@@ -64,4 +64,29 @@ describe('removing a planned meal as the AI', () => {
 			);
 		expect(target).toBe('Pancakes · dinner, Thu, Oct 8');
 	});
+
+	it('keeps the meal’s name on the card after the meal is gone', async () => {
+		const admin = await person(k, 'admin', 'Deniz');
+		const meal = await applied<{ id: string }>(
+			k,
+			'kitchen.addToMealPlan',
+			{ date: '2026-10-08', slot: 'dinner', title: 'Pancakes' },
+			admin.actor,
+		);
+		const result = await k.runner.invoke(
+			'kitchen.removeMealPlanEntry',
+			{ id: meal.id, label: 'pancakes' },
+			AI,
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(result.draftId, admin.actor);
+
+		// The card reads the stored label; the meal itself no longer exists to be looked up.
+		const [draft] = (await k.route('core.listDrafts').call({
+			query: { limit: 5 },
+			actor: admin.actor,
+		})) as { status: string; input: { label?: string } }[];
+		expect(draft?.status).toBe('applied');
+		expect(draft?.input.label).toMatch(/^Pancakes · /);
+	});
 });

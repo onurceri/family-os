@@ -6,7 +6,7 @@ import { createTestKernel, llmFromEnv } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import inbox from '../src/server/index.ts';
 import { PROMPT_VERSION } from '../src/server/process.ts';
-import { CASES, DEFAULT_FAMILY, type Draft, type Members } from './cases.ts';
+import { CASES, DEFAULT_FAMILY, type Draft, type Listed, type Members } from './cases.ts';
 
 /**
  * Runs the extraction cases against a real model and reports which checks pass. Not part of CI:
@@ -81,6 +81,40 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 				systemActor('eval'),
 			);
 		}
+		const listed: Listed = {};
+		const shoppingLists = new Map<string, string>();
+		for (const { list, title } of c.shopping ?? []) {
+			let listId: string | undefined;
+			if (list) {
+				listId = shoppingLists.get(list);
+				if (!listId) {
+					const made = await k.runner.invoke<{ id: string }>(
+						'lists.createShoppingList',
+						{ name: list },
+						systemActor('eval'),
+					);
+					if (made.status !== 'applied') throw new Error('expected the list to be made');
+					listId = made.output.id;
+					shoppingLists.set(list, listId);
+				}
+			}
+			const added = await k.runner.invoke<{ items: { id: string }[] }>(
+				'lists.addShoppingItems',
+				{ ...(listId && { listId }), items: [{ title }] },
+				systemActor('eval'),
+			);
+			if (added.status !== 'applied') throw new Error('expected the item to be added');
+			listed[title] = added.output.items[0]?.id as string;
+		}
+		for (const title of c.tasks ?? []) {
+			const added = await k.runner.invoke<{ id: string }>(
+				'lists.addTask',
+				{ title },
+				systemActor('eval'),
+			);
+			if (added.status !== 'applied') throw new Error('expected the task to be added');
+			listed[title] = added.output.id;
+		}
 		const members: Members = {};
 		let sharer: Awaited<ReturnType<typeof k.member>> | undefined;
 		for (const person of c.family ?? DEFAULT_FAMILY) {
@@ -111,7 +145,7 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 		).reverse();
 		const results = c.checks.map((check) => ({
 			check,
-			ok: check.pass(drafts, members, state, c.text),
+			ok: check.pass(drafts, members, state, c.text, listed),
 		}));
 		const ok = state.status === 'extracted' && results.every((r) => r.ok);
 		lines.push(

@@ -92,7 +92,27 @@ export function narrow(
 		if (mentioned.has(areaOf(t.actionId)) || areaOf(t.actionId) === 'core') return 0;
 		return actsOnExisting(t) ? 2 : 1;
 	};
-	return tools.toSorted((a, b) => rank(a) - rank(b)).slice(0, MAX_TOOLS);
+	const ordered = tools.toSorted((a, b) => rank(a) - rank(b));
+	const picked = ordered.slice(0, MAX_TOOLS);
+	// An action's description sends the model to the read tools of its area to find what it
+	// means ("find the list first"). A write tool is therefore never offered without them: they
+	// take the place of the lowest-ranked tools that no kept write tool needs.
+	const writeAreas = new Set(
+		picked.filter((t) => t.kind === 'draft').map((t) => areaOf(t.actionId)),
+	);
+	const needed = (t: AssistantTool) => t.kind === 'read' && writeAreas.has(areaOf(t.actionId));
+	for (const read of ordered.slice(MAX_TOOLS).filter(needed)) {
+		let at = picked.length - 1;
+		while (
+			at >= 0 &&
+			(needed(picked[at] as AssistantTool) || rank(picked[at] as AssistantTool) === 0)
+		)
+			at--;
+		if (at < 0) break;
+		picked.splice(at, 1);
+		picked.push(read);
+	}
+	return picked;
 }
 
 /** A call the turn made, for the stored answer (names and outcome, never inputs or results). */

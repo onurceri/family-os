@@ -3,6 +3,7 @@ import {
 	namesUnknownId,
 	repairInput,
 	typedIdKind,
+	unknownIdFields,
 	withHandles,
 } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
@@ -50,6 +51,17 @@ describe('handle table', () => {
 		expect(namesUnknownId(mapped, table)).toBe(false);
 		expect(namesUnknownId({ memberIds: [id('member', 9)] }, table)).toBe(true);
 		expect(namesUnknownId({ deep: [{ x: id('vehicle', 1) }] }, table)).toBe(true);
+	});
+
+	it('names the fields that hold an id the model was never shown', () => {
+		const table = createHandleTable();
+		table.add('member', id('member', 1));
+		expect(
+			unknownIdFields(
+				{ listId: id('shop_list', 4), who: [id('member', 1)], items: [{ id: id('shop_item', 2) }] },
+				table,
+			),
+		).toEqual(['listId', 'items[0].id']);
 	});
 
 	it('repairs null fields and JSON written as text', () => {

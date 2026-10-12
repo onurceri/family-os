@@ -27,6 +27,8 @@ export type InboxTables = {
 		read_attempt: number | null;
 		proposals: number;
 		skipped: number;
+		/** Of the skipped, those that pointed at a record that is not on the household's lists. */
+		skipped_unknown: number;
 		/** `provider / model` of the last extraction. */
 		model: string | null;
 		/** Incremented on every retry, so drafts from a new extraction get new dedupe keys. */
@@ -81,6 +83,14 @@ export const migrations: Migrations = {
 			await db.schema.alterTable('inbox_items').addColumn('read_attempt', 'integer').execute();
 		},
 	},
+	'0003_skipped_unknown': {
+		async up(db) {
+			await db.schema
+				.alterTable('inbox_items')
+				.addColumn('skipped_unknown', 'integer', (c) => c.notNull().defaultTo(0))
+				.execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<InboxTables>();
@@ -104,6 +114,7 @@ export function toItem(row: ItemRow): InboxItem {
 		attempt: row.read_attempt,
 		proposals: row.proposals,
 		skipped: row.skipped,
+		skippedUnknown: row.skipped_unknown,
 		createdBy: row.created_by,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,

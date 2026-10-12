@@ -75,11 +75,23 @@ export function withHandles(value: unknown, table: HandleTable): unknown {
  * after `repairInput` has mapped the handles back: every id left must be one in the table.
  */
 export function namesUnknownId(value: unknown, table: HandleTable): boolean {
-	if (typeof value === 'string') return typedIdKind(value) !== null && !table.ids().has(value);
-	if (Array.isArray(value)) return value.some((v) => namesUnknownId(v, table));
+	return unknownIdFields(value, table).length > 0;
+}
+
+/**
+ * The fields of a model's input that hold an id it was never shown, as paths (`listId`,
+ * `items[0].id`), so a refusal can say which one to look up again.
+ */
+export function unknownIdFields(value: unknown, table: HandleTable, path = ''): string[] {
+	if (typeof value === 'string')
+		return typedIdKind(value) !== null && !table.ids().has(value) ? [path || '(input)'] : [];
+	if (Array.isArray(value))
+		return value.flatMap((v, i) => unknownIdFields(v, table, `${path}[${i}]`));
 	if (value && typeof value === 'object')
-		return Object.values(value).some((v) => namesUnknownId(v, table));
-	return false;
+		return Object.entries(value).flatMap(([k, v]) =>
+			unknownIdFields(v, table, path ? `${path}.${k}` : k),
+		);
+	return [];
 }
 
 /**

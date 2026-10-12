@@ -120,6 +120,8 @@ export const InboxItemSchema = z.object({
 	proposals: z.number().int(),
 	/** Proposals the model made that did not pass validation. */
 	skipped: z.number().int(),
+	/** Of the skipped, those that pointed at something that is not on the household's lists. */
+	skippedUnknown: z.number().int(),
 	createdBy: z.string().nullable(),
 	createdAt: z.number(),
 	updatedAt: z.number(),

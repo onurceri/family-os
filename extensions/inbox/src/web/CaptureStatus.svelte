@@ -83,8 +83,11 @@
 						? t('status_question')
 						: t('status_nothing')}</span
 			>
-			{#if item.skipped}<small class="text-ink-soft block text-xs"
-					>{t('status_skipped', { count: item.skipped })}</small
+			{#if item.skippedUnknown}<small class="text-ink-soft block text-xs"
+					>{t('status_skipped_unknown', { count: item.skippedUnknown })}</small
+				>{/if}
+			{#if item.skipped > item.skippedUnknown}<small class="text-ink-soft block text-xs"
+					>{t('status_skipped', { count: item.skipped - item.skippedUnknown })}</small
 				>{/if}
 		</span>
 		{#if isQuestion}

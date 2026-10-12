@@ -4,9 +4,9 @@ import type { ActionInvoker, ActionResult, DraftMeta } from './context.ts';
 import { FamosError } from './errors.ts';
 import {
 	type HandleTable,
-	namesUnknownId,
 	repairInput,
 	typedIdKind,
+	unknownIdFields,
 	withHandles,
 } from './handles.ts';
 
@@ -63,7 +63,11 @@ function issues(details: unknown): string {
 export function toolFailure(error: unknown): string {
 	if (error instanceof FamosError) {
 		if (error.code === 'bad_request')
-			return `Error: invalid input${error.details ? ` (${issues(error.details)})` : ''}`;
+			// Without details the action itself refused the input and says why (an unknown list
+			// name, with the real names).
+			return error.details
+				? `Error: invalid input (${issues(error.details)})`
+				: `Error: ${error.message}`;
 		if (error.code === 'forbidden') return 'Error: not allowed for this person';
 		if (error.code === 'not_found') return 'Error: not found';
 		return `Error: ${error.message}`;
@@ -231,10 +235,19 @@ export async function runAgentTool(call: {
 }): Promise<AgentToolOutcome> {
 	const { actionId, table } = call;
 	const input = repairInput(call.input ?? {}, table.toId);
-	if (namesUnknownId(input, table))
+	const unknown = unknownIdFields(input, table);
+	if (unknown.length > 0)
 		return {
 			ok: false,
-			text: asData(actionId, 'Error: unknown reference; use the handles from earlier results'),
+			text: asData(
+				actionId,
+				`Error: unknown reference in ${unknown
+					.slice(0, 4)
+					.map((field) => `'${field}'`)
+					.join(
+						', ',
+					)}: it is not a handle from earlier results. Look the thing up again with a read tool and use the handle it returns, or pass its name where the tool takes one.`,
+			),
 		};
 	const target = call.kind === 'draft' ? targetOf(input) : null;
 	const earlier = target ? call.targets?.get(target.id) : undefined;

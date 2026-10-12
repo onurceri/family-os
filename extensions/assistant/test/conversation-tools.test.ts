@@ -42,3 +42,34 @@ describe('tool narrowing in a conversation', () => {
 		expect(calendarTools(picked)).toHaveLength(12);
 	});
 });
+
+describe('the read tools an action sends the model to', () => {
+	const as = (kind: 'read' | 'draft', actionId: string): AssistantTool => ({
+		...tool(actionId),
+		kind,
+	});
+
+	it('are kept with a write tool of the same area, even when they would be cut', () => {
+		const crowded = [
+			as('draft', 'lists.addShoppingItems'),
+			// Far more tools of another area than fit, ahead of the read tool that matters.
+			...Array.from({ length: 30 }, (_, i) => as('read', `vehicles.read${i}`)),
+			as('read', 'lists.shoppingList'),
+		];
+		const picked = narrow(crowded, 'Add picture wire to the Hardware store', words).map(
+			(t) => t.actionId,
+		);
+		expect(picked).toContain('lists.addShoppingItems');
+		expect(picked).toContain('lists.shoppingList');
+		expect(picked).toHaveLength(24);
+	});
+
+	it('are not added for an area whose write tools were all cut', () => {
+		const crowded = [
+			...Array.from({ length: 30 }, (_, i) => as('draft', `vehicles.add${i}`)),
+			as('read', 'lists.shoppingList'),
+		];
+		const picked = narrow(crowded, 'anything', words).map((t) => t.actionId);
+		expect(picked).not.toContain('lists.shoppingList');
+	});
+});

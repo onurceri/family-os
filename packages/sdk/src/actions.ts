@@ -100,6 +100,12 @@ export interface ActionDefinition<
 	 */
 	readonly refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	/**
+	 * Turns a thing the caller named in words (a shopping list by its name) into the id the action
+	 * works with, before anything else looks at the input. It throws a `bad_request` that says what
+	 * is wrong and what the valid names are, so a model can correct itself. Read-only and cheap.
+	 */
+	readonly resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
+	/**
 	 * Whether what the input asks for is already so (a shopping item already ticked, a task
 	 * already done). Approving a pending draft whose input is settled closes it as "already
 	 * done" instead of running it, so nothing is recorded as applied that changed nothing and no
@@ -183,6 +189,7 @@ export function defineAction<
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;

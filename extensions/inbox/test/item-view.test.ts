@@ -29,6 +29,7 @@ const item = (over: Partial<InboxItem> = {}): InboxItem => ({
 	attempt: null,
 	proposals: 0,
 	skipped: 0,
+	skippedUnknown: 0,
 	createdBy: null,
 	createdAt: 1,
 	updatedAt: 1,

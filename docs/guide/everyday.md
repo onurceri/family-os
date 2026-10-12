@@ -29,7 +29,7 @@ A family display in the kitchen or hallway shows the same page without a person 
 
 ## Quick add
 
-Quick add is where you give FamilyOS a message, a photo, a document or a voice note, check what it found, and add it. It is a tool for you, not a shared mailbox and not a chat. The AI reads what you give it and lists what it found (an event, a task, shopping items…). Nothing is added until a person ticks it and presses **Add selected**. How the AI is chosen and what it sees: [AI and privacy](ai.md).
+Quick add is where you give FamilyOS a message, a photo, a document or a voice note, check what it found, and add it. It is a tool for you, not a shared mailbox and not a chat. The AI reads what you give it and lists what it found (an event, a task, shopping items…). Nothing is added until a person ticks it and presses **Add selected**. How the AI is chosen and what it sees: [AI and privacy](ai.md). It also sees what is still open on your shopping lists and task list, so a message like "got the light bulbs already" can suggest ticking that item off (or completing that task) instead of adding it again. When it points at something that is not on your lists, that suggestion is left out and the capture says so: "1 suggestion was left out: it pointed at something that is not on your lists."
 
 ### Giving it something
 

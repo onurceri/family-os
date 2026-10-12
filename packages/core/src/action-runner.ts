@@ -365,7 +365,13 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	): Promise<ActionResult<O>> {
 		const def = getAction(actionId);
 		authorize(def, actor);
-		const input = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
+		const parsed = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
+		const input = def.resolveNames
+			? await def.resolveNames(
+					{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
+					parsed,
+				)
+			: parsed;
 		const checkedTitle = await checkTarget(def, input, actor);
 		/** Inside the transaction: a concurrent request may have stored the key meanwhile. */
 		const guard = async (uow: UnitOfWork) => {

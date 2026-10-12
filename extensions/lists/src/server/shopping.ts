@@ -42,6 +42,14 @@ export const shoppingManage = defineCapability({
 });
 const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
 
+/** What the model calls the list that has no name of its own. */
+const DEFAULT_LIST_LABEL = 'Shopping list';
+/** Names a person or the model may use for that list when asking for it by name. */
+const DEFAULT_LIST_ALIASES = [DEFAULT_LIST_LABEL, 'Groceries', 'Market'];
+
+/** The names a list answers to: its own, or the aliases of the list that has none. */
+const namesOf = (list: { name: string }) => (list.name ? [list.name] : DEFAULT_LIST_ALIASES);
+
 async function activeList(uow: UnitOfWork, id: string | undefined) {
 	let query = tables(uow.db)
 		.selectFrom('lists_shopping_lists')
@@ -117,6 +125,30 @@ export const addShoppingItems = defineAction({
 					input: { addedIds: output.addedIds, merged: output.merged },
 				}
 			: null,
+	// A list named in words ("Hardware store") becomes its id here, before the proposal is judged
+	// and stored, so a draft always points at one real list; an unknown name is refused with the
+	// real names, which also stops a model from inventing one.
+	async resolveNames(ctx, input) {
+		if (input.list === undefined) return input;
+		const { list, ...rest } = input;
+		if (rest.listId || list === '') return rest;
+		const { locale } = await ctx.family.settings();
+		const lists = await tables(ctx.db)
+			.selectFrom('lists_shopping_lists')
+			.select(['id', 'name'])
+			.where('archived_at', 'is', null)
+			.orderBy('sort')
+			.orderBy('created_at')
+			.execute();
+		const wanted = titleKey(list, locale);
+		const found = lists.find((l) => namesOf(l).some((n) => titleKey(n, locale) === wanted));
+		if (!found)
+			throw new FamosError(
+				'bad_request',
+				`There is no list called '${list}'. The lists are: ${lists.map((l) => l.name || DEFAULT_LIST_LABEL).join(', ')}. Use one of these names, or omit the list for the default one.`,
+			);
+		return { ...rest, listId: ShoppingListIdSchema.parse(found.id) };
+	},
 	// Every item is already on a list and not bought yet (or only some are).
 	async alreadyThere(ctx, input) {
 		const { locale } = await ctx.family.settings();
@@ -136,7 +168,7 @@ export const addShoppingItems = defineAction({
 		description:
 			'Adds things to buy to a family shopping list (groceries, household supplies, things someone needs for school).',
 		guidance:
-			'Only things the family must buy, not things to bring that a family usually already has (use a task for those). One item per product, titled in the family language with a capital first letter like a list entry ("Milk", not "milk"; brand names as written). The amount goes in quantity, never in the title: "2 litres of milk" is title "Milk", quantity "2 litres"; keep every amount the item gives, with its unit, as written ("2 kg", "1 pack", "a dozen"). Pick the store section as category when obvious. When the person names a list, find it with lists.shoppingList and send its id as listId; when no list is named, omit listId and the default list is used.',
+			'Only things the family must buy, not things to bring that a family usually already has (use a task for those). One item per product, titled in the family language with a capital first letter like a list entry ("Milk", not "milk"; brand names as written). The amount goes in quantity, never in the title: "2 litres of milk" is title "Milk", quantity "2 litres"; keep every amount the item gives, with its unit, as written ("2 kg", "1 pack", "a dozen"). Pick the store section as category when obvious. When the person names a list, send the name as they said it in `list` (an unknown name is refused with the real names), or its id from lists.shoppingList as listId; when no list is named, omit both and the default list is used.',
 	},
 	async run(uow, input) {
 		const list = await activeList(uow, input.listId);
@@ -594,10 +626,6 @@ export const archiveShoppingList = defineAction({
 });
 
 const MAX_SHOPPING = 100;
-/** What the model calls the list that has no name of its own. */
-const DEFAULT_LIST_LABEL = 'Shopping list';
-/** Names a person or the model may use for that list when asking for it by name. */
-const DEFAULT_LIST_ALIASES = [DEFAULT_LIST_LABEL, 'Groceries', 'Market'];
 
 export const shoppingList = defineAction({
 	id: 'lists.shoppingList',
@@ -644,8 +672,7 @@ export const shoppingList = defineAction({
 		const chosen = lists.filter(
 			(l) =>
 				(!listId || l.id === listId) &&
-				(!wanted ||
-					(l.name ? [l.name] : DEFAULT_LIST_ALIASES).some((n) => titleKey(n, locale) === wanted)),
+				(!wanted || namesOf(l).some((n) => titleKey(n, locale) === wanted)),
 		);
 		let budget = MAX_SHOPPING;
 		const out = [];

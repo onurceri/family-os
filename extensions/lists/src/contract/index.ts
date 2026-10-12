@@ -130,6 +130,14 @@ export const AddShoppingItemsSchema = z.object({
 	listId: ShoppingListIdSchema.optional().describe(
 		'Target list; omit for the first (default) list',
 	),
+	list: z
+		.string()
+		.trim()
+		.max(60)
+		.optional()
+		.describe(
+			'The list by the name the person used, when you do not have its id; an unknown name is refused with the real names. Omit both for the default list',
+		),
 	items: z.array(ShoppingItemInputSchema).min(1).max(50),
 	/**
 	 * What happens to an item that is already on the list and not bought yet: `update` (the

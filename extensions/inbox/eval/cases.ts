@@ -31,9 +31,11 @@ export interface Reading {
 	summary: string | null;
 	kind: string | null;
 }
+/** Ids of the seeded shopping items and tasks by title. */
+export type Listed = Record<string, string>;
 export interface Check {
 	label: string;
-	pass(drafts: Draft[], m: Members, reading: Reading, text: string): boolean;
+	pass(drafts: Draft[], m: Members, reading: Reading, text: string, listed: Listed): boolean;
 }
 export interface Case {
 	name: string;
@@ -46,6 +48,10 @@ export interface Case {
 	locale?: string;
 	/** Duties the household records already hold (the records area is on only when given). */
 	obligations?: SeededObligation[];
+	/** Shopping items already open on a list (a list made for the case when it is named). */
+	shopping?: { list?: string; title: string }[];
+	/** Open tasks. */
+	tasks?: string[];
 	checks: Check[];
 }
 export interface SeededObligation {
@@ -509,6 +515,56 @@ Your payment was received and your comprehensive car insurance policy for your G
 	},
 ];
 
+/** The household's own lists: a message that something is bought or done ticks it off. */
+const LIST_CASES: Case[] = [
+	{
+		// Found in use: "tick them off the Hardware store list" found nothing to add, because
+		// Quick add was never shown what was on the lists.
+		name: 'Ticks off a listed shopping item (English)',
+		shopping: [
+			{ list: 'Hardware store', title: 'E27 light bulbs' },
+			{ list: 'Hardware store', title: 'Picture wire' },
+			{ title: 'Milk' },
+		],
+		text: 'Got the E27 light bulbs already, tick them off the Hardware store list',
+		checks: [
+			{
+				label: 'lists.checkShoppingItem: the light bulbs, done',
+				pass: (ds, _m, _r, _t, listed) =>
+					of(ds, 'lists.checkShoppingItem').some(
+						(d) => d.input.id === listed['E27 light bulbs'] && d.input.done === true,
+					),
+			},
+			{
+				label: 'no other item ticked',
+				pass: (ds) => of(ds, 'lists.checkShoppingItem').length === 1,
+			},
+			none('lists.addShoppingItems'),
+		],
+	},
+	{
+		name: 'Nothing to tick off when the item is not listed (English)',
+		shopping: [{ list: 'Hardware store', title: 'Picture wire' }, { title: 'Milk' }],
+		text: 'Got the E27 light bulbs already, tick them off the Hardware store list',
+		checks: [none('lists.checkShoppingItem'), none('lists.addShoppingItems')],
+	},
+	{
+		name: 'Completes a listed task (English)',
+		tasks: ['Pay the swim course fee', 'Book the dentist'],
+		text: 'I paid the swim course fee this morning.',
+		checks: [
+			{
+				label: 'lists.completeTask: the fee',
+				pass: (ds, _m, _r, _t, listed) =>
+					of(ds, 'lists.completeTask').some(
+						(d) => d.input.id === listed['Pay the swim course fee'],
+					),
+			},
+			none('lists.addTask'),
+		],
+	},
+];
+
 /** Items with nothing to file: a question for the assistant, or plain chatter. */
 const NON_ACTIONABLE_CASES: Case[] = [
 	{
@@ -613,6 +669,7 @@ export const CASES: Case[] = [
 	...NON_ACTIONABLE_CASES.map((c, i) => (i === 0 ? { ...TURKEY, ...c } : c)),
 	...REGIONAL_CASES,
 	...RECORD_CASES,
+	...LIST_CASES,
 	...CLUB_CASES,
 	...NOTES_CASES,
 ];

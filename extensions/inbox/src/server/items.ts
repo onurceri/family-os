@@ -167,6 +167,7 @@ export const addItem = defineAction({
 			read_attempt: null,
 			proposals: 0,
 			skipped: 0,
+			skipped_unknown: 0,
 			model: null,
 			extraction: 0,
 			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,

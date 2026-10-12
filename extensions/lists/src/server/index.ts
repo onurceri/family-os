@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import { aiContext, aiContextTasks } from './context.ts';
 import { remindJob, taskDueKind } from './reminders.ts';
 import {
 	addShoppingItems,
@@ -42,9 +43,12 @@ import {
 export default defineExtension({
 	id: 'lists',
 	migrations,
+	ai: { context: [aiContext.id, aiContextTasks.id] },
 	actions: [
 		openTasks,
 		shoppingList,
+		aiContext,
+		aiContextTasks,
 		addTask,
 		updateTask,
 		changeTask,

@@ -17,6 +17,8 @@
 	"ask_assistant": "Asistana sor",
 	"status_skipped_one": "{{count}} öneri eksik olduğu için çıkarıldı.",
 	"status_skipped_other": "{{count}} öneri eksik olduğu için çıkarıldı.",
+	"status_skipped_unknown_one": "{{count}} öneri çıkarıldı: listelerinizde olmayan bir şeyi gösteriyordu.",
+	"status_skipped_unknown_other": "{{count}} öneri çıkarıldı: listelerinizde olmayan bir şeyi gösteriyordu.",
 	"error_not_configured": "Yapay zekâ henüz ayarlanmamış.",
 	"error_not_configured_admin": "Ayarlar → Yapay zekâ'dan bir model seç, sonra tekrar dene.",
 	"open_ai_settings": "Yapay zekâ ayarlarını aç",

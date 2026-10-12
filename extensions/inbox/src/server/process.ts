@@ -29,7 +29,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/16';
+export const PROMPT_VERSION = 'inbox.extract/17';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -618,7 +618,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 	}${
 		records
 			? `
-- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty.`
+- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty. When the item says that something listed under the shopping items has been bought, tick it off with its handle (lists.checkShoppingItem) instead of adding it again; when it says a listed task is done, complete that task. Name it in label as the item words it. If the thing is not listed, propose nothing for it.`
 			: ''
 	}
 - Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time and allDay out: the event is kept as an all-day event that a person checks. Set allDay yourself only for something that fills the whole day (a holiday, a trip day, a birthday), never for an appointment or an activity whose time is simply not given.
@@ -652,6 +652,15 @@ function issuePaths(tree: unknown, prefix = ''): string[] {
 	);
 	const items = (node.items ?? []).flatMap((v, i) => issuePaths(v, `${prefix}[${i}]`));
 	return [...here, ...props, ...items].slice(0, 20);
+}
+
+/**
+ * Whether a rejected input failed on the field that names a record (`id`, `recordId`): the model
+ * pointed at something that is not there, which a person reads differently from a missing field.
+ */
+export function namesRecordBadly(details: unknown): boolean {
+	const tree = details as { properties?: Record<string, unknown> } | null;
+	return Boolean(tree?.properties && ('id' in tree.properties || 'recordId' in tree.properties));
 }
 
 export { repairInput };
@@ -719,6 +728,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 
 	let drafted = 0;
 	let skipped = 0;
+	// Skipped because they pointed at a record that is not on the household's lists.
+	let skippedUnknown = 0;
 	let summary: string | null = null;
 	let kind: ExtractionKind | null = null;
 	let model: string | null = null;
@@ -823,6 +834,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			const { input, guessed } = prepare(proposal);
 			if (namesUnknownRecord(input, records)) {
 				skipped++;
+				skippedUnknown++;
 				continue;
 			}
 			// The model's own doubt, plus the code's: a date whose quoted source names no day, or
@@ -865,6 +877,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				// An input the action rejects is dropped; the item shows how many were skipped.
 				if (isFamosError(error) && (error.code === 'bad_request' || error.code === 'forbidden')) {
 					skipped++;
+					if (error.code === 'bad_request' && namesRecordBadly(error.details)) skippedUnknown++;
 					// Field paths and messages only, never values: they come from family content.
 					ctx.logger.info(
 						{
@@ -904,6 +917,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			model,
 			proposals: drafted,
 			skipped,
+			skipped_unknown: skippedUnknown,
 			error_code: null,
 			read_attempt: null,
 			updated_at: ctx.clock.now(),

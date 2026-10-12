@@ -173,7 +173,7 @@ describe('the list a request names', () => {
 		const info = k.ctx.actions
 			.aiCatalog({ local: true })
 			.find((a) => a.id === 'lists.addShoppingItems');
-		expect(info?.guidance).toContain('find it with lists.shoppingList');
+		expect(info?.guidance).toContain('send the name as they said it in `list`');
 		expect(info?.guidance).toContain('default list is used');
 	});
 });
