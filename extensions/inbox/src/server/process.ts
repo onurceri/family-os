@@ -29,7 +29,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/15';
+export const PROMPT_VERSION = 'inbox.extract/16';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -623,6 +623,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 	}
 - Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time and allDay out: the event is kept as an all-day event that a person checks. Set allDay yourself only for something that fills the whole day (a holiday, a trip day, a birthday), never for an appointment or an activity whose time is simply not given.
 - Quantities: an amount the item gives for a thing to buy ("2 litres of milk", "a dozen eggs", "3 packs") goes into that item's quantity field with its unit, as written ("2 litres", "a dozen", "3 packs"); the title is the product alone ("Milk"), never the amount.
+- Notes: notes must be readable on their own, as a short phrase that says what the detail is ("Fee: 45", "Bring a swim cap"). Never a bare number, amount or word with nothing around it; when a detail has no name in the item, leave it out of the notes.
 - Dates: whenever the item names the day of a proposal (a full date, a weekday, a day of the month such as "the 15th", or words such as today and tomorrow), set the date field, also when you are unsure (then list it in uncertainFields as below). Put the exact words that give the day in dateText (the day only, not the time). A full date (day and month) and words that name one day (today, tomorrow) are certain: do not list them in uncertainFields. If a weekday and a day number in the item disagree, keep the day number and list the date field in uncertainFields. A weekday without a date is ambiguous: "next Thursday" can mean this week's or next week's. When the text does not settle it, choose the nearer one and list the date field in uncertainFields. Do the same for a missing month or year, a time without am/pm or context ("at 4"), and vague spans ("end of the month").
 - Omit only fields the item does not give; never send null. Give arrays and objects as JSON values, not as strings.
 - Before you answer, read the item once more: every appointment, deadline, payment and thing to buy in it must be in a proposal, with its date and time.

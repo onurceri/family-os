@@ -1,6 +1,6 @@
 import { repoTranslate } from '@famos/testing';
 import { describe, expect, it } from 'vitest';
-import { parseQuickAdd } from '../src/web/quick-add.ts';
+import { longestTitle, parseQuickAdd } from '../src/web/quick-add.ts';
 
 /** The units of the English catalog and of the bundled Turkish pack, as the page reads them. */
 const translate = repoTranslate();
@@ -68,5 +68,14 @@ describe('parseQuickAdd', () => {
 	it('keeps numbers that are part of the name', () => {
 		expect(parseQuickAdd('7up', en)).toEqual([{ title: '7up' }]);
 		expect(parseQuickAdd(' , ,', en)).toEqual([]);
+	});
+});
+
+describe('longestTitle', () => {
+	it('measures the longest item, not the whole text, and leaves the amount out', () => {
+		const long = 'x'.repeat(130);
+		expect(longestTitle(`2 kg tomatoes, ${long}, bread`, en)).toBe(long);
+		expect(longestTitle('milk, 4', en)).toBe('milk');
+		expect(longestTitle('', en)).toBe('');
 	});
 });

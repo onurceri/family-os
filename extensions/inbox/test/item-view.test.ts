@@ -90,4 +90,10 @@ describe('what waits for the person', () => {
 		expect(itemChip(item(), [draft('expired'), draft('rejected')]).key).toBe('chip_rejected');
 		expect(itemChip(item(), [draft('expired'), draft('applied')]).key).toBe('chip_added');
 	});
+	it('says taken back for suggestions that were approved and then undone', () => {
+		expect(itemChip(item(), [draft('undone')]).key).toBe('chip_undone');
+		expect(itemChip(item(), [draft('undone'), draft('expired')]).key).toBe('chip_undone');
+		expect(itemChip(item(), [draft('undone'), draft('rejected')]).key).toBe('chip_rejected');
+		expect(itemChip(item(), [draft('undone'), draft('applied')]).key).toBe('chip_added');
+	});
 });

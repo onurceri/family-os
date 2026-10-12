@@ -73,7 +73,9 @@
 		reject: a('draft_reject'),
 		rejectConfirm: a('draft_reject_confirm'),
 		checkThis: a('draft_check_this'),
-		applied: draft.autoApproved ? a('draft_auto_approved') : a('draft_applied'),
+		applied: draft.autoApproved
+			? a('draft_auto_approved')
+			: (presenter?.appliedLabel?.(context) ?? a('draft_applied')),
 		rejected: a('draft_rejected'),
 		retry: a('draft_retry'),
 		waiting: a('draft_waiting'),

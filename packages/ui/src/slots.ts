@@ -304,6 +304,8 @@ export interface DraftPresenter<I = unknown> {
 	fields(input: I, context: PresenterContext): DraftField[];
 	/** Label of the approve button, e.g. "Add to calendar". */
 	approveLabel?(context: PresenterContext): string;
+	/** What a decided card says when the neutral "Done" is too vague, e.g. "Added to the calendar". */
+	appliedLabel?(context: PresenterContext): string;
 	editor?: () => Promise<{ default: Component<DraftEditorProps<I>> }>;
 }
 

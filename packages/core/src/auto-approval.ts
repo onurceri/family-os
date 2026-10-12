@@ -15,6 +15,7 @@ import {
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
+import { WAITING_KIND, waitingDedupeKey } from './draft-notices.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -160,16 +161,13 @@ export function waitingNotice(
 		body = { key: 'app:notify_draft_waiting_body', params: { what } };
 	}
 	return {
-		kind: 'core.draftWaiting',
+		kind: WAITING_KIND,
 		to: { capability: 'core.drafts.approve', ...(except && { except }) },
 		title: { key: 'app:notify_draft_waiting_title' },
 		body,
 		url: '/add',
 		source: { kind: sourceKind, id: draft.sourceId ?? draft.id },
-		dedupeKey:
-			draft.sourceKind && draft.sourceId
-				? `drafts:${draft.sourceKind}:${draft.sourceId}`
-				: `draft:${draft.id}`,
+		dedupeKey: waitingDedupeKey(draft),
 		delayMs,
 	};
 }

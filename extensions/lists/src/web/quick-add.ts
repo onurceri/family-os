@@ -24,3 +24,11 @@ export function parseQuickAdd(text: string, units: readonly string[]): ShoppingI
 	}
 	return items.slice(0, 50);
 }
+
+/** The longest item title in quick-add text: what the title limit applies to when several are typed at once. */
+export function longestTitle(text: string, units: readonly string[]): string {
+	let longest = '';
+	for (const { title } of parseQuickAdd(text, units))
+		if (title.length > longest.length) longest = title;
+	return longest;
+}

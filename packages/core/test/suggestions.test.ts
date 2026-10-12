@@ -38,6 +38,21 @@ const cart = defineExtension({
 			},
 		}),
 		defineAction({
+			id: 'cart.remove',
+			title: 'Remove an item',
+			draftTitle: 'cart:draft_title_remove',
+			input: z.object({ id: z.string().min(1) }),
+			output: z.object({ id: z.string() }),
+			requires: cartUse.id,
+			approval: { unless: cartEdit.id },
+			async targetTitle(_ctx, { id }) {
+				return id === 'item_1' ? 'Swim cap' : null;
+			},
+			async run(_uow, { id }) {
+				return { id };
+			},
+		}),
+		defineAction({
 			id: 'cart.addItems',
 			title: 'Add items',
 			draftTitle: 'cart:draft_title_add_items',
@@ -152,6 +167,14 @@ describe('a suggestion that is already so', () => {
 	});
 });
 
+const waitingNotices = () =>
+	k.ctx.db
+		.withTables<import('../src/tables.ts').CoreTables>()
+		.selectFrom('core_notifications')
+		.selectAll()
+		.where('kind', '=', 'core.draftWaiting')
+		.execute();
+
 describe('the name a suggestion carries', () => {
 	it('is its label, a new thing’s title, or the joined titles of several', async () => {
 		await propose({ name: 'Cheddar', done: true, label: 'Cheddar' }, assistantFor(parent));
@@ -183,6 +206,19 @@ describe('the name a suggestion carries', () => {
 				name: 'Cheddar',
 			});
 		}
+	});
+
+	it('comes from the stored name when the screen sent only an id', async () => {
+		await propose({ id: 'item_1' }, kid.actor, 'cart.remove');
+		k.clock.advance(60_000);
+		await k.worker.drain();
+		const notes = await waitingNotices();
+		expect(notes.length).toBeGreaterThan(0);
+		for (const note of notes)
+			expect(JSON.parse(note.body_params ?? '{}')).toEqual({
+				what: 'cart:draft_title_remove',
+				name: 'Swim cap',
+			});
 	});
 
 	it('is read from the input by subjectOf', () => {
@@ -236,5 +272,42 @@ describe('a suggestion read from something a member shared', () => {
 		const byId = new Map((await listed(parent)).map((d) => [d.id, d.reason]));
 		expect(byId.get(ai)).toBeNull();
 		expect(byId.get(own)).toBe('withdrawn');
+	});
+});
+
+describe('the waiting notice once the suggestion is decided', () => {
+	const sourced = { sourceKind: 'inbox', sourceId: 'inbox_9' };
+	const unread = async () => (await waitingNotices()).filter((n) => n.read_at === null);
+
+	it('is read when the suggestion is rejected, applied or withdrawn', async () => {
+		for (const decide of ['reject', 'approve', 'withdraw'] as const) {
+			const id = await propose({ id: 'item_1' }, kid.actor, 'cart.remove');
+			k.clock.advance(60_000);
+			await k.worker.drain();
+			expect((await unread()).length).toBeGreaterThan(0);
+			if (decide === 'approve') await k.runner.approveDraft(id, parent.actor);
+			else await k.runner.rejectDraft(id, decide === 'reject' ? parent.actor : kid.actor);
+			expect(await unread()).toEqual([]);
+		}
+	});
+
+	it('stays unread while another suggestion of the same message waits', async () => {
+		const first = await propose({ name: 'Cheddar', done: true }, kid.actor, 'cart.tick', sourced);
+		const second = await propose({ id: 'item_1' }, kid.actor, 'cart.remove', sourced);
+		k.clock.advance(60_000);
+		await k.worker.drain();
+		expect((await unread()).length).toBeGreaterThan(0);
+		await k.runner.rejectDraft(first, parent.actor);
+		expect((await unread()).length).toBeGreaterThan(0);
+		await k.runner.rejectDraft(second, parent.actor);
+		expect(await unread()).toEqual([]);
+	});
+
+	it('is never made when the suggestion was decided during the delay', async () => {
+		const id = await propose({ id: 'item_1' }, kid.actor, 'cart.remove');
+		await k.runner.rejectDraft(id, kid.actor);
+		k.clock.advance(60_000);
+		await k.worker.drain();
+		expect(await waitingNotices()).toEqual([]);
 	});
 });

@@ -152,6 +152,35 @@ describe('ingredients to the shopping list', () => {
 		]);
 	});
 
+	it('treats an old entry written like a recipe line as the same product', async () => {
+		const r = await applied<Recipe>(
+			k,
+			'kitchen.createRecipe',
+			{ title: 'Lemon cake', ingredients: ['1 lemon, zest and juice', '200 g flour'] },
+			admin.actor,
+		);
+		await applied(
+			k,
+			'lists.addShoppingItems',
+			{ items: [{ title: 'Lemon, zest and juice' }] },
+			admin.actor,
+		);
+		const result = await applied<{ added: number; alreadyThere: number; existing: unknown[] }>(
+			k,
+			'kitchen.addIngredientsToShopping',
+			{ recipeId: r.id, lines: r.ingredients },
+			admin.actor,
+		);
+		expect(result).toMatchObject({ added: 1, alreadyThere: 1 });
+		expect(result.existing).toEqual([
+			{ title: 'Lemon, zest and juice', listQuantity: null, recipeQuantity: '1' },
+		]);
+		expect((await shoppingItems()).map((i) => i.title).toSorted()).toEqual([
+			'Flour',
+			'Lemon, zest and juice',
+		]);
+	});
+
 	it('counts a bought item that comes back as added, not as already there', async () => {
 		const r = await addRecipe();
 		await applied(k, 'lists.addShoppingItems', { items: [{ title: 'Onion' }] }, admin.actor);

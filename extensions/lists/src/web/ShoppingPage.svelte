@@ -48,7 +48,7 @@
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from './latest-only.js';
-	import { parseQuickAdd } from './quick-add.js';
+	import { longestTitle, parseQuickAdd } from './quick-add.js';
 
 	/**
 	 * The Shopping page, made for the shop: one hand, a phone. The lists as chips, a big add field
@@ -550,6 +550,9 @@
 						label={t('add_item')}
 						placeholder={t('add_item_placeholder')}
 						disabled={!list}
+						limit={SHOPPING_TITLE_MAX}
+						tooLong={(counter) => t('too_long', { counter })}
+						measure={(text) => longestTitle(text, t('quantity_units').split(','))}
 						onsubmit={quickAdd}
 					/>
 				</div>

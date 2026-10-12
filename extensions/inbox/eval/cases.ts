@@ -593,10 +593,26 @@ const CLUB_CASES: Case[] = [
 	},
 ];
 
+const NOTES_CASES: Case[] = [
+	{
+		// Found in use: the fee of a swim course became a task whose notes were just "45".
+		name: 'Task notes say what the amount is (English)',
+		text: 'Swim course starts next month. Please pay the fee of 45 to the school office by Friday 9 October.',
+		checks: [
+			has(
+				'lists.addTask',
+				'notes name the amount, not just the number',
+				(i) => typeof i.notes !== 'string' || /[A-Za-z]/.test(i.notes),
+			),
+		],
+	},
+];
+
 export const CASES: Case[] = [
 	...TURKISH_CASES.map((c) => ({ ...TURKEY, ...c })),
 	...NON_ACTIONABLE_CASES.map((c, i) => (i === 0 ? { ...TURKEY, ...c } : c)),
 	...REGIONAL_CASES,
 	...RECORD_CASES,
 	...CLUB_CASES,
+	...NOTES_CASES,
 ];

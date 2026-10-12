@@ -27,8 +27,9 @@ import {
 	readAutoApproval,
 	waitingNotice,
 } from './auto-approval.ts';
-import { draftCreated, draftUpdated } from './core-events.ts';
+import { draftCreated, draftUpdated, notificationRead } from './core-events.ts';
 import { draftDateOf, hasPassed, WAITING_STATUSES } from './draft-expiry.ts';
+import { settleWaitingNotices } from './draft-notices.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { familyReader } from './family.ts';
 import { type Features, ownerOf } from './features.ts';
@@ -198,6 +199,15 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	}
 	const coreDb = () => deps.db.withTables<CoreTables>();
 
+	/** A decided suggestion no longer waits: its unread "waiting" notices are marked read. */
+	async function settleNotices(
+		uow: UnitOfWork,
+		draft: { id: string; source_kind: string | null; source_id: string | null },
+	): Promise<void> {
+		for (const memberId of await settleWaitingNotices(uow.db, draft, clock.now()))
+			uow.emit(notificationRead, { memberId });
+	}
+
 	const getAction = (actionId: string) => {
 		const def = registry.actions.get(actionId);
 		if (!def) throw new FamosError('not_found', `Unknown action "${actionId}"`);
@@ -245,7 +255,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					const waiting = await trx
 						.withTables<CoreTables>()
 						.selectFrom('core_drafts')
-						.select(['id', 'action_id'])
+						.select(['id', 'action_id', 'source_kind', 'source_id'])
 						.where('source_kind', '=', source.kind)
 						.where('source_id', '=', source.id)
 						.where('status', 'in', ['pending', 'failed'])
@@ -266,6 +276,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						await audit(uow, draft.action_id, 'rejected', draft.id);
 						uow.emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
 					}
+					if (waiting[0]) await settleNotices(uow, waiting[0]);
 					return waiting.length;
 				},
 				async run(actionId, input) {
@@ -499,7 +510,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						summary: meta.summary ?? null,
 						sourceKind: meta.sourceKind ?? null,
 						sourceId: meta.sourceId ?? null,
-						input: JSON.stringify(input),
+						input: JSON.stringify(stored),
 					},
 					def,
 					facts.proposerMemberId,
@@ -663,6 +674,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						.execute();
 					await audit(uow, draft.action_id, 'rejected', draftId);
 					uow.emit(draftUpdated, { draftId, status: 'rejected' });
+					await settleNotices(uow, draft);
 					return;
 				}
 
@@ -681,6 +693,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.where('id', '=', draftId)
 					.execute();
 				uow.emit(draftUpdated, { draftId, status: 'applied' });
+				await settleNotices(uow, draft);
 			});
 		} catch (error) {
 			// What it is about is gone: the draft can never be applied, so it leaves the queue
@@ -729,6 +742,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (Number(closed.numUpdatedRows) === 0) return;
 			await audit(uow, draft.action_id, 'rejected', draft.id);
 			uow.emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
+			await settleNotices(uow, draft);
 		});
 		return getDraft(deps.db, draft.id);
 	}
@@ -757,6 +771,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.execute();
 			await audit(uow, draft.action_id, 'rejected', draftId);
 			uow.emit(draftUpdated, { draftId, status: 'rejected' });
+			await settleNotices(uow, draft);
 		});
 		return getDraft(deps.db, draftId);
 	}
@@ -854,7 +869,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const passed = await passedCheck();
 		const waiting = await coreDb()
 			.selectFrom('core_drafts')
-			.select(['id', 'action_id', 'status', 'input', 'edited_input'])
+			.select(['id', 'action_id', 'status', 'input', 'edited_input', 'source_kind', 'source_id'])
 			.where('status', 'in', [...WAITING_STATUSES])
 			.execute();
 		const expired: string[] = [];
@@ -867,7 +882,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.where('id', '=', draft.id)
 				.where('status', 'in', [...WAITING_STATUSES])
 				.executeTakeFirst();
-			if (Number(done.numUpdatedRows) > 0) expired.push(draft.id);
+			if (Number(done.numUpdatedRows) === 0) continue;
+			expired.push(draft.id);
+			for (const memberId of await settleWaitingNotices(deps.db, draft, now))
+				await bus.publish(notificationRead.name, { memberId });
 		}
 		for (const draftId of expired)
 			await bus.publish(draftUpdated.name, { draftId, status: 'expired' });

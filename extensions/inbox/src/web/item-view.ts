@@ -32,6 +32,7 @@ export interface ItemChip {
 		| 'chip_suggestions'
 		| 'chip_added'
 		| 'chip_rejected'
+		| 'chip_undone'
 		| 'chip_expired'
 		| 'chip_reading'
 		| 'chip_failed'
@@ -85,6 +86,10 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	if (applied) return { tone: 'now', key: 'chip_added', count: applied };
 	if (drafts.length && drafts.every((d) => d.status === 'expired'))
 		return { tone: 'idle', key: 'chip_expired' };
+	// Approved and then taken back is not the same as turned down.
+	const decided = drafts.filter((d) => d.status !== 'expired');
+	if (decided.length && decided.every((d) => d.status === 'undone'))
+		return { tone: 'idle', key: 'chip_undone' };
 	if (drafts.length) return { tone: 'idle', key: 'chip_rejected' };
 	if (item.status === 'filed') return { tone: 'idle', key: 'chip_filed' };
 	if (item.status === 'held') return { tone: 'idle', key: 'chip_held' };

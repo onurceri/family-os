@@ -1,5 +1,5 @@
 import { type AddShoppingItemsInput, titleKey } from '@famos/ext-lists/contract';
-import { defineAction } from '@famos/sdk';
+import { defineAction, FamosError, type UnitOfWork } from '@famos/sdk';
 import { z } from 'zod';
 import { AddToShoppingSchema } from '../contract/index.ts';
 import { kitchenView } from './capabilities.ts';
@@ -13,6 +13,35 @@ const lineKey = (line: string, locale: string) =>
 		.replace(/\s+/g, ' ')
 		.replace(/[\s.,;:!]+$/u, '')
 		.toLocaleLowerCase(locale);
+
+/**
+ * What is still to buy on the list (the default list when none is named), as the person sees it.
+ * Empty when they cannot see lists: the add itself then answers with the right error.
+ */
+async function openItems(
+	uow: UnitOfWork,
+	listId: string | undefined,
+): Promise<{ listId: string | null; items: { title: string; quantity: string | null }[] }> {
+	try {
+		const { lists } = await uow.run<
+			Record<string, never>,
+			{
+				lists: {
+					id: string;
+					items: { title: string; quantity: string | null; bought: boolean }[];
+				}[];
+			}
+		>('lists.shoppingList', {});
+		const list = listId ? lists.find((l) => l.id === listId) : lists[0];
+		return {
+			listId: list?.id ?? null,
+			items: list?.items.filter((i) => !i.bought) ?? [],
+		};
+	} catch (error) {
+		if (error instanceof FamosError) return { listId: null, items: [] };
+		throw error;
+	}
+}
 
 /**
  * "Put the ingredients on the shopping list": the chosen lines of a recipe become shopping items,
@@ -75,26 +104,53 @@ export const addIngredientsToShopping = defineAction({
 		}
 		if (items.size === 0)
 			return { listId: listId ?? '', added: 0, alreadyThere: 0, existing: [], unknownLines };
-		// A recipe never lowers or replaces what someone already put on the list.
-		const input: AddShoppingItemsInput = {
-			...(listId && { listId }),
-			items: [...items.values()],
-			whenOnList: 'keep',
+		// An old entry written like a recipe line ("Lemon, zest and juice") is the same product as
+		// the cleaned item ("Lemon"): compare on the cleaned titles, so it is not added next to it.
+		const onList = await openItems(uow, listId);
+		const sameProduct = new Map<string, { title: string; quantity: string | null }>();
+		for (const row of onList.items) {
+			const cleaned = ingredientToItem(row.title, words, locale)?.title ?? row.title;
+			const key = titleKey(cleaned, locale);
+			if (!sameProduct.has(key)) sameProduct.set(key, row);
+		}
+		const wanted = [...items.values()];
+		const matched = wanted.map((item) => sameProduct.get(titleKey(item.title, locale)));
+		const toAdd = wanted.filter((_, index) => !matched[index]);
+		let result: {
+			listId: string;
+			addedIds: string[];
+			merged: { id: string }[];
+			items: { id: string; title: string; quantity: string | null }[];
+		} = {
+			listId: onList.listId ?? listId ?? '',
+			addedIds: [],
+			merged: [],
+			items: [],
 		};
-		const result = await uow.run<
-			AddShoppingItemsInput,
-			{
-				listId: string;
-				items: { id: string; title: string; quantity: string | null }[];
-				addedIds: string[];
-				merged: { id: string }[];
-			}
-		>('lists.addShoppingItems', input);
+		if (toAdd.length > 0) {
+			// A recipe never lowers or replaces what someone already put on the list.
+			const input: AddShoppingItemsInput = {
+				...(listId && { listId }),
+				items: toAdd,
+				whenOnList: 'keep',
+			};
+			result = await uow.run<AddShoppingItemsInput, typeof result>('lists.addShoppingItems', input);
+		}
 		// The result lists one item per input item, in order. A bought item comes back to buy
 		// even when asked to keep what is there, so it counts as added.
 		const fresh = new Set([...result.addedIds, ...result.merged.map((m) => m.id)]);
-		const existing = input.items.flatMap((item, index) => {
-			const row = result.items[index];
+		let next = 0;
+		const existing = wanted.flatMap((item, index) => {
+			const found = matched[index];
+			if (found)
+				return [
+					{
+						title: found.title,
+						listQuantity: found.quantity,
+						recipeQuantity: item.quantity ?? null,
+					},
+				];
+			const row = result.items[next++];
 			return row && !fresh.has(row.id)
 				? [{ title: row.title, listQuantity: row.quantity, recipeQuantity: item.quantity ?? null }]
 				: [];

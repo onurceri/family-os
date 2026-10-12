@@ -13,6 +13,7 @@
 		onsubmit,
 		limit,
 		tooLong,
+		measure,
 		onmore,
 		moreLabel,
 		disabled = false,
@@ -35,6 +36,8 @@
 		limit?: number;
 		/** The message when over, e.g. "Too long (212/160)"; given the counter text. */
 		tooLong?: (counter: string) => string;
+		/** The part of the text the limit applies to, when it is not all of it (the longest item of several). */
+		measure?: (text: string) => string;
 		onmore?: (text: string) => void;
 		moreLabel?: string;
 		disabled?: boolean;
@@ -43,7 +46,7 @@
 	} = $props();
 
 	let input = $state<HTMLInputElement>();
-	const limitState = $derived(limit ? lengthState(value, limit) : null);
+	const limitState = $derived(limit ? lengthState(measure ? measure(value) : value, limit) : null);
 
 	async function submit(text: string) {
 		let kept = false;

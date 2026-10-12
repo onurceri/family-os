@@ -104,6 +104,7 @@
 	"chip_added_one": "{{count}} added",
 	"chip_added_other": "{{count}} added",
 	"chip_rejected": "Rejected",
+	"chip_undone": "Taken back",
 	"chip_expired": "Day passed",
 	"chip_reading": "Reading…",
 	"chip_failed": "Could not read",

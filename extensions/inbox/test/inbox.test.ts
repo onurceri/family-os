@@ -138,6 +138,15 @@ function proposals() {
 	};
 }
 
+describe('what the model is told about notes', () => {
+	it('asks for notes that read on their own, never a bare number', async () => {
+		k.llm.respond({ summary: 'Swim fee', proposals: [] });
+		await share({ text: 'Swim course fee of 45, pay by Friday' });
+		await k.worker.drain();
+		expect(k.llm.calls[0]?.system).toContain('Never a bare number');
+	});
+});
+
 describe('the language the model writes in', () => {
 	it('names the family language through Intl, not a hand-written list', async () => {
 		k.llm.respond({ summary: 'Kermes', proposals: [] });

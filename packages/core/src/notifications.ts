@@ -19,6 +19,7 @@ import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { notificationCreated, notificationRead } from './core-events.ts';
+import { stillWaiting, WAITING_KIND } from './draft-notices.ts';
 import { type Features, ownerOf } from './features.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables, NotificationsTable } from './tables.ts';
@@ -167,6 +168,13 @@ export function createNotifications(deps: NotificationsDeps) {
 			if (!kind) return;
 			// A turned-off extension says nothing; no rows either.
 			if (!deps.features().isOn(ownerOf(kind.id))) return;
+			// Decided during the delay: there is nothing left to wait for.
+			if (
+				request.kind === WAITING_KIND &&
+				request.dedupeKey &&
+				!(await stillWaiting(ctx.db, request.dedupeKey))
+			)
+				return;
 
 			const active = await ctx.family.members();
 			const wanted = new Set<string>(request.to.members ?? []);
