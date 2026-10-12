@@ -9,6 +9,19 @@ const en = units('en');
 const tr = units('tr');
 
 describe('parseQuickAdd', () => {
+	it("reads a number and a unit after an item as that item's quantity", () => {
+		expect(parseQuickAdd('Sandpaper, 2 sheets', en)).toEqual([
+			{ title: 'Sandpaper', quantity: '2 sheets' },
+		]);
+		expect(parseQuickAdd('Bread, 2 bags, 3 litres milk', en)).toEqual([
+			{ title: 'Bread', quantity: '2 bags' },
+			{ title: 'milk', quantity: '3 litres' },
+		]);
+		expect(parseQuickAdd('Zımpara, 2 tabaka', tr)).toEqual([
+			{ title: 'Zımpara', quantity: '2 tabaka' },
+		]);
+	});
+
 	it('splits items and takes a leading amount as the quantity', () => {
 		expect(parseQuickAdd('2 kg domates, ekmek;  1,5 L süt\n3 yumurta', tr)).toEqual([
 			{ title: 'domates', quantity: '2 kg' },

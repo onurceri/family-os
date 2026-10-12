@@ -58,7 +58,7 @@ describe('what the AI may point at on the lists', () => {
 	});
 
 	it('cuts a long list at its oldest end, so the newest items and tasks always reach the model', async () => {
-		for (let i = 1; i <= 70; i++) {
+		for (let i = 1; i <= 205; i++) {
 			k.clock.set(1_800_000_000_000 + i * 1000);
 			await k.runner.invoke(
 				'lists.addShoppingItems',
@@ -68,13 +68,13 @@ describe('what the AI may point at on the lists', () => {
 			await k.runner.invoke('lists.addTask', { title: `Task ${i}` }, admin.actor);
 		}
 		const items = (await read('lists.aiContext')).items.map((i) => i.label);
-		expect(items).toHaveLength(60);
-		expect(items[0]).toBe('Item 70');
-		expect(items).not.toContain('Item 10');
+		expect(items).toHaveLength(200);
+		expect(items[0]).toBe('Item 205');
+		expect(items).not.toContain('Item 5');
 		const tasks = (await read('lists.aiContextTasks')).items.map((i) => i.label);
-		expect(tasks).toHaveLength(40);
-		expect(tasks[0]).toBe('Task 70');
-		expect(tasks).not.toContain('Task 10');
+		expect(tasks).toHaveLength(200);
+		expect(tasks[0]).toBe('Task 205');
+		expect(tasks).not.toContain('Task 5');
 	});
 
 	it('gives open tasks only', async () => {

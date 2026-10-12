@@ -134,7 +134,7 @@
 	"kind_task_remove": "Görevi sil",
 	"kind_shopping_remove": "Listeden çıkar",
 	"draft_approve_delete": "Sil",
-	"quantity_units": "kg, g, gr, mg, l, lt, ml, cl, adet, paket, pk, kutu, şişe, tane, x",
+	"quantity_units": "kg, g, gr, mg, l, lt, litre, ml, cl, adet, paket, pk, kutu, şişe, tane, tabaka, rulo, torba, poşet, kavanoz, demet, x",
 	"today_open_one": "{{count}} açık",
 	"today_open_other": "{{count}} açık",
 	"today_more_one": "ve {{count}} tane daha",

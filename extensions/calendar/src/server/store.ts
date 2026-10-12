@@ -268,19 +268,29 @@ export const sameTitle = (a: string, b: string) => {
 	return norm(a) === norm(b);
 };
 
-/** Whether an event with the same title already starts on the same day (family time zone). */
+/** How far from a new event's day an event with the same title still counts as the same one. */
+const SAME_EVENT_DAYS = 30;
+
+/**
+ * Whether an event with the same title already starts within a month either side of the day
+ * (family time zone): news that an event moved arrives with the new day, and the event is still
+ * the one on the calendar, not a second one.
+ */
 export async function eventExists(
 	db: DbExecutor,
 	input: { title: string; date: string },
 	timeZone: string,
 ): Promise<boolean> {
-	const { start, end } = dayBounds(input.date, timeZone);
+	const first = addDays(input.date, -SAME_EVENT_DAYS);
+	const last = addDays(input.date, SAME_EVENT_DAYS);
+	const start = dayBounds(first, timeZone).start;
+	const end = dayBounds(last, timeZone).end;
 	const rows = await events(db)
 		.selectFrom('calendar_events')
 		.select('title')
 		.where((eb) =>
 			eb.or([
-				eb('start_date', '=', input.date),
+				eb.and([eb('start_date', '>=', first), eb('start_date', '<=', last)]),
 				eb.and([eb('starts_at', '>=', start), eb('starts_at', '<', end)]),
 			]),
 		)

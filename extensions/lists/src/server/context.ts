@@ -3,9 +3,13 @@ import { z } from 'zod';
 import { tables } from './store.ts';
 import { listsView } from './tasks.ts';
 
-/** The most open items given to a model: the newest first, so a long list is cut at its oldest end. */
-const MAX_CONTEXT_ITEMS = 60;
-const MAX_CONTEXT_TASKS = 40;
+/**
+ * The most open items given to the Inbox, newest first. It is more than a prompt holds: the Inbox
+ * puts the ones a shared text names first and keeps only the first few, so an old item that is
+ * named is still found on a long list.
+ */
+const MAX_CONTEXT_ITEMS = 200;
+const MAX_CONTEXT_TASKS = 200;
 /** What a list that has no name of its own is called. */
 const DEFAULT_LIST_LABEL = 'Shopping list';
 

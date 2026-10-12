@@ -298,7 +298,7 @@ describe('calendar', () => {
 });
 
 describe('duplicate hint', () => {
-	it('marks a proposed event that already exists on that day', async () => {
+	it('marks a proposed event that already exists on that day or within a month of it', async () => {
 		const { actor } = await k.member('admin');
 		await k.runner.invoke(
 			'calendar.createEvent',
@@ -316,13 +316,18 @@ describe('duplicate hint', () => {
 			{ title: 'Zoo trip', date: '2026-10-18', allDay: true },
 			ai,
 		);
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Zoo trip', date: '2026-12-18', allDay: true },
+			ai,
+		);
 		const drafts = await k
 			.route('core.listDrafts')
 			.call({ query: { status: 'pending', limit: 10 } });
 		const byDate = Object.fromEntries(
 			drafts.map((d: { input: { date: string }; mayExist: boolean }) => [d.input.date, d.mayExist]),
 		);
-		expect(byDate).toEqual({ '2026-10-17': true, '2026-10-18': false });
+		expect(byDate).toEqual({ '2026-10-17': true, '2026-10-18': true, '2026-12-18': false });
 	});
 });
 

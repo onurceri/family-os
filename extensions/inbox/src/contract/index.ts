@@ -94,6 +94,21 @@ export const ItemFileSchema = z.object({
 export const ExtractionKindSchema = z.enum(['actionable', 'nothing', 'question']);
 export type ExtractionKind = z.infer<typeof ExtractionKindSchema>;
 
+/**
+ * Why the model left something the item mentions out of its proposals: it is not on any open
+ * list (so there is nothing to tick off), it names a person, pet or other record the household
+ * does not keep, or it was too unclear to suggest.
+ */
+export const LEFT_OUT_REASONS = ['not_listed', 'unknown_record', 'unclear'] as const;
+export const LeftOutReasonSchema = z.enum(LEFT_OUT_REASONS);
+export type LeftOutReason = z.infer<typeof LeftOutReasonSchema>;
+export const LeftOutSchema = z.object({
+	/** The thing as the item words it ("Oat milk", "Miso"). */
+	text: z.string().trim().min(1).max(120),
+	reason: LeftOutReasonSchema,
+});
+export type LeftOut = z.infer<typeof LeftOutSchema>;
+
 export const InboxItemSchema = z.object({
 	id: z.string(),
 	channel: ChannelSchema,
@@ -122,6 +137,8 @@ export const InboxItemSchema = z.object({
 	skipped: z.number().int(),
 	/** Of the skipped, those that pointed at something that is not on the household's lists. */
 	skippedUnknown: z.number().int(),
+	/** Things the item mentions that got no proposal, each with the reason. */
+	leftOut: z.array(LeftOutSchema),
 	createdBy: z.string().nullable(),
 	createdAt: z.number(),
 	updatedAt: z.number(),

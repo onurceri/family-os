@@ -27,6 +27,7 @@ import {
 	subscriptionChanged,
 	tagChanged,
 } from './capabilities.ts';
+import { aiContextEvents } from './context.ts';
 import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
@@ -828,7 +829,7 @@ const getEvent = defineRoute({
 export default defineExtension({
 	id: 'calendar',
 	migrations,
-	ai: { index: searchIndex, context: aiContext.id },
+	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id] },
 	actions: [
 		findEvents,
 		createEvent,
@@ -840,6 +841,7 @@ export default defineExtension({
 		updateTag,
 		deleteTag,
 		aiContext,
+		aiContextEvents,
 		createFeed,
 		revokeFeed,
 		touchFeed,
