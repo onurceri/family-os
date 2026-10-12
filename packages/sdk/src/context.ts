@@ -147,8 +147,16 @@ export type ActionResult<O> =
 	/**
 	 * `autoApproval`: a job approves the draft in a moment, nobody needs to. `decidedByOthers`:
 	 * the person the AI works for cannot decide it, so other members who can approve do.
+	 * `subject`: what the stored suggestion is about, in its stored words (the real title of an
+	 * existing item, not the proposer's name for it); absent when it names nothing.
 	 */
-	| { status: 'drafted'; draftId: string; autoApproval?: true; decidedByOthers?: true };
+	| {
+			status: 'drafted';
+			draftId: string;
+			autoApproval?: true;
+			decidedByOthers?: true;
+			subject?: string;
+	  };
 
 /** Stored on a draft when an action is proposed rather than applied. */
 export interface DraftMeta {
@@ -217,4 +225,10 @@ export interface ActionInvoker {
 	 * tell a model what to fix before anything is drafted.
 	 */
 	checkInput(actionId: string, input: unknown): string[];
+	/**
+	 * The real title of the existing thing an input points at, for actions that declare
+	 * `targetTitle`; null when the action has none, the input is invalid or the target is gone.
+	 * Runs no change. For the AI pipeline, to check a proposal against what the person wrote.
+	 */
+	targetTitle(actionId: string, input: unknown): Promise<string | null>;
 }

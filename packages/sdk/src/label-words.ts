@@ -28,3 +28,20 @@ export function labelNamesTitle(label: string, title: string): boolean {
 	const within = (a: string[], b: string[]) => a.every((w) => b.some((h) => sameWord(w, h)));
 	return within(wanted, have) || within(have, wanted);
 }
+
+/**
+ * Whether a text names the thing titled `title`: every significant word of the title is a whole
+ * word of the text (a trailing plural "s" does not matter), in any order. Unlike
+ * `labelNamesTitle` the text may say more but never less, so "Got the E27 light bulbs" names
+ * "Light bulbs E27" and "Got the picture wire" does not name "Picture hooks". A title without a
+ * significant word ("4") must appear in the text as written.
+ */
+export function textNamesTitle(text: string, title: string): boolean {
+	const have = significantWords(text);
+	const wanted = significantWords(title);
+	if (wanted.length === 0) {
+		const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
+		return plain(title) !== '' && plain(text).includes(plain(title));
+	}
+	return wanted.every((w) => have.some((h) => sameWord(w, h)));
+}

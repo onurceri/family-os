@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { tables } from './store.ts';
 import { listsView } from './tasks.ts';
 
-/** The most open items given to a model: the oldest first, so a long list is cut at its newest end. */
+/** The most open items given to a model: the newest first, so a long list is cut at its oldest end. */
 const MAX_CONTEXT_ITEMS = 60;
 const MAX_CONTEXT_TASKS = 40;
 /** What a list that has no name of its own is called. */
@@ -34,7 +34,8 @@ export const aiContext = defineAction({
 			.where('lists_shopping_items.deleted_at', 'is', null)
 			.where('lists_shopping_items.done_at', 'is', null)
 			.where('lists_shopping_lists.archived_at', 'is', null)
-			.orderBy('lists_shopping_items.created_at')
+			.orderBy('lists_shopping_items.created_at', 'desc')
+			.orderBy('lists_shopping_items.id', 'desc')
 			.limit(MAX_CONTEXT_ITEMS)
 			.execute();
 		return {
@@ -65,7 +66,8 @@ export const aiContextTasks = defineAction({
 			.select(['id', 'title', 'due_date'])
 			.where('deleted_at', 'is', null)
 			.where('done_at', 'is', null)
-			.orderBy('created_at')
+			.orderBy('created_at', 'desc')
+			.orderBy('id', 'desc')
 			.limit(MAX_CONTEXT_TASKS)
 			.execute();
 		return {

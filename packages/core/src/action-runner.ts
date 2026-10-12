@@ -10,8 +10,10 @@ import {
 	type IdGenerator,
 	type JobQueue,
 	type Logger,
+	labelNamesTitle,
 	type MemberId,
 	type SecretBox,
+	subjectOf,
 	type UndoStep,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -41,7 +43,6 @@ import {
 	storeError,
 	storeResult,
 } from './idempotency.ts';
-import { labelNamesTitle } from './label-words.ts';
 import type { Notifier } from './notifications.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables, DraftRow } from './tables.ts';
@@ -409,6 +410,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				)))
 			: null;
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
+		const subject = subjectOf(JSON.stringify(stored));
 		// Personal drafts (memory, questions to a person) go to the member the assistant works for.
 		const personalTo =
 			actor.kind === 'ai' && def.ai?.addressToMember && actor.onBehalfOf ? actor.onBehalfOf : null;
@@ -426,7 +428,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.executeTakeFirst();
 				if (existing) {
 					draftId = existing.id as typeof draftId;
-					await remember(uow, { status: 'drafted', draftId });
+					await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 					return;
 				}
 			}
@@ -494,7 +496,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			});
 			// A draft addressed to one member needs no announcement: they are looking at it.
 			if (addressedTo) {
-				await remember(uow, { status: 'drafted', draftId });
+				await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 				return;
 			}
 			if (auto && facts.proposerMemberId !== null) {
@@ -505,7 +507,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					{ dedupeKey: `${AUTO_APPROVE_JOB}:${draftId}` },
 				);
 				autoApproved = true;
-				await remember(uow, { status: 'drafted', draftId });
+				await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 				return;
 			}
 			// Tell whoever may approve; several drafts from one shared item collapse into one.
@@ -523,13 +525,14 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					deps.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
 				),
 			);
-			await remember(uow, { status: 'drafted', draftId });
+			await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 		});
 		return {
 			status: 'drafted',
 			draftId,
 			...(autoApproved ? { autoApproval: true as const } : {}),
 			...(byOthers ? { decidedByOthers: true as const } : {}),
+			...(subject ? { subject } : {}),
 		};
 	}
 

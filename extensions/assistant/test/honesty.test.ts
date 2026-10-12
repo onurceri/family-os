@@ -95,8 +95,21 @@ describe('the answer never says something else than what was suggested', () => {
 
 		const content = await answer(sent);
 		expect(content).toContain('I have suggested ticking off milk and oat milk.');
-		expect(content).toContain('Waiting for approval: Add shopping items: Milk, Oat milk');
+		expect(content).toContain('Suggested: Add shopping items: Milk, Oat milk');
 		expect((await drafts()).map((d) => d.action_id)).toEqual(['lists.addShoppingItems']);
+	});
+
+	it('words the line with the stored real title, not the name the model used', async () => {
+		await add('Oat milk');
+		k.llm.respondChat([
+			{ tool: 'lists_shoppingList', input: {} },
+			{ tool: 'lists_checkShoppingItem', input: { id: 'shop_item:1', done: true, label: 'milk' } },
+			{ text: 'I suggested ticking it off.' },
+		]);
+		const content = await answer(await ask('I bought the milk'));
+		expect(content).toContain('Oat milk');
+		expect(content).not.toContain(': milk');
+		expect(content).not.toContain('Waiting for approval');
 	});
 
 	it('adds no line when nothing was suggested', async () => {
@@ -121,7 +134,7 @@ describe('the answer never says something else than what was suggested', () => {
 				translate,
 			).split('\n'),
 		).toEqual([
-			'assistant:proposed_waiting|{"what":"lists:draft_title_add_task|{}: Call"}',
+			'assistant:proposed|{"what":"lists:draft_title_add_task|{}: Call"}',
 			'assistant:proposed_automatic|{"what":"Remove an item"}',
 		]);
 	});

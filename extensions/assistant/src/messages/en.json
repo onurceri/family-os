@@ -87,6 +87,6 @@
 	"today_block": "Ask the assistant",
 	"today_block_hint": "A link at the bottom to ask a question.",
 	"someone": "someone",
-	"proposed_waiting": "Waiting for approval: {{what}}",
-	"proposed_automatic": "Will be added automatically: {{what}}"
+	"proposed": "Suggested: {{what}}",
+	"proposed_automatic": "Added automatically: {{what}}"
 }

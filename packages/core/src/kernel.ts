@@ -330,6 +330,20 @@ export function createKernel(options: KernelOptions): Kernel {
 							`${i.path.map(String).join('.') || '(input)'}: ${i.message}`,
 					);
 		},
+		async targetTitle(id, input) {
+			const def = registry.actions.get(id);
+			if (!def?.targetTitle) return null;
+			const parsed = def.input.safeParse(input);
+			if (!parsed.success) return null;
+			return def.targetTitle(
+				{
+					db: options.db,
+					family: familyReader(options.db),
+					translate: options.translate ?? defaultTranslate,
+				},
+				parsed.data,
+			);
+		},
 	};
 	const ctx: ExtensionContext = {
 		db: options.db,

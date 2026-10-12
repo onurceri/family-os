@@ -87,6 +87,6 @@
 	"today_block": "Asistana sor",
 	"today_block_hint": "Altta, soru sormak için bir bağlantı.",
 	"someone": "biri",
-	"proposed_waiting": "Onay bekliyor: {{what}}",
-	"proposed_automatic": "Birazdan otomatik eklenecek: {{what}}"
+	"proposed": "Önerildi: {{what}}",
+	"proposed_automatic": "Otomatik eklendi: {{what}}"
 }

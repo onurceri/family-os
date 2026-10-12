@@ -1,5 +1,27 @@
+import { labelNamesTitle, significantWords, textNamesTitle } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
-import { labelNamesTitle, significantWords } from '../src/label-words.ts';
+
+describe('textNamesTitle', () => {
+	it('needs every significant word of the title in the text, in any order', () => {
+		expect(textNamesTitle('Got the E27 light bulbs', 'Light bulbs E27')).toBe(true);
+		expect(textNamesTitle('Got the picture wire already', 'Picture hooks')).toBe(false);
+		expect(textNamesTitle('Got the picture wire already', 'Picture wire')).toBe(true);
+	});
+
+	it('ignores a trailing plural s and the case', () => {
+		expect(textNamesTitle('GOT THE LIGHT BULB', 'light bulbs')).toBe(true);
+	});
+
+	it('works for any language and ignores bracketed notes in the title', () => {
+		expect(textNamesTitle('Faturaları öde', 'Faturaları öde (Ekim)')).toBe(true);
+		expect(textNamesTitle('Süt aldım', 'Yulaf sütü')).toBe(false);
+	});
+
+	it('looks for a title without significant words as written', () => {
+		expect(textNamesTitle('Buy 4 of them', '4')).toBe(true);
+		expect(textNamesTitle('Buy five', '4')).toBe(false);
+	});
+});
 
 describe('significantWords', () => {
 	it('keeps letters and digits of three or more characters, lower case', () => {

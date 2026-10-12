@@ -203,6 +203,8 @@ export interface AgentToolOutcome {
 	draftId?: string;
 	/** Set with `draftId` when the suggestion is approved by the household's own setting, not a person. */
 	automatic?: boolean;
+	/** What the stored suggestion is about, from the runner (see `ActionResult`). */
+	subject?: string;
 }
 
 /**
@@ -272,6 +274,7 @@ export async function runAgentTool(call: {
 				ok: true,
 				draftId: result.draftId,
 				...(result.autoApproval && { automatic: true }),
+				...(result.subject && { subject: result.subject }),
 				text: asData(
 					actionId,
 					JSON.stringify({

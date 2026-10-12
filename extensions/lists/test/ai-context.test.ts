@@ -52,9 +52,29 @@ describe('what the AI may point at on the lists', () => {
 		const context = await read('lists.aiContext');
 		expect(context.kind).toBe('shop_item');
 		expect(context.items).toEqual([
-			{ id: bulbs.id, label: 'E27 light bulbs', details: '4, list: Hardware store' },
 			{ id: expect.any(String), label: 'Milk', details: 'list: Shopping list' },
+			{ id: bulbs.id, label: 'E27 light bulbs', details: '4, list: Hardware store' },
 		]);
+	});
+
+	it('cuts a long list at its oldest end, so the newest items and tasks always reach the model', async () => {
+		for (let i = 1; i <= 70; i++) {
+			k.clock.set(1_800_000_000_000 + i * 1000);
+			await k.runner.invoke(
+				'lists.addShoppingItems',
+				{ items: [{ title: `Item ${i}` }] },
+				admin.actor,
+			);
+			await k.runner.invoke('lists.addTask', { title: `Task ${i}` }, admin.actor);
+		}
+		const items = (await read('lists.aiContext')).items.map((i) => i.label);
+		expect(items).toHaveLength(60);
+		expect(items[0]).toBe('Item 70');
+		expect(items).not.toContain('Item 10');
+		const tasks = (await read('lists.aiContextTasks')).items.map((i) => i.label);
+		expect(tasks).toHaveLength(40);
+		expect(tasks[0]).toBe('Task 70');
+		expect(tasks).not.toContain('Task 10');
 	});
 
 	it('gives open tasks only', async () => {

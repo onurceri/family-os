@@ -1,5 +1,6 @@
 import { languageName } from '@famos/i18n';
 import {
+	type ActionInvoker,
 	type AiActionInfo,
 	type AiContext,
 	AiContextSchema,
@@ -13,6 +14,7 @@ import {
 	type LlmFile,
 	type ModelRole,
 	repairInput,
+	textNamesTitle,
 } from '@famos/sdk';
 import { formatDate, numericDateOrder, todayIn } from '@famos/time';
 import { z } from 'zod';
@@ -496,6 +498,20 @@ export function withoutTimeAsAllDay(
 }
 
 /**
+ * Whether a proposal points at an existing record (an action with a target title) that the
+ * shared text does not name. Names are data, so this works in any language.
+ */
+export async function namesOtherTarget(
+	actions: Pick<ActionInvoker, 'targetTitle'>,
+	actionId: string,
+	input: Record<string, unknown>,
+	text: string,
+): Promise<boolean> {
+	const title = await actions.targetTitle(actionId, input);
+	return title !== null && !textNamesTitle(text, title);
+}
+
+/**
  * Fields that name members the item itself never names: the model chose them (from a relation,
  * a description or a guess), so a person checks them. A field counts when its value is a member
  * id or a list of member ids; a member counts as named when the item contains any word of their
@@ -833,6 +849,17 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			}
 			const { input, guessed } = prepare(proposal);
 			if (namesUnknownRecord(input, records)) {
+				skipped++;
+				skippedUnknown++;
+				continue;
+			}
+			// A change to an existing item must be about something the shared text names: with many
+			// similar items a model reaches for a near one. Files are read by the model alone, so an
+			// item with files cannot be checked against its text.
+			if (
+				files.length === 0 &&
+				(await namesOtherTarget(ctx.actions, proposal.action, input, text))
+			) {
 				skipped++;
 				skippedUnknown++;
 				continue;

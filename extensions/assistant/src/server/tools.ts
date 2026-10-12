@@ -209,7 +209,7 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 			record.ok = outcome.ok;
 			if (outcome.draftId) {
 				record.draftId = outcome.draftId;
-				const subject = subjectOf(JSON.stringify(raw ?? {}));
+				const subject = outcome.subject ?? subjectOf(JSON.stringify(raw ?? {}));
 				env.proposals?.push({
 					title: info.title,
 					...(info.draftTitle && { titleKey: info.draftTitle }),

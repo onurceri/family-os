@@ -543,6 +543,30 @@ const LIST_CASES: Case[] = [
 		],
 	},
 	{
+		// Found in use: with more open items than fit in the prompt, the newest were cut and the
+		// model ticked off a near one ("Picture hooks") instead of the one named.
+		name: 'Ticks off the newest of many similar items (English)',
+		shopping: [
+			...Array.from({ length: 64 }, (_, i) => ({ title: `Pantry staple ${i + 1}` })),
+			{ list: 'Hardware store', title: 'Picture hooks' },
+			{ list: 'Hardware store', title: 'Picture wire' },
+		],
+		text: 'Got the picture wire already, tick it off the Hardware store list',
+		checks: [
+			{
+				label: 'lists.checkShoppingItem: the picture wire, done',
+				pass: (ds, _m, _r, _t, listed) =>
+					of(ds, 'lists.checkShoppingItem').some(
+						(d) => d.input.id === listed['Picture wire'] && d.input.done === true,
+					),
+			},
+			{
+				label: 'no other item ticked',
+				pass: (ds) => of(ds, 'lists.checkShoppingItem').length === 1,
+			},
+		],
+	},
+	{
 		name: 'Nothing to tick off when the item is not listed (English)',
 		shopping: [{ list: 'Hardware store', title: 'Picture wire' }, { title: 'Milk' }],
 		text: 'Got the E27 light bulbs already, tick them off the Hardware store list',

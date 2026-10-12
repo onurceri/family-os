@@ -95,8 +95,8 @@ const parseCalls = (json: string | null): RecordedCall[] => {
 };
 
 /**
- * The fixed lines under an answer that made suggestions, one per suggestion ("Waiting for
- * approval: Add shopping items: Milk, Oat milk"). Built from the suggestions, not from the
+ * The fixed lines under an answer that made suggestions, one per suggestion ("Suggested: Add shopping
+ * items: Milk, Oat milk"). Built from the suggestions, not from the
  * model's words, so the answer can never claim something else.
  */
 export function proposalLines(
@@ -107,12 +107,9 @@ export function proposalLines(
 		.map((p) => {
 			const title = p.titleKey ? translate(p.titleKey) : p.title;
 			const what = p.subject ? `${title}: ${p.subject}` : title;
-			return translate(
-				p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed_waiting',
-				{
-					what,
-				},
-			);
+			return translate(p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed', {
+				what,
+			});
 		})
 		.join('\n');
 }

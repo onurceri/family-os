@@ -123,6 +123,48 @@ describe('ticking something off from a shared message', () => {
 		expect(await item()).toMatchObject({ proposals: 0, skipped: 1, skippedUnknown: 1 });
 	});
 
+	it('leaves out a tick-off aimed at a similar item the text never names', async () => {
+		const add = await k.runner.invoke<{ items: { id: string }[] }>(
+			'lists.addShoppingItems',
+			{
+				listId: hardwareId,
+				items: [{ title: 'Picture hooks' }, { title: 'Picture wire' }],
+			},
+			admin.actor,
+		);
+		if (add.status !== 'applied') throw new Error('expected the add');
+		// Real model output: the text names the picture wire, the model ticked off the hooks.
+		k.llm.respond({
+			summary: 'Picture wire bought',
+			proposals: [
+				{
+					action: 'lists.checkShoppingItem',
+					input: { id: 'shop_item:2', done: true, label: 'Picture hooks' },
+					confidence: 0.9,
+				},
+			],
+		});
+		await read('Got the picture wire already, tick it off the Hardware store list');
+		expect(k.llm.calls[0]?.system).toContain('Picture hooks (shop_item:2)');
+		expect(await drafts()).toEqual([]);
+		expect(await item()).toMatchObject({ proposals: 0, skipped: 1, skippedUnknown: 1 });
+	});
+
+	it('keeps a tick-off whose item the text names in other order and plural', async () => {
+		k.llm.respond({
+			summary: 'Light bulbs bought',
+			proposals: [
+				{
+					action: 'lists.checkShoppingItem',
+					input: { id: 'shop_item:1', done: true, label: 'E27 light bulbs' },
+					confidence: 0.9,
+				},
+			],
+		});
+		await read('Got the light bulb E27 already');
+		expect(await drafts()).toHaveLength(1);
+	});
+
 	it('tells an unlisted item from an incomplete suggestion', async () => {
 		k.llm.respond({
 			summary: 'Two things',
