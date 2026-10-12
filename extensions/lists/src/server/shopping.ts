@@ -209,6 +209,7 @@ export const undoAddShoppingItems = defineAction({
 	id: 'lists.undoAddShoppingItems',
 	title: 'Take back added shopping items',
 	requires: shoppingEdit.id,
+	approval: { unless: shoppingManage.id },
 	input: z.object({
 		addedIds: z.array(ShoppingItemIdSchema).max(100),
 		merged: z.array(MergedItemSchema).max(100),

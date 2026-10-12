@@ -457,6 +457,21 @@ describe('taking back a suggested shopping add', () => {
 		expect(after.map((i) => i.title)).toEqual(['Süt']);
 	});
 
+	it('lets only those who manage the list take an add back directly', async () => {
+		const { actor } = await k.member('admin');
+		const { actor: child } = await k.member('supervised');
+		const added = await applied<{ items: ShoppingItem[]; addedIds: string[]; merged: [] }>(
+			k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Süt' }] }, actor),
+		);
+		const input = { addedIds: added.addedIds, merged: [] };
+		const proposed = await k.runner.invoke('lists.undoAddShoppingItems', input, child);
+		expect(proposed.status).toBe('drafted');
+		expect(await items()).toHaveLength(1);
+		const done = await k.runner.invoke('lists.undoAddShoppingItems', input, actor);
+		expect(done.status).toBe('applied');
+		expect(await items()).toHaveLength(0);
+	});
+
 	it('flags a draft of which only some items are on the list', async () => {
 		const { actor } = await k.member('admin');
 		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Süt' }] }, actor);
