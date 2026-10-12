@@ -340,7 +340,10 @@ Ayrıca 20 Ekim Salı günü saat 18:00'de veli toplantımız yapılacaktır.`,
 					who.includes(m.Fatma as string)
 				);
 			}),
-			has('lists.addTask', 'pick up the medicine', (i) => /ilaç|eczane/i.test(String(i.title))),
+			has('lists.addTask', 'pick up the medicine', (i) =>
+				// Lower-cased the Turkish way: "İlaç" is not matched by /ilaç/i.
+				/ilaç|eczane/.test(String(i.title).toLocaleLowerCase('tr')),
+			),
 		],
 	},
 	{

@@ -31,7 +31,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/17';
+export const PROMPT_VERSION = 'inbox.extract/18';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -633,7 +633,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 		: ''
 }Rules:
 - Propose only what the item asks for or clearly implies. One item can yield several proposals (a trip has a date for the calendar and a fee to pay as a task). If nothing is actionable, return no proposals.
-- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one member without naming them (for example a school notice and only one member's description mentions that school or class), choose that member and list the field in uncertainFields. Otherwise leave member lists empty ([]).${
+- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one or more members without naming them (for example a school notice and only one member's description mentions that school or class), choose them and list the field in uncertainFields. Otherwise leave member lists empty ([]).${
 		input.sharer
 			? `
 - The person who shared the item (${input.sharer.handle}) is the one a message addressed to "you" or written about "me" or "my" concerns: when the item is clearly about them alone, use them in the member field instead of leaving it empty. A message to the whole household or group concerns everyone: leave the list empty.`
