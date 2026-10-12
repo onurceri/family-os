@@ -38,10 +38,12 @@
 		loadLists,
 		type Outcome,
 		renameList,
+		restoreItem,
 		updateItem,
 	} from './data.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
+	import { latestOnly } from './latest-only.js';
 	import { parseQuickAdd } from './quick-add.js';
 
 	/**
@@ -93,13 +95,18 @@
 			loadError = true;
 		}
 	}
+	const itemReads = latestOnly();
 	async function refreshItems(listId: string) {
+		const stillCurrent = itemReads.begin();
+		// An answer that was overtaken, or is for a list no longer shown, must not replace the items.
+		const usable = () => stillCurrent() && list?.id === listId;
 		try {
-			items = await loadItems(listId);
+			const loaded = await loadItems(listId);
+			if (usable()) items = loaded;
 		} catch {
-			loadError = true;
+			if (usable()) loadError = true;
 		} finally {
-			itemsLoaded = true;
+			if (usable()) itemsLoaded = true;
 		}
 	}
 
@@ -194,9 +201,10 @@
 
 	// Quick add: "2 kg tomatoes, bread" → two items.
 	let quick = $state('');
-	async function quickAdd(text: string) {
+	// False when it failed, so the composer gives the typing back.
+	async function quickAdd(text: string): Promise<boolean> {
 		const parsed = parseQuickAdd(text, t('quantity_units').split(','));
-		if (!parsed.length || !list) return;
+		if (!parsed.length || !list) return false;
 		try {
 			report(
 				await addItems(
@@ -205,8 +213,10 @@
 					t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 				),
 			);
+			return true;
 		} catch {
 			app.toast(t('error'));
+			return false;
 		}
 	}
 
@@ -261,17 +271,7 @@
 				listId
 					? {
 							label: t('undo'),
-							run: () =>
-								void addItems(
-									app,
-									{
-										listId,
-										items: [
-											{ title: item.title, ...(item.quantity && { quantity: item.quantity }) },
-										],
-									},
-									t('label_add', { titles: item.title }),
-								),
+							run: () => void restoreItem(item.id).catch(() => app.toast(t('error'))),
 						}
 					: undefined,
 			);

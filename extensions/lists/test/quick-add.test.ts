@@ -42,6 +42,29 @@ describe('parseQuickAdd', () => {
 		]);
 	});
 
+	it('attaches a part that is only an amount to the item before it', () => {
+		expect(parseQuickAdd('Picture hooks, 4', en)).toEqual([
+			{ title: 'Picture hooks', quantity: '4' },
+		]);
+		expect(parseQuickAdd('Rice, 2 kg, bread, 3', en)).toEqual([
+			{ title: 'Rice', quantity: '2 kg' },
+			{ title: 'bread', quantity: '3' },
+		]);
+		// The item before already has an amount: the lone number stays its own entry.
+		expect(parseQuickAdd('2 kg rice, 3', en)).toEqual([
+			{ title: 'rice', quantity: '2 kg' },
+			{ title: '3' },
+		]);
+	});
+
+	it('reads an amount with a unit at the end', () => {
+		expect(parseQuickAdd('Parmesan 150 g, milk 2 lb', en)).toEqual([
+			{ title: 'Parmesan', quantity: '150 g' },
+			{ title: 'milk', quantity: '2 lb' },
+		]);
+		expect(parseQuickAdd('iPhone 15', en)).toEqual([{ title: 'iPhone 15' }]);
+	});
+
 	it('keeps numbers that are part of the name', () => {
 		expect(parseQuickAdd('7up', en)).toEqual([{ title: '7up' }]);
 		expect(parseQuickAdd(' , ,', en)).toEqual([]);

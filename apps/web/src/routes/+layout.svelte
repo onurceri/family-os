@@ -493,6 +493,8 @@
 			message={toasts.current.message}
 			actionLabel={toasts.current.actionLabel}
 			onaction={toasts.current.onaction}
+			onhold={() => toasts.hold()}
+			onrelease={() => toasts.release()}
 		/>
 	{/key}
 {/if}

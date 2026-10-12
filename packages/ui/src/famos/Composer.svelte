@@ -9,6 +9,7 @@
 		placeholder,
 		label,
 		onsubmit,
+		maxlength,
 		onmore,
 		moreLabel,
 		disabled = false,
@@ -18,8 +19,14 @@
 		placeholder: string;
 		/** Accessible name of the field (already translated). */
 		label: string;
-		/** Called with the trimmed text on Enter; the field clears afterwards. */
-		onsubmit: (text: string) => void;
+		/**
+		 * Called with the trimmed text on Enter; the field clears at once so the next entry can
+		 * start. When it returns (or resolves to) `false`, or rejects, the text comes back unless
+		 * the person has typed something else meanwhile.
+		 */
+		onsubmit: (text: string) => void | boolean | Promise<void | boolean>;
+		/** Longest text the field takes; typing and pasting stop there. */
+		maxlength?: number;
 		onmore?: (text: string) => void;
 		moreLabel?: string;
 		disabled?: boolean;
@@ -29,13 +36,23 @@
 
 	let input = $state<HTMLInputElement>();
 
+	async function submit(text: string) {
+		let kept = false;
+		try {
+			kept = (await onsubmit(text)) === false;
+		} catch {
+			kept = true;
+		}
+		if (kept && value === '') value = text;
+	}
+
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.isComposing) {
 			e.preventDefault();
 			const text = value.trim();
 			if (!text) return;
-			onsubmit(text);
 			value = '';
+			void submit(text);
 		} else if (e.key === 'Escape' && value) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -63,6 +80,7 @@
 		aria-label={label}
 		{placeholder}
 		{disabled}
+		{maxlength}
 		{onkeydown}
 	/>
 	{#if onmore && moreLabel && value.trim()}

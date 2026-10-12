@@ -86,6 +86,10 @@ export const updateItem = async (
 export const deleteItem = async (id: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/lists.deleteShoppingItem', { body: { id } })).status;
 
+/** Takes back a removal: the same item returns, with its place and its bought state. */
+export const restoreItem = async (id: string): Promise<Outcome> =>
+	unwrap(await api.POST('/api/v1/actions/lists.restoreShoppingItem', { body: { id } })).status;
+
 export const clearBought = async (listId: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/lists.clearBought', { body: { listId } })).status;
 

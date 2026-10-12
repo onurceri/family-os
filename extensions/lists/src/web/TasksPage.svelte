@@ -3,7 +3,7 @@
 	import { Composer, ConfirmButton, EmptyArt, Page, Segmented, SidePanel } from '@famos/ui/famos';
 	import { ChevronRight } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
-	import type { Task } from '../contract/index.js';
+	import { TASK_TITLE_MAX, type Task } from '../contract/index.js';
 	import {
 		completeTask,
 		deleteTask,
@@ -155,11 +155,14 @@
 	let quick = $state('');
 	const defaultAssignee = $derived(me && !app.can('lists.tasks.edit') ? me.id : null);
 
-	async function quickAdd(title: string) {
+	// False when it failed, so the composer gives the typing back.
+	async function quickAdd(title: string): Promise<boolean> {
 		try {
 			report(await saveTask({ title, assigneeId: defaultAssignee }), t('saved'));
+			return true;
 		} catch {
 			app.toast(t('error'));
+			return false;
 		}
 	}
 
@@ -295,6 +298,7 @@
 			<Composer
 				bind:value={quick}
 				size="lg"
+				maxlength={TASK_TITLE_MAX}
 				label={t('add_task')}
 				placeholder={t('add_task_placeholder')}
 				moreLabel={t('add_task_details')}

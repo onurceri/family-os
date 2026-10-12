@@ -2,7 +2,14 @@ import { idSchema } from '@famos/sdk';
 import { IsoDateSchema, IsoTimeSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
-export { amountPattern, splitAmount, titleKey } from './amount.ts';
+export {
+	amountOnlyPattern,
+	amountPattern,
+	splitAmount,
+	splitAnyAmount,
+	titleKey,
+	trailingAmountPattern,
+} from './amount.ts';
 
 /**
  * Lists contract: tasks and shopping, shared by the server, the web UI and other extensions.
@@ -21,13 +28,16 @@ export const ReviewLabelSchema = z
 	.optional()
 	.describe('The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer');
 
+/** The longest task title; screens limit typing to it. */
+export const TASK_TITLE_MAX = 160;
+
 export const TaskInputSchema = z
 	.object({
 		title: z
 			.string()
 			.trim()
 			.min(1)
-			.max(160)
+			.max(TASK_TITLE_MAX)
 			.describe('What needs doing, e.g. "Pay the school trip fee"'),
 		assigneeId: MemberIdSchema.nullable()
 			.optional()

@@ -3,6 +3,7 @@
 	import { Chip, MemberChips, Segmented } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
+	import { TASK_TITLE_MAX } from '../contract/index.js';
 	import { useLists } from './i18n.js';
 	import type { TaskFormValue } from './task-form.js';
 
@@ -60,7 +61,7 @@
 		<Input
 			id={id('title')}
 			bind:value={value.title}
-			maxlength={160}
+			maxlength={TASK_TITLE_MAX}
 			required
 			aria-invalid={flag('title')}
 			autocomplete="off"

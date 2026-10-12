@@ -23,13 +23,31 @@ const AMOUNT = `${NUMBER}(?:\\s*[-\\u2013]\\s*${NUMBER})?`;
 
 /** A leading amount with an optional unit: "2", "1,5 kg", "500g", "2x", "½ cup". */
 export function amountPattern(units: readonly string[]): RegExp {
+	return new RegExp(`^(${AMOUNT}\\s*${unitGroup(units)}\\.?)\\s+(.+)$`, 'iu');
+}
+
+/** The units as one optional regex group, longest first so "fl oz" wins over "fl". */
+function unitGroup(units: readonly string[], required = false): string {
 	const words = units
 		.map((u) => u.trim())
 		.filter(Boolean)
 		.toSorted((a, b) => b.length - a.length)
 		.map(escapeRegex);
-	const unit = words.length ? `(?:${words.join('|')})?` : '';
-	return new RegExp(`^(${AMOUNT}\\s*${unit}\\.?)\\s+(.+)$`, 'iu');
+	if (!words.length) return '';
+	return `(?:${words.join('|')})${required ? '' : '?'}`;
+}
+
+/** A trailing amount with a unit: "Parmesan 150 g". The unit is required so "iPhone 15" stays whole. */
+export function trailingAmountPattern(units: readonly string[]): RegExp {
+	const group = unitGroup(units, true);
+	// Without units there is nothing to tell an amount from a number in a name.
+	if (!group) return /(?!)/u;
+	return new RegExp(`^(.+?)\\s+(${AMOUNT}\\s*${group}\\.?)$`, 'iu');
+}
+
+/** Text that is only an amount, with an optional unit: "4", "2 kg". */
+export function amountOnlyPattern(units: readonly string[]): RegExp {
+	return new RegExp(`^(${AMOUNT}\\s*${unitGroup(units)}\\.?)$`, 'iu');
 }
 
 /**
@@ -41,4 +59,20 @@ export function splitAmount(text: string, pattern: RegExp): { title: string; qua
 	const match = pattern.exec(line);
 	if (!match) return { title: line };
 	return { title: (match[2] as string).trim(), quantity: (match[1] as string).trim() };
+}
+
+/**
+ * Like `splitAmount`, and also reads an amount with a unit at the end ("Parmesan 150 g"). A
+ * leading amount wins when both are there.
+ */
+export function splitAnyAmount(
+	text: string,
+	units: readonly string[],
+): { title: string; quantity?: string } {
+	const line = text.trim();
+	const lead = splitAmount(line, amountPattern(units));
+	if (lead.quantity) return lead;
+	const tail = trailingAmountPattern(units).exec(line);
+	if (!tail) return lead;
+	return { title: (tail[1] as string).trim(), quantity: (tail[2] as string).trim() };
 }

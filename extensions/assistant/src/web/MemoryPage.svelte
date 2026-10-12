@@ -32,20 +32,22 @@
 		void load();
 	});
 
-	async function add(text: string) {
+	// False when it failed, so the composer gives the typing back.
+	async function add(text: string): Promise<boolean> {
 		const note = text.trim();
-		if (!note || busy) return;
+		if (!note || busy) return false;
 		if (note.length > LIMIT) {
 			app.toast(t('memory_too_long', { count: LIMIT }));
-			quick = note;
-			return;
+			return false;
 		}
 		busy = true;
 		try {
 			await addMemory(note);
 			await load();
+			return true;
 		} catch {
 			app.toast(t('error'));
+			return false;
 		} finally {
 			busy = false;
 		}
@@ -92,6 +94,7 @@
 			label={t('memory_add_label')}
 			placeholder={t('memory_placeholder')}
 			disabled={busy}
+			maxlength={LIMIT}
 			onsubmit={add}
 		/>
 
