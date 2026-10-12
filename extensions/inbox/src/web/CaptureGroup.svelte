@@ -10,7 +10,7 @@
 	import { approvals, type Edits, withEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
-	import { approveSelectedKey, type Capture, captureLine } from './item-view.js';
+	import { approveSelectedKey, type Capture, captureLine, groupBusyState } from './item-view.js';
 
 	/**
 	 * One capture and what was found in it, decided together: a line saying what it is, the
@@ -60,6 +60,7 @@
 
 	let original = $state(false);
 	let busy = $state(false);
+	const gate = $derived(groupBusyState({ busy, editing: editing.size, picked: picked.length }));
 
 	async function addSelected() {
 		if (busy || picked.length === 0) return;
@@ -210,13 +211,16 @@
 
 	{#if todo.length > 0 && canDecide}
 		<footer class="flex flex-wrap items-center justify-end gap-2">
+			{#if gate.hint}
+				<p class="text-ink-soft mr-auto text-sm" role="status">{t('save_edit_first')}</p>
+			{/if}
 			<ConfirmButton
 				label={rest.length > 0 ? t('dismiss_rest') : t('dismiss_all')}
 				confirmLabel={t('dismiss_rest_confirm')}
 				onconfirm={dismissRest}
-				disabled={busy}
+				disabled={gate.dismissDisabled}
 			/>
-			<Button size="lg" disabled={busy || picked.length === 0} onclick={addSelected}
+			<Button size="lg" disabled={gate.addDisabled} onclick={addSelected}
 				>{t(approveSelectedKey(picked), { n: picked.length })}</Button
 			>
 		</footer>

@@ -221,7 +221,7 @@ describe('calendar', () => {
 		await expect(
 			k.runner.invoke(
 				'calendar.createEvent',
-				{ title: 'x', date: '2026-10-06', startTime: '10:00', endTime: '09:00' },
+				{ title: 'x', date: '2026-10-06', startTime: '10:00', endTime: '10:00' },
 				actor,
 			),
 		).rejects.toMatchObject({ code: 'bad_request' });
@@ -230,6 +230,33 @@ describe('calendar', () => {
 		).rejects.toMatchObject({
 			code: 'bad_request',
 		});
+	});
+
+	it('ends an event that runs past midnight on the next day, and keeps it so when read back', async () => {
+		const { actor } = await k.member('admin');
+		const created = await k.runner.invoke<{ id: string; endTime: string }>(
+			'calendar.createEvent',
+			{ title: 'Sleepover', date: '2026-10-09', startTime: '22:00', endTime: '07:00' },
+			actor,
+		);
+		expect(created.status).toBe('applied');
+		const [night] = await range('2026-10-09', '2026-10-09');
+		expect(night).toMatchObject({
+			start: epochOf('2026-10-09', '22:00', TZ),
+			end: epochOf('2026-10-10', '07:00', TZ),
+		});
+		// It also shows on the morning it ends.
+		expect(await range('2026-10-10', '2026-10-10')).toHaveLength(1);
+		expect(await range('2026-10-11', '2026-10-11')).toEqual([]);
+		const id = (created as { output: { id: string } }).output.id;
+		const moved = await k.runner.invoke<{ event: { endTime: string } }>(
+			'calendar.changeEvent',
+			{ id, title: 'Sleepover at Sam’s' },
+			actor,
+		);
+		expect(moved).toMatchObject({ output: { event: { startTime: '22:00', endTime: '07:00' } } });
+		const [still] = await range('2026-10-09', '2026-10-09');
+		expect(still?.end).toBe(epochOf('2026-10-10', '07:00', TZ));
 	});
 
 	it('updates and deletes events and emits changes', async () => {

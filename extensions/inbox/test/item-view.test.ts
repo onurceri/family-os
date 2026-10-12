@@ -6,12 +6,14 @@ import {
 	approveSelectedKey,
 	askAssistantHref,
 	captureLine,
+	groupBusyState,
 	isAddition,
 	isQuestionForAssistant,
 	isWaiting,
 	itemChip,
 	itemPreview,
 	itemTitle,
+	metaLine,
 } from '../src/web/item-view.ts';
 
 const item = (over: Partial<InboxItem> = {}): InboxItem => ({
@@ -118,5 +120,47 @@ describe('approveSelectedKey', () => {
 			approveSelectedKey([{ actionId: 'lists.addTask' }, { actionId: 'lists.checkShoppingItem' }]),
 		).toBe('apply_selected');
 		expect(approveSelectedKey([{ actionId: 'lists.completeTask' }])).toBe('apply_selected');
+	});
+});
+
+describe('groupBusyState', () => {
+	it('lets the group add and dismiss when no card is being edited', () => {
+		expect(groupBusyState({ busy: false, editing: 0, picked: 2 })).toEqual({
+			addDisabled: false,
+			dismissDisabled: false,
+			hint: false,
+		});
+	});
+
+	it('holds both buttons, and says why, while a card edit is open', () => {
+		expect(groupBusyState({ busy: false, editing: 1, picked: 2 })).toEqual({
+			addDisabled: true,
+			dismissDisabled: true,
+			hint: true,
+		});
+	});
+
+	it('holds Add with nothing picked and both while working', () => {
+		expect(groupBusyState({ busy: false, editing: 0, picked: 0 })).toMatchObject({
+			addDisabled: true,
+			dismissDisabled: false,
+		});
+		expect(groupBusyState({ busy: true, editing: 0, picked: 1 })).toMatchObject({
+			addDisabled: true,
+			dismissDisabled: true,
+		});
+	});
+});
+
+describe('metaLine', () => {
+	it('drops a field that only repeats the headline', () => {
+		expect(metaLine('Sandpaper', ['Sandpaper', 'Hardware store'])).toBe('Hardware store');
+		expect(metaLine('sandpaper ', ['Sandpaper'])).toBe('');
+	});
+
+	it('keeps the other values in order, then the extra notes', () => {
+		expect(metaLine('Dentist', ['Tue 13', '10:00'], ['Check this'])).toBe(
+			'Tue 13 \u00b7 10:00 \u00b7 Check this',
+		);
 	});
 });

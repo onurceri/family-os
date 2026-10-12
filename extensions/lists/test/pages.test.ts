@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupTasks } from '../src/web/format.ts';
+import { groupTasks, movedToHiddenCart } from '../src/web/format.ts';
 import { listPagePath, rememberedListPage, rememberListPage } from '../src/web/lists-page.ts';
 
 function memory() {
@@ -93,5 +93,15 @@ describe('groupTasks', () => {
 			['soon', ['day 6']],
 			['later', ['day 7']],
 		]);
+	});
+});
+
+describe('movedToHiddenCart', () => {
+	it('says so only when a tick went through and the cart is folded away', () => {
+		expect(movedToHiddenCart(true, 'applied', false)).toBe(true);
+		expect(movedToHiddenCart(true, 'applied', true)).toBe(false);
+		expect(movedToHiddenCart(false, 'applied', false)).toBe(false);
+		expect(movedToHiddenCart(true, 'queued', false)).toBe(false);
+		expect(movedToHiddenCart(true, 'drafted', false)).toBe(false);
 	});
 });

@@ -59,6 +59,18 @@ describe('chores', () => {
 		expect(moved).toMatchObject({ completion: null, reason: 'stale' });
 	});
 
+	it('credits the person whose turn it was when someone else taps without naming anyone, and the tapper for a chore anyone may do', async () => {
+		const chore = await create();
+		// Bora ticks Ayşe's turn off without saying who did it.
+		const tapped = await done(chore, bora.actor);
+		expect(tapped.completion?.memberId).toBe(ayse.id);
+		const open = await create({ title: 'Plants', assigneeIds: [] });
+		expect((await done(open, bora.actor)).completion?.memberId).toBe(bora.id);
+		// Someone who cannot edit still may not tick off another person's turn.
+		const another = await create({ title: 'Trash', assigneeIds: [ayse.id] });
+		expect(await rejected(done(another, elif.actor))).toBe('forbidden');
+	});
+
 	it('adds a chore with its people in turn order and the first one up', async () => {
 		const chore = await create({
 			notes: 'Before bed',
@@ -271,7 +283,7 @@ describe('rotation in use', () => {
 		const third = await done(second.chore, ayse.actor);
 		expect(third.chore.assigneeId).toBe(bora.id); // Ayşe 2, Bora 1
 		// Bora skips and Ayşe covers twice more: Bora stays the one with the fewest.
-		const fourth = await done(third.chore, ayse.actor, {});
+		const fourth = await done(third.chore, ayse.actor, { doneBy: ayse.id });
 		expect(fourth.chore.assigneeId).toBe(bora.id);
 	});
 

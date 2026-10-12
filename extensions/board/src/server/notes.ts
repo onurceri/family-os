@@ -189,10 +189,16 @@ export const postNote = defineAction({
 				.insertInto('board_note_seen')
 				.values({ note_id: row.id, member_id: author, seen_at: now })
 				.execute();
+		// The notice names the person who put the note up, when there is one.
+		const name = author
+			? (await uow.family.members()).find((m) => m.id === author)?.displayName
+			: undefined;
 		await uow.notify({
 			kind: postedKind.id,
 			to: { capability: boardView.id, ...(author && { except: author }) },
-			title: { key: 'board:posted_title' },
+			title: name
+				? { key: 'board:posted_title_by', params: { name } }
+				: { key: 'board:posted_title' },
 			body: { key: 'board:posted_body', params: { text: excerpt(input.text) } },
 			url: '/board',
 			source: { kind: 'board.note', id: row.id },

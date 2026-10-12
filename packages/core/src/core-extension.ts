@@ -1074,8 +1074,16 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			else if (query.status) q = q.where('status', '=', query.status);
 			if (query.sourceKind) q = q.where('source_kind', '=', query.sourceKind);
 			if (query.sourceId) q = q.where('source_id', '=', query.sourceId);
-			const rows = await q.orderBy('created_at', 'desc').limit(query.limit).execute();
-			const passed = await deps.runner().passedCheck();
+			const all = await q.orderBy('created_at', 'desc').execute();
+			// A member reads the suggestions they may decide or are the person behind, never
+			// another member's (a supervised child's appointment is not for a teenager to see).
+			const runner = deps.runner();
+			const rows = (
+				actor.kind === 'member'
+					? all.filter((row) => runner.mayDecide(row, actor) || runner.isProposer(actor, row))
+					: all
+			).slice(0, query.limit);
+			const passed = await runner.passedCheck();
 			const shown = rows
 				.map((row): DraftRow => (passed(row) ? { ...row, status: 'expired' } : row))
 				.filter((row) => !query.status || row.status === query.status);

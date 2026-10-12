@@ -112,6 +112,8 @@ export interface ActionRunner {
 	undoStep(draft: DraftRow): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
 	mayDecide(draft: DraftRow, actor: Actor): boolean;
+	/** Whether this actor is the member behind the draft (who proposed it, or who the AI proposed it for). */
+	isProposer(actor: Actor, draft: DraftRow): boolean;
 	/** Whether a pending draft's change seems to exist already (the action's `alreadyThere`). */
 	mayExist(draft: DraftRow): Promise<boolean | 'some'>;
 	/**
@@ -909,6 +911,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		undoStep,
 		mayExist,
 		mayDecide,
+		isProposer,
 		passedCheck,
 		expirePassed,
 	};

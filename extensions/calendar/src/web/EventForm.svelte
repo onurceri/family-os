@@ -5,7 +5,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { onMount } from 'svelte';
-	import type { Tag } from '../contract/index.js';
+	import { endsNextDay, type Tag } from '../contract/index.js';
 	import { loadTags } from './data.js';
 	import {
 		type EventFormValue,
@@ -143,6 +143,9 @@
 							bind:value={value.endTime}
 							aria-invalid={flag('endTime')}
 						/>
+						{#if endsNextDay(value.startTime, value.endTime)}
+							<small class="text-ink-soft text-xs">{t('ends_next_day')}</small>
+						{/if}
 					</div>
 				{/if}
 			</div>

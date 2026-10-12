@@ -13,6 +13,8 @@
 		hourHeight,
 		isLongBlock,
 		layoutDay,
+		maxColumnsFor,
+		overflowOf,
 		snapSlot,
 	} from './layout.js';
 	import { timeLabel } from './format.js';
@@ -84,16 +86,32 @@
 			const isLong = (c: Chip) =>
 				isLongBlock(c.occurrence.start as number, c.occurrence.end as number);
 			const normal = chips.filter((c) => !isLong(c));
-			const placed = layoutDay(normal.map((c) => ({ id: key(c), start: c.start, end: c.end })));
+			const spans = normal.map((c) => ({ id: key(c), start: c.start, end: c.end }));
+			const placed = layoutDay(spans, undefined, maxColumnsFor(colW));
 			const slots = new Map(normal.map((c, i) => [key(c), placed[i]]));
+			const more = overflowOf(spans, placed).map((o) => ({
+				...o,
+				first: normal[placed.findIndex((p) => p.hidden && p.cluster === o.cluster)]
+					?.occurrence as Occurrence,
+			}));
 			return {
 				date,
 				lane,
-				chips: [...chips.filter(isLong), ...normal].map((chip) => ({
-					chip,
-					id: key(chip),
-					place: slots.get(key(chip)) ?? { id: key(chip), column: 0, columns: 1 },
-				})),
+				more,
+				chips: [...chips.filter(isLong), ...normal]
+					.filter((chip) => !slots.get(key(chip))?.hidden)
+					.map((chip) => ({
+						chip,
+						id: key(chip),
+						place: slots.get(key(chip)) ?? {
+							id: key(chip),
+							column: 0,
+							columns: 1,
+							span: 1,
+							cluster: -1,
+							hidden: false,
+						},
+					})),
 			};
 		}),
 	);
@@ -298,12 +316,31 @@
 								height: blockHeight(chip.end - chip.start, hour),
 								column: place.column,
 								columns: place.columns,
+								span: place.span,
 							}}
 							{titleOnly}
 							next={id === nextId}
 							showDetails={single}
 							onclick={() => onopen(chip.occurrence)}
 						/>
+					{/each}
+					{#each d.more as o (o.cluster)}
+						<button
+							type="button"
+							data-testid="more-events"
+							class="border-line bg-idle text-ink-soft focus-visible:ring-ring absolute grid place-items-start overflow-hidden rounded-lg border ps-2 text-start text-[12px] font-bold outline-none focus-visible:ring-2"
+							style:top="{(o.start / 60) * hour}px"
+							style:height="{blockHeight(o.end - o.start, hour)}px"
+							style:left="calc(100% * {o.column} / {o.columns} + 1px)"
+							style:width="calc(100% / {o.columns} - 2px)"
+							onclick={(e) => {
+								e.stopPropagation();
+								if (onday) onday(d.date);
+								else onopen(o.first);
+							}}
+						>
+							{t('more_events', { count: o.count })}
+						</button>
 					{/each}
 					{#if d.date === today && nowIn}
 						<div

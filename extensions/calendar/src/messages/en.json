@@ -17,6 +17,7 @@
 	"field_end_date": "Until (last day)",
 	"field_start": "Starts",
 	"field_end": "Ends",
+	"ends_next_day": "(next day)",
 	"field_members": "Who",
 	"field_location": "Where",
 	"field_notes": "Notes",

@@ -16,6 +16,7 @@ import type { EventDetail, EventInput, Occurrence } from '../contract/index.ts';
 import {
 	defaultReminder,
 	EventInputSchema,
+	endsNextDay,
 	normalizeTags,
 	SUBSCRIPTION_COLORS,
 	tagKey,
@@ -317,7 +318,13 @@ export function toRow(input: EventInput, timeZone: string) {
 		};
 	}
 	const startsAt = epochOf(v.date, v.startTime as string, timeZone);
-	const endsAt = v.endTime ? epochOf(v.date, v.endTime, timeZone) : startsAt + HOUR;
+	const endsAt = v.endTime
+		? epochOf(
+				endsNextDay(v.startTime, v.endTime) ? addDays(v.date, 1) : v.date,
+				v.endTime,
+				timeZone,
+			)
+		: startsAt + HOUR;
 	return {
 		title: v.title,
 		notes: v.notes ?? null,

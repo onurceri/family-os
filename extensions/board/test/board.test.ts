@@ -231,7 +231,7 @@ describe('notifications', () => {
 				.toSorted(),
 		).toEqual([ayse.id, elif.id, guest.id].toSorted());
 		expect(sent()[0]?.message).toMatchObject({
-			title: 'en|board:posted_title|{}',
+			title: 'en|board:posted_title_by|{"name":"Bora"}',
 			body: 'en|board:posted_body|{"text":"Dinner at 7 tonight"}',
 			url: '/board',
 		});

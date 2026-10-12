@@ -277,9 +277,9 @@
 					</dd>
 				{/each}
 			</dl>
-			{#if mayExist && status === 'pending' && labels.mayExist}
+			{#if canDecide && mayExist && status === 'pending' && labels.mayExist}
 				<p class="text-attention text-sm font-semibold">{labels.mayExist}</p>
-			{:else if mayExistSome && status === 'pending' && labels.mayExistSome}
+			{:else if canDecide && mayExistSome && status === 'pending' && labels.mayExistSome}
 				<p class="text-attention text-sm font-semibold">{labels.mayExistSome}</p>
 			{/if}
 			{#if status === 'failed' && error}

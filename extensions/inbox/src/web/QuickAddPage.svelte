@@ -22,6 +22,7 @@
 	$effect(() => feed.start());
 
 	const waiting = $derived(feed.waiting);
+	const canDecide = $derived(app.can('core.drafts.approve'));
 	const recent = $derived(feed.recent);
 	const selectedId = $derived(app.query().get('capture'));
 	const selected = $derived(selectedId ? feed.capture(selectedId) : undefined);
@@ -43,7 +44,10 @@
 				<p class="text-attention font-semibold" role="alert">{t('error')}</p>
 			{/if}
 			{#if waiting.length}
-				<Section label={t('section_waiting')} count={waiting.length}>
+				<Section
+					label={t(canDecide ? 'section_waiting' : 'section_waiting_approval')}
+					count={waiting.length}
+				>
 					<div class="grid gap-9">
 						{#each waiting as capture (capture.item.id)}
 							<CaptureGroup {capture} onchanged={() => void feed.load()} />

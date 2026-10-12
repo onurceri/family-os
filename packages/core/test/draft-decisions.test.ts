@@ -192,3 +192,32 @@ describe('the waiting notice', () => {
 		).toBe(true);
 	});
 });
+
+describe('who reads the suggestion list', () => {
+	const listed = async (who: Who) =>
+		(
+			(await k.route('core.listDrafts').call({
+				actor: who.actor,
+				query: { status: 'pending', limit: 50 },
+			})) as { id: string }[]
+		).map((d) => d.id);
+
+	it("keeps one member's suggestions from another who cannot decide them", async () => {
+		things.add('chair');
+		const kidDraft = await propose(kid);
+		const siblingDraft = await propose(sibling, 'chair');
+		expect(await listed(kid)).toEqual([kidDraft]);
+		expect(await listed(sibling)).toEqual([siblingDraft]);
+	});
+
+	it('shows an approver every suggestion they may decide, and the AI draft to the person behind it', async () => {
+		const kidDraft = await propose(kid);
+		expect(await listed(parent)).toEqual([kidDraft]);
+		expect(await listed(admin)).toEqual([kidDraft]);
+		things.add('chair');
+		const result = await k.runner.invoke('shelf.remove', { name: 'chair' }, aiFor(kid));
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		expect(await listed(kid)).toEqual(expect.arrayContaining([kidDraft, result.draftId]));
+		expect(await listed(sibling)).toEqual([]);
+	});
+});

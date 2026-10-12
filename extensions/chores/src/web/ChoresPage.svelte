@@ -35,6 +35,7 @@
 		validate,
 	} from './form.js';
 	import { useChores } from './i18n.js';
+	import { hasOpenChore } from './open-chores.js';
 	import { openPath } from './nav.js';
 
 	/**
@@ -242,7 +243,7 @@
 
 	{#if loadError}
 		<p class="text-attention font-semibold" role="alert">{t('error')}</p>
-	{:else if loaded && chores.length > 0 && visible.length === 0}
+	{:else if loaded && onlyMine && !hasOpenChore(visible)}
 		<p class="text-ink-soft">{t('nothing_mine')}</p>
 	{/if}
 

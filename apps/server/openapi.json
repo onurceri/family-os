@@ -47781,7 +47781,7 @@
 									"endTime": {
 										"type": "string",
 										"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-										"description": "End time HH:MM; defaults to one hour after the start"
+										"description": "End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day."
 									},
 									"memberIds": {
 										"type": "array",
@@ -48431,7 +48431,7 @@
 											"endTime": {
 												"type": "string",
 												"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-												"description": "End time HH:MM; defaults to one hour after the start"
+												"description": "End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day."
 											},
 											"memberIds": {
 												"type": "array",

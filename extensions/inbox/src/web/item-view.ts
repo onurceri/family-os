@@ -108,6 +108,35 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	return { tone: 'idle', key: 'chip_nothing' };
 }
 
+/**
+ * The line under a suggestion's headline: its field values joined, without any that only say the
+ * headline again (a one-item shopping draft is titled by the item, which is also its one field).
+ */
+export const metaLine = (
+	headline: string,
+	values: readonly string[],
+	extra: readonly string[] = [],
+) => {
+	const same = headline.trim().toLowerCase();
+	return [...values.filter((v) => v.trim().toLowerCase() !== same), ...extra]
+		.filter(Boolean)
+		.join(' \u00b7 ');
+};
+
+/**
+ * Whether the group may add or dismiss now. A card whose edit is still open holds a change that
+ * is not saved yet, so adding then would quietly leave it out.
+ */
+export const groupBusyState = (state: {
+	busy: boolean;
+	editing: number;
+	picked: number;
+}): { addDisabled: boolean; dismissDisabled: boolean; hint: boolean } => ({
+	addDisabled: state.busy || state.editing > 0 || state.picked === 0,
+	dismissDisabled: state.busy || state.editing > 0,
+	hint: state.editing > 0,
+});
+
 /** The group's approve button: "Add selected" only when every picked suggestion adds something. */
 export const approveSelectedKey = (
 	picked: readonly { actionId: string }[],

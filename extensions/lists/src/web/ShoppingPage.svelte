@@ -45,6 +45,7 @@
 		restoreItem,
 		updateItem,
 	} from './data.js';
+	import { movedToHiddenCart } from './format.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from './latest-only.js';
@@ -181,20 +182,22 @@
 		else if (message) app.toast(message);
 	}
 
-	async function toggle(item: ShoppingItem) {
-		const next = !isDone(item);
+	async function toggle(item: ShoppingItem, to?: boolean) {
+		const next = to ?? !isDone(item);
 		moving.add(item.id);
 		setTimeout(() => moving.delete(item.id), 1000);
 		pending[item.id] = next;
 		try {
-			report(
-				await checkItem(
-					app,
-					item.id,
-					next,
-					t(next ? 'label_check' : 'label_uncheck', { title: item.title }),
-				),
+			const outcome = await checkItem(
+				app,
+				item.id,
+				next,
+				t(next ? 'label_check' : 'label_uncheck', { title: item.title }),
 			);
+			report(outcome);
+			// With the cart folded away the item seems to vanish, so say where it went.
+			if (movedToHiddenCart(next, outcome, cartOpen))
+				app.toast(t('in_cart'), { label: t('undo'), run: () => void toggle(item, false) });
 			if (list) await refreshItems(list.id);
 		} catch {
 			app.toast(t('error'));

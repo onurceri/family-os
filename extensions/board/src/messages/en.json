@@ -6,6 +6,7 @@
 	"cap_manage": "Pin notes and take down anyone’s note",
 	"notify_kind_posted": "Someone puts a new note on the board",
 	"posted_title": "New note on the board",
+	"posted_title_by": "{{name}} put up a note",
 	"posted_body": "{{text}}",
 	"nav": "Board",
 	"title": "Board",

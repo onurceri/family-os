@@ -26041,7 +26041,7 @@ export interface operations {
                     endDate?: string;
                     /** @description Start time HH:MM; required unless allDay */
                     startTime?: string;
-                    /** @description End time HH:MM; defaults to one hour after the start */
+                    /** @description End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day. */
                     endTime?: string;
                     /**
                      * @description Family members involved; empty means the whole family
@@ -26265,7 +26265,7 @@ export interface operations {
                         endDate?: string;
                         /** @description Start time HH:MM; required unless allDay */
                         startTime?: string;
-                        /** @description End time HH:MM; defaults to one hour after the start */
+                        /** @description End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day. */
                         endTime?: string;
                         /**
                          * @description Family members involved; empty means the whole family

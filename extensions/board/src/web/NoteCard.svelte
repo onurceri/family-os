@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Avatar } from '@famos/ui/famos';
+	import { Avatar, Menu, type MenuItem } from '@famos/ui/famos';
 	import { Clock, Ellipsis } from '@lucide/svelte';
 	import { onDestroy, tick } from 'svelte';
 	import type { BoardNote } from '../contract/index.js';
@@ -90,16 +90,21 @@
 		const el = textEl;
 		void tick().then(() => (overflows = el.scrollHeight > el.clientHeight + 1));
 	});
-	let open = $state(false);
+	/** How long "take down" stays armed for a second pick. */
+	const ARM_MS = 8000;
+	let menuOpen = $state(false);
 	let armed = $state(false);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	onDestroy(() => clearTimeout(timer));
 
-	function remove() {
+	/** The first pick arms taking the note down and keeps the menu in reach; the second one does it. */
+	async function remove() {
 		if (!armed) {
 			armed = true;
 			clearTimeout(timer);
-			timer = setTimeout(() => (armed = false), 4000);
+			timer = setTimeout(() => (armed = false), ARM_MS);
+			await tick();
+			menuOpen = true;
 			return;
 		}
 		armed = false;
@@ -107,8 +112,28 @@
 		void onremove?.(note);
 	}
 
-	const actionClass =
-		'text-note-ink border-note-ink-soft/40 hover:bg-note-ink/10 min-h-11 rounded-lg border px-3 text-sm font-bold';
+	const items = $derived.by(() => {
+		const list: MenuItem[] = [];
+		if (canEdit) list.push({ id: 'edit', label: t('edit'), onselect: () => onedit?.(note) });
+		if (canPin)
+			list.push({
+				id: 'pin',
+				label: note.pinned ? t('unpin') : t('pin'),
+				onselect: () => onpin?.(note),
+			});
+		if (canEdit && canEarlier)
+			list.push({ id: 'earlier', label: t('move_earlier'), onselect: () => onmove?.(note, -1) });
+		if (canEdit && canLater)
+			list.push({ id: 'later', label: t('move_later'), onselect: () => onmove?.(note, 1) });
+		if (canEdit)
+			list.push({
+				id: 'remove',
+				label: armed ? t('remove_confirm') : t('remove'),
+				danger: true,
+				onselect: () => void remove(),
+			});
+		return list;
+	});
 </script>
 
 <article
@@ -116,6 +141,7 @@
 		? 'polaroid'
 		: PAPER_CLASS[note.paper]} text-note-ink relative grid gap-2 p-3 {variant}"
 	class:day={variant === 'board'}
+	class:menu-open={menuOpen}
 	style:--tilt="{tiltOf(note.id)}deg"
 	style:--paper="var(--{note.paper})"
 	data-testid="note"
@@ -161,18 +187,23 @@
 	{/if}
 	<div class="relative">
 		{#if showMenu}
-			<!-- In the paper's top corner; on a polaroid in the caption row, never over the photo. -->
-			<button
-				type="button"
-				class="menu text-note-ink hover:bg-note-ink/10 focus-visible:ring-ring absolute z-10 grid size-11 place-items-center rounded-lg focus-visible:ring-2"
-				class:on-frame={polaroid}
-				aria-label={t('note_menu')}
-				aria-expanded={open}
-				data-menu
-				onclick={() => (open = !open)}
-			>
-				<Ellipsis class="size-5" aria-hidden="true" />
-			</button>
+			<!-- In the paper's top corner; on a polaroid in the caption row, never over the photo. The
+			     actions open over the board, so the card never changes height. -->
+			<div class="menu absolute z-10" class:on-frame={polaroid}>
+				<Menu bind:open={menuOpen} {items} label={t('note_menu')}>
+					{#snippet trigger({ attrs })}
+						<button
+							type="button"
+							class="text-note-ink hover:bg-note-ink/10 focus-visible:ring-ring grid size-11 place-items-center rounded-lg focus-visible:ring-2"
+							aria-label={t('note_menu')}
+							data-menu
+							{...attrs}
+						>
+							<Ellipsis class="size-5" aria-hidden="true" />
+						</button>
+					{/snippet}
+				</Menu>
+			</div>
 		{/if}
 		<p
 			bind:this={textEl}
@@ -213,60 +244,6 @@
 			<span class="ml-auto text-right font-semibold" data-testid="note-seen">{seenText}</span>
 		{/if}
 	</footer>
-
-	{#if showMenu && open}
-		<div class="flex flex-wrap gap-2" role="group" aria-label={t('note_menu')}>
-			{#if canEdit}
-				<button
-					type="button"
-					class={actionClass}
-					onclick={() => {
-						open = false;
-						onedit?.(note);
-					}}>{t('edit')}</button
-				>
-			{/if}
-			{#if canPin}
-				<button
-					type="button"
-					class={actionClass}
-					onclick={() => {
-						open = false;
-						onpin?.(note);
-					}}
-				>
-					{note.pinned ? t('unpin') : t('pin')}
-				</button>
-			{/if}
-			{#if canEdit && canEarlier}
-				<button
-					type="button"
-					class={actionClass}
-					data-move="earlier"
-					onclick={() => onmove?.(note, -1)}>{t('move_earlier')}</button
-				>
-			{/if}
-			{#if canEdit && canLater}
-				<button
-					type="button"
-					class={actionClass}
-					data-move="later"
-					onclick={() => onmove?.(note, 1)}>{t('move_later')}</button
-				>
-			{/if}
-			{#if canEdit}
-				<button
-					type="button"
-					class="{actionClass} {armed ? 'bg-attention text-on-color border-transparent' : ''}"
-					aria-live="polite"
-					onblur={() => (armed = false)}
-					onclick={remove}
-				>
-					{armed ? t('remove_confirm') : t('remove')}
-				</button>
-			{/if}
-		</div>
-	{/if}
 </article>
 
 <style>
@@ -310,6 +287,10 @@
 	.menu.on-frame {
 		top: -0.4rem;
 		right: -0.55rem;
+	}
+	/* The open menu lies over the notes after this one (a tilted paper makes its own layer). */
+	.paper.menu-open {
+		z-index: 20;
 	}
 	.paper::after {
 		content: '';

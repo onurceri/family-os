@@ -26,7 +26,7 @@
 		today: string;
 		variant?: 'block' | 'line';
 		/** Block only: where it sits in the day column. `top` and `height` are in px. */
-		place?: { top: number; height: number; column: number; columns: number };
+		place?: { top: number; height: number; column: number; columns: number; span?: number };
 		/** Block only: narrow columns show the title and nothing else. */
 		titleOnly?: boolean;
 		/** Block only: the day view also names the place and the people on separate lines. */
@@ -107,7 +107,7 @@
 		style:height="{place.height}px"
 		style:padding-block="{fit.tight ? BLOCK.tight : BLOCK.pad}px"
 		style:left="calc(100% * {place.column} / {place.columns} + 1px)"
-		style:width="calc(100% / {place.columns} - 2px)"
+		style:width="calc(100% * {place.span ?? 1} / {place.columns} - 2px)"
 		style:outline={next ? '2px solid var(--accent)' : undefined}
 		style:outline-offset={next ? '-2px' : undefined}
 		style:z-index={next ? 1 : undefined}

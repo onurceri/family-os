@@ -281,7 +281,9 @@ export const markDone = defineAction({
 	async run(uow, { id, dueDate, doneBy: requestedBy }) {
 		const row = await loadChore(uow.db, id);
 		const self = memberIdOf(uow.actor);
-		const doneBy = requestedBy ?? self;
+		// Without a named person, the turn's owner is credited (so turns and "least done" stay fair
+		// when someone else taps); a chore anyone may do goes to the one who tapped.
+		const doneBy = requestedBy ?? row.assignee_id ?? self;
 		if (!doneBy) throw new FamosError('bad_request', 'Say who did it');
 		if (uow.actor.kind === 'member' && !uow.can(CHORES_EDIT)) {
 			// Own turn, or a chore anyone may do; doing it for someone else needs edit.

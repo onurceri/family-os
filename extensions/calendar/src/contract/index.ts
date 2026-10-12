@@ -75,7 +75,7 @@ export const EventInputSchema = z
 		endDate: IsoDateSchema.optional().describe('Last day of a multi-day all-day event (inclusive)'),
 		startTime: IsoTimeSchema.optional().describe('Start time HH:MM; required unless allDay'),
 		endTime: IsoTimeSchema.optional().describe(
-			'End time HH:MM; defaults to one hour after the start',
+			'End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day.',
 		),
 		memberIds: z
 			.array(MemberIdSchema)
@@ -110,15 +110,22 @@ export const EventInputSchema = z
 			ctx.addIssue({ code: 'custom', path: ['startTime'], message: 'Start time is required' });
 		if (v.endDate && v.endDate < v.date)
 			ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'End date is before the start' });
-		if (!v.allDay && v.startTime && v.endTime && v.endTime <= v.startTime) {
+		// An end earlier than the start is the next morning; the same time would be no length at all.
+		if (!v.allDay && v.startTime && v.endTime && v.endTime === v.startTime) {
 			ctx.addIssue({
 				code: 'custom',
 				path: ['endTime'],
-				message: 'End time must be after the start time',
+				message: 'End time must differ from the start time',
 			});
 		}
 	});
 export type EventInput = z.input<typeof EventInputSchema>;
+
+/** A timed event whose end time is earlier than its start ends the next day (an overnight event). */
+export const endsNextDay = (
+	startTime: string | null | undefined,
+	endTime: string | null | undefined,
+) => Boolean(startTime && endTime && endTime < startTime);
 
 export const EventDetailSchema = z.object({
 	id: z.string(),

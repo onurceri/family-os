@@ -63,3 +63,10 @@ export function dueLabel(
 							);
 	return dueTime ? `${day} · ${formatClock(dueTime, locale, hourCycle)}` : day;
 }
+
+/** Whether ticking an item should say where it went: it left the list for a folded-away cart. */
+export const movedToHiddenCart = (
+	ticked: boolean,
+	outcome: 'applied' | 'drafted' | 'queued',
+	cartOpen: boolean,
+): boolean => ticked && outcome === 'applied' && !cartOpen;

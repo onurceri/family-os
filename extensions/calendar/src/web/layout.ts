@@ -11,19 +11,50 @@ export interface Placed {
 	id: string;
 	/** Zero-based column inside its cluster; earlier starts sit further left. */
 	column: number;
-	/** How many columns the cluster has: the chip is 1/columns of the day's width. */
+	/** How many columns the cluster is drawn in: a chip is `span`/columns of the day's width. */
 	columns: number;
+	/** How many columns the chip covers: it widens into free columns to its right. */
+	span: number;
+	/** Cluster the chip belongs to (for `overflowOf`). */
+	cluster: number;
+	/** True when the cluster has more columns than fit; the chip is counted in "+N more" instead. */
+	hidden: boolean;
+}
+
+/** The "+N more" chip of a crowded cluster: where it sits and how many events it stands for. */
+export interface Overflow {
+	cluster: number;
+	column: number;
+	columns: number;
+	/** Minutes from the start of the day, covering the events it stands for. */
+	start: number;
+	end: number;
+	count: number;
 }
 
 /** A chip is never drawn shorter than this, so it counts as this long when finding overlaps. */
 export const MIN_SPAN = 30;
 
+/** The narrowest a chip may be drawn, in px: titles are unreadable below it. */
+export const MIN_CHIP_WIDTH = 56;
+
+/** How many side-by-side columns a day column of this width can hold (at least two, at most six). */
+export const maxColumnsFor = (width: number): number =>
+	Math.max(2, Math.min(6, Math.floor(width / MIN_CHIP_WIDTH)));
+
 /**
  * Clusters events whose times intersect and gives each a column, greedily: the first column whose
  * last event has ended. Back-to-back events (one ends when the next starts) do not overlap.
+ * A chip then widens into the free columns to its right, so a lone event beside a busy hour is not
+ * a sliver. When a cluster needs more than `maxColumns` columns, the last visible column is kept for
+ * a "+N more" chip (see `overflowOf`) and the events that would sit in it or beyond are `hidden`.
  * The result keeps the order of the input.
  */
-export function layoutDay(spans: readonly Span[], minSpan = MIN_SPAN): Placed[] {
+export function layoutDay(
+	spans: readonly Span[],
+	minSpan = MIN_SPAN,
+	maxColumns = Number.POSITIVE_INFINITY,
+): Placed[] {
 	const effective = (s: Span) => Math.max(s.end, s.start + minSpan);
 	const order = spans
 		.map((span, index) => ({ span, index }))
@@ -32,14 +63,40 @@ export function layoutDay(spans: readonly Span[], minSpan = MIN_SPAN): Placed[] 
 				a.span.start - b.span.start || effective(b.span) - effective(a.span) || a.index - b.index,
 		);
 	const placed = new Map<string, Placed>();
-	let cluster: Placed[] = [];
+	let cluster: { p: Placed; start: number; end: number }[] = [];
 	let clusterEnd = Number.NEGATIVE_INFINITY;
 	let columnEnds: number[] = [];
+	let clusterId = 0;
 
 	const close = () => {
-		for (const p of cluster) p.columns = columnEnds.length;
+		if (cluster.length === 0) return;
+		const needed = columnEnds.length;
+		const crowded = needed > maxColumns;
+		const columns = crowded ? maxColumns : needed;
+		// A crowded cluster keeps its last visible column for the "+N more" chip.
+		const room = crowded ? maxColumns - 1 : needed;
+		for (const item of cluster) {
+			const p = item.p;
+			p.columns = columns;
+			p.hidden = crowded && p.column >= room;
+			if (p.hidden) continue;
+			let span = 1;
+			while (
+				p.column + span < room &&
+				!cluster.some(
+					(o) =>
+						o !== item &&
+						o.p.column === p.column + span &&
+						o.start < item.end &&
+						o.end > item.start,
+				)
+			)
+				span++;
+			p.span = span;
+		}
 		cluster = [];
 		columnEnds = [];
+		clusterId++;
 	};
 
 	for (const { span } of order) {
@@ -48,12 +105,49 @@ export function layoutDay(spans: readonly Span[], minSpan = MIN_SPAN): Placed[] 
 		if (column === -1) column = columnEnds.length;
 		columnEnds[column] = effective(span);
 		clusterEnd = cluster.length ? Math.max(clusterEnd, effective(span)) : effective(span);
-		const p: Placed = { id: span.id, column, columns: 1 };
-		cluster.push(p);
+		const p: Placed = {
+			id: span.id,
+			column,
+			columns: 1,
+			span: 1,
+			cluster: clusterId,
+			hidden: false,
+		};
+		cluster.push({ p, start: span.start, end: effective(span) });
 		placed.set(span.id, p);
 	}
 	close();
 	return spans.map((s) => placed.get(s.id) as Placed);
+}
+
+/** The "+N more" chips of the clusters that did not fit, one per cluster. */
+export function overflowOf(
+	spans: readonly Span[],
+	placed: readonly Placed[],
+	minSpan = MIN_SPAN,
+): Overflow[] {
+	const out = new Map<number, Overflow>();
+	spans.forEach((s, i) => {
+		const p = placed[i];
+		if (!p?.hidden) return;
+		const end = Math.max(s.end, s.start + minSpan);
+		const found = out.get(p.cluster);
+		if (found) {
+			found.start = Math.min(found.start, s.start);
+			found.end = Math.max(found.end, end);
+			found.count++;
+		} else {
+			out.set(p.cluster, {
+				cluster: p.cluster,
+				column: p.columns - 1,
+				columns: p.columns,
+				start: s.start,
+				end,
+				count: 1,
+			});
+		}
+	});
+	return [...out.values()];
 }
 
 /**

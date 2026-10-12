@@ -48,7 +48,7 @@ When you give something from outside the app (the phone's share sheet, [Telegram
 
 Each capture with something to decide is one group: a line saying what it is, when it came and from where, then its suggestions. **Show the original** opens the text, photos and files it was made from. While the AI reads, the group says **Reading…** in place. If the AI had to try again, it says **Trying again (attempt 2 of 4)…** instead.
 
-A suggestion shows what would be added and where it goes (**Calendar**, **Tasks**, **Shopping**…). Fields the AI was unsure about are marked **Check this**; one that looks like something already there says **This may already be there: check before approving.** and asks for a second tap on **Approve** (**Tap again to add it anyway**). A suggestion made for someone else, for example by a child's assistant request, says who asked (**Asked by Noah**), and notifications for waiting suggestions name the thing, such as **Remove a shopping item: Cheddar**. When a message names a day but no time, the event is suggested as an all-day event with **Check this** on it; set the time before you add it. The AI knows who shared the capture, so a message written to you ("your lesson is on Saturday") is suggested for you rather than for the whole family, and it reuses the tags your calendar already has.
+Members see only the suggestions they can decide or that are theirs, and a member who cannot approve sees the section as **Waiting for approval**. A suggestion shows what would be added and where it goes (**Calendar**, **Tasks**, **Shopping**…). Fields the AI was unsure about are marked **Check this**; one that looks like something already there says **This may already be there: check before approving.** and asks for a second tap on **Approve** (**Tap again to add it anyway**). A suggestion made for someone else, for example by a child's assistant request, says who asked (**Asked by Noah**), and notifications for waiting suggestions name the thing, such as **Remove a shopping item: Cheddar**. When a message names a day but no time, the event is suggested as an all-day event with **Check this** on it; set the time before you add it. The AI knows who shared the capture, so a message written to you ("your lesson is on Saturday") is suggested for you rather than for the whole family, and it reuses the tags your calendar already has.
 
 - **Tick what is right.** Every suggestion is ticked at first. Untick the ones you do not want.
 - **Add selected (n):** adds the ticked ones, one by one. A message says how many were added, with **Undo**, which takes all of them back.
@@ -78,7 +78,7 @@ Open **Calendar**. Pick **Day**, **Week** or **Month** at the top; the arrows mo
 ### Add and change events
 
 1. Press **Add event** (or click an empty hour in the grid) and fill in the **Title**. The form opens in a panel at the side, and as a sheet on a phone.
-2. Pick the **Date**, **Starts** and **Ends**. For a whole day, turn on **All day**, and use **Until (last day)** for several days.
+2. Pick the **Date**, **Starts** and **Ends**. For a whole day, turn on **All day**, and use **Until (last day)** for several days. An end time earlier than the start (22:00 to 07:00) means the next morning, and the form says **(next day)**.
 3. Under **Who**, pick the people it is for. Pick nobody and it is for the **Whole family**.
 4. Optionally add **Repeats**, **Reminder**, **Tags**, **Where** and **Notes**, then press **Save**.
 

@@ -6,6 +6,7 @@
 	"cap_manage": "Not sabitlemek ve herkesin notunu kaldırmak",
 	"notify_kind_posted": "Biri panoya yeni bir not astığında",
 	"posted_title": "Panoda yeni bir not var",
+	"posted_title_by": "{{name}} panoya not astı",
 	"posted_body": "{{text}}",
 	"nav": "Pano",
 	"title": "Pano",

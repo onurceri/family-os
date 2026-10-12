@@ -8,7 +8,9 @@ import {
 	hourHeight,
 	layoutDay,
 	MIN_BLOCK_HEIGHT,
+	maxColumnsFor,
 	monthRows,
+	overflowOf,
 	snapSlot,
 } from '../src/web/layout.js';
 
@@ -19,7 +21,7 @@ const by = (placed: ReturnType<typeof layoutDay>) =>
 describe('layoutDay', () => {
 	it('gives a lone event the whole width', () => {
 		expect(layoutDay([{ id: 'a', start: h(9), end: h(10) }])).toEqual([
-			{ id: 'a', column: 0, columns: 1 },
+			{ id: 'a', column: 0, columns: 1, span: 1, cluster: 0, hidden: false },
 		]);
 	});
 
@@ -101,6 +103,87 @@ describe('layoutDay', () => {
 			{ id: 'a', start: h(8), end: h(9) },
 		]);
 		expect(out.map((p) => p.id)).toEqual(['z', 'a']);
+	});
+});
+
+describe('layoutDay widening and overflow', () => {
+	it('lets a chip widen into the free columns to its right', () => {
+		// Three events share the morning; only the first one runs on into the afternoon.
+		const p = by(
+			layoutDay([
+				{ id: 'long', start: h(9), end: h(13) },
+				{ id: 'short', start: h(9), end: h(10) },
+				{ id: 'tall', start: h(9), end: h(10) },
+				{ id: 'late', start: h(11), end: h(12) },
+			]),
+		);
+		expect(p.long).toMatchObject({ column: 0, columns: 3, span: 1 });
+		expect(p.short).toMatchObject({ column: 1, span: 1 });
+		// After 10:00 the last column is free beside `late`, so `late` can take two columns.
+		expect(p.late).toMatchObject({ column: 1, columns: 3, span: 2 });
+	});
+
+	it('keeps a chip at its own column when the next one is taken', () => {
+		const p = by(
+			layoutDay([
+				{ id: 'a', start: h(9), end: h(11) },
+				{ id: 'b', start: h(9), end: h(11) },
+			]),
+		);
+		expect(p.a).toMatchObject({ column: 0, columns: 2, span: 1 });
+		expect(p.b).toMatchObject({ column: 1, columns: 2, span: 1 });
+	});
+
+	it('hides what does not fit and counts it in one "+N more" chip', () => {
+		// Four events at once with room for three columns: two stay, two are counted.
+		const spans = [
+			{ id: 'a', start: h(15), end: h(16) },
+			{ id: 'b', start: h(15), end: h(16) },
+			{ id: 'c', start: h(15), end: h(16) },
+			{ id: 'd', start: h(15, 30), end: h(17) },
+			{ id: 'later', start: h(19), end: h(20) },
+		];
+		const placed = layoutDay(spans, undefined, 3);
+		const p = by(placed);
+		expect(p.a).toMatchObject({ column: 0, columns: 3, hidden: false });
+		expect(p.b).toMatchObject({ column: 1, columns: 3, hidden: false });
+		expect(p.c).toMatchObject({ column: 2, hidden: true });
+		expect(p.d).toMatchObject({ column: 3, hidden: true });
+		expect(p.later).toMatchObject({ column: 0, columns: 1, hidden: false });
+		expect(overflowOf(spans, placed)).toEqual([
+			{ cluster: p.a?.cluster, column: 2, columns: 3, start: h(15), end: h(17), count: 2 },
+		]);
+	});
+
+	it('never widens a chip over the "+N more" column', () => {
+		const placed = layoutDay(
+			[
+				{ id: 'a', start: h(9), end: h(10) },
+				{ id: 'b', start: h(9), end: h(10) },
+				{ id: 'c', start: h(9), end: h(10) },
+			],
+			undefined,
+			2,
+		);
+		expect(placed.map((p) => [p.column, p.span, p.hidden])).toEqual([
+			[0, 1, false],
+			[1, 1, true],
+			[2, 1, true],
+		]);
+	});
+
+	it('gives no overflow when everything fits', () => {
+		const spans = [
+			{ id: 'a', start: h(9), end: h(10) },
+			{ id: 'b', start: h(9), end: h(10) },
+		];
+		expect(overflowOf(spans, layoutDay(spans, undefined, 3))).toEqual([]);
+	});
+
+	it('holds at least two columns, and a readable width for each', () => {
+		expect(maxColumnsFor(94)).toBe(2);
+		expect(maxColumnsFor(190)).toBe(3);
+		expect(maxColumnsFor(1000)).toBe(6);
 	});
 });
 

@@ -4,6 +4,7 @@
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
+	import { metaLine } from './item-view.js';
 
 	/**
 	 * A suggestion in Today's Needs you card: one row with Reject (two taps), Edit and the approve
@@ -31,10 +32,22 @@
 			),
 		),
 	);
+	const headline = $derived(
+		presenter?.title(input, context) ??
+			draftHeadline({
+				summary: draft.summary,
+				titleKey: draft.titleKey,
+				actionId: draft.actionId,
+				input,
+				t: app.t,
+			}),
+	);
 	const meta = $derived(
-		[...fields.map((f) => f.value), ...(uncertain ? [a('draft_check_this')] : [])]
-			.filter(Boolean)
-			.join(' · '),
+		metaLine(
+			headline,
+			fields.map((f) => f.value),
+			uncertain ? [a('draft_check_this')] : [],
+		),
 	);
 
 	let busy = $state(false);
@@ -100,14 +113,7 @@
 	<TodayRow
 		variant="needs"
 		{...presenter?.icon ? { icon: presenter.icon } : {}}
-		title={presenter?.title(input, context) ??
-			draftHeadline({
-				summary: draft.summary,
-				titleKey: draft.titleKey,
-				actionId: draft.actionId,
-				input,
-				t: app.t,
-			})}
+		title={headline}
 		{meta}
 		{uncertain}
 		href="/add"
