@@ -41778,6 +41778,8 @@ export interface operations {
                 "application/json": {
                     /** @description Only the list with this name */
                     list?: string;
+                    /** @description Only this list */
+                    listId?: string;
                 };
             };
         };
@@ -41793,8 +41795,8 @@ export interface operations {
                         status: "applied";
                         output: {
                             lists: {
-                                /** @description For adding to this list */
-                                listId: string;
+                                /** @description The list, for adding items to it (listId) */
+                                id: string;
                                 name: string;
                                 items: {
                                     /** @description For checking off, changing or removing the item */
