@@ -326,6 +326,17 @@ export const checkShoppingItem = defineAction({
 			? `${row.title} is already ticked off.`
 			: `${row.title} is already on the list, not ticked off.`;
 	},
+	// Already ticked (or already unticked) by someone: approving would change nothing, and its
+	// undo would reverse what that person really did.
+	async settled(ctx, { id, done }) {
+		const row = await tables(ctx.db)
+			.selectFrom('lists_shopping_items')
+			.select('done_at')
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		return row !== undefined && (row.done_at !== null) === done;
+	},
 	undo: (item) => ({
 		actionId: 'lists.checkShoppingItem',
 		input: { id: item.id, done: item.doneAt === null },

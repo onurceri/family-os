@@ -116,5 +116,7 @@
 	"draft_title_archive_recipe": "Archive a recipe",
 	"draft_title_add_to_meal_plan": "Plan a meal",
 	"draft_title_update_meal_plan_entry": "Change a planned meal",
-	"draft_title_remove_meal_plan_entry": "Take a meal off the plan"
+	"draft_title_remove_meal_plan_entry": "Take a meal off the plan",
+	"draft_a_meal": "A planned meal",
+	"draft_approve_remove_meal": "Take off"
 }

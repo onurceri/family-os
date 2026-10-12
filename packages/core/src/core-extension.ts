@@ -16,7 +16,7 @@ import {
 import { formatDate, formatLocaleForLanguage, todayIn, weekOf, zoned } from '@famos/time';
 import { z } from 'zod';
 import type { Access } from './access.ts';
-import { type ActionRunner, GONE } from './action-runner.ts';
+import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
 import { createAutoApproval } from './auto-approval.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -29,6 +29,7 @@ import {
 } from './core-events.ts';
 import type { DeviceService } from './devices.ts';
 import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
+import { subjectOf } from './draft-subject.ts';
 import {
 	FamilySettingsSchema,
 	LanguageCodeSchema,
@@ -130,19 +131,7 @@ const SUGGESTION_STATUS = {
 
 /** The action's title and, when the input has one, its name or text: "Add shopping item: Milk". */
 function suggestionLabel(title: string | undefined, row: DraftRow): string {
-	let what: string | undefined;
-	try {
-		const input = JSON.parse(row.edited_input ?? row.input) as Record<string, unknown>;
-		for (const key of ['title', 'name', 'text', 'body', 'summary']) {
-			const value = input[key];
-			if (typeof value === 'string' && value.trim() !== '') {
-				what = value.trim().slice(0, 80);
-				break;
-			}
-		}
-	} catch {
-		// An input from an older version may not parse: the title alone still says what it was.
-	}
+	const what = subjectOf(row.edited_input ?? row.input);
 	const base = title ?? row.action_id;
 	return what ? `${base}: ${what}` : base;
 }
@@ -171,10 +160,11 @@ export const DraftSchema = z.object({
 	/** Applied and its action can take it back (Undo). */
 	undoable: z.boolean(),
 	/**
-	 * Why a rejected draft is closed when a person did not decide it: `gone` (what it was about
-	 * no longer exists) or `withdrawn` (the person behind it took it back). Null otherwise.
+	 * Why a rejected draft is closed when a person did not decide it on its merits: `gone` (what
+	 * it was about no longer exists), `settled` (what it asked for was already so) or `withdrawn`
+	 * (the person behind it took it back). Null otherwise.
 	 */
-	reason: z.enum(['gone', 'withdrawn']).nullable(),
+	reason: z.enum(['gone', 'settled', 'withdrawn']).nullable(),
 	/** i18n key naming what the draft proposes, for a draft no presenter or summary describes. */
 	titleKey: z.string().nullable(),
 	/** Pending only: what it proposes seems to exist already ("this may already be there"). */
@@ -195,12 +185,14 @@ const toMember = (row: MemberRow): Member => ({
 });
 
 /** Why a closed draft is closed, when no one decided it on its merits. */
-function draftReason(row: DraftRow): 'gone' | 'withdrawn' | null {
+function draftReason(row: DraftRow): 'gone' | 'settled' | 'withdrawn' | null {
 	if (row.status !== 'rejected') return null;
 	if (row.error === GONE) return 'gone';
+	if (row.error === SETTLED) return 'settled';
+	// Only a person taking back their own suggestion withdraws it; declining what an assistant
+	// or a shared message produced is an ordinary rejection.
 	const by = JSON.parse(row.proposed_by) as Actor;
-	const proposer = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : null;
-	return proposer && row.decided_by === proposer ? 'withdrawn' : null;
+	return by.kind === 'member' && row.decided_by === by.memberId ? 'withdrawn' : null;
 }
 
 const toDraft = (
@@ -222,7 +214,7 @@ const toDraft = (
 	uncertainFields: row.uncertain_fields ? (JSON.parse(row.uncertain_fields) as string[]) : [],
 	// The stored message can carry internals (SQL, paths); members see only that it failed.
 	error:
-		row.error === null || row.error === GONE
+		row.error === null || row.error === GONE || row.error === SETTLED
 			? null
 			: 'Applying this change failed. Try again or ask an admin.',
 	forMember: row.for_member,
@@ -1206,8 +1198,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					id: z.string(),
 					label: z.string(),
 					status: z.enum(['waiting', 'approved', 'rejected', 'undone', 'expired', 'failed']),
-					/** Why a rejected suggestion closed: taken back by the person, or its subject is gone. */
-					reason: z.enum(['withdrawn', 'gone']).optional(),
+					/** Why a rejected suggestion closed: taken back by the person, its subject is gone, or it was already so. */
+					reason: z.enum(['withdrawn', 'gone', 'settled']).optional(),
 					/** When it was suggested and, once decided, when; ISO 8601 UTC. */
 					suggestedAt: z.string(),
 					decidedAt: z.string().optional(),

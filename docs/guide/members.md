@@ -33,7 +33,7 @@ Everyone chooses their own language under **Settings → You → Profile & sign-
 |---|---|---|
 | Admin | Whoever runs FamilyOS (there can be several) | Everything. Only admins manage members, roles, devices, features, AI, auto-approval, backups, Telegram, email, languages and region, calendar subscriptions, display content. |
 | Member | Adults | See and change everything else, approve suggestions and ask the assistant. |
-| Supervised | Children, or anyone whose changes should be checked | See everything. Add shopping items and tick them off, tick off tasks and their own chores, share to Quick add and ask the assistant. Other changes, such as a new event or removing a shopping item, become suggestions that an adult approves. |
+| Supervised | Children, or anyone whose changes should be checked | See everything. Add shopping items and tick them off, tick off tasks and their own chores, share to Quick add and ask the assistant. Other changes, such as a new event or removing a shopping item, become suggestions that someone who may approve suggestions (Admins and Members by default) decides. |
 | Guest | A babysitter, grandparents visiting | Look only: the calendar, lists, chores, recipes, records, vehicles, home and pets. No sharing, suggesting or assistant. |
 
 Everyone also sees their own notifications and the other members.
@@ -49,6 +49,7 @@ Need something in between? On **Settings → Family → Roles**, under **Your ow
 - Things added to FamilyOS later follow the role you started from.
 - Admin-only permissions cannot be given to a custom role.
 - **Sign in with a PIN on family devices** is one of the permissions. A custom role from Member that has it signs in with a PIN, and one from Supervised that does not signs in with a password. After you change this, set a PIN or a password for the people who have the role.
+- Example: a teenager who uses everything like a Member but should not approve other people's suggestions. Press **New role from Member**, give it a name, untick **Approve suggestions** and press **Create role**.
 - **Delete role** needs a second tap (**Tap again to delete**). It only works when nobody has the role.
 
 ## Family devices and PINs

@@ -553,3 +553,73 @@ describe('shopping list names', () => {
 		await k.runner.invoke('lists.renameShoppingList', { id: otherId, name: 'Hardware' }, actor);
 	});
 });
+
+describe('a suggestion that is already so', () => {
+	const draftOf = async (action: string, input: unknown) => {
+		const result = await k.runner.invoke(action, input, { kind: 'ai', source: 'inbox' });
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		return result.draftId;
+	};
+	const listedDraft = async (id: string) => {
+		const all = await k.route('core.listDrafts').call({ query: { limit: 20 } });
+		const draft = (all as { id: string }[]).find((d) => d.id === id);
+		if (!draft) throw new Error('draft not listed');
+		return draft;
+	};
+
+	it('closes a tick-off of an item somebody already bought, and keeps who bought it', async () => {
+		const { actor: shopper } = await k.member('member');
+		const { actor: admin } = await k.member('admin');
+		const added = await applied<{ items: ShoppingItem[] }>(
+			k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Cheddar' }] }, admin),
+		);
+		const id = added.items[0]?.id as string;
+		const draftId = await draftOf('lists.checkShoppingItem', { id, done: true, label: 'Cheddar' });
+		// Somebody really buys it before the suggestion is looked at.
+		await applied(k.runner.invoke('lists.checkShoppingItem', { id, done: true }, shopper));
+		const before = (await items()).find((i) => i.id === id);
+
+		const closed = await k.runner.approveDraft(draftId, admin);
+		expect(closed.status).toBe('rejected');
+		expect(await listedDraft(draftId)).toMatchObject({
+			status: 'rejected',
+			reason: 'settled',
+			undoable: false,
+		});
+		expect((await items()).find((i) => i.id === id)).toEqual(before);
+		// There is no undo to un-tick the item that was really bought.
+		await expect(k.runner.undoDraft(draftId, admin)).rejects.toMatchObject({ code: 'conflict' });
+		expect((await items()).find((i) => i.id === id)?.doneAt).not.toBeNull();
+	});
+
+	it('still applies a tick-off that is not yet so, with an undo', async () => {
+		const { actor: admin } = await k.member('admin');
+		const added = await applied<{ items: ShoppingItem[] }>(
+			k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Cheddar' }] }, admin),
+		);
+		const id = added.items[0]?.id as string;
+		const draftId = await draftOf('lists.checkShoppingItem', { id, done: true, label: 'Cheddar' });
+		await k.runner.approveDraft(draftId, admin);
+		expect(await listedDraft(draftId)).toMatchObject({ status: 'applied', undoable: true });
+		await k.runner.undoDraft(draftId, admin);
+		expect((await items()).find((i) => i.id === id)?.doneAt).toBeNull();
+	});
+
+	it('closes a completion of a task that is already done', async () => {
+		const { actor: admin } = await k.member('admin');
+		const task = await applied<Task>(
+			k.runner.invoke('lists.addTask', { title: 'Pay bills' }, admin),
+		);
+		const draftId = await draftOf('lists.completeTask', { id: task.id, label: 'Pay bills' });
+		await applied(k.runner.invoke('lists.completeTask', { id: task.id }, admin));
+
+		await k.runner.approveDraft(draftId, admin);
+		expect(await listedDraft(draftId)).toMatchObject({
+			status: 'rejected',
+			reason: 'settled',
+			undoable: false,
+		});
+		// Nothing reopened the task that somebody really finished.
+		expect((await tasks()).find((t) => t.id === task.id)?.doneAt).not.toBeNull();
+	});
+});

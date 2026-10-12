@@ -10,6 +10,16 @@ import { z } from 'zod';
 export const RecipeIdSchema = idSchema('recipe');
 export const MealIdSchema = idSchema('meal');
 
+/** Only for people reviewing a suggestion: which planned meal it is. Never stored. */
+export const ReviewLabelSchema = z
+	.string()
+	.trim()
+	.max(200)
+	.optional()
+	.describe(
+		'The planned meal as listed, e.g. "Lentil soup, 2026-10-17 dinner"; only shown to the reviewer',
+	);
+
 export const MEAL_SLOTS = ['breakfast', 'lunch', 'dinner', 'other'] as const;
 export const MealSlotSchema = z.enum(MEAL_SLOTS);
 export type MealSlot = z.infer<typeof MealSlotSchema>;

@@ -7,6 +7,7 @@
 	import CaptureSource from './CaptureSource.svelte';
 	import CaptureStatus from './CaptureStatus.svelte';
 	import DraftView from './DraftView.svelte';
+	import { approvals, type Edits, withEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
 	import { type Capture, captureLine } from './item-view.js';
@@ -45,6 +46,9 @@
 		unpicked = next;
 	};
 
+	// Edits saved on cards, approved together with their suggestion.
+	let edits = $state<Edits>(new Map());
+
 	let editing = $state<ReadonlySet<string>>(new Set());
 	const setEditing = (id: string, on: boolean) => {
 		if (editing.has(id) === on) return;
@@ -64,9 +68,9 @@
 		let added = 0;
 		let failed = 0;
 		// One by one, in the order proposed: the same endpoint (and rules) as a single approval.
-		for (const draft of picked) {
+		for (const { id, input } of approvals(picked, edits)) {
 			try {
-				const result = await approveDraft(draft.id);
+				const result = await approveDraft(id, input);
 				if (result.status === 'applied') {
 					added += 1;
 					if (result.undoable) undoable.push(result.id);
@@ -122,8 +126,9 @@
 	}
 
 	const reading = $derived(item.status === 'received' || item.status === 'normalized');
-	// Removing is for captures with nothing left to decide; with suggestions "Dismiss" does it.
-	const removable = $derived(mine && !reading && todo.length === 0);
+	// Removing is for captures with nothing left to decide; with suggestions "Dismiss" does it. Someone
+	// who cannot decide still removes their own capture, which takes its waiting suggestions back.
+	const removable = $derived(mine && !reading && (todo.length === 0 || !canDecide));
 	const hasSource = $derived(
 		Boolean(item.text || item.url || item.title || item.transcript) || item.files.length > 0,
 	);
@@ -189,6 +194,10 @@
 						picked={!unpicked.has(draft.id)}
 						onpick={open && canDecide ? (on) => setPicked(draft.id, on) : undefined}
 						oneditchange={(on) => setEditing(draft.id, on)}
+						onedit={open && canDecide
+							? (input) => (edits = withEdit(edits, draft.id, input))
+							: undefined}
+						byline={false}
 					/>
 				</div>
 			{/each}

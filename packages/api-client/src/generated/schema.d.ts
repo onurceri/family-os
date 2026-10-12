@@ -16475,7 +16475,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         /** @enum {string|null} */
-                        reason: "gone" | "withdrawn" | null;
+                        reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
@@ -16760,7 +16760,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         /** @enum {string|null} */
-                        reason: "gone" | "withdrawn" | null;
+                        reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
@@ -16912,7 +16912,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         /** @enum {string|null} */
-                        reason: "gone" | "withdrawn" | null;
+                        reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
@@ -17064,7 +17064,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         /** @enum {string|null} */
-                        reason: "gone" | "withdrawn" | null;
+                        reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
@@ -30230,7 +30230,7 @@ export interface operations {
                                 /** @enum {string} */
                                 status: "waiting" | "approved" | "rejected" | "undone" | "expired" | "failed";
                                 /** @enum {string} */
-                                reason?: "withdrawn" | "gone";
+                                reason?: "withdrawn" | "gone" | "settled";
                                 suggestedAt: string;
                                 decidedAt?: string;
                             }[];
@@ -41004,6 +41004,8 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
+                    /** @description The planned meal as listed, e.g. "Lentil soup, 2026-10-17 dinner"; only shown to the reviewer */
+                    label?: string;
                 };
             };
         };

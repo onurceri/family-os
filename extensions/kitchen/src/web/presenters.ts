@@ -73,3 +73,13 @@ export const addToMealPlanPresenter: DraftPresenter<AddToMealPlanInput> = {
 	fields: mealFields,
 	approveLabel: (c) => c.t('kitchen:draft_approve_meal'),
 };
+
+/** A proposal to take a planned meal off the plan; its label names the meal and its day. */
+export const removeMealPlanEntryPresenter: DraftPresenter<{ id: string; label?: string }> = {
+	actionId: 'kitchen.removeMealPlanEntry',
+	kind: (c) => c.t('kitchen:kind_meal'),
+	icon: CalendarDays,
+	title: (input, c) => input.label || c.t('kitchen:draft_a_meal'),
+	fields: () => [],
+	approveLabel: (c) => c.t('kitchen:draft_approve_remove_meal'),
+};

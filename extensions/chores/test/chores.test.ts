@@ -596,6 +596,33 @@ describe('history', () => {
 		).rejects.toMatchObject({ code: 'not_found' });
 	});
 
+	it('closes a suggested "done" for a date somebody already did, with nothing to undo', async () => {
+		const c = await create();
+		const result = await k.runner.invoke(
+			'chores.markDone',
+			{ id: c.id, dueDate: c.nextDue, label: 'Dishes' },
+			{ kind: 'ai', source: 'assistant', onBehalfOf: ayse.id as never, roleId: 'admin' },
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		const real = await done(c, bora.actor);
+		expect(real.completion).not.toBeNull();
+
+		const closed = await k.runner.approveDraft(result.draftId, ayse.actor);
+		expect(closed.status).toBe('rejected');
+		const [view] = await k
+			.route('core.listDrafts')
+			.call({ actor: ayse.actor, query: { limit: 5 } });
+		expect(view).toMatchObject({ id: result.draftId, reason: 'settled', undoable: false });
+		// Bora's completion stays: no second turn was recorded and none can be undone.
+		const detail = await k
+			.route('chores.getChore')
+			.call({ params: { choreId: c.id }, actor: ayse.actor });
+		expect(
+			detail.history.filter((h: { undoneAt: number | null }) => h.undoneAt === null),
+		).toHaveLength(1);
+		expect(await rejected(k.runner.undoDraft(result.draftId, ayse.actor))).toBe('conflict');
+	});
+
 	it('lets the AI propose marking a chore done; approving does it and undo takes it back', async () => {
 		const c = await create();
 		const result = await k.runner.invoke(

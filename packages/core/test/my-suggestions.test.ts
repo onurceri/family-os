@@ -50,13 +50,24 @@ describe('core.mySuggestions', () => {
 		const byId = (id: string) => after.find((s) => s.id === id);
 		expect(byId(first)).toMatchObject({ status: 'approved' });
 		expect(byId(first)?.decidedAt).toBeTypeOf('string');
-		// The person the suggestion was made for turned it down: that is taking it back.
-		expect(byId(second)).toMatchObject({ status: 'rejected', reason: 'withdrawn' });
+		// The person turned down what their assistant proposed: a rejection, not a withdrawal.
+		expect(byId(second)).toMatchObject({ status: 'rejected' });
+		expect(byId(second)?.reason).toBeUndefined();
 		expect(byId(first)?.reason).toBeUndefined();
 		expect(byId(second)?.label).toContain('B');
 
 		await k.runner.undoDraft(first, adult.actor);
 		expect((await mine(adult.actor)).find((s) => s.id === first)?.status).toBe('undone');
+	});
+
+	it('says withdrawn only when a person took back a suggestion they made themselves', async () => {
+		const kid = await k.member('supervised');
+		const own = await suggest(kid.actor, 'Mine');
+		await k.runner.rejectDraft(own, kid.actor);
+		expect((await mine(kid.actor)).find((s) => s.id === own)).toMatchObject({
+			status: 'rejected',
+			reason: 'withdrawn',
+		});
 	});
 
 	it("lists only the actor's own suggestions", async () => {

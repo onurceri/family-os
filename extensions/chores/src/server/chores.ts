@@ -253,6 +253,24 @@ export const markDone = defineAction({
 	input: MarkDoneSchema,
 	output: MarkDoneResultSchema,
 	requires: choresUse.id,
+	// That date is already done, or the chore moved on: running it records nothing.
+	async settled(ctx, { id, dueDate }) {
+		const row = await tables(ctx.db)
+			.selectFrom('chores_chores')
+			.select('next_due')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return false;
+		const taken = await tables(ctx.db)
+			.selectFrom('chores_completions')
+			.select('id')
+			.where('chore_id', '=', id)
+			.where('due_date', '=', dueDate)
+			.where('undone_at', 'is', null)
+			.executeTakeFirst();
+		return taken !== undefined || row.next_due !== dueDate;
+	},
 	undo: ({ completion }) =>
 		completion ? { actionId: 'chores.undoDone', input: { completionId: completion.id } } : null,
 	ai: {

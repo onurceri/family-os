@@ -707,13 +707,11 @@
 				<!-- The picked day's agenda: below the week strip, and below the month grid. -->
 				{@render tagFilterRow()}
 
-				<div class="flex items-baseline gap-3">
+				<div class="flex items-center gap-3">
 					<h2 class="type-dateline">{formatDate(day, app.formatLocale())}</h2>
 					{#if day !== today}
-						<button
-							type="button"
-							class="text-ink-soft text-sm font-bold underline-offset-4 hover:underline"
-							onclick={() => (selected = null)}>{t('today')}</button
+						<Button variant="secondary" size="sm" onclick={() => (selected = null)}
+							>{t('back_to_today')}</Button
 						>
 					{/if}
 				</div>

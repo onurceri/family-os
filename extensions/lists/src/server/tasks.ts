@@ -265,6 +265,20 @@ export const completeTask = defineAction({
 	output: TaskSchema,
 	requires: tasksComplete.id,
 	approval: 'ai',
+	// Done already, or its due date moved on: running it would change nothing, and its undo
+	// would reopen a completion somebody else made.
+	async settled(ctx, { id, dueDate }) {
+		const row = await tables(ctx.db)
+			.selectFrom('lists_tasks')
+			.select(['done_at', 'due_date'])
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		return (
+			row !== undefined &&
+			(row.done_at !== null || (dueDate !== undefined && dueDate !== row.due_date))
+		);
+	},
 	undo: (task) => ({ actionId: 'lists.reopenTask', input: { id: task.id } }),
 	ai: {
 		description:

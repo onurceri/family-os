@@ -116,5 +116,7 @@
 	"draft_title_archive_recipe": "Tarifi arşivle",
 	"draft_title_add_to_meal_plan": "Öğün planla",
 	"draft_title_update_meal_plan_entry": "Planlanan öğünü değiştir",
-	"draft_title_remove_meal_plan_entry": "Öğünü plandan çıkar"
+	"draft_title_remove_meal_plan_entry": "Öğünü plandan çıkar",
+	"draft_a_meal": "Planlanan bir öğün",
+	"draft_approve_remove_meal": "Çıkar"
 }

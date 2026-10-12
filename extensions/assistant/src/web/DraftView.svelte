@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { DraftCard, type DraftCardStatus } from '@famos/ui/famos';
-	import { draftHeadline, type PresenterContext, proposedByMember } from '@famos/ui/slots';
+	import {
+		askedBy,
+		draftHeadline,
+		draftKicker,
+		type PresenterContext,
+		proposedByMember,
+	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useAssistant } from './i18n.js';
@@ -26,7 +32,7 @@
 	let edited = $state<unknown>(undefined);
 	let busy = $state(false);
 	let local = $state<DraftCardStatus | null>(null);
-	let closedBy = $state<'gone' | 'withdrawn' | null>(null);
+	let closedBy = $state<'gone' | 'settled' | 'withdrawn' | null>(null);
 	let failed = $state(false);
 	// Set by an approval in this card; otherwise the draft itself says whether Undo is possible.
 	let undoable = $state<boolean | null>(null);
@@ -58,6 +64,7 @@
 			}),
 	);
 	const mine = $derived(proposedByMember(draft.proposedBy, app.me()?.id));
+	const asker = $derived(askedBy(draft.proposedBy, app.me()?.id, app.members()));
 	const labels = $derived({
 		approve: presenter?.approveLabel?.(context) ?? a('draft_approve'),
 		edit: a('draft_edit'),
@@ -73,6 +80,8 @@
 		undone: a('draft_undone'),
 		expired: a('draft_expired'),
 		gone: a('draft_gone'),
+		settled: a('draft_settled'),
+		approveConfirm: a('draft_approve_confirm'),
 		withdrawn: a('draft_withdrawn'),
 		withdraw: a('draft_withdraw'),
 		undo: a('draft_undo'),
@@ -143,7 +152,8 @@
 
 <DraftCard
 	quiet
-	kind={presenter?.kind(context) ?? draft.actionId}
+	kind={presenter?.kind(context) ?? draftKicker({ actionId: draft.actionId, t: app.t })}
+	askedBy={asker ? app.t('app:draft_asked_by', { name: asker }) : undefined}
 	icon={presenter?.icon}
 	{title}
 	fields={presenter?.fields(input, context) ?? []}

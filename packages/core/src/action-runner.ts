@@ -10,6 +10,7 @@ import {
 	type IdGenerator,
 	type JobQueue,
 	type Logger,
+	type MemberId,
 	type SecretBox,
 	type UndoStep,
 	type UnitOfWork,
@@ -133,6 +134,9 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
 
 /** `core_drafts.error` of a draft closed because what it was about no longer exists. */
 export const GONE = 'gone';
+
+/** `core_drafts.error` of a draft closed because what it asks for was already so. */
+export const SETTLED = 'settled';
 
 export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	const { registry, bus, clock, ids, logger, access } = deps;
@@ -403,6 +407,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// Auto-approval comes first: a job approves it, so it is not addressed to anyone.
 			const setting = def.autoApprove ? (await readAutoApproval(uow.db))[actionId] : undefined;
 			const personal = factsOf(actor, meta.forMember, personalTo);
+			// A suggestion read from something a member shared belongs to that member: they may take
+			// it back, and it is listed among their own.
+			const proposer: Actor =
+				actor.kind === 'ai' && !actor.onBehalfOf && meta.forMember
+					? { ...actor, onBehalfOf: meta.forMember as MemberId }
+					: actor;
 			const auto =
 				setting !== undefined &&
 				personal.proposerMemberId !== null &&
@@ -423,7 +433,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					input: JSON.stringify(stored),
 					edited_input: null,
 					status: 'pending',
-					proposed_by: JSON.stringify(actor),
+					proposed_by: JSON.stringify(proposer),
 					source_kind: meta.sourceKind ?? null,
 					source_id: meta.sourceId ?? null,
 					summary: meta.summary ?? null,
@@ -479,6 +489,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						summary: meta.summary ?? null,
 						sourceKind: meta.sourceKind ?? null,
 						sourceId: meta.sourceId ?? null,
+						input: JSON.stringify(input),
 					},
 					def,
 					facts.proposerMemberId,
@@ -627,6 +638,20 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.executeTakeFirst();
 				if (Number(claimed.numUpdatedRows) === 0)
 					throw new FamosError('conflict', 'Draft was decided concurrently');
+
+				// Already so (ticked, done): running it changes nothing, and recording it as
+				// applied would offer an undo that reverses somebody else's real change.
+				if (def.settled && (await def.settled({ db: uow.db, family: uow.family }, input))) {
+					await uow.db
+						.withTables<CoreTables>()
+						.updateTable('core_drafts')
+						.set({ status: 'rejected', error: SETTLED, updated_at: clock.now() })
+						.where('id', '=', draftId)
+						.execute();
+					await audit(uow, draft.action_id, 'rejected', draftId);
+					uow.emit(draftUpdated, { draftId, status: 'rejected' });
+					return;
+				}
 
 				const output = await apply(uow, def, input, draftId);
 				await uow.db

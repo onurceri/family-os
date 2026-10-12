@@ -100,6 +100,14 @@ export interface ActionDefinition<
 	 */
 	readonly refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	/**
+	 * Whether what the input asks for is already so (a shopping item already ticked, a task
+	 * already done). Approving a pending draft whose input is settled closes it as "already
+	 * done" instead of running it, so nothing is recorded as applied that changed nothing and no
+	 * undo is offered for it (an undo would reverse somebody else's real change). Read-only and
+	 * cheap; it runs inside the approval's transaction.
+	 */
+	readonly settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
+	/**
 	 * The day a draft of this action is about (`YYYY-MM-DD`, family time), when it is about one.
 	 * Once that day has passed in the family's time zone the suggestion means nothing any more:
 	 * it is no longer shown as waiting and expires by itself. Undefined (or no function) when
@@ -175,6 +183,7 @@ export function defineAction<
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;

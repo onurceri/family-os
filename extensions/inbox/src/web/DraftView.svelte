@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { DraftCard, type DraftCardStatus } from '@famos/ui/famos';
-	import { draftHeadline, type PresenterContext, proposedByMember } from '@famos/ui/slots';
+	import {
+		askedBy,
+		draftHeadline,
+		draftKicker,
+		type PresenterContext,
+		proposedByMember,
+	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
@@ -15,7 +21,9 @@
 		picked,
 		onpick,
 		oneditchange,
+		onedit,
 		quiet = false,
+		byline = true,
 	}: {
 		draft: Draft;
 		compact?: boolean;
@@ -23,6 +31,14 @@
 		picked?: boolean;
 		onpick?: (picked: boolean) => void;
 		oneditchange?: (editing: boolean) => void;
+		/**
+		 * In a group: called with the edited input when the person saves an edit. The card then
+		 * shows the edit and the group approves the suggestion with it; the card itself approves
+		 * nothing when it is saved.
+		 */
+		onedit?: (input: unknown) => void;
+		/** Whether to say who asked, when it was somebody else (a group already names the sharer). */
+		byline?: boolean;
 		/** In a capture's group: a calm card instead of the alarm ring. */
 		quiet?: boolean;
 	} = $props();
@@ -37,11 +53,13 @@
 		hourCycle: app.hourCycle(),
 		timeZone: app.timeZone(),
 	});
-	const input = $derived((draft.editedInput ?? draft.input) as Record<string, unknown>);
+	// An edit saved in a group, until the group's approval sends it.
+	let kept = $state<unknown>(undefined);
+	const input = $derived((kept ?? draft.editedInput ?? draft.input) as Record<string, unknown>);
 	let edited = $state<unknown>(undefined);
 	let busy = $state(false);
 	let local = $state<DraftCardStatus | null>(null);
-	let closedBy = $state<'gone' | 'withdrawn' | null>(null);
+	let closedBy = $state<'gone' | 'settled' | 'withdrawn' | null>(null);
 	let failed = $state(false);
 	// Set by an approval in this card; otherwise the draft itself says whether Undo is possible.
 	let undoable = $state<boolean | null>(null);
@@ -73,10 +91,13 @@
 			}),
 	);
 	const mine = $derived(proposedByMember(draft.proposedBy, app.me()?.id));
+	const asker = $derived(
+		byline ? askedBy(draft.proposedBy, app.me()?.id, app.members()) : undefined,
+	);
 	const labels = $derived({
 		approve: presenter?.approveLabel?.(context) ?? a('draft_approve'),
 		edit: a('draft_edit'),
-		save: a('draft_save'),
+		save: onedit ? a('draft_save_edit') : a('draft_save'),
 		cancel: a('draft_cancel'),
 		reject: a('draft_reject'),
 		rejectConfirm: a('draft_reject_confirm'),
@@ -88,6 +109,8 @@
 		undone: a('draft_undone'),
 		expired: a('draft_expired'),
 		gone: a('draft_gone'),
+		settled: a('draft_settled'),
+		approveConfirm: a('draft_approve_confirm'),
 		withdrawn: a('draft_withdrawn'),
 		withdraw: a('draft_withdraw'),
 		undo: a('draft_undo'),
@@ -160,7 +183,8 @@
 </script>
 
 <DraftCard
-	kind={presenter?.kind(context) ?? draft.actionId}
+	kind={presenter?.kind(context) ?? draftKicker({ actionId: draft.actionId, t: app.t })}
+	askedBy={asker ? app.t('app:draft_asked_by', { name: asker }) : undefined}
 	icon={presenter?.icon}
 	{title}
 	fields={presenter?.fields(input, context) ?? []}
@@ -173,7 +197,10 @@
 	{busy}
 	{canDecide}
 	{compact}
-	{oneditchange}
+	oneditchange={(on) => {
+		if (on) edited = undefined;
+		oneditchange?.(on);
+	}}
 	{quiet}
 	selectable={onpick
 		? {
@@ -191,7 +218,14 @@
 	onundo={status === 'applied' && (undoable ?? draft.undoable) && canDecide
 		? () => void undo(draft.id)
 		: undefined}
-	onsave={Editor ? () => approve(edited) : undefined}
+	onsave={Editor
+		? () => {
+				if (!onedit) return void approve(edited);
+				if (edited === undefined) return;
+				kept = edited;
+				onedit(edited);
+			}
+		: undefined}
 >
 	{#snippet editor()}
 		{#if Editor}

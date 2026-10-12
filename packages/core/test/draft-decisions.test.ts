@@ -175,7 +175,7 @@ describe('the waiting count', () => {
 });
 
 describe('the waiting notice', () => {
-	it('names the action by its translation key when the draft has no summary', async () => {
+	it('names the action by its translation key, and the thing, when the draft has no summary', async () => {
 		await propose(kid);
 		k.clock.advance(60_000);
 		await k.worker.drain();
@@ -185,6 +185,10 @@ describe('the waiting notice', () => {
 			.where('kind', '=', 'core.draftWaiting')
 			.execute();
 		expect(notes.length).toBeGreaterThan(0);
-		expect(notes.every((n) => n.body_key === 'shelf:draft_title_remove')).toBe(true);
+		// The action's translated name, followed by the name of the thing it is about.
+		expect(notes.every((n) => n.body_key === 'app:notify_draft_waiting_named')).toBe(true);
+		expect(
+			notes.every((n) => JSON.parse(n.body_params ?? '{}').what === 'shelf:draft_title_remove'),
+		).toBe(true);
 	});
 });

@@ -26029,6 +26029,7 @@
 												],
 												"enum": [
 													"gone",
+													"settled",
 													"withdrawn",
 													null
 												]
@@ -26678,6 +26679,7 @@
 											],
 											"enum": [
 												"gone",
+												"settled",
 												"withdrawn",
 												null
 											]
@@ -27062,6 +27064,7 @@
 											],
 											"enum": [
 												"gone",
+												"settled",
 												"withdrawn",
 												null
 											]
@@ -27446,6 +27449,7 @@
 											],
 											"enum": [
 												"gone",
+												"settled",
 												"withdrawn",
 												null
 											]
@@ -58514,7 +58518,8 @@
 																		"type": "string",
 																		"enum": [
 																			"withdrawn",
-																			"gone"
+																			"gone",
+																			"settled"
 																		]
 																	},
 																	"suggestedAt": {
@@ -84391,6 +84396,11 @@
 									"id": {
 										"type": "string",
 										"pattern": "^meal_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"label": {
+										"type": "string",
+										"maxLength": 200,
+										"description": "The planned meal as listed, e.g. \"Lentil soup, 2026-10-17 dinner\"; only shown to the reviewer"
 									}
 								},
 								"required": [

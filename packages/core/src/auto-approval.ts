@@ -9,10 +9,12 @@ import {
 	isFamosError,
 	type JobContext,
 	type NotifyRequest,
+	type NotifyText,
 } from '@famos/sdk';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
+import { subjectOf } from './draft-subject.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -131,21 +133,32 @@ export async function qualifies(
 
 /** Tells approvers a suggestion waits for them (collapses several drafts of one source). */
 export function waitingNotice(
-	draft: { id: string; summary: string | null; sourceKind: string | null; sourceId: string | null },
+	draft: {
+		id: string;
+		summary: string | null;
+		sourceKind: string | null;
+		sourceId: string | null;
+		/** The draft's input as stored (JSON): names the thing the notice is about. */
+		input?: string | null;
+	},
 	action: { title: string; draftTitle?: string },
 	except: string | null,
 	delayMs: number,
 ): NotifyRequest {
 	const sourceKind = draft.sourceKind ?? 'draft';
 	// The summary is the proposer's own words; without one the action names what is proposed, in
-	// each reader's language (the English `title` only if an action has no key).
-	const body =
-		draft.summary === null && action.draftTitle
-			? { key: action.draftTitle }
-			: {
-					key: 'app:notify_draft_waiting_body',
-					params: { what: draft.summary ?? action.title },
-				};
+	// each reader's language (the English `title` only if an action has no key), followed by the
+	// name of the thing it is about ("Remove a shopping item: Cheddar").
+	const name = draft.input ? subjectOf(draft.input) : undefined;
+	let body: NotifyText;
+	if (draft.summary === null && action.draftTitle) {
+		body = name
+			? { key: 'app:notify_draft_waiting_named', params: { what: action.draftTitle, name } }
+			: { key: action.draftTitle };
+	} else {
+		const what = draft.summary ?? (name ? `${action.title}: ${name}` : action.title);
+		body = { key: 'app:notify_draft_waiting_body', params: { what } };
+	}
 	return {
 		kind: 'core.draftWaiting',
 		to: { capability: 'core.drafts.approve', ...(except && { except }) },
@@ -328,6 +341,7 @@ export function createAutoApproval(deps: AutoApprovalDeps) {
 							summary: draft.summary,
 							sourceKind: draft.source_kind,
 							sourceId: draft.source_id,
+							input: draft.edited_input ?? draft.input,
 						},
 						def ?? { title: draft.action_id },
 						proposerMemberId,

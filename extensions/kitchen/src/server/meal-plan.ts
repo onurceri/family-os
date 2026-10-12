@@ -1,4 +1,10 @@
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import {
+	type DuplicateContext,
+	defineAction,
+	defineRoute,
+	FamosError,
+	type UnitOfWork,
+} from '@famos/sdk';
 import { addDays, IsoDateSchema, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
@@ -6,6 +12,7 @@ import {
 	MEAL_SLOTS,
 	MealEntrySchema,
 	MealIdSchema,
+	ReviewLabelSchema,
 	UpdateMealEntrySchema,
 } from '../contract/index.ts';
 import { kitchenChanged, kitchenEdit, kitchenView } from './capabilities.ts';
@@ -127,11 +134,23 @@ export const updateMealPlanEntry = defineAction({
 	},
 });
 
+/** The planned meal and its day, for the runner's check that an AI's label names the right one. */
+const mealTitle = async (ctx: DuplicateContext, { id }: { id: string }) => {
+	const row = await tables(ctx.db)
+		.selectFrom('kitchen_meal_plan as m')
+		.leftJoin('kitchen_recipes as r', 'r.id', 'm.recipe_id')
+		.select(['m.title', 'm.date', 'm.slot', 'r.title as recipe_title'])
+		.where('m.id', '=', id)
+		.executeTakeFirst();
+	return row ? `${row.recipe_title ?? row.title}, ${row.date} ${row.slot}` : null;
+};
+
 export const removeMealPlanEntry = defineAction({
 	id: 'kitchen.removeMealPlanEntry',
 	title: 'Take a meal off the plan',
 	draftTitle: 'kitchen:draft_title_remove_meal_plan_entry',
-	input: z.object({ id: MealIdSchema }),
+	targetTitle: mealTitle,
+	input: z.object({ id: MealIdSchema, label: ReviewLabelSchema }),
 	output: z.object({
 		ok: z.literal(true),
 		/** What was taken off, so the removal can be undone; absent when it was already gone. */

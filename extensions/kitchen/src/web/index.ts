@@ -1,6 +1,10 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { UtensilsCrossed } from '@lucide/svelte';
-import { addToMealPlanPresenter, createRecipePresenter } from './presenters.js';
+import {
+	addToMealPlanPresenter,
+	createRecipePresenter,
+	removeMealPlanEntryPresenter,
+} from './presenters.js';
 import { kitchenTimeline } from './timeline.js';
 
 /**
@@ -34,5 +38,5 @@ export default defineWebExtension({
 		},
 	],
 	timeline: [kitchenTimeline],
-	drafts: [createRecipePresenter, addToMealPlanPresenter],
+	drafts: [createRecipePresenter, addToMealPlanPresenter, removeMealPlanEntryPresenter],
 });

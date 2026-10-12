@@ -5,6 +5,7 @@
 	"add": "Add event",
 	"add_to_calendar": "Add to calendar",
 	"today": "Today",
+	"back_to_today": "Back to today",
 	"previous_week": "Previous week",
 	"next_week": "Next week",
 	"next_event": "Next",

@@ -31,6 +31,10 @@
 		expired?: string;
 		/** Shown when what it was about no longer exists. */
 		gone?: string;
+		/** Shown when what it asked for was already so, so approving it changed nothing. */
+		settled?: string;
+		/** Second tap on Approve when it may already be there. */
+		approveConfirm?: string;
 		/** Shown after the person who suggested it took it back. */
 		withdrawn?: string;
 		/** The button with which the person who suggested it takes it back. */
@@ -58,6 +62,7 @@
 		busy = false,
 		canDecide = true,
 		reason = null,
+		askedBy,
 		compact = false,
 		editor,
 		onapprove,
@@ -86,7 +91,9 @@
 		/** False for people who may not approve (children see the proposal and a waiting note). */
 		canDecide?: boolean;
 		/** Why a rejected draft is closed when nobody decided it on its merits. */
-		reason?: 'gone' | 'withdrawn' | null;
+		reason?: 'gone' | 'settled' | 'withdrawn' | null;
+		/** Who asked for it, when it was somebody other than the viewer ("Asked by Noah"). */
+		askedBy?: string;
 		/** A decided draft as one flat row (wide layouts); pending drafts are unchanged. */
 		compact?: boolean;
 		/** Inline editor (from the extension's presenter); shown in edit mode. */
@@ -123,6 +130,14 @@
 	const picking = $derived(
 		Boolean(selectable) && canDecide && (status === 'pending' || status === 'failed'),
 	);
+	/** Approving something that may already be there takes a second tap, as rejecting does. */
+	const warned = $derived((mayExist || mayExistSome) && Boolean(labels.approveConfirm));
+	// Quiet (inside a conversation or a capture): an ordinary filled button at the end.
+	const approveLook = $derived(
+		quiet
+			? 'min-h-11 px-4 bg-ink text-wall ms-auto'
+			: 'min-h-11 px-4 bg-attention text-on-color flex-1',
+	);
 	/** What a draft that did not go in says. */
 	const settled = $derived(
 		status === 'undone'
@@ -131,9 +146,11 @@
 				? (labels.expired ?? labels.rejected)
 				: reason === 'gone'
 					? (labels.gone ?? labels.rejected)
-					: reason === 'withdrawn'
-						? (labels.withdrawn ?? labels.rejected)
-						: labels.rejected,
+					: reason === 'settled'
+						? (labels.settled ?? labels.rejected)
+						: reason === 'withdrawn'
+							? (labels.withdrawn ?? labels.rejected)
+							: labels.rejected,
 	);
 	const ring = $derived(
 		quiet && (status === 'pending' || status === 'failed')
@@ -201,6 +218,7 @@
 				</div>
 				<h3 class="text-lg leading-snug font-extrabold text-balance">{title}</h3>
 				{#if source}<p class="text-ink-soft -mt-2 text-xs">{source}</p>{/if}
+				{#if askedBy}<p class="text-ink-soft -mt-2 text-xs font-semibold">{askedBy}</p>{/if}
 			</div>
 		</div>
 
@@ -310,18 +328,24 @@
 							{labels.edit}
 						</button>
 					{/if}
-					<button
-						type="button"
-						disabled={busy}
-						class={[
-							'min-h-11 rounded-lg px-4 font-bold disabled:opacity-50',
-							// Quiet (inside a conversation or a capture): an ordinary filled button at the end.
-							quiet ? 'bg-ink text-wall ms-auto' : 'bg-attention text-on-color flex-1',
-						]}
-						onclick={onapprove}
-					>
-						{status === 'failed' ? labels.retry : labels.approve}
-					</button>
+					{#if warned && status === 'pending' && labels.approveConfirm}
+						<ConfirmButton
+							label={labels.approve}
+							confirmLabel={labels.approveConfirm}
+							onconfirm={onapprove}
+							disabled={busy}
+							look={approveLook}
+						/>
+					{:else}
+						<button
+							type="button"
+							disabled={busy}
+							class={['rounded-lg font-bold disabled:opacity-50', approveLook]}
+							onclick={onapprove}
+						>
+							{status === 'failed' ? labels.retry : labels.approve}
+						</button>
+					{/if}
 				</div>
 			{/if}
 		{/if}
