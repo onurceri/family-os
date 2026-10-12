@@ -581,10 +581,13 @@ describe('AI SDK LlmPort', () => {
 			prompt: 'School trip Friday',
 			timeoutMs: 1_000,
 			maxOutputTokens: 321,
+			temperature: 0,
 		});
 		expect(seen.at(-1)?.body.max_tokens).toBe(321);
+		expect(seen.at(-1)?.body.temperature).toBe(0);
 		await ask();
 		expect(seen.at(-1)?.body.max_tokens).toBeUndefined();
+		expect(seen.at(-1)?.body.temperature).toBeUndefined();
 
 		await useModel('cut-off');
 		const error = await llm

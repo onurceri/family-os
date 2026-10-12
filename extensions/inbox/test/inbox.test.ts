@@ -984,6 +984,9 @@ describe('what the model made of an item', () => {
 	it('tidies the label', () => {
 		expect(tidySummary('  School   trip\nnotice ')).toBe('School trip notice');
 		expect(tidySummary('   ')).toBeNull();
+		expect(tidySummary('Where is it going?')).toBe('Where is it going');
+		expect(tidySummary('Dentist reminder.')).toBe('Dentist reminder');
+		expect(tidySummary('?')).toBeNull();
 	});
 });
 

@@ -98,7 +98,13 @@ function shortLabel(maxWords = 7): Check {
 			if (!label || label.length > 80) return false;
 			if (label.split(/\s+/).length > maxWords) return false;
 			if (/[.!?]\s*$/.test(label)) return false;
-			return label.toLowerCase() !== text.trim().toLowerCase();
+			// A very short item (a two-word question) may be its own label; a longer one is retold.
+			const words = (value: string) =>
+				value
+					.toLowerCase()
+					.replace(/[^\p{L}\p{N}\s]/gu, '')
+					.trim();
+			return text.trim().split(/\s+/).length <= 3 || words(label) !== words(text);
 		},
 	};
 }

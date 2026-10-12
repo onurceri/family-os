@@ -49,6 +49,12 @@ export interface LlmObjectRequest<T> {
 	 * call fails with `output_too_long`, which retrying does not fix.
 	 */
 	maxOutputTokens?: number;
+	/**
+	 * How freely the model chooses its words (0 = always the most likely). Left out, the
+	 * provider's default applies, which for many models is high enough that the same input gets
+	 * a different answer each time; reading data out of text wants 0.
+	 */
+	temperature?: number;
 	/** Recorded in usage. */
 	memberId?: string | null;
 	jobId?: string | null;

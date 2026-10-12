@@ -395,6 +395,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					...(request.maxOutputTokens !== undefined && {
 						maxOutputTokens: request.maxOutputTokens,
 					}),
+					...(request.temperature !== undefined && { temperature: request.temperature }),
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),
 				});

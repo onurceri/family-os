@@ -158,9 +158,15 @@ const SUMMARY_DESCRIPTION = `A short label for the shared item in the family lan
 const KIND_DESCRIPTION =
 	'actionable: the item asks for or implies something to add or do. question: the item is a question or request addressed to the family organizer or assistant, not something shared to file or act on. nothing: anything else, with nothing to add. Classify only; never answer a question.';
 
-/** The model's label, tidied: one line, and cut at a word boundary when it runs long. */
+/**
+ * The model's label, tidied: one line, no closing full stop, question or exclamation mark (it is
+ * shown as a heading), and cut at a word boundary when it runs long.
+ */
 export function tidySummary(raw: string): string | null {
-	const text = raw.replace(/\s+/g, ' ').trim();
+	const text = raw
+		.replace(/\s+/g, ' ')
+		.trim()
+		.replace(/[\s.!?\u3002\uff1f\uff01]+$/u, '');
 	if (text.length <= SUMMARY_MAX) return text || null;
 	const cut = text.slice(0, SUMMARY_MAX - 1);
 	const space = cut.lastIndexOf(' ');
@@ -736,6 +742,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				files,
 				timeoutMs: 90_000,
 				maxOutputTokens: EXTRACT_MAX_OUTPUT_TOKENS,
+				// Reading facts out of a message: the same message should give the same proposals.
+				temperature: 0,
 				memberId: row.created_by,
 				jobId: run.id,
 			});
