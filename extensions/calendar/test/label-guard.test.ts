@@ -42,7 +42,7 @@ describe('the words an AI uses for a thing must name it', () => {
 				k.runner.invoke(action, { id: eventId, label: 'Sunday planning', ...extra }, AI),
 			).rejects.toMatchObject({
 				message: expect.stringContaining(
-					"That is 'Biology test', not 'Sunday planning'. If it is not on the list, tell the person. Tell the person this and do not suggest anything else for it.",
+					"That is 'Biology test', not 'Sunday planning'. Tell the person this and do not suggest anything else for it.",
 				),
 			});
 		}

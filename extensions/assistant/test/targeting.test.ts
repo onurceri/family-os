@@ -69,7 +69,7 @@ describe('an assistant turn never acts on the closest thing', () => {
 		expect(found?.result).toContain('Delft project call');
 		expect(unlabelled?.result).toContain('Say which one you mean');
 		expect(wrong?.result).toContain(
-			"That is 'Delft project call', not 'Delft board meeting'. If it is not on the list, tell the person.",
+			"That is 'Delft project call', not 'Delft board meeting'.",
 		);
 		expect(await drafts()).toEqual([]);
 	});

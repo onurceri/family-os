@@ -798,7 +798,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (title !== null && !labelNamesTitle(said, title))
 				throw new FamosError(
 					'conflict',
-					`That is '${title}', not '${said}'. If it is not on the list, tell the person.${CLOSED_MATTER}`,
+					`That is '${title}', not '${said}'.${CLOSED_MATTER}`,
 				);
 		}
 		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
