@@ -128,6 +128,22 @@ describe('ingredients to the shopping list', () => {
 		expect(await shoppingItems()).toHaveLength(0);
 	});
 
+	it('matches lines loosely and reports the ones that match nothing', async () => {
+		const r = await addRecipe();
+		const result = await applied<{ added: number; alreadyThere: number; unknownLines: string[] }>(
+			k,
+			'kitchen.addIngredientsToShopping',
+			{ recipeId: r.id, lines: ['  1 ONION. ', '2  carrots', 'a line someone made up'] },
+			admin.actor,
+		);
+		expect(result).toMatchObject({
+			added: 2,
+			alreadyThere: 0,
+			unknownLines: ['a line someone made up'],
+		});
+		expect((await shoppingItems()).map((i) => i.title).toSorted()).toEqual(['Carrots', 'Onion']);
+	});
+
 	it('refuses with a clear error when Lists is turned off, and adds nothing', async () => {
 		const r = await addRecipe();
 		await applied(

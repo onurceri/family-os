@@ -40,6 +40,15 @@ describe('ingredientToItem', () => {
 		expect(en('1,5 kg potatoes, peeled')).toEqual({ title: 'Potatoes', quantity: '1,5 kg' });
 	});
 
+	it('drops the preparation words that were missing, and reads a lone amount as the quantity', () => {
+		expect(en('Lemon, juiced')).toEqual({ title: 'Lemon' });
+		expect(en('2 red onions, cut in wedges')).toEqual({ title: 'Red onions', quantity: '2' });
+		expect(en('1 chicken breast, boneless')).toEqual({ title: 'Chicken breast', quantity: '1' });
+		expect(en('Lime, 1')).toEqual({ title: 'Lime', quantity: '1' });
+		expect(en('Flour, 2 cups')).toEqual({ title: 'Flour', quantity: '2 cups' });
+		expect(tr('Limon, suyu sıkılmış')).toEqual({ title: 'Limon' });
+	});
+
 	it('reads a line without an amount as all title', () => {
 		expect(en('fresh parsley')).toEqual({ title: 'Fresh parsley' });
 		expect(en('  ')).toBeNull();

@@ -1,4 +1,9 @@
-import { amountPattern, type ShoppingItemInput, splitAmount } from '@famos/ext-lists/contract';
+import {
+	amountOnlyPattern,
+	amountPattern,
+	type ShoppingItemInput,
+	splitAmount,
+} from '@famos/ext-lists/contract';
 
 /** Shopping item limits (lists contract). */
 const TITLE_MAX = 120;
@@ -39,8 +44,9 @@ const capitalise = (text: string, locale: string) => {
 /**
  * Reads a recipe's ingredient line as a shopping item: "60 g feta, crumbled" becomes "Feta" with
  * the quantity "60 g"; "1 tin chopped tomatoes (400 g)" becomes "Chopped tomatoes", "1 tin
- * (400 g)". A note after a comma is dropped when it names a preparation; an amount in brackets
- * joins the quantity and other bracketed notes are dropped. Null for a line with no product.
+ * (400 g)". A note after a comma is dropped when it names a preparation, and one that is only an
+ * amount ("Lime, 1") becomes the quantity; an amount in brackets joins the quantity and other
+ * bracketed notes are dropped. Null for a line with no product.
  */
 export function ingredientToItem(
 	line: string,
@@ -58,11 +64,14 @@ export function ingredientToItem(
 		.trim();
 
 	const [head = '', ...notes] = withoutBrackets.split(/,(?!\d)/);
+	const alone = amountOnlyPattern(words.units);
 	const kept = notes.filter((note) => note.trim() && !hasPhrase(note, words.preparation, locale));
-	const { title: name, quantity } = splitAmount(
-		[head, ...kept].map((part) => part.trim()).join(', '),
-		pattern,
-	);
+	// A note that is only an amount ("Lime, 1") is the quantity, not part of the name.
+	const noteAmount = kept.find((note) => alone.test(note.trim()))?.trim();
+	const named = kept.filter((note) => note.trim() !== noteAmount);
+	const split = splitAmount([head, ...named].map((part) => part.trim()).join(', '), pattern);
+	const name = split.title;
+	const quantity = split.quantity ?? noteAmount;
 
 	let title = name;
 	if (quantity) {
