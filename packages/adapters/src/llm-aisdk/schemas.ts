@@ -154,6 +154,10 @@ export const AiActivityEntrySchema = z.object({
 	model: z.string(),
 	inputTokens: z.number().int().nullable(),
 	outputTokens: z.number().int().nullable(),
+	/** The part of the output spent on thinking, when the provider reported it. */
+	reasoningTokens: z.number().int().nullable(),
+	/** Why the model stopped (`stop`, `length` …); null when it did not answer. */
+	finishReason: z.string().nullable(),
 	/** USD, when known. */
 	cost: z.number().nullable(),
 	latencyMs: z.number().int(),

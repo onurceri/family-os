@@ -13,6 +13,7 @@ import {
 	type LlmObjectResult,
 	type LlmPolicy,
 	type LlmPort,
+	type LlmReasoning,
 	type LlmTranscribeRequest,
 	type LlmTranscribeResult,
 	type Logger,
@@ -37,14 +38,33 @@ import { type AiSettingsService, monthBounds, type ResolvedProvider } from './se
 import { aiTables } from './tables.ts';
 
 /** Builds the model client for a provider; tests replace it with a mock model. */
-export type ModelFactory = (provider: ResolvedProvider, model: string) => LanguageModel;
+export type ModelFactory = (
+	provider: ResolvedProvider,
+	model: string,
+	options?: ModelOptions,
+) => LanguageModel;
+
+export interface ModelOptions {
+	/** Only for providers that take it in the request body rather than as `reasoning_effort`. */
+	reasoning?: LlmReasoning;
+}
+
+/** The provider-neutral level as the OpenAI-compatible `reasoning_effort` value. */
+const effortOf = (level: LlmReasoning) => (level === 'off' ? ('none' as const) : level);
+
+/**
+ * Whether the reasoning level goes to the provider as a top-level option (the SDK sends it
+ * as `reasoning_effort`). OpenRouter takes it in a `reasoning` object instead, added in
+ * `transformRequestBody`.
+ */
+const reasoningInBody = (provider: ResolvedProvider) => provider.kind === 'openrouter';
 
 /**
  * One OpenAI-compatible client covers every provider kind (structured output,
  * images and OpenRouter's reported cost all work through it). OpenRouter is asked to include the
  * call's cost in the usage block.
  */
-export const openAiCompatibleModel: ModelFactory = (provider, model) =>
+export const openAiCompatibleModel: ModelFactory = (provider, model, options) =>
 	createOpenAICompatible({
 		name: provider.kind,
 		baseURL: provider.baseUrl,
@@ -55,6 +75,7 @@ export const openAiCompatibleModel: ModelFactory = (provider, model) =>
 			transformRequestBody: (body: Record<string, unknown>) => ({
 				...body,
 				usage: { include: true },
+				...(options?.reasoning && { reasoning: { effort: effortOf(options.reasoning) } }),
 				// Only endpoints that keep no prompts and do not train on them (verified 2026-10-06).
 				...(provider.zeroRetention && { provider: { zdr: true, data_collection: 'deny' } }),
 			}),
@@ -132,14 +153,22 @@ function toLlmError(error: unknown): LlmError {
 		return new LlmError('timeout', 'The model did not answer in time', { cause: error });
 	}
 	if (NoObjectGeneratedError.isInstance(error)) {
+		const usage = {
+			inputTokens: error.usage?.inputTokens ?? null,
+			outputTokens: error.usage?.outputTokens ?? null,
+			reasoningTokens: error.usage?.outputTokenDetails?.reasoningTokens || null,
+			finishReason: error.finishReason ?? null,
+		};
 		// The answer was cut off by the output cap: a retry would be cut off the same way.
 		if (error.finishReason === 'length') {
 			return new LlmError('output_too_long', "The model's answer was longer than allowed", {
 				cause: error,
+				usage,
 			});
 		}
 		return new LlmError('invalid_output', 'The model did not return the expected structure', {
 			cause: error,
+			usage,
 		});
 	}
 	if (APICallError.isInstance(error)) {
@@ -293,6 +322,8 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 		return async (fields: {
 			input?: number | null;
 			output?: number | null;
+			reasoning?: number | null;
+			finishReason?: string | null;
 			cost?: number | null;
 			errorCode?: string | null;
 		}) => {
@@ -309,6 +340,8 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					job_id: request.jobId ?? null,
 					input_tokens: fields.input ?? null,
 					output_tokens: fields.output ?? null,
+					reasoning_tokens: fields.reasoning ?? null,
+					finish_reason: fields.finishReason ?? null,
 					cost_micros: fields.cost == null ? null : Math.round(fields.cost * 1_000_000),
 					latency_ms: Math.max(0, deps.clock.now() - started),
 					error_code: fields.errorCode ?? null,
@@ -317,6 +350,15 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				.execute();
 		};
 	}
+
+	/** What a failed call used, as the fields `record` takes. */
+	const failureFields = (failure: LlmError) => ({
+		errorCode: failure.code,
+		input: failure.usage?.inputTokens ?? null,
+		output: failure.usage?.outputTokens ?? null,
+		reasoning: failure.usage?.reasoningTokens ?? null,
+		finishReason: failure.usage?.finishReason ?? null,
+	});
 
 	async function policy(feature: string, roleName: ModelRole): Promise<LlmPolicy> {
 		const [{ sendFiles, sendPeople, sendVoice }, { enabled, off }, roles] = await Promise.all([
@@ -359,9 +401,9 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			}
 			await checkLimits();
 
-			try {
+			const attempt = async (reasoning: LlmReasoning | undefined) => {
 				const result = await generateText({
-					model: factory(provider, role.model),
+					model: factory(provider, role.model, reasoning ? { reasoning } : undefined),
 					output: Output.object({
 						schema: request.jsonSchema
 							? jsonSchema<T>(request.jsonSchema, {
@@ -396,20 +438,46 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 						maxOutputTokens: request.maxOutputTokens,
 					}),
 					...(request.temperature !== undefined && { temperature: request.temperature }),
+					...(reasoning && !reasoningInBody(provider) && { reasoning: effortOf(reasoning) }),
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),
 				});
+				return result;
+			};
+
+			try {
+				let result: Awaited<ReturnType<typeof attempt>>;
+				try {
+					result = await attempt(request.reasoning);
+				} catch (error) {
+					// Models without a thinking mode can refuse the setting; asking again without it
+					// still gets the answer.
+					if (request.reasoning && toLlmError(error).code === 'rejected') {
+						logger.warn(
+							{ feature: request.feature, model: label },
+							'provider rejected the reasoning setting; asking again without it',
+						);
+						result = await attempt(undefined);
+					} else throw error;
+				}
 				const reported = (result.providerMetadata?.famos as { cost?: number } | undefined)?.cost;
 				const usage = {
 					inputTokens: result.usage.inputTokens ?? null,
 					outputTokens: result.usage.outputTokens ?? null,
+					reasoningTokens: result.usage.outputTokenDetails?.reasoningTokens || null,
 					cost: typeof reported === 'number' ? reported : provider.kind === 'ollama' ? 0 : null,
 				};
-				await record({ input: usage.inputTokens, output: usage.outputTokens, cost: usage.cost });
+				await record({
+					input: usage.inputTokens,
+					output: usage.outputTokens,
+					reasoning: usage.reasoningTokens,
+					finishReason: result.finishReason ?? null,
+					cost: usage.cost,
+				});
 				return { output: result.output as T, model: label, usage };
 			} catch (error) {
 				const failure = toLlmError(error);
-				await record({ errorCode: failure.code });
+				await record(failureFields(failure));
 				logger.warn(
 					// The provider's error text describes the request, not family content.
 					{
@@ -418,6 +486,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 						model: label,
 						code: failure.code,
 						reason: failure.message.slice(0, 300),
+						...failure.usage,
 					},
 					'model call failed',
 				);

@@ -31,6 +31,10 @@ export type AiTables = {
 		job_id: string | null;
 		input_tokens: number | null;
 		output_tokens: number | null;
+		/** The part of the output spent on thinking, when the provider reported it. */
+		reasoning_tokens: number | null;
+		/** Why the model stopped (`stop`, `length` …), when it answered. */
+		finish_reason: string | null;
 		/** Millionths of a USD, when known. */
 		cost_micros: number | null;
 		latency_ms: number;
@@ -82,6 +86,12 @@ export const aiMigrations: Migrations = {
 				.modifyEnd(sql`strict`)
 				.execute();
 			await db.schema.createIndex('ai_usage_at_idx').on('ai_usage').columns(['at']).execute();
+		},
+	},
+	'0002_usage_reasoning': {
+		async up(db) {
+			await db.schema.alterTable('ai_usage').addColumn('reasoning_tokens', 'integer').execute();
+			await db.schema.alterTable('ai_usage').addColumn('finish_reason', 'text').execute();
 		},
 	},
 };

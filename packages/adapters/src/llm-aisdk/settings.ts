@@ -450,6 +450,8 @@ export function createAiSettings(deps: AiSettingsDeps) {
 						model: split < 0 ? r.model : r.model.slice(split + 3),
 						inputTokens: r.input_tokens,
 						outputTokens: r.output_tokens,
+						reasoningTokens: r.reasoning_tokens,
+						finishReason: r.finish_reason,
 						cost: r.cost_micros === null ? null : r.cost_micros / 1_000_000,
 						latencyMs: r.latency_ms,
 						errorCode: r.error_code,

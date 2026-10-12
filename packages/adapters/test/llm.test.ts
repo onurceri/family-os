@@ -97,6 +97,11 @@ const server = http.createServer((req, res) => {
 			);
 		if (model === 'denied')
 			return res.writeHead(401).end(JSON.stringify({ error: { message: 'bad key' } }));
+		// A model without a thinking mode refuses the setting.
+		if (model === 'no-thinking' && (body.reasoning_effort || body.reasoning))
+			return res
+				.writeHead(400)
+				.end(JSON.stringify({ error: { message: 'Unsupported parameter: reasoning_effort' } }));
 		const content =
 			model === 'rambling'
 				? 'not json at all'
@@ -120,6 +125,7 @@ const server = http.createServer((req, res) => {
 					prompt_tokens: 120,
 					completion_tokens: 30,
 					total_tokens: 150,
+					...(model === 'cut-off' && { completion_tokens_details: { reasoning_tokens: 25 } }),
 					...(model === 'priced' && { cost: 0.00042 }),
 				},
 			}),
@@ -460,7 +466,7 @@ describe('AI SDK LlmPort', () => {
 		expect(result).toEqual({
 			output: { title: 'Zoo trip', date: '2026-10-17' },
 			model: 'Router / priced',
-			usage: { inputTokens: 120, outputTokens: 30, cost: 0.00042 },
+			usage: { inputTokens: 120, outputTokens: 30, reasoningTokens: null, cost: 0.00042 },
 		});
 		// OpenRouter is asked to report cost; the schema goes out as a JSON schema.
 		expect(seen[0]).toMatchObject({
@@ -602,6 +608,71 @@ describe('AI SDK LlmPort', () => {
 			})
 			.catch((e: unknown) => e);
 		expect(error).toMatchObject({ code: 'output_too_long', retryable: false });
+		// The failed call still says what it used and why it stopped.
+		expect((error as LlmError).usage).toEqual({
+			inputTokens: 120,
+			outputTokens: 30,
+			reasoningTokens: 25,
+			finishReason: 'length',
+		});
+		const [entry] = (await settings.activity()).entries;
+		expect(entry).toMatchObject({
+			errorCode: 'output_too_long',
+			inputTokens: 120,
+			outputTokens: 30,
+			reasoningTokens: 25,
+			finishReason: 'length',
+		});
+	});
+
+	describe('reasoning', () => {
+		const askWith = (reasoning?: 'off' | 'low' | 'medium' | 'high') =>
+			llm.generateObject({
+				role: 'smart',
+				feature: 'test.extract',
+				areas: ['test'],
+				schema: Trip,
+				prompt: 'School trip Friday',
+				timeoutMs: CALL_TIMEOUT_MS,
+				...(reasoning && { reasoning }),
+			});
+
+		it('sends nothing unless asked', async () => {
+			await useModel('priced', 'openai-compatible');
+			await askWith();
+			expect(seen[0]?.body).not.toHaveProperty('reasoning_effort');
+			expect(seen[0]?.body).not.toHaveProperty('reasoning');
+			await useModel('priced');
+			await askWith();
+			expect(seen[1]?.body).not.toHaveProperty('reasoning_effort');
+			expect(seen[1]?.body).not.toHaveProperty('reasoning');
+		});
+
+		it('sends reasoning_effort to OpenAI-compatible providers', async () => {
+			await useModel('priced', 'openai-compatible');
+			await askWith('low');
+			expect(seen[0]?.body.reasoning_effort).toBe('low');
+			await askWith('off');
+			expect(seen[1]?.body.reasoning_effort).toBe('none');
+			expect(seen[1]?.body).not.toHaveProperty('reasoning');
+		});
+
+		it('sends a reasoning object to OpenRouter', async () => {
+			await useModel('priced');
+			await askWith('low');
+			expect(seen[0]?.body.reasoning).toEqual({ effort: 'low' });
+			expect(seen[0]?.body).not.toHaveProperty('reasoning_effort');
+			await askWith('off');
+			expect(seen[1]?.body.reasoning).toEqual({ effort: 'none' });
+		});
+
+		it('asks again without it when the provider refuses the setting', async () => {
+			await useModel('no-thinking', 'openai-compatible');
+			await expect(askWith('low')).resolves.toMatchObject({ output: { title: 'Zoo trip' } });
+			expect(seen).toHaveLength(2);
+			expect(seen[0]?.body.reasoning_effort).toBe('low');
+			expect(seen[1]?.body).not.toHaveProperty('reasoning_effort');
+		});
 	});
 
 	it('stops at the monthly limits', async () => {

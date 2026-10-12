@@ -7112,6 +7112,8 @@ export interface operations {
                             model: string;
                             inputTokens: number | null;
                             outputTokens: number | null;
+                            reasoningTokens: number | null;
+                            finishReason: string | null;
                             cost: number | null;
                             latencyMs: number;
                             errorCode: string | null;

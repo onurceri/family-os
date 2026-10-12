@@ -110,13 +110,13 @@ export const addTask = defineAction({
 		except: (actor, input) => actor.kind === 'member' && input.assigneeId === actor.memberId,
 	},
 	undo: (task) => ({ actionId: 'lists.deleteTask', input: { id: task.id } }),
-	// An open task with the same title and due date.
+	// A task with the same title and due date, done or not: one that was ticked off the same
+	// day it was suggested again is still the same piece of work.
 	async alreadyThere(ctx, input) {
 		const { locale } = await ctx.family.settings();
 		const rows = await tables(ctx.db)
 			.selectFrom('lists_tasks')
 			.select('title')
-			.where('done_at', 'is', null)
 			.where('deleted_at', 'is', null)
 			.where('due_date', input.dueDate ? '=' : 'is', input.dueDate ?? null)
 			.execute();

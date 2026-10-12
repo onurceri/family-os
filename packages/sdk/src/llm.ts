@@ -55,10 +55,20 @@ export interface LlmObjectRequest<T> {
 	 * a different answer each time; reading data out of text wants 0.
 	 */
 	temperature?: number;
+	/**
+	 * How much the model may think before it answers, on models that can. Left out, the
+	 * provider's default applies. Reading data out of text wants little or none: thinking counts
+	 * against `maxOutputTokens` and can fill it before the answer starts. A provider that
+	 * refuses the setting is asked again without it.
+	 */
+	reasoning?: LlmReasoning;
 	/** Recorded in usage. */
 	memberId?: string | null;
 	jobId?: string | null;
 }
+
+export const LLM_REASONING = ['off', 'low', 'medium', 'high'] as const;
+export type LlmReasoning = (typeof LLM_REASONING)[number];
 
 /** One message of a chat. Tool results are data, never instructions. */
 export interface LlmChatMessage {
@@ -173,6 +183,8 @@ export interface LlmEmbedResult {
 export interface LlmUsage {
 	inputTokens: number | null;
 	outputTokens: number | null;
+	/** The part of the output spent on thinking, when the provider reports it. */
+	reasoningTokens?: number | null;
 	/** USD, when the provider reports it (OpenRouter); local models cost 0. */
 	cost: number | null;
 }
@@ -256,14 +268,30 @@ export type LlmErrorCode =
 	/** The answer hit the request's `maxOutputTokens` before it was complete. */
 	| 'output_too_long';
 
+/** What a failed call used before it failed, when the provider said. */
+export interface LlmFailureUsage {
+	inputTokens: number | null;
+	outputTokens: number | null;
+	reasoningTokens: number | null;
+	/** Why the model stopped (`length`, `stop` …). */
+	finishReason: string | null;
+}
+
 const RETRYABLE: ReadonlySet<LlmErrorCode> = new Set(['timeout', 'unavailable', 'invalid_output']);
 
 export class LlmError extends Error {
 	readonly code: LlmErrorCode;
 	readonly retryable: boolean;
+	/** Set on failures after the model had answered (cut off, unusable). */
+	readonly usage: LlmFailureUsage | undefined;
 
-	constructor(code: LlmErrorCode, message: string, options?: { cause?: unknown }) {
+	constructor(
+		code: LlmErrorCode,
+		message: string,
+		options?: { cause?: unknown; usage?: LlmFailureUsage },
+	) {
 		super(message, options);
+		this.usage = options?.usage;
 		this.name = 'LlmError';
 		this.code = code;
 		this.retryable = RETRYABLE.has(code);

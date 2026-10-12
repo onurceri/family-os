@@ -136,6 +136,18 @@
 									>{entry.provider ? `${entry.provider} / ${entry.model}` : entry.model}</span
 								>
 								<span class="text-ink-soft tabular-nums">{cost(entry.cost)}</span>
+								{#if entry.inputTokens !== null || entry.outputTokens !== null}
+									<span class="text-ink-soft tabular-nums" data-testid="ai-activity-tokens"
+										>{t('ai_activity_tokens', {
+											input: entry.inputTokens ?? 0,
+											output: entry.outputTokens ?? 0,
+										})}{entry.reasoningTokens
+											? ` ${t('ai_activity_thinking', { count: entry.reasoningTokens })}`
+											: ''}{entry.finishReason === 'length'
+											? ` ${t('ai_activity_cut_off')}`
+											: ''}</span
+									>
+								{/if}
 								<span class={entry.errorCode ? 'text-attention font-semibold' : 'text-ink-soft'}
 									>{result(entry.errorCode)}</span
 								>

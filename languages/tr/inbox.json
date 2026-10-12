@@ -25,7 +25,7 @@
 	"error_timeout": "Yapay zekâ çok geç yanıt verdi.",
 	"error_unavailable": "Yapay zekâ hizmeti şu an yanıt vermiyor.",
 	"error_invalid_output": "Yapay zekânın yanıtı anlaşılamadı.",
-	"error_output_too_long": "Yapay zekânın tek seferde okuması için fazla uzun. Daha küçük parçalar halinde paylaşın.",
+	"error_output_too_long": "Yapay zekânın cevabı kontrolden çıktı. Tekrar deneyin.",
 	"error_unsupported": "Bu tür bir dosya okunamıyor.",
 	"error_data_policy": "Bu modelin veri saklamayan bir sağlayıcısı yok. Ayarlar → Yapay zekâ'dan başka bir model seç ya da veri saklayan sağlayıcılara izin ver.",
 	"error_ai_local_required": "Bu alan yalnızca kendi ağındaki yapay zekâyı kullanabilir, ama bu tür iş için böyle biri seçilmemiş. Ayarlar → Yapay zekâ'dan ağındaki bir hizmeti seç ya da alanın yapay zekâ erişimini değiştir.",

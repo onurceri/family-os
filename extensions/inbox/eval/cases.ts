@@ -546,6 +546,23 @@ const CLUB_CASES: Case[] = [
 		],
 	},
 	{
+		// Found in use: a fee task went to a member nothing in the message named, and was not marked.
+		name: 'Task nobody is named for is not silently assigned (English)',
+		text: 'Swim club: the autumn term fee of 120 is due by Friday 16 October. Please pay at the front desk.',
+		checks: [
+			has('lists.addTask', 'the fee task due 16 Oct', (i) => i.dueDate === '2026-10-16'),
+			{
+				label: 'lists.addTask: no assignee, or the assignee is "check this" on assigneeId',
+				pass: (ds) =>
+					of(ds, 'lists.addTask').some(
+						(d) =>
+							d.input.dueDate === '2026-10-16' &&
+							(d.input.assigneeId === undefined || d.uncertainFields.includes('assigneeId')),
+					),
+			},
+		],
+	},
+	{
 		// Found in use: a message to the sharer became a whole-family event.
 		name: 'Message addressed to the person who shared it (English)',
 		text: 'Note to self: my dentist check-up is on Saturday 10 October at 9am.',

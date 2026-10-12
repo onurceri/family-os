@@ -478,6 +478,30 @@ describe('duplicate hint', () => {
 	});
 });
 
+describe('duplicate hint for finished tasks', () => {
+	it('still sees a task that was applied and then ticked off', async () => {
+		const { actor } = await k.member('admin');
+		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const task = await applied<{ id: string }>(
+			k.runner.invoke(
+				'lists.addTask',
+				{ title: 'Pay the swim club fee', dueDate: '2026-10-09' },
+				actor,
+			),
+		);
+		await applied(k.runner.invoke('lists.completeTask', { id: task.id }, actor));
+		await k.runner.invoke(
+			'lists.addTask',
+			{ title: 'Pay the swim club fee', dueDate: '2026-10-09' },
+			ai,
+		);
+		const [draft] = await k
+			.route('core.listDrafts')
+			.call({ query: { status: 'pending', limit: 10 } });
+		expect(draft).toMatchObject({ mayExist: true });
+	});
+});
+
 describe('taking back a suggested shopping add', () => {
 	it('puts merged items back as they were and removes the new ones', async () => {
 		const { actor } = await k.member('admin');

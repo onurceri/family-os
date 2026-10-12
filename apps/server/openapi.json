@@ -5631,6 +5631,18 @@
 															"null"
 														]
 													},
+													"reasoningTokens": {
+														"type": [
+															"integer",
+															"null"
+														]
+													},
+													"finishReason": {
+														"type": [
+															"string",
+															"null"
+														]
+													},
 													"cost": {
 														"type": [
 															"number",
@@ -5663,6 +5675,8 @@
 													"model",
 													"inputTokens",
 													"outputTokens",
+													"reasoningTokens",
+													"finishReason",
 													"cost",
 													"latencyMs",
 													"errorCode",
