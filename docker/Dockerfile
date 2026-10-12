@@ -2,7 +2,10 @@
 # FamilyOS: one image for amd64 and arm64. Debian slim, not Alpine (native modules on Pi).
 ARG NODE_VERSION=24
 
-FROM node:${NODE_VERSION}-bookworm-slim AS build
+# The build stage only makes architecture-independent output (the web app, the bundled server and
+# the packs; native better-sqlite3 stays external), so it runs once on the builder's own platform
+# instead of under emulation for each target. Only the runtime stage is built per architecture.
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS build
 WORKDIR /repo
 RUN npm install -g pnpm@12.9.1
 # Install dependencies first for better layer caching.
