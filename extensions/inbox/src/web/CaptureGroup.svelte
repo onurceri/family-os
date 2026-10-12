@@ -10,7 +10,7 @@
 	import { approvals, type Edits, withEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
-	import { type Capture, captureLine } from './item-view.js';
+	import { approveSelectedKey, type Capture, captureLine } from './item-view.js';
 
 	/**
 	 * One capture and what was found in it, decided together: a line saying what it is, the
@@ -213,7 +213,7 @@
 				disabled={busy}
 			/>
 			<Button size="lg" disabled={busy || picked.length === 0} onclick={addSelected}
-				>{t('add_selected', { n: picked.length })}</Button
+				>{t(approveSelectedKey(picked), { n: picked.length })}</Button
 			>
 		</footer>
 	{:else if removable}

@@ -139,6 +139,7 @@
 	"from": "from {{name}}",
 	"pick_suggestion": "Include: {{name}}",
 	"add_selected": "Add selected ({{n}})",
+	"apply_selected": "Apply selected ({{n}})",
 	"dismiss_rest": "Dismiss the rest",
 	"dismiss_all": "Dismiss all",
 	"dismiss_rest_confirm": "Tap again to dismiss",

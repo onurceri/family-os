@@ -139,6 +139,7 @@
 	"from": "{{name}} kişisinden",
 	"pick_suggestion": "Dahil et: {{name}}",
 	"add_selected": "Seçilenleri ekle ({{n}})",
+	"apply_selected": "Seçilenleri uygula ({{n}})",
 	"dismiss_rest": "Kalanları at",
 	"dismiss_all": "Hepsini at",
 	"dismiss_rest_confirm": "Atmak için tekrar dokun",

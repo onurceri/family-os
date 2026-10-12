@@ -150,7 +150,10 @@ export const completeTaskPresenter: DraftPresenter<{ id: string; label?: string 
 	kind: (c) => c.t('lists:kind_task'),
 	icon: ListChecks,
 	title: (input, c) => input.label || c.t('lists:draft_a_task'),
-	fields: () => [],
+	// Says what will happen, so it never reads like a suggestion to add the task.
+	fields: (_input, c) => [
+		{ label: c.t('lists:draft_change'), value: c.t('lists:draft_approve_done'), path: 'id' },
+	],
 	approveLabel: (c) => c.t('lists:draft_approve_done'),
 };
 

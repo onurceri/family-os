@@ -107,3 +107,11 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	if (isQuestionForAssistant(item)) return { tone: 'info', key: 'chip_question' };
 	return { tone: 'idle', key: 'chip_nothing' };
 }
+
+/** The group's approve button: "Add selected" only when every picked suggestion adds something. */
+export const approveSelectedKey = (
+	picked: readonly { actionId: string }[],
+): 'add_selected' | 'apply_selected' =>
+	picked.length > 0 && picked.every((d) => isAddition(d.actionId))
+		? 'add_selected'
+		: 'apply_selected';

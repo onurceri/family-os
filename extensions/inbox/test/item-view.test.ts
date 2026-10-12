@@ -3,6 +3,7 @@ import type { InboxItem } from '../src/contract/index.ts';
 import type { Draft } from '../src/web/data.ts';
 import {
 	addsToTitle,
+	approveSelectedKey,
 	askAssistantHref,
 	captureLine,
 	isAddition,
@@ -107,5 +108,15 @@ describe('what waits for the person', () => {
 		expect(itemChip(item(), [draft('undone'), draft('expired')]).key).toBe('chip_undone');
 		expect(itemChip(item(), [draft('undone'), draft('rejected')]).key).toBe('chip_rejected');
 		expect(itemChip(item(), [draft('undone'), draft('applied')]).key).toBe('chip_added');
+	});
+});
+
+describe('approveSelectedKey', () => {
+	it('says "Add" only when every picked suggestion adds something', () => {
+		expect(approveSelectedKey([{ actionId: 'lists.addShoppingItems' }])).toBe('add_selected');
+		expect(
+			approveSelectedKey([{ actionId: 'lists.addTask' }, { actionId: 'lists.checkShoppingItem' }]),
+		).toBe('apply_selected');
+		expect(approveSelectedKey([{ actionId: 'lists.completeTask' }])).toBe('apply_selected');
 	});
 });
