@@ -132,6 +132,12 @@ function toLlmError(error: unknown): LlmError {
 		return new LlmError('timeout', 'The model did not answer in time', { cause: error });
 	}
 	if (NoObjectGeneratedError.isInstance(error)) {
+		// The answer was cut off by the output cap: a retry would be cut off the same way.
+		if (error.finishReason === 'length') {
+			return new LlmError('output_too_long', "The model's answer was longer than allowed", {
+				cause: error,
+			});
+		}
 		return new LlmError('invalid_output', 'The model did not return the expected structure', {
 			cause: error,
 		});
@@ -386,6 +392,9 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					// Strict JSON-schema mode (OpenAI) rejects optional fields, which most action inputs
 					// have. The output is validated against the Zod schema here instead.
 					providerOptions: { openaiCompatible: { strictJsonSchema: false } },
+					...(request.maxOutputTokens !== undefined && {
+						maxOutputTokens: request.maxOutputTokens,
+					}),
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),
 				});

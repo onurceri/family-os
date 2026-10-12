@@ -25,6 +25,7 @@ const item = (over: Partial<InboxItem> = {}): InboxItem => ({
 	summary: 'Soru',
 	kind: 'question',
 	errorCode: null,
+	attempt: null,
 	proposals: 0,
 	skipped: 0,
 	createdBy: null,

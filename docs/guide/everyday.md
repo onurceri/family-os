@@ -46,9 +46,9 @@ When you give something from outside the app (the phone's share sheet, [Telegram
 
 ### Waiting for you
 
-Each capture with something to decide is one group: a line saying what it is, when it came and from where, then its suggestions. **Show the original** opens the text, photos and files it was made from. While the AI reads, the group says **Reading…** in place.
+Each capture with something to decide is one group: a line saying what it is, when it came and from where, then its suggestions. **Show the original** opens the text, photos and files it was made from. While the AI reads, the group says **Reading…** in place. If the AI had to try again, it says **Trying again (attempt 2 of 4)…** instead.
 
-A suggestion shows what would be added and where it goes (**Calendar**, **Tasks**, **Shopping**…). Fields the AI was unsure about are marked **Check this**; one that looks like something already there says **This may already be there: check before approving.**
+A suggestion shows what would be added and where it goes (**Calendar**, **Tasks**, **Shopping**…). Fields the AI was unsure about are marked **Check this**; one that looks like something already there says **This may already be there: check before approving.** When a message names a day but no time, the event is suggested as an all-day event with **Check this** on it; set the time before you add it. The AI knows who shared the capture, so a message written to you ("your lesson is on Saturday") is suggested for you rather than for the whole family, and it reuses the tags your calendar already has.
 
 - **Tick what is right.** Every suggestion is ticked at first. Untick the ones you do not want.
 - **Add selected (n):** adds the ticked ones, one by one. A message says how many were added, with **Undo**, which takes all of them back.
@@ -67,7 +67,7 @@ If you are not allowed to approve (a supervised member, for example), you see yo
 
 ### When reading fails
 
-If the AI could not read a capture, it says why, for example **AI is not set up yet.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.** or **This kind of file cannot be read.** Admins also get a link to the AI settings. Fix the cause, then press **Try again** to read the same capture again. If the AI is switched off for this kind of capture, it is kept and says **AI is off. Kept here unread.**; press **Read now** to read it.
+If the AI could not read a capture, it says why, for example **AI is not set up yet.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.** or **This is too long for the AI to read in one go. Share it in smaller parts.** Admins also get a link to the AI settings. Fix the cause, then press **Try again** to read the same capture again. If the AI is switched off for this kind of capture, it is kept and says **AI is off. Kept here unread.**; press **Read now** to read it.
 
 **Remove** (then **Tap again to remove**) takes a capture away and declines any suggestions from it that are still waiting. Only the person who made a capture can remove it, read it again or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
 

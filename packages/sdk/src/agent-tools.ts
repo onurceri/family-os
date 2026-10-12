@@ -139,6 +139,9 @@ export function fitResult(value: unknown): string {
 /** An action's output as the model reads it: ids become handles, and record lists are compact. */
 export function readableOutput(output: unknown, table: HandleTable): unknown {
 	const context = AiContextSchema.safeParse(output);
+	if (context.success && context.data.plain) {
+		return { [context.data.label]: context.data.items.map((item) => item.label) };
+	}
 	if (context.success) {
 		return {
 			[context.data.label]: context.data.items.map((item) => ({

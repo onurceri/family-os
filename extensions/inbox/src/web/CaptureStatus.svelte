@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import { FolderInput, Sparkles } from '@lucide/svelte';
-	import type { InboxItem } from '../contract/index.js';
+	import { type InboxItem, READ_ATTEMPTS } from '../contract/index.js';
 	import { retryItem } from './data.js';
 	import { useInbox } from './i18n.js';
 	import { askAssistantHref, isQuestionForAssistant } from './item-view.js';
@@ -39,7 +39,11 @@
 <div class="flex flex-wrap items-center gap-2 text-sm">
 	{#if reading}
 		<span class="grid w-full gap-2" data-testid="capture-reading">
-			<span class="text-ink-soft font-semibold" role="status">{t('status_reading')}</span>
+			<span class="text-ink-soft font-semibold" role="status"
+				>{item.attempt
+					? t('status_retrying', { attempt: item.attempt, max: READ_ATTEMPTS })
+					: t('status_reading')}</span
+			>
 			<!-- A calm line that moves while the AI reads; still with reduced motion. -->
 			<span class="bg-line relative block h-1.5 w-full overflow-hidden rounded-full">
 				<span class="bar absolute inset-y-0 left-0 w-2/5 rounded-full"></span>

@@ -2471,6 +2471,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/actions/calendar.aiContext": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Calendar tags, for the AI */
+        post: operations["calendar.aiContext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/actions/calendar.createFeed": {
         parameters: {
             query?: never;
@@ -20976,7 +20993,8 @@ export interface operations {
                         /** @enum {string|null} */
                         kind: "actionable" | "nothing" | "question" | null;
                         /** @enum {string|null} */
-                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        attempt: number | null;
                         proposals: number;
                         skipped: number;
                         createdBy: string | null;
@@ -21153,7 +21171,8 @@ export interface operations {
                         /** @enum {string|null} */
                         kind: "actionable" | "nothing" | "question" | null;
                         /** @enum {string|null} */
-                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        attempt: number | null;
                         proposals: number;
                         skipped: number;
                         createdBy: string | null;
@@ -25982,7 +26001,7 @@ export interface operations {
                     };
                     /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default */
                     reminder?: number | null;
-                    /** @description Short labels such as school, health, car. Use existing family tags when they fit (school, health, car…); at most 2. */
+                    /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
                     tags?: string[];
                 };
             };
@@ -26206,7 +26225,7 @@ export interface operations {
                         };
                         /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default */
                         reminder?: number | null;
-                        /** @description Short labels such as school, health, car. Use existing family tags when they fit (school, health, car…); at most 2. */
+                        /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
                         tags?: string[];
                     };
                 };
@@ -27077,6 +27096,157 @@ export interface operations {
                         output: {
                             /** @enum {boolean} */
                             ok: true;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "calendar.aiContext": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            kind: string;
+                            label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
+                            items: {
+                                id: string;
+                                label: string;
+                                details?: string;
+                                url?: string;
+                            }[];
                         };
                     } | {
                         /** @enum {string} */
@@ -35114,6 +35284,8 @@ export interface operations {
                         output: {
                             kind: string;
                             label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
                             items: {
                                 id: string;
                                 label: string;
@@ -38523,6 +38695,8 @@ export interface operations {
                         output: {
                             kind: string;
                             label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
                             items: {
                                 id: string;
                                 label: string;
@@ -38672,6 +38846,8 @@ export interface operations {
                         output: {
                             kind: string;
                             label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
                             items: {
                                 id: string;
                                 label: string;
@@ -38866,7 +39042,8 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            attempt: number | null;
                             proposals: number;
                             skipped: number;
                             createdBy: string | null;
@@ -39040,7 +39217,8 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            attempt: number | null;
                             proposals: number;
                             skipped: number;
                             createdBy: string | null;
@@ -39366,7 +39544,8 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            attempt: number | null;
                             proposals: number;
                             skipped: number;
                             createdBy: string | null;
@@ -45335,6 +45514,8 @@ export interface operations {
                         output: {
                             kind: string;
                             label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
                             items: {
                                 id: string;
                                 label: string;
@@ -46309,6 +46490,8 @@ export interface operations {
                         output: {
                             kind: string;
                             label: string;
+                            /** @enum {boolean} */
+                            plain?: true;
                             items: {
                                 id: string;
                                 label: string;

@@ -91,7 +91,7 @@ export const EventInputSchema = z
 			.max(MAX_TAGS)
 			.optional()
 			.describe(
-				'Short labels such as school, health, car. Use existing family tags when they fit (school, health, car…); at most 2.',
+				"Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2.",
 			),
 	})
 	.superRefine((v, ctx) => {

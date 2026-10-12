@@ -32,6 +32,8 @@ export const STATUSES = [
 export const EXTRACT_FEATURE = 'inbox.extract';
 /** The AI feature name of turning voice notes into text. */
 export const TRANSCRIBE_FEATURE = 'inbox.transcribe';
+/** How many times reading an item is tried before it fails (one reading plus its retries). */
+export const READ_ATTEMPTS = 4;
 export const ItemStatusSchema = z.enum(STATUSES);
 export type ItemStatus = z.infer<typeof ItemStatusSchema>;
 
@@ -47,6 +49,8 @@ export const ErrorCodeSchema = z.enum([
 	'timeout',
 	'unavailable',
 	'invalid_output',
+	/** The answer ran past the output cap; reading the item again would end the same way. */
+	'output_too_long',
 	'unsupported',
 	/** Only files were shared, and the family does not send files to the AI. */
 	'files_off',
@@ -107,6 +111,11 @@ export const InboxItemSchema = z.object({
 	/** What the model made of the item; null while unread or when no model read it. */
 	kind: ExtractionKindSchema.nullable(),
 	errorCode: ErrorCodeSchema.nullable(),
+	/**
+	 * While a failed reading waits to be tried again: the number of the attempt that comes next
+	 * (of `READ_ATTEMPTS`). Null when the item is not waiting for a retry.
+	 */
+	attempt: z.number().int().nullable(),
 	/** Drafts proposed from this item. */
 	proposals: z.number().int(),
 	/** Proposals the model made that did not pass validation. */

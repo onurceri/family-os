@@ -49,7 +49,7 @@ import {
 	removeSubscription,
 	updateSubscription,
 } from './subscriptions.ts';
-import { deleteTag, listTags, updateTag } from './tags.ts';
+import { aiContext, deleteTag, listTags, updateTag } from './tags.ts';
 import { whenOf } from './when.ts';
 
 /**
@@ -110,7 +110,7 @@ export const createEvent = defineAction({
 		description:
 			'Adds an event to the family calendar: appointments, school trips, classes, visits, deliveries, services. Use for anything that happens at a date (and usually a time).',
 		guidance:
-			'Use the family time zone. Resolve relative dates ("Friday", "tomorrow") from today\'s date. Set allDay only when no time is given. List the members involved; leave empty for the whole family. Use existing family tags when they fit (school, health, car…); at most 2.',
+			'Use the family time zone. Resolve relative dates ("Friday", "tomorrow") from today\'s date. Set allDay only when no time is given. List the members involved; leave empty for the whole family. Use one of the existing family tags when it fits (they are listed when known); add a new short tag only when none does. At most 2.',
 	},
 	async run(uow, input) {
 		await assertMembers(uow, input.memberIds ?? []);
@@ -558,7 +558,7 @@ const getEvent = defineRoute({
 export default defineExtension({
 	id: 'calendar',
 	migrations,
-	ai: { index: searchIndex },
+	ai: { index: searchIndex, context: aiContext.id },
 	actions: [
 		findEvents,
 		createEvent,
@@ -568,6 +568,7 @@ export default defineExtension({
 		restoreEvent,
 		updateTag,
 		deleteTag,
+		aiContext,
 		createFeed,
 		revokeFeed,
 		touchFeed,

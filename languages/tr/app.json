@@ -318,6 +318,7 @@
 	"ai_activity_err_timeout": "Yapay zekâ çok geç cevap verdi",
 	"ai_activity_err_unavailable": "Sağlayıcıya ulaşılamadı",
 	"ai_activity_err_invalid_output": "Cevap kullanılamadı",
+	"ai_activity_err_output_too_long": "Cevap çok uzun oldu",
 	"ai_activity_err_other": "Başarısız",
 	"ai_activity_free": "Ücretsiz",
 	"ai_activity_cost_unknown": "Maliyet bilinmiyor",

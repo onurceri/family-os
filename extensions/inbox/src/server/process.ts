@@ -21,6 +21,7 @@ import {
 	EXTRACT_FEATURE,
 	type ExtractionKind,
 	ExtractionKindSchema,
+	READ_ATTEMPTS,
 	TRANSCRIBE_FEATURE,
 } from '../contract/index.ts';
 import { datePaths, dateTable, dateWords, isUncertainDate } from './dates.ts';
@@ -28,7 +29,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/13';
+export const PROMPT_VERSION = 'inbox.extract/14';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -143,6 +144,14 @@ async function modelFiles(
 	}
 	return { files: out, unreadable };
 }
+
+/**
+ * The most tokens one reading may write. A proposal is about 150 to 350 tokens (its input, the
+ * words its date came from, its doubts), the answer holds at most twelve of them (about 4,200),
+ * and models that count their reasoning against the cap need room on top. Anything longer is a
+ * model that has lost its way, which would otherwise run until the time limit, three times over.
+ */
+export const EXTRACT_MAX_OUTPUT_TOKENS = 6_000;
 
 const SUMMARY_MAX = 80;
 const SUMMARY_DESCRIPTION = `A short label for the shared item in the family language: a noun phrase of a few words (at most ${SUMMARY_MAX} characters), like a heading or a file name. Never a sentence, never about "the shared content" or "the item", and never a statement that nothing was found.`;
@@ -364,6 +373,8 @@ const AI_ACTOR = { kind: 'ai', source: 'inbox' } as const;
 export interface RecordContext {
 	kind: string;
 	label: string;
+	/** Words to write as they are (tags): listed in the prompt without handles. */
+	plain?: true;
 	items: { handle: string; id: string; label: string; details?: string; url?: string }[];
 }
 
@@ -396,10 +407,17 @@ export async function readRecordContexts(
 				if (!isFamosError(error)) ctx.logger.warn({ actionId }, 'AI context failed');
 				continue;
 			}
-			const items = context.items
-				.slice(0, MAX_CONTEXT_ITEMS)
-				.map((item) => ({ ...item, handle: table.add(context.kind, item.id) }));
-			if (items.length > 0) groups.push({ kind: context.kind, label: context.label, items });
+			const items = context.items.slice(0, MAX_CONTEXT_ITEMS).map((item) => ({
+				...item,
+				handle: context.plain ? item.label : table.add(context.kind, item.id),
+			}));
+			if (items.length > 0)
+				groups.push({
+					kind: context.kind,
+					label: context.label,
+					...(context.plain && { plain: true as const }),
+					items,
+				});
 		}
 	}
 	return groups;
@@ -449,6 +467,28 @@ export function fillRecordFields(
 	return input;
 }
 
+/**
+ * An event that has a day but no time cannot be created as a timed one, and dropping it would
+ * lose what the item said. It becomes an all-day event whose time the person is asked to check.
+ * Judged from the action's own input shape (a day, a start time and an all-day switch), so no
+ * action id is named here.
+ */
+export function withoutTimeAsAllDay(
+	input: Record<string, unknown>,
+	action: AiActionInfo | undefined,
+): { input: Record<string, unknown>; guessed: string[] } {
+	const declared = (action?.inputSchema.properties ?? {}) as Record<string, unknown>;
+	if (declared.allDay === undefined || declared.startTime === undefined)
+		return { input, guessed: [] };
+	if (typeof input.date !== 'string' || input.allDay === true) return { input, guessed: [] };
+	if (input.startTime !== undefined && input.startTime !== null && input.startTime !== '')
+		return { input, guessed: [] };
+	const rest = Object.fromEntries(
+		Object.entries(input).filter(([key]) => key !== 'startTime' && key !== 'endTime'),
+	);
+	return { input: { ...rest, allDay: true }, guessed: ['startTime', 'allDay'] };
+}
+
 /** Tells the model how this family writes numeric dates and clock times. */
 export function regionNote(order: 'DMY' | 'MDY' | 'YMD', hourCycle: 'h12' | 'h23'): string {
 	const dates =
@@ -479,6 +519,10 @@ function systemPrompt(input: {
 	members: { handle: string; displayName: string; about: string | null }[] | null;
 	/** Records the areas told us about, with handles; empty when no area shares any. */
 	records: RecordContext[];
+	/** Words the areas want reused as they are (the family's tags), per heading. */
+	vocabularies: RecordContext[];
+	/** Who shared the item: the name too when names may be sent. */
+	sharer: { handle: string; displayName: string | null } | null;
 }): string {
 	const records = input.records
 		.map(
@@ -491,6 +535,9 @@ function systemPrompt(input: {
 					.join('\n')}`,
 		)
 		.join('\n\n');
+	const vocabularies = input.vocabularies
+		.map((group) => `${group.label}: ${group.items.map((i) => i.label).join(', ')}`)
+		.join('\n');
 	const members = (input.members ?? [])
 		.map(
 			(m) =>
@@ -512,21 +559,30 @@ ${input.calendar}
 ${regionNote(input.dateOrder, input.hourCycle)}
 
 Family members:
-${input.members === null ? '- (not shared: leave every member field empty)' : members || '- (none listed)'}
-
+${input.members === null ? `- (not shared: leave every member field empty${input.sharer ? ', except the person who shared the item' : ''})` : members || '- (none listed)'}
 ${
+	input.sharer
+		? `\nThis item was shared by ${input.sharer.displayName ? `${input.sharer.displayName} (${input.sharer.handle})` : input.sharer.handle}.\n`
+		: ''
+}
+${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes such a label and one fits.\n\n` : ''}${
 	records
 		? `Household records (what the household keeps in FamilyOS; refer to a record only by its handle):\n${records}\n\n`
 		: ''
 }Rules:
 - Propose only what the item asks for or clearly implies. One item can yield several proposals (a trip has a date for the calendar and a fee to pay as a task). If nothing is actionable, return no proposals.
 - In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one member without naming them (for example a school notice and only one member's description mentions that school or class), choose that member and list the field in uncertainFields. Otherwise leave member lists empty ([]).${
+		input.sharer
+			? `
+- The person who shared the item (${input.sharer.handle}) is the one a message addressed to "you" or written about "me" or "my" concerns: when the item is clearly about them alone, use them in the member field instead of leaving it empty. A message to the whole household or group concerns everyone: leave the list empty.`
+			: ''
+	}${
 		records
 			? `
 - Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty.`
 			: ''
 	}
-- Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states; a timed event without its startTime is rejected.
+- Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time out: the event is kept as an all-day event that a person checks.
 - Quantities: an amount the item gives for a thing to buy ("2 litres of milk", "a dozen eggs", "3 packs") goes into that item's quantity field with its unit, as written ("2 litres", "a dozen", "3 packs"); the title is the product alone ("Milk"), never the amount.
 - Dates: whenever the item names the day of a proposal (a full date, a weekday, a day of the month such as "the 15th", or words such as today and tomorrow), set the date field, also when you are unsure (then list it in uncertainFields as below). Put the exact words that give the day in dateText (the day only, not the time). A full date (day and month) and words that name one day (today, tomorrow) are certain: do not list them in uncertainFields. If a weekday and a day number in the item disagree, keep the day number and list the date field in uncertainFields. A weekday without a date is ambiguous: "next Thursday" can mean this week's or next week's. When the text does not settle it, choose the nearer one and list the date field in uncertainFields. Do the same for a missing month or year, a time without am/pm or context ("at 4"), and vague spans ("end of the month").
 - Omit only fields the item does not give; never send null. Give arrays and objects as JSON values, not as strings.
@@ -563,7 +619,7 @@ export { repairInput };
 async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
 	await tables(ctx.db)
 		.updateTable('inbox_items')
-		.set({ status: 'failed', error_code: code, updated_at: ctx.clock.now() })
+		.set({ status: 'failed', error_code: code, read_attempt: null, updated_at: ctx.clock.now() })
 		.where('id', '=', row.id)
 		.execute();
 	await ctx.ai.reindex(ITEM_KIND, row.id);
@@ -574,7 +630,7 @@ async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
 async function hold(ctx: JobContext, row: ItemRow) {
 	await tables(ctx.db)
 		.updateTable('inbox_items')
-		.set({ status: 'held', error_code: null, updated_at: ctx.clock.now() })
+		.set({ status: 'held', error_code: null, read_attempt: null, updated_at: ctx.clock.now() })
 		.where('id', '=', row.id)
 		.execute();
 	await ctx.ai.reindex(ITEM_KIND, row.id);
@@ -636,7 +692,10 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			...m,
 			handle: table.add('member', m.id),
 		}));
-		const records = await readRecordContexts(ctx, catalog, table);
+		const contexts = await readRecordContexts(ctx, catalog, table);
+		const records = contexts.filter((group) => !group.plain);
+		const vocabularies = contexts.filter((group) => group.plain);
+		const sharer = family.find((m) => m.id === row.created_by);
 		const handles = table.toId;
 		const prompt = [
 			`<shared_item channel="${row.channel}">`,
@@ -668,10 +727,15 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 					// Without consent to share people, the model sees no names and assigns nobody.
 					members: policy.sendPeople ? family : null,
 					records,
+					vocabularies,
+					sharer: sharer
+						? { handle: sharer.handle, displayName: policy.sendPeople ? sharer.displayName : null }
+						: null,
 				}),
 				prompt: userPrompt,
 				files,
 				timeoutMs: 90_000,
+				maxOutputTokens: EXTRACT_MAX_OUTPUT_TOKENS,
 				memberId: row.created_by,
 				jobId: run.id,
 			});
@@ -679,15 +743,19 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		// The code's review (works whatever the model): proposals the actions would reject, and
 		// clock times the item states that no proposal uses. The model is told once and answers
 		// again; if that fails, the first answer stands.
-		const problems = reviewProblems(result.output, text, (proposal) =>
-			ctx.actions.checkInput(
-				proposal.action,
+		const prepare = (proposal: { action: string; input: unknown }) => {
+			const action = catalog.find((a) => a.id === proposal.action);
+			return withoutTimeAsAllDay(
 				fillRecordFields(
 					repairInput(proposal.input, handles) as Record<string, unknown>,
-					catalog.find((a) => a.id === proposal.action),
+					action,
 					records,
 				),
-			),
+				action,
+			);
+		};
+		const problems = reviewProblems(result.output, text, (proposal) =>
+			ctx.actions.checkInput(proposal.action, prepare(proposal).input),
 		);
 		if (problems.length > 0) {
 			try {
@@ -710,18 +778,14 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				skipped++;
 				continue;
 			}
-			const input = fillRecordFields(
-				repairInput(proposal.input, handles) as Record<string, unknown>,
-				catalog.find((a) => a.id === proposal.action),
-				records,
-			);
+			const { input, guessed } = prepare(proposal);
 			if (namesUnknownRecord(input, records)) {
 				skipped++;
 				continue;
 			}
 			// The model's own doubt, plus the code's: a date whose quoted source names no day, or
 			// disagrees with it, is always marked "check this".
-			const uncertain = new Set(proposal.uncertainFields);
+			const uncertain = new Set([...proposal.uncertainFields, ...guessed]);
 			for (const path of datePaths(input)) {
 				if (
 					isUncertainDate(
@@ -797,6 +861,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			proposals: drafted,
 			skipped,
 			error_code: null,
+			read_attempt: null,
 			updated_at: ctx.clock.now(),
 		})
 		.where('id', '=', row.id)
@@ -816,7 +881,7 @@ export const processItem = defineJob({
 	name: PROCESS_JOB,
 	payload: z.object({ itemId: z.string() }),
 	timeoutMs: 150_000,
-	maxAttempts: 4,
+	maxAttempts: READ_ATTEMPTS,
 	backoff: (attempt) => Math.min(30_000 * 2 ** (attempt - 1), 10 * 60_000),
 	async handle(ctx, { itemId }, run) {
 		const db = tables(ctx.db);
@@ -863,6 +928,13 @@ export const processItem = defineJob({
 					return markFailed(ctx, row, code === 'local_required' ? 'ai_local_required' : code);
 			}
 			if (last) return markFailed(ctx, row, 'unavailable');
+			// The job runs again after its backoff: say so, instead of a reading that looks stuck.
+			await db
+				.updateTable('inbox_items')
+				.set({ read_attempt: run.attempt + 1, updated_at: ctx.clock.now() })
+				.where('id', '=', row.id)
+				.execute();
+			await ctx.events.emit(itemChanged, { itemId: row.id });
 			throw error;
 		}
 	},

@@ -43,6 +43,12 @@ export interface LlmObjectRequest<T> {
 	files?: readonly LlmFile[];
 	/** Required: every model call has an explicit time limit. */
 	timeoutMs: number;
+	/**
+	 * The most tokens the model may write, reasoning included on models that count it. A model
+	 * that rambles would otherwise run until the time limit; when the cap cuts the answer off the
+	 * call fails with `output_too_long`, which retrying does not fix.
+	 */
+	maxOutputTokens?: number;
 	/** Recorded in usage. */
 	memberId?: string | null;
 	jobId?: string | null;
@@ -240,7 +246,9 @@ export type LlmErrorCode =
 	| 'local_required'
 	| 'timeout'
 	| 'unavailable'
-	| 'invalid_output';
+	| 'invalid_output'
+	/** The answer hit the request's `maxOutputTokens` before it was complete. */
+	| 'output_too_long';
 
 const RETRYABLE: ReadonlySet<LlmErrorCode> = new Set(['timeout', 'unavailable', 'invalid_output']);
 

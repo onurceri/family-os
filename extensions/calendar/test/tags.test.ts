@@ -117,12 +117,23 @@ describe('tags on events', () => {
 		expect(await stored(a.id)).toBeNull();
 	});
 
-	it('tells the AI to prefer existing family tags', () => {
+	it('tells the AI to prefer existing family tags, and which ones exist', async () => {
 		expect(createEvent.ai?.guidance).toContain('existing family tags');
 		const schema = JSON.stringify(z.toJSONSchema(EventInputSchema, { io: 'input' }));
-		expect(schema).toContain(
-			'Use existing family tags when they fit (school, health, car…); at most 2.',
+		expect(schema).toContain('Reuse one of the family');
+		// No example list for the model to copy: the real tags come from the family.
+		expect(schema).not.toContain('school, health, car');
+
+		const empty = await k.runner.invoke('calendar.aiContext', {}, systemActor('test'));
+		expect(empty).toMatchObject({ status: 'applied', output: { items: [], plain: true } });
+		await create({ tags: ['Swim club', 'school'] });
+		const result = await k.runner.invoke<{ kind: string; items: { label: string }[] }>(
+			'calendar.aiContext',
+			{},
+			admin.actor,
 		);
+		if (result.status !== 'applied') throw new Error('expected applied');
+		expect(result.output.items.map((i) => i.label)).toEqual(['school', 'Swim club']);
 	});
 });
 

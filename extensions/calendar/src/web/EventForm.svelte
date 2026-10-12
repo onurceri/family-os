@@ -98,7 +98,7 @@
 					onchange={() => (value.reminder = reminderFor(value.allDay, value.reminder))}
 					class="accent-ink size-5"
 				/>
-				{t('field_all_day')}
+				{t('field_all_day')}{@render check('allDay')}
 			</label>
 			<div class="grid grid-cols-2 gap-3">
 				<div class="grid gap-1.5 {value.allDay ? '' : 'col-span-2'}">

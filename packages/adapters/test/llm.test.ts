@@ -100,14 +100,22 @@ const server = http.createServer((req, res) => {
 		const content =
 			model === 'rambling'
 				? 'not json at all'
-				: JSON.stringify({ title: 'Zoo trip', date: '2026-10-17' });
+				: model === 'cut-off'
+					? '{"title": "Zoo tr'
+					: JSON.stringify({ title: 'Zoo trip', date: '2026-10-17' });
 		res.end(
 			JSON.stringify({
 				id: 'c1',
 				object: 'chat.completion',
 				created: 1,
 				model,
-				choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content } }],
+				choices: [
+					{
+						index: 0,
+						finish_reason: model === 'cut-off' ? 'length' : 'stop',
+						message: { role: 'assistant', content },
+					},
+				],
 				usage: {
 					prompt_tokens: 120,
 					completion_tokens: 30,
@@ -561,6 +569,36 @@ describe('AI SDK LlmPort', () => {
 		await useModel('rambling');
 		await expect(ask()).rejects.toMatchObject({ code: 'invalid_output', retryable: true });
 		expect((await settings.usage()).total).toMatchObject({ calls: 3, errors: 3 });
+	});
+
+	it('passes the output cap on, and fails an answer the cap cut off without a retry', async () => {
+		await useModel('priced', 'openai-compatible');
+		await llm.generateObject({
+			role: 'smart',
+			feature: 'test.extract',
+			areas: ['test'],
+			schema: Trip,
+			prompt: 'School trip Friday',
+			timeoutMs: 1_000,
+			maxOutputTokens: 321,
+		});
+		expect(seen.at(-1)?.body.max_tokens).toBe(321);
+		await ask();
+		expect(seen.at(-1)?.body.max_tokens).toBeUndefined();
+
+		await useModel('cut-off');
+		const error = await llm
+			.generateObject({
+				role: 'smart',
+				feature: 'test.extract',
+				areas: ['test'],
+				schema: Trip,
+				prompt: 'School trip Friday',
+				timeoutMs: 1_000,
+				maxOutputTokens: 5,
+			})
+			.catch((e: unknown) => e);
+		expect(error).toMatchObject({ code: 'output_too_long', retryable: false });
 	});
 
 	it('stops at the monthly limits', async () => {

@@ -164,6 +164,7 @@ export const addItem = defineAction({
 			summary: null,
 			kind: null,
 			error_code: null,
+			read_attempt: null,
 			proposals: 0,
 			skipped: 0,
 			model: null,
@@ -220,7 +221,10 @@ export const fileItem = defineAction({
 	},
 });
 
-/** Reads a failed or held item again (after fixing AI settings, turning AI on, or an outage). */
+/**
+ * Reads a failed or held item again (after fixing AI settings, turning AI on, or an outage).
+ * An item that is still being read is refused: it is already on its way.
+ */
 export const retryItem = defineAction({
 	id: 'inbox.retryItem',
 	title: 'Read an inbox item again',
@@ -231,6 +235,9 @@ export const retryItem = defineAction({
 	async run(uow, { id }) {
 		const row = await load(uow, id);
 		if (!mayHandle(uow.actor, row.created_by)) throw new FamosError('forbidden', 'Not your item');
+		// Still being read (or waiting for the job's own retry): reading again now would do nothing.
+		if (row.status === 'received' || row.status === 'normalized')
+			throw new FamosError('conflict', 'This item is still being read');
 		if (row.status !== 'failed' && row.status !== 'held') return toItem(row);
 		const extraction = row.extraction + 1;
 		const patch = {
@@ -239,6 +246,7 @@ export const retryItem = defineAction({
 				? 'received'
 				: 'normalized') as 'received' | 'normalized',
 			error_code: null,
+			read_attempt: null,
 			extraction,
 			updated_at: uow.clock.now(),
 		};

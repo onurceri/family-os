@@ -1,4 +1,10 @@
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import {
+	AiContextSchema,
+	defineAction,
+	defineRoute,
+	FamosError,
+	type UnitOfWork,
+} from '@famos/sdk';
 import { z } from 'zod';
 import {
 	DeleteTagInputSchema,
@@ -132,5 +138,37 @@ export const listTags = defineRoute({
 			.select(['name', 'color'])
 			.orderBy('key')
 			.execute();
+	},
+});
+
+const MAX_CONTEXT_TAGS = 50;
+
+/**
+ * The family's calendar tags, for the AI: an event it proposes should reuse a tag the family
+ * already has instead of inventing a near duplicate. Read by the Inbox as the AI actor.
+ */
+export const aiContext = defineAction({
+	id: 'calendar.aiContext',
+	title: 'Calendar tags, for the AI',
+	input: z.object({}),
+	output: AiContextSchema,
+	readOnly: true,
+	requires: calendarView.id,
+	ai: {
+		description: 'Lists the tags the family already uses on calendar events.',
+	},
+	async run(uow) {
+		const rows = await events(uow.db)
+			.selectFrom('calendar_tags')
+			.select('name')
+			.orderBy('key')
+			.limit(MAX_CONTEXT_TAGS)
+			.execute();
+		return {
+			kind: 'calendar_tag',
+			label: 'Existing calendar tags',
+			plain: true as const,
+			items: rows.map((r) => ({ id: r.name, label: r.name })),
+		};
 	},
 });

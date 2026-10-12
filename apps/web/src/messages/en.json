@@ -318,6 +318,7 @@
 	"ai_activity_err_timeout": "The AI took too long",
 	"ai_activity_err_unavailable": "The provider was not reachable",
 	"ai_activity_err_invalid_output": "The answer could not be used",
+	"ai_activity_err_output_too_long": "The answer was too long",
 	"ai_activity_err_other": "Failed",
 	"ai_activity_free": "Free",
 	"ai_activity_cost_unknown": "Cost unknown",

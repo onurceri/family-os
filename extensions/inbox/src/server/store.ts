@@ -23,6 +23,8 @@ export type InboxTables = {
 		/** What the model made of the item (`actionable`, `nothing`, `question`). */
 		kind: ExtractionKind | null;
 		error_code: ErrorCode | null;
+		/** The attempt that comes next while a failed reading waits for its retry. */
+		read_attempt: number | null;
 		proposals: number;
 		skipped: number;
 		/** `provider / model` of the last extraction. */
@@ -74,6 +76,11 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
+	'0002_read_attempt': {
+		async up(db) {
+			await db.schema.alterTable('inbox_items').addColumn('read_attempt', 'integer').execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<InboxTables>();
@@ -94,6 +101,7 @@ export function toItem(row: ItemRow): InboxItem {
 		summary: row.summary,
 		kind: row.kind,
 		errorCode: row.error_code,
+		attempt: row.read_attempt,
 		proposals: row.proposals,
 		skipped: row.skipped,
 		createdBy: row.created_by,

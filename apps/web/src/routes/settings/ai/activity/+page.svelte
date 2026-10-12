@@ -68,6 +68,7 @@
 		'timeout',
 		'unavailable',
 		'invalid_output',
+		'output_too_long',
 	]);
 	const result = (code: string | null) =>
 		code === null

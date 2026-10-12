@@ -14,7 +14,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { type InboxItem, itemTitle, UPLOAD_QUOTA } from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
-import { processItem, repairInput, tidySummary } from '../src/server/process.ts';
+import {
+	EXTRACT_MAX_OUTPUT_TOKENS,
+	processItem,
+	repairInput,
+	tidySummary,
+} from '../src/server/process.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -117,10 +122,15 @@ function proposals() {
 				confidence: 0.7,
 				uncertainFields: ['assigneeId'],
 			},
-			// Invalid: a timed event without a start time. Dropped, counted as skipped.
+			// Invalid: it ends before it starts. Dropped, counted as skipped.
 			{
 				action: 'calendar.createEvent',
-				input: { title: 'Veli toplantısı', date: '2026-10-20' },
+				input: {
+					title: 'Veli toplantısı',
+					allDay: true,
+					date: '2026-10-20',
+					endDate: '2026-10-19',
+				},
 				confidence: 0.4,
 				uncertainFields: [],
 			},
@@ -430,14 +440,14 @@ describe('inbox pipeline', () => {
 	it('tells the model what is wrong once, and takes the fixed answer', async () => {
 		const fixed = proposals();
 		const third = fixed.proposals[2] as { input: Record<string, unknown> };
-		third.input = { ...third.input, startTime: '18:00' };
+		third.input = { title: 'Veli toplantısı', date: '2026-10-20', startTime: '18:00' };
 		k.llm.respond(proposals(), fixed);
 		await share({ text: `${NOTICE} Veli toplantısı 20 Ekim 18:00.` });
 		await k.worker.drain();
 		expect(k.llm.calls).toHaveLength(2);
 		const review = k.llm.calls[1]?.prompt ?? '';
 		expect(review).toContain('<review>');
-		expect(review).toMatch(/Proposal 3 \(calendar\.createEvent\) is invalid: .*startTime/);
+		expect(review).toMatch(/Proposal 3 \(calendar\.createEvent\) is invalid: .*endDate/);
 		expect(review).toContain('The item states 18:00');
 		expect((await items())[0]).toMatchObject({ status: 'extracted', proposals: 3 });
 	});
@@ -470,6 +480,99 @@ describe('inbox pipeline', () => {
 			{ id: 'job_x', attempt: 1, maxAttempts: 4 },
 		);
 		expect(await drafts()).toHaveLength(2);
+	});
+
+	it('keeps an event that has a day but no time as an all-day event the person checks', async () => {
+		k.llm.respond({
+			summary: 'Choir rehearsal',
+			proposals: [
+				{
+					action: 'calendar.createEvent',
+					input: { title: 'Choir rehearsal', date: '2026-10-08', location: 'Hall' },
+					dateText: 'Thursday',
+					confidence: 0.8,
+					uncertainFields: [],
+				},
+			],
+		});
+		await share({ text: 'Choir rehearsal moved to Thursday, bring your folder' });
+		await k.worker.drain();
+		// Nothing is wrong with the answer, so the model is not asked again.
+		expect(k.llm.calls).toHaveLength(1);
+		expect((await items())[0]).toMatchObject({ status: 'extracted', proposals: 1, skipped: 0 });
+		const [draft] = await drafts();
+		expect(draft.input).toMatchObject({ allDay: true, date: '2026-10-08', location: 'Hall' });
+		expect(draft.input.startTime).toBeUndefined();
+		expect(draft.uncertainFields).toEqual(expect.arrayContaining(['startTime', 'allDay']));
+	});
+
+	it('limits what the model may write, and fails an answer that hit the limit at once', async () => {
+		k.llm.respond(new LlmError('output_too_long', 'cut off'), proposals());
+		await share({ text: NOTICE });
+		await k.worker.drain();
+		expect(k.llm.calls).toHaveLength(1); // not tried again
+		expect(k.llm.calls[0]?.maxOutputTokens).toBe(EXTRACT_MAX_OUTPUT_TOKENS);
+		expect((await items())[0]).toMatchObject({
+			status: 'failed',
+			errorCode: 'output_too_long',
+			attempt: null,
+		});
+	});
+
+	it('shows which attempt a failed reading waits for, and refuses to retry one that is running', async () => {
+		k.llm.respond(new LlmError('timeout', 'slow'), new LlmError('timeout', 'slow'), proposals());
+		const item = await share({ text: NOTICE });
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'normalized', attempt: 2 });
+		await expect(
+			k.runner.invoke('inbox.retryItem', { id: item.id }, parent.actor),
+		).rejects.toMatchObject({ code: 'conflict' });
+		expect((await items())[0]).toMatchObject({ status: 'normalized', attempt: 2 });
+
+		k.clock.advance(60_000);
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'normalized', attempt: 3 });
+		k.clock.advance(120_000);
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'extracted', attempt: null });
+	});
+
+	it('lists the existing calendar tags in the prompt, as plain words', async () => {
+		k.llm.respond({ summary: 'x', proposals: [] });
+		await share({ text: NOTICE });
+		await k.worker.drain();
+		expect(k.llm.calls[0]?.system).not.toContain('Existing calendar tags');
+
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Swim', allDay: true, date: '2026-10-10', tags: ['swim club', 'School'] },
+			parent.actor,
+		);
+		k.llm.respond({ summary: 'x', proposals: [] });
+		await share({ text: 'Swim meet' });
+		await k.worker.drain();
+		const system = k.llm.calls.at(-1)?.system ?? '';
+		expect(system).toContain('Existing calendar tags: School, swim club');
+		expect(system).not.toContain('calendar_tag:');
+		expect(system).not.toContain('### calendar.aiContext');
+		expect(system).not.toContain('Household records');
+	});
+
+	it('tells the model who shared the item, by handle only when names are off', async () => {
+		k.llm.respond({ summary: 'x', proposals: [] });
+		await share({ text: NOTICE });
+		await k.worker.drain();
+		const system = k.llm.calls[0]?.system ?? '';
+		expect(system).toContain('This item was shared by Ayşe (member:1).');
+		expect(system).toContain('The person who shared the item (member:1)');
+
+		k.llm.privacy.sendPeople = false;
+		k.llm.respond({ summary: 'x', proposals: [] });
+		await share({ text: NOTICE });
+		await k.worker.drain();
+		const anonymous = k.llm.calls.at(-1)?.system ?? '';
+		expect(anonymous).toContain('This item was shared by member:1.');
+		expect(anonymous).not.toContain('Ayşe');
 	});
 
 	it('lets supervised members share; someone who may approve decides the drafts', async () => {

@@ -195,6 +195,11 @@ export const AiContextSchema = z.object({
 	kind: z.string().regex(/^[a-z][a-z0-9_]{0,29}$/),
 	/** A heading for the model: `Vehicles`. */
 	label: z.string().min(1).max(60),
+	/**
+	 * The items are words the model writes as they are (the family's tags), not records: they get
+	 * no handles, and no proposal refers to them by id.
+	 */
+	plain: z.literal(true).optional(),
 	items: z
 		.array(
 			z.object({

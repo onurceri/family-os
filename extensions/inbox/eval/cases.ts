@@ -522,9 +522,58 @@ const NON_ACTIONABLE_CASES: Case[] = [
 	},
 ];
 
+/** Club and activity messages: a day without a time, and messages written to the sharer. */
+const CLUB_CASES: Case[] = [
+	{
+		// Found in use: the event had a date and no time, so it was dropped and nothing was drafted.
+		name: 'Event with a day but no time (English)',
+		text: 'Choir rehearsal moved to Thursday, bring your folder',
+		checks: [
+			has(
+				'calendar.createEvent',
+				'rehearsal on a Thursday, all day or with the time left out',
+				(i) =>
+					['2026-10-08', '2026-10-15'].includes(String(i.date)) &&
+					(i.allDay === true || i.startTime === undefined),
+			),
+			flagged('calendar.createEvent', 'the missing time', titled(/./), 'startTime'),
+		],
+	},
+	{
+		// Found in use: a message to the sharer became a whole-family event.
+		name: 'Message addressed to the person who shared it (English)',
+		text: 'Hi, your swim lesson is on Saturday 10 October at 9am, please bring a towel.',
+		checks: [
+			has(
+				'calendar.createEvent',
+				'the lesson on 10 Oct 09:00 for the sharer (Ayşe)',
+				(i, m) =>
+					i.date === '2026-10-10' &&
+					i.startTime === '09:00' &&
+					(i.memberIds as string[] | undefined)?.includes(m.Ayşe as string) === true,
+			),
+		],
+	},
+	{
+		name: 'Message to the whole household stays for everyone (English)',
+		text: 'Family picnic at the lake on Sunday 11 October at noon, everyone is welcome.',
+		checks: [
+			has(
+				'calendar.createEvent',
+				'the picnic on 11 Oct 12:00 for the whole family',
+				(i) =>
+					i.date === '2026-10-11' &&
+					i.startTime === '12:00' &&
+					((i.memberIds as string[] | undefined) ?? []).length === 0,
+			),
+		],
+	},
+];
+
 export const CASES: Case[] = [
 	...TURKISH_CASES.map((c) => ({ ...TURKEY, ...c })),
 	...NON_ACTIONABLE_CASES.map((c, i) => (i === 0 ? { ...TURKEY, ...c } : c)),
 	...REGIONAL_CASES,
 	...RECORD_CASES,
+	...CLUB_CASES,
 ];
