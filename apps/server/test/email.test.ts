@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 const PASSWORD = 'mailbox app password 4711';
@@ -113,6 +114,7 @@ beforeEach(async () => {
 	runtime = openRuntime(config, {
 		logger: capturingLogger(),
 		quiet: true,
+		passwordHasher: fastPasswordHasher,
 		emailConnect: createDirMailbox(mailDir),
 	});
 	await migrate(runtime);

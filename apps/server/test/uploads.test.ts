@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 
@@ -60,6 +61,7 @@ beforeEach(async () => {
 	runtime = openRuntime(config, {
 		logger: silentLogger,
 		quiet: true,
+		passwordHasher: fastPasswordHasher,
 		extensions: [defineExtension({ id: 'probe', routes: [upload, download] })],
 	});
 	await migrate(runtime);

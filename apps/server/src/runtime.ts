@@ -21,6 +21,7 @@ import { createGuardedHttp } from '@famos/adapters/http-guard';
 import {
 	createIdentity,
 	type Identity,
+	type IdentityOptions,
 	identityMigrations,
 } from '@famos/adapters/identity-betterauth';
 import {
@@ -101,6 +102,8 @@ export function openRuntime(
 		/** Tests: the `fetch` backup targets use, and a cheap age passphrase cost. */
 		backupFetch?: typeof fetch;
 		scryptWorkFactor?: number;
+		/** Tests: a cheap password hash in place of scrypt, so sign-in speed does not depend on machine load. */
+		passwordHasher?: IdentityOptions['passwordHasher'];
 		telegramTiming?: {
 			pollTimeoutSeconds: number;
 			conflictMs: number;
@@ -121,6 +124,7 @@ export function openRuntime(
 		baseURL: config.baseURL,
 		trustedOrigins: config.trustedOrigins,
 		...(options.quiet && { quiet: true }),
+		...(options.passwordHasher && { passwordHasher: options.passwordHasher }),
 		mayUsePin: async (memberId) => {
 			const kernel = kernelRef;
 			if (!kernel) return false;

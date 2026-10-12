@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 const FAST = {
@@ -111,7 +112,8 @@ async function call(method: string, path: string, body?: unknown, withCookie = c
 }
 
 async function until(check: () => boolean | Promise<boolean>, what = 'condition') {
-	const deadline = Date.now() + 5_000;
+	// A backstop only: a passing run returns as soon as the condition holds, however slow the machine.
+	const deadline = Date.now() + 25_000;
 	while (Date.now() < deadline) {
 		if (await check()) return;
 		await new Promise((r) => setTimeout(r, 10));
@@ -129,6 +131,7 @@ beforeEach(async () => {
 	runtime = openRuntime(config, {
 		logger: capturingLogger(),
 		quiet: true,
+		passwordHasher: fastPasswordHasher,
 		telegramApiRoot: fake.url,
 		telegramTiming: FAST,
 	});
@@ -274,7 +277,9 @@ describe('Telegram settings and linking', () => {
 		await call('POST', '/api/v1/actions/core.archiveMember', { memberId: kid });
 		await until(async () => !(await runtime.telegram.linkOf(kid)).linked, 'the unlink');
 		fake.say(66, 'hello?');
-		await new Promise((r) => setTimeout(r, 300));
+		// The poller acknowledges an update only after handling it, so no pending update means the
+		// message was handled (and, for an unlinked chat, ignored).
+		await until(() => fake.pending() === 0, 'the message to be handled');
 		expect(fake.sent().at(-1)?.text).not.toBe('Sent to Quick add.');
 	});
 });
@@ -390,7 +395,7 @@ describe('sharing from Telegram', () => {
 			fake
 				.sent()
 				.some((m) => m.text === 'I could not answer that. Please try again, or ask in the app.');
-		const deadline = Date.now() + 15_000;
+		const deadline = Date.now() + 25_000;
 		while (!told() && Date.now() < deadline) {
 			await runtime.kernel.worker.drain();
 			await new Promise((r) => setTimeout(r, 50));

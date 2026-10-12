@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 /**
  * Records and "Add to…" through the real HTTP stack (the E2E waits for the first domain extension): sharing papers to the Inbox with a record named files them without the AI.
@@ -21,7 +22,11 @@ let ip = 0;
 beforeEach(async () => {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-records-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
-	runtime = openRuntime(config, { logger: silentLogger, quiet: true });
+	runtime = openRuntime(config, {
+		logger: silentLogger,
+		quiet: true,
+		passwordHasher: fastPasswordHasher,
+	});
 	await migrate(runtime);
 	await runtime.kernel.start();
 	app = createHttpApp({

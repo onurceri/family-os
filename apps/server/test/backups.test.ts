@@ -12,6 +12,7 @@ import { type Config, loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { restoreFile } from '../src/restore.ts';
 import { backupNow, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 const PASSPHRASE = 'a long family passphrase';
@@ -65,7 +66,12 @@ async function startDav() {
 }
 
 const open = () => {
-	const r = openRuntime(config, { logger: silentLogger, quiet: true, scryptWorkFactor: 10 });
+	const r = openRuntime(config, {
+		logger: silentLogger,
+		quiet: true,
+		passwordHasher: fastPasswordHasher,
+		scryptWorkFactor: 10,
+	});
 	app = createHttpApp({
 		kernel: r.kernel,
 		ai: r.ai,

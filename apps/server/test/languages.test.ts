@@ -10,6 +10,7 @@ import { createHttpApp } from '../src/http/app.ts';
 import { createTranslate, ENGLISH } from '../src/i18n.ts';
 import { createLanguageRegistry } from '../src/languages.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 
@@ -43,7 +44,12 @@ async function boot() {
 			return { status: 200, text: fakeHttp.body, etag: null, lastModified: null };
 		},
 	};
-	runtime = openRuntime(config, { logger: silentLogger, quiet: true, http });
+	runtime = openRuntime(config, {
+		logger: silentLogger,
+		quiet: true,
+		passwordHasher: fastPasswordHasher,
+		http,
+	});
 	await migrate(runtime);
 	await runtime.kernel.start();
 	app = createHttpApp({

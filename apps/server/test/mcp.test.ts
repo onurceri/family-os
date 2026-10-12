@@ -13,13 +13,14 @@ import {
 	type ExtensionDefinition,
 } from '@famos/sdk';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { loadConfig } from '../src/config.ts';
 import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { MCP_RATE_PER_MINUTE } from '../src/mcp/http.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { fastPasswordHasher } from './fast-password.ts';
 
 const BASE = 'http://localhost:3000';
 let runtime: Runtime;
@@ -47,6 +48,7 @@ async function boot(extra: readonly ExtensionDefinition[] = []) {
 	runtime = openRuntime(config, {
 		logger: silentLogger,
 		quiet: true,
+		passwordHasher: fastPasswordHasher,
 		extensions: [...extensions, ...extra],
 	});
 	await migrate(runtime);
@@ -267,9 +269,13 @@ describe('personal API tokens', () => {
 			cookie,
 		);
 		expect(archived.body.status).toBe('applied');
-		await new Promise((r) => setTimeout(r, 50));
-		const rows = await runtime.kernel.apiTokens.list(memberActor(kid, 'member'));
-		expect(rows[0]?.revokedAt).not.toBeNull();
+		await vi.waitFor(
+			async () => {
+				const rows = await runtime.kernel.apiTokens.list(memberActor(kid, 'member'));
+				expect(rows[0]?.revokedAt).not.toBeNull();
+			},
+			{ timeout: 25_000 },
+		);
 		expect((await rpc(secret, legacyList)).status).toBe(401);
 	});
 });
