@@ -796,10 +796,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				);
 			title = await def.targetTitle(ctx, input);
 			if (title !== null && !labelNamesTitle(said, title))
-				throw new FamosError(
-					'conflict',
-					`That is '${title}', not '${said}'.${CLOSED_MATTER}`,
-				);
+				throw new FamosError('conflict', `That is '${title}', not '${said}'.${CLOSED_MATTER}`);
 		}
 		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
 		if (reason !== null) throw new FamosError('conflict', `${reason}${CLOSED_MATTER}`);

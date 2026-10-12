@@ -68,9 +68,7 @@ describe('an assistant turn never acts on the closest thing', () => {
 		const [found, unlabelled, wrong] = k.llm.chatTrace;
 		expect(found?.result).toContain('Delft project call');
 		expect(unlabelled?.result).toContain('Say which one you mean');
-		expect(wrong?.result).toContain(
-			"That is 'Delft project call', not 'Delft board meeting'.",
-		);
+		expect(wrong?.result).toContain("That is 'Delft project call', not 'Delft board meeting'.");
 		expect(await drafts()).toEqual([]);
 	});
 
