@@ -29872,6 +29872,8 @@ export interface operations {
                                 label: string;
                                 /** @enum {string} */
                                 status: "waiting" | "approved" | "rejected" | "undone" | "expired" | "failed";
+                                /** @enum {string} */
+                                reason?: "withdrawn" | "gone";
                                 suggestedAt: string;
                                 decidedAt?: string;
                             }[];

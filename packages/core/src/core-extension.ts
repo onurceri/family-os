@@ -1168,6 +1168,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					id: z.string(),
 					label: z.string(),
 					status: z.enum(['waiting', 'approved', 'rejected', 'undone', 'expired', 'failed']),
+					/** Why a rejected suggestion closed: taken back by the person, or its subject is gone. */
+					reason: z.enum(['withdrawn', 'gone']).optional(),
 					/** When it was suggested and, once decided, when; ISO 8601 UTC. */
 					suggestedAt: z.string(),
 					decidedAt: z.string().optional(),
@@ -1177,7 +1179,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		readOnly: true,
 		ai: {
 			description:
-				"Lists the person's recent suggestions (the changes they or you proposed for them) with what became of each: waiting, approved, rejected, undone, expired or failed. Use it when the person asks whether something was approved or added, or what is still waiting.",
+				"Lists the person's recent suggestions (the changes they or you proposed for them) with what became of each: waiting, approved, rejected (withdrawn when the person took it back), undone, expired or failed. Use it when the person asks whether something was approved or added, or what is still waiting.",
 		},
 		async run(uow, { limit }) {
 			const owner =
@@ -1206,13 +1208,17 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 						: by.kind === 'ai' && by.onBehalfOf === owner;
 				})
 				.slice(0, limit)
-				.map((row) => ({
-					id: row.id,
-					label: row.summary ?? suggestionLabel(actions.get(row.action_id)?.title, row),
-					status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
-					suggestedAt: iso(row.created_at),
-					...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
-				}));
+				.map((row) => {
+					const reason = draftReason(row);
+					return {
+						id: row.id,
+						label: row.summary ?? suggestionLabel(actions.get(row.action_id)?.title, row),
+						status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
+						...(reason !== null && { reason }),
+						suggestedAt: iso(row.created_at),
+						...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
+					};
+				});
 			return { suggestions };
 		},
 	});

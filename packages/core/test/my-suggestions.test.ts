@@ -15,7 +15,7 @@ afterEach(() => k.close());
 
 const assistantFor = (m: { member: { id: string } }, source: 'assistant' | 'mcp' = 'assistant') =>
 	({ kind: 'ai', source, onBehalfOf: m.member.id as MemberId, roleId: 'member' }) as Actor;
-type Listed = { id: string; label: string; status: string; decidedAt?: string }[];
+type Listed = { id: string; label: string; status: string; reason?: string; decidedAt?: string }[];
 const mine = async (actor: Actor) => {
 	const result = await k.runner.invoke<{ suggestions: Listed }>(
 		'core.mySuggestions',
@@ -50,7 +50,9 @@ describe('core.mySuggestions', () => {
 		const byId = (id: string) => after.find((s) => s.id === id);
 		expect(byId(first)).toMatchObject({ status: 'approved' });
 		expect(byId(first)?.decidedAt).toBeTypeOf('string');
-		expect(byId(second)).toMatchObject({ status: 'rejected' });
+		// The person the suggestion was made for turned it down: that is taking it back.
+		expect(byId(second)).toMatchObject({ status: 'rejected', reason: 'withdrawn' });
+		expect(byId(first)?.reason).toBeUndefined();
 		expect(byId(second)?.label).toContain('B');
 
 		await k.runner.undoDraft(first, adult.actor);

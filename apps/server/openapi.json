@@ -57788,6 +57788,13 @@
 																			"failed"
 																		]
 																	},
+																	"reason": {
+																		"type": "string",
+																		"enum": [
+																			"withdrawn",
+																			"gone"
+																		]
+																	},
 																	"suggestedAt": {
 																		"type": "string"
 																	},
