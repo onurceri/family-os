@@ -2,7 +2,13 @@ import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
 import records from '@famos/ext-records/server';
 import vehicles from '@famos/ext-vehicles/server';
-import { type Actor, type MemberId, systemActor } from '@famos/sdk';
+import {
+	type Actor,
+	createHandleTable,
+	type MemberId,
+	readableOutput,
+	systemActor,
+} from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -91,6 +97,70 @@ describe('calendar.findEvents', () => {
 		).rejects.toMatchObject({ code: 'bad_request' });
 	});
 
+	it('finds by text, filters by member, and notes an unknown tag', async () => {
+		const add = (input: Record<string, unknown>) =>
+			k.runner.invoke('calendar.createEvent', input, admin.actor);
+		await add({
+			title: 'Swimming lesson',
+			date: '2026-01-06',
+			startTime: '17:30',
+			memberIds: [kid.member.id],
+		});
+		await add({
+			title: 'Dentist',
+			date: '2026-01-06',
+			startTime: '09:00',
+			location: 'Swim Street 4',
+			memberIds: [admin.member.id],
+		});
+		await add({ title: 'Family lunch', date: '2026-01-06', startTime: '12:00' });
+		const range = { from: '2026-01-05', to: '2026-01-08' };
+		type Found = { events: { title: string }[]; note?: string; truncated: boolean };
+
+		const swim = await read<Found>('calendar.findEvents', { ...range, text: 'SWIM' });
+		expect(swim.events.map((e) => e.title)).toEqual(['Dentist', 'Swimming lesson']);
+
+		const hers = await read<Found>('calendar.findEvents', { ...range, members: [kid.member.id] });
+		expect(hers.events.map((e) => e.title)).toEqual(['Family lunch', 'Swimming lesson']);
+
+		const ghost = await read<Found>('calendar.findEvents', { ...range, tag: 'swimming' });
+		expect(ghost.events).toEqual([]);
+		expect(ghost.note).toContain('no family tag "swimming"');
+	});
+
+	it('says honestly when it cut the list at its own limit', async () => {
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Walk', date: '2026-01-01', startTime: '08:00', recurrence: { freq: 'daily' } },
+			admin.actor,
+		);
+		const result = await read<{ events: unknown[]; truncated: boolean; note?: string }>(
+			'calendar.findEvents',
+			{ from: '2026-01-01', to: '2026-03-03' },
+		);
+		expect(result.events).toHaveLength(60);
+		expect(result.truncated).toBe(true);
+		expect(result.note).toContain('Narrow the query');
+	});
+
+	it('shows the model a compact week: no empty fields, ids as handles', async () => {
+		const add = (input: Record<string, unknown>) =>
+			k.runner.invoke('calendar.createEvent', input, admin.actor);
+		for (let i = 0; i < 37; i++)
+			await add({ title: `Event ${i}`, date: `2026-01-0${5 + (i % 3)}`, startTime: '10:00' });
+		const out = await read<unknown>('calendar.findEvents', {
+			from: '2026-01-05',
+			to: '2026-01-11',
+		});
+		const table = createHandleTable();
+		const text = JSON.stringify(readableOutput(out, table));
+		expect(text).not.toContain('null');
+		expect(text).not.toContain('"external"');
+		expect(text).not.toContain('"occurrence"');
+		expect(text).toContain('"id":"cal_event:1"');
+		expect(text.length).toBeLessThan(37 * 120);
+	});
+
 	it('is available to a supervised member (calendar.view is a view capability)', async () => {
 		const result = await read<{ events: unknown[] }>(
 			'calendar.findEvents',
@@ -146,6 +216,10 @@ describe('lists tools', () => {
 		// Store-section order: produce, dairy…, household.
 		expect(list.lists[0]?.items.map((i) => i.title)).toEqual(['Apples', 'Milk', 'Soap']);
 		expect(list.lists[0]?.items[1]).toMatchObject({ quantity: '2' });
+		// The model gets handles for the items, so it can act on them without inventing ids.
+		const seen = JSON.stringify(readableOutput(list, createHandleTable()));
+		expect(seen).toMatch(/"id":"shop_item:\d+"/);
+		expect(seen).not.toContain('shop_item_');
 		expect(
 			(await read<{ lists: unknown[] }>('lists.shoppingList', { list: 'Nope' })).lists,
 		).toEqual([]);

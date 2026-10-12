@@ -463,6 +463,8 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					messages: toModelMessages(request.messages),
 					tools,
 					stopWhen: isStepCount(Math.max(1, request.maxSteps)),
+					// Once the host closes the tools, the next step can only be the answer.
+					prepareStep: () => (request.toolsClosed?.() ? { toolChoice: 'none' as const } : {}),
 					providerOptions: { openaiCompatible: { strictJsonSchema: false } },
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),

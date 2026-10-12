@@ -82,6 +82,11 @@ export interface LlmChatRequest {
 	tools: readonly LlmChatTool[];
 	/** The most model round trips (a round trip that calls tools is one step). */
 	maxSteps: number;
+	/**
+	 * Asked before each step: once it returns true the model gets no tools and must answer
+	 * from what it has (a host limit on tool calls was reached).
+	 */
+	toolsClosed?(): boolean;
 	/** Required: every model call has an explicit time limit (for the whole tool loop). */
 	timeoutMs: number;
 	memberId?: string | null;

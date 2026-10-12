@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	type DuplicateContext,
 	defineAction,
 	defineCapability,
 	defineEvent,
@@ -53,6 +54,17 @@ async function activeList(uow: UnitOfWork, id: string | undefined) {
 		);
 	return list;
 }
+
+/** The title of a listed item, for the runner's check that an AI's label names the right one. */
+const itemTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
+	(
+		await tables(ctx.db)
+			.selectFrom('lists_shopping_items')
+			.select('title')
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst()
+	)?.title ?? null;
 
 async function loadItem(uow: UnitOfWork, id: string) {
 	const row = await tables(uow.db)
@@ -295,6 +307,7 @@ export const updateShoppingItem = defineAction({
 
 export const checkShoppingItem = defineAction({
 	id: 'lists.checkShoppingItem',
+	targetTitle: itemTitle,
 	offline: true,
 	title: 'Tick off (or untick) a shopping item',
 	draftTitle: 'lists:draft_title_check_shopping_item',
@@ -328,6 +341,7 @@ export const checkShoppingItem = defineAction({
 
 export const deleteShoppingItem = defineAction({
 	id: 'lists.deleteShoppingItem',
+	targetTitle: itemTitle,
 	title: 'Remove a shopping item',
 	draftTitle: 'lists:draft_title_delete_shopping_item',
 	requires: shoppingEdit.id,
@@ -383,14 +397,20 @@ export const removeShoppingItems = defineAction({
 	draftTitle: 'lists:draft_title_remove_shopping_items',
 	requires: shoppingEdit.id,
 	input: z.object({ ids: z.array(ShoppingItemIdSchema).min(1).max(50) }),
-	output: z.object({ removed: z.number().int() }),
+	output: z.object({ removed: z.number().int(), ids: z.array(z.string()) }),
 	approval: { unless: shoppingManage.id },
+	undo: ({ ids }) =>
+		ids.length ? { actionId: 'lists.restoreShoppingItems', input: { ids } } : null,
+	ai: {
+		description:
+			'Removes several items from the shopping lists at once (not bought, just no longer needed). Find them with lists.shoppingList first and send all their ids in one call.',
+	},
 	async run(uow, { ids }) {
 		const now = uow.clock.now();
 		const db = tables(uow.db);
 		const rows = await db
 			.selectFrom('lists_shopping_items')
-			.select('list_id')
+			.select(['id', 'list_id'])
 			.where('id', 'in', ids)
 			.where('deleted_at', 'is', null)
 			.execute();
@@ -401,7 +421,31 @@ export const removeShoppingItems = defineAction({
 			.where('deleted_at', 'is', null)
 			.executeTakeFirst();
 		for (const listId of new Set(rows.map((r) => r.list_id))) uow.emit(shoppingChanged, { listId });
-		return { removed: Number(result.numUpdatedRows) };
+		return { removed: Number(result.numUpdatedRows), ids: rows.map((r) => r.id) };
+	},
+});
+
+/** Takes back `lists.removeShoppingItems`. */
+export const restoreShoppingItems = defineAction({
+	id: 'lists.restoreShoppingItems',
+	title: 'Put removed shopping items back',
+	requires: shoppingEdit.id,
+	input: z.object({ ids: z.array(ShoppingItemIdSchema).min(1).max(50) }),
+	output: z.object({ restored: z.number().int() }),
+	async run(uow, { ids }) {
+		const db = tables(uow.db);
+		const rows = await db
+			.selectFrom('lists_shopping_items')
+			.select('list_id')
+			.where('id', 'in', ids)
+			.execute();
+		const result = await db
+			.updateTable('lists_shopping_items')
+			.set({ deleted_at: null, updated_at: uow.clock.now() })
+			.where('id', 'in', ids)
+			.executeTakeFirst();
+		for (const listId of new Set(rows.map((r) => r.list_id))) uow.emit(shoppingChanged, { listId });
+		return { restored: Number(result.numUpdatedRows) };
 	},
 });
 
@@ -540,6 +584,7 @@ export const shoppingList = defineAction({
 				name: z.string(),
 				items: z.array(
 					z.object({
+						id: z.string().describe('For checking off, changing or removing the item'),
 						title: z.string(),
 						quantity: z.string().nullable(),
 						category: CategorySchema,
@@ -587,7 +632,7 @@ export const shoppingList = defineAction({
 				name: l.name || DEFAULT_LIST_LABEL,
 				items: rows
 					.sort((a, b) => rank(a) - rank(b))
-					.map((r) => ({ title: r.title, quantity: r.quantity, category: r.category })),
+					.map((r) => ({ id: r.id, title: r.title, quantity: r.quantity, category: r.category })),
 			});
 		}
 		return { lists: out };

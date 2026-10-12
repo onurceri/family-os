@@ -120,6 +120,9 @@ function withoutFields(schema: Record<string, unknown>, fields: readonly string[
 	return { ...schema, properties, ...(required && { required }) };
 }
 
+/** Whether the turn used up its tool calls, so the model must answer without tools. */
+export const toolsClosed = (calls: readonly RecordedCall[]) => calls.length >= MAX_TOOL_CALLS;
+
 /** Turns the offered actions into the chat's tools. */
 export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmChatTool[] {
 	let count = 0;
@@ -131,10 +134,15 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 			: info.inputSchema,
 		async execute(raw) {
 			const index = count++;
+			// Calls past the cap run nothing and are not recorded: a model that sends dozens
+			// in one step must not fill the stored answer with them.
 			const record: RecordedCall = { name: actionId, ok: false };
-			env.calls.push(record);
+			if (index < MAX_TOOL_CALLS) env.calls.push(record);
 			if (index >= MAX_TOOL_CALLS)
-				return asData(actionId, 'Error: too many tool calls in this turn');
+				return asData(
+					actionId,
+					'Error: the tool limit for this turn was reached. Make no more tool calls; answer from what you have and say what is still to do.',
+				);
 			const outcome = await runAgentTool({
 				actions: env.actions,
 				actor: env.actor,

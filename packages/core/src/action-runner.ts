@@ -123,6 +123,18 @@ export interface ActionRunner {
 /** What `passedCheck` needs of a draft. */
 export type PassedFacts = Pick<DraftRow, 'action_id' | 'status' | 'input' | 'edited_input'>;
 
+const normalized = (text: string) => text.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+
+/**
+ * Whether a review label can be about the thing titled `title`: one holds the other, ignoring
+ * case and spacing ("Dentist (15 Oct)" is about "Dentist"). An empty label says nothing.
+ */
+export function labelMatches(label: string, title: string): boolean {
+	const l = normalized(label);
+	const t = normalized(title);
+	return l === '' || t === '' || l.includes(t) || t.includes(l);
+}
+
 function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: string): z.infer<S> {
 	const result = schema.safeParse(value);
 	if (!result.success)
@@ -343,6 +355,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const def = getAction(actionId);
 		authorize(def, actor);
 		const input = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
+		if (actor.kind === 'ai') await assertLabelMatches(def, input);
 		/** Inside the transaction: a concurrent request may have stored the key meanwhile. */
 		const guard = async (uow: UnitOfWork) => {
 			if (!idem) return;
@@ -711,6 +724,18 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// Results stored by an older version may not match today's output shape: not undoable.
 		const output = def.output.safeParse(JSON.parse(draft.result));
 		return output.success ? def.undo(output.data) : null;
+	}
+
+	/** Refuses an AI's change whose label names something else than the target it points at. */
+	async function assertLabelMatches(def: AnyActionDefinition, input: unknown): Promise<void> {
+		const label = (input as { label?: unknown } | null)?.label;
+		if (!def.targetTitle || typeof label !== 'string') return;
+		const title = await def.targetTitle({ db: deps.db, family: familyReader(deps.db) }, input);
+		if (title === null || labelMatches(label, title)) return;
+		throw new FamosError(
+			'conflict',
+			`That handle is '${title}', not '${label.trim()}'. Look it up again.`,
+		);
 	}
 
 	async function mayExist(draft: DraftRow): Promise<boolean | 'some'> {

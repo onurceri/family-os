@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	type DuplicateContext,
 	defineAction,
 	defineCapability,
 	defineEvent,
@@ -59,6 +60,17 @@ async function scheduleReminder(uow: UnitOfWork, id: string) {
 		timeZone,
 	);
 }
+
+/** The title of an open task, for the runner's check that an AI's label names the right one. */
+const taskTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
+	(
+		await tables(ctx.db)
+			.selectFrom('lists_tasks')
+			.select('title')
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst()
+	)?.title ?? null;
 
 async function load(uow: UnitOfWork, id: string) {
 	const row = await tables(uow.db)
@@ -179,6 +191,7 @@ const TaskChangeSchema = z.object({
  */
 export const changeTask = defineAction({
 	id: 'lists.changeTask',
+	targetTitle: taskTitle,
 	title: 'Change some details of a task',
 	draftTitle: 'lists:draft_title_change_task',
 	input: TaskChangeSchema.extend({ id: TaskIdSchema, label: ReviewLabelSchema }),
@@ -238,6 +251,7 @@ export const changeTask = defineAction({
 
 export const completeTask = defineAction({
 	id: 'lists.completeTask',
+	targetTitle: taskTitle,
 	offline: true,
 	title: 'Mark a task done',
 	draftTitle: 'lists:draft_title_complete_task',
@@ -326,6 +340,7 @@ export const reopenTask = defineAction({
 
 export const deleteTask = defineAction({
 	id: 'lists.deleteTask',
+	targetTitle: taskTitle,
 	title: 'Delete a task',
 	draftTitle: 'lists:draft_title_delete_task',
 	input: z.object({ id: TaskIdSchema, label: ReviewLabelSchema }),

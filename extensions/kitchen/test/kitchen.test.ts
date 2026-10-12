@@ -341,7 +341,11 @@ describe('AI', () => {
 	it('offers recipes and meals as drafts, and only reads for the rest', () => {
 		const catalog = k.ctx.actions.aiCatalog().map((a) => a.id);
 		expect(catalog).toEqual(
-			expect.arrayContaining(['kitchen.createRecipe', 'kitchen.addToMealPlan']),
+			expect.arrayContaining([
+				'kitchen.createRecipe',
+				'kitchen.addToMealPlan',
+				'kitchen.removeMealPlanEntry',
+			]),
 		);
 		for (const id of [
 			'kitchen.updateRecipe',
@@ -349,7 +353,6 @@ describe('AI', () => {
 			'kitchen.addIngredientsToShopping',
 			'kitchen.setRecipePhoto',
 			'kitchen.updateMealPlanEntry',
-			'kitchen.removeMealPlanEntry',
 		]) {
 			expect(catalog, id).not.toContain(id);
 		}

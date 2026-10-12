@@ -132,17 +132,45 @@ export const removeMealPlanEntry = defineAction({
 	title: 'Take a meal off the plan',
 	draftTitle: 'kitchen:draft_title_remove_meal_plan_entry',
 	input: z.object({ id: MealIdSchema }),
-	output: z.object({ ok: z.literal(true) }),
+	output: z.object({
+		ok: z.literal(true),
+		/** What was taken off, so the removal can be undone; absent when it was already gone. */
+		removed: z
+			.object({
+				date: z.string(),
+				slot: z.enum(MEAL_SLOTS),
+				recipeId: z.string().nullable(),
+				title: z.string(),
+				note: z.string().nullable(),
+			})
+			.optional(),
+	}),
 	approval: { unless: kitchenEdit.id },
+	undo: ({ removed }) => (removed ? { actionId: 'kitchen.addToMealPlan', input: removed } : null),
+	ai: {
+		description:
+			'Takes a planned meal off the family meal plan. Find it with kitchen.mealPlan first.',
+	},
 	async run(uow, { id }) {
 		// Already gone (undoing twice, a second tap) is fine.
-		const result = await tables(uow.db)
-			.deleteFrom('kitchen_meal_plan')
+		const row = await tables(uow.db)
+			.selectFrom('kitchen_meal_plan')
+			.selectAll()
 			.where('id', '=', id)
-			.execute();
-		if (result.some((r) => Number(r.numDeletedRows) > 0))
-			uow.emit(kitchenChanged, { area: 'meals' });
-		return { ok: true as const };
+			.executeTakeFirst();
+		if (!row) return { ok: true as const };
+		await tables(uow.db).deleteFrom('kitchen_meal_plan').where('id', '=', id).execute();
+		uow.emit(kitchenChanged, { area: 'meals' });
+		return {
+			ok: true as const,
+			removed: {
+				date: row.date,
+				slot: row.slot,
+				recipeId: row.recipe_id,
+				title: row.title,
+				note: row.note,
+			},
+		};
 	},
 });
 

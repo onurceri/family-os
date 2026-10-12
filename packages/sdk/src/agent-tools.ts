@@ -11,7 +11,17 @@ import { type HandleTable, namesUnknownId, repairInput, withHandles } from './ha
  */
 
 /** A tool result longer than this is cut, so one answer cannot fill the context. */
-export const MAX_RESULT_BYTES = 4096;
+export const MAX_RESULT_BYTES = 16_384;
+
+/** The UTF-8 size of a text (this package has no TextEncoder). */
+function utf8Length(text: string): number {
+	let bytes = 0;
+	for (const ch of text) {
+		const code = ch.codePointAt(0) as number;
+		bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
+	}
+	return bytes;
+}
 
 /**
  * Tool results are data, never instructions: they are wrapped in a block the system
@@ -21,12 +31,13 @@ export function asData(name: string, text: string): string {
 	const body = text.replaceAll('</tool_result', '<\\/tool_result');
 	let bytes = 0;
 	let end = 0;
-	// Cut on a character boundary at MAX_RESULT_BYTES of UTF-8 (this package has no TextEncoder).
+	// The last resort, for text that is not a list (lists are cut by whole items in `fitResult`):
+	// cut on a character boundary at MAX_RESULT_BYTES of UTF-8 and say so.
 	for (const ch of body) {
 		const code = ch.codePointAt(0) as number;
 		bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
 		if (bytes > MAX_RESULT_BYTES) {
-			return `<tool_result name="${name}">\n${body.slice(0, end)}\n…(shortened)\n</tool_result>`;
+			return `<tool_result name="${name}">\n${body.slice(0, end)}\n…(shortened: the rest of this result was left out)\n</tool_result>`;
 		}
 		end += ch.length;
 	}
@@ -54,6 +65,77 @@ export function toolFailure(error: unknown): string {
 	return 'Error: the tool failed';
 }
 
+/**
+ * Leaves out what tells the model nothing: null, empty text, empty objects, and empty lists
+ * inside items. Every field costs tokens on each step of a turn, because earlier results are sent
+ * again. `false` stays (an absent flag reads as "unknown", not "no"), and so does an empty list at
+ * the top, which is the answer "there are none".
+ */
+export function compact(value: unknown, depth = 0): unknown {
+	if (Array.isArray(value)) return value.map((v) => compact(v, depth + 1));
+	if (value && typeof value === 'object') {
+		const out: Record<string, unknown> = {};
+		for (const [key, v] of Object.entries(value)) {
+			const kept = compact(v, depth + 1);
+			if (kept === null || kept === undefined || kept === '') continue;
+			if (Array.isArray(kept) && kept.length === 0 && depth > 0) continue;
+			if (typeof kept === 'object' && !Array.isArray(kept) && Object.keys(kept).length === 0)
+				continue;
+			out[key] = kept;
+		}
+		return out;
+	}
+	return value;
+}
+
+const CUT_HINT = 'Narrow the query (a shorter date range or a text filter) to see the rest.';
+
+/**
+ * A result as JSON that fits `MAX_RESULT_BYTES`. When it is too long, whole trailing items of
+ * the longest list are dropped (never half an item) and a `cut` field says how many are shown
+ * of how many, so the model knows to narrow the query instead of trusting a partial list.
+ * A result with no list is returned as is; `asData` then cuts the text and says so.
+ */
+export function fitResult(value: unknown): string {
+	const whole = JSON.stringify(value);
+	// Room for the wrapper and the `cut` field.
+	const budget = MAX_RESULT_BYTES - 400;
+	if (utf8Length(whole) <= budget) return whole;
+	let holder: Record<string, unknown>;
+	let key = '';
+	if (Array.isArray(value)) {
+		holder = {};
+		key = 'items';
+	} else if (value && typeof value === 'object') {
+		holder = { ...(value as Record<string, unknown>) };
+		let longest = -1;
+		for (const [k, v] of Object.entries(holder)) {
+			const size = Array.isArray(v) ? utf8Length(JSON.stringify(v)) : -1;
+			if (size > longest) {
+				longest = size;
+				key = k;
+			}
+		}
+		if (!key) return whole;
+	} else return whole;
+	const list = (Array.isArray(value) ? value : holder[key]) as unknown[];
+	const render = (shown: number) =>
+		JSON.stringify({
+			...holder,
+			[key]: list.slice(0, shown),
+			cut: { shown, total: list.length, hint: CUT_HINT },
+		});
+	// The most items that fit; the size grows with the count, so a binary search finds it.
+	let low = 0;
+	let high = list.length;
+	while (low < high) {
+		const mid = Math.ceil((low + high) / 2);
+		if (utf8Length(render(mid)) <= budget) low = mid;
+		else high = mid - 1;
+	}
+	return render(low);
+}
+
 /** An action's output as the model reads it: ids become handles, and record lists are compact. */
 export function readableOutput(output: unknown, table: HandleTable): unknown {
 	const context = AiContextSchema.safeParse(output);
@@ -66,7 +148,7 @@ export function readableOutput(output: unknown, table: HandleTable): unknown {
 			})),
 		};
 	}
-	return withHandles(output, table);
+	return compact(withHandles(output, table));
 }
 
 export interface AgentToolOutcome {
@@ -125,7 +207,7 @@ export async function runAgentTool(call: {
 		}
 		return {
 			ok: true,
-			text: asData(actionId, JSON.stringify(readableOutput(result.output, table))),
+			text: asData(actionId, fitResult(readableOutput(result.output, table))),
 		};
 	} catch (error) {
 		return { ok: false, text: asData(actionId, toolFailure(error)) };

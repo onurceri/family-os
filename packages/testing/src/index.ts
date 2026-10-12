@@ -238,6 +238,8 @@ export function createFakeLlm(): FakeLlm {
 					text += delta;
 					break;
 				}
+				// The real loop offers no tools once the host closes them.
+				if (request.toolsClosed?.()) continue;
 				rounds++;
 				const tool = request.tools.find((t) => t.name === step.tool);
 				request.onToolCall?.(step.tool, step.input);

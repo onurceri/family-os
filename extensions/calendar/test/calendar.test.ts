@@ -121,18 +121,19 @@ describe('calendar', () => {
 		await add({ title: 'Sunday walk', date: '2026-10-11', startTime: '10:00' });
 		// Saturday 12:00 in the family's time zone.
 		k.clock.set(epochOf('2026-10-10', '12:00', TZ));
-		const found = await k.runner.invoke<{ events: { title: string; when: string }[] }>(
+		const found = await k.runner.invoke<{ events: { title: string; when?: string }[] }>(
 			'calendar.findEvents',
 			{ from: '2026-10-05', to: '2026-10-11' },
 			{ kind: 'ai', source: 'assistant' },
 		);
 		if (found.status !== 'applied') throw new Error('expected applied');
+		// Only today's events say where they stand; other days are before or after by their date.
 		expect(Object.fromEntries(found.output.events.map((e) => [e.title, e.when]))).toEqual({
-			'Monday swim': 'past',
+			'Monday swim': undefined,
 			'Saturday market': 'past',
 			'Saturday fair': 'now',
 			'Saturday lunch': 'upcoming',
-			'Sunday walk': 'upcoming',
+			'Sunday walk': undefined,
 		});
 	});
 

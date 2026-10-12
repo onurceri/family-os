@@ -1,5 +1,5 @@
 import type { ActionInvoker, AiActionInfo } from '@famos/sdk';
-import { createHandleTable } from '@famos/sdk';
+import { compact, createHandleTable, fitResult } from '@famos/sdk';
 import { repoVocabulary } from '@famos/testing';
 import { describe, expect, it } from 'vitest';
 import {
@@ -12,6 +12,7 @@ import {
 	MAX_TOOLS,
 	narrow,
 	type RecordedCall,
+	toolsClosed,
 } from '../src/server/tools.ts';
 
 /** The words of the repository's catalogs and bundled language packs. */
@@ -36,13 +37,64 @@ describe('tool results', () => {
 		expect(text.match(/<\/tool_result/g)).toHaveLength(1);
 	});
 
-	it('are cut at 4 KB, on a character boundary', () => {
-		const long = 'ç'.repeat(5000);
+	it('are cut at 16 KB for text, on a character boundary, and say so', () => {
+		const long = 'ç'.repeat(10_000);
 		const text = asData('x.y', long);
+		expect(MAX_RESULT_BYTES).toBe(16_384);
 		expect(Buffer.byteLength(text)).toBeLessThan(MAX_RESULT_BYTES + 120);
-		expect(text).toContain('(shortened)');
+		expect(text).toContain('(shortened: the rest of this result was left out)');
 		expect(text).not.toContain('�');
 		expect(asData('x.y', 'short')).not.toContain('shortened');
+	});
+
+	it('leave out null, empty text and empty lists inside items, keeping false', () => {
+		expect(
+			compact({
+				title: 'Swim',
+				time: null,
+				recurring: false,
+				location: '',
+				tags: [],
+				nested: { gone: [], kept: 0 },
+				none: {},
+				list: [{ a: 1, b: null, done: false, tags: [] }],
+			}),
+		).toEqual({
+			title: 'Swim',
+			recurring: false,
+			tags: [],
+			nested: { kept: 0 },
+			list: [{ a: 1, done: false }],
+		});
+	});
+
+	it('cut a long list by whole items and say how many are shown', () => {
+		const events = Array.from({ length: 400 }, (_, i) => ({
+			title: `Event number ${i} with a longer title`,
+			date: '2026-01-05',
+		}));
+		const text = fitResult({ events, truncated: false });
+		const fitted = JSON.parse(text) as {
+			events: { title: string }[];
+			cut: { shown: number; total: number; hint: string };
+		};
+		expect(Buffer.byteLength(text)).toBeLessThan(MAX_RESULT_BYTES);
+		expect(fitted.cut.total).toBe(400);
+		expect(fitted.cut.shown).toBe(fitted.events.length);
+		expect(fitted.cut.shown).toBeGreaterThan(100);
+		expect(fitted.cut.shown).toBeLessThan(400);
+		expect(fitted.cut.hint).toContain('Narrow the query');
+		const last = fitted.events.at(-1)?.title;
+		expect(last).toBe(`Event number ${fitted.cut.shown - 1} with a longer title`);
+		expect(asData('x.y', text)).not.toContain('shortened');
+	});
+
+	it('cut a top-level list too, and leave a short result alone', () => {
+		const rows = Array.from({ length: 2000 }, (_, i) => ({ n: i, text: 'x'.repeat(20) }));
+		const fitted = JSON.parse(fitResult(rows)) as { items: unknown[]; cut: { total: number } };
+		expect(fitted.cut.total).toBe(2000);
+		expect(fitted.items.length).toBeLessThan(2000);
+		expect(fitResult({ events: [1, 2] })).toBe('{"events":[1,2]}');
 	});
 });
 
@@ -160,8 +212,13 @@ describe('tool execution', () => {
 		expect(first).toContain('vehicle:1');
 		expect(first).not.toContain('vehicle_0199');
 		for (let i = 1; i < MAX_TOOL_CALLS; i++) await t?.execute({});
-		expect(await t?.execute({})).toContain('too many tool calls');
+		expect(toolsClosed(calls)).toBe(true);
+		// A model that sends dozens of calls in one step: none past the cap runs or is recorded,
+		// and each is told to answer.
+		const extra = await Promise.all(Array.from({ length: 30 }, () => t?.execute({})));
+		for (const answer of extra) expect(answer).toContain('Make no more tool calls');
 		expect(seen).toHaveLength(MAX_TOOL_CALLS);
+		expect(calls).toHaveLength(MAX_TOOL_CALLS);
 		expect(calls.filter((c) => c.ok)).toHaveLength(MAX_TOOL_CALLS);
 	});
 });

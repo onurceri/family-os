@@ -84,6 +84,13 @@ export interface ActionDefinition<
 	 */
 	readonly alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	/**
+	 * The real title of the thing an input with a `label` points at (null when it is not there).
+	 * When an AI proposes the action and its label clearly names something else, the runner
+	 * refuses with the real title, so a model that picked the wrong handle looks it up again
+	 * instead of changing or deleting the wrong thing. Read-only and cheap.
+	 */
+	readonly targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	/**
 	 * The day a draft of this action is about (`YYYY-MM-DD`, family time), when it is about one.
 	 * Once that day has passed in the family's time zone the suggestion means nothing any more:
 	 * it is no longer shown as waiting and expires by itself. Undefined (or no function) when
@@ -157,6 +164,7 @@ export function defineAction<
 	offline?: boolean;
 	undo?: (output: z.infer<Out>) => UndoStep | null;
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
+	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;

@@ -20,7 +20,14 @@ import {
 import { formatWeekday } from './format.ts';
 import { systemPrompt } from './prompt.ts';
 import { tables } from './store.ts';
-import { type AssistantTool, areaOf, chatTools, narrow, type RecordedCall } from './tools.ts';
+import {
+	type AssistantTool,
+	areaOf,
+	chatTools,
+	narrow,
+	type RecordedCall,
+	toolsClosed,
+} from './tools.ts';
 
 /** The most notes sent to the model, and the most characters of them. */
 export const MEMORY_MAX_NOTES = 20;
@@ -227,6 +234,7 @@ export const turnJob = defineJob({
 					inject,
 				}),
 				maxSteps: MAX_STEPS,
+				toolsClosed: () => toolsClosed(calls),
 				timeoutMs: CHAT_TIMEOUT_MS,
 				memberId,
 				jobId: run.id,

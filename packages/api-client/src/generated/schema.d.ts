@@ -4212,6 +4212,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/actions/lists.restoreShoppingItems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put removed shopping items back */
+        post: operations["lists.restoreShoppingItems"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/actions/lists.removeShoppingItems": {
         parameters: {
             query?: never;
@@ -25723,7 +25740,11 @@ export interface operations {
                     from: string;
                     /** @description Last day (inclusive), YYYY-MM-DD; at most 62 days after `from` */
                     to: string;
-                    /** @description Only events with this tag, e.g. "school" */
+                    /** @description Only events whose title or place contains this text, e.g. "swimming" */
+                    text?: string;
+                    /** @description Only what involves these people, plus events for the whole family. Use it for "my ..." and "<name>'s ..." questions */
+                    members?: string[];
+                    /** @description Only events with this existing family tag; leave out unless a tag was named */
                     tag?: string;
                 };
             };
@@ -25742,27 +25763,35 @@ export interface operations {
                             events: {
                                 /** @description The event, for changing or deleting it; null for subscribed calendars */
                                 id: string | null;
-                                /** @description This date of a repeating event, for deleting only that one */
-                                occurrence: string;
+                                /** @description Repeating events only: this date, for deleting only that one */
+                                occurrence?: string;
                                 title: string;
                                 date: string;
                                 endDate: string | null;
                                 /** @description HH:MM-HH:MM local time; null for all-day events */
                                 time: string | null;
-                                /** @description Empty means the whole family */
+                                /** @description Left out means the whole family */
                                 memberIds: string[];
                                 location: string | null;
                                 tags: string[];
-                                recurring: boolean;
-                                /** @description From a subscribed calendar */
-                                external: boolean;
                                 /**
-                                 * @description past: already over; now: happening now (or today, all day); upcoming: still ahead
+                                 * @description Only on repeating events
+                                 * @enum {boolean}
+                                 */
+                                recurring?: true;
+                                /**
+                                 * @description Only on events from a subscribed calendar
+                                 * @enum {boolean}
+                                 */
+                                external?: true;
+                                /**
+                                 * @description Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date
                                  * @enum {string}
                                  */
-                                when: "past" | "now" | "upcoming";
+                                when?: "past" | "now" | "upcoming";
                             }[];
                             truncated: boolean;
+                            note?: string;
                         };
                     } | {
                         /** @enum {string} */
@@ -40303,6 +40332,14 @@ export interface operations {
                         output: {
                             /** @enum {boolean} */
                             ok: true;
+                            removed?: {
+                                date: string;
+                                /** @enum {string} */
+                                slot: "breakfast" | "lunch" | "dinner" | "other";
+                                recipeId: string | null;
+                                title: string;
+                                note: string | null;
+                            };
                         };
                     } | {
                         /** @enum {string} */
@@ -41061,6 +41098,8 @@ export interface operations {
                             lists: {
                                 name: string;
                                 items: {
+                                    /** @description For checking off, changing or removing the item */
+                                    id: string;
                                     title: string;
                                     quantity: string | null;
                                     /** @enum {string} */
@@ -43229,6 +43268,150 @@ export interface operations {
             };
         };
     };
+    "lists.restoreShoppingItems": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            restored: number;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
     "lists.removeShoppingItems": {
         parameters: {
             query?: never;
@@ -43258,6 +43441,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             removed: number;
+                            ids: string[];
                         };
                     } | {
                         /** @enum {string} */

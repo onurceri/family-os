@@ -1,4 +1,5 @@
 import {
+	type DuplicateContext,
 	defineAction,
 	defineExtension,
 	defineRoute,
@@ -15,6 +16,7 @@ import {
 	OccurrenceSchema,
 	RangeQuerySchema,
 	ReviewLabelSchema,
+	tagKey,
 } from '../contract/index.ts';
 import {
 	calendarEdit,
@@ -80,6 +82,17 @@ async function loadEvent(uow: UnitOfWork, id: string) {
 	if (!row) throw new FamosError('not_found', 'Event not found');
 	return row;
 }
+
+/** The title of a live event, for the runner's check that an AI's label names the right one. */
+const eventTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
+	(
+		await events(ctx.db)
+			.selectFrom('calendar_events')
+			.select('title')
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst()
+	)?.title ?? null;
 
 export const createEvent = defineAction({
 	id: 'calendar.createEvent',
@@ -163,6 +176,7 @@ export const deleteEvent = defineAction({
 	}),
 	output: z.object({ ok: z.literal(true), id: z.string(), occurrence: z.string().nullable() }),
 	approval: { unless: calendarEdit.id },
+	targetTitle: eventTitle,
 	undo: ({ id, occurrence }) => ({
 		actionId: 'calendar.restoreEvent',
 		input: occurrence ? { id, occurrence } : { id },
@@ -272,6 +286,7 @@ export const changeEvent = defineAction({
 	// The old values of what changed, keyed like the input (for undo).
 	output: z.object({ event: EventDetailSchema, before: z.record(z.string(), z.unknown()) }),
 	approval: { unless: calendarEdit.id },
+	targetTitle: eventTitle,
 	undo: ({ event, before }) => ({
 		actionId: 'calendar.changeEvent',
 		input: { id: event.id, ...before },
@@ -363,7 +378,25 @@ export const findEvents = defineAction({
 	input: z.object({
 		from: IsoDateSchema.describe('First day, YYYY-MM-DD'),
 		to: IsoDateSchema.describe('Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`'),
-		tag: z.string().trim().max(40).optional().describe('Only events with this tag, e.g. "school"'),
+		text: z
+			.string()
+			.trim()
+			.max(80)
+			.optional()
+			.describe('Only events whose title or place contains this text, e.g. "swimming"'),
+		members: z
+			.array(MemberIdSchema)
+			.max(10)
+			.optional()
+			.describe(
+				'Only what involves these people, plus events for the whole family. Use it for "my ..." and "<name>\'s ..." questions',
+			),
+		tag: z
+			.string()
+			.trim()
+			.max(40)
+			.optional()
+			.describe('Only events with this existing family tag; leave out unless a tag was named'),
 	}),
 	output: z.object({
 		events: z.array(
@@ -374,34 +407,37 @@ export const findEvents = defineAction({
 					.describe('The event, for changing or deleting it; null for subscribed calendars'),
 				occurrence: z
 					.string()
-					.describe('This date of a repeating event, for deleting only that one'),
+					.optional()
+					.describe('Repeating events only: this date, for deleting only that one'),
 				title: z.string(),
 				date: z.string(),
 				endDate: z.string().nullable(),
 				time: z.string().nullable().describe('HH:MM-HH:MM local time; null for all-day events'),
-				memberIds: z.array(z.string()).describe('Empty means the whole family'),
+				memberIds: z.array(z.string()).describe('Left out means the whole family'),
 				location: z.string().nullable(),
 				tags: z.array(z.string()),
-				recurring: z.boolean(),
-				external: z.boolean().describe('From a subscribed calendar'),
+				recurring: z.literal(true).optional().describe('Only on repeating events'),
+				external: z.literal(true).optional().describe('Only on events from a subscribed calendar'),
 				when: z
 					.enum(['past', 'now', 'upcoming'])
+					.optional()
 					.describe(
-						'past: already over; now: happening now (or today, all day); upcoming: still ahead',
+						'Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date',
 					),
 			}),
 		),
 		truncated: z.boolean(),
+		note: z.string().optional(),
 	}),
 	readOnly: true,
 	requires: calendarView.id,
 	ai: {
 		description:
-			'Finds what is on the family calendar between two dates (inclusive), repeating events expanded and subscribed calendars included, in time order. Each event says whether it is past, happening now or upcoming. Use it for "what is on this week / on Saturday / is the dentist booked" questions.',
+			'Finds what is on the family calendar between two dates (inclusive), repeating events expanded and subscribed calendars included, in time order. Events of today say whether they are past, happening now or upcoming. To find one thing, give a short `text` from its title. Use it for "what is on this week / on Saturday / is the dentist booked" questions.',
 		guidance:
-			'Resolve relative dates ("this week", "tomorrow") from today in the family time zone. For what is coming up (also "this week"), start at today. Never present an event whose when is past as coming up.',
+			'Resolve relative dates ("this week", "tomorrow") from today in the family time zone. For what is coming up (also "this week"), start at today. Never present an event whose when is past, or whose date is before today, as coming up.',
 	},
-	async run(uow, { from, to, tag }) {
+	async run(uow, { from, to, tag, text, members }) {
 		if ((Date.parse(to) - Date.parse(from)) / 86_400_000 > MAX_RANGE_DAYS || to < from) {
 			throw new FamosError('bad_request', `The range may span at most ${MAX_RANGE_DAYS} days`);
 		}
@@ -413,32 +449,66 @@ export const findEvents = defineAction({
 			externalOccurrencesBetween(uow.db, from, to, timeZone),
 		]);
 		const wanted = tag?.toLocaleLowerCase();
-		const all = sortOccurrences([...own, ...external], timeZone).filter(
-			(o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted),
-		);
+		const needle = text?.toLocaleLowerCase();
+		const notes: string[] = [];
+		// A tag nobody uses finds nothing; say so, so the model tries a text filter instead.
+		if (tag) {
+			const known = await events(uow.db)
+				.selectFrom('calendar_tags')
+				.select('key')
+				.where('key', '=', tagKey(tag))
+				.executeTakeFirst();
+			if (!known) notes.push(`There is no family tag "${tag}"; use \`text\` to search by subject.`);
+		}
+		const all = sortOccurrences([...own, ...external], timeZone)
+			.filter(
+				(o) =>
+					!members?.length ||
+					o.memberIds.length === 0 ||
+					o.memberIds.some((m) => (members as readonly string[]).includes(m)),
+			)
+			.filter((o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted))
+			.filter(
+				(o) =>
+					!needle ||
+					o.title.toLocaleLowerCase().includes(needle) ||
+					(o.location ?? '').toLocaleLowerCase().includes(needle),
+			);
+		if (all.length > MAX_FOUND)
+			notes.push(
+				`Only the first ${MAX_FOUND} of ${all.length} events are shown. Narrow the query (a shorter date range or a text filter) to see the rest.`,
+			);
 		return {
-			events: all.slice(0, MAX_FOUND).map((o) => ({
-				id: o.source === null ? o.eventId : null,
-				occurrence: o.key,
-				title: o.title,
-				date: o.allDay
+			events: all.slice(0, MAX_FOUND).map((o) => {
+				const date = o.allDay
 					? (o.startDate as string)
 					: zoned(o.start as number, timeZone)
 							.toPlainDate()
-							.toString(),
-				endDate: o.allDay && o.endDate && o.endDate !== o.startDate ? o.endDate : null,
-				time:
-					!o.allDay && o.start !== null
-						? `${clock(o.start, timeZone)}${o.end !== null ? `-${clock(o.end, timeZone)}` : ''}`
-						: null,
-				memberIds: o.memberIds,
-				location: o.location,
-				tags: o.tags,
-				recurring: o.recurring,
-				external: o.source !== null,
-				when: whenOf(o, now, today),
-			})),
+							.toString();
+				const when = whenOf(o, now, today);
+				return {
+					id: o.source === null ? o.eventId : null,
+					...(o.recurring && { occurrence: o.key }),
+					title: o.title,
+					date,
+					endDate: o.allDay && o.endDate && o.endDate !== o.startDate ? o.endDate : null,
+					time:
+						!o.allDay && o.start !== null
+							? `${clock(o.start, timeZone)}${o.end !== null ? `-${clock(o.end, timeZone)}` : ''}`
+							: null,
+					memberIds: o.memberIds,
+					location: o.location,
+					tags: o.tags,
+					// Flags only when set: most events are neither, and every field costs tokens.
+					...(o.recurring && { recurring: true as const }),
+					...(o.source !== null && { external: true as const }),
+					// Other days are before or after today by their date; the model needs this only
+					// to tell what is over from what is still to come today.
+					...((date === today || when === 'now') && { when }),
+				};
+			}),
 			truncated: all.length > MAX_FOUND,
+			...(notes.length > 0 && { note: notes.join(' ') }),
 		};
 	},
 });

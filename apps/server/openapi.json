@@ -47285,10 +47285,24 @@
 										"type": "string",
 										"description": "Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`"
 									},
+									"text": {
+										"type": "string",
+										"maxLength": 80,
+										"description": "Only events whose title or place contains this text, e.g. \"swimming\""
+									},
+									"members": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"maxItems": 10,
+										"description": "Only what involves these people, plus events for the whole family. Use it for \"my ...\" and \"<name>'s ...\" questions"
+									},
 									"tag": {
 										"type": "string",
 										"maxLength": 40,
-										"description": "Only events with this tag, e.g. \"school\""
+										"description": "Only events with this existing family tag; leave out unless a tag was named"
 									}
 								},
 								"required": [
@@ -47332,7 +47346,7 @@
 																	},
 																	"occurrence": {
 																		"type": "string",
-																		"description": "This date of a repeating event, for deleting only that one"
+																		"description": "Repeating events only: this date, for deleting only that one"
 																	},
 																	"title": {
 																		"type": "string"
@@ -47358,7 +47372,7 @@
 																		"items": {
 																			"type": "string"
 																		},
-																		"description": "Empty means the whole family"
+																		"description": "Left out means the whole family"
 																	},
 																	"location": {
 																		"type": [
@@ -47373,11 +47387,18 @@
 																		}
 																	},
 																	"recurring": {
-																		"type": "boolean"
+																		"type": "boolean",
+																		"enum": [
+																			true
+																		],
+																		"description": "Only on repeating events"
 																	},
 																	"external": {
 																		"type": "boolean",
-																		"description": "From a subscribed calendar"
+																		"enum": [
+																			true
+																		],
+																		"description": "Only on events from a subscribed calendar"
 																	},
 																	"when": {
 																		"type": "string",
@@ -47386,27 +47407,26 @@
 																			"now",
 																			"upcoming"
 																		],
-																		"description": "past: already over; now: happening now (or today, all day); upcoming: still ahead"
+																		"description": "Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date"
 																	}
 																},
 																"required": [
 																	"id",
-																	"occurrence",
 																	"title",
 																	"date",
 																	"endDate",
 																	"time",
 																	"memberIds",
 																	"location",
-																	"tags",
-																	"recurring",
-																	"external",
-																	"when"
+																	"tags"
 																]
 															}
 														},
 														"truncated": {
 															"type": "boolean"
+														},
+														"note": {
+															"type": "string"
 														}
 													},
 													"required": [
@@ -82942,6 +82962,45 @@
 															"enum": [
 																true
 															]
+														},
+														"removed": {
+															"type": "object",
+															"properties": {
+																"date": {
+																	"type": "string"
+																},
+																"slot": {
+																	"type": "string",
+																	"enum": [
+																		"breakfast",
+																		"lunch",
+																		"dinner",
+																		"other"
+																	]
+																},
+																"recipeId": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"title": {
+																	"type": "string"
+																},
+																"note": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"date",
+																"slot",
+																"recipeId",
+																"title",
+																"note"
+															]
 														}
 													},
 													"required": [
@@ -84697,6 +84756,10 @@
 																		"items": {
 																			"type": "object",
 																			"properties": {
+																				"id": {
+																					"type": "string",
+																					"description": "For checking off, changing or removing the item"
+																				},
 																				"title": {
 																					"type": "string"
 																				},
@@ -84726,6 +84789,7 @@
 																				}
 																			},
 																			"required": [
+																				"id",
 																				"title",
 																				"quantity",
 																				"category"
@@ -90459,6 +90523,332 @@
 				}
 			}
 		},
+		"/api/v1/actions/lists.restoreShoppingItems": {
+			"post": {
+				"operationId": "lists.restoreShoppingItems",
+				"summary": "Put removed shopping items back",
+				"tags": [
+					"actions",
+					"lists"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"ids": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^shop_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"minItems": 1,
+										"maxItems": 50
+									}
+								},
+								"required": [
+									"ids"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"restored": {
+															"type": "integer"
+														}
+													},
+													"required": [
+														"restored"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/api/v1/actions/lists.removeShoppingItems": {
 			"post": {
 				"operationId": "lists.removeShoppingItems",
@@ -90530,10 +90920,17 @@
 													"properties": {
 														"removed": {
 															"type": "integer"
+														},
+														"ids": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
 														}
 													},
 													"required": [
-														"removed"
+														"removed",
+														"ids"
 													]
 												}
 											},
