@@ -509,13 +509,23 @@ export async function namesOtherTarget(
 	actionId: string,
 	input: Record<string, unknown>,
 	text: string,
-	listed: readonly string[],
+	listed: readonly { id: string; label: string }[],
 ): Promise<boolean> {
 	const title = await actions.targetTitle(actionId, input);
 	if (title === null) return false;
-	const [share = 0, ...others] = namedShares(text, [title, ...listed]);
+	// The target's own entry in the list may be worded differently ("Car insurance" for "Car
+	// insurance · Golf"): it is the same thing, so it counts for the target, not against it.
+	const pointedAt = new Set(Object.values(input).filter((v): v is string => typeof v === 'string'));
+	const own = listed.filter((item) => pointedAt.has(item.id));
+	const others = listed.filter((item) => !pointedAt.has(item.id));
+	const shares = namedShares(text, [
+		title,
+		...own.map((i) => i.label),
+		...others.map((i) => i.label),
+	]);
+	const share = Math.max(...shares.slice(0, 1 + own.length));
 	if (share === 0) return true;
-	return others.some((other) => other > share);
+	return shares.slice(1 + own.length).some((other) => other > share);
 }
 
 /**
@@ -769,7 +779,9 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		const contexts = await readRecordContexts(ctx, catalog, table);
 		const records = contexts.filter((group) => !group.plain);
 		// What the model could point at: a proposal on one of these must be the one the text names.
-		const listedTitles = records.flatMap((group) => group.items.map((item) => item.label));
+		const listed = records.flatMap((group) =>
+			group.items.map((item) => ({ id: item.id, label: item.label })),
+		);
 		const vocabularies = contexts.filter((group) => group.plain);
 		const sharer = family.find((m) => m.id === row.created_by);
 		const handles = table.toId;
@@ -867,7 +879,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			// item with files cannot be checked against its text.
 			if (
 				files.length === 0 &&
-				(await namesOtherTarget(ctx.actions, proposal.action, input, text, listedTitles))
+				(await namesOtherTarget(ctx.actions, proposal.action, input, text, listed))
 			) {
 				skipped++;
 				skippedUnknown++;
