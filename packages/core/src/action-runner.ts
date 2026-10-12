@@ -529,9 +529,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			);
 			await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 		});
+		// The proposer is told too, so an AI can warn the person before they look at the card.
+		const exists = await seemsToExist(def, input, { actionId });
 		return {
 			status: 'drafted',
 			draftId,
+			...(exists ? { mayExist: exists } : {}),
 			...(autoApproved ? { autoApproval: true as const } : {}),
 			...(byOthers ? { decidedByOthers: true as const } : {}),
 			...(subject ? { subject } : {}),
@@ -829,22 +832,31 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return title;
 	}
 
-	async function mayExist(draft: DraftRow): Promise<boolean | 'some'> {
-		if (draft.status !== 'pending') return false;
-		const def = registry.actions.get(draft.action_id);
-		if (!def?.alreadyThere || !deps.features.isOn(ownerOf(def.id))) return false;
-		const input = def.input.safeParse(JSON.parse(draft.input));
-		if (!input.success) return false;
+	/** Whether what an input proposes seems to exist already; only a hint, it never throws. */
+	async function seemsToExist(
+		def: AnyActionDefinition,
+		input: unknown,
+		what: Record<string, string>,
+	): Promise<boolean | 'some'> {
+		if (!def.alreadyThere || !deps.features.isOn(ownerOf(def.id))) return false;
 		try {
 			return await def.alreadyThere(
 				{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
-				input.data,
+				input,
 			);
 		} catch (error) {
-			// Only a hint: never let it break the draft list.
-			logger.warn({ err: error, draftId: draft.id }, 'duplicate check failed');
+			logger.warn({ err: error, ...what }, 'duplicate check failed');
 			return false;
 		}
+	}
+
+	async function mayExist(draft: DraftRow): Promise<boolean | 'some'> {
+		if (draft.status !== 'pending') return false;
+		const def = registry.actions.get(draft.action_id);
+		if (!def) return false;
+		const input = def.input.safeParse(JSON.parse(draft.input));
+		if (!input.success) return false;
+		return seemsToExist(def, input.data, { draftId: draft.id });
 	}
 
 	async function undoDraft(draftId: string, approver: Actor): Promise<DraftRow> {

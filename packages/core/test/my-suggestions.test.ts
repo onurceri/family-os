@@ -15,7 +15,14 @@ afterEach(() => k.close());
 
 const assistantFor = (m: { member: { id: string } }, source: 'assistant' | 'mcp' = 'assistant') =>
 	({ kind: 'ai', source, onBehalfOf: m.member.id as MemberId, roleId: 'member' }) as Actor;
-type Listed = { id: string; label: string; status: string; reason?: string; decidedAt?: string }[];
+type Listed = {
+	id: string;
+	label: string;
+	group?: string;
+	status: string;
+	reason?: string;
+	decidedAt?: string;
+}[];
 const mine = async (actor: Actor) => {
 	const result = await k.runner.invoke<{ suggestions: Listed }>(
 		'core.mySuggestions',
@@ -58,6 +65,22 @@ describe('core.mySuggestions', () => {
 
 		await k.runner.undoDraft(first, adult.actor);
 		expect((await mine(adult.actor)).find((s) => s.id === first)?.status).toBe('undone');
+	});
+
+	it('labels each suggestion by itself and returns the group summary apart', async () => {
+		const result = await k.runner.invoke(
+			'notes.addNote',
+			{ body: 'Call the vet' },
+			assistantFor(adult),
+			{
+				draft: { sourceKind: 'inbox', sourceId: 'm1', summary: 'Quick add: pet and school notes' },
+			},
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		const [listed] = await mine(adult.actor);
+		expect(listed?.label).toContain('Call the vet');
+		expect(listed?.label).not.toContain('Quick add');
+		expect(listed?.group).toBe('Quick add: pet and school notes');
 	});
 
 	it('says withdrawn only when a person took back a suggestion they made themselves', async () => {

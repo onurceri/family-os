@@ -1,22 +1,15 @@
 import type { ActionInvoker, AiActionInfo } from '@famos/sdk';
-import { compact, createHandleTable, fitResult } from '@famos/sdk';
-import { repoVocabulary } from '@famos/testing';
+import { compact, createHandleTable, FamosError, fitResult } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 import {
 	type AssistantTool,
-	areaOf,
 	asData,
 	chatTools,
 	MAX_RESULT_BYTES,
 	MAX_TOOL_CALLS,
-	MAX_TOOLS,
-	narrow,
 	type RecordedCall,
 	toolsClosed,
 } from '../src/server/tools.ts';
-
-/** The words of the repository's catalogs and bundled language packs. */
-const words = repoVocabulary();
 
 const tool = (actionId: string): AssistantTool => ({
 	actionId,
@@ -98,57 +91,6 @@ describe('tool results', () => {
 	});
 });
 
-describe('tool narrowing', () => {
-	const many = [
-		...['calendar.a', 'calendar.b', 'lists.a', 'lists.b'].map(tool),
-		...Array.from({ length: 30 }, (_, i) => tool(`vehicles.t${i}`)),
-	];
-	it('keeps everything while it fits', () => {
-		expect(narrow(many.slice(0, MAX_TOOLS), 'anything', words)).toHaveLength(MAX_TOOLS);
-	});
-	it('puts the areas the question mentions first, up to the limit', () => {
-		const picked = narrow(
-			many,
-			'What is on the calendar this week, and what do I need to buy?',
-			words,
-		);
-		expect(picked).toHaveLength(MAX_TOOLS);
-		expect(
-			picked
-				.slice(0, 4)
-				.map((t) => areaOf(t.actionId))
-				.sort(),
-		).toEqual(['calendar', 'calendar', 'lists', 'lists']);
-		// Turkish keywords work too.
-		expect(narrow(many, 'bu hafta takvimde ne var?', words)[0]?.actionId).toMatch(/^calendar/);
-	});
-	it('outside the areas named, keeps adding and reading before changing what is there', () => {
-		const changer = (actionId: string): AssistantTool => {
-			const t = tool(actionId);
-			return { ...t, info: { ...t.info, inputSchema: { type: 'object', properties: { id: {} } } } };
-		};
-		const tools = [
-			...Array.from({ length: 20 }, (_, i) => changer(`calendar.change${i}`)),
-			...Array.from({ length: 10 }, (_, i) => tool(`lists.add${i}`)),
-		];
-		const picked = narrow(tools, 'Add apples', words).map((t) => t.actionId);
-		for (let i = 0; i < 10; i++) expect(picked).toContain(`lists.add${i}`);
-	});
-});
-
-describe('personal tools', () => {
-	const crowded = [
-		...['core.addMemory', 'core.searchFamily'].map(tool),
-		...Array.from({ length: 24 }, (_, i) => tool(`lists.t${i}`)),
-	];
-	it('never crowd out the tools of the question’s area', () => {
-		const names = (q: string) => narrow(crowded, q, words).map((t) => t.actionId);
-		expect(names('Add apples')).not.toContain('core.addMemory');
-		expect(names('Add apples')).toContain('core.searchFamily');
-		expect(names('Remember that I am vegetarian')).toContain('core.addMemory');
-	});
-});
-
 describe('hidden fields', () => {
 	it('are left out of the model’s schema and set by the host', async () => {
 		const seen: unknown[] = [];
@@ -174,6 +116,7 @@ describe('hidden fields', () => {
 			table: createHandleTable(),
 			turnId: 'turn',
 			calls: [],
+			translate: (key) => key,
 			inject: { 'core.addMemory': { source: 'assistant' } },
 		});
 		expect(t?.inputSchema).toEqual({
@@ -184,6 +127,34 @@ describe('hidden fields', () => {
 		// Whatever the model sends for the field, the host's value wins.
 		await t?.execute({ text: 'q', source: 'forged' });
 		expect(seen).toEqual([{ text: 'q', source: 'assistant' }]);
+	});
+});
+
+describe('failed tool calls', () => {
+	it('are reported with the names of the input fields, never their values', async () => {
+		const actions = {
+			async invoke() {
+				throw new FamosError('bad_request', 'Give `from`');
+			},
+		} as unknown as ActionInvoker;
+		const failures: unknown[] = [];
+		const [t] = chatTools([tool('calendar.findEvents')], {
+			actions,
+			actor: { kind: 'ai', source: 'assistant' },
+			table: createHandleTable(),
+			turnId: 'turn',
+			calls: [],
+			translate: (key) => key,
+			onFailure: (failure) => failures.push(failure),
+		});
+		await t?.execute({ members: ['member:1'], text: 'the Mila birthday secret' });
+		// A reference the model was never shown is a failure too.
+		await t?.execute({ id: 'vehicle_01990000-0000-7000-8000-000000000009' });
+		expect(failures).toEqual([
+			{ actionId: 'calendar.findEvents', code: 'bad_request', inputKeys: ['members', 'text'] },
+			{ actionId: 'calendar.findEvents', code: 'unknown_reference', inputKeys: ['id'] },
+		]);
+		expect(JSON.stringify(failures)).not.toContain('secret');
 	});
 });
 
@@ -207,6 +178,7 @@ describe('tool execution', () => {
 			table,
 			turnId: 'turn',
 			calls,
+			translate: (key) => key,
 		});
 		const first = (await t?.execute({})) as string;
 		expect(first).toContain('vehicle:1');

@@ -8,43 +8,14 @@ import {
 	MAX_RESULT_BYTES,
 	runAgentTool,
 	subjectOf,
+	type ToolFailureInfo,
 } from '@famos/sdk';
 
 // The wrapping of results is shared with MCP; the assistant's tests import it from here.
 export { asData, MAX_RESULT_BYTES };
 
-/** The most tools offered in one turn: small models cope badly with many. */
-export const MAX_TOOLS = 24;
 /** The most tool calls in one turn, whatever the step limit. */
 export const MAX_TOOL_CALLS = 12;
-
-/**
- * The words that point at an area come from each extension's catalog and the language packs
- * (`<area>:ai_words`): code holds no words of any language. When there are more tools
- * than fit, the tools of the areas the question seems to be about come first.
- */
-const areaWordsKey = (area: string) => `${area}:ai_words`;
-
-/** Personal tools of core and the words that call for them. */
-const PERSONAL_TOOLS: Record<string, string> = {
-	'core.addMemory': 'assistant:memory_words',
-};
-
-/** The words a key lists in every installed language (`ExtensionContext.vocabulary`). */
-export type Words = (key: string) => readonly string[];
-
-/** Whether the question uses one of the words (at the start of a word, any case). */
-function mentions(question: string, words: readonly string[]): boolean {
-	const text = question.toLocaleLowerCase();
-	return words.some((word) => {
-		let at = text.indexOf(word);
-		while (at !== -1) {
-			if (at === 0 || !/\p{L}/u.test(text[at - 1] ?? '')) return true;
-			at = text.indexOf(word, at + 1);
-		}
-		return false;
-	});
-}
 
 export interface AssistantTool {
 	/** The action behind it. */
@@ -58,62 +29,6 @@ export const areaOf = (actionId: string) => actionId.split('.')[0] as string;
 
 /** `calendar.findEvents` → `calendar_findEvents`: providers reject dots in tool names. */
 export const toolName = (actionId: string) => actionId.replace('.', '_');
-
-/** Whether a tool changes an existing thing (its input names one by `id`). */
-const actsOnExisting = (t: AssistantTool) => {
-	const schema = t.info.inputSchema as { properties?: Record<string, unknown> } | undefined;
-	return Boolean(schema?.properties && 'id' in schema.properties);
-};
-
-/**
- * Keeps at most `MAX_TOOLS`, the ones for the areas the question mentions first. `question` is
- * what the person said lately (a follow-up like "yes, move it" names no area), and `used` the
- * areas the conversation already worked in, which stay offered.
- */
-export function narrow(
-	tools: readonly AssistantTool[],
-	question: string,
-	words: Words,
-	used: ReadonlySet<string> = new Set(),
-): AssistantTool[] {
-	if (tools.length <= MAX_TOOLS) return [...tools];
-	const areas = new Set(tools.map((t) => areaOf(t.actionId)));
-	const mentioned = new Set(
-		[...areas].filter((area) => used.has(area) || mentions(question, words(areaWordsKey(area)))),
-	);
-	// Search works across areas, so it is never the one to drop. The personal tools (remember,
-	// ask someone) are dropped first unless the question points at them: they must not crowd out
-	// the tools of the areas the question is about.
-	// Tools that change something already there (they take its `id`) need that thing found
-	// first, so outside the areas the question names they come after reading and adding.
-	const rank = (t: AssistantTool) => {
-		const personal = PERSONAL_TOOLS[t.actionId];
-		if (personal) return mentions(question, words(personal)) ? 0 : 3;
-		if (mentioned.has(areaOf(t.actionId)) || areaOf(t.actionId) === 'core') return 0;
-		return actsOnExisting(t) ? 2 : 1;
-	};
-	const ordered = tools.toSorted((a, b) => rank(a) - rank(b));
-	const picked = ordered.slice(0, MAX_TOOLS);
-	// An action's description sends the model to the read tools of its area to find what it
-	// means ("find the list first"). A write tool is therefore never offered without them: they
-	// take the place of the lowest-ranked tools that no kept write tool needs.
-	const writeAreas = new Set(
-		picked.filter((t) => t.kind === 'draft').map((t) => areaOf(t.actionId)),
-	);
-	const needed = (t: AssistantTool) => t.kind === 'read' && writeAreas.has(areaOf(t.actionId));
-	for (const read of ordered.slice(MAX_TOOLS).filter(needed)) {
-		let at = picked.length - 1;
-		while (
-			at >= 0 &&
-			(needed(picked[at] as AssistantTool) || rank(picked[at] as AssistantTool) === 0)
-		)
-			at--;
-		if (at < 0) break;
-		picked.splice(at, 1);
-		picked.push(read);
-	}
-	return picked;
-}
 
 /** A call the turn made, for the stored answer (names and outcome, never inputs or results). */
 export interface RecordedCall {
@@ -152,6 +67,10 @@ export interface ToolEnv {
 	 * where a question's answer will show.
 	 */
 	inject?: Record<string, Record<string, unknown>>;
+	/** A catalog key in the asker's language (the names of suggestions). */
+	translate: (key: string) => string;
+	/** Told about each failed call (for the log). */
+	onFailure?: (failure: ToolFailureInfo) => void;
 }
 
 /** The JSON Schema without the fields the host sets itself. */
@@ -202,7 +121,8 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 					promptVersion: 'assistant.chat/1',
 					dedupeKey: `assistant:${env.turnId}:${index}`,
 				},
-				draftSummary: info.description.split('.')[0] ?? '',
+				draftTitle: info.draftTitle ? env.translate(info.draftTitle) : info.title,
+				onFailure: env.onFailure,
 				labels: env.labels,
 				targets: env.targets,
 			});

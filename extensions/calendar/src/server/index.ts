@@ -124,6 +124,59 @@ function occurrenceDetail(row: EventRow, series: EventDetail, key: string): Even
 	};
 }
 
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The occurrence key of one date of a repeating event. A timed series is keyed by the start
+ * (epoch milliseconds), but a model or a person names the date, so a date maps to the one
+ * occurrence on that day. Throws a `bad_request` that says what to send instead.
+ */
+function occurrenceKey(row: EventRow, key: string): string {
+	const keys = (day: string) => expandRow(row, day, day, row.time_zone).map((o) => o.key);
+	if (!row.all_day && DATE_KEY.test(key)) {
+		const found = isValidDate(key) ? keys(key) : [];
+		if (found.length === 0)
+			throw new FamosError(
+				'bad_request',
+				`This repeating event does not happen on ${key}. Use the \`occurrence\` that calendar.findEvents shows for the date you mean.`,
+			);
+		if (found.length > 1)
+			throw new FamosError(
+				'bad_request',
+				`This repeating event happens more than once on ${key}. Use the \`occurrence\` that calendar.findEvents shows for the one you mean.`,
+			);
+		return String(found[0]);
+	}
+	const day = row.all_day
+		? key
+		: Number.isFinite(Number(key))
+			? zoned(Number(key), row.time_zone).toPlainDate().toString()
+			: '';
+	if (!day || !isValidDate(day) || !keys(day).includes(key))
+		throw new FamosError(
+			'bad_request',
+			`'${key}' is not one of the event’s dates. Use the \`occurrence\` that calendar.findEvents shows, or the date of that occurrence.`,
+		);
+	return key;
+}
+
+/** `resolveNames` of the actions that take an `occurrence`: stores the key, never a date. */
+const resolveOccurrence = async <T extends { id: string; occurrence?: string | undefined }>(
+	ctx: DuplicateContext,
+	input: T,
+): Promise<T> => {
+	if (!input.occurrence) return input;
+	const row = await events(ctx.db)
+		.selectFrom('calendar_events')
+		.selectAll()
+		.where('id', '=', input.id)
+		.where('deleted_at', 'is', null)
+		.executeTakeFirst();
+	// A missing event or a single event is the action's own business.
+	if (!row?.rrule) return input;
+	return { ...input, occurrence: occurrenceKey(row, input.occurrence) };
+};
+
 /** The title of a live event, for the runner's check that an AI's label names the right one. */
 const eventTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
 	(
@@ -211,13 +264,18 @@ export const deleteEvent = defineAction({
 	draftTitle: 'calendar:draft_title_delete_event',
 	input: z.object({
 		id: EventIdSchema,
-		/** Occurrence key (from the occurrence list) to skip just that one. */
-		occurrence: z.string().optional(),
+		occurrence: z
+			.string()
+			.optional()
+			.describe(
+				'Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to remove just that one',
+			),
 		label: ReviewLabelSchema,
 	}),
 	output: z.object({ ok: z.literal(true), id: z.string(), occurrence: z.string().nullable() }),
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
+	resolveNames: resolveOccurrence,
 	undo: ({ id, occurrence }) => ({
 		actionId: 'calendar.restoreEvent',
 		input: occurrence ? { id, occurrence } : { id },
@@ -226,8 +284,11 @@ export const deleteEvent = defineAction({
 		description:
 			'Removes an event from the family calendar. For a repeating event, give `occurrence` to remove only that date; without it the whole series goes. Find the event with calendar.findEvents first.',
 	},
-	async run(uow, { id, occurrence, label: _label }) {
+	async run(uow, { id, occurrence: rawOccurrence, label: _label }) {
 		const row = await loadEvent(uow, id);
+		// A draft stored before keys were resolved may still hold a date.
+		const occurrence =
+			rawOccurrence && row.rrule ? occurrenceKey(row, rawOccurrence) : rawOccurrence;
 		const now = uow.clock.now();
 		if (occurrence && row.rrule) {
 			const list: (string | number)[] = row.exdates ? JSON.parse(row.exdates) : [];
@@ -329,7 +390,7 @@ export const changeEvent = defineAction({
 			.string()
 			.optional()
 			.describe(
-				'Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes',
+				'Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to change just that one. That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes',
 			),
 		label: ReviewLabelSchema,
 	}),
@@ -342,6 +403,7 @@ export const changeEvent = defineAction({
 	}),
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
+	resolveNames: resolveOccurrence,
 	undo: ({ event, before, split }) =>
 		split
 			? {
@@ -357,8 +419,10 @@ export const changeEvent = defineAction({
 		guidance:
 			'Use the family time zone and resolve relative dates from today. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
 	},
-	async run(uow, { id, label: _label, occurrence, ...change }) {
+	async run(uow, { id, label: _label, occurrence: rawOccurrence, ...change }) {
 		const row = await loadEvent(uow, id);
+		const occurrence =
+			rawOccurrence && row.rrule ? occurrenceKey(row, rawOccurrence) : rawOccurrence;
 		await assertMembers(uow, change.memberIds ?? []);
 		const { timeZone } = await uow.family.settings();
 		const series = toDetail(row);
@@ -524,7 +588,7 @@ export const findEvents = defineAction({
 	title: 'Find events in a date range, for the AI',
 	input: z.object({
 		from: IsoDateSchema.optional().describe(
-			'First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today)',
+			'First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today). Without `to` and `text` it means that one day',
 		),
 		to: IsoDateSchema.optional().describe(
 			'Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from`',
@@ -561,7 +625,9 @@ export const findEvents = defineAction({
 				occurrence: z
 					.string()
 					.optional()
-					.describe('Repeating events only: this date, for deleting only that one'),
+					.describe(
+						'Repeating events only: the key of this date, for changing or deleting only that one',
+					),
 				title: z.string(),
 				date: z.string(),
 				endDate: z.string().nullable(),
@@ -581,6 +647,15 @@ export const findEvents = defineAction({
 		),
 		truncated: z.boolean(),
 		note: z.string().optional(),
+		nextMatch: z
+			.object({
+				id: z.string().nullable().describe('The event; null for subscribed calendars'),
+				occurrence: z.string().optional(),
+				title: z.string(),
+				date: z.string(),
+			})
+			.optional()
+			.describe('Only when nothing matched in the range: the next match after it'),
 	}),
 	readOnly: true,
 	requires: calendarView.id,
@@ -590,12 +665,21 @@ export const findEvents = defineAction({
 		guidance:
 			'Resolve relative dates ("this week", "tomorrow") from today in the family time zone. For what is coming up (also "this week"), start at today. Never present an event whose when is past, or whose date is before today, as coming up.',
 	},
-	async run(uow, { from: fromDay, to: toDay, tag, text, members }) {
+	async run(uow, { from: fromDay, to: toDayGiven, tag, text, members }) {
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
 		const today = todayIn(timeZone, now);
-		if (!text && (!fromDay || !toDay))
-			throw new FamosError('bad_request', 'Give `from` and `to`, or a `text` to search for');
+		if (!text && !fromDay) {
+			const got = Object.entries({ from: fromDay, to: toDayGiven, tag, text, members })
+				.filter(([, value]) => value !== undefined)
+				.map(([key]) => key);
+			throw new FamosError(
+				'bad_request',
+				`Give \`from\` (alone it means that one day) and optionally \`to\`, or a \`text\` to search for. Received: ${got.length > 0 ? got.join(', ') : 'nothing'}.`,
+			);
+		}
+		// Without a text, `from` alone is that one day.
+		const toDay = toDayGiven ?? (text ? undefined : fromDay);
 		// Looking for one thing by name does not need dates: it is searched for from today on.
 		const from = fromDay ?? today;
 		const to = toDay ?? addDays(from, MAX_RANGE_DAYS);
@@ -635,6 +719,9 @@ export const findEvents = defineAction({
 				);
 		};
 		const all = await between(from, to);
+		let nextMatch:
+			| { id: string | null; occurrence?: string; title: string; date: string }
+			| undefined;
 		// Nothing in the range, but the same search finds something later: say what and when,
 		// so the answer is "the next one is on …" and not "there is none".
 		if (all.length === 0 && (needle || wanted)) {
@@ -645,7 +732,15 @@ export const findEvents = defineAction({
 					: zoned(next.start as number, timeZone)
 							.toPlainDate()
 							.toString();
-				notes.push(`Nothing from ${from} to ${to}. The next match is "${next.title}" on ${day}.`);
+				notes.push(
+					`Nothing from ${from} to ${to}. The next match is "${next.title}" on ${day} (see nextMatch).`,
+				);
+				nextMatch = {
+					id: next.source === null ? next.eventId : null,
+					...(next.recurring && { occurrence: next.key }),
+					title: next.title,
+					date: day,
+				};
 			}
 		}
 		if (all.length > MAX_FOUND)
@@ -682,6 +777,7 @@ export const findEvents = defineAction({
 				};
 			}),
 			truncated: all.length > MAX_FOUND,
+			...(nextMatch && { nextMatch }),
 			...(notes.length > 0 && { note: notes.join(' ') }),
 		};
 	},

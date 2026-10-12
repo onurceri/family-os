@@ -6,6 +6,7 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
+	labelNamesTitle,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { IsoDateSchema, IsoTimeSchema, nextDate, todayIn, toRRule } from '@famos/time';
@@ -110,18 +111,24 @@ export const addTask = defineAction({
 		except: (actor, input) => actor.kind === 'member' && input.assigneeId === actor.memberId,
 	},
 	undo: (task) => ({ actionId: 'lists.deleteTask', input: { id: task.id } }),
-	// A task with the same title and due date, done or not: one that was ticked off the same
-	// day it was suggested again is still the same piece of work.
+	// A task that says the same: the same words of the title (a longer or shorter way of saying it
+	// counts), whatever its due date, while it is still open; a done one only on the same due date,
+	// since one that was ticked off the same day it was suggested again is still the same piece of
+	// work.
 	async alreadyThere(ctx, input) {
 		const { locale } = await ctx.family.settings();
 		const rows = await tables(ctx.db)
 			.selectFrom('lists_tasks')
-			.select('title')
+			.select(['title', 'due_date', 'done_at'])
 			.where('deleted_at', 'is', null)
-			.where('due_date', input.dueDate ? '=' : 'is', input.dueDate ?? null)
 			.execute();
 		const key = titleKey(input.title, locale);
-		return rows.some((row) => titleKey(row.title, locale) === key);
+		const due = input.dueDate ?? null;
+		return rows.some(
+			(row) =>
+				(row.due_date === due && titleKey(row.title, locale) === key) ||
+				((row.done_at === null || row.due_date === due) && labelNamesTitle(input.title, row.title)),
+		);
 	},
 	ai: {
 		description:

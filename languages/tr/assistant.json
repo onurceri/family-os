@@ -65,7 +65,6 @@
 	"kind_memory": "Not",
 	"remember_title": "Hatırla: {{text}}",
 	"remember_approve": "Bunu hatırla",
-	"memory_words": "hatırla, unut, artık, her zaman, asla",
 	"use_own_agent": "Kendi yapay zekâ uygulamanı kullan",
 	"greeting_morning": "Günaydın {{name}}.",
 	"greeting_afternoon": "İyi günler {{name}}.",

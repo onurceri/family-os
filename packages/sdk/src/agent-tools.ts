@@ -194,6 +194,14 @@ function collectLabels(value: unknown, table: HandleTable, labels: Map<string, s
 	for (const v of Object.values(record)) collectLabels(v, table, labels);
 }
 
+/** A failed tool call, for the log: which tool, why, and the names (never values) of its input. */
+export interface ToolFailureInfo {
+	actionId: string;
+	/** A `FamosError` code, or a reason of the host (`unknown_reference`, `second_target`, `error`). */
+	code: string;
+	inputKeys: string[];
+}
+
 export interface AgentToolOutcome {
 	/** The result as the model reads it (already wrapped by `asData`). */
 	text: string;
@@ -221,8 +229,8 @@ export async function runAgentTool(call: {
 	input: unknown;
 	/** The metadata of the draft this call proposes (draft tools only). */
 	draft?: DraftMeta;
-	/** What the draft is, for the answer ("a suggestion was created"). */
-	draftSummary: string;
+	/** The draft's name as a suggestion in the person's words ("Add a task"), for the answer. */
+	draftTitle: string;
 	/**
 	 * What the records shown so far are called (handle → title), filled from the results, so a
 	 * later turn can remind the model what its handles stand for.
@@ -234,33 +242,40 @@ export async function runAgentTool(call: {
 	 * things to one record.
 	 */
 	targets?: Map<string, string>;
+	/**
+	 * Told about every call that fails, with the names of the input fields it had (never their
+	 * values: they come from the model and may hold family content), so failures can be logged.
+	 */
+	onFailure?: (failure: ToolFailureInfo) => void;
 }): Promise<AgentToolOutcome> {
 	const { actionId, table } = call;
 	const input = repairInput(call.input ?? {}, table.toId);
+	const inputKeys =
+		call.input && typeof call.input === 'object' && !Array.isArray(call.input)
+			? Object.keys(call.input)
+			: [];
+	const fail = (code: string, message: string): AgentToolOutcome => {
+		call.onFailure?.({ actionId, code, inputKeys });
+		return { ok: false, text: asData(actionId, message) };
+	};
 	const unknown = unknownIdFields(input, table);
 	if (unknown.length > 0)
-		return {
-			ok: false,
-			text: asData(
-				actionId,
-				`Error: unknown reference in ${unknown
-					.slice(0, 4)
-					.map((field) => `'${field}'`)
-					.join(
-						', ',
-					)}: it is not a handle from earlier results. Look the thing up again with a read tool and use the handle it returns, or pass its name where the tool takes one.`,
-			),
-		};
+		return fail(
+			'unknown_reference',
+			`Error: unknown reference in ${unknown
+				.slice(0, 4)
+				.map((field) => `'${field}'`)
+				.join(
+					', ',
+				)}: it is not a handle from earlier results. Look the thing up again with a read tool and use the handle it returns, or pass its name where the tool takes one.`,
+		);
 	const target = call.kind === 'draft' ? targetOf(input) : null;
 	const earlier = target ? call.targets?.get(target.id) : undefined;
 	if (target && earlier !== undefined && earlier.toLocaleLowerCase() !== target.words)
-		return {
-			ok: false,
-			text: asData(
-				actionId,
-				`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.said}'. If '${target.said}' is not on the list, tell the person.`,
-			),
-		};
+		return fail(
+			'second_target',
+			`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.said}'. If '${target.said}' is not on the list, tell the person.`,
+		);
 	try {
 		const result: ActionResult<unknown> = await call.actions.invoke(
 			actionId,
@@ -270,6 +285,12 @@ export async function runAgentTool(call: {
 		);
 		if (result.status === 'drafted') {
 			if (target) call.targets?.set(target.id, target.said);
+			const what = result.subject ? `${call.draftTitle}: ${result.subject}` : call.draftTitle;
+			const exists = result.mayExist
+				? result.mayExist === 'some'
+					? ' Some of it may already be there; tell the person.'
+					: ` It may already be there${result.subject ? ` (${result.subject})` : ''}; tell the person.`
+				: '';
 			return {
 				ok: true,
 				draftId: result.draftId,
@@ -280,12 +301,15 @@ export async function runAgentTool(call: {
 					JSON.stringify({
 						status: 'drafted',
 						suggestion: table.add('draft', result.draftId),
+						...(result.mayExist && { mayExist: result.mayExist }),
 						// A ready sentence: models that paraphrase a note still say "added" otherwise.
-						say: result.autoApproval
-							? `Suggested: ${call.draftSummary}. It will be added automatically in a moment.`
-							: result.decidedByOthers
-								? `Suggested, not added yet: ${call.draftSummary}. It appears once another person in the household who may approve it does so; this person cannot approve it themselves.`
-								: `Suggested, not added yet: ${call.draftSummary}. It appears once a person in the household approves it.`,
+						say: `${
+							result.autoApproval
+								? `Suggested: ${what}. It will be added automatically in a moment.`
+								: result.decidedByOthers
+									? `Suggested, not added yet: ${what}. It appears once another person in the household who may approve it does so; this person cannot approve it themselves.`
+									: `Suggested, not added yet: ${what}. It appears once a person in the household approves it.`
+						}${exists}`,
 					}),
 				),
 			};
@@ -296,6 +320,11 @@ export async function runAgentTool(call: {
 			text: asData(actionId, fitResult(readableOutput(result.output, table))),
 		};
 	} catch (error) {
+		call.onFailure?.({
+			actionId,
+			code: error instanceof FamosError ? error.code : 'error',
+			inputKeys,
+		});
 		return { ok: false, text: asData(actionId, toolFailure(error)) };
 	}
 }

@@ -47321,7 +47321,7 @@
 								"properties": {
 									"from": {
 										"type": "string",
-										"description": "First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today)"
+										"description": "First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today). Without `to` and `text` it means that one day"
 									},
 									"to": {
 										"type": "string",
@@ -47384,7 +47384,7 @@
 																	},
 																	"occurrence": {
 																		"type": "string",
-																		"description": "Repeating events only: this date, for deleting only that one"
+																		"description": "Repeating events only: the key of this date, for changing or deleting only that one"
 																	},
 																	"title": {
 																		"type": "string"
@@ -47465,6 +47465,33 @@
 														},
 														"note": {
 															"type": "string"
+														},
+														"nextMatch": {
+															"type": "object",
+															"properties": {
+																"id": {
+																	"type": [
+																		"string",
+																		"null"
+																	],
+																	"description": "The event; null for subscribed calendars"
+																},
+																"occurrence": {
+																	"type": "string"
+																},
+																"title": {
+																	"type": "string"
+																},
+																"date": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"id",
+																"title",
+																"date"
+															],
+															"description": "Only when nothing matched in the range: the next match after it"
 														}
 													},
 													"required": [
@@ -49124,7 +49151,7 @@
 									},
 									"occurrence": {
 										"type": "string",
-										"description": "Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes"
+										"description": "Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to change just that one. That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes"
 									},
 									"label": {
 										"type": "string",
@@ -49651,7 +49678,8 @@
 										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 									},
 									"occurrence": {
-										"type": "string"
+										"type": "string",
+										"description": "Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to remove just that one"
 									},
 									"label": {
 										"type": "string",
@@ -58523,6 +58551,9 @@
 																		"type": "string"
 																	},
 																	"label": {
+																		"type": "string"
+																	},
+																	"group": {
 																		"type": "string"
 																	},
 																	"status": {
@@ -86258,6 +86289,11 @@
 										"type": "string",
 										"pattern": "^shop_list_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
 										"description": "Only this list"
+									},
+									"text": {
+										"type": "string",
+										"maxLength": 80,
+										"description": "Only items whose title shares its words with this text (for example \"cheddar\" finds \"Cheddar cheese\"); use it to find one item in a long list"
 									}
 								}
 							}
@@ -86283,6 +86319,10 @@
 												"output": {
 													"type": "object",
 													"properties": {
+														"truncated": {
+															"type": "boolean",
+															"description": "True when more items matched than are shown; pass `text` or `list` to see them"
+														},
 														"lists": {
 															"type": "array",
 															"items": {

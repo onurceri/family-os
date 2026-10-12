@@ -6,6 +6,7 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
+	labelNamesTitle,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { sql } from 'kysely';
@@ -633,8 +634,20 @@ export const shoppingList = defineAction({
 	input: z.object({
 		list: z.string().trim().max(60).optional().describe('Only the list with this name'),
 		listId: ShoppingListIdSchema.optional().describe('Only this list'),
+		text: z
+			.string()
+			.trim()
+			.max(80)
+			.optional()
+			.describe(
+				'Only items whose title shares its words with this text (for example "cheddar" finds "Cheddar cheese"); use it to find one item in a long list',
+			),
 	}),
 	output: z.object({
+		truncated: z
+			.boolean()
+			.optional()
+			.describe('True when more items matched than are shown; pass `text` or `list` to see them'),
 		lists: z.array(
 			z.object({
 				id: z.string().describe('The list, for adding items to it (listId)'),
@@ -657,9 +670,9 @@ export const shoppingList = defineAction({
 	requires: listsView.id,
 	ai: {
 		description:
-			'Shows the family shopping lists (each with its id, the way to name a list when adding items): what is still to buy (in store-section order), then what was bought in the last 7 days (bought true). Use it for "is there milk on the list / what do we need" questions. An item that is bought is not to buy now; match the name the person used to a listed title by its words, and if none fits, say it is not on the list.',
+			'Shows the family shopping lists (each with its id, the way to name a list when adding items): what is still to buy (in store-section order), then what was bought in the last 7 days (bought true). Use it for "is there milk on the list / what do we need" questions. To find one item, pass `text` (lists can be long). An item that is bought is not to buy now; match the name the person used to a listed title by its words, and if none fits, say it is not on the list.',
 	},
-	async run(uow, { list, listId }) {
+	async run(uow, { list, listId, text }) {
 		const { locale } = await uow.family.settings();
 		const wanted = list ? titleKey(list, locale) : null;
 		const lists = await tables(uow.db)
@@ -674,34 +687,31 @@ export const shoppingList = defineAction({
 				(!listId || l.id === listId) &&
 				(!wanted || namesOf(l).some((n) => titleKey(n, locale) === wanted)),
 		);
+		const matches = (r: ItemRow) => !text || labelNamesTitle(text, r.title);
+		const boughtSince = uow.clock.now() - BOUGHT_VISIBLE_MS;
 		let budget = MAX_SHOPPING;
+		let truncated = false;
 		const out = [];
 		for (const l of chosen) {
-			const rows = await tables(uow.db)
+			const all = await tables(uow.db)
 				.selectFrom('lists_shopping_items')
 				.selectAll()
 				.where('list_id', '=', l.id)
 				.where('deleted_at', 'is', null)
-				.where('done_at', 'is', null)
+				.where((eb) => eb.or([eb('done_at', 'is', null), eb('done_at', '>=', boughtSince)]))
 				.orderBy('created_at')
-				.limit(budget)
 				.execute();
-			budget -= rows.length;
 			// What was just bought stays findable, so a name that matches it is not mapped to
 			// another row.
-			const bought =
-				budget > 0
-					? await tables(uow.db)
-							.selectFrom('lists_shopping_items')
-							.selectAll()
-							.where('list_id', '=', l.id)
-							.where('deleted_at', 'is', null)
-							.where('done_at', '>=', uow.clock.now() - BOUGHT_VISIBLE_MS)
-							.orderBy('done_at', 'desc')
-							.limit(budget)
-							.execute()
-					: [];
-			budget -= bought.length;
+			const open = all.filter((r) => r.done_at === null && matches(r));
+			const bought = all
+				.filter((r) => r.done_at !== null && matches(r))
+				.sort((a, b) => (b.done_at as number) - (a.done_at as number));
+			const shownOpen = open.slice(0, budget);
+			budget -= shownOpen.length;
+			const shownBought = bought.slice(0, budget);
+			budget -= shownBought.length;
+			if (shownOpen.length < open.length || shownBought.length < bought.length) truncated = true;
 			const rank = (r: ItemRow) => CATEGORIES.indexOf(r.category);
 			const view = (r: ItemRow, isBought: boolean) => ({
 				id: r.id,
@@ -714,12 +724,12 @@ export const shoppingList = defineAction({
 				id: l.id,
 				name: l.name || DEFAULT_LIST_LABEL,
 				items: [
-					...rows.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),
-					...bought.map((r) => view(r, true)),
+					...shownOpen.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),
+					...shownBought.map((r) => view(r, true)),
 				],
 			});
 		}
-		return { lists: out };
+		return { ...(truncated && { truncated }), lists: out };
 	},
 });
 

@@ -149,6 +149,7 @@ export type ActionResult<O> =
 	 * the person the AI works for cannot decide it, so other members who can approve do.
 	 * `subject`: what the stored suggestion is about, in its stored words (the real title of an
 	 * existing item, not the proposer's name for it); absent when it names nothing.
+	 * `mayExist`: the action's `alreadyThere` thinks what was proposed is on record already.
 	 */
 	| {
 			status: 'drafted';
@@ -156,6 +157,7 @@ export type ActionResult<O> =
 			autoApproval?: true;
 			decidedByOthers?: true;
 			subject?: string;
+			mayExist?: boolean | 'some';
 	  };
 
 /** Stored on a draft when an action is proposed rather than applied. */

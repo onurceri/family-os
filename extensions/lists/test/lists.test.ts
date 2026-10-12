@@ -474,7 +474,26 @@ describe('duplicate hint', () => {
 			.route('core.listDrafts')
 			.call({ query: { status: 'pending', limit: 10 } });
 		const hints = drafts.toReversed().map((d: { mayExist: boolean }) => d.mayExist);
-		expect(hints).toEqual([true, false, true, false]);
+		// The same task asked for another day is still open, so it counts as there.
+		expect(hints).toEqual([true, true, true, false]);
+	});
+
+	it('meets a task by the words of its title, whatever its due date', async () => {
+		const { actor } = await k.member('admin');
+		const ai = { kind: 'ai', source: 'assistant' } as const;
+		await k.runner.invoke(
+			'lists.addTask',
+			{ title: 'Buy a birthday present for Mila', dueDate: '2026-10-20' },
+			actor,
+		);
+		const hint = async (title: string, dueDate?: string) => {
+			const proposed = await k.runner.invoke('lists.addTask', { title, dueDate }, ai);
+			if (proposed.status !== 'drafted') throw new Error('expected a draft');
+			return proposed.mayExist ?? false;
+		};
+		expect(await hint('Buy a present for Mila')).toBe(true);
+		expect(await hint('Buy a present for Mila', '2026-10-18')).toBe(true);
+		expect(await hint('Buy a present for Noah')).toBe(false);
 	});
 });
 

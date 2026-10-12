@@ -65,7 +65,6 @@
 	"kind_memory": "Memory",
 	"remember_title": "Remember: {{text}}",
 	"remember_approve": "Remember this",
-	"memory_words": "remember, forget, from now on, always, never",
 	"use_own_agent": "Use your own AI agent",
 	"greeting_morning": "Good morning, {{name}}.",
 	"greeting_afternoon": "Good afternoon, {{name}}.",

@@ -130,8 +130,12 @@ const SUGGESTION_STATUS = {
 } as const satisfies Record<(typeof DRAFT_STATUSES)[number], string>;
 
 /** The action's title and, when the input has one, its name or text: "Add shopping item: Milk". */
-function suggestionLabel(title: string | undefined, row: DraftRow): string {
-	const what = subjectOf(row.edited_input ?? row.input);
+function suggestionLabel(
+	title: string | undefined,
+	row: DraftRow,
+	subject: string | undefined = subjectOf(row.edited_input ?? row.input),
+): string {
+	const what = subject;
 	const base = title ?? row.action_id;
 	return what ? `${base}: ${what}` : base;
 }
@@ -1208,7 +1212,10 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			suggestions: z.array(
 				z.object({
 					id: z.string(),
+					/** What this suggestion is: the action and the thing it is about. */
 					label: z.string(),
+					/** The Quick add group it came from, when it came from one (not a name for this suggestion). */
+					group: z.string().optional(),
 					status: z.enum(['waiting', 'approved', 'rejected', 'undone', 'expired', 'failed']),
 					/** Why a rejected suggestion closed: taken back by the person, its subject is gone, or it was already so. */
 					reason: z.enum(['withdrawn', 'gone', 'settled']).optional(),
@@ -1242,25 +1249,45 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const passed = await deps.runner().passedCheck(uow.db);
 			const actions = deps.registry().actions;
 			const iso = (at: number) => new Date(at).toISOString();
-			const suggestions = rows
+			const ctx = { db: uow.db, family: uow.family, translate: uow.translate };
+			const mine = rows
 				.filter((row) => {
 					const by = JSON.parse(row.proposed_by) as Actor;
 					return by.kind === 'member'
 						? by.memberId === owner
 						: by.kind === 'ai' && by.onBehalfOf === owner;
 				})
-				.slice(0, limit)
-				.map((row) => {
+				.slice(0, limit);
+			// A draft stored before drafts carried the real title of what they change names its
+			// target only by id: the action says what that is called now.
+			const subjectFor = async (row: DraftRow) => {
+				const raw = row.edited_input ?? row.input;
+				const named = subjectOf(raw);
+				const def = actions.get(row.action_id);
+				if (named || !def?.targetTitle) return named;
+				try {
+					const input = def.input.safeParse(JSON.parse(raw));
+					return input.success
+						? ((await def.targetTitle(ctx, input.data)) ?? undefined)?.slice(0, 80)
+						: undefined;
+				} catch {
+					return undefined;
+				}
+			};
+			const suggestions = await Promise.all(
+				mine.map(async (row) => {
 					const reason = draftReason(row);
 					return {
 						id: row.id,
-						label: row.summary ?? suggestionLabel(actions.get(row.action_id)?.title, row),
+						label: suggestionLabel(actions.get(row.action_id)?.title, row, await subjectFor(row)),
+						...(row.summary && { group: row.summary }),
 						status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
 						...(reason !== null && { reason }),
 						suggestedAt: iso(row.created_at),
 						...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
 					};
-				});
+				}),
+			);
 			return { suggestions };
 		},
 	});

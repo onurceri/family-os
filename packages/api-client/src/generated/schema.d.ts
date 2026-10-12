@@ -25844,7 +25844,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today) */
+                    /** @description First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today). Without `to` and `text` it means that one day */
                     from?: string;
                     /** @description Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from` */
                     to?: string;
@@ -25871,7 +25871,7 @@ export interface operations {
                             events: {
                                 /** @description The event, for changing or deleting it; null for subscribed calendars */
                                 id: string | null;
-                                /** @description Repeating events only: this date, for deleting only that one */
+                                /** @description Repeating events only: the key of this date, for changing or deleting only that one */
                                 occurrence?: string;
                                 title: string;
                                 date: string;
@@ -25900,6 +25900,14 @@ export interface operations {
                             }[];
                             truncated: boolean;
                             note?: string;
+                            /** @description Only when nothing matched in the range: the next match after it */
+                            nextMatch?: {
+                                /** @description The event; null for subscribed calendars */
+                                id: string | null;
+                                occurrence?: string;
+                                title: string;
+                                date: string;
+                            };
                         };
                     } | {
                         /** @enum {string} */
@@ -26493,7 +26501,7 @@ export interface operations {
                     notes?: string | null;
                     tags?: string[];
                     id: string;
-                    /** @description Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes */
+                    /** @description Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to change just that one. That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes */
                     occurrence?: string;
                     /** @description Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar. */
                     label?: string;
@@ -26682,6 +26690,7 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
+                    /** @description Repeating events: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD) of that occurrence, to remove just that one */
                     occurrence?: string;
                     /** @description Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar. */
                     label?: string;
@@ -30265,6 +30274,7 @@ export interface operations {
                             suggestions: {
                                 id: string;
                                 label: string;
+                                group?: string;
                                 /** @enum {string} */
                                 status: "waiting" | "approved" | "rejected" | "undone" | "expired" | "failed";
                                 /** @enum {string} */
@@ -41819,6 +41829,8 @@ export interface operations {
                     list?: string;
                     /** @description Only this list */
                     listId?: string;
+                    /** @description Only items whose title shares its words with this text (for example "cheddar" finds "Cheddar cheese"); use it to find one item in a long list */
+                    text?: string;
                 };
             };
         };
@@ -41833,6 +41845,8 @@ export interface operations {
                         /** @enum {string} */
                         status: "applied";
                         output: {
+                            /** @description True when more items matched than are shown; pass `text` or `list` to see them */
+                            truncated?: boolean;
                             lists: {
                                 /** @description The list, for adding items to it (listId) */
                                 id: string;

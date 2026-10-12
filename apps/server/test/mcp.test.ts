@@ -591,6 +591,11 @@ describe('tools', () => {
 			legacyCall('vehicles_addLog', { vehicleId: handle, doneOn: '2026-10-01', kind: 'service' }),
 		);
 		expect(drafted.body.result.content[0].text).toContain('"status":"drafted"');
+		// The sentence names the suggestion by its title, not by the action's description.
+		expect(drafted.body.result.content[0].text).toMatch(
+			/"say":"Suggested, not added yet: [^"]*\. It appears/,
+		);
+		expect(drafted.body.result.content[0].text).not.toContain('Adds ');
 		const drafts = await runtime.handle.db
 			.selectFrom('core_drafts' as never)
 			.selectAll()

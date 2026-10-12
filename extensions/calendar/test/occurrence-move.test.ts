@@ -155,6 +155,79 @@ describe('moving one date of a repeating event', () => {
 	});
 });
 
+describe('naming one date of a repeating event by its day', () => {
+	const piano = () =>
+		create({
+			title: 'Piano lesson',
+			date: '2026-10-08',
+			startTime: '16:00',
+			endTime: '16:45',
+			recurrence: { freq: 'weekly', byDay: ['TH'] },
+		});
+
+	it('moves the occurrence of that day when the model sends a date (the real mistake)', async () => {
+		// The model sent "2026-10-15" for a timed series; it used to fail only when approved.
+		const id = await piano();
+		const result = await k.runner.invoke(
+			'calendar.changeEvent',
+			{ id, occurrence: '2026-10-15', startTime: '17:00', label: 'Piano lesson' },
+			ai(),
+			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(result.draftId, admin.actor);
+		expect(await range('2026-10-15', '2026-10-15')).toMatchObject([
+			{ start: epochOf('2026-10-15', '17:00', TZ), recurring: false },
+		]);
+		expect(await range('2026-10-08', '2026-10-08')).toMatchObject([{ recurring: true }]);
+	});
+
+	it('stores the key, so the draft says which occurrence it is', async () => {
+		const id = await piano();
+		const result = await k.runner.invoke(
+			'calendar.deleteEvent',
+			{ id, occurrence: '2026-10-15', label: 'Piano lesson' },
+			ai(),
+			{ draft: { sourceKind: 'assistant', sourceId: 'turn_2' } },
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		const [draft] = await k
+			.route('core.listDrafts')
+			.call({ actor: admin.actor, query: { status: 'pending', limit: 5 } });
+		expect(draft.input.occurrence).toBe(String(epochOf('2026-10-15', '16:00', TZ)));
+		await k.runner.approveDraft(result.draftId, admin.actor);
+		expect(await range('2026-10-15', '2026-10-15')).toEqual([]);
+	});
+
+	it('refuses a day the series does not have to the model, with nothing drafted', async () => {
+		const id = await piano();
+		await expect(
+			k.runner.invoke(
+				'calendar.changeEvent',
+				{ id, occurrence: '2026-10-14', startTime: '17:00', label: 'Piano lesson' },
+				ai(),
+				{ draft: { sourceKind: 'assistant', sourceId: 'turn_3' } },
+			),
+		).rejects.toMatchObject({
+			code: 'bad_request',
+			message: expect.stringContaining('does not happen on 2026-10-14'),
+		});
+		await expect(
+			k.runner.invoke(
+				'calendar.deleteEvent',
+				{ id, occurrence: 'soon', label: 'Piano lesson' },
+				ai(),
+				{ draft: { sourceKind: 'assistant', sourceId: 'turn_3' } },
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(
+			await k
+				.route('core.listDrafts')
+				.call({ actor: admin.actor, query: { status: 'pending', limit: 5 } }),
+		).toEqual([]);
+	});
+});
+
 describe('finding an event by its text', () => {
 	const find = (input: Record<string, unknown>) =>
 		k.runner.invoke<{ events: { title: string; date: string }[]; note?: string }>(
@@ -173,7 +246,49 @@ describe('finding an event by its text', () => {
 
 	it('still needs a range when there is no text', async () => {
 		await expect(find({})).rejects.toMatchObject({ code: 'bad_request' });
-		await expect(find({ from: '2026-10-12' })).rejects.toMatchObject({ code: 'bad_request' });
+		await expect(find({ to: '2026-10-12' })).rejects.toMatchObject({ code: 'bad_request' });
+	});
+
+	it('names the keys it received when it cannot search', async () => {
+		await expect(find({ to: '2026-10-12', members: [] })).rejects.toMatchObject({
+			message: expect.stringContaining('Received: to, members'),
+		});
+	});
+
+	it('takes `from` alone as that one day', async () => {
+		await create({ title: 'Monday swim', date: '2026-10-12', startTime: '17:00' });
+		await create({ title: 'Tuesday swim', date: '2026-10-13', startTime: '17:00' });
+		const found = await find({ from: '2026-10-12' });
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.events.map((e) => e.title)).toEqual(['Monday swim']);
+	});
+
+	it('gives the next match as a record the model can use', async () => {
+		const lukas = await k.member('member', 'Lukas');
+		const noah = await k.member('member', 'Noah');
+		await create({
+			title: 'Swimming',
+			date: '2026-10-13',
+			startTime: '17:00',
+			memberIds: [noah.member.id],
+		});
+		const gala = await create({
+			title: 'Swimming gala',
+			date: '2026-11-07',
+			startTime: '10:00',
+			memberIds: [lukas.member.id],
+		});
+		const found = await find({
+			from: '2026-10-12',
+			to: '2026-10-18',
+			text: 'swimming',
+			members: [lukas.member.id],
+		});
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.events).toEqual([]);
+		expect(found.output).toMatchObject({
+			nextMatch: { id: gala, title: 'Swimming gala', date: '2026-11-07' },
+		});
 	});
 
 	it('names the next match when the searched range has none', async () => {

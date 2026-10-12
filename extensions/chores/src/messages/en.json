@@ -83,7 +83,6 @@
 	"label_undo": "Take back the completion of a chore",
 	"draft_done_by": "Done by",
 	"draft_approve_done": "Mark done",
-	"ai_words": "chore, whose turn, dishes, laundry, tidy",
 	"quiet_none": "no chores",
 	"today_more_one": "and {{count}} more",
 	"today_more_other": "and {{count}} more",

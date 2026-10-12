@@ -83,7 +83,6 @@
 	"label_undo": "Bir işin yapıldı kaydını geri al",
 	"draft_done_by": "Yapan",
 	"draft_approve_done": "Yapıldı olarak işaretle",
-	"ai_words": "ev işi, ev işleri, sıra kimde, bulaşık, çamaşır, toplama",
 	"quiet_none": "ev işi yok",
 	"today_more_one": "ve {{count}} tane daha",
 	"today_more_other": "ve {{count}} tane daha",

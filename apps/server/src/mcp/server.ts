@@ -18,7 +18,10 @@ interface Offered {
 	/** The action, or null for the people list. */
 	actionId: string | null;
 	kind: 'read' | 'draft';
-	info: Pick<AiActionInfo, 'title' | 'description' | 'inputSchema'> & { guidance?: string };
+	info: Pick<AiActionInfo, 'title' | 'description' | 'inputSchema'> & {
+		guidance?: string;
+		draftTitle?: string;
+	};
 }
 
 /** A tool's input is already JSON Schema (from the action's Zod schema); the action validates it. */
@@ -208,7 +211,11 @@ export async function createServerFor(
 							sourceId: principal.token.id,
 							promptVersion: 'mcp/1',
 						},
-						draftSummary: tool.info.description.split('.')[0] ?? '',
+						draftTitle: tool.info.draftTitle
+							? kernel.ctx.translate(settings.locale, tool.info.draftTitle)
+							: tool.info.title,
+						onFailure: ({ actionId, code, inputKeys }) =>
+							kernel.ctx.logger.warn({ actionId, code, inputKeys }, 'MCP tool call failed'),
 					});
 					text = outcome.text;
 					ok = outcome.ok;

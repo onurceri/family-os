@@ -25,7 +25,6 @@ import {
 	type AssistantTool,
 	areaOf,
 	chatTools,
-	narrow,
 	type Proposal,
 	type RecordedCall,
 	toolsClosed,
@@ -68,10 +67,6 @@ export const assistantDone = defineEvent('assistant.done', donePayload);
 export const KEEP_VERBATIM = 12;
 /** When this many messages are not summarised yet, the summariser runs. */
 export const SUMMARIZE_AFTER = 30;
-/** How many of the person's latest messages decide which tools are offered. */
-const RECENT_USER_MESSAGES = 3;
-/** How many earlier answers are scanned for the areas the conversation used. */
-const USED_AREAS_LOOKBACK = 40;
 /** The most handles kept with a thread, and the most listed in the prompt. */
 const MAX_REMEMBERED_HANDLES = 150;
 const MAX_RECORDS_IN_PROMPT = 30;
@@ -83,14 +78,6 @@ const parseHandles = (json: string | null): RememberedHandles => {
 		return json ? (JSON.parse(json) as RememberedHandles) : {};
 	} catch {
 		return {};
-	}
-};
-
-const parseCalls = (json: string | null): RecordedCall[] => {
-	try {
-		return json ? (JSON.parse(json) as RecordedCall[]) : [];
-	} catch {
-		return [];
 	}
 };
 
@@ -219,26 +206,6 @@ export const turnJob = defineJob({
 			content: m.content,
 		}));
 		while (messages[0]?.role === 'assistant') messages.shift();
-		// A follow-up ("yes, move it") names no area: what the person said lately counts, and so
-		// do the areas the conversation already worked in.
-		const question = kept
-			.filter((m) => m.role === 'user')
-			.slice(-RECENT_USER_MESSAGES)
-			.map((m) => m.content)
-			.join('\n');
-		const earlierCalls = await db
-			.selectFrom('assistant_messages')
-			.select('tool_calls')
-			.where('thread_id', '=', threadId)
-			.where('status', '=', 'done')
-			.where('tool_calls', 'is not', null)
-			.orderBy('created_at', 'desc')
-			.limit(USED_AREAS_LOOKBACK)
-			.execute();
-		const used = new Set<string>();
-		for (const row of earlierCalls)
-			for (const call of parseCalls(row.tool_calls)) used.add(areaOf(call.name));
-
 		// What the asker may use: their capabilities and the AI sandbox filter the tools.
 		const offered: AssistantTool[] = [
 			...ctx.actions.aiReadTools({ local: policy.local, actor }).map((info) => ({
@@ -252,7 +219,7 @@ export const turnJob = defineJob({
 				info,
 			})),
 		];
-		const tools = narrow(offered, question, (key) => ctx.vocabulary(key), used);
+		const tools = offered;
 
 		// The member's own notes go into their own threads only, and only where the family lets
 		// people's details reach the model (core is not an area; the privacy switch governs it).
@@ -339,6 +306,9 @@ export const turnJob = defineJob({
 					labels,
 					targets,
 					inject,
+					translate: (key) => ctx.translate(member.locale ?? settings.locale, key),
+					onFailure: ({ actionId, code, inputKeys }) =>
+						ctx.logger.warn({ actionId, code, inputKeys }, 'assistant tool call failed'),
 				}),
 				maxSteps: MAX_STEPS,
 				toolsClosed: () => toolsClosed(calls),

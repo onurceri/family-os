@@ -134,7 +134,6 @@
 	"kind_task_remove": "Delete task",
 	"kind_shopping_remove": "Remove from list",
 	"draft_approve_delete": "Delete",
-	"ai_words": "task, todo, to-do, shopping, buy, list",
 	"quantity_units": "kg, g, mg, l, ml, cl, pcs, pack, packs, lb, lbs, oz, gal, qt, pt, doz, dozen, can, cans, bottle, bottles, x",
 	"today_open_one": "{{count}} open",
 	"today_open_other": "{{count}} open",
