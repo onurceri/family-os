@@ -103,6 +103,8 @@
 	"chip_suggestions_other": "{{count}} öneri",
 	"chip_added_one": "{{count}} eklendi",
 	"chip_added_other": "{{count}} eklendi",
+	"chip_done_one": "{{count}} yapıldı",
+	"chip_done_other": "{{count}} yapıldı",
 	"chip_rejected": "Reddedildi",
 	"chip_undone": "Geri alındı",
 	"chip_expired": "Günü geçti",

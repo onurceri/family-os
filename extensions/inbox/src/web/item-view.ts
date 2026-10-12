@@ -31,6 +31,7 @@ export interface ItemChip {
 	key:
 		| 'chip_suggestions'
 		| 'chip_added'
+		| 'chip_done'
 		| 'chip_rejected'
 		| 'chip_undone'
 		| 'chip_expired'
@@ -75,6 +76,10 @@ export function captureLine(item: InboxItem): string {
 	return item.summary?.trim() || itemTitle(item);
 }
 
+/** Whether an action adds something: action ids read `<extension>.<verbNoun>`, and the verb is add or create. */
+export const isAddition = (actionId: string): boolean =>
+	/^(add|create)(?=[A-Z]|$)/.test(actionId.split('.').at(-1) ?? '');
+
 /** The outcome chip of a capture. */
 export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	if (item.status === 'received' || item.status === 'normalized')
@@ -82,8 +87,14 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	if (item.status === 'failed') return { tone: 'attention', key: 'chip_failed' };
 	const pending = drafts.filter(needsAction).length;
 	if (pending) return { tone: 'attention', key: 'chip_suggestions', count: pending };
-	const applied = drafts.filter((d) => d.status === 'applied').length;
-	if (applied) return { tone: 'now', key: 'chip_added', count: applied };
+	const applied = drafts.filter((d) => d.status === 'applied');
+	// "Added" only when everything that happened was an add; a removal or a change is just done.
+	if (applied.length)
+		return {
+			tone: 'now',
+			key: applied.every((d) => isAddition(d.actionId)) ? 'chip_added' : 'chip_done',
+			count: applied.length,
+		};
 	if (drafts.length && drafts.every((d) => d.status === 'expired'))
 		return { tone: 'idle', key: 'chip_expired' };
 	// Approved and then taken back is not the same as turned down.

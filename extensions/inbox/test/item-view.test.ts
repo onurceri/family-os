@@ -5,6 +5,7 @@ import {
 	addsToTitle,
 	askAssistantHref,
 	captureLine,
+	isAddition,
 	isQuestionForAssistant,
 	isWaiting,
 	itemChip,
@@ -61,7 +62,8 @@ describe('item view', () => {
 });
 
 describe('what waits for the person', () => {
-	const draft = (status: Draft['status']) => ({ id: 'd', status }) as Draft;
+	const draft = (status: Draft['status'], actionId = 'lists.addTask') =>
+		({ id: 'd', status, actionId }) as Draft;
 	const waits = (over: Partial<InboxItem>, drafts: Draft[], mine = true, seen = false) =>
 		isWaiting({ item: item(over), drafts }, mine, seen);
 
@@ -89,6 +91,15 @@ describe('what waits for the person', () => {
 		expect(itemChip(item(), [draft('expired'), draft('expired')]).key).toBe('chip_expired');
 		expect(itemChip(item(), [draft('expired'), draft('rejected')]).key).toBe('chip_rejected');
 		expect(itemChip(item(), [draft('expired'), draft('applied')]).key).toBe('chip_added');
+	});
+	it('says added only when every applied suggestion was an add', () => {
+		const add = draft('applied', 'calendar.createEvent');
+		const removal = draft('applied', 'kitchen.removeMeal');
+		expect(itemChip(item(), [add]).key).toBe('chip_added');
+		expect(itemChip(item(), [removal]).key).toBe('chip_done');
+		expect(itemChip(item(), [add, removal])).toMatchObject({ key: 'chip_done', count: 2 });
+		expect(isAddition('lists.addShoppingItems')).toBe(true);
+		expect(isAddition('lists.address')).toBe(false);
 	});
 	it('says taken back for suggestions that were approved and then undone', () => {
 		expect(itemChip(item(), [draft('undone')]).key).toBe('chip_undone');
