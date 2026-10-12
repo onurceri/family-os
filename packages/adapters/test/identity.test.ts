@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { openDatabase, runMigrations } from '@famos/db';
 import { getMigrations } from 'better-auth/db/migration';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -9,6 +10,22 @@ import {
 } from '../src/identity-betterauth/index.ts';
 
 const BASE = 'http://localhost:3000';
+/**
+ * A salted SHA-256 stands in for better-auth's scrypt, which takes long enough under CPU load
+ * to exceed the test timeout. The password flow around it is unchanged.
+ */
+const digest = (salt: string, password: string) =>
+	createHash('sha256').update(`${salt}:${password}`).digest('hex');
+const passwordHasher = {
+	hash: async (password: string) => {
+		const salt = randomBytes(8).toString('hex');
+		return `${salt}:${digest(salt, password)}`;
+	},
+	verify: async ({ hash, password }: { hash: string; password: string }) => {
+		const [salt = '', expected] = hash.split(':');
+		return digest(salt, password) === expected;
+	},
+};
 let identity: Identity;
 let db: ReturnType<typeof openDatabase>['db'];
 /** Members whose role no longer signs in with a PIN. */
@@ -25,6 +42,7 @@ beforeEach(async () => {
 		secureCookies: false,
 		trustedDevice: async (headers) => headers.get('x-test-device'),
 		mayUsePin: async (memberId) => !noPin.has(memberId),
+		passwordHasher,
 	});
 });
 
@@ -49,6 +67,32 @@ const cookieOf = (res: Response) =>
 		.join('; ');
 
 describe('identity-betterauth', () => {
+	it('signs in with the default password hashing', { timeout: 120_000 }, async () => {
+		// scrypt is memory- and CPU-bound by design, so how long it takes depends on the machine.
+		const real = createIdentity({
+			db,
+			secret: 's'.repeat(32),
+			baseURL: BASE,
+			secureCookies: false,
+			trustedDevice: async () => null,
+			mayUsePin: async () => true,
+		});
+		await real.admin.setPasswordLogin({
+			memberId: 'member_real',
+			email: 'real@example.com',
+			password: 'correct horse battery',
+			displayName: 'R',
+		});
+		const res = await real.handler(
+			new Request(`${BASE}/api/auth/sign-in/email`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', origin: BASE },
+				body: JSON.stringify({ email: 'real@example.com', password: 'correct horse battery' }),
+			}),
+		);
+		expect(res.status).toBe(200);
+	});
+
 	it('committed migrations match what better-auth expects', async () => {
 		const plan = await getMigrations(
 			authOptions({

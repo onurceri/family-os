@@ -457,7 +457,9 @@ describe('scheduling', () => {
 		await new Promise((r) => setTimeout(r, 60));
 		expect(polls).toBe(0); // just checked
 		now += 6 * 60_000;
-		await new Promise((r) => setTimeout(r, 60));
+		// The next scheduler tick queues the check; wait for it rather than guess how long a tick takes.
+		const deadline = Date.now() + 30_000;
+		while (polls === 0 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 10));
 		email.stop();
 		expect(polls).toBeGreaterThan(0);
 	});

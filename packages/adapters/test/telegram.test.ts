@@ -57,7 +57,8 @@ const make = (overrides: Partial<Parameters<typeof createTelegram>[0]> = {}) => 
 };
 
 async function until(check: () => boolean | Promise<boolean>, what = 'condition') {
-	const deadline = Date.now() + 4_000;
+	// A backstop only: a passing run returns as soon as the condition holds, however slow the machine.
+	const deadline = Date.now() + 25_000;
 	while (Date.now() < deadline) {
 		if (await check()) return;
 		await new Promise((r) => setTimeout(r, 10));
@@ -312,6 +313,12 @@ describe('asking the assistant', () => {
 				return { status: 'asked', threadId: 'thread_1', replyId: `reply_${asked.length}` };
 			},
 		});
+	/**
+	 * The handler records a question before the service stores the reply it waits for and sends
+	 * the typing action, so a question is only fully handled once that action went out.
+	 */
+	const questionHandled = (count: number, what: string) =>
+		until(() => asked.length === count && fake.callsOf('sendChatAction').length === count, what);
 	beforeEach(() => {
 		asked = [];
 		busy = false;
@@ -327,7 +334,7 @@ describe('asking the assistant', () => {
 		fake.sent().length = 0;
 
 		fake.say(55, 'What is on the shopping list?');
-		await until(() => asked.length === 1, 'the question');
+		await questionHandled(1, 'the question');
 		expect(asked[0]).toEqual({
 			memberId: 'mem_1',
 			text: 'What is on the shopping list?',
@@ -349,7 +356,7 @@ describe('asking the assistant', () => {
 
 		// The next question goes to the same thread.
 		fake.say(55, 'And the calendar?');
-		await until(() => asked.length === 2, 'the second question');
+		await questionHandled(2, 'the second question');
 		expect(asked[1]?.threadId).toBe('thread_1');
 	});
 
@@ -360,7 +367,7 @@ describe('asking the assistant', () => {
 		tg.start();
 		await linked(tg);
 		fake.say(55, 'Add apples');
-		await until(() => asked.length === 1, 'the question');
+		await questionHandled(1, 'the question');
 		fake.sent().length = 0;
 		drafts = [{ id: 'draft_1', label: 'Apples' }];
 
@@ -447,9 +454,9 @@ describe('polling', () => {
 		expect(fake.callsOf('getUpdates')).toEqual([]);
 		await tg.setToken(fake.token);
 		await until(() => fake.callsOf('getUpdates').length > 0, 'polling to start');
-		const began = Date.now();
+		// stop() aborts the poll in flight instead of waiting out the long poll; a regression
+		// would hang here until the test times out.
 		await tg.stop();
-		expect(Date.now() - began).toBeLessThan(1_000);
 	});
 });
 

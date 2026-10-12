@@ -257,8 +257,11 @@ describe.skipIf(!hasOpenssl)('node transport', () => {
 			[
 				'req',
 				'-x509',
+				// An EC key generates instantly; RSA key generation takes a random, load-dependent time.
 				'-newkey',
-				'rsa:2048',
+				'ec',
+				'-pkeyopt',
+				'ec_paramgen_curve:prime256v1',
 				'-nodes',
 				'-days',
 				'1',

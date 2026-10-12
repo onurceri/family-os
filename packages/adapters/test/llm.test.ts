@@ -17,6 +17,12 @@ import { silentLogger, uuidv7Ids } from '../src/runtime/index.ts';
 // A stand-in OpenAI-compatible server: behaviour is chosen by the requested model id.
 type Seen = { url: string; auth: string | undefined; body: Record<string, unknown> };
 const seen: Seen[] = [];
+/**
+ * Calls that must succeed get a long limit: the limit is only a backstop, so a busy machine
+ * cannot turn a slow-but-correct response into a failure.
+ */
+const CALL_TIMEOUT_MS = 30_000;
+
 const server = http.createServer((req, res) => {
 	let raw = '';
 	req.on('data', (chunk) => (raw += chunk));
@@ -48,7 +54,7 @@ const server = http.createServer((req, res) => {
 			};
 			seen.push({ url: req.url, auth, body: fields });
 			const model = fields.model;
-			if (model === 'slow-stt') return void setTimeout(() => res.end('{}'), 2_000);
+			if (model === 'slow-stt') return; // never answers: the client's own timeout ends the call
 			if (model === 'denied-stt') return res.writeHead(401).end('{}');
 			if (model === 'big-stt') return res.writeHead(413).end('{"error":"too big"}');
 			if (model === 'missing-stt') return res.writeHead(404).end('{}');
@@ -82,7 +88,7 @@ const server = http.createServer((req, res) => {
 			);
 		}
 		if (body.stream) return streamChat(model, body, res);
-		if (model === 'slow') return void setTimeout(() => res.end('{}'), 2_000);
+		if (model === 'slow') return; // never answers: the client's own timeout ends the call
 		if (model === 'no-zdr')
 			return res.writeHead(404).end(
 				JSON.stringify({
@@ -183,7 +189,13 @@ beforeAll(async () => {
 	await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 	baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
 });
-afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+afterAll(
+	() =>
+		new Promise<void>((resolve) => {
+			server.close(() => resolve());
+			server.closeAllConnections();
+		}),
+);
 
 const NOW = Date.UTC(2026, 9, 6, 9);
 let clockNow = NOW;
@@ -225,7 +237,7 @@ beforeEach(async () => {
 });
 
 const Trip = z.object({ title: z.string(), date: z.string() });
-const ask = (role: 'fast' | 'vision' | 'smart' = 'smart', timeoutMs = 1_000) =>
+const ask = (role: 'fast' | 'vision' | 'smart' = 'smart', timeoutMs = CALL_TIMEOUT_MS) =>
 	llm.generateObject({
 		role,
 		feature: 'test.extract',
@@ -271,7 +283,7 @@ async function useTranscriber(
 	return provider;
 }
 const audio = new Uint8Array([79, 103, 103, 83, 0, 1, 2]);
-const say = (timeoutMs = 1_000) =>
+const say = (timeoutMs = CALL_TIMEOUT_MS) =>
 	llm.transcribe({
 		feature: 'test.transcribe',
 		areas: ['test'],
@@ -494,7 +506,7 @@ describe('AI SDK LlmPort', () => {
 			schema: Trip,
 			prompt: 'Read this',
 			files: [{ data: new Uint8Array([137, 80, 78, 71]), mediaType: 'image/png' }],
-			timeoutMs: 1_000,
+			timeoutMs: CALL_TIMEOUT_MS,
 		});
 		expect(seen[0]?.body.provider).toBeUndefined();
 		const messages = (seen[0]?.body.messages ?? []) as { content: unknown }[];
@@ -529,7 +541,7 @@ describe('AI SDK LlmPort', () => {
 			schema: Trip,
 			prompt: 'Read this',
 			files: [{ data: new Uint8Array([137, 80, 78, 71]), mediaType: 'image/png' }],
-			timeoutMs: 1_000,
+			timeoutMs: CALL_TIMEOUT_MS,
 		});
 		const messages = (seen[0]?.body.messages ?? []) as { content: unknown[] }[];
 		const content = messages[0]?.content;
@@ -565,7 +577,7 @@ describe('AI SDK LlmPort', () => {
 
 describe('embeddings', () => {
 	const embed = (area = 'test', texts: string[] = ['one', 'three']) =>
-		llm.embed({ feature: 'test.embed', area, texts, timeoutMs: 1_000, jobId: 'job_1' });
+		llm.embed({ feature: 'test.embed', area, texts, timeoutMs: CALL_TIMEOUT_MS, jobId: 'job_1' });
 	async function useEmbedder(
 		model: string,
 		kind: 'openai-compatible' | 'ollama' = 'openai-compatible',
@@ -703,7 +715,7 @@ describe('speech to text', () => {
 			audio,
 			mediaType: 'audio/mpeg',
 			filename: 'note.mp3',
-			timeoutMs: 1_000,
+			timeoutMs: CALL_TIMEOUT_MS,
 		});
 		expect(result.usage.cost).toBeNull();
 		expect(seen[0]?.body.language).toBeUndefined();
@@ -812,7 +824,7 @@ describe('AI areas and local models', () => {
 				areas: ['test', 'vault'],
 				schema: Trip,
 				prompt: 'x',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).rejects.toMatchObject({ code: 'disabled', retryable: false });
 		expect(seen).toHaveLength(0);
@@ -831,7 +843,7 @@ describe('AI areas and local models', () => {
 				areas: ['vault'],
 				schema: Trip,
 				prompt: 'x',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).rejects.toMatchObject({ code: 'local_required', retryable: false });
 		expect(seen).toHaveLength(0);
@@ -848,7 +860,7 @@ describe('AI areas and local models', () => {
 				areas: ['vault'],
 				schema: Trip,
 				prompt: 'x',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).rejects.toMatchObject({ code: 'local_required' });
 		expect(seen).toHaveLength(0);
@@ -865,7 +877,7 @@ describe('AI areas and local models', () => {
 				areas: ['test', 'vault'],
 				schema: Trip,
 				prompt: 'x',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).resolves.toMatchObject({ model: 'Router / priced' });
 		expect(seen).toHaveLength(1);
@@ -902,7 +914,7 @@ describe('AI areas and local models', () => {
 				audio,
 				mediaType: 'audio/ogg',
 				filename: 'v.ogg',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).rejects.toMatchObject({ code: 'local_required' });
 		expect(seen).toHaveLength(0);
@@ -914,7 +926,7 @@ describe('AI areas and local models', () => {
 				audio,
 				mediaType: 'audio/ogg',
 				filename: 'v.ogg',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 			}),
 		).rejects.toMatchObject({ code: 'disabled' });
 		expect((await row()).map((r) => r.error_code)).toEqual(['local_required', 'disabled']);
@@ -952,7 +964,7 @@ describe('AI activity', () => {
 				areas: ['test', 'vault', 'test'],
 				schema: Trip,
 				prompt: 'secret prompt text',
-				timeoutMs: 1_000,
+				timeoutMs: CALL_TIMEOUT_MS,
 				memberId: 'mem_9',
 			}),
 		).rejects.toMatchObject({ code: 'disabled' });
@@ -1039,7 +1051,7 @@ describe('chat with tools', () => {
 			messages: [{ role: 'user', content: 'ping?' }],
 			tools: [ping],
 			maxSteps: 4,
-			timeoutMs: 2_000,
+			timeoutMs: CALL_TIMEOUT_MS,
 			memberId: 'mem_1',
 			jobId: 'job_1',
 			onText: (d) => deltas.push(d),

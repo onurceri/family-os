@@ -34,6 +34,15 @@ export interface IdentityOptions {
 	 * sign-in, so a PIN set earlier stops working when the role changes.
 	 */
 	mayUsePin: (memberId: string) => Promise<boolean>;
+	/**
+	 * Replaces better-auth's password hashing (scrypt, tuned to take tens of milliseconds and
+	 * a lot of memory). Production leaves it unset; tests pass a cheap hash so sign-in speed
+	 * does not depend on how busy the machine is.
+	 */
+	passwordHasher?: {
+		hash: (password: string) => Promise<string>;
+		verify: (input: { hash: string; password: string }) => Promise<boolean>;
+	};
 }
 
 export interface Identity {
@@ -124,6 +133,7 @@ export function authOptions(options: IdentityOptions): BetterAuthOptions {
 			disableSignUp: true,
 			minPasswordLength: 10,
 			maxPasswordLength: 200,
+			...(options.passwordHasher && { password: options.passwordHasher }),
 		},
 		user: {
 			modelName: 'auth_users',
