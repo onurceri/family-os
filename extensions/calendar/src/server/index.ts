@@ -6,9 +6,10 @@ import {
 	FamosError,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { IsoDateSchema, IsoTimeSchema, todayIn, zoned } from '@famos/time';
+import { addDays, IsoDateSchema, IsoTimeSchema, isValidDate, todayIn, zoned } from '@famos/time';
 import { z } from 'zod';
 import {
+	type EventDetail,
 	EventDetailSchema,
 	EventIdSchema,
 	EventInputSchema,
@@ -30,9 +31,11 @@ import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
 import {
+	type EventRow,
 	ensureTags,
 	eventExists,
 	events,
+	expandRow,
 	migrations,
 	occurrencesBetween,
 	sortOccurrences,
@@ -81,6 +84,44 @@ async function loadEvent(uow: UnitOfWork, id: string) {
 		.executeTakeFirst();
 	if (!row) throw new FamosError('not_found', 'Event not found');
 	return row;
+}
+
+/**
+ * One date of a repeating event as an event of its own: the series' details at that date (a
+ * multi-day all-day event keeps its length, a timed one its start and end). Throws when the key
+ * is not one of the series' dates.
+ */
+function occurrenceDetail(row: EventRow, series: EventDetail, key: string): EventDetail {
+	const notThere = () => new FamosError('bad_request', 'That is not one of the event’s dates');
+	const day = row.all_day
+		? key
+		: Number.isFinite(Number(key))
+			? zoned(Number(key), row.time_zone).toPlainDate().toString()
+			: '';
+	if (!day || !isValidDate(day)) throw notThere();
+	if (!expandRow(row, day, day, row.time_zone).some((o) => o.key === key)) throw notThere();
+	if (row.all_day) {
+		const span = Math.round(
+			(Date.parse(series.endDate ?? series.date) - Date.parse(series.date)) / 86_400_000,
+		);
+		return {
+			...series,
+			date: key,
+			endDate: span > 0 ? addDays(key, span) : null,
+			recurrence: null,
+			rrule: null,
+		};
+	}
+	const hhmm = (ms: number) => zoned(ms, row.time_zone).toPlainTime().toString().slice(0, 5);
+	const start = Number(key);
+	return {
+		...series,
+		date: day,
+		startTime: hhmm(start),
+		endTime: hhmm(start + ((row.ends_at as number) - (row.starts_at as number))),
+		recurrence: null,
+		rrule: null,
+	};
 }
 
 /** The title of a live event, for the runner's check that an AI's label names the right one. */
@@ -282,28 +323,48 @@ export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
 	title: 'Change some details of an event (whole series)',
 	draftTitle: 'calendar:draft_title_change_event',
-	input: EventChangeSchema.extend({ id: EventIdSchema, label: ReviewLabelSchema }),
-	// The old values of what changed, keyed like the input (for undo).
-	output: z.object({ event: EventDetailSchema, before: z.record(z.string(), z.unknown()) }),
+	input: EventChangeSchema.extend({
+		id: EventIdSchema,
+		occurrence: z
+			.string()
+			.optional()
+			.describe(
+				'Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes',
+			),
+		label: ReviewLabelSchema,
+	}),
+	// The old values of what changed, keyed like the input (for undo). `split` is set when one
+	// date of a repeating event became its own event: `event` is then the new one-off event.
+	output: z.object({
+		event: EventDetailSchema,
+		before: z.record(z.string(), z.unknown()),
+		split: z.object({ seriesId: z.string(), occurrence: z.string() }).optional(),
+	}),
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
-	undo: ({ event, before }) => ({
-		actionId: 'calendar.changeEvent',
-		input: { id: event.id, ...before },
-	}),
+	undo: ({ event, before, split }) =>
+		split
+			? {
+					actionId: 'calendar.putOccurrenceBack',
+					input: { id: split.seriesId, occurrence: split.occurrence, splitId: event.id },
+				}
+			: { actionId: 'calendar.changeEvent', input: { id: event.id, ...before } },
 	// Moving an event to a day that has passed means nothing; other changes do not expire.
 	draftDate: (input) => input.endDate ?? input.date,
 	ai: {
 		description:
 			'Changes an existing family event: its time, date, place, title, notes, tags or who goes. Send only the fields that change. Find the event with calendar.findEvents first; never add a second event for the same thing.',
 		guidance:
-			'Use the family time zone and resolve relative dates from today. For a repeating event this changes every date; to drop one date use calendar.deleteEvent with its occurrence.',
+			'Use the family time zone and resolve relative dates from today. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
 	},
-	async run(uow, { id, label: _label, ...change }) {
+	async run(uow, { id, label: _label, occurrence, ...change }) {
 		const row = await loadEvent(uow, id);
 		await assertMembers(uow, change.memberIds ?? []);
 		const { timeZone } = await uow.family.settings();
-		const was = toDetail(row);
+		const series = toDetail(row);
+		const split = Boolean(occurrence && row.rrule);
+		// For one date of a series, the event is that date as it is now; the rest is the series.
+		const was = split ? occurrenceDetail(row, series, occurrence as string) : series;
 		const current: Record<string, unknown> = {
 			title: was.title,
 			allDay: was.allDay,
@@ -341,11 +402,53 @@ export const changeEvent = defineAction({
 			before.endTime = was.endTime;
 			merged.endTime = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
 		}
-		if (Object.keys(before).length === 0) return { event: was, before };
+		// A new first day without a new last day keeps a multi-day event as long as it was.
+		if (change.date !== undefined && change.endDate === undefined && was.endDate) {
+			const span = Math.round((Date.parse(was.endDate) - Date.parse(was.date)) / 86_400_000);
+			before.endDate = was.endDate;
+			merged.endDate = addDays(change.date, span);
+		}
+		if (Object.keys(before).length === 0) return { event: series, before };
 		const parsed = EventInputSchema.safeParse(merged);
 		if (!parsed.success)
 			throw new FamosError('bad_request', parsed.error.issues[0]?.message ?? 'Invalid change');
 		const next = toRow(parsed.data, timeZone);
+		if (split) {
+			const now = uow.clock.now();
+			const newId = uow.ids.next('cal_event');
+			const created = {
+				id: newId,
+				...next,
+				exdates: null,
+				created_by: row.created_by,
+				source_kind: null,
+				source_id: null,
+				created_at: now,
+				updated_at: now,
+				deleted_at: null,
+			};
+			await events(uow.db).insertInto('calendar_events').values(created).execute();
+			const skipped: (string | number)[] = row.exdates ? JSON.parse(row.exdates) : [];
+			skipped.push(row.all_day ? (occurrence as string) : Number(occurrence));
+			await events(uow.db)
+				.updateTable('calendar_events')
+				.set({ exdates: JSON.stringify(skipped), updated_at: now })
+				.where('id', '=', id)
+				.execute();
+			await ensureTags(uow.db, tagsOf(created.tags), now);
+			const schedule = (r: Parameters<typeof scheduleReminder>[1]) =>
+				scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), r, now);
+			await schedule(created);
+			await schedule(await loadEvent(uow, id));
+			await uow.ai.reindex(EVENT_KIND, newId);
+			uow.emit(eventChanged, { eventId: id });
+			uow.emit(eventChanged, { eventId: newId });
+			return {
+				event: toDetail(created),
+				before,
+				split: { seriesId: id, occurrence: occurrence as string },
+			};
+		}
 		// A repeat rule outside the editable presets is kept as it was.
 		if (was.rrule) next.rrule = row.rrule;
 		const moved = ['date', 'startTime', 'allDay'].some((k) => k in before);
@@ -364,9 +467,53 @@ export const changeEvent = defineAction({
 	},
 });
 
+/** Takes back moving one date of a repeating event: the one-off event goes, the date returns. */
+export const putOccurrenceBack = defineAction({
+	id: 'calendar.putOccurrenceBack',
+	title: 'Put one date of a repeating event back',
+	draftTitle: 'calendar:draft_title_put_occurrence_back',
+	input: z.object({ id: EventIdSchema, occurrence: z.string(), splitId: EventIdSchema }),
+	output: z.object({ ok: z.literal(true) }),
+	approval: { unless: calendarEdit.id },
+	async run(uow, { id, occurrence, splitId }) {
+		const now = uow.clock.now();
+		await events(uow.db)
+			.updateTable('calendar_events')
+			.set({ deleted_at: now, updated_at: now })
+			.where('id', '=', splitId)
+			.where('deleted_at', 'is', null)
+			.execute();
+		await uow.ai.remove(EVENT_KIND, splitId);
+		const series = await events(uow.db)
+			.selectFrom('calendar_events')
+			.selectAll()
+			.where('id', '=', id)
+			.executeTakeFirst();
+		if (!series) throw new FamosError('not_found', 'Event not found');
+		const skipped: (string | number)[] = series.exdates ? JSON.parse(series.exdates) : [];
+		const kept = skipped.filter((x) => String(x) !== occurrence);
+		await events(uow.db)
+			.updateTable('calendar_events')
+			.set({ exdates: kept.length ? JSON.stringify(kept) : null, updated_at: now })
+			.where('id', '=', id)
+			.execute();
+		await scheduleReminder(
+			(job, payload, o) => uow.enqueue(job, payload, o),
+			await loadEvent(uow, id),
+			now,
+		);
+		uow.emit(eventChanged, { eventId: id });
+		uow.emit(eventChanged, { eventId: splitId });
+		return { ok: true as const };
+	},
+});
+
 const MAX_RANGE_DAYS = 62;
 
 const MAX_FOUND = 60;
+
+/** How far past the searched range a search for the next match looks. */
+const NEXT_MATCH_DAYS = 366;
 
 /** `HH:MM` of an instant in the family time zone. */
 const clock = (ms: number, timeZone: string) =>
@@ -376,14 +523,20 @@ export const findEvents = defineAction({
 	id: 'calendar.findEvents',
 	title: 'Find events in a date range, for the AI',
 	input: z.object({
-		from: IsoDateSchema.describe('First day, YYYY-MM-DD'),
-		to: IsoDateSchema.describe('Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`'),
+		from: IsoDateSchema.optional().describe(
+			'First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today)',
+		),
+		to: IsoDateSchema.optional().describe(
+			'Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from`',
+		),
 		text: z
 			.string()
 			.trim()
 			.max(80)
 			.optional()
-			.describe('Only events whose title or place contains this text, e.g. "swimming"'),
+			.describe(
+				'Only events whose title or place contains this text, e.g. "swimming". Without `from` and `to` it searches from today on',
+			),
 		members: z
 			.array(MemberIdSchema)
 			.max(10)
@@ -437,17 +590,18 @@ export const findEvents = defineAction({
 		guidance:
 			'Resolve relative dates ("this week", "tomorrow") from today in the family time zone. For what is coming up (also "this week"), start at today. Never present an event whose when is past, or whose date is before today, as coming up.',
 	},
-	async run(uow, { from, to, tag, text, members }) {
-		if ((Date.parse(to) - Date.parse(from)) / 86_400_000 > MAX_RANGE_DAYS || to < from) {
-			throw new FamosError('bad_request', `The range may span at most ${MAX_RANGE_DAYS} days`);
-		}
+	async run(uow, { from: fromDay, to: toDay, tag, text, members }) {
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
 		const today = todayIn(timeZone, now);
-		const [own, external] = await Promise.all([
-			occurrencesBetween(uow.db, from, to, timeZone),
-			externalOccurrencesBetween(uow.db, from, to, timeZone),
-		]);
+		if (!text && (!fromDay || !toDay))
+			throw new FamosError('bad_request', 'Give `from` and `to`, or a `text` to search for');
+		// Looking for one thing by name does not need dates: it is searched for from today on.
+		const from = fromDay ?? today;
+		const to = toDay ?? addDays(from, MAX_RANGE_DAYS);
+		if ((Date.parse(to) - Date.parse(from)) / 86_400_000 > MAX_RANGE_DAYS || to < from) {
+			throw new FamosError('bad_request', `The range may span at most ${MAX_RANGE_DAYS} days`);
+		}
 		const wanted = tag?.toLocaleLowerCase();
 		const needle = text?.toLocaleLowerCase();
 		const notes: string[] = [];
@@ -460,20 +614,40 @@ export const findEvents = defineAction({
 				.executeTakeFirst();
 			if (!known) notes.push(`There is no family tag "${tag}"; use \`text\` to search by subject.`);
 		}
-		const all = sortOccurrences([...own, ...external], timeZone)
-			.filter(
-				(o) =>
-					!members?.length ||
-					o.memberIds.length === 0 ||
-					o.memberIds.some((m) => (members as readonly string[]).includes(m)),
-			)
-			.filter((o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted))
-			.filter(
-				(o) =>
-					!needle ||
-					o.title.toLocaleLowerCase().includes(needle) ||
-					(o.location ?? '').toLocaleLowerCase().includes(needle),
-			);
+		const between = async (a: string, b: string) => {
+			const [own, external] = await Promise.all([
+				occurrencesBetween(uow.db, a, b, timeZone),
+				externalOccurrencesBetween(uow.db, a, b, timeZone),
+			]);
+			return sortOccurrences([...own, ...external], timeZone)
+				.filter(
+					(o) =>
+						!members?.length ||
+						o.memberIds.length === 0 ||
+						o.memberIds.some((m) => (members as readonly string[]).includes(m)),
+				)
+				.filter((o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted))
+				.filter(
+					(o) =>
+						!needle ||
+						o.title.toLocaleLowerCase().includes(needle) ||
+						(o.location ?? '').toLocaleLowerCase().includes(needle),
+				);
+		};
+		const all = await between(from, to);
+		// Nothing in the range, but the same search finds something later: say what and when,
+		// so the answer is "the next one is on …" and not "there is none".
+		if (all.length === 0 && (needle || wanted)) {
+			const next = (await between(addDays(to, 1), addDays(to, NEXT_MATCH_DAYS)))[0];
+			if (next) {
+				const day = next.allDay
+					? (next.startDate as string)
+					: zoned(next.start as number, timeZone)
+							.toPlainDate()
+							.toString();
+				notes.push(`Nothing from ${from} to ${to}. The next match is "${next.title}" on ${day}.`);
+			}
+		}
 		if (all.length > MAX_FOUND)
 			notes.push(
 				`Only the first ${MAX_FOUND} of ${all.length} events are shown. Narrow the query (a shorter date range or a text filter) to see the rest.`,
@@ -566,6 +740,7 @@ export default defineExtension({
 		changeEvent,
 		deleteEvent,
 		restoreEvent,
+		putOccurrenceBack,
 		updateTag,
 		deleteTag,
 		aiContext,

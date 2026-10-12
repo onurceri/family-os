@@ -10,6 +10,8 @@ People with the permission **Ask the assistant** can use it. Admins, members and
 - **Find things by meaning** when Search is set up: "which paper is about the boiler warranty?" (see [Search](search.md)).
 - **Suggest changes**: "add milk and bread to the shopping list" creates a suggestion under the answer. Nothing changes until someone approves it.
 
+When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.
+
 Examples to try:
 
 - What's on the calendar this week?
@@ -27,7 +29,9 @@ Conversations are private: each person sees only their own.
 
 ## Suggestions
 
-Suggestions appear as the same cards as in Quick add, right under the answer. People who may approve can approve, edit or reject them there. Others, such as a supervised member, see **Waiting for approval**; an adult decides in Quick add. An approved suggestion can be taken back with **Undo**.
+Suggestions appear as the same cards as in Quick add, right under the answer. People who may approve can approve, edit or reject them there. Others, such as a supervised member, see **Waiting for approval**; an adult decides in Quick add, and the assistant says so. A card always shows the real name of the item it changes. When [auto-approval](auto-approval.md) is on for the kind of change, the assistant says it will be added automatically in a moment. An approved suggestion can be taken back with **Undo**.
+
+A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation.
 
 ## What it remembers
 

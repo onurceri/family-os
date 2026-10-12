@@ -85,11 +85,20 @@ export interface ActionDefinition<
 	readonly alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	/**
 	 * The real title of the thing an input with a `label` points at (null when it is not there).
-	 * When an AI proposes the action and its label clearly names something else, the runner
-	 * refuses with the real title, so a model that picked the wrong handle looks it up again
-	 * instead of changing or deleting the wrong thing. Read-only and cheap.
+	 * An AI must send the `label` (the name the person used for the thing, in their words) and
+	 * every significant word of it must be a word of the real title; otherwise the runner refuses
+	 * with the real title, so a model that picked the closest thing instead of the named one tells
+	 * the person it is not there. Every draft of the action is stored with the real title as its
+	 * `label`, so reviewers see what will really change. Read-only and cheap.
 	 */
 	readonly targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	/**
+	 * A reason an AI's proposal is pointless (the thing is already in the state it asks for), or
+	 * null. The runner refuses the proposal with that text, so the model tells the person instead
+	 * of filling the review list with changes that change nothing. Only asked of AI actors.
+	 * Read-only and cheap.
+	 */
+	readonly refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	/**
 	 * The day a draft of this action is about (`YYYY-MM-DD`, family time), when it is about one.
 	 * Once that day has passed in the family's time zone the suggestion means nothing any more:
@@ -165,6 +174,7 @@ export function defineAction<
 	undo?: (output: z.infer<Out>) => UndoStep | null;
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;

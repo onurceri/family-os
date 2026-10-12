@@ -13,7 +13,7 @@ import {
 	idSchema,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { formatLocaleForLanguage } from '@famos/time';
+import { formatDate, formatLocaleForLanguage, todayIn, weekOf, zoned } from '@famos/time';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { type ActionRunner, GONE } from './action-runner.ts';
@@ -1154,6 +1154,44 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	});
 
 	/**
+	 * Where "now" is for the family: the date, the weekday, the time and this week's first and last
+	 * day. An agent that never saw the server's instructions (an MCP client) cannot know the date,
+	 * and models count days badly, so they ask.
+	 */
+	const today = defineAction({
+		id: 'core.today',
+		title: 'Today’s date, weekday and time in the family’s time zone',
+		input: z.object({}),
+		output: z.object({
+			date: z.string().describe('Today, YYYY-MM-DD'),
+			weekday: z.string(),
+			time: z.string().describe('The time of day now, HH:MM (24-hour)'),
+			timeZone: z.string(),
+			weekFirstDay: z.string().describe('The first day of this week, YYYY-MM-DD'),
+			weekLastDay: z.string().describe('The last day of this week, YYYY-MM-DD'),
+		}),
+		readOnly: true,
+		ai: {
+			description:
+				'Tells today’s date, the weekday, the time of day, the family time zone, and the first and last day of this week (the week starts on the family’s first day of the week). Use it before turning "today", "tomorrow", "this week" or "next Friday" into dates.',
+		},
+		async run(uow) {
+			const { timeZone, weekStart } = await uow.family.settings();
+			const now = uow.clock.now();
+			const date = todayIn(timeZone, now);
+			const week = weekOf(date, weekStart);
+			return {
+				date,
+				weekday: formatDate(date, 'en', { weekday: 'long' }),
+				time: zoned(now, timeZone).toPlainTime().toString({ smallestUnit: 'minute' }),
+				timeZone,
+				weekFirstDay: week[0] as string,
+				weekLastDay: week[6] as string,
+			};
+		},
+	});
+
+	/**
 	 * What became of the suggestions the signed-in member made, or an agent made for them (the
 	 * assistant, an MCP client). Agents read it to answer "was it approved?" instead of guessing.
 	 * Only the member's own suggestions are listed, and one addressed to someone else never is.
@@ -1290,6 +1328,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		actions: [
 			decidableSources,
 			mySuggestions,
+			today,
 			createMember,
 			updateMember,
 			setMyLanguage,

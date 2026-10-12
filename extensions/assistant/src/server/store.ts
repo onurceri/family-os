@@ -11,6 +11,11 @@ export type AssistantTables = {
 		summary: string | null;
 		/** How many of the oldest messages the summary covers. */
 		summarized_count: number;
+		/**
+		 * JSON: the handles the model was shown in earlier turns, `{ "event:1": { id, label } }`,
+		 * so "move it" in the next turn still points at the same record.
+		 */
+		handles: string | null;
 		created_at: number;
 		updated_at: number;
 	};
@@ -65,6 +70,11 @@ export const migrations: Migrations = {
 				.on('assistant_messages')
 				.columns(['thread_id', 'created_at'])
 				.execute();
+		},
+	},
+	'0002_thread_handles': {
+		async up(db) {
+			await db.schema.alterTable('assistant_threads').addColumn('handles', 'text').execute();
 		},
 	},
 };

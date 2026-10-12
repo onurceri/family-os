@@ -15,10 +15,21 @@ export interface HandleTable {
 	ids(): ReadonlySet<string>;
 }
 
-export function createHandleTable(): HandleTable {
+/**
+ * `known` holds handles shown in earlier turns of a conversation (handle → id): they keep their
+ * meaning, and new handles continue after the highest number of each kind.
+ */
+export function createHandleTable(known: Readonly<Record<string, string>> = {}): HandleTable {
 	const toId = new Map<string, string>();
 	const byId = new Map<string, string>();
 	const counters = new Map<string, number>();
+	for (const [handle, id] of Object.entries(known)) {
+		const [kind, n] = handle.split(':');
+		if (!kind || !/^\d+$/.test(n ?? '')) continue;
+		toId.set(handle, id);
+		byId.set(id, handle);
+		counters.set(kind, Math.max(counters.get(kind) ?? 0, Number(n)));
+	}
 	return {
 		add(kind, id) {
 			const known = byId.get(id);

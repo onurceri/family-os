@@ -144,7 +144,11 @@ export interface UnitOfWork extends EventEmitter {
 
 export type ActionResult<O> =
 	| { status: 'applied'; output: O }
-	| { status: 'drafted'; draftId: string };
+	/**
+	 * `autoApproval`: a job approves the draft in a moment, nobody needs to. `decidedByOthers`:
+	 * the person the AI works for cannot decide it, so other members who can approve do.
+	 */
+	| { status: 'drafted'; draftId: string; autoApproval?: true; decidedByOthers?: true };
 
 /** Stored on a draft when an action is proposed rather than applied. */
 export interface DraftMeta {

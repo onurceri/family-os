@@ -2437,6 +2437,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/actions/calendar.putOccurrenceBack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put one date of a repeating event back */
+        post: operations["calendar.putOccurrenceBack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/actions/calendar.updateTag": {
         parameters: {
             query?: never;
@@ -2783,6 +2800,23 @@ export interface paths {
         put?: never;
         /** Read the status of the member's recent suggestions */
         post: operations["core.mySuggestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/actions/core.today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Today’s date, weekday and time in the family’s time zone */
+        post: operations["core.today"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25772,11 +25806,11 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description First day, YYYY-MM-DD */
-                    from: string;
-                    /** @description Last day (inclusive), YYYY-MM-DD; at most 62 days after `from` */
-                    to: string;
-                    /** @description Only events whose title or place contains this text, e.g. "swimming" */
+                    /** @description First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today) */
+                    from?: string;
+                    /** @description Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from` */
+                    to?: string;
+                    /** @description Only events whose title or place contains this text, e.g. "swimming". Without `from` and `to` it searches from today on */
                     text?: string;
                     /** @description Only what involves these people, plus events for the whole family. Use it for "my ..." and "<name>'s ..." questions */
                     members?: string[];
@@ -26421,7 +26455,9 @@ export interface operations {
                     notes?: string | null;
                     tags?: string[];
                     id: string;
-                    /** @description The event as listed, e.g. "Dentist (15 Oct)"; only shown to the reviewer */
+                    /** @description Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes */
+                    occurrence?: string;
+                    /** @description Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar. */
                     label?: string;
                 };
             };
@@ -26474,6 +26510,10 @@ export interface operations {
                             };
                             before: {
                                 [key: string]: unknown;
+                            };
+                            split?: {
+                                seriesId: string;
+                                occurrence: string;
                             };
                         };
                     } | {
@@ -26605,7 +26645,7 @@ export interface operations {
                 "application/json": {
                     id: string;
                     occurrence?: string;
-                    /** @description The event as listed, e.g. "Dentist (15 Oct)"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar. */
                     label?: string;
                 };
             };
@@ -26802,6 +26842,153 @@ export interface operations {
                             reminder: number | null;
                             rrule: string | null;
                             tags: string[];
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "calendar.putOccurrenceBack": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id: string;
+                    occurrence: string;
+                    splitId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            /** @enum {boolean} */
+                            ok: true;
                         };
                     } | {
                         /** @enum {string} */
@@ -30047,6 +30234,157 @@ export interface operations {
                                 suggestedAt: string;
                                 decidedAt?: string;
                             }[];
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "core.today": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            /** @description Today, YYYY-MM-DD */
+                            date: string;
+                            weekday: string;
+                            /** @description The time of day now, HH:MM (24-hour) */
+                            time: string;
+                            timeZone: string;
+                            /** @description The first day of this week, YYYY-MM-DD */
+                            weekFirstDay: string;
+                            /** @description The last day of this week, YYYY-MM-DD */
+                            weekLastDay: string;
                         };
                     } | {
                         /** @enum {string} */
@@ -41454,6 +41792,8 @@ export interface operations {
                                     quantity: string | null;
                                     /** @enum {string} */
                                     category: "produce" | "bakery" | "dairy" | "meat" | "pantry" | "frozen" | "drinks" | "snacks" | "household" | "personal" | "baby" | "pets" | "other";
+                                    /** @description True when it was ticked off in the last 7 days; it is not to buy now */
+                                    bought: boolean;
                                 }[];
                             }[];
                         };
@@ -42000,7 +42340,7 @@ export interface operations {
                     /** @description New notes; null clears them */
                     notes?: string | null;
                     id: string;
-                    /** @description The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list. */
                     label?: string;
                 };
             };
@@ -42179,7 +42519,7 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
-                    /** @description The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list. */
                     label?: string;
                     dueDate?: string | null;
                 };
@@ -42526,7 +42866,7 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
-                    /** @description The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list. */
                     label?: string;
                 };
             };
@@ -43180,7 +43520,7 @@ export interface operations {
                 "application/json": {
                     id: string;
                     done: boolean;
-                    /** @description The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list. */
                     label?: string;
                 };
             };
@@ -43333,7 +43673,7 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
-                    /** @description The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer */
+                    /** @description Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list. */
                     label?: string;
                 };
             };

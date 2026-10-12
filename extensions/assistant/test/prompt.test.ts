@@ -13,6 +13,7 @@ const input = {
 	summary: null,
 	hasTools: true,
 	memories: [],
+	records: [],
 } as const;
 
 describe('the language the assistant answers in', () => {

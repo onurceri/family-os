@@ -67,6 +67,31 @@ export const assistantDone = defineEvent('assistant.done', donePayload);
 export const KEEP_VERBATIM = 12;
 /** When this many messages are not summarised yet, the summariser runs. */
 export const SUMMARIZE_AFTER = 30;
+/** How many of the person's latest messages decide which tools are offered. */
+const RECENT_USER_MESSAGES = 3;
+/** How many earlier answers are scanned for the areas the conversation used. */
+const USED_AREAS_LOOKBACK = 40;
+/** The most handles kept with a thread, and the most listed in the prompt. */
+const MAX_REMEMBERED_HANDLES = 150;
+const MAX_RECORDS_IN_PROMPT = 30;
+
+type RememberedHandles = Record<string, { id: string; label: string }>;
+
+const parseHandles = (json: string | null): RememberedHandles => {
+	try {
+		return json ? (JSON.parse(json) as RememberedHandles) : {};
+	} catch {
+		return {};
+	}
+};
+
+const parseCalls = (json: string | null): RecordedCall[] => {
+	try {
+		return json ? (JSON.parse(json) as RecordedCall[]) : [];
+	} catch {
+		return [];
+	}
+};
 const MAX_STEPS = 8;
 const CHAT_TIMEOUT_MS = 120_000;
 
@@ -98,6 +123,8 @@ export const turnJob = defineJob({
 			.executeTakeFirst();
 		if (!thread) return;
 		const memberId = thread.member_id;
+		// Set once the handle table exists; keeps the handles shown in this turn for the next.
+		let persistHandles: () => Promise<void> = async () => {};
 
 		const finish = async (fields: {
 			status: 'done' | 'failed';
@@ -105,6 +132,7 @@ export const turnJob = defineJob({
 			errorCode?: string | null;
 			calls?: RecordedCall[];
 		}) => {
+			await persistHandles();
 			await db
 				.updateTable('assistant_messages')
 				.set({
@@ -169,7 +197,25 @@ export const turnJob = defineJob({
 			content: m.content,
 		}));
 		while (messages[0]?.role === 'assistant') messages.shift();
-		const question = kept.findLast((m) => m.role === 'user')?.content ?? '';
+		// A follow-up ("yes, move it") names no area: what the person said lately counts, and so
+		// do the areas the conversation already worked in.
+		const question = kept
+			.filter((m) => m.role === 'user')
+			.slice(-RECENT_USER_MESSAGES)
+			.map((m) => m.content)
+			.join('\n');
+		const earlierCalls = await db
+			.selectFrom('assistant_messages')
+			.select('tool_calls')
+			.where('thread_id', '=', threadId)
+			.where('status', '=', 'done')
+			.where('tool_calls', 'is not', null)
+			.orderBy('created_at', 'desc')
+			.limit(USED_AREAS_LOOKBACK)
+			.execute();
+		const used = new Set<string>();
+		for (const row of earlierCalls)
+			for (const call of parseCalls(row.tool_calls)) used.add(areaOf(call.name));
 
 		// What the asker may use: their capabilities and the AI sandbox filter the tools.
 		const offered: AssistantTool[] = [
@@ -184,14 +230,31 @@ export const turnJob = defineJob({
 				info,
 			})),
 		];
-		const tools = narrow(offered, question, (key) => ctx.vocabulary(key));
+		const tools = narrow(offered, question, (key) => ctx.vocabulary(key), used);
 
 		// The member's own notes go into their own threads only, and only where the family lets
 		// people's details reach the model (core is not an area; the privacy switch governs it).
 		const memories = policy.sendPeople ? await recallMemories(ctx, actor) : [];
 
 		const family = await ctx.family.members();
-		const table = createHandleTable();
+		// Handles shown in earlier turns of this thread keep their meaning.
+		const remembered = parseHandles(thread.handles);
+		const table = createHandleTable(
+			Object.fromEntries(Object.entries(remembered).map(([handle, r]) => [handle, r.id])),
+		);
+		const labels = new Map(Object.entries(remembered).map(([handle, r]) => [handle, r.label]));
+		const targets = new Map<string, string>();
+		persistHandles = async () => {
+			const kept = [...table.toId]
+				.filter(([handle]) => !handle.startsWith('member:') && !handle.startsWith('draft:'))
+				.slice(-MAX_REMEMBERED_HANDLES)
+				.map(([handle, id]) => [handle, { id, label: labels.get(handle) ?? '' }] as const);
+			await db
+				.updateTable('assistant_threads')
+				.set({ handles: JSON.stringify(Object.fromEntries(kept)) })
+				.where('id', '=', threadId)
+				.execute();
+		};
 		const handles = family.map((m) => ({ ...m, handle: table.add('member', m.id) }));
 		const settings = await ctx.family.settings();
 		const now = ctx.clock.now();
@@ -237,6 +300,10 @@ export const turnJob = defineJob({
 					summary: thread.summarized_count > 0 ? thread.summary : null,
 					hasTools: tools.length > 0,
 					memories,
+					records: [...labels]
+						.filter(([, label]) => label !== '')
+						.slice(-MAX_RECORDS_IN_PROMPT)
+						.map(([handle, label]) => ({ handle, label })),
 				}),
 				messages,
 				tools: chatTools(tools, {
@@ -245,6 +312,8 @@ export const turnJob = defineJob({
 					table,
 					turnId: messageId,
 					calls,
+					labels,
+					targets,
 					inject,
 				}),
 				maxSteps: MAX_STEPS,

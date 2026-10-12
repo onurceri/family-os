@@ -53,13 +53,19 @@ export function normalizeTags(raw: readonly string[] | null | undefined): string
 
 const TagName = z.string().trim().min(1).max(MAX_TAG_LENGTH);
 
-/** Only for people reviewing a suggestion: which event it is. Never stored. */
+/**
+ * Tells the reviewer which event it is. For an AI it is the guard against acting on the wrong
+ * one: the person's own words, which must name the target. The runner stores the real title
+ * here on every draft.
+ */
 export const ReviewLabelSchema = z
 	.string()
 	.trim()
 	.max(200)
 	.optional()
-	.describe('The event as listed, e.g. "Dentist (15 Oct)"; only shown to the reviewer');
+	.describe(
+		'Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar.',
+	);
 
 export const EventInputSchema = z
 	.object({

@@ -2,7 +2,13 @@ import { AiContextSchema } from './actions.ts';
 import type { Actor } from './actor.ts';
 import type { ActionInvoker, ActionResult, DraftMeta } from './context.ts';
 import { FamosError } from './errors.ts';
-import { type HandleTable, namesUnknownId, repairInput, withHandles } from './handles.ts';
+import {
+	type HandleTable,
+	namesUnknownId,
+	repairInput,
+	typedIdKind,
+	withHandles,
+} from './handles.ts';
 
 /**
  * What every agent (the in-app assistant, MCP clients) shares when a model
@@ -154,6 +160,36 @@ export function readableOutput(output: unknown, table: HandleTable): unknown {
 	return compact(withHandles(output, table));
 }
 
+/** The id and the person's words of a change aimed at one record, or null. */
+function targetOf(input: unknown): { id: string; words: string } | null {
+	const { id, label } = (input ?? {}) as { id?: unknown; label?: unknown };
+	if (typeof id !== 'string' || typeof label !== 'string') return null;
+	const words = label.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+	return words === '' ? null : { id, words };
+}
+
+const MAX_LABEL = 80;
+
+/**
+ * Notes what each record in a result is called: an object with a typed `id` and a `title` or
+ * `name` (before the ids become handles). Called after the result is read, never inside a prompt.
+ */
+function collectLabels(value: unknown, table: HandleTable, labels: Map<string, string>): void {
+	if (Array.isArray(value)) {
+		for (const v of value) collectLabels(v, table, labels);
+		return;
+	}
+	if (!value || typeof value !== 'object') return;
+	const record = value as Record<string, unknown>;
+	const name = typeof record.title === 'string' ? record.title : record.name;
+	if (typeof record.id === 'string' && typeof name === 'string' && typedIdKind(record.id)) {
+		const handle =
+			table.handleOf(record.id) ?? table.add(typedIdKind(record.id) as string, record.id);
+		labels.set(handle, name.replace(/\s+/g, ' ').trim().slice(0, MAX_LABEL));
+	}
+	for (const v of Object.values(record)) collectLabels(v, table, labels);
+}
+
 export interface AgentToolOutcome {
 	/** The result as the model reads it (already wrapped by `asData`). */
 	text: string;
@@ -179,6 +215,17 @@ export async function runAgentTool(call: {
 	draft?: DraftMeta;
 	/** What the draft is, for the answer ("a suggestion was created"). */
 	draftSummary: string;
+	/**
+	 * What the records shown so far are called (handle → title), filled from the results, so a
+	 * later turn can remind the model what its handles stand for.
+	 */
+	labels?: Map<string, string>;
+	/**
+	 * The target (id → the words used for it) of each change already proposed in this turn. A second
+	 * change to the same target under other words is refused: the model is mapping two different
+	 * things to one record.
+	 */
+	targets?: Map<string, string>;
 }): Promise<AgentToolOutcome> {
 	const { actionId, table } = call;
 	const input = repairInput(call.input ?? {}, table.toId);
@@ -186,6 +233,16 @@ export async function runAgentTool(call: {
 		return {
 			ok: false,
 			text: asData(actionId, 'Error: unknown reference; use the handles from earlier results'),
+		};
+	const target = call.kind === 'draft' ? targetOf(input) : null;
+	const earlier = target ? call.targets?.get(target.id) : undefined;
+	if (target && earlier !== undefined && earlier !== target.words)
+		return {
+			ok: false,
+			text: asData(
+				actionId,
+				`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.words}'. If '${target.words}' is not on the list, tell the person.`,
+			),
 		};
 	try {
 		const result: ActionResult<unknown> = await call.actions.invoke(
@@ -195,6 +252,7 @@ export async function runAgentTool(call: {
 			call.kind === 'draft' && call.draft ? { draft: call.draft } : undefined,
 		);
 		if (result.status === 'drafted') {
+			if (target) call.targets?.set(target.id, target.words);
 			return {
 				ok: true,
 				draftId: result.draftId,
@@ -204,11 +262,16 @@ export async function runAgentTool(call: {
 						status: 'drafted',
 						suggestion: table.add('draft', result.draftId),
 						// A ready sentence: models that paraphrase a note still say "added" otherwise.
-						say: `Suggested, not added yet: ${call.draftSummary}. It appears once a person in the household approves it.`,
+						say: result.autoApproval
+							? `Suggested: ${call.draftSummary}. It will be added automatically in a moment.`
+							: result.decidedByOthers
+								? `Suggested, not added yet: ${call.draftSummary}. It appears once another person in the household who may approve it does so; this person cannot approve it themselves.`
+								: `Suggested, not added yet: ${call.draftSummary}. It appears once a person in the household approves it.`,
 					}),
 				),
 			};
 		}
+		if (call.labels) collectLabels(result.output, table, call.labels);
 		return {
 			ok: true,
 			text: asData(actionId, fitResult(readableOutput(result.output, table))),

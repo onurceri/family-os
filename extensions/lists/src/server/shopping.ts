@@ -314,6 +314,18 @@ export const checkShoppingItem = defineAction({
 	requires: shoppingEdit.id,
 	input: z.object({ id: ShoppingItemIdSchema, done: z.boolean(), label: ReviewLabelSchema }),
 	output: ShoppingItemSchema,
+	refuseProposal: async (ctx, { id, done }) => {
+		const row = await tables(ctx.db)
+			.selectFrom('lists_shopping_items')
+			.select(['title', 'done_at'])
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row || (row.done_at !== null) !== done) return null;
+		return done
+			? `${row.title} is already ticked off.`
+			: `${row.title} is already on the list, not ticked off.`;
+	},
 	undo: (item) => ({
 		actionId: 'lists.checkShoppingItem',
 		input: { id: item.id, done: item.doneAt === null },
@@ -588,6 +600,9 @@ export const shoppingList = defineAction({
 						title: z.string(),
 						quantity: z.string().nullable(),
 						category: CategorySchema,
+						bought: z
+							.boolean()
+							.describe('True when it was ticked off in the last 7 days; it is not to buy now'),
 					}),
 				),
 			}),
@@ -597,7 +612,7 @@ export const shoppingList = defineAction({
 	requires: listsView.id,
 	ai: {
 		description:
-			'Shows what is still to buy on the family shopping lists (items not bought yet, in store-section order). Use it for "is there milk on the list / what do we need" questions.',
+			'Shows the family shopping lists: what is still to buy (in store-section order), then what was bought in the last 7 days (bought true). Use it for "is there milk on the list / what do we need" questions. An item that is bought is not to buy now; match the name the person used to a listed title by its words, and if none fits, say it is not on the list.',
 	},
 	async run(uow, { list }) {
 		const { locale } = await uow.family.settings();
@@ -627,12 +642,35 @@ export const shoppingList = defineAction({
 				.limit(budget)
 				.execute();
 			budget -= rows.length;
+			// What was just bought stays findable, so a name that matches it is not mapped to
+			// another row.
+			const bought =
+				budget > 0
+					? await tables(uow.db)
+							.selectFrom('lists_shopping_items')
+							.selectAll()
+							.where('list_id', '=', l.id)
+							.where('deleted_at', 'is', null)
+							.where('done_at', '>=', uow.clock.now() - BOUGHT_VISIBLE_MS)
+							.orderBy('done_at', 'desc')
+							.limit(budget)
+							.execute()
+					: [];
+			budget -= bought.length;
 			const rank = (r: ItemRow) => CATEGORIES.indexOf(r.category);
+			const view = (r: ItemRow, isBought: boolean) => ({
+				id: r.id,
+				title: r.title,
+				quantity: r.quantity,
+				category: r.category,
+				bought: isBought,
+			});
 			out.push({
 				name: l.name || DEFAULT_LIST_LABEL,
-				items: rows
-					.sort((a, b) => rank(a) - rank(b))
-					.map((r) => ({ id: r.id, title: r.title, quantity: r.quantity, category: r.category })),
+				items: [
+					...rows.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),
+					...bought.map((r) => view(r, true)),
+				],
 			});
 		}
 		return { lists: out };

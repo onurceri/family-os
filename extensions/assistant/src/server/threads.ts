@@ -76,6 +76,7 @@ export const sendMessage = defineAction({
 					title: titleOf(input.text),
 					summary: null,
 					summarized_count: 0,
+					handles: null,
 					created_at: now,
 					updated_at: now,
 				})

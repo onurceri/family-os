@@ -64,16 +64,21 @@ const actsOnExisting = (t: AssistantTool) => {
 	return Boolean(schema?.properties && 'id' in schema.properties);
 };
 
-/** Keeps at most `MAX_TOOLS`, the ones for the areas the question mentions first. */
+/**
+ * Keeps at most `MAX_TOOLS`, the ones for the areas the question mentions first. `question` is
+ * what the person said lately (a follow-up like "yes, move it" names no area), and `used` the
+ * areas the conversation already worked in, which stay offered.
+ */
 export function narrow(
 	tools: readonly AssistantTool[],
 	question: string,
 	words: Words,
+	used: ReadonlySet<string> = new Set(),
 ): AssistantTool[] {
 	if (tools.length <= MAX_TOOLS) return [...tools];
 	const areas = new Set(tools.map((t) => areaOf(t.actionId)));
 	const mentioned = new Set(
-		[...areas].filter((area) => mentions(question, words(areaWordsKey(area)))),
+		[...areas].filter((area) => used.has(area) || mentions(question, words(areaWordsKey(area)))),
 	);
 	// Search works across areas, so it is never the one to drop. The personal tools (remember,
 	// ask someone) are dropped first unless the question points at them: they must not crowd out
@@ -102,6 +107,10 @@ export interface ToolEnv {
 	table: HandleTable;
 	turnId: string;
 	calls: RecordedCall[];
+	/** What the records shown in this turn are called (handle → title). */
+	labels?: Map<string, string>;
+	/** The words used for each target changed in this turn (see `runAgentTool`). */
+	targets?: Map<string, string>;
 	/**
 	 * Fields the host sets on a tool's input, per action id. They are hidden from the model's
 	 * schema and win over anything it sends: bookkeeping it must not be able to forge, such as
@@ -159,6 +168,8 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 					dedupeKey: `assistant:${env.turnId}:${index}`,
 				},
 				draftSummary: info.description.split('.')[0] ?? '',
+				labels: env.labels,
+				targets: env.targets,
 			});
 			record.ok = outcome.ok;
 			if (outcome.draftId) record.draftId = outcome.draftId;

@@ -110,6 +110,7 @@ A hosted agent may keep its MCP settings somewhere other than a config file you 
 ## What the app can do
 
 - **Read tools**: the calendar, open tasks, the shopping list, what is due, the records of vehicles, pets and the home, and [Search](search.md) when it is set up.
+- **Today**: the date, the weekday, the time and this week's first and last day in the family's time zone, so an agent never has to guess what "tomorrow" is.
 - **Suggest tools** (app keys that may suggest): add an event, a task, shopping items and so on. Each creates a suggestion in Quick add, marked as coming from an AI app, which you approve or reject.
 - Areas you switched **off** for the AI are not available. Areas set to **local only** are not available either, because an agent on another computer would take the data out of the house. See [AI and privacy](ai.md).
 - People: the app can ask who is in the family only if **Send names and descriptions** is on in Settings → AI.

@@ -47295,16 +47295,16 @@
 								"properties": {
 									"from": {
 										"type": "string",
-										"description": "First day, YYYY-MM-DD"
+										"description": "First day, YYYY-MM-DD; required unless `text` is given (then it defaults to today)"
 									},
 									"to": {
 										"type": "string",
-										"description": "Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`"
+										"description": "Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from`"
 									},
 									"text": {
 										"type": "string",
 										"maxLength": 80,
-										"description": "Only events whose title or place contains this text, e.g. \"swimming\""
+										"description": "Only events whose title or place contains this text, e.g. \"swimming\". Without `from` and `to` it searches from today on"
 									},
 									"members": {
 										"type": "array",
@@ -47320,11 +47320,7 @@
 										"maxLength": 40,
 										"description": "Only events with this existing family tag; leave out unless a tag was named"
 									}
-								},
-								"required": [
-									"from",
-									"to"
-								]
+								}
 							}
 						}
 					}
@@ -49100,10 +49096,14 @@
 										"type": "string",
 										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 									},
+									"occurrence": {
+										"type": "string",
+										"description": "Repeating events: the `occurrence` of the one date to change (from calendar.findEvents). That date becomes its own one-off event with the change and is skipped in the series; without it the whole series changes"
+									},
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The event as listed, e.g. \"Dentist (15 Oct)\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar."
 									}
 								},
 								"required": [
@@ -49316,6 +49316,21 @@
 														"before": {
 															"type": "object",
 															"additionalProperties": {}
+														},
+														"split": {
+															"type": "object",
+															"properties": {
+																"seriesId": {
+																	"type": "string"
+																},
+																"occurrence": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"seriesId",
+																"occurrence"
+															]
 														}
 													},
 													"required": [
@@ -49615,7 +49630,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The event as listed, e.g. \"Dentist (15 Oct)\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this event, in their words, not the listed title. If no listed event fits those words, do not call this tool: tell the person it is not on the calendar."
 									}
 								},
 								"required": [
@@ -50158,6 +50173,339 @@
 														"reminder",
 														"rrule",
 														"tags"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/calendar.putOccurrenceBack": {
+			"post": {
+				"operationId": "calendar.putOccurrenceBack",
+				"summary": "Put one date of a repeating event back",
+				"tags": [
+					"actions",
+					"calendar"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"occurrence": {
+										"type": "string"
+									},
+									"splitId": {
+										"type": "string",
+										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									}
+								},
+								"required": [
+									"id",
+									"occurrence",
+									"splitId"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"ok": {
+															"type": "boolean",
+															"enum": [
+																true
+															]
+														}
+													},
+													"required": [
+														"ok"
 													]
 												}
 											},
@@ -58187,6 +58535,343 @@
 													},
 													"required": [
 														"suggestions"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/core.today": {
+			"post": {
+				"operationId": "core.today",
+				"summary": "Today’s date, weekday and time in the family’s time zone",
+				"tags": [
+					"actions",
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"date": {
+															"type": "string",
+															"description": "Today, YYYY-MM-DD"
+														},
+														"weekday": {
+															"type": "string"
+														},
+														"time": {
+															"type": "string",
+															"description": "The time of day now, HH:MM (24-hour)"
+														},
+														"timeZone": {
+															"type": "string"
+														},
+														"weekFirstDay": {
+															"type": "string",
+															"description": "The first day of this week, YYYY-MM-DD"
+														},
+														"weekLastDay": {
+															"type": "string",
+															"description": "The last day of this week, YYYY-MM-DD"
+														}
+													},
+													"required": [
+														"date",
+														"weekday",
+														"time",
+														"timeZone",
+														"weekFirstDay",
+														"weekLastDay"
 													]
 												}
 											},
@@ -85563,13 +86248,18 @@
 																						"pets",
 																						"other"
 																					]
+																				},
+																				"bought": {
+																					"type": "boolean",
+																					"description": "True when it was ticked off in the last 7 days; it is not to buy now"
 																				}
 																			},
 																			"required": [
 																				"id",
 																				"title",
 																				"quantity",
-																				"category"
+																				"category",
+																				"bought"
 																			]
 																		}
 																	}
@@ -87116,7 +87806,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The task or item as listed, e.g. \"Pay the bills\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list."
 									}
 								},
 								"required": [
@@ -87609,7 +88299,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The task or item as listed, e.g. \"Pay the bills\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list."
 									},
 									"dueDate": {
 										"type": [
@@ -88558,7 +89248,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The task or item as listed, e.g. \"Pay the bills\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list."
 									}
 								},
 								"required": [
@@ -90263,7 +90953,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The task or item as listed, e.g. \"Pay the bills\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list."
 									}
 								},
 								"required": [
@@ -90638,7 +91328,7 @@
 									"label": {
 										"type": "string",
 										"maxLength": 200,
-										"description": "The task or item as listed, e.g. \"Pay the bills\"; only shown to the reviewer"
+										"description": "Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list."
 									}
 								},
 								"required": [

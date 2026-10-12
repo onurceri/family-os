@@ -102,7 +102,7 @@ describe('tasks', () => {
 		);
 		const result = await k.runner.invoke(
 			'lists.changeTask',
-			{ id: task.id, assigneeId: member.id, dueDate: '2026-10-10' },
+			{ id: task.id, assigneeId: member.id, dueDate: '2026-10-10', label: 'faturaları öde' },
 			{ kind: 'ai', source: 'assistant', onBehalfOf: member.id as never, roleId: 'admin' },
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 		);

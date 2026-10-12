@@ -54,6 +54,7 @@ describe('people in answers', () => {
 			summary: null,
 			hasTools: true,
 			memories: [],
+			records: [],
 		});
 		expect(prompt).toContain('use a handle like member:1 only in tool inputs');
 		expect(prompt).toContain('In your answers never write a handle');
@@ -73,6 +74,7 @@ describe('people in answers', () => {
 			summary: null,
 			hasTools: true,
 			memories: [],
+			records: [],
 		});
 		expect(prompt).toContain('mean the person asking (Lukas)');
 		expect(prompt).toContain('Also in the family that day');

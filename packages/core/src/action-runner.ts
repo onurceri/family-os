@@ -39,6 +39,7 @@ import {
 	storeError,
 	storeResult,
 } from './idempotency.ts';
+import { labelNamesTitle } from './label-words.ts';
 import type { Notifier } from './notifications.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables, DraftRow } from './tables.ts';
@@ -122,18 +123,6 @@ export interface ActionRunner {
 
 /** What `passedCheck` needs of a draft. */
 export type PassedFacts = Pick<DraftRow, 'action_id' | 'status' | 'input' | 'edited_input'>;
-
-const normalized = (text: string) => text.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
-
-/**
- * Whether a review label can be about the thing titled `title`: one holds the other, ignoring
- * case and spacing ("Dentist (15 Oct)" is about "Dentist"). An empty label says nothing.
- */
-export function labelMatches(label: string, title: string): boolean {
-	const l = normalized(label);
-	const t = normalized(title);
-	return l === '' || t === '' || l.includes(t) || t.includes(l);
-}
 
 function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: string): z.infer<S> {
 	const result = schema.safeParse(value);
@@ -355,7 +344,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const def = getAction(actionId);
 		authorize(def, actor);
 		const input = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
-		if (actor.kind === 'ai') await assertLabelMatches(def, input);
+		const checkedTitle = await checkTarget(def, input, actor);
 		/** Inside the transaction: a concurrent request may have stored the key meanwhile. */
 		const guard = async (uow: UnitOfWork) => {
 			if (!idem) return;
@@ -382,10 +371,19 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		}
 
 		const meta = options.draft ?? {};
+		// Every draft carries the real name of what it changes, so cards and notices show what
+		// will happen whoever proposed it (a screen sends only the id).
+		const targetName = def.targetTitle
+			? (checkedTitle ??
+				(await def.targetTitle({ db: deps.db, family: familyReader(deps.db) }, input)))
+			: null;
+		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		// Personal drafts (memory, questions to a person) go to the member the assistant works for.
 		const personalTo =
 			actor.kind === 'ai' && def.ai?.addressToMember && actor.onBehalfOf ? actor.onBehalfOf : null;
 		let draftId = ids.next('draft');
+		let autoApproved = false;
+		let byOthers = false;
 		await unitOfWork(actor, async (uow) => {
 			await guard(uow);
 			if (meta.dedupeKey) {
@@ -422,7 +420,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.values({
 					id: draftId,
 					action_id: actionId,
-					input: JSON.stringify(input),
+					input: JSON.stringify(stored),
 					edited_input: null,
 					status: 'pending',
 					proposed_by: JSON.stringify(actor),
@@ -448,6 +446,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.execute();
 			await audit(uow, actionId, 'drafted', draftId);
 			const facts = { ...personal, addressedTo };
+			// A person's AI whose draft goes to the approvers: someone else decides it.
+			byOthers = !auto && actor.kind === 'ai' && facts.proposerMemberId !== null && !addressedTo;
 			uow.emit(draftCreated, {
 				draftId,
 				actionId,
@@ -467,6 +467,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					{ draftId, proposerMemberId: facts.proposerMemberId },
 					{ dedupeKey: `${AUTO_APPROVE_JOB}:${draftId}` },
 				);
+				autoApproved = true;
 				await remember(uow, { status: 'drafted', draftId });
 				return;
 			}
@@ -486,7 +487,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			);
 			await remember(uow, { status: 'drafted', draftId });
 		});
-		return { status: 'drafted', draftId };
+		return {
+			status: 'drafted',
+			draftId,
+			...(autoApproved ? { autoApproval: true as const } : {}),
+			...(byOthers ? { decidedByOthers: true as const } : {}),
+		};
 	}
 
 	/**
@@ -726,16 +732,40 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return output.success ? def.undo(output.data) : null;
 	}
 
-	/** Refuses an AI's change whose label names something else than the target it points at. */
-	async function assertLabelMatches(def: AnyActionDefinition, input: unknown): Promise<void> {
-		const label = (input as { label?: unknown } | null)?.label;
-		if (!def.targetTitle || typeof label !== 'string') return;
-		const title = await def.targetTitle({ db: deps.db, family: familyReader(deps.db) }, input);
-		if (title === null || labelMatches(label, title)) return;
-		throw new FamosError(
-			'conflict',
-			`That handle is '${title}', not '${label.trim()}'. Look it up again.`,
-		);
+	/**
+	 * The real title of what an input points at, for actions that have a `targetTitle`. An AI must
+	 * say in the person's own words which thing it means (`label`), and those words must name the
+	 * target: a model that picked the closest thing instead of the named one is refused, so it
+	 * tells the person it is not there. Null when the action has no target title or the target
+	 * does not exist (the action then reports that itself).
+	 */
+	async function checkTarget(
+		def: AnyActionDefinition,
+		input: unknown,
+		actor: Actor,
+	): Promise<string | null | undefined> {
+		// People see what they pick: nothing to check, and no query unless a draft needs the name.
+		if (actor.kind !== 'ai') return undefined;
+		const ctx = { db: deps.db, family: familyReader(deps.db) };
+		let title: string | null = null;
+		if (def.targetTitle) {
+			const label = (input as { label?: unknown } | null)?.label;
+			const said = typeof label === 'string' ? label.trim() : '';
+			if (said === '')
+				throw new FamosError(
+					'conflict',
+					'Say which one you mean: send `label` with the name the person used for it, in their words.',
+				);
+			title = await def.targetTitle(ctx, input);
+			if (title !== null && !labelNamesTitle(said, title))
+				throw new FamosError(
+					'conflict',
+					`That is '${title}', not '${said}'. If it is not on the list, tell the person.`,
+				);
+		}
+		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
+		if (reason !== null) throw new FamosError('conflict', reason);
+		return title;
 	}
 
 	async function mayExist(draft: DraftRow): Promise<boolean | 'some'> {

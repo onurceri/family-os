@@ -20,13 +20,19 @@ export const ShoppingListIdSchema = idSchema('shop_list');
 export const ShoppingItemIdSchema = idSchema('shop_item');
 export const MemberIdSchema = idSchema('member');
 
-/** Only for people reviewing a suggestion: which task or item it is. Never stored. */
+/**
+ * Tells the reviewer which task or item it is. For an AI it is the guard against acting on the
+ * wrong one: the person's own words, which must name the target. The runner stores the real
+ * title here on every draft.
+ */
 export const ReviewLabelSchema = z
 	.string()
 	.trim()
 	.max(200)
 	.optional()
-	.describe('The task or item as listed, e.g. "Pay the bills"; only shown to the reviewer');
+	.describe(
+		'Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list.',
+	);
 
 /** The longest task title; screens limit typing to it. */
 export const TASK_TITLE_MAX = 160;
