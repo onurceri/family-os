@@ -542,11 +542,11 @@ const CLUB_CASES: Case[] = [
 	{
 		// Found in use: a message to the sharer became a whole-family event.
 		name: 'Message addressed to the person who shared it (English)',
-		text: 'Hi, your swim lesson is on Saturday 10 October at 9am, please bring a towel.',
+		text: 'Note to self: my dentist check-up is on Saturday 10 October at 9am.',
 		checks: [
 			has(
 				'calendar.createEvent',
-				'the lesson on 10 Oct 09:00 for the sharer (Ayşe)',
+				'the check-up on 10 Oct 09:00 for the sharer (Ayşe)',
 				(i, m) =>
 					i.date === '2026-10-10' &&
 					i.startTime === '09:00' &&
