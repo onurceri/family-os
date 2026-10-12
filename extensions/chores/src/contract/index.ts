@@ -115,8 +115,13 @@ export type Completion = z.infer<typeof CompletionSchema>;
 
 export const MarkDoneResultSchema = z.object({
 	chore: ChoreSchema,
-	/** Null when the tap changed nothing (already done). */
+	/** Null when the tap changed nothing; `reason` then says why. */
 	completion: CompletionSchema.nullable(),
+	/**
+	 * Set when nothing changed: `already_done` for a date that was done already, `stale` when the
+	 * chore has moved on to another due date.
+	 */
+	reason: z.enum(['stale', 'already_done']).optional(),
 });
 export type MarkDoneResult = z.infer<typeof MarkDoneResultSchema>;
 

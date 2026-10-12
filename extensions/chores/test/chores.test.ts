@@ -38,6 +38,27 @@ const rejected = (p: Promise<unknown>) =>
 	);
 
 describe('chores', () => {
+	it('says why a tap changed nothing', async () => {
+		const c = await create();
+		const first = await done(c);
+		expect(first.completion).not.toBeNull();
+		expect(first.reason).toBeUndefined();
+		const same = await applied<MarkDoneResult>(
+			k,
+			'chores.markDone',
+			{ id: c.id, dueDate: c.nextDue },
+			ayse.actor,
+		);
+		expect(same).toMatchObject({ completion: null, reason: 'already_done' });
+		const moved = await applied<MarkDoneResult>(
+			k,
+			'chores.markDone',
+			{ id: c.id, dueDate: '2030-01-01' },
+			ayse.actor,
+		);
+		expect(moved).toMatchObject({ completion: null, reason: 'stale' });
+	});
+
 	it('adds a chore with its people in turn order and the first one up', async () => {
 		const chore = await create({
 			notes: 'Before bed',

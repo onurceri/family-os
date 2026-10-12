@@ -276,9 +276,13 @@ export const markDone = defineAction({
 			.where('due_date', '=', dueDate)
 			.where('undone_at', 'is', null)
 			.executeTakeFirst();
-		// A stale tap (already done, or the date moved on) changes nothing.
-		if (row.next_due !== dueDate || taken)
-			return { chore: await choreView(uow.db, row, today), completion: null };
+		// A stale tap (already done, or the date moved on) changes nothing, and says so.
+		if (taken || row.next_due !== dueDate)
+			return {
+				chore: await choreView(uow.db, row, today),
+				completion: null,
+				reason: taken ? ('already_done' as const) : ('stale' as const),
+			};
 		await assertMembers(uow, [doneBy]);
 
 		const completion = {
