@@ -3,7 +3,7 @@ import type { Actor } from './actor.ts';
 import type { ExtensionContext, UnitOfWork } from './context.ts';
 
 /** What a duplicate check may read. */
-export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family'>;
+export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family' | 'translate'>;
 
 /**
  * Approval policy for an action:

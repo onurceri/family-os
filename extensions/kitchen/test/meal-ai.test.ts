@@ -1,3 +1,4 @@
+import { repoTranslate } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AI, applied, createKernel, person } from './support.ts';
 
@@ -33,7 +34,7 @@ describe('removing a planned meal as the AI', () => {
 		expect((await plan()).meals).toHaveLength(0);
 	});
 
-	it('names the meal and its day, and refuses a label that names another meal', async () => {
+	it('names the meal, its slot and its day, and refuses a label that names another meal', async () => {
 		const admin = await person(k, 'admin', 'Deniz');
 		const meal = await applied<{ id: string }>(
 			k,
@@ -52,7 +53,10 @@ describe('removing a planned meal as the AI', () => {
 		expect(ok.status).toBe('drafted');
 		const target = await k.registry.actions
 			.get('kitchen.removeMealPlanEntry')
-			?.targetTitle?.({ db: k.ctx.db, family: k.ctx.family }, { id: meal.id });
-		expect(target).toBe('Pancakes, 2026-10-08 dinner');
+			?.targetTitle?.(
+				{ db: k.ctx.db, family: k.ctx.family, translate: repoTranslate() },
+				{ id: meal.id },
+			);
+		expect(target).toBe('Pancakes · dinner, Thu, Oct 8');
 	});
 });

@@ -5,7 +5,7 @@ import {
 	FamosError,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { addDays, IsoDateSchema, todayIn } from '@famos/time';
+import { addDays, formatDate, IsoDateSchema, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	AddToMealPlanSchema,
@@ -142,7 +142,17 @@ const mealTitle = async (ctx: DuplicateContext, { id }: { id: string }) => {
 		.select(['m.title', 'm.date', 'm.slot', 'r.title as recipe_title'])
 		.where('m.id', '=', id)
 		.executeTakeFirst();
-	return row ? `${row.recipe_title ?? row.title}, ${row.date} ${row.slot}` : null;
+	if (!row) return null;
+	// People read this on cards and in notices: the dish first (it is what a label is matched
+	// against), then the meal and the day in the family's own formats.
+	const { locale, formatLocale } = await ctx.family.settings();
+	const slot = ctx.translate(locale, `kitchen:slot_${row.slot}`).toLocaleLowerCase(locale);
+	const day = formatDate(row.date, formatLocale, {
+		weekday: 'short',
+		day: 'numeric',
+		month: 'short',
+	});
+	return `${row.recipe_title ?? row.title} · ${slot}, ${day}`;
 };
 
 export const removeMealPlanEntry = defineAction({

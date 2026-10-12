@@ -223,9 +223,9 @@ describe('a suggestion read from something a member shared', () => {
 		expect((await suggestionsOf(kid.actor)).map((s) => s.id)).toContain(id);
 		const closed = await k.runner.rejectDraft(id, kid.actor);
 		expect(closed).toMatchObject({ status: 'rejected', decided_by: kid.member.id });
-		// Declining what a shared message produced is a rejection, not a withdrawal.
+		// Taking back what their own share produced reads as withdrawn.
 		const [view] = await listed(kid);
-		expect(view).toMatchObject({ id, status: 'rejected', reason: null });
+		expect(view).toMatchObject({ id, status: 'rejected', reason: 'withdrawn' });
 	});
 
 	it('a rejected assistant suggestion is not called withdrawn, a person’s own is', async () => {

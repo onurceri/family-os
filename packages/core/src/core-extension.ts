@@ -189,10 +189,14 @@ function draftReason(row: DraftRow): 'gone' | 'settled' | 'withdrawn' | null {
 	if (row.status !== 'rejected') return null;
 	if (row.error === GONE) return 'gone';
 	if (row.error === SETTLED) return 'settled';
-	// Only a person taking back their own suggestion withdraws it; declining what an assistant
-	// or a shared message produced is an ordinary rejection.
+	// Only a person taking back their own suggestion (or what their own share produced)
+	// withdraws it; declining what an assistant or MCP client proposed is an ordinary rejection.
 	const by = JSON.parse(row.proposed_by) as Actor;
-	return by.kind === 'member' && row.decided_by === by.memberId ? 'withdrawn' : null;
+	if (by.kind === 'member') return row.decided_by === by.memberId ? 'withdrawn' : null;
+	// What a member shared to Quick add is theirs to take back; an assistant's is not.
+	return by.kind === 'ai' && by.source === 'inbox' && row.decided_by === by.onBehalfOf
+		? 'withdrawn'
+		: null;
 }
 
 const toDraft = (

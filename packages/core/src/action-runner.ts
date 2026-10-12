@@ -379,7 +379,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// will happen whoever proposed it (a screen sends only the id).
 		const targetName = def.targetTitle
 			? (checkedTitle ??
-				(await def.targetTitle({ db: deps.db, family: familyReader(deps.db) }, input)))
+				(await def.targetTitle(
+					{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
+					input,
+				)))
 			: null;
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		// Personal drafts (memory, questions to a person) go to the member the assistant works for.
@@ -641,7 +644,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 				// Already so (ticked, done): running it changes nothing, and recording it as
 				// applied would offer an undo that reverses somebody else's real change.
-				if (def.settled && (await def.settled({ db: uow.db, family: uow.family }, input))) {
+				if (
+					def.settled &&
+					(await def.settled({ db: uow.db, family: uow.family, translate: deps.translate }, input))
+				) {
 					await uow.db
 						.withTables<CoreTables>()
 						.updateTable('core_drafts')
@@ -771,7 +777,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	): Promise<string | null | undefined> {
 		// People see what they pick: nothing to check, and no query unless a draft needs the name.
 		if (actor.kind !== 'ai') return undefined;
-		const ctx = { db: deps.db, family: familyReader(deps.db) };
+		const ctx = { db: deps.db, family: familyReader(deps.db), translate: deps.translate };
 		let title: string | null = null;
 		if (def.targetTitle) {
 			const label = (input as { label?: unknown } | null)?.label;
@@ -800,7 +806,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const input = def.input.safeParse(JSON.parse(draft.input));
 		if (!input.success) return false;
 		try {
-			return await def.alreadyThere({ db: deps.db, family: familyReader(deps.db) }, input.data);
+			return await def.alreadyThere(
+				{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
+				input.data,
+			);
 		} catch (error) {
 			// Only a hint: never let it break the draft list.
 			logger.warn({ err: error, draftId: draft.id }, 'duplicate check failed');
