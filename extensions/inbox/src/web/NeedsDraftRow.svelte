@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ConfirmButton, TodayRow } from '@famos/ui/famos';
-	import type { PresenterContext } from '@famos/ui/slots';
+	import { draftHeadline, type PresenterContext } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
@@ -100,7 +100,14 @@
 	<TodayRow
 		variant="needs"
 		{...presenter?.icon ? { icon: presenter.icon } : {}}
-		title={presenter?.title(input, context) ?? draft.summary ?? draft.actionId}
+		title={presenter?.title(input, context) ??
+			draftHeadline({
+				summary: draft.summary,
+				titleKey: draft.titleKey,
+				actionId: draft.actionId,
+				input,
+				t: app.t,
+			})}
 		{meta}
 		{uncertain}
 		href="/add"

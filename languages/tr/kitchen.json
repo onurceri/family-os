@@ -110,5 +110,11 @@
 	"plan_meal": "Öğün planla",
 	"words_units": "yemek kaşığı, yk, tatlı kaşığı, tk, çay kaşığı, çk, su bardağı, sb, çay bardağı, kahve fincanı, kase, kutu, konserve, kavanoz, diş, tutam, avuç, dilim, demet, dal, baş, adet, tane, paket, poşet",
 	"words_amount_link": "",
-	"words_preparation": "doğranmış, rendelenmiş, kıyılmış, dilimlenmiş, soyulmuş, ufalanmış, ezilmiş, erimiş, çırpılmış, yıkanmış, süzülmüş, ayıklanmış, oda sıcaklığında, isteğe bağlı, göz kararı, servis için, suyu sıkılmış, kemiksiz, derisiz, çekirdeği çıkarılmış, haşlanmış, kızartılmış, püre yapılmış, çözülmüş, dilimler halinde, parçalara bölünmüş"
+	"words_preparation": "doğranmış, rendelenmiş, kıyılmış, dilimlenmiş, soyulmuş, ufalanmış, ezilmiş, erimiş, çırpılmış, yıkanmış, süzülmüş, ayıklanmış, oda sıcaklığında, isteğe bağlı, göz kararı, servis için, suyu sıkılmış, kemiksiz, derisiz, çekirdeği çıkarılmış, haşlanmış, kızartılmış, püre yapılmış, çözülmüş, dilimler halinde, parçalara bölünmüş",
+	"draft_title_create_recipe": "Tarif ekle",
+	"draft_title_update_recipe": "Tarifi değiştir",
+	"draft_title_archive_recipe": "Tarifi arşivle",
+	"draft_title_add_to_meal_plan": "Öğün planla",
+	"draft_title_update_meal_plan_entry": "Planlanan öğünü değiştir",
+	"draft_title_remove_meal_plan_entry": "Öğünü plandan çıkar"
 }

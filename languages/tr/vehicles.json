@@ -90,5 +90,10 @@
 	"options_for": "{{name}} seçenekleri",
 	"archive_title": "{{name}} arşivlensin mi?",
 	"archive_do": "Arşivle",
-	"log_add_first": "İlk kaydı ekle"
+	"log_add_first": "İlk kaydı ekle",
+	"draft_title_add_vehicle": "Araç ekle",
+	"draft_title_update_vehicle": "Aracı değiştir",
+	"draft_title_archive_vehicle": "Aracı arşivle",
+	"draft_title_add_log": "Bakım veya onarım ekle",
+	"draft_title_remove_log": "Bakım veya onarımı kaldır"
 }

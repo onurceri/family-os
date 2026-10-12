@@ -31,6 +31,13 @@ export interface ActionDefinition<
 > {
 	readonly id: Id;
 	readonly title: string;
+	/**
+	 * i18n key (in the owning extension's catalog) naming what a draft of this action proposes
+	 * ("Remove a service entry"). It titles the draft where no presenter or summary does, and the
+	 * "waiting" notification. Every action that can become a draft declares one: `title` is
+	 * English and for developers only.
+	 */
+	readonly draftTitle?: string;
 	readonly description?: string;
 	readonly input: In;
 	readonly output: Out;
@@ -137,6 +144,7 @@ export function defineAction<
 >(definition: {
 	id: Id;
 	title: string;
+	draftTitle?: string;
 	description?: string;
 	input: In;
 	output: Out;

@@ -260,6 +260,35 @@ describe('shopping', () => {
 		expect(out.lists.map((l) => l.name)).toEqual(['Shopping list']);
 	});
 
+	it('lets supervised members add and tick items but drafts their removal', async () => {
+		const { actor: child } = await k.member('supervised');
+		const { actor: parent } = await k.member('member');
+		await applied(
+			k.runner.invoke(
+				'lists.addShoppingItems',
+				{ items: [{ title: 'Milk' }, { title: 'Bread' }, { title: 'Eggs' }] },
+				child,
+			),
+		);
+		const [milk, bread, eggs] = await items();
+		expect(
+			(await k.runner.invoke('lists.checkShoppingItem', { id: milk?.id, done: true }, child))
+				.status,
+		).toBe('applied');
+		for (const [id, input] of [
+			['lists.deleteShoppingItem', { id: milk?.id }],
+			['lists.removeShoppingItems', { ids: [bread?.id] }],
+			['lists.clearBought', { listId: DEFAULT_LIST_ID }],
+		] as const) {
+			expect((await k.runner.invoke(id, input, child)).status).toBe('drafted');
+		}
+		expect(await items()).toHaveLength(3);
+		expect(
+			(await k.runner.invoke('lists.deleteShoppingItem', { id: eggs?.id }, parent)).status,
+		).toBe('applied');
+		expect(await items()).toHaveLength(2);
+	});
+
 	it('adds items without duplicates and brings bought items back', async () => {
 		const { actor } = await k.member('member');
 		await k.runner.invoke(

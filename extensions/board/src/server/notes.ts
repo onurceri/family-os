@@ -138,6 +138,7 @@ export function excerpt(text: string, max = 120): string {
 export const postNote = defineAction({
 	id: 'board.postNote',
 	title: 'Put a note on the family board',
+	draftTitle: 'board:draft_title_post_note',
 	input: PostNoteSchema,
 	output: BoardNoteSchema,
 	requires: boardPost.id,

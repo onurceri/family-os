@@ -79,5 +79,6 @@
 	"quiet_board": "nothing on the board",
 	"empty_hint": "Leave a note for the family: a reminder, a message, a thank-you.",
 	"today_block": "The board",
-	"today_block_hint": "Notes for the whole family, pinned on the board."
+	"today_block_hint": "Notes for the whole family, pinned on the board.",
+	"draft_title_post_note": "Put a note on the family board"
 }

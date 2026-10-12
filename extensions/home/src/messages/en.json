@@ -103,5 +103,14 @@
 	"discard_hint": "What you typed here has not been saved.",
 	"discard_keep": "Keep editing",
 	"discard_confirm": "Discard",
-	"close": "Close"
+	"close": "Close",
+	"draft_title_add_home": "Add a home",
+	"draft_title_update_home": "Change a home",
+	"draft_title_archive_home": "Archive a home",
+	"draft_title_add_item": "Add a thing to a home",
+	"draft_title_update_item": "Change a thing in a home",
+	"draft_title_archive_item": "Archive a thing in a home",
+	"draft_title_add_service": "Add a utility or subscription",
+	"draft_title_update_service": "Change a utility or subscription",
+	"draft_title_archive_service": "Archive a utility or subscription"
 }

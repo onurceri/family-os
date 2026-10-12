@@ -90,5 +90,10 @@
 	"options_for": "Options for {{name}}",
 	"archive_title": "Archive {{name}}?",
 	"archive_do": "Archive",
-	"log_add_first": "Add the first entry"
+	"log_add_first": "Add the first entry",
+	"draft_title_add_vehicle": "Add a vehicle",
+	"draft_title_update_vehicle": "Change a vehicle",
+	"draft_title_archive_vehicle": "Archive a vehicle",
+	"draft_title_add_log": "Add a service or repair",
+	"draft_title_remove_log": "Remove a service or repair"
 }

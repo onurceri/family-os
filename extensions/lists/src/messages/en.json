@@ -171,5 +171,20 @@
 	"today_block_tasks": "Tasks",
 	"today_block_tasks_hint": "The day's tasks, and those with no date.",
 	"today_block_shopping": "Shopping",
-	"today_block_shopping_hint": "How many things there are to get."
+	"today_block_shopping_hint": "How many things there are to get.",
+	"draft_title_add_task": "Add a task",
+	"draft_title_update_task": "Change a task",
+	"draft_title_change_task": "Change a task",
+	"draft_title_complete_task": "Mark a task as done",
+	"draft_title_delete_task": "Delete a task",
+	"draft_title_restore_task": "Bring back a deleted task",
+	"draft_title_add_shopping_items": "Add shopping items",
+	"draft_title_check_shopping_item": "Tick off a shopping item",
+	"draft_title_delete_shopping_item": "Remove a shopping item",
+	"draft_title_remove_shopping_items": "Remove shopping items",
+	"draft_title_undo_add_shopping_items": "Take back added shopping items",
+	"draft_title_clear_bought": "Clear the bought items",
+	"draft_title_create_shopping_list": "Create a shopping list",
+	"draft_title_rename_shopping_list": "Rename a shopping list",
+	"draft_title_archive_shopping_list": "Remove a shopping list"
 }

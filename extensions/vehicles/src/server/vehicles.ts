@@ -63,6 +63,7 @@ const fieldsOf = (v: z.output<typeof UpdateVehicleSchema>['vehicle']) => ({
 export const addVehicle = defineAction({
 	id: 'vehicles.addVehicle',
 	title: 'Add a vehicle',
+	draftTitle: 'vehicles:draft_title_add_vehicle',
 	input: AddVehicleSchema,
 	output: VehicleSchema,
 	approval: { unless: vehiclesEdit.id },
@@ -116,6 +117,7 @@ export const addVehicle = defineAction({
 export const updateVehicle = defineAction({
 	id: 'vehicles.updateVehicle',
 	title: 'Change a vehicle',
+	draftTitle: 'vehicles:draft_title_update_vehicle',
 	input: UpdateVehicleSchema,
 	output: VehicleSchema,
 	approval: { unless: vehiclesEdit.id },
@@ -141,6 +143,7 @@ export const updateVehicle = defineAction({
 export const archiveVehicle = defineAction({
 	id: 'vehicles.archiveVehicle',
 	title: 'Archive a vehicle',
+	draftTitle: 'vehicles:draft_title_archive_vehicle',
 	input: z.object({ id: VehicleIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: vehiclesEdit.id },
@@ -161,6 +164,7 @@ export const archiveVehicle = defineAction({
 export const addLog = defineAction({
 	id: 'vehicles.addLog',
 	title: 'Add a service or repair entry',
+	draftTitle: 'vehicles:draft_title_add_log',
 	input: AddLogSchema,
 	output: VehicleLogSchema,
 	approval: { unless: vehiclesEdit.id },
@@ -203,6 +207,7 @@ export const addLog = defineAction({
 export const removeLog = defineAction({
 	id: 'vehicles.removeLog',
 	title: 'Remove a service or repair entry',
+	draftTitle: 'vehicles:draft_title_remove_log',
 	input: z.object({ id: VehicleLogIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: vehiclesEdit.id },

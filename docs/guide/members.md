@@ -33,7 +33,7 @@ Everyone chooses their own language under **Settings → You → Profile & sign-
 |---|---|---|
 | Admin | Whoever runs FamilyOS (there can be several) | Everything. Only admins manage members, roles, devices, features, AI, auto-approval, backups, Telegram, email, languages and region, calendar subscriptions, display content. |
 | Member | Adults | See and change everything else, approve suggestions and ask the assistant. |
-| Supervised | Children, or anyone whose changes should be checked | See everything. Add shopping items, tick off tasks and their own chores, share to Quick add and ask the assistant. Other changes, such as a new event, become suggestions that an adult approves. |
+| Supervised | Children, or anyone whose changes should be checked | See everything. Add shopping items and tick them off, tick off tasks and their own chores, share to Quick add and ask the assistant. Other changes, such as a new event or removing a shopping item, become suggestions that an adult approves. |
 | Guest | A babysitter, grandparents visiting | Look only: the calendar, lists, chores, recipes, records, vehicles, home and pets. No sharing, suggesting or assistant. |
 
 Everyone also sees their own notifications and the other members.

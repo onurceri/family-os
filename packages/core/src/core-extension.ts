@@ -16,7 +16,7 @@ import {
 import { formatLocaleForLanguage } from '@famos/time';
 import { z } from 'zod';
 import type { Access } from './access.ts';
-import type { ActionRunner } from './action-runner.ts';
+import { type ActionRunner, GONE } from './action-runner.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
 import { createAutoApproval } from './auto-approval.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -138,6 +138,13 @@ export const DraftSchema = z.object({
 	decidedBy: z.string().nullable(),
 	/** Applied and its action can take it back (Undo). */
 	undoable: z.boolean(),
+	/**
+	 * Why a rejected draft is closed when a person did not decide it: `gone` (what it was about
+	 * no longer exists) or `withdrawn` (the person behind it took it back). Null otherwise.
+	 */
+	reason: z.enum(['gone', 'withdrawn']).nullable(),
+	/** i18n key naming what the draft proposes, for a draft no presenter or summary describes. */
+	titleKey: z.string().nullable(),
 	/** Pending only: what it proposes seems to exist already ("this may already be there"). */
 	mayExist: z.boolean(),
 	/** Pending only: part of what it proposes seems to exist already. */
@@ -155,10 +162,20 @@ const toMember = (row: MemberRow): Member => ({
 	archived: row.archived_at !== null,
 });
 
+/** Why a closed draft is closed, when no one decided it on its merits. */
+function draftReason(row: DraftRow): 'gone' | 'withdrawn' | null {
+	if (row.status !== 'rejected') return null;
+	if (row.error === GONE) return 'gone';
+	const by = JSON.parse(row.proposed_by) as Actor;
+	const proposer = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : null;
+	return proposer && row.decided_by === proposer ? 'withdrawn' : null;
+}
+
 const toDraft = (
 	row: DraftRow,
 	undoable = false,
 	mayExist: boolean | 'some' = false,
+	titleKey: string | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -172,13 +189,18 @@ const toDraft = (
 	confidence: row.confidence,
 	uncertainFields: row.uncertain_fields ? (JSON.parse(row.uncertain_fields) as string[]) : [],
 	// The stored message can carry internals (SQL, paths); members see only that it failed.
-	error: row.error === null ? null : 'Applying this change failed. Try again or ask an admin.',
+	error:
+		row.error === null || row.error === GONE
+			? null
+			: 'Applying this change failed. Try again or ask an admin.',
 	forMember: row.for_member,
 	createdAt: row.created_at,
 	decidedAt: row.decided_at,
 	autoApproved: row.auto_approved === 1,
 	decidedBy: row.decided_by,
 	undoable,
+	reason: draftReason(row),
+	titleKey,
 	mayExist: mayExist === true,
 	mayExistSome: mayExist === 'some',
 });
@@ -1045,7 +1067,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const rows = await ctx.db
 				.withTables<CoreTables>()
 				.selectFrom('core_drafts')
-				.select(['action_id', 'status', 'input', 'edited_input'])
+				.selectAll()
 				.where('status', '=', 'pending')
 				.where((eb) =>
 					actor.kind === 'member'
@@ -1053,9 +1075,13 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 						: eb('for_member', 'is', null),
 				)
 				.execute();
+			// A member's count is what they can decide: not their own suggestions, nor what an
+			// approver must look at. A display only shows that something waits.
+			const decidable =
+				actor.kind === 'member' ? rows.filter((row) => deps.runner().mayDecide(row, actor)) : rows;
 			// One about a day that has passed no longer waits (it expires).
 			const passed = await deps.runner().passedCheck();
-			return { count: rows.filter((row) => !passed(row)).length };
+			return { count: decidable.filter((row) => !passed(row)).length };
 		},
 	});
 
@@ -1108,14 +1134,20 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 
 	const DraftParams = z.object({ draftId: idSchema('draft') });
 	const view = async (row: DraftRow) =>
-		toDraft(row, deps.runner().undoStep(row) !== null, await deps.runner().mayExist(row));
+		toDraft(
+			row,
+			deps.runner().undoStep(row) !== null,
+			await deps.runner().mayExist(row),
+			deps.registry().actions.get(row.action_id)?.draftTitle ?? null,
+		);
 
 	const approve = defineRoute({
 		method: 'post',
 		path: '/drafts/{draftId}/approve',
 		operationId: 'core.approveDraft',
 		summary: 'Approve (optionally edit) and apply a draft',
-		requires: CORE_CAPABILITIES.draftsApprove.id,
+		// The runner decides who may: an approver, or the member a draft is addressed to.
+		requires: CORE_CAPABILITIES.draftsPropose.id,
 		params: DraftParams,
 		body: z.object({ input: z.unknown().optional() }),
 		response: DraftSchema,
@@ -1128,8 +1160,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		method: 'post',
 		path: '/drafts/{draftId}/reject',
 		operationId: 'core.rejectDraft',
-		summary: 'Reject a draft',
-		requires: CORE_CAPABILITIES.draftsApprove.id,
+		summary: 'Reject a draft, or withdraw your own',
+		requires: CORE_CAPABILITIES.draftsPropose.id,
 		params: DraftParams,
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
@@ -1142,7 +1174,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		path: '/drafts/{draftId}/undo',
 		operationId: 'core.undoDraft',
 		summary: "Take back an applied draft (Undo), with its action's inverse",
-		requires: CORE_CAPABILITIES.draftsApprove.id,
+		requires: CORE_CAPABILITIES.draftsPropose.id,
 		params: DraftParams,
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {

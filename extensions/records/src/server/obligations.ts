@@ -69,6 +69,7 @@ async function scheduleReminders(uow: UnitOfWork, id: string) {
 export const addObligation = defineAction({
 	id: 'records.addObligation',
 	title: 'Add something that needs doing to a record',
+	draftTitle: 'records:draft_title_add_obligation',
 	input: AddObligationSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
@@ -130,6 +131,7 @@ export const addObligation = defineAction({
 export const updateObligation = defineAction({
 	id: 'records.updateObligation',
 	title: 'Change an obligation',
+	draftTitle: 'records:draft_title_update_obligation',
 	input: UpdateObligationSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
@@ -169,6 +171,7 @@ export const updateObligation = defineAction({
 export const completeObligation = defineAction({
 	id: 'records.completeObligation',
 	title: 'Mark an obligation done',
+	draftTitle: 'records:draft_title_complete_obligation',
 	description:
 		'Adds a history entry. A repeating obligation moves on to its next due date; a one-off is archived as done.',
 	input: CompleteObligationSchema,
@@ -257,6 +260,7 @@ export const completeObligation = defineAction({
 export const undoCompletion = defineAction({
 	id: 'records.undoCompletion',
 	title: 'Take back marking an obligation done',
+	draftTitle: 'records:draft_title_undo_completion',
 	input: UndoCompletionSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
@@ -292,6 +296,7 @@ export const undoCompletion = defineAction({
 export const removeObligation = defineAction({
 	id: 'records.removeObligation',
 	title: 'Remove an obligation',
+	draftTitle: 'records:draft_title_remove_obligation',
 	input: z.object({ id: ObligationIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: recordsEdit.id },
@@ -314,6 +319,7 @@ export const removeObligation = defineAction({
 export const archiveForRecord = defineAction({
 	id: 'records.archiveForRecord',
 	title: 'Archive the obligations and documents of a record',
+	draftTitle: 'records:draft_title_archive_for_record',
 	input: z.object({ recordId: RecordIdSchema }),
 	output: z.object({ obligations: z.number().int(), documents: z.number().int() }),
 	approval: { unless: recordsEdit.id },
@@ -358,6 +364,7 @@ export const archiveForRecord = defineAction({
 export const renameRecord = defineAction({
 	id: 'records.renameRecord',
 	title: 'Update the name of a record',
+	draftTitle: 'records:draft_title_rename_record',
 	input: RenameRecordSchema,
 	output: z.object({ obligations: z.number().int() }),
 	approval: { unless: recordsEdit.id },

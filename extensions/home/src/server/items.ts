@@ -115,6 +115,7 @@ async function keepLapsing(uow: UnitOfWork, obligationId: string, until: string)
 export const addItem = defineAction({
 	id: 'home.addItem',
 	title: 'Add a thing to a home',
+	draftTitle: 'home:draft_title_add_item',
 	input: AddItemSchema,
 	output: ItemSchema,
 	approval: { unless: homeEdit.id },
@@ -200,6 +201,7 @@ export const addItem = defineAction({
 export const updateItem = defineAction({
 	id: 'home.updateItem',
 	title: 'Change a thing',
+	draftTitle: 'home:draft_title_update_item',
 	input: UpdateItemSchema,
 	// The old values of the fields that were given, keyed like the input (for undo).
 	output: ItemSchema.extend({ before: UpdateItemSchema.omit({ id: true, itemName: true }) }),
@@ -258,6 +260,7 @@ export const updateItem = defineAction({
 export const archiveItem = defineAction({
 	id: 'home.archiveItem',
 	title: 'Archive a thing',
+	draftTitle: 'home:draft_title_archive_item',
 	input: z.object({ id: ItemIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: homeEdit.id },

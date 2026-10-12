@@ -26,6 +26,7 @@ const fieldsOf = (h: z.output<typeof UpdateHomeSchema>['home']) => ({
 export const addHome = defineAction({
 	id: 'home.addHome',
 	title: 'Add a home',
+	draftTitle: 'home:draft_title_add_home',
 	input: AddHomeSchema,
 	output: HomeSchema,
 	approval: { unless: homeEdit.id },
@@ -74,6 +75,7 @@ export const addHome = defineAction({
 export const updateHome = defineAction({
 	id: 'home.updateHome',
 	title: 'Change a home',
+	draftTitle: 'home:draft_title_update_home',
 	input: UpdateHomeSchema,
 	output: HomeSchema,
 	approval: { unless: homeEdit.id },
@@ -97,6 +99,7 @@ export const updateHome = defineAction({
 export const archiveHome = defineAction({
 	id: 'home.archiveHome',
 	title: 'Archive a home',
+	draftTitle: 'home:draft_title_archive_home',
 	input: z.object({ id: HomeIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: homeEdit.id },

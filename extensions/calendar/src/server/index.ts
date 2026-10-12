@@ -84,6 +84,7 @@ async function loadEvent(uow: UnitOfWork, id: string) {
 export const createEvent = defineAction({
 	id: 'calendar.createEvent',
 	title: 'Add an event to the family calendar',
+	draftTitle: 'calendar:draft_title_create_event',
 	input: EventInputSchema,
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
@@ -126,6 +127,7 @@ export const createEvent = defineAction({
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
 	title: 'Change an event (whole series)',
+	draftTitle: 'calendar:draft_title_update_event',
 	input: z.object({ id: EventIdSchema, event: EventInputSchema }),
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
@@ -152,6 +154,7 @@ export const updateEvent = defineAction({
 export const deleteEvent = defineAction({
 	id: 'calendar.deleteEvent',
 	title: 'Delete an event, or one occurrence of a repeating event',
+	draftTitle: 'calendar:draft_title_delete_event',
 	input: z.object({
 		id: EventIdSchema,
 		/** Occurrence key (from the occurrence list) to skip just that one. */
@@ -201,6 +204,7 @@ export const deleteEvent = defineAction({
 export const restoreEvent = defineAction({
 	id: 'calendar.restoreEvent',
 	title: 'Bring back a deleted event, or a skipped date of a repeating event',
+	draftTitle: 'calendar:draft_title_restore_event',
 	input: z.object({ id: EventIdSchema, occurrence: z.string().optional() }),
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
@@ -263,6 +267,7 @@ type EventChange = z.infer<typeof EventChangeSchema>;
 export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
 	title: 'Change some details of an event (whole series)',
+	draftTitle: 'calendar:draft_title_change_event',
 	input: EventChangeSchema.extend({ id: EventIdSchema, label: ReviewLabelSchema }),
 	// The old values of what changed, keyed like the input (for undo).
 	output: z.object({ event: EventDetailSchema, before: z.record(z.string(), z.unknown()) }),

@@ -1302,7 +1302,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reject a draft */
+        /** Reject a draft, or withdraw your own */
         post: operations["core.rejectDraft"];
         delete?: never;
         options?: never;
@@ -16389,6 +16389,9 @@ export interface operations {
                         autoApproved: boolean;
                         decidedBy: string | null;
                         undoable: boolean;
+                        /** @enum {string|null} */
+                        reason: "gone" | "withdrawn" | null;
+                        titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                     }[];
@@ -16671,6 +16674,9 @@ export interface operations {
                         autoApproved: boolean;
                         decidedBy: string | null;
                         undoable: boolean;
+                        /** @enum {string|null} */
+                        reason: "gone" | "withdrawn" | null;
+                        titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                     };
@@ -16794,7 +16800,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Reject a draft */
+            /** @description Reject a draft, or withdraw your own */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -16820,6 +16826,9 @@ export interface operations {
                         autoApproved: boolean;
                         decidedBy: string | null;
                         undoable: boolean;
+                        /** @enum {string|null} */
+                        reason: "gone" | "withdrawn" | null;
+                        titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                     };
@@ -16969,6 +16978,9 @@ export interface operations {
                         autoApproved: boolean;
                         decidedBy: string | null;
                         undoable: boolean;
+                        /** @enum {string|null} */
+                        reason: "gone" | "withdrawn" | null;
+                        titleKey: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                     };

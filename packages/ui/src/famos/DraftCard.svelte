@@ -29,6 +29,12 @@
 		undone?: string;
 		/** Shown when nobody decided it and the day it was about has passed. */
 		expired?: string;
+		/** Shown when what it was about no longer exists. */
+		gone?: string;
+		/** Shown after the person who suggested it took it back. */
+		withdrawn?: string;
+		/** The button with which the person who suggested it takes it back. */
+		withdraw?: string;
 		/** The button that takes an applied draft back. */
 		undo?: string;
 		/** Shown on a pending draft that seems to exist already. */
@@ -51,12 +57,14 @@
 		labels,
 		busy = false,
 		canDecide = true,
+		reason = null,
 		compact = false,
 		editor,
 		onapprove,
 		onreject,
 		onsave,
 		onundo,
+		onwithdraw,
 		selectable,
 		quiet = false,
 		oneditchange,
@@ -77,6 +85,8 @@
 		busy?: boolean;
 		/** False for people who may not approve (children see the proposal and a waiting note). */
 		canDecide?: boolean;
+		/** Why a rejected draft is closed when nobody decided it on its merits. */
+		reason?: 'gone' | 'withdrawn' | null;
 		/** A decided draft as one flat row (wide layouts); pending drafts are unchanged. */
 		compact?: boolean;
 		/** Inline editor (from the extension's presenter); shown in edit mode. */
@@ -87,6 +97,11 @@
 		onsave?: () => void;
 		/** Shown on an applied draft that can still be taken back; omit to hide "Undo". */
 		onundo?: () => void;
+		/**
+		 * For the person behind a suggestion they cannot decide themselves: a button under the
+		 * waiting note that takes it back. Omit to hide "Withdraw".
+		 */
+		onwithdraw?: () => void;
 		/**
 		 * A suggestion in a group that is decided together: a checkbox instead of Approve and
 		 * Reject (the group has the buttons); Edit stays. Only for people who may decide.
@@ -114,7 +129,11 @@
 			? (labels.undone ?? labels.rejected)
 			: status === 'expired'
 				? (labels.expired ?? labels.rejected)
-				: labels.rejected,
+				: reason === 'gone'
+					? (labels.gone ?? labels.rejected)
+					: reason === 'withdrawn'
+						? (labels.withdrawn ?? labels.rejected)
+						: labels.rejected,
 	);
 	const ring = $derived(
 		quiet && (status === 'pending' || status === 'failed')
@@ -250,6 +269,16 @@
 			{/if}
 			{#if !canDecide}
 				<p class="text-ink-soft text-sm font-semibold">{labels.waiting}</p>
+				{#if onwithdraw && labels.withdraw}
+					<button
+						type="button"
+						disabled={busy}
+						class="bg-idle min-h-11 justify-self-start rounded-lg px-4 font-bold disabled:opacity-50"
+						onclick={onwithdraw}
+					>
+						{labels.withdraw}
+					</button>
+				{/if}
 			{:else if picking}
 				{#if onsave && editor}
 					<div class="flex">

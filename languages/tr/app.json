@@ -337,6 +337,9 @@
 	"nav_waiting": "bekliyor",
 	"draft_undone": "Geri alındı",
 	"draft_expired": "Günü geçti",
+	"draft_gone": "Artık yok",
+	"draft_withdrawn": "Geri çekildi",
+	"draft_withdraw": "Geri çek",
 	"draft_may_exist": "Bu zaten eklenmiş olabilir: onaylamadan önce kontrol et.",
 	"draft_may_exist_some": "Bunların bir kısmı zaten eklenmiş olabilir: onaylamadan önce kontrol et.",
 	"draft_undo": "Geri al",
@@ -1058,5 +1061,6 @@
 	"home_sentence_day_plan": "{{greeting}}, {{name}}. Planda {{plan}} şey var.",
 	"home_sentence_day_plan_last": "{{greeting}}, {{name}}. Planda {{plan}} şey var, bu akşam {{title}}.",
 	"home_sentence_day_evening": "{{greeting}}, {{name}}. **Yarın saat {{time}} başlıyor.**",
-	"home_sentence_day_evening_free": "{{greeting}}, {{name}}. **Yarın boş.**"
+	"home_sentence_day_evening_free": "{{greeting}}, {{name}}. **Yarın boş.**",
+	"draft_title_add_memory": "Bir şeyi hatırla"
 }

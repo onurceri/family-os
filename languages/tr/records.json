@@ -103,5 +103,14 @@
 	"discard_confirm": "Sil",
 	"close": "Kapat",
 	"today_block": "Yaklaşanlar",
-	"today_block_hint": "Önümüzdeki haftalarda gelen yenilemeler ve bakımlar."
+	"today_block_hint": "Önümüzdeki haftalarda gelen yenilemeler ve bakımlar.",
+	"draft_title_add_obligation": "Yapılması gereken bir şey ekle",
+	"draft_title_update_obligation": "Yapılması gereken şeyi değiştir",
+	"draft_title_complete_obligation": "Yapıldı olarak işaretle",
+	"draft_title_undo_completion": "Yapıldı işaretini geri al",
+	"draft_title_remove_obligation": "Yapılması gereken şeyi kaldır",
+	"draft_title_archive_for_record": "Bir kayda bağlı olanları arşivle",
+	"draft_title_rename_record": "Kaydı yeniden adlandır",
+	"draft_title_update_document": "Belgeyi değiştir",
+	"draft_title_detach_document": "Belgeyi kayıttan çıkar"
 }

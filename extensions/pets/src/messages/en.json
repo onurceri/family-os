@@ -103,5 +103,10 @@
 	"options_for": "Options for {{name}}",
 	"archive_title": "Archive {{name}}?",
 	"archive_do": "Archive",
-	"treatment_add_first": "Add the first one"
+	"treatment_add_first": "Add the first one",
+	"draft_title_add_pet": "Add a pet",
+	"draft_title_update_pet": "Change a pet",
+	"draft_title_archive_pet": "Archive a pet",
+	"draft_title_add_treatment": "Add a treatment",
+	"draft_title_remove_treatment": "Remove a treatment"
 }

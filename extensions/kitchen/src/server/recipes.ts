@@ -74,6 +74,7 @@ const sameTitle = async (db: UnitOfWork['db'], title: string) =>
 export const createRecipe = defineAction({
 	id: 'kitchen.createRecipe',
 	title: 'Add a recipe',
+	draftTitle: 'kitchen:draft_title_create_recipe',
 	input: CreateRecipeSchema,
 	output: RecipeSchema,
 	approval: { unless: kitchenEdit.id },
@@ -95,6 +96,7 @@ export const createRecipe = defineAction({
 export const updateRecipe = defineAction({
 	id: 'kitchen.updateRecipe',
 	title: 'Change a recipe',
+	draftTitle: 'kitchen:draft_title_update_recipe',
 	input: UpdateRecipeSchema,
 	output: RecipeSchema,
 	approval: { unless: kitchenEdit.id },
@@ -112,6 +114,7 @@ export const updateRecipe = defineAction({
 export const archiveRecipe = defineAction({
 	id: 'kitchen.archiveRecipe',
 	title: 'Archive a recipe',
+	draftTitle: 'kitchen:draft_title_archive_recipe',
 	input: z.object({ id: RecipeIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: kitchenEdit.id },

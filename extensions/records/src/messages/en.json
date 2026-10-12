@@ -103,5 +103,14 @@
 	"discard_confirm": "Discard",
 	"close": "Close",
 	"today_block": "Coming up",
-	"today_block_hint": "Renewals and services due in the next weeks."
+	"today_block_hint": "Renewals and services due in the next weeks.",
+	"draft_title_add_obligation": "Add something that needs doing",
+	"draft_title_update_obligation": "Change something that needs doing",
+	"draft_title_complete_obligation": "Mark something as done",
+	"draft_title_undo_completion": "Take back marking something as done",
+	"draft_title_remove_obligation": "Remove something that needs doing",
+	"draft_title_archive_for_record": "Archive what belongs to a record",
+	"draft_title_rename_record": "Rename a record",
+	"draft_title_update_document": "Change a document",
+	"draft_title_detach_document": "Remove a document from a record"
 }

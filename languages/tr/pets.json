@@ -103,5 +103,10 @@
 	"options_for": "{{name}} seçenekleri",
 	"archive_title": "{{name}} arşivlensin mi?",
 	"archive_do": "Arşivle",
-	"treatment_add_first": "İlkini ekle"
+	"treatment_add_first": "İlkini ekle",
+	"draft_title_add_pet": "Evcil hayvan ekle",
+	"draft_title_update_pet": "Evcil hayvanı değiştir",
+	"draft_title_archive_pet": "Evcil hayvanı arşivle",
+	"draft_title_add_treatment": "Uygulama ekle",
+	"draft_title_remove_treatment": "Uygulamayı kaldır"
 }

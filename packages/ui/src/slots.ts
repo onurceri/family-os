@@ -429,3 +429,5 @@ export function defineWebExtension(ext: WebExtension): WebExtension {
 	}
 	return ext;
 }
+
+export { draftHeadline, proposedByMember } from './draft-title.ts';

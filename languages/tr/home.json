@@ -103,5 +103,14 @@
 	"discard_hint": "Burada yazdıklarınız kaydedilmedi.",
 	"discard_keep": "Düzenlemeye devam et",
 	"discard_confirm": "Sil",
-	"close": "Kapat"
+	"close": "Kapat",
+	"draft_title_add_home": "Ev ekle",
+	"draft_title_update_home": "Evi değiştir",
+	"draft_title_archive_home": "Evi arşivle",
+	"draft_title_add_item": "Eve bir eşya ekle",
+	"draft_title_update_item": "Evdeki eşyayı değiştir",
+	"draft_title_archive_item": "Evdeki eşyayı arşivle",
+	"draft_title_add_service": "Fatura veya abonelik ekle",
+	"draft_title_update_service": "Fatura veya aboneliği değiştir",
+	"draft_title_archive_service": "Fatura veya aboneliği arşivle"
 }

@@ -59,7 +59,7 @@ A suggestion shows what would be added and where it goes (**Calendar**, **Tasks*
 
 When every suggestion of a capture is decided, the group leaves **Waiting for you** by itself. A capture the AI found nothing in says **Nothing to add was found.** with **Remove**.
 
-If you are not allowed to approve (a supervised member, for example), you see your suggestions with **Waiting for approval** instead of ticks; an adult decides them. When someone who may not change things directly adds something by hand, for example an event, they get the message **Sent for approval**, and it appears under **Waiting for you** in **Requests** for an approver to decide.
+If you are not allowed to approve (a supervised member, for example), you see your suggestions with **Waiting for approval** instead of ticks; an adult decides them. Changed your mind? Press **Withdraw** under your own suggestion and it is taken back. A suggestion about something that has been removed meanwhile closes by itself and says **It no longer exists**. The number of suggestions waiting counts only those you can decide. When someone who may not change things directly adds something by hand, for example an event, they get the message **Sent for approval**, and it appears under **Waiting for you** in **Requests** for an approver to decide.
 
 ### Recent
 

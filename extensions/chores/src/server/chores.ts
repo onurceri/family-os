@@ -93,6 +93,7 @@ const fieldsOf = (c: z.output<typeof UpdateChoreSchema>['chore']) => ({
 export const createChore = defineAction({
 	id: 'chores.createChore',
 	title: 'Add a chore',
+	draftTitle: 'chores:draft_title_create_chore',
 	input: CreateChoreSchema,
 	output: ChoreSchema,
 	approval: { unless: choresEdit.id },
@@ -139,6 +140,7 @@ export const createChore = defineAction({
 export const updateChore = defineAction({
 	id: 'chores.updateChore',
 	title: 'Change a chore',
+	draftTitle: 'chores:draft_title_update_chore',
 	input: UpdateChoreSchema,
 	output: ChoreSchema,
 	approval: { unless: choresEdit.id },
@@ -173,6 +175,7 @@ export const updateChore = defineAction({
 export const archiveChore = defineAction({
 	id: 'chores.archiveChore',
 	title: 'Archive a chore',
+	draftTitle: 'chores:draft_title_archive_chore',
 	input: z.object({ id: ChoreIdSchema }),
 	output: OkSchema,
 	approval: { unless: choresEdit.id },
@@ -198,6 +201,7 @@ export const archiveChore = defineAction({
 export const setAssignees = defineAction({
 	id: 'chores.setAssignees',
 	title: 'Choose who does a chore',
+	draftTitle: 'chores:draft_title_set_assignees',
 	description:
 		'Sets the people who take turns, in order. Whoever is up now stays if still listed, else the first one is up.',
 	input: SetAssigneesSchema,
@@ -243,6 +247,7 @@ export const markDone = defineAction({
 	id: 'chores.markDone',
 	offline: true,
 	title: 'Mark a chore done',
+	draftTitle: 'chores:draft_title_mark_done',
 	description:
 		'Records who did it, moves the chore to its next due date and hands it to the next person in turn. A tap on a date that has already been done changes nothing.',
 	input: MarkDoneSchema,

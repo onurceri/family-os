@@ -54,6 +54,7 @@ export function createMemory() {
 	const addMemory = defineAction({
 		id: 'core.addMemory',
 		title: 'Remember something',
+		draftTitle: 'app:draft_title_add_memory',
 		input: z.object({
 			text: MemoryTextSchema,
 			/** Set by the assistant when it proposed the note; a label, it grants nothing. */

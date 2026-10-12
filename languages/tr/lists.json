@@ -171,5 +171,20 @@
 	"today_block_tasks": "Görevler",
 	"today_block_tasks_hint": "Günün görevleri ve tarihi olmayanlar.",
 	"today_block_shopping": "Alışveriş",
-	"today_block_shopping_hint": "Alınacak kaç şey olduğu."
+	"today_block_shopping_hint": "Alınacak kaç şey olduğu.",
+	"draft_title_add_task": "Görev ekle",
+	"draft_title_update_task": "Görevi değiştir",
+	"draft_title_change_task": "Görevi değiştir",
+	"draft_title_complete_task": "Görevi tamamlandı olarak işaretle",
+	"draft_title_delete_task": "Görevi sil",
+	"draft_title_restore_task": "Silinen görevi geri getir",
+	"draft_title_add_shopping_items": "Alışveriş öğeleri ekle",
+	"draft_title_check_shopping_item": "Alışveriş öğesini işaretle",
+	"draft_title_delete_shopping_item": "Alışveriş öğesini kaldır",
+	"draft_title_remove_shopping_items": "Alışveriş öğelerini kaldır",
+	"draft_title_undo_add_shopping_items": "Eklenen alışveriş öğelerini geri al",
+	"draft_title_clear_bought": "Alınan öğeleri temizle",
+	"draft_title_create_shopping_list": "Alışveriş listesi oluştur",
+	"draft_title_rename_shopping_list": "Alışveriş listesini yeniden adlandır",
+	"draft_title_archive_shopping_list": "Alışveriş listesini kaldır"
 }

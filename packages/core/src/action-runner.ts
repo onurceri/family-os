@@ -130,6 +130,9 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
 	return result.data;
 }
 
+/** `core_drafts.error` of a draft closed because what it was about no longer exists. */
+export const GONE = 'gone';
+
 export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	const { registry, bus, clock, ids, logger, access } = deps;
 	const can = (actor: Actor, capability: string) => access.can(actor, capability);
@@ -463,7 +466,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						sourceKind: meta.sourceKind ?? null,
 						sourceId: meta.sourceId ?? null,
 					},
-					def.title,
+					def,
 					facts.proposerMemberId,
 					deps.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
 				),
@@ -552,6 +555,18 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		}
 	}
 
+	/** The member behind a draft: who proposed it, or who the AI proposed it for. */
+	function proposerOf(draft: DraftRow): string | null {
+		const by = JSON.parse(draft.proposed_by) as Actor;
+		if (by.kind === 'member') return by.memberId;
+		return by.kind === 'ai' ? (by.onBehalfOf ?? null) : null;
+	}
+
+	/** Whether this actor is the member behind the draft (they may take their own suggestion back). */
+	function isProposer(actor: Actor, draft: DraftRow): boolean {
+		return actor.kind === 'member' && proposerOf(draft) === actor.memberId;
+	}
+
 	async function approveDraft(
 		draftId: string,
 		approver: Actor,
@@ -611,6 +626,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				uow.emit(draftUpdated, { draftId, status: 'applied' });
 			});
 		} catch (error) {
+			// What it is about is gone: the draft can never be applied, so it leaves the queue
+			// (a retry would only fail again) and says why.
+			if (error instanceof FamosError && error.code === 'not_found')
+				return closeAsGone(draft, approver, approverId);
 			// Domain errors (validation, permissions, conflicts) leave the draft untouched.
 			if (error instanceof FamosError) throw error;
 			logger.error({ err: error, draftId }, 'applying draft failed');
@@ -629,13 +648,48 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return getDraft(deps.db, draftId);
 	}
 
+	/** Closes a waiting draft whose subject no longer exists; the reason is `error: 'gone'`. */
+	async function closeAsGone(
+		draft: DraftRow,
+		approver: Actor,
+		decidedBy: string,
+	): Promise<DraftRow> {
+		await unitOfWork(approver, async (uow) => {
+			const now = clock.now();
+			const closed = await uow.db
+				.withTables<CoreTables>()
+				.updateTable('core_drafts')
+				.set({
+					status: 'rejected',
+					decided_by: decidedBy,
+					decided_at: now,
+					error: GONE,
+					updated_at: now,
+				})
+				.where('id', '=', draft.id)
+				.where('status', 'in', ['pending', 'failed'])
+				.executeTakeFirst();
+			if (Number(closed.numUpdatedRows) === 0) return;
+			await audit(uow, draft.action_id, 'rejected', draft.id);
+			uow.emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
+		});
+		return getDraft(deps.db, draft.id);
+	}
+
+	/**
+	 * Rejecting needs the same standing as approving; the member behind a draft may always take
+	 * their own back (withdraw it), even without `core.drafts.approve`.
+	 */
 	async function rejectDraft(draftId: string, approver: Actor): Promise<DraftRow> {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(approver, draft);
 		if (draft.status === 'rejected') return draft;
 		if (draft.status !== 'pending' && draft.status !== 'failed')
 			throw new FamosError('conflict', `Draft is ${draft.status}`);
-		const approverId = assertApprover(approver, getAction(draft.action_id), draft);
+		const approverId =
+			isProposer(approver, draft) && approver.kind === 'member'
+				? approver.memberId
+				: assertApprover(approver, getAction(draft.action_id), draft);
 		await unitOfWork(approver, async (uow) => {
 			const now = clock.now();
 			await uow.db

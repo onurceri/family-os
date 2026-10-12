@@ -78,6 +78,7 @@ export const addShoppingItems = defineAction({
 	id: 'lists.addShoppingItems',
 	offline: true,
 	title: 'Add items to a shopping list',
+	draftTitle: 'lists:draft_title_add_shopping_items',
 	requires: shoppingEdit.id,
 	autoApprove: {
 		label: 'lists:auto_approve_shopping',
@@ -208,6 +209,7 @@ export const addShoppingItems = defineAction({
 export const undoAddShoppingItems = defineAction({
 	id: 'lists.undoAddShoppingItems',
 	title: 'Take back added shopping items',
+	draftTitle: 'lists:draft_title_undo_add_shopping_items',
 	requires: shoppingEdit.id,
 	approval: { unless: shoppingManage.id },
 	input: z.object({
@@ -295,6 +297,7 @@ export const checkShoppingItem = defineAction({
 	id: 'lists.checkShoppingItem',
 	offline: true,
 	title: 'Tick off (or untick) a shopping item',
+	draftTitle: 'lists:draft_title_check_shopping_item',
 	requires: shoppingEdit.id,
 	input: z.object({ id: ShoppingItemIdSchema, done: z.boolean(), label: ReviewLabelSchema }),
 	output: ShoppingItemSchema,
@@ -326,9 +329,11 @@ export const checkShoppingItem = defineAction({
 export const deleteShoppingItem = defineAction({
 	id: 'lists.deleteShoppingItem',
 	title: 'Remove a shopping item',
+	draftTitle: 'lists:draft_title_delete_shopping_item',
 	requires: shoppingEdit.id,
 	input: z.object({ id: ShoppingItemIdSchema, label: ReviewLabelSchema }),
 	output: z.object({ ok: z.literal(true), id: z.string() }),
+	approval: { unless: shoppingManage.id },
 	undo: ({ id }) => ({ actionId: 'lists.restoreShoppingItem', input: { id } }),
 	ai: {
 		description:
@@ -375,9 +380,11 @@ export const restoreShoppingItem = defineAction({
 export const removeShoppingItems = defineAction({
 	id: 'lists.removeShoppingItems',
 	title: 'Remove several shopping items',
+	draftTitle: 'lists:draft_title_remove_shopping_items',
 	requires: shoppingEdit.id,
 	input: z.object({ ids: z.array(ShoppingItemIdSchema).min(1).max(50) }),
 	output: z.object({ removed: z.number().int() }),
+	approval: { unless: shoppingManage.id },
 	async run(uow, { ids }) {
 		const now = uow.clock.now();
 		const db = tables(uow.db);
@@ -401,9 +408,11 @@ export const removeShoppingItems = defineAction({
 export const clearBought = defineAction({
 	id: 'lists.clearBought',
 	title: 'Clear the bought items of a list',
+	draftTitle: 'lists:draft_title_clear_bought',
 	requires: shoppingEdit.id,
 	input: z.object({ listId: ShoppingListIdSchema }),
 	output: z.object({ cleared: z.number().int() }),
+	approval: { unless: shoppingManage.id },
 	async run(uow, { listId }) {
 		const list = await activeList(uow, listId);
 		const now = uow.clock.now();
@@ -436,6 +445,7 @@ async function assertNameFree(uow: UnitOfWork, name: string, except?: string) {
 export const createShoppingList = defineAction({
 	id: 'lists.createShoppingList',
 	title: 'Create a shopping list',
+	draftTitle: 'lists:draft_title_create_shopping_list',
 	input: z.object({ name: ListNameSchema }),
 	output: ShoppingListSchema,
 	approval: { unless: shoppingManage.id },
@@ -467,6 +477,7 @@ export const createShoppingList = defineAction({
 export const renameShoppingList = defineAction({
 	id: 'lists.renameShoppingList',
 	title: 'Rename a shopping list',
+	draftTitle: 'lists:draft_title_rename_shopping_list',
 	input: z.object({ id: ShoppingListIdSchema, name: ListNameSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: shoppingManage.id },
@@ -486,6 +497,7 @@ export const renameShoppingList = defineAction({
 export const archiveShoppingList = defineAction({
 	id: 'lists.archiveShoppingList',
 	title: 'Remove a shopping list',
+	draftTitle: 'lists:draft_title_archive_shopping_list',
 	input: z.object({ id: ShoppingListIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: shoppingManage.id },

@@ -81,6 +81,7 @@ export const attachDocument = defineAction({
 export const updateDocument = defineAction({
 	id: 'records.updateDocument',
 	title: 'Change the label or expiry of a paper',
+	draftTitle: 'records:draft_title_update_document',
 	input: UpdateDocumentSchema,
 	output: RecordDocumentSchema,
 	approval: { unless: recordsEdit.id },
@@ -110,6 +111,7 @@ export const updateDocument = defineAction({
 export const detachDocument = defineAction({
 	id: 'records.detachDocument',
 	title: 'Detach a paper from a record',
+	draftTitle: 'records:draft_title_detach_document',
 	input: z.object({ id: RecordDocIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: recordsEdit.id },

@@ -26022,6 +26022,23 @@
 											"undoable": {
 												"type": "boolean"
 											},
+											"reason": {
+												"type": [
+													"string",
+													"null"
+												],
+												"enum": [
+													"gone",
+													"withdrawn",
+													null
+												]
+											},
+											"titleKey": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
 											"mayExist": {
 												"type": "boolean"
 											},
@@ -26045,6 +26062,8 @@
 											"autoApproved",
 											"decidedBy",
 											"undoable",
+											"reason",
+											"titleKey",
 											"mayExist",
 											"mayExistSome"
 										]
@@ -26652,6 +26671,23 @@
 										"undoable": {
 											"type": "boolean"
 										},
+										"reason": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"gone",
+												"withdrawn",
+												null
+											]
+										},
+										"titleKey": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -26675,6 +26711,8 @@
 										"autoApproved",
 										"decidedBy",
 										"undoable",
+										"reason",
+										"titleKey",
 										"mayExist",
 										"mayExistSome"
 									]
@@ -26905,7 +26943,7 @@
 		"/api/v1/core/drafts/{draftId}/reject": {
 			"post": {
 				"operationId": "core.rejectDraft",
-				"summary": "Reject a draft",
+				"summary": "Reject a draft, or withdraw your own",
 				"tags": [
 					"core"
 				],
@@ -26927,7 +26965,7 @@
 				],
 				"responses": {
 					"201": {
-						"description": "Reject a draft",
+						"description": "Reject a draft, or withdraw your own",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -27017,6 +27055,23 @@
 										"undoable": {
 											"type": "boolean"
 										},
+										"reason": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"gone",
+												"withdrawn",
+												null
+											]
+										},
+										"titleKey": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -27040,6 +27095,8 @@
 										"autoApproved",
 										"decidedBy",
 										"undoable",
+										"reason",
+										"titleKey",
 										"mayExist",
 										"mayExistSome"
 									]
@@ -27382,6 +27439,23 @@
 										"undoable": {
 											"type": "boolean"
 										},
+										"reason": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"gone",
+												"withdrawn",
+												null
+											]
+										},
+										"titleKey": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -27405,6 +27479,8 @@
 										"autoApproved",
 										"decidedBy",
 										"undoable",
+										"reason",
+										"titleKey",
 										"mayExist",
 										"mayExistSome"
 									]

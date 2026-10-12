@@ -35,6 +35,7 @@
 	"group_upcoming": "Yaklaşanlar",
 	"group_done": "Tamamlananlar",
 	"mark_done": "“{{title}}” işini tamamla",
+	"turn_of": "Sıra: {{name}}",
 	"done": "Tamamlandı",
 	"done_by": "{{name}} yaptı",
 	"anyone": "Herkes",
@@ -90,5 +91,10 @@
 	"discard_hint": "Burada yazdıklarınız kaydedilmedi.",
 	"discard_keep": "Düzenlemeye devam et",
 	"discard_confirm": "Sil",
-	"close": "Kapat"
+	"close": "Kapat",
+	"draft_title_create_chore": "İş ekle",
+	"draft_title_update_chore": "İşi değiştir",
+	"draft_title_archive_chore": "İşi arşivle",
+	"draft_title_set_assignees": "İşi kimin yapacağını değiştir",
+	"draft_title_mark_done": "İşi yapıldı olarak işaretle"
 }

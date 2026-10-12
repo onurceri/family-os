@@ -199,5 +199,10 @@
 	"discard_title": "Değişiklikler silinsin mi?",
 	"discard_hint": "Burada yazdıklarınız kaydedilmedi.",
 	"discard_keep": "Düzenlemeye devam et",
-	"discard_confirm": "Sil"
+	"discard_confirm": "Sil",
+	"draft_title_create_event": "Etkinlik ekle",
+	"draft_title_update_event": "Etkinliği değiştir",
+	"draft_title_change_event": "Etkinliği değiştir",
+	"draft_title_delete_event": "Etkinliği sil",
+	"draft_title_restore_event": "Silinen etkinliği geri getir"
 }

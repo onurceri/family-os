@@ -337,6 +337,9 @@
 	"nav_waiting": "waiting",
 	"draft_undone": "Taken back",
 	"draft_expired": "Its day has passed",
+	"draft_gone": "It no longer exists",
+	"draft_withdrawn": "Withdrawn",
+	"draft_withdraw": "Withdraw",
 	"draft_may_exist": "This may already be there: check before approving.",
 	"draft_may_exist_some": "Some of these may already be there: check before approving.",
 	"draft_undo": "Undo",
@@ -1058,5 +1061,6 @@
 	"home_sentence_day_plan": "{{greeting}}, {{name}}. {{plan}} on the plan.",
 	"home_sentence_day_plan_last": "{{greeting}}, {{name}}. {{plan}} on the plan, {{title}} tonight.",
 	"home_sentence_day_evening": "{{greeting}}, {{name}}. **Tomorrow starts at {{time}}.**",
-	"home_sentence_day_evening_free": "{{greeting}}, {{name}}. **Tomorrow is free.**"
+	"home_sentence_day_evening_free": "{{greeting}}, {{name}}. **Tomorrow is free.**",
+	"draft_title_add_memory": "Remember something"
 }

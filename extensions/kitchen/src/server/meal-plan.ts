@@ -53,6 +53,7 @@ const mealOut = async (uow: UnitOfWork, row: MealRow) => {
 export const addToMealPlan = defineAction({
 	id: 'kitchen.addToMealPlan',
 	title: 'Plan a meal',
+	draftTitle: 'kitchen:draft_title_add_to_meal_plan',
 	input: AddToMealPlanSchema,
 	output: MealEntrySchema,
 	approval: { unless: kitchenEdit.id },
@@ -101,6 +102,7 @@ export const addToMealPlan = defineAction({
 export const updateMealPlanEntry = defineAction({
 	id: 'kitchen.updateMealPlanEntry',
 	title: 'Change a planned meal',
+	draftTitle: 'kitchen:draft_title_update_meal_plan_entry',
 	input: UpdateMealEntrySchema,
 	output: MealEntrySchema,
 	approval: { unless: kitchenEdit.id },
@@ -128,6 +130,7 @@ export const updateMealPlanEntry = defineAction({
 export const removeMealPlanEntry = defineAction({
 	id: 'kitchen.removeMealPlanEntry',
 	title: 'Take a meal off the plan',
+	draftTitle: 'kitchen:draft_title_remove_meal_plan_entry',
 	input: z.object({ id: MealIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: kitchenEdit.id },

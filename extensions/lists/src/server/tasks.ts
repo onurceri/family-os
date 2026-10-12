@@ -87,6 +87,7 @@ function fields(input: z.infer<typeof TaskInputSchema>) {
 export const addTask = defineAction({
 	id: 'lists.addTask',
 	title: 'Add a task',
+	draftTitle: 'lists:draft_title_add_task',
 	autoApprove: { label: 'lists:auto_approve_tasks', capabilities: [tasksEdit.id] },
 	input: TaskInputSchema,
 	output: TaskSchema,
@@ -140,6 +141,7 @@ export const addTask = defineAction({
 export const updateTask = defineAction({
 	id: 'lists.updateTask',
 	title: 'Change a task',
+	draftTitle: 'lists:draft_title_update_task',
 	input: z.object({ id: TaskIdSchema, task: TaskInputSchema }),
 	output: TaskSchema,
 	approval: { unless: tasksEdit.id },
@@ -178,6 +180,7 @@ const TaskChangeSchema = z.object({
 export const changeTask = defineAction({
 	id: 'lists.changeTask',
 	title: 'Change some details of a task',
+	draftTitle: 'lists:draft_title_change_task',
 	input: TaskChangeSchema.extend({ id: TaskIdSchema, label: ReviewLabelSchema }),
 	// The old values of what changed, keyed like the input (for undo).
 	output: z.object({ task: TaskSchema, before: z.record(z.string(), z.string().nullable()) }),
@@ -237,6 +240,7 @@ export const completeTask = defineAction({
 	id: 'lists.completeTask',
 	offline: true,
 	title: 'Mark a task done',
+	draftTitle: 'lists:draft_title_complete_task',
 	description: 'A repeating task moves on to its next due date instead.',
 	input: z.object({
 		id: TaskIdSchema,
@@ -323,6 +327,7 @@ export const reopenTask = defineAction({
 export const deleteTask = defineAction({
 	id: 'lists.deleteTask',
 	title: 'Delete a task',
+	draftTitle: 'lists:draft_title_delete_task',
 	input: z.object({ id: TaskIdSchema, label: ReviewLabelSchema }),
 	output: z.object({ ok: z.literal(true), id: z.string() }),
 	approval: { unless: tasksEdit.id },
@@ -348,6 +353,7 @@ export const deleteTask = defineAction({
 export const restoreTask = defineAction({
 	id: 'lists.restoreTask',
 	title: 'Bring back a deleted task',
+	draftTitle: 'lists:draft_title_restore_task',
 	input: z.object({ id: TaskIdSchema }),
 	output: TaskSchema,
 	approval: { unless: tasksEdit.id },

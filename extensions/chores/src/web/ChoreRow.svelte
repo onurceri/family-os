@@ -36,6 +36,10 @@
 	const finished = $derived(chore.nextDue === null);
 	const group = $derived(groupOf(chore, today));
 	const who = $derived(app.members().find((m) => m.id === chore.assigneeId));
+	// Why the tick is off: someone else's turn (a guest simply cannot tick, and needs no hint).
+	const notYourTurn = $derived(
+		!finished && !canDo && who ? t('turn_of', { name: who.displayName }) : null,
+	);
 	const doer = $derived(app.members().find((m) => m.id === chore.lastDone?.memberId));
 	const due = $derived(
 		finished && doer
@@ -53,7 +57,10 @@
 		type="button"
 		onclick={ondone}
 		disabled={busy || waiting || finished || !canDo}
-		aria-label={t('mark_done', { title: chore.title })}
+		aria-label={notYourTurn
+			? `${t('mark_done', { title: chore.title })} (${notYourTurn})`
+			: t('mark_done', { title: chore.title })}
+		title={notYourTurn ?? undefined}
 		class="focus-visible:ring-ring grid size-11 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 disabled:opacity-60"
 	>
 		<span
@@ -86,7 +93,9 @@
 							: 'text-ink-soft'}">{due}</span
 			>
 			{#if !finished}
-				<span class="text-ink-soft shrink-0">&middot; {who ? who.displayName : t('anyone')}</span>
+				<span class="text-ink-soft shrink-0"
+					>&middot; {notYourTurn ?? (who ? who.displayName : t('anyone'))}</span
+				>
 			{/if}
 			{#if waiting}
 				<span class="shrink-0 font-semibold" data-testid="waiting-mark"

@@ -39,6 +39,7 @@ const fieldsOf = (s: z.output<typeof UpdateServiceSchema>['service']) => ({
 export const addService = defineAction({
 	id: 'home.addService',
 	title: 'Add a utility or subscription',
+	draftTitle: 'home:draft_title_add_service',
 	input: AddServiceSchema,
 	output: ServiceSchema,
 	approval: { unless: homeEdit.id },
@@ -75,6 +76,7 @@ export const addService = defineAction({
 export const updateService = defineAction({
 	id: 'home.updateService',
 	title: 'Change a utility or subscription',
+	draftTitle: 'home:draft_title_update_service',
 	input: UpdateServiceSchema,
 	output: ServiceSchema,
 	approval: { unless: homeEdit.id },
@@ -100,6 +102,7 @@ export const updateService = defineAction({
 export const archiveService = defineAction({
 	id: 'home.archiveService',
 	title: 'Archive a utility or subscription',
+	draftTitle: 'home:draft_title_archive_service',
 	input: z.object({ id: ServiceIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: homeEdit.id },

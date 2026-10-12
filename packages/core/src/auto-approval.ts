@@ -132,19 +132,25 @@ export async function qualifies(
 /** Tells approvers a suggestion waits for them (collapses several drafts of one source). */
 export function waitingNotice(
 	draft: { id: string; summary: string | null; sourceKind: string | null; sourceId: string | null },
-	actionTitle: string,
+	action: { title: string; draftTitle?: string },
 	except: string | null,
 	delayMs: number,
 ): NotifyRequest {
 	const sourceKind = draft.sourceKind ?? 'draft';
+	// The summary is the proposer's own words; without one the action names what is proposed, in
+	// each reader's language (the English `title` only if an action has no key).
+	const body =
+		draft.summary === null && action.draftTitle
+			? { key: action.draftTitle }
+			: {
+					key: 'app:notify_draft_waiting_body',
+					params: { what: draft.summary ?? action.title },
+				};
 	return {
 		kind: 'core.draftWaiting',
 		to: { capability: 'core.drafts.approve', ...(except && { except }) },
 		title: { key: 'app:notify_draft_waiting_title' },
-		body: {
-			key: 'app:notify_draft_waiting_body',
-			params: { what: draft.summary ?? actionTitle },
-		},
+		body,
 		url: '/add',
 		source: { kind: sourceKind, id: draft.sourceId ?? draft.id },
 		dedupeKey:
@@ -323,7 +329,7 @@ export function createAutoApproval(deps: AutoApprovalDeps) {
 							sourceKind: draft.source_kind,
 							sourceId: draft.source_id,
 						},
-						def?.title ?? draft.action_id,
+						def ?? { title: draft.action_id },
 						proposerMemberId,
 						deps.draftNotifyDelayMs,
 					),

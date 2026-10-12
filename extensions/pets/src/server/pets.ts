@@ -63,6 +63,7 @@ const fieldsOf = (p: z.output<typeof UpdatePetSchema>['pet']) => ({
 export const addPet = defineAction({
 	id: 'pets.addPet',
 	title: 'Add a pet',
+	draftTitle: 'pets:draft_title_add_pet',
 	input: AddPetSchema,
 	output: PetSchema,
 	approval: { unless: petsEdit.id },
@@ -113,6 +114,7 @@ export const addPet = defineAction({
 export const updatePet = defineAction({
 	id: 'pets.updatePet',
 	title: 'Change a pet',
+	draftTitle: 'pets:draft_title_update_pet',
 	input: UpdatePetSchema,
 	output: PetSchema,
 	approval: { unless: petsEdit.id },
@@ -134,6 +136,7 @@ export const updatePet = defineAction({
 export const archivePet = defineAction({
 	id: 'pets.archivePet',
 	title: 'Archive a pet',
+	draftTitle: 'pets:draft_title_archive_pet',
 	input: z.object({ id: PetIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: petsEdit.id },
@@ -154,6 +157,7 @@ export const archivePet = defineAction({
 export const addTreatment = defineAction({
 	id: 'pets.addTreatment',
 	title: 'Add a treatment',
+	draftTitle: 'pets:draft_title_add_treatment',
 	description:
 		'Adds a history entry. With an open duty of the same pet it also marks that duty done on the same day, so its next date moves on.',
 	input: AddTreatmentSchema,
@@ -211,6 +215,7 @@ export const addTreatment = defineAction({
 export const removeTreatment = defineAction({
 	id: 'pets.removeTreatment',
 	title: 'Remove a treatment',
+	draftTitle: 'pets:draft_title_remove_treatment',
 	input: z.object({ id: PetTreatmentIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: petsEdit.id },

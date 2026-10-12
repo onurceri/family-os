@@ -199,5 +199,10 @@
 	"discard_title": "Discard your changes?",
 	"discard_hint": "What you typed here has not been saved.",
 	"discard_keep": "Keep editing",
-	"discard_confirm": "Discard"
+	"discard_confirm": "Discard",
+	"draft_title_create_event": "Add an event",
+	"draft_title_update_event": "Change an event",
+	"draft_title_change_event": "Change an event",
+	"draft_title_delete_event": "Delete an event",
+	"draft_title_restore_event": "Bring back a deleted event"
 }

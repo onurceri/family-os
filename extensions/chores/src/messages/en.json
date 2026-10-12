@@ -35,6 +35,7 @@
 	"group_upcoming": "Coming up",
 	"group_done": "Done",
 	"mark_done": "Mark “{{title}}” done",
+	"turn_of": "{{name}}'s turn",
 	"done": "Done",
 	"done_by": "Done by {{name}}",
 	"anyone": "Anyone",
@@ -90,5 +91,10 @@
 	"discard_hint": "What you typed here has not been saved.",
 	"discard_keep": "Keep editing",
 	"discard_confirm": "Discard",
-	"close": "Close"
+	"close": "Close",
+	"draft_title_create_chore": "Add a chore",
+	"draft_title_update_chore": "Change a chore",
+	"draft_title_archive_chore": "Archive a chore",
+	"draft_title_set_assignees": "Change who does a chore",
+	"draft_title_mark_done": "Mark a chore as done"
 }
