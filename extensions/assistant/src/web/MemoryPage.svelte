@@ -94,7 +94,8 @@
 			label={t('memory_add_label')}
 			placeholder={t('memory_placeholder')}
 			disabled={busy}
-			maxlength={LIMIT}
+			limit={LIMIT}
+			tooLong={() => t('memory_too_long', { count: LIMIT })}
 			onsubmit={add}
 		/>
 

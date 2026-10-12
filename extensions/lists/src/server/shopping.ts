@@ -16,6 +16,8 @@ import {
 	CategorySchema,
 	ListNameSchema,
 	ReviewLabelSchema,
+	SHOPPING_QUANTITY_MAX,
+	SHOPPING_TITLE_MAX,
 	ShoppingItemIdSchema,
 	ShoppingItemSchema,
 	ShoppingListIdSchema,
@@ -97,7 +99,7 @@ export const addShoppingItems = defineAction({
 		capabilities: [shoppingManage.id, shoppingEdit.id],
 	},
 	description:
-		'Items already on the list are not duplicated (a new quantity replaces the old one); bought items come back. Without a category, the one last used for the product is reused.',
+		'Items already on the list are not duplicated (a new quantity replaces the old one; an empty one keeps it); bought items come back. Without a category, the one last used for the product is reused.',
 	input: AddShoppingItemsSchema,
 	output: z.object({
 		listId: z.string(),
@@ -171,7 +173,9 @@ export const addShoppingItems = defineAction({
 				const patch = {
 					done_at: null,
 					done_by: null,
-					quantity: item.quantity !== undefined ? item.quantity : existing.quantity,
+					// An add without an amount never clears the one on the list (an editor sends null for
+					// an empty field); clearing it is `lists.updateShoppingItem`.
+					quantity: item.quantity || existing.quantity,
 					category: item.category ?? existing.category,
 					updated_at: now,
 				};
@@ -281,8 +285,8 @@ export const updateShoppingItem = defineAction({
 	requires: shoppingEdit.id,
 	input: z.object({
 		id: ShoppingItemIdSchema,
-		title: z.string().trim().min(1).max(120).optional(),
-		quantity: z.string().trim().max(40).nullable().optional(),
+		title: z.string().trim().min(1).max(SHOPPING_TITLE_MAX).optional(),
+		quantity: z.string().trim().max(SHOPPING_QUANTITY_MAX).nullable().optional(),
 		category: CategorySchema.optional(),
 	}),
 	output: ShoppingItemSchema,

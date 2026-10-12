@@ -177,6 +177,7 @@
 		}
 	}
 
+	const formTitle = $derived(editingId === 'new' ? t('form_title_new') : t('form_title_edit'));
 	const statusLabel = (o: Obligation) => t(`status_${dueStatus(o, today)}`);
 	const everyLabel = (o: Obligation) =>
 		o.every?.months
@@ -190,7 +191,7 @@
 
 <SidePanel
 	open={editingId !== null}
-	title={t('form_title')}
+	title={formTitle}
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('save')}
@@ -207,7 +208,7 @@
 >
 	{#if form && editingId}
 		{@const editing = editingId}
-		<form bind:this={formEl} onsubmit={submit} class="grid gap-6" aria-label={t('form_title')}>
+		<form bind:this={formEl} onsubmit={submit} class="grid gap-6" aria-label={formTitle}>
 			<ObligationForm bind:value={form} {errors} idPrefix="obl-{recordId}" />
 		</form>
 		{#if editing !== 'new'}

@@ -1,7 +1,9 @@
 import { DEFAULT_LEAD_DAYS, type Obligation, type ObligationPreset } from '../contract/index.js';
 import type { ObligationFields } from './data.js';
 
-export type RepeatUnit = 'none' | 'months' | 'years';
+import type { RepeatUnit } from './repeat.js';
+
+export type { RepeatUnit };
 
 /** The obligation form as the inputs hold it. */
 export interface ObligationFormValue {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
-	import { Chip, MemberChips, Segmented } from '@famos/ui/famos';
+	import { Chip, LimitCounter, MemberChips, Segmented } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { TASK_TITLE_MAX } from '../contract/index.js';
@@ -61,10 +61,16 @@
 		<Input
 			id={id('title')}
 			bind:value={value.title}
-			maxlength={TASK_TITLE_MAX}
 			required
 			aria-invalid={flag('title')}
+			aria-describedby={id('title-limit')}
 			autocomplete="off"
+		/>
+		<LimitCounter
+			id={id('title-limit')}
+			text={value.title}
+			max={TASK_TITLE_MAX}
+			tooLong={(counter) => t('too_long', { counter })}
 		/>
 	</div>
 

@@ -4,12 +4,15 @@
 	 * teaches the syntax. Enter adds and keeps focus, Esc clears. With text, `onmore` shows an
 	 * "Add details" link that opens the panel or sheet pre-filled.
 	 */
+	import { counterText, lengthState } from './length-limit.js';
+
 	let {
 		value = $bindable(''),
 		placeholder,
 		label,
 		onsubmit,
-		maxlength,
+		limit,
+		tooLong,
 		onmore,
 		moreLabel,
 		disabled = false,
@@ -25,8 +28,13 @@
 		 * the person has typed something else meanwhile.
 		 */
 		onsubmit: (text: string) => void | boolean | Promise<void | boolean>;
-		/** Longest text the field takes; typing and pasting stop there. */
-		maxlength?: number;
+		/**
+		 * Longest text that can be added. The field never cuts: a counter shows near the limit and
+		 * a message over it, and Enter does nothing until the text is short enough.
+		 */
+		limit?: number;
+		/** The message when over, e.g. "Too long (212/160)"; given the counter text. */
+		tooLong?: (counter: string) => string;
 		onmore?: (text: string) => void;
 		moreLabel?: string;
 		disabled?: boolean;
@@ -35,6 +43,7 @@
 	} = $props();
 
 	let input = $state<HTMLInputElement>();
+	const limitState = $derived(limit ? lengthState(value, limit) : null);
 
 	async function submit(text: string) {
 		let kept = false;
@@ -50,7 +59,7 @@
 		if (e.key === 'Enter' && !e.isComposing) {
 			e.preventDefault();
 			const text = value.trim();
-			if (!text) return;
+			if (!text || limitState?.over) return;
 			value = '';
 			void submit(text);
 		} else if (e.key === 'Escape' && value) {
@@ -61,7 +70,12 @@
 	}
 </script>
 
-<div class="composer" class:lg={size === 'lg'} class:filled={value.length > 0}>
+<div
+	class="composer"
+	class:lg={size === 'lg'}
+	class:filled={value.length > 0}
+	class:over={limitState?.over}
+>
 	<svg
 		class="plus"
 		viewBox="0 0 24 24"
@@ -80,7 +94,7 @@
 		aria-label={label}
 		{placeholder}
 		{disabled}
-		{maxlength}
+		aria-invalid={limitState?.over ? 'true' : undefined}
 		{onkeydown}
 	/>
 	{#if onmore && moreLabel && value.trim()}
@@ -95,6 +109,11 @@
 	{/if}
 	<span class="kbd" aria-hidden="true">{'\u21b5'}</span>
 </div>
+{#if limitState?.counting}
+	<p class="limit" class:over={limitState.over} role={limitState.over ? 'alert' : undefined}>
+		{limitState.over && tooLong ? tooLong(counterText(limitState)) : counterText(limitState)}
+	</p>
+{/if}
 
 <style>
 	.composer {
@@ -108,6 +127,22 @@
 		box-shadow: var(--shadow-lit);
 		color: var(--ink-soft);
 		transition: box-shadow 150ms ease-out;
+	}
+	.limit {
+		margin: 4px 14px 0;
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		color: var(--ink-soft);
+	}
+	.limit.over {
+		color: var(--attention);
+		font-weight: 600;
+	}
+	.composer.over,
+	.composer.over:focus-within {
+		box-shadow:
+			var(--shadow-lit),
+			inset 0 0 0 1.5px var(--attention);
 	}
 	.lg {
 		height: 56px;

@@ -8,7 +8,7 @@ Choose **Add recipe** and fill in the **Name**, **Servings** (as you write it, s
 
 ### Ingredients to the shopping list
 
-On a recipe's page, tick the ingredients you need (**Select all** ticks every line) and choose **Add selected to shopping list**. They are added to the shopping list as they are written, and items already on the list are not added twice. This needs Lists to be switched on; if you have several shopping lists you can choose which one.
+On a recipe's page, tick the ingredients you need (**Select all** ticks every line) and choose **Add selected to shopping list**. They are added to the shopping list with the product as the name and the amount as the quantity; a note after a comma ("Lemon, zest and juice") is left out of the name. Items already on the list are not added twice and are left as they are. A message and a short list under the ingredients say what was added, what was already there ("Chicken breast is already on the list (500 g; the recipe needs 600 g)") and what was not added. This needs Lists to be switched on; if you have several shopping lists you can choose which one.
 
 ## Meal plan
 
@@ -19,7 +19,7 @@ The **Meal plan** tab shows one week at a time. Each day shows **Breakfast**, **
 - On a recipe's page, press **Put it on the meal plan** beside its name.
 - On the **Recipes** tab, each recipe has a calendar button that does the same.
 
-Choose the **Day** and the **Meal** and press **Add**. A message says **Added to the meal plan**, with **See the plan**.
+Choose the **Day** and the **Meal** and press **Add**. If the same dish is already planned for that meal on that day, the panel says so and asks you to tick **Add it anyway**. A message says **Added to the meal plan**, with **See the plan**.
 
 ## What the AI does here
 

@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
+	import { lengthState, LimitCounter } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import type { DraftEditorProps } from '@famos/ui/slots';
 	import { Plus, X } from '@lucide/svelte';
 	import { untrack } from 'svelte';
-	import { type AddShoppingItemsInput, CATEGORIES, type Category } from '../contract/index.js';
+	import {
+		type AddShoppingItemsInput,
+		CATEGORIES,
+		type Category,
+		SHOPPING_QUANTITY_MAX,
+		SHOPPING_TITLE_MAX,
+	} from '../contract/index.js';
 	import { useLists } from './i18n.js';
 
 	/** Edits proposed shopping items inside the Inbox draft card: rename, quantity, section, remove. */
@@ -38,18 +45,32 @@
 		<li
 			class="grid grid-cols-[1fr_5.5rem_auto] items-center gap-2 sm:grid-cols-[1fr_5.5rem_10rem_auto]"
 		>
-			<Input
-				bind:value={row.title}
-				aria-label={t('field_title')}
-				maxlength={120}
-				autocomplete="off"
-			/>
-			<Input
-				bind:value={row.quantity}
-				aria-label={t('field_quantity')}
-				maxlength={40}
-				autocomplete="off"
-			/>
+			<div class="grid gap-1">
+				<Input
+					bind:value={row.title}
+					aria-label={t('field_title')}
+					aria-invalid={lengthState(row.title, SHOPPING_TITLE_MAX).over ? 'true' : undefined}
+					autocomplete="off"
+				/>
+				<LimitCounter
+					text={row.title}
+					max={SHOPPING_TITLE_MAX}
+					tooLong={(counter) => t('too_long', { counter })}
+				/>
+			</div>
+			<div class="grid gap-1">
+				<Input
+					bind:value={row.quantity}
+					aria-label={t('field_quantity')}
+					aria-invalid={lengthState(row.quantity, SHOPPING_QUANTITY_MAX).over ? 'true' : undefined}
+					autocomplete="off"
+				/>
+				<LimitCounter
+					text={row.quantity}
+					max={SHOPPING_QUANTITY_MAX}
+					tooLong={(counter) => t('too_long', { counter })}
+				/>
+			</div>
 			<select
 				bind:value={row.category}
 				aria-label={t('field_category')}

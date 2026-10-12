@@ -34,8 +34,11 @@ export const ReviewLabelSchema = z
 		'Required for you: the name the person used for this task or item, in their words, not the listed title. If nothing listed fits those words, do not call this tool: tell the person it is not on the list.',
 	);
 
-/** The longest task title; screens limit typing to it. */
+/** The longest task title; screens count toward it and refuse a longer one. */
 export const TASK_TITLE_MAX = 160;
+/** The longest shopping item title and quantity. */
+export const SHOPPING_TITLE_MAX = 120;
+export const SHOPPING_QUANTITY_MAX = 40;
 
 export const TaskInputSchema = z
 	.object({
@@ -109,11 +112,11 @@ export const CategorySchema = z.enum(CATEGORIES);
 export type Category = z.infer<typeof CategorySchema>;
 
 export const ShoppingItemInputSchema = z.object({
-	title: z.string().trim().min(1).max(120).describe('The product, e.g. "Milk"'),
+	title: z.string().trim().min(1).max(SHOPPING_TITLE_MAX).describe('The product, e.g. "Milk"'),
 	quantity: z
 		.string()
 		.trim()
-		.max(40)
+		.max(SHOPPING_QUANTITY_MAX)
 		.nullable()
 		.optional()
 		.describe('Free text, e.g. "2 kg" or "3"'),

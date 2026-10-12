@@ -2,8 +2,10 @@ import { describeRecurrence, todayIn } from '@famos/time';
 import type { DraftPresenter, PresenterContext } from '@famos/ui/slots';
 import { ListChecks, ShoppingCart } from '@lucide/svelte';
 import type { AddShoppingItemsInput, TaskInput } from '../contract/index.js';
+import { loadItems, loadLists } from './data.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
+import { itemsOnList, quantityChanges } from './shopping-draft.js';
 
 const tr = (c: PresenterContext): ListsT =>
 	((key: string, options?: Record<string, unknown>) => c.t(`lists:${key}`, options)) as ListsT;
@@ -49,7 +51,15 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 	editor: () => import('./TaskDraftEditor.svelte'),
 };
 
-/** Proposed shopping items: the title counts them, the field lists them with quantities. */
+const onList = itemsOnList(async (listId) => {
+	const id = listId ?? (await loadLists())[0]?.id;
+	return id ? loadItems(id) : [];
+});
+
+/**
+ * Proposed shopping items: the title counts them, the field lists them with quantities, and a
+ * second field names every item already on the list whose quantity the add would replace.
+ */
 export const addShoppingItemsPresenter: DraftPresenter<AddShoppingItemsInput> = {
 	actionId: 'lists.addShoppingItems',
 	kind: (c) => c.t('lists:kind_shopping'),
@@ -62,7 +72,21 @@ export const addShoppingItemsPresenter: DraftPresenter<AddShoppingItemsInput> = 
 		const value = input.items
 			.map((i) => (i.quantity ? `${i.title} (${i.quantity})` : i.title))
 			.join(', ');
-		return [{ label: tr(c)('items'), value, path: 'items' }];
+		const t = tr(c);
+		const fields = [{ label: t('items'), value, path: 'items' }];
+		const changes = quantityChanges(
+			input.items,
+			onList(input.listId) ?? [],
+			c.formatLocale,
+			input.whenOnList,
+		);
+		if (changes.length)
+			fields.push({
+				label: t('items_changed'),
+				value: changes.map((change) => t('quantity_change', { ...change })).join(', '),
+				path: 'items',
+			});
+		return fields;
 	},
 	approveLabel: (c) => c.t('lists:add_to_list'),
 	editor: () => import('./ShoppingDraftEditor.svelte'),

@@ -1,14 +1,20 @@
 <script lang="ts">
 	import { formatDate, todayIn } from '@famos/time';
-	import { Card, SidePanel } from '@famos/ui/famos';
+	import { Card, Notice, SidePanel } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { CalendarDays, CookingPot, PencilLine } from '@lucide/svelte';
-	import { MEAL_SLOTS, type MealSlot, type RecipeSummary } from '../contract/index.js';
-	import { addMeal } from './data.js';
+	import {
+		MEAL_SLOTS,
+		type MealEntry,
+		type MealSlot,
+		type RecipeSummary,
+	} from '../contract/index.js';
+	import { addMeal, loadMeals } from './data.js';
 	import { useKitchen } from './i18n.js';
 	import { openPath } from './nav.js';
 	import { planPath } from './plan.js';
+	import { plannedAlready } from './plan-duplicate.js';
 
 	/**
 	 * Putting a meal on the plan, in a panel (a sheet on a phone). With a `recipe` (from a recipe or
@@ -54,7 +60,38 @@
 		title = '';
 	});
 
+	// The meals of the chosen day, to warn before the same dish lands in the same meal twice.
+	let dayMeals = $state<MealEntry[]>([]);
+	let addAnyway = $state(false);
+	$effect(() => {
+		const wanted = day;
+		if (!open || !wanted) {
+			dayMeals = [];
+			return;
+		}
+		void loadMeals(wanted, wanted).then(
+			(meals) => {
+				if (wanted === day) dayMeals = meals;
+			},
+			() => (dayMeals = []),
+		);
+	});
+
 	const free = $derived(chosen === 'free' || recipes.length === 0);
+	const repeated = $derived.by(() => {
+		const recipeId = recipe?.id ?? (free ? '' : chosen);
+		if (!recipeId && !title.trim()) return undefined;
+		return plannedAlready(
+			dayMeals,
+			{ date: day, slot: meal, ...(recipeId ? { recipeId } : { title }) },
+			app.formatLocale(),
+		);
+	});
+	// The agreement belongs to one dish on one day and meal.
+	$effect(() => {
+		void [day, meal, chosen, title, recipe?.id];
+		addAnyway = false;
+	});
 	const dirty = $derived(open && !recipe && (chosen !== '' || title.trim() !== ''));
 	const longDay = (value: string) =>
 		formatDate(value, app.formatLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
@@ -65,6 +102,7 @@
 		event.preventDefault();
 		const recipeId = recipe?.id ?? (free ? '' : chosen);
 		if (!day || (!recipeId && !title.trim())) return;
+		if (repeated && !addAnyway) return;
 		busy = true;
 		try {
 			const outcome = await addMeal({
@@ -93,7 +131,9 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('plan_add')}
-	saveDisabled={busy || (!recipe && !free && chosen === '')}
+	saveDisabled={busy ||
+		(!recipe && !free && chosen === '') ||
+		(repeated !== undefined && !addAnyway)}
 	onsave={() => formEl?.requestSubmit()}
 	{onclose}
 	{dirty}
@@ -171,6 +211,19 @@
 						<Input id="plan-title" bind:value={title} maxlength={160} autocomplete="off" required />
 					</div>
 				{/if}
+			{/if}
+			{#if repeated}
+				<Notice tone="warn">
+					{t('plan_repeated', {
+						title: repeated.title,
+						slot: t(`slot_${meal}`),
+						date: longDay(day),
+					})}
+				</Notice>
+				<label class="flex min-h-10 cursor-pointer items-center gap-3 text-[15px]">
+					<input type="checkbox" bind:checked={addAnyway} class="accent-ink size-5 shrink-0" />
+					{t('plan_repeated_anyway')}
+				</label>
 			{/if}
 		</form>
 	{/if}

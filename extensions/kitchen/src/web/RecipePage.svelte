@@ -47,6 +47,7 @@
 	import PlanPanel from './PlanPanel.svelte';
 	import RecipeForm from './RecipeForm.svelte';
 	import RecipesPage from './RecipesPage.svelte';
+	import { shoppingSummary } from './shopping-summary.js';
 
 	/**
 	 * The recipes (`/kitchen`) and one recipe (`/kitchen/recipes/:id`): ingredients to tick, steps,
@@ -109,19 +110,29 @@
 		if (!recipeOpen) return;
 		// Lists may be off or hidden from this person: then the button is simply absent.
 		void loadShoppingLists().then(
-			(lists) => (shoppingLists = lists),
+			(lists) => {
+				shoppingLists = lists;
+				// The picker names every list, the first (the default) included.
+				if (!lists.some((l) => l.id === listId)) listId = lists[0]?.id ?? '';
+			},
 			() => (shoppingLists = []),
 		);
 	});
 	let shopping = $state(false);
+	// What the last add left out or found already there, shown under the ingredients.
+	let shoppingDetails = $state<string[]>([]);
+	$effect(() => {
+		void recipeId;
+		shoppingDetails = [];
+	});
 	async function toShopping() {
 		if (!recipe || chosen.length === 0) return;
 		shopping = true;
 		try {
 			const result = await addToShopping(recipe.id, chosen, listId || undefined);
-			app.toast(
-				result.added > 0 ? t('shopping_added', { count: result.added }) : t('shopping_nothing_new'),
-			);
+			const summary = shoppingSummary(result, t);
+			app.toast(summary.headline);
+			shoppingDetails = summary.details;
 			picked = {};
 		} catch {
 			app.toast(t('shopping_error'));
@@ -361,12 +372,18 @@
 									aria-label={t('shopping_list_choice')}
 									class="border-input bg-wall h-9 rounded-[var(--r-ctl)] border px-2.5 text-sm"
 								>
-									<option value="">{t('shopping_default_list')}</option>
 									{#each shoppingLists as l (l.id)}<option value={l.id}>{l.name}</option>{/each}
 								</select>
 							</div>
 						{/if}
 					</Card>
+					{#if shoppingDetails.length}
+						<ul class="mt-2 grid gap-1" aria-label={t('shopping_details')}>
+							{#each shoppingDetails as detail, i (i)}
+								<li class="text-ink-soft text-[13px]">{detail}</li>
+							{/each}
+						</ul>
+					{/if}
 				</Section>
 			{/if}
 

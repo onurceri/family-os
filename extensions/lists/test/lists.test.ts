@@ -331,6 +331,30 @@ describe('shopping', () => {
 		expect(await items()).toMatchObject([{ title: 'Eggs', quantity: '4' }]);
 	});
 
+	it('keeps the quantity and section on the list when the add has none (an empty editor field)', async () => {
+		const { actor } = await k.member('admin');
+		const add = (input: object) => k.runner.invoke('lists.addShoppingItems', input, actor);
+		await add({
+			items: [
+				{ title: 'Oat milk', quantity: '1 l', category: 'dairy' },
+				{ title: 'Rice', quantity: '1 kg' },
+			],
+		});
+		// What the draft editor sends for fields the person left empty.
+		await add({
+			items: [
+				{ title: 'oat milk', quantity: null },
+				{ title: 'Rice', quantity: '' },
+			],
+		});
+		expect(await items()).toMatchObject([
+			{ title: 'Oat milk', quantity: '1 l', category: 'dairy' },
+			{ title: 'Rice', quantity: '1 kg' },
+		]);
+		await add({ items: [{ title: 'Rice', quantity: 'a bag' }] });
+		expect((await items()).find((i) => i.title === 'Rice')?.quantity).toBe('a bag');
+	});
+
 	it('brings a bought item back with the new quantity even when keeping', async () => {
 		const { actor } = await k.member('admin');
 		await k.runner.invoke(

@@ -84817,6 +84817,34 @@
 														"alreadyThere": {
 															"type": "integer"
 														},
+														"existing": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"title": {
+																		"type": "string"
+																	},
+																	"listQuantity": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	},
+																	"recipeQuantity": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	}
+																},
+																"required": [
+																	"title",
+																	"listQuantity",
+																	"recipeQuantity"
+																]
+															}
+														},
 														"unknownLines": {
 															"type": "array",
 															"items": {
@@ -84828,6 +84856,7 @@
 														"listId",
 														"added",
 														"alreadyThere",
+														"existing",
 														"unknownLines"
 													]
 												}
@@ -90024,7 +90053,7 @@
 			"post": {
 				"operationId": "lists.addShoppingItems",
 				"summary": "Add items to a shopping list",
-				"description": "Items already on the list are not duplicated (a new quantity replaces the old one); bought items come back. Without a category, the one last used for the product is reused.",
+				"description": "Items already on the list are not duplicated (a new quantity replaces the old one; an empty one keeps it); bought items come back. Without a category, the one last used for the product is reused.",
 				"tags": [
 					"actions",
 					"lists"

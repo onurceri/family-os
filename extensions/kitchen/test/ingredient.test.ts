@@ -7,7 +7,6 @@ const vocabulary = repoVocabulary();
 const words: IngredientWords = {
 	units: [...vocabulary('lists:quantity_units'), ...vocabulary('kitchen:words_units')],
 	links: vocabulary('kitchen:words_amount_link'),
-	preparation: vocabulary('kitchen:words_preparation'),
 };
 const en = (line: string) => ingredientToItem(line, words, 'en');
 const tr = (line: string) => ingredientToItem(line, words, 'tr');
@@ -32,11 +31,24 @@ describe('ingredientToItem', () => {
 		expect(en('1 lemon (optional)')).toEqual({ title: 'Lemon', quantity: '1' });
 	});
 
-	it('drops a preparation note after a comma, keeps other parts', () => {
+	it('drops every note after a comma, whatever it says', () => {
+		expect(en('Lemon, zest and juice')).toEqual({ title: 'Lemon' });
+		expect(en('2 garlic cloves, the green parts removed')).toEqual({
+			title: 'Garlic cloves',
+			quantity: '2',
+		});
+		expect(en('Butter, plus extra for the pan')).toEqual({ title: 'Butter' });
+		expect(en('Chicken breast, 500 g, skinned')).toEqual({
+			title: 'Chicken breast',
+			quantity: '500 g',
+		});
+	});
+
+	it('drops a preparation note after a comma', () => {
 		expect(en('60 g feta, crumbled')).toEqual({ title: 'Feta', quantity: '60 g' });
 		expect(en('1 onion, finely chopped')).toEqual({ title: 'Onion', quantity: '1' });
 		expect(en('Salt, to taste')).toEqual({ title: 'Salt' });
-		expect(en('salt, pepper')).toEqual({ title: 'Salt, pepper' });
+		expect(en('salt, pepper')).toEqual({ title: 'Salt' });
 		expect(en('1,5 kg potatoes, peeled')).toEqual({ title: 'Potatoes', quantity: '1,5 kg' });
 	});
 

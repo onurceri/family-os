@@ -9,6 +9,8 @@
 		Dialog,
 		EmptyArt,
 		IconButton,
+		lengthState,
+		LimitCounter,
 		Menu,
 		type MenuItem,
 		Page,
@@ -21,8 +23,10 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { slide } from 'svelte/transition';
 	import {
-		LIST_NAME_MAX,
 		CATEGORIES,
+		LIST_NAME_MAX,
+		SHOPPING_QUANTITY_MAX,
+		SHOPPING_TITLE_MAX,
 		type Category,
 		type ShoppingItem,
 		type ShoppingList,
@@ -205,6 +209,11 @@
 	async function quickAdd(text: string): Promise<boolean> {
 		const parsed = parseQuickAdd(text, t('quantity_units').split(','));
 		if (!parsed.length || !list) return false;
+		// Nothing is cut: an item that is too long stays in the field with a message.
+		if (parsed.some((p) => itemTooLong(p.title, p.quantity))) {
+			app.toast(t('too_long_item'));
+			return false;
+		}
 		try {
 			report(
 				await addItems(
@@ -227,7 +236,12 @@
 	let snapshot = '';
 	const dirty = $derived(editing !== null && JSON.stringify(editing) !== snapshot);
 	let editForm = $state<HTMLFormElement | null>(null);
+	let showEditErrors = $state(false);
+	const itemTooLong = (title: string, quantity: string | null | undefined) =>
+		title.trim().length > SHOPPING_TITLE_MAX ||
+		(quantity ?? '').trim().length > SHOPPING_QUANTITY_MAX;
 	function edit(item: ShoppingItem) {
+		showEditErrors = false;
 		editing = {
 			id: item.id,
 			title: item.title,
@@ -239,6 +253,8 @@
 	async function saveEdit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!editing || !editing.title.trim()) return;
+		showEditErrors = true;
+		if (itemTooLong(editing.title, editing.quantity)) return;
 		try {
 			report(
 				await updateItem(editing.id, {
@@ -715,9 +731,16 @@
 				<Input
 					id="item-title"
 					bind:value={editing.title}
-					maxlength={120}
 					required
+					aria-invalid={showEditErrors && lengthState(editing.title, SHOPPING_TITLE_MAX).over
+						? 'true'
+						: undefined}
 					autocomplete="off"
+				/>
+				<LimitCounter
+					text={editing.title}
+					max={SHOPPING_TITLE_MAX}
+					tooLong={(counter) => t('too_long', { counter })}
 				/>
 			</div>
 			<div class="grid gap-1.5">
@@ -725,7 +748,19 @@
 					>{t('field_quantity')}
 					<span class="text-ink-soft font-normal">{t('optional')}</span></Label
 				>
-				<Input id="item-quantity" bind:value={editing.quantity} maxlength={40} autocomplete="off" />
+				<Input
+					id="item-quantity"
+					bind:value={editing.quantity}
+					aria-invalid={showEditErrors && lengthState(editing.quantity, SHOPPING_QUANTITY_MAX).over
+						? 'true'
+						: undefined}
+					autocomplete="off"
+				/>
+				<LimitCounter
+					text={editing.quantity}
+					max={SHOPPING_QUANTITY_MAX}
+					tooLong={(counter) => t('too_long', { counter })}
+				/>
 			</div>
 			<div class="grid gap-1.5">
 				<Label for="item-category">{t('field_category')}</Label>

@@ -14,6 +14,7 @@ import { z } from 'zod';
 import {
 	MemberIdSchema,
 	ReviewLabelSchema,
+	TASK_TITLE_MAX,
 	TaskIdSchema,
 	TaskInputSchema,
 	TaskSchema,
@@ -173,7 +174,7 @@ export const updateTask = defineAction({
 
 /** The fields a change may touch; each one left out stays as it is. */
 const TaskChangeSchema = z.object({
-	title: z.string().trim().min(1).max(160).optional().describe('The new title'),
+	title: z.string().trim().min(1).max(TASK_TITLE_MAX).optional().describe('The new title'),
 	assigneeId: MemberIdSchema.nullable()
 		.optional()
 		.describe('The member who should do it; null means anyone'),

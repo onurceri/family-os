@@ -4,6 +4,7 @@
 	import { Label } from '@famos/ui/label';
 	import { useRecords } from './i18n.js';
 	import type { ObligationFormValue } from './form.js';
+	import { type RepeatUnit, withRepeat } from './repeat.js';
 
 	/**
 	 * The form of one obligation (it opens in the side panel or the phone sheet): what, when, how
@@ -53,7 +54,12 @@
 
 		<div class="grid content-start gap-1.5">
 			<Label for={id('repeat')}>{t('field_repeat')}</Label>
-			<select id={id('repeat')} bind:value={value.repeat} class={field}>
+			<select
+				id={id('repeat')}
+				value={value.repeat}
+				onchange={(e) => (value = withRepeat(value, e.currentTarget.value as RepeatUnit))}
+				class={field}
+			>
 				<option value="none">{t('repeat_none')}</option>
 				<option value="months">{t('repeat_months')}</option>
 				<option value="years">{t('repeat_years')}</option>

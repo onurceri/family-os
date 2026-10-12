@@ -8,6 +8,7 @@ import type {
 	RecipeSummary,
 } from '../contract/index.js';
 import { api } from './api.js';
+import type { ShoppingOutcome } from './shopping-summary.js';
 
 /** Kitchen API calls, all through the generated client. */
 export type Outcome = 'applied' | 'drafted';
@@ -54,19 +55,20 @@ export async function uploadPhoto(recipeId: string, file: File): Promise<void> {
 	);
 }
 
-/** Puts the chosen ingredient lines on a shopping list; counts what was new. */
+/** Puts the chosen ingredient lines on a shopping list; says what was new and what was not. */
 export async function addToShopping(
 	recipeId: string,
 	lines: string[],
 	listId?: string,
-): Promise<{ added: number; alreadyThere: number }> {
+): Promise<ShoppingOutcome> {
 	const result = unwrap(
 		await api.POST('/api/v1/actions/kitchen.addIngredientsToShopping', {
 			body: { recipeId, lines, ...(listId && { listId }) },
 		}),
 	);
-	if (result.status !== 'applied') return { added: 0, alreadyThere: 0 };
-	return { added: result.output.added, alreadyThere: result.output.alreadyThere };
+	if (result.status !== 'applied')
+		return { added: 0, alreadyThere: 0, existing: [], unknownLines: [] };
+	return result.output;
 }
 
 export const loadShoppingLists = async (): Promise<ShoppingList[]> =>

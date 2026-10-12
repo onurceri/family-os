@@ -4203,7 +4203,7 @@ export interface paths {
         put?: never;
         /**
          * Add items to a shopping list
-         * @description Items already on the list are not duplicated (a new quantity replaces the old one); bought items come back. Without a category, the one last used for the product is reused.
+         * @description Items already on the list are not duplicated (a new quantity replaces the old one; an empty one keeps it); bought items come back. Without a category, the one last used for the product is reused.
          */
         post: operations["lists.addShoppingItems"];
         delete?: never;
@@ -41179,6 +41179,11 @@ export interface operations {
                             listId: string;
                             added: number;
                             alreadyThere: number;
+                            existing: {
+                                title: string;
+                                listQuantity: string | null;
+                                recipeQuantity: string | null;
+                            }[];
                             unknownLines: string[];
                         };
                     } | {

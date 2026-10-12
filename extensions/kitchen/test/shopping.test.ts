@@ -116,6 +116,56 @@ describe('ingredients to the shopping list', () => {
 		expect(items.find((i) => i.title === 'Butter')?.quantity).toBe('20 g');
 	});
 
+	it("hands back what is already on the list with its quantity and the recipe's", async () => {
+		const r = await applied<Recipe>(
+			k,
+			'kitchen.createRecipe',
+			{ title: 'Roast', ingredients: ['600 g chicken breast', '1 onion', 'Salt, to taste'] },
+			admin.actor,
+		);
+		await applied(
+			k,
+			'lists.addShoppingItems',
+			{ items: [{ title: 'Chicken breast', quantity: '500 g' }, { title: 'Onion' }] },
+			admin.actor,
+		);
+		const result = await applied<{
+			added: number;
+			alreadyThere: number;
+			existing: unknown[];
+		}>(
+			k,
+			'kitchen.addIngredientsToShopping',
+			{ recipeId: r.id, lines: r.ingredients },
+			admin.actor,
+		);
+		expect(result).toMatchObject({ added: 1, alreadyThere: 2 });
+		expect(result.existing).toEqual([
+			{ title: 'Chicken breast', listQuantity: '500 g', recipeQuantity: '600 g' },
+			{ title: 'Onion', listQuantity: null, recipeQuantity: '1' },
+		]);
+		// The preparation note stays out of the shopping title.
+		expect((await shoppingItems()).map((i) => i.title).toSorted()).toEqual([
+			'Chicken breast',
+			'Onion',
+			'Salt',
+		]);
+	});
+
+	it('counts a bought item that comes back as added, not as already there', async () => {
+		const r = await addRecipe();
+		await applied(k, 'lists.addShoppingItems', { items: [{ title: 'Onion' }] }, admin.actor);
+		const [onion] = await shoppingItems();
+		await applied(k, 'lists.checkShoppingItem', { id: onion?.id, done: true }, admin.actor);
+		const result = await applied<{ added: number; alreadyThere: number }>(
+			k,
+			'kitchen.addIngredientsToShopping',
+			{ recipeId: r.id, lines: ['1 onion'] },
+			admin.actor,
+		);
+		expect(result).toMatchObject({ added: 1, alreadyThere: 0 });
+	});
+
 	it('ignores lines that are not in the recipe', async () => {
 		const r = await addRecipe();
 		const result = await applied<{ added: number }>(

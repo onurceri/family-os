@@ -298,7 +298,8 @@
 			<Composer
 				bind:value={quick}
 				size="lg"
-				maxlength={TASK_TITLE_MAX}
+				limit={TASK_TITLE_MAX}
+				tooLong={(counter) => t('too_long', { counter })}
 				label={t('add_task')}
 				placeholder={t('add_task_placeholder')}
 				moreLabel={t('add_task_details')}
