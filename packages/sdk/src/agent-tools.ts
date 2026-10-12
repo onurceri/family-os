@@ -161,11 +161,11 @@ export function readableOutput(output: unknown, table: HandleTable): unknown {
 }
 
 /** The id and the person's words of a change aimed at one record, or null. */
-function targetOf(input: unknown): { id: string; words: string } | null {
+function targetOf(input: unknown): { id: string; words: string; said: string } | null {
 	const { id, label } = (input ?? {}) as { id?: unknown; label?: unknown };
 	if (typeof id !== 'string' || typeof label !== 'string') return null;
-	const words = label.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
-	return words === '' ? null : { id, words };
+	const said = label.trim().replace(/\s+/g, ' ');
+	return said === '' ? null : { id, said, words: said.toLocaleLowerCase() };
 }
 
 const MAX_LABEL = 80;
@@ -236,12 +236,12 @@ export async function runAgentTool(call: {
 		};
 	const target = call.kind === 'draft' ? targetOf(input) : null;
 	const earlier = target ? call.targets?.get(target.id) : undefined;
-	if (target && earlier !== undefined && earlier !== target.words)
+	if (target && earlier !== undefined && earlier.toLocaleLowerCase() !== target.words)
 		return {
 			ok: false,
 			text: asData(
 				actionId,
-				`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.words}'. If '${target.words}' is not on the list, tell the person.`,
+				`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.said}'. If '${target.said}' is not on the list, tell the person.`,
 			),
 		};
 	try {
@@ -252,7 +252,7 @@ export async function runAgentTool(call: {
 			call.kind === 'draft' && call.draft ? { draft: call.draft } : undefined,
 		);
 		if (result.status === 'drafted') {
-			if (target) call.targets?.set(target.id, target.words);
+			if (target) call.targets?.set(target.id, target.said);
 			return {
 				ok: true,
 				draftId: result.draftId,

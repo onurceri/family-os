@@ -101,7 +101,7 @@ describe('an assistant turn never acts on the closest thing', () => {
 		expect(list?.result).toContain('"title":"Milk"');
 		expect(list?.result).toContain('"bought":true');
 		expect(first?.result).toContain('"status":"drafted"');
-		expect(second?.result).toContain("already suggested in this turn for 'milk'");
+		expect(second?.result).toContain("already suggested in this turn for 'Milk'");
 		expect(await drafts()).toHaveLength(1);
 		// The draft carries what will really be ticked off.
 		expect(JSON.parse((await drafts())[0]?.input ?? '{}')).toMatchObject({ label: 'Oat milk' });

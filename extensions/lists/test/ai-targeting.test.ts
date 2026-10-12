@@ -65,7 +65,7 @@ describe('shopping items an AI points at', () => {
 		}
 		const bread = await k.runner.invoke(
 			'lists.deleteShoppingItem',
-			{ id: items.Bread?.id, label: 'bread' },
+			{ id: items.Bread?.id, label: 'the bread' },
 			AI,
 		);
 		expect(bread.status).toBe('drafted');

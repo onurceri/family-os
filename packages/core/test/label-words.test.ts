@@ -27,6 +27,14 @@ describe('labelNamesTitle', () => {
 		expect(labelNamesTitle('dent', 'Dentist checkup')).toBe(false);
 	});
 
+	it('also accepts a label that holds the whole title, like a leading article', () => {
+		expect(labelNamesTitle('the bread', 'Bread')).toBe(true);
+		expect(labelNamesTitle('milk', 'Oat milk')).toBe(true);
+		expect(labelNamesTitle('Dentist checkup tomorrow', 'Dentist checkup')).toBe(true);
+		expect(labelNamesTitle('the Delft board meeting', 'Delft project call')).toBe(false);
+		expect(labelNamesTitle('4', '4')).toBe(true);
+	});
+
 	it('ignores case, spacing, brackets and a trailing plural s', () => {
 		expect(labelNamesTitle('  DENTIST   checkups (14 Oct) ', 'Dentist checkup')).toBe(true);
 		expect(labelNamesTitle('Dentist checkup', 'Dentist checkups')).toBe(true);

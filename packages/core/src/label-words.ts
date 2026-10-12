@@ -13,17 +13,18 @@ export function significantWords(text: string): string[] {
 const sameWord = (a: string, b: string) => a === b || a === `${b}s` || b === `${a}s`;
 
 /**
- * Whether the person's own words (`label`) name the thing titled `title`: every significant word
- * of the label is a whole word of the title (a trailing plural "s" does not matter). "Milk" is in
- * "Oat milk", but "Dental cleaning" is not in "Dentist checkup". A label without a significant
- * word ("4") must be the title itself.
+ * Whether the person's own words (`label`) name the thing titled `title`: the significant words
+ * of one side are all whole words of the other (a trailing plural "s" does not matter), so
+ * "the bread" and "Bread" meet, "Milk" is in "Oat milk", but "Dental cleaning" is not
+ * "Dentist checkup". A side without a significant word ("4") must equal the other.
  */
 export function labelNamesTitle(label: string, title: string): boolean {
 	const wanted = significantWords(label);
-	if (wanted.length === 0) {
+	const have = significantWords(title);
+	if (wanted.length === 0 || have.length === 0) {
 		const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
 		return plain(label) !== '' && plain(label) === plain(title);
 	}
-	const have = significantWords(title);
-	return wanted.every((w) => have.some((h) => sameWord(w, h)));
+	const within = (a: string[], b: string[]) => a.every((w) => b.some((h) => sameWord(w, h)));
+	return within(wanted, have) || within(have, wanted);
 }
