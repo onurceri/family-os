@@ -3,6 +3,7 @@ export * from './actor.ts';
 export * from './agent-tools.ts';
 export * from './capabilities.ts';
 export * from './context.ts';
+export * from './draft-subject.ts';
 export * from './errors.ts';
 export * from './events.ts';
 export * from './extension.ts';

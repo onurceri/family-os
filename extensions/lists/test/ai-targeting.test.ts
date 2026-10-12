@@ -86,14 +86,16 @@ describe('shopping items an AI points at', () => {
 				{ id: items.Milk?.id, done: true, label: 'Milk' },
 				AI,
 			),
-		).rejects.toMatchObject({ message: 'Milk is already ticked off.' });
+		).rejects.toMatchObject({ message: expect.stringContaining('Milk is already ticked off.') });
 		await expect(
 			k.runner.invoke(
 				'lists.checkShoppingItem',
 				{ id: items['Oat milk']?.id, done: false, label: 'Oat milk' },
 				AI,
 			),
-		).rejects.toMatchObject({ message: 'Oat milk is already on the list, not ticked off.' });
+		).rejects.toMatchObject({
+			message: expect.stringContaining('Oat milk is already on the list, not ticked off.'),
+		});
 		const oat = await k.runner.invoke(
 			'lists.checkShoppingItem',
 			{ id: items['Oat milk']?.id, done: true, label: 'Oat milk' },

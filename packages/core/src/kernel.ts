@@ -269,6 +269,7 @@ export function createKernel(options: KernelOptions): Kernel {
 	const aiInfo = (a: AnyActionDefinition) => ({
 		id: a.id,
 		title: a.title,
+		...(a.draftTitle && { draftTitle: a.draftTitle }),
 		description: a.ai?.description ?? '',
 		...(a.ai?.guidance && { guidance: a.ai.guidance }),
 		inputSchema: z.toJSONSchema(a.input, { io: 'input', unrepresentable: 'any' }) as Record<

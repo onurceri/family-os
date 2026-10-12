@@ -10,11 +10,11 @@ import {
 	type JobContext,
 	type NotifyRequest,
 	type NotifyText,
+	subjectOf,
 } from '@famos/sdk';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
-import { subjectOf } from './draft-subject.ts';
 import type { Registry } from './registry.ts';
 import type { CoreTables } from './tables.ts';
 

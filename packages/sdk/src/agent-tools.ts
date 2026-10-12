@@ -197,6 +197,8 @@ export interface AgentToolOutcome {
 	ok: boolean;
 	/** Set when the call created a draft. */
 	draftId?: string;
+	/** Set with `draftId` when the suggestion is approved by the household's own setting, not a person. */
+	automatic?: boolean;
 }
 
 /**
@@ -256,6 +258,7 @@ export async function runAgentTool(call: {
 			return {
 				ok: true,
 				draftId: result.draftId,
+				...(result.autoApproval && { automatic: true }),
 				text: asData(
 					actionId,
 					JSON.stringify({

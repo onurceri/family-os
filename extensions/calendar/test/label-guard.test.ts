@@ -41,8 +41,9 @@ describe('the words an AI uses for a thing must name it', () => {
 			await expect(
 				k.runner.invoke(action, { id: eventId, label: 'Sunday planning', ...extra }, AI),
 			).rejects.toMatchObject({
-				message:
-					"That is 'Biology test', not 'Sunday planning'. If it is not on the list, tell the person.",
+				message: expect.stringContaining(
+					"That is 'Biology test', not 'Sunday planning'. If it is not on the list, tell the person. Tell the person this and do not suggest anything else for it.",
+				),
 			});
 		}
 	});

@@ -136,7 +136,7 @@ export const addShoppingItems = defineAction({
 		description:
 			'Adds things to buy to a family shopping list (groceries, household supplies, things someone needs for school).',
 		guidance:
-			'Only things the family must buy, not things to bring that a family usually already has (use a task for those). One item per product, titled in the family language with a capital first letter like a list entry ("Milk", not "milk"; brand names as written). The amount goes in quantity, never in the title: "2 litres of milk" is title "Milk", quantity "2 litres"; keep every amount the item gives, with its unit, as written ("2 kg", "1 pack", "a dozen"). Pick the store section as category when obvious. Omit listId unless a list is named.',
+			'Only things the family must buy, not things to bring that a family usually already has (use a task for those). One item per product, titled in the family language with a capital first letter like a list entry ("Milk", not "milk"; brand names as written). The amount goes in quantity, never in the title: "2 litres of milk" is title "Milk", quantity "2 litres"; keep every amount the item gives, with its unit, as written ("2 kg", "1 pack", "a dozen"). Pick the store section as category when obvious. When the person names a list, find it with lists.shoppingList and send its id as listId; when no list is named, omit listId and the default list is used.',
 	},
 	async run(uow, input) {
 		const list = await activeList(uow, input.listId);
@@ -604,10 +604,12 @@ export const shoppingList = defineAction({
 	title: 'Shopping lists with what is still to buy, for the AI',
 	input: z.object({
 		list: z.string().trim().max(60).optional().describe('Only the list with this name'),
+		listId: ShoppingListIdSchema.optional().describe('Only this list'),
 	}),
 	output: z.object({
 		lists: z.array(
 			z.object({
+				id: z.string().describe('The list, for adding items to it (listId)'),
 				name: z.string(),
 				items: z.array(
 					z.object({
@@ -627,9 +629,9 @@ export const shoppingList = defineAction({
 	requires: listsView.id,
 	ai: {
 		description:
-			'Shows the family shopping lists: what is still to buy (in store-section order), then what was bought in the last 7 days (bought true). Use it for "is there milk on the list / what do we need" questions. An item that is bought is not to buy now; match the name the person used to a listed title by its words, and if none fits, say it is not on the list.',
+			'Shows the family shopping lists (each with its id, the way to name a list when adding items): what is still to buy (in store-section order), then what was bought in the last 7 days (bought true). Use it for "is there milk on the list / what do we need" questions. An item that is bought is not to buy now; match the name the person used to a listed title by its words, and if none fits, say it is not on the list.',
 	},
-	async run(uow, { list }) {
+	async run(uow, { list, listId }) {
 		const { locale } = await uow.family.settings();
 		const wanted = list ? titleKey(list, locale) : null;
 		const lists = await tables(uow.db)
@@ -641,8 +643,9 @@ export const shoppingList = defineAction({
 			.execute();
 		const chosen = lists.filter(
 			(l) =>
-				!wanted ||
-				(l.name ? [l.name] : DEFAULT_LIST_ALIASES).some((n) => titleKey(n, locale) === wanted),
+				(!listId || l.id === listId) &&
+				(!wanted ||
+					(l.name ? [l.name] : DEFAULT_LIST_ALIASES).some((n) => titleKey(n, locale) === wanted)),
 		);
 		let budget = MAX_SHOPPING;
 		const out = [];
@@ -681,6 +684,7 @@ export const shoppingList = defineAction({
 				bought: isBought,
 			});
 			out.push({
+				id: l.id,
 				name: l.name || DEFAULT_LIST_LABEL,
 				items: [
 					...rows.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),

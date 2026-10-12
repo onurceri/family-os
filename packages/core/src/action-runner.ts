@@ -132,6 +132,13 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
 	return result.data;
 }
 
+/**
+ * Ends a refusal that settles the matter. A model that reads only "already ticked off" tends to
+ * look for another way to do something for the same request (putting the item back on the list),
+ * so the refusal tells it to stop and say so.
+ */
+const CLOSED_MATTER = ' Tell the person this and do not suggest anything else for it.';
+
 /** `core_drafts.error` of a draft closed because what it was about no longer exists. */
 export const GONE = 'gone';
 
@@ -791,11 +798,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (title !== null && !labelNamesTitle(said, title))
 				throw new FamosError(
 					'conflict',
-					`That is '${title}', not '${said}'. If it is not on the list, tell the person.`,
+					`That is '${title}', not '${said}'. If it is not on the list, tell the person.${CLOSED_MATTER}`,
 				);
 		}
 		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
-		if (reason !== null) throw new FamosError('conflict', reason);
+		if (reason !== null) throw new FamosError('conflict', `${reason}${CLOSED_MATTER}`);
 		return title;
 	}
 

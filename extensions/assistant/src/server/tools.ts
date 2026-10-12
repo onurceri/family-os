@@ -7,6 +7,7 @@ import {
 	type LlmChatTool,
 	MAX_RESULT_BYTES,
 	runAgentTool,
+	subjectOf,
 } from '@famos/sdk';
 
 // The wrapping of results is shared with MCP; the assistant's tests import it from here.
@@ -101,12 +102,26 @@ export interface RecordedCall {
 	draftId?: string;
 }
 
+/** A suggestion the turn made, for the line the host adds under the answer. */
+export interface Proposal {
+	/** The action's English title. */
+	title: string;
+	/** Catalog key of its name as a suggestion, when it has one. */
+	titleKey?: string;
+	/** What it is about: the real name of the item, the titles of the items. */
+	subject?: string;
+	/** Approved by the household's own setting rather than by a person. */
+	automatic: boolean;
+}
+
 export interface ToolEnv {
 	actions: ActionInvoker;
 	actor: Actor;
 	table: HandleTable;
 	turnId: string;
 	calls: RecordedCall[];
+	/** The suggestions this turn made, in order. */
+	proposals?: Proposal[];
 	/** What the records shown in this turn are called (handle → title). */
 	labels?: Map<string, string>;
 	/** The words used for each target changed in this turn (see `runAgentTool`). */
@@ -172,7 +187,16 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 				targets: env.targets,
 			});
 			record.ok = outcome.ok;
-			if (outcome.draftId) record.draftId = outcome.draftId;
+			if (outcome.draftId) {
+				record.draftId = outcome.draftId;
+				const subject = subjectOf(JSON.stringify(raw ?? {}));
+				env.proposals?.push({
+					title: info.title,
+					...(info.draftTitle && { titleKey: info.draftTitle }),
+					...(subject && { subject }),
+					automatic: outcome.automatic === true,
+				});
+			}
 			return outcome.text;
 		},
 	}));

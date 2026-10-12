@@ -11,6 +11,7 @@ import {
 	FamosError,
 	type IdentityAdmin,
 	idSchema,
+	subjectOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { formatDate, formatLocaleForLanguage, todayIn, weekOf, zoned } from '@famos/time';
@@ -29,7 +30,6 @@ import {
 } from './core-events.ts';
 import type { DeviceService } from './devices.ts';
 import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
-import { subjectOf } from './draft-subject.ts';
 import {
 	FamilySettingsSchema,
 	LanguageCodeSchema,

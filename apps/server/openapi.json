@@ -86233,6 +86233,11 @@
 										"type": "string",
 										"maxLength": 60,
 										"description": "Only the list with this name"
+									},
+									"listId": {
+										"type": "string",
+										"pattern": "^shop_list_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+										"description": "Only this list"
 									}
 								}
 							}
@@ -86263,6 +86268,10 @@
 															"items": {
 																"type": "object",
 																"properties": {
+																	"id": {
+																		"type": "string",
+																		"description": "The list, for adding items to it (listId)"
+																	},
 																	"name": {
 																		"type": "string"
 																	},
@@ -86318,6 +86327,7 @@
 																	}
 																},
 																"required": [
+																	"id",
 																	"name",
 																	"items"
 																]

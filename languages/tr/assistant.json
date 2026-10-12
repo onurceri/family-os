@@ -86,5 +86,7 @@
 	"just_now": "Az önce",
 	"today_block": "Asistana sor",
 	"today_block_hint": "Altta, soru sormak için bir bağlantı.",
-	"someone": "biri"
+	"someone": "biri",
+	"proposed_waiting": "Onay bekliyor: {{what}}",
+	"proposed_automatic": "Birazdan otomatik eklenecek: {{what}}"
 }

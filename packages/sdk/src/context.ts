@@ -175,6 +175,8 @@ export interface AiActionInfo {
 	id: string;
 	title: string;
 	description: string;
+	/** Catalog key of the action's name as a suggestion (`defineAction`'s `draftTitle`). */
+	draftTitle?: string;
 	guidance?: string;
 	inputSchema: Record<string, unknown>;
 }

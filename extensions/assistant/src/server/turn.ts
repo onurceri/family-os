@@ -26,6 +26,7 @@ import {
 	areaOf,
 	chatTools,
 	narrow,
+	type Proposal,
 	type RecordedCall,
 	toolsClosed,
 } from './tools.ts';
@@ -92,6 +93,30 @@ const parseCalls = (json: string | null): RecordedCall[] => {
 		return [];
 	}
 };
+
+/**
+ * The fixed lines under an answer that made suggestions, one per suggestion ("Waiting for
+ * approval: Add shopping items: Milk, Oat milk"). Built from the suggestions, not from the
+ * model's words, so the answer can never claim something else.
+ */
+export function proposalLines(
+	proposals: readonly Proposal[],
+	translate: (key: string, params?: Record<string, unknown>) => string,
+): string {
+	return proposals
+		.map((p) => {
+			const title = p.titleKey ? translate(p.titleKey) : p.title;
+			const what = p.subject ? `${title}: ${p.subject}` : title;
+			return translate(
+				p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed_waiting',
+				{
+					what,
+				},
+			);
+		})
+		.join('\n');
+}
+
 const MAX_STEPS = 8;
 const CHAT_TIMEOUT_MS = 120_000;
 
@@ -260,6 +285,7 @@ export const turnJob = defineJob({
 		const now = ctx.clock.now();
 		const today = todayIn(settings.timeZone, now);
 		const calls: RecordedCall[] = [];
+		const proposals: Proposal[] = [];
 		const inject = {
 			'core.addMemory': { source: 'assistant' },
 		};
@@ -312,6 +338,7 @@ export const turnJob = defineJob({
 					table,
 					turnId: messageId,
 					calls,
+					proposals,
 					labels,
 					targets,
 					inject,
@@ -324,11 +351,20 @@ export const turnJob = defineJob({
 				onText: (text) => emit(scrubber.push(text)),
 			});
 			emit(scrubber.flush());
+			// Whatever the model wrote, the person is told what was really suggested, from the
+			// suggestions themselves.
+			const locale = member.locale ?? settings.locale;
+			const stated = proposalLines(proposals, (key, params) => ctx.translate(locale, key, params));
+			if (result.text && stated !== '') emit(`\n\n${stated}`);
 			// The step limit can end the loop on a tool call: no answer text, which is a failure
 			// (the drafts it made still stand and are listed).
 			await finish(
 				result.text
-					? { status: 'done', content: scrubHandles(result.text, nameOf), calls }
+					? {
+							status: 'done',
+							content: `${scrubHandles(result.text, nameOf)}${stated === '' ? '' : `\n\n${stated}`}`,
+							calls,
+						}
 					: { status: 'failed', errorCode: 'no_answer', calls },
 			);
 			const total = await db

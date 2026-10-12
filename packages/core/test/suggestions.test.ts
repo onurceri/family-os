@@ -5,10 +5,10 @@ import {
 	defineExtension,
 	FamosError,
 	type MemberId,
+	subjectOf,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { subjectOf } from '../src/draft-subject.ts';
 import { createTestKernel, type TestKernel } from './harness.ts';
 
 // Suggestions that are already so, the names they carry, and who can take them back.
