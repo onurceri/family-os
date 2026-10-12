@@ -19,6 +19,7 @@ import {
 } from '../contract/index.ts';
 import { formatWeekday } from './format.ts';
 import { systemPrompt } from './prompt.ts';
+import { createHandleScrubber, scrubHandles } from './scrub.ts';
 import { tables } from './store.ts';
 import {
 	type AssistantTool,
@@ -199,6 +200,19 @@ export const turnJob = defineJob({
 		const inject = {
 			'core.addMemory': { source: 'assistant' },
 		};
+		// A handle in an answer becomes the member's name, or a neutral word where names are not shared.
+		const nameOf = (handle: string) => {
+			const id = table.toId.get(handle);
+			const found = policy.sendPeople ? family.find((m) => m.id === id) : undefined;
+			return (
+				found?.displayName ?? ctx.translate(member.locale ?? settings.locale, 'assistant:someone')
+			);
+		};
+		const scrubber = createHandleScrubber(nameOf);
+		const emit = (text: string) => {
+			if (text !== '')
+				void ctx.events.emitTo(memberId, assistantDelta, { threadId, messageId, text });
+		};
 
 		try {
 			const result = await ctx.llm.chat({
@@ -238,15 +252,14 @@ export const turnJob = defineJob({
 				timeoutMs: CHAT_TIMEOUT_MS,
 				memberId,
 				jobId: run.id,
-				onText: (text) => {
-					void ctx.events.emitTo(memberId, assistantDelta, { threadId, messageId, text });
-				},
+				onText: (text) => emit(scrubber.push(text)),
 			});
+			emit(scrubber.flush());
 			// The step limit can end the loop on a tool call: no answer text, which is a failure
 			// (the drafts it made still stand and are listed).
 			await finish(
 				result.text
-					? { status: 'done', content: result.text, calls }
+					? { status: 'done', content: scrubHandles(result.text, nameOf), calls }
 					: { status: 'failed', errorCode: 'no_answer', calls },
 			);
 			const total = await db

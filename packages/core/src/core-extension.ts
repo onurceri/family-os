@@ -115,6 +115,38 @@ const DRAFT_STATUSES = [
 	'expired',
 ] as const;
 
+/** How many of the newest drafts `core.mySuggestions` looks through to find the member's own. */
+const MY_SUGGESTIONS_WINDOW = 300;
+
+const SUGGESTION_STATUS = {
+	pending: 'waiting',
+	failed: 'failed',
+	approved: 'approved',
+	applied: 'approved',
+	rejected: 'rejected',
+	undone: 'undone',
+	expired: 'expired',
+} as const satisfies Record<(typeof DRAFT_STATUSES)[number], string>;
+
+/** The action's title and, when the input has one, its name or text: "Add shopping item: Milk". */
+function suggestionLabel(title: string | undefined, row: DraftRow): string {
+	let what: string | undefined;
+	try {
+		const input = JSON.parse(row.edited_input ?? row.input) as Record<string, unknown>;
+		for (const key of ['title', 'name', 'text', 'body', 'summary']) {
+			const value = input[key];
+			if (typeof value === 'string' && value.trim() !== '') {
+				what = value.trim().slice(0, 80);
+				break;
+			}
+		}
+	} catch {
+		// An input from an older version may not parse: the title alone still says what it was.
+	}
+	const base = title ?? row.action_id;
+	return what ? `${base}: ${what}` : base;
+}
+
 export const DraftSchema = z.object({
 	id: z.string(),
 	actionId: z.string(),
@@ -1121,6 +1153,70 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		},
 	});
 
+	/**
+	 * What became of the suggestions the signed-in member made, or an agent made for them (the
+	 * assistant, an MCP client). Agents read it to answer "was it approved?" instead of guessing.
+	 * Only the member's own suggestions are listed, and one addressed to someone else never is.
+	 */
+	const mySuggestions = defineAction({
+		id: 'core.mySuggestions',
+		title: "Read the status of the member's recent suggestions",
+		input: z.object({ limit: z.number().int().min(1).max(30).default(15) }),
+		output: z.object({
+			suggestions: z.array(
+				z.object({
+					id: z.string(),
+					label: z.string(),
+					status: z.enum(['waiting', 'approved', 'rejected', 'undone', 'expired', 'failed']),
+					/** When it was suggested and, once decided, when; ISO 8601 UTC. */
+					suggestedAt: z.string(),
+					decidedAt: z.string().optional(),
+				}),
+			),
+		}),
+		readOnly: true,
+		ai: {
+			description:
+				"Lists the person's recent suggestions (the changes they or you proposed for them) with what became of each: waiting, approved, rejected, undone, expired or failed. Use it when the person asks whether something was approved or added, or what is still waiting.",
+		},
+		async run(uow, { limit }) {
+			const owner =
+				uow.actor.kind === 'member'
+					? uow.actor.memberId
+					: uow.actor.kind === 'ai'
+						? uow.actor.onBehalfOf
+						: undefined;
+			if (owner === undefined) return { suggestions: [] };
+			const rows = await uow.db
+				.withTables<CoreTables>()
+				.selectFrom('core_drafts')
+				.selectAll()
+				.where((eb) => eb.or([eb('for_member', 'is', null), eb('for_member', '=', owner)]))
+				.orderBy('created_at', 'desc')
+				.limit(MY_SUGGESTIONS_WINDOW)
+				.execute();
+			const passed = await deps.runner().passedCheck(uow.db);
+			const actions = deps.registry().actions;
+			const iso = (at: number) => new Date(at).toISOString();
+			const suggestions = rows
+				.filter((row) => {
+					const by = JSON.parse(row.proposed_by) as Actor;
+					return by.kind === 'member'
+						? by.memberId === owner
+						: by.kind === 'ai' && by.onBehalfOf === owner;
+				})
+				.slice(0, limit)
+				.map((row) => ({
+					id: row.id,
+					label: row.summary ?? suggestionLabel(actions.get(row.action_id)?.title, row),
+					status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
+					suggestedAt: iso(row.created_at),
+					...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
+				}));
+			return { suggestions };
+		},
+	});
+
 	const expireDrafts = defineJob({
 		name: EXPIRE_JOB,
 		payload: z.object({}),
@@ -1187,6 +1283,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		migrations: coreMigrations,
 		actions: [
 			decidableSources,
+			mySuggestions,
 			createMember,
 			updateMember,
 			setMyLanguage,

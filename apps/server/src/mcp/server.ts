@@ -34,7 +34,7 @@ function jsonSchema(schema: Record<string, unknown>): StandardSchemaWithJSON {
 }
 
 const DRAFT_NOTE =
-	'Creates a suggestion that a family member approves; nothing changes until they do.';
+	'Creates a suggestion that a family member approves; nothing changes until they do. Tell the person it is suggested, not added. To see whether it was approved, read their suggestions.';
 
 export interface McpToolDeps {
 	kernel: Kernel;

@@ -88,8 +88,9 @@ const readIds = (actor: Actor) =>
 	k.ctx.actions
 		.aiReadTools({ actor })
 		.map((a) => a.id)
+		.filter((id) => !id.startsWith('core.'))
 		.sort();
-// Core's own personal tools (memory) are tested in memory.test.ts.
+// Core's own personal tools (memory, suggestions) are tested in memory.test.ts and my-suggestions.test.ts.
 const draftIds = (actor: Actor) =>
 	k.ctx.actions
 		.aiCatalog({ actor })
@@ -218,6 +219,7 @@ describe('the AI acting on behalf of a member', () => {
 			k.ctx.actions
 				.aiReadTools({ actor: admin.ai, local: true })
 				.map((a) => a.id)
+				.filter((id) => !id.startsWith('core.'))
 				.sort(),
 		).toEqual(['shelf.list', 'stash.list']);
 	});

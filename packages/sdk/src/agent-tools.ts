@@ -199,8 +199,9 @@ export async function runAgentTool(call: {
 					actionId,
 					JSON.stringify({
 						status: 'drafted',
-						note: 'A suggestion was created. Nothing changes until a person approves it.',
-						summary: call.draftSummary,
+						suggestion: table.add('draft', result.draftId),
+						// A ready sentence: models that paraphrase a note still say "added" otherwise.
+						say: `Suggested, not added yet: ${call.draftSummary}. It appears once a person in the household approves it.`,
 					}),
 				),
 			};
