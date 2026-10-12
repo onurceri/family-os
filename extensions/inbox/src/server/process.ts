@@ -29,7 +29,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/14';
+export const PROMPT_VERSION = 'inbox.extract/15';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -495,6 +495,39 @@ export function withoutTimeAsAllDay(
 	return { input: { ...rest, allDay: true }, guessed: ['startTime', 'allDay'] };
 }
 
+/**
+ * Fields that name members the item itself never names: the model chose them (from a relation,
+ * a description or a guess), so a person checks them. A field counts when its value is a member
+ * id or a list of member ids; a member counts as named when the item contains any word of their
+ * display name. Names are the family's own data, so this works in any language.
+ */
+export function unnamedMemberFields(
+	input: Record<string, unknown>,
+	members: readonly { id: string; displayName: string }[],
+	text: string,
+	locale: string,
+): string[] {
+	const byId = new Map(members.map((m) => [m.id, m.displayName]));
+	const words = new Set(
+		text
+			.toLocaleLowerCase(locale)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter(Boolean),
+	);
+	const named = (id: string) =>
+		(byId.get(id) ?? '')
+			.toLocaleLowerCase(locale)
+			.split(/[^\p{L}\p{N}]+/u)
+			.some((part) => part.length > 1 && words.has(part));
+	const fields: string[] = [];
+	for (const [key, value] of Object.entries(input)) {
+		const ids = Array.isArray(value) ? value : [value];
+		if (ids.length === 0 || !ids.every((id) => typeof id === 'string' && byId.has(id))) continue;
+		if (!(ids as string[]).every(named)) fields.push(key);
+	}
+	return fields;
+}
+
 /** Tells the model how this family writes numeric dates and clock times. */
 export function regionNote(order: 'DMY' | 'MDY' | 'YMD', hourCycle: 'h12' | 'h23'): string {
 	const dates =
@@ -577,7 +610,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 		: ''
 }Rules:
 - Propose only what the item asks for or clearly implies. One item can yield several proposals (a trip has a date for the calendar and a fee to pay as a task). If nothing is actionable, return no proposals.
-- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one member without naming them (for example a school notice and only one member's description mentions that school or class), choose that member and list the field in uncertainFields. A member the item does not name or clearly point to (chosen only because of their role, their age or a guess about who usually does such things) is inferred: list the field in uncertainFields, or leave it empty when you are unsure. Only a member named in the item is certain. Otherwise leave member lists empty ([]).${
+- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one member without naming them (for example a school notice and only one member's description mentions that school or class), choose that member and list the field in uncertainFields. Otherwise leave member lists empty ([]).${
 		input.sharer
 			? `
 - The person who shared the item (${input.sharer.handle}) is the one a message addressed to "you" or written about "me" or "my" concerns: when the item is clearly about them alone, use them in the member field instead of leaving it empty. A message to the whole household or group concerns everyone: leave the list empty.`
@@ -588,7 +621,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 - Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty.`
 			: ''
 	}
-- Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time out: the event is kept as an all-day event that a person checks.
+- Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time and allDay out: the event is kept as an all-day event that a person checks. Set allDay yourself only for something that fills the whole day (a holiday, a trip day, a birthday), never for an appointment or an activity whose time is simply not given.
 - Quantities: an amount the item gives for a thing to buy ("2 litres of milk", "a dozen eggs", "3 packs") goes into that item's quantity field with its unit, as written ("2 litres", "a dozen", "3 packs"); the title is the product alone ("Milk"), never the amount.
 - Dates: whenever the item names the day of a proposal (a full date, a weekday, a day of the month such as "the 15th", or words such as today and tomorrow), set the date field, also when you are unsure (then list it in uncertainFields as below). Put the exact words that give the day in dateText (the day only, not the time). A full date (day and month) and words that name one day (today, tomorrow) are certain: do not list them in uncertainFields. If a weekday and a day number in the item disagree, keep the day number and list the date field in uncertainFields. A weekday without a date is ambiguous: "next Thursday" can mean this week's or next week's. When the text does not settle it, choose the nearer one and list the date field in uncertainFields. Do the same for a missing month or year, a time without am/pm or context ("at 4"), and vague spans ("end of the month").
 - Omit only fields the item does not give; never send null. Give arrays and objects as JSON values, not as strings.
@@ -744,9 +777,6 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				maxOutputTokens: EXTRACT_MAX_OUTPUT_TOKENS,
 				// Reading facts out of a message: the same message should give the same proposals.
 				temperature: 0,
-				// Thinking counts against the cap and can fill it before the answer starts; reading
-				// facts out of a message needs little of it.
-				reasoning: 'low',
 				memberId: row.created_by,
 				jobId: run.id,
 			});
@@ -808,6 +838,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				)
 					uncertain.add(path);
 			}
+			for (const field of unnamedMemberFields(input, family, text, settings.formatLocale))
+				uncertain.add(field);
 			try {
 				await ctx.actions.invoke(
 					proposal.action,

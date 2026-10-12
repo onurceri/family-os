@@ -512,9 +512,7 @@ describe('inbox pipeline', () => {
 		await k.worker.drain();
 		expect(k.llm.calls).toHaveLength(1); // not tried again
 		expect(k.llm.calls[0]?.maxOutputTokens).toBe(EXTRACT_MAX_OUTPUT_TOKENS);
-		expect(k.llm.calls[0]?.reasoning).toBe('low');
-		// A member chosen without being named must be marked to check.
-		expect(k.llm.calls[0]?.system).toContain('Only a member named in the item is certain');
+		expect(k.llm.calls[0]?.reasoning).toBeUndefined();
 		expect((await items())[0]).toMatchObject({
 			status: 'failed',
 			errorCode: 'output_too_long',
