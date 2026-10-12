@@ -19,7 +19,12 @@ describe('removing a planned meal as the AI', () => {
 			admin.actor,
 		);
 
-		const result = await k.runner.invoke('kitchen.removeMealPlanEntry', { id: meal.id }, AI);
+		const result = await k.runner.invoke(
+			'kitchen.removeMealPlanEntry',
+			// The AI names the meal in the person's words.
+			{ id: meal.id, label: 'pancakes' },
+			AI,
+		);
 		expect(result.status).toBe('drafted');
 		const plan = async () =>
 			applied<{ meals: unknown[] }>(
