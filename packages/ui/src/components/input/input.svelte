@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { cn, type WithElementRef } from "../../utils.js";
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
+	import { findApp } from "../../app-context.js";
+	import LimitCounter from "../../famos/LimitCounter.svelte";
+	import { lengthState } from "../../famos/length-limit.js";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
 
@@ -16,8 +19,27 @@
 		files = $bindable(),
 		class: className,
 		"data-slot": dataSlot = "input",
+		maxlength,
 		...restProps
 	}: Props = $props();
+
+	// A long text field never cuts what is typed or pasted: a counter shows near the limit and a
+	// message over it, and the field is invalid (a form that validates refuses it) until it is
+	// shorter. Short fields (a year, a code) keep the browser's hard limit.
+	const COUNTED_FROM = 40;
+	const counted = $derived(
+		type !== "file" && typeof maxlength === "number" && maxlength >= COUNTED_FROM
+	);
+	const over = $derived(
+		counted && lengthState(String(value ?? ""), maxlength as number).over
+	);
+	const app = findApp();
+	const tooLong = (counter: string) => app?.t("app:too_long", { counter }) ?? counter;
+	$effect(() => {
+		(ref as HTMLInputElement | null)?.setCustomValidity(
+			over ? tooLong(`${String(value ?? "").trim().length}/${maxlength}`) : ""
+		);
+	});
 </script>
 
 {#if type === "file"}
@@ -43,6 +65,11 @@
 		)}
 		{type}
 		bind:value
+		maxlength={counted ? undefined : maxlength}
 		{...restProps}
+		aria-invalid={over ? "true" : restProps["aria-invalid"]}
 	/>
+	{#if counted}
+		<LimitCounter text={String(value ?? "")} max={maxlength as number} {tooLong} />
+	{/if}
 {/if}

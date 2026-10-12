@@ -92,6 +92,11 @@ export function provideAppContext(context: AppContext): void {
 	setContext(KEY, context);
 }
 
+/** The app context when there is one (a shared component used outside the app, as in tests). */
+export function findApp(): AppContext | undefined {
+	return getContext<AppContext | undefined>(KEY);
+}
+
 export function useApp(): AppContext {
 	const context = getContext<AppContext | undefined>(KEY);
 	if (!context) throw new Error('useApp() called outside the FamilyOS app');

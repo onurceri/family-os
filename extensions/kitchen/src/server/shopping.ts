@@ -17,7 +17,7 @@ const lineKey = (line: string, locale: string) =>
 /**
  * "Put the ingredients on the shopping list": the chosen lines of a recipe become shopping items,
  * the product as the title and the amount as the quantity ("2 tbsp olive oil" is "Olive oil",
- * "2 tbsp"). Units come from the language packs; nothing is converted.
+ * "2 tbsp"). Units and preparation words come from the language packs; nothing is converted.
  * A line is matched to the recipe's text ignoring case, spacing and trailing punctuation; lines
  * that match nothing are handed back in `unknownLines`. An item already on the list is matched by
  * its title and left as it is. The lists action runs as
@@ -58,6 +58,7 @@ export const addIngredientsToShopping = defineAction({
 		const words = {
 			units: [...uow.vocabulary('lists:quantity_units'), ...uow.vocabulary('kitchen:words_units')],
 			links: uow.vocabulary('kitchen:words_amount_link'),
+			preparation: uow.vocabulary('kitchen:words_preparation'),
 		};
 		const items = new Map<string, NonNullable<ReturnType<typeof ingredientToItem>>>();
 		const unknownLines: string[] = [];

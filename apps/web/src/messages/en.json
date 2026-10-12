@@ -182,6 +182,7 @@
 	"setup_device_name": "Home device",
 	"not_found": "This page does not exist.",
 	"draft_check_this": "Check this",
+	"too_long": "Too long ({{counter}})",
 	"nav_ai": "Provider & models",
 	"nav_features": "Features",
 	"region_locale": "Region format",

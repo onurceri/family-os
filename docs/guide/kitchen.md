@@ -8,7 +8,7 @@ Choose **Add recipe** and fill in the **Name**, **Servings** (as you write it, s
 
 ### Ingredients to the shopping list
 
-On a recipe's page, tick the ingredients you need (**Select all** ticks every line) and choose **Add selected to shopping list**. They are added to the shopping list with the product as the name and the amount as the quantity; a note after a comma ("Lemon, zest and juice") is left out of the name. Items already on the list are not added twice and are left as they are. A message and a short list under the ingredients say what was added, what was already there ("Chicken breast is already on the list (500 g; the recipe needs 600 g)") and what was not added. This needs Lists to be switched on; if you have several shopping lists you can choose which one.
+On a recipe's page, tick the ingredients you need (**Select all** ticks every line) and choose **Add selected to shopping list**. They are added to the shopping list with the product as the name and the amount as the quantity; a preparation note after a comma ("Lemon, zest and juice") is left out of the name. Items already on the list are not added twice and are left as they are. A message and a short list under the ingredients say what was added, what was already there ("Chicken breast is already on the list (500 g; the recipe needs 600 g)") and what was not added. This needs Lists to be switched on; if you have several shopping lists you can choose which one.
 
 ## Meal plan
 

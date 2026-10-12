@@ -182,6 +182,7 @@
 	"setup_device_name": "Ev cihazı",
 	"not_found": "Bu sayfa yok.",
 	"draft_check_this": "Kontrol et",
+	"too_long": "Çok uzun ({{counter}})",
 	"nav_ai": "Sağlayıcı ve modeller",
 	"nav_features": "Özellikler",
 	"region_locale": "Bölge biçimi",
