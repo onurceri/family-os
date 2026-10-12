@@ -97,16 +97,16 @@
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	onDestroy(() => clearTimeout(timer));
 
-	/** The first pick arms taking the note down and keeps the menu in reach; the second one does it. */
-	async function remove() {
-		if (!armed) {
-			armed = true;
-			clearTimeout(timer);
-			timer = setTimeout(() => (armed = false), ARM_MS);
-			await tick();
-			menuOpen = true;
-			return;
-		}
+	/**
+	 * The menu's "Take down" arms it; a button over the note then does it. The menu closes on any
+	 * pick, so the second tap lives on the note itself, laid over it so the board never moves.
+	 */
+	function arm() {
+		armed = true;
+		clearTimeout(timer);
+		timer = setTimeout(() => (armed = false), ARM_MS);
+	}
+	function remove() {
 		armed = false;
 		clearTimeout(timer);
 		void onremove?.(note);
@@ -128,9 +128,9 @@
 		if (canEdit)
 			list.push({
 				id: 'remove',
-				label: armed ? t('remove_confirm') : t('remove'),
+				label: t('remove'),
 				danger: true,
-				onselect: () => void remove(),
+				onselect: arm,
 			});
 		return list;
 	});
@@ -204,6 +204,13 @@
 					{/snippet}
 				</Menu>
 			</div>
+			{#if armed}
+				<button
+					type="button"
+					class="confirm bg-destructive text-destructive-foreground focus-visible:ring-ring absolute z-20 rounded-lg px-3 py-2 text-sm font-medium focus-visible:ring-2"
+					onclick={remove}>{t('remove_confirm')}</button
+				>
+			{/if}
 		{/if}
 		<p
 			bind:this={textEl}
@@ -280,6 +287,10 @@
 		color: color-mix(in srgb, var(--note-ink-soft) 60%, var(--note-ink));
 	}
 	/* The menu sits in the paper's top corner, or in a polaroid's caption row. */
+	.confirm {
+		top: 0;
+		right: 2.75rem;
+	}
 	.menu {
 		top: -0.75rem;
 		right: -0.75rem;

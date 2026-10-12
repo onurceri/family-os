@@ -45,7 +45,7 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 
 	// The paper can change later.
 	await note.getByRole('button', { name: 'Actions for this note' }).click();
-	await note.getByRole('button', { name: 'Edit', exact: true }).click();
+	await note.getByRole('menuitem', { name: 'Edit', exact: true }).click();
 	await page.getByTestId('composer').getByRole('radio', { name: 'Paper 5' }).check({ force: true });
 	await page.getByTestId('composer').getByRole('button', { name: 'Save' }).click();
 	await expect(note).toHaveAttribute('data-paper', 'note-5');
@@ -85,8 +85,8 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 
 	// The menu moves a note too (for keyboards and screen readers).
 	await note.getByRole('button', { name: 'Actions for this note' }).click();
-	await expect(note.getByRole('button', { name: 'Move earlier' })).toHaveCount(0);
-	await note.getByRole('button', { name: 'Move later' }).click();
+	await expect(note.getByRole('menuitem', { name: 'Move earlier' })).toHaveCount(0);
+	await note.getByRole('menuitem', { name: 'Move later' }).click();
 	await expect(notes.first()).toContainText('Bins go out tonight');
 	await page.reload();
 	await expect(notes.first()).toContainText('Bins go out tonight');
@@ -96,7 +96,7 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 		.click();
 	await notes
 		.filter({ hasText: 'Bins go out tonight' })
-		.getByRole('button', { name: 'Take down', exact: true })
+		.getByRole('menuitem', { name: 'Take down', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Tap again to take down' }).click();
 	await expect(notes).toHaveCount(1);
@@ -105,7 +105,7 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 	await expect(eceNote.getByRole('button', { name: 'Actions for this note' })).toHaveCount(0);
 
 	await note.getByRole('button', { name: 'Actions for this note' }).click();
-	await note.getByRole('button', { name: 'Pin', exact: true }).click();
+	await note.getByRole('menuitem', { name: 'Pin', exact: true }).click();
 	await expect(note.getByText('Pinned', { exact: true })).toBeAttached();
 	await expect(eceNote.getByText('Pinned', { exact: true })).toBeAttached();
 
@@ -121,7 +121,7 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 
 	// The author takes it down with a second tap; the other board follows.
 	await note.getByRole('button', { name: 'Actions for this note' }).click();
-	await note.getByRole('button', { name: 'Take down', exact: true }).click();
+	await note.getByRole('menuitem', { name: 'Take down', exact: true }).click();
 	await note.getByRole('button', { name: 'Tap again to take down' }).click();
 	await expect(page.getByText('Note taken down')).toBeVisible();
 	await expect(page.getByTestId('note')).toHaveCount(0);
