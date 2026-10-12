@@ -62,7 +62,6 @@
 	"memory_saved": "Saved",
 	"memory_deleted": "Forgotten",
 	"memory_from_assistant": "Suggested by the assistant",
-	"memory_chars_left": "{{count}} characters left",
 	"kind_memory": "Memory",
 	"remember_title": "Remember: {{text}}",
 	"remember_approve": "Remember this",

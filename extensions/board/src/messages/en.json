@@ -16,8 +16,6 @@
 	"write_tile": "Write a note…",
 	"note_label": "Your note",
 	"note_placeholder": "What should the family know?",
-	"chars_left_one": "{{count}} character left",
-	"chars_left_other": "{{count}} characters left",
 	"paper_group": "Paper",
 	"paper_n": "Paper {{n}}",
 	"add_photo": "Add a photo",

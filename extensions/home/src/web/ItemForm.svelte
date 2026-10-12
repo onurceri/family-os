@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { ITEM_PRESETS } from '../contract/index.js';
@@ -77,12 +78,13 @@
 	</div>
 	<div class="grid gap-1.5">
 		<Label for={id('notes')}>{t('field_notes')} {@render optional()}</Label>
-		<textarea
+		<Textarea
 			id={id('notes')}
 			bind:value={value.notes}
 			maxlength={2000}
-			rows="2"
-			class="{field} min-h-[84px] py-2"></textarea>
+			rows={2}
+			class="{field} min-h-[84px] py-2"
+		></Textarea>
 	</div>
 	{#if picks}
 		<PresetPicker presets={ITEM_PRESETS} bind:picks {errors} />

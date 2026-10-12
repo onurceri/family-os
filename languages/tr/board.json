@@ -16,8 +16,6 @@
 	"write_tile": "Bir not yaz…",
 	"note_label": "Notun",
 	"note_placeholder": "Aile neyi bilmeli?",
-	"chars_left_one": "{{count}} karakter kaldı",
-	"chars_left_other": "{{count}} karakter kaldı",
 	"paper_group": "Kâğıt",
 	"paper_n": "Kâğıt {{n}}",
 	"add_photo": "Fotoğraf ekle",

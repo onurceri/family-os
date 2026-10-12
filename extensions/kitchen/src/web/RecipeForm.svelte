@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import type { RecipeFormValue } from './form.js';
@@ -51,21 +52,21 @@
 
 	<div class="grid gap-1.5">
 		<Label for={id('ingredients')}>{t('field_ingredients')}</Label>
-		<textarea id={id('ingredients')} bind:value={value.ingredients} rows="6" class={area}
+		<textarea id={id('ingredients')} bind:value={value.ingredients} rows={6} class={area}
 		></textarea>
 		<small class="text-ink-soft text-xs">{t('field_ingredients_hint')}</small>
 	</div>
 
 	<div class="grid gap-1.5">
 		<Label for={id('steps')}>{t('field_steps')}</Label>
-		<textarea id={id('steps')} bind:value={value.steps} rows="6" class={area}></textarea>
+		<textarea id={id('steps')} bind:value={value.steps} rows={6} class={area}></textarea>
 		<small class="text-ink-soft text-xs">{t('field_steps_hint')}</small>
 	</div>
 
 	<div class="grid gap-1.5">
 		<Label for={id('notes')}>{t('field_notes')}</Label>
-		<textarea id={id('notes')} bind:value={value.notes} rows="2" maxlength={4000} class={area}
-		></textarea>
+		<Textarea id={id('notes')} bind:value={value.notes} rows={2} maxlength={4000} class={area}
+		></Textarea>
 	</div>
 
 	<div class="grid gap-4 @lg:grid-cols-2">

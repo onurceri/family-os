@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import { Card, Composer, ConfirmButton, Page, PageHeader, SidePanel } from '@famos/ui/famos';
 	import { ChevronRight } from '@lucide/svelte';
 	import { addMemory, deleteMemory, loadMemories, type Memory, updateMemory } from './data.js';
@@ -61,7 +62,7 @@
 	async function save() {
 		const memory = editing;
 		const note = draft.trim();
-		if (!memory || !note) return;
+		if (!memory || !note || note.length > LIMIT) return;
 		editing = null;
 		if (note === memory.text) return;
 		try {
@@ -130,7 +131,7 @@
 		closeLabel={t('close')}
 		cancelLabel={t('cancel')}
 		saveLabel={t('save')}
-		saveDisabled={!draft.trim()}
+		saveDisabled={!draft.trim() || draft.trim().length > LIMIT}
 		onsave={save}
 		onclose={() => (editing = null)}
 		dirty={editing !== null && draft.trim() !== editing.text}
@@ -153,16 +154,13 @@
 		{/snippet}
 		<div class="grid gap-2">
 			<label for="memory-edit" class="sr-only">{t('memory_edit')}</label>
-			<textarea
+			<Textarea
 				id="memory-edit"
 				bind:value={draft}
 				maxlength={LIMIT}
-				rows="4"
+				rows={4}
 				class="bg-idle min-h-24 w-full resize-none rounded-[var(--r-ctl)] px-3 py-2.5 text-base"
-			></textarea>
-			<span class="text-ink-soft text-[13px]"
-				>{t('memory_chars_left', { count: LIMIT - draft.length })}</span
-			>
+			></Textarea>
 		</div>
 	</SidePanel>
 </Page>

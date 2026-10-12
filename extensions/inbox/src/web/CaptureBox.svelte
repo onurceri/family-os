@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { isApiError } from '@famos/api-client';
+	import { LimitCounter, lengthState } from '@famos/ui/famos';
 	import { ArrowUp, Mic, Paperclip, Square, X } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
 	import { type InboxItem, UPLOAD_LIMITS } from '../contract/index.js';
@@ -142,12 +143,14 @@
 
 	const clock = $derived(`${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`);
 	const empty = $derived(!text.trim() && files.length === 0);
-	const ready = $derived(!empty && !recording);
+	const TEXT_MAX = 20000;
+	const over = $derived(lengthState(text, TEXT_MAX).over);
+	const ready = $derived(!empty && !recording && !over);
 	const sendLabel = $derived(fileTo && files.length > 0 ? t('share_file') : t('send'));
 
 	async function send(event: SubmitEvent) {
 		event.preventDefault();
-		if (empty || sending || recording) return;
+		if (empty || sending || recording || over) return;
 		sending = true;
 		try {
 			const item = await sendItem({
@@ -194,7 +197,6 @@
 		bind:this={area}
 		bind:value={text}
 		rows={compact ? 2 : 3}
-		maxlength={20000}
 		placeholder={t('compose_placeholder')}
 		{onkeydown}
 		{onpaste}
@@ -203,6 +205,7 @@
 			: compact
 				? 'min-h-16 text-base leading-7 placeholder:text-lg'
 				: 'min-h-20 text-[17px] leading-7 placeholder:text-xl'}"></textarea>
+	<LimitCounter {text} max={TEXT_MAX} tooLong={(counter) => app.t('app:too_long', { counter })} />
 	{#if files.length}
 		<ul class="flex flex-wrap gap-2 px-1">
 			{#each files as file, i (i)}

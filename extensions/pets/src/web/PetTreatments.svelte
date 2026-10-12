@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import type { Obligation, RecordDocument } from '@famos/ext-records/contract';
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
@@ -211,12 +212,13 @@
 		</div>
 		<div class="grid gap-1.5">
 			<Label for="treatment-notes">{t('treatment_notes')} {@render optional()}</Label>
-			<textarea
+			<Textarea
 				id="treatment-notes"
 				bind:value={notes}
 				maxlength={2000}
-				rows="2"
-				class="{field} min-h-[84px] py-2"></textarea>
+				rows={2}
+				class="{field} min-h-[84px] py-2"
+			></Textarea>
 		</div>
 		{#if duties.length > 0}
 			<div class="grid gap-1.5">

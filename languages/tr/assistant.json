@@ -62,7 +62,6 @@
 	"memory_saved": "Kaydedildi",
 	"memory_deleted": "Unutuldu",
 	"memory_from_assistant": "Asistan önerdi",
-	"memory_chars_left": "{{count}} karakter kaldı",
 	"kind_memory": "Not",
 	"remember_title": "Hatırla: {{text}}",
 	"remember_approve": "Bunu hatırla",

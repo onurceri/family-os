@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
+	import { Textarea } from '@famos/ui/textarea';
 	import { addDays, formatDate, todayIn } from '@famos/time';
 	import { Check, ImagePlus, X } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -51,7 +52,6 @@
 	onMount(() => textarea?.focus());
 	onDestroy(() => previewUrl && URL.revokeObjectURL(previewUrl));
 
-	const left = $derived(NOTE_MAX_CHARS - text.length);
 	const endsOn = $derived.by((): string | null => {
 		if (until === 'today') return today;
 		if (until === 'tomorrow') return addDays(today, 1);
@@ -128,19 +128,15 @@
 >
 	<label class="grid gap-1">
 		<span class="sr-only">{t('note_label')}</span>
-		<textarea
-			bind:this={textarea}
+		<Textarea
+			bind:ref={textarea}
 			bind:value={text}
 			maxlength={NOTE_MAX_CHARS}
-			rows="4"
+			rows={4}
 			placeholder={t('note_placeholder')}
 			class="text-note-ink placeholder:text-note-ink-soft focus-visible:ring-ring min-h-28 w-full resize-y rounded-sm bg-transparent text-base leading-snug font-semibold focus-visible:ring-2 focus-visible:outline-none"
-			data-testid="composer-text"></textarea>
-		{#if left <= 60}
-			<span class="text-note-ink-soft text-xs" aria-live="polite"
-				>{t('chars_left', { count: left })}</span
-			>
-		{/if}
+			data-testid="composer-text"
+		></Textarea>
 	</label>
 
 	<fieldset class="min-w-0">

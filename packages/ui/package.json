@@ -23,6 +23,10 @@
 			"svelte": "./src/components/input/index.ts",
 			"default": "./src/components/input/index.ts"
 		},
+		"./textarea": {
+			"svelte": "./src/components/textarea/index.ts",
+			"default": "./src/components/textarea/index.ts"
+		},
 		"./label": {
 			"svelte": "./src/components/label/index.ts",
 			"default": "./src/components/label/index.ts"

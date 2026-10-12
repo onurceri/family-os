@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { LimitCounter, lengthState } from '@famos/ui/famos';
 	import { ArrowUp } from '@lucide/svelte';
 	import { useAssistant } from './i18n.js';
 
@@ -23,8 +24,10 @@
 		busy?: boolean;
 		onsend: () => void;
 	} = $props();
-	const { t } = useAssistant();
-	const ready = $derived(value.trim().length > 0 && !disabled && !busy);
+	const { app, t } = useAssistant();
+	const MAX = 4000;
+	const over = $derived(lengthState(value, MAX).over);
+	const ready = $derived(value.trim().length > 0 && !disabled && !busy && !over);
 	const coarse = () => matchMedia('(pointer: coarse)').matches;
 
 	function onkeydown(event: KeyboardEvent) {
@@ -47,14 +50,14 @@
 		bind:this={field}
 		bind:value
 		{onkeydown}
-		rows="1"
-		maxlength={4000}
+		rows={1}
 		{disabled}
 		placeholder={t('compose_placeholder')}></textarea>
 	<button type="submit" class="send" class:ready aria-label={t('send')} disabled={!ready}>
 		<ArrowUp aria-hidden="true" />
 	</button>
 </form>
+<LimitCounter text={value} max={MAX} tooLong={(counter) => app.t('app:too_long', { counter })} />
 
 <style>
 	.field {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
 	import { MemberChips, RepeatPicker } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
@@ -201,13 +202,13 @@
 
 		<div class="grid gap-1.5">
 			<Label for={id('notes')}>{t('field_notes')}{@render check('notes')}</Label>
-			<textarea
+			<Textarea
 				id={id('notes')}
 				bind:value={value.notes}
 				maxlength={2000}
-				rows="3"
+				rows={3}
 				class="border-input focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-2.5 py-2 text-base outline-none focus-visible:ring-3 md:text-sm"
-			></textarea>
+			></Textarea>
 		</div>
 	</div>
 </div>

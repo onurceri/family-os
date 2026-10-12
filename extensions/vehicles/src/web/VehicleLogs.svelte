@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '@famos/ui/textarea';
 	import type { RecordDocument } from '@famos/ext-records/contract';
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
@@ -172,12 +173,13 @@
 			<Label for="log-notes"
 				>{t('log_notes')} <span class="text-ink-soft font-normal">{t('optional')}</span></Label
 			>
-			<textarea
+			<Textarea
 				id="log-notes"
 				bind:value={notes}
 				maxlength={2000}
-				rows="3"
-				class="{field} min-h-[84px] py-2"></textarea>
+				rows={3}
+				class="{field} min-h-[84px] py-2"
+			></Textarea>
 			<small class="text-ink-soft text-[13px]">{t('log_notes_hint')}</small>
 		</div>
 		{#if papers.length > 0}
