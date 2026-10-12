@@ -99,23 +99,23 @@ export async function shareText(page: Page, text: string) {
 }
 
 /**
- * Presses "Add selected" in the capture group that holds `card` (everything in it is ticked
- * unless a test unticked it) and waits for the "n added" notice.
+ * Presses "Add selected" ("Apply selected" when not everything adds) in the capture group that
+ * holds `card` (everything in it is ticked unless a test unticked it) and waits for the notice.
  */
 export async function addCard(card: Locator) {
 	const page = card.page();
 	await page
 		.getByTestId('capture-group')
 		.filter({ has: card })
-		.getByRole('button', { name: /^Add selected/ })
+		.getByRole('button', { name: /^(Add|Apply) selected/ })
 		.click();
-	await expect(page.getByRole('status').filter({ hasText: /^\d+ added/ })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: /^\d+ (added|done)/ })).toBeVisible();
 }
 
-/** Presses the only "Add selected" on the page and waits for the "n added" notice. */
+/** Presses the only "Add selected" (or "Apply selected") on the page and waits for the notice. */
 export async function addAll(page: Page) {
-	await page.getByRole('button', { name: /^Add selected/ }).click();
-	await expect(page.getByRole('status').filter({ hasText: /^\d+ added/ })).toBeVisible();
+	await page.getByRole('button', { name: /^(Add|Apply) selected/ }).click();
+	await expect(page.getByRole('status').filter({ hasText: /^\d+ (added|done)/ })).toBeVisible();
 }
 
 /**

@@ -64,6 +64,8 @@
 	async function addSelected() {
 		if (busy || picked.length === 0) return;
 		busy = true;
+		// Said the way the button said it: "added" only when everything adds something.
+		const adds = approveSelectedKey(picked) === 'add_selected';
 		const undoable: string[] = [];
 		let added = 0;
 		let failed = 0;
@@ -86,7 +88,9 @@
 			return;
 		}
 		const message =
-			failed > 0 ? t('added_partial', { count: added, failed }) : t('added_n', { count: added });
+			failed > 0
+				? t(adds ? 'added_partial' : 'done_partial', { count: added, failed })
+				: t(adds ? 'added_n' : 'done_n', { count: added });
 		app.toast(
 			message,
 			undoable.length
