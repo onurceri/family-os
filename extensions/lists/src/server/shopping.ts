@@ -65,6 +65,15 @@ async function loadItem(uow: UnitOfWork, id: string) {
 	return row;
 }
 
+/** What an item looked like before an add merged into it, so Undo can put it back. */
+const MergedItemSchema = z.object({
+	id: z.string(),
+	quantity: z.string().nullable(),
+	category: CategorySchema,
+	doneAt: z.number().nullable(),
+	doneBy: z.string().nullable(),
+});
+
 export const addShoppingItems = defineAction({
 	id: 'lists.addShoppingItems',
 	offline: true,
@@ -82,13 +91,18 @@ export const addShoppingItems = defineAction({
 		items: z.array(ShoppingItemSchema),
 		/** Items this call created (others were already on the list and only updated). */
 		addedIds: z.array(z.string()),
+		/** Items that were already there and changed by this call, as they were before. */
+		merged: z.array(MergedItemSchema).default([]),
 	}),
-	// Undo removes what was added; items that were already there stay.
+	// Undo removes what was added and puts merged items back as they were.
 	undo: (output) =>
-		output.addedIds.length
-			? { actionId: 'lists.removeShoppingItems', input: { ids: output.addedIds } }
+		output.addedIds.length || output.merged.length
+			? {
+					actionId: 'lists.undoAddShoppingItems',
+					input: { addedIds: output.addedIds, merged: output.merged },
+				}
 			: null,
-	// Every item is already on a list and not bought yet.
+	// Every item is already on a list and not bought yet (or only some are).
 	async alreadyThere(ctx, input) {
 		const { locale } = await ctx.family.settings();
 		const keys = input.items.map((item) => titleKey(item.title, locale));
@@ -100,7 +114,8 @@ export const addShoppingItems = defineAction({
 			.where('deleted_at', 'is', null)
 			.execute();
 		const found = new Set(open.map((row) => row.title_key));
-		return keys.every((key) => found.has(key));
+		if (keys.every((key) => found.has(key))) return true;
+		return keys.some((key) => found.has(key)) ? 'some' : false;
 	},
 	ai: {
 		description:
@@ -115,6 +130,7 @@ export const addShoppingItems = defineAction({
 		const now = uow.clock.now();
 		const out: ItemRow[] = [];
 		const addedIds: string[] = [];
+		const merged: z.infer<typeof MergedItemSchema>[] = [];
 		for (const item of input.items) {
 			const key = titleKey(item.title, locale);
 			const existing = await db
@@ -131,6 +147,14 @@ export const addShoppingItems = defineAction({
 				continue;
 			}
 			if (existing) {
+				if (!merged.some((m) => m.id === existing.id))
+					merged.push({
+						id: existing.id,
+						quantity: existing.quantity,
+						category: existing.category as z.infer<typeof CategorySchema>,
+						doneAt: existing.done_at,
+						doneBy: existing.done_by,
+					});
 				const patch = {
 					done_at: null,
 					done_by: null,
@@ -176,7 +200,63 @@ export const addShoppingItems = defineAction({
 			addedIds.push(row.id);
 		}
 		uow.emit(shoppingChanged, { listId: list.id });
-		return { listId: list.id, items: out.map(toItem), addedIds };
+		return { listId: list.id, items: out.map(toItem), addedIds, merged };
+	},
+});
+
+/** Takes back an add: new items go, merged items return to what they were. */
+export const undoAddShoppingItems = defineAction({
+	id: 'lists.undoAddShoppingItems',
+	title: 'Take back added shopping items',
+	requires: shoppingEdit.id,
+	input: z.object({
+		addedIds: z.array(ShoppingItemIdSchema).max(100),
+		merged: z.array(MergedItemSchema).max(100),
+	}),
+	output: z.object({ removed: z.number().int(), restored: z.number().int() }),
+	async run(uow, { addedIds, merged }) {
+		const db = tables(uow.db);
+		const now = uow.clock.now();
+		const lists = new Set<string>();
+		let removed = 0;
+		if (addedIds.length) {
+			const rows = await db
+				.selectFrom('lists_shopping_items')
+				.select('list_id')
+				.where('id', 'in', addedIds)
+				.where('deleted_at', 'is', null)
+				.execute();
+			for (const r of rows) lists.add(r.list_id);
+			const result = await db
+				.updateTable('lists_shopping_items')
+				.set({ deleted_at: now, updated_at: now })
+				.where('id', 'in', addedIds)
+				.where('deleted_at', 'is', null)
+				.executeTakeFirst();
+			removed = Number(result.numUpdatedRows);
+		}
+		let restored = 0;
+		for (const item of merged) {
+			const result = await db
+				.updateTable('lists_shopping_items')
+				.set({
+					quantity: item.quantity,
+					category: item.category,
+					done_at: item.doneAt,
+					done_by: item.doneBy,
+					updated_at: now,
+				})
+				.where('id', '=', item.id)
+				.where('deleted_at', 'is', null)
+				.returningAll()
+				.executeTakeFirst();
+			if (result) {
+				restored += 1;
+				lists.add(result.list_id);
+			}
+		}
+		for (const listId of lists) uow.emit(shoppingChanged, { listId });
+		return { removed, restored };
 	},
 });
 

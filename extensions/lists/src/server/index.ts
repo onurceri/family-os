@@ -16,6 +16,7 @@ import {
 	shoppingEdit,
 	shoppingList,
 	shoppingManage,
+	undoAddShoppingItems,
 	updateShoppingItem,
 } from './shopping.ts';
 import { migrations } from './store.ts';
@@ -56,6 +57,7 @@ export default defineExtension({
 		deleteShoppingItem,
 		restoreShoppingItem,
 		removeShoppingItems,
+		undoAddShoppingItems,
 		clearBought,
 		createShoppingList,
 		renameShoppingList,

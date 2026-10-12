@@ -4229,6 +4229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/actions/lists.undoAddShoppingItems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take back added shopping items */
+        post: operations["lists.undoAddShoppingItems"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/actions/lists.clearBought": {
         parameters: {
             query?: never;
@@ -16373,6 +16390,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         mayExist: boolean;
+                        mayExistSome: boolean;
                     }[];
                 };
             };
@@ -16654,6 +16672,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         mayExist: boolean;
+                        mayExistSome: boolean;
                     };
                 };
             };
@@ -16802,6 +16821,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         mayExist: boolean;
+                        mayExistSome: boolean;
                     };
                 };
             };
@@ -16950,6 +16970,7 @@ export interface operations {
                         decidedBy: string | null;
                         undoable: boolean;
                         mayExist: boolean;
+                        mayExistSome: boolean;
                     };
                 };
             };
@@ -29016,6 +29037,8 @@ export interface operations {
                                 dueDate: string;
                                 doneAt: number;
                             } | null;
+                            /** @enum {string} */
+                            reason?: "stale" | "already_done";
                         };
                     } | {
                         /** @enum {string} */
@@ -40417,6 +40440,7 @@ export interface operations {
                             listId: string;
                             added: number;
                             alreadyThere: number;
+                            unknownLines: string[];
                         };
                     } | {
                         /** @enum {string} */
@@ -42461,6 +42485,15 @@ export interface operations {
                                 addedBy: string | null;
                             }[];
                             addedIds: string[];
+                            /** @default [] */
+                            merged: {
+                                id: string;
+                                quantity: string | null;
+                                /** @enum {string} */
+                                category: "produce" | "bakery" | "dairy" | "meat" | "pantry" | "frozen" | "drinks" | "snacks" | "household" | "personal" | "baby" | "pets" | "other";
+                                doneAt: number | null;
+                                doneBy: string | null;
+                            }[];
                         };
                     } | {
                         /** @enum {string} */
@@ -43213,6 +43246,159 @@ export interface operations {
                         status: "applied";
                         output: {
                             removed: number;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "lists.undoAddShoppingItems": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    addedIds: string[];
+                    merged: {
+                        id: string;
+                        quantity: string | null;
+                        /** @enum {string} */
+                        category: "produce" | "bakery" | "dairy" | "meat" | "pantry" | "frozen" | "drinks" | "snacks" | "household" | "personal" | "baby" | "pets" | "other";
+                        doneAt: number | null;
+                        doneBy: string | null;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            removed: number;
+                            restored: number;
                         };
                     } | {
                         /** @enum {string} */

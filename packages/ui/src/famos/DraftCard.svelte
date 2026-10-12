@@ -33,6 +33,8 @@
 		undo?: string;
 		/** Shown on a pending draft that seems to exist already. */
 		mayExist?: string;
+		/** Shown on a pending draft of which only some things exist already. */
+		mayExistSome?: string;
 	}
 
 	let {
@@ -43,6 +45,7 @@
 		fields,
 		uncertain = [],
 		mayExist = false,
+		mayExistSome = false,
 		status,
 		error,
 		labels,
@@ -66,6 +69,8 @@
 		uncertain?: readonly string[];
 		/** What it proposes seems to be there already (same title and date). */
 		mayExist?: boolean;
+		/** Some, not all, of what it proposes is there already. */
+		mayExistSome?: boolean;
 		status: DraftCardStatus;
 		error?: string | null;
 		labels: DraftCardLabels;
@@ -237,6 +242,8 @@
 			</dl>
 			{#if mayExist && status === 'pending' && labels.mayExist}
 				<p class="text-attention text-sm font-semibold">{labels.mayExist}</p>
+			{:else if mayExistSome && status === 'pending' && labels.mayExistSome}
+				<p class="text-attention text-sm font-semibold">{labels.mayExistSome}</p>
 			{/if}
 			{#if status === 'failed' && error}
 				<p class="text-attention text-sm font-semibold" role="alert">{error}</p>

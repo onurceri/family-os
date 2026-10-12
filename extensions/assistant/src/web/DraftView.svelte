@@ -62,6 +62,7 @@
 		expired: a('draft_expired'),
 		undo: a('draft_undo'),
 		mayExist: a('draft_may_exist'),
+		mayExistSome: a('draft_may_exist_some'),
 	});
 
 	let Editor = $state<Component<{
@@ -129,6 +130,7 @@
 	fields={presenter?.fields(input, context) ?? []}
 	uncertain={draft.uncertainFields}
 	mayExist={draft.mayExist}
+	mayExistSome={draft.mayExistSome}
 	{status}
 	error={failed || draft.status === 'failed' ? a('draft_failed') : null}
 	{labels}

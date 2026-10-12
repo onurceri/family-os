@@ -109,7 +109,7 @@ export interface ActionRunner {
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
 	mayDecide(draft: DraftRow, actor: Actor): boolean;
 	/** Whether a pending draft's change seems to exist already (the action's `alreadyThere`). */
-	mayExist(draft: DraftRow): Promise<boolean>;
+	mayExist(draft: DraftRow): Promise<boolean | 'some'>;
 	/**
 	 * A check, for today in the family's time zone, of whether a waiting draft is about a day that
 	 * has passed: it is shown and counted as expired even before `expirePassed` ran. Inside a unit
@@ -659,7 +659,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return output.success ? def.undo(output.data) : null;
 	}
 
-	async function mayExist(draft: DraftRow): Promise<boolean> {
+	async function mayExist(draft: DraftRow): Promise<boolean | 'some'> {
 		if (draft.status !== 'pending') return false;
 		const def = registry.actions.get(draft.action_id);
 		if (!def?.alreadyThere || !deps.features.isOn(ownerOf(def.id))) return false;

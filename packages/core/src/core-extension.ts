@@ -140,6 +140,8 @@ export const DraftSchema = z.object({
 	undoable: z.boolean(),
 	/** Pending only: what it proposes seems to exist already ("this may already be there"). */
 	mayExist: z.boolean(),
+	/** Pending only: part of what it proposes seems to exist already. */
+	mayExistSome: z.boolean(),
 });
 
 const toMember = (row: MemberRow): Member => ({
@@ -156,7 +158,7 @@ const toMember = (row: MemberRow): Member => ({
 const toDraft = (
 	row: DraftRow,
 	undoable = false,
-	mayExist = false,
+	mayExist: boolean | 'some' = false,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -177,7 +179,8 @@ const toDraft = (
 	autoApproved: row.auto_approved === 1,
 	decidedBy: row.decided_by,
 	undoable,
-	mayExist,
+	mayExist: mayExist === true,
+	mayExistSome: mayExist === 'some',
 });
 
 const members = (db: DbExecutor) => db.withTables<CoreTables>();

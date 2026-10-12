@@ -425,6 +425,53 @@ describe('duplicate hint', () => {
 	});
 });
 
+describe('taking back a suggested shopping add', () => {
+	it('puts merged items back as they were and removes the new ones', async () => {
+		const { actor } = await k.member('admin');
+		const milk = await applied<{ items: ShoppingItem[] }>(
+			k.runner.invoke(
+				'lists.addShoppingItems',
+				{ items: [{ title: 'Süt', quantity: '1', category: 'dairy' }] },
+				actor,
+			),
+		);
+		const milkId = milk.items[0]?.id as string;
+		await applied(k.runner.invoke('lists.checkShoppingItem', { id: milkId, done: true }, actor));
+		const bought = (await items()).find((i) => i.id === milkId);
+
+		const result = await k.runner.invoke(
+			'lists.addShoppingItems',
+			{ items: [{ title: 'süt', quantity: '6', category: 'other' }, { title: 'Ekmek' }] },
+			{ kind: 'ai', source: 'inbox' },
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(result.draftId, actor);
+		expect((await items()).find((i) => i.id === milkId)).toMatchObject({
+			quantity: '6',
+			category: 'other',
+			doneAt: null,
+		});
+		await k.runner.undoDraft(result.draftId, actor);
+		const after = await items();
+		expect(after.find((i) => i.id === milkId)).toEqual(bought);
+		expect(after.map((i) => i.title)).toEqual(['Süt']);
+	});
+
+	it('flags a draft of which only some items are on the list', async () => {
+		const { actor } = await k.member('admin');
+		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Süt' }] }, actor);
+		await k.runner.invoke(
+			'lists.addShoppingItems',
+			{ items: [{ title: 'Süt' }, { title: 'Ekmek' }] },
+			{ kind: 'ai', source: 'inbox' },
+		);
+		const [draft] = await k
+			.route('core.listDrafts')
+			.call({ query: { status: 'pending', limit: 10 } });
+		expect(draft).toMatchObject({ mayExist: false, mayExistSome: true });
+	});
+});
+
 describe('a suggested task whose due date has passed', () => {
 	it('never expires: a late task is still worth doing', async () => {
 		const ai = { kind: 'ai', source: 'inbox' } as const;

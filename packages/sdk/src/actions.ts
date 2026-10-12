@@ -73,8 +73,9 @@ export interface ActionDefinition<
 	/**
 	 * Whether what a pending draft proposes seems to exist already (same title and date, say), so
 	 * the reviewer sees "this may already be there". Read-only and cheap; a hint, never a block.
+	 * Answer `'some'` when a draft carries several things and only part of them exist.
 	 */
-	readonly alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
+	readonly alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	/**
 	 * The day a draft of this action is about (`YYYY-MM-DD`, family time), when it is about one.
 	 * Once that day has passed in the family's time zone the suggestion means nothing any more:
@@ -147,7 +148,7 @@ export function defineAction<
 	autoApprove?: AutoApprovalHints;
 	offline?: boolean;
 	undo?: (output: z.infer<Out>) => UndoStep | null;
-	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
+	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;

@@ -32,7 +32,7 @@ On a phone every style stacks into one column and nothing scrolls sideways; Lane
 
 **Settings → You → Appearance** shows the **Style** first, as three live pictures of Today on a made-up day in the colors you use, then the **Colors**: day or night on this device, a sample of the real parts of FamilyOS, and every theme as a small picture (day colors next to night colors). What you use on this device is marked **In use**.
 
-- **For yourself:** **Use for me** on a style or a theme. It follows you to every device you sign in on. **Follow the family** takes it back.
+- **For yourself:** **Use for me** on a style or a theme. It follows you to every device you sign in on. **Use the family style** (shown while you have your own) takes it back.
 - **For the family:** **Settings → Family → Theme** (admins, and anyone allowed to change family settings). **Family style** and **Make family default** on a theme set what everyone sees who has not chosen their own, and the sign-in page.
 - **For a display:** the same page lists the **Displays**, each with its own **Style** and **Theme** (or **Same as the family**).
 
