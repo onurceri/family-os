@@ -14,7 +14,7 @@ import {
 	type LlmFile,
 	type ModelRole,
 	repairInput,
-	textNamesTitle,
+	wordsNamed,
 } from '@famos/sdk';
 import { formatDate, numericDateOrder, todayIn } from '@famos/time';
 import { z } from 'zod';
@@ -498,17 +498,24 @@ export function withoutTimeAsAllDay(
 }
 
 /**
- * Whether a proposal points at an existing record (an action with a target title) that the
- * shared text does not name. Names are data, so this works in any language.
+ * Whether a proposal points at an existing record (an action with a target title) that is not the
+ * one the shared text names: none of its words are in the text, or another listed record shares
+ * more words with it. "Got the picture wire" names Picture wire (two words), not Picture hooks
+ * (one). Counting words, not matching them all, lets "paid" stand for "Pay the … fee". Names are
+ * data, so this works in any language.
  */
 export async function namesOtherTarget(
 	actions: Pick<ActionInvoker, 'targetTitle'>,
 	actionId: string,
 	input: Record<string, unknown>,
 	text: string,
+	listed: readonly string[],
 ): Promise<boolean> {
 	const title = await actions.targetTitle(actionId, input);
-	return title !== null && !textNamesTitle(text, title);
+	if (title === null) return false;
+	const named = wordsNamed(text, title);
+	if (named === 0) return true;
+	return listed.some((other) => wordsNamed(text, other) > named);
 }
 
 /**
@@ -761,6 +768,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		}));
 		const contexts = await readRecordContexts(ctx, catalog, table);
 		const records = contexts.filter((group) => !group.plain);
+		// What the model could point at: a proposal on one of these must be the one the text names.
+		const listedTitles = records.flatMap((group) => group.items.map((item) => item.label));
 		const vocabularies = contexts.filter((group) => group.plain);
 		const sharer = family.find((m) => m.id === row.created_by);
 		const handles = table.toId;
@@ -858,7 +867,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			// item with files cannot be checked against its text.
 			if (
 				files.length === 0 &&
-				(await namesOtherTarget(ctx.actions, proposal.action, input, text))
+				(await namesOtherTarget(ctx.actions, proposal.action, input, text, listedTitles))
 			) {
 				skipped++;
 				skippedUnknown++;

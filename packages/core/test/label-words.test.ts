@@ -1,25 +1,20 @@
-import { labelNamesTitle, significantWords, textNamesTitle } from '@famos/sdk';
+import { labelNamesTitle, significantWords, wordsNamed } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 
-describe('textNamesTitle', () => {
-	it('needs every significant word of the title in the text, in any order', () => {
-		expect(textNamesTitle('Got the E27 light bulbs', 'Light bulbs E27')).toBe(true);
-		expect(textNamesTitle('Got the picture wire already', 'Picture hooks')).toBe(false);
-		expect(textNamesTitle('Got the picture wire already', 'Picture wire')).toBe(true);
+describe('wordsNamed', () => {
+	it('counts the title words a text says, in any order and plural', () => {
+		expect(wordsNamed('Got the E27 light bulbs', 'Light bulbs E27')).toBe(3);
+		expect(wordsNamed('Got the picture wire already', 'Picture hooks')).toBe(1);
+		expect(wordsNamed('Got the picture wire already', 'Picture wire')).toBe(2);
+		expect(wordsNamed('I paid the swim course fee', 'Pay the swim course fee')).toBe(4);
+		expect(wordsNamed('GOT THE LIGHT BULB', 'light bulbs')).toBe(2);
 	});
 
-	it('ignores a trailing plural s and the case', () => {
-		expect(textNamesTitle('GOT THE LIGHT BULB', 'light bulbs')).toBe(true);
-	});
-
-	it('works for any language and ignores bracketed notes in the title', () => {
-		expect(textNamesTitle('Faturaları öde', 'Faturaları öde (Ekim)')).toBe(true);
-		expect(textNamesTitle('Süt aldım', 'Yulaf sütü')).toBe(false);
-	});
-
-	it('looks for a title without significant words as written', () => {
-		expect(textNamesTitle('Buy 4 of them', '4')).toBe(true);
-		expect(textNamesTitle('Buy five', '4')).toBe(false);
+	it('works in any language and for titles without a significant word', () => {
+		expect(wordsNamed('Faturaları öde', 'Faturaları öde (Ekim)')).toBe(2);
+		expect(wordsNamed('Süt aldım', 'Yulaf sütü')).toBe(0);
+		expect(wordsNamed('Buy 4 of them', '4')).toBe(1);
+		expect(wordsNamed('Buy five', '4')).toBe(0);
 	});
 });
 

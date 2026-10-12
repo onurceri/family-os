@@ -30,18 +30,17 @@ export function labelNamesTitle(label: string, title: string): boolean {
 }
 
 /**
- * Whether a text names the thing titled `title`: every significant word of the title is a whole
- * word of the text (a trailing plural "s" does not matter), in any order. Unlike
- * `labelNamesTitle` the text may say more but never less, so "Got the E27 light bulbs" names
- * "Light bulbs E27" and "Got the picture wire" does not name "Picture hooks". A title without a
- * significant word ("4") must appear in the text as written.
+ * How many significant words of `title` a text says as whole words (a trailing plural "s" does
+ * not matter), in any order. "I paid the swim course fee" says four of "Pay the swim course
+ * fee"; "Got the picture wire" says one of "Picture hooks" and two of "Picture wire". A title
+ * without a significant word ("4") counts 1 when the text contains it as written, else 0.
  */
-export function textNamesTitle(text: string, title: string): boolean {
+export function wordsNamed(text: string, title: string): number {
 	const have = significantWords(text);
 	const wanted = significantWords(title);
 	if (wanted.length === 0) {
 		const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
-		return plain(title) !== '' && plain(text).includes(plain(title));
+		return plain(title) !== '' && plain(text).includes(plain(title)) ? 1 : 0;
 	}
-	return wanted.every((w) => have.some((h) => sameWord(w, h)));
+	return wanted.filter((w) => have.some((h) => sameWord(w, h))).length;
 }
