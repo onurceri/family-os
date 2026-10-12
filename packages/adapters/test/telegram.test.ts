@@ -593,7 +593,8 @@ describe('button presses', () => {
 		});
 
 		fake.press(55, 7, 'r:draft_2', keyboard);
-		await until(() => decisions.length === 2);
+		// The decision is recorded before the answer goes out, so wait for the answer itself.
+		await until(() => fake.callsOf('answerCallbackQuery').length === 2, 'the second answer');
 		expect(decisions[1]).toEqual({ memberId: 'mem_1', draftId: 'draft_2', verb: 'reject' });
 		expect(fake.callsOf('answerCallbackQuery')[1]).toMatchObject({ text: 'telegram_rejected' });
 	});
