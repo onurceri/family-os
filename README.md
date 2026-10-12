@@ -8,6 +8,8 @@ task, things to buy. Nothing changes until someone in the family approves it.
 
 ![FamilyOS on a phone and on a display on the kitchen wall: the time, the weather, the next thing, each person's day, chores, shopping and meals](docs/images/hero-kitchen.webp)
 
+https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
+
 > [!WARNING]
 > **Beta.** FamilyOS works, but it is beta software. Until 1.0 there is **no
 > backward-compatibility guarantee**: the data format, the API, the MCP tools and the pack formats
