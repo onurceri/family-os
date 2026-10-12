@@ -5,7 +5,7 @@ import type { AddShoppingItemsInput, TaskInput } from '../contract/index.js';
 import { loadItems, loadLists } from './data.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
-import { itemsOnList, quantityChanges } from './shopping-draft.js';
+import { draftListName, itemsOnList, quantityChanges, shoppingLists } from './shopping-draft.js';
 
 const tr = (c: PresenterContext): ListsT =>
 	((key: string, options?: Record<string, unknown>) => c.t(`lists:${key}`, options)) as ListsT;
@@ -51,6 +51,7 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 	editor: () => import('./TaskDraftEditor.svelte'),
 };
 
+const allLists = shoppingLists(loadLists);
 const onList = itemsOnList(async (listId) => {
 	const id = listId ?? (await loadLists())[0]?.id;
 	return id ? loadItems(id) : [];
@@ -74,6 +75,8 @@ export const addShoppingItemsPresenter: DraftPresenter<AddShoppingItemsInput> = 
 			.join(', ');
 		const t = tr(c);
 		const fields = [{ label: t('items'), value, path: 'items' }];
+		const list = draftListName(allLists(), input.listId);
+		if (list) fields.push({ label: t('list'), value: list, path: 'listId' });
 		const changes = quantityChanges(
 			input.items,
 			onList(input.listId) ?? [],

@@ -1,36 +1,52 @@
 import { SvelteMap } from 'svelte/reactivity';
-import { type ShoppingItem, type ShoppingItemInput, titleKey } from '../contract/index.js';
+import {
+	type ShoppingItem,
+	type ShoppingItemInput,
+	type ShoppingList,
+	titleKey,
+} from '../contract/index.js';
 
 /** The items of a shopping list, once known; asking for an unknown list starts loading it. */
 export type ItemsOnList = (listId: string | undefined) => readonly ShoppingItem[] | undefined;
 
 /**
+ * A read for the draft cards, by key: the first ask starts loading and later asks get the answer.
+ * The map is reactive, so a card that asked shows the answer as soon as it arrives; an answer
+ * older than `maxAgeMs` is asked for again (the old one stays until the new one comes).
+ */
+function cachedReads<T>(
+	load: (key: string | undefined) => Promise<T>,
+	maxAgeMs: number,
+	now: () => number,
+): (key: string | undefined) => T | undefined {
+	const known = new SvelteMap<string, T>();
+	const askedAt = new Map<string, number>();
+	return (key) => {
+		const k = key ?? '';
+		const at = askedAt.get(k);
+		if (at === undefined || now() - at > maxAgeMs) {
+			askedAt.set(k, now());
+			// Started from a card's render: the map changes only after the load, never during it.
+			load(key).then(
+				(value) => known.set(k, value),
+				() => {},
+			);
+		}
+		return known.get(k);
+	};
+}
+
+/**
  * The list's current items for the draft cards. A card shows what adding would change on the
- * list ("Rice: 1 kg → a bag"), so it reads the list once through the lists API. The map is
- * reactive, so a card that asked shows the answer as soon as it arrives; an answer older than
- * `maxAgeMs` is asked for again (the old one stays until the new one comes). `listId` undefined
- * means the default list.
+ * list ("Rice: 1 kg → a bag"), so it reads the list once through the lists API. `listId`
+ * undefined means the default list.
  */
 export function itemsOnList(
 	load: (listId: string | undefined) => Promise<readonly ShoppingItem[]>,
 	maxAgeMs = 30_000,
 	now: () => number = Date.now,
 ): ItemsOnList {
-	const known = new SvelteMap<string, readonly ShoppingItem[]>();
-	const askedAt = new Map<string, number>();
-	return (listId) => {
-		const key = listId ?? '';
-		const at = askedAt.get(key);
-		if (at === undefined || now() - at > maxAgeMs) {
-			askedAt.set(key, now());
-			// Started from a card's render: the map changes only after the load, never during it.
-			load(listId).then(
-				(items) => known.set(key, items),
-				() => {},
-			);
-		}
-		return known.get(key);
-	};
+	return cachedReads(load, maxAgeMs, now);
 }
 
 export interface QuantityChange {
@@ -65,4 +81,26 @@ export function quantityChanges(
 		if (existing && from && from !== to) changes.push({ title: existing.title, from, to });
 	}
 	return changes;
+}
+
+/**
+ * The list a draft adds to, by name, for the card: only when the family has more than one list
+ * (with one there is nothing to choose). `listId` undefined means the default (first) list.
+ */
+export function draftListName(
+	lists: readonly Pick<ShoppingList, 'id' | 'name'>[] | undefined,
+	listId: string | undefined,
+): string | undefined {
+	if (!lists || lists.length < 2) return undefined;
+	return (listId ? lists.find((l) => l.id === listId) : lists[0])?.name;
+}
+
+/** The family's shopping lists for the draft cards, read once and kept fresh like `itemsOnList`. */
+export function shoppingLists(
+	load: () => Promise<readonly ShoppingList[]>,
+	maxAgeMs = 30_000,
+	now: () => number = Date.now,
+): () => readonly ShoppingList[] | undefined {
+	const read = cachedReads(() => load(), maxAgeMs, now);
+	return () => read(undefined);
 }

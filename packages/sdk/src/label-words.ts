@@ -30,17 +30,26 @@ export function labelNamesTitle(label: string, title: string): boolean {
 }
 
 /**
- * How many significant words of `title` a text says as whole words (a trailing plural "s" does
- * not matter), in any order. "I paid the swim course fee" says four of "Pay the swim course
- * fee"; "Got the picture wire" says one of "Picture hooks" and two of "Picture wire". A title
- * without a significant word ("4") counts 1 when the text contains it as written, else 0.
+ * For each title, how much of it a text names: the share of its distinct significant words that
+ * the text says as whole words (a trailing plural "s" does not matter), each word weighted by how
+ * rare it is among these titles. A word most titles share ("the", "and" in any language) says
+ * little about which one is meant; the weights come from the titles themselves, so nothing here
+ * knows a language. "Got the picture wire" names all of "Picture wire" and half of "Picture
+ * hooks"; a long task that only shares "the" scores near nothing. A title without a significant
+ * word ("4") scores 1 when the text contains it as written, else 0.
  */
-export function wordsNamed(text: string, title: string): number {
+export function namedShares(text: string, titles: readonly string[]): number[] {
 	const have = significantWords(text);
-	const wanted = significantWords(title);
-	if (wanted.length === 0) {
-		const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
-		return plain(title) !== '' && plain(text).includes(plain(title)) ? 1 : 0;
-	}
-	return wanted.filter((w) => have.some((h) => sameWord(w, h))).length;
+	const says = (w: string) => have.some((h) => sameWord(w, h));
+	const words = titles.map((title) => [...new Set(significantWords(title))]);
+	const titlesWith = (w: string) => words.filter((ws) => ws.some((x) => sameWord(x, w))).length;
+	const weight = (w: string) => Math.log(1 + titles.length / Math.max(1, titlesWith(w)));
+	const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
+	return titles.map((title, i) => {
+		const ws = words[i] as string[];
+		if (ws.length === 0) return plain(title) !== '' && plain(text).includes(plain(title)) ? 1 : 0;
+		const total = ws.reduce((sum, w) => sum + weight(w), 0);
+		const named = ws.filter(says).reduce((sum, w) => sum + weight(w), 0);
+		return named / total;
+	});
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ShoppingItem } from '../src/contract/index.ts';
-import { itemsOnList, quantityChanges } from '../src/web/shopping-draft.ts';
+import { draftListName, itemsOnList, quantityChanges } from '../src/web/shopping-draft.ts';
 
 const item = (title: string, quantity: string | null, doneAt: number | null = null) =>
 	({
@@ -75,5 +75,21 @@ describe('itemsOnList', () => {
 		clock = 2000;
 		expect(ask(undefined)?.[0]?.title).toBe('Rice');
 		expect(calls).toBe(2);
+	});
+});
+
+describe('draftListName', () => {
+	const lists = [
+		{ id: 'a', name: 'Groceries' },
+		{ id: 'b', name: 'Hardware store' },
+	];
+	it('names the list a draft adds to when there is a choice', () => {
+		expect(draftListName(lists, 'b')).toBe('Hardware store');
+		expect(draftListName(lists, undefined)).toBe('Groceries');
+	});
+	it('says nothing with one list, before the lists are known, or for an unknown list', () => {
+		expect(draftListName([{ id: 'a', name: 'Groceries' }], 'a')).toBeUndefined();
+		expect(draftListName(undefined, 'a')).toBeUndefined();
+		expect(draftListName(lists, 'gone')).toBeUndefined();
 	});
 });

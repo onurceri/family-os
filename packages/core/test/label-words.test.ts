@@ -1,20 +1,35 @@
-import { labelNamesTitle, significantWords, wordsNamed } from '@famos/sdk';
+import { labelNamesTitle, namedShares, significantWords } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 
-describe('wordsNamed', () => {
-	it('counts the title words a text says, in any order and plural', () => {
-		expect(wordsNamed('Got the E27 light bulbs', 'Light bulbs E27')).toBe(3);
-		expect(wordsNamed('Got the picture wire already', 'Picture hooks')).toBe(1);
-		expect(wordsNamed('Got the picture wire already', 'Picture wire')).toBe(2);
-		expect(wordsNamed('I paid the swim course fee', 'Pay the swim course fee')).toBe(4);
-		expect(wordsNamed('GOT THE LIGHT BULB', 'light bulbs')).toBe(2);
+describe('namedShares', () => {
+	const vet =
+		"Call the Riverside Vet Clinic to move Bruno's check-up, ask whether the booster can be done at the same visit, and bring the passports";
+
+	it('picks the item the text names, not one that shares a word or common words', () => {
+		// Found in use: a long task repeating "the" outscored the picture wire by word count.
+		const [wire = 0, hooks = 0, task = 0] = namedShares(
+			'Got the picture wire already, tick it off',
+			['Picture wire', 'Picture hooks', vet],
+		);
+		expect(wire).toBe(1);
+		expect(hooks).toBeGreaterThan(0);
+		expect(hooks).toBeLessThan(wire);
+		expect(task).toBeLessThan(hooks);
+	});
+
+	it('still names a task the text words differently', () => {
+		const [fee = 0, dentist = 0] = namedShares('I paid the swim course fee', [
+			'Pay the swim course fee',
+			'Book the dentist',
+		]);
+		expect(fee).toBeGreaterThan(dentist);
+		expect(fee).toBeGreaterThan(0.5);
 	});
 
 	it('works in any language and for titles without a significant word', () => {
-		expect(wordsNamed('Faturaları öde', 'Faturaları öde (Ekim)')).toBe(2);
-		expect(wordsNamed('Süt aldım', 'Yulaf sütü')).toBe(0);
-		expect(wordsNamed('Buy 4 of them', '4')).toBe(1);
-		expect(wordsNamed('Buy five', '4')).toBe(0);
+		expect(namedShares('Süt aldım', ['Yulaf sütü'])).toEqual([0]);
+		expect(namedShares('Buy 4 of them', ['4'])).toEqual([1]);
+		expect(namedShares('Buy five', ['4'])).toEqual([0]);
 	});
 });
 

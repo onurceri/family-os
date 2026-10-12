@@ -13,8 +13,8 @@ import {
 	type JobContext,
 	type LlmFile,
 	type ModelRole,
+	namedShares,
 	repairInput,
-	wordsNamed,
 } from '@famos/sdk';
 import { formatDate, numericDateOrder, todayIn } from '@famos/time';
 import { z } from 'zod';
@@ -499,10 +499,10 @@ export function withoutTimeAsAllDay(
 
 /**
  * Whether a proposal points at an existing record (an action with a target title) that is not the
- * one the shared text names: none of its words are in the text, or another listed record shares
- * more words with it. "Got the picture wire" names Picture wire (two words), not Picture hooks
- * (one). Counting words, not matching them all, lets "paid" stand for "Pay the … fee". Names are
- * data, so this works in any language.
+ * one the shared text names: the text names none of it, or names another listed record more
+ * (by the share of its words, rare words counting more). "Got the picture wire" names Picture
+ * wire, not Picture hooks; "I paid the swim course fee" still names "Pay the swim course fee".
+ * Names are data, so this works in any language.
  */
 export async function namesOtherTarget(
 	actions: Pick<ActionInvoker, 'targetTitle'>,
@@ -513,9 +513,9 @@ export async function namesOtherTarget(
 ): Promise<boolean> {
 	const title = await actions.targetTitle(actionId, input);
 	if (title === null) return false;
-	const named = wordsNamed(text, title);
-	if (named === 0) return true;
-	return listed.some((other) => wordsNamed(text, other) > named);
+	const [share = 0, ...others] = namedShares(text, [title, ...listed]);
+	if (share === 0) return true;
+	return others.some((other) => other > share);
 }
 
 /**
