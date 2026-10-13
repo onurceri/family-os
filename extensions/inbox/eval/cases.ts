@@ -12,6 +12,8 @@ export interface Draft {
 	actionId: string;
 	input: Record<string, unknown>;
 	uncertainFields: string[];
+	/** The draft looks like something already there ("this may already be there"). */
+	mayExist: boolean;
 }
 /** Member ids by display name. */
 export type Members = Record<string, string>;
@@ -52,6 +54,8 @@ export interface Case {
 	shopping?: { list?: string; title: string }[];
 	/** Open tasks. */
 	tasks?: string[];
+	/** Events already on the calendar. */
+	events?: { title: string; date: string; startTime: string }[];
 	checks: Check[];
 }
 export interface SeededObligation {
@@ -612,6 +616,32 @@ const UNLISTED_RECORD_CASES: Case[] = [
 	},
 ];
 
+/** News about an event the calendar already has. */
+const CALENDAR_CASES: Case[] = [
+	{
+		// Found in use: the swim coach's move became a second gala, unmarked.
+		name: 'Moves the event that is already there (English)',
+		events: [{ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' }],
+		text: 'Regional gala moved to Sat 14 Nov 09:00',
+		checks: [
+			{
+				label: 'calendar.changeEvent to 14 Nov 09:00, or a new event marked as maybe already there',
+				pass: (ds) =>
+					of(ds, 'calendar.changeEvent').some(
+						(d) => d.input.date === '2026-11-14' && d.input.startTime === '09:00',
+					) ||
+					of(ds, 'calendar.createEvent').some(
+						(d) => d.mayExist && d.input.date === '2026-11-14' && d.input.startTime === '09:00',
+					),
+			},
+			{
+				label: 'no calendar.createEvent without "may already be there"',
+				pass: (ds) => of(ds, 'calendar.createEvent').every((d) => d.mayExist),
+			},
+		],
+	},
+];
+
 /** Items with nothing to file: a question for the assistant, or plain chatter. */
 const NON_ACTIONABLE_CASES: Case[] = [
 	{
@@ -718,6 +748,7 @@ export const CASES: Case[] = [
 	...RECORD_CASES,
 	...LIST_CASES,
 	...UNLISTED_RECORD_CASES,
+	...CALENDAR_CASES,
 	...CLUB_CASES,
 	...NOTES_CASES,
 ];

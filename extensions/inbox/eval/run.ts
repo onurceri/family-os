@@ -106,6 +106,10 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 			if (added.status !== 'applied') throw new Error('expected the item to be added');
 			listed[title] = added.output.items[0]?.id as string;
 		}
+		for (const event of c.events ?? []) {
+			const added = await k.runner.invoke('calendar.createEvent', event, systemActor('eval'));
+			if (added.status !== 'applied') throw new Error('expected the event to be added');
+		}
 		for (const title of c.tasks ?? []) {
 			const added = await k.runner.invoke<{ id: string }>(
 				'lists.addTask',
@@ -159,7 +163,7 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 					typeof v === 'string' && names[v] ? `@${names[v]}` : v,
 				);
 				lines.push(
-					`      · ${d.actionId} ${shown}${d.uncertainFields.length ? ` check:${d.uncertainFields.join(',')}` : ''}`,
+					`      · ${d.actionId} ${shown}${d.uncertainFields.length ? ` check:${d.uncertainFields.join(',')}` : ''}${d.mayExist ? ' may-exist' : ''}`,
 				);
 			}
 		}
