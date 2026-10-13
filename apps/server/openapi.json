@@ -36299,31 +36299,6 @@
 										"skippedUnknown": {
 											"type": "integer"
 										},
-										"leftOut": {
-											"type": "array",
-											"items": {
-												"type": "object",
-												"properties": {
-													"text": {
-														"type": "string",
-														"minLength": 1,
-														"maxLength": 120
-													},
-													"reason": {
-														"type": "string",
-														"enum": [
-															"not_listed",
-															"unknown_record",
-															"unclear"
-														]
-													}
-												},
-												"required": [
-													"text",
-													"reason"
-												]
-											}
-										},
 										"createdBy": {
 											"type": [
 												"string",
@@ -36354,7 +36329,6 @@
 										"proposals",
 										"skipped",
 										"skippedUnknown",
-										"leftOut",
 										"createdBy",
 										"createdAt",
 										"updatedAt"
@@ -36778,31 +36752,6 @@
 											"skippedUnknown": {
 												"type": "integer"
 											},
-											"leftOut": {
-												"type": "array",
-												"items": {
-													"type": "object",
-													"properties": {
-														"text": {
-															"type": "string",
-															"minLength": 1,
-															"maxLength": 120
-														},
-														"reason": {
-															"type": "string",
-															"enum": [
-																"not_listed",
-																"unknown_record",
-																"unclear"
-															]
-														}
-													},
-													"required": [
-														"text",
-														"reason"
-													]
-												}
-											},
 											"createdBy": {
 												"type": [
 													"string",
@@ -36833,7 +36782,6 @@
 											"proposals",
 											"skipped",
 											"skippedUnknown",
-											"leftOut",
 											"createdBy",
 											"createdAt",
 											"updatedAt"
@@ -51529,364 +51477,6 @@
 			"post": {
 				"operationId": "calendar.aiContext",
 				"summary": "Calendar tags, for the AI",
-				"tags": [
-					"actions",
-					"calendar"
-				],
-				"security": [
-					{
-						"session": []
-					}
-				],
-				"parameters": [
-					{
-						"schema": {
-							"type": "string",
-							"pattern": "^[A-Za-z0-9_-]{1,100}$",
-							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
-						},
-						"required": false,
-						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
-						"name": "idempotency-key",
-						"in": "header"
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"properties": {}
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"description": "Applied, or stored as a draft for approval",
-						"content": {
-							"application/json": {
-								"schema": {
-									"oneOf": [
-										{
-											"type": "object",
-											"properties": {
-												"status": {
-													"type": "string",
-													"enum": [
-														"applied"
-													]
-												},
-												"output": {
-													"type": "object",
-													"properties": {
-														"kind": {
-															"type": "string",
-															"pattern": "^[a-z][a-z0-9_]{0,29}$"
-														},
-														"label": {
-															"type": "string",
-															"minLength": 1,
-															"maxLength": 60
-														},
-														"plain": {
-															"type": "boolean",
-															"enum": [
-																true
-															]
-														},
-														"items": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"id": {
-																		"type": "string",
-																		"minLength": 1,
-																		"maxLength": 120
-																	},
-																	"label": {
-																		"type": "string",
-																		"minLength": 1,
-																		"maxLength": 160
-																	},
-																	"details": {
-																		"type": "string",
-																		"maxLength": 400
-																	},
-																	"url": {
-																		"type": "string",
-																		"maxLength": 300
-																	}
-																},
-																"required": [
-																	"id",
-																	"label"
-																]
-															},
-															"maxItems": 200
-														}
-													},
-													"required": [
-														"kind",
-														"label",
-														"items"
-													]
-												}
-											},
-											"required": [
-												"status",
-												"output"
-											]
-										},
-										{
-											"type": "object",
-											"properties": {
-												"status": {
-													"type": "string",
-													"enum": [
-														"drafted"
-													]
-												},
-												"draftId": {
-													"type": "string"
-												}
-											},
-											"required": [
-												"status",
-												"draftId"
-											]
-										}
-									]
-								}
-							}
-						}
-					},
-					"400": {
-						"description": "Invalid request",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"401": {
-						"description": "Not signed in",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"403": {
-						"description": "Not allowed",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"404": {
-						"description": "Not found",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"409": {
-						"description": "Conflict",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"422": {
-						"description": "The Idempotency-Key was used for a different action",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"429": {
-						"description": "Limit reached",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"/api/v1/actions/calendar.aiContextEvents": {
-			"post": {
-				"operationId": "calendar.aiContextEvents",
-				"summary": "Upcoming events, for the AI",
 				"tags": [
 					"actions",
 					"calendar"
@@ -80789,31 +80379,6 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
-														"leftOut": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"text": {
-																		"type": "string",
-																		"minLength": 1,
-																		"maxLength": 120
-																	},
-																	"reason": {
-																		"type": "string",
-																		"enum": [
-																			"not_listed",
-																			"unknown_record",
-																			"unclear"
-																		]
-																	}
-																},
-																"required": [
-																	"text",
-																	"reason"
-																]
-															}
-														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -80844,7 +80409,6 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
-														"leftOut",
 														"createdBy",
 														"createdAt",
 														"updatedAt"
@@ -81325,31 +80889,6 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
-														"leftOut": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"text": {
-																		"type": "string",
-																		"minLength": 1,
-																		"maxLength": 120
-																	},
-																	"reason": {
-																		"type": "string",
-																		"enum": [
-																			"not_listed",
-																			"unknown_record",
-																			"unclear"
-																		]
-																	}
-																},
-																"required": [
-																	"text",
-																	"reason"
-																]
-															}
-														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -81380,7 +80919,6 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
-														"leftOut",
 														"createdBy",
 														"createdAt",
 														"updatedAt"
@@ -82219,31 +81757,6 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
-														"leftOut": {
-															"type": "array",
-															"items": {
-																"type": "object",
-																"properties": {
-																	"text": {
-																		"type": "string",
-																		"minLength": 1,
-																		"maxLength": 120
-																	},
-																	"reason": {
-																		"type": "string",
-																		"enum": [
-																			"not_listed",
-																			"unknown_record",
-																			"unclear"
-																		]
-																	}
-																},
-																"required": [
-																	"text",
-																	"reason"
-																]
-															}
-														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -82274,7 +81787,6 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
-														"leftOut",
 														"createdBy",
 														"createdAt",
 														"updatedAt"

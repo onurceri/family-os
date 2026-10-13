@@ -565,8 +565,7 @@ describe('inbox pipeline', () => {
 		expect(system).toContain('Existing calendar tags: School, swim club');
 		expect(system).not.toContain('calendar_tag:');
 		expect(system).not.toContain('### calendar.aiContext');
-		// The event itself is listed as a record, the tags are not.
-		expect(system).toContain('Upcoming calendar events:');
+		expect(system).not.toContain('Household records');
 	});
 
 	it('tells the model who shared the item, by handle only when names are off', async () => {

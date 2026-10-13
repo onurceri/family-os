@@ -30,7 +30,6 @@ export const DEFAULT_FAMILY: Person[] = [
 export interface Reading {
 	summary: string | null;
 	kind: string | null;
-	leftOut: { text: string; reason: string }[];
 }
 /** Ids of the seeded shopping items and tasks by title. */
 export type Listed = Record<string, string>;
@@ -53,8 +52,6 @@ export interface Case {
 	shopping?: { list?: string; title: string }[];
 	/** Open tasks. */
 	tasks?: string[];
-	/** Events already on the calendar. */
-	events?: { title: string; date: string; startTime: string }[];
 	checks: Check[];
 }
 export interface SeededObligation {
@@ -595,23 +592,8 @@ const LIST_CASES: Case[] = [
 	},
 ];
 
-/** What a reading leaves out is reported with a reason, and what it states is still proposed. */
-const LEFT_OUT_CASES: Case[] = [
-	{
-		// Found in use: "Bought oat milk" gave nothing and no reason.
-		name: 'Reports a bought item that is on no list (English)',
-		shopping: [{ title: 'Bread' }],
-		text: 'Bought oat milk',
-		checks: [
-			none('lists.checkShoppingItem'),
-			none('lists.addShoppingItems'),
-			{
-				label: 'leftOut: oat milk, not_listed',
-				pass: (_ds, _m, reading) =>
-					reading.leftOut.some((l) => /oat milk/i.test(l.text) && l.reason === 'not_listed'),
-			},
-		],
-	},
+/** What the item states is still proposed when a record it names is not listed. */
+const UNLISTED_RECORD_CASES: Case[] = [
 	{
 		// Found in use: with no pet named Miso, even the vet appointment was dropped.
 		name: 'Keeps the appointment of a pet that is not listed (English)',
@@ -626,25 +608,6 @@ const LEFT_OUT_CASES: Case[] = [
 					i.startTime === '10:30' &&
 					/riverside/i.test(String(i.location ?? i.title)),
 			),
-			{
-				label: 'leftOut: Miso, unknown_record',
-				pass: (_ds, _m, reading) =>
-					reading.leftOut.some((l) => /miso/i.test(l.text) && l.reason === 'unknown_record'),
-			},
-		],
-	},
-	{
-		// Found in use: the move became a second event, because the calendar was never shown.
-		name: 'Changes the listed event when it moved (English)',
-		events: [{ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' }],
-		text: 'Regional gala moved to Sat 14 Nov 09:00',
-		checks: [
-			has(
-				'calendar.changeEvent',
-				'the gala on 14 Nov 09:00',
-				(i) => i.date === '2026-11-14' && i.startTime === '09:00',
-			),
-			none('calendar.createEvent'),
 		],
 	},
 ];
@@ -754,7 +717,7 @@ export const CASES: Case[] = [
 	...REGIONAL_CASES,
 	...RECORD_CASES,
 	...LIST_CASES,
-	...LEFT_OUT_CASES,
+	...UNLISTED_RECORD_CASES,
 	...CLUB_CASES,
 	...NOTES_CASES,
 ];

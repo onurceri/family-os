@@ -29,8 +29,6 @@ export type InboxTables = {
 		skipped: number;
 		/** Of the skipped, those that pointed at a record that is not on the household's lists. */
 		skipped_unknown: number;
-		/** JSON array of { text, reason }: what the item mentions that got no proposal, and why. */
-		left_out: string | null;
 		/** `provider / model` of the last extraction. */
 		model: string | null;
 		/** Incremented on every retry, so drafts from a new extraction get new dedupe keys. */
@@ -93,11 +91,6 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
-	'0004_left_out': {
-		async up(db) {
-			await db.schema.alterTable('inbox_items').addColumn('left_out', 'text').execute();
-		},
-	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<InboxTables>();
@@ -122,7 +115,6 @@ export function toItem(row: ItemRow): InboxItem {
 		proposals: row.proposals,
 		skipped: row.skipped,
 		skippedUnknown: row.skipped_unknown,
-		leftOut: row.left_out ? (JSON.parse(row.left_out) as InboxItem['leftOut']) : [],
 		createdBy: row.created_by,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,

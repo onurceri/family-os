@@ -7,7 +7,7 @@ import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { InboxItem } from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
-import { rankByMention, tidyLeftOut, unnamedMemberFields } from '../src/server/process.ts';
+import { rankByMention, unnamedMemberFields } from '../src/server/process.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -98,25 +98,10 @@ describe('what the model is shown of long lists', () => {
 	});
 });
 
-describe('what the model leaves out', () => {
-	it('keeps and shows why "bought oat milk" got no proposal', async () => {
-		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Bread' }] }, admin.actor);
-		// Real model output: nothing proposed, and no word about why.
-		k.llm.respond({
-			summary: 'Oat milk bought',
-			kind: 'nothing',
-			proposals: [],
-			leftOut: [{ text: 'Oat milk', reason: 'not_listed' }],
-		});
-		await read('Bought oat milk');
-		expect(await item()).toMatchObject([
-			{ proposals: 0, leftOut: [{ text: 'Oat milk', reason: 'not_listed' }] },
-		]);
-	});
-
-	it('keeps the vet appointment when the pet is not listed, and says the pet is unknown', async () => {
+describe('an unlisted record', () => {
+	it('keeps the vet appointment when the pet is not listed', async () => {
 		// Real model output before the prompt was narrowed: the whole item was dropped. Now the
-		// appointment is proposed and only the pet is reported.
+		// appointment is proposed.
 		await k.runner.invoke(
 			'records.addObligation',
 			{
@@ -143,7 +128,6 @@ describe('what the model leaves out', () => {
 					confidence: 0.8,
 				},
 			],
-			leftOut: [{ text: 'Miso', reason: 'unknown_record' }],
 		});
 		await read("Miso's annual check Thu 15 10:30, Riverside Vet Clinic");
 		expect(system()).toContain('A record that is not listed only drops the proposal that needs it');
@@ -152,48 +136,11 @@ describe('what the model leaves out', () => {
 			actionId: 'calendar.createEvent',
 			input: { location: 'Riverside Vet Clinic', startTime: '10:30' },
 		});
-		expect(await item()).toMatchObject([
-			{ proposals: 1, leftOut: [{ text: 'Miso', reason: 'unknown_record' }] },
-		]);
-	});
-
-	it('drops malformed entries instead of failing the reading', async () => {
-		k.llm.respond({
-			summary: 'x',
-			proposals: [],
-			leftOut: [
-				{ text: 'Oat milk', reason: 'not_listed' },
-				{ text: 'Oat milk', reason: 'not_listed' },
-				{ text: 'Soap', reason: 'because I said so' },
-				'Eggs',
-				{ text: '', reason: 'unclear' },
-			],
-		});
-		await read('Bought oat milk, soap and eggs');
-		expect(await item()).toMatchObject([
-			{ status: 'extracted', leftOut: [{ text: 'Oat milk', reason: 'not_listed' }] },
-		]);
-	});
-
-	it('tidies a list to well-formed, distinct entries', () => {
-		expect(
-			tidyLeftOut([
-				{ text: ' Miso ', reason: 'unknown_record' },
-				{ text: 'miso', reason: 'unknown_record' },
-				null,
-				{ reason: 'unclear' },
-			]),
-		).toEqual([{ text: 'Miso', reason: 'unknown_record' }]);
-	});
-
-	it('has no left-out things on a plain reading', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('Hello');
-		expect(await item()).toMatchObject([{ leftOut: [] }]);
+		expect(await item()).toMatchObject([{ proposals: 1 }]);
 	});
 });
 
-describe('moving an event that is already on the calendar', () => {
+describe('an event that moved', () => {
 	beforeEach(async () => {
 		await k.runner.invoke(
 			'calendar.createEvent',
@@ -206,43 +153,6 @@ describe('moving an event that is already on the calendar', () => {
 				{ title: `Class trip ${i + 1}`, date: '2026-10-20', allDay: true },
 				admin.actor,
 			);
-	});
-
-	it('lists upcoming events with their day and time, without ids', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('Hello');
-		expect(system()).toContain('Upcoming calendar events:');
-		expect(system()).toContain('- Regional Gala (cal_event:');
-		expect(system()).toMatch(/Regional Gala \(cal_event:\d+\): 2026-11-07, 18:00-22:00/);
-		expect(JSON.stringify(k.llm.calls)).not.toMatch(/cal_event_[0-9a-f]{8}/);
-	});
-
-	it('changes the listed event when the item says it moved', async () => {
-		k.llm.respond({
-			summary: 'Gala moved',
-			proposals: [
-				{
-					action: 'calendar.changeEvent',
-					input: {
-						id: 'cal_event:1',
-						date: '2026-11-14',
-						startTime: '09:00',
-						label: 'Regional gala',
-					},
-					dateText: 'Sat 14 Nov',
-					confidence: 0.9,
-				},
-			],
-		});
-		await read('Regional gala moved to Sat 14 Nov 09:00');
-		expect(system()).toContain('calendar.changeEvent');
-		expect(system()).toContain('says an event moved or changed');
-		const [draft] = await drafts();
-		expect(draft).toMatchObject({
-			actionId: 'calendar.changeEvent',
-			input: { date: '2026-11-14', startTime: '09:00' },
-		});
-		expect(await item()).toMatchObject([{ proposals: 1, skipped: 0 }]);
 	});
 
 	it('marks a new event for the same title a week later as already there', async () => {

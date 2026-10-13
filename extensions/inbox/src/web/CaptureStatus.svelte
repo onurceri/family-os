@@ -43,11 +43,6 @@
 	{#if item.skipped > item.skippedUnknown}<small class="text-ink-soft block text-xs"
 			>{t('status_skipped', { count: item.skipped - item.skippedUnknown })}</small
 		>{/if}
-	{#each item.leftOut as left (`${left.reason}:${left.text}`)}
-		<small class="text-ink-soft block text-xs"
-			>{t(`left_out_${left.reason}`, { text: left.text })}</small
-		>
-	{/each}
 {/snippet}
 
 <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -104,7 +99,7 @@
 				>{t('ask_assistant')}</Button
 			>
 		{/if}
-	{:else if item.skipped > 0 || item.leftOut.length > 0}
+	{:else if item.skipped > 0}
 		<span class="min-w-0 flex-1">{@render skippedLines()}</span>
 	{/if}
 </div>

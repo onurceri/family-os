@@ -106,9 +106,6 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 			if (added.status !== 'applied') throw new Error('expected the item to be added');
 			listed[title] = added.output.items[0]?.id as string;
 		}
-		for (const event of c.events ?? []) {
-			await k.runner.invoke('calendar.createEvent', event, systemActor('eval'));
-		}
 		for (const title of c.tasks ?? []) {
 			const added = await k.runner.invoke<{ id: string }>(
 				'lists.addTask',
