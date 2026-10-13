@@ -562,3 +562,45 @@ describe('taking a completion back', () => {
 		expect(k.ctx.actions.aiCatalog().some((a) => a.id === 'records.undoCompletion')).toBe(false);
 	});
 });
+
+describe('an AI proposing that a duty is done', () => {
+	const AI = { kind: 'ai', source: 'inbox' } as const;
+
+	it('is refused without a day it was done or a date it runs to', async () => {
+		// Real mistake: "your car insurance is due for renewal … ends on 20 October" was proposed
+		// as done.
+		const o = await add({ title: 'Car insurance', dueDate: '2026-10-20', every: { years: 1 } });
+		await expect(
+			k.runner.invoke(
+				'records.completeObligation',
+				{ id: o.id, dueDate: '2026-10-20', label: 'Car insurance (Golf)' },
+				AI,
+			),
+		).rejects.toMatchObject({
+			code: 'conflict',
+			message: expect.stringContaining('Nothing says when Car insurance was done'),
+		});
+	});
+
+	it('is drafted when the item gives the date it now runs to, or the day it was done', async () => {
+		const o = await add({ title: 'Car insurance', dueDate: '2026-10-20', every: { years: 1 } });
+		const renewed = await k.runner.invoke(
+			'records.completeObligation',
+			{ id: o.id, nextDueDate: '2027-10-19' },
+			AI,
+		);
+		expect(renewed.status).toBe('drafted');
+		const paid = await k.runner.invoke(
+			'records.completeObligation',
+			{ id: o.id, doneOn: '2026-10-06' },
+			AI,
+		);
+		expect(paid.status).toBe('drafted');
+	});
+
+	it('leaves people free to mark it done for today', async () => {
+		const o = await add({ title: 'Car insurance', dueDate: '2026-10-20', every: { years: 1 } });
+		await complete(o.id);
+		expect((await history(o.id)).length).toBe(1);
+	});
+});

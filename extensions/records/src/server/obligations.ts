@@ -177,6 +177,19 @@ export const completeObligation = defineAction({
 	input: CompleteObligationSchema,
 	output: CompletedObligationSchema,
 	approval: { unless: recordsEdit.id },
+	// A model reads a renewal notice or a reminder as "done" all too easily; something that really
+	// was done comes with the day it happened or the date it now runs to. Without either, the
+	// duty is still to do, and the model asks the person instead of suggesting it.
+	refuseProposal: async (ctx, { id, doneOn, nextDueDate }) => {
+		if (doneOn !== undefined || nextDueDate !== undefined) return null;
+		const row = await tables(ctx.db)
+			.selectFrom('records_obligations')
+			.select('title')
+			.where('id', '=', id)
+			.executeTakeFirst();
+		if (!row) return null;
+		return `Nothing says when ${row.title} was done: a reminder or a renewal notice is not done. Mark it done only with the day it was done (doneOn) or the date it now runs to (nextDueDate).`;
+	},
 	undo: ({ id, before }) =>
 		before ? { actionId: 'records.undoCompletion', input: { id, ...before } } : null,
 	ai: {
