@@ -130,7 +130,9 @@ describe('an unlisted record', () => {
 			],
 		});
 		await read("Miso's annual check Thu 15 10:30, Riverside Vet Clinic");
-		expect(system()).toContain('A record that is not listed only drops the proposal that needs it');
+		expect(system()).toContain(
+			'An event the item states is added even when the person, pet or thing it is for is not in the household records',
+		);
 		const [draft] = await drafts();
 		expect(draft).toMatchObject({
 			actionId: 'calendar.createEvent',

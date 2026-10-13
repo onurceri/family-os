@@ -31,7 +31,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/20';
+export const PROMPT_VERSION = 'inbox.extract/22';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -677,7 +677,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 	}${
 		records
 			? `
-- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id. A record that is not listed only drops the proposal that needs it (a duty, a vaccination, a tick-off): an event, task or shopping item the item itself states is still proposed, with the unlisted person, pet or thing named in its title or notes. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty. When the item says that something listed under the shopping items has been bought, tick it off with its handle (lists.checkShoppingItem) instead of adding it again; when it says a listed task is done, complete that task. Name it in label as the item words it. If the thing is not listed, propose nothing for it.`
+- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty. When the item says that something listed under the shopping items has been bought, tick it off with its handle (lists.checkShoppingItem) instead of adding it again; when it says a listed task is done, complete that task. Name it in label as the item words it. If the thing is not listed, propose nothing for it.`
 			: ''
 	}
 - Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time and allDay out: the event is kept as an all-day event that a person checks. Set allDay yourself only for something that fills the whole day (a holiday, a trip day, a birthday), never for an appointment or an activity whose time is simply not given.
