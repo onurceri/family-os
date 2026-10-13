@@ -1,5 +1,5 @@
 import { languageName } from '@famos/i18n';
-import { weekOf } from '@famos/time';
+import { daysAround, weekOf } from '@famos/time';
 import { formatWeekday } from './format.ts';
 
 export interface PromptInput {
@@ -83,6 +83,10 @@ export function systemPrompt(input: PromptInput): string {
 	}.
 
 ${nowBlock(input)} Write dates as YYYY-MM-DD in tool inputs. When you tell people a time, use ${input.hourCycle === 'h12' ? 'the 12-hour clock (for example 4:30 PM)' : 'the 24-hour clock (for example 16:30)'}; times in tool inputs are always HH:MM (24-hour). Answer in ${languageName(input.locale)}, the person's language, unless the person writes in another language.
+
+The days around today:
+${daysAround(input.today).join('\n')}
+Take weekdays and dates from this table; when a person's weekday and date disagree, say so and ask.
 
 Family members (use a handle like member:1 only in tool inputs; in your answers always write the person's name):
 ${members}

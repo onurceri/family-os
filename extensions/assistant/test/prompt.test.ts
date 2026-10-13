@@ -37,6 +37,40 @@ describe('where now is', () => {
 		);
 	});
 
+	it('gives a table of the days around today to take weekdays from', () => {
+		const prompt = systemPrompt({
+			...input,
+			today: '2026-10-13',
+			weekday: 'Tuesday',
+			locale: 'en',
+		});
+		expect(prompt).toContain(
+			'Mon 2026-10-12 (yesterday)\nTue 2026-10-13 (today)\nWed 2026-10-14 (tomorrow)',
+		);
+		// 20 October 2026 is a Tuesday, whatever a person calls it.
+		expect(prompt).toContain('Tue 2026-10-20\n');
+		expect(prompt).toContain('Tue 2026-10-06\n');
+		expect(prompt).toContain('Tue 2026-10-27\n');
+		expect(prompt).toContain(
+			"Take weekdays and dates from this table; when a person's weekday and date disagree, say so and ask.",
+		);
+	});
+
+	it('keeps the table right across a month boundary and a daylight-saving change', () => {
+		// Europe/Istanbul has no summer time, but the table is plain days in any zone.
+		const prompt = systemPrompt({
+			...input,
+			today: '2026-10-30',
+			weekday: 'Friday',
+			timeZone: 'Europe/Berlin',
+			locale: 'en',
+		});
+		expect(prompt).toContain('Sun 2026-10-25\nMon 2026-10-26');
+		expect(prompt).toContain(
+			'Fri 2026-10-30 (today)\nSat 2026-10-31 (tomorrow)\nSun 2026-11-01\nMon 2026-11-02',
+		);
+	});
+
 	it('tells the model that past events are never coming up', () => {
 		const prompt = systemPrompt({ ...input, locale: 'en' });
 		expect(prompt).toContain('Now it is Thursday, 2026-10-08, 14:05');

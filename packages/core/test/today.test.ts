@@ -29,8 +29,33 @@ describe('core.today', () => {
 				timeZone: 'Europe/Istanbul',
 				weekFirstDay: '2026-10-05',
 				weekLastDay: '2026-10-11',
+				days: expect.arrayContaining(['Sat 2026-10-10 (today)', 'Sun 2026-10-11 (tomorrow)']),
 			},
 		});
+	});
+
+	it('answers the family’s day just after midnight in a zone ahead of UTC', async () => {
+		// Tuesday 2026-10-13, 00:30 in Istanbul is still Monday 21:30 in UTC.
+		k.clock.advance(Date.parse('2026-10-12T21:30:00Z') - k.clock.now());
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ timeZone: 'Europe/Istanbul', weekStart: 1 },
+			systemActor('test'),
+		);
+		const { actor } = await k.member('member');
+		const result = await k.runner.invoke<{
+			date: string;
+			weekday: string;
+			time: string;
+			days: string[];
+		}>('core.today', {}, actor);
+		if (result.status !== 'applied') throw new Error('expected an answer');
+		expect(result.output).toMatchObject({ date: '2026-10-13', weekday: 'Tuesday', time: '00:30' });
+		expect(result.output.days[0]).toBe('Tue 2026-10-06');
+		expect(result.output.days).toContain('Mon 2026-10-12 (yesterday)');
+		expect(result.output.days).toContain('Tue 2026-10-13 (today)');
+		expect(result.output.days).toContain('Tue 2026-10-20');
+		expect(result.output.days.at(-1)).toBe('Tue 2026-10-27');
 	});
 
 	it('follows the family’s first day of the week', async () => {

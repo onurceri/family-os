@@ -14,7 +14,14 @@ import {
 	subjectOf,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { formatDate, formatLocaleForLanguage, todayIn, weekOf, zoned } from '@famos/time';
+import {
+	daysAround,
+	formatDate,
+	formatLocaleForLanguage,
+	todayIn,
+	weekOf,
+	zoned,
+} from '@famos/time';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
@@ -1179,11 +1186,16 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			timeZone: z.string(),
 			weekFirstDay: z.string().describe('The first day of this week, YYYY-MM-DD'),
 			weekLastDay: z.string().describe('The last day of this week, YYYY-MM-DD'),
+			days: z
+				.array(z.string())
+				.describe(
+					'The days from a week ago to two weeks ahead, each with its weekday ("Tue 2026-10-13 (today)"). Take weekdays from here; when a weekday and a date disagree, say so and ask.',
+				),
 		}),
 		readOnly: true,
 		ai: {
 			description:
-				'Tells today’s date, the weekday, the time of day, the family time zone, and the first and last day of this week (the week starts on the family’s first day of the week). Use it before turning "today", "tomorrow", "this week" or "next Friday" into dates.',
+				'Tells today’s date, the weekday, the time of day, the family time zone, the first and last day of this week (the week starts on the family’s first day of the week), and the weekday of each day from a week ago to two weeks ahead. Use it before turning "today", "tomorrow", "this week" or "next Friday" into dates.',
 		},
 		async run(uow) {
 			const { timeZone, weekStart } = await uow.family.settings();
@@ -1197,6 +1209,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				timeZone,
 				weekFirstDay: week[0] as string,
 				weekLastDay: week[6] as string,
+				days: daysAround(date),
 			};
 		},
 	});

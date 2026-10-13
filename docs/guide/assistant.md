@@ -12,6 +12,8 @@ People with the permission **Ask the assistant** can use it. Admins, members and
 
 When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.
 
+It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), it says so and asks which one you mean.
+
 Examples to try:
 
 - What's on the calendar this week?

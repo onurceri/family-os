@@ -141,6 +141,19 @@ describe('a turn', () => {
 		expect(system).toContain('Still ahead this week: the rest of today, Sunday 2026-10-11.');
 	});
 
+	it('gives the model the days around the family’s today, also when UTC is still on the day before', async () => {
+		// Tuesday 2026-10-13, 00:30 in Istanbul is still Monday 21:30 in UTC.
+		k.clock.set(Date.parse('2026-10-12T21:30:00Z'));
+		k.llm.respondChat([{ text: 'Tuesday 20 October.' }]);
+		await ask(ayse, 'What is on Wednesday 20 October?');
+		const system = k.llm.chatCalls.at(-1)?.system ?? '';
+		expect(system).toContain(
+			'Mon 2026-10-12 (yesterday)\nTue 2026-10-13 (today)\nWed 2026-10-14 (tomorrow)',
+		);
+		expect(system).toContain('Tue 2026-10-20\n');
+		expect(system).toContain("when a person's weekday and date disagree, say so and ask");
+	});
+
 	it('keeps threads private to their member', async () => {
 		k.llm.respondChat([{ text: 'Hello' }]);
 		const sent = await ask(ayse, 'Hi');

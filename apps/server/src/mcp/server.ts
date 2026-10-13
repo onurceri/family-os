@@ -101,9 +101,10 @@ function handlesIn(args: unknown): string[] {
 	return [...new Set(JSON.stringify(args ?? {}).match(STABLE_HANDLE) ?? [])];
 }
 
-/** Today in the family's time zone, as `YYYY-MM-DD`. */
+/** Today in the family's time zone, with its weekday: `Tuesday, 2026-10-13`. */
 function today(timeZone: string, now: number): string {
-	return new Intl.DateTimeFormat('en-CA', { timeZone }).format(now);
+	const weekday = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'long' }).format(now);
+	return `${weekday}, ${new Intl.DateTimeFormat('en-CA', { timeZone }).format(now)}`;
 }
 
 /**
@@ -124,7 +125,8 @@ export async function createServerFor(
 		{ name: 'FamilyOS', title: 'FamilyOS', version: deps.appVersion },
 		{
 			instructions: [
-				`FamilyOS is a family organizer. Today is ${today(settings.timeZone, now)} (${settings.timeZone}).`,
+				// A client keeps these for its whole session, which can outlive the day.
+				`FamilyOS is a family organizer. When this connection started it was ${today(settings.timeZone, now)} in the family time zone ${settings.timeZone}. Call core_today for the current date and the weekday of each day around it before turning words like today, tomorrow or a weekday into a date; never work a weekday out yourself.`,
 				'Records are named by references like "vehicle:3fa9c1b2d4": pass them back unchanged.',
 				principal.token.scope === 'read_write'
 					? 'Tools that change something only create a suggestion that a family member approves.'

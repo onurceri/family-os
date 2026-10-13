@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	addDays,
 	dayBounds,
+	daysAround,
 	defaultHourCycle,
 	defaultTemperatureUnit,
 	defaultWeekStart,
@@ -242,5 +243,39 @@ describe('setupFormatLocale', () => {
 	});
 	it("falls back to the language's own region when the browser has none", () => {
 		expect(setupFormatLocale('tr', 'en')).toBe('tr-TR');
+	});
+});
+
+describe('daysAround', () => {
+	it('gives each day around today with its weekday, from a week back to two weeks ahead', () => {
+		// 13 October 2026 is a Tuesday.
+		const days = daysAround('2026-10-13');
+		expect(days).toHaveLength(22);
+		expect(days[0]).toBe('Tue 2026-10-06');
+		expect(days.slice(6, 9)).toEqual([
+			'Mon 2026-10-12 (yesterday)',
+			'Tue 2026-10-13 (today)',
+			'Wed 2026-10-14 (tomorrow)',
+		]);
+		expect(days).toContain('Tue 2026-10-20');
+		expect(days.at(-1)).toBe('Tue 2026-10-27');
+	});
+
+	it('keeps weekdays right across a month boundary and a daylight-saving change', () => {
+		// Many zones leave summer time on Sunday 25 October 2026; the dates are plain days.
+		const days = daysAround('2026-10-30', 7, 3);
+		expect(days).toEqual([
+			'Fri 2026-10-23',
+			'Sat 2026-10-24',
+			'Sun 2026-10-25',
+			'Mon 2026-10-26',
+			'Tue 2026-10-27',
+			'Wed 2026-10-28',
+			'Thu 2026-10-29 (yesterday)',
+			'Fri 2026-10-30 (today)',
+			'Sat 2026-10-31 (tomorrow)',
+			'Sun 2026-11-01',
+			'Mon 2026-11-02',
+		]);
 	});
 });

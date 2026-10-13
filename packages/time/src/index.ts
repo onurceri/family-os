@@ -264,6 +264,20 @@ export function weekOf(date: string, weekStart = 1): string[] {
 	return Array.from({ length: 7 }, (_, i) => addDays(first, i));
 }
 
+/**
+ * The dates around `today`, one line each with its English weekday ("Tue 2026-10-13 (today)"),
+ * from `before` days back to `after` days ahead. Models work weekdays out wrongly; a prompt that
+ * carries this table lets them look a weekday up instead. English because prompts are English.
+ */
+export function daysAround(today: string, before = 7, after = 14): string[] {
+	const label = (offset: number) =>
+		offset === -1 ? ' (yesterday)' : offset === 0 ? ' (today)' : offset === 1 ? ' (tomorrow)' : '';
+	return Array.from({ length: before + after + 1 }, (_, i) => {
+		const date = addDays(today, i - before);
+		return `${formatDate(date, 'en', { weekday: 'short' })} ${date}${label(i - before)}`;
+	});
+}
+
 /** Localized short weekday names in RRULE order (MO … SU). */
 export function weekdayNames(locale: string): Record<Weekday, string> {
 	const monday = Date.parse('2026-01-05T12:00:00Z'); // a Monday

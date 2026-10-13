@@ -709,7 +709,10 @@ describe('protocol', () => {
 		const tools = await client.listTools();
 		expect(tools.tools.map((t) => t.name)).toContain('calendar_findEvents');
 		expect(client.getServerVersion()?.name).toBe('FamilyOS');
-		expect(client.getInstructions()).toContain('Today is');
+		expect(client.getInstructions()).toMatch(
+			/When this connection started it was \w+day, \d{4}-\d{2}-\d{2}/,
+		);
+		expect(client.getInstructions()).toContain('Call core_today for the current date');
 		const result = await client.callTool({
 			name: 'calendar_findEvents',
 			arguments: { from: '2026-10-01', to: '2026-10-31' },
