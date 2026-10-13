@@ -432,6 +432,12 @@ export const changeEvent = defineAction({
 	targetTitle: eventTitle,
 	scopeNote: occurrenceScope,
 	resolveNames: resolveOccurrence,
+	// A model sometimes names the event but leaves out what changes; such a draft would change
+	// nothing, so the model is told to give the new values instead.
+	refuseProposal: async (_ctx, { id: _id, label: _label, occurrence: _occurrence, ...change }) =>
+		Object.values(change).some((value) => value !== undefined)
+			? null
+			: 'Nothing would change: give the new values (date, startTime, endTime, location…) in their fields.',
 	undo: ({ event, before, split }) =>
 		split
 			? {
@@ -445,7 +451,7 @@ export const changeEvent = defineAction({
 		description:
 			'Changes an existing family event: its time, date, place, title, notes, tags or who goes. Send only the fields that change. Find the event with calendar.findEvents first, or use its handle when it is listed; never add a second event for the same thing.',
 		guidance:
-			'Use the family time zone and resolve relative dates from today. When a message says a listed calendar event moved or changed (a new day, time or place), change that event here by its handle instead of adding a new event, with the event in label as the message words it. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
+			'Use the family time zone and resolve relative dates from today. When a message says a listed calendar event moved or changed (a new day, time or place), change that event here by its handle instead of adding a new event: put the new values in their fields (date, startTime, endTime, location…) and the event in label as the message words it. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
 	},
 	async run(uow, { id, label: _label, occurrence: rawOccurrence, ...change }) {
 		const row = await loadEvent(uow, id);

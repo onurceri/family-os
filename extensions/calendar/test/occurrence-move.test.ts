@@ -374,3 +374,23 @@ describe('naming a suggestion that touches one date', () => {
 		expect((await labels())[0]).toContain('(25 Oct only)');
 	});
 });
+
+describe('an AI change that names the event but not what changes', () => {
+	it('is refused, so no draft changes nothing', async () => {
+		// Real mistake: "Regional gala moved to Sat 14 Nov 09:00" became a change of "Regional
+		// Gala" with only its handle and label.
+		const id = await create({ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' });
+		await expect(
+			k.runner.invoke('calendar.changeEvent', { id, label: 'Regional gala' }, ai()),
+		).rejects.toMatchObject({
+			code: 'conflict',
+			message: expect.stringContaining('Nothing would change'),
+		});
+		const moved = await k.runner.invoke(
+			'calendar.changeEvent',
+			{ id, date: '2026-11-14', startTime: '09:00', label: 'Regional gala' },
+			ai(),
+		);
+		expect(moved.status).toBe('drafted');
+	});
+});
