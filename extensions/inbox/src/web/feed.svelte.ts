@@ -1,7 +1,7 @@
 import type { AppContext } from '@famos/ui/app';
 import type { InboxItem } from '../contract/index.js';
 import { type Draft, loadInboxDrafts, loadItems, loadPendingDrafts } from './data.js';
-import { type Capture, isWaiting } from './item-view.js';
+import { type Capture, isWaiting, needsAction } from './item-view.js';
 
 /** How many captures "Recent" lists. */
 export const RECENT_LIMIT = 20;
@@ -90,6 +90,14 @@ export class CaptureFeed {
 		return this.items
 			.map((item) => ({ item, drafts: this.draftsOf(item.id) }))
 			.filter((c) => isWaiting(c, c.item.createdBy === me, this.#seen.has(c.item.id)));
+	}
+
+	/**
+	 * How many suggestions wait in those captures: what the Quick add badge counts, with the
+	 * requests, so the badge and the page agree (a capture can hold several).
+	 */
+	get waitingSuggestions(): number {
+		return this.waiting.reduce((n, c) => n + c.drafts.filter(needsAction).length, 0);
 	}
 
 	/** The person's own earlier captures. */

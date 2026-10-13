@@ -1,4 +1,4 @@
-import { labelNamesTitle, namedShares, significantWords } from '@famos/sdk';
+import { labelNamesTitle, namedShares, searchFinds, significantWords } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 
 describe('namedShares', () => {
@@ -76,5 +76,32 @@ describe('labelNamesTitle', () => {
 		expect(labelNamesTitle('4', 'Oat milk')).toBe(false);
 		expect(labelNamesTitle('4', '4')).toBe(true);
 		expect(labelNamesTitle('  ', 'Oat milk')).toBe(false);
+	});
+});
+
+describe('searchFinds', () => {
+	it('finds another form of a word when one starts the other and the shorter has four letters', () => {
+		// "When is the swimming this week?" missed the "Swim training" events.
+		expect(searchFinds('swimming', 'Swim training')).toBe(true);
+		expect(searchFinds('swim', 'Swimming gala')).toBe(true);
+		expect(searchFinds('swimming gala', 'Swim gala at the pool')).toBe(true);
+		expect(searchFinds('Yüzme', 'yüzmeye gidiyoruz')).toBe(true);
+	});
+
+	it('keeps short words, other words and unrelated titles out', () => {
+		expect(searchFinds('cars', 'Carpet cleaning')).toBe(false);
+		expect(searchFinds('sw', 'Splash training')).toBe(false);
+		expect(searchFinds('swimming pool', 'Swim training')).toBe(false);
+		expect(searchFinds('dentist', 'Swim training')).toBe(false);
+	});
+
+	it('still finds a text contained as written', () => {
+		expect(searchFinds('ing', 'Swimming gala')).toBe(true);
+	});
+
+	it('does not loosen the check of which item a change names', () => {
+		expect(labelNamesTitle('swimming', 'Swim training')).toBe(false);
+		expect(labelNamesTitle('Swim', 'Swimming gala')).toBe(false);
+		expect(namedShares('swimming', ['Swim training'])).toEqual([0]);
 	});
 });

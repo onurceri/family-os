@@ -1,5 +1,5 @@
 import { systemActor } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
@@ -9,7 +9,7 @@ let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 
 beforeEach(async () => {
-	k = await createTestKernel({ extensions: [calendar] });
+	k = await createTestKernel({ extensions: [calendar], translate: repoTranslate() });
 	await k.runner.invoke('core.updateFamilySettings', { timeZone: TZ }, systemActor('test'));
 	k.clock.set(epochOf('2026-10-12', '09:00', TZ)); // a Monday
 	admin = await k.member('admin', 'Ayse');
@@ -300,5 +300,77 @@ describe('finding an event by its text', () => {
 		const none = await find({ from: '2026-10-12', to: '2026-10-17', text: 'sailing' });
 		if (none.status !== 'applied') throw new Error('expected applied');
 		expect(none.output.note).toBeUndefined();
+	});
+});
+
+describe('naming a suggestion that touches one date', () => {
+	const labels = async () => {
+		const result = await k.runner.invoke<{ suggestions: { label: string }[] }>(
+			'core.mySuggestions',
+			{ limit: 10 },
+			ai(),
+		);
+		if (result.status !== 'applied') throw new Error('expected a read');
+		return result.output.suggestions.map((s) => s.label);
+	};
+
+	it('says one date, not the whole series, and the whole series when no date is given', async () => {
+		// The assistant's suggestion for one Sunday was listed as "(whole series)".
+		const id = await create({
+			title: 'Sunday planning',
+			date: '2026-10-11',
+			startTime: '20:00',
+			endTime: '21:00',
+			recurrence: { freq: 'weekly', byDay: ['SU'] },
+		});
+		const [, next] = await range('2026-10-11', '2026-10-25');
+		await k.runner.invoke(
+			'calendar.changeEvent',
+			{ id, occurrence: next.key, startTime: '18:00', label: 'Sunday planning' },
+			ai(),
+		);
+		await k.runner.invoke(
+			'calendar.deleteEvent',
+			{ id, occurrence: '2026-10-25', label: 'Sunday planning' },
+			ai(),
+		);
+		await k.runner.invoke(
+			'calendar.changeEvent',
+			{ id, location: 'Garden', label: 'Sunday planning' },
+			ai(),
+		);
+		const all = await labels();
+		expect(all).toHaveLength(3);
+		expect(all.filter((l) => l.startsWith('Change') && l.endsWith('(Oct 18 only)'))).toHaveLength(
+			1,
+		);
+		expect(all.filter((l) => l.startsWith('Delete') && l.endsWith('(Oct 25 only)'))).toHaveLength(
+			1,
+		);
+		expect(all.filter((l) => !l.includes('only'))).toEqual([
+			'Change some details of an event: Sunday planning',
+		]);
+		for (const label of all) expect(label).not.toContain('whole series');
+	});
+
+	it('writes the date in the family format locale and the words of the person', async () => {
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ formatLocale: 'en-GB' },
+			systemActor('test'),
+		);
+		const id = await create({
+			title: 'Sunday planning',
+			date: '2026-10-11',
+			startTime: '20:00',
+			endTime: '21:00',
+			recurrence: { freq: 'weekly', byDay: ['SU'] },
+		});
+		await k.runner.invoke(
+			'calendar.deleteEvent',
+			{ id, occurrence: '2026-10-25', label: 'Sunday planning' },
+			ai(),
+		);
+		expect((await labels())[0]).toContain('(25 Oct only)');
 	});
 });

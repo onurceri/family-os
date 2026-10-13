@@ -51,6 +51,29 @@ describe('shopping items an AI points at', () => {
 		expect(Object.keys(await shoppingList())).toEqual(['Oat milk', 'Bread']);
 	});
 
+	it('finds items by another form of the word searched for, without loosening which one a change names', async () => {
+		await k.runner.invoke(
+			'lists.addShoppingItems',
+			{ items: [{ title: 'Breadsticks' }] },
+			admin.actor,
+		);
+		const found = await k.runner.invoke<Listed>('lists.shoppingList', { text: 'bread' }, AI);
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.lists.flatMap((l) => l.items.map((i) => i.title)).sort()).toEqual([
+			'Bread',
+			'Breadsticks',
+		]);
+		const items = await shoppingList();
+		await expect(
+			k.runner.invoke(
+				'lists.deleteShoppingItem',
+				{ id: items.Breadsticks?.id, label: 'Bread' },
+				AI,
+				{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
+			),
+		).rejects.toMatchObject({ code: 'conflict' });
+	});
+
 	it('refuses to remove the closest item when the named one is not on the list', async () => {
 		// Real mistake: "Remove the anchovies" sent an unrelated item with the label "4".
 		const items = await shoppingList();

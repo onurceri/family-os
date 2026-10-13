@@ -601,6 +601,29 @@ describe('inbox pipeline', () => {
 		expect((await k.runner.approveDraft(draft.id, parent.actor)).status).toBe('applied');
 	});
 
+	it('keeps the item of every waiting suggestion in the list, however many newer items there are', async () => {
+		const other = proposals();
+		other.proposals = [
+			{ ...other.proposals[0], input: { ...other.proposals[0]?.input, title: 'Kermes' } },
+		] as typeof other.proposals;
+		k.llm.respond(proposals());
+		const first = await share({ text: 'Veli toplantısı' }, [], kid.actor);
+		await k.worker.drain();
+		k.llm.respond(other);
+		const second = await share({ text: 'Kermes' }, [], kid.actor);
+		await k.worker.drain();
+		k.llm.respond({ summary: 'x', proposals: [] });
+		const newest = await share({ text: 'Merhaba' }, [], kid.actor);
+		await k.worker.drain();
+		const asParent = (await k
+			.route('inbox.listItems')
+			.call({ query: { limit: 1 }, actor: parent.actor })) as InboxItem[];
+		const ids = asParent.map((i) => i.id);
+		expect(ids).toContain(first.id);
+		expect(ids).toContain(second.id);
+		expect(ids).not.toContain(newest.id);
+	});
+
 	it('shows supervised members only their own items and files', async () => {
 		k.llm.respond({ summary: 'x', proposals: [] }, proposals());
 		const png = pngWith('a', 'b');

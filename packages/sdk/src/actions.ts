@@ -93,6 +93,16 @@ export interface ActionDefinition<
 	 */
 	readonly targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	/**
+	 * A qualifier for an input that changes only part of what the title names: one date of a
+	 * repeating event. `key` is a catalog key (in the extension's catalog) that takes `{{date}}`;
+	 * `date` is a day (YYYY-MM-DD) the host writes in the family's format locale. Null when the
+	 * input is not partial, so the title stands for the whole.
+	 */
+	readonly scopeNote?: (
+		ctx: DuplicateContext,
+		input: z.infer<In>,
+	) => Promise<{ key: string; date: string } | null>;
+	/**
 	 * A reason an AI's proposal is pointless (the thing is already in the state it asks for), or
 	 * null. The runner refuses the proposal with that text, so the model tells the person instead
 	 * of filling the review list with changes that change nothing. Only asked of AI actors.
@@ -188,6 +198,10 @@ export function defineAction<
 	undo?: (output: z.infer<Out>) => UndoStep | null;
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	scopeNote?: (
+		ctx: DuplicateContext,
+		input: z.infer<In>,
+	) => Promise<{ key: string; date: string } | null>;
 	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;

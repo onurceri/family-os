@@ -38,9 +38,14 @@ export const MIN_SPAN = 30;
 /** The narrowest a chip may be drawn, in px: titles are unreadable below it. */
 export const MIN_CHIP_WIDTH = 56;
 
-/** How many side-by-side columns a day column of this width can hold (at least two, at most six). */
+/**
+ * How many side-by-side lanes a day column of this measured width can hold, each at least
+ * `MIN_CHIP_WIDTH` wide (at most six). A column too narrow for two lanes holds one, so an
+ * overlapping cluster there shows only its "+N more" chip instead of slivers nobody can read.
+ * Before the width is known (zero) nothing is held back.
+ */
 export const maxColumnsFor = (width: number): number =>
-	Math.max(2, Math.min(6, Math.floor(width / MIN_CHIP_WIDTH)));
+	width > 0 ? Math.max(1, Math.min(6, Math.floor(width / MIN_CHIP_WIDTH))) : 6;
 
 /**
  * Clusters events whose times intersect and gives each a column, greedily: the first column whose

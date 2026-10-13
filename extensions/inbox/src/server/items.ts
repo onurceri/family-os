@@ -389,7 +389,19 @@ export const listItems = defineRoute({
 				? eb.or([eb('created_by', '=', mine), eb('id', 'in', others)])
 				: eb('created_by', '=', mine),
 		);
-		return (await rows.orderBy('created_at', 'desc').limit(query.limit).execute()).map(toItem);
+		const recent = await rows.orderBy('created_at', 'desc').limit(query.limit).execute();
+		// A suggestion waiting for a decision always has its item, however many newer items there
+		// are: otherwise the page would hold fewer suggestions than the count of those waiting.
+		const shown = new Set(recent.map((row) => row.id));
+		const older = others.filter((id) => !shown.has(id));
+		if (older.length === 0) return recent.map(toItem);
+		const waiting = await tables(ctx.db)
+			.selectFrom('inbox_items')
+			.selectAll()
+			.where('status', '!=', 'dismissed')
+			.where('id', 'in', older)
+			.execute();
+		return [...recent, ...waiting].toSorted((a, b) => b.created_at - a.created_at).map(toItem);
 	},
 });
 

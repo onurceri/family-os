@@ -46,7 +46,7 @@
 			{#if waiting.length}
 				<Section
 					label={t(canDecide ? 'section_waiting' : 'section_waiting_approval')}
-					count={waiting.length}
+					count={feed.waitingSuggestions || undefined}
 				>
 					<div class="grid gap-9">
 						{#each waiting as capture (capture.item.id)}

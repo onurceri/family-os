@@ -4,6 +4,7 @@ import {
 	defineExtension,
 	defineRoute,
 	FamosError,
+	searchFinds,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { addDays, IsoDateSchema, IsoTimeSchema, isValidDate, todayIn, zoned } from '@famos/time';
@@ -177,6 +178,30 @@ const resolveOccurrence = async <T extends { id: string; occurrence?: string | u
 	return { ...input, occurrence: occurrenceKey(row, input.occurrence) };
 };
 
+/** `scopeNote` of the actions that take an `occurrence`: the one date a change is limited to. */
+const occurrenceScope = async (
+	ctx: DuplicateContext,
+	input: { id: string; occurrence?: string | undefined },
+): Promise<{ key: string; date: string } | null> => {
+	if (!input.occurrence) return null;
+	const row = await events(ctx.db)
+		.selectFrom('calendar_events')
+		.selectAll()
+		.where('id', '=', input.id)
+		.where('deleted_at', 'is', null)
+		.executeTakeFirst();
+	// On a single event the occurrence means nothing: the change is to the whole of it.
+	if (!row?.rrule) return null;
+	const date = DATE_KEY.test(input.occurrence)
+		? input.occurrence
+		: row.all_day
+			? input.occurrence
+			: Number.isFinite(Number(input.occurrence))
+				? zoned(Number(input.occurrence), row.time_zone).toPlainDate().toString()
+				: '';
+	return isValidDate(date) ? { key: 'calendar:title_one_date', date } : null;
+};
+
 /** The title of a live event, for the runner's check that an AI's label names the right one. */
 const eventTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
 	(
@@ -233,7 +258,7 @@ export const createEvent = defineAction({
 
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
-	title: 'Change an event (whole series)',
+	title: 'Change an event',
 	draftTitle: 'calendar:draft_title_update_event',
 	input: z.object({ id: EventIdSchema, event: EventInputSchema }),
 	output: EventDetailSchema,
@@ -275,6 +300,7 @@ export const deleteEvent = defineAction({
 	output: z.object({ ok: z.literal(true), id: z.string(), occurrence: z.string().nullable() }),
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
+	scopeNote: occurrenceScope,
 	resolveNames: resolveOccurrence,
 	undo: ({ id, occurrence }) => ({
 		actionId: 'calendar.restoreEvent',
@@ -376,13 +402,13 @@ const EventChangeSchema = z.object({
 type EventChange = z.infer<typeof EventChangeSchema>;
 
 /**
- * Changes some details of an event (the whole series) and keeps the rest: the AI and agents send
+ * Changes some details of an event (the whole series, or one date of it) and keeps the rest: the AI and agents send
  * only what changes, so a repeat rule, reminder or skipped dates they never saw are kept. The
  * output carries the old values, so the change can be taken back.
  */
 export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
-	title: 'Change some details of an event (whole series)',
+	title: 'Change some details of an event',
 	draftTitle: 'calendar:draft_title_change_event',
 	input: EventChangeSchema.extend({
 		id: EventIdSchema,
@@ -403,6 +429,7 @@ export const changeEvent = defineAction({
 	}),
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
+	scopeNote: occurrenceScope,
 	resolveNames: resolveOccurrence,
 	undo: ({ event, before, split }) =>
 		split
@@ -599,7 +626,7 @@ export const findEvents = defineAction({
 			.max(80)
 			.optional()
 			.describe(
-				'Only events whose title or place contains this text, e.g. "swimming". Without `from` and `to` it searches from today on',
+				'Only events whose title or place contains this text or a form of its words ("swimming" also finds "Swim training"), e.g. "swimming". Without `from` and `to` it searches from today on',
 			),
 		members: z
 			.array(MemberIdSchema)
@@ -712,10 +739,7 @@ export const findEvents = defineAction({
 				)
 				.filter((o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted))
 				.filter(
-					(o) =>
-						!needle ||
-						o.title.toLocaleLowerCase().includes(needle) ||
-						(o.location ?? '').toLocaleLowerCase().includes(needle),
+					(o) => !needle || searchFinds(needle, o.title) || searchFinds(needle, o.location ?? ''),
 				);
 		};
 		const all = await between(from, to);

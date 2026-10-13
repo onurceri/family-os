@@ -7,6 +7,7 @@ import {
 	defineRoute,
 	FamosError,
 	labelNamesTitle,
+	searchFinds,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { sql } from 'kysely';
@@ -687,7 +688,8 @@ export const shoppingList = defineAction({
 				(!listId || l.id === listId) &&
 				(!wanted || namesOf(l).some((n) => titleKey(n, locale) === wanted)),
 		);
-		const matches = (r: ItemRow) => !text || labelNamesTitle(text, r.title);
+		const matches = (r: ItemRow) =>
+			!text || labelNamesTitle(text, r.title) || searchFinds(text, r.title);
 		const boughtSince = uow.clock.now() - BOUGHT_VISIBLE_MS;
 		let budget = MAX_SHOPPING;
 		let truncated = false;

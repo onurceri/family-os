@@ -44,7 +44,7 @@ export interface ItemChip {
 	count?: number;
 }
 
-const needsAction = (d: Draft) => d.status === 'pending' || d.status === 'failed';
+export const needsAction = (d: Draft) => d.status === 'pending' || d.status === 'failed';
 
 /** A capture and the suggestions made from it. */
 export interface Capture {

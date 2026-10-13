@@ -14,6 +14,7 @@ import {
 	itemPreview,
 	itemTitle,
 	metaLine,
+	needsAction,
 } from '../src/web/item-view.ts';
 
 const item = (over: Partial<InboxItem> = {}): InboxItem => ({
@@ -162,5 +163,14 @@ describe('metaLine', () => {
 		expect(metaLine('Dentist', ['Tue 13', '10:00'], ['Check this'])).toBe(
 			'Tue 13 \u00b7 10:00 \u00b7 Check this',
 		);
+	});
+});
+
+describe('needsAction', () => {
+	const draft = (status: Draft['status']) => ({ id: 'd', status }) as Draft;
+	it('is a suggestion to decide or to try again, which the Quick add badge counts too', () => {
+		expect(needsAction(draft('pending'))).toBe(true);
+		expect(needsAction(draft('failed'))).toBe(true);
+		expect(needsAction(draft('applied'))).toBe(false);
 	});
 });

@@ -134,10 +134,12 @@ function suggestionLabel(
 	title: string | undefined,
 	row: DraftRow,
 	subject: string | undefined = subjectOf(row.edited_input ?? row.input),
+	scope?: string,
 ): string {
 	const what = subject;
 	const base = title ?? row.action_id;
-	return what ? `${base}: ${what}` : base;
+	const label = what ? `${base}: ${what}` : base;
+	return scope ? `${label} (${scope})` : label;
 }
 
 export const DraftSchema = z.object({
@@ -1274,12 +1276,36 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					return undefined;
 				}
 			};
+			// A change to one date of a repeating event says so, in the words and the date format
+			// of the person it is for.
+			const { locale, formatLocale } = await uow.family.settings();
+			const language = (await uow.family.members()).find((m) => m.id === owner)?.locale ?? locale;
+			const scopeFor = async (row: DraftRow) => {
+				const def = actions.get(row.action_id);
+				if (!def?.scopeNote) return undefined;
+				try {
+					const input = def.input.safeParse(JSON.parse(row.edited_input ?? row.input));
+					const note = input.success ? await def.scopeNote(ctx, input.data) : null;
+					return note
+						? uow.translate(language, note.key, {
+								date: formatDate(note.date, formatLocale, { day: 'numeric', month: 'short' }),
+							})
+						: undefined;
+				} catch {
+					return undefined;
+				}
+			};
 			const suggestions = await Promise.all(
 				mine.map(async (row) => {
 					const reason = draftReason(row);
 					return {
 						id: row.id,
-						label: suggestionLabel(actions.get(row.action_id)?.title, row, await subjectFor(row)),
+						label: suggestionLabel(
+							actions.get(row.action_id)?.title,
+							row,
+							await subjectFor(row),
+							await scopeFor(row),
+						),
 						...(row.summary && { group: row.summary }),
 						status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
 						...(reason !== null && { reason }),

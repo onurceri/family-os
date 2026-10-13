@@ -2378,7 +2378,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change an event (whole series) */
+        /** Change an event */
         post: operations["calendar.updateEvent"];
         delete?: never;
         options?: never;
@@ -2395,7 +2395,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change some details of an event (whole series) */
+        /** Change some details of an event */
         post: operations["calendar.changeEvent"];
         delete?: never;
         options?: never;
@@ -25848,7 +25848,7 @@ export interface operations {
                     from?: string;
                     /** @description Last day (inclusive), YYYY-MM-DD; at most 62 days after `from`; with `text` it defaults to 62 days after `from` */
                     to?: string;
-                    /** @description Only events whose title or place contains this text, e.g. "swimming". Without `from` and `to` it searches from today on */
+                    /** @description Only events whose title or place contains this text or a form of its words ("swimming" also finds "Swim training"), e.g. "swimming". Without `from` and `to` it searches from today on */
                     text?: string;
                     /** @description Only what involves these people, plus events for the whole family. Use it for "my ..." and "<name>'s ..." questions */
                     members?: string[];

@@ -53,3 +53,30 @@ export function namedShares(text: string, titles: readonly string[]): number[] {
 		return named / total;
 	});
 }
+
+const MIN_STEM = 4;
+
+/** Whether two words are one word in different forms: one starts the other and is long enough to mean it. */
+function sameStem(a: string, b: string): boolean {
+	if (a === b) return true;
+	const [short, long] = [...a].length <= [...b].length ? [a, b] : [b, a];
+	return [...short].length >= MIN_STEM && long.startsWith(short);
+}
+
+/**
+ * Whether a search text finds `haystack`, for the filters of read tools (never for deciding which
+ * item a change names: that is `labelNamesTitle`, which stays strict). The text is found when it
+ * is contained as written, or when each of its words is a word of the haystack or a form of one:
+ * one word starts the other and the shorter has at least four letters ("swim" and "swimming").
+ * Letters only, in any language; no word lists.
+ */
+export function searchFinds(query: string, haystack: string): boolean {
+	const lower = (s: string) => s.toLocaleLowerCase();
+	const wanted = lower(query).trim();
+	if (wanted === '') return true;
+	if (lower(haystack).includes(wanted)) return true;
+	const words = (s: string) => lower(s).match(/[\p{L}\p{N}]+/gu) ?? [];
+	const have = words(haystack);
+	const asked = words(query);
+	return asked.length > 0 && asked.every((w) => have.some((h) => sameStem(w, h)));
+}

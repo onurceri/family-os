@@ -47330,7 +47330,7 @@
 									"text": {
 										"type": "string",
 										"maxLength": 80,
-										"description": "Only events whose title or place contains this text, e.g. \"swimming\". Without `from` and `to` it searches from today on"
+										"description": "Only events whose title or place contains this text or a form of its words (\"swimming\" also finds \"Swim training\"), e.g. \"swimming\". Without `from` and `to` it searches from today on"
 									},
 									"members": {
 										"type": "array",
@@ -48394,7 +48394,7 @@
 		"/api/v1/actions/calendar.updateEvent": {
 			"post": {
 				"operationId": "calendar.updateEvent",
-				"summary": "Change an event (whole series)",
+				"summary": "Change an event",
 				"tags": [
 					"actions",
 					"calendar"
@@ -49050,7 +49050,7 @@
 		"/api/v1/actions/calendar.changeEvent": {
 			"post": {
 				"operationId": "calendar.changeEvent",
-				"summary": "Change some details of an event (whole series)",
+				"summary": "Change some details of an event",
 				"tags": [
 					"actions",
 					"calendar"

@@ -110,6 +110,23 @@ describe('calendar', () => {
 		expect(event?.start).toBe(epochOf('2026-10-15', '18:00', TZ));
 	});
 
+	it('finds events by another form of the word searched for', async () => {
+		// "When is the swimming this week?" found only "Swimming gala", not "Swim training".
+		const { actor } = await k.member('admin');
+		const add = (input: Record<string, unknown>) =>
+			k.runner.invoke('calendar.createEvent', input, actor);
+		await add({ title: 'Swim training', date: '2026-10-13', startTime: '17:00' });
+		await add({ title: 'Swimming gala', date: '2026-10-17', startTime: '10:00' });
+		await add({ title: 'Dentist', date: '2026-10-14', startTime: '09:00' });
+		const found = await k.runner.invoke<{ events: { title: string }[] }>(
+			'calendar.findEvents',
+			{ from: '2026-10-12', to: '2026-10-18', text: 'swimming' },
+			{ kind: 'ai', source: 'assistant' },
+		);
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.events.map((e) => e.title)).toEqual(['Swim training', 'Swimming gala']);
+	});
+
 	it('tells the AI which events of the week are over, under way or ahead', async () => {
 		const { actor } = await k.member('admin');
 		const add = (input: Record<string, unknown>) =>

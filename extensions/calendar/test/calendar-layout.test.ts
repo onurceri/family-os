@@ -180,10 +180,40 @@ describe('layoutDay widening and overflow', () => {
 		expect(overflowOf(spans, layoutDay(spans, undefined, 3))).toEqual([]);
 	});
 
-	it('holds at least two columns, and a readable width for each', () => {
-		expect(maxColumnsFor(94)).toBe(2);
+	it('holds as many lanes as fit at a readable width each, however narrow the column', () => {
 		expect(maxColumnsFor(190)).toBe(3);
+		expect(maxColumnsFor(112)).toBe(2);
+		expect(maxColumnsFor(111)).toBe(1);
+		expect(maxColumnsFor(90)).toBe(1);
 		expect(maxColumnsFor(1000)).toBe(6);
+		expect(maxColumnsFor(0)).toBe(6);
+	});
+
+	it('shows two overlapping events as "+2 more" in a column too narrow for two lanes', () => {
+		// With the add panel open, two events on one Tuesday were two 45 px slivers ("Swii trair").
+		const spans = [
+			{ id: 'swim', start: h(17), end: h(18) },
+			{ id: 'choir', start: h(17), end: h(18, 30) },
+		];
+		const placed = layoutDay(spans, undefined, maxColumnsFor(90));
+		expect(placed.every((p) => p.hidden)).toBe(true);
+		expect(overflowOf(spans, placed)).toEqual([
+			{
+				cluster: placed[0]?.cluster,
+				column: 0,
+				columns: 1,
+				start: h(17),
+				end: h(18, 30),
+				count: 2,
+			},
+		]);
+		const wide = layoutDay(spans, undefined, maxColumnsFor(120));
+		expect(wide.some((p) => p.hidden)).toBe(false);
+	});
+
+	it('leaves a lone event whole in a narrow column', () => {
+		const lone = layoutDay([{ id: 'a', start: h(9), end: h(10) }], undefined, maxColumnsFor(60));
+		expect(lone[0]).toMatchObject({ column: 0, columns: 1, hidden: false });
 	});
 });
 
