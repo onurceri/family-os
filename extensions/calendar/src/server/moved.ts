@@ -73,5 +73,11 @@ export async function movedEvent(
 		if (input.endTime) change.endTime = input.endTime;
 	}
 	if (input.location && input.location !== o.location) change.location = input.location;
-	return { actionId: 'calendar.changeEvent', input: change, at };
+	return {
+		actionId: 'calendar.changeEvent',
+		input: change,
+		at,
+		to: allDay ? { date: input.date } : { date: input.date, time: input.startTime as string },
+		key: 'calendar:draft_already_there',
+	};
 }

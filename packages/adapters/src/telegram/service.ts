@@ -41,20 +41,21 @@ export interface TelegramHandlers {
 	}): Promise<
 		{ status: 'asked'; threadId: string; replyId: string } | { status: 'busy' | 'unavailable' }
 	>;
-	/** Approves or rejects a draft as the member. Throw a `FamosError` to refuse. */
+	/**
+	 * Approves or rejects a draft as the member, or turns it into the change it offers instead
+	 * (`replace`; it then waits to be approved). Throw a `FamosError` to refuse.
+	 */
 	onDecision(decision: {
 		memberId: string;
 		draftId: string;
-		verb: 'approve' | 'reject';
+		verb: 'approve' | 'reject' | 'replace';
 	}): Promise<void>;
 	/**
 	 * Pending drafts a notification's source points at, that this recipient may see (the adapter
-	 * shows at most five).
+	 * shows at most five). `instead`: what is already there (a line of the message) and the words
+	 * of the button that changes it instead of adding a second one.
 	 */
-	draftButtons(
-		memberId: string,
-		source: { kind: string; id: string },
-	): Promise<{ id: string; label: string }[]>;
+	draftButtons(memberId: string, source: { kind: string; id: string }): Promise<DraftButton[]>;
 	/** Renders a message key in the member's language (the family's language when `null`). */
 	translate(
 		memberId: string | null,
@@ -63,6 +64,13 @@ export interface TelegramHandlers {
 	): string | Promise<string>;
 	/** The member's display name, or null when they are archived or unknown. */
 	memberName(memberId: string): Promise<string | null>;
+}
+
+/** A pending draft as the chat shows it: approve and reject, and maybe a change instead. */
+export interface DraftButton {
+	id: string;
+	label: string;
+	instead?: { there: string; action: string };
 }
 
 export interface TelegramDeps {
@@ -572,7 +580,7 @@ export function createTelegram(deps: TelegramDeps) {
 				log.warn(errInfo(error), 'telegram callback answer failed');
 			}
 		};
-		const match = /^([ar]):(.+)$/.exec(cb.data ?? '');
+		const match = /^([arm]):(.+)$/.exec(cb.data ?? '');
 		const link = await linkByUser(cb.from.id);
 		if (!match || !link) return answer();
 		const memberId = link.member_id;
@@ -581,9 +589,14 @@ export function createTelegram(deps: TelegramDeps) {
 			return answer();
 		}
 		const draftId = match[2] as string;
-		const verb = match[1] === 'a' ? 'approve' : 'reject';
+		const verb = match[1] === 'a' ? 'approve' : match[1] === 'm' ? 'replace' : 'reject';
 		let done = true;
-		let resultKey = verb === 'approve' ? 'telegram_approved' : 'telegram_rejected';
+		let resultKey =
+			verb === 'approve'
+				? 'telegram_approved'
+				: verb === 'replace'
+					? 'telegram_replaced'
+					: 'telegram_rejected';
 		try {
 			await need().onDecision({ memberId, draftId, verb });
 		} catch (error) {
@@ -599,12 +612,18 @@ export function createTelegram(deps: TelegramDeps) {
 			}
 		}
 		await answer(await tr(memberId, resultKey));
-		// Take this draft's buttons away; the rest of the keyboard stays.
+		// Take this draft's buttons away; the rest of the keyboard stays. A draft that became the
+		// change it offered gets that change's own buttons in their place, to approve it or not.
 		const message = cb.message && cb.message.date !== 0 ? (cb.message as Message) : undefined;
 		if (done && message?.reply_markup) {
-			const rows = message.reply_markup.inline_keyboard.filter(
-				(row) => !row.some((b) => 'callback_data' in b && b.callback_data?.endsWith(`:${draftId}`)),
-			);
+			const ours = (row: InlineKeyboardButton[]) =>
+				row.some((b) => 'callback_data' in b && b.callback_data?.endsWith(`:${draftId}`));
+			const all = message.reply_markup.inline_keyboard;
+			const rows = all.filter((row) => !ours(row));
+			if (verb === 'replace') {
+				const at = Math.max(0, all.findIndex(ours));
+				rows.splice(at, 0, ...(await draftRows(memberId, { kind: 'draft', id: draftId })).rows);
+			}
 			try {
 				await s.bot.api.editMessageReplyMarkup(message.chat.id, message.message_id, {
 					reply_markup: { inline_keyboard: rows },
@@ -735,20 +754,26 @@ export function createTelegram(deps: TelegramDeps) {
 		return `${deps.baseURL.replace(/\/+$/, '')}${path}`;
 	}
 
+	/**
+	 * The buttons of the drafts a message is about, and the lines it must say for them: a draft
+	 * that is something already there says so, so approving it never adds a second one unseen,
+	 * and offers the change instead on a row of its own.
+	 */
 	async function draftRows(
 		memberId: string,
 		source: NotificationMessage['source'],
-	): Promise<InlineKeyboardButton[][]> {
-		if (!source) return [];
-		let drafts: { id: string; label: string }[];
+	): Promise<{ rows: InlineKeyboardButton[][]; notes: string[] }> {
+		if (!source) return { rows: [], notes: [] };
+		let drafts: DraftButton[];
 		try {
 			drafts = await need().draftButtons(memberId, source);
 		} catch (error) {
 			log.warn(errInfo(error), 'telegram draft buttons unavailable');
-			return [];
+			return { rows: [], notes: [] };
 		}
 		const reject = await tr(memberId, 'telegram_btn_reject');
 		const rows: InlineKeyboardButton[][] = [];
+		const notes: string[] = [];
 		for (const draft of drafts.slice(0, MAX_DRAFT_BUTTONS)) {
 			const approveData = `a:${draft.id}`;
 			const rejectData = `r:${draft.id}`;
@@ -764,8 +789,14 @@ export function createTelegram(deps: TelegramDeps) {
 				{ text: `✓ ${truncate(draft.label, 28)}`, callback_data: approveData },
 				{ text: `✗ ${reject}`, callback_data: rejectData },
 			]);
+			if (draft.instead) {
+				notes.push(draft.instead.there);
+				rows.push([
+					{ text: `↪ ${truncate(draft.instead.action, 60)}`, callback_data: `m:${draft.id}` },
+				]);
+			}
 		}
-		return rows;
+		return { rows, notes };
 	}
 
 	const channel: NotificationChannel = {
@@ -786,12 +817,13 @@ export function createTelegram(deps: TelegramDeps) {
 			const openUrl = urlOf(message.url);
 			// Telegram rejects URL buttons that are not public https addresses (a LAN or http address).
 			const button = openUrl?.startsWith('https://') ? openUrl : null;
-			const rows = await draftRows(memberId, message.source);
+			const { rows, notes } = await draftRows(memberId, message.source);
 			const open = await tr(memberId, 'telegram_btn_open');
 
 			const attempt = async (withButton: boolean) => {
 				const lines = [`<b>${escapeHtml(truncate(message.title, 300))}</b>`];
 				if (message.body) lines.push(escapeHtml(truncate(message.body, MAX_TEXT_CHARS)));
+				for (const note of notes) lines.push(escapeHtml(truncate(note, 300)));
 				if (openUrl && !(withButton && button)) lines.push(escapeHtml(openUrl));
 				const keyboard = [...rows];
 				if (withButton && button) keyboard.push([{ text: open, url: button }]);
@@ -940,15 +972,23 @@ export function createTelegram(deps: TelegramDeps) {
 			const s = await session();
 			if (!s) return false;
 			const rows: InlineKeyboardButton[][] = [];
-			for (const id of answer.draftIds)
-				rows.push(...(await draftRows(memberId, { kind: 'draft', id })));
+			const notes: string[] = [];
+			for (const id of answer.draftIds) {
+				const found = await draftRows(memberId, { kind: 'draft', id });
+				rows.push(...found.rows);
+				notes.push(...found.notes);
+			}
 			const text = answer.text.trim() || (await tr(memberId, 'telegram_failed'));
+			const html = [
+				answerHtml(truncate(text, MAX_TEXT_CHARS)),
+				...notes.map((note) => escapeHtml(truncate(note, 300))),
+			].join('\n\n');
 			try {
-				await s.bot.api.sendMessage(link.chat_id, answerHtml(truncate(text, MAX_TEXT_CHARS)), {
+				await s.bot.api.sendMessage(link.chat_id, html, {
 					parse_mode: 'HTML',
 					link_preview_options: { is_disabled: true },
 					...(rows.length > 0 && {
-						reply_markup: { inline_keyboard: rows.slice(0, MAX_DRAFT_BUTTONS) },
+						reply_markup: { inline_keyboard: rows.slice(0, MAX_DRAFT_BUTTONS * 2) },
 					}),
 				});
 				return true;

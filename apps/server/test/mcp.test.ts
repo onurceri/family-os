@@ -676,6 +676,36 @@ describe('tools', () => {
 		});
 	});
 
+	it('tells the agent which event is already there for the person to move instead', async () => {
+		const { adminId, admin } = await family();
+		const made = await runtime.kernel.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' },
+			memberActor(adminId, 'admin'),
+		);
+		expect(made.status).toBe('applied');
+		// What a connected agent sent for "the regional gala moved to Sat 14 Nov 09:00".
+		const res = await rpc(
+			admin.secret,
+			legacyCall('calendar_createEvent', {
+				title: 'Regional gala',
+				date: '2026-11-14',
+				startTime: '09:00',
+			}),
+		);
+		const text = res.body.result.content[0].text as string;
+		expect(text).toContain('"status":"drafted"');
+		expect(text).toContain(
+			'Already there: Regional Gala, 2026-11-07 18:00; the person can move it to 2026-11-14 09:00 instead when deciding.',
+		);
+		// The agent only suggests: the draft is still the new event until a person chooses.
+		const drafts = (await runtime.handle.db
+			.selectFrom('core_drafts' as never)
+			.select(['action_id' as never, 'status' as never])
+			.execute()) as unknown as { action_id: string; status: string }[];
+		expect(drafts).toEqual([{ action_id: 'calendar.createEvent', status: 'pending' }]);
+	});
+
 	it('never lists a read-only token’s draft tools, and refuses to call one', async () => {
 		const { adminId, cookie } = await family();
 		void cookie;

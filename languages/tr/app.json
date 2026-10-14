@@ -502,6 +502,8 @@
 	"telegram_quota": "Günlük yükleme sınırına ulaşıldı. Yarın tekrar dene.",
 	"telegram_failed": "Bir şeyler ters gitti. Lütfen tekrar dene.",
 	"telegram_approved": "Onaylandı.",
+	"telegram_replaced": "Artık var olanın değişikliği: uygulamak için onayla.",
+	"telegram_btn_move_instead": "Bunun yerine {{when}} tarihine taşı",
 	"telegram_rejected": "Reddedildi.",
 	"telegram_already_decided": "Zaten karara bağlanmış.",
 	"telegram_btn_reject": "Reddet",

@@ -6,6 +6,7 @@ import { createSecretBox } from '../src/secrets/index.ts';
 import { type FakeBotApi, startFakeBotApi } from '../src/telegram/fake-bot-api.ts';
 import {
 	createTelegram,
+	type DraftButton,
 	type Telegram,
 	type TelegramHandlers,
 	type TelegramShare,
@@ -19,7 +20,7 @@ let shared: TelegramShare[];
 let decisions: { memberId: string; draftId: string; verb: string }[];
 let decisionError: Error | undefined;
 let shareError: Error | undefined;
-let drafts: { id: string; label: string }[];
+let drafts: DraftButton[];
 let names: Record<string, string | null>;
 const started: Telegram[] = [];
 
@@ -529,6 +530,36 @@ describe('notifications', () => {
 		}
 	});
 
+	it('says what is already there and offers to change it instead', async () => {
+		const tg = make();
+		await tg.setToken(fake.token);
+		tg.start();
+		await linked(tg);
+		fake.sent().length = 0;
+		drafts = [
+			{
+				id: 'draft_1',
+				label: 'Regional gala moved',
+				instead: {
+					there: 'Already on the calendar: Regional Gala · Sat 7 Nov 18:00',
+					action: 'Move it to Sat 14 Nov 09:00 instead',
+				},
+			},
+			{ id: 'draft_2', label: 'Bake a cake' },
+		];
+		await tg.channel.send('mem_1', { ...message, source: { kind: 'inbox', id: 'i' } });
+		expect(fake.sent()[0]?.text).toBe(
+			'<b>Dinner &lt;at&gt; 6</b>\nGrandma &amp; friends\nAlready on the calendar: Regional Gala · Sat 7 Nov 18:00',
+		);
+		expect(fake.keyboard(0).map((row) => row.map((b) => b.callback_data ?? b.url))).toEqual([
+			['a:draft_1', 'r:draft_1'],
+			['m:draft_1'],
+			['a:draft_2', 'r:draft_2'],
+			['https://family.example/calendar'],
+		]);
+		expect(fake.keyboard(0)[1]?.[0]?.text).toBe('↪ Move it to Sat 14 Nov 09:00 instead');
+	});
+
 	it('leaves out a draft whose id cannot fit into callback data', async () => {
 		const tg = make();
 		await tg.setToken(fake.token);
@@ -597,6 +628,40 @@ describe('button presses', () => {
 		await until(() => fake.callsOf('answerCallbackQuery').length === 2, 'the second answer');
 		expect(decisions[1]).toEqual({ memberId: 'mem_1', draftId: 'draft_2', verb: 'reject' });
 		expect(fake.callsOf('answerCallbackQuery')[1]).toMatchObject({ text: 'telegram_rejected' });
+	});
+
+	it('turns a draft into the change it offers, and shows that change’s own buttons in its place', async () => {
+		const tg = make();
+		await tg.setToken(fake.token);
+		tg.start();
+		await linked(tg);
+		const offering = {
+			inline_keyboard: [
+				[
+					{ text: '✓ A', callback_data: 'a:draft_1' },
+					{ text: '✗', callback_data: 'r:draft_1' },
+				],
+				[{ text: '↪ Move it instead', callback_data: 'm:draft_1' }],
+				...keyboard.inline_keyboard.slice(1),
+			],
+		};
+		// What the draft is now: a change, approved or rejected like any other.
+		drafts = [{ id: 'draft_1', label: 'Change an event: Regional Gala' }];
+		fake.press(55, 7, 'm:draft_1', offering);
+		await until(() => fake.callsOf('editMessageReplyMarkup').length === 1);
+		expect(decisions).toEqual([{ memberId: 'mem_1', draftId: 'draft_1', verb: 'replace' }]);
+		expect(fake.callsOf('answerCallbackQuery')[0]).toMatchObject({ text: 'telegram_replaced' });
+		expect(fake.callsOf('editMessageReplyMarkup')[0]).toMatchObject({
+			reply_markup: {
+				inline_keyboard: [
+					[
+						{ text: '✓ Change an event: Regional G…', callback_data: 'a:draft_1' },
+						{ text: '✗ telegram_btn_reject', callback_data: 'r:draft_1' },
+					],
+					keyboard.inline_keyboard[1],
+				],
+			},
+		});
 	});
 
 	it('says so when the member may not decide, and keeps the buttons', async () => {

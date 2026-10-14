@@ -163,12 +163,16 @@ export interface UndoStep {
 /**
  * Another action a pending draft could become (`ActionDefinition.instead`). `at` says when the
  * thing already there is (a day, and a time when it has one), so the reviewer can tell which one
- * it is.
+ * it is; `to` is the day (and time) the alternative moves it to, when it moves it. `key` is a
+ * catalog key (in the offering extension's catalog) that says what is there, with `{{what}}`
+ * (its name and when), for places that have no presenter to word it (a chat message).
  */
 export interface DraftAlternative {
 	actionId: string;
 	input: unknown;
 	at?: { date: string; time?: string };
+	to?: { date: string; time?: string };
+	key?: string;
 }
 
 export interface AutoApprovalHints {

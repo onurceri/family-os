@@ -217,6 +217,31 @@ describe('what the model reads after a suggestion', () => {
 		expect(result).toContain('"mayExist":true');
 		expect(result).toContain('It may already be there');
 	});
+
+	it('names the event already there that the person can move instead, and moves nothing', async () => {
+		await createEvent({ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' });
+		k.llm.respondChat([
+			{
+				tool: 'calendar_createEvent',
+				input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
+			},
+			{ text: 'Suggested.' },
+		]);
+		await ask('The regional gala moved to Sat 14 Nov 09:00');
+		const say = JSON.parse(
+			resultOf('calendar_createEvent')
+				.replace(/^<tool_result[^>]*>\n/, '')
+				.replace(/\n<\/tool_result>$/, ''),
+		).say as string;
+		expect(say).toContain(
+			'Already there: Regional Gala, 2026-11-07 18:00; the person can move it to 2026-11-14 09:00 instead when deciding.',
+		);
+		expect(say).not.toContain('It may already be there');
+		// The suggestion stays what the model proposed: only the person turns it into a move.
+		expect((await drafts()).map((d) => [d.action_id, d.status])).toEqual([
+			['calendar.createEvent', 'pending'],
+		]);
+	});
 });
 
 describe('finding one item in a long shopping list', () => {

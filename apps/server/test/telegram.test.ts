@@ -356,6 +356,77 @@ describe('sharing from Telegram', () => {
 		expect(logs.join('\n')).not.toContain(fake.token);
 	});
 
+	it('says an event is already there and moves it from the chat instead of adding a second', async () => {
+		await connect();
+		await link(55);
+		const made = await call('POST', '/api/v1/actions/calendar.createEvent', {
+			title: 'Regional Gala',
+			date: '2026-11-07',
+			startTime: '18:00',
+		});
+		expect(made.body.status).toBe('applied');
+		const galaId = made.body.output.id as string;
+		// The real model output for the coach's message: a new event, not a change.
+		model.answers.push({
+			summary: 'Regional gala moved',
+			proposals: [
+				{
+					action: 'calendar.createEvent',
+					input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
+					dateText: 'Sat 14 Nov',
+					confidence: 0.9,
+					uncertainFields: [],
+				},
+			],
+		});
+		fake.say(55, '/paylas Regional gala moved to Sat 14 Nov 09:00');
+		await until(() => fake.sent().some((m) => m.text === 'Sent to Quick add.'), 'the reply');
+		fake.sent().length = 0;
+		for (let i = 0; i < 4 && fake.sent().length === 0; i++) await runtime.kernel.worker.drain();
+		await until(() => fake.sent().length > 0, 'the notification on Telegram');
+		const draftId = (await call('GET', '/api/v1/core/drafts?sourceKind=inbox&limit=10')).body[0]
+			.id as string;
+
+		const message = fake.sent()[0];
+		expect(message?.text).toContain('Already on the calendar: Regional Gala · ');
+		const rows = fake.keyboard(0);
+		expect(rows.slice(0, 2).map((row) => row.map((b) => b.callback_data))).toEqual([
+			[`a:${draftId}`, `r:${draftId}`],
+			[`m:${draftId}`],
+		]);
+		expect(rows[1]?.[0]?.text).toMatch(/^↪ Move it to .*14.* instead$/);
+
+		// Moving it: the suggestion becomes the change, still waiting, with its own buttons.
+		fake.press(55, 1, `m:${draftId}`, message?.reply_markup);
+		await until(() => fake.callsOf('editMessageReplyMarkup').length === 1, 'the new buttons');
+		const replaced = (await call('GET', '/api/v1/core/drafts?sourceKind=inbox&limit=10')).body[0];
+		expect(replaced).toMatchObject({ actionId: 'calendar.changeEvent', status: 'pending' });
+		const edited = fake.callsOf('editMessageReplyMarkup')[0] as {
+			reply_markup: { inline_keyboard: { text: string; callback_data?: string }[][] };
+		};
+		const first = edited.reply_markup.inline_keyboard[0];
+		expect(first?.map((b) => b.callback_data)).toEqual([`a:${draftId}`, `r:${draftId}`]);
+		expect(first?.[0]?.text).toContain('Change an event');
+
+		// Approving that applies the move: one gala, on the new day.
+		fake.press(55, 1, `a:${draftId}`, edited.reply_markup);
+		await until(
+			async () =>
+				(await call('GET', '/api/v1/core/drafts?sourceKind=inbox&limit=10')).body[0].status ===
+				'applied',
+			'the move to be applied',
+		);
+		const november = (
+			await call('GET', '/api/v1/calendar/occurrences?from=2026-11-01&to=2026-11-30')
+		).body as { eventId: string; startDate: string | null; start: number | null }[];
+		expect(november).toHaveLength(1);
+		expect(november[0]?.eventId).toBe(galaId);
+		expect((await call('GET', `/api/v1/calendar/events/${galaId}`)).body).toMatchObject({
+			date: '2026-11-14',
+			startTime: '09:00',
+		});
+	});
+
 	it('adds text and links, and says when the Inbox is off', async () => {
 		await connect();
 		await link(55);

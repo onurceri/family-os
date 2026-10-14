@@ -502,6 +502,8 @@
 	"telegram_quota": "The daily upload limit is reached. Try again tomorrow.",
 	"telegram_failed": "Something went wrong. Please try again.",
 	"telegram_approved": "Approved.",
+	"telegram_replaced": "It is now a change of the one already there: approve it to apply it.",
+	"telegram_btn_move_instead": "Move it to {{when}} instead",
 	"telegram_rejected": "Rejected.",
 	"telegram_already_decided": "Already decided.",
 	"telegram_btn_reject": "Reject",

@@ -1,6 +1,7 @@
 export * from './schemas.ts';
 export {
 	createTelegram,
+	type DraftButton,
 	type Telegram,
 	type TelegramDeps,
 	type TelegramHandlers,

@@ -29,6 +29,7 @@
 		"@famos/i18n": "workspace:*",
 		"@famos/sdk": "workspace:*",
 		"@famos/themes": "workspace:*",
+		"@famos/time": "workspace:*",
 		"@hono/node-server": "2.1.3",
 		"@hono/zod-openapi": "1.6.3",
 		"@modelcontextprotocol/hono": "2.0.2",

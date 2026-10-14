@@ -286,11 +286,20 @@ export async function runAgentTool(call: {
 		if (result.status === 'drafted') {
 			if (target) call.targets?.set(target.id, target.said);
 			const what = result.subject ? `${call.draftTitle}: ${result.subject}` : call.draftTitle;
-			const exists = result.mayExist
-				? result.mayExist === 'some'
-					? ' Some of it may already be there; tell the person.'
-					: ` It may already be there${result.subject ? ` (${result.subject})` : ''}; tell the person.`
-				: '';
+			const when = (at: { date: string; time?: string }) =>
+				at.time ? `${at.date} ${at.time}` : at.date;
+			const there = result.instead;
+			// What is there is named, so the person hears which one; only they choose to change it,
+			// on the suggestion, when they decide. The agent never does.
+			const exists = there
+				? ` Already there: ${there.name}${there.at ? `, ${when(there.at)}` : ''}; the person can ${
+						there.to ? `move it to ${when(there.to)}` : 'change that one'
+					} instead when deciding. Tell the person.`
+				: result.mayExist
+					? result.mayExist === 'some'
+						? ' Some of it may already be there; tell the person.'
+						: ` It may already be there${result.subject ? ` (${result.subject})` : ''}; tell the person.`
+					: '';
 			return {
 				ok: true,
 				draftId: result.draftId,

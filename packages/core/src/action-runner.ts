@@ -542,10 +542,22 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		});
 		// The proposer is told too, so an AI can warn the person before they look at the card.
 		const exists = await seemsToExist(def, input, { actionId });
+		// And of what it could change instead: an agent tells the person, who chooses when deciding.
+		const offered = autoApproved ? null : await alternativeOf(def, input, { actionId });
+		const named = (offered?.input as { label?: unknown } | undefined)?.label;
+		const instead =
+			offered && typeof named === 'string'
+				? {
+						name: named,
+						...(offered.at && { at: offered.at }),
+						...(offered.to && { to: offered.to }),
+					}
+				: undefined;
 		return {
 			status: 'drafted',
 			draftId,
 			...(exists ? { mayExist: exists } : {}),
+			...(instead && { instead }),
 			...(autoApproved ? { autoApproval: true as const } : {}),
 			...(byOthers ? { decidedByOthers: true as const } : {}),
 			...(subject ? { subject } : {}),
@@ -899,7 +911,13 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (next.refuseProposal && (await next.refuseProposal(ctx, resolved)) !== null) return null;
 			// Stored like every draft of that action: with the real title of what it changes.
 			const stored = title ? { ...(resolved as object), label: title.slice(0, 200) } : resolved;
-			return { actionId: next.id, input: stored, ...(offered.at && { at: offered.at }) };
+			return {
+				actionId: next.id,
+				input: stored,
+				...(offered.at && { at: offered.at }),
+				...(offered.to && { to: offered.to }),
+				...(offered.key && { key: offered.key }),
+			};
 		} catch (error) {
 			logger.warn({ err: error, ...what }, 'finding an alternative failed');
 			return null;

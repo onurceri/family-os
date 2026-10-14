@@ -150,6 +150,8 @@ export type ActionResult<O> =
 	 * `subject`: what the stored suggestion is about, in its stored words (the real title of an
 	 * existing item, not the proposer's name for it); absent when it names nothing.
 	 * `mayExist`: the action's `alreadyThere` thinks what was proposed is on record already.
+	 * `instead`: the thing already there that the person may change instead when they decide
+	 * (its real name, when it is, and the day it would move to), so an agent can tell them.
 	 */
 	| {
 			status: 'drafted';
@@ -158,6 +160,11 @@ export type ActionResult<O> =
 			decidedByOthers?: true;
 			subject?: string;
 			mayExist?: boolean | 'some';
+			instead?: {
+				name: string;
+				at?: { date: string; time?: string };
+				to?: { date: string; time?: string };
+			};
 	  };
 
 /** Stored on a draft when an action is proposed rather than applied. */

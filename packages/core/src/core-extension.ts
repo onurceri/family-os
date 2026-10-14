@@ -260,7 +260,11 @@ const toDraft = (
 	titleKey,
 	mayExist: mayExist === true,
 	mayExistSome: mayExist === 'some',
-	instead,
+	instead: instead && {
+		actionId: instead.actionId,
+		input: instead.input,
+		...(instead.at && { at: instead.at }),
+	},
 	replacedFrom:
 		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
 });

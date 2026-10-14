@@ -1,6 +1,7 @@
 import type { Telegram, TelegramHandlers } from '@famos/adapters/telegram';
 import { type CoreTables, type Kernel, memberChanged } from '@famos/core';
-import { FamosError } from '@famos/sdk';
+import { FamosError, subjectOf } from '@famos/sdk';
+import { formatClock, formatDate } from '@famos/time';
 import { memberActor, shareToInbox } from './inbox-share.ts';
 
 /**
@@ -94,6 +95,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			const actor = await memberActor(kernel, memberId);
 			if (!actor) throw new FamosError('forbidden', 'Not a member');
 			if (verb === 'approve') await kernel.runner.approveDraft(draftId, actor);
+			else if (verb === 'replace') await kernel.runner.replaceDraft(draftId, actor);
 			else await kernel.runner.rejectDraft(draftId, actor);
 		},
 
@@ -113,13 +115,47 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			// One about a day that has passed is expired: no buttons for it.
 			const actor = await memberActor(kernel, memberId);
 			const passed = await kernel.runner.passedCheck();
-			return rows
+			const { formatLocale, hourCycle } = await kernel.ctx.family.settings();
+			const when = (at: { date: string; time?: string }) => {
+				const day = formatDate(at.date, formatLocale, {
+					weekday: 'short',
+					day: 'numeric',
+					month: 'short',
+				});
+				return at.time ? `${day} ${formatClock(at.time, formatLocale, hourCycle)}` : day;
+			};
+			const t = (key: string, params?: Record<string, unknown>) =>
+				handlers.translate(memberId, key, params);
+			const shown = rows
 				.filter((r) => actor !== null && !passed(r) && kernel.runner.mayDecide(r, actor))
-				.slice(0, 5)
-				.map((r) => ({
-					id: r.id,
-					label: r.summary ?? kernel.registry.actions.get(r.action_id)?.title ?? r.action_id,
-				}));
+				.slice(0, 5);
+			return Promise.all(
+				shown.map(async (r) => {
+					const def = kernel.registry.actions.get(r.action_id);
+					const named = subjectOf(r.input);
+					// A suggestion that became a change says so, with what it changes.
+					const label =
+						r.replaced !== null && def?.draftTitle
+							? `${await t(def.draftTitle)}${named ? `: ${named}` : ''}`
+							: (r.summary ?? def?.title ?? r.action_id);
+					const offered = await kernel.runner.alternative(r);
+					if (!offered) return { id: r.id, label };
+					const name = (offered.input as { label?: unknown }).label;
+					const what = [typeof name === 'string' ? name : '', offered.at ? when(offered.at) : '']
+						.filter(Boolean)
+						.join(' · ');
+					return {
+						id: r.id,
+						label,
+						instead: {
+							there: await t(offered.key ?? 'app:draft_instead_there', { what, name: what }),
+							action: offered.to
+								? await t('app:telegram_btn_move_instead', { when: when(offered.to) })
+								: await t('app:draft_instead'),
+						},
+					};
+				}),
+			);
 		},
 	};
 	telegram.setHandlers(handlers);
