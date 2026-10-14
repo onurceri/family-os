@@ -62832,7 +62832,6 @@
 																	"kind": {
 																		"type": "string",
 																		"enum": [
-																			"unknown_namespace",
 																			"unknown_key",
 																			"not_text",
 																			"placeholders",

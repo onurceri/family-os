@@ -1,4 +1,6 @@
 import { defineWebExtension } from '@famos/ui/slots';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { addObligationPresenter, completeObligationPresenter } from './presenters.js';
 
 /**
@@ -7,7 +9,8 @@ import { addObligationPresenter, completeObligationPresenter } from './presenter
  * own: the record pages belong to vehicles, pets and the home.
  */
 export default defineWebExtension({
-	id: 'records',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'records:feature_name',
 	descriptionKey: 'records:feature_description',
 	slots: [

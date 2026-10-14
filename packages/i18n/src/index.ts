@@ -12,10 +12,11 @@ import {
 /**
  * Shared i18n setup for the web app and the server. Built on i18next.
  *
- * English is the base language and the only one the code knows. Its catalogs live in code:
+ * English is the base language and the only one the app's code knows. Its catalogs live in code:
  *   apps/web/src/messages/en.json                → namespace "app"
- *   extensions/<id>/src/messages/en.json         → namespace "<id>"
- * Every other language is a language pack (data, see `pack.ts`): `languages/<code>/`. Missing
+ *   extensions/<id>/src/messages/en.json         → namespace "<id>", registered by the extension
+ * Every other language is a language pack (data, see `pack.ts`): `languages/<code>/`, laid over
+ * the translations extensions ship (`extensions/<id>/src/messages/<code>.json`). Missing
  * strings show in English (`fallbackLng`). Interpolation uses i18next syntax: "Hello, {{name}}".
  */
 /**

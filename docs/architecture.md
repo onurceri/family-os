@@ -162,7 +162,7 @@ An illustrative extension (the real ones live in `extensions/`):
   "famos": {
     "id": "shopping",
     "version": "1.2.0",
-    "sdk": "^0.1.0",
+    "sdk": "^0.4.0",
     "capabilities": ["shopping.view", "shopping.edit"]
   }
 }
@@ -171,9 +171,12 @@ An illustrative extension (the real ones live in `extensions/`):
 ```ts
 // extensions/shopping/src/server/index.ts
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 
 export default defineExtension({
   manifest: pkg.famos,
+  messages: { en, tr },                         // its texts, under its id (see Language packs)
   capabilities: [shoppingView, shoppingEdit],   // defineCapability(...), see §13
   actions: [addItem, checkOff],                 // see below
   routes: shoppingRoutes,                       // defineRoute(...) definitions; served under /api/v1/shopping
@@ -202,7 +205,8 @@ export const addItem = defineAction({
 
 // extensions/shopping/src/web/index.ts
 export default defineWebExtension({
-  id: 'shopping',
+  manifest: pkg.famos,                      // the same id as the server side
+  messages: en,                             // English; other languages come with the pack
   nav: [{ id: 'shopping.nav', path: '/shopping', labelKey: 'shopping:nav', placement: 'primary' }],
   pages: [{ id: 'shopping.page', path: '/shopping', component: () => import('./ShoppingPage.svelte') }],
   slots: [{ slot: 'dashboard.card', id: 'shopping.list', component: () => import('./ListCard.svelte') }],
@@ -235,13 +239,13 @@ The Inbox stores the papers it files on a record under `inbox/` and grants each 
 
 ### Manifest
 
-Every extension describes itself in the `famos` field of its package.json (`ExtensionManifestSchema` in the SDK) and passes it to `defineExtension({ manifest: pkg.famos, … })`. It is static JSON so that the host can read what an extension is and what it reaches before running any of its code:
+Every extension describes itself in the `famos` field of its package.json (`ExtensionManifestSchema` in the SDK) and passes it to `defineExtension({ manifest: pkg.famos, … })` and to `defineWebExtension({ manifest: pkg.famos, … })`, so both sides have the same id. It is static JSON so that the host can read what an extension is and what it reaches before running any of its code:
 
 | Field | Meaning |
 |---|---|
 | `id` | Lowercase letters and digits; the namespace of everything it declares and its API path segment |
 | `version` | Its own version, the same as the package's |
-| `sdk` | The SDK versions it was built for, as a caret range (`^0.3.0`) |
+| `sdk` | The SDK versions it was built for, as a caret range (`^0.4.0`) |
 | `dependsOn` | Extensions that must be present; their migrations run first |
 | `optional` | Extensions it works with when present and does without otherwise (Quick add files papers on records only when records is there). They do not change the load order |
 | `tablePrefix` | The prefix of its tables; `<id>_` when left out |
@@ -264,6 +268,7 @@ An entry contributes:
 - **Slots**: typed contribution points whose contracts are plain data plus a component loader: the app's own (`dashboard.card`, `today.atmosphere`, `today.capture`, `today.head`, `nav.action`, `display.widget`, `display.status`, `display.ambient`, `setup.step`, `settings.display`) and those an extension owns. An owner declares its slot from its contract by adding to the global `FamosExtensionSlots` interface (`record.section` in records, `inbox.fileTarget` in inbox), so the page that renders it and the extensions that contribute to it share one type. It is a global rather than an augmentation of `@famos/ui/slots`, because a checker that reaches a component of `@famos/ui` through a link can see a copy of that module an augmentation does not reach.
 - **Today**: `timeline` (the day's things; a timeline's `page` is where the day links), `today` facets and `blocks` (below), `dashboard.card` cards.
 - **Draft presenters** for the extension's own actions. Core's actions are presented by the app (`apps/web/src/lib/app-slots.ts`).
+- **Texts**: `messages`, its English catalog, which `registerWebExtension` adds under its id (see "Language packs").
 
 **Today facets** are what Today shows in shapes of its own rather than as a card, so each style can draw them its way: `perMember` (counts per person: chores as rings, bars, "2 left", a display's total), `photo` (the photo of the day), `weather` (the next hours, for a style that draws them itself) and `setupHint` (a step of a new family's first steps; a `fresh` step also says whether the family is new). A style shows a facet only when an extension that is turned on provides it and the viewer holds its `requires`. **Blocks** are what "What Today shows" lists: the app's own (the clock, the greeting, the weather and the photo when something provides them, the next thing, the day, where everyone is, Needs you, the next days, done today), those extensions add (`blocks`, placed by `order`; the chores and the meals), and every card; a card or a facet names the extension's block it belongs to with `block`. Block ids are what people hide, so they never change.
 
@@ -316,16 +321,18 @@ Language is not region: an English-speaking family in Berlin wants English words
 
 ### Language packs
 
-Adding a language must not need a code change, so English is the only language the code knows (`apps/web/src/messages/en.json`, `extensions/<id>/src/messages/en.json`). Every other language is a **pack**, a folder `languages/<code>/` with `manifest.json` and one catalog per namespace (`app.json`, `<extension id>.json`). Turkish is bundled in `languages/`; the Docker image copies the folder to `/app/languages` (`check-dockerfile` enforces it). Installed packs live in `<data>/languages/<code>/`, override a bundled pack of the same code (newer translations without an app release), and are archived in backups (`languages/` in the tar). A pack is text only and rendered as text everywhere, never HTML, which is why it is safe to install at runtime when code is not.
+Adding a language must not need a code change, so English is the only language the app's code knows (`apps/web/src/messages/en.json`). Every other language is a **pack**, a folder `languages/<code>/` with `manifest.json` and one catalog per namespace (`app.json`, and `<extension id>.json` for any extension it translates). Turkish is bundled in `languages/`; the Docker image copies the folder to `/app/languages` (`check-dockerfile` enforces it). Installed packs live in `<data>/languages/<code>/`, override a bundled pack of the same code (newer translations without an app release), and are archived in backups (`languages/` in the tar). A pack is text only and rendered as text everywhere, never HTML, which is why it is safe to install at runtime when code is not.
+
+**Catalogs register themselves.** Each extension carries its own texts in `src/messages/<code>.json`: `en.json`, which every key must be in, and the translations it ships (`tr.json`). The server entry passes them as `defineExtension({ messages: { en, tr } })`, the web entry its English as `defineWebExtension({ manifest: pkg.famos, messages: en })`; the namespace is always the manifest's id (`app` is reserved). The host never names an extension's catalog: the server builds its English from the extensions it loads (`catalogsOf` in `apps/server/src/i18n.ts`), and the web app registers each extension's English in `registerWebExtension`. A language shows, key by key, the **pack's string, then the extension's own translation, then English**: so a bundled pack holds only `app.json`, an extension can ship its translations with itself, and a pack can still correct or add any extension's strings. A language is offered only when a pack for it exists; an extension's translation of a language without a pack waits until one is installed.
 
 - **Words code must recognize** (command names, weekdays, units, keywords) are comma-separated catalog strings too, read with `ctx.vocabulary(key)` on the server (all installed languages) or `t(key)` in the UI. The Telegram share command is one: its English name and every pack's own name are accepted.
-- **`@famos/i18n`** holds the format and the rules, with no file access: the manifest schema (`PackManifestSchema`; the code is validated with `Intl.getCanonicalLocales`), `validatePack` (unknown keys and namespaces are reported and ignored, a string whose `{{placeholders}}` differ from English is dropped, 2 MB per pack, 4 KB per string, plural forms of the language's own CLDR categories), `coverage`, `negotiateLocale` among the available codes, `satisfiesRange` for the `famos` range, and `createI18n`/`addCatalogs` with English as `fallbackLng`. `@famos/i18n/node` reads and writes pack folders and is used by the server and the tools.
-- **The registry** (`apps/server/src/languages.ts`, the composition root) loads bundled and then installed packs at start and on every install or removal; a broken pack is skipped and logged. Core sees it only through `LanguagePort` (`KernelOptions.languages`; without one English is listed and any well-formed code is accepted, as in tests). `createTranslate(registry)` rebuilds its i18next instance when the registry changes and renders notifications, Telegram, email and push texts; `kernel.translate`, `ctx.translate` and `uow.translate` expose it.
+- **`@famos/i18n`** holds the format and the rules, with no file access: the manifest schema (`PackManifestSchema`; the code is validated with `Intl.getCanonicalLocales`), `validatePack` against the installed English (unknown keys are reported and ignored; a namespace the pack lacks only lowers its coverage, and one of an extension that is not installed is left out without a problem; a string whose `{{placeholders}}` differ from English is dropped; 2 MB per pack, 4 KB per string, plural forms of the language's own CLDR categories), `withOwnTranslations` (lays a pack over the extensions' translations of its language, checking those the same way), `coverage`, `negotiateLocale` among the available codes, `satisfiesRange` for the `famos` range, and `createI18n`/`addCatalogs` with English as `fallbackLng`. `@famos/i18n/node` reads and writes pack folders and is used by the server and the tools.
+- **The registry** (`apps/server/src/languages.ts`, the composition root) loads bundled and then installed packs at start and on every install or removal, each laid over the loaded extensions' translations of its language; a broken pack is skipped and logged. Coverage and the served catalogs are those of the combination, which is what the family sees. Core sees it only through `LanguagePort` (`KernelOptions.languages`; without one English is listed and any well-formed code is accepted, as in tests). `createTranslate(registry)` rebuilds its i18next instance when the registry changes and renders notifications, Telegram, email and push texts; `kernel.translate`, `ctx.translate` and `uow.translate` expose it.
 - **Codes are validated against the registry, not an enum**: family `locale`, a member's `locale`, `core.setMyLanguage` and setup refuse a code no pack exists for (`languages.assertKnown`). Removing an installed pack moves the family back to English and clears members who used it.
 - **Routes and actions** (core): `core.listLanguages` and `core.getLanguageCatalogs` are public (setup and sign-in need them; the catalogs are JSON text with an `ETag` of the pack version, English is not served). Changing state goes through actions: `core.installLanguagePack` (validates, writes the pack folder through the port and records it in `core_settings.languages`, both in the action; the file write is idempotent and the one effect outside the database), `core.removeLanguagePack`, and `core.installLanguagePackFromUrl`, which only enqueues the `core.fetchLanguagePack` job (guarded HTTP is for jobs); its progress is in `core_settings.languages.fetch`. All need `core.settings.manage`. `core.setMyLanguage` lets any member choose their own language.
-- **The web app** bundles English only. It reads `core.listLanguages`, loads the chosen pack on demand (cached by version in `localStorage` for offline starts), sets `<html lang dir>` and follows `core.family.changed` and `core.languages.changed` events. Signed out, the language is the device's choice (sign-in switcher) or the browser's best match; signed in, it is the member's `locale`, else the family's. The first screen of setup is the language choice, and setup continues in it; it becomes the family's language. Notifications and the assistant follow the member's language; displays use the family's.
+- **The web app** bundles English only (the app's, and each extension's from its web entry). It reads `core.listLanguages`, loads the chosen pack on demand (cached by version in `localStorage` for offline starts), sets `<html lang dir>` and follows `core.family.changed` and `core.languages.changed` events. Signed out, the language is the device's choice (sign-in switcher) or the browser's best match; signed in, it is the member's `locale`, else the family's. The first screen of setup is the language choice, and setup continues in it; it becomes the family's language. Notifications and the assistant follow the member's language; displays use the family's.
 - **Prompts** name the language with `Intl.DisplayNames` (`languageName`), never a map. A test (`scripts/language-branches.test.ts`) fails on `=== 'tr'`-style comparisons and hard-coded locale lists outside tests and `languages/`.
-- **Tools**: `pnpm lang:template <code>`, `pnpm lang:check <dir>` (see [the guide](guide/languages.md)). CI requires every bundled pack to be valid and 100% complete (`packages/i18n/test`).
+- **Tools**: `pnpm lang:template <code>`, `pnpm lang:check <dir>` for a pack folder or an extension folder (see [the guide](guide/languages.md)). CI requires every bundled pack to hold only `app.json`, valid and complete, every bundled extension to ship each bundled language, valid and complete, and so each bundled language to be 100% complete as the app shows it (`packages/i18n/test`).
 
 ### Appearance: styles and palettes
 

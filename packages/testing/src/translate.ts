@@ -1,12 +1,19 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { addCatalogs, buildResources, createI18n, DEFAULT_LOCALE, validatePack } from '@famos/i18n';
-import { listPackDirsSync, readEnglishSync, readPackDirSync } from '@famos/i18n/node';
+import {
+	addCatalogs,
+	buildResources,
+	createI18n,
+	DEFAULT_LOCALE,
+	validatePack,
+	withOwnTranslations,
+} from '@famos/i18n';
+import { listPackDirsSync, readCheckoutCatalogs, readPackDirSync } from '@famos/i18n/node';
 
 /**
  * A translator for tests that need real texts: English from every catalog in the repository plus
- * the bundled language packs in `languages/`, merged with English as fallback like the server's
- *. `createTestKernel` renders a notification's key by default; pass this as
+ * the bundled language packs in `languages/` over the extensions' own translations, with English
+ * as fallback like the server's. `createTestKernel` renders a notification's key by default; pass this as
  * `translate` when a test reads the words.
  */
 export function repoTranslate(): (
@@ -15,7 +22,7 @@ export function repoTranslate(): (
 	params?: Record<string, unknown>,
 ) => string {
 	const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-	const english = readEnglishSync(root);
+	const { english, translations } = readCheckoutCatalogs(root);
 	const i18n = createI18n({
 		resources: buildResources(
 			Object.entries(english).map(([namespace, catalog]) => ({
@@ -31,7 +38,8 @@ export function repoTranslate(): (
 	for (const code of listPackDirsSync(join(root, 'languages'))) {
 		const result = validatePack(readPackDirSync(join(root, 'languages', code)), english);
 		if (!result.ok) throw new Error(`${code}: ${result.error}`);
-		addCatalogs(i18n, result.pack.manifest.code, result.pack.catalogs);
+		const { pack } = withOwnTranslations(result.pack, translations[code] ?? {}, english);
+		addCatalogs(i18n, pack.manifest.code, pack.catalogs);
 		known.add(result.pack.manifest.code);
 	}
 	return (locale, key, params) => {

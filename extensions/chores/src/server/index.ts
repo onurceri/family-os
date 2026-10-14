@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { choresEdit, choresUse, choresView } from './capabilities.ts';
 import {
 	archiveChore,
@@ -24,6 +26,7 @@ import { getTodayByMember, todayByMemberAction } from './today.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	actions: [
 		createChore,

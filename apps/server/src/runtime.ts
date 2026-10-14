@@ -56,7 +56,7 @@ import type { Config } from './config.ts';
 import { wireEmail } from './email.ts';
 import { extensions } from './extensions.ts';
 import { deviceTokenFromHeaders } from './http/devices.ts';
-import { createTranslate, createVocabulary, ENGLISH } from './i18n.ts';
+import { catalogsOf, createTranslate, createVocabulary } from './i18n.ts';
 import {
 	createLanguageRegistry,
 	findBundledLanguages,
@@ -223,8 +223,9 @@ export function openRuntime(
 		// Core owns the per-area setting; until the kernel exists nothing is open.
 		areaAccess: (id) => kernelRef?.aiAreas.access(id) ?? 'off',
 	});
+	const loaded = options.extensions ?? extensions;
 	const languages = createLanguageRegistry({
-		english: ENGLISH,
+		...catalogsOf(loaded),
 		appVersion: APP_VERSION,
 		bundledDir: findBundledLanguages(config.bundledLanguagesDir),
 		installedDir: config.languagesDir,
@@ -247,7 +248,7 @@ export function openRuntime(
 		http: options.http ?? createGuardedHttp(),
 		identity: identity.admin,
 		llm,
-		extensions: options.extensions ?? extensions,
+		extensions: loaded,
 		infrastructureJobs: [
 			...createEmailJobs(email),
 			...createBackupJobs({

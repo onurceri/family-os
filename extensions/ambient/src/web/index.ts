@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { Images } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { photoFacet, placeStep, SETTINGS_PATH, weatherFacet } from './today.js';
 
 /**
@@ -9,7 +11,8 @@ import { photoFacet, placeStep, SETTINGS_PATH, weatherFacet } from './today.js';
  * the place, this extension decides when to show itself.
  */
 export default defineWebExtension({
-	id: 'ambient',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'ambient:feature_name',
 	descriptionKey: 'ambient:feature_description',
 	nav: [

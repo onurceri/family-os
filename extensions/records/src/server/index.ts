@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { recordsEdit, recordsView } from './capabilities.ts';
 import {
 	attachDocument,
@@ -35,6 +37,7 @@ import { migrations } from './store.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	ai: { context: aiContext.id, index: searchIndex },
 	actions: [

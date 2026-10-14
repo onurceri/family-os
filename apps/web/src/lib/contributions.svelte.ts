@@ -1,6 +1,7 @@
 import type { WebExtension } from '@famos/ui/slots';
 import { appDraftPresenters, appSlotContributions } from './app-slots.js';
 import { type Contributions, collect } from './contributions.js';
+import { registerEnglish } from './i18n.svelte.js';
 
 /**
  * The one place extensions register their web side (`registerWebExtension`), and the one place
@@ -52,7 +53,8 @@ class Registry {
 
 export const contributions = new Registry();
 
-/** Adds an extension's `./web` entry to the app. */
+/** Adds an extension's `./web` entry to the app, with its English texts. */
 export function registerWebExtension(ext: WebExtension): void {
+	if (ext.messages) registerEnglish(ext.id, ext.messages);
 	contributions.register(ext);
 }

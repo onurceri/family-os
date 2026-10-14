@@ -513,8 +513,19 @@ export interface AiFeatureContribution {
 	hintKey?: string;
 }
 
+/** Translatable texts: keys to strings, nested as in the JSON catalog files. */
+export interface WebMessages {
+	readonly [key: string]: string | WebMessages;
+}
+
 export interface WebExtension {
+	/** The manifest's id: the namespace of its contributions and of its texts. */
 	id: string;
+	/**
+	 * Its English texts (`src/messages/en.json`), registered under its id so keys read
+	 * `<id>:<key>`. Other languages come from the server with the language's pack.
+	 */
+	messages?: WebMessages;
 	/** Name and one-line description in Settings → Features (`<extension>:<key>`). */
 	labelKey?: string;
 	descriptionKey?: string;
@@ -549,7 +560,15 @@ export interface PageContribution {
 	component: () => Promise<{ default: Component | Component<PageProps> }>;
 }
 
-export function defineWebExtension(ext: WebExtension): WebExtension {
+/**
+ * An extension's `./web` entry. `manifest` is the `famos` field of its package.json, the same one
+ * its server side declares, so both sides share one id.
+ */
+export function defineWebExtension(
+	definition: Omit<WebExtension, 'id'> & { manifest: { id: string } },
+): WebExtension {
+	const { manifest, ...rest } = definition;
+	const ext: WebExtension = { ...rest, id: manifest.id };
 	const own = (id: string) => id.startsWith(`${ext.id}.`);
 	for (const d of ext.drafts ?? []) {
 		if (!own(d.actionId))

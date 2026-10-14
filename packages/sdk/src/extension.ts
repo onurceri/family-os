@@ -5,6 +5,7 @@ import type { ConversationProvider } from './conversation.ts';
 import type { EventDefinition } from './events.ts';
 import type { AnyJobDefinition } from './jobs.ts';
 import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
+import type { ExtensionMessages } from './messages.ts';
 import type { NotificationKindDefinition } from './notifications.ts';
 import type { DbExecutor } from './ports.ts';
 import type { AnyRouteDefinition } from './routes.ts';
@@ -50,6 +51,11 @@ export interface ExtensionDefinition {
 	readonly shareTarget?: ShareTarget;
 	/** Answers members who ask from outside the app; listed in the manifest's `provides`. */
 	readonly conversation?: ConversationProvider;
+	/**
+	 * Its texts by language, imported from `src/messages/<code>.json`: `en` and the translations
+	 * it ships. The host registers them under the extension's id.
+	 */
+	readonly messages?: ExtensionMessages;
 	/** Optional wiring after all extensions are loaded, e.g. event subscriptions. */
 	register?(ctx: ExtensionContext): void | Promise<void>;
 }
@@ -128,6 +134,7 @@ export function defineExtension(definition: {
 	ai?: AiExtensionHints;
 	shareTarget?: ShareTarget;
 	conversation?: ConversationProvider;
+	messages?: ExtensionMessages;
 	register?(ctx: ExtensionContext): void | Promise<void>;
 }): ExtensionDefinition {
 	const manifest = parseManifest(definition.manifest);

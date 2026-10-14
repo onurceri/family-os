@@ -4,9 +4,17 @@ import { defineWebExtension, type WebExtension } from '../src/slots.js';
 const component = () => Promise.resolve({ default: (() => {}) as never });
 const load = async () => [];
 
-const define = (ext: Partial<WebExtension>) => () => defineWebExtension({ id: 'garden', ...ext });
+const define = (ext: Partial<Omit<WebExtension, 'id'>>) => () =>
+	defineWebExtension({ manifest: { id: 'garden' }, ...ext });
 
 describe('defineWebExtension', () => {
+	it('takes its id from the manifest and keeps its English texts', () => {
+		const ext = defineWebExtension({ manifest: { id: 'garden' }, messages: { beds: 'Beds' } });
+		expect(ext.id).toBe('garden');
+		expect(ext.messages).toEqual({ beds: 'Beds' });
+		expect('manifest' in ext).toBe(false);
+	});
+
 	it('takes an extension whose contributions are its own', () => {
 		expect(
 			define({

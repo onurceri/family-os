@@ -21,6 +21,8 @@ import {
 	ReviewLabelSchema,
 	tagKey,
 } from '../contract/index.ts';
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import {
 	calendarEdit,
 	calendarManage,
@@ -893,6 +895,7 @@ const getEvent = defineRoute({
 
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	ai: { index: searchIndex, context: aiContext.id },
 	actions: [

@@ -1,12 +1,15 @@
 import { unwrap } from '@famos/api-client';
 import { defineWebExtension } from '@famos/ui/slots';
 import { SquarePlus } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
 import { EXTRACT_FEATURE, TRANSCRIBE_FEATURE } from '../contract/index.js';
+import en from '../messages/en.json' with { type: 'json' };
 import { api } from './api.js';
 
 /** Quick add UI: the Quick add tab (with the count waiting), its global button and the share target page. */
 export default defineWebExtension({
-	id: 'inbox',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'inbox:feature_name',
 	descriptionKey: 'inbox:feature_description',
 	aiFeatures: [

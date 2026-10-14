@@ -49,7 +49,7 @@ export type LanguageSummary = Omit<Language, 'installedAt' | 'url'>;
 export interface LanguageProblem {
 	namespace: string;
 	key: string;
-	kind: 'unknown_namespace' | 'unknown_key' | 'not_text' | 'placeholders' | 'too_long';
+	kind: 'unknown_key' | 'not_text' | 'placeholders' | 'too_long';
 }
 
 export interface LanguageCatalogs {
@@ -204,13 +204,7 @@ export function createLanguages(deps: LanguagesDeps) {
 				z.object({
 					namespace: z.string(),
 					key: z.string(),
-					kind: z.enum([
-						'unknown_namespace',
-						'unknown_key',
-						'not_text',
-						'placeholders',
-						'too_long',
-					]),
+					kind: z.enum(['unknown_key', 'not_text', 'placeholders', 'too_long']),
 				}),
 			),
 			/** Problems beyond the first hundred. */

@@ -48,7 +48,7 @@ export type PackManifest = z.infer<typeof PackManifestSchema>;
 export interface PackProblem {
 	namespace: string;
 	key: string;
-	kind: 'unknown_namespace' | 'unknown_key' | 'not_text' | 'placeholders' | 'too_long';
+	kind: 'unknown_key' | 'not_text' | 'placeholders' | 'too_long';
 }
 
 export interface LanguagePack {
@@ -163,8 +163,11 @@ export function checkNamespace(
 }
 
 /**
- * Validates a pack from untrusted input (`{ manifest, catalogs }`). A bad manifest or an
- * oversized pack is refused; bad strings are dropped and reported, the rest of the pack loads.
+ * Validates a pack from untrusted input (`{ manifest, catalogs }`) against the installed English
+ * (the app's and every installed extension's catalog). A bad manifest or an oversized pack is
+ * refused; bad strings are dropped and reported, the rest of the pack loads. A pack may lack a
+ * namespace (that only lowers its coverage) and may carry one of an extension that is not
+ * installed (it is left out, since there is nothing to check it against).
  */
 export function validatePack(
 	input: unknown,
@@ -206,15 +209,39 @@ export function validatePack(
 	const problems: PackProblem[] = [];
 	for (const [namespace, translated] of Object.entries(rawCatalogs)) {
 		const base = english[namespace];
-		if (!base) {
-			problems.push({ namespace, key: '', kind: 'unknown_namespace' });
-			continue;
-		}
+		if (!base) continue;
 		const checked = checkNamespace(namespace, base, translated, manifest.code);
 		problems.push(...checked.problems);
 		if (flatten(checked.catalog).size > 0) catalogs[namespace] = checked.catalog;
 	}
 	return { ok: true, pack: { manifest, catalogs }, problems };
+}
+
+/**
+ * What a language shows: the pack's strings over the translations the extensions ship of the
+ * same language (`own`, by namespace), so a pack only needs what it changes or adds. English fills
+ * in the rest when the strings are used. The extensions' strings are checked like a pack's; those
+ * that fail are left out and reported.
+ */
+export function withOwnTranslations(
+	pack: LanguagePack,
+	own: Catalogs,
+	english: Catalogs,
+): { pack: LanguagePack; problems: PackProblem[] } {
+	const catalogs: Catalogs = { ...pack.catalogs };
+	const problems: PackProblem[] = [];
+	for (const [namespace, translated] of Object.entries(own)) {
+		const base = english[namespace];
+		if (!base) continue;
+		const checked = checkNamespace(namespace, base, translated, pack.manifest.code);
+		problems.push(...checked.problems);
+		const merged = new Map([
+			...flatten(checked.catalog),
+			...flatten(pack.catalogs[namespace] ?? {}),
+		]);
+		if (merged.size > 0) catalogs[namespace] = unflatten(merged);
+	}
+	return { pack: { manifest: pack.manifest, catalogs }, problems };
 }
 
 export interface Coverage {
@@ -228,13 +255,18 @@ export interface Coverage {
 
 /** How much of English a pack translates. A plural group counts once, when all its forms are there. */
 export function coverage(english: Catalogs, pack: LanguagePack): Coverage {
-	const categories = pluralCategories(pack.manifest.code);
+	return catalogCoverage(english, pack.catalogs, pack.manifest.code);
+}
+
+/** How much of English the catalogs of language `code` translate (see `coverage`). */
+export function catalogCoverage(english: Catalogs, catalogs: Catalogs, code: string): Coverage {
+	const categories = pluralCategories(code);
 	let total = 0;
 	let translated = 0;
 	const missing: Coverage['missing'] = [];
 	for (const [namespace, base] of Object.entries(english)) {
 		const index = indexEnglish(base);
-		const have = flatten(pack.catalogs[namespace] ?? {});
+		const have = flatten(catalogs[namespace] ?? {});
 		const seen = new Set<string>();
 		for (const key of index.flat.keys()) {
 			const m = PLURAL_SUFFIX.exec(key);

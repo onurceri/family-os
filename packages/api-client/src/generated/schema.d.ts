@@ -32053,7 +32053,7 @@ export interface operations {
                                 namespace: string;
                                 key: string;
                                 /** @enum {string} */
-                                kind: "unknown_namespace" | "unknown_key" | "not_text" | "placeholders" | "too_long";
+                                kind: "unknown_key" | "not_text" | "placeholders" | "too_long";
                             }[];
                             moreProblems: number;
                         };

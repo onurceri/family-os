@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
 import {
 	aiListNotes,
@@ -26,6 +28,7 @@ import { migrations } from './store.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	actions: [postNote, editNote, removeNote, pinNote, moveNote, markSeen, setNotePhoto, aiListNotes],
 	routes: [getNotes, getNotePhoto, uploadNotePhoto],

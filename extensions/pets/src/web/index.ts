@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { PawPrint } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { addPetPresenter, addTreatmentPresenter } from './presenters.js';
 
 /**
@@ -8,7 +10,8 @@ import { addPetPresenter, addTreatmentPresenter } from './presenters.js';
  * Inbox's "Add to…".
  */
 export default defineWebExtension({
-	id: 'pets',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'pets:feature_name',
 	descriptionKey: 'pets:feature_description',
 	nav: [

@@ -14,6 +14,7 @@ export * from './jobs.ts';
 export * from './label-words.ts';
 export * from './llm.ts';
 export * from './manifest.ts';
+export * from './messages.ts';
 export * from './notifications.ts';
 export * from './ports.ts';
 export * from './routes.ts';

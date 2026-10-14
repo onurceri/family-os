@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { Car } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { addLogPresenter, addVehiclePresenter } from './presenters.js';
 
 /**
@@ -8,7 +10,8 @@ import { addLogPresenter, addVehiclePresenter } from './presenters.js';
  * choices for the Inbox's "Add to…".
  */
 export default defineWebExtension({
-	id: 'vehicles',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'vehicles:feature_name',
 	descriptionKey: 'vehicles:feature_description',
 	nav: [

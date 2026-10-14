@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { House } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { addHomePresenter, addItemPresenter, updateItemPresenter } from './presenters.js';
 
 /**
@@ -9,7 +11,8 @@ import { addHomePresenter, addItemPresenter, updateItemPresenter } from './prese
  * choices for the Inbox's "Add to…".
  */
 export default defineWebExtension({
-	id: 'home',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'home:feature_name',
 	descriptionKey: 'home:feature_description',
 	nav: [

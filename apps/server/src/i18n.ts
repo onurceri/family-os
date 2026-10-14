@@ -1,49 +1,45 @@
-import ambientEn from '@famos/ext-ambient/messages/en.json' with { type: 'json' };
-import assistantEn from '@famos/ext-assistant/messages/en.json' with { type: 'json' };
-import boardEn from '@famos/ext-board/messages/en.json' with { type: 'json' };
-import calendarEn from '@famos/ext-calendar/messages/en.json' with { type: 'json' };
-import choresEn from '@famos/ext-chores/messages/en.json' with { type: 'json' };
-import homeEn from '@famos/ext-home/messages/en.json' with { type: 'json' };
-import inboxEn from '@famos/ext-inbox/messages/en.json' with { type: 'json' };
-import kitchenEn from '@famos/ext-kitchen/messages/en.json' with { type: 'json' };
-import listsEn from '@famos/ext-lists/messages/en.json' with { type: 'json' };
-import petsEn from '@famos/ext-pets/messages/en.json' with { type: 'json' };
-import recordsEn from '@famos/ext-records/messages/en.json' with { type: 'json' };
-import vehiclesEn from '@famos/ext-vehicles/messages/en.json' with { type: 'json' };
 import {
 	addCatalogs,
 	buildResources,
-	type Catalog,
 	type Catalogs,
 	canonicalLocale,
 	createI18n,
 	DEFAULT_LOCALE,
 	type i18n,
+	isLocale,
 } from '@famos/i18n';
+import type { ExtensionDefinition } from '@famos/sdk';
 import appEn from '../../web/src/messages/en.json' with { type: 'json' };
 import type { LanguageRegistry } from './languages.ts';
 
+/** What the loaded extensions bring to the languages: English, and their own translations. */
+export interface ExtensionCatalogs {
+	/** By namespace: `app` is the app's own messages, every extension's catalog sits under its id. */
+	english: Catalogs;
+	/** By language code, then extension id. */
+	translations: Record<string, Catalogs>;
+}
+
 /**
- * The English catalogs, by namespace: namespace `app` is the app's own messages, every
- * extension's catalog sits under its id. English is the only language the code carries; the
- * others are language packs. The JSON files are imported statically so the server
- * bundle contains them.
+ * Gathers the catalogs of the loaded extensions next to the app's own English. Each extension
+ * brings its English and the translations it ships; a language is offered only when a pack for
+ * it is installed, and its pack's strings win over an extension's own.
  */
-export const ENGLISH: Catalogs = {
-	app: appEn,
-	ambient: ambientEn as Catalog,
-	assistant: assistantEn as Catalog,
-	board: boardEn as Catalog,
-	calendar: calendarEn as Catalog,
-	chores: choresEn as Catalog,
-	home: homeEn as Catalog,
-	inbox: inboxEn as Catalog,
-	kitchen: kitchenEn as Catalog,
-	lists: listsEn as Catalog,
-	pets: petsEn as Catalog,
-	records: recordsEn as Catalog,
-	vehicles: vehiclesEn as Catalog,
-};
+export function catalogsOf(extensions: readonly ExtensionDefinition[]): ExtensionCatalogs {
+	const english: Catalogs = { app: appEn };
+	const translations: Record<string, Catalogs> = {};
+	for (const ext of extensions) {
+		if (!ext.messages) continue;
+		for (const [code, catalog] of Object.entries(ext.messages)) {
+			if (code === DEFAULT_LOCALE) english[ext.id] = catalog;
+			else if (isLocale(code) && canonicalLocale(code) === code)
+				translations[code] = { ...translations[code], [ext.id]: catalog };
+			else
+				throw new Error(`Extension "${ext.id}" names its messages "${code}", not a language code`);
+		}
+	}
+	return { english, translations };
+}
 
 /**
  * Renders translation keys on the server (notifications, Telegram, email) from English plus the
@@ -55,7 +51,7 @@ export function createTranslate(languages: LanguageRegistry) {
 	let instance: i18n | undefined;
 	const current = (): i18n => {
 		if (instance && built === languages.version) return instance;
-		const english = Object.entries(ENGLISH).map(([namespace, catalog]) => ({
+		const english = Object.entries(languages.english).map(([namespace, catalog]) => ({
 			namespace,
 			locale: DEFAULT_LOCALE,
 			catalog,

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Catalogs } from './catalog.ts';
+import { type Catalog, type Catalogs, DEFAULT_LOCALE } from './catalog.ts';
 
 /**
  * File access for language packs (server and translator tools; never the browser).
@@ -59,38 +59,37 @@ export async function writePackDir(dir: string, pack: RawPack): Promise<void> {
 	}
 }
 
-/** Like `readEnglish`, synchronously (for test helpers). */
-export function readEnglishSync(repoRoot: string): Catalogs {
-	const out: Catalogs = {
-		app: JSON.parse(readFileSync(join(repoRoot, 'apps/web/src/messages/en.json'), 'utf8')),
-	};
-	for (const entry of readdirSync(join(repoRoot, 'extensions'), { withFileTypes: true })) {
-		if (!entry.isDirectory()) continue;
-		try {
-			out[entry.name] = JSON.parse(
-				readFileSync(join(repoRoot, 'extensions', entry.name, 'src/messages/en.json'), 'utf8'),
-			);
-		} catch {
-			// an extension without messages
-		}
-	}
-	return out;
+/** The catalogs of a checkout: English by namespace, and the translations extensions ship. */
+export interface CheckoutCatalogs {
+	/** The app's `app` and every extension's own namespace. */
+	english: Catalogs;
+	/** By language code, then namespace: each extension's `src/messages/<code>.json`. */
+	translations: Record<string, Catalogs>;
 }
 
-/** The English catalogs of a checkout: the app's `app` and every extension's own namespace. */
-export async function readEnglish(repoRoot: string): Promise<Catalogs> {
-	const out: Catalogs = {
-		app: JSON.parse(await readFile(join(repoRoot, 'apps/web/src/messages/en.json'), 'utf8')),
-	};
-	for (const entry of await readdir(join(repoRoot, 'extensions'), { withFileTypes: true })) {
+/**
+ * Reads the catalogs of a checkout (tools and tests; the server takes them from the extensions
+ * it loads). An extension's catalogs are `extensions/<id>/src/messages/<code>.json`.
+ */
+export function readCheckoutCatalogs(repoRoot: string): CheckoutCatalogs {
+	const read = (path: string) => JSON.parse(readFileSync(path, 'utf8')) as Catalog;
+	const english: Catalogs = { app: read(join(repoRoot, 'apps/web/src/messages/en.json')) };
+	const translations: Record<string, Catalogs> = {};
+	for (const entry of readdirSync(join(repoRoot, 'extensions'), { withFileTypes: true })) {
 		if (!entry.isDirectory()) continue;
+		const dir = join(repoRoot, 'extensions', entry.name, 'src/messages');
+		let files: string[];
 		try {
-			out[entry.name] = JSON.parse(
-				await readFile(join(repoRoot, 'extensions', entry.name, 'src/messages/en.json'), 'utf8'),
-			);
+			files = readdirSync(dir).filter((f) => f.endsWith('.json'));
 		} catch {
-			// an extension without messages
+			continue; // an extension without messages
+		}
+		for (const file of files) {
+			const code = file.slice(0, -'.json'.length);
+			const catalog = read(join(dir, file));
+			if (code === DEFAULT_LOCALE) english[entry.name] = catalog;
+			else translations[code] = { ...translations[code], [entry.name]: catalog };
 		}
 	}
-	return out;
+	return { english, translations };
 }

@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { assistantUse } from './capabilities.ts';
 import { conversation } from './conversation.ts';
 import { migrations } from './store.ts';
@@ -14,6 +16,7 @@ import { assistantDelta, assistantDone, turnJob } from './turn.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	actions: [sendMessage, renameThread, deleteThread],
 	routes: [listThreads, getThread],

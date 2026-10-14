@@ -1,13 +1,16 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { Sparkles } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
 import { CHAT_FEATURE } from '../contract/index.js';
+import en from '../messages/en.json' with { type: 'json' };
 
 /**
  * Assistant UI: the Ask page, a rail entry (on phones it overflows into More)
  * and an "Ask" card on Today.
  */
 export default defineWebExtension({
-	id: 'assistant',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'assistant:feature_name',
 	descriptionKey: 'assistant:feature_description',
 	aiFeatures: [

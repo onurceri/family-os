@@ -1,23 +1,29 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createTestKernel } from '@famos/testing';
 import { describe, expect, it } from 'vitest';
 import { extensions } from '../src/extensions.ts';
+import { catalogsOf } from '../src/i18n.ts';
 
-const repo = new URL('../../../', import.meta.url);
-const catalog = (namespace: string): Record<string, string> =>
-	JSON.parse(
-		readFileSync(
-			new URL(
-				namespace === 'app'
-					? 'apps/web/src/messages/en.json'
-					: `extensions/${namespace}/src/messages/en.json`,
-				repo,
-			),
-			'utf8',
-		),
-	);
+const { english } = catalogsOf(extensions);
+const catalog = (namespace: string): Record<string, unknown> => english[namespace] ?? {};
 
 describe('bundled extensions', () => {
+	it('each bring their English texts under their own id', () => {
+		for (const ext of extensions) expect(ext.messages?.en, ext.id).toBeTruthy();
+		expect(Object.keys(english).sort()).toEqual(['app', ...extensions.map((e) => e.id)].sort());
+	});
+
+	// The server reaches what extensions bring (catalogs included) through the list it loads, so
+	// leaving one out of that list leaves it out entirely.
+	it('are named only by the list the server loads', () => {
+		const src = join(import.meta.dirname, '../src');
+		const naming = readdirSync(src, { recursive: true, encoding: 'utf8' })
+			.filter((file) => /\.ts$/.test(file))
+			.filter((file) => readFileSync(join(src, file), 'utf8').includes('@famos/ext-'));
+		expect(naming).toEqual(['extensions.ts']);
+	});
+
 	// AGENTS.md rule 8: what the AI may propose can be taken back after it was approved.
 	it('declare undo for every data-changing action the AI may propose', () => {
 		const missing = extensions.flatMap((ext) =>

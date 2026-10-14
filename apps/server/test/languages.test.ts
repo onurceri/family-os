@@ -6,8 +6,9 @@ import { createBackup, restoreBackup } from '@famos/db';
 import { type ExternalHttp, ExternalHttpError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
+import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
-import { createTranslate, ENGLISH } from '../src/i18n.ts';
+import { catalogsOf, createTranslate } from '../src/i18n.ts';
 import { createLanguageRegistry } from '../src/languages.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
@@ -132,7 +133,10 @@ describe('the registry', () => {
 	});
 	afterEach(() => rm(root, { recursive: true, force: true }));
 
-	const write = async (dir: string, pack: ReturnType<typeof tinyPack>) => {
+	const write = async (
+		dir: string,
+		pack: { manifest: { code: string }; catalogs: Record<string, unknown> },
+	) => {
 		await mkdir(join(dir, pack.manifest.code), { recursive: true });
 		await writeFile(join(dir, pack.manifest.code, 'manifest.json'), JSON.stringify(pack.manifest));
 		for (const [ns, catalog] of Object.entries(pack.catalogs))
@@ -140,7 +144,7 @@ describe('the registry', () => {
 	};
 	const registry = () =>
 		createLanguageRegistry({
-			english: ENGLISH,
+			...catalogsOf(extensions),
 			appVersion: APP_VERSION,
 			bundledDir: join(root, 'bundled'),
 			installedDir: join(root, 'installed'),
@@ -204,6 +208,39 @@ describe('the registry', () => {
 		});
 	});
 
+	it("takes a pack that lacks an extension's strings, which only lowers its coverage", async () => {
+		const languages = registry();
+		const { language, problems } = await languages.install(tinyPack('aa'));
+		expect(problems).toEqual([]);
+		expect(language.coverage).toBeGreaterThan(0);
+		expect(language.coverage).toBeLessThan(0.01);
+		expect(languages.catalogs('aa')?.catalogs.home).toBeUndefined();
+		// Strings of an extension that is not installed are left out, not refused.
+		const extra = tinyPack('ab');
+		const withUnknown = { ...extra, catalogs: { ...extra.catalogs, garden: { beds: 'Beete' } } };
+		expect((await languages.install(withUnknown)).problems).toEqual([]);
+		expect(languages.catalogs('ab')?.catalogs.garden).toBeUndefined();
+	});
+
+	it("shows a pack over an extension's own translation, and the extension's where the pack has none", async () => {
+		await write(join(root, 'installed'), {
+			...tinyPack('tr'),
+			catalogs: { app: { nav_more: 'Paket' }, home: { nav: 'Paketten ev' } },
+		});
+		const languages = registry();
+		const catalogs = languages.catalogs('tr')?.catalogs as Record<string, Record<string, string>>;
+		expect(catalogs.app?.nav_more).toBe('Paket');
+		expect(catalogs.home?.nav).toBe('Paketten ev');
+		// The pack has nothing else of home or calendar: their own Turkish fills in.
+		expect(catalogs.home?.feature_name).toBe('Ev');
+		expect(catalogs.calendar?.nav).toBeTruthy();
+		const translate = createTranslate(languages);
+		expect(translate('tr', 'home:feature_name')).toBe('Ev');
+		expect(translate('tr', 'home:nav')).toBe('Paketten ev');
+		// The app's strings the pack lacks are English: the installed pack replaces the bundled one.
+		expect(translate('tr', 'nav_home')).toBe('Today');
+	});
+
 	it('renders in the language with English fallback, and follows installs', async () => {
 		const languages = registry();
 		const translate = createTranslate(languages);
@@ -234,6 +271,9 @@ describe('the bundled Turkish pack', () => {
 		expect(cookie).toBeTruthy();
 		expect(runtime.kernel.translate('tr', 'nav_more')).toBe('Daha');
 		expect(runtime.kernel.translate('en', 'nav_more')).toBe('More');
+		// The extensions' strings come from their own Turkish.
+		expect(runtime.kernel.translate('tr', 'home:feature_name')).toBe('Ev');
+		expect(runtime.kernel.translate('en', 'home:feature_name')).toBe('Home');
 	});
 });
 
@@ -256,8 +296,11 @@ describe('the language routes', () => {
 			dir: 'ltr',
 			version: etag?.replaceAll('"', ''),
 		});
-		expect(Object.keys(first.body.catalogs)).toContain('app');
+		expect(Object.keys(first.body.catalogs).sort()).toEqual(
+			['app', ...extensions.map((e) => e.id)].sort(),
+		);
 		expect(first.body.catalogs.app.nav_more).toBe('Daha');
+		expect(first.body.catalogs.home.feature_name).toBe('Ev');
 
 		const again = await call('GET', '/api/v1/core/languages/tr/catalogs', undefined, undefined, {
 			'if-none-match': etag as string,

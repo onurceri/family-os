@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { petsEdit, petsView } from './capabilities.ts';
 import {
 	addPet,
@@ -22,6 +24,7 @@ import { migrations } from './store.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	ai: { context: aiContext.id },
 	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext],

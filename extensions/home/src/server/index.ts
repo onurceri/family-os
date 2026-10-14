@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import { homeEdit, homeView } from './capabilities.ts';
 import { aiContext, aiContextItems } from './context.ts';
 import { addHome, archiveHome, getHome, listHomes, updateHome } from './homes.ts';
@@ -18,6 +20,7 @@ import { migrations } from './store.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	ai: { context: [aiContext.id, aiContextItems.id], index: searchIndex },
 	actions: [

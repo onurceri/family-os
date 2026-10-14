@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { UtensilsCrossed } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import {
 	addToMealPlanPresenter,
 	createRecipePresenter,
@@ -12,7 +14,8 @@ import { kitchenTimeline } from './timeline.js';
  * (and as a block of their own), and the Inbox presenters for recipes and meals.
  */
 export default defineWebExtension({
-	id: 'kitchen',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'kitchen:feature_name',
 	descriptionKey: 'kitchen:feature_description',
 	nav: [

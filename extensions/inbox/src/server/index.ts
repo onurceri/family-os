@@ -1,5 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
+import tr from '../messages/tr.json' with { type: 'json' };
 import {
 	addItem,
 	createItem,
@@ -19,6 +21,7 @@ import { migrations } from './store.ts';
 /** Family Inbox: shared things become AI-proposed drafts that someone approves. */
 export default defineExtension({
 	manifest: pkg.famos,
+	messages: { en, tr },
 	migrations,
 	ai: { index: searchIndex },
 	actions: [addItem, retryItem, dismissItem, fileItem],

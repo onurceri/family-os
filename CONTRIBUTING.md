@@ -84,8 +84,9 @@ By contributing you agree that your contribution is licensed under the project's
 
 - **A language pack.** Translate FamilyOS into your language without touching code:
   `pnpm lang:template <code>` writes a pack from the English catalogs, `pnpm lang:check <dir>`
-  reports what is missing. See [Languages](docs/guide/languages.md). A bundled pack must be
-  complete.
+  reports what is missing. See [Languages](docs/guide/languages.md). A bundled language must be
+  complete: the app's strings in `languages/<code>/app.json`, each extension's in its own
+  `src/messages/<code>.json`.
 - **A theme pack.** A palette is a `tokens.json` of colour values (and optional fonts), checked
   for contrast with `pnpm theme:check <dir>`. See [Appearance](docs/guide/appearance.md).
 - **The user guide.** If something in [docs/guide](docs/guide/README.md) was unclear when you set

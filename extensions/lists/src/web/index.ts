@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { ListChecks, ListTodo, ShoppingBasket } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import {
 	addShoppingItemsPresenter,
 	addTaskPresenter,
@@ -16,7 +18,8 @@ import { tasksTimeline } from './timeline.js';
  * that opens the page used last), Today cards and Quick add presenters.
  */
 export default defineWebExtension({
-	id: 'lists',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'lists:feature_name',
 	descriptionKey: 'lists:feature_description',
 	nav: [

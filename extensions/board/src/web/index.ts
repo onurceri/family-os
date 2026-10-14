@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { StickyNote } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 
 /**
  * Board UI: the board page (`/board`), a Today card with the latest notes and a
@@ -7,7 +9,8 @@ import { StickyNote } from '@lucide/svelte';
  * screens; on a phone the three tabs are taken and it moves into More.
  */
 export default defineWebExtension({
-	id: 'board',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'board:feature_name',
 	descriptionKey: 'board:feature_description',
 	nav: [

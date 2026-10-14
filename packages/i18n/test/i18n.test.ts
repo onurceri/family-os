@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -5,7 +6,10 @@ import { afterAll, describe, expect, it } from 'vitest';
 import {
 	addCatalogs,
 	buildResources,
+	type Catalog,
 	type Catalogs,
+	catalogCoverage,
+	checkNamespace,
 	coverage,
 	createI18n,
 	isLocale,
@@ -18,10 +22,11 @@ import {
 	satisfiesRange,
 	textDirection,
 	validatePack,
+	withOwnTranslations,
 } from '../src/index.ts';
 import {
 	listPackDirsSync,
-	readEnglish,
+	readCheckoutCatalogs,
 	readPackDir,
 	readPackDirSync,
 	writePackDir,
@@ -143,7 +148,7 @@ describe('pack validation', () => {
 		expect(validatePack(null, english).ok).toBe(false);
 	});
 
-	it('ignores and reports unknown keys and namespaces', () => {
+	it('reports unknown keys, and leaves out the namespaces of extensions not installed', () => {
 		const result = validatePack(
 			{
 				manifest,
@@ -155,13 +160,40 @@ describe('pack validation', () => {
 			english,
 		);
 		if (!result.ok) throw new Error(result.error);
-		expect(result.problems).toEqual(
-			expect.arrayContaining([
-				{ namespace: 'app', key: 'surprise', kind: 'unknown_key' },
-				{ namespace: 'elsewhere', key: '', kind: 'unknown_namespace' },
-			]),
-		);
+		expect(result.problems).toEqual([{ namespace: 'app', key: 'surprise', kind: 'unknown_key' }]);
 		expect(result.pack.catalogs).toEqual({ app: { greeting: 'Merhaba, {{name}}' } });
+	});
+
+	it('takes a pack that lacks an installed extension, which only lowers its coverage', () => {
+		const result = validatePack({ manifest, catalogs: { app: turkish.catalogs.app } }, english);
+		if (!result.ok) throw new Error(result.error);
+		expect(result.problems).toEqual([]);
+		const covered = coverage(english, result.pack);
+		expect(covered.missing).toEqual([{ namespace: 'lists', key: 'title' }]);
+		expect(covered.ratio).toBeLessThan(1);
+	});
+
+	it("shows the pack's strings over an extension's own translation, and fills in from it", () => {
+		const result = validatePack(
+			{ manifest, catalogs: { app: turkish.catalogs.app, lists: { title: 'Paket' } } },
+			english,
+		);
+		if (!result.ok) throw new Error(result.error);
+		const own = { lists: { title: 'Listeler' }, missing: { a: 'b' } };
+		expect(withOwnTranslations(result.pack, own, english).pack.catalogs.lists).toEqual({
+			title: 'Paket',
+		});
+		const { app } = result.pack.catalogs;
+		const alone = validatePack({ manifest, catalogs: { app } }, english);
+		if (!alone.ok) throw new Error(alone.error);
+		const shown = withOwnTranslations(alone.pack, own, english);
+		expect(shown.problems).toEqual([]);
+		expect(shown.pack.catalogs.lists).toEqual({ title: 'Listeler' });
+		expect(coverage(english, shown.pack).ratio).toBe(1);
+		// The extension's strings are checked like a pack's.
+		const bad = withOwnTranslations(alone.pack, { lists: { title: '{{x}}' } }, english);
+		expect(bad.problems).toEqual([{ namespace: 'lists', key: 'title', kind: 'placeholders' }]);
+		expect(bad.pack.catalogs.lists).toBeUndefined();
 	});
 
 	it('drops a string whose placeholders differ from English', () => {
@@ -340,25 +372,74 @@ describe('pack folders', () => {
 	});
 });
 
-/** The bundled packs must be valid and 100% complete (replaces the old locale-completeness test). */
-describe('bundled packs', () => {
+/**
+ * The bundled languages must be valid and 100% complete: each bundled pack holds the app's own
+ * strings, and every bundled extension ships the same languages in its `src/messages`.
+ */
+describe('bundled translations', () => {
 	const root = resolve(import.meta.dirname, '../../..');
+	const { english, translations } = readCheckoutCatalogs(root);
+	const codes = listPackDirsSync(join(root, 'languages'));
 
-	it('every pack in languages/ is valid and complete', async () => {
-		const englishCatalogs = await readEnglish(root);
-		const codes = listPackDirsSync(join(root, 'languages'));
+	it('every pack in languages/ holds only the app strings, valid and complete', async () => {
 		expect(codes).toContain('tr');
 		for (const code of codes) {
-			const result = validatePack(
-				await readPackDir(join(root, 'languages', code)),
-				englishCatalogs,
-			);
+			const raw = await readPackDir(join(root, 'languages', code));
+			expect(Object.keys(raw.catalogs), `${code}: an extension's strings live with it`).toEqual([
+				'app',
+			]);
+			const result = validatePack(raw, english);
 			if (!result.ok) throw new Error(`${code}: ${result.error}`);
 			expect(result.pack.manifest.code, `${code}: folder name`).toBe(code);
 			expect(result.problems, `${code}: problems`).toEqual([]);
-			const covered = coverage(englishCatalogs, result.pack);
-			expect(covered.missing, `${code}: missing strings`).toEqual([]);
-			expect(covered.ratio).toBe(1);
+			const app = catalogCoverage({ app: english.app as Catalog }, result.pack.catalogs, code);
+			expect(app.missing, `${code}: missing app strings`).toEqual([]);
 		}
+	});
+
+	it('every bundled extension ships each bundled language, valid and complete', () => {
+		const extensions = Object.keys(english).filter((namespace) => namespace !== 'app');
+		expect(extensions.length).toBeGreaterThan(5);
+		for (const id of extensions) {
+			const base = english[id] as Catalog;
+			const shipped = readdirSync(join(root, 'extensions', id, 'src/messages'))
+				.filter((f) => f.endsWith('.json') && f !== 'en.json')
+				.map((f) => f.slice(0, -'.json'.length));
+			for (const code of codes) expect(shipped, `${id}: ${code}.json`).toContain(code);
+			for (const code of shipped) {
+				const raw = JSON.parse(
+					readFileSync(join(root, 'extensions', id, 'src/messages', `${code}.json`), 'utf8'),
+				);
+				const checked = checkNamespace(id, base, raw, code);
+				expect(checked.problems, `${id}/${code}: problems`).toEqual([]);
+				const covered = catalogCoverage({ [id]: base }, { [id]: checked.catalog }, code);
+				expect(covered.missing, `${id}/${code}: missing strings`).toEqual([]);
+			}
+		}
+	});
+
+	it('every bundled language is complete as the app shows it', async () => {
+		for (const code of codes) {
+			const result = validatePack(await readPackDir(join(root, 'languages', code)), english);
+			if (!result.ok) throw new Error(`${code}: ${result.error}`);
+			const shown = withOwnTranslations(result.pack, translations[code] ?? {}, english);
+			expect(coverage(english, shown.pack).ratio, code).toBe(1);
+		}
+	});
+});
+
+describe('registering a namespace later', () => {
+	it('reads an extension catalog added after start, in English and in a pack', () => {
+		const i18n = createI18n({
+			resources: { en: { app: { nav_more: 'More' } } },
+			locale: 'en',
+			defaultNS: 'app',
+		});
+		expect(i18n.exists('garden:beds')).toBe(false);
+		addCatalogs(i18n, 'en', { garden: { beds: 'Beds', rows: 'Rows' } });
+		expect(i18n.t('garden:beds')).toBe('Beds');
+		addCatalogs(i18n, 'tr', { garden: { beds: 'Tarhlar' } });
+		expect(i18n.t('garden:beds', { lng: 'tr' })).toBe('Tarhlar');
+		expect(i18n.t('garden:rows', { lng: 'tr' })).toBe('Rows');
 	});
 });

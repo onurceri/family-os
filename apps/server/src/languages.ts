@@ -11,6 +11,7 @@ import {
 	packFingerprint,
 	textDirection,
 	validatePack,
+	withOwnTranslations,
 } from '@famos/i18n';
 import { listPackDirsSync, readPackDirSync, writePackDir } from '@famos/i18n/node';
 import { FamosError, type Logger } from '@famos/sdk';
@@ -30,13 +31,20 @@ interface Loaded {
 export interface LanguageRegistry extends LanguagePort {
 	/** Increases whenever packs are installed, removed or reloaded: consumers rebuild their caches. */
 	readonly version: number;
-	/** The loaded packs (not English). */
+	/** The English catalogs by namespace (the app's and every loaded extension's). */
+	readonly english: Catalogs;
+	/** The loaded packs (not English), each with the extensions' own translations folded in. */
 	packs(): readonly LanguagePack[];
 }
 
 export interface LanguageRegistryOptions {
 	/** English catalogs by namespace: the base every pack is checked against. */
 	english: Catalogs;
+	/**
+	 * The translations the loaded extensions ship, by language code then namespace. They fill in
+	 * under a pack of the same language.
+	 */
+	translations?: Readonly<Record<string, Catalogs>>;
 	appVersion: string;
 	/** Packs shipped with the app. */
 	bundledDir: string | undefined;
@@ -61,10 +69,12 @@ export function findBundledLanguages(configured: string | undefined): string | u
 /**
  * The language registry: bundled packs, then installed ones (an installed pack with
  * the same code replaces the bundled one). Everything is validated against English on the way
- * in; a pack that fails is skipped and logged, never fatal.
+ * in; a pack that fails is skipped and logged, never fatal. A pack shows over the translations
+ * the extensions ship of its language; what neither has is English.
  */
 export function createLanguageRegistry(options: LanguageRegistryOptions): LanguageRegistry {
 	const { english, appVersion, logger } = options;
+	const translations = options.translations ?? {};
 	let loaded = new Map<string, Loaded>();
 	let version = 0;
 
@@ -73,9 +83,11 @@ export function createLanguageRegistry(options: LanguageRegistryOptions): Langua
 			try {
 				const result = validatePack(readPackDirSync(join(root, folder)), english, { appVersion });
 				if (!result.ok) throw new Error(result.error);
-				const { pack, problems } = result;
-				if (pack.manifest.code !== folder)
+				if (result.pack.manifest.code !== folder)
 					throw new Error('the folder is not named after the code');
+				const shown = withOwnTranslations(result.pack, translations[folder] ?? {}, english);
+				const { pack } = shown;
+				const problems = [...result.problems, ...shown.problems];
 				if (problems.length > 0) {
 					logger.warn(
 						{ code: folder, problems: problems.length },
@@ -123,6 +135,7 @@ export function createLanguageRegistry(options: LanguageRegistryOptions): Langua
 		get version() {
 			return version;
 		},
+		english,
 		packs: () => [...loaded.values()].map((l) => l.pack),
 		list() {
 			const base: LanguageSummary = {

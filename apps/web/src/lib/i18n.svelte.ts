@@ -1,6 +1,5 @@
 import {
 	addCatalogs,
-	buildResources,
 	type Catalog,
 	type Catalogs,
 	createI18n,
@@ -9,28 +8,8 @@ import {
 	type Locale,
 	negotiateLocale,
 } from '@famos/i18n';
+import appEn from '../messages/en.json';
 import { api } from './api';
-
-/**
- * Translations for the SPA. English is the base language and the only one bundled
- * with the build: the app's own messages plus every extension's `src/messages/en.json`
- * (namespace = extension id). Every other language is a language pack the server serves; it is
- * loaded when chosen and cached. `t` reads the reactive locale, so templates re-render when it
- * changes, with no page reload. Anything a pack lacks shows in English.
- */
-const files = import.meta.glob<Catalog>(
-	['../messages/en.json', '../../../../extensions/*/src/messages/en.json'],
-	{
-		eager: true,
-		import: 'default',
-	},
-);
-
-const entries = Object.entries(files).map(([path, catalog]) => ({
-	namespace: /\/extensions\/([^/]+)\//.exec(path)?.[1] ?? 'app',
-	locale: DEFAULT_LOCALE,
-	catalog,
-}));
 
 /** A language the server offers (`core.listLanguages`). */
 export interface Language {
@@ -56,11 +35,28 @@ function stored(): Locale | null {
 	}
 }
 
+/**
+ * Translations for the SPA. English is the base language and the only one bundled
+ * with the build: the app's own messages here, and each extension's own `src/messages/en.json`
+ * (namespace = extension id), registered with its web entry (`registerEnglish`). Every other
+ * language is a language pack the server serves, with the extensions' own translations folded in;
+ * it is loaded when chosen and cached. `t` reads the reactive locale, so templates re-render when
+ * it changes, with no page reload. Anything a pack lacks shows in English.
+ */
 const i18n = createI18n({
-	resources: buildResources(entries),
+	resources: { [DEFAULT_LOCALE]: { app: appEn } },
 	locale: DEFAULT_LOCALE,
 	defaultNS: 'app',
 });
+
+/**
+ * Adds an extension's English texts under its id (again, after a hot reload). The app's own
+ * namespace is not an extension's to replace.
+ */
+export function registerEnglish(namespace: string, catalog: Catalog): void {
+	if (namespace === 'app') throw new Error('"app" is the namespace of the app\'s own texts');
+	addCatalogs(i18n, DEFAULT_LOCALE, { [namespace]: catalog });
+}
 
 let current = $state<Locale>(DEFAULT_LOCALE);
 let direction = $state<'ltr' | 'rtl'>('ltr');

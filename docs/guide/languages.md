@@ -18,7 +18,7 @@ A language only chooses words. Dates, times, numbers and weeks follow your [regi
 - **From a file.** Choose a pack as one `.json` file (see below).
 - **From an address.** Enter an `https` address that returns the pack as JSON and press **Install**. FamilyOS fetches it in the background (with the same protections as other outbound requests: https only, no private addresses, a size limit). You typed the address, so this is not a call you did not configure. The page says if it could not be fetched.
 
-Strings that cannot be used (unknown keys, mismatched `{{placeholders}}`, text longer than 4 KB) are skipped and counted on the page; the rest of the pack still works. A pack is limited to 2 MB, and up to 40 installed packs. Installing a pack with the code of an included one (for example `tr`) replaces it, so newer translations do not wait for an app release. Removing an installed pack (**Remove**, then confirm) brings the included one back. Without an included pack of that code, the family language falls back to English and people who used it follow the family language.
+Strings that cannot be used (unknown keys, mismatched `{{placeholders}}`, text longer than 4 KB) are skipped and counted on the page; the rest of the pack still works. A pack is checked against the features this FamilyOS has: one that leaves a feature out still installs (that feature shows in English, or in its own translation, and the pack's share goes down), and a pack's file for a feature you do not have is simply not used. A pack is limited to 2 MB, and up to 40 installed packs. Installing a pack with the code of an included one (for example `tr`) replaces it, so newer translations do not wait for an app release. Removing an installed pack (**Remove**, then confirm) brings the included one back. Without an included pack of that code, the family language falls back to English and people who used it follow the family language.
 
 Installed packs are stored in `<data>/languages/<code>/` and are part of backups.
 
@@ -30,9 +30,11 @@ A pack is a folder named after its BCP 47 code (`de`, `pt-BR`):
 languages/de/
   manifest.json     code, name, nativeName, version, famos (compatible app versions), dir, authors
   app.json          the app's own messages (namespace "app")
-  calendar.json     one file per extension, named after its id
-  ...
+  calendar.json     one file per feature (extension), named after its id; any you leave out
+  ...               show in that feature's own translation if it has one, else in English
 ```
+
+Features can bring their own translations with them (`extensions/<id>/src/messages/<code>.json`). Where both have a string, the pack's wins, so a pack can correct a feature's translation; where the pack has none, the feature's own is used.
 
 `manifest.json`:
 
@@ -57,9 +59,10 @@ Each catalog has the same keys as the English one (`apps/web/src/messages/en.jso
 pnpm lang:template de        # writes languages/de/ from the English catalogs
 pnpm lang:check languages/de # coverage, unknown keys, placeholder mismatches (non-zero on problems)
 pnpm lang:check languages/de --complete   # also fails when strings are missing
+pnpm lang:check extensions/calendar       # the translations one feature ships
 ```
 
-`lang:template` fills every file with the English text, so you translate each value in place and an untranslated string reads as English meanwhile. `lang:check` counts how many strings are still identical to English (many are fine, such as names). Bundled packs must be 100% complete and valid; CI enforces it.
+`lang:template` fills every file with the English text, so you translate each value in place and an untranslated string reads as English meanwhile. `lang:check` on a pack counts the features' own translations of the same language too, as the app shows them, and counts how many strings are still identical to English (many are fine, such as names). Included languages must be 100% complete and valid; CI enforces it.
 
 ### Sharing a single file
 
@@ -72,4 +75,4 @@ To install from a file or an address, put the whole pack in one JSON document:
 }
 ```
 
-To include a pack with FamilyOS itself, send a pull request that adds `languages/<code>/` (it must be complete). There is no public directory of packs yet.
+To include a language with FamilyOS itself, send a pull request that adds `languages/<code>/` with `manifest.json` and `app.json`, and each feature's translation as `extensions/<id>/src/messages/<code>.json` next to its `en.json` (all must be complete; `lang:template` writes every file into the pack folder, so move the features' files over). There is no public directory of packs yet.

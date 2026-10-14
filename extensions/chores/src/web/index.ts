@@ -1,5 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { SquareCheckBig } from '@lucide/svelte';
+import pkg from '../../package.json' with { type: 'json' };
+import en from '../messages/en.json' with { type: 'json' };
 import { createChorePresenter, markDonePresenter, setAssigneesPresenter } from './presenters.js';
 import { choresBlock, choresToday } from './today.js';
 
@@ -9,7 +11,8 @@ import { choresBlock, choresToday } from './today.js';
  * splits.
  */
 export default defineWebExtension({
-	id: 'chores',
+	manifest: pkg.famos,
+	messages: en,
 	labelKey: 'chores:feature_name',
 	descriptionKey: 'chores:feature_description',
 	nav: [
