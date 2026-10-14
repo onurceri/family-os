@@ -1,5 +1,127 @@
-import { type DbExecutor, type FileStore, type JobQueue, LlmError, type LlmPort } from '@famos/sdk';
+import {
+	type DbExecutor,
+	type ExtensionDefinition,
+	type FileStore,
+	type JobQueue,
+	LlmError,
+	type LlmPort,
+	systemActor,
+	tablePrefixOf,
+} from '@famos/sdk';
+import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
+import { createTestKernel } from '../index.ts';
+
+/**
+ * What every extension's context must refuse: another table (core's, in a query, in raw SQL,
+ * through `sql.table`, inside a transaction and in DDL), the schema itself, files outside its
+ * own folder, actions its manifest does not call, and a network it does not declare. Its own
+ * tables stay reachable. Run it in each extension's tests with the extensions it depends on.
+ */
+export function extensionScopeContract(
+	extension: ExtensionDefinition,
+	options: { with?: readonly ExtensionDefinition[] } = {},
+): void {
+	const { id } = extension;
+	const prefix = tablePrefixOf(extension.manifest);
+	const forbidden = { code: 'forbidden' };
+	const kernel = () => createTestKernel({ extensions: [...(options.with ?? []), extension] });
+
+	describe(`extension scope: ${id}`, () => {
+		it('reaches its own tables', async () => {
+			const k = await kernel();
+			const own = await sql<{ name: string }>`select name from sqlite_master
+				where type = 'table' and name like ${`${prefix}%`}`.execute(k.ctx.db);
+			const db = k.contextFor(id).db.withTables<Record<string, { n: number }>>();
+			for (const { name } of own.rows)
+				await expect(
+					db
+						.selectFrom(name)
+						.select((eb) => eb.fn.countAll().as('n'))
+						.execute(),
+				).resolves.toHaveLength(1);
+			await k.close();
+		});
+
+		it('refuses tables that are not its own, in queries, raw SQL and DDL', async () => {
+			const k = await kernel();
+			const ctx = k.contextFor(id);
+			const db = ctx.db.withTables<{ core_members: { id: string } }>();
+			await expect(db.selectFrom('core_members').select('id').execute()).rejects.toMatchObject(
+				forbidden,
+			);
+			// An alias may not stand in for another table's name.
+			const own = ctx.db.withTables<Record<string, { id: string }>>();
+			await expect(
+				own.selectFrom(`${prefix}x as core_members`).selectAll().execute(),
+			).rejects.toMatchObject(forbidden);
+			await expect(sql`select id from core_members`.execute(ctx.db)).rejects.toMatchObject(
+				forbidden,
+			);
+			await expect(
+				sql`select id from ${sql.table('core_members')}`.execute(ctx.db),
+			).rejects.toMatchObject(forbidden);
+			await expect(
+				sql`select id from ${sql.id('core_members')}`.execute(ctx.db),
+			).rejects.toMatchObject(forbidden);
+			await expect(sql`select name from sqlite_master`.execute(ctx.db)).rejects.toMatchObject(
+				forbidden,
+			);
+			await expect(sql`pragma table_info(core_members)`.execute(ctx.db)).rejects.toMatchObject(
+				forbidden,
+			);
+			await expect(
+				ctx.db
+					.transaction()
+					.execute((trx) =>
+						trx
+							.withTables<{ core_members: { id: string } }>()
+							.selectFrom('core_members')
+							.selectAll()
+							.execute(),
+					),
+			).rejects.toMatchObject(forbidden);
+			await expect(
+				ctx.db.schema.createTable('elsewhere').addColumn('id', 'text').execute(),
+			).rejects.toMatchObject(forbidden);
+			await expect(ctx.db.schema.dropTable('core_members').execute()).rejects.toMatchObject(
+				forbidden,
+			);
+			await expect(
+				ctx.db.schema.createIndex(`${prefix}idx`).on('core_members').column('id').execute(),
+			).rejects.toMatchObject(forbidden);
+			await expect(
+				ctx.db.schema.dropIndex('core_audit_log_at_idx').execute(),
+			).rejects.toMatchObject(forbidden);
+			await k.close();
+		});
+
+		it('keeps to its own files, actions and network', async () => {
+			const k = await kernel();
+			const ctx = k.contextFor(id);
+			await expect(ctx.files.put('core/x', new Uint8Array([1]))).rejects.toMatchObject(forbidden);
+			await expect(ctx.files.delete('core/x')).rejects.toMatchObject(forbidden);
+			if (!extension.manifest.calls.includes('core.createMember'))
+				await expect(
+					ctx.actions.invoke(
+						'core.createMember',
+						{ displayName: 'X', roleId: 'admin' },
+						systemActor('test'),
+					),
+				).rejects.toMatchObject(forbidden);
+			if (!extension.manifest.network?.userUrls) {
+				const host = 'not-declared.example';
+				if (!extension.manifest.network?.hosts?.includes(host))
+					await expect(ctx.http.get({ url: `https://${host}/` })).rejects.toMatchObject(forbidden);
+			}
+			if (!extension.manifest.network?.local)
+				await expect(
+					ctx.http.get({ url: 'https://example.org/', allowLocal: true }),
+				).rejects.toMatchObject(forbidden);
+			await k.close();
+		});
+	});
+}
 
 /**
  * Port contract suites. Every adapter (and fake) for a port must pass its suite; this is what

@@ -22,9 +22,11 @@ import type {
 	NotifyRequest,
 	SecretBox,
 } from '@famos/sdk';
+import { tablePrefixOf } from '@famos/sdk';
+import type { KyselyPlugin } from 'kysely';
 import { z } from 'zod';
 import { type Access, createAccess } from './access.ts';
-import { type ActionRunner, createActionRunner } from './action-runner.ts';
+import { type ActionRunner, createActionRunner, type ExtensionViews } from './action-runner.ts';
 import { type AiAreas, createAiAreas } from './ai-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { type ApiTokenService, createApiTokenService } from './api-tokens.ts';
@@ -45,6 +47,7 @@ import {
 	type Vocabulary,
 } from './notifications.ts';
 import { buildRegistry, type Registry } from './registry.ts';
+import { createSchemaNames, hostFiles, scopedFiles, scopedHttp, scopePlugin } from './scope.ts';
 import { createSearch, SEARCH_ACTION, SYNC_JOB } from './search.ts';
 import { createThemes, defaultThemes, type ThemePort, type Themes } from './themes.ts';
 import { createWorker, type Worker, type WorkerOptions } from './worker.ts';
@@ -56,8 +59,8 @@ export interface KernelOptions {
 	ids: IdGenerator;
 	logger: Logger;
 	files: FileStore;
-	/** Seals credentials at rest with a key derived from `FAMOS_SECRET`. */
-	secrets: SecretBox;
+	/** Each extension's box for credentials at rest, with its own key derived from `FAMOS_SECRET`. */
+	secrets: (extensionId: string) => SecretBox;
 	/** Guarded outbound HTTP for extensions' jobs (SSRF protection, size cap, timeout). */
 	http: ExternalHttp;
 	identity: IdentityAdmin;
@@ -91,7 +94,13 @@ export interface KernelOptions {
 
 export interface Kernel {
 	readonly registry: Registry;
+	/** The host's context: every table, file and action. Extensions get `contextFor` instead. */
 	readonly ctx: ExtensionContext;
+	/**
+	 * An extension's own context (its tables, files, secrets, network and calls); the host's
+	 * for core and for names that are no extension.
+	 */
+	contextFor(extensionId: string): ExtensionContext;
 	readonly runner: ActionRunner;
 	readonly bus: InProcessEventBus;
 	readonly worker: Worker;
@@ -182,6 +191,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		aiAreas: () => aiAreas,
 		features: () => features,
 		invoke: (id, input, actor) => (runner as ActionRunner).invoke(id, input, actor),
+		contextFor: (id) => contextFor(id),
 	});
 	const themes = createThemes({ themes: () => options.themes ?? defaultThemes });
 	const core = createCoreExtension({
@@ -205,6 +215,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		aiAreas: () => aiAreas,
 		registry: () => registry,
 		notifications,
+		extensionDb: (id, db) => views.db(id, db),
 		runner: () => {
 			if (!runner) throw new Error('Kernel not initialised');
 			return runner;
@@ -238,6 +249,46 @@ export function createKernel(options: KernelOptions): Kernel {
 		}
 	});
 
+	const byId = new Map(registry.extensions.map((e) => [e.id, e]));
+	// The registry refuses the names the host reserves; an infrastructure scope added without a
+	// reserved name is refused here too, by its scope name.
+	for (const { scope } of options.infrastructureMigrations) {
+		const clash = registry.extensions.find((e) => {
+			const prefix = tablePrefixOf(e.manifest);
+			return e.id === scope || prefix.startsWith(`${scope}_`) || `${scope}_`.startsWith(prefix);
+		});
+		if (clash) throw new Error(`Extension "${clash.id}" clashes with the host's "${scope}" tables`);
+	}
+	/** Core and the infrastructure adapters are the host: they see everything. */
+	const isHost = (id: string) => id === 'core' || !byId.has(id);
+	const schemaNames = createSchemaNames();
+	const plugins = new Map<string, KyselyPlugin>();
+	const pluginFor = (id: string) => {
+		let plugin = plugins.get(id);
+		if (!plugin) {
+			const ext = byId.get(id) as ExtensionDefinition;
+			plugin = scopePlugin(id, tablePrefixOf(ext.manifest), schemaNames);
+			plugins.set(id, plugin);
+		}
+		return plugin;
+	};
+	const boxes = new Map<string, SecretBox>();
+	const views: ExtensionViews = {
+		db: (id, db) => (isHost(id) ? db : db.withPlugin(pluginFor(id))),
+		files: (id, db) =>
+			isHost(id)
+				? hostFiles(options.files, db, options.clock.now)
+				: scopedFiles(options.files, id, db, options.clock.now),
+		secrets(id) {
+			let box = boxes.get(id);
+			if (!box) {
+				box = options.secrets(id);
+				boxes.set(id, box);
+			}
+			return box;
+		},
+	};
+
 	let worker: Worker | undefined;
 	/** Whether an embedding model is set: without one, search is not offered to the AI. */
 	let embedReady = false;
@@ -265,8 +316,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		clock: options.clock,
 		ids: options.ids,
 		logger: options.logger,
-		files: options.files,
-		secrets: options.secrets,
+		views,
 		bus,
 		registry,
 		access,
@@ -324,9 +374,13 @@ export function createKernel(options: KernelOptions): Kernel {
 				return !catalogOptions?.actor || mayUseAsAi(access, a, catalogOptions.actor);
 			})
 			.map(([, info]) => info);
-	const actions: ActionInvoker = {
+	/** The actions as `caller` reaches them (the host when it is undefined). */
+	const invokerFor = (caller: string | undefined): ActionInvoker => ({
 		invoke: (id, input, actor, invokeOptions) =>
-			(runner as ActionRunner).invoke(id, input, actor, invokeOptions),
+			(runner as ActionRunner).invoke(id, input, actor, {
+				...invokeOptions,
+				...(caller !== undefined && { caller }),
+			}),
 		// Not offered to the AI: actions of turned-off extensions, of areas that are off for the AI,
 		// and of local-only areas unless the model that will see the catalog is local.
 		// For an AI acting for a member, also actions that member could not use.
@@ -352,24 +406,24 @@ export function createKernel(options: KernelOptions): Kernel {
 			if (!parsed.success) return null;
 			return def.targetTitle(
 				{
-					db: options.db,
+					db: views.db(ownerOf(id), options.db),
 					family: familyReader(options.db),
 					translate: options.translate ?? defaultTranslate,
 				},
 				parsed.data,
 			);
 		},
-	};
+	});
 	const ctx: ExtensionContext = {
 		db: options.db,
 		clock: options.clock,
 		ids: options.ids,
 		logger: options.logger,
-		files: options.files,
-		secrets: options.secrets,
+		files: hostFiles(options.files, options.db, options.clock.now),
+		secrets: views.secrets('core'),
 		http: options.http,
 		events: bus,
-		actions,
+		actions: invokerFor(undefined),
 		family: familyReader(options.db),
 		translate: options.translate ?? defaultTranslate,
 		vocabulary: options.vocabulary ?? noVocabulary,
@@ -393,30 +447,76 @@ export function createKernel(options: KernelOptions): Kernel {
 			return id;
 		},
 	};
-	const jobCtx: JobContext = { ...ctx, llm: options.llm };
+	const contexts = new Map<string, ExtensionContext>();
+	/**
+	 * An extension's own view of the host: its tables, its files and those granted to it, its own
+	 * secret key, the network its manifest declares, and the actions it may call.
+	 */
+	function contextFor(id: string): ExtensionContext {
+		if (isHost(id)) return ctx;
+		let made = contexts.get(id);
+		if (!made) {
+			const ext = byId.get(id) as ExtensionDefinition;
+			made = {
+				...ctx,
+				db: views.db(id, options.db),
+				files: views.files(id, options.db),
+				secrets: views.secrets(id),
+				http: scopedHttp(options.http, ext.manifest),
+				actions: invokerFor(id),
+			};
+			contexts.set(id, made);
+		}
+		return made;
+	}
+	const jobContexts = new Map<string, JobContext>();
+	const jobContextFor = (id: string): JobContext => {
+		const key = isHost(id) ? 'core' : id;
+		let made = jobContexts.get(key);
+		if (!made) {
+			made = { ...contextFor(key), llm: options.llm };
+			jobContexts.set(key, made);
+		}
+		return made;
+	};
 	worker = createWorker({
 		queue: options.queue,
 		registry,
-		ctx: jobCtx,
+		ctxFor: (job) => jobContextFor(ownerOf(job)),
 		clock: options.clock,
 		logger: options.logger,
 		isOn: (id) => features.isOn(id),
 		...(options.worker && { options: options.worker }),
 	});
 
-	const doors = createHostDoors({ db: options.db, registry, access, features, ctx: () => ctx });
+	const doors = createHostDoors({ db: options.db, registry, access, features, contextFor });
 
+	/** An extension's migrations, kept to its own tables like the rest of its code. */
+	const scopedMigrations = (ext: ExtensionDefinition): Migrations =>
+		Object.fromEntries(
+			Object.entries(ext.migrations).map(([name, migration]) => [
+				name,
+				{
+					async up(db: DbExecutor) {
+						// Raw SQL is checked against the schema as the extensions before it left it.
+						await schemaNames.refresh(db);
+						await migration.up(views.db(ext.id, db));
+					},
+				},
+			]),
+		);
 	const coreFirst = registry.extensions.filter((e) => e.id === 'core');
 	const rest = registry.extensions.filter((e) => e.id !== 'core');
 	const migrationScopes = [
 		...coreFirst.map((e) => ({ scope: e.id, migrations: e.migrations })),
 		...options.infrastructureMigrations,
-		...rest.map((e) => ({ scope: e.id, migrations: e.migrations })),
+		...rest.map((e) => ({ scope: e.id, migrations: scopedMigrations(e) })),
 	];
 
 	return {
 		registry,
 		ctx,
+		contextFor,
 		runner,
 		bus,
 		worker,
@@ -436,12 +536,16 @@ export function createKernel(options: KernelOptions): Kernel {
 		migrationScopes,
 		reconcileSearch,
 		async start() {
+			await schemaNames.refresh(options.db);
 			await access.refresh(options.db);
 			await features.refresh(options.db);
 			await aiAreas.refresh(options.db);
 			// Event handlers of a turned-off extension do not run.
 			for (const ext of registry.extensions)
-				await ext.register?.({ ...ctx, events: gatedEvents(bus, () => features.isOn(ext.id)) });
+				await ext.register?.({
+					...contextFor(ext.id),
+					events: gatedEvents(bus, () => features.isOn(ext.id)),
+				});
 			await reconcileSearch();
 		},
 		async stop() {

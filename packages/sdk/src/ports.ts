@@ -147,6 +147,11 @@ export interface SecretBox {
 	seal(plain: string): string;
 	/** The plain text, or null when it was sealed with another secret or is corrupt. */
 	open(sealed: string): string | null;
+	/**
+	 * Whether a value that opens was sealed the old way (an earlier format or a shared key): seal
+	 * it again and store the new value, so it keeps opening once the old way is retired.
+	 */
+	needsReseal(sealed: string): boolean;
 }
 
 /**

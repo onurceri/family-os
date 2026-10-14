@@ -10,7 +10,13 @@ import type {
 	NotificationKindDefinition,
 	ShareTarget,
 } from '@famos/sdk';
-import { assertRestrictiveDefaults, SDK_VERSION, satisfiesCaret, tablePrefixOf } from '@famos/sdk';
+import {
+	assertRestrictiveDefaults,
+	reservedClash,
+	SDK_VERSION,
+	satisfiesCaret,
+	tablePrefixOf,
+} from '@famos/sdk';
 
 export interface Registry {
 	/** Extensions in dependency order (dependencies first). */
@@ -106,6 +112,9 @@ function checkManifests(
 		}
 
 		const prefix = tablePrefixOf(manifest);
+		// Core is the host itself and owns `core_`.
+		const clash = ext.id === 'core' ? null : reservedClash(ext.id, prefix);
+		if (clash) throw new Error(`${where} cannot be installed: ${clash}`);
 		for (const other of prefixes) {
 			if (prefix.startsWith(other.prefix) || other.prefix.startsWith(prefix))
 				throw new Error(

@@ -156,6 +156,7 @@ describe('records', () => {
 
 		const key = `inbox/${INBOX_ITEM}/0`;
 		await k.ctx.files.put(key, new TextEncoder().encode('x'), 'application/pdf');
+		await k.ctx.files.grant(key, 'records');
 		const [paper] = await run<{ id: string }[]>('records.attachDocument', {
 			recordId: CAR,
 			recordKind: 'vehicle',

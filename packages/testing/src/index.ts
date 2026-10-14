@@ -2,13 +2,13 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFsFileStore } from '@famos/adapters/files-fs';
-import { createSecretBox } from '@famos/adapters/llm-aisdk';
 import {
 	createSqliteQueue,
 	queueMigrations,
 	type SqliteJobQueue,
 } from '@famos/adapters/queue-sqlite';
 import { silentLogger, uuidv7Ids } from '@famos/adapters/runtime';
+import { createExtensionSecrets } from '@famos/adapters/secrets';
 import {
 	createKernel,
 	type Kernel,
@@ -397,6 +397,9 @@ export function createFakeHttp(): FakeHttp {
 	};
 }
 
+/** The `FAMOS_SECRET` of a test kernel, for tests that seal values the way a release did. */
+export const TEST_SECRET = 'test-secret';
+
 export interface TestKernel extends Kernel {
 	readonly clock: TestClock;
 	readonly identity: FakeIdentity;
@@ -453,7 +456,7 @@ export async function createTestKernel(
 		ids: uuidv7Ids,
 		logger: silentLogger,
 		files: createFsFileStore(filesDir),
-		secrets: createSecretBox('test-secret', 'extension-secrets'),
+		secrets: createExtensionSecrets(TEST_SECRET),
 		http,
 		identity,
 		llm: options.llm ?? llm,
@@ -494,7 +497,7 @@ export async function createTestKernel(
 			if (!found) throw new Error(`No route ${operationId}`);
 			return {
 				call: (request = {}) =>
-					found.route.handle(kernel.ctx, {
+					found.route.handle(kernel.contextFor(found.extension), {
 						params: undefined,
 						query: undefined,
 						body: undefined,

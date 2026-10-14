@@ -9,6 +9,7 @@
 		"./files-fs": "./src/files-fs/index.ts",
 		"./http-guard": "./src/http-guard/index.ts",
 		"./runtime": "./src/runtime/index.ts",
+		"./secrets": "./src/secrets/index.ts",
 		"./identity-betterauth": "./src/identity-betterauth/index.ts",
 		"./llm-aisdk": "./src/llm-aisdk/index.ts",
 		"./webpush": "./src/webpush/index.ts",

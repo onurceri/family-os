@@ -38,4 +38,13 @@ describe('extension manifests', () => {
 		}
 		expect(offenders).toEqual([]);
 	});
+
+	it('never drops the plugin that keeps an extension to its own tables', () => {
+		// `withoutPlugins()` would hand back the whole database, every table of every extension.
+		const offenders: string[] = [];
+		for (const file of walk(join(root, 'extensions')))
+			if (/\bwithoutPlugins\s*\(/.test(readFileSync(file, 'utf8')))
+				offenders.push(file.slice(root.length + 1));
+		expect(offenders).toEqual([]);
+	});
 });

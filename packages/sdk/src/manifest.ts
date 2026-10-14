@@ -6,7 +6,7 @@ import { z } from 'zod';
  * start one whose range this version does not satisfy. Raise the minor for an addition, the major
  * for a change that breaks an extension built against the old one (while below 1.0, the minor).
  */
-export const SDK_VERSION = '0.2.0';
+export const SDK_VERSION = '0.3.0';
 
 const EXTENSION_ID = /^[a-z][a-z0-9]*$/;
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
@@ -79,6 +79,34 @@ export const ExtensionManifestSchema = z.strictObject({
 export type ExtensionManifest = z.output<typeof ExtensionManifestSchema>;
 /** The manifest as written in package.json, before defaults are filled in. */
 export type ExtensionManifestInput = z.input<typeof ExtensionManifestSchema>;
+
+/**
+ * Names the host keeps for itself: core and the infrastructure adapters (identity's tables are
+ * `auth_…`, the model settings `ai_…`, the job queue `queue_…`). No extension may take one as its
+ * id, nor a table prefix that overlaps `<name>_`, or it would reach the host's tables through its
+ * own scope.
+ */
+export const RESERVED_NAMES = [
+	'core',
+	'auth',
+	'identity',
+	'ai',
+	'queue',
+	'email',
+	'backup',
+	'telegram',
+	'webpush',
+] as const;
+
+/** The table prefixes the host keeps for itself (see `RESERVED_NAMES`). */
+export const RESERVED_TABLE_PREFIXES: readonly string[] = RESERVED_NAMES.map((name) => `${name}_`);
+
+/** Why an extension may not use this id and table prefix, or null when it may. */
+export function reservedClash(id: string, prefix: string): string | null {
+	if ((RESERVED_NAMES as readonly string[]).includes(id)) return `its id "${id}" is the host's`;
+	const taken = RESERVED_TABLE_PREFIXES.find((p) => p.startsWith(prefix) || prefix.startsWith(p));
+	return taken ? `its table prefix "${prefix}" overlaps the host's "${taken}"` : null;
+}
 
 /** The table prefix an extension's tables use. */
 export const tablePrefixOf = (manifest: ExtensionManifest): string =>

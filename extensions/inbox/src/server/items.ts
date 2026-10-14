@@ -76,6 +76,8 @@ async function fileOnRecord(
 	files: readonly { key: string; name: string; type: string }[],
 	fileTo: FileTo,
 ) {
+	// Records reads the files where they are; it may only once the Inbox lets it.
+	for (const { key } of files) await uow.files.grant(key, 'records');
 	try {
 		await uow.run('records.attachDocument', {
 			recordId: fileTo.recordId,

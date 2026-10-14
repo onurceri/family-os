@@ -24,6 +24,8 @@ const archiveCar = defineAction({
 });
 const garage = defineTestExtension({
 	id: 'garage',
+	dependsOn: ['records'],
+	calls: ['records.archiveForRecord'],
 	actions: [archiveCar],
 	capabilities: [garageEdit],
 });

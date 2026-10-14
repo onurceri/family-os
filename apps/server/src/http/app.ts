@@ -205,7 +205,7 @@ function mountRoute(
 	app.openapi(route, (async (c: any) => {
 		assertOn(deps.kernel, extension);
 		const actor = requireActor(c, deps.kernel.access, def.requires);
-		const result = await def.handle(deps.kernel.ctx, {
+		const result = await def.handle(deps.kernel.contextFor(extension), {
 			params: def.params ? c.req.valid('param') : undefined,
 			query: def.query ? c.req.valid('query') : undefined,
 			body: def.body ? c.req.valid('json') : undefined,
@@ -276,7 +276,7 @@ function mountFileRoute(
 		if (params && !params.success) {
 			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
 		}
-		const file = (await def.handle(deps.kernel.ctx, {
+		const file = (await def.handle(deps.kernel.contextFor(extension), {
 			params: params?.data,
 			query: undefined,
 			body: undefined,
@@ -337,7 +337,7 @@ function mountTextRoute(
 		if (params && !params.success) {
 			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
 		}
-		const result = (await def.handle(deps.kernel.ctx, {
+		const result = (await def.handle(deps.kernel.contextFor(extension), {
 			params: params?.data,
 			query: undefined,
 			body: undefined,
@@ -407,7 +407,7 @@ function mountUploadRoute(
 			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
 		}
 		const { body, files } = await readUpload(c, def);
-		const result = await def.handle(deps.kernel.ctx, {
+		const result = await def.handle(deps.kernel.contextFor(extension), {
 			params: params?.data,
 			query: undefined,
 			body,

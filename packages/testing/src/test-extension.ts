@@ -1,4 +1,9 @@
-import { defineExtension, type ExtensionDefinition, SDK_VERSION } from '@famos/sdk';
+import {
+	defineExtension,
+	type ExtensionDefinition,
+	type ExtensionManifestInput,
+	SDK_VERSION,
+} from '@famos/sdk';
 
 type Definition = Parameters<typeof defineExtension>[0];
 
@@ -14,9 +19,10 @@ export function defineTestExtension(
 		dependsOn?: string[];
 		optional?: string[];
 		calls?: string[];
+		network?: ExtensionManifestInput['network'];
 	},
 ): ExtensionDefinition {
-	const { id, dependsOn, optional, calls, ...rest } = definition;
+	const { id, dependsOn, optional, calls, network, ...rest } = definition;
 	return defineExtension({
 		...rest,
 		manifest: {
@@ -26,6 +32,7 @@ export function defineTestExtension(
 			dependsOn,
 			optional,
 			calls,
+			network,
 			capabilities: (rest.capabilities ?? []).map((c) => c.id),
 			provides: [
 				...(rest.shareTarget ? ['shareTarget'] : []),

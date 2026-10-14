@@ -6,8 +6,8 @@ import {
 	type DbExecutor,
 	type DraftAlternative,
 	type DraftMeta,
+	type ExtensionFiles,
 	FamosError,
-	type FileStore,
 	type IdGenerator,
 	isFamosError,
 	type JobQueue,
@@ -62,6 +62,20 @@ export interface InvokeOptions {
 	idempotencyKey?: string;
 	/** Called when the result came from a stored key instead of a new run. */
 	onReplay?: () => void;
+	/**
+	 * The extension that asks (through its context). It may run its own actions and those its
+	 * manifest's `calls` lists, or as an AI actor what the AI is offered. Left out: the host.
+	 */
+	caller?: string;
+}
+
+/** What the runner needs to give each extension its own view of a transaction. */
+export interface ExtensionViews {
+	/** `db` (the root connection or a transaction) as the extension sees it: its own tables. */
+	db(extensionId: string, db: DbExecutor): DbExecutor;
+	/** The extension's files, with grants read and written through `db`. */
+	files(extensionId: string, db: DbExecutor): ExtensionFiles;
+	secrets(extensionId: string): SecretBox;
 }
 
 export interface ActionRunnerDeps {
@@ -70,8 +84,7 @@ export interface ActionRunnerDeps {
 	clock: Clock;
 	ids: IdGenerator;
 	logger: Logger;
-	files: FileStore;
-	secrets: SecretBox;
+	views: ExtensionViews;
 	bus: InProcessEventBus;
 	registry: Registry;
 	/** Capability checks. */
@@ -236,8 +249,40 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return def;
 	};
 
-	/** Runs `work` in one transaction; events and job wake-ups fire only after commit. */
-	async function unitOfWork<T>(actor: Actor, work: (uow: UnitOfWork) => Promise<T>): Promise<T> {
+	const manifests = new Map(registry.extensions.map((e) => [e.id, e.manifest]));
+	const contextActions = new Set(registry.extensions.flatMap((e) => [e.ai?.context ?? []].flat()));
+
+	/**
+	 * Whether an extension may run an action: its own, one its manifest's `calls` lists, or, as an
+	 * AI actor, one the AI is offered (the Inbox and the assistant act for the AI). The host and
+	 * core may run any. What the actor may do is checked separately, by `authorize`.
+	 */
+	function assertCallable(caller: string, def: AnyActionDefinition, actor: Actor): void {
+		if (caller === 'core' || ownerOf(def.id) === caller) return;
+		if (manifests.get(caller)?.calls.includes(def.id)) return;
+		if (actor.kind === 'ai' && (def.ai !== undefined || contextActions.has(def.id))) return;
+		throw new FamosError(
+			'forbidden',
+			`Extension "${caller}" may not run ${def.id}: list it in famos.calls of its package.json`,
+		);
+	}
+
+	/** What an action's checks read (names, titles, duplicates) see: its extension's tables. */
+	const readContext = (def: AnyActionDefinition, db: DbExecutor = deps.db) => ({
+		db: deps.views.db(ownerOf(def.id), db),
+		family: familyReader(db),
+		translate: deps.translate,
+	});
+
+	/**
+	 * Runs `work` in one transaction; events and job wake-ups fire only after commit. `work` gets
+	 * the host's unit of work (core's bookkeeping: drafts, audit) and `view`, which gives an
+	 * extension's action its own view of the same transaction.
+	 */
+	async function unitOfWork<T>(
+		actor: Actor,
+		work: (uow: UnitOfWork, view: (extensionId: string) => UnitOfWork) => Promise<T>,
+	): Promise<T> {
 		const events: [string, unknown][] = [];
 		let enqueued = 0;
 		const result = await deps.db.transaction().execute(async (trx) => {
@@ -250,14 +295,22 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					...options,
 				});
 			};
-			const uow: UnitOfWork = {
-				db: trx,
+			const views = new Map<string, UnitOfWork>();
+			const view = (owner: string): UnitOfWork => {
+				const known = views.get(owner);
+				if (known) return known;
+				const made = makeView(owner);
+				views.set(owner, made);
+				return made;
+			};
+			const makeView = (owner: string): UnitOfWork => ({
+				db: deps.views.db(owner, trx),
 				actor,
 				clock,
 				ids,
 				logger,
-				files: deps.files,
-				secrets: deps.secrets,
+				files: deps.views.files(owner, trx),
+				secrets: deps.views.secrets(owner),
 				family: familyReader(trx),
 				translate: deps.translate,
 				vocabulary: deps.vocabulary,
@@ -293,19 +346,23 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 							})
 							.where('id', '=', draft.id)
 							.execute();
-						await audit(uow, draft.action_id, 'rejected', draft.id);
-						uow.emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
+						await audit(view('core'), draft.action_id, 'rejected', draft.id);
+						view('core').emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
 					}
-					if (waiting[0]) await settleNotices(uow, waiting[0]);
+					if (waiting[0]) await settleNotices(view('core'), waiting[0]);
 					return waiting.length;
 				},
 				async run(actionId, input) {
 					const def = getAction(actionId);
+					assertCallable(owner, def, actor);
 					authorize(def, actor);
-					return def.run(uow, parseOrThrow(def.input, input, `input for ${actionId}`));
+					return def.run(
+						view(ownerOf(def.id)),
+						parseOrThrow(def.input, input, `input for ${actionId}`),
+					);
 				},
-			};
-			return work(uow);
+			});
+			return work(view('core'), view);
 		});
 		if (enqueued > 0) deps.onJobsEnqueued?.();
 		for (const [name, payload] of events) await bus.publish(name, payload);
@@ -333,6 +390,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	async function apply(
 		uow: UnitOfWork,
+		view: (extensionId: string) => UnitOfWork,
 		def: AnyActionDefinition,
 		input: unknown,
 		draftId: string | null,
@@ -340,7 +398,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	) {
 		const output = parseOrThrow(
 			def.output,
-			await def.run(uow, input, prepared),
+			await def.run(view(ownerOf(def.id)), input, prepared),
 			`output of ${def.id}`,
 		);
 		if (!def.readOnly) await audit(uow, def.id, 'applied', draftId);
@@ -384,14 +442,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		idem: IdempotencyRequest | null,
 	): Promise<ActionResult<O>> {
 		const def = getAction(actionId);
+		assertCallable(options.caller ?? 'core', def, actor);
 		authorize(def, actor);
 		const parsed = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
-		const input = def.resolveNames
-			? await def.resolveNames(
-					{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
-					parsed,
-				)
-			: parsed;
+		const input = def.resolveNames ? await def.resolveNames(readContext(def), parsed) : parsed;
 		const checkedTitle = await checkTarget(def, input, actor);
 		/** Inside the transaction: a concurrent request may have stored the key meanwhile. */
 		const guard = async (uow: UnitOfWork) => {
@@ -405,9 +459,9 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (!needsApproval(def, actor, input)) {
 			// Slow or networked work (a model call) happens before the transaction opens.
 			const prepared = def.prepare ? await def.prepare(input, actor) : undefined;
-			const output = await unitOfWork(actor, async (uow) => {
+			const output = await unitOfWork(actor, async (uow, view) => {
 				await guard(uow);
-				const out = await apply(uow, def, input, null, prepared);
+				const out = await apply(uow, view, def, input, null, prepared);
 				await remember(uow, { status: 'applied', output: out });
 				return out;
 			});
@@ -422,11 +476,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// Every draft carries the real name of what it changes, so cards and notices show what
 		// will happen whoever proposed it (a screen sends only the id).
 		const targetName = def.targetTitle
-			? (checkedTitle ??
-				(await def.targetTitle(
-					{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
-					input,
-				)))
+			? (checkedTitle ?? (await def.targetTitle(readContext(def), input)))
 			: null;
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		const subject = subjectOf(JSON.stringify(stored));
@@ -685,7 +735,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			throw new FamosError('conflict', 'Draft is expired');
 
 		try {
-			await unitOfWork(approver, async (uow) => {
+			await unitOfWork(approver, async (uow, view) => {
 				const now = clock.now();
 				const claimed = await uow.db
 					.withTables<CoreTables>()
@@ -707,7 +757,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				// applied would offer an undo that reverses somebody else's real change.
 				if (
 					def.settled &&
-					(await def.settled({ db: uow.db, family: uow.family, translate: deps.translate }, input))
+					(await def.settled(
+						{ db: view(ownerOf(def.id)).db, family: uow.family, translate: deps.translate },
+						input,
+					))
 				) {
 					await uow.db
 						.withTables<CoreTables>()
@@ -721,7 +774,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					return;
 				}
 
-				const output = await apply(uow, def, input, draftId);
+				const output = await apply(uow, view, def, input, draftId);
 				await uow.db
 					.withTables<CoreTables>()
 					.updateTable('core_drafts')
@@ -842,7 +895,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	): Promise<string | null | undefined> {
 		// People see what they pick: nothing to check, and no query unless a draft needs the name.
 		if (actor.kind !== 'ai') return undefined;
-		const ctx = { db: deps.db, family: familyReader(deps.db), translate: deps.translate };
+		const ctx = readContext(def);
 		let title: string | null = null;
 		if (def.targetTitle) {
 			const label = (input as { label?: unknown } | null)?.label;
@@ -869,10 +922,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	): Promise<boolean | 'some'> {
 		if (!def.alreadyThere || !deps.features.isOn(ownerOf(def.id))) return false;
 		try {
-			return await def.alreadyThere(
-				{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
-				input,
-			);
+			return await def.alreadyThere(readContext(def), input);
 		} catch (error) {
 			logger.warn({ err: error, ...what }, 'duplicate check failed');
 			return false;
@@ -899,14 +949,14 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		what: Record<string, string>,
 	): Promise<DraftAlternative | null> {
 		if (!def.instead || !deps.features.isOn(ownerOf(def.id))) return null;
-		const ctx = { db: deps.db, family: familyReader(deps.db), translate: deps.translate };
 		try {
-			const offered = await def.instead(ctx, input);
+			const offered = await def.instead(readContext(def), input);
 			if (!offered) return null;
 			const next = registry.actions.get(offered.actionId);
 			if (!next || next.readOnly || !deps.features.isOn(ownerOf(next.id))) return null;
 			const parsed = next.input.safeParse(offered.input);
 			if (!parsed.success) return null;
+			const ctx = readContext(next);
 			const resolved = next.resolveNames ? await next.resolveNames(ctx, parsed.data) : parsed.data;
 			const title = next.targetTitle ? await next.targetTitle(ctx, resolved) : null;
 			// The draft's own words must name what it would change, as an AI's label must: an
@@ -947,10 +997,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const input = def.input.safeParse(JSON.parse(draft.edited_input ?? draft.input));
 		if (!input.success) return null;
 		try {
-			return await def.currentValues(
-				{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
-				input.data,
-			);
+			return await def.currentValues(readContext(def), input.data);
 		} catch (error) {
 			logger.warn({ err: error, draftId: draft.id }, 'reading the current values failed');
 			return null;

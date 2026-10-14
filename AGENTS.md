@@ -47,7 +47,7 @@ docs/              Architecture, design system, user guide, releasing
    - `core` imports only `sdk`. It never imports `db` or `adapters`.
    - `web` talks to the server only through `@famos/api-client`.
    - Only `apps/server` imports `db`, `adapters` and concrete libraries.
-2. **Extensions never import each other's internals.** Use actions (`ctx.actions.run`), events, or typed IDs. No foreign keys across extensions; prefix tables with the extension id (`shopping_items`). Each extension's manifest is the `famos` field of its package.json: declare every foreign action it runs in `famos.calls`, the extensions they belong to in `dependsOn` or `optional`, and every capability in `famos.capabilities`; the registry refuses a manifest that disagrees with the code.
+2. **Extensions never import each other's internals.** Use actions (`ctx.actions.run`), events, or typed IDs. No foreign keys across extensions; prefix tables with the extension id (`shopping_items`). Each extension's manifest is the `famos` field of its package.json: declare every foreign action it runs in `famos.calls`, the extensions they belong to in `dependsOn` or `optional`, and every capability in `famos.capabilities`; the registry refuses a manifest that disagrees with the code, and each extension's context holds it to its manifest while it runs (its tables, files, secrets, calls and network).
 3. **Access is capabilities, never role names.** Declare what your extension protects with `defineCapability` (choose a level: `view`, `use`, `edit`, `manage`), give routes `requires`, and give data-changing actions `requires` and/or `approval: { unless: capability }`. Never assume a household shape (parents/children): describe people only by their `about`. A sensitive extension may set capability `defaults` that only remove grants its level gives; it can never add one.
 4. **Every state change is an action** (`defineAction`). Permissions and approval are enforced by the action runner, not in route handlers. Route handlers only validate, resolve the actor and delegate. The only exceptions are credential management (passwords, PINs, AI provider keys) and device trust: they set cookies or call an adapter outside a transaction.
 5. **Zod is the single source of truth** for request/response shapes, action inputs, LLM structured output and draft forms. Do not duplicate types by hand.
@@ -63,7 +63,8 @@ docs/              Architecture, design system, user guide, releasing
 ## Data and migrations
 
 - `ctx.db` / `uow.db` are `Kysely<object>`: add your tables with `db.withTables<MyTables>()`.
-- Query only your own extension's tables. Read members and family settings through `ctx.family` / `uow.family` (inside a unit of work always `uow.family`, which reads through the transaction); reach other extensions through their actions and routes.
+- Query only your own extension's tables (named with your `tablePrefix`, `<id>_` by default): `ctx.db` and `uow.db` refuse anything else with `forbidden`, in queries, raw SQL, DDL and migrations. Read members and family settings through `ctx.family` / `uow.family` (inside a unit of work always `uow.family`, which reads through the transaction); reach other extensions through their actions (listed in `famos.calls`) and routes.
+- Files: write only under `<id>/`. To let another extension read one of your files, grant it first (`uow.files.grant(key, 'records')`).
 - Never call identity operations (`IdentityAdmin`) inside a unit of work: they share the single SQLite connection and would deadlock.
 
 - SQLite only (WAL, STRICT tables, foreign keys on). Query with Kysely through `ctx.db`; there is no repository layer.
@@ -151,8 +152,8 @@ Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` an
 - PIN sign-in and the profile picker only work on trusted family devices (`core_devices`, kind `family`); never add another path that reveals member names or accepts PINs without that check. Displays (kind `kiosk`) never get PIN sign-in, profiles or write access: they hold only granted `view` capabilities and cannot run actions.
 
 - Never log secrets, API keys, PINs or the contents of family documents.
-- A credential an extension must keep (a calendar subscription URL is one) is sealed with `ctx.secrets` / `uow.secrets` (AES-GCM from `FAMOS_SECRET`) and never returned to the browser or logged; show a host or a hint instead.
-- Outbound requests to addresses a user typed go through `ctx.http.get` (SSRF guard: https only, no private/loopback/link-local addresses unless `allowLocal`, same-host redirects, size cap, timeout). Call it from job handlers only; extensions never use `fetch` for such addresses.
+- A credential an extension must keep (a calendar subscription URL is one) is sealed with `ctx.secrets` / `uow.secrets` (AES-GCM, a key of the extension's own derived from `FAMOS_SECRET`) and never returned to the browser or logged; show a host or a hint instead. Reseal a value whose `needsReseal` is true.
+- Outbound requests to addresses a user typed go through `ctx.http.get` (SSRF guard: https only, no private/loopback/link-local addresses unless `allowLocal`, same-host redirects, size cap, timeout). Call it from job handlers only; extensions never use `fetch` for such addresses. It reaches only what the manifest's `network` declares (`hosts`, `userUrls`, `local`).
 - Provider API keys are stored encrypted in the database (key from `FAMOS_SECRET`).
 - Do not add telemetry or calls to external services that the family has not explicitly configured.
 

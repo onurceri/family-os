@@ -183,7 +183,7 @@ describe('photo upload', () => {
 	});
 
 	it('keeps at most the library cap and cleans up the file it refused', async () => {
-		const spy = vi.spyOn(k.ctx.files, 'delete');
+		const spy = vi.spyOn(k.contextFor('ambient').files, 'delete');
 		const insert = k.ctx.db.withTables<{ ambient_photos: Record<string, unknown> }>();
 		await insert
 			.insertInto('ambient_photos')

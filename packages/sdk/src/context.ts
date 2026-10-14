@@ -46,6 +46,19 @@ export interface FamilyReader {
 	members(): Promise<FamilyMember[]>;
 }
 
+/**
+ * An extension's files. It writes and deletes only keys under `<its id>/`; it reads those, and
+ * keys another extension granted it (the papers the Inbox files on a record).
+ */
+export interface ExtensionFiles extends FileStore {
+	/**
+	 * Lets another extension read one of this extension's files (`get`, `stat`), for example
+	 * before handing its key to that extension's action. Only the owner may grant; granting twice
+	 * is harmless. Inside an action, `uow.files.grant` commits with the change.
+	 */
+	grant(key: string, toExtension: string): Promise<void>;
+}
+
 /** Asks family search to (re)read or forget one entity; see `AiIndex`. */
 export interface SearchIndexer {
 	/** The entity was created or changed: embed it again (changed text only). */
@@ -55,18 +68,27 @@ export interface SearchIndexer {
 }
 
 /**
- * Everything an extension may use. Built once by the composition root; there is no
+ * Everything an extension may use, built by the kernel for each extension; there is no
  * DI container. Tests build it with @famos/testing.
+ *
+ * It is the extension's own view: `db` reaches only tables with its prefix, `files` only its
+ * own keys and those granted to it, `secrets` opens only what it sealed, `http` reaches only
+ * what its manifest's `network` declares, and `actions.invoke` runs its own actions and those
+ * its manifest's `calls` lists. Members and family settings come from `family`.
  */
 export interface ExtensionContext {
+	/** Only this extension's tables (its `tablePrefix`); anything else throws `forbidden`. */
 	readonly db: DbExecutor;
 	readonly clock: Clock;
 	readonly ids: IdGenerator;
 	readonly logger: Logger;
-	readonly files: FileStore;
-	/** Seals and opens credentials at rest (see `SecretBox`). */
+	readonly files: ExtensionFiles;
+	/** Seals and opens credentials at rest (see `SecretBox`), with a key of this extension's own. */
 	readonly secrets: SecretBox;
-	/** Guarded outbound HTTP (see `ExternalHttp`); use it from job handlers only. */
+	/**
+	 * Guarded outbound HTTP (see `ExternalHttp`), limited to the manifest's `network`; use it
+	 * from job handlers only.
+	 */
 	readonly http: ExternalHttp;
 	readonly events: EventBus;
 	readonly actions: ActionInvoker;
@@ -106,13 +128,17 @@ export interface ExtensionContext {
 
 /** A unit of work: one SQLite transaction, with jobs and events bound to it. */
 export interface UnitOfWork extends EventEmitter {
-	/** The transaction. Use `db.withTables<MyTables>()` for typing. */
+	/**
+	 * The transaction, limited to this extension's tables like `ExtensionContext.db`. Use
+	 * `db.withTables<MyTables>()` for typing.
+	 */
 	readonly db: DbExecutor;
 	readonly actor: Actor;
 	readonly clock: Clock;
 	readonly ids: IdGenerator;
 	readonly logger: Logger;
-	readonly files: FileStore;
+	/** This extension's files (see `ExtensionFiles`); grants commit with the transaction. */
+	readonly files: ExtensionFiles;
 	/** Seals and opens credentials at rest (see `SecretBox`). */
 	readonly secrets: SecretBox;
 	readonly family: FamilyReader;
@@ -138,7 +164,11 @@ export interface UnitOfWork extends EventEmitter {
 	 * already passed its own permission check. Returns how many were rejected.
 	 */
 	rejectDraftsOf(source: { kind: string; id: string }): Promise<number>;
-	/** Runs another action inside this transaction, as the same actor. */
+	/**
+	 * Runs another action inside this transaction, as the same actor. The action gets its own
+	 * extension's view of the transaction. Like `actions.invoke`, only this extension's actions
+	 * and those its manifest's `calls` lists may be run.
+	 */
 	run<I, O>(actionId: string, input: I): Promise<O>;
 }
 
@@ -202,6 +232,10 @@ export interface ActionInvoker {
 	/**
 	 * Runs an action through the action runner: validation → RBAC → approval policy →
 	 * transaction → audit → events. May return a draft instead of applying.
+	 *
+	 * An extension may run its own actions and those its manifest's `calls` lists; anything else
+	 * is `forbidden`. As an AI actor it may also run what the AI is offered (`aiCatalog`,
+	 * `aiReadTools`, `aiContextActions`): that is how the Inbox and the assistant act for the AI.
 	 */
 	invoke<O = unknown>(
 		actionId: string,

@@ -31,14 +31,15 @@ class JobTimeoutError extends Error {
 export function createWorker(deps: {
 	queue: JobQueue;
 	registry: Registry;
-	ctx: JobContext;
+	/** The context a job's handler gets: its extension's own, by the job's name. */
+	ctxFor: (job: string) => JobContext;
 	clock: Clock;
 	logger: Logger;
 	/** Jobs of turned-off extensions stay queued until it is turned on again. */
 	isOn?: (extensionId: string) => boolean;
 	options?: WorkerOptions;
 }): Worker {
-	const { queue, registry, ctx, clock } = deps;
+	const { queue, registry, clock } = deps;
 	const logger = deps.logger.child({ component: 'worker' });
 	const idleMs = deps.options?.idleMs ?? 1000;
 	const recoverEveryMs = deps.options?.recoverEveryMs ?? 30_000;
@@ -75,7 +76,7 @@ export function createWorker(deps: {
 		try {
 			const payload = def.payload.parse(job.payload);
 			await Promise.race([
-				def.handle(ctx, payload, {
+				def.handle(deps.ctxFor(job.name), payload, {
 					id: job.id,
 					attempt: job.attempt,
 					maxAttempts: job.maxAttempts,

@@ -17,6 +17,8 @@ const ITEM = 'inbox_item_00000000-0000-7000-8000-000000000001';
 const key = (n = 0) => `inbox/${ITEM}/${n}`;
 async function store(n: number, text: string) {
 	await k.ctx.files.put(key(n), new TextEncoder().encode(text), 'application/pdf');
+	// The Inbox lets records read what it files.
+	await k.ctx.files.grant(key(n), 'records');
 }
 const file = (n = 0, name = 'policy.pdf') => ({ key: key(n), name, type: 'application/pdf' });
 const attach = (input: Record<string, unknown>, actor = admin.actor) =>
@@ -80,6 +82,17 @@ describe('documents', () => {
 		await expect(
 			attach({ files: [{ key: 'inbox/../x/0', name: 'x', type: 'text/plain' }] }),
 		).rejects.toMatchObject({ code: 'bad_request' });
+	});
+
+	it('cannot read an Inbox file the Inbox did not grant it', async () => {
+		await k.ctx.files.put(key(5), new TextEncoder().encode('private'), 'application/pdf');
+		await expect(attach({ files: [file(5)] })).rejects.toMatchObject({ code: 'bad_request' });
+		const records = k.contextFor('records').files;
+		expect(await records.get(key(5))).toBeNull();
+		await expect(records.put(key(6), new Uint8Array([1]))).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+		await expect(records.grant(key(5), 'records')).rejects.toMatchObject({ code: 'forbidden' });
 	});
 
 	it('attaching the same file twice keeps one link', async () => {

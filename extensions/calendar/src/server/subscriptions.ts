@@ -313,6 +313,15 @@ export const refreshJob = defineJob({
 		try {
 			const url = ctx.secrets.open(sub.sealed_url);
 			if (url === null) throw new ExternalHttpError('bad_url', 'The address cannot be opened');
+			// Sealed the old way: sealed again with this extension's own key, once (the check on the
+			// old value makes a second run, or a concurrent edit of the address, change nothing).
+			if (ctx.secrets.needsReseal(sub.sealed_url))
+				await db
+					.updateTable('calendar_subscriptions')
+					.set({ sealed_url: ctx.secrets.seal(url) })
+					.where('id', '=', sub.id)
+					.where('sealed_url', '=', sub.sealed_url)
+					.execute();
 			const response = await ctx.http.get({
 				url,
 				allowLocal: sub.allow_local === 1,

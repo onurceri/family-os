@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
+import type { SecretBox as ExtensionSecretBox } from '@famos/sdk';
 
 /**
  * Credentials at rest (provider API keys; other purposes get their own derived key): AES-256-GCM with a key derived from FAMOS_SECRET (HKDF), so a
@@ -35,5 +36,35 @@ export function createSecretBox(secret: string, purpose = 'ai-provider-keys'): S
 				return null;
 			}
 		},
+	};
+}
+
+/**
+ * The purpose of the one key all extensions shared before each got its own. Values sealed with
+ * it (`v1.`) still open, so existing calendar subscriptions keep syncing, and report
+ * `needsReseal`, so their owner seals them again with its own key.
+ */
+const SHARED_EXTENSION_PURPOSE = 'extension-secrets';
+
+/**
+ * One box per extension, each with its own key derived from FAMOS_SECRET (`ext:<id>`), so one
+ * extension cannot open what another sealed. Format: `v2.<iv>.<tag>.<ciphertext>`; `v1.` values
+ * of the earlier shared key open too.
+ */
+export function createExtensionSecrets(
+	secret: string,
+): (extensionId: string) => ExtensionSecretBox {
+	const shared = createSecretBox(secret, SHARED_EXTENSION_PURPOSE);
+	return (extensionId) => {
+		const own = createSecretBox(secret, `ext:${extensionId}`);
+		return {
+			seal: (plain) => `v2${own.seal(plain).slice('v1'.length)}`,
+			open(sealed) {
+				if (sealed.startsWith('v2.')) return own.open(`v1${sealed.slice('v2'.length)}`);
+				if (sealed.startsWith('v1.')) return shared.open(sealed);
+				return null;
+			},
+			needsReseal: (sealed) => sealed.startsWith('v1.') && shared.open(sealed) !== null,
+		};
 	};
 }

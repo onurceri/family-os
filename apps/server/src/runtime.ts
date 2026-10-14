@@ -37,6 +37,7 @@ import {
 	type SqliteJobQueue,
 } from '@famos/adapters/queue-sqlite';
 import { createLogger, systemClock, uuidv7Ids } from '@famos/adapters/runtime';
+import { createExtensionSecrets } from '@famos/adapters/secrets';
 import { createTelegram, type Telegram, telegramMigrations } from '@famos/adapters/telegram';
 import { createWebPush, type WebPush, webPushMigrations } from '@famos/adapters/webpush';
 import { CORE_CAPABILITIES, createKernel, type Kernel } from '@famos/core';
@@ -242,7 +243,7 @@ export function openRuntime(
 		ids: uuidv7Ids,
 		logger,
 		files: createFsFileStore(config.filesDir),
-		secrets: createSecretBox(config.secret, 'extension-secrets'),
+		secrets: createExtensionSecrets(config.secret),
 		http: options.http ?? createGuardedHttp(),
 		identity: identity.admin,
 		llm,

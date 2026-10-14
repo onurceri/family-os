@@ -53,7 +53,8 @@ export function createHostDoors(deps: {
 	registry: Registry;
 	access: Access;
 	features: Features;
-	ctx: () => ExtensionContext;
+	/** A provider is called with its own extension's context. */
+	contextFor: (extensionId: string) => ExtensionContext;
 }) {
 	const { registry, access, features } = deps;
 
@@ -104,7 +105,7 @@ export function createHostDoors(deps: {
 				files.some((f) => !mimeAccepted(f.type, target.limits.accept))
 			)
 				throw new FamosError('bad_request', 'This file cannot be added');
-			await target.receive(deps.ctx(), actor, {
+			await target.receive(deps.contextFor(found.extension), actor, {
 				channel: share.channel,
 				...(share.title !== undefined && { title: share.title }),
 				...(share.text !== undefined && { text: share.text }),
@@ -127,14 +128,14 @@ export function createHostDoors(deps: {
 				if (!found || !features.isOn(found.extension))
 					throw new FamosError('feature_off', 'No conversation to ask');
 				const actor = await allowed(memberId, found.provider.requires, 'ask');
-				return found.provider.ask(deps.ctx(), actor, question);
+				return found.provider.ask(deps.contextFor(found.extension), actor, question);
 			},
 
 			/** The member's finished answer `replyId`, or null (not theirs, not written, none). */
 			async answer(memberId: string, replyId: string): Promise<ConversationAnswer | null> {
 				const found = registry.conversation;
 				if (!found || !features.isOn(found.extension)) return null;
-				return found.provider.answer(deps.ctx(), memberId, replyId);
+				return found.provider.answer(deps.contextFor(found.extension), memberId, replyId);
 			},
 		},
 	};

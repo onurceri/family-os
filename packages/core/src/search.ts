@@ -204,6 +204,8 @@ export interface SearchDeps {
 	features: () => Features;
 	/** Runs an action as an actor (the route delegates to the action). */
 	invoke: (actionId: string, input: unknown, actor: Actor) => Promise<ActionResult<unknown>>;
+	/** The extension's own context: what it loads for the index, it reads from its own tables. */
+	contextFor: (extensionId: string) => ExtensionContext;
 }
 
 type KindEntry = { kind: string; extensionId: string; def: AiIndexKind };
@@ -284,7 +286,7 @@ export function createSearch(deps: SearchDeps) {
 				if (allowed.reason === 'closed') await deleteEntity(entry.kind, id);
 				return true;
 			}
-			const doc = await entry.def.load(ctx as ExtensionContext, id);
+			const doc = await entry.def.load(deps.contextFor(entry.extensionId), id);
 			if (!doc) {
 				await deleteEntity(entry.kind, id);
 				return true;
@@ -397,7 +399,7 @@ export function createSearch(deps: SearchDeps) {
 			await clearFailure();
 
 			// A change that arrived while the model worked was deduplicated into this job: look again.
-			const again = await entry.def.load(ctx as ExtensionContext, id);
+			const again = await entry.def.load(deps.contextFor(entry.extensionId), id);
 			if (!again || again.title + again.text === doc.title + doc.text) return true;
 		}
 		return true;
@@ -474,7 +476,7 @@ export function createSearch(deps: SearchDeps) {
 			const allowed = await gate(extensionId, ctx.llm);
 			if (!allowed.ok || allowed.model !== model) return;
 
-			const page = await index.list(ctx, cursor);
+			const page = await index.list(deps.contextFor(extensionId), cursor);
 			for (const item of page.items) {
 				const entry = kinds().get(item.kind);
 				if (!entry) continue;

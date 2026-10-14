@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "inbox",
 		"version": "0.1.0",
-		"sdk": "^0.2.0",
+		"sdk": "^0.3.0",
 		"optional": [
 			"records"
 		],

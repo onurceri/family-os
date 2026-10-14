@@ -1,6 +1,7 @@
 import {
 	type Actor,
 	AI_AREA_ACCESS,
+	type AnyActionDefinition,
 	BUILT_IN_ROLES,
 	type DbExecutor,
 	type DraftAlternative,
@@ -46,7 +47,7 @@ import {
 	regionFormats,
 	writeFamilySettings,
 } from './family.ts';
-import { type Features, readDisabled, writeDisabled } from './features.ts';
+import { type Features, ownerOf, readDisabled, writeDisabled } from './features.ts';
 import { pruneIdempotency, schedulePrune } from './idempotency.ts';
 import { createLanguages, familySettingsChanged, type LanguagePort } from './languages.ts';
 import { createMemory } from './memory.ts';
@@ -407,6 +408,8 @@ export interface CoreExtensionDeps {
 	themes: Themes;
 	/** How long a suggestion waits before it notifies approvers. */
 	draftNotifyDelayMs: number;
+	/** `db` (a transaction too) as an extension sees it: its own tables. */
+	extensionDb: (extensionId: string, db: DbExecutor) => DbExecutor;
 }
 
 /** Compares without an early exit, so timing does not reveal how much of a code matched. */
@@ -1310,7 +1313,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const passed = await deps.runner().passedCheck(uow.db);
 			const actions = deps.registry().actions;
 			const iso = (at: number) => new Date(at).toISOString();
-			const ctx = { db: uow.db, family: uow.family, translate: uow.translate };
+			// An action's title is read from its own extension's tables, through this transaction.
+			const ctxOf = (def: AnyActionDefinition) => ({
+				db: deps.extensionDb(ownerOf(def.id), uow.db),
+				family: uow.family,
+				translate: uow.translate,
+			});
 			const actor = uow.actor;
 			// An agent in a conversation: what was suggested there (an MCP draft also names its app
 			// key as its source).
@@ -1340,7 +1348,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				try {
 					const input = def.input.safeParse(JSON.parse(raw));
 					return input.success
-						? ((await def.targetTitle(ctx, input.data)) ?? undefined)?.slice(0, 80)
+						? ((await def.targetTitle(ctxOf(def), input.data)) ?? undefined)?.slice(0, 80)
 						: undefined;
 				} catch {
 					return undefined;
@@ -1355,7 +1363,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				if (!def?.scopeNote) return undefined;
 				try {
 					const input = def.input.safeParse(JSON.parse(row.edited_input ?? row.input));
-					const note = input.success ? await def.scopeNote(ctx, input.data) : null;
+					const note = input.success ? await def.scopeNote(ctxOf(def), input.data) : null;
 					return note
 						? uow.translate(language, note.key, {
 								date: formatDate(note.date, formatLocale, { day: 'numeric', month: 'short' }),

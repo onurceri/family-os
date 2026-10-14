@@ -354,8 +354,35 @@ export const m0003_ai_mode: Migration = {
 	},
 };
 
+/**
+ * An extension reads another's file only when the owner granted it. Papers filed on a record
+ * before grants existed stay where the Inbox stored them, so they are granted to records here:
+ * `records_documents` and `inbox/` are what existed when this ran, and this migration is the only
+ * place core names them. Core migrates first, so on a new installation the table is not there yet
+ * and nothing is granted (the Inbox grants each file it hands to records from now on).
+ */
+export const m0004_file_grants: Migration = {
+	async up(db) {
+		await db.schema
+			.createTable('core_file_grants')
+			.addColumn('key', 'text', (c) => c.notNull())
+			.addColumn('grantee', 'text', (c) => c.notNull())
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addPrimaryKeyConstraint('core_file_grants_pk', ['key', 'grantee'])
+			.modifyEnd(sql`strict`)
+			.execute();
+		const filed = await sql<{ n: number }>`select count(*) as n from sqlite_master
+			where type = 'table' and name = 'records_documents'`.execute(db);
+		if (!filed.rows[0]?.n) return;
+		await sql`insert or ignore into core_file_grants (key, grantee, created_at)
+			select distinct file_key, 'records', created_at from records_documents
+			where file_key like 'inbox/%'`.execute(db);
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
 	'0003_ai_mode': m0003_ai_mode,
+	'0004_file_grants': m0004_file_grants,
 };

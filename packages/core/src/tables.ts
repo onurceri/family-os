@@ -233,7 +233,16 @@ export type MemberMemoryTable = {
 	updated_at: number;
 };
 
+/** A file of one extension that another may read (`key` lies under the owner's `<id>/`). */
+export type FileGrantsTable = {
+	key: string;
+	/** The extension that may read it. */
+	grantee: string;
+	created_at: number;
+};
+
 export type CoreTables = {
+	core_file_grants: FileGrantsTable;
 	core_member_memory: MemberMemoryTable;
 	core_idempotency: IdempotencyTable;
 	core_embeddings: EmbeddingsTable;

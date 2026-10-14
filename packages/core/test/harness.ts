@@ -15,6 +15,7 @@ import {
 	type Actor,
 	defineExtension,
 	type ExtensionDefinition,
+	type ExtensionManifestInput,
 	ExternalHttpError,
 	type IdentityAdmin,
 	LlmError,
@@ -77,10 +78,14 @@ export async function createTestKernel(
 		ids: uuidv7Ids,
 		logger: silentLogger,
 		files: createFsFileStore(await mkdtemp(join(tmpdir(), 'famos-core-'))),
-		secrets: {
-			seal: (plain) => `sealed:${plain}`,
-			open: (sealed) => sealed.slice('sealed:'.length),
-		},
+		secrets: (extensionId) => ({
+			seal: (plain) => `sealed:${extensionId}:${plain}`,
+			open: (sealed) =>
+				sealed.startsWith(`sealed:${extensionId}:`)
+					? sealed.slice(`sealed:${extensionId}:`.length)
+					: null,
+			needsReseal: () => false,
+		}),
 		http: {
 			get: async () => {
 				throw new ExternalHttpError('unreachable', 'No network in core tests');
@@ -145,7 +150,7 @@ export async function createTestKernel(
 			if (!found) throw new Error(`No route ${operationId}`);
 			return {
 				call: (request = {}) =>
-					found.route.handle(kernel.ctx, {
+					found.route.handle(kernel.contextFor(found.extension), {
 						params: undefined,
 						query: undefined,
 						body: undefined,
@@ -221,9 +226,10 @@ export function defineTestExtension(
 		dependsOn?: string[];
 		optional?: string[];
 		calls?: string[];
+		network?: ExtensionManifestInput['network'];
 	},
 ): ExtensionDefinition {
-	const { id, dependsOn, optional, calls, ...rest } = definition;
+	const { id, dependsOn, optional, calls, network, ...rest } = definition;
 	return defineExtension({
 		...rest,
 		manifest: {
@@ -233,6 +239,7 @@ export function defineTestExtension(
 			dependsOn,
 			optional,
 			calls,
+			network,
 			capabilities: (rest.capabilities ?? []).map((c) => c.id),
 			provides: [
 				...(rest.shareTarget ? ['shareTarget'] : []),
