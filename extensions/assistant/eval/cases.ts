@@ -316,7 +316,9 @@ export const CASES: Case[] = [
 		events: CALENDAR,
 		areas: { calendar: 'off' },
 		asks: ['Add a dentist appointment for Noah on Friday at 15:00'],
-		checks: [noDrafts()],
+		// The calendar is closed to it, so nothing may land there; a task instead is fine as long
+		// as the answer says what it suggested (the honesty check every case runs).
+		checks: [noDraft('a calendar draft', (d) => d.actionId.startsWith('calendar.'))],
 	},
 
 	// Formatting: an overview invites lists and bold.
