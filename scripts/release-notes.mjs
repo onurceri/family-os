@@ -15,19 +15,38 @@ const SECTIONS = [
 
 const HEADER = /^(?<type>[a-z]+)(?:\((?<scope>[^)]+)\))?(?<bang>!)?: (?<subject>.+)$/;
 
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE: *(.*)$/;
+
+/**
+ * Every `BREAKING CHANGE:` (or `BREAKING-CHANGE:`) footer of a commit body, in order. A footer
+ * goes on over the indented lines after it; a blank or unindented line ends it.
+ */
+function breakingNotes(lines) {
+	const notes = [];
+	let current = null;
+	for (const line of lines) {
+		const start = BREAKING_FOOTER.exec(line);
+		if (start) {
+			current = [start[1].trim()];
+			notes.push(current);
+		} else if (current && /^\s+\S/.test(line)) current.push(line.trim());
+		else current = null;
+	}
+	return notes.map((parts) => parts.filter(Boolean).join(' ')).filter(Boolean);
+}
+
 /** Parses one commit; returns null for messages that are not Conventional Commits. */
 export function parseCommit(message) {
 	const [header = '', ...rest] = message.trim().split('\n');
 	const match = HEADER.exec(header.trim());
 	if (!match?.groups) return null;
-	const body = rest.join('\n');
-	const breakingNote = /^BREAKING[ -]CHANGE: (.+)$/m.exec(body)?.[1];
+	const notes = breakingNotes(rest);
 	return {
 		type: match.groups.type,
 		scope: match.groups.scope ?? null,
 		subject: match.groups.subject,
-		breaking: Boolean(match.groups.bang) || breakingNote !== undefined,
-		breakingNote: breakingNote ?? null,
+		breaking: Boolean(match.groups.bang) || notes.length > 0,
+		breakingNotes: notes,
 	};
 }
 
@@ -71,7 +90,9 @@ export function renderNotes(version, entries, date = new Date(), { first = false
 		const security = c.type === 'fix' && c.scope === 'security';
 		const line = `- ${c.scope && !security ? `**${c.scope}:** ` : ''}${c.subject}`;
 		if (c.breaking) {
-			groups.get('breaking').push(c.breakingNote ? `${line} — ${c.breakingNote}` : line);
+			// Each breaking change of a commit gets a line of its own.
+			const lines = c.breakingNotes.map((note) => `${line} — ${note}`);
+			groups.get('breaking').push(...(lines.length ? lines : [line]));
 			continue;
 		}
 		// Security fixes get their own section so people know to update.

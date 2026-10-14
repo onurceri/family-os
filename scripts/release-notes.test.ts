@@ -12,9 +12,36 @@ describe('release notes', () => {
 		});
 		expect(parseCommit('feat!: new backup format')).toMatchObject({ breaking: true });
 		expect(parseCommit('fix(core): x\n\nBREAKING CHANGE: restore needs 0.3 backups')).toMatchObject(
-			{ breaking: true, breakingNote: 'restore needs 0.3 backups' },
+			{ breaking: true, breakingNotes: ['restore needs 0.3 backups'] },
 		);
+		expect(parseCommit('feat!: x')).toMatchObject({ breaking: true, breakingNotes: [] });
 		expect(parseCommit('Merge branch main')).toBeNull();
+	});
+
+	it('keeps every breaking change of a commit, each footer with its indented lines', () => {
+		// Commit #30 had two footers and the notes showed only the first.
+		const commit = parseCommit(
+			[
+				'fix(assistant, mcp)!: steady answers',
+				'',
+				'Body text.',
+				'',
+				'BREAKING CHANGE: language packs: the words moved to app:words_*.',
+				'BREAKING-CHANGE: MCP: core_mySuggestions lists only',
+				'  the suggestions made with that app key.',
+				'Refs: #30',
+				'',
+				'Co-Authored-By: Someone <someone@example.com>',
+			].join('\n'),
+		);
+		expect(commit.breakingNotes).toEqual([
+			'language packs: the words moved to app:words_*.',
+			'MCP: core_mySuggestions lists only the suggestions made with that app key.',
+		]);
+		const notes = renderNotes('0.3.0', [
+			'fix(mcp)!: steady\n\nBREAKING CHANGE: one\nBREAKING CHANGE: two',
+		]);
+		expect(notes).toContain('- **mcp:** steady — one\n- **mcp:** steady — two\n');
 	});
 
 	it('groups user-visible changes and leaves out maintenance', () => {
