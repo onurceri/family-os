@@ -985,8 +985,12 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				);
 				drafted++;
 			} catch (error) {
-				// An input the action rejects is dropped; the item shows how many were skipped.
-				if (isFamosError(error) && (error.code === 'bad_request' || error.code === 'forbidden')) {
+				// An input the action rejects, or a proposal it refuses (a conflict: already done,
+				// nothing would change), is dropped; the item shows how many were skipped.
+				if (
+					isFamosError(error) &&
+					(error.code === 'bad_request' || error.code === 'forbidden' || error.code === 'conflict')
+				) {
 					skipped++;
 					if (error.code === 'bad_request' && namesRecordBadly(error.details)) skippedUnknown++;
 					// Field paths and messages only, never values: they come from family content.

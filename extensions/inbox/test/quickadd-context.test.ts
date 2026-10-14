@@ -229,6 +229,24 @@ describe('an event that moved', () => {
 		expect(await item()).toMatchObject([{ proposals: 1, skipped: 0 }]);
 	});
 
+	it('skips a change the action refuses, and still reads the item', async () => {
+		// Real model output: the event by handle and label, but not the new day or time. The
+		// action refuses it (nothing would change); that used to fail the whole item.
+		k.llm.respond({
+			summary: 'Regional gala moved',
+			proposals: [
+				{
+					action: 'calendar.changeEvent',
+					input: { id: 'cal_event:1', label: 'Regional Gala' },
+					confidence: 0.9,
+				},
+			],
+		});
+		await read('Regional gala moved to Sat 14 Nov 09:00');
+		expect(await drafts()).toHaveLength(0);
+		expect(await item()).toMatchObject([{ status: 'extracted', proposals: 0, skipped: 1 }]);
+	});
+
 	it('shows no events when the message names none', async () => {
 		k.llm.respond({ summary: 'Dentist', proposals: [] });
 		await read('Dentist on Thursday at 10');
