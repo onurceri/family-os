@@ -31,7 +31,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/24';
+export const PROMPT_VERSION = 'inbox.extract/25';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',

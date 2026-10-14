@@ -451,7 +451,7 @@ export const changeEvent = defineAction({
 		description:
 			'Changes an existing family event: its time, date, place, title, notes, tags or who goes. Send only the fields that change. Find the event with calendar.findEvents first, or use its handle when it is listed; never add a second event for the same thing.',
 		guidance:
-			'Use the family time zone and resolve relative dates from today. When a message says a listed calendar event moved or changed (a new day, time or place), change that event here by its handle instead of adding a new event: put the new values in their fields (date, startTime, endTime, location…) and the event in label as the message words it. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
+			'Use the family time zone and resolve relative dates from today. When a message says a listed calendar event moved or changed (a new day, time or place), change that event here by its handle instead of adding a new event, with the new day, time or place in their fields and the event in label as the message words it. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
 	},
 	async run(uow, { id, label: _label, occurrence: rawOccurrence, ...change }) {
 		const row = await loadEvent(uow, id);
