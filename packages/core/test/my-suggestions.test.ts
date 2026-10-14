@@ -22,6 +22,8 @@ type Listed = {
 	status: string;
 	reason?: string;
 	decidedAt?: string;
+	decidedBy?: string;
+	automatic?: true;
 }[];
 const mine = async (actor: Actor) => {
 	const result = await k.runner.invoke<{ suggestions: Listed }>(
@@ -102,5 +104,70 @@ describe('core.mySuggestions', () => {
 		);
 		// An agent with nobody behind it has no suggestions of its own.
 		expect(await mine({ kind: 'ai', source: 'inbox' })).toEqual([]);
+	});
+
+	it('lists for an agent only what was suggested in its own conversation, with who decided', async () => {
+		const via = (source: 'assistant' | 'mcp', sourceId: string) =>
+			({ ...assistantFor(adult, source), sourceId }) as Actor;
+		const hermes = via('mcp', 'api_token_hermes');
+		const ownKey = await k.runner.invoke('notes.addNote', { body: 'Plasters' }, hermes, {
+			draft: { sourceKind: 'mcp', sourceId: 'api_token_hermes' },
+		});
+		if (ownKey.status !== 'drafted') throw new Error('expected a draft');
+		// What happened to Hermes in use: the person's Quick add, another app and an assistant
+		// thread had suggestions too, all approved by somebody, and Hermes reported them as its own.
+		const shared = await k.runner.invoke(
+			'notes.addNote',
+			{ body: 'Footbridge entry' },
+			assistantFor(adult),
+			{
+				draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1' },
+			},
+		);
+		if (shared.status !== 'drafted') throw new Error('expected a draft');
+		const otherApp = await suggest(via('mcp', 'api_token_other'), 'Batteries');
+		const thread = await suggest(via('assistant', 'asst_thread_1'), 'Salad');
+		// An agent's suggestion for a person who may decide it is theirs alone to decide.
+		for (const id of [ownKey.draftId, shared.draftId, otherApp, thread])
+			await k.runner.approveDraft(id, adult.actor);
+
+		const listed = await mine(hermes);
+		expect(listed.map((s) => s.id)).toEqual([ownKey.draftId]);
+		expect(listed[0]).toMatchObject({ status: 'approved', decidedBy: adult.member.id });
+		expect(listed[0]?.automatic).toBeUndefined();
+		// The assistant sees its own thread; the person, asking directly, sees all of theirs.
+		expect((await mine(via('assistant', 'asst_thread_1'))).map((s) => s.id)).toEqual([thread]);
+		expect(await mine(via('assistant', 'asst_thread_2'))).toEqual([]);
+		expect(await mine(adult.actor)).toHaveLength(4);
+	});
+
+	it("says it is the agent's own suggestion from the draft's source when the actor did not record one", async () => {
+		const result = await k.runner.invoke(
+			'notes.addNote',
+			{ body: 'Wood glue' },
+			assistantFor(adult, 'mcp'),
+			{
+				draft: { sourceKind: 'mcp', sourceId: 'api_token_hermes' },
+			},
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		const hermes = { ...assistantFor(adult, 'mcp'), sourceId: 'api_token_hermes' } as Actor;
+		expect((await mine(hermes)).map((s) => s.id)).toEqual([result.draftId]);
+	});
+
+	it('names the person who decided a suggestion they had to approve for someone else', async () => {
+		const kid = await k.member('supervised');
+		const thread = {
+			kind: 'ai',
+			source: 'assistant',
+			sourceId: 'asst_thread_kid',
+			onBehalfOf: kid.member.id as MemberId,
+			roleId: 'supervised',
+		} as Actor;
+		const id = await suggest(thread, 'Swim cap');
+		await k.runner.approveDraft(id, adult.actor);
+		expect(await mine(thread)).toMatchObject([
+			{ id, status: 'approved', decidedBy: adult.member.id },
+		]);
 	});
 });

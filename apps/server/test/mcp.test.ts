@@ -706,6 +706,42 @@ describe('tools', () => {
 		expect(drafts).toEqual([{ action_id: 'calendar.createEvent', status: 'pending' }]);
 	});
 
+	it('reports only the suggestions made through its own app key, with who decided them', async () => {
+		const { adminId } = await family();
+		const hermes = await newToken(adminId, 'admin', 'read_write', 'Hermes');
+		const other = await newToken(adminId, 'admin', 'read_write', 'Another app');
+		const suggest = (secret: string, title: string) =>
+			rpc(
+				secret,
+				legacyCall('calendar_createEvent', {
+					title,
+					date: '2026-10-20',
+					allDay: true,
+					memberIds: [],
+					tags: [],
+				}),
+			);
+		await suggest(hermes.secret, 'Delft project call');
+		await suggest(other.secret, 'Maas footbridge entry');
+		const drafts = (await runtime.handle.db
+			.selectFrom('core_drafts' as never)
+			.selectAll()
+			.execute()) as unknown as { id: string; proposed_by: string }[];
+		expect(drafts.map((d) => JSON.parse(d.proposed_by).sourceId).toSorted()).toEqual(
+			[hermes.token.id, other.token.id].toSorted(),
+		);
+		for (const d of drafts)
+			await runtime.kernel.runner.approveDraft(d.id, memberActor(adminId, 'admin'));
+
+		const res = await rpc(hermes.secret, legacyCall('core_mySuggestions', {}));
+		const text = res.body.result.content[0].text as string;
+		expect(text).toContain('Delft project call');
+		expect(text).not.toContain('Maas footbridge');
+		// Who decided it, as a reference the people list resolves (never a raw id).
+		expect(text).toMatch(/"decidedBy":"member:[0-9a-f]+"/);
+		expect(text).not.toContain(adminId);
+	});
+
 	it('never lists a read-only token’s draft tools, and refuses to call one', async () => {
 		const { adminId, cookie } = await family();
 		void cookie;

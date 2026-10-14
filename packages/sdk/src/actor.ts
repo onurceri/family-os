@@ -18,9 +18,17 @@ export type Actor =
 	 * began), on top of the AI's own limits (view level, areas that are not off). Without it, it
 	 * works for nobody in particular (the Inbox). `local`: the model that reads the results runs
 	 * on the family's own network (absent means it does not), which decides whether data of
-	 * local-only areas may reach it.
+	 * local-only areas may reach it. `sourceId`: the conversation it works in (an assistant thread,
+	 * an app key of an MCP client), so it can tell its own suggestions from the person's others.
 	 */
-	| { kind: 'ai'; source: string; onBehalfOf?: MemberId; roleId?: RoleId; local?: boolean }
+	| {
+			kind: 'ai';
+			source: string;
+			sourceId?: string;
+			onBehalfOf?: MemberId;
+			roleId?: RoleId;
+			local?: boolean;
+	  }
 	| { kind: 'system'; source: string }
 	/**
 	 * A paired family display: view-only, with the capabilities granted at pairing.
@@ -33,6 +41,7 @@ export const ActorSchema: z.ZodType<Actor> = z.discriminatedUnion('kind', [
 	z.object({
 		kind: z.literal('ai'),
 		source: z.string(),
+		sourceId: z.string().optional(),
 		onBehalfOf: z.custom<MemberId>().optional(),
 		roleId: z.string().optional(),
 		local: z.boolean().optional(),

@@ -59,6 +59,8 @@ export function offeredTools(
 	const actor: Actor = {
 		kind: 'ai',
 		source: 'mcp',
+		// What this app key suggested is its own; the person's other suggestions are not.
+		sourceId: principal.token.id,
 		onBehalfOf: principal.member.id as MemberId,
 		roleId: principal.member.roleId,
 	};

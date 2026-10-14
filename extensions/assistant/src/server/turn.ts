@@ -185,6 +185,8 @@ export const turnJob = defineJob({
 		const actor: Actor = {
 			kind: 'ai',
 			source: 'assistant',
+			// The suggestions of this conversation are its own; the person's others are not.
+			sourceId: threadId,
 			onBehalfOf: member.id as MemberId,
 			roleId: member.roleId,
 			// Results of local-only areas may reach the model only if it runs on the family's network.
