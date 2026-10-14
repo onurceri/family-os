@@ -509,3 +509,12 @@ export function nextEveryDue(anchor: string, every: MonthlyOrYearly, after: stri
 		if (compareDates(candidate, after) > 0) return candidate;
 	}
 }
+
+export {
+	type DateOrder,
+	type DateWords,
+	dateWords,
+	isUncertainDate,
+	type WeekdayMismatch,
+	weekdayMismatches,
+} from './date-words.ts';

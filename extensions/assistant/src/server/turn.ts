@@ -8,7 +8,7 @@ import {
 	type LlmChatMessage,
 	type MemberId,
 } from '@famos/sdk';
-import { todayIn, zoned } from '@famos/time';
+import { dateWords, numericDateOrder, todayIn, zoned } from '@famos/time';
 import { z } from 'zod';
 import {
 	CHAT_FEATURE,
@@ -18,7 +18,7 @@ import {
 	TURN_JOB,
 } from '../contract/index.ts';
 import { formatWeekday } from './format.ts';
-import { systemPrompt } from './prompt.ts';
+import { systemPrompt, weekdayNotes } from './prompt.ts';
 import { createHandleScrubber, scrubHandles } from './scrub.ts';
 import { tables } from './store.ts';
 import {
@@ -248,6 +248,14 @@ export const turnJob = defineJob({
 		const settings = await ctx.family.settings();
 		const now = ctx.clock.now();
 		const today = todayIn(settings.timeZone, now);
+		// A weekday that does not fit its date in what the person just wrote is pointed out.
+		const asked = kept.findLast((m) => m.role === 'user')?.content ?? '';
+		const notes = weekdayNotes(
+			asked,
+			today,
+			dateWords((key) => ctx.vocabulary(key)),
+			numericDateOrder(settings.formatLocale),
+		);
 		const calls: RecordedCall[] = [];
 		const proposals: Proposal[] = [];
 		const inject = {
@@ -294,6 +302,7 @@ export const turnJob = defineJob({
 						.filter(([, label]) => label !== '')
 						.slice(-MAX_RECORDS_IN_PROMPT)
 						.map(([handle, label]) => ({ handle, label })),
+					notes,
 				}),
 				messages,
 				tools: chatTools(tools, {

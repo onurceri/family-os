@@ -16,7 +16,7 @@ import {
 	namedShares,
 	repairInput,
 } from '@famos/sdk';
-import { formatDate, numericDateOrder, todayIn } from '@famos/time';
+import { dateWords, formatDate, isUncertainDate, numericDateOrder, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	type ErrorCode,
@@ -26,7 +26,7 @@ import {
 	READ_ATTEMPTS,
 	TRANSCRIBE_FEATURE,
 } from '../contract/index.ts';
-import { datePaths, dateTable, dateWords, isUncertainDate } from './dates.ts';
+import { datePaths, dateTable } from './dates.ts';
 import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 

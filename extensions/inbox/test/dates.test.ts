@@ -1,6 +1,7 @@
 import { repoVocabulary } from '@famos/testing';
+import { dateWords, isUncertainDate } from '@famos/time';
 import { describe, expect, it } from 'vitest';
-import { datePaths, dateTable, dateWords, isUncertainDate } from '../src/server/dates.ts';
+import { datePaths, dateTable } from '../src/server/dates.ts';
 import { clockTimes } from '../src/server/process.ts';
 
 /** The date words of the repository's catalogs and bundled language packs. */

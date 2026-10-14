@@ -1,5 +1,13 @@
 import { languageName } from '@famos/i18n';
-import { daysAround, weekOf } from '@famos/time';
+import {
+	addDays,
+	type DateOrder,
+	type DateWords,
+	daysAround,
+	formatDate,
+	weekdayMismatches,
+	weekOf,
+} from '@famos/time';
 import { formatWeekday } from './format.ts';
 
 export interface PromptInput {
@@ -25,6 +33,34 @@ export interface PromptInput {
 	memories: readonly string[];
 	/** Records shown earlier in this conversation (handle and title), so "it" stays resolvable. */
 	records: readonly { handle: string; label: string }[];
+	/** Facts about the person's latest message that the answer must mention (see `weekdayNotes`). */
+	notes?: readonly string[];
+}
+
+/** The English name of a weekday (1 = Monday): 2026-01-05 was a Monday. */
+const weekdayName = (day: number) => formatWeekday(addDays('2026-01-05', day - 1));
+
+/**
+ * A weekday the person wrote next to a date that falls on another day ("Wednesday 20 October"
+ * when it is a Tuesday), found in code: models pass over such a slip even with a calendar in the
+ * prompt. Each becomes a note the answer must mention. English, because prompts are English.
+ */
+export function weekdayNotes(
+	text: string,
+	today: string,
+	words: DateWords,
+	order: DateOrder,
+): string[] {
+	return weekdayMismatches(text, today, words, order).map((m) => {
+		const day = formatDate(m.date, 'en', { day: 'numeric', month: 'long', year: 'numeric' });
+		return `The person wrote "${m.said}", but ${day} (${m.date}) is a ${weekdayName(m.weekday)}, not a ${weekdayName(m.saidWeekday)}.`;
+	});
+}
+
+/** The notes about the latest message, with what to do about them. */
+function notesBlock(notes: readonly string[] | undefined): string {
+	if (!notes?.length) return '';
+	return `\n\nChecked in the person's latest message (true, worked out from the calendar):\n${notes.map((n) => `- ${n}`).join('\n')}\nStart your answer by telling the person this weekday and date do not match, with the real weekday. Then ask which day they mean; if a tool can answer for both, answer for the date and say that you did.`;
 }
 
 /**
@@ -86,7 +122,7 @@ ${nowBlock(input)} Write dates as YYYY-MM-DD in tool inputs. When you tell peopl
 
 The days around today:
 ${daysAround(input.today).join('\n')}
-Take weekdays and dates from this table; when a person's weekday and date disagree, say so and ask.
+Take weekdays and dates from this table; when a person's weekday and date disagree, say so and ask.${notesBlock(input.notes)}
 
 Family members (use a handle like member:1 only in tool inputs; in your answers always write the person's name):
 ${members}
