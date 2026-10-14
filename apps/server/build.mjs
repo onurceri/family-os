@@ -14,6 +14,9 @@ await build({
 	// esbuild renames the polyfill's class to AbortSignal2 and every Telegram call fails.
 	keepNames: true,
 	external: ['better-sqlite3'],
+	// whatwg-url and tr46 (inside node-fetch, inside grammY) require Node's built-in punycode,
+	// which is deprecated and warns at every start; the userland package is the same code.
+	alias: { punycode: 'punycode/' },
 	banner: {
 		// Some CJS dependencies call require(); provide it in the ESM bundle.
 		js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
