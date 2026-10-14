@@ -1,0 +1,5039 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "FamilyOS API: chores",
+		"version": "v1",
+		"description": "Generated from route and action definitions. Do not edit."
+	},
+	"components": {
+		"securitySchemes": {
+			"session": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "better-auth.session_token"
+			}
+		},
+		"schemas": {},
+		"parameters": {}
+	},
+	"paths": {
+		"/api/v1/chores/chores": {
+			"get": {
+				"operationId": "chores.listAllChores",
+				"summary": "The chores with whose turn it is, soonest first; a finished one-off stays for a week",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The chores with whose turn it is, soonest first; a finished one-off stays for a week",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string",
+												"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+											},
+											"title": {
+												"type": "string"
+											},
+											"notes": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"recurrence": {
+												"oneOf": [
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"daily"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 365,
+																"default": 1
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq"
+														]
+													},
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"weekly"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 52,
+																"default": 1
+															},
+															"byDay": {
+																"type": "array",
+																"items": {
+																	"type": "string",
+																	"enum": [
+																		"MO",
+																		"TU",
+																		"WE",
+																		"TH",
+																		"FR",
+																		"SA",
+																		"SU"
+																	]
+																},
+																"minItems": 1,
+																"maxItems": 7
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq",
+															"byDay"
+														]
+													},
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"monthly"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 12,
+																"default": 1
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq"
+														]
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"startDate": {
+												"type": "string"
+											},
+											"nextDue": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"overdue": {
+												"type": "boolean"
+											},
+											"rotation": {
+												"type": "string",
+												"enum": [
+													"fixed",
+													"round_robin",
+													"least_done"
+												]
+											},
+											"assigneeId": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"assigneeIds": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												}
+											},
+											"lastDone": {
+												"type": [
+													"object",
+													"null"
+												],
+												"properties": {
+													"memberId": {
+														"type": "string"
+													},
+													"doneAt": {
+														"type": "number"
+													}
+												},
+												"required": [
+													"memberId",
+													"doneAt"
+												]
+											},
+											"createdAt": {
+												"type": "number"
+											},
+											"updatedAt": {
+												"type": "number"
+											}
+										},
+										"required": [
+											"id",
+											"title",
+											"notes",
+											"recurrence",
+											"startDate",
+											"nextDue",
+											"overdue",
+											"rotation",
+											"assigneeId",
+											"assigneeIds",
+											"lastDone",
+											"createdAt",
+											"updatedAt"
+										]
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/chores/chores/{choreId}": {
+			"get": {
+				"operationId": "chores.getChore",
+				"summary": "One chore with who did it lately",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "choreId",
+						"in": "path"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "One chore with who did it lately",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string",
+											"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"title": {
+											"type": "string"
+										},
+										"notes": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"recurrence": {
+											"oneOf": [
+												{
+													"type": "object",
+													"properties": {
+														"freq": {
+															"type": "string",
+															"enum": [
+																"daily"
+															]
+														},
+														"interval": {
+															"type": "integer",
+															"minimum": 1,
+															"maximum": 365,
+															"default": 1
+														},
+														"until": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"freq"
+													]
+												},
+												{
+													"type": "object",
+													"properties": {
+														"freq": {
+															"type": "string",
+															"enum": [
+																"weekly"
+															]
+														},
+														"interval": {
+															"type": "integer",
+															"minimum": 1,
+															"maximum": 52,
+															"default": 1
+														},
+														"byDay": {
+															"type": "array",
+															"items": {
+																"type": "string",
+																"enum": [
+																	"MO",
+																	"TU",
+																	"WE",
+																	"TH",
+																	"FR",
+																	"SA",
+																	"SU"
+																]
+															},
+															"minItems": 1,
+															"maxItems": 7
+														},
+														"until": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"freq",
+														"byDay"
+													]
+												},
+												{
+													"type": "object",
+													"properties": {
+														"freq": {
+															"type": "string",
+															"enum": [
+																"monthly"
+															]
+														},
+														"interval": {
+															"type": "integer",
+															"minimum": 1,
+															"maximum": 12,
+															"default": 1
+														},
+														"until": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"freq"
+													]
+												},
+												{
+													"type": "null"
+												}
+											]
+										},
+										"startDate": {
+											"type": "string"
+										},
+										"nextDue": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"overdue": {
+											"type": "boolean"
+										},
+										"rotation": {
+											"type": "string",
+											"enum": [
+												"fixed",
+												"round_robin",
+												"least_done"
+											]
+										},
+										"assigneeId": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"assigneeIds": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										},
+										"lastDone": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"memberId": {
+													"type": "string"
+												},
+												"doneAt": {
+													"type": "number"
+												}
+											},
+											"required": [
+												"memberId",
+												"doneAt"
+											]
+										},
+										"createdAt": {
+											"type": "number"
+										},
+										"updatedAt": {
+											"type": "number"
+										},
+										"history": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"id": {
+														"type": "string",
+														"pattern": "^chore_done_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+													},
+													"choreId": {
+														"type": "string",
+														"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+													},
+													"memberId": {
+														"type": "string"
+													},
+													"dueDate": {
+														"type": "string"
+													},
+													"doneAt": {
+														"type": "number"
+													},
+													"undoneAt": {
+														"type": [
+															"number",
+															"null"
+														]
+													}
+												},
+												"required": [
+													"id",
+													"choreId",
+													"memberId",
+													"dueDate",
+													"doneAt",
+													"undoneAt"
+												]
+											}
+										}
+									},
+									"required": [
+										"id",
+										"title",
+										"notes",
+										"recurrence",
+										"startDate",
+										"nextDue",
+										"overdue",
+										"rotation",
+										"assigneeId",
+										"assigneeIds",
+										"lastDone",
+										"createdAt",
+										"updatedAt",
+										"history"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/chores/today": {
+			"get": {
+				"operationId": "chores.getTodayByMember",
+				"summary": "Today's chores per person: due today or late, and done today",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Today's chores per person: due today or late, and done today",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"memberId": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"done": {
+												"type": "integer",
+												"minimum": 0
+											},
+											"total": {
+												"type": "integer",
+												"minimum": 0
+											}
+										},
+										"required": [
+											"memberId",
+											"done",
+											"total"
+										]
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.createChore": {
+			"post": {
+				"operationId": "chores.createChore",
+				"summary": "Add a chore",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"title": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 120,
+										"description": "The chore, e.g. \"Empty the dishwasher\""
+									},
+									"notes": {
+										"type": [
+											"string",
+											"null"
+										],
+										"maxLength": 1000
+									},
+									"recurrence": {
+										"oneOf": [
+											{
+												"type": "object",
+												"properties": {
+													"freq": {
+														"type": "string",
+														"enum": [
+															"daily"
+														]
+													},
+													"interval": {
+														"type": "integer",
+														"minimum": 1,
+														"maximum": 365,
+														"default": 1
+													},
+													"until": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"freq"
+												]
+											},
+											{
+												"type": "object",
+												"properties": {
+													"freq": {
+														"type": "string",
+														"enum": [
+															"weekly"
+														]
+													},
+													"interval": {
+														"type": "integer",
+														"minimum": 1,
+														"maximum": 52,
+														"default": 1
+													},
+													"byDay": {
+														"type": "array",
+														"items": {
+															"type": "string",
+															"enum": [
+																"MO",
+																"TU",
+																"WE",
+																"TH",
+																"FR",
+																"SA",
+																"SU"
+															]
+														},
+														"minItems": 1,
+														"maxItems": 7
+													},
+													"until": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"freq",
+													"byDay"
+												]
+											},
+											{
+												"type": "object",
+												"properties": {
+													"freq": {
+														"type": "string",
+														"enum": [
+															"monthly"
+														]
+													},
+													"interval": {
+														"type": "integer",
+														"minimum": 1,
+														"maximum": 12,
+														"default": 1
+													},
+													"until": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"freq"
+												]
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "How it repeats; omit or null for a one-off chore"
+									},
+									"startDate": {
+										"type": "string",
+										"description": "The first day it is due, YYYY-MM-DD, in the family time zone"
+									},
+									"rotation": {
+										"type": "string",
+										"enum": [
+											"fixed",
+											"round_robin",
+											"least_done"
+										],
+										"default": "fixed",
+										"description": "fixed: the same person; round_robin: take turns in the listed order; least_done: whoever did it least lately"
+									},
+									"assigneeIds": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"maxItems": 20,
+										"default": [],
+										"description": "The people in turn order; the first one is up first. Empty means anyone"
+									}
+								},
+								"required": [
+									"title",
+									"startDate"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string",
+															"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+														},
+														"title": {
+															"type": "string"
+														},
+														"notes": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"recurrence": {
+															"oneOf": [
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"daily"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 365,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"weekly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 52,
+																			"default": 1
+																		},
+																		"byDay": {
+																			"type": "array",
+																			"items": {
+																				"type": "string",
+																				"enum": [
+																					"MO",
+																					"TU",
+																					"WE",
+																					"TH",
+																					"FR",
+																					"SA",
+																					"SU"
+																				]
+																			},
+																			"minItems": 1,
+																			"maxItems": 7
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq",
+																		"byDay"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"monthly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 12,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
+														"startDate": {
+															"type": "string"
+														},
+														"nextDue": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"overdue": {
+															"type": "boolean"
+														},
+														"rotation": {
+															"type": "string",
+															"enum": [
+																"fixed",
+																"round_robin",
+																"least_done"
+															]
+														},
+														"assigneeId": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"assigneeIds": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
+														"lastDone": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"memberId": {
+																	"type": "string"
+																},
+																"doneAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"memberId",
+																"doneAt"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"title",
+														"notes",
+														"recurrence",
+														"startDate",
+														"nextDue",
+														"overdue",
+														"rotation",
+														"assigneeId",
+														"assigneeIds",
+														"lastDone",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.updateChore": {
+			"post": {
+				"operationId": "chores.updateChore",
+				"summary": "Change a chore",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"chore": {
+										"type": "object",
+										"properties": {
+											"title": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 120,
+												"description": "The chore, e.g. \"Empty the dishwasher\""
+											},
+											"notes": {
+												"type": [
+													"string",
+													"null"
+												],
+												"maxLength": 1000
+											},
+											"recurrence": {
+												"oneOf": [
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"daily"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 365,
+																"default": 1
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq"
+														]
+													},
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"weekly"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 52,
+																"default": 1
+															},
+															"byDay": {
+																"type": "array",
+																"items": {
+																	"type": "string",
+																	"enum": [
+																		"MO",
+																		"TU",
+																		"WE",
+																		"TH",
+																		"FR",
+																		"SA",
+																		"SU"
+																	]
+																},
+																"minItems": 1,
+																"maxItems": 7
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq",
+															"byDay"
+														]
+													},
+													{
+														"type": "object",
+														"properties": {
+															"freq": {
+																"type": "string",
+																"enum": [
+																	"monthly"
+																]
+															},
+															"interval": {
+																"type": "integer",
+																"minimum": 1,
+																"maximum": 12,
+																"default": 1
+															},
+															"until": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"freq"
+														]
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "How it repeats; omit or null for a one-off chore"
+											},
+											"startDate": {
+												"type": "string",
+												"description": "The first day it is due, YYYY-MM-DD, in the family time zone"
+											},
+											"rotation": {
+												"type": "string",
+												"enum": [
+													"fixed",
+													"round_robin",
+													"least_done"
+												],
+												"default": "fixed",
+												"description": "fixed: the same person; round_robin: take turns in the listed order; least_done: whoever did it least lately"
+											}
+										},
+										"required": [
+											"title",
+											"startDate"
+										]
+									}
+								},
+								"required": [
+									"id",
+									"chore"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string",
+															"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+														},
+														"title": {
+															"type": "string"
+														},
+														"notes": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"recurrence": {
+															"oneOf": [
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"daily"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 365,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"weekly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 52,
+																			"default": 1
+																		},
+																		"byDay": {
+																			"type": "array",
+																			"items": {
+																				"type": "string",
+																				"enum": [
+																					"MO",
+																					"TU",
+																					"WE",
+																					"TH",
+																					"FR",
+																					"SA",
+																					"SU"
+																				]
+																			},
+																			"minItems": 1,
+																			"maxItems": 7
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq",
+																		"byDay"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"monthly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 12,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
+														"startDate": {
+															"type": "string"
+														},
+														"nextDue": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"overdue": {
+															"type": "boolean"
+														},
+														"rotation": {
+															"type": "string",
+															"enum": [
+																"fixed",
+																"round_robin",
+																"least_done"
+															]
+														},
+														"assigneeId": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"assigneeIds": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
+														"lastDone": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"memberId": {
+																	"type": "string"
+																},
+																"doneAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"memberId",
+																"doneAt"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"title",
+														"notes",
+														"recurrence",
+														"startDate",
+														"nextDue",
+														"overdue",
+														"rotation",
+														"assigneeId",
+														"assigneeIds",
+														"lastDone",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.archiveChore": {
+			"post": {
+				"operationId": "chores.archiveChore",
+				"summary": "Archive a chore",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									}
+								},
+								"required": [
+									"id"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"ok": {
+															"type": "boolean",
+															"enum": [
+																true
+															]
+														}
+													},
+													"required": [
+														"ok"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.setAssignees": {
+			"post": {
+				"operationId": "chores.setAssignees",
+				"summary": "Choose who does a chore",
+				"description": "Sets the people who take turns, in order. Whoever is up now stays if still listed, else the first one is up.",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"memberIds": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"maxItems": 20,
+										"description": "The people in turn order; empty means anyone"
+									},
+									"choreTitle": {
+										"type": "string",
+										"maxLength": 120
+									}
+								},
+								"required": [
+									"id",
+									"memberIds"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"chore": {
+															"type": "object",
+															"properties": {
+																"id": {
+																	"type": "string",
+																	"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+																},
+																"title": {
+																	"type": "string"
+																},
+																"notes": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"recurrence": {
+																	"oneOf": [
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"daily"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 365,
+																					"default": 1
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq"
+																			]
+																		},
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"weekly"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 52,
+																					"default": 1
+																				},
+																				"byDay": {
+																					"type": "array",
+																					"items": {
+																						"type": "string",
+																						"enum": [
+																							"MO",
+																							"TU",
+																							"WE",
+																							"TH",
+																							"FR",
+																							"SA",
+																							"SU"
+																						]
+																					},
+																					"minItems": 1,
+																					"maxItems": 7
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq",
+																				"byDay"
+																			]
+																		},
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"monthly"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 12,
+																					"default": 1
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq"
+																			]
+																		},
+																		{
+																			"type": "null"
+																		}
+																	]
+																},
+																"startDate": {
+																	"type": "string"
+																},
+																"nextDue": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"overdue": {
+																	"type": "boolean"
+																},
+																"rotation": {
+																	"type": "string",
+																	"enum": [
+																		"fixed",
+																		"round_robin",
+																		"least_done"
+																	]
+																},
+																"assigneeId": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"assigneeIds": {
+																	"type": "array",
+																	"items": {
+																		"type": "string"
+																	}
+																},
+																"lastDone": {
+																	"type": [
+																		"object",
+																		"null"
+																	],
+																	"properties": {
+																		"memberId": {
+																			"type": "string"
+																		},
+																		"doneAt": {
+																			"type": "number"
+																		}
+																	},
+																	"required": [
+																		"memberId",
+																		"doneAt"
+																	]
+																},
+																"createdAt": {
+																	"type": "number"
+																},
+																"updatedAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"id",
+																"title",
+																"notes",
+																"recurrence",
+																"startDate",
+																"nextDue",
+																"overdue",
+																"rotation",
+																"assigneeId",
+																"assigneeIds",
+																"lastDone",
+																"createdAt",
+																"updatedAt"
+															]
+														},
+														"previousAssigneeIds": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														}
+													},
+													"required": [
+														"chore",
+														"previousAssigneeIds"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.markDone": {
+			"post": {
+				"operationId": "chores.markDone",
+				"summary": "Mark a chore done",
+				"description": "Records who did it, moves the chore to its next due date and hands it to the next person in turn. A tap on a date that has already been done changes nothing.",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"dueDate": {
+										"type": "string"
+									},
+									"doneBy": {
+										"type": "string",
+										"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"label": {
+										"type": "string",
+										"maxLength": 200,
+										"description": "The chore as listed, e.g. \"Empty the dishwasher\"; only shown to the reviewer"
+									}
+								},
+								"required": [
+									"id",
+									"dueDate"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"chore": {
+															"type": "object",
+															"properties": {
+																"id": {
+																	"type": "string",
+																	"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+																},
+																"title": {
+																	"type": "string"
+																},
+																"notes": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"recurrence": {
+																	"oneOf": [
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"daily"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 365,
+																					"default": 1
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq"
+																			]
+																		},
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"weekly"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 52,
+																					"default": 1
+																				},
+																				"byDay": {
+																					"type": "array",
+																					"items": {
+																						"type": "string",
+																						"enum": [
+																							"MO",
+																							"TU",
+																							"WE",
+																							"TH",
+																							"FR",
+																							"SA",
+																							"SU"
+																						]
+																					},
+																					"minItems": 1,
+																					"maxItems": 7
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq",
+																				"byDay"
+																			]
+																		},
+																		{
+																			"type": "object",
+																			"properties": {
+																				"freq": {
+																					"type": "string",
+																					"enum": [
+																						"monthly"
+																					]
+																				},
+																				"interval": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 12,
+																					"default": 1
+																				},
+																				"until": {
+																					"type": "string"
+																				}
+																			},
+																			"required": [
+																				"freq"
+																			]
+																		},
+																		{
+																			"type": "null"
+																		}
+																	]
+																},
+																"startDate": {
+																	"type": "string"
+																},
+																"nextDue": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"overdue": {
+																	"type": "boolean"
+																},
+																"rotation": {
+																	"type": "string",
+																	"enum": [
+																		"fixed",
+																		"round_robin",
+																		"least_done"
+																	]
+																},
+																"assigneeId": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"assigneeIds": {
+																	"type": "array",
+																	"items": {
+																		"type": "string"
+																	}
+																},
+																"lastDone": {
+																	"type": [
+																		"object",
+																		"null"
+																	],
+																	"properties": {
+																		"memberId": {
+																			"type": "string"
+																		},
+																		"doneAt": {
+																			"type": "number"
+																		}
+																	},
+																	"required": [
+																		"memberId",
+																		"doneAt"
+																	]
+																},
+																"createdAt": {
+																	"type": "number"
+																},
+																"updatedAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"id",
+																"title",
+																"notes",
+																"recurrence",
+																"startDate",
+																"nextDue",
+																"overdue",
+																"rotation",
+																"assigneeId",
+																"assigneeIds",
+																"lastDone",
+																"createdAt",
+																"updatedAt"
+															]
+														},
+														"completion": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"id": {
+																	"type": "string",
+																	"pattern": "^chore_done_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+																},
+																"choreId": {
+																	"type": "string",
+																	"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+																},
+																"memberId": {
+																	"type": "string"
+																},
+																"dueDate": {
+																	"type": "string"
+																},
+																"doneAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"id",
+																"choreId",
+																"memberId",
+																"dueDate",
+																"doneAt"
+															]
+														},
+														"reason": {
+															"type": "string",
+															"enum": [
+																"stale",
+																"already_done"
+															]
+														}
+													},
+													"required": [
+														"chore",
+														"completion"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.undoDone": {
+			"post": {
+				"operationId": "chores.undoDone",
+				"summary": "Undo a completion",
+				"description": "Takes the latest completion of a chore back: the due date and whose turn it was return. Your own completion can be undone the same day.",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"completionId": {
+										"type": "string",
+										"pattern": "^chore_done_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									}
+								},
+								"required": [
+									"completionId"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string",
+															"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+														},
+														"title": {
+															"type": "string"
+														},
+														"notes": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"recurrence": {
+															"oneOf": [
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"daily"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 365,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"weekly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 52,
+																			"default": 1
+																		},
+																		"byDay": {
+																			"type": "array",
+																			"items": {
+																				"type": "string",
+																				"enum": [
+																					"MO",
+																					"TU",
+																					"WE",
+																					"TH",
+																					"FR",
+																					"SA",
+																					"SU"
+																				]
+																			},
+																			"minItems": 1,
+																			"maxItems": 7
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq",
+																		"byDay"
+																	]
+																},
+																{
+																	"type": "object",
+																	"properties": {
+																		"freq": {
+																			"type": "string",
+																			"enum": [
+																				"monthly"
+																			]
+																		},
+																		"interval": {
+																			"type": "integer",
+																			"minimum": 1,
+																			"maximum": 12,
+																			"default": 1
+																		},
+																		"until": {
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"freq"
+																	]
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
+														"startDate": {
+															"type": "string"
+														},
+														"nextDue": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"overdue": {
+															"type": "boolean"
+														},
+														"rotation": {
+															"type": "string",
+															"enum": [
+																"fixed",
+																"round_robin",
+																"least_done"
+															]
+														},
+														"assigneeId": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"assigneeIds": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
+														"lastDone": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"memberId": {
+																	"type": "string"
+																},
+																"doneAt": {
+																	"type": "number"
+																}
+															},
+															"required": [
+																"memberId",
+																"doneAt"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"title",
+														"notes",
+														"recurrence",
+														"startDate",
+														"nextDue",
+														"overdue",
+														"rotation",
+														"assigneeId",
+														"assigneeIds",
+														"lastDone",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.listChores": {
+			"post": {
+				"operationId": "chores.listChores",
+				"summary": "Chores, for the AI",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"assignee": {
+										"type": "string",
+										"description": "Only chores that are this member’s turn (their handle)"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"today": {
+															"type": "string"
+														},
+														"chores": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"id": {
+																		"type": "string"
+																	},
+																	"title": {
+																		"type": "string"
+																	},
+																	"nextDue": {
+																		"type": [
+																			"string",
+																			"null"
+																		],
+																		"description": "Null when a one-off chore is done"
+																	},
+																	"overdue": {
+																		"type": "boolean"
+																	},
+																	"assigneeId": {
+																		"type": [
+																			"string",
+																			"null"
+																		],
+																		"description": "Whose turn it is; null means anyone"
+																	},
+																	"assigneeIds": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		},
+																		"description": "The people in turn order"
+																	},
+																	"rotation": {
+																		"type": "string"
+																	},
+																	"repeats": {
+																		"type": "boolean"
+																	}
+																},
+																"required": [
+																	"id",
+																	"title",
+																	"nextDue",
+																	"overdue",
+																	"assigneeId",
+																	"assigneeIds",
+																	"rotation",
+																	"repeats"
+																]
+															}
+														},
+														"truncated": {
+															"type": "boolean"
+														}
+													},
+													"required": [
+														"today",
+														"chores",
+														"truncated"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/chores.todayByMember": {
+			"post": {
+				"operationId": "chores.todayByMember",
+				"summary": "Today's chores per person",
+				"description": "For each person with chores today, and for anyone, how many are due today or late and how many are done.",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "array",
+													"items": {
+														"type": "object",
+														"properties": {
+															"memberId": {
+																"type": [
+																	"string",
+																	"null"
+																]
+															},
+															"done": {
+																"type": "integer",
+																"minimum": 0
+															},
+															"total": {
+																"type": "integer",
+																"minimum": 0
+															}
+														},
+														"required": [
+															"memberId",
+															"done",
+															"total"
+														]
+													}
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"webhooks": {}
+}

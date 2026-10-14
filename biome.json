@@ -11,6 +11,7 @@
 			"!**/*.svelte",
 			"!**/generated",
 			"!**/openapi.json",
+			"!**/*.gen.d.ts",
 			"!packages/ui/src/components",
 			"!.claude"
 		]

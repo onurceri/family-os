@@ -35,7 +35,7 @@ pnpm test         # unit and integration tests on in-memory SQLite
 
 - Every action and route has tests (`createTestKernel` from `@famos/testing`). Tests never call a
   real AI provider; use the scripted fake model.
-- After changing routes, run `pnpm gen` and commit `openapi.json` and `packages/api-client`.
+- After changing routes, run `pnpm gen` and commit what it writes: `openapi.json`, `packages/api-client`, and each extension's `openapi.json` and `src/web/api.gen.d.ts`.
   Never edit generated files by hand.
 - `pnpm e2e` runs the small set of end-to-end flows in Playwright (run
   `pnpm --filter @famos/e2e exec playwright install --only-shell chromium` once). Add an e2e test

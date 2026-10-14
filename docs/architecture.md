@@ -141,9 +141,9 @@ Each extension is **one package** with subpath exports:
 ## 5. Dependency rules (enforced in CI)
 
 - `sdk` depends only on `zod` (and Kysely *types*).
-- `extensions/*` may import `sdk`, `ui`, `time`, and other extensions' `./contract` only; their `./web` code may also import `api-client` (server and contract code may not).
+- `extensions/*` may import `sdk`, `ui`, `time`, and other extensions' `./contract` only; their `./web` code may also import `api-client` and the `./api` types of an extension their manifest depends on (server and contract code may not).
 - `core` may import `sdk`; it must not import adapters or `db`.
-- `web` may import `api-client`, `ui`, extensions' `./web` and `./contract`; never server code.
+- `web` may import `api-client`, `ui`, extensions' `./web` and `./contract`; never server code or an extension's `./api`.
 - `adapters` and `db` are imported only by `apps/server`. Extensions receive the database through `ctx.db`, typed by the SDK.
 
 Violations fail the build via dependency-cruiser.
@@ -630,8 +630,11 @@ The app is used in shops with poor reception. The common moments are small (tick
 ## 15. API contract
 
 - Routes are defined framework-neutrally with `defineRoute` from `@famos/sdk` (Zod params, query, body, response, roles). The server's HTTP adapter turns them, and every action, into `@hono/zod-openapi` routes, so extensions never import an HTTP framework and route handlers are testable without HTTP.
-- The server emits `openapi.json`, which is committed. CI regenerates it and fails on any diff.
-- `packages/api-client` (types from `openapi-typescript`, runtime `openapi-fetch`) is generated from it and is the only way `web` talks to the server. Future native clients use the same spec.
+- The running server serves the whole document at `/api/openapi.json`. `pnpm gen` (`main.ts openapi openapi.json --extensions ../../extensions`) writes it split by owner, and every part is committed; CI regenerates them and fails on any difference:
+  - `apps/server/openapi.json` holds core's and the app's own routes (members, settings, AI, backups, push, Telegram, email, MCP) and `/actions/core.*`;
+  - `extensions/<id>/openapi.json` holds an extension's routes (`/api/v1/<id>/…`) and its actions (`/actions/<id>.*`), and `extensions/<id>/src/web/api.gen.d.ts` its types (`openapi-typescript`, written by `apps/server/scripts/api-types.ts`).
+- `packages/api-client` (types from `openapi-typescript`, runtime `openapi-fetch`) is the only way `web` and extensions talk to the server. Its `paths` are the host's only. `createApiClient<Own>()` adds an extension's own `paths`, so an extension's web code (`src/web/api.ts`) is typed against the host's routes and its own, and builds without the rest of the app or any other extension's types. Future native clients use the same documents.
+- An extension's types are its `./api` export (types only, nothing at run time). Another extension reads them only for a declared dependency (`dependsOn` or `optional`; ambient reads the calendar, kitchen the lists, pets and vehicles the records) and passes them to its client: `createApiClient<paths & calendar>()`. dependency-cruiser fails an undeclared one, and forbids `apps/web` from importing any extension's API types or client: the app talks to the host's routes only.
 - All routes are versioned under `/api/v1`, and every operation has a stable `operationId` (for example `shopping.addItem`).
 
 ## 16. Deployment
@@ -650,6 +653,6 @@ The app is used in shops with poor reception. The common moments are small (tick
 - **Migration tests**: empty DB → current; previous-release fixture DB → current; refuse to start on a newer DB.
 - **Backup tests**: backup → restore into an empty volume → data and files are equal.
 - **Pipeline tests**: AI SDK `MockLanguageModel` for deterministic extraction; kill the worker mid-job → restart → completes without duplicate drafts.
-- **API drift**: regenerate `openapi.json` → `git diff` must be empty.
+- **API drift**: regenerate `openapi.json`, the extensions' documents and their types → the working tree must stay clean.
 - **E2E (Playwright)**: a small set of essential flows and security boundaries: setup → share → draft → approve → undo; sign-in with a password, a PIN only on a family device; a supervised member's change becomes an approval; a display reads only what it was granted and follows live changes over the WebSocket. Layout and timing are unit-tested or reviewed in the sweep, not gated by e2e.
 - **Docker smoke**: `docker compose up` → `/health`; arm64 image builds; backup and restore inside the container.

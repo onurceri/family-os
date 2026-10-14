@@ -32,7 +32,7 @@ packages/themes    Theme pack contract: token list, validation, contrast, styles
 packages/time      Dates, time zones, recurrence (RRULE) and format-locale helpers (Temporal)
 packages/testing   Test ctx on in-memory SQLite, fakes, port contract suites
 packages/ui        Shared Svelte components, <Slot/>
-packages/api-client  Generated from openapi.json — never edit by hand
+packages/api-client  Generated from openapi.json (core and app routes) — never edit by hand
 apps/e2e           Playwright end-to-end tests against the production bundle
 extensions/*       Features (calendar, lists, inbox, board, records, home, pets, vehicles, chores, kitchen, assistant, ambient); one package each
 languages/         Bundled language packs
@@ -80,7 +80,8 @@ docs/              Architecture, design system, user guide, releasing
 - Define routes with `defineRoute` from `@famos/sdk` (never import Hono in an extension). They are served under `/api/v1/<extension>` with a stable `operationId` (`<extension>.<verbNoun>`); actions are exposed automatically at `POST /api/v1/actions/<id>`.
 - A route can send text with its own content type (an ICS feed) by using `TextResponseSchema` as its `response`: return `{ text, contentType, cacheControl?, etag? }`; only `text/calendar`, `text/plain` and `application/json` keep their type (a matching `If-None-Match` gets `304`), and the response is sandboxed with `nosniff`. Its `cache-control` is the one place the API's `no-store` default is replaced.
 - A route can send a stored file by using `FileResponseSchema` as its `response`; the server streams it sandboxed and only renders images and PDFs inline.
-- After changing routes, regenerate `openapi.json` and `packages/api-client` and commit both. CI fails if they drift.
+- After changing routes, run `pnpm gen` and commit what it writes: `apps/server/openapi.json` and `packages/api-client` (core's and the app's routes), and for each extension `extensions/<id>/openapi.json` and `src/web/api.gen.d.ts` (its routes and actions). CI fails if they drift.
+- An extension's web client is `createApiClient<paths>()` with its own generated `paths` (`src/web/api.ts`); `@famos/api-client`'s own `paths` are the host's only. To read another extension's routes, import its `./api` types (`import type { paths as calendar } from '@famos/ext-calendar/api'`) and declare it in the manifest (`dependsOn` or `optional`); dependency-cruiser fails otherwise. `apps/web` never imports an extension's `./api`.
 - Never edit generated files by hand.
 
 ## Frontend
@@ -125,7 +126,7 @@ pnpm sweep          # screenshots of every page for a UI review (test-results/sw
 pnpm release x.y.z  # bump, commit and tag a release locally (docs/releasing.md); a person pushes
 pnpm lint           # Biome, Prettier (.svelte), dependency-cruiser
 pnpm typecheck      # tsc and svelte-check
-pnpm gen            # openapi.json and api-client types
+pnpm gen            # openapi.json, api-client types, each extension's openapi.json and api.gen.d.ts
 pnpm build          # web SPA + bundled server (apps/server/dist/main.mjs)
 docker compose up   # production-like run on http://localhost:3000
 

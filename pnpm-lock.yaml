@@ -302,6 +302,9 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      openapi-typescript:
+        specifier: 7.13.0
+        version: 7.13.0(typescript@6.0.3)
       tsx:
         specifier: 4.23.15
         version: 4.23.15
@@ -418,6 +421,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/ext-calendar':
+        specifier: workspace:*
+        version: link:../calendar
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing

@@ -10,7 +10,7 @@
 			"outputs": ["openapi.json", "src/generated/**"]
 		},
 		"typecheck": {
-			"dependsOn": ["gen", "^gen"]
+			"dependsOn": ["gen", "^gen", "@famos/server#gen"]
 		},
 		"dev": {
 			"cache": false,

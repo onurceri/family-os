@@ -1,4 +1,5 @@
-import { writeFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Duplex } from 'node:stream';
 import { parseArgs } from 'node:util';
 import { silentLogger } from '@famos/adapters/runtime';
@@ -6,9 +7,11 @@ import type { CoreTables } from '@famos/core';
 import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
 import { type Config, loadConfig } from './config.ts';
+import { extensions } from './extensions.ts';
 import { createHttpApp, OPENAPI_INFO, resolveActor } from './http/app.ts';
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
+import { splitOpenApi } from './openapi.ts';
 import { askSecret } from './prompt.ts';
 import { restoreFile } from './restore.ts';
 import {
@@ -30,7 +33,9 @@ Usage: famos <command>
   backup             Write a backup to $FAMOS_DATA_DIR/backups and exit
   restore <file>     Restore a backup (stop the server first). An encrypted .age file asks
                      for its passphrase (or FAMOS_BACKUP_PASSPHRASE), or use --identity <file>
-  openapi [file]     Write the OpenAPI document (default: openapi.json)
+  openapi [file]     Write the OpenAPI document (default: openapi.json). With --extensions <dir>,
+                     the file holds core's and the app's routes, and each extension's routes and
+                     actions go to <dir>/<id>/openapi.json
 `;
 
 async function serveCommand() {
@@ -188,6 +193,16 @@ function generationConfig(): Config {
 	};
 }
 
+/**
+ * Writes only when the content changed: type checks read these files while generation runs, and
+ * an unchanged file must never be seen half-written.
+ */
+async function writeJson(file: string, value: unknown) {
+	const text = `${JSON.stringify(value, null, '\t')}\n`;
+	const current = await readFile(file, 'utf8').catch(() => null);
+	if (current !== text) await writeFile(file, text);
+}
+
 async function main() {
 	const { positionals, values } = parseArgs({
 		allowPositionals: true,
@@ -195,6 +210,7 @@ async function main() {
 			force: { type: 'boolean' },
 			help: { type: 'boolean' },
 			identity: { type: 'string' },
+			extensions: { type: 'string' },
 		},
 	});
 	const [command = 'serve', arg] = positionals;
@@ -253,9 +269,25 @@ async function main() {
 				secureCookies: false,
 			});
 			const doc = app.getOpenAPI31Document(OPENAPI_INFO);
-			await writeFile(out, `${JSON.stringify(doc, null, '\t')}\n`);
 			await runtime.close();
-			console.log(`OpenAPI document written: ${out}`);
+			if (!values.extensions) {
+				await writeJson(out, doc);
+				console.log(`OpenAPI document written: ${out}`);
+				return;
+			}
+			const split = splitOpenApi(
+				doc,
+				extensions.map((ext) => ext.id),
+			);
+			await writeJson(out, split.host);
+			for (const [id, fragment] of split.extensions) {
+				const dir = join(values.extensions, id);
+				await access(join(dir, 'package.json')).catch(() => {
+					throw new Error(`No extension package for ${id} at ${dir}`);
+				});
+				await writeJson(join(dir, 'openapi.json'), fragment);
+			}
+			console.log(`OpenAPI documents written: ${out} and ${split.extensions.size} extension(s)`);
 			return;
 		}
 		default:

@@ -26,6 +26,9 @@
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",
+		"./api": {
+			"types": "./src/web/api.gen.d.ts"
+		},
 		"./server": "./src/server/index.ts",
 		"./web": {
 			"svelte": "./src/web/index.ts",
@@ -48,6 +51,7 @@
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
+		"@famos/ext-calendar": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",
 		"svelte-check": "4.7.6",

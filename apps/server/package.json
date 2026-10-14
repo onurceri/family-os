@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "tsx watch --clear-screen=false src/main.ts serve",
 		"typecheck": "tsc -p .",
-		"gen": "tsx src/main.ts openapi openapi.json",
+		"gen": "tsx src/main.ts openapi openapi.json --extensions ../../extensions && tsx scripts/api-types.ts ../../extensions",
 		"build": "node build.mjs"
 	},
 	"dependencies": {
@@ -45,6 +45,7 @@
 		"@modelcontextprotocol/client": "2.3.1",
 		"@types/ws": "8.18.2",
 		"esbuild": "0.28.2",
+		"openapi-typescript": "7.13.0",
 		"tsx": "4.23.15"
 	}
 }

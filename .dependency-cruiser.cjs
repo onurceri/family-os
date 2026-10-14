@@ -2,8 +2,37 @@
  * Architecture rules, enforced in CI (`pnpm lint`).
  * A violation means the layering is broken; fix the import, don't relax the rule.
  */
+const fs = require('node:fs');
+const path = require('node:path');
+
 const INFRA_LIBS =
 	'node_modules/(hono|@hono|better-auth|@better-auth|better-sqlite3|ai|@ai-sdk|ws|tar)/';
+
+/** An extension's generated API types, its `./api` export. */
+const EXTENSION_API = '^extensions/[^/]+/src/web/api\\.gen\\.d\\.ts$';
+
+/**
+ * One rule per extension: its code may read another extension's API types only when its manifest
+ * names that extension in `dependsOn` or `optional`, so a web read of another extension is always
+ * a declared dependency.
+ */
+const extensionsDir = path.join(__dirname, 'extensions');
+const declaredApiReads = fs
+	.readdirSync(extensionsDir)
+	.filter((dir) => fs.existsSync(path.join(extensionsDir, dir, 'package.json')))
+	.map((dir) => {
+		const { famos } = JSON.parse(
+			fs.readFileSync(path.join(extensionsDir, dir, 'package.json'), 'utf8'),
+		);
+		const allowed = [dir, ...(famos?.dependsOn ?? []), ...(famos?.optional ?? [])];
+		return {
+			name: `extension-api-only-of-dependencies:${dir}`,
+			comment: `${dir} reads another extension's API only when its manifest declares it (dependsOn or optional).`,
+			severity: 'error',
+			from: { path: `^extensions/${dir}/` },
+			to: { path: EXTENSION_API, pathNot: `^extensions/(${allowed.join('|')})/` },
+		};
+	});
 
 module.exports = {
 	forbidden: [
@@ -55,15 +84,16 @@ module.exports = {
 			comment: "Only an extension's ./web code may call the API, through the generated client.",
 			severity: 'error',
 			from: { path: '^extensions/[^/]+/src/(server|contract)' },
-			to: { path: '^packages/api-client/' },
+			to: { path: ['^packages/api-client/', EXTENSION_API] },
 		},
+		...declaredApiReads,
 		{
 			name: 'extensions-no-internals-of-others',
 			severity: 'error',
 			from: { path: '^extensions/([^/]+)/src' },
 			to: {
 				path: '^extensions/([^/]+)/src',
-				pathNot: ['^extensions/$1/src', '^extensions/[^/]+/src/contract'],
+				pathNot: ['^extensions/$1/src', '^extensions/[^/]+/src/contract', EXTENSION_API],
 			},
 		},
 		{
@@ -81,6 +111,14 @@ module.exports = {
 				pathNot: '^packages/(db|adapters|testing)/|^packages/core/test/',
 			},
 			to: { path: '^packages/(db|adapters)/' },
+		},
+		{
+			name: 'web-no-extension-api',
+			comment:
+				"The app talks to the host's routes only; an extension's API types and client belong to that extension.",
+			severity: 'error',
+			from: { path: '^apps/web/' },
+			to: { path: [EXTENSION_API, '^extensions/[^/]+/src/web/api\\.ts$'] },
 		},
 		{
 			name: 'web-no-server-code',

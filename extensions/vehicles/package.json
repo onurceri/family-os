@@ -24,6 +24,9 @@
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",
+		"./api": {
+			"types": "./src/web/api.gen.d.ts"
+		},
 		"./server": "./src/server/index.ts",
 		"./web": {
 			"svelte": "./src/web/index.ts",

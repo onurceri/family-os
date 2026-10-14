@@ -31,10 +31,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: Generated code is up to date (OpenAPI, API client)
+      - name: Generated code is up to date (OpenAPI, API client, extension API types)
         run: |
           pnpm gen
-          git diff --exit-code -- apps/server/openapi.json packages/api-client/src/generated
+          changed=$(git status --porcelain --untracked-files=all -- apps/server/openapi.json packages/api-client/src/generated 'extensions/*/openapi.json' 'extensions/*/src/web/api.gen.d.ts')
+          if [ -n "$changed" ]; then echo "$changed"; git diff --stat; exit 1; fi
 
       - run: pnpm lint
       - run: pnpm typecheck

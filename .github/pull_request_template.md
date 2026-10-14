@@ -11,7 +11,7 @@
 - [ ] `pnpm lint`, `pnpm typecheck` and `pnpm test` pass
 - [ ] The title follows Conventional Commits (`feat(calendar): …`, `fix(core): …`) and describes the change for the people who use FamilyOS; breaking changes are marked (`feat!:`)
 - [ ] It follows [AGENTS.md](../AGENTS.md); a rule that changes is updated in `docs/architecture.md` too
-- [ ] Routes changed: `openapi.json` and `packages/api-client` regenerated with `pnpm gen`
+- [ ] Routes changed: `openapi.json`, `packages/api-client` and the extensions' API types regenerated with `pnpm gen`
 - [ ] Migrations: a new, hand-written, expand-only migration (no released migration edited) with its table types
 - [ ] New strings: English in `en.json`, and Turkish updated (`languages/tr/app.json`, or the extension's own `src/messages/tr.json`)
 - [ ] UI: follows the [design system](../docs/design/design-system.md), tokens only, works at phone width

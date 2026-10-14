@@ -1,0 +1,3227 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "FamilyOS API: inbox",
+		"version": "v1",
+		"description": "Generated from route and action definitions. Do not edit."
+	},
+	"components": {
+		"securitySchemes": {
+			"session": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "better-auth.session_token"
+			}
+		},
+		"schemas": {},
+		"parameters": {}
+	},
+	"paths": {
+		"/api/v1/inbox/items": {
+			"post": {
+				"operationId": "inbox.createItem",
+				"summary": "Share or upload something to the Family Inbox (multipart: text fields and files)",
+				"tags": [
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"channel": {
+										"type": "string",
+										"enum": [
+											"share",
+											"upload",
+											"text",
+											"telegram",
+											"email"
+										],
+										"default": "upload"
+									},
+									"title": {
+										"type": "string",
+										"maxLength": 300
+									},
+									"text": {
+										"type": "string",
+										"maxLength": 20000
+									},
+									"url": {
+										"type": "string",
+										"maxLength": 2000,
+										"format": "uri"
+									},
+									"fileToRecordId": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 120
+									},
+									"fileToRecordKind": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 40
+									},
+									"fileToLabel": {
+										"type": "string",
+										"enum": [
+											"policy",
+											"invoice",
+											"card",
+											"receipt",
+											"other"
+										]
+									},
+									"fileToRecordName": {
+										"type": "string",
+										"maxLength": 120
+									},
+									"files": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"format": "binary"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Share or upload something to the Family Inbox (multipart: text fields and files)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"channel": {
+											"type": "string",
+											"enum": [
+												"share",
+												"upload",
+												"text",
+												"telegram",
+												"email"
+											]
+										},
+										"title": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"text": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"url": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"files": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"name": {
+														"type": "string"
+													},
+													"type": {
+														"type": "string"
+													},
+													"size": {
+														"type": "integer"
+													}
+												},
+												"required": [
+													"name",
+													"type",
+													"size"
+												]
+											}
+										},
+										"status": {
+											"type": "string",
+											"enum": [
+												"received",
+												"normalized",
+												"extracted",
+												"failed",
+												"dismissed",
+												"held",
+												"filed"
+											]
+										},
+										"filedTo": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"recordId": {
+													"type": "string"
+												},
+												"recordKind": {
+													"type": "string"
+												},
+												"label": {
+													"type": "string",
+													"enum": [
+														"policy",
+														"invoice",
+														"card",
+														"receipt",
+														"other"
+													]
+												},
+												"recordName": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"recordId",
+												"recordKind",
+												"label",
+												"recordName"
+											]
+										},
+										"transcript": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"summary": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"kind": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"actionable",
+												"nothing",
+												"question",
+												null
+											]
+										},
+										"errorCode": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"not_configured",
+												"limit_reached",
+												"auth",
+												"rejected",
+												"data_policy",
+												"ai_local_required",
+												"timeout",
+												"unavailable",
+												"invalid_output",
+												"output_too_long",
+												"unsupported",
+												"files_off",
+												"voice_not_read",
+												null
+											]
+										},
+										"attempt": {
+											"type": [
+												"integer",
+												"null"
+											]
+										},
+										"proposals": {
+											"type": "integer"
+										},
+										"skipped": {
+											"type": "integer"
+										},
+										"skippedUnknown": {
+											"type": "integer"
+										},
+										"createdBy": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"createdAt": {
+											"type": "number"
+										},
+										"updatedAt": {
+											"type": "number"
+										}
+									},
+									"required": [
+										"id",
+										"channel",
+										"title",
+										"text",
+										"url",
+										"files",
+										"status",
+										"filedTo",
+										"transcript",
+										"summary",
+										"kind",
+										"errorCode",
+										"attempt",
+										"proposals",
+										"skipped",
+										"skippedUnknown",
+										"createdBy",
+										"createdAt",
+										"updatedAt"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "inbox.listItems",
+				"summary": "Recent inbox items, newest first (dismissed items left out)",
+				"tags": [
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 100,
+							"default": 30
+						},
+						"required": false,
+						"name": "limit",
+						"in": "query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Recent inbox items, newest first (dismissed items left out)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string"
+											},
+											"channel": {
+												"type": "string",
+												"enum": [
+													"share",
+													"upload",
+													"text",
+													"telegram",
+													"email"
+												]
+											},
+											"title": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"text": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"url": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"files": {
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"name": {
+															"type": "string"
+														},
+														"type": {
+															"type": "string"
+														},
+														"size": {
+															"type": "integer"
+														}
+													},
+													"required": [
+														"name",
+														"type",
+														"size"
+													]
+												}
+											},
+											"status": {
+												"type": "string",
+												"enum": [
+													"received",
+													"normalized",
+													"extracted",
+													"failed",
+													"dismissed",
+													"held",
+													"filed"
+												]
+											},
+											"filedTo": {
+												"type": [
+													"object",
+													"null"
+												],
+												"properties": {
+													"recordId": {
+														"type": "string"
+													},
+													"recordKind": {
+														"type": "string"
+													},
+													"label": {
+														"type": "string",
+														"enum": [
+															"policy",
+															"invoice",
+															"card",
+															"receipt",
+															"other"
+														]
+													},
+													"recordName": {
+														"type": [
+															"string",
+															"null"
+														]
+													}
+												},
+												"required": [
+													"recordId",
+													"recordKind",
+													"label",
+													"recordName"
+												]
+											},
+											"transcript": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"summary": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"kind": {
+												"type": [
+													"string",
+													"null"
+												],
+												"enum": [
+													"actionable",
+													"nothing",
+													"question",
+													null
+												]
+											},
+											"errorCode": {
+												"type": [
+													"string",
+													"null"
+												],
+												"enum": [
+													"not_configured",
+													"limit_reached",
+													"auth",
+													"rejected",
+													"data_policy",
+													"ai_local_required",
+													"timeout",
+													"unavailable",
+													"invalid_output",
+													"output_too_long",
+													"unsupported",
+													"files_off",
+													"voice_not_read",
+													null
+												]
+											},
+											"attempt": {
+												"type": [
+													"integer",
+													"null"
+												]
+											},
+											"proposals": {
+												"type": "integer"
+											},
+											"skipped": {
+												"type": "integer"
+											},
+											"skippedUnknown": {
+												"type": "integer"
+											},
+											"createdBy": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"createdAt": {
+												"type": "number"
+											},
+											"updatedAt": {
+												"type": "number"
+											}
+										},
+										"required": [
+											"id",
+											"channel",
+											"title",
+											"text",
+											"url",
+											"files",
+											"status",
+											"filedTo",
+											"transcript",
+											"summary",
+											"kind",
+											"errorCode",
+											"attempt",
+											"proposals",
+											"skipped",
+											"skippedUnknown",
+											"createdBy",
+											"createdAt",
+											"updatedAt"
+										]
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/inbox/items/{itemId}/files/{index}": {
+			"get": {
+				"operationId": "inbox.getItemFile",
+				"summary": "A file of an inbox item (images, PDFs and audio open inline)",
+				"tags": [
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^inbox_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "itemId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": [
+								"integer",
+								"null"
+							],
+							"minimum": 0,
+							"maximum": 20
+						},
+						"required": false,
+						"name": "index",
+						"in": "path"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "A file of an inbox item (images, PDFs and audio open inline)",
+						"content": {
+							"application/octet-stream": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/inbox.addItem": {
+			"post": {
+				"operationId": "inbox.addItem",
+				"summary": "Put something in the Family Inbox",
+				"tags": [
+					"actions",
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^inbox_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"channel": {
+										"type": "string",
+										"enum": [
+											"share",
+											"upload",
+											"text",
+											"telegram",
+											"email"
+										]
+									},
+									"title": {
+										"type": "string",
+										"maxLength": 300
+									},
+									"text": {
+										"type": "string",
+										"maxLength": 20000
+									},
+									"url": {
+										"type": "string",
+										"maxLength": 2000,
+										"format": "uri"
+									},
+									"files": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"key": {
+													"type": "string"
+												},
+												"name": {
+													"type": "string",
+													"maxLength": 255
+												},
+												"type": {
+													"type": "string",
+													"maxLength": 100
+												},
+												"size": {
+													"type": "integer",
+													"minimum": 0
+												}
+											},
+											"required": [
+												"key",
+												"name",
+												"type",
+												"size"
+											]
+										},
+										"maxItems": 6,
+										"default": []
+									},
+									"fileTo": {
+										"type": "object",
+										"properties": {
+											"recordId": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 120
+											},
+											"recordKind": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 40
+											},
+											"label": {
+												"type": "string",
+												"enum": [
+													"policy",
+													"invoice",
+													"card",
+													"receipt",
+													"other"
+												]
+											},
+											"recordName": {
+												"type": "string",
+												"maxLength": 120
+											}
+										},
+										"required": [
+											"recordId",
+											"recordKind"
+										]
+									}
+								},
+								"required": [
+									"id",
+									"channel"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"channel": {
+															"type": "string",
+															"enum": [
+																"share",
+																"upload",
+																"text",
+																"telegram",
+																"email"
+															]
+														},
+														"title": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"text": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"url": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"files": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"name": {
+																		"type": "string"
+																	},
+																	"type": {
+																		"type": "string"
+																	},
+																	"size": {
+																		"type": "integer"
+																	}
+																},
+																"required": [
+																	"name",
+																	"type",
+																	"size"
+																]
+															}
+														},
+														"status": {
+															"type": "string",
+															"enum": [
+																"received",
+																"normalized",
+																"extracted",
+																"failed",
+																"dismissed",
+																"held",
+																"filed"
+															]
+														},
+														"filedTo": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"recordId": {
+																	"type": "string"
+																},
+																"recordKind": {
+																	"type": "string"
+																},
+																"label": {
+																	"type": "string",
+																	"enum": [
+																		"policy",
+																		"invoice",
+																		"card",
+																		"receipt",
+																		"other"
+																	]
+																},
+																"recordName": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"recordId",
+																"recordKind",
+																"label",
+																"recordName"
+															]
+														},
+														"transcript": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"summary": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"kind": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"actionable",
+																"nothing",
+																"question",
+																null
+															]
+														},
+														"errorCode": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"not_configured",
+																"limit_reached",
+																"auth",
+																"rejected",
+																"data_policy",
+																"ai_local_required",
+																"timeout",
+																"unavailable",
+																"invalid_output",
+																"output_too_long",
+																"unsupported",
+																"files_off",
+																"voice_not_read",
+																null
+															]
+														},
+														"attempt": {
+															"type": [
+																"integer",
+																"null"
+															]
+														},
+														"proposals": {
+															"type": "integer"
+														},
+														"skipped": {
+															"type": "integer"
+														},
+														"skippedUnknown": {
+															"type": "integer"
+														},
+														"createdBy": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"channel",
+														"title",
+														"text",
+														"url",
+														"files",
+														"status",
+														"filedTo",
+														"transcript",
+														"summary",
+														"kind",
+														"errorCode",
+														"attempt",
+														"proposals",
+														"skipped",
+														"skippedUnknown",
+														"createdBy",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/inbox.retryItem": {
+			"post": {
+				"operationId": "inbox.retryItem",
+				"summary": "Read an inbox item again",
+				"tags": [
+					"actions",
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^inbox_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									}
+								},
+								"required": [
+									"id"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"channel": {
+															"type": "string",
+															"enum": [
+																"share",
+																"upload",
+																"text",
+																"telegram",
+																"email"
+															]
+														},
+														"title": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"text": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"url": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"files": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"name": {
+																		"type": "string"
+																	},
+																	"type": {
+																		"type": "string"
+																	},
+																	"size": {
+																		"type": "integer"
+																	}
+																},
+																"required": [
+																	"name",
+																	"type",
+																	"size"
+																]
+															}
+														},
+														"status": {
+															"type": "string",
+															"enum": [
+																"received",
+																"normalized",
+																"extracted",
+																"failed",
+																"dismissed",
+																"held",
+																"filed"
+															]
+														},
+														"filedTo": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"recordId": {
+																	"type": "string"
+																},
+																"recordKind": {
+																	"type": "string"
+																},
+																"label": {
+																	"type": "string",
+																	"enum": [
+																		"policy",
+																		"invoice",
+																		"card",
+																		"receipt",
+																		"other"
+																	]
+																},
+																"recordName": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"recordId",
+																"recordKind",
+																"label",
+																"recordName"
+															]
+														},
+														"transcript": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"summary": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"kind": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"actionable",
+																"nothing",
+																"question",
+																null
+															]
+														},
+														"errorCode": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"not_configured",
+																"limit_reached",
+																"auth",
+																"rejected",
+																"data_policy",
+																"ai_local_required",
+																"timeout",
+																"unavailable",
+																"invalid_output",
+																"output_too_long",
+																"unsupported",
+																"files_off",
+																"voice_not_read",
+																null
+															]
+														},
+														"attempt": {
+															"type": [
+																"integer",
+																"null"
+															]
+														},
+														"proposals": {
+															"type": "integer"
+														},
+														"skipped": {
+															"type": "integer"
+														},
+														"skippedUnknown": {
+															"type": "integer"
+														},
+														"createdBy": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"channel",
+														"title",
+														"text",
+														"url",
+														"files",
+														"status",
+														"filedTo",
+														"transcript",
+														"summary",
+														"kind",
+														"errorCode",
+														"attempt",
+														"proposals",
+														"skipped",
+														"skippedUnknown",
+														"createdBy",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/inbox.dismissItem": {
+			"post": {
+				"operationId": "inbox.dismissItem",
+				"summary": "Remove an item from the Family Inbox",
+				"tags": [
+					"actions",
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^inbox_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									}
+								},
+								"required": [
+									"id"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"ok": {
+															"type": "boolean",
+															"enum": [
+																true
+															]
+														}
+													},
+													"required": [
+														"ok"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/inbox.fileItem": {
+			"post": {
+				"operationId": "inbox.fileItem",
+				"summary": "File an inbox item on a record",
+				"tags": [
+					"actions",
+					"inbox"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string",
+										"pattern": "^inbox_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"fileTo": {
+										"type": "object",
+										"properties": {
+											"recordId": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 120
+											},
+											"recordKind": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 40
+											},
+											"label": {
+												"type": "string",
+												"enum": [
+													"policy",
+													"invoice",
+													"card",
+													"receipt",
+													"other"
+												]
+											},
+											"recordName": {
+												"type": "string",
+												"maxLength": 120
+											}
+										},
+										"required": [
+											"recordId",
+											"recordKind"
+										]
+									}
+								},
+								"required": [
+									"id",
+									"fileTo"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"channel": {
+															"type": "string",
+															"enum": [
+																"share",
+																"upload",
+																"text",
+																"telegram",
+																"email"
+															]
+														},
+														"title": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"text": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"url": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"files": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"name": {
+																		"type": "string"
+																	},
+																	"type": {
+																		"type": "string"
+																	},
+																	"size": {
+																		"type": "integer"
+																	}
+																},
+																"required": [
+																	"name",
+																	"type",
+																	"size"
+																]
+															}
+														},
+														"status": {
+															"type": "string",
+															"enum": [
+																"received",
+																"normalized",
+																"extracted",
+																"failed",
+																"dismissed",
+																"held",
+																"filed"
+															]
+														},
+														"filedTo": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"recordId": {
+																	"type": "string"
+																},
+																"recordKind": {
+																	"type": "string"
+																},
+																"label": {
+																	"type": "string",
+																	"enum": [
+																		"policy",
+																		"invoice",
+																		"card",
+																		"receipt",
+																		"other"
+																	]
+																},
+																"recordName": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"recordId",
+																"recordKind",
+																"label",
+																"recordName"
+															]
+														},
+														"transcript": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"summary": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"kind": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"actionable",
+																"nothing",
+																"question",
+																null
+															]
+														},
+														"errorCode": {
+															"type": [
+																"string",
+																"null"
+															],
+															"enum": [
+																"not_configured",
+																"limit_reached",
+																"auth",
+																"rejected",
+																"data_policy",
+																"ai_local_required",
+																"timeout",
+																"unavailable",
+																"invalid_output",
+																"output_too_long",
+																"unsupported",
+																"files_off",
+																"voice_not_read",
+																null
+															]
+														},
+														"attempt": {
+															"type": [
+																"integer",
+																"null"
+															]
+														},
+														"proposals": {
+															"type": "integer"
+														},
+														"skipped": {
+															"type": "integer"
+														},
+														"skippedUnknown": {
+															"type": "integer"
+														},
+														"createdBy": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														}
+													},
+													"required": [
+														"id",
+														"channel",
+														"title",
+														"text",
+														"url",
+														"files",
+														"status",
+														"filedTo",
+														"transcript",
+														"summary",
+														"kind",
+														"errorCode",
+														"attempt",
+														"proposals",
+														"skipped",
+														"skippedUnknown",
+														"createdBy",
+														"createdAt",
+														"updatedAt"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"webhooks": {}
+}
