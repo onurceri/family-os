@@ -32,11 +32,40 @@ export function parseCommit(message) {
 }
 
 /**
+ * Reads the footers `Release-note-for: <sha prefix>` and `Release-note: <header or none>` of a
+ * commit message; returns null when it does not correct another commit.
+ */
+export function parseCorrection(message) {
+	const target = /^Release-note-for: *([0-9a-f]{7,40})\s*$/im.exec(message)?.[1];
+	const note = /^Release-note: *(.+?)\s*$/im.exec(message)?.[1];
+	if (!target || !note) return null;
+	return { target: target.toLowerCase(), note };
+}
+
+/**
  * Groups user-visible commits into Markdown; docs, tests and chores are left out. `first` marks
  * the first release, which has no earlier version to compare with.
+ *
+ * Each entry is a message or `{ sha, message }`, newest first (git log order). A later commit
+ * can replace an earlier commit's line with `Release-note-for` and `Release-note` footers; the
+ * newest correction for a commit wins and `Release-note: none` drops the line. Only entries
+ * that carry a sha can be corrected.
  */
-export function renderNotes(version, messages, date = new Date(), { first = false } = {}) {
-	const commits = messages.map(parseCommit).filter(Boolean);
+export function renderNotes(version, entries, date = new Date(), { first = false } = {}) {
+	const items = entries.map((e) => (typeof e === 'string' ? { sha: null, message: e } : e));
+	const corrections = [];
+	for (const { message } of items) {
+		const correction = parseCorrection(message);
+		if (correction) corrections.push(correction);
+	}
+	const commits = items
+		.map(({ sha, message }) => {
+			const fix = sha ? corrections.find((c) => sha.toLowerCase().startsWith(c.target)) : undefined;
+			if (!fix) return parseCommit(message);
+			if (fix.note.toLowerCase() === 'none') return null;
+			return parseCommit(fix.note) ?? parseCommit(message);
+		})
+		.filter(Boolean);
 	const groups = new Map(SECTIONS.map(([key]) => [key, []]));
 	for (const c of commits) {
 		const security = c.type === 'fix' && c.scope === 'security';
@@ -84,9 +113,13 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
 	}
 	const from = fromArg ?? previousTag(to);
 	const range = from ? `${from}..${to}` : to;
-	const messages = git('log', '--format=%B%x1e', range)
+	const entries = git('log', '--format=%H%x00%B%x1e', range)
 		.split('\x1e')
-		.map((m) => m.trim())
-		.filter(Boolean);
-	process.stdout.write(renderNotes(version, messages, new Date(), { first: !from }));
+		.map((record) => record.trim())
+		.filter(Boolean)
+		.map((record) => {
+			const [sha = '', ...message] = record.split('\x00');
+			return { sha, message: message.join('\x00').trim() };
+		});
+	process.stdout.write(renderNotes(version, entries, new Date(), { first: !from }));
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error plain JS script without type declarations
-import { parseCommit, renderNotes } from './release-notes.mjs';
+import { parseCommit, parseCorrection, renderNotes } from './release-notes.mjs';
 
 describe('release notes', () => {
 	it('parses Conventional Commits, including breaking changes', () => {
@@ -54,6 +54,52 @@ describe('release notes', () => {
 			].join('\n'),
 		);
 		expect(renderNotes('0.2.1', ['docs: typo'])).toContain('Maintenance only');
+	});
+
+	it("lets a later commit correct or drop an earlier commit's line", () => {
+		const date = new Date('2026-10-07T12:00:00Z');
+		const sha = (c: string) => c.repeat(40);
+		const entries = [
+			{
+				sha: sha('9'),
+				message:
+					'chore: moves a line\n\nRelease-note-for: fffffff\nRelease-note: fix(board): now a fix',
+			},
+			{ sha: sha('f'), message: 'feat(board): untouched until corrected' },
+			{
+				sha: sha('c'),
+				message:
+					'chore(release): newest correction\n\nRelease-note-for: aaaaaaa\nRelease-note: fix(inbox): right text',
+			},
+			{
+				sha: sha('d'),
+				message:
+					'chore: older correction\n\nRelease-note-for: aaaaaaa\nRelease-note: fix(inbox): stale text',
+			},
+			{
+				sha: sha('e'),
+				message: 'docs: drops a line\n\nRelease-note-for: bbbbbbb\nRelease-note: none',
+			},
+			{ sha: sha('b'), message: 'feat(lists): drop me' },
+			{ sha: sha('a'), message: 'fix(inbox): wrong claim (#23)' },
+			{ sha: sha('1'), message: 'feat(kitchen): left alone' },
+		];
+		expect(parseCorrection('fix: x')).toBeNull();
+		expect(renderNotes('0.2.0', entries, date)).toBe(
+			[
+				'## 0.2.0 (2026-10-07)',
+				'',
+				'### New',
+				'',
+				'- **kitchen:** left alone',
+				'',
+				'### Fixed',
+				'',
+				'- **board:** now a fix',
+				'- **inbox:** right text',
+				'',
+			].join('\n'),
+		);
 	});
 
 	it('marks the first release, with or without user-visible commits', () => {

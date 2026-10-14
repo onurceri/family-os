@@ -36,3 +36,5 @@ The **Release** workflow then runs every check (lint, typecheck, tests, E2E), ve
 | Faster | `perf` |
 
 Docs, tests, refactors, CI and chores are left out, so write `feat` and `fix` subjects for the people who use FamilyOS.
+
+`main` is never rewritten, so a line that reads wrongly is corrected by a later commit of any type. Give its body the footers `Release-note-for: <at least 7 characters of the commit's sha>` and `Release-note: <type(scope): subject>`: that header replaces the earlier commit's line and lands in the section its type picks. `Release-note: none` drops the line, and when a commit has several corrections the latest wins.
