@@ -1,5 +1,6 @@
-import { defineAction, defineCapability, defineExtension } from '@famos/sdk';
+import { defineAction, defineCapability } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
+import { defineTestExtension } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { type Obligation, type ObligationPreset, RecordIdSchema } from '../src/contract/index.ts';
@@ -21,7 +22,7 @@ const archiveCar = defineAction({
 		return { archived: r.obligations };
 	},
 });
-const garage = defineExtension({
+const garage = defineTestExtension({
 	id: 'garage',
 	actions: [archiveCar],
 	capabilities: [garageEdit],

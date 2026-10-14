@@ -9,6 +9,7 @@ import {
 } from '@famos/sdk';
 import { addDays, IsoDateSchema, IsoTimeSchema, isValidDate, todayIn, zoned } from '@famos/time';
 import { z } from 'zod';
+import pkg from '../../package.json' with { type: 'json' };
 import {
 	type EventDetail,
 	EventDetailSchema,
@@ -891,7 +892,7 @@ const getEvent = defineRoute({
 });
 
 export default defineExtension({
-	id: 'calendar',
+	manifest: pkg.famos,
 	migrations,
 	ai: { index: searchIndex, context: aiContext.id },
 	actions: [

@@ -1,6 +1,6 @@
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
-import { type Actor, FamosError, type MemberId } from '@famos/sdk';
+import { type Actor, isFamosError, type MemberId } from '@famos/sdk';
 import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Message, ThreadDetail } from '../src/contract/index.ts';
@@ -50,7 +50,7 @@ const code = async (promise: Promise<unknown>) => {
 	try {
 		await promise;
 	} catch (error) {
-		if (error instanceof FamosError) return error.code;
+		if (isFamosError(error)) return error.code;
 		throw error;
 	}
 	return 'ok';

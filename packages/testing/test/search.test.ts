@@ -2,14 +2,13 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
 	LlmError,
 	type MemberId,
 	systemActor,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createTestKernel, type TestKernel } from '../src/index.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from '../src/index.ts';
 
 /**
  * Family search against two throwaway extensions: `notes` (open) and `stash`
@@ -79,7 +78,7 @@ const pageOf = (kind: string, prefix: string) => async () => ({
 	next: null,
 });
 
-const notes = defineExtension({
+const notes = defineTestExtension({
 	id: 'notes',
 	actions: [putNote, dropNote],
 	capabilities: [notesView, notesAll],
@@ -106,7 +105,7 @@ const notes = defineExtension({
 		},
 	},
 });
-const stash = defineExtension({
+const stash = defineTestExtension({
 	id: 'stash',
 	sensitive: true,
 	actions: [putSecret],

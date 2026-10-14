@@ -2,13 +2,13 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
 	FamosError,
+	isFamosError,
 	type MemberId,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // Who may decide, withdraw or count a draft, and what happens to a draft about something gone.
 const shelfUse = defineCapability({ id: 'shelf.use', label: 'shelf:cap_use', level: 'use' });
@@ -18,7 +18,7 @@ const shelfManage = defineCapability({
 	level: 'edit',
 });
 const things = new Set(['lamp']);
-const shelf = defineExtension({
+const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfUse, shelfManage],
 	actions: [
@@ -62,7 +62,7 @@ const code = async (promise: Promise<unknown>) => {
 	try {
 		await promise;
 	} catch (error) {
-		if (error instanceof FamosError) return error.code;
+		if (isFamosError(error)) return error.code;
 		throw error;
 	}
 	return 'ok';

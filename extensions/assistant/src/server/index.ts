@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { assistantUse } from './capabilities.ts';
 import { migrations } from './store.ts';
 import { summarizeJob } from './summary.ts';
@@ -11,7 +12,7 @@ import { assistantDelta, assistantDone, turnJob } from './turn.ts';
  * a person approves), and streams the text to that member only.
  */
 export default defineExtension({
-	id: 'assistant',
+	manifest: pkg.famos,
 	migrations,
 	actions: [sendMessage, renameThread, deleteThread],
 	routes: [listThreads, getThread],

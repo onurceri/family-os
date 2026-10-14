@@ -16,7 +16,18 @@ export type FamosErrorCode =
 	| 'idempotency_mismatch'
 	| 'unavailable';
 
+/**
+ * Marks an error class by a registered symbol. An extension installed on its own can carry another
+ * copy of this module, whose classes are different objects, so `instanceof` would miss its errors;
+ * a symbol from `Symbol.for` is the same in every copy.
+ */
+export const hasBrand = (error: unknown, brand: symbol): boolean =>
+	typeof error === 'object' && error !== null && (error as Record<symbol, unknown>)[brand] === true;
+
+const FAMOS_ERROR = Symbol.for('famos.FamosError');
+
 export class FamosError extends Error {
+	readonly [FAMOS_ERROR] = true;
 	readonly code: FamosErrorCode;
 	readonly details: unknown;
 
@@ -28,7 +39,7 @@ export class FamosError extends Error {
 	}
 }
 
-export const isFamosError = (error: unknown): error is FamosError => error instanceof FamosError;
+export const isFamosError = (error: unknown): error is FamosError => hasBrand(error, FAMOS_ERROR);
 
 /** The HTTP status each error code maps to (shared by the API and the stored idempotent results). */
 export const ERROR_HTTP_STATUS: Record<FamosErrorCode, number> = {

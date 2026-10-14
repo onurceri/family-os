@@ -3,12 +3,11 @@ import lists from '@famos/ext-lists/server';
 import {
 	defineAction,
 	defineCapability,
-	defineExtension,
 	LlmError,
 	systemActor,
 	type UploadedFile,
 } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, defineTestExtension, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -803,7 +802,7 @@ describe('inbox pipeline', () => {
 /** A sensitive area whose action the AI may propose. */
 const stashEdit = defineCapability({ id: 'stash.edit', label: 'stash:cap_edit', level: 'edit' });
 const stashView = defineCapability({ id: 'stash.view', label: 'stash:cap_view', level: 'view' });
-const stash = defineExtension({
+const stash = defineTestExtension({
 	id: 'stash',
 	sensitive: true,
 	capabilities: [stashView, stashEdit],

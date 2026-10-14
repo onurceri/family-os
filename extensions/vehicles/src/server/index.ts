@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { vehiclesEdit, vehiclesView } from './capabilities.ts';
 import { migrations } from './store.ts';
 import {
@@ -20,8 +21,7 @@ import {
  * The AI learns which vehicles exist through `vehicles.aiContext`.
  */
 export default defineExtension({
-	id: 'vehicles',
-	dependsOn: ['records'],
+	manifest: pkg.famos,
 	migrations,
 	ai: { context: aiContext.id },
 	actions: [addVehicle, updateVehicle, archiveVehicle, addLog, removeLog, aiContext],

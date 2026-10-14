@@ -1,8 +1,8 @@
-import { defineAction, defineExtension } from '@famos/sdk';
+import { defineAction } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { anyLanguage, type LanguagePort } from '../src/languages.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // An action that reads family settings inside its transaction (must not deadlock).
 const readZone = defineAction({
@@ -15,7 +15,7 @@ const readZone = defineAction({
 		return { timeZone: (await uow.family.settings()).timeZone };
 	},
 });
-const probe = defineExtension({ id: 'probe', actions: [readZone] });
+const probe = defineTestExtension({ id: 'probe', actions: [readZone] });
 
 let k: TestKernel;
 beforeEach(async () => {

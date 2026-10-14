@@ -1,6 +1,6 @@
 import type { Telegram, TelegramHandlers } from '@famos/adapters/telegram';
 import { type CoreTables, type Kernel, memberChanged } from '@famos/core';
-import { FamosError, subjectOf } from '@famos/sdk';
+import { FamosError, isFamosError, subjectOf } from '@famos/sdk';
 import { formatClock, formatDate } from '@famos/time';
 import { memberActor, shareToInbox } from './inbox-share.ts';
 
@@ -71,8 +71,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			try {
 				const result = await ask(threadId).catch(async (error: unknown) => {
 					// The thread was deleted in the app: start a new one.
-					if (threadId && error instanceof FamosError && error.code === 'not_found')
-						return ask(null);
+					if (threadId && isFamosError(error) && error.code === 'not_found') return ask(null);
 					throw error;
 				});
 				if (result.status !== 'applied') return { status: 'unavailable' };
@@ -82,7 +81,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 					replyId: result.output.replyId,
 				};
 			} catch (error) {
-				if (error instanceof FamosError) {
+				if (isFamosError(error)) {
 					if (error.code === 'conflict') return { status: 'busy' };
 					if (['forbidden', 'feature_off', 'not_found'].includes(error.code))
 						return { status: 'unavailable' };

@@ -1,7 +1,7 @@
 import { AiContextSchema } from './actions.ts';
 import type { Actor } from './actor.ts';
 import type { ActionInvoker, ActionResult, DraftMeta } from './context.ts';
-import { FamosError } from './errors.ts';
+import { isFamosError } from './errors.ts';
 import {
 	type HandleTable,
 	repairInput,
@@ -61,7 +61,7 @@ function issues(details: unknown): string {
 
 /** What a failed call tells the model: enough to fix the input or to say it cannot be done. */
 export function toolFailure(error: unknown): string {
-	if (error instanceof FamosError) {
+	if (isFamosError(error)) {
 		if (error.code === 'bad_request')
 			// Without details the action itself refused the input and says why (an unknown list
 			// name, with the real names).
@@ -331,7 +331,7 @@ export async function runAgentTool(call: {
 	} catch (error) {
 		call.onFailure?.({
 			actionId,
-			code: error instanceof FamosError ? error.code : 'error',
+			code: isFamosError(error) ? error.code : 'error',
 			inputKeys,
 		});
 		return { ok: false, text: asData(actionId, toolFailure(error)) };

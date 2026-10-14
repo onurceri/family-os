@@ -1,9 +1,28 @@
 {
 	"name": "@famos/ext-home",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "home",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"dependsOn": [
+			"records"
+		],
+		"capabilities": [
+			"home.view",
+			"home.edit"
+		],
+		"calls": [
+			"records.addObligation",
+			"records.archiveForRecord",
+			"records.removeObligation",
+			"records.renameRecord",
+			"records.updateObligation"
+		]
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

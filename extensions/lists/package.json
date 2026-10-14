@@ -1,9 +1,21 @@
 {
 	"name": "@famos/ext-lists",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "lists",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"capabilities": [
+			"lists.view",
+			"lists.tasks.edit",
+			"lists.tasks.complete",
+			"lists.shopping.edit",
+			"lists.shopping.manage"
+		]
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

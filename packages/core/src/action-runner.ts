@@ -9,6 +9,7 @@ import {
 	FamosError,
 	type FileStore,
 	type IdGenerator,
+	isFamosError,
 	type JobQueue,
 	type Logger,
 	labelNamesTitle,
@@ -643,7 +644,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			assertApprover(actor, def, draft);
 			return true;
 		} catch (error) {
-			if (error instanceof FamosError) return false;
+			if (isFamosError(error)) return false;
 			throw error;
 		}
 	}
@@ -740,10 +741,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		} catch (error) {
 			// What it is about is gone: the draft can never be applied, so it leaves the queue
 			// (a retry would only fail again) and says why.
-			if (error instanceof FamosError && error.code === 'not_found')
+			if (isFamosError(error) && error.code === 'not_found')
 				return closeAsGone(draft, approver, approverId);
 			// Domain errors (validation, permissions, conflicts) leave the draft untouched.
-			if (error instanceof FamosError) throw error;
+			if (isFamosError(error)) throw error;
 			logger.error({ err: error, draftId }, 'applying draft failed');
 			await coreDb()
 				.updateTable('core_drafts')

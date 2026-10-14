@@ -1,4 +1,4 @@
-import { FamosError } from '@famos/sdk';
+import { FamosError, isFamosError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { CoreTables } from '../src/tables.ts';
 import { notesExtension } from './fixtures.ts';
@@ -23,7 +23,7 @@ const keyRows = () =>
 const codeOf = (promise: Promise<unknown>) =>
 	promise.then(
 		() => 'ok',
-		(e: unknown) => (e instanceof FamosError ? e.code : 'other'),
+		(e: unknown) => (isFamosError(e) ? e.code : 'other'),
 	);
 
 describe('idempotency keys', () => {

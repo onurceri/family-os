@@ -1,5 +1,5 @@
 import { type AddObligationInput, scheduleOf } from '@famos/ext-records/contract';
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import { defineAction, defineRoute, FamosError, isFamosError, type UnitOfWork } from '@famos/sdk';
 import { z } from 'zod';
 import {
 	AddItemSchema,
@@ -54,7 +54,7 @@ async function syncWarranty(
 			try {
 				await uow.run('records.removeObligation', { id: obligationId });
 			} catch (error) {
-				if (!(error instanceof FamosError)) throw error;
+				if (!isFamosError(error)) throw error;
 			}
 		}
 		return null;
@@ -78,7 +78,7 @@ async function syncWarranty(
 			});
 			return moved.id;
 		} catch (error) {
-			if (!(error instanceof FamosError)) throw error;
+			if (!isFamosError(error)) throw error;
 			// Finished or removed since: the new date is a new duty.
 		}
 	}
@@ -108,7 +108,7 @@ async function keepLapsing(uow: UnitOfWork, obligationId: string, until: string)
 			},
 		});
 	} catch (error) {
-		if (!(error instanceof FamosError)) throw error;
+		if (!isFamosError(error)) throw error;
 	}
 }
 

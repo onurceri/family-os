@@ -1,4 +1,5 @@
 import type { Kysely } from 'kysely';
+import { hasBrand } from './errors.ts';
 
 /**
  * Ports: interfaces for infrastructure that is likely to change. Implementations live in
@@ -161,7 +162,10 @@ export type ExternalHttpErrorCode =
 	| 'too_large'
 	| `http_${number}`;
 
+const EXTERNAL_HTTP_ERROR = Symbol.for('famos.ExternalHttpError');
+
 export class ExternalHttpError extends Error {
+	readonly [EXTERNAL_HTTP_ERROR] = true;
 	readonly code: ExternalHttpErrorCode;
 
 	constructor(code: ExternalHttpErrorCode, message?: string) {
@@ -170,6 +174,9 @@ export class ExternalHttpError extends Error {
 		this.code = code;
 	}
 }
+
+export const isExternalHttpError = (error: unknown): error is ExternalHttpError =>
+	hasBrand(error, EXTERNAL_HTTP_ERROR);
 
 export interface ExternalHttpRequest {
 	/**

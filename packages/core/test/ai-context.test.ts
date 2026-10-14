@@ -1,8 +1,8 @@
-import { defineAction, defineCapability, defineExtension, systemActor } from '@famos/sdk';
+import { defineAction, defineCapability, systemActor } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { buildRegistry } from '../src/registry.ts';
-import { createTestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension } from './harness.ts';
 
 const edit = defineCapability({ id: 'garage.edit', label: 'garage:cap_edit', level: 'edit' });
 const context = (readOnly = true) =>
@@ -19,11 +19,11 @@ const context = (readOnly = true) =>
 describe('AI record context (extension.ai.context)', () => {
 	it('must name a read-only action of the same extension', () => {
 		expect(() =>
-			buildRegistry([defineExtension({ id: 'garage', ai: { context: 'garage.aiContext' } })]),
+			buildRegistry([defineTestExtension({ id: 'garage', ai: { context: 'garage.aiContext' } })]),
 		).toThrow(/which it lacks/);
 		expect(() =>
 			buildRegistry([
-				defineExtension({
+				defineTestExtension({
 					id: 'garage',
 					actions: [context(false)],
 					capabilities: [edit],
@@ -32,11 +32,15 @@ describe('AI record context (extension.ai.context)', () => {
 			]),
 		).toThrow(/read-only/);
 		expect(() =>
-			defineExtension({ id: 'garage', actions: [context()], ai: { context: 'other.aiContext' } }),
+			defineTestExtension({
+				id: 'garage',
+				actions: [context()],
+				ai: { context: 'other.aiContext' },
+			}),
 		).toThrow(/namespaced/);
 		expect(() =>
 			buildRegistry([
-				defineExtension({
+				defineTestExtension({
 					id: 'garage',
 					actions: [context()],
 					ai: { context: 'garage.aiContext' },
@@ -48,7 +52,7 @@ describe('AI record context (extension.ai.context)', () => {
 	it('is listed for extensions that are on, and not for those turned off', async () => {
 		const k = await createTestKernel({
 			extensions: [
-				defineExtension({
+				defineTestExtension({
 					id: 'garage',
 					actions: [context()],
 					ai: { context: 'garage.aiContext' },

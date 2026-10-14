@@ -12,6 +12,7 @@ import {
 	FamosError,
 	type IdentityAdmin,
 	idSchema,
+	SDK_VERSION,
 	subjectOf,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -1484,7 +1485,15 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	});
 
 	return defineExtension({
-		id: 'core',
+		// Core is the host itself, not an installed package, so its manifest is written here.
+		manifest: {
+			id: 'core',
+			version: SDK_VERSION,
+			sdk: `^${SDK_VERSION}`,
+			capabilities: Object.values(CORE_CAPABILITIES).map((c) => c.id),
+			// Language and theme packs can be installed from an address a person types.
+			network: { userUrls: true },
+		},
 		migrations: coreMigrations,
 		actions: [
 			decidableSources,

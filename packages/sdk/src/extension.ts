@@ -3,6 +3,7 @@ import { assertRestrictiveDefaults, type CapabilityDefinition } from './capabili
 import type { ExtensionContext } from './context.ts';
 import type { EventDefinition } from './events.ts';
 import type { AnyJobDefinition } from './jobs.ts';
+import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
 import type { NotificationKindDefinition } from './notifications.ts';
 import type { DbExecutor } from './ports.ts';
 import type { AnyRouteDefinition } from './routes.ts';
@@ -19,10 +20,10 @@ export interface Migration {
 export type Migrations = Readonly<Record<string, Migration>>;
 
 export interface ExtensionDefinition {
-	/** Lowercase identifier, also the table prefix and the API path segment. */
+	/** What the extension is and what it reaches, from the `famos` field of its package.json. */
+	readonly manifest: ExtensionManifest;
+	/** The manifest's id: the namespace of everything it declares and the API path segment. */
 	readonly id: string;
-	/** Extensions whose migrations must run first. */
-	readonly dependsOn: readonly string[];
 	readonly migrations: Migrations;
 	readonly actions: readonly AnyActionDefinition[];
 	readonly routes: readonly AnyRouteDefinition[];
@@ -107,11 +108,9 @@ export interface AiIndex {
 	): Promise<{ items: { kind: string; id: string }[]; next: string | null }>;
 }
 
-const EXTENSION_ID = /^[a-z][a-z0-9]*$/;
-
 export function defineExtension(definition: {
-	id: string;
-	dependsOn?: readonly string[];
+	/** The `famos` field of the extension's package.json. */
+	manifest: ExtensionManifestInput;
 	migrations?: Migrations;
 	actions?: readonly AnyActionDefinition[];
 	routes?: readonly AnyRouteDefinition[];
@@ -123,12 +122,10 @@ export function defineExtension(definition: {
 	ai?: AiExtensionHints;
 	register?(ctx: ExtensionContext): void | Promise<void>;
 }): ExtensionDefinition {
-	const { id } = definition;
-	if (!EXTENSION_ID.test(id))
-		throw new Error(`Invalid extension id "${id}": use lowercase letters and digits`);
+	const manifest = parseManifest(definition.manifest);
+	const { id } = manifest;
 
 	const ext: ExtensionDefinition = {
-		dependsOn: [],
 		migrations: {},
 		actions: [],
 		routes: [],
@@ -138,6 +135,8 @@ export function defineExtension(definition: {
 		notifications: [],
 		sensitive: false,
 		...definition,
+		manifest,
+		id,
 	};
 
 	const owned = (kind: string, name: string) => {

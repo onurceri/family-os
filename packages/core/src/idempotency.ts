@@ -5,6 +5,7 @@ import {
 	type ExtensionContext,
 	FamosError,
 	type FamosErrorCode,
+	isFamosError,
 } from '@famos/sdk';
 import { z } from 'zod';
 import type { CoreTables } from './tables.ts';
@@ -22,7 +23,7 @@ const STORED_ERRORS: ReadonlySet<FamosErrorCode> = new Set([
 	'not_found',
 ]);
 export const isStoredError = (error: unknown): error is FamosError =>
-	error instanceof FamosError && STORED_ERRORS.has(error.code);
+	isFamosError(error) && STORED_ERRORS.has(error.code);
 
 export interface IdempotencyRequest {
 	key: string;

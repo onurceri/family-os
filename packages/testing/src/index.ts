@@ -516,5 +516,5 @@ export async function createTestKernel(
 /** For tests that migrate a database themselves. */
 export { openDatabase, runMigrations } from '@famos/db';
 export { type EnvLlm, llmFromEnv } from './llm-from-env.ts';
-
+export { defineTestExtension } from './test-extension.ts';
 export { repoTranslate, repoVocabulary } from './translate.ts';

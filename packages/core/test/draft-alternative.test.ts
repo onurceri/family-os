@@ -2,14 +2,14 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
 	FamosError,
+	isFamosError,
 	type MemberId,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { CoreTables } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // A suggestion to add a thing that is already there may become a move of that thing instead.
 const shelfUse = defineCapability({ id: 'shelf.use', label: 'shelf:cap_use', level: 'use' });
@@ -69,7 +69,7 @@ const move = defineAction({
 	},
 });
 
-const shelf = defineExtension({
+const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfUse, shelfEdit, shelfArrange],
 	actions: [add, move],
@@ -95,7 +95,7 @@ const code = async (promise: Promise<unknown>) => {
 	try {
 		await promise;
 	} catch (error) {
-		if (error instanceof FamosError) return error.code;
+		if (isFamosError(error)) return error.code;
 		throw error;
 	}
 	return 'ok';

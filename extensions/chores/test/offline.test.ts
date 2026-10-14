@@ -1,4 +1,4 @@
-import { FamosError } from '@famos/sdk';
+import { isFamosError } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Chore, MarkDoneResult } from '../src/contract/index.ts';
@@ -40,7 +40,7 @@ const completions = async () =>
 const codeOf = (promise: Promise<unknown>) =>
 	promise.then(
 		() => 'ok',
-		(e: unknown) => (e instanceof FamosError ? e.code : 'other'),
+		(e: unknown) => (isFamosError(e) ? e.code : 'other'),
 	);
 
 it('declares done and undo as offline-capable', () => {

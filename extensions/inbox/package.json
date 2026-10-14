@@ -1,9 +1,24 @@
 {
 	"name": "@famos/ext-inbox",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "inbox",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"optional": [
+			"records"
+		],
+		"capabilities": [
+			"inbox.share"
+		],
+		"calls": [
+			"core.decidableSources",
+			"records.attachDocument"
+		]
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

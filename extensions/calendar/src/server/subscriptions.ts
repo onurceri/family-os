@@ -4,6 +4,7 @@ import {
 	defineRoute,
 	ExternalHttpError,
 	FamosError,
+	isExternalHttpError,
 	type JobContext,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -252,7 +253,7 @@ export const listSubscriptions = defineRoute({
 
 /** The error code a failed fetch is recorded as. */
 function errorCode(error: unknown): string {
-	if (error instanceof ExternalHttpError) {
+	if (isExternalHttpError(error)) {
 		if (error.code === 'blocked_address' || error.code === 'too_large') return error.code;
 		if (error.code.startsWith('http_')) return error.code;
 		return 'unreachable';

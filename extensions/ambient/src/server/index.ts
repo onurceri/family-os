@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { ambientManage, ambientPhotos, ambientWeather, settingsChanged } from './capabilities.ts';
 import { getPhotoOfTheDay } from './photo-of-the-day.ts';
 import {
@@ -21,7 +22,7 @@ import { getWeather, searchPlaces } from './weather.ts';
  * outside. Turning the extension off in Settings → Features stops every outbound call.
  */
 export default defineExtension({
-	id: 'ambient',
+	manifest: pkg.famos,
 	migrations,
 	actions: [addPhoto, deletePhoto, updateWeather, updateTiming],
 	jobs: [deleteFileJob],

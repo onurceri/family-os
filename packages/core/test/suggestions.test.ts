@@ -2,20 +2,19 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
 	FamosError,
 	type MemberId,
 	subjectOf,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // Suggestions that are already so, the names they carry, and who can take them back.
 const cartUse = defineCapability({ id: 'cart.use', label: 'cart:cap_use', level: 'use' });
 const cartEdit = defineCapability({ id: 'cart.edit', label: 'cart:cap_edit', level: 'edit' });
 const bought = new Map<string, boolean>();
-const cart = defineExtension({
+const cart = defineTestExtension({
 	id: 'cart',
 	capabilities: [cartUse, cartEdit],
 	actions: [

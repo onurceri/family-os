@@ -154,11 +154,26 @@ Violations fail the build via dependency-cruiser.
 
 An illustrative extension (the real ones live in `extensions/`):
 
+```jsonc
+// extensions/shopping/package.json (the manifest, see "Manifest" below)
+{
+  "name": "@famos/ext-shopping",
+  "version": "1.2.0",
+  "famos": {
+    "id": "shopping",
+    "version": "1.2.0",
+    "sdk": "^0.1.0",
+    "capabilities": ["shopping.view", "shopping.edit"]
+  }
+}
+```
+
 ```ts
-// extensions/shopping/src/index.ts
+// extensions/shopping/src/server/index.ts
+import pkg from '../../package.json' with { type: 'json' };
+
 export default defineExtension({
-  id: 'shopping',
-  dependsOn: [],
+  manifest: pkg.famos,
   capabilities: [shoppingView, shoppingEdit],   // defineCapability(...), see §13
   actions: [addItem, checkOff],                 // see below
   routes: shoppingRoutes,                       // defineRoute(...) definitions; served under /api/v1/shopping
@@ -201,6 +216,26 @@ export default defineWebExtension({
 - **Database access**: `ctx.db` / `uow.db` are typed `Kysely<object>`; each extension adds its own tables with `db.withTables<MyTables>()`, so touching an untyped (foreign) table does not compile. Members and family settings (time zone, locale) come from `ctx.family` / `uow.family`.
 - **Turning off** (Settings → Family → Features, `core.setFeatureEnabled`): every id an extension owns is namespaced by its id, so core can stop it without its help. A turned-off extension keeps its data; its routes and actions answer `feature_off`, its actions leave the AI catalog, its jobs stay queued, its event handlers do not run, its capabilities are inactive and the web app hides its nav, pages and cards (`me.disabledExtensions`). Core cannot be turned off. Web entries name themselves for that page with `labelKey`/`descriptionKey`.
 - **Web side**: the app collects every `./web` entry at build time and serves contributed pages through a catch-all route. Extension components get app services (translation, members, time zone, realtime events, toasts) from `useApp()` (`@famos/ui/app`, provided through Svelte context), never by importing app modules. UI contributions go into a small set of typed **slots** (`dashboard.card`, `display.widget`, `record.section`, `setup.step`, …) whose contracts are plain data plus a component loader.
+
+### Manifest
+
+Every extension describes itself in the `famos` field of its package.json (`ExtensionManifestSchema` in the SDK) and passes it to `defineExtension({ manifest: pkg.famos, … })`. It is static JSON so that the host can read what an extension is and what it reaches before running any of its code:
+
+| Field | Meaning |
+|---|---|
+| `id` | Lowercase letters and digits; the namespace of everything it declares and its API path segment |
+| `version` | Its own version, the same as the package's |
+| `sdk` | The SDK versions it was built for, as a caret range (`^0.1.0`) |
+| `dependsOn` | Extensions that must be present; their migrations run first |
+| `optional` | Extensions it works with when present and does without otherwise (Quick add files papers on records only when records is there). They do not change the load order |
+| `tablePrefix` | The prefix of its tables; `<id>_` when left out |
+| `capabilities` | The ids of every capability its code declares |
+| `calls` | The exact ids of other extensions' (or core's) actions its code runs with `uow.run` or `ctx.actions.invoke` |
+| `network` | What it may reach outside the household: `hosts` it calls, `userUrls` (addresses a person typed), `local` (the home network, when a person allows it) |
+
+The registry checks the manifest against the code when the host starts and refuses to start otherwise: the capabilities in the code and in the manifest are the same; no two extensions' table prefixes overlap; the host's `SDK_VERSION` satisfies the `sdk` range (an in-house caret check, read as npm reads it); every entry in `calls` belongs to core or to an extension in `dependsOn` or `optional`, and is an action of it when that extension is present. A missing `dependsOn` extension stops the start; a missing optional one does not. The inbox and the assistant run actions of any extension on the AI's behalf; those are not `calls`, they come from the AI catalog.
+
+The SDK's error classes (`FamosError`, `LlmError`, `ExternalHttpError`) are checked with `isFamosError`, `isLlmError` and `isExternalHttpError`, which read a `Symbol.for` brand, never with `instanceof`: an extension built on its own can carry a separate copy of the SDK, whose classes are different objects. A test fails on `instanceof` for them.
 
 ### Records and record pages
 

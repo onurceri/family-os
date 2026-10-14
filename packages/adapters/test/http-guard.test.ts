@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { ExternalHttpError } from '@famos/sdk';
+import { isExternalHttpError } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 import {
 	createGuardedHttp,
@@ -47,7 +47,7 @@ const dns =
 const code = async (promise: Promise<unknown>) =>
 	promise.then(
 		() => null,
-		(e: unknown) => (e instanceof ExternalHttpError ? e.code : `other:${String(e)}`),
+		(e: unknown) => (isExternalHttpError(e) ? e.code : `other:${String(e)}`),
 	);
 
 describe('addresses', () => {

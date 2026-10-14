@@ -7,6 +7,7 @@ import {
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	isFamosError,
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
@@ -562,7 +563,7 @@ export function createThemes(deps: ThemesDeps) {
 				else await done({ status: 'failed', error: 'The pack was refused' });
 			} catch (error) {
 				// A pack that fails validation is final: say why, and do not retry.
-				const reason = error instanceof FamosError ? `: ${error.message}` : '';
+				const reason = isFamosError(error) ? `: ${error.message}` : '';
 				await done({ status: 'failed', error: `The pack was refused${reason}`.slice(0, 500) });
 			}
 		},

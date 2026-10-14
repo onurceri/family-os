@@ -1,10 +1,16 @@
-import { defineExtension, defineNotificationKind, systemActor } from '@famos/sdk';
+import { defineNotificationKind, systemActor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { notificationCreated } from '../src/core-events.ts';
 import { quietUntil } from '../src/notifications.ts';
 import { buildRegistry } from '../src/registry.ts';
 import { notesExtension } from './fixtures.ts';
-import { createTestKernel, type FakeChannel, fakeChannel, type TestKernel } from './harness.ts';
+import {
+	createTestKernel,
+	defineTestExtension,
+	type FakeChannel,
+	fakeChannel,
+	type TestKernel,
+} from './harness.ts';
 
 let k: TestKernel;
 let web: FakeChannel;
@@ -530,10 +536,10 @@ describe('kinds', () => {
 	it('must be namespaced by their extension and unique', () => {
 		const kind = (id: string) => defineNotificationKind({ id, label: 'x:y' });
 		expect(() => defineNotificationKind({ id: 'nodots', label: 'x:y' })).toThrow(/Invalid/);
-		expect(() => defineExtension({ id: 'mine', notifications: [kind('other.thing')] })).toThrow(
+		expect(() => defineTestExtension({ id: 'mine', notifications: [kind('other.thing')] })).toThrow(
 			/namespaced/,
 		);
-		const a = defineExtension({ id: 'mine', notifications: [kind('mine.thing')] });
+		const a = defineTestExtension({ id: 'mine', notifications: [kind('mine.thing')] });
 		expect(buildRegistry([a]).notificationKinds.has('mine.thing')).toBe(true);
 		expect(() =>
 			buildRegistry([a, { ...a, id: 'copy', notifications: [kind('mine.thing')] }]),
@@ -542,7 +548,7 @@ describe('kinds', () => {
 
 	it('must name a declared capability as their audience', () => {
 		const ext = (audience: string) =>
-			defineExtension({
+			defineTestExtension({
 				id: 'mine',
 				notifications: [defineNotificationKind({ id: 'mine.thing', label: 'x:y', audience })],
 			});

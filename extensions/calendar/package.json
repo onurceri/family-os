@@ -1,9 +1,23 @@
 {
 	"name": "@famos/ext-calendar",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "calendar",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"capabilities": [
+			"calendar.view",
+			"calendar.edit",
+			"calendar.manage"
+		],
+		"network": {
+			"userUrls": true,
+			"local": true
+		}
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

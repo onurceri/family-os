@@ -2,7 +2,6 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
 	defineRoute,
 	FamosError,
 	systemActor,
@@ -11,12 +10,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { displayActor, normalizeUserCode, PAIRING_TTL_MS } from '../src/devices.ts';
 import type { CoreTables, DeviceRow } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 const peekView = defineCapability({ id: 'peek.view', label: 'peek:cap_view', level: 'view' });
 const peekOther = defineCapability({ id: 'peek.other', label: 'peek:cap_other', level: 'view' });
 const peekEdit = defineCapability({ id: 'peek.edit', label: 'peek:cap_edit', level: 'edit' });
-const peek = defineExtension({
+const peek = defineTestExtension({
 	id: 'peek',
 	capabilities: [peekView, peekOther, peekEdit],
 	actions: [

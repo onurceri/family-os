@@ -3,12 +3,11 @@ import {
 	defaultGrant,
 	defineAction,
 	defineCapability,
-	defineExtension,
 } from '@famos/sdk';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { buildRegistry } from '../src/registry.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 /** Restrictive defaults. */
 const roles = (view: boolean, supervised: boolean, guest: boolean) => ({
@@ -38,7 +37,7 @@ const peek = defineAction({
 	requires: secretView.id,
 	run: async () => ({ ok: true as const }),
 });
-const stash = defineExtension({
+const stash = defineTestExtension({
 	id: 'stash',
 	capabilities: [secretView, secretEdit],
 	actions: [peek],
@@ -46,7 +45,7 @@ const stash = defineExtension({
 
 describe('validation', () => {
 	it('lets an extension remove grants its level gives', () => {
-		expect(() => defineExtension({ id: 'stash', capabilities: [secretView] })).not.toThrow();
+		expect(() => defineTestExtension({ id: 'stash', capabilities: [secretView] })).not.toThrow();
 		expect(defaultGrant(secretView, 'member')).toBe(true);
 		expect(defaultGrant(secretView, 'supervised')).toBe(false);
 		expect(defaultGrant(secretView, 'guest')).toBe(false);
@@ -59,7 +58,7 @@ describe('validation', () => {
 			level: 'edit',
 			defaults: roles(true, true, false),
 		});
-		expect(() => defineExtension({ id: 'stash', capabilities: [adds] })).toThrow(
+		expect(() => defineTestExtension({ id: 'stash', capabilities: [adds] })).toThrow(
 			/only remove grants/,
 		);
 		const guestManage = defineCapability({
@@ -68,7 +67,7 @@ describe('validation', () => {
 			level: 'use',
 			defaults: roles(true, true, true),
 		});
-		expect(() => defineExtension({ id: 'stash', capabilities: [guestManage] })).toThrow(
+		expect(() => defineTestExtension({ id: 'stash', capabilities: [guestManage] })).toThrow(
 			/"guest" would gain/,
 		);
 	});
@@ -80,7 +79,9 @@ describe('validation', () => {
 			level: 'manage',
 			critical: true,
 		});
-		expect(() => defineExtension({ id: 'stash', capabilities: [critical] })).toThrow(/critical/);
+		expect(() => defineTestExtension({ id: 'stash', capabilities: [critical] })).toThrow(
+			/critical/,
+		);
 		// An extension object that skipped defineExtension is still checked when registered.
 		const sneaky = { ...stash, capabilities: [critical] };
 		expect(() => buildRegistry([sneaky])).toThrow(/critical/);

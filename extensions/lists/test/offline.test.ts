@@ -1,4 +1,4 @@
-import { FamosError, systemActor } from '@famos/sdk';
+import { isFamosError, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -25,7 +25,7 @@ const tasks = (): Promise<Task[]> => k.route('lists.listTasks').call();
 const codeOf = (promise: Promise<unknown>) =>
 	promise.then(
 		() => 'ok',
-		(e: unknown) => (e instanceof FamosError ? e.code : 'other'),
+		(e: unknown) => (isFamosError(e) ? e.code : 'other'),
 	);
 
 it('declares the offline-capable actions', () => {

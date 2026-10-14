@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { hasBrand } from './errors.ts';
 
 /**
  * Language models. Extensions ask for a *role*, never a provider or model: the
@@ -284,7 +285,10 @@ export interface LlmFailureUsage {
 
 const RETRYABLE: ReadonlySet<LlmErrorCode> = new Set(['timeout', 'unavailable', 'invalid_output']);
 
+const LLM_ERROR = Symbol.for('famos.LlmError');
+
 export class LlmError extends Error {
+	readonly [LLM_ERROR] = true;
 	readonly code: LlmErrorCode;
 	readonly retryable: boolean;
 	/** Set on failures after the model had answered (cut off, unusable). */
@@ -303,4 +307,4 @@ export class LlmError extends Error {
 	}
 }
 
-export const isLlmError = (error: unknown): error is LlmError => error instanceof LlmError;
+export const isLlmError = (error: unknown): error is LlmError => hasBrand(error, LLM_ERROR);

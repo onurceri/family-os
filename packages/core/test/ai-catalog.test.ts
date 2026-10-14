@@ -1,8 +1,8 @@
-import { defineAction, defineCapability, defineExtension } from '@famos/sdk';
+import { defineAction, defineCapability } from '@famos/sdk';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { CoreTables } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 const thingsEdit = defineCapability({ id: 'things.edit', label: 'things:cap_edit', level: 'edit' });
 const addThing = defineAction({
@@ -31,7 +31,11 @@ let k: TestKernel;
 beforeEach(async () => {
 	k = await createTestKernel({
 		extensions: [
-			defineExtension({ id: 'things', actions: [addThing, notForAi], capabilities: [thingsEdit] }),
+			defineTestExtension({
+				id: 'things',
+				actions: [addThing, notForAi],
+				capabilities: [thingsEdit],
+			}),
 		],
 	});
 });
@@ -89,7 +93,11 @@ it('offers assistant-only actions to the in-app assistant, not to MCP clients or
 	});
 	const kernel = await createTestKernel({
 		extensions: [
-			defineExtension({ id: 'things', actions: [addThing, draftOnly], capabilities: [thingsEdit] }),
+			defineTestExtension({
+				id: 'things',
+				actions: [addThing, draftOnly],
+				capabilities: [thingsEdit],
+			}),
 		],
 	});
 	try {

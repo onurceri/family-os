@@ -1,5 +1,5 @@
 import { type AddShoppingItemsInput, titleKey } from '@famos/ext-lists/contract';
-import { defineAction, FamosError, type UnitOfWork } from '@famos/sdk';
+import { defineAction, isFamosError, type UnitOfWork } from '@famos/sdk';
 import { z } from 'zod';
 import { AddToShoppingSchema } from '../contract/index.ts';
 import { kitchenView } from './capabilities.ts';
@@ -38,7 +38,7 @@ async function openItems(
 			items: list?.items.filter((i) => !i.bought) ?? [],
 		};
 	} catch (error) {
-		if (error instanceof FamosError) return { listId: null, items: [] };
+		if (isFamosError(error)) return { listId: null, items: [] };
 		throw error;
 	}
 }

@@ -1,14 +1,8 @@
-import {
-	type Actor,
-	defineAction,
-	defineCapability,
-	defineExtension,
-	type MemberId,
-} from '@famos/sdk';
+import { type Actor, defineAction, defineCapability, type MemberId } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { CoreTables } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // The assistant acts for the member who asked: never beyond them, never beyond the AI.
 const stashView = defineCapability({
@@ -33,12 +27,12 @@ const reader = (id: string, requires: string) =>
 			return { text: 'contents' };
 		},
 	});
-const stash = defineExtension({
+const stash = defineTestExtension({
 	id: 'stash',
 	capabilities: [stashView],
 	actions: [reader('stash.list', stashView.id)],
 });
-const shelf = defineExtension({
+const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfView, shelfEdit],
 	actions: [

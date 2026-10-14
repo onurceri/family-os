@@ -6,7 +6,7 @@ import type {
 	NotificationChannel,
 	NotificationMessage,
 } from '@famos/sdk';
-import { FamosError } from '@famos/sdk';
+import { FamosError, isFamosError } from '@famos/sdk';
 import { Bot, GrammyError, HttpError } from 'grammy';
 import type { CallbackQuery, InlineKeyboardButton, Message, Update } from 'grammy/types';
 import type { SecretBox } from '../secrets/index.ts';
@@ -340,7 +340,7 @@ export function createTelegram(deps: TelegramDeps) {
 	}
 
 	const shareFailureKey = (error: unknown): string => {
-		if (error instanceof FamosError) {
+		if (isFamosError(error)) {
 			if (error.code === 'limit_reached') return 'telegram_quota';
 			if (error.code === 'feature_off') return 'telegram_inbox_off';
 			if (error.code === 'forbidden') return 'telegram_not_allowed';
@@ -551,7 +551,7 @@ export function createTelegram(deps: TelegramDeps) {
 			}
 		} catch (error) {
 			log.warn({ ...errInfo(error), memberId }, 'telegram file download failed');
-			const tooBig = error instanceof FamosError;
+			const tooBig = isFamosError(error);
 			await reply(s, msg.chat.id, memberId, tooBig ? 'telegram_file_too_big' : 'telegram_failed');
 			return;
 		}
@@ -601,10 +601,10 @@ export function createTelegram(deps: TelegramDeps) {
 			await need().onDecision({ memberId, draftId, verb });
 		} catch (error) {
 			log.info({ ...errInfo(error), memberId, draftId, verb }, 'telegram decision refused');
-			if (error instanceof FamosError && error.code === 'forbidden') {
+			if (isFamosError(error) && error.code === 'forbidden') {
 				resultKey = 'telegram_not_allowed';
 				done = false; // the buttons stay: someone else with the right may press them
-			} else if (error instanceof FamosError && ['conflict', 'not_found'].includes(error.code)) {
+			} else if (isFamosError(error) && ['conflict', 'not_found'].includes(error.code)) {
 				resultKey = 'telegram_already_decided';
 			} else {
 				resultKey = 'telegram_failed';

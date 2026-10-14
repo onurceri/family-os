@@ -7,6 +7,7 @@ import {
 	type ExtensionContext,
 	FamosError,
 	FileResponseSchema,
+	isFamosError,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -83,10 +84,7 @@ async function fileOnRecord(
 		});
 	} catch (error) {
 		// Records is not installed or switched off: say so instead of "unknown action".
-		if (
-			error instanceof FamosError &&
-			(error.code === 'feature_off' || error.code === 'not_found')
-		) {
+		if (isFamosError(error) && (error.code === 'feature_off' || error.code === 'not_found')) {
 			throw new FamosError('bad_request', 'Filing papers on a record is not available');
 		}
 		throw error;

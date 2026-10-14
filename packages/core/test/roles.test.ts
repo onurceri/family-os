@@ -1,9 +1,9 @@
-import { defineAction, defineCapability, defineExtension, systemActor } from '@famos/sdk';
+import { defineAction, defineCapability, systemActor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { buildRegistry } from '../src/registry.ts';
 import { notesExtension } from './fixtures.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 let k: TestKernel;
 beforeEach(async () => {
@@ -134,7 +134,7 @@ describe('roles and capabilities', () => {
 		const ext = (
 			actions: ReturnType<typeof defineAction>[],
 			capabilities = [defineCapability({ id: 'x.edit', label: 'x:edit', level: 'edit' })],
-		) => defineExtension({ id: 'x', actions, capabilities });
+		) => defineTestExtension({ id: 'x', actions, capabilities });
 		expect(() => buildRegistry([ext([defineAction({ id: 'x.open', ...base })])])).toThrow(
 			/neither/,
 		);
@@ -155,7 +155,7 @@ describe('roles and capabilities', () => {
 			]),
 		).toThrow(/AI/);
 		expect(() =>
-			defineExtension({
+			defineTestExtension({
 				id: 'x',
 				capabilities: [
 					defineCapability({ id: 'x.root', label: 'x:root', level: 'manage', critical: true }),
@@ -163,7 +163,7 @@ describe('roles and capabilities', () => {
 			}),
 		).toThrow(/only core/);
 		expect(() =>
-			defineExtension({
+			defineTestExtension({
 				id: 'x',
 				capabilities: [defineCapability({ id: 'y.edit', label: 'y:edit', level: 'edit' })],
 			}),

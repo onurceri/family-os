@@ -4,6 +4,7 @@ import {
 	type Clock,
 	type DbExecutor,
 	type IdGenerator,
+	isLlmError,
 	type LlmChatRequest,
 	type LlmChatResult,
 	type LlmEmbedRequest,
@@ -148,7 +149,7 @@ function statusToLlmError(status: number, body: string): LlmError {
 }
 
 function toLlmError(error: unknown): LlmError {
-	if (error instanceof LlmError) return error;
+	if (isLlmError(error)) return error;
 	if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
 		return new LlmError('timeout', 'The model did not answer in time', { cause: error });
 	}

@@ -1,4 +1,11 @@
-import { defineRoute, type ExtensionContext, ExternalHttpError, FamosError } from '@famos/sdk';
+import {
+	defineRoute,
+	type ExtensionContext,
+	ExternalHttpError,
+	FamosError,
+	isExternalHttpError,
+	isFamosError,
+} from '@famos/sdk';
 import type { TemperatureUnit } from '@famos/time';
 import { z } from 'zod';
 import {
@@ -97,10 +104,10 @@ export function parseForecast(
 }
 
 function unavailable(error: unknown): FamosError {
-	if (error instanceof FamosError) return error;
+	if (isFamosError(error)) return error;
 	return new FamosError(
 		'unavailable',
-		`weather_${error instanceof ExternalHttpError ? error.code : 'unreachable'}`,
+		`weather_${isExternalHttpError(error) ? error.code : 'unreachable'}`,
 	);
 }
 

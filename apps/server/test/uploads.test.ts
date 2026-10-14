@@ -2,7 +2,8 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
-import { defineExtension, defineRoute, FamosError, FileResponseSchema } from '@famos/sdk';
+import { defineRoute, FamosError, FileResponseSchema } from '@famos/sdk';
+import { defineTestExtension } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { loadConfig } from '../src/config.ts';
@@ -62,7 +63,7 @@ beforeEach(async () => {
 		logger: silentLogger,
 		quiet: true,
 		passwordHasher: fastPasswordHasher,
-		extensions: [defineExtension({ id: 'probe', routes: [upload, download] })],
+		extensions: [defineTestExtension({ id: 'probe', routes: [upload, download] })],
 	});
 	await migrate(runtime);
 	await runtime.kernel.start();

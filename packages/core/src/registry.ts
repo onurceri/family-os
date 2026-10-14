@@ -7,7 +7,7 @@ import type {
 	ExtensionDefinition,
 	NotificationKindDefinition,
 } from '@famos/sdk';
-import { assertRestrictiveDefaults } from '@famos/sdk';
+import { assertRestrictiveDefaults, SDK_VERSION, satisfiesCaret, tablePrefixOf } from '@famos/sdk';
 
 export interface Registry {
 	/** Extensions in dependency order (dependencies first). */
@@ -39,7 +39,7 @@ export function orderExtensions(extensions: readonly ExtensionDefinition[]): Ext
 		if (s === 'visiting')
 			throw new Error(`Extension dependency cycle: ${[...path, ext.id].join(' → ')}`);
 		state.set(ext.id, 'visiting');
-		for (const dep of ext.dependsOn) {
+		for (const dep of ext.manifest.dependsOn) {
 			const target = byId.get(dep);
 			if (!target) throw new Error(`Extension "${ext.id}" depends on missing extension "${dep}"`);
 			visit(target, [...path, ext.id]);
@@ -49,6 +49,64 @@ export function orderExtensions(extensions: readonly ExtensionDefinition[]): Ext
 	};
 	for (const ext of [...extensions].sort((a, b) => a.id.localeCompare(b.id))) visit(ext, []);
 	return ordered;
+}
+
+/**
+ * Checks each manifest against the code and against the other extensions: the manifest is what
+ * the host can read before an extension runs, so it must say all of what the code does.
+ */
+function checkManifests(
+	ordered: readonly ExtensionDefinition[],
+	actions: ReadonlyMap<string, AnyActionDefinition>,
+): void {
+	const present = new Set(ordered.map((ext) => ext.id));
+	const prefixes: { id: string; prefix: string }[] = [];
+	for (const ext of ordered) {
+		const { manifest } = ext;
+		const where = `Extension "${ext.id}"`;
+		if (manifest.id !== ext.id)
+			throw new Error(`${where} carries the manifest of "${manifest.id}"`);
+		if (!satisfiesCaret(SDK_VERSION, manifest.sdk))
+			throw new Error(`${where} needs SDK ${manifest.sdk}, but this host has ${SDK_VERSION}`);
+
+		for (const dep of manifest.dependsOn) {
+			if (manifest.optional.includes(dep))
+				throw new Error(`${where} names "${dep}" both as a dependency and as optional`);
+		}
+
+		const declared = new Set(manifest.capabilities);
+		const inCode = new Set(ext.capabilities.map((c) => c.id));
+		const unlisted = [...inCode].filter((id) => !declared.has(id));
+		const absent = [...declared].filter((id) => !inCode.has(id));
+		if (unlisted.length)
+			throw new Error(`${where} declares capabilities its manifest lacks: ${unlisted.join(', ')}`);
+		if (absent.length)
+			throw new Error(`${where} lists capabilities its code lacks: ${absent.join(', ')}`);
+
+		const prefix = tablePrefixOf(manifest);
+		for (const other of prefixes) {
+			if (prefix.startsWith(other.prefix) || other.prefix.startsWith(prefix))
+				throw new Error(
+					`${where} and "${other.id}" have overlapping table prefixes "${prefix}" and "${other.prefix}"`,
+				);
+		}
+		prefixes.push({ id: ext.id, prefix });
+
+		for (const call of manifest.calls) {
+			const owner = call.slice(0, call.indexOf('.'));
+			if (owner === ext.id)
+				throw new Error(`${where} lists its own action "${call}" in calls; list only foreign ones`);
+			const reachable =
+				owner === 'core' || manifest.dependsOn.includes(owner) || manifest.optional.includes(owner);
+			if (!reachable)
+				throw new Error(
+					`${where} calls "${call}", but "${owner}" is neither a dependency nor optional`,
+				);
+			// An optional extension that is not installed has no actions to check.
+			if (present.has(owner) && !actions.has(call))
+				throw new Error(`${where} calls "${call}", which "${owner}" does not have`);
+		}
+	}
 }
 
 /** Collects all contributions and rejects duplicates across extensions. */
@@ -153,6 +211,7 @@ export function buildRegistry(
 	for (const { route } of routes) {
 		if (!ROUTE_ACCESS.has(route.requires)) known(route.requires, `Route "${route.operationId}"`);
 	}
+	checkManifests(ordered, actions);
 	return {
 		extensions: ordered,
 		actions,

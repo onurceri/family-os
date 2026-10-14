@@ -1,7 +1,7 @@
-import { type Actor, defineAction, defineCapability, defineExtension } from '@famos/sdk';
+import { type Actor, defineAction, defineCapability } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 /** One sensitive area  and one ordinary area, each with a view capability and an AI action. */
 const ledgerView = defineCapability({ id: 'ledger.view', label: 'ledger:cap_view', level: 'view' });
@@ -31,7 +31,7 @@ const reader = (id: string, requires: string, secret: string) =>
 			return { text: secret };
 		},
 	});
-const ledger = defineExtension({
+const ledger = defineTestExtension({
 	id: 'ledger',
 	sensitive: true,
 	capabilities: [ledgerView, ledgerEdit],
@@ -51,7 +51,7 @@ const ledger = defineExtension({
 		}),
 	],
 });
-const diary = defineExtension({
+const diary = defineTestExtension({
 	id: 'diary',
 	capabilities: [diaryView],
 	actions: [proposal('diary.addPage', diaryView.id), reader('diary.readPages', diaryView.id, 'x')],

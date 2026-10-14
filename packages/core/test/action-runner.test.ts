@@ -1,4 +1,4 @@
-import { FamosError, systemActor } from '@famos/sdk';
+import { isFamosError, systemActor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { notesExtension } from './fixtures.ts';
 import { createTestKernel, type TestKernel } from './harness.ts';
@@ -17,7 +17,7 @@ const count = async () => {
 const codeOf = (promise: Promise<unknown>) =>
 	promise.then(
 		() => 'ok',
-		(e: unknown) => (e instanceof FamosError ? e.code : 'other'),
+		(e: unknown) => (isFamosError(e) ? e.code : 'other'),
 	);
 
 describe('action runner', () => {

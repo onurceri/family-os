@@ -5,6 +5,7 @@ import {
 	defineJob,
 	defineRoute,
 	FamosError,
+	isFamosError,
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
@@ -337,7 +338,7 @@ export function createLanguages(deps: LanguagesDeps) {
 				else await done({ status: 'failed', error: 'The pack was refused' });
 			} catch (error) {
 				// A pack that fails validation is final: say why, and do not retry.
-				const reason = error instanceof FamosError ? `: ${error.message}` : '';
+				const reason = isFamosError(error) ? `: ${error.message}` : '';
 				await done({ status: 'failed', error: `The pack was refused${reason}`.slice(0, 500) });
 			}
 		},

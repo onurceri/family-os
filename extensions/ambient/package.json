@@ -1,9 +1,28 @@
 {
 	"name": "@famos/ext-ambient",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "ambient",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"optional": [
+			"calendar"
+		],
+		"capabilities": [
+			"ambient.photos",
+			"ambient.weather",
+			"ambient.manage"
+		],
+		"network": {
+			"hosts": [
+				"api.open-meteo.com",
+				"geocoding-api.open-meteo.com"
+			]
+		}
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

@@ -8,6 +8,7 @@ import {
 	ExternalHttpError,
 	type ExternalHttpRequest,
 	type ExternalHttpResponse,
+	isExternalHttpError,
 } from '@famos/sdk';
 
 /**
@@ -255,7 +256,7 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 					return { status: 200, text, contentType, etag, lastModified };
 				}
 			} catch (error) {
-				if (error instanceof ExternalHttpError) throw error;
+				if (isExternalHttpError(error)) throw error;
 				if (isAbort(error) || signal.aborted) throw new ExternalHttpError('timeout', 'Timed out');
 				throw new ExternalHttpError('unreachable', 'The request failed');
 			}

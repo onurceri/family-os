@@ -1,16 +1,10 @@
-import {
-	type Actor,
-	defineAction,
-	defineCapability,
-	defineExtension,
-	type FamosError,
-} from '@famos/sdk';
+import { type Actor, defineAction, defineCapability, type FamosError } from '@famos/sdk';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { hasPassed, nextExpiryAt } from '../src/draft-expiry.ts';
 import type { CoreTables } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 describe('hasPassed', () => {
 	it('is true only for a day before today', () => {
@@ -53,7 +47,7 @@ const addPlan = defineAction({
 	},
 });
 let runs = 0;
-const plans = defineExtension({
+const plans = defineTestExtension({
 	id: 'plans',
 	actions: [addPlan],
 	capabilities: [planEdit],

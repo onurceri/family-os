@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
 import {
 	aiListNotes,
@@ -24,7 +25,7 @@ import { migrations } from './store.ts';
  * once and deleted, with their photos, 30 days later by a daily job.
  */
 export default defineExtension({
-	id: 'board',
+	manifest: pkg.famos,
 	migrations,
 	actions: [postNote, editNote, removeNote, pinNote, moveNote, markSeen, setNotePhoto, aiListNotes],
 	routes: [getNotes, getNotePhoto, uploadNotePhoto],

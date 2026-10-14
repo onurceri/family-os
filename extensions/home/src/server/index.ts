@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { homeEdit, homeView } from './capabilities.ts';
 import { aiContext, aiContextItems } from './context.ts';
 import { addHome, archiveHome, getHome, listHomes, updateHome } from './homes.ts';
@@ -16,8 +17,7 @@ import { migrations } from './store.ts';
  * `home.aiContext` and `home.aiContextItems`. Services are not shown to it.
  */
 export default defineExtension({
-	id: 'home',
-	dependsOn: ['records'],
+	manifest: pkg.famos,
 	migrations,
 	ai: { context: [aiContext.id, aiContextItems.id], index: searchIndex },
 	actions: [

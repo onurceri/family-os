@@ -1,9 +1,27 @@
 {
 	"name": "@famos/ext-pets",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "pets",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"dependsOn": [
+			"records"
+		],
+		"capabilities": [
+			"pets.view",
+			"pets.edit"
+		],
+		"calls": [
+			"records.addObligation",
+			"records.archiveForRecord",
+			"records.completeObligation",
+			"records.renameRecord"
+		]
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

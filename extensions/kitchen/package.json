@@ -1,9 +1,25 @@
 {
 	"name": "@famos/ext-kitchen",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
+	"famos": {
+		"id": "kitchen",
+		"version": "0.1.0",
+		"sdk": "^0.1.0",
+		"optional": [
+			"lists"
+		],
+		"capabilities": [
+			"kitchen.view",
+			"kitchen.edit"
+		],
+		"calls": [
+			"lists.addShoppingItems",
+			"lists.shoppingList"
+		]
+	},
 	"exports": {
 		"./messages/*": "./src/messages/*",
 		"./contract": "./src/contract/index.ts",

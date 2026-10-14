@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { kitchenChanged, kitchenEdit, kitchenView } from './capabilities.ts';
 import {
 	addToMealPlan,
@@ -28,7 +29,7 @@ import { migrations } from './store.ts';
  * list the amount is read off as the quantity, nothing is converted. It reaches the shopping list only through the `lists` action, never its tables.
  */
 export default defineExtension({
-	id: 'kitchen',
+	manifest: pkg.famos,
 	migrations,
 	ai: { index: searchIndex },
 	actions: [

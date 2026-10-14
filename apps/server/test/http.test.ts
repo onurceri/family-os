@@ -2,7 +2,8 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
-import { defineExtension, type ExtensionDefinition } from '@famos/sdk';
+import type { ExtensionDefinition } from '@famos/sdk';
+import { defineTestExtension } from '@famos/testing';
 import type { WSContext } from 'hono/ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
@@ -440,7 +441,7 @@ describe('HTTP API', () => {
 	it('lets admins choose how far the AI may use each area', async () => {
 		// A sensitive area beside the real extensions.
 		await runtime.close();
-		await boot([defineExtension({ id: 'strongbox', sensitive: true })]);
+		await boot([defineTestExtension({ id: 'strongbox', sensitive: true })]);
 		expect((await call('GET', '/api/v1/core/ai-areas')).status).toBe(401);
 		const { cookie } = await setupAndSignIn();
 		const list = await call('GET', '/api/v1/core/ai-areas', undefined, cookie);

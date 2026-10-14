@@ -1,13 +1,13 @@
-import { defineAction, defineCapability, defineExtension, systemActor } from '@famos/sdk';
+import { defineAction, defineCapability, systemActor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { jobLog, noteAdded, notesExtension } from './fixtures.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 /** Listens to notes events, and offers an AI action, to see both stop with their extension. */
 const heard: string[] = [];
 const watcherUse = defineCapability({ id: 'watcher.use', label: 'watcher:cap_use', level: 'use' });
-const watcher = defineExtension({
+const watcher = defineTestExtension({
 	id: 'watcher',
 	capabilities: [watcherUse],
 	actions: [

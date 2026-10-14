@@ -2,7 +2,6 @@ import {
 	defineAction,
 	defineCapability,
 	defineEvent,
-	defineExtension,
 	defineJob,
 	defineNotificationKind,
 	FamosError,
@@ -10,6 +9,7 @@ import {
 } from '@famos/sdk';
 import { sql } from 'kysely';
 import { z } from 'zod';
+import { defineTestExtension } from './harness.ts';
 
 /** A tiny extension exercising every contribution type, used by core tests. */
 type NotesTables = { notes_items: { id: string; body: string; created_at: number } };
@@ -158,7 +158,7 @@ export const processNote = defineJob({
 	},
 });
 
-export const notesExtension = defineExtension({
+export const notesExtension = defineTestExtension({
 	id: 'notes',
 	migrations: {
 		'0001_create_items': {

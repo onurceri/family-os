@@ -6,12 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
 import type { MemberId } from '@famos/sdk';
-import {
-	defineAction,
-	defineCapability,
-	defineExtension,
-	type ExtensionDefinition,
-} from '@famos/sdk';
+import { defineAction, defineCapability, type ExtensionDefinition } from '@famos/sdk';
+import { defineTestExtension } from '@famos/testing';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -40,7 +36,7 @@ const mailOut = defineAction({
 		return { sent: true };
 	},
 });
-const outbox = defineExtension({ id: 'outbox', actions: [mailOut], capabilities: [sendMail] });
+const outbox = defineTestExtension({ id: 'outbox', actions: [mailOut], capabilities: [sendMail] });
 
 async function boot(extra: readonly ExtensionDefinition[] = []) {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-mcp-'));

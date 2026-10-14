@@ -6,7 +6,7 @@ boundaries, and [AGENTS.md](../AGENTS.md) for the checklist.
 
 ```
 extensions/<id>/
-├── package.json        # exports "./contract", "./server", "./web"
+├── package.json        # exports "./contract", "./server", "./web"; the manifest in "famos"
 └── src/
     ├── contract/       # Zod schemas, route + action + event types — importable by anyone
     ├── server/         # actions, routes, jobs, migrations, queries — imported by apps/server only

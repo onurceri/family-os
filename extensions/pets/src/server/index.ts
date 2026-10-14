@@ -1,4 +1,5 @@
 import { defineExtension } from '@famos/sdk';
+import pkg from '../../package.json' with { type: 'json' };
 import { petsEdit, petsView } from './capabilities.ts';
 import {
 	addPet,
@@ -20,8 +21,7 @@ import { migrations } from './store.ts';
  * The AI learns which pets exist through `pets.aiContext`.
  */
 export default defineExtension({
-	id: 'pets',
-	dependsOn: ['records'],
+	manifest: pkg.famos,
 	migrations,
 	ai: { context: aiContext.id },
 	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext],

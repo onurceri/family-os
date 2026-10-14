@@ -1,8 +1,8 @@
-import { defineExtension, defineJob } from '@famos/sdk';
+import { defineJob } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { jobLog, notesExtension } from './fixtures.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 let k: TestKernel;
 beforeEach(async () => {
@@ -107,7 +107,7 @@ describe('lanes', () => {
 			},
 		});
 		const lanes = await createTestKernel({
-			extensions: [defineExtension({ id: 'lanes', jobs: [slow, quick] })],
+			extensions: [defineTestExtension({ id: 'lanes', jobs: [slow, quick] })],
 		});
 		try {
 			await lanes.queue.enqueue(lanes.ctx.db, 'lanes.slow', {});
@@ -148,7 +148,7 @@ describe('lanes', () => {
 			},
 		});
 		const lanes = await createTestKernel({
-			extensions: [defineExtension({ id: 'lanes', jobs: [a, b] })],
+			extensions: [defineTestExtension({ id: 'lanes', jobs: [a, b] })],
 		});
 		try {
 			await lanes.queue.enqueue(lanes.ctx.db, 'lanes.a', {});

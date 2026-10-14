@@ -2,19 +2,18 @@ import {
 	type Actor,
 	defineAction,
 	defineCapability,
-	defineExtension,
-	FamosError,
+	isFamosError,
 	type MemberId,
 } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { CoreTables } from '../src/tables.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
 // Member memory: personal drafts, ownership and limits.
 const shelfEdit = defineCapability({ id: 'shelf.edit', label: 'shelf:cap_edit', level: 'edit' });
 const added: { by: string; name: string }[] = [];
-const shelf = defineExtension({
+const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfEdit],
 	actions: [
@@ -86,7 +85,7 @@ const code = async (promise: Promise<unknown>) => {
 	try {
 		await promise;
 	} catch (error) {
-		if (error instanceof FamosError) return error.code;
+		if (isFamosError(error)) return error.code;
 		throw error;
 	}
 	return 'ok';
