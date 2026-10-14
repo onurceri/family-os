@@ -4,24 +4,26 @@
 	import CaptureBox from './CaptureBox.svelte';
 	import CaptureDetail from './CaptureDetail.svelte';
 	import CaptureGroup from './CaptureGroup.svelte';
-	import DraftView from './DraftView.svelte';
 	import { CaptureFeed } from './feed.svelte.js';
 	import { useInbox } from './i18n.js';
 	import { captureLine } from './item-view.js';
 	import RecentList from './RecentList.svelte';
+	import RequestGroup from './RequestGroup.svelte';
 	import WaysIn from './WaysIn.svelte';
 
 	/**
 	 * Quick add: give it something, check what it found, add it. One column: the capture card
-	 * (the hero), the other ways in, then what waits for this person (one group per capture, plus
-	 * requests that are not captures) and a short history, each only when it has something.
+	 * (the hero), the other ways in, then what waits for this person (one group per capture, and one
+	 * for the requests from each other place: an assistant answer, a connected app, a person) and a
+	 * short history, each only when it has something. Every suggestion waits here: the badge counts
+	 * what is here, and the notifications link here.
 	 * Not a mailbox: nothing here is shared with the family.
 	 */
 	const { app, t } = useInbox();
 	const feed = new CaptureFeed(app);
 	$effect(() => feed.start());
 
-	const waiting = $derived(feed.waiting);
+	const entries = $derived(feed.entries);
 	const canDecide = $derived(app.can('core.drafts.approve'));
 	const recent = $derived(feed.recent);
 	const selectedId = $derived(app.query().get('capture'));
@@ -40,32 +42,24 @@
 		</div>
 
 		{#if feed.loaded}
-			{#if feed.failed && waiting.length === 0}
+			{#if feed.failed && entries.length === 0}
 				<p class="text-attention font-semibold" role="alert">{t('error')}</p>
 			{/if}
-			{#if waiting.length}
+			{#if entries.length}
 				<Section
 					label={t(canDecide ? 'section_waiting' : 'section_waiting_approval')}
 					count={feed.waitingSuggestions || undefined}
 				>
 					<div class="grid gap-9">
-						{#each waiting as capture (capture.item.id)}
-							<CaptureGroup {capture} onchanged={() => void feed.load()} />
+						{#each entries as entry (entry.key)}
+							{#if entry.kind === 'capture'}
+								<CaptureGroup capture={entry.capture} onchanged={() => void feed.load()} />
+							{:else}
+								<RequestGroup group={entry.group} />
+							{/if}
 						{/each}
 					</div>
 				</Section>
-			{/if}
-			{#if feed.requests.length}
-				<div data-testid="requests">
-					<Section label={t('requests')} count={feed.requests.length}>
-						<p class="text-ink-soft -mt-1 text-[13px]">{t('requests_hint')}</p>
-						<div
-							class="grid grid-cols-[repeat(auto-fit,minmax(min(20rem,100%),1fr))] items-start gap-3"
-						>
-							{#each feed.requests as draft (draft.id)}<DraftView {draft} />{/each}
-						</div>
-					</Section>
-				</div>
 			{/if}
 			<RecentList captures={recent} selectedId={selected?.item.id} onselect={open} />
 		{/if}

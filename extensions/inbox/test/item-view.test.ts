@@ -6,6 +6,7 @@ import {
 	approveSelectedKey,
 	askAssistantHref,
 	captureLine,
+	decidableCount,
 	groupBusyState,
 	isAddition,
 	isQuestionForAssistant,
@@ -15,6 +16,7 @@ import {
 	itemTitle,
 	metaLine,
 	needsAction,
+	requestGroups,
 } from '../src/web/item-view.ts';
 
 const item = (over: Partial<InboxItem> = {}): InboxItem => ({
@@ -172,5 +174,69 @@ describe('needsAction', () => {
 		expect(needsAction(draft('pending'))).toBe(true);
 		expect(needsAction(draft('failed'))).toBe(true);
 		expect(needsAction(draft('applied'))).toBe(false);
+	});
+});
+
+describe('requests that are not from a capture', () => {
+	const request = (over: Partial<Draft>) =>
+		({
+			id: 'd',
+			status: 'pending',
+			actionId: 'lists.addTask',
+			createdAt: 1,
+			sourceKind: null,
+			sourceId: null,
+			proposedBy: { kind: 'member', memberId: 'noah' },
+			canDecide: true,
+			...over,
+		}) as Draft;
+	const app = (id: string, at: number, key = 'api_token_hermes') =>
+		request({
+			id,
+			createdAt: at,
+			sourceKind: 'mcp',
+			sourceId: key,
+			proposedBy: { kind: 'ai', source: 'mcp', onBehalfOf: 'sofia' },
+		});
+
+	it('groups them by where they came from, newest group first, each in the order made', () => {
+		const groups = requestGroups([
+			app('plasters', 3),
+			app('delft', 1),
+			app('other app', 2, 'api_token_other'),
+			request({ id: 'asked', createdAt: 4 }),
+			request({
+				id: 'salad',
+				createdAt: 5,
+				sourceKind: 'assistant',
+				sourceId: 'asst_msg_1',
+				proposedBy: { kind: 'ai', source: 'assistant', onBehalfOf: 'sofia' },
+			}),
+		]);
+		expect(groups.map((g) => [g.origin, g.drafts.map((d) => d.id)])).toEqual([
+			['assistant', ['salad']],
+			['person', ['asked']],
+			['app', ['delft', 'plasters']],
+			['app', ['other app']],
+		]);
+	});
+
+	it('leaves out what is decided', () => {
+		expect(
+			requestGroups([request({ status: 'applied' }), request({ status: 'rejected' })]),
+		).toEqual([]);
+		expect(requestGroups([request({ status: 'failed' })])).toHaveLength(1);
+	});
+
+	it('counts what the person may decide, as the badge does', () => {
+		expect(
+			decidableCount([
+				request({}),
+				request({ status: 'failed' }),
+				// Their own request, waiting for someone else.
+				request({ canDecide: false }),
+				request({ status: 'applied' }),
+			]),
+		).toBe(2);
 	});
 });

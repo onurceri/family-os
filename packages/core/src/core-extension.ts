@@ -199,6 +199,8 @@ export const DraftSchema = z.object({
 		.nullable(),
 	/** The action it proposed before a reviewer chose its alternative; null when it never changed. */
 	replacedFrom: z.string().nullable(),
+	/** Whether the member reading it may decide it (approve or reject it on its merits). */
+	canDecide: z.boolean(),
 });
 
 const toMember = (row: MemberRow): Member => ({
@@ -233,6 +235,7 @@ const toDraft = (
 	mayExist: boolean | 'some' = false,
 	titleKey: string | null = null,
 	instead: DraftAlternative | null = null,
+	canDecide = false,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -267,6 +270,7 @@ const toDraft = (
 	},
 	replacedFrom:
 		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
+	canDecide,
 });
 
 const members = (db: DbExecutor) => db.withTables<CoreTables>();
@@ -1123,7 +1127,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const shown = rows
 				.map((row): DraftRow => (passed(row) ? { ...row, status: 'expired' } : row))
 				.filter((row) => !query.status || row.status === query.status);
-			return Promise.all(shown.map(view));
+			return Promise.all(shown.map((row) => view(row, actor)));
 		},
 	});
 
@@ -1131,7 +1135,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		method: 'get',
 		path: '/drafts/waiting',
 		operationId: 'core.countWaitingDrafts',
-		summary: 'How many suggestions wait for a decision (a count only)',
+		summary:
+			'How many suggestions wait for a decision (a count only): what Quick add shows to decide',
 		requires: CORE_CAPABILITIES.draftsWaiting.id,
 		response: z.object({ count: z.number().int() }),
 		async handle(ctx, { actor }) {
@@ -1140,7 +1145,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.withTables<CoreTables>()
 				.selectFrom('core_drafts')
 				.selectAll()
-				.where('status', '=', 'pending')
+				// A suggestion whose applying failed still waits for someone to try it again.
+				.where('status', 'in', [...WAITING_STATUSES])
 				.where((eb) =>
 					actor.kind === 'member'
 						? eb.or([eb('for_member', 'is', null), eb('for_member', '=', actor.memberId)])
@@ -1385,13 +1391,14 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	});
 
 	const DraftParams = z.object({ draftId: idSchema('draft') });
-	const view = async (row: DraftRow) =>
+	const view = async (row: DraftRow, reader: Actor) =>
 		toDraft(
 			row,
 			deps.runner().undoStep(row) !== null,
 			await deps.runner().mayExist(row),
 			deps.registry().actions.get(row.action_id)?.draftTitle ?? null,
 			await deps.runner().alternative(row),
+			deps.runner().mayDecide(row, reader),
 		);
 
 	const approve = defineRoute({
@@ -1405,7 +1412,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		body: z.object({ input: z.unknown().optional() }),
 		response: DraftSchema,
 		async handle(_ctx, { params, body, actor }) {
-			return view(await deps.runner().approveDraft(params.draftId, actor, body.input));
+			return view(await deps.runner().approveDraft(params.draftId, actor, body.input), actor);
 		},
 	});
 
@@ -1418,7 +1425,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		params: DraftParams,
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
-			return view(await deps.runner().rejectDraft(params.draftId, actor));
+			return view(await deps.runner().rejectDraft(params.draftId, actor), actor);
 		},
 	});
 
@@ -1431,7 +1438,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		params: DraftParams,
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
-			return view(await deps.runner().undoDraft(params.draftId, actor));
+			return view(await deps.runner().undoDraft(params.draftId, actor), actor);
 		},
 	});
 
@@ -1445,7 +1452,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		params: DraftParams,
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
-			return view(await deps.runner().replaceDraft(params.draftId, actor));
+			return view(await deps.runner().replaceDraft(params.draftId, actor), actor);
 		},
 	});
 

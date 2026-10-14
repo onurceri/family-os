@@ -10,10 +10,15 @@ export type { components };
 export const loadItems = async (): Promise<InboxItem[]> =>
 	unwrap(await api.GET('/api/v1/inbox/items', { params: { query: { limit: 30 } } }));
 
-export const loadPendingDrafts = async (): Promise<Draft[]> =>
-	unwrap(
-		await api.GET('/api/v1/core/drafts', { params: { query: { status: 'pending', limit: 200 } } }),
-	);
+const loadDrafts = async (status: 'pending' | 'failed'): Promise<Draft[]> =>
+	unwrap(await api.GET('/api/v1/core/drafts', { params: { query: { status, limit: 200 } } }));
+
+/**
+ * The suggestions that still wait for a decision: pending ones, and those whose applying failed
+ * and can be tried again. Each says whether the signed-in person may decide it (`canDecide`).
+ */
+export const loadWaitingDrafts = async (): Promise<Draft[]> =>
+	(await Promise.all([loadDrafts('pending'), loadDrafts('failed')])).flat();
 
 /** Recent inbox drafts in every state, so decided ones still show under their item. */
 export const loadInboxDrafts = async (): Promise<Draft[]> =>

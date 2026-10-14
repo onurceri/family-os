@@ -26094,6 +26094,9 @@
 													"string",
 													"null"
 												]
+											},
+											"canDecide": {
+												"type": "boolean"
 											}
 										},
 										"required": [
@@ -26117,7 +26120,8 @@
 											"mayExist",
 											"mayExistSome",
 											"instead",
-											"replacedFrom"
+											"replacedFrom",
+											"canDecide"
 										]
 									}
 								}
@@ -26347,7 +26351,7 @@
 		"/api/v1/core/drafts/waiting": {
 			"get": {
 				"operationId": "core.countWaitingDrafts",
-				"summary": "How many suggestions wait for a decision (a count only)",
+				"summary": "How many suggestions wait for a decision (a count only): what Quick add shows to decide",
 				"tags": [
 					"core"
 				],
@@ -26358,7 +26362,7 @@
 				],
 				"responses": {
 					"200": {
-						"description": "How many suggestions wait for a decision (a count only)",
+						"description": "How many suggestions wait for a decision (a count only): what Quick add shows to decide",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -26781,6 +26785,9 @@
 												"string",
 												"null"
 											]
+										},
+										"canDecide": {
+											"type": "boolean"
 										}
 									},
 									"required": [
@@ -26804,7 +26811,8 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
-										"replacedFrom"
+										"replacedFrom",
+										"canDecide"
 									]
 								}
 							}
@@ -27203,6 +27211,9 @@
 												"string",
 												"null"
 											]
+										},
+										"canDecide": {
+											"type": "boolean"
 										}
 									},
 									"required": [
@@ -27226,7 +27237,8 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
-										"replacedFrom"
+										"replacedFrom",
+										"canDecide"
 									]
 								}
 							}
@@ -27625,6 +27637,9 @@
 												"string",
 												"null"
 											]
+										},
+										"canDecide": {
+											"type": "boolean"
 										}
 									},
 									"required": [
@@ -27648,7 +27663,8 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
-										"replacedFrom"
+										"replacedFrom",
+										"canDecide"
 									]
 								}
 							}
@@ -28047,6 +28063,9 @@
 												"string",
 												"null"
 											]
+										},
+										"canDecide": {
+											"type": "boolean"
 										}
 									},
 									"required": [
@@ -28070,7 +28089,8 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
-										"replacedFrom"
+										"replacedFrom",
+										"canDecide"
 									]
 								}
 							}

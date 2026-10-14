@@ -144,3 +144,56 @@ export const approveSelectedKey = (
 	picked.length > 0 && picked.every((d) => isAddition(d.actionId))
 		? 'add_selected'
 		: 'apply_selected';
+
+/** Where a suggestion that is not from a capture came from. */
+export type RequestOrigin = 'assistant' | 'app' | 'person';
+
+/** Suggestions from one place: one assistant answer, one connected app, or one person's requests. */
+export interface RequestGroup {
+	key: string;
+	origin: RequestOrigin;
+	/** Oldest first, the order they were made in. */
+	drafts: Draft[];
+	/** When the newest of them was made. */
+	latest: number;
+}
+
+/** The member behind a suggestion: who made it, or who an agent made it for. */
+function personBehind(draft: Draft): string {
+	const by = draft.proposedBy as { kind?: string; memberId?: string; onBehalfOf?: string } | null;
+	return (by?.kind === 'member' ? by.memberId : by?.onBehalfOf) ?? '';
+}
+
+export function requestOrigin(draft: Draft): RequestOrigin {
+	if (draft.sourceKind === 'assistant') return 'assistant';
+	if (draft.sourceKind === 'mcp') return 'app';
+	return 'person';
+}
+
+/**
+ * The waiting suggestions that are not from a capture, grouped by where they came from: an
+ * assistant answer, a connected app (its app key), or the person who asked. Newest group first.
+ */
+export function requestGroups(drafts: readonly Draft[]): RequestGroup[] {
+	const groups = new Map<string, RequestGroup>();
+	for (const draft of drafts.filter(needsAction).toSorted((a, b) => a.createdAt - b.createdAt)) {
+		const origin = requestOrigin(draft);
+		const key =
+			origin === 'person'
+				? `person:${personBehind(draft)}`
+				: `${origin}:${draft.sourceId ?? draft.id}:${personBehind(draft)}`;
+		const group = groups.get(key);
+		if (group) {
+			group.drafts.push(draft);
+			group.latest = Math.max(group.latest, draft.createdAt);
+		} else groups.set(key, { key, origin, drafts: [draft], latest: draft.createdAt });
+	}
+	return [...groups.values()].toSorted((a, b) => b.latest - a.latest);
+}
+
+/**
+ * How many of these suggestions wait for this person to decide: what the Quick add badge (the
+ * server's count of waiting suggestions) counts too.
+ */
+export const decidableCount = (drafts: readonly Draft[]): number =>
+	drafts.filter((d) => needsAction(d) && d.canDecide).length;

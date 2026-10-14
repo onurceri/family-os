@@ -1266,7 +1266,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** How many suggestions wait for a decision (a count only) */
+        /** How many suggestions wait for a decision (a count only): what Quick add shows to decide */
         get: operations["core.countWaitingDrafts"];
         put?: never;
         post?: never;
@@ -16541,6 +16541,7 @@ export interface operations {
                             };
                         } | null;
                         replacedFrom: string | null;
+                        canDecide: boolean;
                     }[];
                 };
             };
@@ -16660,7 +16661,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description How many suggestions wait for a decision (a count only) */
+            /** @description How many suggestions wait for a decision (a count only): what Quick add shows to decide */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -16835,6 +16836,7 @@ export interface operations {
                             };
                         } | null;
                         replacedFrom: string | null;
+                        canDecide: boolean;
                     };
                 };
             };
@@ -16996,6 +16998,7 @@ export interface operations {
                             };
                         } | null;
                         replacedFrom: string | null;
+                        canDecide: boolean;
                     };
                 };
             };
@@ -17157,6 +17160,7 @@ export interface operations {
                             };
                         } | null;
                         replacedFrom: string | null;
+                        canDecide: boolean;
                     };
                 };
             };
@@ -17318,6 +17322,7 @@ export interface operations {
                             };
                         } | null;
                         replacedFrom: string | null;
+                        canDecide: boolean;
                     };
                 };
             };

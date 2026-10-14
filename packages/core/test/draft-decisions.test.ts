@@ -221,3 +221,36 @@ describe('who reads the suggestion list', () => {
 		expect(await listed(sibling)).toEqual([]);
 	});
 });
+
+describe('what Quick add shows to decide, and the count of it', () => {
+	const shown = (who: Who) =>
+		k.route('core.listDrafts').call({ actor: who.actor, query: { limit: 50 } }) as Promise<
+			{ id: string; status: string; canDecide: boolean }[]
+		>;
+
+	it('tells each reader whether they may decide a suggestion', async () => {
+		const id = await propose(kid);
+		expect((await shown(parent)).find((d) => d.id === id)?.canDecide).toBe(true);
+		// The child sees their own request, waiting for someone else.
+		expect((await shown(kid)).find((d) => d.id === id)?.canDecide).toBe(false);
+	});
+
+	it('counts exactly the waiting suggestions a reader may decide, failed ones included', async () => {
+		things.add('chair');
+		const pending = await propose(kid);
+		const failed = await propose(kid, 'chair');
+		await db()
+			.updateTable('core_drafts')
+			.set({ status: 'failed' })
+			.where('id', '=', failed)
+			.execute();
+		for (const who of [parent, kid]) {
+			const decidable = (await shown(who)).filter(
+				(d) => (d.status === 'pending' || d.status === 'failed') && d.canDecide,
+			);
+			expect((await waiting(who)).count).toBe(decidable.length);
+		}
+		expect((await waiting(parent)).count).toBe(2);
+		expect((await shown(parent)).map((d) => d.id).toSorted()).toEqual([pending, failed].toSorted());
+	});
+});
