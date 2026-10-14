@@ -445,6 +445,10 @@ describe('long threads', () => {
 			.executeTakeFirstOrThrow();
 		expect(row.summary).toBe('They planned the week.');
 		expect(row.summarized_count).toBeGreaterThan(30);
+		// The answer and the summary ask for the most likely words, so the same question gets the
+		// same lookups and suggestions from one run to the next.
+		expect(call?.temperature).toBe(0);
+		expect(k.llm.calls.at(-1)?.temperature).toBe(0);
 		// The summary reaches the next turn, as data.
 		k.llm.respondChat([{ text: 'reply 2' }]);
 		await ask(ayse, 'and then?', threadId);

@@ -1199,6 +1199,8 @@ describe('chat with tools', () => {
 			messages: { role: string }[];
 		};
 		expect(first.tools.map((t) => t.function.name)).toEqual(['ping']);
+		// No temperature asked for: the provider's default.
+		expect((first as { temperature?: number }).temperature).toBeUndefined();
 		expect(first.messages[0]).toMatchObject({ role: 'system', content: 'You help.' });
 		expect(await usage()).toEqual([
 			{
@@ -1210,6 +1212,14 @@ describe('chat with tools', () => {
 				cost_micros: null,
 			},
 		]);
+	});
+
+	it('passes the temperature on to every step of the tool loop', async () => {
+		await useModel('chat-tools');
+		await chat({ temperature: 0 }).run;
+		const bodies = seen.map((s) => s.body as { temperature?: number });
+		expect(bodies.length).toBeGreaterThan(1);
+		for (const body of bodies) expect(body.temperature).toBe(0);
 	});
 
 	it('records a call to a tool that was not offered as failed, and still answers', async () => {

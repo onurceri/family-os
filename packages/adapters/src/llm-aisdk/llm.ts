@@ -541,6 +541,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					...(request.system && { system: request.system }),
 					messages: toModelMessages(request.messages),
 					tools,
+					...(request.temperature !== undefined && { temperature: request.temperature }),
 					stopWhen: isStepCount(Math.max(1, request.maxSteps)),
 					// Once the host closes the tools, the next step can only be the answer.
 					prepareStep: () => (request.toolsClosed?.() ? { toolChoice: 'none' as const } : {}),

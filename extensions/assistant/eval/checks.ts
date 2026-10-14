@@ -23,7 +23,7 @@ export interface Draft {
 /** One message of the conversation and what the assistant did with it. */
 export interface Turn {
 	ask: string;
-	/** The stored answer, with the host's "Suggested:" lines under it. */
+	/** The stored answer, with the host's "Suggested, not added yet:" lines under it. */
 	reply: string;
 	/** `done`, or `failed` with the error code after a colon. */
 	status: string;
@@ -151,7 +151,7 @@ export function noHandles(): Check {
 
 /**
  * Words that tell the person something was suggested, added or changed. Only false when nothing
- * was: the host adds its own "Suggested:" line for real suggestions.
+ * was: the host adds its own "Suggested, not added yet:" line for real suggestions.
  */
 const CLAIM =
 	/\b(I(?:'ve| have)? (?:suggested|added|moved|changed|ticked|removed|created|scheduled|made a suggestion|put)|waiting for (?:your )?approval|needs? (?:to be )?approved|once (?:a person|someone|another person) approves)\b/i;

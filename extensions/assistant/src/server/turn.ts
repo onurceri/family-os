@@ -322,6 +322,9 @@ export const turnJob = defineJob({
 						ctx.logger.warn({ actionId, code, inputKeys }, 'assistant tool call failed'),
 				}),
 				maxSteps: MAX_STEPS,
+				// The same question should get the same lookups and suggestions: at the provider's
+				// default the model picks different tools (or none) from one run to the next.
+				temperature: 0,
 				toolsClosed: () => toolsClosed(calls),
 				timeoutMs: CHAT_TIMEOUT_MS,
 				memberId,

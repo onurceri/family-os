@@ -111,6 +111,11 @@ export interface LlmChatRequest {
 	toolsClosed?(): boolean;
 	/** Required: every model call has an explicit time limit (for the whole tool loop). */
 	timeoutMs: number;
+	/**
+	 * How freely the model chooses its words and its tool calls, for every step of the loop (see
+	 * `LlmObjectRequest.temperature`). Left out, the provider's default applies.
+	 */
+	temperature?: number;
 	memberId?: string | null;
 	jobId?: string | null;
 	/** Streamed answer text, in order. */

@@ -56,6 +56,8 @@ export const summarizeJob = defineJob({
 					...fresh.map((m) => `${m.role}: ${m.content.slice(0, MAX_MESSAGE_CHARS)}`),
 				].join('\n'),
 				timeoutMs: 90_000,
+				// A summary keeps what was said: nothing to invent, so the most likely words.
+				temperature: 0,
 				memberId: thread.member_id,
 				jobId: run.id,
 			});
