@@ -7,7 +7,7 @@ import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { InboxItem } from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
-import { namedItems, rankByMention, unnamedMemberFields } from '../src/server/process.ts';
+import { rankByMention, unnamedMemberFields } from '../src/server/process.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -197,81 +197,6 @@ describe('an event that moved', () => {
 			actor: admin.actor,
 		})) as { actionId: string; mayExist: boolean }[];
 		expect(listed.find((d) => d.actionId === 'calendar.createEvent')?.mayExist).toBe(true);
-	});
-
-	it('shows the model the event the message names, and drafts its change by handle', async () => {
-		k.llm.respond({
-			summary: 'Regional gala moved',
-			proposals: [
-				{
-					action: 'calendar.changeEvent',
-					input: {
-						id: 'cal_event:1',
-						date: '2026-11-14',
-						startTime: '09:00',
-						label: 'Regional gala',
-					},
-					dateText: 'Sat 14 Nov',
-					confidence: 0.9,
-				},
-			],
-		});
-		await read('Regional gala moved to Sat 14 Nov 09:00');
-		expect(system()).toContain('- Regional Gala (cal_event:1): 2026-11-07, 18:00-22:00');
-		// The trips the message does not name are not shown.
-		expect(system()).not.toContain('Class trip');
-		const [draft] = await drafts();
-		expect(draft).toMatchObject({
-			actionId: 'calendar.changeEvent',
-			input: { date: '2026-11-14', startTime: '09:00' },
-		});
-		expect(String(draft?.input.id)).toMatch(/^cal_event_/);
-		expect(await item()).toMatchObject([{ proposals: 1, skipped: 0 }]);
-	});
-
-	it('skips a change the action refuses, and still reads the item', async () => {
-		// Real model output: the event by handle and label, but not the new day or time. The
-		// action refuses it (nothing would change); that used to fail the whole item.
-		k.llm.respond({
-			summary: 'Regional gala moved',
-			proposals: [
-				{
-					action: 'calendar.changeEvent',
-					input: { id: 'cal_event:1', label: 'Regional Gala' },
-					confidence: 0.9,
-				},
-			],
-		});
-		await read('Regional gala moved to Sat 14 Nov 09:00');
-		expect(await drafts()).toHaveLength(0);
-		expect(await item()).toMatchObject([{ status: 'extracted', proposals: 0, skipped: 1 }]);
-	});
-
-	it('shows no events when the message names none', async () => {
-		k.llm.respond({ summary: 'Dentist', proposals: [] });
-		await read('Dentist on Thursday at 10');
-		expect(system()).not.toContain('Calendar events');
-		expect(system()).not.toContain('cal_event:');
-	});
-});
-
-describe('namedItems', () => {
-	const labels = (titles: string[]) => titles.map((label) => ({ label }));
-
-	it('keeps only what the text clearly names, best match first', () => {
-		const items = labels(['Swim training', 'Regional Gala', 'Parents evening']);
-		expect(
-			namedItems(items, 'Coach: swim gala news, Regional gala moved to Sat 14 Nov').map(
-				(i) => i.label,
-			),
-		).toEqual(['Regional Gala']);
-	});
-
-	it('shows nothing for a text that names nothing, and at most five', () => {
-		expect(namedItems(labels(['Regional Gala']), 'See you Thursday')).toEqual([]);
-		expect(namedItems(labels(['Regional Gala']), '  ')).toEqual([]);
-		const many = labels(Array.from({ length: 8 }, () => 'Swim gala'));
-		expect(namedItems(many, 'swim gala moved')).toHaveLength(5);
 	});
 });
 

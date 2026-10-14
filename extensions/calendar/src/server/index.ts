@@ -28,7 +28,6 @@ import {
 	subscriptionChanged,
 	tagChanged,
 } from './capabilities.ts';
-import { aiContextEvents } from './context.ts';
 import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
@@ -449,9 +448,9 @@ export const changeEvent = defineAction({
 	draftDate: (input) => input.endDate ?? input.date,
 	ai: {
 		description:
-			'Changes an existing family event: its time, date, place, title, notes, tags or who goes. Send only the fields that change. Find the event with calendar.findEvents first, or use its handle when it is listed; never add a second event for the same thing.',
+			'Changes an existing family event: its time, date, place, title, notes, tags or who goes. Send only the fields that change. Find the event with calendar.findEvents first; never add a second event for the same thing.',
 		guidance:
-			'Use the family time zone and resolve relative dates from today. When a message says a listed calendar event moved or changed (a new day, time or place), change that event here by its handle instead of adding a new event, with the new day, time or place in their fields and the event in label as the message words it. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
+			'Use the family time zone and resolve relative dates from today. For a repeating event without `occurrence` this changes every date. To move or change just one date of a repeating event, give its `occurrence`; to drop one date use calendar.deleteEvent with its occurrence. Never create a new event to move an existing one.',
 	},
 	async run(uow, { id, label: _label, occurrence: rawOccurrence, ...change }) {
 		const row = await loadEvent(uow, id);
@@ -859,7 +858,7 @@ const getEvent = defineRoute({
 export default defineExtension({
 	id: 'calendar',
 	migrations,
-	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id] },
+	ai: { index: searchIndex, context: aiContext.id },
 	actions: [
 		findEvents,
 		createEvent,
@@ -871,7 +870,6 @@ export default defineExtension({
 		updateTag,
 		deleteTag,
 		aiContext,
-		aiContextEvents,
 		createFeed,
 		revokeFeed,
 		touchFeed,

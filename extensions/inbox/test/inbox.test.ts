@@ -559,8 +559,7 @@ describe('inbox pipeline', () => {
 			parent.actor,
 		);
 		k.llm.respond({ summary: 'x', proposals: [] });
-		// A text that does not name the event: an event it names would be listed as a record.
-		await share({ text: 'Pool meet' });
+		await share({ text: 'Swim meet' });
 		await k.worker.drain();
 		const system = k.llm.calls.at(-1)?.system ?? '';
 		expect(system).toContain('Existing calendar tags: School, swim club');

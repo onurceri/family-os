@@ -31,7 +31,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/25';
+export const PROMPT_VERSION = 'inbox.extract/22';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -397,33 +397,6 @@ export function rankByMention<T extends { label: string }>(items: readonly T[], 
 	return [...named.map((entry) => entry.item), ...rest];
 }
 
-/**
- * How much of an item's title the shared text must say for a `named` area to show it: most of
- * its words, rare words counting more. "Regional gala moved" names "Regional Gala" (1), while a
- * coach's message that only says "swim" does not name "Swim training".
- */
-const NAMED_SHARE = 0.6;
-/** The most items of a `named` area the model is shown: each one is noise for the rest. */
-const MAX_NAMED_ITEMS = 5;
-
-/**
- * The items of a `named` area that the shared text clearly names, best match first: few, and none
- * when the text names none of them.
- */
-export function namedItems<T extends { label: string }>(items: readonly T[], text: string): T[] {
-	if (items.length === 0 || !text.trim()) return [];
-	const shares = namedShares(
-		text,
-		items.map((item) => item.label),
-	);
-	return items
-		.map((item, i) => ({ item, i, share: shares[i] ?? 0 }))
-		.filter((entry) => entry.share >= NAMED_SHARE)
-		.toSorted((a, b) => b.share - a.share || a.i - b.i)
-		.slice(0, MAX_NAMED_ITEMS)
-		.map((entry) => entry.item);
-}
-
 export interface RecordContext {
 	kind: string;
 	label: string;
@@ -437,7 +410,7 @@ export interface RecordContext {
  * read through its read-only action as the AI actor, so an area that is off for the AI refuses
  * and contributes nothing; no prompt builder reads another extension's tables. Items
  * get short handles (`vehicle:1`) because models copy long ids unreliably. When an area has more
- * than fit, the ones the shared `text` names come first; a `named` area shows only those.
+ * than fit, the ones the shared `text` names come first.
  */
 export async function readRecordContexts(
 	ctx: Pick<JobContext, 'actions' | 'logger'>,
@@ -463,11 +436,7 @@ export async function readRecordContexts(
 				if (!isFamosError(error)) ctx.logger.warn({ actionId }, 'AI context failed');
 				continue;
 			}
-			const ranked = context.plain
-				? context.items
-				: context.named
-					? namedItems(context.items, text)
-					: rankByMention(context.items, text);
+			const ranked = context.plain ? context.items : rankByMention(context.items, text);
 			const items = ranked.slice(0, MAX_CONTEXT_ITEMS).map((item) => ({
 				...item,
 				handle: context.plain ? item.label : table.add(context.kind, item.id),

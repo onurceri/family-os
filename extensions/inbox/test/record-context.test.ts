@@ -177,6 +177,28 @@ describe('proposals that name a record', () => {
 		]);
 	});
 
+	it('skips a completion the app refuses, and still reads the item', async () => {
+		// Real model output for a renewal notice: the duty marked done with no day it was done.
+		// Records refuses it; that used to fail the whole item instead of skipping one suggestion.
+		k.llm.respond({
+			summary: 'Car insurance renewal',
+			proposals: [
+				{
+					action: 'records.completeObligation',
+					input: { id: 'obligation:1', dueDate: '2026-11-01', label: 'Car insurance (Clio)' },
+					confidence: 0.8,
+				},
+			],
+		});
+		await read('Your car insurance is due for renewal on 1 November. Renew before then.');
+		expect(await drafts()).toHaveLength(0);
+		const [item] = (await k.route('inbox.listItems').call({
+			query: { limit: 5 },
+			actor: admin.actor,
+		})) as { status: string; proposals: number; skipped: number }[];
+		expect(item).toMatchObject({ status: 'extracted', proposals: 0, skipped: 1 });
+	});
+
 	it('maps a vehicle handle to its id and fills the record’s name and page', async () => {
 		k.llm.respond({
 			summary: 'Yeni poliçe',

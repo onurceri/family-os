@@ -240,12 +240,6 @@ export const AiContextSchema = z.object({
 	 * no handles, and no proposal refers to them by id.
 	 */
 	plain: z.literal(true).optional(),
-	/**
-	 * Only the items the shared text names matter (the family's events): the model is shown the few
-	 * the text names clearly, and none when it names none. Each listed item is noise for every
-	 * other item, so a long list of this kind is never shown whole.
-	 */
-	named: z.literal(true).optional(),
 	items: z
 		.array(
 			z.object({

@@ -40,7 +40,10 @@ function observed(): { llm: LlmPort; notes: string[] } {
 			async generateObject(request) {
 				const started = Date.now();
 				try {
-					return await llm.generateObject(request);
+					const result = await llm.generateObject(request);
+					// FAMOS_EVAL_RAW=1 shows what the model answered, before the app checks or drops any of it.
+					if (process.env.FAMOS_EVAL_RAW) notes.push(`raw ${JSON.stringify(result.output)}`);
+					return result;
 				} catch (error) {
 					notes.push(
 						isLlmError(error) ? `${error.code}: ${error.message.slice(0, 160)}` : String(error),
