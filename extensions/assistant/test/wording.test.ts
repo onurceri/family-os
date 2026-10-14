@@ -25,13 +25,17 @@ beforeEach(async () => {
 });
 afterEach(() => k.close());
 
-async function ask(who: Asker, text: string): Promise<Message> {
+/** The thread of the last question, for a follow-up in the same conversation. */
+let lastThread = '';
+
+async function ask(who: Asker, text: string, threadId?: string): Promise<Message> {
 	const result = await k.runner.invoke<{ threadId: string }>(
 		'assistant.sendMessage',
-		{ text },
+		{ text, ...(threadId && { threadId }) },
 		who.actor,
 	);
 	if (result.status !== 'applied') throw new Error('expected the message to be stored');
+	lastThread = result.output.threadId;
 	await k.worker.drain();
 	const detail = await k
 		.route('assistant.getThread')
@@ -122,7 +126,8 @@ describe('suggestions', () => {
 			[{ tool: 'core_mySuggestions', input: {} }, { text: 'Approved.' }],
 		);
 		await ask(can, 'Add milk to the shopping list');
-		await ask(can, 'Was it approved?');
+		const thread = lastThread;
+		await ask(can, 'Was it approved?', thread);
 		const waiting = k.llm.chatTrace.at(-1)?.result ?? '';
 		expect(waiting).toContain('<tool_result name="core.mySuggestions">');
 		expect(waiting).toContain('"status":"waiting"');
@@ -135,7 +140,7 @@ describe('suggestions', () => {
 			.select('id')
 			.execute();
 		await k.runner.approveDraft(drafts[0]?.id as string, can.actor);
-		await ask(can, 'And now?');
+		await ask(can, 'And now?', thread);
 		expect(k.llm.chatTrace.at(-1)?.result).toContain('"status":"approved"');
 	});
 
