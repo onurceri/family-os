@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Slot from '@famos/ui/slot';
-	import type { FileTarget } from '@famos/ui/slots';
+	import type { FileTarget } from '../contract/index.js';
 	import { FILE_LABELS, type FileLabel } from '../contract/index.js';
 	import type { FileChoice } from './data.js';
 	import { useInbox } from './i18n.js';

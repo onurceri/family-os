@@ -38,6 +38,11 @@ export interface AppContext {
 	slots<S extends SlotName>(name: S): readonly SlotContribution<S>[];
 	/** Whether a path such as `/calendar` is a page of the app (for linking paths in text). */
 	isAppPath(path: string): boolean;
+	/**
+	 * The page where the viewer shares things with the family (Quick add), when an extension that
+	 * is turned on offers one (`NavContribution.share`) and the viewer may use it.
+	 */
+	share(): { path: string; labelKey: string } | undefined;
 	/** Show a notice with an optional action (e.g. Undo). */
 	toast(message: string, action?: { label: string; run: () => void }): void;
 	/**
@@ -86,7 +91,11 @@ export interface WaitingChange {
 	input: unknown;
 }
 
-const KEY = Symbol('famos.app');
+/**
+ * A registered symbol: an extension bundled on its own may bring its own copy of this module, and
+ * both copies must find the context the app provides.
+ */
+const KEY = Symbol.for('famos.app');
 
 export function provideAppContext(context: AppContext): void {
 	setContext(KEY, context);

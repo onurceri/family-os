@@ -3,7 +3,7 @@
 	import { Page as PageFrame, trackWork } from '@famos/ui/famos';
 	import type { PageContribution, PageProps } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { matchPage, ownerOf } from '#lib/extensions.js';
+	import { ownerOf, pageFor } from '#lib/extensions.js';
 	import PageGate from '#lib/PageGate.svelte';
 	import { t } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -11,7 +11,7 @@
 	// Extension pages: matched by path (`/vehicles/:id` patterns too), loaded lazily.
 	// The path alone (a string), so a change of the query (`?thread=`) does not remount the page.
 	const pathname = $derived(page.url.pathname);
-	const found = $derived(matchPage(pathname));
+	const found = $derived(pageFor(pathname));
 	// A turned-off extension's pages are gone until it is turned on again.
 	const contribution = $derived(
 		found && !session.disabledExtensions.includes(ownerOf(found.page.id)) ? found : undefined,

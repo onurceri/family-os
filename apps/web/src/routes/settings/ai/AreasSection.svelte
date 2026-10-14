@@ -3,7 +3,7 @@
 	import { Button } from '@famos/ui/button';
 	import { Card, Dialog, Notice, Section, Segmented, SettingRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
-	import { webExtensions } from '#lib/extensions.js';
+	import { contributions } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
@@ -26,7 +26,7 @@
 	const notCovered = (id: string) =>
 		search?.configured === true && search.areas.some((a) => a.id === id && !a.covered);
 
-	const web = (id: string) => webExtensions.find((e) => e.id === id);
+	const web = (id: string) => contributions.extension(id);
 	const nameOf = (area: AiArea) => {
 		const key = web(area.id)?.labelKey;
 		return key ? tDynamic(key) : area.id;

@@ -16,6 +16,8 @@ export const SAMPLE_PEOPLE = [
 ] as const;
 
 const [A, B, C] = SAMPLE_PEOPLE.map((p) => p.id) as [string, string, string];
+/** The made-up events are drawn as links, like real ones; the picture is inert, so where is moot. */
+const SAMPLE_HREF = '/';
 
 export function sampleDay(timeZone: string, now = Date.now()): TodaySample {
 	const today = todayIn(timeZone, now);
@@ -36,7 +38,7 @@ export function sampleDay(timeZone: string, now = Date.now()): TodaySample {
 		title,
 		members,
 		kind: 'event',
-		href: '/calendar',
+		href: SAMPLE_HREF,
 		...(location && { location, subtitle: location }),
 	});
 
@@ -58,7 +60,7 @@ export function sampleDay(timeZone: string, now = Date.now()): TodaySample {
 				title: t('appearance_sample_library'),
 				members: [C],
 				kind: 'event',
-				href: '/calendar',
+				href: SAMPLE_HREF,
 			},
 			item('dentist', today, '08:30', '09:15', t('appearance_sample_dentist'), [B]),
 			item(

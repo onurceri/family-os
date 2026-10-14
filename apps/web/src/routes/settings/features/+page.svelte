@@ -3,7 +3,7 @@
 	import { type paths, unwrap } from '@famos/api-client';
 	import { Card, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
-	import { webExtensions } from '#lib/extensions.js';
+	import { contributions } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
@@ -14,7 +14,7 @@
 
 	let features = $state<Feature[]>([]);
 	let error = $state<string | null>(null);
-	const web = (id: string) => webExtensions.find((e) => e.id === id);
+	const web = (id: string) => contributions.extension(id);
 	async function load() {
 		features = (await api.GET('/api/v1/core/features')).data ?? [];
 	}

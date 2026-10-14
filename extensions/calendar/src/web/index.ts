@@ -1,7 +1,7 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { CalendarDays, CalendarRange, Smartphone } from '@lucide/svelte';
 import { changeEventPresenter, createEventPresenter, deleteEventPresenter } from './presenter.js';
-import { calendarTimeline } from './timeline.js';
+import { calendarTimeline, firstEventStep } from './timeline.js';
 
 /** Calendar UI: the Calendar tab, its events on the Today timeline and the Inbox presenter for proposed events. */
 export default defineWebExtension({
@@ -16,6 +16,7 @@ export default defineWebExtension({
 			icon: CalendarDays,
 			placement: 'primary',
 			order: 20,
+			shortcut: 'c',
 		},
 		// Settings: the personal feed addresses (You) and the family's subscriptions and tags (Family).
 		{
@@ -55,5 +56,6 @@ export default defineWebExtension({
 		},
 	],
 	timeline: [calendarTimeline],
+	today: [firstEventStep],
 	drafts: [createEventPresenter, changeEventPresenter, deleteEventPresenter],
 });

@@ -210,5 +210,8 @@
 	"draft_title_delete_event": "Delete an event",
 	"draft_title_restore_event": "Bring back a deleted event",
 	"title_one_date": "{{date}} only",
-	"draft_title_put_occurrence_back": "Put one date of a repeating event back"
+	"draft_title_put_occurrence_back": "Put one date of a repeating event back",
+	"setup_step": "Put something on the calendar",
+	"setup_step_text": "Or subscribe to a calendar you already use",
+	"setup_step_action": "Add event"
 }

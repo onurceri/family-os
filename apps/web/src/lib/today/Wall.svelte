@@ -67,7 +67,8 @@
 	const twoColumns = new MediaQuery('(min-width: 1280px)', false);
 	const app = $derived(data.app);
 	const words = $derived(data.words);
-	const hasCalendar = $derived(app.isAppPath('/calendar'));
+	/** Where things are shared with the family (Quick add), if this viewer may. */
+	const share = $derived(app.share());
 
 	const whoTitle = $derived(
 		data.evening
@@ -235,8 +236,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if app.can('inbox.share')}
-					<a href="/add" class="more">{t('home_needs_link')}</a>
+				{#if share}
+					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
 			</div>
@@ -320,11 +321,7 @@
 		{#if showWho}
 			<div class="blk who-blk" style:--o="7">
 				<TodayBlock block={data.menuFor('day')}>
-					<TodaySection
-						title={whoTitle}
-						href={hasCalendar ? '/calendar' : undefined}
-						more={t('home_day_link')}
-					>
+					<TodaySection title={whoTitle} href={data.dayHref} more={t('home_day_link')}>
 						{#if data.showNames}
 							<div class="who" data-testid="member-days">
 								{#each data.members as m (m.id)}
@@ -397,7 +394,7 @@
 			<!-- Names off (a display): the chores' total, as there are no rows to carry rings. -->
 			{#if !data.showNames && data.rings.length > 0}
 				<div class="tile" class:gone={gone('chores')}>
-					<TodayBlock block={data.menuFor('chores')}>
+					<TodayBlock block={data.menuFor(data.countsBlock)}>
 						<TodaySection title={words.choresToday}>
 							<ChoreRings
 								rings={data.rings}
@@ -426,7 +423,7 @@
 					<TodayBlock block={data.menuFor('nextDays')}>
 						<TodaySection
 							title={t('home_next_title')}
-							href={hasCalendar ? '/calendar' : undefined}
+							href={data.dayHref}
 							more={t('home_next_link')}
 						>
 							<ol class="nextdays" data-testid="next-days">
@@ -483,7 +480,7 @@
 
 			{#if data.meals.length > 0}
 				<div class="tile" class:gone={gone('extras')}>
-					<TodayBlock block={data.menuFor('kitchen')}>
+					<TodayBlock block={data.menuFor(data.mealsBlock?.id ?? '')}>
 						<TodaySection title={words.kitchen}>
 							<ul class="meals">
 								{#each data.meals as meal (meal.id)}

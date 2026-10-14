@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Card, ScheduleFields } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
-	import type { RecordPreset } from '@famos/ui/slots';
+	import type { ObligationPreset } from '@famos/ext-records/contract';
 	import type { PresetPicks } from './form.js';
 	import { useHome } from './i18n.js';
 
@@ -14,7 +14,7 @@
 		picks = $bindable(),
 		errors = {},
 	}: {
-		presets: readonly RecordPreset[];
+		presets: readonly ObligationPreset[];
 		picks: PresetPicks;
 		errors?: Record<string, true>;
 	} = $props();

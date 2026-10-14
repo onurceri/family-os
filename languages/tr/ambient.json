@@ -80,5 +80,10 @@
 	"today_range": "En yüksek {{max}} · en düşük {{min}}",
 	"today_range_rain": "En yüksek {{max}} · en düşük {{min}} · %{{percent}} yağmur",
 	"today_hourly": "Önümüzdeki saatler",
-	"today_source": "Hava durumu: Open-Meteo"
+	"today_source": "Hava durumu: Open-Meteo",
+	"setup_step": "Şehrini ayarla",
+	"setup_step_text": "Burada ve aile ekranında hava durumu için",
+	"setup_step_action": "Hava durumu yeri",
+	"nav_photos_weather": "Fotoğraflar ve hava durumu",
+	"devices_line": "Fotoğrafların, hava durumunun ve ekranlardaki slayt gösterisinin kendi sayfası var:"
 }

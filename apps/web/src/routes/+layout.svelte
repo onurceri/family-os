@@ -28,7 +28,8 @@
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
-	import { draftPresenters, enabledOnly, isAppPath, slotContributions } from '#lib/extensions.js';
+	import { shareFor } from '#lib/contributions.js';
+	import { contributions, enabledOnly, isAppPath } from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
 	import LoadingMark from '#lib/LoadingMark.svelte';
 	import { netActivity, shellState } from '#lib/net-activity.svelte.js';
@@ -92,16 +93,21 @@
 				: null,
 		timeZone: () => family.timeZone,
 		onEvent,
-		draftPresenter: (actionId) => draftPresenters.get(actionId),
+		draftPresenter: (actionId) => contributions.presenters.get(actionId),
 		can: (capability) => session.can(capability),
 		slots: (name) =>
 			enabledOnly(
-				slotContributions.filter(
+				contributions.slots.filter(
 					(c) => c.slot === name && (!c.requires || session.can(c.requires)),
 				),
 				session.disabledExtensions,
 			) as never,
 		isAppPath: (path) => isAppPath(path, session.disabledExtensions),
+		share: () =>
+			shareFor(contributions.share, {
+				can: (capability) => session.can(capability),
+				disabledExtensions: session.disabledExtensions,
+			}),
 		toast: (message, action) => toasts.show(message, action),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
 		waiting: () => offline.waitingChanges(),
@@ -185,8 +191,8 @@
 			(appearance.previewing !== null && !appearance.previewingForFamily),
 	);
 
-	// Keyboard shortcuts: n Quick add, g t Today,
-	// g c Calendar. "/" focuses search on the pages that have one. Ignored while typing.
+	// Keyboard shortcuts: n Quick add, g t Today, g and the key a navigation entry names
+	// (`shortcut`). "/" focuses search on the pages that have one. Ignored while typing.
 	let goPending = false;
 	let goTimer: ReturnType<typeof setTimeout> | undefined;
 	function shortcuts(e: KeyboardEvent) {
@@ -200,11 +206,7 @@
 			goPending = false;
 			clearTimeout(goTimer);
 			const target =
-				e.key === 't'
-					? '/'
-					: e.key === 'c' && nav.primary.some((i) => i.path === '/calendar')
-						? '/calendar'
-						: null;
+				e.key === 't' ? '/' : (nav.primary.find((i) => i.shortcut === e.key)?.path ?? null);
 			if (target) {
 				e.preventDefault();
 				void goto(target);

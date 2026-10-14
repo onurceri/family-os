@@ -1,10 +1,12 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { SquareCheckBig } from '@lucide/svelte';
 import { createChorePresenter, markDonePresenter, setAssigneesPresenter } from './presenters.js';
+import { choresBlock, choresToday } from './today.js';
 
 /**
- * Chores UI: the Chores page (today, overdue, upcoming, one tap to tick off), a Today section and
- * Inbox presenters for suggested chores and splits.
+ * Chores UI: the Chores page (today, overdue, upcoming, one tap to tick off), today's chores per
+ * person on Today (rings, bars, a block of its own) and Inbox presenters for suggested chores and
+ * splits.
  */
 export default defineWebExtension({
 	id: 'chores',
@@ -34,9 +36,12 @@ export default defineWebExtension({
 			band: 'notes',
 			order: 25,
 			glance: true,
+			block: choresBlock.id,
 			requires: 'chores.use',
 			component: () => import('./ChoresCard.svelte'),
 		},
 	],
+	blocks: [choresBlock],
+	today: [choresToday],
 	drafts: [createChorePresenter, setAssigneesPresenter, markDonePresenter],
 });

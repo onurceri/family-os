@@ -1,78 +1,23 @@
-import type {
-	AnyDraftPresenter,
-	NavContribution,
-	PageContribution,
-	SlotContribution,
-	WebExtension,
-} from '@famos/ui/slots';
-import { appSlotContributions } from './app-slots.js';
+import type { WebExtension } from '@famos/ui/slots';
+import { matchPage, ownerOf } from './contributions.js';
+import { contributions, registerWebExtension } from './contributions.svelte.js';
 
 /**
- * Collects every extension's `./web` entry at build time. Extensions are
- * first-party workspace packages, so a glob over the monorepo is enough; no runtime loading.
+ * Registers every extension's `./web` entry, found at build time. Extensions are first-party
+ * workspace packages, so a glob over the monorepo is enough; no runtime loading. Read what they
+ * contribute through `contributions`, imported from here, so the registering has happened.
  */
 const modules = import.meta.glob<{ default: WebExtension }>(
 	'../../../../extensions/*/src/web/index.ts',
-	{
-		eager: true,
-	},
+	{ eager: true },
 );
+for (const m of Object.values(modules)) registerWebExtension(m.default);
 
-export const webExtensions: WebExtension[] = Object.values(modules).map((m) => m.default);
-export const slotContributions: SlotContribution[] = [
-	...webExtensions.flatMap((e) => e.slots ?? []),
-	...appSlotContributions,
-];
-export const navContributions: NavContribution[] = webExtensions
-	.flatMap((e) => e.nav ?? [])
-	.toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
+export { enabledOnly, ownerOf } from './contributions.js';
+export { contributions };
 
-/** Draft presenters by action id; the Inbox renders drafts without knowing any extension. */
-export const draftPresenters: ReadonlyMap<string, AnyDraftPresenter> = new Map(
-	webExtensions.flatMap((e) => e.drafts ?? []).map((d) => [d.actionId, d]),
-);
-
-/** The extension that owns a namespaced id (`calendar.page` → `calendar`). */
-export const ownerOf = (id: string) => id.split('.')[0] ?? id;
-
-/** Contributions of extensions that are turned on (More → Features). */
-export const enabledOnly = <T extends { id: string }>(
-	items: readonly T[],
-	off: readonly string[],
-) => (off.length === 0 ? [...items] : items.filter((item) => !off.includes(ownerOf(item.id))));
-
-/** Extension pages by path, served by the catch-all route. */
-export const pageContributions: ReadonlyMap<string, PageContribution> = new Map(
-	webExtensions.flatMap((e) => e.pages ?? []).map((p) => [p.path, p]),
-);
-
-/**
- * The page for a path: an exact match, else a pattern whose `:name` segments match one segment
- * each (`/vehicles/:id`); the matched values are the page's `params`.
- */
-export function matchPage(
-	pathname: string,
-	pages: ReadonlyMap<string, PageContribution> = pageContributions,
-): { page: PageContribution; params: Record<string, string> } | undefined {
-	const path = pathname.replace(/\/+$/, '') || '/';
-	const exact = pages.get(path);
-	if (exact) return { page: exact, params: {} };
-	const segments = path.split('/');
-	for (const page of pages.values()) {
-		const pattern = page.path.split('/');
-		if (!page.path.includes(':') || pattern.length !== segments.length) continue;
-		const params: Record<string, string> = {};
-		const fits = pattern.every((part, i) => {
-			const segment = segments[i] ?? '';
-			if (!part.startsWith(':')) return part === segment;
-			if (!segment) return false;
-			params[part.slice(1)] = decodeURIComponent(segment);
-			return true;
-		});
-		if (fits) return { page, params };
-	}
-	return undefined;
-}
+/** The extension page for a path (see `matchPage`). */
+export const pageFor = (pathname: string) => matchPage(pathname, contributions.pages);
 
 /**
  * The app's own pages, from the SvelteKit route files (not loaded, only their paths): `/more`,
@@ -87,6 +32,6 @@ const APP_PAGES = new Set(
 /** Whether a path is a page of the app: its own, or one of an extension that is turned on. */
 export function isAppPath(path: string, off: readonly string[] = []): boolean {
 	if (APP_PAGES.has(path.replace(/\/+$/, '') || '/')) return true;
-	const found = matchPage(path);
+	const found = pageFor(path);
 	return found !== undefined && !off.includes(ownerOf(found.page.id));
 }

@@ -126,5 +126,8 @@
 	"draft_title_update_meal_plan_entry": "Planlanan öğünü değiştir",
 	"draft_title_remove_meal_plan_entry": "Öğünü plandan çıkar",
 	"draft_a_meal": "Planlanan bir öğün",
-	"draft_approve_remove_meal": "Çıkar"
+	"draft_approve_remove_meal": "Çıkar",
+	"today_meals_title": "Mutfak",
+	"today_block": "Yemekler",
+	"today_block_hint": "Bugünün yemek planı."
 }

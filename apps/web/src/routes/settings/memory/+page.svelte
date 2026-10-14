@@ -1,17 +1,20 @@
 <script lang="ts">
-	import { Textarea } from '@famos/ui/textarea';
+	import { type paths, unwrap } from '@famos/api-client';
 	import { Card, Composer, ConfirmButton, Page, PageHeader, SidePanel } from '@famos/ui/famos';
+	import { Textarea } from '@famos/ui/textarea';
 	import { ChevronRight } from '@lucide/svelte';
-	import { addMemory, deleteMemory, loadMemories, type Memory, updateMemory } from './data.js';
-	import { useAssistant } from './i18n.js';
+	import { api } from '#lib/api.js';
+	import { t } from '#lib/i18n.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 
 	/**
-	 * "Assistant memory", Settings, You: the member's own short notes. Only they can read
-	 * them; the assistant shows them to the model in their own conversations. Add one in the field,
-	 * change or forget one in a panel; notes the assistant suggests arrive as cards in the
-	 * conversation.
+	 * Memory, Settings, You: the member's own short notes. Only they can read them; the assistant
+	 * and the AI apps they connect read them in their own conversations. Add one in the field,
+	 * change or forget one in a panel; notes the AI suggests arrive as suggestions to approve.
 	 */
-	const { app, t } = useAssistant();
+	type Memory =
+		paths['/api/v1/core/memories']['get']['responses'][200]['content']['application/json'][number];
+
 	const LIMIT = 280;
 	let memories = $state<Memory[]>([]);
 	let loaded = $state(false);
@@ -20,11 +23,13 @@
 	let editing = $state<Memory | null>(null);
 	let draft = $state('');
 
+	const failed = () => toasts.show(t('error_generic'));
+
 	async function load() {
 		try {
-			memories = await loadMemories();
+			memories = unwrap(await api.GET('/api/v1/core/memories'));
 		} catch {
-			app.toast(t('error'));
+			failed();
 		} finally {
 			loaded = true;
 		}
@@ -38,16 +43,16 @@
 		const note = text.trim();
 		if (!note || busy) return false;
 		if (note.length > LIMIT) {
-			app.toast(t('memory_too_long', { count: LIMIT }));
+			toasts.show(t('memory_too_long', { count: LIMIT }));
 			return false;
 		}
 		busy = true;
 		try {
-			await addMemory(note);
+			unwrap(await api.POST('/api/v1/actions/core.addMemory', { body: { text: note } }));
 			await load();
 			return true;
 		} catch {
-			app.toast(t('error'));
+			failed();
 			return false;
 		} finally {
 			busy = false;
@@ -66,22 +71,26 @@
 		editing = null;
 		if (note === memory.text) return;
 		try {
-			await updateMemory(memory.id, note);
-			app.toast(t('memory_saved'));
+			unwrap(
+				await api.POST('/api/v1/actions/core.updateMemory', {
+					body: { id: memory.id, text: note },
+				}),
+			);
+			toasts.show(t('memory_saved'));
 			await load();
 		} catch {
-			app.toast(t('error'));
+			failed();
 		}
 	}
 
 	async function forget(memory: Memory) {
 		editing = null;
 		try {
-			await deleteMemory(memory.id);
-			app.toast(t('memory_deleted'));
+			unwrap(await api.POST('/api/v1/actions/core.deleteMemory', { body: { id: memory.id } }));
+			toasts.show(t('memory_deleted'));
 			await load();
 		} catch {
-			app.toast(t('error'));
+			failed();
 		}
 	}
 </script>
@@ -128,7 +137,7 @@
 	<SidePanel
 		open={editing !== null}
 		title={t('memory_edit')}
-		closeLabel={t('close')}
+		closeLabel={t('side_panel_close')}
 		cancelLabel={t('cancel')}
 		saveLabel={t('save')}
 		saveDisabled={!draft.trim() || draft.trim().length > LIMIT}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { FileTarget } from '@famos/ui/slots';
+	import type { FileTarget } from '@famos/ext-inbox/contract';
 	import { Car } from '@lucide/svelte';
 	import { RECORD_KIND, type Vehicle } from '../contract/index.js';
 	import { loadVehicles } from './data.js';

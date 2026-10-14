@@ -31,12 +31,14 @@
 	} = $props();
 
 	/** Keys shown on hover, per page (the shortcuts live in the layout). */
-	const KEYS: Record<string, string[]> = {
-		'/': ['g', 't'],
-		'/calendar': ['g', 'c'],
-		'/add': ['n'],
-	};
-	const keysFor = (item: NavItem) => KEYS[item.path];
+	const keysFor = (item: NavItem): string[] | undefined =>
+		item.path === '/'
+			? ['g', 't']
+			: item.shortcut
+				? ['g', item.shortcut]
+				: item.share
+					? ['n']
+					: undefined;
 
 	// Household is a disclosure. It closes itself when the sidebar would otherwise scroll; a
 	// person's own choice is remembered on this device and wins over that.

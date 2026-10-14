@@ -79,7 +79,8 @@
 	const app = $derived(data.app);
 	const words = $derived(data.words);
 	const rowSize = $derived(wide.current ? ('half' as const) : ('wide' as const));
-	const hasCalendar = $derived(app.isAppPath('/calendar'));
+	/** Where things are shared with the family (Quick add), if this viewer may. */
+	const share = $derived(app.share());
 
 	const dayTitle = $derived(
 		data.evening
@@ -158,12 +159,8 @@
 
 	{#if data.rings.length > 0}
 		<div class="blk chores" class:gone={gone('chores')} style:--o="8">
-			<TodayBlock block={data.menuFor('chores')}>
-				<TodaySection
-					title={words.choresToday}
-					href={app.isAppPath('/chores') ? '/chores' : undefined}
-					more={words.chores}
-				>
+			<TodayBlock block={data.menuFor(data.countsBlock)}>
+				<TodaySection title={words.choresToday} href={data.countsHref} more={words.chores}>
 					<ChoreRings
 						rings={data.rings}
 						label={words.chores}
@@ -293,11 +290,7 @@
 		{#if showDay}
 			<div class="blk dayblk" style:--o="7">
 				<TodayBlock block={data.menuFor('day')}>
-					<TodaySection
-						title={dayTitle}
-						href={hasCalendar ? '/calendar' : undefined}
-						more={t('home_day_link')}
-					>
+					<TodaySection title={dayTitle} href={data.dayHref} more={t('home_day_link')}>
 						{#if columns}
 							<div class="mcols" data-testid="member-days">
 								{#each data.days.people as person (person.memberId)}
@@ -384,11 +377,7 @@
 		{#if data.showNext}
 			<div class="blk" class:gone={gone('extras')} style:--o="11">
 				<TodayBlock block={data.menuFor('nextDays')}>
-					<TodaySection
-						title={t('home_next_title')}
-						href={hasCalendar ? '/calendar' : undefined}
-						more={t('home_next_link')}
-					>
+					<TodaySection title={t('home_next_title')} href={data.dayHref} more={t('home_next_link')}>
 						{@render nextDaysList()}
 					</TodaySection>
 				</TodayBlock>
@@ -438,8 +427,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if app.can('inbox.share')}
-					<a href="/add" class="more">{t('home_needs_link')}</a>
+				{#if share}
+					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
 			</div>
@@ -491,7 +480,7 @@
 
 		{#if data.meals.length > 0}
 			<div class="blk" class:gone={gone('extras')} style:--o="13">
-				<TodayBlock block={data.menuFor('kitchen')}>
+				<TodayBlock block={data.menuFor(data.mealsBlock?.id ?? '')}>
 					<TodaySection title={words.kitchen}>
 						<ul class="meals">
 							{#each data.meals as meal (meal.id)}

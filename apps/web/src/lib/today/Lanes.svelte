@@ -16,7 +16,6 @@
 	import Slot from '@famos/ui/slot';
 	import { groupOf, sortTimeline } from '@famos/ui/timeline';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { api } from '#lib/api.js';
 	import FirstSteps from '#lib/FirstSteps.svelte';
 	import { t } from '#lib/i18n.svelte.js';
 	import {
@@ -48,8 +47,8 @@
 	 * lanes; on a phone it stands in the board's place above the folded, empty columns.
 	 *
 	 * Purely presentational, like Broadsheet: everything comes from `TodayData`, plus the hourly
-	 * forecast for the weather row (read here, through the API, and waited for before the page
-	 * shows, so it composes once). Cards are mounted once at every width: the band is CSS.
+	 * forecast for the weather row (read here, from the `weather` facet, and waited for before the
+	 * page shows, so it composes once). Cards are mounted once at every width: the band is CSS.
 	 *
 	 * In family mode (a display) there is no person: no sentence, no Needs you, no toggle and no
 	 * links; `status` (the display's pills) takes the bell's place, and the photo of the day joins
@@ -72,29 +71,20 @@
 	const choresInLanes = $derived(data.familyMode);
 	const app = $derived(data.app);
 	const words = $derived(data.words);
-	const hasCalendar = $derived(app.isAppPath('/calendar'));
+	/** Where things are shared with the family (Quick add), if this viewer may. */
+	const share = $derived(app.share());
 	const zone = $derived(data.timeZone);
 
 	/* ───────────── the hourly weather of the chart's weather row ───────────── */
 
 	const WEATHER_CAP_MS = 1200;
-	let forecast = $state<{ hours: HourlyPoint[]; min: number; max: number } | null>(null);
+	let forecast = $state<{ hours: readonly HourlyPoint[]; min: number; max: number } | null>(null);
 	let weatherLoaded = $state(false);
-	const canWeather = $derived(
-		data.can('ambient.weather') &&
-			!data.disabledExtensions.includes('ambient') &&
-			data.shows('weather'),
-	);
+	const weather = $derived(data.weatherSource);
 
-	async function loadWeather() {
+	async function loadWeather(source: typeof weather) {
 		try {
-			if (!canWeather) {
-				forecast = null;
-				return;
-			}
-			const res = await api.GET('/api/v1/ambient/weather');
-			const f = res.data?.enabled ? res.data.forecast : null;
-			forecast = f ? { hours: f.hourly ?? [], min: f.min, max: f.max } : null;
+			forecast = source ? await source.load(app) : null;
 		} catch {
 			// Keep what is on screen.
 		} finally {
@@ -102,14 +92,18 @@
 		}
 	}
 	$effect(() => {
-		void canWeather;
+		const source = weather;
 		void data.today;
-		void loadWeather();
-		const refresh = setInterval(() => void loadWeather(), 10 * 60_000);
-		const off = app.onEvent('ambient.', () => void loadWeather());
+		void loadWeather(source);
+		const refresh = source?.refreshMs
+			? setInterval(() => void loadWeather(source), source.refreshMs)
+			: undefined;
+		const offs = (source?.invalidateOn ?? []).map((prefix) =>
+			app.onEvent(prefix, () => void loadWeather(source)),
+		);
 		return () => {
 			clearInterval(refresh);
-			off();
+			for (const off of offs) off();
 		};
 	});
 	$effect(() => {
@@ -402,7 +396,7 @@
 		</section>
 	{/if}
 
-	<!-- ───────────── the day as a chart (a display needs the calendar) ───────────── -->
+	<!-- ───────────── the day as a chart (a display needs what a timeline requires) ───────────── -->
 	{#if data.showsDay && data.shows('day')}
 		<div class="blk" style:--o="7">
 			{#if across}
@@ -431,7 +425,7 @@
 						title={data.evening
 							? t('home_tomorrow_title', { weekday: data.tomorrowWeekday })
 							: t('lanes_chart')}
-						href={hasCalendar ? '/calendar' : undefined}
+						href={data.dayHref}
 						more={t('home_day_link')}
 					>
 						<DayChartVertical
@@ -463,8 +457,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if app.can('inbox.share')}
-					<a href="/add" class="more">{t('home_needs_link')}</a>
+				{#if share}
+					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
 			</div>
@@ -498,12 +492,8 @@
 
 		{#if data.rings.length > 0 && !choresInLanes}
 			<div class="blk" style:--o="8">
-				<TodayBlock block={data.menuFor('chores')}>
-					<TodaySection
-						title={words.choresToday}
-						href={app.isAppPath('/chores') ? '/chores' : undefined}
-						more={words.chores}
-					>
+				<TodayBlock block={data.menuFor(data.countsBlock)}>
+					<TodaySection title={words.choresToday} href={data.countsHref} more={words.chores}>
 						<ChoreBars
 							rings={data.rings}
 							label={words.chores}
@@ -548,11 +538,7 @@
 		{#if data.showNext}
 			<div class="blk" class:gone={gone('extras')} style:--o="9">
 				<TodayBlock block={data.menuFor('nextDays')}>
-					<TodaySection
-						title={t('home_next_title')}
-						href={hasCalendar ? '/calendar' : undefined}
-						more={t('home_next_link')}
-					>
+					<TodaySection title={t('home_next_title')} href={data.dayHref} more={t('home_next_link')}>
 						{@render nextDaysList()}
 					</TodaySection>
 				</TodayBlock>

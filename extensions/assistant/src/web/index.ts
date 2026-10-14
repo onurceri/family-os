@@ -1,7 +1,6 @@
 import { defineWebExtension } from '@famos/ui/slots';
 import { Sparkles } from '@lucide/svelte';
 import { CHAT_FEATURE } from '../contract/index.js';
-import { addMemoryPresenter } from './presenters.js';
 
 /**
  * Assistant UI: the Ask page, a rail entry (on phones it overflows into More)
@@ -43,11 +42,5 @@ export default defineWebExtension({
 	],
 	pages: [
 		{ id: 'assistant.page', path: '/assistant', component: () => import('./AssistantPage.svelte') },
-		{
-			id: 'assistant.memory',
-			path: '/settings/memory',
-			component: () => import('./MemoryPage.svelte'),
-		},
 	],
-	drafts: [addMemoryPresenter],
 });

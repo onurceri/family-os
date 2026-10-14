@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import en from '../messages/en.json';
-import { type Translate, todayWords } from './today-words.js';
+import { type FacetWords, type Translate, todayWords } from './today-words.js';
 
 const tr = JSON.parse(
 	readFileSync(join(import.meta.dirname, '../../../../languages/tr/app.json'), 'utf8'),
@@ -19,6 +19,17 @@ function translator(catalog: Record<string, string>, used: Set<string>): Transla
 		return found.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(options[name]));
 	}) as unknown as Translate;
 }
+
+/** What an extension's facet and block would give (their words are in their own catalogs). */
+const extra: FacetWords = {
+	counts: {
+		title: 'Chores today',
+		label: 'Chores',
+		ring: (name, done, total) => `${name}: ${done} of ${total} done`,
+		left: (count) => `${count} left`,
+	},
+	meals: 'Kitchen',
+};
 
 /** Calls every function in the words so each key is looked up. */
 function exercise(words: ReturnType<typeof todayWords>) {
@@ -52,11 +63,11 @@ function exercise(words: ReturnType<typeof todayWords>) {
 describe('Today words', () => {
 	it('reads every today_ key of the English catalog, and Turkish has them all', () => {
 		const used = new Set<string>();
-		const words = todayWords(translator(en, used));
+		const words = todayWords(translator(en, used), extra);
 		const english = exercise(words);
 		expect(english).toContain('Piano lesson in 25 min');
-		expect(english).toContain('1 chore left');
-		expect(english).toContain('3 chores left');
+		expect(english).toContain('3 left');
+		expect(english).toContain('Elif: 1 of 3 done');
 		expect(english).toContain('From the photos · October 2025');
 		expect(english).toContain('Deniz, Amy and Elif');
 		expect(words.nextUp.nextUp).toBe('Next up');
@@ -64,7 +75,7 @@ describe('Today words', () => {
 		const todayKeys = Object.keys(en).filter((k) => k.startsWith('today_'));
 		expect([...used].sort()).toEqual(todayKeys.sort());
 		for (const key of todayKeys) expect(tr[key], key).toBeTruthy();
-		expect(exercise(todayWords(translator(tr, new Set())))).toContain(
+		expect(exercise(todayWords(translator(tr, new Set()), extra))).toContain(
 			'Fotoğraflardan · October 2025',
 		);
 	});

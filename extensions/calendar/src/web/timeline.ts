@@ -1,5 +1,11 @@
-import { addDays, dayBounds } from '@famos/time';
-import type { DayItem, TimelineApp, TimelineContribution, TimelineItem } from '@famos/ui/slots';
+import { addDays, dayBounds, todayIn } from '@famos/time';
+import type {
+	DayItem,
+	SetupHintFacet,
+	TimelineApp,
+	TimelineContribution,
+	TimelineItem,
+} from '@famos/ui/slots';
 import type { Occurrence } from '../contract/index.js';
 import { loadRange, onDay } from './data.js';
 import { timeLabel } from './format.js';
@@ -39,6 +45,9 @@ export function toTimelineItem(o: Occurrence, day: string, app: TimelineApp): Ti
 /** Today's events for the day's timeline on Today. */
 export const calendarTimeline: TimelineContribution = {
 	id: 'calendar.today',
+	requires: 'calendar.view',
+	// The calendar's page shows the whole day.
+	page: '/calendar',
 	invalidateOn: ['calendar.'],
 	async load(day, app) {
 		const timeZone = app.timeZone();
@@ -60,5 +69,31 @@ export const calendarTimeline: TimelineContribution = {
 			}
 		}
 		return items;
+	},
+};
+
+/**
+ * "Put something on the calendar", among a new family's first steps. Whether the calendar has
+ * anything at all also says whether the family is new (`fresh`); the calendar answers at most 62
+ * days at a time, so it looks back and ahead once each.
+ */
+export const firstEventStep: SetupHintFacet = {
+	kind: 'setupHint',
+	id: 'calendar.firstEvent',
+	requires: 'calendar.view',
+	order: 10,
+	fresh: true,
+	titleKey: 'calendar:setup_step',
+	textKey: 'calendar:setup_step_text',
+	actionKey: 'calendar:setup_step_action',
+	href: '/calendar',
+	invalidateOn: ['calendar.'],
+	async load(app) {
+		const today = todayIn(app.timeZone(), Date.now());
+		const ranges = await Promise.all([
+			loadRange(addDays(today, -60), today),
+			loadRange(addDays(today, 1), addDays(today, 61)),
+		]);
+		return ranges.some((occurrences) => occurrences.length > 0);
 	},
 };

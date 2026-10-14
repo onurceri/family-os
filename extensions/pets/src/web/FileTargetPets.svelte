@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { FileTarget } from '@famos/ui/slots';
+	import type { FileTarget } from '@famos/ext-inbox/contract';
 	import { PawPrint } from '@lucide/svelte';
 	import { type Pet, RECORD_KIND } from '../contract/index.js';
 	import { loadPets } from './data.js';

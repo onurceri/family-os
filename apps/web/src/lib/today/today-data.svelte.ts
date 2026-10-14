@@ -1,4 +1,3 @@
-import { unwrap } from '@famos/api-client';
 import { addDays, epochOf, todayIn } from '@famos/time';
 import type { AppContext } from '@famos/ui/app';
 import {
@@ -13,7 +12,6 @@ import {
 	memberDays,
 	type NextUpMode,
 	nextUp,
-	sharedRead,
 	statusOf,
 	statusText,
 	type TodayBlockOptions,
@@ -26,11 +24,13 @@ import type {
 	TimelineContribution,
 	TimelineItem,
 	TodayBand,
+	TodayFacet,
 	TodayReport,
 } from '@famos/ui/slots';
 import { untrack } from 'svelte';
 import { api } from '#lib/api.js';
-import { enabledOnly, slotContributions, webExtensions } from '#lib/extensions.js';
+import { facetsOf, hasDay, type Viewer } from '#lib/contributions.js';
+import { contributions, enabledOnly } from '#lib/extensions.js';
 import type { Step } from '#lib/FirstSteps.svelte';
 import { family } from '#lib/family.svelte.js';
 import { t, tDynamic } from '#lib/i18n.svelte.js';
@@ -51,21 +51,24 @@ import {
 	quietPhrases,
 	showCaptureBox,
 } from '#lib/today.js';
-import { type TodayWords, todayWords } from '#lib/today-words.js';
+import { type FacetWords, type TodayWords, todayWords } from '#lib/today-words.js';
 import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } from './blocks.js';
 
 /**
  * Everything Today shows, loaded and settled in one place. Every style's
  * composition (Broadsheet, Wall, Lanes) takes one `TodayData` and only arranges it: the day's
- * timeline and the look-ahead, the cards and what they report, chores per person, the photo of
- * the day, the first steps of a new family, whose next thing the hero shows, and when the page
- * is settled (composed once). Create it while a component initialises: it owns effects.
+ * timeline and the look-ahead, the cards and what they report, the facets extensions provide
+ * (counts per person, the photo of the day, the weather's hours, the first steps of a new
+ * family), whose next thing the hero shows, and when the page is settled (composed once). It
+ * names no extension: everything comes from `contributions`. Create it while a component
+ * initialises: it owns effects.
  *
  * **Family mode** (a family display): no person. It reads only what
  * the display holds (`app.can`: the display's view capabilities) through routes a display may
  * call, mounts no card a person acts on (only those with a glance, such as shopping as a number),
  * never loads the first steps or the AI row, and keeps the hero on the family's next thing.
- * Without `calendar.view` there is no day (no hero, no day by person, no evening or quiet note).
+ * Without the `requires` of any timeline contribution there is no day (no hero, no day by
+ * person, no evening or quiet note).
  * With names off there is no per-person structure: the day is one column of everything, chores
  * one total, and no item carries its people. Nothing in it is a link.
  */
@@ -130,45 +133,42 @@ export interface TodayOptions {
 	hide?: (block: string) => void;
 }
 
-/** Without it a display has no day: no hero, no day by person, no evening or quiet note. */
-const DAY_CAPABILITY = 'calendar.view';
-/** Chores as rings, read through `GET /chores/today` (displays may; `chores.todayByMember` not). */
-const CHORES_CAPABILITY = 'chores.view';
-const PHOTO_CAPABILITY = 'ambient.photos';
-
-/**
- * The capability a display needs for a contribution in family mode: its own `requires`, else the
- * view capability of its extension (`calendar.today` → `calendar.view`), so a display never asks
- * for an area it was not granted.
- */
-export const familyModeCapability = (c: { id: string; requires?: string }): string =>
-	c.requires ?? `${c.id.split('.')[0]}.view`;
-
 /**
  * What a display may be granted for Today in family mode, offered when pairing besides what the
- * `display.*` slots name: the day, chores, the photo, and what the timelines, the weather and
- * the cards with a glance need.
+ * `display.*` slots name: what the timelines (the day), the facets a display shows (counts per
+ * person, the photo, the weather's hours), the weather and the cards with a glance need.
  */
 export function familyModeCapabilities(): string[] {
-	const contributions = [
-		...webExtensions.flatMap((e) => e.timeline ?? []),
-		...slotContributions.filter(
-			(c) => c.slot === 'today.atmosphere' || (c.slot === 'dashboard.card' && c.glance === true),
-		),
-	];
 	return [
 		...new Set([
-			DAY_CAPABILITY,
-			CHORES_CAPABILITY,
-			PHOTO_CAPABILITY,
-			...contributions.map(familyModeCapability),
+			...contributions.timelines.map((c) => c.requires),
+			...contributions.facets.filter((f) => f.kind !== 'setupHint').map((f) => f.requires),
+			...contributions.slots.flatMap((c) =>
+				c.slot === 'today.atmosphere' || (c.slot === 'dashboard.card' && c.glance === true)
+					? [c.requires]
+					: [],
+			),
 		]),
 	];
 }
 
 /** An extension's name key (Settings → Features), for a card without a `labelKey` of its own. */
-const extensionLabel = (id: string): string | undefined =>
-	webExtensions.find((e) => e.id === id)?.labelKey;
+const extensionLabel = (id: string): string | undefined => contributions.extension(id)?.labelKey;
+
+/** The first facet of a kind from an extension that is turned on, whoever views. */
+const providedFacet = <K extends TodayFacet['kind']>(kind: K, off: readonly string[]) =>
+	facetsOf(contributions.facets, kind, { can: () => true, disabledExtensions: off })[0];
+
+/** What the app's own blocks need (the weather, the photo), from extensions that are turned on. */
+const providers = (off: readonly string[]) => ({
+	weather:
+		providedFacet('weather', off) !== undefined ||
+		enabledOnly(
+			contributions.slots.filter((c) => c.slot === 'today.atmosphere'),
+			off,
+		).length > 0,
+	photo: providedFacet('photo', off) !== undefined,
+});
 
 /**
  * The blocks "What Today shows" offers to a viewer: a person (the cards they may see), the
@@ -181,7 +181,7 @@ export function availableTodayBlocks(viewer: {
 	disabledExtensions: readonly string[];
 }): TodayBlock[] {
 	const cards = enabledOnly(
-		slotContributions.filter(
+		contributions.slots.filter(
 			(c): c is Card =>
 				c.slot === 'dashboard.card' &&
 				(!viewer.familyMode || c.glance === true) &&
@@ -191,7 +191,8 @@ export function availableTodayBlocks(viewer: {
 	).toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
 	return todayBlocks(cards, {
 		familyMode: viewer.familyMode ?? false,
-		disabledExtensions: viewer.disabledExtensions,
+		added: enabledOnly(contributions.blocks, viewer.disabledExtensions),
+		provided: providers(viewer.disabledExtensions),
 		extensionLabel,
 	});
 }
@@ -226,10 +227,16 @@ export class TodayData {
 	readonly ready = $derived(this.#familyMode !== null || session.status === 'ready');
 	/** Changes when someone else views: what is loaded is read again. */
 	readonly #viewer = $derived(this.#familyMode ? 'display' : (session.me?.id ?? ''));
-	/** The day (the hero, the day by person, the evening, the quiet day): a display needs the calendar. */
-	readonly showsDay = $derived(!this.#familyMode || this.can(DAY_CAPABILITY));
-	#allowed = (c: { id: string; requires?: string }): boolean =>
-		this.#familyMode ? this.can(familyModeCapability(c)) : !c.requires || this.can(c.requires);
+	readonly #viewing = $derived<Viewer>({
+		can: this.can,
+		disabledExtensions: this.disabledExtensions,
+	});
+	/**
+	 * The day (the hero, the day by person, the evening, the quiet day): a display needs what a
+	 * timeline contribution requires.
+	 */
+	readonly showsDay = $derived(!this.#familyMode || hasDay(contributions.timelines, this.#viewing));
+	#allowed = (c: { requires?: string | undefined }): boolean => !c.requires || this.can(c.requires);
 
 	/* ───────────── time ───────────── */
 
@@ -251,7 +258,23 @@ export class TodayData {
 					timeZone: family.timeZone,
 				},
 	);
-	readonly words = $derived<TodayWords>(todayWords(t));
+	/** The words of the compositions: the app's, and those of the facets and blocks shown. */
+	readonly words = $derived.by<TodayWords>(() => {
+		const counts = this.memberCounts;
+		const meals = this.mealsBlock;
+		const extra: FacetWords = {
+			...(counts && {
+				counts: {
+					title: tDynamic(counts.titleKey),
+					label: tDynamic(counts.labelKey),
+					ring: (name, done, total) => tDynamic(counts.ringKey, { name, done, total }),
+					left: (count) => tDynamic(counts.leftKey, { count }),
+				},
+			}),
+			...(meals && { meals: tDynamic(meals.titleKey ?? meals.labelKey) }),
+		};
+		return todayWords(t, extra);
+	});
 	/** The family; `shortName` is what a column, lane or ring shows (the first name). */
 	readonly members = $derived.by<readonly (FamilyMember & { shortName: string })[]>(() =>
 		withShortNames(
@@ -263,7 +286,45 @@ export class TodayData {
 		this.#sample ? this.#sample.me : this.#familyMode ? null : session.me,
 	);
 
-	/* ───────────── cards and what they report ───────────── */
+	/* ───────────── the facets extensions provide ───────────── */
+
+	/**
+	 * The first facet of a kind this viewer may see. A preview takes the first of an extension
+	 * that is turned on (it reads nothing; its made-up day still needs the words).
+	 */
+	#facet<K extends TodayFacet['kind']>(kind: K) {
+		return this.#sample
+			? providedFacet(kind, this.disabledExtensions)
+			: facetsOf(contributions.facets, kind, this.#viewing)[0];
+	}
+	/** Things of the day counted per person (chores): rings, bars, "2 left". */
+	readonly memberCounts = $derived(this.#facet('perMember'));
+	/** The block that shows or hides the counts per person. */
+	readonly countsBlock = $derived(this.memberCounts?.block ?? '');
+	/** The page the counts open (none on a display: nothing there is a link). */
+	readonly countsHref = $derived.by(() => {
+		const href = this.memberCounts?.href;
+		return href && this.app.isAppPath(href) ? href : undefined;
+	});
+	readonly #photoSource = $derived(this.#sample ? undefined : this.#facet('photo'));
+	/** The steps extensions add to the first steps of a new family, in `order`. */
+	readonly #setupHints = $derived(
+		this.#familyMode || this.#sample
+			? []
+			: facetsOf(contributions.facets, 'setupHint', this.#viewing).toSorted(
+					(a, b) => (a.order ?? 0) - (b.order ?? 0),
+				),
+	);
+	/** The blocks extensions add, of those that are turned on. */
+	readonly #addedBlocks = $derived(enabledOnly(contributions.blocks, this.disabledExtensions));
+	/** The block that is the day's meals as a list of their own. */
+	readonly mealsBlock = $derived(this.#addedBlocks.find((b) => b.items === 'meal'));
+	/** The page that shows the whole day, which the day and the next days link to. */
+	readonly dayHref = $derived(
+		contributions.timelines
+			.map((c) => c.page)
+			.find((page): page is string => page !== undefined && this.app.isAppPath(page)),
+	);
 
 	/* ───────────── what this Today shows ───────────── */
 
@@ -271,13 +332,17 @@ export class TodayData {
 	readonly hidden = $derived<ReadonlySet<string>>(new Set(this.#hiddenOf?.() ?? []));
 	/** Whether a block shows (a built-in id, or a card's contribution id; unknown ids show). */
 	shows = (block: string): boolean => shows(this.hidden, block);
+	/** The weather's next hours, for a style that draws them itself (Lanes), when shown here. */
+	readonly weatherSource = $derived(
+		this.shows('weather') ? facetsOf(contributions.facets, 'weather', this.#viewing)[0] : undefined,
+	);
 
 	/** The cards this viewer may see, hidden or not (what "What Today shows" lists). */
 	readonly availableCards = $derived(
 		(this.#sample
 			? []
 			: enabledOnly(
-					slotContributions.filter(
+					contributions.slots.filter(
 						(c): c is Card =>
 							c.slot === 'dashboard.card' &&
 							// A display mounts only what reads at a glance: nothing to act on.
@@ -292,7 +357,8 @@ export class TodayData {
 	readonly blocks = $derived<TodayBlock[]>(
 		todayBlocks(this.availableCards, {
 			familyMode: this.familyMode,
-			disabledExtensions: this.disabledExtensions,
+			added: this.#addedBlocks,
+			provided: providers(this.disabledExtensions),
 			extensionLabel,
 		}),
 	);
@@ -334,7 +400,7 @@ export class TodayData {
 		this.#sample
 			? []
 			: enabledOnly(
-					slotContributions.filter(
+					contributions.slots.filter(
 						(c): c is Atmosphere =>
 							c.slot === 'today.atmosphere' && this.shows('weather') && this.#allowed(c),
 					),
@@ -353,10 +419,9 @@ export class TodayData {
 	readonly timelines = $derived(
 		this.#sample || !this.showsDay
 			? []
-			: enabledOnly(
-					webExtensions.flatMap((e) => e.timeline ?? []),
-					this.disabledExtensions,
-				).filter((c) => this.#allowed(c)),
+			: enabledOnly(contributions.timelines, this.disabledExtensions).filter((c) =>
+					this.#allowed(c),
+				),
 	);
 	todayItems = $state<TimelineItem[]>([]);
 	tomorrowItems = $state<TimelineItem[]>([]);
@@ -387,19 +452,19 @@ export class TodayData {
 			this.nextDaysItems.length > 0,
 	);
 
-	/* ───────────── chores per person and the photo of the day ───────────── */
+	/* ───────────── counts per person and the photo of the day ───────────── */
 
-	/** Today's chores per person (`null`: anyone), from `GET /chores/today` with `chores.view`. */
+	/** Today's counts per person (`null`: anyone), from the `perMember` facet. */
 	chores = $state<ChoreCount[]>([]);
 	choresLoaded = $state(false);
-	photo = $state<{ id: string; month: string } | null>(null);
+	photo = $state<{ src: string; month: string } | null>(null);
 	photoLoaded = $state(false);
 
 	/* ───────────── a new family, and AI not connected ───────────── */
 
 	aiMissing = $state(false);
-	hasEvents = $state<boolean | null>(null);
-	weatherOn = $state<boolean | null>(null);
+	/** The answers of the extensions' first steps, by id: done or not. */
+	hintsDone = $state<Record<string, boolean>>({});
 	setupLoaded = $state(false);
 	stepsHidden = $state(false);
 	aiDismissed = $state(false);
@@ -474,19 +539,19 @@ export class TodayData {
 
 		$effect(() => {
 			void this.#viewer;
-			void this.#canChores;
+			const source = this.memberCounts;
 			void this.today;
 			void app.offline();
 			untrack(() => void this.#loadChores());
-			return app.onEvent('chores.', () => void this.#loadChores());
+			return onEvents(app, source?.invalidateOn, () => void this.#loadChores());
 		});
 
 		$effect(() => {
 			void this.#viewer;
-			void this.#canPhoto;
+			const source = this.#photoSource;
 			void this.today;
 			untrack(() => void this.#loadPhoto());
-			return app.onEvent('ambient.', () => void this.#loadPhoto());
+			return onEvents(app, source?.invalidateOn, () => void this.#loadPhoto());
 		});
 
 		if (familyMode) {
@@ -506,8 +571,13 @@ export class TodayData {
 				void session.me?.id;
 				void this.#alone;
 				void this.today;
+				const hints = this.#setupHints;
 				untrack(() => void this.#loadSetup());
-				return app.onEvent('calendar.', () => void this.#loadSetup());
+				return onEvents(
+					app,
+					hints.flatMap((h) => h.invalidateOn ?? []),
+					() => void this.#loadSetup(),
+				);
 			});
 		}
 
@@ -579,16 +649,9 @@ export class TodayData {
 		);
 	}
 
-	readonly #canChores = $derived(
-		this.can(CHORES_CAPABILITY) && !this.disabledExtensions.includes('chores'),
-	);
-	readonly #canPhoto = $derived(
-		this.can(PHOTO_CAPABILITY) && !this.disabledExtensions.includes('ambient'),
-	);
-
 	/**
-	 * Reads the day, the look-ahead, chores and the photo again (a display does it now and then
-	 * in case it missed a live update). The composition stays as it is while they arrive.
+	 * Reads the day, the look-ahead, the counts and the photo again (a display does it now and
+	 * then in case it missed a live update). The composition stays as it is while they arrive.
 	 */
 	reload() {
 		if (this.#sample) return;
@@ -601,15 +664,12 @@ export class TodayData {
 
 	async #loadChores() {
 		try {
-			if (!this.#canChores) {
+			const source = this.memberCounts;
+			if (!source) {
 				this.chores = [];
 				return;
 			}
-			// The same read as the chores card's rings, so they share it.
-			const data = await sharedRead('/api/v1/chores/today', async () =>
-				unwrap(await api.GET('/api/v1/chores/today')),
-			);
-			this.chores = data;
+			this.chores = [...(await source.load(this.app))];
 		} catch {
 			// Keep what is on screen.
 		} finally {
@@ -619,12 +679,12 @@ export class TodayData {
 
 	async #loadPhoto() {
 		try {
-			if (!this.#canPhoto) {
+			const source = this.#photoSource;
+			if (!source) {
 				this.photo = null;
 				return;
 			}
-			const res = await api.GET('/api/v1/ambient/photos/today');
-			if (res.data) this.photo = res.data.photo;
+			this.photo = await source.load(this.app);
 		} catch {
 			// Keep what is on screen.
 		} finally {
@@ -642,34 +702,13 @@ export class TodayData {
 					this.aiMissing = Boolean(roles) && !roles?.fast && !roles?.vision && !roles?.smart;
 				}),
 			);
-		if (this.#alone && app.isAppPath('/calendar')) {
-			const today = this.today;
+		// A step that says whether the family is new is asked only while it has one person.
+		for (const hint of this.#setupHints.filter((h) => !h.fresh || this.#alone))
 			jobs.push(
-				// The calendar answers at most 62 days at a time: a look back and a look ahead.
-				Promise.all(
-					[
-						[addDays(today, -60), today],
-						[addDays(today, 1), addDays(today, 61)],
-					].map(([from, to]) =>
-						api.GET('/api/v1/calendar/occurrences', {
-							params: { query: { from: from as string, to: to as string } },
-						}),
-					),
-				)
-					.then(
-						(all) => (this.hasEvents = all.some((res) => res.error || (res.data?.length ?? 0) > 0)),
-					)
-					.catch(() => (this.hasEvents = true)),
-			);
-		}
-		if (session.can('ambient.manage'))
-			jobs.push(
-				// The same read as the weather on the page, so they share it.
-				sharedRead('/api/v1/ambient/weather', async () =>
-					unwrap(await api.GET('/api/v1/ambient/weather')),
-				)
-					.then((weather) => (this.weatherOn = weather.enabled))
-					.catch(() => (this.weatherOn = true)),
+				hint
+					.load(app)
+					.catch(() => true)
+					.then((done) => (this.hintsDone[hint.id] = done)),
 			);
 		await Promise.allSettled(jobs);
 		this.setupLoaded = true;
@@ -734,11 +773,20 @@ export class TodayData {
 
 	/* ───────────── a new family, and AI not connected ───────────── */
 
-	readonly fresh = $derived(
-		this.setupLoaded && family.members.length <= 1 && this.hasEvents === false,
-	);
+	/**
+	 * A new family: one person, and none of the steps that say so is done yet (with no such step
+	 * nothing says the family is new).
+	 */
+	readonly fresh = $derived.by(() => {
+		const telling = this.#setupHints.filter((h) => h.fresh);
+		return (
+			this.setupLoaded &&
+			family.members.length <= 1 &&
+			telling.length > 0 &&
+			telling.every((h) => this.hintsDone[h.id] === false)
+		);
+	});
 	readonly steps = $derived.by((): Step[] => {
-		const app = this.app;
 		const list: Step[] = [
 			{ id: 'account', title: t('home_step_account'), text: t('home_step_done'), done: true },
 		];
@@ -751,24 +799,19 @@ export class TodayData {
 				href: '/settings/members',
 				action: t('home_step_people_action'),
 			});
-		if (app.isAppPath('/calendar'))
+		// The extensions' steps, each once its answer is in.
+		for (const hint of this.#setupHints) {
+			const done = this.hintsDone[hint.id];
+			if (done === undefined) continue;
 			list.push({
-				id: 'calendar',
-				title: t('home_step_calendar'),
-				text: t('home_step_calendar_text'),
-				done: this.hasEvents !== false,
-				href: '/calendar',
-				action: t('home_step_calendar_action'),
+				id: hint.id,
+				title: tDynamic(hint.titleKey),
+				text: tDynamic(hint.textKey),
+				done,
+				href: hint.href,
+				action: tDynamic(hint.actionKey),
 			});
-		if (session.can('ambient.manage') && this.weatherOn !== null)
-			list.push({
-				id: 'city',
-				title: t('home_step_city'),
-				text: t('home_step_city_text'),
-				done: this.weatherOn,
-				href: '/settings/photos-weather',
-				action: t('home_step_city_action'),
-			});
+		}
 		if (session.can('core.ai.manage'))
 			list.push({
 				id: 'ai',
@@ -968,7 +1011,12 @@ export class TodayData {
 	 * names off (a display), one ring for the family's total, as "anyone" (no person's colour).
 	 */
 	readonly rings = $derived.by((): ChoreRing[] => {
-		if (!this.shows('chores') || !this.chores.some((c) => c.total > 0)) return [];
+		if (
+			!this.memberCounts ||
+			!this.shows(this.countsBlock) ||
+			!this.chores.some((c) => c.total > 0)
+		)
+			return [];
 		if (!this.showNames) {
 			const done = this.chores.reduce((sum, c) => sum + c.done, 0);
 			const total = this.chores.reduce((sum, c) => sum + c.total, 0);
@@ -992,20 +1040,22 @@ export class TodayData {
 	});
 	/** Chores left for a person, or for anyone (`null`; with names off, the family's in all). */
 	choresLeftFor = (memberId: string | null): number =>
-		!this.shows('chores')
+		!this.shows(this.countsBlock)
 			? 0
 			: this.showNames
 				? choresLeft(memberId, this.chores)
 				: this.chores.reduce((sum, c) => sum + Math.max(0, c.total - c.done), 0);
-	/** Today's meal plan (the kitchen). */
+	/** Today's meals, as a list of their own (shown or hidden by the block they belong to). */
 	readonly meals = $derived(
-		this.shows('kitchen') ? this.dayItems.filter((i) => i.kind === 'meal') : [],
+		!this.mealsBlock || this.shows(this.mealsBlock.id)
+			? this.dayItems.filter((i) => i.kind === 'meal')
+			: [],
 	);
 
 	readonly photoOfTheDay = $derived<PhotoOfTheDay | null>(
 		this.photo && this.shows('photo')
 			? {
-					src: `/api/v1/ambient/photos/${encodeURIComponent(this.photo.id)}`,
+					src: this.photo.src,
 					label: this.words.photo(formatPhotoMonth(this.photo.month, this.format.formatLocale)),
 				}
 			: null,
@@ -1026,4 +1076,16 @@ export class TodayData {
 			: this.#weekdayShort.format(epochOf(day, '12:00', this.timeZone));
 	colorOf = (item: TimelineItem): string =>
 		this.members.find((m) => m.id === item.members?.[0])?.color ?? '';
+}
+
+/** Listens to every prefix (none: nothing to listen to); returns what stops it. */
+function onEvents(
+	app: AppContext,
+	prefixes: readonly string[] | undefined,
+	handler: () => void,
+): () => void {
+	const offs = (prefixes ?? []).map((prefix) => app.onEvent(prefix, handler));
+	return () => {
+		for (const off of offs) off();
+	};
 }

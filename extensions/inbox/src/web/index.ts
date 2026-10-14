@@ -30,6 +30,8 @@ export default defineWebExtension({
 			placement: 'primary',
 			order: 10,
 			requires: 'inbox.share',
+			// Where things are shared with the family: Today links here and `n` opens Quick add.
+			share: true,
 			// Suggestions waiting for this person: theirs alone, and those they may decide.
 			badge: async () => unwrap(await api.GET('/api/v1/core/drafts/waiting')).count,
 		},

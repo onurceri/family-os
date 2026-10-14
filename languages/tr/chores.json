@@ -95,5 +95,12 @@
 	"draft_title_update_chore": "İşi değiştir",
 	"draft_title_archive_chore": "İşi arşivle",
 	"draft_title_set_assignees": "İşi kimin yapacağını değiştir",
-	"draft_title_mark_done": "İşi yapıldı olarak işaretle"
+	"draft_title_mark_done": "İşi yapıldı olarak işaretle",
+	"today_left_one": "{{count}} iş kaldı",
+	"today_left_other": "{{count}} iş kaldı",
+	"today_counts_label": "Ev işleri",
+	"today_ring": "{{name}}: {{total}} işten {{done}} tanesi bitti",
+	"today_title": "Bugünün işleri",
+	"today_block": "Ev işleri",
+	"today_block_hint": "Herkesin bugünkü ev işlerinde nerede olduğu."
 }

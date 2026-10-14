@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { FileTarget } from '@famos/ui/slots';
+	import type { FileTarget } from '@famos/ext-inbox/contract';
 	import { House, Refrigerator, Zap } from '@lucide/svelte';
 	import {
 		HOME_KIND,

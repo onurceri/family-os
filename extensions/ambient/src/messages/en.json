@@ -80,5 +80,10 @@
 	"today_range": "H {{max}} · L {{min}}",
 	"today_range_rain": "H {{max}} · L {{min}} · {{percent}}% rain",
 	"today_hourly": "Next hours",
-	"today_source": "Weather: Open-Meteo"
+	"today_source": "Weather: Open-Meteo",
+	"setup_step": "Set your city",
+	"setup_step_text": "For the weather here and on a family display",
+	"setup_step_action": "Weather place",
+	"nav_photos_weather": "Photos and weather",
+	"devices_line": "Photos, the weather and the slideshow on screens have their own page:"
 }

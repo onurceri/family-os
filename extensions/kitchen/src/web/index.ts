@@ -8,8 +8,8 @@ import {
 import { kitchenTimeline } from './timeline.js';
 
 /**
- * Kitchen UI: recipes and the weekly meal plan under `/kitchen`, today's meals on the Today timeline,
- * and the Inbox presenters for recipes and meals.
+ * Kitchen UI: recipes and the weekly meal plan under `/kitchen`, today's meals on the Today timeline
+ * (and as a block of their own), and the Inbox presenters for recipes and meals.
  */
 export default defineWebExtension({
 	id: 'kitchen',
@@ -38,5 +38,17 @@ export default defineWebExtension({
 		},
 	],
 	timeline: [kitchenTimeline],
+	blocks: [
+		{
+			// The block's id is the one people have hidden it by since it was the app's own.
+			id: 'kitchen',
+			labelKey: 'kitchen:today_block',
+			hintKey: 'kitchen:today_block_hint',
+			titleKey: 'kitchen:today_meals_title',
+			// Today's meals as a list of their own, between Needs you (90) and the next days (110).
+			items: 'meal',
+			order: 100,
+		},
+	],
 	drafts: [createRecipePresenter, addToMealPlanPresenter, removeMealPlanEntryPresenter],
 });

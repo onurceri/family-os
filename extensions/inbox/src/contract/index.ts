@@ -190,3 +190,23 @@ export function itemTitle(item: Nameable): string {
 		item.summary?.trim() || firstLine?.trim().slice(0, OWN_TITLE_MAX) || item.files[0]?.name || ''
 	);
 }
+
+/** A record Quick add can file papers into ("Add to …"). */
+export interface FileTarget {
+	recordId: string;
+	recordKind: string;
+	/** What the person sees ("Golf", "Luna"). */
+	name: string;
+}
+
+declare global {
+	interface FamosExtensionSlots {
+		/**
+		 * Records a person can file Quick add papers into, contributed by domain extensions. Each
+		 * contribution shows its own records as choices (and nothing when it has none); `selected`
+		 * is the current choice across all contributions. With no contribution Quick add hides
+		 * "Add to…".
+		 */
+		'inbox.fileTarget': { selected: FileTarget | null; onselect(target: FileTarget | null): void };
+	}
+}

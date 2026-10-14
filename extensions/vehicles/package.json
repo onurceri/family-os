@@ -44,6 +44,7 @@
 		"zod": "4.6.5"
 	},
 	"peerDependencies": {
+		"@famos/ext-inbox": "workspace:*",
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {

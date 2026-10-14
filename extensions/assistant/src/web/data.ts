@@ -75,22 +75,3 @@ export const replaceDraft = async (draftId: string): Promise<Draft> =>
 	unwrap(
 		await api.POST('/api/v1/core/drafts/{draftId}/replace', { params: { path: { draftId } } }),
 	);
-
-/** What the assistant remembers about me (nobody else can read it). */
-export type Memory =
-	paths['/api/v1/core/memories']['get']['responses'][200]['content']['application/json'][number];
-
-export const loadMemories = async (): Promise<Memory[]> =>
-	unwrap(await api.GET('/api/v1/core/memories'));
-
-export const addMemory = async (text: string): Promise<void> => {
-	unwrap(await api.POST('/api/v1/actions/core.addMemory', { body: { text } }));
-};
-
-export const updateMemory = async (id: string, text: string): Promise<void> => {
-	unwrap(await api.POST('/api/v1/actions/core.updateMemory', { body: { id, text } }));
-};
-
-export const deleteMemory = async (id: string): Promise<void> => {
-	unwrap(await api.POST('/api/v1/actions/core.deleteMemory', { body: { id } }));
-};

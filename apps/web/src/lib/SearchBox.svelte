@@ -5,7 +5,7 @@
 	import { Card, Section } from '@famos/ui/famos';
 	import { Search } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
-	import { isAppPath, webExtensions } from '#lib/extensions.js';
+	import { contributions, isAppPath } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { searchStatus } from '#lib/search-status.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -49,7 +49,7 @@
 	}
 
 	const label = (extension: string) => {
-		const key = webExtensions.find((e) => e.id === extension)?.labelKey;
+		const key = contributions.extension(extension)?.labelKey;
 		return key ? tDynamic(key) : extension;
 	};
 	const linkOf = (result: Result) =>

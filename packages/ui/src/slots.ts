@@ -6,27 +6,6 @@ import type { Component } from 'svelte';
  * lazy component loader, so they stay framework-neutral at the edges.
  */
 /**
- * "What usually needs doing" for a kind of record, offered by its domain extension to the
- * `record.section` slot. Structurally the same as `ObligationPreset` in the records contract.
- */
-export interface RecordPreset {
-	id: string;
-	/** Namespaced translation key of the domain (`vehicles:preset_inspection`). */
-	titleKey: string;
-	every?: { months?: number; years?: number };
-	leadDays?: number;
-	labelKey?: string;
-}
-
-/** A record Quick add can file papers into ("Add to …"). */
-export interface FileTarget {
-	recordId: string;
-	recordKind: string;
-	/** What the person sees ("Golf", "Luna"). */
-	name: string;
-}
-
-/**
  * Where a Today contribution sits on the page. `foot` is
  * the last line of the page: quiet links (Ask the assistant) that never count as content.
  */
@@ -44,7 +23,28 @@ export interface TodayReport {
 	urgent?: number;
 }
 
-export interface SlotProps {
+declare global {
+	/**
+	 * The slots extensions add (an extension that owns a slot declares it from its contract), so
+	 * the page that renders it and the extensions that contribute to it share one type:
+	 *
+	 * ```ts
+	 * declare global {
+	 *   interface FamosExtensionSlots {
+	 *     'record.section': { recordId: string; recordKind: string; recordName: string };
+	 *   }
+	 * }
+	 * ```
+	 *
+	 * Global rather than an augmentation of this module: a Svelte component of this package that
+	 * another package's checker reaches through a link can see a copy of this module that an
+	 * augmentation does not reach, while every copy shares the globals.
+	 */
+	interface FamosExtensionSlots {}
+}
+
+/** The slots of the app, and those extensions add (`FamosExtensionSlots`). */
+export interface SlotProps extends FamosExtensionSlots {
 	/**
 	 * A section of Today. The page mounts every card once
 	 * and waits for its first `report`; a card renders only `TodaySection` / `TodayRow` shapes (the
@@ -118,36 +118,15 @@ export interface SlotProps {
 	 */
 	'display.ambient': { time: string; date: string };
 	/**
-	 * A section of a record's page. The domain extension owns the page and renders this
-	 * slot with `<Slot name="record.section" props={…} />`; `records` contributes the obligations
-	 * and the papers, other extensions can add their own. `recordName` and `recordUrl` let a
-	 * section keep lists that span records readable.
-	 */
-	'record.section': {
-		recordId: string;
-		recordKind: string;
-		recordName: string;
-		recordUrl?: string;
-		/** Capability whose holders are reminded about new obligations when nobody is assigned. */
-		audience?: string;
-		presets?: readonly RecordPreset[];
-	};
-	/**
-	 * Records a person can file Quick add papers into, contributed by domain extensions. Each
-	 * contribution shows its own records as choices (and nothing when it has none); `selected` is
-	 * the current choice across all contributions. With no contribution Quick add hides "Add to…".
-	 */
-	'inbox.fileTarget': { selected: FileTarget | null; onselect(target: FileTarget | null): void };
-	/**
 	 * An optional step of first-run setup, shown after the founder's account exists and they are
 	 * signed in (they hold every capability). It must never block setup: it offers Skip and calls
 	 * `done` when it is finished or skipped.
 	 */
 	'setup.step': { done: () => void };
 	/**
-	 * Sections of Settings, Devices & displays, below the displays: what family displays show
-	 * (photos, weather, timing). The contribution renders `Section`s of its own and loads its own
-	 * data; it is shown to people who hold its `requires`.
+	 * A line in Settings, Devices & displays, under the devices: where else the family chooses what
+	 * displays show (a settings page of the extension's own: photos and the weather). It is shown
+	 * to people who hold its `requires`.
 	 */
 	'settings.display': Record<string, never>;
 }
@@ -160,22 +139,14 @@ interface SlotContributionOf<S extends SlotName> {
 	id: string;
 	/** Lower comes first. */
 	order?: number;
-	/**
-	 * Capability needed to show this contribution (`display.widget`, `display.status`: the display
-	 * must hold it). Pairing a display offers the capabilities that `display.widget`,
-	 * `display.status` and `display.ambient` contributions name here, besides those of the
-	 * display's Today (family mode), so declare it for every contribution that reads protected data.
-	 * Contributions of extensions that are turned off are hidden anyway.
-	 */
-	requires?: string;
 	/** `dashboard.card` only: which band of Today the card belongs to (default `notes`). */
 	band?: TodayBand;
 	/**
-	 * `dashboard.card` only: the card has a glance (`form: 'glance'`): a number to read from the
-	 * door, or a shape the page draws. A style that shows the day at a glance puts these with the
-	 * family's numbers (Broadsheet: the family column) instead of with the day's rows.
+	 * `dashboard.card` only: the block that shows or hides the card, when it is one of the
+	 * extension's own `blocks` (the chores card is the rings of the chores block). Without it the
+	 * card is a block of its own (or part of Needs you, in the `needs` band).
 	 */
-	glance?: boolean;
+	block?: string;
 	/**
 	 * `dashboard.card` only: the card's rows are things to do (tasks). A style that keeps what
 	 * needs doing apart from the day puts these with it (Broadsheet from 1280 px: the right
@@ -197,9 +168,29 @@ interface SlotContributionOf<S extends SlotName> {
 	component: () => Promise<{ default: Component<SlotProps[S]> }>;
 }
 
+/** The slots a family display reads: what it may show depends on what it was granted. */
+type DisplayRead = 'today.atmosphere' | 'display.widget' | 'display.status' | 'display.ambient';
+
+/**
+ * `requires`: the capability needed to show the contribution. A display shows a contribution only
+ * when it holds it, and pairing a display offers the capabilities its slots and its Today (family
+ * mode) name, so the slots a display reads always name one, and so does a card with a glance
+ * (the only cards a display mounts). Contributions of extensions that are turned off are hidden
+ * anyway.
+ *
+ * `glance` (`dashboard.card` only): the card has a glance (`form: 'glance'`): a number to read
+ * from the door, or a shape the page draws. A style that shows the day at a glance puts these
+ * with the family's numbers (Broadsheet: the family column) instead of with the day's rows.
+ */
+type Requirement<S extends SlotName> = S extends DisplayRead
+	? { requires: string }
+	: S extends 'dashboard.card'
+		? { glance: true; requires: string } | { glance?: false; requires?: string }
+		: { requires?: string };
+
 /** A contribution to one slot; without an argument, to any slot (a union, so each keeps its props). */
 export type SlotContribution<S extends SlotName = SlotName> = S extends SlotName
-	? SlotContributionOf<S>
+	? SlotContributionOf<S> & Requirement<S>
 	: never;
 
 /**
@@ -228,6 +219,13 @@ export interface NavContribution {
 	requires?: string;
 	/** Number badge, e.g. pending drafts; refreshed by the app. */
 	badge?: () => Promise<number>;
+	/**
+	 * The page where things are shared with the family (Quick add): the app links to it from Today
+	 * ("Needs you") and gives it the `n` key. One entry of all extensions at most.
+	 */
+	share?: boolean;
+	/** A key that opens the page after `g` (`c`: `g c` opens the calendar). */
+	shortcut?: string;
 	/**
 	 * For a page in the `settings` group: the part of the settings list it belongs to (default
 	 * `system`).
@@ -374,7 +372,13 @@ export interface TimelineApp {
 export interface TimelineContribution {
 	/** Unique, namespaced: `<extension>.<name>`. */
 	id: string;
-	requires?: string;
+	/**
+	 * Capability needed to read it. A family display has a day (the next thing, the day by person)
+	 * when it holds the `requires` of any timeline contribution.
+	 */
+	requires: string;
+	/** The page that shows the whole day: Today's day and the next days link to it. */
+	page?: string;
 	/**
 	 * Items for one calendar day (`YYYY-MM-DD` in the family's time zone). Called for today and
 	 * tomorrow; `app` gives the time zone, formats and translations.
@@ -395,6 +399,111 @@ export interface DayItem extends TimelineItem {
 	day: string;
 }
 
+/**
+ * Something Today shows in a shape of its own, not as a card: each style decides where and how
+ * (Broadsheet's rings, Lanes' bars and weather row, Wall's tiles). A style shows a facet only
+ * when an extension that is turned on provides it and the viewer holds its `requires`; with
+ * several of one kind, the first (by extension) is used.
+ */
+export type TodayFacet = MemberCountsFacet | PhotoFacet | WeatherFacet | SetupHintFacet;
+
+interface FacetBase {
+	/** Unique, namespaced: `<extension>.<name>`. */
+	id: string;
+	/** Capability needed to read it (a display's too). */
+	requires: string;
+	/** Event prefixes whose arrival should reload (`'chores.'`). */
+	invalidateOn?: readonly string[];
+}
+
+/** How far one person is with the day's things (`memberId: null`: anyone's). */
+export interface MemberCount {
+	memberId: string | null;
+	done: number;
+	total: number;
+}
+
+/**
+ * Things of the day counted per person (chores): rings or bars, the "2 left" under a person's
+ * day, a display's total. `block` is the extension's block that shows or hides it; `href` the
+ * page the rings open. The words are translation keys: `titleKey` the section ("Chores today"),
+ * `labelKey` its short name ("Chores"), `ringKey` one ring (`name`, `done`, `total`), `leftKey`
+ * what is left for a person (`count`, with plural forms).
+ */
+export interface MemberCountsFacet extends FacetBase {
+	kind: 'perMember';
+	block: string;
+	href?: string;
+	titleKey: string;
+	labelKey: string;
+	ringKey: string;
+	leftKey: string;
+	load(app: TimelineApp): Promise<readonly MemberCount[]>;
+}
+
+/** The photo of the day: where it loads from and the month it is from (`YYYY-MM`); null for none. */
+export interface PhotoFacet extends FacetBase {
+	kind: 'photo';
+	load(app: TimelineApp): Promise<{ src: string; month: string } | null>;
+}
+
+/**
+ * The next hours of the weather, for a style that draws them itself (Lanes' weather row); null
+ * when there is no forecast. `refreshMs`: how often to read it again while the page is open.
+ */
+export interface WeatherFacet extends FacetBase {
+	kind: 'weather';
+	refreshMs?: number;
+	load(
+		app: TimelineApp,
+	): Promise<{ hours: readonly WeatherHour[]; min: number; max: number } | null>;
+}
+
+/** One hour of a forecast (the same shape as `HourlyPoint` of `@famos/ui/famos`). */
+export interface WeatherHour {
+	/** Epoch ms of the hour's start. */
+	at: number;
+	temperature: number;
+	/** WMO weather code. */
+	code: number;
+	precipitationProbability?: number | null;
+}
+
+/**
+ * A step of the first steps a new family sees on Today ("Set your city"), between the app's own
+ * (the people) and the AI. `load` says whether it is done; a failed load counts as done. With
+ * `fresh` its answer also says whether the family is new: it is asked only while the family has
+ * one person, and while no such step is done Today greets a new family with the first steps.
+ * The keys are the step's title, one line on it and its button; `order` places it among others.
+ */
+export interface SetupHintFacet extends FacetBase {
+	kind: 'setupHint';
+	order?: number;
+	fresh?: boolean;
+	titleKey: string;
+	textKey: string;
+	actionKey: string;
+	href: string;
+	load(app: TimelineApp): Promise<boolean>;
+}
+
+/**
+ * A block of Today an extension adds to "What Today shows", where each person, the family and a
+ * display may hide it. Its id is the extension's id or namespaced (`<extension>.<name>`), and it
+ * is what a card's or a facet's `block` names. `order` places it among the app's own blocks (10
+ * the clock … 120 the evening's done line, in tens). `titleKey` is the heading Today gives it when
+ * that differs from its name. With `items` the block is the day's things of that kind as a list
+ * of their own (the meals).
+ */
+export interface TodayBlockContribution {
+	id: string;
+	labelKey: string;
+	hintKey?: string;
+	order: number;
+	titleKey?: string;
+	items?: TimelineItem['kind'];
+}
+
 /** What an extension's `./web` entry exports. */
 /** A model-backed feature that can be switched off on its own (Settings → AI). */
 export interface AiFeatureContribution {
@@ -413,6 +522,10 @@ export interface WebExtension {
 	slots?: SlotContribution[];
 	/** Things that belong on the day's timeline on Today. */
 	timeline?: TimelineContribution[];
+	/** What Today shows in shapes of its own (counts per person, the photo, the weather, first steps). */
+	today?: TodayFacet[];
+	/** Blocks of Today this extension adds to "What Today shows". */
+	blocks?: TodayBlockContribution[];
 	nav?: NavContribution[];
 	drafts?: AnyDraftPresenter[];
 	/** Pages served under their path (matched by the app's catch-all route). */
@@ -437,22 +550,30 @@ export interface PageContribution {
 }
 
 export function defineWebExtension(ext: WebExtension): WebExtension {
+	const own = (id: string) => id.startsWith(`${ext.id}.`);
 	for (const d of ext.drafts ?? []) {
-		// The assistant also presents the personal core actions it proposes (a memory, a question
-		// to a person): core has no web entry of its own.
-		const ownsCoreAction = ext.id === 'assistant' && d.actionId.startsWith('core.');
-		if (!ownsCoreAction && !d.actionId.startsWith(`${ext.id}.`))
+		if (!own(d.actionId))
 			throw new Error(`Draft presenter "${d.actionId}" must be namespaced as "${ext.id}.…"`);
 	}
 	for (const c of [
 		...(ext.slots ?? []),
 		...(ext.timeline ?? []),
+		...(ext.today ?? []),
 		...(ext.nav ?? []),
 		...(ext.nav ?? []).flatMap((n) => n.children ?? []),
 		...(ext.pages ?? []),
 	]) {
-		if (!c.id.startsWith(`${ext.id}.`))
-			throw new Error(`Contribution "${c.id}" must be namespaced as "${ext.id}.…"`);
+		if (!own(c.id)) throw new Error(`Contribution "${c.id}" must be namespaced as "${ext.id}.…"`);
+	}
+	const blocks = new Set((ext.blocks ?? []).map((b) => b.id));
+	for (const id of blocks) {
+		if (id !== ext.id && !own(id))
+			throw new Error(`Block "${id}" must be "${ext.id}" or namespaced as "${ext.id}.…"`);
+	}
+	for (const c of [...(ext.slots ?? []), ...(ext.today ?? [])]) {
+		const block = 'block' in c ? c.block : undefined;
+		if (block !== undefined && !blocks.has(block))
+			throw new Error(`"${c.id}" names the block "${block}", which "${ext.id}" does not add`);
 	}
 	return ext;
 }

@@ -6,7 +6,7 @@
 	import { api } from '#lib/api.js';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { browserFormatLocale } from '#lib/family.svelte.js';
-	import { enabledOnly, slotContributions } from '#lib/extensions.js';
+	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { getLocale, loadLanguages, setLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { connectRealtime, onEvent } from '#lib/realtime.js';
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
@@ -69,6 +69,7 @@
 		draftPresenter: () => undefined,
 		slots: () => [],
 		isAppPath: () => false,
+		share: () => undefined,
 		toast: () => {},
 		// A display only looks: no actions, no offline queue.
 		runAction: () => Promise.reject(new Error('Displays cannot run actions')),
@@ -195,7 +196,7 @@
 	function visible<S extends 'display.widget' | 'display.status'>(slot: S) {
 		const held = me?.capabilities ?? [];
 		return enabledOnly(
-			slotContributions.filter((c) => c.slot === slot),
+			contributions.slots.filter((c) => c.slot === slot),
 			me?.disabledExtensions ?? [],
 		)
 			.filter((c) => !c.requires || held.includes(c.requires))
@@ -212,7 +213,7 @@
 
 	const ambient = $derived(
 		enabledOnly(
-			slotContributions.filter((c) => c.slot === 'display.ambient'),
+			contributions.slots.filter((c) => c.slot === 'display.ambient'),
 			me?.disabledExtensions ?? [],
 		) as SlotContribution<'display.ambient'>[],
 	);

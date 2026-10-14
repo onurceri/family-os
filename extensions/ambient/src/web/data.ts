@@ -21,6 +21,10 @@ export const loadWeather = (): Promise<Weather> =>
 
 export const photoUrl = (id: string) => `/api/v1/ambient/photos/${encodeURIComponent(id)}`;
 
+/** The photo of the day (same month, another year), or null when there is none. */
+export const loadPhotoOfToday = async (): Promise<{ id: string; month: string } | null> =>
+	unwrap(await api.GET('/api/v1/ambient/photos/today')).photo;
+
 export const loadSettings = async (): Promise<AmbientSettings> =>
 	unwrap(await api.GET('/api/v1/ambient/settings'));
 

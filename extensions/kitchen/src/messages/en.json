@@ -126,5 +126,8 @@
 	"draft_title_update_meal_plan_entry": "Change a planned meal",
 	"draft_title_remove_meal_plan_entry": "Take a meal off the plan",
 	"draft_a_meal": "A planned meal",
-	"draft_approve_remove_meal": "Take off"
+	"draft_approve_remove_meal": "Take off",
+	"today_meals_title": "Kitchen",
+	"today_block": "Meals",
+	"today_block_hint": "Today's meal plan."
 }

@@ -73,6 +73,7 @@ export default defineWebExtension({
 			hintKey: 'lists:today_block_shopping_hint',
 			order: 30,
 			glance: true,
+			requires: 'lists.view',
 			component: () => import('./ShoppingCard.svelte'),
 		},
 		{

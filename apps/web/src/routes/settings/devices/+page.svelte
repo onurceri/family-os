@@ -18,7 +18,8 @@
 	} from '@famos/ui/famos';
 	import { ChevronRight, Monitor, Plus, Smartphone, Tablet } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
-	import { slotContributions } from '#lib/extensions.js';
+	import Slot from '@famos/ui/slot';
+	import { contributions } from '#lib/extensions.js';
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -56,7 +57,7 @@
 	// mode), a display widget, a status pill or ambient mode needs it (`requires`).
 	const shown = new Set([
 		...familyModeCapabilities(),
-		...slotContributions.flatMap((c) =>
+		...contributions.slots.flatMap((c) =>
 			(c.slot === 'display.widget' ||
 				c.slot === 'display.status' ||
 				c.slot === 'display.ambient') &&
@@ -102,9 +103,6 @@
 			(editName !== opened.name ||
 				editNames !== (opened.display?.showNames ?? false) ||
 				[...editCaps].sort().join() !== [...(opened.display?.capabilities ?? [])].sort().join()),
-	);
-	const photosPage = $derived(
-		session.can('ambient.manage') && !session.disabledExtensions.includes('ambient'),
 	);
 
 	const when = (ms: number) =>
@@ -277,15 +275,8 @@
 		{/if}
 		{#if error}<p class="text-attention text-sm font-semibold" role="alert">{error}</p>{/if}
 
-		{#if photosPage}
-			<p class="text-ink-soft px-1 text-sm" data-testid="photos-weather-link">
-				{t('devices_photos_line')}
-				<a
-					class="text-info font-semibold underline underline-offset-2"
-					href="/settings/photos-weather">{t('nav_photos_weather')}</a
-				>
-			</p>
-		{/if}
+		<!-- Where else the family chooses what displays show (photos and the weather). -->
+		<Slot name="settings.display" />
 	</div>
 
 	<AddDevice

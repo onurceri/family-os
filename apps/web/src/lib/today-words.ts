@@ -2,11 +2,25 @@ import type { MemberDayWords, NextUpWords, StatusWords } from '@famos/ui/famos';
 import type { t as translate } from './i18n.svelte.js';
 
 /**
- * The words of Today's shared components, from the app's catalog. The components and
- * the model in `@famos/ui/famos` hold no words; a composition builds these once with `t` and
- * hands them down.
+ * The words of Today's shared components, from the app's catalog and from the facets and blocks
+ * extensions provide (`FacetWords`). The components and the model in `@famos/ui/famos` hold no
+ * words; Today builds these once and hands them down.
  */
 export type Translate = typeof translate;
+
+/** Words that come with what extensions provide: the counts per person, the meals' heading. */
+export interface FacetWords {
+	counts?: {
+		/** The section ("Chores today"). */
+		title: string;
+		/** Its short name ("Chores"). */
+		label: string;
+		ring(name: string, done: number, total: number): string;
+		/** What is left for a person ("2 chores left"). */
+		left(count: number): string;
+	};
+	meals?: string;
+}
 
 export interface TodayWords {
 	nextUp: NextUpWords;
@@ -16,6 +30,7 @@ export interface TodayWords {
 	nothingFor(names: string): string;
 	family: string;
 	anyone: string;
+	/** The counts per person's short name, and one ring (from the `perMember` facet). */
 	chores: string;
 	choreRing(name: string, done: number, total: number): string;
 	hourly: string;
@@ -27,6 +42,7 @@ export interface TodayWords {
 	nextUpError: string;
 	/** The label of the day by person while the hero shows the next thing. */
 	restOfDay: string;
+	/** The counts per person's section (from the facet), and the meals' heading (from their block). */
 	choresToday: string;
 	kitchen: string;
 	/** Wall's rows of each person's next thing: "Who, next". */
@@ -35,7 +51,7 @@ export interface TodayWords {
 	names(list: readonly string[]): string;
 }
 
-export function todayWords(t: Translate): TodayWords {
+export function todayWords(t: Translate, extra: FacetWords = {}): TodayWords {
 	return {
 		nextUp: {
 			nextUp: t('today_next_up'),
@@ -60,7 +76,7 @@ export function todayWords(t: Translate): TodayWords {
 			soon: (title, duration) => t('today_status_soon', { title, duration }),
 			at: (title, time) => t('today_status_at', { title, time }),
 			until: (title, time) => t('today_status_until', { title, time }),
-			choresLeft: (count) => t('today_status_chores', { count }),
+			choresLeft: (count) => extra.counts?.left(count) ?? '',
 			nothing: t('today_status_nothing'),
 		},
 		day: {
@@ -73,15 +89,15 @@ export function todayWords(t: Translate): TodayWords {
 		nothingFor: (names) => t('today_day_nothing_for', { names }),
 		family: t('today_family'),
 		anyone: t('today_anyone'),
-		chores: t('today_chores'),
-		choreRing: (name, done, total) => t('today_chore_ring', { name, done, total }),
+		chores: extra.counts?.label ?? '',
+		choreRing: (name, done, total) => extra.counts?.ring(name, done, total) ?? '',
 		hourly: t('today_hourly'),
 		photo: (month) => t('today_photo', { month }),
 		noneForMe: t('today_next_up_none'),
 		nextUpError: t('today_next_up_error'),
 		restOfDay: t('today_rest_title'),
-		choresToday: t('today_chores_title'),
-		kitchen: t('today_kitchen'),
+		choresToday: extra.counts?.title ?? '',
+		kitchen: extra.meals ?? '',
 		whoNext: t('today_who_next'),
 		names: (list) =>
 			list.length <= 1

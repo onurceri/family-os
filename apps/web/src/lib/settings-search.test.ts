@@ -7,7 +7,9 @@ const groups = [
 	{ section: 'family', items: ['nav_members', 'nav_devices_displays', 'nav_photos_weather'] },
 	{ section: 'system', items: ['nav_backups'] },
 ];
-const label = (key: string) => (en as Record<string, string>)[key] ?? key;
+/** An extension's page is named from its own catalog. */
+const labels: Record<string, string> = { ...en, nav_photos_weather: 'Photos and weather' };
+const label = (key: string) => labels[key] ?? key;
 const found = (query: string) => filterSettings(groups, query, label);
 
 describe('settings search', () => {

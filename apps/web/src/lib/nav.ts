@@ -7,7 +7,6 @@ import {
 	DatabaseBackup,
 	Eye,
 	Gauge,
-	Images,
 	KeyRound,
 	Mail,
 	MapPin,
@@ -22,7 +21,7 @@ import {
 	Users,
 } from '@lucide/svelte';
 import type { Component } from 'svelte';
-import { enabledOnly, navContributions } from './extensions';
+import { contributions, enabledOnly } from './extensions';
 
 /**
  * Navigation model:
@@ -39,10 +38,14 @@ export interface NavItem {
 	group?: string;
 	/** For settings pages: the part of the settings list (see SETTINGS_SECTIONS). */
 	section?: SettingsSection;
+	/** Lower comes first. */
+	order?: number;
 	/** Capability needed to see this entry. */
 	requires?: string;
-	/** An app page that shows an extension's settings: it goes when that extension is turned off. */
-	extension?: string;
+	/** The page where things are shared with the family (its key is `n`). */
+	share?: boolean;
+	/** The key that opens the page after `g`. */
+	shortcut?: string;
 	/** Other pages that belong to this entry (the settings list marks it while they are open). */
 	alsoOn?: string[];
 	badge?: () => Promise<number>;
@@ -70,10 +73,15 @@ export const PHONE_PRIMARY_SLOTS = 3;
 
 export const TODAY: NavItem = { id: 'core.today', path: '/', labelKey: 'nav_home', icon: Sun };
 
-/** Pages owned by the app itself, all of them settings (the settings list; More on phones). */
+/**
+ * Pages owned by the app itself, all of them settings (the settings list; More on phones). Their
+ * `order` leaves room for the pages extensions add to a part of the list (Photos and weather, 35,
+ * comes after Devices and displays); on a tie the app's own page comes first.
+ */
 const APP_SETTINGS: NavItem[] = [
 	{
 		id: 'core.account',
+		order: 10,
 		path: '/settings/profile',
 		labelKey: 'nav_profile',
 		icon: UserRound,
@@ -82,6 +90,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.appearance',
+		order: 20,
 		path: '/settings/appearance',
 		labelKey: 'nav_appearance',
 		icon: Palette,
@@ -90,6 +99,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.notificationSettings',
+		order: 30,
 		path: '/settings/notifications',
 		labelKey: 'nav_notifications',
 		icon: Bell,
@@ -98,16 +108,18 @@ const APP_SETTINGS: NavItem[] = [
 		requires: 'core.notifications.receive',
 	},
 	{
-		id: 'assistant.memorySettings',
+		id: 'core.memory',
+		order: 40,
 		path: '/settings/memory',
 		labelKey: 'nav_memory',
 		icon: BookmarkPlus,
 		group: 'settings',
 		section: 'you',
-		requires: 'assistant.use',
+		requires: 'core.memory.use',
 	},
 	{
 		id: 'core.connectedApps',
+		order: 45,
 		path: '/settings/connected-apps',
 		labelKey: 'nav_connected_apps',
 		icon: KeyRound,
@@ -117,6 +129,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.members',
+		order: 10,
 		path: '/settings/members',
 		labelKey: 'nav_members',
 		icon: Users,
@@ -126,6 +139,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.roles',
+		order: 20,
 		path: '/settings/roles',
 		labelKey: 'nav_roles',
 		icon: ShieldCheck,
@@ -135,6 +149,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.devices',
+		order: 30,
 		path: '/settings/devices',
 		labelKey: 'nav_devices_displays',
 		icon: Smartphone,
@@ -143,17 +158,8 @@ const APP_SETTINGS: NavItem[] = [
 		requires: 'core.devices.manage',
 	},
 	{
-		id: 'ambient.photosWeather',
-		path: '/settings/photos-weather',
-		labelKey: 'nav_photos_weather',
-		icon: Images,
-		group: 'settings',
-		section: 'family',
-		requires: 'ambient.manage',
-		extension: 'ambient',
-	},
-	{
 		id: 'core.features',
+		order: 40,
 		path: '/settings/features',
 		labelKey: 'nav_features',
 		icon: Blocks,
@@ -163,6 +169,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.region',
+		order: 42,
 		path: '/settings/region',
 		labelKey: 'nav_language_region',
 		icon: MapPin,
@@ -172,6 +179,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.theme',
+		order: 44,
 		path: '/settings/theme',
 		labelKey: 'nav_theme',
 		icon: Paintbrush,
@@ -181,6 +189,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.ai',
+		order: 10,
 		path: '/settings/ai',
 		labelKey: 'nav_ai',
 		icon: Sparkles,
@@ -190,6 +199,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.aiPrivacy',
+		order: 20,
 		path: '/settings/ai/privacy',
 		labelKey: 'nav_ai_privacy',
 		icon: Eye,
@@ -199,6 +209,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.aiUsage',
+		order: 30,
 		path: '/settings/ai/usage',
 		labelKey: 'nav_ai_usage',
 		alsoOn: ['/settings/ai/activity'],
@@ -209,6 +220,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.autoApproval',
+		order: 40,
 		path: '/settings/auto-approval',
 		labelKey: 'nav_auto_approval',
 		icon: CheckCheck,
@@ -218,6 +230,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.backups',
+		order: 10,
 		path: '/settings/backups',
 		labelKey: 'nav_backups',
 		icon: DatabaseBackup,
@@ -227,6 +240,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.email',
+		order: 20,
 		path: '/settings/email',
 		labelKey: 'nav_email',
 		icon: Mail,
@@ -236,6 +250,7 @@ const APP_SETTINGS: NavItem[] = [
 	},
 	{
 		id: 'core.telegram',
+		order: 30,
 		path: '/settings/telegram',
 		labelKey: 'nav_telegram',
 		icon: Send,
@@ -268,9 +283,9 @@ export function buildNav(
 	can: Can,
 	/** Turned-off extensions, whose pages disappear from navigation. */
 	disabled: readonly string[] = [],
-	contributions: readonly NavContribution[] = navContributions,
+	entries: readonly NavContribution[] = contributions.nav,
 ): NavModel {
-	const visible = enabledOnly(contributions, disabled)
+	const visible = enabledOnly(entries, disabled)
 		.filter((c) => allowed(c, can))
 		.map(({ children, ...c }): Omit<NavContribution, 'children'> & Pick<NavItem, 'children'> => {
 			const shown = children?.filter((child) => allowed(child, can));
@@ -290,13 +305,11 @@ export function buildNav(
 		}
 		return [...groups].map(([group, items]) => ({ group, items }));
 	};
-	// The app's own settings come first in each part, then pages extensions add.
+	// The app's own settings and the pages extensions add, in one order (the app's first on a tie).
 	const settingsItems = [
-		...APP_SETTINGS.filter(
-			(i) => allowed(i, can) && !(i.extension && disabled.includes(i.extension)),
-		),
-		...visible.filter((c) => c.placement === 'more' && c.group === 'settings').toSorted(byOrder),
-	];
+		...APP_SETTINGS.filter((i) => allowed(i, can)),
+		...visible.filter((c) => c.placement === 'more' && c.group === 'settings'),
+	].toSorted(byOrder);
 	const settings = SETTINGS_SECTIONS.map((section) => ({
 		section,
 		items: settingsItems.filter((i) => (i.section ?? 'system') === section),

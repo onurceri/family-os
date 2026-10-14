@@ -5,6 +5,7 @@ import { loadTasks } from './data.js';
 /** Open tasks that are due at a time of day, on the day's timeline on Today. */
 export const tasksTimeline: TimelineContribution = {
 	id: 'lists.timedTasks',
+	requires: 'lists.view',
 	invalidateOn: ['lists.task.'],
 	async load(day, app) {
 		const tasks = await loadTasks();

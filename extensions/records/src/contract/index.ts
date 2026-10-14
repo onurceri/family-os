@@ -305,3 +305,26 @@ export type RecordDocument = z.infer<typeof RecordDocumentSchema>;
 
 export const obligationChangedPayload = z.object({ recordId: z.string() });
 export const documentChangedPayload = z.object({ recordId: z.string() });
+
+/** What a record's page passes to the sections of its `record.section` slot. */
+export interface RecordSectionProps {
+	recordId: string;
+	recordKind: string;
+	recordName: string;
+	recordUrl?: string;
+	/** Capability whose holders are reminded about new obligations when nobody is assigned. */
+	audience?: string;
+	presets?: readonly ObligationPreset[];
+}
+
+declare global {
+	interface FamosExtensionSlots {
+		/**
+		 * A section of a record's page. The domain extension owns the page and renders this slot
+		 * with `<Slot name="record.section" props={…} />`; `records` contributes the obligations
+		 * and the papers, other extensions can add their own. `recordName` and `recordUrl` let a
+		 * section keep lists that span records readable.
+		 */
+		'record.section': RecordSectionProps;
+	}
+}

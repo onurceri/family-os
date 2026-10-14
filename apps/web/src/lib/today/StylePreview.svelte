@@ -18,9 +18,13 @@
 	let { style }: { style: StyleId } = $props();
 
 	const real = useApp();
-	/** The app for the picture: no capabilities, no slots and no events, so nothing mounts or loads. */
+	/**
+	 * The app for the picture: no capabilities, no place to share, no slots and no events, so nothing
+	 * mounts or loads.
+	 */
 	const app: AppContext = Object.assign(Object.create(real) as AppContext, {
 		can: () => false,
+		share: () => undefined,
 		slots: () => [],
 		onEvent: () => () => {},
 		toast: () => {},

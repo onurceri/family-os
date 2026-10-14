@@ -1,21 +1,45 @@
 import { defineWebExtension } from '@famos/ui/slots';
+import { Images } from '@lucide/svelte';
+import { photoFacet, placeStep, SETTINGS_PATH, weatherFacet } from './today.js';
 
 /**
- * Ambient UI: display content settings, the weather of Today (and of a display's Today) and
- * ambient mode of family displays. Ambient mode is a `display.ambient` contribution: the display page only offers the
- * place, this extension decides when to show itself.
+ * Ambient UI: the Photos and weather settings page, the weather of Today (and of a display's
+ * Today), the photo of the day, the place among a new family's first steps and ambient mode of
+ * family displays. Ambient mode is a `display.ambient` contribution: the display page only offers
+ * the place, this extension decides when to show itself.
  */
 export default defineWebExtension({
 	id: 'ambient',
 	labelKey: 'ambient:feature_name',
 	descriptionKey: 'ambient:feature_description',
+	nav: [
+		{
+			id: 'ambient.photosWeather',
+			path: SETTINGS_PATH,
+			labelKey: 'ambient:nav_photos_weather',
+			icon: Images,
+			placement: 'more',
+			group: 'settings',
+			section: 'family',
+			// After Devices and displays.
+			order: 35,
+			requires: 'ambient.manage',
+		},
+	],
+	pages: [
+		{
+			id: 'ambient.settings',
+			path: SETTINGS_PATH,
+			component: () => import('./PhotosWeatherPage.svelte'),
+		},
+	],
 	slots: [
 		{
 			slot: 'settings.display',
 			id: 'ambient.content',
 			order: 10,
 			requires: 'ambient.manage',
-			component: () => import('./DisplayContent.svelte'),
+			component: () => import('./DisplaysLink.svelte'),
 		},
 		{
 			slot: 'setup.step',
@@ -38,4 +62,5 @@ export default defineWebExtension({
 			component: () => import('./Ambient.svelte'),
 		},
 	],
+	today: [photoFacet, weatherFacet, placeStep],
 });

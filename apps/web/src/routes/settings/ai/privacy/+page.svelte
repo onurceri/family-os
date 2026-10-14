@@ -3,7 +3,7 @@
 	import { unwrap } from '@famos/api-client';
 	import { Card, Notice, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
-	import { enabledOnly, webExtensions } from '#lib/extensions.js';
+	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
@@ -49,7 +49,9 @@
 
 	// Switches: AI as a whole, and each AI feature of the extensions that are on.
 	const aiFeatures = $derived(
-		enabledOnly(webExtensions, session.disabledExtensions).flatMap((e) => e.aiFeatures ?? []),
+		enabledOnly(contributions.extensions, session.disabledExtensions).flatMap(
+			(e) => e.aiFeatures ?? [],
+		),
 	);
 	async function saveSwitches(next: AiSettings['switches']) {
 		if (!settings) return;

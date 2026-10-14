@@ -4,7 +4,7 @@
 	import { Button } from '@famos/ui/button';
 	import { Card, Notice, Page, PageHeader, Section } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
-	import { enabledOnly, webExtensions } from '#lib/extensions.js';
+	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import type { ActivityEntry } from '../types.js';
@@ -43,7 +43,7 @@
 
 	const features = $derived(
 		new Map(
-			enabledOnly(webExtensions, [])
+			enabledOnly(contributions.extensions, [])
 				.flatMap((e) => e.aiFeatures ?? [])
 				.map((f) => [f.id, f.labelKey]),
 		),
@@ -54,7 +54,7 @@
 		return key ? tDynamic(key) : id;
 	};
 	const areaLabel = (id: string) => {
-		const key = webExtensions.find((e) => e.id === id)?.labelKey;
+		const key = contributions.extension(id)?.labelKey;
 		return key ? tDynamic(key) : id;
 	};
 	const known = new Set([

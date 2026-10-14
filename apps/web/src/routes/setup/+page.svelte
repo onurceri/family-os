@@ -10,7 +10,7 @@
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { getLanguages, getLocale, setLocale, t } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { enabledOnly, slotContributions } from '#lib/extensions.js';
+	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import Slot from '@famos/ui/slot';
 	import type { SlotContribution } from '@famos/ui/slots';
 
@@ -89,7 +89,7 @@
 			if (sharedDevice) {
 				await api.POST('/api/v1/core/devices/trust', { body: { name: t('setup_device_name') } });
 			}
-			extraSteps = enabledOnly(slotContributions, session.disabledExtensions)
+			extraSteps = enabledOnly(contributions.slots, session.disabledExtensions)
 				.filter((c): c is SlotContribution<'setup.step'> => c.slot === 'setup.step')
 				.toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
 			if (extraSteps.length > 0) step = 'more';
