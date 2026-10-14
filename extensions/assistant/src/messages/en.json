@@ -86,6 +86,6 @@
 	"today_block": "Ask the assistant",
 	"today_block_hint": "A link at the bottom to ask a question.",
 	"someone": "someone",
-	"proposed": "Suggested: {{what}}",
+	"proposed": "Suggested, not added yet: {{what}}",
 	"proposed_automatic": "Added automatically: {{what}}"
 }

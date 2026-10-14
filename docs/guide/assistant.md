@@ -37,7 +37,7 @@ Suggestions appear as the same cards as in Quick add, right under the answer. Pe
 
 Ask "was it approved?" and the assistant looks up the suggestions it made in this conversation, with what became of each and who decided it ("approved by Sofia"). Suggestions made elsewhere, in Quick add, another conversation or a connected app, are not its own and it does not report them.
 
-Under an answer that made suggestions, the assistant always adds a fixed line for each one, such as "Suggested: Add shopping items: Milk, Oat milk". It is written by the app from the suggestion itself, so it is right even if the wording above it is not. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
+Under an answer that made suggestions, the assistant always adds a fixed line for each one, such as "Suggested, not added yet: Add shopping items: Milk, Oat milk" (or "Added automatically: …" when auto-approval adds it). It is written by the app from the suggestion itself, so it is right even if the wording above it is not, and it is there even when the assistant ran out of steps before writing an answer. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
 
 A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation.
 

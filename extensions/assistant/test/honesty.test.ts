@@ -95,7 +95,7 @@ describe('the answer never says something else than what was suggested', () => {
 
 		const content = await answer(sent);
 		expect(content).toContain('I have suggested ticking off milk and oat milk.');
-		expect(content).toContain('Suggested: Add shopping items: Milk, Oat milk');
+		expect(content).toContain('Suggested, not added yet: Add shopping items: Milk, Oat milk');
 		expect((await drafts()).map((d) => d.action_id)).toEqual(['lists.addShoppingItems']);
 	});
 
