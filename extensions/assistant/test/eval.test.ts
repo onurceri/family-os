@@ -146,7 +146,7 @@ describe('a case run end to end with a scripted model', () => {
 			'calendar.findEvents',
 			'calendar.changeEvent',
 		]);
-		expect(result.outcome.turns[0]?.reply).toContain('Suggested: ');
+		expect(result.outcome.turns[0]?.reply).toContain('Suggested, not added yet: ');
 	});
 
 	it('fails the follow-up when the model changes the whole series (real model output)', async () => {
@@ -222,6 +222,6 @@ describe('a case run end to end with a scripted model', () => {
 		const result = await runCase(byName('Turkish'), llm);
 		expect(result.failed).toEqual([expect.stringContaining('reply never says')]);
 		// The host's own line is in the family language.
-		expect(result.outcome.turns[0]?.reply).toContain('Önerildi: ');
+		expect(result.outcome.turns[0]?.reply).toContain('Önerildi, henüz eklenmedi: ');
 	});
 });
