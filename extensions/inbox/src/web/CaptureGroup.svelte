@@ -10,7 +10,13 @@
 	import { approvals, type Edits, withEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
-	import { approveSelectedKey, type Capture, captureLine, groupBusyState } from './item-view.js';
+	import {
+		approveSelectedKey,
+		type Capture,
+		captureLine,
+		groupBusyState,
+		pickedDrafts,
+	} from './item-view.js';
 
 	/**
 	 * One capture and what was found in it, decided together: a line saying what it is, the
@@ -35,15 +41,13 @@
 	const canDecide = $derived(app.can('core.drafts.approve'));
 	const todo = $derived(drafts.filter((d) => d.status === 'pending' || d.status === 'failed'));
 
-	// Everything waiting is ticked until the person unticks it.
-	let unpicked = $state<ReadonlySet<string>>(new Set());
-	const picked = $derived(todo.filter((d) => !unpicked.has(d.id)));
-	const rest = $derived(todo.filter((d) => unpicked.has(d.id)));
+	// What waits starts ticked, except what would add a second one; the person's ticks win.
+	let choices = $state<ReadonlyMap<string, boolean>>(new Map());
+	const picked = $derived(pickedDrafts(todo, choices));
+	const pickedIds = $derived(new Set(picked.map((d) => d.id)));
+	const rest = $derived(todo.filter((d) => !pickedIds.has(d.id)));
 	const setPicked = (id: string, on: boolean) => {
-		const next = new Set(unpicked);
-		if (on) next.delete(id);
-		else next.add(id);
-		unpicked = next;
+		choices = new Map(choices).set(id, on);
 	};
 
 	// Edits saved on cards, approved together with their suggestion.
@@ -196,7 +200,7 @@
 						{draft}
 						compact
 						quiet
-						picked={!unpicked.has(draft.id)}
+						picked={pickedIds.has(draft.id)}
 						onpick={open && canDecide ? (on) => setPicked(draft.id, on) : undefined}
 						oneditchange={(on) => setEditing(draft.id, on)}
 						onedit={open && canDecide
@@ -204,6 +208,8 @@
 							: undefined}
 						onreplaced={() => {
 							edits = withEdit(edits, draft.id, undefined);
+							// The person chose the change: it goes in with the others.
+							setPicked(draft.id, true);
 							onchanged?.();
 						}}
 						byline={false}
@@ -219,7 +225,7 @@
 				<p class="text-ink-soft mr-auto text-sm" role="status">{t('save_edit_first')}</p>
 			{/if}
 			<ConfirmButton
-				label={rest.length > 0 ? t('dismiss_rest') : t('dismiss_all')}
+				label={picked.length > 0 && rest.length > 0 ? t('dismiss_rest') : t('dismiss_all')}
 				confirmLabel={t('dismiss_rest_confirm')}
 				onconfirm={dismissRest}
 				disabled={gate.dismissDisabled}

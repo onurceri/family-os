@@ -137,6 +137,24 @@ export const groupBusyState = (state: {
 	hint: state.editing > 0,
 });
 
+/**
+ * Whether a suggestion in a group starts ticked. One that offers to change what is already there
+ * (move the event) would add a second one if the group approved it as it is, and one that seems
+ * to be there already takes a second tap on its own card: neither goes in unless the person
+ * ticks it. One of which only some things exist still adds the rest, so it starts ticked.
+ */
+export const pickedByDefault = (draft: Pick<Draft, 'instead' | 'mayExist'>): boolean =>
+	!draft.instead && !draft.mayExist;
+
+/**
+ * The suggestions a group approves: the person's own ticks and unticks, and for the rest
+ * whether they start ticked. Choosing the offered change is a choice too: that one is ticked.
+ */
+export const pickedDrafts = <D extends Pick<Draft, 'id' | 'instead' | 'mayExist'>>(
+	todo: readonly D[],
+	choices: ReadonlyMap<string, boolean>,
+): D[] => todo.filter((d) => choices.get(d.id) ?? pickedByDefault(d));
+
 /** The group's approve button: "Add selected" only when every picked suggestion adds something. */
 export const approveSelectedKey = (
 	picked: readonly { actionId: string }[],

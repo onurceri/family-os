@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { askedBy, draftHeadline, draftKicker, proposedByMember } from '../src/draft-title.js';
-import { DraftCard } from '../src/famos/index.js';
-import { insteadOffer } from '../src/slots.js';
+import { DraftCard, draftButtons } from '../src/famos/index.js';
+import { changedValue, insteadOffer } from '../src/slots.js';
 import { cleanup, click, qa, render } from './helpers.js';
 
 afterEach(cleanup);
@@ -242,6 +242,42 @@ describe('a suggestion that offers to change what is already there', () => {
 		expect(onapprove).toHaveBeenCalledOnce();
 	});
 
+	it('makes the move the filled button and adding it as new a secondary one', () => {
+		// The card pushed people to the duplicate: "Add as new" was the filled button.
+		const el = offered();
+		const move = button(el, 'Move it to Sat 14 Nov 09:00 instead');
+		const addNew = button(el, 'Add as new');
+		expect(move.className).toContain('bg-attention');
+		expect(addNew.className).not.toContain('bg-attention');
+		expect(addNew.className).toContain('bg-idle');
+	});
+
+	it('in a group, offers the move as an outline beside the tick: the group has the filled one', () => {
+		const onchoose = vi.fn();
+		const el = render(DraftCard, {
+			kind: 'Calendar',
+			title: 'Regional gala',
+			fields: [],
+			status: 'pending',
+			labels: { ...labels, addAsNew: 'Add as new' },
+			quiet: true,
+			selectable: { checked: false, label: 'Pick', onchange: vi.fn() },
+			instead: {
+				there: 'Already on the calendar: Regional Gala · Sat 7 Nov 18:00',
+				action: 'Move it to Sat 14 Nov 09:00 instead',
+				onchoose,
+			},
+			onapprove: vi.fn(),
+			onreject: vi.fn(),
+		});
+		const move = button(el, 'Move it to Sat 14 Nov 09:00 instead');
+		expect(move.className).toContain('border');
+		expect(move.className).not.toContain('bg-ink');
+		expect(button(el, 'Add as new')).toBeUndefined();
+		click(move);
+		expect(onchoose).toHaveBeenCalledOnce();
+	});
+
 	it('is not offered to someone who cannot decide', () => {
 		const el = offered(vi.fn(), vi.fn(), false);
 		expect(el.textContent).not.toContain('instead');
@@ -300,5 +336,40 @@ describe('insteadOffer', () => {
 				t,
 			}),
 		).toEqual({ there: 'app:draft_instead_there_unnamed', action: 'app:draft_instead' });
+	});
+});
+
+describe('draftButtons', () => {
+	it('makes the offered change the primary action of a card decided on its own', () => {
+		expect(draftButtons({ offered: true, warned: true, picking: false })).toEqual({
+			offer: 'primary',
+			approve: 'secondary-confirm',
+		});
+	});
+
+	it('keeps the group button the one filled button', () => {
+		expect(draftButtons({ offered: true, warned: true, picking: true })).toEqual({
+			offer: 'outline',
+			approve: 'none',
+		});
+		expect(draftButtons({ offered: false, warned: false, picking: true })).toEqual({
+			offer: 'none',
+			approve: 'none',
+		});
+	});
+
+	it('asks a second tap to approve what may already be there', () => {
+		expect(draftButtons({ offered: false, warned: true, picking: false }).approve).toBe(
+			'primary-confirm',
+		);
+		expect(draftButtons({ offered: false, warned: false, picking: false }).approve).toBe('primary');
+	});
+});
+
+describe('changedValue', () => {
+	it('reads old → new when the old value is known and differs', () => {
+		expect(changedValue('1 l', '2 l')).toBe('1 l → 2 l');
+		expect(changedValue('2 l', '2 l')).toBe('2 l');
+		expect(changedValue(undefined, '2 l')).toBe('2 l');
 	});
 });

@@ -273,6 +273,16 @@ export interface PresenterContext {
 	timeZone: string;
 }
 
+/** What the fields a waiting change touches hold now, keyed like its input; null when unknown. */
+export type DraftBefore = Readonly<Record<string, unknown>> | null;
+
+/**
+ * A row's value for a change: "old → new" when the old value is known and differs, else the new
+ * value alone.
+ */
+export const changedValue = (from: string | undefined, to: string): string =>
+	from === undefined || from === to ? to : `${from} \u2192 ${to}`;
+
 export interface DraftField {
 	label: string;
 	value: string;
@@ -301,7 +311,11 @@ export interface DraftPresenter<I = unknown> {
 	kind(context: PresenterContext): string;
 	icon?: Component;
 	title(input: I, context: PresenterContext): string;
-	fields(input: I, context: PresenterContext): DraftField[];
+	/**
+	 * The card's rows. `before` is what the fields a change touches hold now, keyed like the input
+	 * (from the action's `currentValues`, waiting drafts only), for rows that read "old → new".
+	 */
+	fields(input: I, context: PresenterContext, before?: DraftBefore): DraftField[];
 	/** Label of the approve button, e.g. "Add to calendar". */
 	approveLabel?(context: PresenterContext): string;
 	/** What a decided card says when the neutral "Done" is too vague, e.g. "Added to the calendar". */

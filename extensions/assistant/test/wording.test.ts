@@ -141,7 +141,11 @@ describe('suggestions', () => {
 			.execute();
 		await k.runner.approveDraft(drafts[0]?.id as string, can.actor);
 		await ask(can, 'And now?', thread);
-		expect(k.llm.chatTrace.at(-1)?.result).toContain('"status":"approved"');
+		const approved = k.llm.chatTrace.at(-1)?.result ?? '';
+		expect(approved).toContain('"status":"approved"');
+		// Who decided it reaches the model as the person's name, which it may repeat as it is.
+		expect(approved).toContain(`"decidedBy":"${can.member.displayName}"`);
+		expect(approved).not.toMatch(/"decidedBy":"member:/);
 	});
 
 	it("does not show another member's suggestions", async () => {

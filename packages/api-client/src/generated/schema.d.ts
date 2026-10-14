@@ -16540,6 +16540,9 @@ export interface operations {
                                 time?: string;
                             };
                         } | null;
+                        before: {
+                            [key: string]: unknown;
+                        } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
                     }[];
@@ -16835,6 +16838,9 @@ export interface operations {
                                 time?: string;
                             };
                         } | null;
+                        before: {
+                            [key: string]: unknown;
+                        } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
                     };
@@ -16996,6 +17002,9 @@ export interface operations {
                                 date: string;
                                 time?: string;
                             };
+                        } | null;
+                        before: {
+                            [key: string]: unknown;
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
@@ -17159,6 +17168,9 @@ export interface operations {
                                 time?: string;
                             };
                         } | null;
+                        before: {
+                            [key: string]: unknown;
+                        } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
                     };
@@ -17320,6 +17332,9 @@ export interface operations {
                                 date: string;
                                 time?: string;
                             };
+                        } | null;
+                        before: {
+                            [key: string]: unknown;
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;

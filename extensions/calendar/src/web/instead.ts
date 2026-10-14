@@ -10,7 +10,7 @@ export interface OfferedChange {
 }
 
 /** A day and maybe a time, short, in the family's formats ("Sat 7 Nov 18:00"). */
-function when(date: string, time: string | undefined, c: PresenterContext): string {
+export function when(date: string, time: string | undefined, c: PresenterContext): string {
 	const day = formatDate(date, c.formatLocale, {
 		weekday: 'short',
 		day: 'numeric',

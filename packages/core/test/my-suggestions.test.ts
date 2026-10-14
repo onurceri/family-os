@@ -133,7 +133,7 @@ describe('core.mySuggestions', () => {
 
 		const listed = await mine(hermes);
 		expect(listed.map((s) => s.id)).toEqual([ownKey.draftId]);
-		expect(listed[0]).toMatchObject({ status: 'approved', decidedBy: adult.member.id });
+		expect(listed[0]).toMatchObject({ status: 'approved', decidedBy: adult.member.displayName });
 		expect(listed[0]?.automatic).toBeUndefined();
 		// The assistant sees its own thread; the person, asking directly, sees all of theirs.
 		expect((await mine(via('assistant', 'asst_thread_1'))).map((s) => s.id)).toEqual([thread]);
@@ -167,7 +167,7 @@ describe('core.mySuggestions', () => {
 		const id = await suggest(thread, 'Swim cap');
 		await k.runner.approveDraft(id, adult.actor);
 		expect(await mine(thread)).toMatchObject([
-			{ id, status: 'approved', decidedBy: adult.member.id },
+			{ id, status: 'approved', decidedBy: adult.member.displayName },
 		]);
 	});
 });

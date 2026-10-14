@@ -737,8 +737,10 @@ describe('tools', () => {
 		const text = res.body.result.content[0].text as string;
 		expect(text).toContain('Delft project call');
 		expect(text).not.toContain('Maas footbridge');
-		// Who decided it, as a reference the people list resolves (never a raw id).
-		expect(text).toMatch(/"decidedBy":"member:[0-9a-f]+"/);
+		// Who decided it, by the name people know them by: an agent repeats it as it is, so it is
+		// never an id or a handle.
+		expect(text).toContain('"decidedBy":"Parent"');
+		expect(text).not.toMatch(/"decidedBy":"member:/);
 		expect(text).not.toContain(adminId);
 	});
 

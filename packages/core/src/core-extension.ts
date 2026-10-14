@@ -197,6 +197,11 @@ export const DraftSchema = z.object({
 			at: z.object({ date: z.string(), time: z.string().optional() }).optional(),
 		})
 		.nullable(),
+	/**
+	 * Waiting only: what the fields it changes hold now, keyed like its input, so the card reads
+	 * "old → new". Null for actions that do not say, and when the thing is gone.
+	 */
+	before: z.record(z.string(), z.unknown()).nullable(),
 	/** The action it proposed before a reviewer chose its alternative; null when it never changed. */
 	replacedFrom: z.string().nullable(),
 	/** Whether the member reading it may decide it (approve or reject it on its merits). */
@@ -236,6 +241,7 @@ const toDraft = (
 	titleKey: string | null = null,
 	instead: DraftAlternative | null = null,
 	canDecide = false,
+	before: Record<string, unknown> | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -268,6 +274,7 @@ const toDraft = (
 		input: instead.input,
 		...(instead.at && { at: instead.at }),
 	},
+	before,
 	replacedFrom:
 		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
 	canDecide,
@@ -1268,7 +1275,10 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					/** When it was suggested and, once decided, when; ISO 8601 UTC. */
 					suggestedAt: z.string(),
 					decidedAt: z.string().optional(),
-					/** The member who decided it (approved, rejected or took it back). */
+					/**
+					 * The name of the person who decided it (approved, rejected or took it back), as
+					 * people call them: an agent repeats it, so it is never an id or a handle.
+					 */
 					decidedBy: z.string().optional(),
 					/** Approved by the household's auto-approval setting, not by a person deciding it. */
 					automatic: z.literal(true).optional(),
@@ -1278,7 +1288,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		readOnly: true,
 		ai: {
 			description:
-				"Lists the suggestions made in this conversation (the changes you proposed here for the person; for a connected app, the ones made through its app key), newest first, with what became of each: waiting, approved, rejected (withdrawn when the person took it back), undone, expired or failed, and who decided it (decidedBy; automatic when the household's auto-approval approved it). Suggestions made elsewhere (Quick add, other conversations or apps) are not listed: never present them as made here. Use it when the person asks whether something was approved or added, or what is still waiting.",
+				"Lists the suggestions made in this conversation (the changes you proposed here for the person; for a connected app, the ones made through its app key), newest first, with what became of each: waiting, approved, rejected (withdrawn when the person took it back), undone, expired or failed, and who decided it (decidedBy, the person's name; automatic when the household's auto-approval approved it). Suggestions made elsewhere (Quick add, other conversations or apps) are not listed: never present them as made here. Use it when the person asks whether something was approved or added, or what is still waiting.",
 		},
 		async run(uow, { limit }) {
 			const owner =
@@ -1354,6 +1364,21 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					return undefined;
 				}
 			};
+			// Who decided, by name: an archived member still decided it, so the table is read.
+			const deciders = [
+				...new Set(mine.flatMap((row) => (row.decided_by === null ? [] : [row.decided_by]))),
+			];
+			const names = new Map(
+				deciders.length === 0
+					? []
+					: (
+							await members(uow.db)
+								.selectFrom('core_members')
+								.select(['id', 'display_name'])
+								.where('id', 'in', deciders)
+								.execute()
+						).map((m) => [m.id, m.display_name]),
+			);
 			const suggestions = await Promise.all(
 				mine.map(async (row) => {
 					const reason = draftReason(row);
@@ -1370,7 +1395,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 						...(reason !== null && { reason }),
 						suggestedAt: iso(row.created_at),
 						...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
-						...(row.decided_by !== null && { decidedBy: row.decided_by }),
+						...(row.decided_by !== null &&
+							names.has(row.decided_by) && { decidedBy: names.get(row.decided_by) }),
 						...(row.auto_approved === 1 && { automatic: true as const }),
 					};
 				}),
@@ -1399,6 +1425,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			deps.registry().actions.get(row.action_id)?.draftTitle ?? null,
 			await deps.runner().alternative(row),
 			deps.runner().mayDecide(row, reader),
+			await deps.runner().currentValues(row),
 		);
 
 	const approve = defineRoute({

@@ -1,0 +1,148 @@
+import { formatClock, formatDate } from '@famos/time';
+import {
+	changedValue,
+	type DraftBefore,
+	type DraftField,
+	type PresenterContext,
+} from '@famos/ui/slots';
+import { when } from './instead.js';
+
+/** What a `calendar.changeEvent` draft carries. */
+export type ChangeEventInput = {
+	id: string;
+	label?: string;
+	title?: string;
+	allDay?: boolean;
+	date?: string;
+	endDate?: string | null;
+	startTime?: string;
+	endTime?: string | null;
+	memberIds?: string[];
+	location?: string | null;
+	notes?: string | null;
+	tags?: string[];
+	occurrence?: string;
+};
+
+interface When {
+	allDay?: boolean;
+	date?: string;
+	endDate?: string | null;
+	startTime?: string | null;
+	endTime?: string | null;
+}
+
+const WHEN_KEYS = ['allDay', 'date', 'endDate', 'startTime', 'endTime'] as const;
+
+/**
+ * When an event is, short ("Sat 7 Nov 07:45"). `timeOnly` leaves the day out, for the new side of
+ * a change that keeps the day; `withEnd` adds the end time, when the change sets one.
+ */
+function whenText(w: When, c: PresenterContext, withEnd: boolean, timeOnly = false): string {
+	const t = (key: string) => c.t(`calendar:${key}`);
+	if (!w.date) return '';
+	if (w.allDay) {
+		const last = w.endDate && w.endDate !== w.date ? `–${when(w.endDate, undefined, c)}` : '';
+		return `${when(w.date, undefined, c)}${last} · ${t('all_day')}`;
+	}
+	const clock = (x: string) => formatClock(x, c.formatLocale, c.hourCycle);
+	const time = w.startTime
+		? `${clock(w.startTime)}${withEnd && w.endTime ? `–${clock(w.endTime)}` : ''}`
+		: '';
+	if (timeOnly && time) return time;
+	return [when(w.date, undefined, c), time].filter(Boolean).join(' ');
+}
+
+/** The new "when" alone, as it was always shown when nothing is known of the event as it is. */
+function plainWhen(input: ChangeEventInput, c: PresenterContext): string {
+	return [
+		input.date ? formatDate(input.date, c.formatLocale) : null,
+		input.allDay
+			? c.t('calendar:all_day')
+			: [input.startTime, input.endTime]
+					.filter((x): x is string => Boolean(x))
+					.map((x) => formatClock(x, c.formatLocale, c.hourCycle))
+					.join('–'),
+	]
+		.filter(Boolean)
+		.join(' · ');
+}
+
+const text = (v: unknown): string | undefined =>
+	v === undefined ? undefined : typeof v === 'string' && v.trim() ? v : '—';
+
+/**
+ * The rows of a proposed change to an event: only what changes, each as "old → new" when the
+ * event as it is now is known (`before`), so the reviewer sees what it changes from.
+ */
+export function changeEventFields(
+	input: ChangeEventInput,
+	c: PresenterContext,
+	before: DraftBefore = null,
+): DraftField[] {
+	const t = (key: string, options?: Record<string, unknown>) => c.t(`calendar:${key}`, options);
+	const was = before ?? undefined;
+	const fields: DraftField[] = [];
+	if (input.title !== undefined && (was !== undefined || input.title !== input.label))
+		fields.push({
+			label: was === undefined ? t('draft_new_title') : t('field_title'),
+			value: changedValue(text(was?.title), input.title),
+			path: 'title',
+		});
+	if (WHEN_KEYS.some((k) => input[k] !== undefined)) {
+		const paths = ['date', 'endDate', 'startTime', 'endTime', 'allDay'];
+		if (was && typeof was.date === 'string') {
+			const old = Object.fromEntries(WHEN_KEYS.map((k) => [k, was[k] ?? undefined])) as When;
+			const next: When = { ...old };
+			for (const k of WHEN_KEYS) {
+				const v = input[k];
+				// biome-ignore lint/suspicious/noExplicitAny: each key keeps its own type on both sides.
+				if (v !== undefined) (next as any)[k] = v === null ? undefined : v;
+			}
+			if (next.allDay) next.startTime = next.endTime = undefined;
+			const withEnd = input.endTime !== undefined;
+			const sameDay = !old.allDay && !next.allDay && old.date === next.date;
+			const from = whenText(old, c, withEnd);
+			const to = whenText(next, c, withEnd, sameDay);
+			fields.push({
+				label: t('when'),
+				value: from === whenText(next, c, withEnd) ? to : changedValue(from, to),
+				paths,
+			});
+		} else fields.push({ label: t('when'), value: plainWhen(input, c), paths });
+	}
+	if (input.memberIds !== undefined) {
+		const names = (ids: readonly string[]) =>
+			ids
+				.map((id) => c.members.find((m) => m.id === id)?.displayName)
+				.filter(Boolean)
+				.join(', ') || t('everyone');
+		const old = Array.isArray(was?.memberIds) ? names(was.memberIds as string[]) : undefined;
+		fields.push({
+			label: t('who'),
+			value: changedValue(old, names(input.memberIds)),
+			path: 'memberIds',
+		});
+	}
+	if (input.location !== undefined)
+		fields.push({
+			label: t('where'),
+			value: changedValue(text(was?.location), text(input.location) as string),
+			path: 'location',
+		});
+	if (input.tags !== undefined) {
+		const old = Array.isArray(was?.tags) ? (was.tags as string[]).join(', ') : undefined;
+		fields.push({
+			label: t('tags'),
+			value: changedValue(old === undefined ? undefined : old || '—', input.tags.join(', ') || '—'),
+			path: 'tags',
+		});
+	}
+	if (input.notes !== undefined)
+		fields.push({
+			label: t('notes'),
+			value: changedValue(text(was?.notes), text(input.notes) as string),
+			path: 'notes',
+		});
+	return fields;
+}

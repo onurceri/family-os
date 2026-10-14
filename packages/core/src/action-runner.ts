@@ -118,6 +118,11 @@ export interface ActionRunner {
 	/** Whether a pending draft's change seems to exist already (the action's `alreadyThere`). */
 	mayExist(draft: DraftRow): Promise<boolean | 'some'>;
 	/**
+	 * What the fields a pending draft would change hold now (the action's `currentValues`), keyed
+	 * like its input. Null when the action has none, the draft is decided, or the thing is gone.
+	 */
+	currentValues(draft: DraftRow): Promise<Record<string, unknown> | null>;
+	/**
 	 * What a pending draft could become instead (the action's `instead`), as it would be stored:
 	 * resolved, checked and labelled with the real title of what it changes. Null when nothing fits.
 	 */
@@ -933,6 +938,24 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return alternativeOf(def, input.data, { draftId: draft.id });
 	}
 
+	async function currentValues(draft: DraftRow): Promise<Record<string, unknown> | null> {
+		if (draft.status !== 'pending' && draft.status !== 'failed') return null;
+		const def = registry.actions.get(draft.action_id);
+		if (!def?.currentValues || !deps.features.isOn(ownerOf(def.id))) return null;
+		// The reviewer reads the draft as it would be approved: with a saved edit when there is one.
+		const input = def.input.safeParse(JSON.parse(draft.edited_input ?? draft.input));
+		if (!input.success) return null;
+		try {
+			return await def.currentValues(
+				{ db: deps.db, family: familyReader(deps.db), translate: deps.translate },
+				input.data,
+			);
+		} catch (error) {
+			logger.warn({ err: error, draftId: draft.id }, 'reading the current values failed');
+			return null;
+		}
+	}
+
 	async function replaceDraft(draftId: string, actor: Actor): Promise<DraftRow> {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(actor, draft);
@@ -1037,6 +1060,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		undoStep,
 		mayExist,
 		alternative,
+		currentValues,
 		replaceDraft,
 		mayDecide,
 		isProposer,

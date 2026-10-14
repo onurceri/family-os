@@ -185,7 +185,7 @@
 	askedBy={asker ? app.t('app:draft_asked_by', { name: asker }) : undefined}
 	icon={presenter?.icon}
 	{title}
-	fields={presenter?.fields(input, context) ?? []}
+	fields={presenter?.fields(input, context, draft.before) ?? []}
 	uncertain={draft.uncertainFields}
 	mayExist={draft.mayExist}
 	mayExistSome={draft.mayExistSome}

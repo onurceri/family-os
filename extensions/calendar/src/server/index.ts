@@ -405,6 +405,34 @@ const EventChangeSchema = z.object({
 type EventChange = z.infer<typeof EventChangeSchema>;
 
 /**
+ * An event as a change sees it: the event (one date of it, given an occurrence key of a
+ * repeating event) and its fields keyed like a change's input.
+ */
+function eventAsItIs(row: EventRow, occurrence: string | undefined) {
+	const series = toDetail(row);
+	// For one date of a series, the event is that date as it is now; the rest is the series.
+	const was = occurrence ? occurrenceDetail(row, series, occurrence) : series;
+	const current: Record<string, unknown> = {
+		title: was.title,
+		allDay: was.allDay,
+		date: was.date,
+		endDate: was.endDate ?? undefined,
+		startTime: was.startTime ?? undefined,
+		endTime: was.endTime ?? undefined,
+		memberIds: was.memberIds,
+		location: was.location ?? undefined,
+		notes: was.notes ?? undefined,
+		tags: was.tags,
+		recurrence: was.recurrence ?? undefined,
+		reminder: row.reminder_set ? row.reminder_minutes : undefined,
+	};
+	return { was, current };
+}
+
+/** The fields that together say when an event is: a change of one is shown against all of them. */
+const WHEN_FIELDS = ['allDay', 'date', 'endDate', 'startTime', 'endTime'] as const;
+
+/**
  * Changes some details of an event (the whole series, or one date of it) and keeps the rest: the AI and agents send
  * only what changes, so a repeat rule, reminder or skipped dates they never saw are kept. The
  * output carries the old values, so the change can be taken back.
@@ -434,6 +462,25 @@ export const changeEvent = defineAction({
 	targetTitle: eventTitle,
 	scopeNote: occurrenceScope,
 	resolveNames: resolveOccurrence,
+	// The event as it is now, for the card's "old → new": a new time is read against the old day
+	// and time together, so every field of when it is comes along with any one of them.
+	async currentValues(ctx, { id, label: _label, occurrence, ...change }) {
+		const row = await events(ctx.db)
+			.selectFrom('calendar_events')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const key = occurrence && row.rrule ? occurrenceKey(row, occurrence) : undefined;
+		const { current } = eventAsItIs(row, key);
+		const changed = Object.keys(change).filter(
+			(k) => change[k as keyof typeof change] !== undefined,
+		);
+		const when = changed.some((k) => (WHEN_FIELDS as readonly string[]).includes(k));
+		const keys = new Set([...changed, ...(when ? WHEN_FIELDS : [])]);
+		return Object.fromEntries([...keys].map((k) => [k, current[k] ?? null]));
+	},
 	// A model sometimes names the event but leaves out what changes; such a draft would change
 	// nothing, so the model is told to give the new values instead.
 	refuseProposal: async (_ctx, { id: _id, label: _label, occurrence: _occurrence, ...change }) =>
@@ -463,22 +510,7 @@ export const changeEvent = defineAction({
 		const { timeZone } = await uow.family.settings();
 		const series = toDetail(row);
 		const split = Boolean(occurrence && row.rrule);
-		// For one date of a series, the event is that date as it is now; the rest is the series.
-		const was = split ? occurrenceDetail(row, series, occurrence as string) : series;
-		const current: Record<string, unknown> = {
-			title: was.title,
-			allDay: was.allDay,
-			date: was.date,
-			endDate: was.endDate ?? undefined,
-			startTime: was.startTime ?? undefined,
-			endTime: was.endTime ?? undefined,
-			memberIds: was.memberIds,
-			location: was.location ?? undefined,
-			notes: was.notes ?? undefined,
-			tags: was.tags,
-			recurrence: was.recurrence ?? undefined,
-			reminder: row.reminder_set ? row.reminder_minutes : undefined,
-		};
+		const { was, current } = eventAsItIs(row, split ? occurrence : undefined);
 		const merged = { ...current };
 		const before: Record<string, unknown> = {};
 		for (const [key, value] of Object.entries(change) as [keyof EventChange, unknown][]) {

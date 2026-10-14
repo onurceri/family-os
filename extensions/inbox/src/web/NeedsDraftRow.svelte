@@ -24,7 +24,7 @@
 		timeZone: app.timeZone(),
 	});
 	const input = $derived((draft.editedInput ?? draft.input) as Record<string, unknown>);
-	const fields = $derived(presenter?.fields(input, context) ?? []);
+	const fields = $derived(presenter?.fields(input, context, draft.before) ?? []);
 	const uncertain = $derived(
 		fields.some((f) =>
 			[...(f.path ? [f.path] : []), ...(f.paths ?? [])].some((p) =>
@@ -125,7 +125,7 @@
 				onconfirm={reject}
 				disabled={busy}
 			/>
-			{#if Editor}
+			{#if Editor && !draft.instead}
 				<button
 					type="button"
 					class="text-ink-soft hover:bg-idle {buttonClass}"
@@ -134,12 +134,17 @@
 					onclick={() => (editing = !editing)}>{a('draft_edit')}</button
 				>
 			{/if}
-			<button
-				type="button"
-				class="bg-idle text-ink hover:bg-line {buttonClass}"
-				disabled={busy}
-				onclick={() => approve()}>{presenter?.approveLabel?.(context) ?? a('draft_approve')}</button
-			>
+			<!-- One that could change what is already there is decided on its card in Quick add, where
+			the change is offered: approving it here in one tap would add a second one. -->
+			{#if !draft.instead}
+				<button
+					type="button"
+					class="bg-idle text-ink hover:bg-line {buttonClass}"
+					disabled={busy}
+					onclick={() => approve()}
+					>{presenter?.approveLabel?.(context) ?? a('draft_approve')}</button
+				>
+			{/if}
 		{/snippet}
 		{#snippet below()}
 			{#if editing && Editor}

@@ -114,6 +114,15 @@ export interface ActionDefinition<
 		input: z.infer<In>,
 	) => Promise<{ key: string; date: string } | null>;
 	/**
+	 * What the fields a change would touch hold now, keyed like the input (`{ date, startTime }`
+	 * for an input that moves an event), so a reviewer reads "old → new" instead of only the new
+	 * value. Only the fields the input changes; null when the thing is gone. Read-only and cheap.
+	 */
+	readonly currentValues?: (
+		ctx: DuplicateContext,
+		input: z.infer<In>,
+	) => Promise<Record<string, unknown> | null>;
+	/**
 	 * A reason an AI's proposal is pointless (the thing is already in the state it asks for), or
 	 * null. The runner refuses the proposal with that text, so the model tells the person instead
 	 * of filling the review list with changes that change nothing. Only asked of AI actors.
@@ -229,6 +238,10 @@ export function defineAction<
 		ctx: DuplicateContext,
 		input: z.infer<In>,
 	) => Promise<{ key: string; date: string } | null>;
+	currentValues?: (
+		ctx: DuplicateContext,
+		input: z.infer<In>,
+	) => Promise<Record<string, unknown> | null>;
 	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;

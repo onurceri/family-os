@@ -19,6 +19,7 @@ export {
 	type DraftCardStatus,
 	default as DraftCard,
 } from './DraftCard.svelte';
+export { type DraftButtons, draftButtons } from './draft-buttons.js';
 export { default as EmptyArt } from './EmptyArt.svelte';
 export { default as EmptyLine } from './EmptyLine.svelte';
 export { default as EmptyState } from './EmptyState.svelte';

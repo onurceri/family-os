@@ -6,6 +6,7 @@ import { loadItems, loadLists } from './data.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
 import { draftListName, itemsOnList, quantityChanges, shoppingLists } from './shopping-draft.js';
+import { type ChangeTaskInput, changeTaskFields } from './task-change.js';
 
 const tr = (c: PresenterContext): ListsT =>
 	((key: string, options?: Record<string, unknown>) => c.t(`lists:${key}`, options)) as ListsT;
@@ -95,52 +96,14 @@ export const addShoppingItemsPresenter: DraftPresenter<AddShoppingItemsInput> = 
 	editor: () => import('./ShoppingDraftEditor.svelte'),
 };
 
-type ChangeTaskInput = {
-	id: string;
-	label?: string;
-	title?: string;
-	assigneeId?: string | null;
-	dueDate?: string | null;
-	dueTime?: string | null;
-	notes?: string | null;
-};
-
-/** A proposed change to an existing task: only what changes is listed. */
+/** A proposed change to an existing task: only what changes is listed, as "old → new". */
 export const changeTaskPresenter: DraftPresenter<ChangeTaskInput> = {
 	actionId: 'lists.changeTask',
 	kind: (c) => c.t('lists:kind_task_change'),
 	icon: ListChecks,
 	// The label is the model's copy of the title it was shown; the id is what is acted on.
 	title: (input, c) => input.label || input.title || c.t('lists:draft_a_task'),
-	fields(input, c) {
-		const t = tr(c);
-		const fields: { label: string; value: string; path?: string; paths?: string[] }[] = [];
-		if (input.title !== undefined && input.title !== input.label)
-			fields.push({ label: t('draft_new_title'), value: input.title, path: 'title' });
-		if (input.assigneeId !== undefined)
-			fields.push({
-				label: t('who'),
-				value: c.members.find((m) => m.id === input.assigneeId)?.displayName ?? t('anyone'),
-				path: 'assigneeId',
-			});
-		if (input.dueDate !== undefined || input.dueTime !== undefined)
-			fields.push({
-				label: t('due'),
-				value: input.dueDate
-					? dueLabel(
-							{ dueDate: input.dueDate, dueTime: input.dueTime ?? null },
-							todayIn(c.timeZone, Date.now()),
-							t,
-							c.formatLocale,
-							c.hourCycle,
-						)
-					: t('no_due'),
-				paths: ['dueDate', 'dueTime'],
-			});
-		if (input.notes !== undefined)
-			fields.push({ label: t('notes'), value: input.notes || '—', path: 'notes' });
-		return fields;
-	},
+	fields: (input, c, before) => changeTaskFields(input, c, before),
 	approveLabel: (c) => c.t('lists:draft_approve_change'),
 };
 

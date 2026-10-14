@@ -207,6 +207,29 @@ export const changeTask = defineAction({
 	output: z.object({ task: TaskSchema, before: z.record(z.string(), z.string().nullable()) }),
 	approval: { unless: tasksEdit.id },
 	undo: ({ task, before }) => ({ actionId: 'lists.changeTask', input: { id: task.id, ...before } }),
+	// The task as it is now, for the card's "old → new"; a deadline is its date and time together.
+	async currentValues(ctx, { id, label: _label, ...change }) {
+		const row = await tables(ctx.db)
+			.selectFrom('lists_tasks')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const values: Record<string, unknown> = {
+			title: row.title,
+			assigneeId: row.assignee_id,
+			dueDate: row.due_date,
+			dueTime: row.due_time,
+			notes: row.notes,
+		};
+		const changed = Object.keys(change).filter(
+			(k) => change[k as keyof typeof change] !== undefined,
+		);
+		const due = changed.includes('dueDate') || changed.includes('dueTime');
+		const keys = new Set([...changed, ...(due ? ['dueDate', 'dueTime'] : [])]);
+		return Object.fromEntries([...keys].map((k) => [k, values[k] ?? null]));
+	},
 	ai: {
 		description:
 			'Changes an existing open task: who does it, its deadline, its title or notes. Send only the fields that change. Find the task with lists.openTasks first; never add a second task for the same thing.',

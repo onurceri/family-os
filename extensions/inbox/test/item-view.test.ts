@@ -16,6 +16,8 @@ import {
 	itemTitle,
 	metaLine,
 	needsAction,
+	pickedByDefault,
+	pickedDrafts,
 	requestGroups,
 } from '../src/web/item-view.ts';
 
@@ -238,5 +240,42 @@ describe('requests that are not from a capture', () => {
 				request({ status: 'applied' }),
 			]),
 		).toBe(2);
+	});
+});
+
+describe('what a group approves', () => {
+	const offer = { actionId: 'calendar.changeEvent', input: { id: 'cal_event_1' } };
+	const suggestion = (id: string, over: Partial<Draft> = {}) =>
+		({ id, instead: null, mayExist: false, ...over }) as Draft;
+	const gala = suggestion('gala', { instead: offer });
+	const milk = suggestion('milk');
+	const twice = suggestion('twice', { mayExist: true });
+	const some = suggestion('some', { mayExistSome: true });
+
+	it('starts with a suggestion that would add a second one unticked', () => {
+		// "Regional Gala moved to the 14th" went in as a second gala with "Add selected".
+		expect(pickedByDefault(gala)).toBe(false);
+		expect(pickedByDefault(twice)).toBe(false);
+		expect(pickedByDefault(milk)).toBe(true);
+		// Only some of it is there: the rest is new, so it goes in.
+		expect(pickedByDefault(some)).toBe(true);
+		expect(pickedDrafts([gala, milk, twice, some], new Map()).map((d) => d.id)).toEqual([
+			'milk',
+			'some',
+		]);
+	});
+
+	it('follows the person: a tick adds it, an untick leaves it out', () => {
+		const choices = new Map([
+			['gala', true],
+			['milk', false],
+		]);
+		expect(pickedDrafts([gala, milk, twice], choices).map((d) => d.id)).toEqual(['gala']);
+	});
+
+	it('ticks the change the person chose instead, while it still shows its offer', () => {
+		expect(pickedDrafts([gala], new Map([['gala', true]])).map((d) => d.id)).toEqual(['gala']);
+		// Once the list catches up it is a change with no offer: ticked like any other.
+		expect(pickedDrafts([suggestion('gala')], new Map()).map((d) => d.id)).toEqual(['gala']);
 	});
 });

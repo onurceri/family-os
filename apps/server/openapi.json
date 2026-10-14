@@ -26089,6 +26089,13 @@
 													"actionId"
 												]
 											},
+											"before": {
+												"type": [
+													"object",
+													"null"
+												],
+												"additionalProperties": {}
+											},
 											"replacedFrom": {
 												"type": [
 													"string",
@@ -26120,6 +26127,7 @@
 											"mayExist",
 											"mayExistSome",
 											"instead",
+											"before",
 											"replacedFrom",
 											"canDecide"
 										]
@@ -26780,6 +26788,13 @@
 												"actionId"
 											]
 										},
+										"before": {
+											"type": [
+												"object",
+												"null"
+											],
+											"additionalProperties": {}
+										},
 										"replacedFrom": {
 											"type": [
 												"string",
@@ -26811,6 +26826,7 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
+										"before",
 										"replacedFrom",
 										"canDecide"
 									]
@@ -27206,6 +27222,13 @@
 												"actionId"
 											]
 										},
+										"before": {
+											"type": [
+												"object",
+												"null"
+											],
+											"additionalProperties": {}
+										},
 										"replacedFrom": {
 											"type": [
 												"string",
@@ -27237,6 +27260,7 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
+										"before",
 										"replacedFrom",
 										"canDecide"
 									]
@@ -27632,6 +27656,13 @@
 												"actionId"
 											]
 										},
+										"before": {
+											"type": [
+												"object",
+												"null"
+											],
+											"additionalProperties": {}
+										},
 										"replacedFrom": {
 											"type": [
 												"string",
@@ -27663,6 +27694,7 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
+										"before",
 										"replacedFrom",
 										"canDecide"
 									]
@@ -28058,6 +28090,13 @@
 												"actionId"
 											]
 										},
+										"before": {
+											"type": [
+												"object",
+												"null"
+											],
+											"additionalProperties": {}
+										},
 										"replacedFrom": {
 											"type": [
 												"string",
@@ -28089,6 +28128,7 @@
 										"mayExist",
 										"mayExistSome",
 										"instead",
+										"before",
 										"replacedFrom",
 										"canDecide"
 									]

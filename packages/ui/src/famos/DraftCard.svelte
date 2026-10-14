@@ -2,6 +2,7 @@
 	import type { Component, Snippet } from 'svelte';
 	import type { DraftField } from '../slots.js';
 	import ConfirmButton from './ConfirmButton.svelte';
+	import { draftButtons } from './draft-buttons.js';
 
 	/**
 	 * A draft proposed by AI (or a child) waiting for a parent.
@@ -143,6 +144,7 @@
 		(mayExist || mayExistSome || Boolean(instead)) && Boolean(labels.approveConfirm),
 	);
 	const offered = $derived(canDecide && status === 'pending' ? instead : undefined);
+	const buttons = $derived(draftButtons({ offered: Boolean(offered), warned, picking }));
 	const approveLabel = $derived(
 		status === 'failed'
 			? labels.retry
@@ -151,10 +153,14 @@
 				: labels.approve,
 	);
 	// Quiet (inside a conversation or a capture): an ordinary filled button at the end.
-	const approveLook = $derived(
+	const filledLook = $derived(
 		quiet
 			? 'min-h-11 px-4 bg-ink text-wall ms-auto'
 			: 'min-h-11 px-4 bg-attention text-on-color flex-1',
+	);
+	// Beside the offered change, adding it as new is a plain secondary button.
+	const approveLook = $derived(
+		buttons.approve === 'secondary-confirm' ? 'min-h-11 px-4 bg-idle text-ink' : filledLook,
 	);
 	/** What a draft that did not go in says. */
 	const settled = $derived(
@@ -298,14 +304,16 @@
 			{#if offered}
 				<div class="grid gap-2">
 					<p class="text-attention text-sm font-semibold">{offered.there}</p>
-					<button
-						type="button"
-						disabled={busy}
-						class="bg-idle min-h-11 justify-self-start rounded-lg px-4 text-start font-bold disabled:opacity-50"
-						onclick={offered.onchoose}
-					>
-						{offered.action}
-					</button>
+					{#if buttons.offer === 'outline'}
+						<button
+							type="button"
+							disabled={busy}
+							class="border-line text-ink hover:bg-idle min-h-11 justify-self-start rounded-lg border px-4 text-start font-bold disabled:opacity-50"
+							onclick={offered.onchoose}
+						>
+							{offered.action}
+						</button>
+					{/if}
 				</div>
 			{:else if canDecide && mayExist && status === 'pending' && labels.mayExist}
 				<p class="text-attention text-sm font-semibold">{labels.mayExist}</p>
@@ -358,7 +366,7 @@
 							{labels.edit}
 						</button>
 					{/if}
-					{#if warned && status === 'pending' && labels.approveConfirm}
+					{#if (buttons.approve === 'primary-confirm' || buttons.approve === 'secondary-confirm') && status === 'pending' && labels.approveConfirm}
 						<ConfirmButton
 							label={approveLabel}
 							confirmLabel={labels.approveConfirm}
@@ -374,6 +382,16 @@
 							onclick={onapprove}
 						>
 							{approveLabel}
+						</button>
+					{/if}
+					{#if offered && buttons.offer === 'primary'}
+						<button
+							type="button"
+							disabled={busy}
+							class={['rounded-lg text-start font-bold disabled:opacity-50', filledLook]}
+							onclick={offered.onchoose}
+						>
+							{offered.action}
 						</button>
 					{/if}
 				</div>
