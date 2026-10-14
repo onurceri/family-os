@@ -421,7 +421,12 @@ export const openTasks = defineAction({
 	id: 'lists.openTasks',
 	title: 'Open tasks, for the AI',
 	input: z.object({
-		assignee: z.string().optional().describe('Only tasks of this member (their handle)'),
+		assignee: z
+			.string()
+			.optional()
+			.describe(
+				'Leave it out (the default) for all open tasks of the family, also when the person says "give me" or "show me the open tasks" (that is who gets the answer, not whose tasks). Only for a question about one person\'s own tasks ("what do I still have to do", "Sam\'s tasks"): their handle',
+			),
 	}),
 	output: z.object({
 		tasks: z.array(
@@ -440,7 +445,7 @@ export const openTasks = defineAction({
 	requires: listsView.id,
 	ai: {
 		description:
-			'Lists the family tasks that are not done yet, soonest due first (undated last). Use it for "what do I still have to do / what is on the list for Sam" questions.',
+			'Lists the family tasks that are not done yet, soonest due first (undated last). Use it for "which tasks are open", "what do I still have to do" or "what is on the list for Sam" questions.',
 	},
 	async run(uow, { assignee }) {
 		let query = tables(uow.db)

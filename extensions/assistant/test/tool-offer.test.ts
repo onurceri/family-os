@@ -164,7 +164,9 @@ describe('finding events', () => {
 		const result = resultOf('calendar_findEvents');
 		expect(result).toContain('"events":[]');
 		expect(result).toMatch(/"nextMatch":\{"id":"cal_event:\d+"/);
-		expect(k.llm.chatCalls[0]?.system).toContain('filter a tool by person only for those words');
+		expect(k.llm.chatCalls[0]?.system).toContain(
+			'Never filter by person when the person names an activity',
+		);
 	});
 
 	it('takes `from` alone as one day, and names what it got when it cannot search', async () => {
@@ -315,5 +317,38 @@ describe('suggestion labels', () => {
 			.where('id', '=', draft.draftId)
 			.execute();
 		expect((await read())[0]?.label).toBe('Tick off (or untick) a shopping item: Milk');
+	});
+});
+
+describe('an overview the person asks for', () => {
+	it('tells the model that "give me" is who gets the answer, not a person filter', async () => {
+		// What the real model did for "Give me an overview of this week": it filtered both tools
+		// by the asker and left out the family's other events and open tasks.
+		k.llm.respondChat([
+			{
+				tool: 'calendar_findEvents',
+				input: { from: '2026-10-12', to: '2026-10-18', members: ['member:1'] },
+			},
+			{ tool: 'lists_openTasks', input: { assignee: 'member:1' } },
+			{ text: 'This week you have nothing on.' },
+		]);
+		await ask("Give me an overview of this week: what's on, the open tasks and the shopping list.");
+		const request = k.llm.chatCalls[0];
+		expect(request?.system).toContain(
+			'"Give me", "show me" and "tell me" only say who gets the answer, never whose things',
+		);
+		const field = (tool: string, name: string) => {
+			const schema = request?.tools?.find((t) => t.name === tool)?.inputSchema as
+				| { properties?: Record<string, { description?: string }> }
+				| undefined;
+			return schema?.properties?.[name]?.description ?? '';
+		};
+		for (const description of [
+			field('calendar_findEvents', 'members'),
+			field('lists_openTasks', 'assignee'),
+		]) {
+			expect(description).toMatch(/^Leave it out \(the default\)/);
+			expect(description).toContain('that is who gets the answer');
+		}
 	});
 });

@@ -642,7 +642,7 @@ export const findEvents = defineAction({
 			.max(10)
 			.optional()
 			.describe(
-				'Only what involves these people, plus events for the whole family. Use it for "my ..." and "<name>\'s ..." questions',
+				'Leave it out (the default) for the whole family calendar: overviews and "what is on" questions, also when the person says "give me" or "show me" (that is who gets the answer, not whose events). Only for a question about specific people\'s own events ("my calendar", "what do I have", "am I free", "Noah\'s week"): what involves these people, plus events for the whole family',
 			),
 		tag: z
 			.string()
