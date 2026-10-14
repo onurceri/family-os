@@ -14,7 +14,8 @@
 		}
 	},
 	"scripts": {
-		"typecheck": "tsc -p . && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings"
+		"typecheck": "tsc -p . && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings",
+		"eval": "tsx eval/run.ts"
 	},
 	"dependencies": {
 		"@famos/api-client": "workspace:*",
@@ -37,6 +38,7 @@
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",
 		"svelte-check": "4.7.6",
+		"tsx": "4.23.15",
 		"typescript": "6.0.3"
 	}
 }

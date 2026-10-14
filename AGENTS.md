@@ -103,6 +103,7 @@ docs/              Architecture, design system, user guide, releasing
 - Core tests use `packages/core/test/harness.ts`; extension tests use `createTestKernel` from `@famos/testing`.
 - Tests never call real providers: use the scripted fake model (`k.llm.respond(...)` from `createTestKernel`).
 - Prompt or extraction changes: run the evaluation set against a real model and keep it passing (`FAMOS_EVAL_API_KEY=… pnpm --filter @famos/ext-inbox eval`; not in CI). Add a case to `extensions/inbox/eval/cases.ts` for every extraction mistake found in use.
+- Assistant prompt or tool changes: run the assistant eval (`pnpm --filter @famos/ext-assistant eval`; not in CI) and add a case to `extensions/assistant/eval/cases.ts` for every assistant mistake found in use.
 - New adapters must pass the port's contract test suite.
 - Migration changes need an upgrade test from the previous release's fixture database.
 - Logic gets unit tests (Vitest): layout math, selection, caching and other pure functions live in plain modules with a test beside them, not behind a browser.
