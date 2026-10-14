@@ -459,7 +459,7 @@ describe('events proposed by the AI', () => {
 		const proposed = await k.runner.invoke(
 			'calendar.createEvent',
 			{ title: 'School trip', date: '2026-10-14', startTime: '09:00', memberIds: [ann.id] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (proposed.status !== 'drafted') throw new Error('expected a draft');
 		await advanceTo(at('2026-10-06', '12:00'));

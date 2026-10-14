@@ -3,7 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import lists from '../src/server/index.ts';
 
-const AI: Actor = { kind: 'ai', source: 'inbox' };
+const AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 

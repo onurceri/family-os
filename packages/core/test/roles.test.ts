@@ -121,7 +121,7 @@ describe('roles and capabilities', () => {
 	});
 
 	it('lets AI read but never hold a changing capability', () => {
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		expect(k.access.can(ai, 'core.members.view')).toBe(true);
 		expect(k.access.can(ai, 'notes.edit')).toBe(false);
 		expect(k.access.can(systemActor('test'), 'core.roles.manage')).toBe(true);

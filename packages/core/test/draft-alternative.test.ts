@@ -192,6 +192,7 @@ describe('a draft that offers to change what is already there', () => {
 	it('is approved like any change, and undone with the change’s undo', async () => {
 		const ai: Actor = {
 			kind: 'ai',
+			mode: 'share',
 			source: 'inbox',
 			onBehalfOf: kid.member.id as MemberId,
 			roleId: kid.actor.roleId,

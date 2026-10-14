@@ -1,4 +1,4 @@
-import { defineEvent } from '@famos/sdk';
+import { conversationAnswered, defineEvent } from '@famos/sdk';
 import { z } from 'zod';
 
 /** Everything the event carries; ids and kinds only, no content: who proposed what, whence. */
@@ -48,6 +48,7 @@ export const notificationRead = defineEvent(
 
 export const coreEvents = [
 	draftCreated,
+	conversationAnswered,
 	draftUpdated,
 	memberChanged,
 	roleChanged,

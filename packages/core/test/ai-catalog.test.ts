@@ -59,7 +59,7 @@ it('stores uncertain fields on drafts', async () => {
 	const result = await k.ctx.actions.invoke(
 		'things.addThing',
 		{ name: 'x' },
-		{ kind: 'ai', source: 'inbox' },
+		{ kind: 'ai', mode: 'share', source: 'inbox' },
 		{
 			draft: { uncertainFields: ['when'], confidence: 0.6 },
 		},
@@ -79,14 +79,14 @@ it('stores uncertain fields on drafts', async () => {
 	expect(row?.uncertain_fields).toBe('["when"]');
 });
 
-it('offers assistant-only actions to the in-app assistant, not to MCP clients or the Inbox', async () => {
+it('offers conversation-only actions to the AI in the app conversation, not to agents or shares', async () => {
 	const draftOnly = defineAction({
 		id: 'things.makeRule',
 		title: 'Make a rule',
 		input: z.object({}),
 		output: z.object({}),
 		requires: thingsEdit.id,
-		ai: { description: 'Makes a rule.', assistantOnly: true },
+		ai: { description: 'Makes a rule.', conversationOnly: true },
 		async run() {
 			return {};
 		},
@@ -104,11 +104,19 @@ it('offers assistant-only actions to the in-app assistant, not to MCP clients or
 		const member = { onBehalfOf: 'member_x' as never, roleId: 'admin' };
 		const ids = (actor: Parameters<typeof kernel.ctx.actions.aiCatalog>[0]) =>
 			kernel.ctx.actions.aiCatalog(actor).map((a) => a.id);
-		expect(ids({ actor: { kind: 'ai', source: 'assistant', ...member } })).toContain(
-			'things.makeRule',
-		);
-		expect(ids({ actor: { kind: 'ai', source: 'mcp', ...member } })).toEqual(['things.addThing']);
-		expect(ids({ actor: { kind: 'ai', source: 'inbox' } })).toEqual(['things.addThing']);
+		expect(
+			ids({ actor: { kind: 'ai', mode: 'conversation', source: 'assistant', ...member } }),
+		).toContain('things.makeRule');
+		expect(ids({ actor: { kind: 'ai', mode: 'agent', source: 'mcp', ...member } })).toEqual([
+			'things.addThing',
+		]);
+		expect(ids({ actor: { kind: 'ai', mode: 'share', source: 'inbox' } })).toEqual([
+			'things.addThing',
+		]);
+		// The mode decides, never the name of the source.
+		expect(ids({ actor: { kind: 'ai', mode: 'agent', source: 'assistant', ...member } })).toEqual([
+			'things.addThing',
+		]);
 	} finally {
 		await kernel.close();
 	}

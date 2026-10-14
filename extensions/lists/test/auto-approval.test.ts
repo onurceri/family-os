@@ -45,20 +45,26 @@ describe('auto-approval for lists', () => {
 		await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'Milk' }] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 			{ draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1', forMember: adult.id } },
 		);
 		await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'Bread' }] },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: adult.id as never, roleId: 'member' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: adult.id as never,
+				roleId: 'member',
+			},
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 		);
 		// A child's suggestion waits for a person.
 		await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'Sweets' }] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 			{ draft: { sourceKind: 'inbox', sourceId: 'inbox_item_2', forMember: child.id } },
 		);
 		await k.worker.drain();
@@ -71,7 +77,7 @@ describe('auto-approval for lists', () => {
 		await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'Milk' }] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 			{ draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1', forMember: adult.id } },
 		);
 		await k.worker.drain();
@@ -84,7 +90,13 @@ describe('auto-approval for lists', () => {
 		await k.runner.invoke(
 			'lists.addTask',
 			{ title: 'Call the school' },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: adult.id as never, roleId: 'member' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: adult.id as never,
+				roleId: 'member',
+			},
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_2' } },
 		);
 		await k.worker.drain();

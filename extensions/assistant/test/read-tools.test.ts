@@ -18,6 +18,7 @@ let admin: Awaited<ReturnType<TestKernel['member']>>;
 let kid: Awaited<ReturnType<TestKernel['member']>>;
 const aiFor = (who: typeof admin): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,

@@ -101,7 +101,13 @@ describe('calendar', () => {
 		const result = await k.runner.invoke(
 			'calendar.changeEvent',
 			{ id, startTime: '18:00', label: 'Veli toplantısı' },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: member.id as never, roleId: 'admin' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: member.id as never,
+				roleId: 'admin',
+			},
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 		);
 		expect(result.status).toBe('drafted');
@@ -121,7 +127,7 @@ describe('calendar', () => {
 		const found = await k.runner.invoke<{ events: { title: string }[] }>(
 			'calendar.findEvents',
 			{ from: '2026-10-12', to: '2026-10-18', text: 'swimming' },
-			{ kind: 'ai', source: 'assistant' },
+			{ kind: 'ai', mode: 'conversation', source: 'assistant' },
 		);
 		if (found.status !== 'applied') throw new Error('expected applied');
 		expect(found.output.events.map((e) => e.title)).toEqual(['Swim training', 'Swimming gala']);
@@ -141,7 +147,7 @@ describe('calendar', () => {
 		const found = await k.runner.invoke<{ events: { title: string; when?: string }[] }>(
 			'calendar.findEvents',
 			{ from: '2026-10-05', to: '2026-10-11' },
-			{ kind: 'ai', source: 'assistant' },
+			{ kind: 'ai', mode: 'conversation', source: 'assistant' },
 		);
 		if (found.status !== 'applied') throw new Error('expected applied');
 		// Only today's events say where they stand; other days are before or after by their date.
@@ -213,8 +219,13 @@ describe('calendar', () => {
 			code: 'forbidden',
 		});
 		expect(
-			(await k.runner.invoke('calendar.createEvent', input, { kind: 'ai', source: 'inbox' }))
-				.status,
+			(
+				await k.runner.invoke('calendar.createEvent', input, {
+					kind: 'ai',
+					mode: 'share',
+					source: 'inbox',
+				})
+			).status,
 		).toBe('drafted');
 		expect(await range('2026-10-17', '2026-10-17')).toEqual([]);
 		// A couple: the other partner is a member, not an admin, and needs no approval.
@@ -322,7 +333,7 @@ describe('duplicate hint', () => {
 			{ title: 'Zoo trip', date: '2026-10-17', startTime: '09:00' },
 			actor,
 		);
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		await k.runner.invoke(
 			'calendar.createEvent',
 			{ title: 'zoo  TRIP', date: '2026-10-17', allDay: true },
@@ -351,7 +362,7 @@ describe('duplicate hint', () => {
 describe('a suggested event whose day has passed', () => {
 	it('expires when one-off (after its last day); a repeating one never does', async () => {
 		k.clock.set(epochOf('2026-10-11', '09:00', TZ));
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const propose = async (input: object) => {
 			const result = await k.runner.invoke('calendar.createEvent', input, ai);
 			if (result.status !== 'drafted') throw new Error('expected a draft');

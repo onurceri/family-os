@@ -211,7 +211,8 @@ export function fakeChannel(id: string): FakeChannel {
 
 /**
  * `defineExtension` for an extension that lives only in a test. Its manifest is made from the
- * code (the capabilities it declares), so a test names only what it is about; a test of the
+ * code (the capabilities it declares, the host contracts it provides), so a test names only
+ * what it is about; a test of the
  * manifest itself uses `defineExtension` with a written one.
  */
 export function defineTestExtension(
@@ -233,6 +234,10 @@ export function defineTestExtension(
 			optional,
 			calls,
 			capabilities: (rest.capabilities ?? []).map((c) => c.id),
+			provides: [
+				...(rest.shareTarget ? ['shareTarget'] : []),
+				...(rest.conversation ? ['conversation'] : []),
+			],
 		},
 	});
 }

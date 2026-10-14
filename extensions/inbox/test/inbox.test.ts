@@ -11,7 +11,7 @@ import { createTestKernel, defineTestExtension, type TestKernel } from '@famos/t
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { type InboxItem, itemTitle, UPLOAD_QUOTA } from '../src/contract/index.ts';
+import { type InboxItem, itemTitle, UPLOAD_LIMITS, UPLOAD_QUOTA } from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
 import {
 	EXTRACT_MAX_OUTPUT_TOKENS,
@@ -339,6 +339,29 @@ describe('upload quota', () => {
 		});
 		// Another member has their own quota.
 		await share({}, [big(UPLOAD_QUOTA.bytes - 1)], kid.actor);
+	});
+});
+
+describe('shares from outside the app', () => {
+	it('become items like an upload, through the kernel’s share door', async () => {
+		expect(k.shareLimits()).toEqual(UPLOAD_LIMITS);
+		const bytes = new TextEncoder().encode('Zoo trip on Friday');
+		await k.share(parent.member.id, {
+			channel: 'telegram',
+			text: 'From the class chat',
+			files: [{ name: 'note.txt', type: 'text/plain', bytes }],
+		});
+		const [item] = await items();
+		expect(item).toMatchObject({ channel: 'telegram', text: 'From the class chat' });
+		expect(item?.files.map((f) => [f.name, f.type])).toEqual([['note.txt', 'text/plain']]);
+		// Only what the app accepts: an unknown channel or a malformed link is refused.
+		await expect(
+			k.share(parent.member.id, { channel: 'fax', text: 'x', files: [] }),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		await expect(
+			k.share(parent.member.id, { channel: 'email', url: 'not a link', files: [] }),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await items()).toHaveLength(1);
 	});
 });
 
@@ -875,7 +898,7 @@ describe('AI areas in the inbox', () => {
 		expect(seenByModel).not.toMatch(/stash|SECRET/i);
 		// Reading it as the AI is refused too, so no prompt builder could pull it in.
 		await expect(
-			k.runner.invoke('stash.listRecords', {}, { kind: 'ai', source: 'inbox' }),
+			k.runner.invoke('stash.listRecords', {}, { kind: 'ai', mode: 'share', source: 'inbox' }),
 		).rejects.toMatchObject({ code: 'forbidden' });
 		await expect(k.runner.invoke('stash.listRecords', {}, admin.actor)).resolves.toMatchObject({
 			status: 'applied',

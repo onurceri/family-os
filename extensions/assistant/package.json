@@ -7,9 +7,12 @@
 	"famos": {
 		"id": "assistant",
 		"version": "0.1.0",
-		"sdk": "^0.1.0",
+		"sdk": "^0.2.0",
 		"capabilities": [
 			"assistant.use"
+		],
+		"provides": [
+			"conversation"
 		],
 		"calls": [
 			"core.recallMemories"

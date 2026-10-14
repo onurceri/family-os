@@ -223,12 +223,12 @@ export type EmbeddingsTable = {
 	updated_at: number;
 };
 
-/** A short note a member owns; the assistant sees it in that member's own threads. */
+/** A short note a member owns; the AI sees it only in that member's own conversations. */
 export type MemberMemoryTable = {
 	id: string;
 	member_id: string;
 	text: string;
-	source: 'member' | 'assistant';
+	source: 'member' | 'ai';
 	created_at: number;
 	updated_at: number;
 };

@@ -161,6 +161,7 @@ const aiFor = async (roleId: string, local = false) => {
 	const { actor, member } = await k.member(roleId);
 	const ai: Actor = {
 		kind: 'ai',
+		mode: 'conversation',
 		source: 'assistant',
 		onBehalfOf: member.id as MemberId,
 		roleId,
@@ -267,7 +268,11 @@ describe('who finds what', () => {
 	it('does not let the AI search for nobody', async () => {
 		await put('note_1', 'Boiler warranty', 'The boiler warranty runs until 2028.');
 		await expect(
-			k.runner.invoke('core.searchFamily', { query: 'boiler' }, { kind: 'ai', source: 'inbox' }),
+			k.runner.invoke(
+				'core.searchFamily',
+				{ query: 'boiler' },
+				{ kind: 'ai', mode: 'share', source: 'inbox' },
+			),
 		).rejects.toMatchObject({ code: 'forbidden' });
 	});
 

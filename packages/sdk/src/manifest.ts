@@ -6,7 +6,7 @@ import { z } from 'zod';
  * start one whose range this version does not satisfy. Raise the minor for an addition, the major
  * for a change that breaks an extension built against the old one (while below 1.0, the minor).
  */
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = '0.2.0';
 
 const EXTENSION_ID = /^[a-z][a-z0-9]*$/;
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
@@ -15,6 +15,10 @@ const ACTION_ID = /^[a-z][a-z0-9]*\.[a-z][a-zA-Z0-9]*$/;
 const CAPABILITY_ID = /^[a-z][a-z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/;
 const TABLE_PREFIX = /^[a-z][a-z0-9_]*_$/;
 const HOST = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*[a-z0-9]$/;
+
+/** The contracts between the host and one extension that the host's channels use. */
+export const HOST_CONTRACTS = ['shareTarget', 'conversation'] as const;
+export type HostContract = (typeof HOST_CONTRACTS)[number];
 
 const ExtensionIdSchema = z.string().regex(EXTENSION_ID, 'use lowercase letters and digits');
 
@@ -49,6 +53,16 @@ export const ExtensionManifestSchema = z.strictObject({
 	 * extension in `dependsOn` or `optional`.
 	 */
 	calls: z.array(z.string().regex(ACTION_ID)).default([]),
+	/**
+	 * The host contracts it implements: `shareTarget` receives what members share from outside
+	 * the app, `conversation` answers what they ask from there. Each has at most one provider in an
+	 * installation.
+	 */
+	// Read as strings first: package.json is imported as JSON, whose arrays hold plain strings.
+	provides: z
+		.array(z.string())
+		.pipe(z.array(z.enum(HOST_CONTRACTS)))
+		.default([]),
 	/** What it may reach outside the household. Left out: nothing. */
 	network: z
 		.strictObject({

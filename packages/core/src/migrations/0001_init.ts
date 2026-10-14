@@ -330,7 +330,32 @@ export const m0002_draft_replaced: Migration = {
 	},
 };
 
+/**
+ * AI actors say how they work (`mode`) instead of core recognising extensions by name. Stored
+ * actors get the mode their source had: the names below are the extensions and doors that
+ * existed when this ran, and this migration is the only place core names them. A memory the AI
+ * proposed is marked `ai`.
+ */
+export const m0003_ai_mode: Migration = {
+	async up(db) {
+		await sql`update core_member_memory set source = 'ai' where source = 'assistant'`.execute(db);
+		for (const table of ['core_drafts', 'core_audit_log'] as const) {
+			const column = table === 'core_drafts' ? 'proposed_by' : 'actor';
+			await sql`update ${sql.table(table)} set ${sql.ref(column)} = json_set(${sql.ref(column)}, '$.mode',
+				case json_extract(${sql.ref(column)}, '$.source')
+					when 'inbox' then 'share'
+					when 'assistant' then 'conversation'
+					else 'agent'
+				end)
+				where json_valid(${sql.ref(column)})
+					and json_extract(${sql.ref(column)}, '$.kind') = 'ai'
+					and json_extract(${sql.ref(column)}, '$.mode') is null`.execute(db);
+		}
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
+	'0003_ai_mode': m0003_ai_mode,
 };

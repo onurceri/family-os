@@ -3,9 +3,12 @@ import type {
 	AnyJobDefinition,
 	AnyRouteDefinition,
 	CapabilityDefinition,
+	ConversationProvider,
 	EventDefinition,
 	ExtensionDefinition,
+	HostContract,
 	NotificationKindDefinition,
+	ShareTarget,
 } from '@famos/sdk';
 import { assertRestrictiveDefaults, SDK_VERSION, satisfiesCaret, tablePrefixOf } from '@famos/sdk';
 
@@ -20,6 +23,13 @@ export interface Registry {
 	readonly capabilities: readonly CapabilityDefinition[];
 	/** All notification kinds by id, core's first. */
 	readonly notificationKinds: ReadonlyMap<string, NotificationKindDefinition>;
+	/** The extension that receives what members share from outside the app, if one is installed. */
+	readonly shareTarget: { readonly extension: string; readonly target: ShareTarget } | null;
+	/** The extension that answers what members ask from outside the app, if one is installed. */
+	readonly conversation: {
+		readonly extension: string;
+		readonly provider: ConversationProvider;
+	} | null;
 }
 
 const ROUTE_ACCESS = new Set(['public', 'trusted-device', 'signedIn']);
@@ -82,6 +92,18 @@ function checkManifests(
 			throw new Error(`${where} declares capabilities its manifest lacks: ${unlisted.join(', ')}`);
 		if (absent.length)
 			throw new Error(`${where} lists capabilities its code lacks: ${absent.join(', ')}`);
+
+		const implemented: Record<HostContract, boolean> = {
+			shareTarget: ext.shareTarget !== undefined,
+			conversation: ext.conversation !== undefined,
+		};
+		for (const [contract, inCode] of Object.entries(implemented)) {
+			const listed = manifest.provides.includes(contract as HostContract);
+			if (inCode && !listed)
+				throw new Error(`${where} implements ${contract}, which its manifest's provides lacks`);
+			if (listed && !inCode)
+				throw new Error(`${where} lists ${contract} in provides, but its code lacks it`);
+		}
 
 		const prefix = tablePrefixOf(manifest);
 		for (const other of prefixes) {
@@ -212,6 +234,22 @@ export function buildRegistry(
 		if (!ROUTE_ACCESS.has(route.requires)) known(route.requires, `Route "${route.operationId}"`);
 	}
 	checkManifests(ordered, actions);
+	const sole = <T>(contract: string, pick: (ext: ExtensionDefinition) => T | undefined) => {
+		const providers = ordered.flatMap((ext) => {
+			const value = pick(ext);
+			return value === undefined ? [] : [{ extension: ext.id, value }];
+		});
+		if (providers.length > 1)
+			throw new Error(
+				`Only one extension may provide ${contract}: ${providers.map((p) => `"${p.extension}"`).join(', ')}`,
+			);
+		return providers[0] ?? null;
+	};
+	const share = sole('shareTarget', (ext) => ext.shareTarget);
+	const conversation = sole('conversation', (ext) => ext.conversation);
+	if (share) known(share.value.requires, `Share target of "${share.extension}"`);
+	if (conversation)
+		known(conversation.value.requires, `Conversation of "${conversation.extension}"`);
 	return {
 		extensions: ordered,
 		actions,
@@ -220,5 +258,10 @@ export function buildRegistry(
 		routes,
 		capabilities: [...capabilities.values()],
 		notificationKinds,
+		shareTarget: share && { extension: share.extension, target: share.value },
+		conversation: conversation && {
+			extension: conversation.extension,
+			provider: conversation.value,
+		},
 	};
 }

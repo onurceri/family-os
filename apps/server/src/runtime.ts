@@ -49,7 +49,6 @@ import {
 	runMigrations,
 	schemaState,
 } from '@famos/db';
-import { UPLOAD_LIMITS } from '@famos/ext-inbox/contract';
 import type { ExtensionDefinition, ExternalHttp, Logger } from '@famos/sdk';
 import pkg from '../package.json' with { type: 'json' };
 import type { Config } from './config.ts';
@@ -190,9 +189,15 @@ export function openRuntime(
 		enqueuePoll: async () => {
 			await queue.enqueue(handle.db, EMAIL_POLL_JOB, {}, { dedupeKey: EMAIL_POLL_JOB });
 		},
+		// The share target's limits, read when mail is read: the kernel that knows the target is
+		// created after the adapter. Without a target nothing can be shared, so no file is kept.
 		limits: {
-			maxFiles: UPLOAD_LIMITS.maxFiles,
-			maxBytes: UPLOAD_LIMITS.maxBytes,
+			get maxFiles() {
+				return kernelRef?.shareLimits()?.maxFiles ?? 0;
+			},
+			get maxBytes() {
+				return kernelRef?.shareLimits()?.maxBytes ?? 0;
+			},
 			maxTextChars: 20_000,
 			maxTitleChars: 300,
 		},

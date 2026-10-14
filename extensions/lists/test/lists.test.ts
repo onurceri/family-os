@@ -103,7 +103,13 @@ describe('tasks', () => {
 		const result = await k.runner.invoke(
 			'lists.changeTask',
 			{ id: task.id, assigneeId: member.id, dueDate: '2026-10-10', label: 'faturaları öde' },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: member.id as never, roleId: 'admin' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: member.id as never,
+				roleId: 'admin',
+			},
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 		);
 		expect(result.status).toBe('drafted');
@@ -206,8 +212,13 @@ describe('tasks', () => {
 			'drafted',
 		);
 		expect(
-			(await k.runner.invoke('lists.addTask', { title: 'x' }, { kind: 'ai', source: 'inbox' }))
-				.status,
+			(
+				await k.runner.invoke(
+					'lists.addTask',
+					{ title: 'x' },
+					{ kind: 'ai', mode: 'share', source: 'inbox' },
+				)
+			).status,
 		).toBe('drafted');
 	});
 
@@ -453,7 +464,7 @@ describe('duplicate hint', () => {
 			actor,
 		);
 		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Süt' }] }, actor);
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		await k.runner.invoke(
 			'lists.addTask',
 			{ title: 'pay the trip fee', dueDate: '2026-10-09' },
@@ -480,7 +491,7 @@ describe('duplicate hint', () => {
 
 	it('meets a task by the words of its title, whatever its due date', async () => {
 		const { actor } = await k.member('admin');
-		const ai = { kind: 'ai', source: 'assistant' } as const;
+		const ai = { kind: 'ai', mode: 'conversation', source: 'assistant' } as const;
 		await k.runner.invoke(
 			'lists.addTask',
 			{ title: 'Buy a birthday present for Mila', dueDate: '2026-10-20' },
@@ -500,7 +511,7 @@ describe('duplicate hint', () => {
 describe('duplicate hint for finished tasks', () => {
 	it('still sees a task that was applied and then ticked off', async () => {
 		const { actor } = await k.member('admin');
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const task = await applied<{ id: string }>(
 			k.runner.invoke(
 				'lists.addTask',
@@ -538,7 +549,7 @@ describe('taking back a suggested shopping add', () => {
 		const result = await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'süt', quantity: '6', category: 'other' }, { title: 'Ekmek' }] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (result.status !== 'drafted') throw new Error('expected a draft');
 		await k.runner.approveDraft(result.draftId, actor);
@@ -574,7 +585,7 @@ describe('taking back a suggested shopping add', () => {
 		await k.runner.invoke(
 			'lists.addShoppingItems',
 			{ items: [{ title: 'Süt' }, { title: 'Ekmek' }] },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		const [draft] = await k
 			.route('core.listDrafts')
@@ -585,7 +596,7 @@ describe('taking back a suggested shopping add', () => {
 
 describe('a suggested task whose due date has passed', () => {
 	it('never expires: a late task is still worth doing', async () => {
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const result = await k.runner.invoke(
 			'lists.addTask',
 			{ title: 'Return the form', dueDate: '2026-10-01' },
@@ -623,7 +634,11 @@ describe('shopping list names', () => {
 
 describe('a suggestion that is already so', () => {
 	const draftOf = async (action: string, input: unknown) => {
-		const result = await k.runner.invoke(action, input, { kind: 'ai', source: 'inbox' });
+		const result = await k.runner.invoke(action, input, {
+			kind: 'ai',
+			mode: 'share',
+			source: 'inbox',
+		});
 		if (result.status !== 'drafted') throw new Error('expected a draft');
 		return result.draftId;
 	};

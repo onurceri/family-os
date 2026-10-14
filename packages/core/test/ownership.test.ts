@@ -40,7 +40,7 @@ const fromInbox = async (forMember: string, body = 'Meeting') => {
 	const result = await k.runner.invoke(
 		ACTION,
 		{ body },
-		{ kind: 'ai', source: 'inbox' },
+		{ kind: 'ai', mode: 'share', source: 'inbox' },
 		{ draft: { sourceKind: 'inbox', sourceId: `item-${body}`, forMember } },
 	);
 	if (result.status !== 'drafted') throw new Error('expected a draft');
@@ -48,6 +48,7 @@ const fromInbox = async (forMember: string, body = 'Meeting') => {
 };
 const assistantFor = (m: { member: { id: string }; actor: Actor }, roleId: string): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: m.member.id as MemberId,
 	roleId,

@@ -351,7 +351,7 @@ describe('draft waiting', () => {
 		const admin = await k.member('admin');
 		const member = await k.member('member');
 		await k.member('supervised');
-		const ai = { kind: 'ai' as const, source: 'inbox' };
+		const ai = { kind: 'ai' as const, mode: 'share' as const, source: 'inbox' };
 		const meta = { draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1', summary: 'Dentist' } };
 		await k.runner.invoke('notes.addNote', { body: 'a' }, ai, meta);
 		await k.runner.invoke('notes.addNote', { body: 'b' }, ai, meta);
@@ -376,7 +376,7 @@ describe('draft waiting', () => {
 
 	it("passes the notification's source on to the channels", async () => {
 		const admin = await k.member('admin');
-		const ai = { kind: 'ai' as const, source: 'inbox' };
+		const ai = { kind: 'ai' as const, mode: 'share' as const, source: 'inbox' };
 		const meta = { draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1', summary: 'Dentist' } };
 		await k.runner.invoke('notes.addNote', { body: 'a' }, ai, meta);
 		k.clock.advance(30_000);

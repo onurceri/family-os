@@ -5,7 +5,7 @@ import chores from '../src/server/index.ts';
 
 export const TZ = 'Europe/Istanbul';
 export const at = (date: string, time: string) => epochOf(date, time, TZ);
-export const AI: Actor = { kind: 'ai', source: 'inbox' };
+export const AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 
 /** Tuesday 2026-10-06, 10:00 in Istanbul. */
 export async function createKernel() {

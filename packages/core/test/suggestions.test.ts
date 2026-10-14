@@ -103,6 +103,7 @@ const suggestionsOf = async (actor: Actor) => {
 };
 const assistantFor = (who: Who): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,
@@ -232,7 +233,7 @@ describe('the name a suggestion carries', () => {
 });
 
 describe('a suggestion read from something a member shared', () => {
-	const inbox: Actor = { kind: 'ai', source: 'inbox' };
+	const inbox: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 
 	it('belongs to the sharer, who may take it back even without approving', async () => {
 		const id = await propose({ name: 'Cheddar', done: true }, inbox, 'cart.tick', {
@@ -248,6 +249,7 @@ describe('a suggestion read from something a member shared', () => {
 			.executeTakeFirstOrThrow();
 		expect(JSON.parse(row.proposed_by)).toMatchObject({
 			kind: 'ai',
+			mode: 'share',
 			source: 'inbox',
 			onBehalfOf: kid.member.id,
 		});

@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	conversationAnswered,
 	createHandleTable,
 	defineEvent,
 	defineJob,
@@ -157,6 +158,8 @@ export const turnJob = defineJob({
 				messageId,
 				status: fields.status,
 			});
+			// Channels outside the app wait for this answer by its id.
+			await ctx.events.emitTo(memberId, conversationAnswered, { replyId: messageId });
 		};
 
 		const member = (await ctx.family.members()).find((m) => m.id === memberId);
@@ -184,6 +187,7 @@ export const turnJob = defineJob({
 
 		const actor: Actor = {
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			// The suggestions of this conversation are its own; the person's others are not.
 			sourceId: threadId,
@@ -261,7 +265,7 @@ export const turnJob = defineJob({
 		const calls: RecordedCall[] = [];
 		const proposals: Proposal[] = [];
 		const inject = {
-			'core.addMemory': { source: 'assistant' },
+			'core.addMemory': { source: 'ai' },
 		};
 		// A handle in an answer becomes the member's name, or a neutral word where names are not shared.
 		const nameOf = (handle: string) => {

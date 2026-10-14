@@ -62,6 +62,7 @@ describe('the tools offered to the model', () => {
 	const asAssistant = () =>
 		({
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: ayse.member.id as never,
 			roleId: 'admin',
@@ -286,6 +287,7 @@ describe('suggestion labels', () => {
 		});
 		const ai = {
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: ayse.member.id as never,
 			roleId: 'admin',

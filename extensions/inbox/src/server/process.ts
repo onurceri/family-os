@@ -376,7 +376,7 @@ export function outputJsonSchema(catalog: AiActionInfo[]): Record<string, unknow
 
 /** Items per area given to the model; the rest are left out (newest or soonest first). */
 const MAX_CONTEXT_ITEMS = 50;
-const AI_ACTOR = { kind: 'ai', source: 'inbox' } as const;
+const AI_ACTOR = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 
 /**
  * Puts the items the shared text names first (by the share of their words it says, rare words
@@ -937,7 +937,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				await ctx.actions.invoke(
 					proposal.action,
 					input,
-					{ kind: 'ai', source: 'inbox' },
+					{ kind: 'ai', mode: 'share', source: 'inbox' },
 					{
 						draft: {
 							sourceKind: 'inbox',

@@ -1,6 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
 import { assistantUse } from './capabilities.ts';
+import { conversation } from './conversation.ts';
 import { migrations } from './store.ts';
 import { summarizeJob } from './summary.ts';
 import { deleteThread, getThread, listThreads, renameThread, sendMessage } from './threads.ts';
@@ -19,4 +20,5 @@ export default defineExtension({
 	events: [assistantDelta, assistantDone],
 	capabilities: [assistantUse],
 	jobs: [turnJob, summarizeJob],
+	conversation,
 });

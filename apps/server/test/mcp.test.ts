@@ -649,6 +649,7 @@ describe('tools', () => {
 		});
 		expect(JSON.parse(draft.proposed_by)).toMatchObject({
 			kind: 'ai',
+			mode: 'agent',
 			source: 'mcp',
 			onBehalfOf: kid,
 		});

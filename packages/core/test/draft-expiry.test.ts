@@ -53,7 +53,7 @@ const plans = defineTestExtension({
 	capabilities: [planEdit],
 });
 
-const AI: Actor = { kind: 'ai', source: 'inbox' };
+const AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 beforeEach(async () => {

@@ -19612,7 +19612,7 @@ export interface operations {
                         id: string;
                         text: string;
                         /** @enum {string} */
-                        source: "member" | "assistant";
+                        source: "member" | "ai";
                         createdAt: number;
                         updatedAt: number;
                     }[];
@@ -35304,7 +35304,7 @@ export interface operations {
                 "application/json": {
                     text: string;
                     /** @enum {string} */
-                    source?: "member" | "assistant";
+                    source?: "member" | "ai";
                 };
             };
         };
@@ -35468,7 +35468,7 @@ export interface operations {
                             id: string;
                             text: string;
                             /** @enum {string} */
-                            source: "member" | "assistant";
+                            source: "member" | "ai";
                             createdAt: number;
                             updatedAt: number;
                         };
@@ -35763,7 +35763,7 @@ export interface operations {
                             id: string;
                             text: string;
                             /** @enum {string} */
-                            source: "member" | "assistant";
+                            source: "member" | "ai";
                             createdAt: number;
                             updatedAt: number;
                         }[];

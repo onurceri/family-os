@@ -10,7 +10,6 @@ import { CORE_CAPABILITIES, type Kernel } from '@famos/core';
 import { FamosError } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
-import { memberActor } from '../inbox-share.ts';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 
@@ -134,7 +133,7 @@ export function mountEmailRoutes(app: OpenAPIHono<AppEnv>, email: Email, kernel:
 	app.openapi(addSender, async (c) => {
 		requireAdmin(c);
 		const input = c.req.valid('json');
-		if (!(await memberActor(kernel, input.memberId)))
+		if (!(await kernel.memberActor(input.memberId)))
 			throw new FamosError('bad_request', 'Choose a member of the family');
 		return c.json(await email.addSender(input), 200);
 	});

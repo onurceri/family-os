@@ -17,7 +17,7 @@ beforeEach(async () => {
 });
 afterEach(() => k.close());
 
-const ai = { kind: 'ai', source: 'inbox' } as const;
+const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 const add = async (input: object) => {
 	const result = await k.runner.invoke<{ id: string }>('calendar.createEvent', input, admin.actor);
 	if (result.status !== 'applied') throw new Error('expected an event');

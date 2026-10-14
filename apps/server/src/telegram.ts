@@ -1,25 +1,14 @@
 import type { Telegram, TelegramHandlers } from '@famos/adapters/telegram';
 import { type CoreTables, type Kernel, memberChanged } from '@famos/core';
-import { FamosError, isFamosError, subjectOf } from '@famos/sdk';
+import { conversationAnswered, FamosError, isFamosError, subjectOf } from '@famos/sdk';
 import { formatClock, formatDate } from '@famos/time';
-import { memberActor, shareToInbox } from './inbox-share.ts';
 
 /**
- * Connects the Telegram adapter to the kernel. Everything a chat can do goes through
- * the same doors as the app: the Inbox route for shares, the draft runner for decisions, both
- * as the linked member, so capabilities, quotas and feature switches apply unchanged.
+ * Connects the Telegram adapter to the kernel. Everything a chat can do goes through the same
+ * doors as the app, as the linked member: the kernel's share target for shares, its conversation
+ * for questions, the draft runner for decisions. Capabilities, quotas and feature switches apply
+ * unchanged, and which extensions are behind those doors is not this file's business.
  */
-/** The columns of the assistant's messages the chat answer needs (the assistant owns the table). */
-type AssistantMessages = {
-	assistant_messages: {
-		id: string;
-		content: string;
-		status: string;
-		error_code: string | null;
-		tool_calls: string | null;
-	};
-};
-
 export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 	const translate = kernel.translate;
 	const core = () => kernel.ctx.db.withTables<CoreTables>();
@@ -48,8 +37,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 		},
 
 		async onShare({ memberId, text, url, files }) {
-			await shareToInbox(kernel, {
-				memberId,
+			await kernel.share(memberId, {
 				channel: 'telegram',
 				...(text !== undefined && { text }),
 				...(url !== undefined && { url }),
@@ -57,29 +45,11 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			});
 		},
 
-		// A question typed in the chat goes to the assistant as the member.
+		// A question typed in the chat goes to the family's conversation as the member.
 		async onAsk({ memberId, text, threadId }) {
-			const actor = await memberActor(kernel, memberId);
-			if (!actor || !kernel.ctx.access.can(actor, 'assistant.use'))
-				return { status: 'unavailable' };
-			const ask = (thread: string | null) =>
-				kernel.runner.invoke<{ threadId: string; replyId: string }>(
-					'assistant.sendMessage',
-					{ text, ...(thread && { threadId: thread }) },
-					actor,
-				);
 			try {
-				const result = await ask(threadId).catch(async (error: unknown) => {
-					// The thread was deleted in the app: start a new one.
-					if (threadId && isFamosError(error) && error.code === 'not_found') return ask(null);
-					throw error;
-				});
-				if (result.status !== 'applied') return { status: 'unavailable' };
-				return {
-					status: 'asked',
-					threadId: result.output.threadId,
-					replyId: result.output.replyId,
-				};
+				const asked = await kernel.conversation.ask(memberId, { text, threadId });
+				return { status: 'asked', threadId: asked.threadId, replyId: asked.replyId };
 			} catch (error) {
 				if (isFamosError(error)) {
 					if (error.code === 'conflict') return { status: 'busy' };
@@ -91,7 +61,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 		},
 
 		async onDecision({ memberId, draftId, verb }) {
-			const actor = await memberActor(kernel, memberId);
+			const actor = await kernel.memberActor(memberId);
 			if (!actor) throw new FamosError('forbidden', 'Not a member');
 			if (verb === 'approve') await kernel.runner.approveDraft(draftId, actor);
 			else if (verb === 'replace') await kernel.runner.replaceDraft(draftId, actor);
@@ -112,7 +82,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 				.execute();
 			// Only the ones this person may decide: buttons that would be refused are not shown.
 			// One about a day that has passed is expired: no buttons for it.
-			const actor = await memberActor(kernel, memberId);
+			const actor = await kernel.memberActor(memberId);
 			const passed = await kernel.runner.passedCheck();
 			const { formatLocale, hourCycle } = await kernel.ctx.family.settings();
 			const when = (at: { date: string; time?: string }) => {
@@ -162,28 +132,18 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 	// The answer to a question asked in the chat goes back to the chat when it is written; the
 	// adapter sends it only when the chat waits for exactly this reply.
 	kernel.bus.onMember(async (memberId, name, payload) => {
-		if (name !== 'assistant.done') return;
-		const { messageId } = payload as { messageId: string };
-		const row = await kernel.ctx.db
-			.withTables<AssistantMessages>()
-			.selectFrom('assistant_messages')
-			.select(['content', 'status', 'error_code', 'tool_calls'])
-			.where('id', '=', messageId)
-			.executeTakeFirst();
-		if (!row) return;
-		const calls: { draftId?: string }[] = row.tool_calls ? JSON.parse(row.tool_calls) : [];
+		if (name !== conversationAnswered.name) return;
+		const { replyId } = conversationAnswered.payload.parse(payload);
+		const answer = await kernel.conversation.answer(memberId, replyId);
+		if (!answer) return;
 		const text =
-			row.status === 'done'
-				? row.content
+			answer.status === 'done'
+				? answer.text
 				: await handlers.translate(
 						memberId,
-						row.error_code === 'disabled' ? 'telegram_answer_ai_off' : 'telegram_answer_failed',
+						answer.status === 'ai_off' ? 'telegram_answer_ai_off' : 'telegram_answer_failed',
 					);
-		await telegram.sendAnswer(memberId, {
-			replyId: messageId,
-			text,
-			draftIds: calls.flatMap((c) => (c.draftId ? [c.draftId] : [])),
-		});
+		await telegram.sendAnswer(memberId, { replyId, text, draftIds: answer.draftIds });
 	});
 
 	// An archived member's Telegram account is unlinked (the chat is checked on every message too).

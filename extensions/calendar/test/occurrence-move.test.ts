@@ -28,6 +28,7 @@ async function create(input: Record<string, unknown>): Promise<string> {
 const ai = () =>
 	({
 		kind: 'ai',
+		mode: 'conversation',
 		source: 'assistant',
 		onBehalfOf: admin.member.id as never,
 		roleId: 'admin',
@@ -233,7 +234,7 @@ describe('finding an event by its text', () => {
 		k.runner.invoke<{ events: { title: string; date: string }[]; note?: string }>(
 			'calendar.findEvents',
 			input,
-			{ kind: 'ai', source: 'assistant' },
+			{ kind: 'ai', mode: 'conversation', source: 'assistant' },
 		);
 
 	it('searches from today for two months when only text is given', async () => {

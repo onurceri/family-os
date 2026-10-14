@@ -80,6 +80,7 @@ describe('core.today', () => {
 		const { member } = await k.member('member');
 		const ai = {
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: member.id as MemberId,
 			roleId: 'member',

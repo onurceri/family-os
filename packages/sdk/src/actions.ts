@@ -196,11 +196,11 @@ export interface ActionAiHints {
 	/** Short guidance for filling fields, e.g. how to pick members or dates. */
 	guidance?: string;
 	/**
-	 * Offered only to the in-app assistant working for a member, not to the Inbox pipeline that
-	 * reads shared (untrusted) content, nor to MCP clients: for actions that should come from a
-	 * person's own request here.
+	 * Offered only to the AI answering a member in the app's own conversation (`mode:
+	 * 'conversation'`), not to one reading shared (untrusted) content, nor to outside agents: for
+	 * actions that should come from a person's own request here.
 	 */
-	assistantOnly?: boolean;
+	conversationOnly?: boolean;
 	/**
 	 * What the assistant proposes becomes a draft addressed to the member it works for: only that
 	 * member sees and decides it (not other approvers, admins included). For personal things whose

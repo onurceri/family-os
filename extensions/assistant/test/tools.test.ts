@@ -112,7 +112,7 @@ describe('hidden fields', () => {
 		} satisfies AiActionInfo;
 		const [t] = chatTools([{ actionId: 'core.addMemory', kind: 'read', info }], {
 			actions,
-			actor: { kind: 'ai', source: 'assistant' },
+			actor: { kind: 'ai', mode: 'conversation', source: 'assistant' },
 			table: createHandleTable(),
 			turnId: 'turn',
 			calls: [],
@@ -140,7 +140,7 @@ describe('failed tool calls', () => {
 		const failures: unknown[] = [];
 		const [t] = chatTools([tool('calendar.findEvents')], {
 			actions,
-			actor: { kind: 'ai', source: 'assistant' },
+			actor: { kind: 'ai', mode: 'conversation', source: 'assistant' },
 			table: createHandleTable(),
 			turnId: 'turn',
 			calls: [],
@@ -174,7 +174,7 @@ describe('tool execution', () => {
 		const table = createHandleTable();
 		const [t] = chatTools([tool('vehicles.aiContext')], {
 			actions,
-			actor: { kind: 'ai', source: 'assistant' },
+			actor: { kind: 'ai', mode: 'conversation', source: 'assistant' },
 			table,
 			turnId: 'turn',
 			calls,

@@ -250,4 +250,57 @@ describe('manifest', () => {
 			]),
 		).toThrow(/both as a dependency and as optional/);
 	});
+
+	it('takes one share target and one conversation, each listed in its manifest', () => {
+		const shareTarget = {
+			requires: 'mail.view',
+			limits: { maxFiles: 1, maxBytes: 10, accept: ['text/plain'] },
+			receive: async () => {},
+		};
+		const conversation = {
+			requires: 'mail.view',
+			ask: async () => ({ threadId: 't', replyId: 'r' }),
+			answer: async () => null,
+		};
+		const provider = (id: string, provides: string[], code: object) =>
+			defineExtension({
+				manifest: manifest(id, { capabilities: [`${id}.view`], provides }),
+				capabilities: [defineCapability({ id: `${id}.view`, label: 'x:cap', level: 'view' })],
+				...code,
+			});
+		const mail = provider('mail', ['shareTarget', 'conversation'], { shareTarget, conversation });
+		const registry = buildRegistry([mail]);
+		expect(registry.shareTarget?.extension).toBe('mail');
+		expect(registry.conversation?.extension).toBe('mail');
+		expect(buildRegistry([defineExtension({ manifest: manifest('post') })]).shareTarget).toBeNull();
+
+		expect(() => buildRegistry([provider('mail', [], { shareTarget })])).toThrow(
+			/implements shareTarget, which its manifest's provides lacks/,
+		);
+		expect(() => buildRegistry([provider('mail', ['conversation'], {})])).toThrow(
+			/lists conversation in provides, but its code lacks it/,
+		);
+		const post = (code: object) =>
+			provider('post', Object.keys(code), {
+				...code,
+				...('shareTarget' in code && { shareTarget: { ...shareTarget, requires: 'post.view' } }),
+				...('conversation' in code && {
+					conversation: { ...conversation, requires: 'post.view' },
+				}),
+			});
+		expect(() => buildRegistry([mail, post({ shareTarget })])).toThrow(
+			/Only one extension may provide shareTarget/,
+		);
+		expect(() => buildRegistry([mail, post({ conversation })])).toThrow(
+			/Only one extension may provide conversation/,
+		);
+		expect(() => parseManifest(manifest('mail', { provides: ['inbox'] }))).toThrow(/provides/);
+		// Its capability is its own: another extension's would let it share in someone else's name.
+		expect(() =>
+			defineExtension({
+				manifest: manifest('mail', { provides: ['shareTarget'] }),
+				shareTarget: { ...shareTarget, requires: 'post.view' },
+			}),
+		).toThrow(/must be namespaced/);
+	});
 });

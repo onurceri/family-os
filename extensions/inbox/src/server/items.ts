@@ -8,7 +8,9 @@ import {
 	FamosError,
 	FileResponseSchema,
 	isFamosError,
+	type ShareTarget,
 	type UnitOfWork,
+	type UploadedFile,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -322,49 +324,76 @@ export const createItem = defineRoute({
 	body: NewItemFieldsSchema,
 	upload: UPLOAD_LIMITS,
 	response: InboxItemSchema,
-	async handle(ctx, { body, files, actor }) {
-		const { fileToRecordId, fileToRecordKind, fileToLabel, fileToRecordName, ...fields } = body;
-		if (!fileToRecordId !== !fileToRecordKind)
-			throw new FamosError('bad_request', 'Name both the record and its kind to file on');
-		const fileTo: FileTo | undefined =
-			fileToRecordId && fileToRecordKind
-				? {
-						recordId: fileToRecordId,
-						recordKind: fileToRecordKind,
-						...(fileToLabel && { label: fileToLabel }),
-						...(fileToRecordName && { recordName: fileToRecordName }),
-					}
-				: undefined;
-		await assertQuota(ctx, actor, files);
-		// Files cannot join a transaction: store them first, remove them if the action fails.
-		const id = ctx.ids.next('inbox_item');
-		const stored: z.infer<typeof StoredFileSchema>[] = [];
-		try {
-			for (const [i, file] of files.entries()) {
-				const key = `inbox/${id}/${i}`;
-				// Photos lose their location and other metadata before they are stored (and so before
-				// any model sees them).
-				const data = STRIPPED_TYPES.has(file.type)
-					? stripImageMetadata(await file.bytes(), file.type)
-					: file.stream();
-				const stat = await ctx.files.put(key, data, file.type);
-				stored.push({ key, name: safeName(file.name, i), type: file.type, size: stat.size });
-			}
-			const result = await ctx.actions.invoke<z.infer<typeof InboxItemSchema>>(
-				'inbox.addItem',
-				{ id, ...fields, files: stored, ...(fileTo && { fileTo }) },
-				actor,
-			);
-			if (result.status !== 'applied') throw new FamosError('conflict', 'The item was not added');
-			return result.output;
-		} catch (error) {
-			await Promise.all(stored.map((f) => ctx.files.delete(f.key)));
-			if (error instanceof MalformedImageError)
-				throw new FamosError('bad_request', 'A photo could not be read; it was not added');
-			throw error;
-		}
-	},
+	handle: (ctx, { body, files, actor }) => addUpload(ctx, actor, body, files),
 });
+
+/**
+ * Where things shared from outside the app (Telegram, email) arrive: they become items exactly
+ * as an upload from the app does, with the same quota, metadata stripping and AI reading.
+ */
+export const shareTarget: ShareTarget = {
+	requires: inboxShare.id,
+	limits: UPLOAD_LIMITS,
+	async receive(ctx, actor, share) {
+		const fields = NewItemFieldsSchema.safeParse({
+			channel: share.channel,
+			...(share.title !== undefined && { title: share.title }),
+			...(share.text !== undefined && { text: share.text }),
+			...(share.url !== undefined && { url: share.url }),
+		});
+		if (!fields.success) throw new FamosError('bad_request', 'This cannot be added');
+		await addUpload(ctx, actor, fields.data, share.files);
+	},
+};
+
+/** Stores the files of an upload and adds the item; the files go again if adding fails. */
+async function addUpload(
+	ctx: ExtensionContext,
+	actor: Actor,
+	body: z.infer<typeof NewItemFieldsSchema>,
+	files: readonly UploadedFile[],
+): Promise<z.infer<typeof InboxItemSchema>> {
+	const { fileToRecordId, fileToRecordKind, fileToLabel, fileToRecordName, ...fields } = body;
+	if (!fileToRecordId !== !fileToRecordKind)
+		throw new FamosError('bad_request', 'Name both the record and its kind to file on');
+	const fileTo: FileTo | undefined =
+		fileToRecordId && fileToRecordKind
+			? {
+					recordId: fileToRecordId,
+					recordKind: fileToRecordKind,
+					...(fileToLabel && { label: fileToLabel }),
+					...(fileToRecordName && { recordName: fileToRecordName }),
+				}
+			: undefined;
+	await assertQuota(ctx, actor, files);
+	// Files cannot join a transaction: store them first, remove them if the action fails.
+	const id = ctx.ids.next('inbox_item');
+	const stored: z.infer<typeof StoredFileSchema>[] = [];
+	try {
+		for (const [i, file] of files.entries()) {
+			const key = `inbox/${id}/${i}`;
+			// Photos lose their location and other metadata before they are stored (and so before
+			// any model sees them).
+			const data = STRIPPED_TYPES.has(file.type)
+				? stripImageMetadata(await file.bytes(), file.type)
+				: file.stream();
+			const stat = await ctx.files.put(key, data, file.type);
+			stored.push({ key, name: safeName(file.name, i), type: file.type, size: stat.size });
+		}
+		const result = await ctx.actions.invoke<z.infer<typeof InboxItemSchema>>(
+			'inbox.addItem',
+			{ id, ...fields, files: stored, ...(fileTo && { fileTo }) },
+			actor,
+		);
+		if (result.status !== 'applied') throw new FamosError('conflict', 'The item was not added');
+		return result.output;
+	} catch (error) {
+		await Promise.all(stored.map((f) => ctx.files.delete(f.key)));
+		if (error instanceof MalformedImageError)
+			throw new FamosError('bad_request', 'A photo could not be read; it was not added');
+		throw error;
+	}
+}
 
 export const listItems = defineRoute({
 	method: 'get',

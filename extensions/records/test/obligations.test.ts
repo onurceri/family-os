@@ -474,7 +474,7 @@ describe('AI context', () => {
 			k,
 			'records.aiContext',
 			{},
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		expect(out).toMatchObject({
 			kind: 'obligation',
@@ -484,7 +484,7 @@ describe('AI context', () => {
 });
 
 describe('taking a completion back', () => {
-	const AI = { kind: 'ai', source: 'inbox' } as const;
+	const AI = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 	const anchorOf = async (id: string) =>
 		(
 			await k.ctx.db
@@ -564,7 +564,7 @@ describe('taking a completion back', () => {
 });
 
 describe('an AI proposing that a duty is done', () => {
-	const AI = { kind: 'ai', source: 'inbox' } as const;
+	const AI = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 
 	it('is refused without a day it was done or a date it runs to', async () => {
 		// Real mistake: "your car insurance is due for renewal … ends on 20 October" was proposed

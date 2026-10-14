@@ -14,7 +14,13 @@ beforeEach(async () => {
 afterEach(() => k.close());
 
 const assistantFor = (m: { member: { id: string } }, source: 'assistant' | 'mcp' = 'assistant') =>
-	({ kind: 'ai', source, onBehalfOf: m.member.id as MemberId, roleId: 'member' }) as Actor;
+	({
+		kind: 'ai',
+		mode: source === 'assistant' ? 'conversation' : 'agent',
+		source,
+		onBehalfOf: m.member.id as MemberId,
+		roleId: 'member',
+	}) as Actor;
 type Listed = {
 	id: string;
 	label: string;
@@ -103,7 +109,7 @@ describe('core.mySuggestions', () => {
 			[true],
 		);
 		// An agent with nobody behind it has no suggestions of its own.
-		expect(await mine({ kind: 'ai', source: 'inbox' })).toEqual([]);
+		expect(await mine({ kind: 'ai', mode: 'share', source: 'inbox' })).toEqual([]);
 	});
 
 	it('lists for an agent only what was suggested in its own conversation, with who decided', async () => {
@@ -159,6 +165,7 @@ describe('core.mySuggestions', () => {
 		const kid = await k.member('supervised');
 		const thread = {
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			sourceId: 'asst_thread_kid',
 			onBehalfOf: kid.member.id as MemberId,

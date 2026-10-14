@@ -613,7 +613,13 @@ describe('history', () => {
 		const result = await k.runner.invoke(
 			'chores.markDone',
 			{ id: c.id, dueDate: c.nextDue, label: 'Dishes' },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: ayse.id as never, roleId: 'admin' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: ayse.id as never,
+				roleId: 'admin',
+			},
 		);
 		if (result.status !== 'drafted') throw new Error('expected a draft');
 		const real = await done(c, bora.actor);
@@ -640,7 +646,13 @@ describe('history', () => {
 		const result = await k.runner.invoke(
 			'chores.markDone',
 			{ id: c.id, dueDate: c.nextDue, doneBy: bora.id, label: 'Dishes' },
-			{ kind: 'ai', source: 'assistant', onBehalfOf: ayse.id as never, roleId: 'admin' },
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: ayse.id as never,
+				roleId: 'admin',
+			},
 			{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 		);
 		expect(result.status).toBe('drafted');

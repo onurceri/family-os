@@ -72,6 +72,7 @@ async function asking(roleId: string) {
 	const { actor, member } = await k.member(roleId);
 	const ai: Actor = {
 		kind: 'ai',
+		mode: 'conversation',
 		source: 'assistant',
 		onBehalfOf: member.id as MemberId,
 		roleId,
@@ -96,7 +97,7 @@ describe('the AI acting on behalf of a member', () => {
 	it('holds only capabilities the member holds, on top of the AI’s own limits', async () => {
 		const adult = await asking('member');
 		const kid = await asking('supervised');
-		const anyone: Actor = { kind: 'ai', source: 'inbox' };
+		const anyone: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 		expect(k.access.can(adult.ai, 'stash.view')).toBe(true);
 		expect(k.access.can(kid.ai, 'stash.view')).toBe(false);
 		expect(k.access.can(kid.ai, 'shelf.view')).toBe(true);
@@ -114,7 +115,10 @@ describe('the AI acting on behalf of a member', () => {
 		expect(readIds(adult.ai)).toEqual(['shelf.list', 'stash.list']);
 		expect(readIds(kid.ai)).toEqual(['shelf.list']);
 		// No member: everything the sandbox allows.
-		expect(readIds({ kind: 'ai', source: 'inbox' })).toEqual(['shelf.list', 'stash.list']);
+		expect(readIds({ kind: 'ai', mode: 'share', source: 'inbox' })).toEqual([
+			'shelf.list',
+			'stash.list',
+		]);
 		// Read tools are not draft tools.
 		expect(draftIds(adult.ai)).not.toContain('shelf.list');
 	});
@@ -168,6 +172,7 @@ describe('the AI acting on behalf of a member', () => {
 			.executeTakeFirstOrThrow();
 		expect(JSON.parse(row.proposed_by)).toMatchObject({
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: adult.member.id,
 		});

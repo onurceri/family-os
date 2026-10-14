@@ -4,9 +4,9 @@ import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import type { CoreTables, MemberMemoryTable } from './tables.ts';
 
 /**
- * Personal memory: short notes a member owns. The assistant may propose one as a draft
- * only that member can approve; it shows the notes to the model in that member's own threads
- * and nowhere else. Nobody, admins included, reads another member's notes through any route or
+ * Personal memory: short notes a member owns. The AI answering them in the app's conversation
+ * may propose one as a draft only that member can approve, and sees the notes in that member's
+ * own conversations and nowhere else. Nobody, admins included, reads another member's notes through any route or
  * action; texts are family content and are never logged.
  */
 
@@ -20,7 +20,8 @@ const MemoryTextSchema = z.string().trim().min(1).max(MEMORY_MAX_CHARS);
 export const MemorySchema = z.object({
 	id: z.string(),
 	text: z.string(),
-	source: z.enum(['member', 'assistant']),
+	/** `ai`: the AI proposed it and the member approved it. */
+	source: z.enum(['member', 'ai']),
 	createdAt: z.number(),
 	updatedAt: z.number(),
 });
@@ -35,12 +36,12 @@ const toMemory = (row: MemberMemoryTable): Memory => ({
 });
 
 /**
- * The member whose memories a call may touch: a signed-in member, or the assistant working for
- * one (reading their notes for their own threads). Never anyone else.
+ * The member whose memories a call may touch: a signed-in member, or the AI answering one in the
+ * app's conversation (reading their notes for their own conversations). Never anyone else.
  */
 function ownerOf(actor: Actor): string {
 	if (actor.kind === 'member') return actor.memberId;
-	if (actor.kind === 'ai' && actor.source === 'assistant' && actor.onBehalfOf)
+	if (actor.kind === 'ai' && actor.mode === 'conversation' && actor.onBehalfOf)
 		return actor.onBehalfOf;
 	throw new FamosError('forbidden', 'Memories belong to a member');
 }
@@ -57,14 +58,14 @@ export function createMemory() {
 		draftTitle: 'app:draft_title_add_memory',
 		input: z.object({
 			text: MemoryTextSchema,
-			/** Set by the assistant when it proposed the note; a label, it grants nothing. */
-			source: z.enum(['member', 'assistant']).optional(),
+			/** Set by the AI when it proposed the note; a label, it grants nothing. */
+			source: z.enum(['member', 'ai']).optional(),
 		}),
 		output: z.object({ id: z.string(), text: z.string() }),
 		requires: CORE_CAPABILITIES.memoryUse.id,
-		// Only the assistant working for the person proposes it, always as a draft only they decide.
+		// Only the AI answering the person in the app proposes it, always as a draft only they decide.
 		ai: {
-			assistantOnly: true,
+			conversationOnly: true,
 			addressToMember: true,
 			description:
 				'Suggests keeping a short note about this person (a preference, a fact, a routine) so you can use it in later conversations. Use only when the person says to remember something or states a lasting preference. One fact per note, at most 280 characters, written as a plain statement.',
@@ -144,8 +145,8 @@ export function createMemory() {
 
 	/**
 	 * The notes for a prompt, newest first. Not offered to any model as a tool (no `ai` hints): the
-	 * assistant's turn job reads them as the member it works for and puts them in that member's own
-	 * threads. Anyone else gets their own notes, never another member's.
+	 * conversation's job reads them as the member it works for and puts them in that member's own
+	 * conversations. Anyone else gets their own notes, never another member's.
 	 */
 	const recallMemories = defineAction({
 		id: 'core.recallMemories',

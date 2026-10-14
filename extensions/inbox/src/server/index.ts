@@ -10,6 +10,7 @@ import {
 	itemChanged,
 	listItems,
 	retryItem,
+	shareTarget,
 } from './items.ts';
 import { itemReady, processItem } from './process.ts';
 import { searchIndex } from './search.ts';
@@ -26,4 +27,5 @@ export default defineExtension({
 	notifications: [itemReady],
 	events: [itemChanged],
 	capabilities: [inboxShare],
+	shareTarget,
 });

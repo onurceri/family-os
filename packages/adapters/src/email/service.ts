@@ -43,7 +43,7 @@ export interface EmailDeps {
 	connect: MailboxConnect;
 	/** Queues a poll in the job queue (deduplicated). */
 	enqueuePoll(): Promise<void>;
-	/** The Inbox's limits, so attachments are filtered before they are handed over. */
+	/** The share target's limits, so attachments are filtered before they are handed over. */
 	limits: { maxFiles: number; maxBytes: number; maxTextChars: number; maxTitleChars: number };
 	/** Called after the settings or the reported state changed, so open pages can refresh. */
 	onStatusChange?: () => void;

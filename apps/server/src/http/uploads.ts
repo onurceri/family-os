@@ -1,3 +1,4 @@
+import { mimeAccepted } from '@famos/core';
 import {
 	type AnyRouteDefinition,
 	FamosError,
@@ -20,13 +21,6 @@ export const LANGUAGE_PACK_BODY_LIMIT = 2 * 1024 * 1024 + 4096;
 
 /** A theme pack (at most 1.5 MB decoded, a third more as base64) plus the request around it. */
 export const THEME_PACK_BODY_LIMIT = 2 * 1024 * 1024 + 4096;
-
-export function mimeAccepted(type: string, accept: readonly string[]): boolean {
-	const t = type.toLowerCase();
-	return accept.some((a) =>
-		a.endsWith('/*') ? t.startsWith(a.slice(0, -1)) : t === a.toLowerCase(),
-	);
-}
 
 function toUploaded(field: string, file: File): UploadedFile {
 	return {

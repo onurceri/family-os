@@ -35,6 +35,7 @@ import { createDeviceService, type DeviceService } from './devices.ts';
 import { createEventBus, type InProcessEventBus } from './event-bus.ts';
 import { familyReader } from './family.ts';
 import { createFeatures, type Features, ownerOf } from './features.ts';
+import { createHostDoors, type HostDoors } from './host-doors.ts';
 import { anyLanguage, type LanguagePort } from './languages.ts';
 import {
 	createNotifications,
@@ -111,6 +112,20 @@ export interface Kernel {
 	readonly languages: LanguagePort;
 	/** Theme packs and who chose which theme. */
 	readonly themes: Themes;
+	/** The member as an actor, or null when they are archived or unknown. */
+	readonly memberActor: HostDoors['memberActor'];
+	/**
+	 * Hands what a member sent from outside the app (Telegram, email) to the installed share
+	 * target, as that member, with the same checks as an upload in the app.
+	 */
+	readonly share: HostDoors['share'];
+	/** What one share may carry, so a channel can trim before it sends; null without a target. */
+	readonly shareLimits: HostDoors['shareLimits'];
+	/**
+	 * The installed conversation, for channels outside the app: ask as a member, and read the
+	 * answer once `conversationAnswered` names it.
+	 */
+	readonly conversation: HostDoors['conversation'];
 	/** All migration scopes in execution order: core, infrastructure, extensions. */
 	readonly migrationScopes: readonly { scope: string; migrations: Migrations }[];
 	/** Family search follows the AI settings: run after a model, provider or area changes. */
@@ -290,15 +305,15 @@ export function createKernel(options: KernelOptions): Kernel {
 		list
 			.filter(([a]) => {
 				const owner = ownerOf(a.id);
-				// Meant for a person's own request in the in-app assistant: not for the Inbox, which
-				// reads shared content, and not for MCP clients.
+				// Meant for a person's own request in the app's conversation: not for an AI reading
+				// shared content, and not for outside agents.
 				const forMember = catalogOptions?.actor;
 				if (
-					a.ai?.assistantOnly &&
+					a.ai?.conversationOnly &&
 					!(
 						forMember?.kind === 'ai' &&
 						forMember.onBehalfOf !== undefined &&
-						forMember.source === 'assistant'
+						forMember.mode === 'conversation'
 					)
 				)
 					return false;
@@ -389,6 +404,8 @@ export function createKernel(options: KernelOptions): Kernel {
 		...(options.worker && { options: options.worker }),
 	});
 
+	const doors = createHostDoors({ db: options.db, registry, access, features, ctx: () => ctx });
+
 	const coreFirst = registry.extensions.filter((e) => e.id === 'core');
 	const rest = registry.extensions.filter((e) => e.id !== 'core');
 	const migrationScopes = [
@@ -412,6 +429,10 @@ export function createKernel(options: KernelOptions): Kernel {
 		translate: options.translate ?? defaultTranslate,
 		languages: options.languages ?? anyLanguage,
 		themes,
+		memberActor: doors.memberActor,
+		share: doors.share,
+		shareLimits: doors.shareLimits,
+		conversation: doors.conversation,
 		migrationScopes,
 		reconcileSearch,
 		async start() {

@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type FakeBotApi, startFakeBotApi } from '@famos/adapters/telegram/fake-bot-api';
 import type { CoreTables } from '@famos/core';
-import type { Logger } from '@famos/sdk';
+import type { ExtensionDefinition, Logger } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
+import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
@@ -121,7 +122,8 @@ async function until(check: () => boolean | Promise<boolean>, what = 'condition'
 	throw new Error(`Timed out waiting for ${what}`);
 }
 
-beforeEach(async () => {
+/** Starts the server with the bot, a model and a family set up; `installed`: its extensions. */
+async function start(installed?: readonly ExtensionDefinition[]) {
 	logs = [];
 	responses = [];
 	fake = await startFakeBotApi();
@@ -129,6 +131,7 @@ beforeEach(async () => {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-telegram-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
+		...(installed && { extensions: installed }),
 		logger: capturingLogger(),
 		quiet: true,
 		passwordHasher: fastPasswordHasher,
@@ -173,14 +176,19 @@ beforeEach(async () => {
 			password: 'correct horse battery',
 		})
 	).cookie;
-});
+}
 
-afterEach(async () => {
-	vi.useRealTimers();
+async function stop() {
 	await runtime.telegram.stop();
 	await runtime.close();
 	await fake.close();
 	await model.close();
+}
+
+beforeEach(() => start());
+afterEach(async () => {
+	vi.useRealTimers();
+	await stop();
 });
 
 /** Connects the bot and links Telegram user `userId` to `memberId` through the real routes/codes. */
@@ -211,7 +219,7 @@ async function addKid() {
 }
 
 const event = (title: string) => ({ title, allDay: true, date: '2026-12-24' });
-const aiActor = { kind: 'ai' as const, source: 'inbox' };
+const aiActor = { kind: 'ai' as const, mode: 'share' as const, source: 'inbox' };
 
 describe('Telegram settings and linking', () => {
 	it('keeps the token secret and lets only admins manage the bot', async () => {
@@ -475,6 +483,22 @@ describe('sharing from Telegram', () => {
 		const threads = (await call('GET', '/api/v1/assistant/threads')).body as { title: string }[];
 		expect(threads.map((t) => t.title)).toEqual(['What is on the shopping list?']);
 	}, 20_000);
+
+	it('shares typed text to Quick add when no extension answers questions', async () => {
+		await stop();
+		await start(extensions.filter((e) => e.id !== 'assistant'));
+		await connect();
+		await link(55);
+		fake.say(55, 'Dentist on Friday at 10');
+		await until(() => fake.sent().some((m) => m.text === 'Sent to Quick add.'));
+		const items = (await call('GET', '/api/v1/inbox/items')).body as {
+			text: string | null;
+			channel: string;
+		}[];
+		expect(items.map((i) => [i.channel, i.text])).toEqual([
+			['telegram', 'Dentist on Friday at 10'],
+		]);
+	});
 
 	it('adds voice notes to the Inbox as audio files', async () => {
 		await connect();

@@ -57,6 +57,7 @@ const code = async (promise: Promise<unknown>) => {
 };
 const asAi = (who: Who): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,
@@ -85,7 +86,7 @@ describe('memory', () => {
 
 		await k.runner.approveDraft(draftId, ayse.actor);
 		expect(await k.route('core.listMyMemories').call({ actor: ayse.actor })).toMatchObject([
-			{ text: 'I am vegetarian', source: 'assistant' },
+			{ text: 'I am vegetarian', source: 'ai' },
 		]);
 		expect(sent.threadId).toBeTruthy();
 	});
@@ -133,7 +134,7 @@ describe('memory', () => {
 	});
 
 	it('is never a tool for the Inbox pipeline or MCP, nor readable by them', async () => {
-		const inbox: Actor = { kind: 'ai', source: 'inbox' };
+		const inbox: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 		const catalog = k.ctx.actions.aiCatalog({ actor: inbox }).map((a) => a.id);
 		expect(catalog).not.toContain('core.addMemory');
 		expect(k.ctx.actions.aiCatalog({}).map((a) => a.id)).not.toContain('core.addMemory');

@@ -57,7 +57,7 @@ const diary = defineTestExtension({
 	actions: [proposal('diary.addPage', diaryView.id), reader('diary.readPages', diaryView.id, 'x')],
 });
 
-const AI: Actor = { kind: 'ai', source: 'inbox' };
+const AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 let k: TestKernel;
 beforeEach(async () => {
 	k = await createTestKernel({ extensions: [ledger, diary] });

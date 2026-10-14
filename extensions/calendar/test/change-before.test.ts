@@ -44,8 +44,14 @@ const listed = async (id: string, status?: string): Promise<Listed> =>
 			query: { limit: 20, ...(status && { status }) },
 		})) as Listed[]
 	).find((d) => d.id === id) as Listed;
-const ai = (source: string): Actor =>
-	({ kind: 'ai', source, onBehalfOf: admin.member.id, roleId: 'admin' }) as Actor;
+const ai = (source: 'assistant' | 'mcp'): Actor =>
+	({
+		kind: 'ai',
+		mode: source === 'assistant' ? 'conversation' : 'agent',
+		source,
+		onBehalfOf: admin.member.id,
+		roleId: 'admin',
+	}) as Actor;
 
 describe('the event as it is now, on a change suggestion', () => {
 	it('comes with the move offered for a new event, and the card reads old → new', async () => {
@@ -59,7 +65,7 @@ describe('the event as it is now, on a change suggestion', () => {
 				startTime: '09:00',
 				location: 'Zwembad De Kuip',
 			},
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		// A new event is not a change: nothing to compare with.
 		expect((await listed(draftId)).before).toBeNull();

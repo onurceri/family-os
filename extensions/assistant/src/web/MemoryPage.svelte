@@ -114,7 +114,7 @@
 							<span class="text-[15px] font-semibold break-words whitespace-pre-wrap"
 								>{memory.text}</span
 							>
-							{#if memory.source === 'assistant'}
+							{#if memory.source === 'ai'}
 								<span class="text-ink-soft text-[13px]">{t('memory_from_assistant')}</span>
 							{/if}
 						</span>

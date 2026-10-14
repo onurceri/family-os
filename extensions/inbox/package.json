@@ -7,12 +7,15 @@
 	"famos": {
 		"id": "inbox",
 		"version": "0.1.0",
-		"sdk": "^0.1.0",
+		"sdk": "^0.2.0",
 		"optional": [
 			"records"
 		],
 		"capabilities": [
 			"inbox.share"
+		],
+		"provides": [
+			"shareTarget"
 		],
 		"calls": [
 			"core.decidableSources",

@@ -74,6 +74,7 @@ afterEach(() => k.close());
 
 const ai = (who: Who): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,
@@ -95,7 +96,7 @@ describe('memory', () => {
 	it('is proposed as a draft only its member can see and decide', async () => {
 		const result = await k.runner.invoke(
 			'core.addMemory',
-			{ text: 'I am vegetarian', source: 'assistant' },
+			{ text: 'I am vegetarian', source: 'ai' },
 			ai(ayse),
 			{ draft: { sourceKind: 'assistant', sourceId: 'm1' } },
 		);
@@ -124,7 +125,7 @@ describe('memory', () => {
 		const approved = await k.runner.approveDraft(draftId, ayse.actor);
 		expect(approved.status).toBe('applied');
 		const mine = await k.route('core.listMyMemories').call({ actor: ayse.actor });
-		expect(mine).toMatchObject([{ text: 'I am vegetarian', source: 'assistant' }]);
+		expect(mine).toMatchObject([{ text: 'I am vegetarian', source: 'ai' }]);
 		// A replay by someone else still learns nothing.
 		expect(await code(k.runner.approveDraft(draftId, admin.actor))).toBe('not_found');
 	});
@@ -159,8 +160,13 @@ describe('memory', () => {
 		]);
 		// The Inbox pipeline (an AI for nobody) reads none.
 		expect(
-			await code(k.runner.invoke('core.recallMemories', {}, { kind: 'ai', source: 'inbox' })),
+			await code(
+				k.runner.invoke('core.recallMemories', {}, { kind: 'ai', mode: 'share', source: 'inbox' }),
+			),
 		).toBe('forbidden');
+		// An outside agent working for Ayşe reads none either: the mode decides, not the source.
+		const agent: Actor = { ...ai(ayse), mode: 'agent' } as Actor;
+		expect(await code(k.runner.invoke('core.recallMemories', {}, agent))).toBe('forbidden');
 
 		await run('core.updateMemory', { id, text: 'Likes green tea' }, ayse);
 		expect(await k.route('core.listMyMemories').call({ actor: ayse.actor })).toMatchObject([
@@ -182,7 +188,7 @@ describe('memory', () => {
 		expect(names(ai(ayse))).toContain('core.addMemory');
 		// Not for the Inbox pipeline, which reads shared content.
 		expect(names()).not.toContain('core.addMemory');
-		expect(names({ kind: 'ai', source: 'inbox' })).not.toContain('core.addMemory');
+		expect(names({ kind: 'ai', mode: 'share', source: 'inbox' })).not.toContain('core.addMemory');
 		// The note reader is never a tool.
 		expect(k.ctx.actions.aiReadTools({ actor: ai(ayse) }).map((a) => a.id)).not.toContain(
 			'core.recallMemories',

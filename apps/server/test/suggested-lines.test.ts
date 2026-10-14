@@ -136,6 +136,7 @@ describe('the line that names each suggestion', () => {
 	it('is the say of each suggestion an MCP client makes, naming the thing', async () => {
 		const actor: Actor = {
 			kind: 'ai',
+			mode: 'agent',
 			source: 'mcp',
 			sourceId: 'api_token_hermes',
 			onBehalfOf: sofia.member.id as MemberId,

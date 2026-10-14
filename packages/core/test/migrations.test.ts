@@ -1,7 +1,7 @@
 import { openDatabase, runMigrations } from '@famos/db';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
-import { coreMigrations, m0001_init } from '../src/migrations/0001_init.ts';
+import { coreMigrations, m0001_init, m0002_draft_replaced } from '../src/migrations/0001_init.ts';
 
 /** A fresh database gets core's constraints: checks, unique keys, foreign keys and cascades. */
 it('a fresh database migrates with core constraints in place', async () => {
@@ -148,4 +148,64 @@ it('upgrades the audit log and drafts so a draft can become another action', asy
 		db,
 	);
 	expect(index.rows.map((r) => r.name)).toContain('core_audit_log_at_idx');
+});
+
+/** AI actors stored before they said how they work get the mode their source had. */
+it('gives stored AI actors their mode and marks memories the AI proposed', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	await runMigrations(db, [
+		{
+			scope: 'core',
+			migrations: { '0001_init': m0001_init, '0002_draft_replaced': m0002_draft_replaced },
+		},
+	]);
+	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
+		db,
+	);
+	const actors = {
+		draft_inbox: { kind: 'ai', source: 'inbox', onBehalfOf: 'member_a' },
+		draft_thread: { kind: 'ai', source: 'assistant', sourceId: 't1', onBehalfOf: 'member_a' },
+		draft_mcp: { kind: 'ai', source: 'mcp', onBehalfOf: 'member_a' },
+		draft_member: { kind: 'member', memberId: 'member_a', roleId: 'admin' },
+	};
+	for (const [id, actor] of Object.entries(actors)) {
+		await sql`insert into core_drafts (id, action_id, input, status, proposed_by, created_at, updated_at)
+			values (${id}, 'x.y', '{}', 'pending', ${JSON.stringify(actor)}, 1, 1)`.execute(db);
+		await sql`insert into core_audit_log (at, actor, action_id, draft_id, outcome)
+			values (1, ${JSON.stringify(actor)}, 'x.y', ${id}, 'drafted')`.execute(db);
+	}
+	for (const [id, source] of [
+		['memory_1', 'assistant'],
+		['memory_2', 'member'],
+	])
+		await sql`insert into core_member_memory (id, member_id, text, source, created_at, updated_at)
+			values (${id}, 'member_a', 'x', ${source}, 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+
+	const drafts = await sql<{
+		id: string;
+		proposed_by: string;
+	}>`select id, proposed_by from core_drafts order by id`.execute(db);
+	const modes = Object.fromEntries(
+		drafts.rows.map((r) => [r.id, (JSON.parse(r.proposed_by) as { mode?: string }).mode]),
+	);
+	expect(modes).toEqual({
+		draft_inbox: 'share',
+		draft_mcp: 'agent',
+		draft_member: undefined,
+		draft_thread: 'conversation',
+	});
+	expect(JSON.parse(drafts.rows.find((r) => r.id === 'draft_thread')?.proposed_by ?? '')).toEqual({
+		...actors.draft_thread,
+		mode: 'conversation',
+	});
+	const audit = await sql<{
+		actor: string;
+	}>`select actor from core_audit_log where draft_id = 'draft_inbox'`.execute(db);
+	expect(JSON.parse(audit.rows[0]?.actor ?? '')).toMatchObject({ mode: 'share' });
+	const memories = await sql<{
+		source: string;
+	}>`select source from core_member_memory order by id`.execute(db);
+	expect(memories.rows.map((r) => r.source)).toEqual(['ai', 'member']);
 });

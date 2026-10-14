@@ -76,6 +76,7 @@ const waiting = (who: Who) =>
 	k.route('core.countWaitingDrafts').call({ actor: who.actor }) as Promise<{ count: number }>;
 const aiFor = (who: Who): Actor => ({
 	kind: 'ai',
+	mode: 'agent',
 	source: 'mcp',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import lists from '../src/server/index.ts';
 
 const TZ = 'Europe/Istanbul';
-const AI: Actor = { kind: 'ai', source: 'assistant' };
+const AI: Actor = { kind: 'ai', mode: 'conversation', source: 'assistant' };
 let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 

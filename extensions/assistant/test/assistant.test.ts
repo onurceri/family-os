@@ -120,10 +120,14 @@ describe('a turn', () => {
 				.map((e) => e.payload.text)
 				.join(''),
 		).toBe('Friday 10:30 you have the dentist.');
-		expect(mine.at(-1)).toMatchObject({
-			name: 'assistant.done',
-			payload: { threadId: sent.threadId, messageId: sent.replyId, status: 'done' },
-		});
+		expect(mine.slice(-2)).toMatchObject([
+			{
+				name: 'assistant.done',
+				payload: { threadId: sent.threadId, messageId: sent.replyId, status: 'done' },
+			},
+			// Channels outside the app learn of the answer by its id alone.
+			{ name: 'core.conversation.answered', payload: { replyId: sent.replyId } },
+		]);
 		expect(delivered[can.member.id]).toBeUndefined();
 		expect(delivered[kid.member.id]).toBeUndefined();
 		expect(broadcast.filter((n) => n.startsWith('assistant.'))).toEqual([]);
@@ -234,6 +238,7 @@ describe('a turn', () => {
 		});
 		expect(JSON.parse(rows[0]?.proposed_by ?? '')).toMatchObject({
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: can.member.id,
 		});
@@ -318,7 +323,7 @@ describe('a turn', () => {
 			content: '',
 		});
 		expect(k.llm.chatCalls).toHaveLength(0);
-		expect(delivered[ayse.member.id]?.at(-1)).toMatchObject({
+		expect(delivered[ayse.member.id]?.at(-2)).toMatchObject({
 			name: 'assistant.done',
 			payload: { status: 'failed' },
 		});
@@ -460,6 +465,7 @@ describe('actors', () => {
 	it('the stored draft proposer is the AI acting for the asker', async () => {
 		const actor: Actor = {
 			kind: 'ai',
+			mode: 'conversation',
 			source: 'assistant',
 			onBehalfOf: kid.member.id as never,
 			roleId: 'supervised',

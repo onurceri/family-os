@@ -43,6 +43,7 @@ const kinds = async (query: string, actor?: Actor) => (await find(query, actor))
 const embeddedTexts = () => k.llm.embedCalls.flatMap((c) => c.texts).join('\n');
 const aiFor = (): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: admin.member.id as MemberId,
 	roleId: 'admin',

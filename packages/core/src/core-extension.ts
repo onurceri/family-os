@@ -229,8 +229,8 @@ function draftReason(row: DraftRow): 'gone' | 'settled' | 'withdrawn' | null {
 	// withdraws it; declining what an assistant or MCP client proposed is an ordinary rejection.
 	const by = JSON.parse(row.proposed_by) as Actor;
 	if (by.kind === 'member') return row.decided_by === by.memberId ? 'withdrawn' : null;
-	// What a member shared to Quick add is theirs to take back; an assistant's is not.
-	return by.kind === 'ai' && by.source === 'inbox' && row.decided_by === by.onBehalfOf
+	// What a member shared is theirs to take back; what an AI they talk to proposed is not.
+	return by.kind === 'ai' && by.mode === 'share' && row.decided_by === by.onBehalfOf
 		? 'withdrawn'
 		: null;
 }

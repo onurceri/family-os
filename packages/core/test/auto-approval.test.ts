@@ -52,6 +52,7 @@ const stopped = () =>
 		.execute();
 const assistantFor = (memberId: string, roleId: string): Actor => ({
 	kind: 'ai',
+	mode: 'conversation',
 	source: 'assistant',
 	onBehalfOf: memberId as MemberId,
 	roleId,
@@ -155,7 +156,7 @@ describe('auto-approval of drafts', () => {
 		const inbox = await k.runner.invoke(
 			ACTION,
 			{ body: 'C' },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 			{ draft: { sourceKind: 'inbox', sourceId: 'i1', forMember: adult.member.id } },
 		);
 		await k.worker.drain();
@@ -176,7 +177,11 @@ describe('auto-approval of drafts', () => {
 		await enable('notes.edit');
 		const forChild = await propose(assistantFor(child.member.id, 'supervised'), 'A');
 		expect((await draft(forChild)).status).toBe('pending');
-		const forNobody = await k.runner.invoke(ACTION, { body: 'B' }, { kind: 'ai', source: 'inbox' });
+		const forNobody = await k.runner.invoke(
+			ACTION,
+			{ body: 'B' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
+		);
 		await k.worker.drain();
 		expect(forNobody.status === 'drafted' && (await draft(forNobody.draftId)).status).toBe(
 			'pending',

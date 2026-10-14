@@ -1,12 +1,14 @@
 import type { AnyActionDefinition } from './actions.ts';
 import { assertRestrictiveDefaults, type CapabilityDefinition } from './capabilities.ts';
 import type { ExtensionContext } from './context.ts';
+import type { ConversationProvider } from './conversation.ts';
 import type { EventDefinition } from './events.ts';
 import type { AnyJobDefinition } from './jobs.ts';
 import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
 import type { NotificationKindDefinition } from './notifications.ts';
 import type { DbExecutor } from './ports.ts';
 import type { AnyRouteDefinition } from './routes.ts';
+import type { ShareTarget } from './share.ts';
 
 /** A forward-only schema migration. There is no `down`. */
 export interface Migration {
@@ -44,6 +46,10 @@ export interface ExtensionDefinition {
 	 * `AiContext`; the Inbox calls it as the AI actor, so a locked area contributes nothing.
 	 */
 	readonly ai?: AiExtensionHints;
+	/** Receives what members share from outside the app; listed in the manifest's `provides`. */
+	readonly shareTarget?: ShareTarget;
+	/** Answers members who ask from outside the app; listed in the manifest's `provides`. */
+	readonly conversation?: ConversationProvider;
 	/** Optional wiring after all extensions are loaded, e.g. event subscriptions. */
 	register?(ctx: ExtensionContext): void | Promise<void>;
 }
@@ -120,6 +126,8 @@ export function defineExtension(definition: {
 	notifications?: readonly NotificationKindDefinition[];
 	sensitive?: boolean;
 	ai?: AiExtensionHints;
+	shareTarget?: ShareTarget;
+	conversation?: ConversationProvider;
 	register?(ctx: ExtensionContext): void | Promise<void>;
 }): ExtensionDefinition {
 	const manifest = parseManifest(definition.manifest);
@@ -153,6 +161,8 @@ export function defineExtension(definition: {
 		assertRestrictiveDefaults(id, capability);
 	}
 	for (const id of [ext.ai?.context ?? []].flat()) owned('AI context action', id);
+	if (ext.shareTarget) owned('Share target capability', ext.shareTarget.requires);
+	if (ext.conversation) owned('Conversation capability', ext.conversation.requires);
 	for (const kind of Object.keys(ext.ai?.index?.kinds ?? {})) owned('AI index kind', kind);
 	return ext;
 }

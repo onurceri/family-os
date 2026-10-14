@@ -198,7 +198,7 @@ describe('requests that are not from a capture', () => {
 			createdAt: at,
 			sourceKind: 'mcp',
 			sourceId: key,
-			proposedBy: { kind: 'ai', source: 'mcp', onBehalfOf: 'sofia' },
+			proposedBy: { kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: 'sofia' },
 		});
 
 	it('groups them by where they came from, newest group first, each in the order made', () => {
@@ -212,7 +212,7 @@ describe('requests that are not from a capture', () => {
 				createdAt: 5,
 				sourceKind: 'assistant',
 				sourceId: 'asst_msg_1',
-				proposedBy: { kind: 'ai', source: 'assistant', onBehalfOf: 'sofia' },
+				proposedBy: { kind: 'ai', mode: 'conversation', source: 'assistant', onBehalfOf: 'sofia' },
 			}),
 		]);
 		expect(groups.map((g) => [g.origin, g.drafts.map((d) => d.id)])).toEqual([

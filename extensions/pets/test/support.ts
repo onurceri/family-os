@@ -6,7 +6,7 @@ import pets from '../src/server/index.ts';
 
 export const TZ = 'Europe/Istanbul';
 export const at = (date: string, time: string) => epochOf(date, time, TZ);
-export const AI: Actor = { kind: 'ai', source: 'inbox' };
+export const AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 
 export async function createKernel(extra: Parameters<typeof createTestKernel>[0] = {}) {
 	const k = await createTestKernel({

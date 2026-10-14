@@ -42,7 +42,7 @@ describe('action runner', () => {
 		const result = await k.runner.invoke(
 			'notes.addNote',
 			{ body: 'from AI' },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 			{
 				draft: { sourceKind: 'inbox_item', sourceId: 'x', summary: 'Add note' },
 			},
@@ -52,7 +52,11 @@ describe('action runner', () => {
 	});
 
 	it('lets AI call read-only actions directly', async () => {
-		const result = await k.runner.invoke('notes.countNotes', {}, { kind: 'ai', source: 'agent' });
+		const result = await k.runner.invoke(
+			'notes.countNotes',
+			{},
+			{ kind: 'ai', mode: 'agent', source: 'agent' },
+		);
 		expect(result.status).toBe('applied');
 	});
 
@@ -96,7 +100,7 @@ describe('action runner', () => {
 describe('drafts', () => {
 	it('undoes an applied draft in one transaction; stale results are not undoable', async () => {
 		const { actor: admin } = await k.member('admin');
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const first = await k.runner.invoke('notes.addNote', { body: 'a' }, ai);
 		const second = await k.runner.invoke('notes.addNote', { body: 'b' }, ai);
 		if (first.status !== 'drafted' || second.status !== 'drafted')
@@ -123,7 +127,7 @@ describe('drafts', () => {
 	});
 
 	it('drafts once per dedupe key and filters drafts by source', async () => {
-		const ai = { kind: 'ai', source: 'inbox' } as const;
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const meta = { sourceKind: 'inbox', sourceId: 'inbox_item_1', dedupeKey: 'inbox:1:0' };
 		const first = await k.runner.invoke('notes.addNote', { body: 'a' }, ai, { draft: meta });
 		const again = await k.runner.invoke('notes.addNote', { body: 'a' }, ai, { draft: meta });
@@ -143,7 +147,7 @@ describe('drafts', () => {
 		const result = await k.runner.invoke(
 			'notes.addNote',
 			{ body: 'draft' },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (result.status !== 'drafted') throw new Error('expected draft');
 
@@ -161,7 +165,7 @@ describe('drafts', () => {
 		const result = await k.runner.invoke(
 			'notes.addNote',
 			{ body: 'x' },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (result.status !== 'drafted') throw new Error('expected draft');
 		expect(await codeOf(k.runner.approveDraft(result.draftId, supervised))).toBe('forbidden');
@@ -183,12 +187,16 @@ describe('drafts', () => {
 		const failing = await k.runner.invoke(
 			'notes.addNote',
 			{ body: 'x', fail: true },
-			{ kind: 'ai', source: 'inbox' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (failing.status !== 'drafted') throw new Error('expected draft');
 		expect(await codeOf(k.runner.approveDraft(failing.draftId, admin))).toBe('unavailable');
 
-		const domain = await k.runner.invoke('notes.conflict', {}, { kind: 'ai', source: 'inbox' });
+		const domain = await k.runner.invoke(
+			'notes.conflict',
+			{},
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
+		);
 		if (domain.status !== 'drafted') throw new Error('expected draft');
 		expect(await codeOf(k.runner.approveDraft(domain.draftId, admin))).toBe('conflict');
 

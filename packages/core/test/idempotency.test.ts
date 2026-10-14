@@ -14,7 +14,7 @@ const count = async () => {
 	const r = await k.runner.invoke<{ count: number }>(
 		'notes.countNotes',
 		{},
-		{ kind: 'ai', source: 'test' },
+		{ kind: 'ai', mode: 'agent', source: 'test' },
 	);
 	return r.status === 'applied' ? r.output.count : -1;
 };

@@ -32959,7 +32959,7 @@
 												"type": "string",
 												"enum": [
 													"member",
-													"assistant"
+													"ai"
 												]
 											},
 											"createdAt": {
@@ -70282,7 +70282,7 @@
 										"type": "string",
 										"enum": [
 											"member",
-											"assistant"
+											"ai"
 										]
 									}
 								},
@@ -70653,7 +70653,7 @@
 															"type": "string",
 															"enum": [
 																"member",
-																"assistant"
+																"ai"
 															]
 														},
 														"createdAt": {
@@ -71319,7 +71319,7 @@
 																"type": "string",
 																"enum": [
 																	"member",
-																	"assistant"
+																	"ai"
 																]
 															},
 															"createdAt": {

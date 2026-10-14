@@ -9,6 +9,7 @@ export * from './devices.ts';
 export * from './event-bus.ts';
 export * from './family.ts';
 export * from './features.ts';
+export { type ChannelShare, type HostDoors, mimeAccepted } from './host-doors.ts';
 export { IDEMPOTENCY_KEEP_MS, IDEMPOTENCY_KEY } from './idempotency.ts';
 export * from './kernel.ts';
 export * from './languages.ts';
