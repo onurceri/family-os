@@ -4,6 +4,7 @@ import {
 	type AnyActionDefinition,
 	type Clock,
 	type DbExecutor,
+	type DraftAlternative,
 	type DraftMeta,
 	FamosError,
 	type FileStore,
@@ -116,6 +117,16 @@ export interface ActionRunner {
 	isProposer(actor: Actor, draft: DraftRow): boolean;
 	/** Whether a pending draft's change seems to exist already (the action's `alreadyThere`). */
 	mayExist(draft: DraftRow): Promise<boolean | 'some'>;
+	/**
+	 * What a pending draft could become instead (the action's `instead`), as it would be stored:
+	 * resolved, checked and labelled with the real title of what it changes. Null when nothing fits.
+	 */
+	alternative(draft: DraftRow): Promise<DraftAlternative | null>;
+	/**
+	 * Turns a pending draft into its alternative, decided by whoever may decide both the draft and
+	 * the alternative. It stays pending: the change is then approved like any other, with its undo.
+	 */
+	replaceDraft(draftId: string, actor: Actor): Promise<DraftRow>;
 	/**
 	 * A check, for today in the family's time zone, of whether a waiting draft is about a day that
 	 * has passed: it is shown and counted as expired even before `expirePassed` ran. Inside a unit
@@ -298,7 +309,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	async function audit(
 		uow: UnitOfWork,
 		actionId: string,
-		outcome: 'applied' | 'drafted' | 'rejected' | 'undone',
+		outcome: 'applied' | 'drafted' | 'rejected' | 'undone' | 'replaced',
 		draftId: string | null,
 	) {
 		await uow.db
@@ -859,6 +870,91 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return seemsToExist(def, input.data, { draftId: draft.id });
 	}
 
+	/**
+	 * The alternative an action offers for an input, checked the way a proposal of that action is:
+	 * a known, enabled, data-changing action, a valid input with names resolved, a target that
+	 * exists and that the change would really change. Only a hint: it never throws.
+	 */
+	async function alternativeOf(
+		def: AnyActionDefinition,
+		input: unknown,
+		what: Record<string, string>,
+	): Promise<DraftAlternative | null> {
+		if (!def.instead || !deps.features.isOn(ownerOf(def.id))) return null;
+		const ctx = { db: deps.db, family: familyReader(deps.db), translate: deps.translate };
+		try {
+			const offered = await def.instead(ctx, input);
+			if (!offered) return null;
+			const next = registry.actions.get(offered.actionId);
+			if (!next || next.readOnly || !deps.features.isOn(ownerOf(next.id))) return null;
+			const parsed = next.input.safeParse(offered.input);
+			if (!parsed.success) return null;
+			const resolved = next.resolveNames ? await next.resolveNames(ctx, parsed.data) : parsed.data;
+			const title = next.targetTitle ? await next.targetTitle(ctx, resolved) : null;
+			// The draft's own words must name what it would change, as an AI's label must: an
+			// alternative is never the closest thing, whatever the action offering it found.
+			const said = subjectOf(JSON.stringify(input));
+			if (next.targetTitle && (title === null || !said || !labelNamesTitle(said, title)))
+				return null;
+			if (next.refuseProposal && (await next.refuseProposal(ctx, resolved)) !== null) return null;
+			// Stored like every draft of that action: with the real title of what it changes.
+			const stored = title ? { ...(resolved as object), label: title.slice(0, 200) } : resolved;
+			return { actionId: next.id, input: stored, ...(offered.at && { at: offered.at }) };
+		} catch (error) {
+			logger.warn({ err: error, ...what }, 'finding an alternative failed');
+			return null;
+		}
+	}
+
+	async function alternative(draft: DraftRow): Promise<DraftAlternative | null> {
+		if (draft.status !== 'pending') return null;
+		const def = registry.actions.get(draft.action_id);
+		if (!def?.instead) return null;
+		const input = def.input.safeParse(JSON.parse(draft.input));
+		if (!input.success) return null;
+		return alternativeOf(def, input.data, { draftId: draft.id });
+	}
+
+	async function replaceDraft(draftId: string, actor: Actor): Promise<DraftRow> {
+		const draft = await getDraft(deps.db, draftId);
+		assertAddressee(actor, draft);
+		if (draft.status !== 'pending') throw new FamosError('conflict', `Draft is ${draft.status}`);
+		// Choosing the alternative is a decision about the draft as it was proposed.
+		assertApprover(actor, getAction(draft.action_id), draft);
+		if (draft.replaced !== null) return draft; // idempotent
+		// Worked out again here: what a client sends is never the alternative.
+		const offered = await alternative(draft);
+		if (!offered) throw new FamosError('conflict', 'There is nothing to do instead');
+		const next = getAction(offered.actionId);
+		// And about the change it becomes: nobody turns a draft into one they could not approve.
+		assertApprover(actor, next, draft);
+		const input = JSON.stringify(offered.input);
+		if ((await passedCheck())({ ...draft, action_id: next.id, input, edited_input: null }))
+			throw new FamosError('conflict', 'Draft is expired');
+		await unitOfWork(actor, async (uow) => {
+			const now = clock.now();
+			const changed = await uow.db
+				.withTables<CoreTables>()
+				.updateTable('core_drafts')
+				.set({
+					action_id: next.id,
+					input,
+					edited_input: null,
+					replaced: JSON.stringify({ actionId: draft.action_id, input: JSON.parse(draft.input) }),
+					updated_at: now,
+				})
+				.where('id', '=', draftId)
+				.where('status', '=', 'pending')
+				.where('action_id', '=', draft.action_id)
+				.executeTakeFirst();
+			if (Number(changed.numUpdatedRows) === 0)
+				throw new FamosError('conflict', 'Draft was decided concurrently');
+			await audit(uow, draft.action_id, 'replaced', draftId);
+			uow.emit(draftUpdated, { draftId, status: 'pending' });
+		});
+		return getDraft(deps.db, draftId);
+	}
+
 	async function undoDraft(draftId: string, approver: Actor): Promise<DraftRow> {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(approver, draft);
@@ -922,6 +1018,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		undoDraft,
 		undoStep,
 		mayExist,
+		alternative,
+		replaceDraft,
 		mayDecide,
 		isProposer,
 		passedCheck,

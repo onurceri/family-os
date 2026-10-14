@@ -71,13 +71,18 @@ export type DraftsTable = {
 	error: string | null;
 	/** Addressed to one member: only they see and decide it (memory). */
 	for_member: string | null;
+	/**
+	 * JSON `{ actionId, input }`: what a pending draft proposed before a reviewer turned it into
+	 * another action (`ActionDefinition.instead`). Null when it never changed.
+	 */
+	replaced: string | null;
 	/** 1 when the auto-approval setting approved it (`decided_by` is who enabled the setting). */
 	auto_approved: Generated<number>;
 	created_at: number;
 	updated_at: number;
 };
 
-export type AuditOutcome = 'applied' | 'drafted' | 'rejected' | 'undone';
+export type AuditOutcome = 'applied' | 'drafted' | 'rejected' | 'undone' | 'replaced';
 
 export type AuditLogTable = {
 	id: Generated<number>;

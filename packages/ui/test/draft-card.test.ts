@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { askedBy, draftHeadline, draftKicker, proposedByMember } from '../src/draft-title.js';
 import { DraftCard } from '../src/famos/index.js';
+import { insteadOffer } from '../src/slots.js';
 import { cleanup, click, qa, render } from './helpers.js';
 
 afterEach(cleanup);
@@ -202,5 +203,102 @@ describe('draftHeadline', () => {
 		expect(proposedByMember({ kind: 'ai', source: 'inbox' }, 'm1')).toBe(false);
 		expect(proposedByMember({ kind: 'member', memberId: 'm2' }, 'm1')).toBe(false);
 		expect(proposedByMember({ kind: 'member', memberId: 'm1' }, undefined)).toBe(false);
+	});
+});
+
+describe('a suggestion that offers to change what is already there', () => {
+	const offered = (onchoose = vi.fn(), onapprove = vi.fn(), canDecide = true) =>
+		render(DraftCard, {
+			kind: 'Calendar',
+			title: 'Regional gala',
+			fields: [],
+			status: 'pending',
+			labels: { ...labels, addAsNew: 'Add as new', mayExist: 'This may already be there' },
+			mayExist: true,
+			canDecide,
+			instead: {
+				there: 'Already on the calendar: Regional Gala · Sat 7 Nov 18:00',
+				action: 'Move it to Sat 14 Nov 09:00 instead',
+				onchoose,
+			},
+			onapprove,
+			onreject: vi.fn(),
+		});
+	const button = (el: HTMLElement, text: string) =>
+		qa('button', el).find((b) => b.textContent?.trim() === text) as HTMLElement;
+
+	it('says what is there and moves it with one tap; adding it as new takes two', () => {
+		const onchoose = vi.fn();
+		const onapprove = vi.fn();
+		const el = offered(onchoose, onapprove);
+		expect(el.textContent).toContain('Already on the calendar: Regional Gala · Sat 7 Nov 18:00');
+		expect(el.textContent).not.toContain('This may already be there');
+		click(button(el, 'Move it to Sat 14 Nov 09:00 instead'));
+		expect(onchoose).toHaveBeenCalledOnce();
+		const addNew = button(el, 'Add as new');
+		click(addNew);
+		expect(onapprove).not.toHaveBeenCalled();
+		click(addNew);
+		expect(onapprove).toHaveBeenCalledOnce();
+	});
+
+	it('is not offered to someone who cannot decide', () => {
+		const el = offered(vi.fn(), vi.fn(), false);
+		expect(el.textContent).not.toContain('instead');
+		expect(el.textContent).toContain('Waiting for approval');
+	});
+});
+
+describe('insteadOffer', () => {
+	const t = (key: string, options?: Record<string, unknown>) =>
+		options ? `${key} ${JSON.stringify(options)}` : key;
+	const context = {
+		t,
+		members: [],
+		formatLocale: 'en-GB',
+		weekStart: 1,
+		hourCycle: 'h23' as const,
+		timeZone: 'UTC',
+	};
+	const instead = {
+		actionId: 'shelf.move',
+		input: { id: 'thing_1', label: ' Reading lamp ' },
+		at: { date: '2026-11-07' },
+	};
+
+	it('is nothing without an alternative', () => {
+		expect(insteadOffer({ instead: null, presenter: undefined, context, t })).toBeUndefined();
+	});
+
+	it('lets the presenter of the alternative word it', () => {
+		const presenter = {
+			actionId: 'shelf.move',
+			kind: () => 'Shelf',
+			title: () => 'Move',
+			fields: () => [],
+			instead: (input: { label: string }, at: { date: string } | undefined) => ({
+				there: `${input.label.trim()} on ${at?.date}`,
+				action: 'Move it',
+			}),
+		};
+		expect(insteadOffer({ instead, presenter, context, t })).toEqual({
+			there: 'Reading lamp on 2026-11-07',
+			action: 'Move it',
+		});
+	});
+
+	it('names what is there by its real title when no presenter words it', () => {
+		expect(insteadOffer({ instead, presenter: undefined, context, t })).toEqual({
+			there: 'app:draft_instead_there {"name":"Reading lamp"}',
+			action: 'app:draft_instead',
+		});
+		expect(
+			insteadOffer({
+				instead: { ...instead, input: { id: 'x' } },
+				presenter: undefined,
+				context,
+				t,
+			}),
+		).toEqual({ there: 'app:draft_instead_there_unnamed', action: 'app:draft_instead' });
 	});
 });

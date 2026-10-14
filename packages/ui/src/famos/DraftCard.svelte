@@ -45,6 +45,8 @@
 		mayExist?: string;
 		/** Shown on a pending draft of which only some things exist already. */
 		mayExistSome?: string;
+		/** The approve button of a draft that offers to change what is there instead. */
+		addAsNew?: string;
 	}
 
 	let {
@@ -56,6 +58,7 @@
 		uncertain = [],
 		mayExist = false,
 		mayExistSome = false,
+		instead,
 		status,
 		error,
 		labels,
@@ -84,6 +87,11 @@
 		mayExist?: boolean;
 		/** Some, not all, of what it proposes is there already. */
 		mayExistSome?: boolean;
+		/**
+		 * It could change what is already there instead (move the event on the calendar): what is
+		 * there, the button's words, and what choosing it does. Adding it stays possible.
+		 */
+		instead?: { there: string; action: string; onchoose: () => void };
 		status: DraftCardStatus;
 		error?: string | null;
 		labels: DraftCardLabels;
@@ -131,7 +139,17 @@
 		Boolean(selectable) && canDecide && (status === 'pending' || status === 'failed'),
 	);
 	/** Approving something that may already be there takes a second tap, as rejecting does. */
-	const warned = $derived((mayExist || mayExistSome) && Boolean(labels.approveConfirm));
+	const warned = $derived(
+		(mayExist || mayExistSome || Boolean(instead)) && Boolean(labels.approveConfirm),
+	);
+	const offered = $derived(canDecide && status === 'pending' ? instead : undefined);
+	const approveLabel = $derived(
+		status === 'failed'
+			? labels.retry
+			: offered && labels.addAsNew
+				? labels.addAsNew
+				: labels.approve,
+	);
 	// Quiet (inside a conversation or a capture): an ordinary filled button at the end.
 	const approveLook = $derived(
 		quiet
@@ -277,7 +295,19 @@
 					</dd>
 				{/each}
 			</dl>
-			{#if canDecide && mayExist && status === 'pending' && labels.mayExist}
+			{#if offered}
+				<div class="grid gap-2">
+					<p class="text-attention text-sm font-semibold">{offered.there}</p>
+					<button
+						type="button"
+						disabled={busy}
+						class="bg-idle min-h-11 justify-self-start rounded-lg px-4 text-start font-bold disabled:opacity-50"
+						onclick={offered.onchoose}
+					>
+						{offered.action}
+					</button>
+				</div>
+			{:else if canDecide && mayExist && status === 'pending' && labels.mayExist}
 				<p class="text-attention text-sm font-semibold">{labels.mayExist}</p>
 			{:else if canDecide && mayExistSome && status === 'pending' && labels.mayExistSome}
 				<p class="text-attention text-sm font-semibold">{labels.mayExistSome}</p>
@@ -330,7 +360,7 @@
 					{/if}
 					{#if warned && status === 'pending' && labels.approveConfirm}
 						<ConfirmButton
-							label={labels.approve}
+							label={approveLabel}
 							confirmLabel={labels.approveConfirm}
 							onconfirm={onapprove}
 							disabled={busy}
@@ -343,7 +373,7 @@
 							class={['rounded-lg font-bold disabled:opacity-50', approveLook]}
 							onclick={onapprove}
 						>
-							{status === 'failed' ? labels.retry : labels.approve}
+							{approveLabel}
 						</button>
 					{/if}
 				</div>

@@ -307,6 +307,17 @@ export interface DraftPresenter<I = unknown> {
 	/** What a decided card says when the neutral "Done" is too vague, e.g. "Added to the calendar". */
 	appliedLabel?(context: PresenterContext): string;
 	editor?: () => Promise<{ default: Component<DraftEditorProps<I>> }>;
+	/**
+	 * When a draft of another action offers to become a draft of this one (a new event that is
+	 * one already on the calendar): what is there already (`at` is when it is) and the button that
+	 * chooses it, e.g. "Already on the calendar: Regional Gala · Sat 7 Nov 18:00" and "Move it to
+	 * Sat 14 Nov 09:00 instead".
+	 */
+	instead?(
+		input: I,
+		at: { date: string; time?: string } | undefined,
+		context: PresenterContext,
+	): { there: string; action: string };
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: registries hold presenters of different input types.
@@ -433,3 +444,31 @@ export function defineWebExtension(ext: WebExtension): WebExtension {
 }
 
 export { askedBy, draftHeadline, draftKicker, proposedByMember } from './draft-title.ts';
+
+/**
+ * What a pending draft's card says about the alternative it offers (a change of what is already
+ * there): the presenter of the alternative's action words it; without one, the real title of what
+ * it would change and a plain button. Undefined when there is no alternative.
+ */
+export function insteadOffer(draft: {
+	instead: { actionId: string; input?: unknown; at?: { date: string; time?: string } } | null;
+	/** The presenter of the alternative's action. */
+	presenter: AnyDraftPresenter | undefined;
+	context: PresenterContext;
+	t: (key: string, options?: Record<string, unknown>) => string;
+}): { there: string; action: string } | undefined {
+	const { instead, presenter } = draft;
+	if (!instead) return undefined;
+	if (presenter?.instead) return presenter.instead(instead.input, instead.at, draft.context);
+	const label =
+		typeof instead.input === 'object' && instead.input !== null && 'label' in instead.input
+			? instead.input.label
+			: undefined;
+	return {
+		there:
+			typeof label === 'string' && label.trim()
+				? draft.t('app:draft_instead_there', { name: label.trim() })
+				: draft.t('app:draft_instead_there_unnamed'),
+		action: draft.t('app:draft_instead'),
+	};
+}

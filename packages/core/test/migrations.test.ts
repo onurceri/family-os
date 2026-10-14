@@ -1,7 +1,7 @@
 import { openDatabase, runMigrations } from '@famos/db';
 import { sql } from 'kysely';
 import { expect, it } from 'vitest';
-import { coreMigrations } from '../src/migrations/0001_init.ts';
+import { coreMigrations, m0001_init } from '../src/migrations/0001_init.ts';
 
 /** A fresh database gets core's constraints: checks, unique keys, foreign keys and cascades. */
 it('a fresh database migrates with core constraints in place', async () => {
@@ -110,4 +110,42 @@ it('a fresh database migrates with core constraints in place', async () => {
 		sql`insert into core_member_memory (id, member_id, text, source, created_at, updated_at)
 			values ('memory_1', 'member_a', 'x', 'member', 'not a number', 1)`.execute(db),
 	).rejects.toThrow(/cannot store TEXT/i);
+});
+
+/** A database from before drafts could change their action keeps its drafts and audit log. */
+it('upgrades the audit log and drafts so a draft can become another action', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	await runMigrations(db, [{ scope: 'core', migrations: { '0001_init': m0001_init } }]);
+	await sql`insert into core_drafts (id, action_id, input, status, proposed_by, created_at, updated_at)
+		values ('draft_old', 'x.y', '{}', 'pending', '{}', 1, 1)`.execute(db);
+	await sql`insert into core_audit_log (at, actor, action_id, draft_id, outcome)
+		values (5, '{"kind":"system"}', 'x.y', 'draft_old', 'drafted')`.execute(db);
+
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+
+	const drafts = await sql<{
+		replaced: string | null;
+	}>`select replaced from core_drafts`.execute(db);
+	expect(drafts.rows).toEqual([{ replaced: null }]);
+	const audit = await sql<{
+		id: number;
+		at: number;
+		outcome: string;
+	}>`select id, at, outcome from core_audit_log`.execute(db);
+	expect(audit.rows).toEqual([{ id: 1, at: 5, outcome: 'drafted' }]);
+	await sql`insert into core_audit_log (at, actor, action_id, draft_id, outcome)
+		values (6, '{}', 'x.y', 'draft_old', 'replaced')`.execute(db);
+	await expect(
+		sql`insert into core_audit_log (at, actor, action_id, outcome) values (1, '{}', 'x.y', 'nonsense')`.execute(
+			db,
+		),
+	).rejects.toThrow(/CHECK/);
+	const ids = await sql<{ id: number }>`select id from core_audit_log order by id`.execute(db);
+	expect(ids.rows.map((r) => r.id)).toEqual([1, 2]);
+	const index = await sql<{
+		name: string;
+	}>`select name from sqlite_schema where type = 'index' and tbl_name = 'core_audit_log'`.execute(
+		db,
+	);
+	expect(index.rows.map((r) => r.name)).toContain('core_audit_log_at_idx');
 });

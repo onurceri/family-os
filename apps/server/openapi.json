@@ -26059,6 +26059,41 @@
 											},
 											"mayExistSome": {
 												"type": "boolean"
+											},
+											"instead": {
+												"type": [
+													"object",
+													"null"
+												],
+												"properties": {
+													"actionId": {
+														"type": "string"
+													},
+													"input": {},
+													"at": {
+														"type": "object",
+														"properties": {
+															"date": {
+																"type": "string"
+															},
+															"time": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"date"
+														]
+													}
+												},
+												"required": [
+													"actionId"
+												]
+											},
+											"replacedFrom": {
+												"type": [
+													"string",
+													"null"
+												]
 											}
 										},
 										"required": [
@@ -26080,7 +26115,9 @@
 											"reason",
 											"titleKey",
 											"mayExist",
-											"mayExistSome"
+											"mayExistSome",
+											"instead",
+											"replacedFrom"
 										]
 									}
 								}
@@ -26709,6 +26746,41 @@
 										},
 										"mayExistSome": {
 											"type": "boolean"
+										},
+										"instead": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"actionId": {
+													"type": "string"
+												},
+												"input": {},
+												"at": {
+													"type": "object",
+													"properties": {
+														"date": {
+															"type": "string"
+														},
+														"time": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"date"
+													]
+												}
+											},
+											"required": [
+												"actionId"
+											]
+										},
+										"replacedFrom": {
+											"type": [
+												"string",
+												"null"
+											]
 										}
 									},
 									"required": [
@@ -26730,7 +26802,9 @@
 										"reason",
 										"titleKey",
 										"mayExist",
-										"mayExistSome"
+										"mayExistSome",
+										"instead",
+										"replacedFrom"
 									]
 								}
 							}
@@ -27094,6 +27168,41 @@
 										},
 										"mayExistSome": {
 											"type": "boolean"
+										},
+										"instead": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"actionId": {
+													"type": "string"
+												},
+												"input": {},
+												"at": {
+													"type": "object",
+													"properties": {
+														"date": {
+															"type": "string"
+														},
+														"time": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"date"
+													]
+												}
+											},
+											"required": [
+												"actionId"
+											]
+										},
+										"replacedFrom": {
+											"type": [
+												"string",
+												"null"
+											]
 										}
 									},
 									"required": [
@@ -27115,7 +27224,9 @@
 										"reason",
 										"titleKey",
 										"mayExist",
-										"mayExistSome"
+										"mayExistSome",
+										"instead",
+										"replacedFrom"
 									]
 								}
 							}
@@ -27479,6 +27590,41 @@
 										},
 										"mayExistSome": {
 											"type": "boolean"
+										},
+										"instead": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"actionId": {
+													"type": "string"
+												},
+												"input": {},
+												"at": {
+													"type": "object",
+													"properties": {
+														"date": {
+															"type": "string"
+														},
+														"time": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"date"
+													]
+												}
+											},
+											"required": [
+												"actionId"
+											]
+										},
+										"replacedFrom": {
+											"type": [
+												"string",
+												"null"
+											]
 										}
 									},
 									"required": [
@@ -27500,7 +27646,431 @@
 										"reason",
 										"titleKey",
 										"mayExist",
-										"mayExistSome"
+										"mayExistSome",
+										"instead",
+										"replacedFrom"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/core/drafts/{draftId}/replace": {
+			"post": {
+				"operationId": "core.replaceDraft",
+				"summary": "Turn a pending draft into the alternative it offers (`instead`)",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^draft_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "draftId",
+						"in": "path"
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "Turn a pending draft into the alternative it offers (`instead`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"actionId": {
+											"type": "string"
+										},
+										"input": {},
+										"editedInput": {},
+										"status": {
+											"type": "string",
+											"enum": [
+												"pending",
+												"approved",
+												"rejected",
+												"applied",
+												"failed",
+												"undone",
+												"expired"
+											]
+										},
+										"proposedBy": {},
+										"sourceKind": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"sourceId": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"summary": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"confidence": {
+											"type": [
+												"number",
+												"null"
+											]
+										},
+										"uncertainFields": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										},
+										"error": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"forMember": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"createdAt": {
+											"type": "number"
+										},
+										"decidedAt": {
+											"type": [
+												"number",
+												"null"
+											]
+										},
+										"autoApproved": {
+											"type": "boolean"
+										},
+										"decidedBy": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"undoable": {
+											"type": "boolean"
+										},
+										"reason": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"gone",
+												"settled",
+												"withdrawn",
+												null
+											]
+										},
+										"titleKey": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"mayExist": {
+											"type": "boolean"
+										},
+										"mayExistSome": {
+											"type": "boolean"
+										},
+										"instead": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"actionId": {
+													"type": "string"
+												},
+												"input": {},
+												"at": {
+													"type": "object",
+													"properties": {
+														"date": {
+															"type": "string"
+														},
+														"time": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"date"
+													]
+												}
+											},
+											"required": [
+												"actionId"
+											]
+										},
+										"replacedFrom": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									},
+									"required": [
+										"id",
+										"actionId",
+										"status",
+										"sourceKind",
+										"sourceId",
+										"summary",
+										"confidence",
+										"uncertainFields",
+										"error",
+										"forMember",
+										"createdAt",
+										"decidedAt",
+										"autoApproved",
+										"decidedBy",
+										"undoable",
+										"reason",
+										"titleKey",
+										"mayExist",
+										"mayExistSome",
+										"instead",
+										"replacedFrom"
 									]
 								}
 							}

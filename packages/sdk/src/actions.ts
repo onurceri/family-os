@@ -84,6 +84,17 @@ export interface ActionDefinition<
 	 */
 	readonly alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	/**
+	 * What a pending draft could do to a thing already on record instead of adding a second one:
+	 * a new event whose title names an event already on the calendar is offered as a change of that
+	 * event (news that it moved arrives with the new date). The reviewer chooses; the draft then
+	 * becomes a draft of that action, decided like any other. Null when nothing fits. It must name
+	 * one thing by words of its title, never the closest one. Read-only and cheap.
+	 */
+	readonly instead?: (
+		ctx: DuplicateContext,
+		input: z.infer<In>,
+	) => Promise<DraftAlternative | null>;
+	/**
 	 * The real title of the thing an input with a `label` points at (null when it is not there).
 	 * An AI must send the `label` (the name the person used for the thing, in their words) and
 	 * every significant word of it must be a word of the real title; otherwise the runner refuses
@@ -149,6 +160,17 @@ export interface UndoStep {
 	input: unknown;
 }
 
+/**
+ * Another action a pending draft could become (`ActionDefinition.instead`). `at` says when the
+ * thing already there is (a day, and a time when it has one), so the reviewer can tell which one
+ * it is.
+ */
+export interface DraftAlternative {
+	actionId: string;
+	input: unknown;
+	at?: { date: string; time?: string };
+}
+
 export interface AutoApprovalHints {
 	/** i18n key naming what is approved ("Shopping items"), shown in More → Auto-approval. */
 	readonly label: string;
@@ -197,6 +219,7 @@ export function defineAction<
 	offline?: boolean;
 	undo?: (output: z.infer<Out>) => UndoStep | null;
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
+	instead?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<DraftAlternative | null>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	scopeNote?: (
 		ctx: DuplicateContext,

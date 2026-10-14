@@ -4,6 +4,7 @@ import { CalendarDays } from '@lucide/svelte';
 import type { EventInput } from '../contract/index.js';
 import { reminderKey } from './form.js';
 import { describeWhen } from './format.js';
+import { moveOffer } from './instead.js';
 
 /** How a proposed event looks in the Inbox: its draft card. */
 export const createEventPresenter: DraftPresenter<EventInput> = {
@@ -114,6 +115,7 @@ export const changeEventPresenter: DraftPresenter<ChangeEventInput> = {
 		return fields;
 	},
 	approveLabel: (c) => c.t('calendar:draft_approve_change'),
+	instead: moveOffer,
 };
 
 /** A proposal to remove an event, or one date of a repeating one. */

@@ -269,7 +269,7 @@ export const sameTitle = (a: string, b: string) => {
 };
 
 /** How far from a new event's day an event with the same title still counts as the same one. */
-const SAME_EVENT_DAYS = 30;
+export const SAME_EVENT_DAYS = 30;
 
 /**
  * Whether an event with the same title already starts within a month either side of the day

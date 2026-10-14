@@ -29,6 +29,7 @@ import {
 	tagChanged,
 } from './capabilities.ts';
 import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
+import { movedEvent } from './moved.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
 import {
@@ -223,6 +224,8 @@ export const createEvent = defineAction({
 	undo: (event) => ({ actionId: 'calendar.deleteEvent', input: { id: event.id } }),
 	alreadyThere: async (ctx, input) =>
 		eventExists(ctx.db, input, (await ctx.family.settings()).timeZone),
+	// A message that an event moved arrives as a new event: the reviewer may move the one there.
+	instead: async (ctx, input) => movedEvent(ctx.db, input, (await ctx.family.settings()).timeZone),
 	// Over once its last day has passed; a repeating event still comes again, so it never expires.
 	draftDate: (input) => (input.recurrence ? undefined : (input.endDate ?? input.date)),
 	ai: {

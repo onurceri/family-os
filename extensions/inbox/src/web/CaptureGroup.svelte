@@ -202,6 +202,10 @@
 						onedit={open && canDecide
 							? (input) => (edits = withEdit(edits, draft.id, input))
 							: undefined}
+						onreplaced={() => {
+							edits = withEdit(edits, draft.id, undefined);
+							onchanged?.();
+						}}
 						byline={false}
 					/>
 				</div>

@@ -4,11 +4,12 @@
 		askedBy,
 		draftHeadline,
 		draftKicker,
+		insteadOffer,
 		type PresenterContext,
 		proposedByMember,
 	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
+	import { approveDraft, type Draft, rejectDraft, replaceDraft, undoDraft } from './data.js';
 	import { useAssistant } from './i18n.js';
 
 	/**
@@ -16,9 +17,14 @@
 	 * presenter of the extension that owns the action renders it, and people who may approve
 	 * decide here. Everyone else sees "Waiting for approval".
 	 */
-	let { draft }: { draft: Draft } = $props();
+	let { draft: given }: { draft: Draft } = $props();
 	const { app, t } = useAssistant();
 
+	// The draft as this card turned it into the change it offered, until the list catches up.
+	let swapped = $state<Draft | null>(null);
+	const draft = $derived(
+		swapped && swapped.id === given.id && swapped.actionId !== given.actionId ? swapped : given,
+	);
 	const presenter = $derived(app.draftPresenter(draft.actionId));
 	const context = $derived<PresenterContext>({
 		t: app.t,
@@ -89,7 +95,28 @@
 		undo: a('draft_undo'),
 		mayExist: a('draft_may_exist'),
 		mayExistSome: a('draft_may_exist_some'),
+		addAsNew: a('draft_add_as_new'),
 	});
+	const offer = $derived(
+		insteadOffer({
+			instead: draft.instead,
+			presenter: draft.instead ? app.draftPresenter(draft.instead.actionId) : undefined,
+			context,
+			t: app.t,
+		}),
+	);
+
+	async function choose() {
+		busy = true;
+		try {
+			swapped = await replaceDraft(draft.id);
+			edited = undefined;
+		} catch {
+			app.toast(t('error'));
+		} finally {
+			busy = false;
+		}
+	}
 
 	let Editor = $state<Component<{
 		input: unknown;
@@ -162,6 +189,7 @@
 	uncertain={draft.uncertainFields}
 	mayExist={draft.mayExist}
 	mayExistSome={draft.mayExistSome}
+	instead={offer && { ...offer, onchoose: () => void choose() }}
 	{status}
 	error={failed || draft.status === 'failed' ? a('draft_failed') : null}
 	{labels}

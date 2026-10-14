@@ -100,6 +100,12 @@ export const rejectDraft = async (draftId: string): Promise<Draft> =>
 export const undoDraft = async (draftId: string): Promise<Draft> =>
 	unwrap(await api.POST('/api/v1/core/drafts/{draftId}/undo', { params: { path: { draftId } } }));
 
+/** Turns a suggestion into the change it offers instead (moving the event already there). */
+export const replaceDraft = async (draftId: string): Promise<Draft> =>
+	unwrap(
+		await api.POST('/api/v1/core/drafts/{draftId}/replace', { params: { path: { draftId } } }),
+	);
+
 export const fileUrl = (itemId: string, index: number) =>
 	`/api/v1/inbox/items/${itemId}/files/${index}`;
 

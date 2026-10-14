@@ -3,6 +3,7 @@ import {
 	AI_AREA_ACCESS,
 	BUILT_IN_ROLES,
 	type DbExecutor,
+	type DraftAlternative,
 	defineAction,
 	defineExtension,
 	defineJob,
@@ -184,6 +185,20 @@ export const DraftSchema = z.object({
 	mayExist: z.boolean(),
 	/** Pending only: part of what it proposes seems to exist already. */
 	mayExistSome: z.boolean(),
+	/**
+	 * Pending only: another action it could become, offered to the reviewer (a new event whose
+	 * title names one already on the calendar becomes a change of that one). `at` is when the
+	 * thing already there is. Choosing it is `core.replaceDraft`.
+	 */
+	instead: z
+		.object({
+			actionId: z.string(),
+			input: z.unknown(),
+			at: z.object({ date: z.string(), time: z.string().optional() }).optional(),
+		})
+		.nullable(),
+	/** The action it proposed before a reviewer chose its alternative; null when it never changed. */
+	replacedFrom: z.string().nullable(),
 });
 
 const toMember = (row: MemberRow): Member => ({
@@ -217,6 +232,7 @@ const toDraft = (
 	undoable = false,
 	mayExist: boolean | 'some' = false,
 	titleKey: string | null = null,
+	instead: DraftAlternative | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -244,6 +260,9 @@ const toDraft = (
 	titleKey,
 	mayExist: mayExist === true,
 	mayExistSome: mayExist === 'some',
+	instead,
+	replacedFrom:
+		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
 });
 
 const members = (db: DbExecutor) => db.withTables<CoreTables>();
@@ -1349,6 +1368,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			deps.runner().undoStep(row) !== null,
 			await deps.runner().mayExist(row),
 			deps.registry().actions.get(row.action_id)?.draftTitle ?? null,
+			await deps.runner().alternative(row),
 		);
 
 	const approve = defineRoute({
@@ -1389,6 +1409,20 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
 			return view(await deps.runner().undoDraft(params.draftId, actor));
+		},
+	});
+
+	const replace = defineRoute({
+		method: 'post',
+		path: '/drafts/{draftId}/replace',
+		operationId: 'core.replaceDraft',
+		summary: 'Turn a pending draft into the alternative it offers (`instead`)',
+		// The runner decides who may: whoever may decide both the draft and what it becomes.
+		requires: CORE_CAPABILITIES.draftsPropose.id,
+		params: DraftParams,
+		response: DraftSchema,
+		async handle(_ctx, { params, actor }) {
+			return view(await deps.runner().replaceDraft(params.draftId, actor));
 		},
 	});
 
@@ -1449,6 +1483,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			approve,
 			reject,
 			undo,
+			replace,
 			...languages.routes,
 			...deps.themes.routes,
 			...autoApproval.routes,

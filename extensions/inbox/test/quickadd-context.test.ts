@@ -198,6 +198,54 @@ describe('an event that moved', () => {
 		})) as { actionId: string; mayExist: boolean }[];
 		expect(listed.find((d) => d.actionId === 'calendar.createEvent')?.mayExist).toBe(true);
 	});
+
+	it('offers to move the event that is there, and moves it instead of adding a second', async () => {
+		// The same real output: the card offers the move, and choosing it moves the gala.
+		k.llm.respond({
+			summary: 'Regional gala moved',
+			proposals: [
+				{
+					action: 'calendar.createEvent',
+					input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
+					dateText: 'Sat 14 Nov',
+					confidence: 0.9,
+				},
+			],
+		});
+		await read('Regional gala moved to Sat 14 Nov 09:00');
+		const [draft] = (await k.route('core.listDrafts').call({
+			query: { sourceKind: 'inbox', limit: 50 },
+			actor: admin.actor,
+		})) as { id: string; actionId: string; instead: object | null }[];
+		expect(draft?.actionId).toBe('calendar.createEvent');
+		expect(draft?.instead).toMatchObject({
+			actionId: 'calendar.changeEvent',
+			input: { label: 'Regional Gala', date: '2026-11-14', startTime: '09:00' },
+			at: { date: '2026-11-07', time: '18:00' },
+		});
+
+		const id = draft?.id as string;
+		const replaced = await k
+			.route('core.replaceDraft')
+			.call({ actor: admin.actor, params: { draftId: id } });
+		expect(replaced).toMatchObject({ actionId: 'calendar.changeEvent', status: 'pending' });
+		expect((await k.runner.approveDraft(id, admin.actor)).status).toBe('applied');
+		const november = (await k
+			.route('calendar.listOccurrences')
+			.call({ query: { from: '2026-11-01', to: '2026-11-30' } })) as {
+			title: string;
+			start: number;
+			end: number;
+		}[];
+		// One gala, on the new day, as long as it was.
+		expect(november).toEqual([
+			expect.objectContaining({
+				title: 'Regional Gala',
+				start: epochOf('2026-11-14', '09:00', TZ),
+				end: epochOf('2026-11-14', '13:00', TZ),
+			}),
+		]);
+	});
 });
 
 describe('the person who shared the item', () => {

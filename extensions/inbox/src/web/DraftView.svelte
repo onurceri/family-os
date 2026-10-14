@@ -4,11 +4,12 @@
 		askedBy,
 		draftHeadline,
 		draftKicker,
+		insteadOffer,
 		type PresenterContext,
 		proposedByMember,
 	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
+	import { approveDraft, type Draft, rejectDraft, replaceDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
 
 	/**
@@ -16,12 +17,13 @@
 	 * extension: it looks the presenter up by action id.
 	 */
 	let {
-		draft,
+		draft: given,
 		compact = false,
 		picked,
 		onpick,
 		oneditchange,
 		onedit,
+		onreplaced,
 		quiet = false,
 		byline = true,
 	}: {
@@ -37,6 +39,11 @@
 		 * nothing when it is saved.
 		 */
 		onedit?: (input: unknown) => void;
+		/**
+		 * Called when the person chose the change the suggestion offered instead: an edit saved for
+		 * what it was before no longer fits it.
+		 */
+		onreplaced?: () => void;
 		/** Whether to say who asked, when it was somebody else (a group already names the sharer). */
 		byline?: boolean;
 		/** In a capture's group: a calm card instead of the alarm ring. */
@@ -44,6 +51,11 @@
 	} = $props();
 	const { app, t } = useInbox();
 
+	// The draft as this card turned it into the change it offered, until the list catches up.
+	let swapped = $state<Draft | null>(null);
+	const draft = $derived(
+		swapped && swapped.id === given.id && swapped.actionId !== given.actionId ? swapped : given,
+	);
 	const presenter = $derived(app.draftPresenter(draft.actionId));
 	const context = $derived<PresenterContext>({
 		t: app.t,
@@ -118,7 +130,30 @@
 		undo: a('draft_undo'),
 		mayExist: a('draft_may_exist'),
 		mayExistSome: a('draft_may_exist_some'),
+		addAsNew: a('draft_add_as_new'),
 	});
+	const offer = $derived(
+		insteadOffer({
+			instead: draft.instead,
+			presenter: draft.instead ? app.draftPresenter(draft.instead.actionId) : undefined,
+			context,
+			t: app.t,
+		}),
+	);
+
+	async function choose() {
+		busy = true;
+		try {
+			swapped = await replaceDraft(draft.id);
+			edited = undefined;
+			kept = undefined;
+			onreplaced?.();
+		} catch {
+			app.toast(t('error'));
+		} finally {
+			busy = false;
+		}
+	}
 
 	let Editor = $state<Component<{
 		input: unknown;
@@ -193,6 +228,7 @@
 	uncertain={draft.uncertainFields}
 	mayExist={draft.mayExist}
 	mayExistSome={draft.mayExistSome}
+	instead={offer && { ...offer, onchoose: () => void choose() }}
 	{status}
 	error={failed || draft.status === 'failed' ? a('draft_failed') : null}
 	{labels}

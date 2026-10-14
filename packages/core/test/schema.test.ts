@@ -81,6 +81,7 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 		result: true,
 		error: true,
 		for_member: true,
+		replaced: true,
 		auto_approved: true,
 		created_at: true,
 		updated_at: true,

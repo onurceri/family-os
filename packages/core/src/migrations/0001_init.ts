@@ -298,6 +298,39 @@ export const m0001_init: Migration = {
 	},
 };
 
+/**
+ * A pending draft can become another action (a new event becomes a change of the one already on
+ * the calendar): the draft keeps what it proposed before, and the audit log records the switch.
+ * SQLite cannot change a check constraint, so the audit log is rebuilt with its rows.
+ */
+export const m0002_draft_replaced: Migration = {
+	async up(db) {
+		await db.schema.alterTable('core_drafts').addColumn('replaced', 'text').execute();
+		await db.schema
+			.createTable('core_audit_log_next')
+			.addColumn('id', 'integer', (c) => c.primaryKey().autoIncrement())
+			.addColumn('at', 'integer', (c) => c.notNull())
+			.addColumn('actor', 'text', (c) => c.notNull())
+			.addColumn('action_id', 'text', (c) => c.notNull())
+			.addColumn('draft_id', 'text')
+			.addColumn('outcome', 'text', (c) =>
+				c.notNull().check(sql`outcome in ('applied', 'drafted', 'rejected', 'undone', 'replaced')`),
+			)
+			.modifyEnd(sql`strict`)
+			.execute();
+		await sql`insert into core_audit_log_next (id, at, actor, action_id, draft_id, outcome)
+			select id, at, actor, action_id, draft_id, outcome from core_audit_log`.execute(db);
+		await db.schema.dropTable('core_audit_log').execute();
+		await db.schema.alterTable('core_audit_log_next').renameTo('core_audit_log').execute();
+		await db.schema
+			.createIndex('core_audit_log_at_idx')
+			.on('core_audit_log')
+			.column('at')
+			.execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
+	'0002_draft_replaced': m0002_draft_replaced,
 };
