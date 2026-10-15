@@ -161,7 +161,7 @@ Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` an
 - PIN sign-in and the profile picker only work on trusted family devices (`core_devices`, kind `family`); never add another path that reveals member names or accepts PINs without that check. Displays (kind `kiosk`) never get PIN sign-in, profiles or write access: they hold only granted `view` capabilities and cannot run actions.
 
 - Never log secrets, API keys, PINs or the contents of family documents.
-- A credential an extension must keep (a calendar subscription URL is one) is sealed with `ctx.secrets` / `uow.secrets` (AES-GCM, a key of the extension's own derived from `FAMOS_SECRET`) and never returned to the browser or logged; show a host or a hint instead. Reseal a value whose `needsReseal` is true.
+- A credential an extension must keep (a calendar subscription URL is one) is sealed with `ctx.secrets` / `uow.secrets` (AES-GCM, a key of the extension's own derived from `FAMOS_SECRET`) and never returned to the browser or logged; show a host or a hint instead.
 - Outbound requests to addresses a user typed go through `ctx.http.get` (SSRF guard: https only, no private/loopback/link-local addresses unless `allowLocal`, same-host redirects, size cap, timeout). Call it from job handlers only; extensions never use `fetch` for such addresses. It reaches only what the manifest's `network` declares (`hosts`, `userUrls`, `local`).
 - Provider API keys are stored encrypted in the database (key from `FAMOS_SECRET`).
 - Do not add telemetry or calls to external services that the family has not explicitly configured.

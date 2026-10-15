@@ -13,7 +13,7 @@ function http(network?: Record<string, unknown>) {
 				return { status: 304, etag: null, lastModified: null };
 			},
 		},
-		parseManifest({ id: 'x', version: '0.0.0', sdk: '^0.4.0', ...(network && { network }) }),
+		parseManifest({ id: 'x', version: '0.0.0', sdk: '^0.5.0', ...(network && { network }) }),
 	);
 	return { guarded, seen };
 }

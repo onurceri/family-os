@@ -147,7 +147,7 @@
 	"sub_error_too_large": "The calendar is too large (over 5 MB). The events from before are kept.",
 	"sub_error_not_calendar": "The address did not return a calendar. The events from before are kept.",
 	"sub_error_blocked_address": "The address points into a private network. Turn on the home network option if that is intended.",
-	"sub_error_bad_url": "The address cannot be used.",
+	"sub_error_bad_url": "The address cannot be used. Press Edit and enter the calendar address again. The events from before are kept.",
 	"sub_error_http": "The calendar's server answered with an error ({{status}}). The events from before are kept.",
 	"field_tags": "Tags",
 	"tags": "Tags",
