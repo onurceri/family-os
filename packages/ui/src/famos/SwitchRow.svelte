@@ -61,7 +61,7 @@
 {/snippet}
 
 {#if end}
-	<div class="flex items-center gap-1 pe-2">
+	<div class="flex items-center gap-1 pe-3">
 		<div class="min-w-0 flex-1">{@render row()}</div>
 		{@render end()}
 	</div>
