@@ -626,9 +626,6 @@ importers:
       '@famos/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@famos/ext-inbox':
-        specifier: workspace:*
-        version: link:../inbox
       '@famos/ext-records':
         specifier: workspace:*
         version: link:../records
@@ -651,6 +648,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/ext-inbox':
+        specifier: workspace:*
+        version: link:../inbox
       '@famos/pack':
         specifier: workspace:*
         version: link:../../packages/pack
@@ -697,21 +697,12 @@ importers:
       '@famos/ext-calendar':
         specifier: workspace:*
         version: link:../calendar
-      '@famos/ext-home':
-        specifier: workspace:*
-        version: link:../home
       '@famos/ext-lists':
         specifier: workspace:*
         version: link:../lists
-      '@famos/ext-pets':
-        specifier: workspace:*
-        version: link:../pets
       '@famos/ext-records':
         specifier: workspace:*
         version: link:../records
-      '@famos/ext-vehicles':
-        specifier: workspace:*
-        version: link:../vehicles
       '@famos/pack':
         specifier: workspace:*
         version: link:../../packages/pack
@@ -819,9 +810,6 @@ importers:
       '@famos/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@famos/ext-inbox':
-        specifier: workspace:*
-        version: link:../inbox
       '@famos/ext-records':
         specifier: workspace:*
         version: link:../records
@@ -844,6 +832,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/ext-inbox':
+        specifier: workspace:*
+        version: link:../inbox
       '@famos/pack':
         specifier: workspace:*
         version: link:../../packages/pack
@@ -905,9 +896,6 @@ importers:
       '@famos/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@famos/ext-inbox':
-        specifier: workspace:*
-        version: link:../inbox
       '@famos/ext-records':
         specifier: workspace:*
         version: link:../records
@@ -930,6 +918,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/ext-inbox':
+        specifier: workspace:*
+        version: link:../inbox
       '@famos/pack':
         specifier: workspace:*
         version: link:../../packages/pack

@@ -50,10 +50,10 @@
 		"zod": "4.6.5"
 	},
 	"peerDependencies": {
-		"@famos/ext-inbox": "workspace:*",
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
+		"@famos/ext-inbox": "workspace:*",
 		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",

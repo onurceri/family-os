@@ -54,11 +54,8 @@
 	},
 	"devDependencies": {
 		"@famos/ext-calendar": "workspace:*",
-		"@famos/ext-home": "workspace:*",
 		"@famos/ext-lists": "workspace:*",
-		"@famos/ext-pets": "workspace:*",
 		"@famos/ext-records": "workspace:*",
-		"@famos/ext-vehicles": "workspace:*",
 		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",

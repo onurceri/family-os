@@ -1,10 +1,10 @@
-import pets from '@famos/ext-pets/server';
+import inbox from '@famos/ext-inbox/server';
 import records from '@famos/ext-records/server';
 import { systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import inbox from '../src/server/index.ts';
+import pets from '../src/server/index.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
