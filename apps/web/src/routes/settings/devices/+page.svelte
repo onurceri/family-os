@@ -85,7 +85,7 @@
 
 	function closeAdd() {
 		adding = false;
-		if (linkCode !== null) void goto('/settings/devices', { replaceState: true });
+		if (linkCode !== null) void goto('/settings/devices', { replace: true });
 	}
 
 	// The device panels: a screen is edited, a family device is only read and removed.
@@ -129,7 +129,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.devices.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	$effect(() => {

@@ -15,7 +15,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.ai.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	async function load() {

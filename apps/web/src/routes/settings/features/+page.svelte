@@ -21,7 +21,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.features.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 	$effect(() => {
 		if (!session.can('core.features.manage')) return;

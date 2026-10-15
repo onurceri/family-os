@@ -47,7 +47,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.ai.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	/** Whether the three chat tasks use one provider and model (or none is set yet). */
@@ -242,7 +242,7 @@
 	<ProviderPanel
 		open={panelOpen}
 		provider={adding ? null : editing}
-		onclose={() => void goto(here, { replaceState: true, reset: false })}
+		onclose={() => void goto(here, { replace: true, reset: false })}
 		onchanged={load}
 		onmodels={(id, list) => (models[id] = list)}
 	/>

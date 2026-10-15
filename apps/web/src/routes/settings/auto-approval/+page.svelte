@@ -32,7 +32,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.autoApprove.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 	$effect(() => {
 		if (session.can('core.autoApprove.manage')) void load();

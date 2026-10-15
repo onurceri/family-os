@@ -55,7 +55,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	async function load() {
@@ -149,7 +149,7 @@
 	// The sender panel lives in the address (?new=1).
 	const here = $derived(page.url.pathname);
 	const addingSender = $derived(page.url.searchParams.has('new'));
-	const closePanel = () => void goto(here, { replaceState: true, reset: false });
+	const closePanel = () => void goto(here, { replace: true, reset: false });
 	let senderForm = $state<HTMLFormElement>();
 
 	async function addSender() {

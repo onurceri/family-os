@@ -22,8 +22,8 @@
 
 	$effect(() => {
 		if (session.status !== 'ready') return;
-		if (!section || items.length === 0) void goto('/more', { replaceState: true });
-		else if (wide.current) void goto(items[0]?.path ?? '/more', { replaceState: true });
+		if (!section || items.length === 0) void goto('/more', { replace: true });
+		else if (wide.current) void goto(items[0]?.path ?? '/more', { replace: true });
 	});
 
 	const label = (item: NavItem) =>

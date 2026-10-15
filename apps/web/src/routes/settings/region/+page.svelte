@@ -64,7 +64,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	/** "tr-US" → "Turkish (United States)" in the person's language: a name, not a format. */

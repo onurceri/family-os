@@ -96,7 +96,7 @@
 	// The API enforces access; this only keeps others out of a screen they cannot use.
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.members.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	$effect(() => {

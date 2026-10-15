@@ -120,7 +120,7 @@
 				else url.searchParams.set(key, value);
 			}
 			void goto(`${url.pathname}${url.search}`, {
-				replaceState: options?.replace ?? false,
+				replace: options?.replace ?? false,
 			});
 		},
 	});
@@ -271,10 +271,10 @@
 		if (isDisplay) return;
 		if (session.status === 'setup' && path !== '/setup')
 			// Keep `?code=` from the setup address printed in the server log.
-			void goto(`/setup${page.url.search}`, { replaceState: true });
+			void goto(`/setup${page.url.search}`, { replace: true });
 		else if (session.status === 'anonymous' && !PUBLIC.has(path))
-			void goto('/login', { replaceState: true });
-		else if (session.status === 'ready' && PUBLIC.has(path)) void goto('/', { replaceState: true });
+			void goto('/login', { replace: true });
+		else if (session.status === 'ready' && PUBLIC.has(path)) void goto('/', { replace: true });
 	});
 
 	// A session that ended (signed out elsewhere, expired) leaves no member's reads cached.

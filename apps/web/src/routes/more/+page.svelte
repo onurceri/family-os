@@ -19,7 +19,7 @@
 	$effect(() => {
 		if (!wide.current || session.status !== 'ready') return;
 		const first = nav.settings[0]?.items[0]?.path ?? '/settings/profile';
-		void goto(first, { replaceState: true });
+		void goto(first, { replace: true });
 	});
 
 	const label = (item: NavItem) =>

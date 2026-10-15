@@ -58,7 +58,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.mcp.use'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	async function load() {

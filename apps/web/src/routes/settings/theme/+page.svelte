@@ -88,7 +88,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	async function refresh() {

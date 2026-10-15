@@ -21,7 +21,7 @@
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replaceState: true });
+			void goto('/', { replace: true });
 	});
 
 	async function load() {
@@ -38,7 +38,7 @@
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const editing = $derived(data?.targets.find((x) => x.id === editId) ?? null);
 	const openPanel = (query: string) => void goto(`${here}?${query}`, { reset: false });
-	const closePanel = () => void goto(here, { replaceState: true, reset: false });
+	const closePanel = () => void goto(here, { replace: true, reset: false });
 
 	const when = (ms: number) =>
 		dateTimeFormat({ dateStyle: 'medium', timeStyle: 'short' }).format(ms);
