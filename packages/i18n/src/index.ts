@@ -9,6 +9,8 @@ import {
 	type Resources,
 } from './catalog.ts';
 
+export { languageName, textDirection } from './names.ts';
+
 /**
  * Shared i18n setup for the web app and the server. Built on i18next.
  *
@@ -42,29 +44,6 @@ export function negotiateLocale(
 		if (variant) return variant;
 	}
 	return DEFAULT_LOCALE;
-}
-
-/** The language's name in English, as "Answer in Turkish" prompts and lists need it. */
-export function languageName(code: string): string {
-	try {
-		return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code;
-	} catch {
-		return code;
-	}
-}
-
-/** Reading direction of a language, from `Intl.Locale` text info (left to right when unknown). */
-export function textDirection(code: string): 'ltr' | 'rtl' {
-	try {
-		const locale = new Intl.Locale(code) as Intl.Locale & {
-			getTextInfo?: () => { direction: string };
-			textInfo?: { direction: string };
-		};
-		const direction = (locale.getTextInfo?.() ?? locale.textInfo)?.direction;
-		return direction === 'rtl' ? 'rtl' : 'ltr';
-	} catch {
-		return 'ltr';
-	}
 }
 
 export interface CatalogEntry {

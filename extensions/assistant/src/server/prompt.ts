@@ -1,4 +1,4 @@
-import { languageName } from '@famos/i18n';
+import { languageName } from '@famos/i18n/names';
 import {
 	addDays,
 	type DateOrder,
