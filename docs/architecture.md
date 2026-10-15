@@ -38,7 +38,7 @@ Versions are pinned exactly (`save-exact` + lockfile) and updated deliberately t
 | Auth | better-auth (email + password, profile + PIN plugin on trusted family devices); telemetry and runtime schema validation disabled (our migrations own the schema) | better-auth 1.7.x |
 | AI | Vercel AI SDK 7 with one OpenAI-compatible client for OpenRouter, Ollama and other compatible servers | ai 7.0.x |
 | API client | `openapi.json` → `openapi-typescript` (types) + `openapi-fetch` (tiny runtime) | 7.13.x / 0.17.x |
-| Build | Server bundled with esbuild into one ESM file (`better-sqlite3` external, installed in the image); dev with `tsx watch` | esbuild 0.28.x, tsx 4.23.x |
+| Build | Server bundled with esbuild into ES modules with code splitting: `main.mjs`, one entry per module shared with extension packages (`shared/{sdk,zod,kysely,time}.mjs`, listed in `shared/modules.json`) and their common chunks beside them (`better-sqlite3` external, installed in the image). Each extension is built into a package of its own (`@famos/pack`) and loaded at start; dev with `tsx watch` on the extensions' source | esbuild 0.28.x, tsx 4.23.x |
 | Quality | Biome (TS/JS/JSON/CSS), Prettier + `prettier-plugin-svelte` (`.svelte` only), svelte-check, Vitest 5, Playwright, dependency-cruiser | biome 2.5.x, vitest 5.0.x |
 | Release | SemVer, release notes generated from Conventional Commits (no extra tooling), GitHub Actions, multi-arch (amd64/arm64) image on GHCR, Renovate | — |
 | License | AGPL-3.0-or-later for all FamilyOS code: anyone may self-host, modify and share it, and whoever runs a modified version for others over a network offers them its source. Vendored code keeps its own license (shadcn-svelte components, MIT). Contributions are accepted under the same license, with no CLA | — |
@@ -70,7 +70,7 @@ Reasons for the less obvious choices:
 └──────────┬───────────────────────────────────────────────────────────────┘
            │ generated api-client (from openapi.json) + WebSocket
 ┌──────────▼──────────────── apps/server (composition root) ───────────────┐
-│ config → build adapters → ctx → core.start(extensions)                   │
+│ load extension packages → config → adapters → ctx → core.start(exts)    │
 │ Hono: /api/v1/<ext>/…  /api/v1/actions/:id  /api/v1/drafts  /ws  static  │
 │ worker loop · CLI (migrate | backup | restore)                           │
 │ HTTP layer: validate, resolve Actor, call core/actions. No business rules│
@@ -98,6 +98,7 @@ Reasons for the less obvious choices:
 ### Layers and responsibilities
 
 - **apps/server** is the composition root and the only place that knows concrete libraries. It reads configuration, builds adapters, creates the typed `ctx`, registers extensions and starts the HTTP server and/or worker depending on `FAMOS_ROLES`.
+- **Loading extensions.** The server names no extension: at start it loads the extension packages it finds (`apps/server/src/extensions/`) and hands their definitions to the kernel. The packages shipped with the app are found only beside the server bundle (`/app/server` → `/app/extensions` in the image, `apps/server/dist` → `dist/extensions` in a checkout), which is what makes them trusted, so no setting moves the folder; every one listed in its `extensions.json` (always and offered) is loaded. Before the first package is imported, a synchronous resolve hook (`module.registerHooks`) takes over the imports of code inside a package folder: the shared modules (`@famos/sdk`, `zod`, `kysely`, `@famos/time`) resolve to the server's own instances (`shared/modules.json`), `node:` modules and the package's own files resolve as usual, and any other import (another bare package, a file outside the folder) is refused with an error that names the package. A package is also refused when its `famos-package.json` was built for another platform (`built.sdk` must be the host's `SDK_VERSION` or an earlier patch of the same minor; the manifest's caret is checked as well) or when its code carries a manifest that differs from the one the package describes. In development and tests `FAMOS_DEV_EXTENSIONS=<workspace>/extensions` loads the extensions' source instead (`pnpm dev` and `pnpm gen` set it, with a warning in the log); it is refused when `NODE_ENV=production`. Server tests find the extensions the same way (`apps/server/test/support/extensions.ts`).
 - **Inbound adapters** (HTTP routes, WebSocket, CLI, MCP, Telegram) only validate input, resolve the `Actor` (who is calling, with which role) and call core or an action. They contain no business rules.
 - **@famos/core** is the kernel: members and roles, RBAC, the action registry and runner, drafts, the job runner, the in-process event bus, the migrator and backups.
 - **Extensions** own features. Each owns its tables, actions, routes, events, migrations and UI contributions.
@@ -154,7 +155,7 @@ The server bundle leaves out only the modules the host shares with every package
 
 `SDK_VERSION` is the platform version that packages are built against. `packages/pack/platform.json` records it with Svelte's minor, zod's major, Kysely's minor and the export names of `@famos/sdk`, `@famos/time`, `@famos/api-client` and every `@famos/ui` subpath; a test fails when they change and `SDK_VERSION` was not raised (its minor when something a built package may use changed or went away, at least its patch when names were only added). `pnpm --filter @famos/pack platform:update` rewrites the file once the version is raised.
 
-`extensions.json` at the root says which packages the image ships: `always` (calendar, lists, inbox, assistant, board, chores, records: records because home, pets and vehicles need it), `offered` (ambient, kitchen, pets, vehicles, home) and `default`, the offered ones a fresh family gets. `pnpm build` runs turbo, which builds every package, and then `scripts/collect-extensions.mjs`, which copies each listed package and `extensions.json` to `dist/extensions/`; an extension folder the file does not name, or a named one without a built package, fails the build. The server bundles every extension from its source and does not load these packages.
+`extensions.json` at the root says which packages the image ships: `always` (calendar, lists, inbox, assistant, board, chores, records: records because home, pets and vehicles need it), `offered` (ambient, kitchen, pets, vehicles, home) and `default`, the offered ones a fresh family gets. `pnpm build` runs turbo, which builds every package, and then `scripts/collect-extensions.mjs`, which copies each listed package and `extensions.json` to `dist/extensions/`; an extension folder the file does not name, or a named one without a built package, fails the build. The server loads these packages at start (§3, Loading extensions).
 
 ## 5. Dependency rules (enforced in CI)
 
@@ -163,6 +164,7 @@ The server bundle leaves out only the modules the host shares with every package
 - `core` may import `sdk`; it must not import adapters or `db`.
 - `web` may import `api-client`, `ui`, extensions' `./web` and `./contract`; never server code or an extension's `./api`.
 - `adapters` and `db` are imported only by `apps/server`. Extensions receive the database through `ctx.db`, typed by the SDK.
+- `apps/server` imports no extension: it loads them from packages at start (§3).
 
 Violations fail the build via dependency-cruiser.
 
@@ -660,6 +662,7 @@ The app is used in shops with poor reception. The common moments are small (tick
 - One multi-stage Docker image (amd64 + arm64) on `node:24-bookworm-slim` (Debian rather than Alpine, to avoid musl edge cases with native modules on a Raspberry Pi). The SPA is built and served by the Hono server on a single port, so installation is one `docker compose up`. There is no server-side rendering; a client-rendered SPA suits PWA and display use.
 - `FAMOS_ROLES=api,worker` (default both) lets heavy installations run a separate worker container from the same image. SQLite's single writer still keeps everything on one host.
 - Local AI services (Ollama) run in an optional compose profile or on another machine, reached by URL.
+- The image ships the extension packages in `/app/extensions` (built with `@famos/pack` and gathered by `scripts/collect-extensions.mjs`), beside the server bundle in `/app/server`.
 - Volume `/data` holds `famos.db`, `files/`, `backups/`, installed language and theme packs, and the generated secret (unless `FAMOS_SECRET` is set). `FAMOS_SECRET` seals provider keys, bot tokens, mail passwords, subscription URLs and backup passphrases; it is never inside a backup, so restoring on new hardware needs it too.
 - HTTPS is required for PWA Share Target; docs cover Caddy and Tailscale.
 

@@ -38,7 +38,9 @@ COPY extensions/records/package.json extensions/records/
 COPY extensions/vehicles/package.json extensions/vehicles/
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm --filter @famos/web build && pnpm --filter @famos/server build
+# The web app, the server, and every extension package gathered into dist/extensions.
+RUN pnpm --filter @famos/web build && pnpm --filter @famos/server build \
+  && pnpm --filter "./extensions/*" build && node scripts/collect-extensions.mjs
 # The bundle keeps native better-sqlite3 external; record its exact version for the runtime stage.
 RUN node -e "const v=require('./apps/server/package.json').dependencies['better-sqlite3']; \
   require('fs').writeFileSync('/repo/runtime-package.json', JSON.stringify({name:'famos-runtime',private:true,type:'module',dependencies:{'better-sqlite3':v}}))"
@@ -53,6 +55,8 @@ COPY --from=build /repo/runtime-package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY --from=build /repo/apps/server/dist ./server
 COPY --from=build /repo/apps/web/build ./web
+# Extension packages shipped with the app, found next to the server bundle (/app/server → /app/extensions).
+COPY --from=build /repo/dist/extensions ./extensions
 # Language packs shipped with the app; installed ones live in the data volume.
 COPY --from=build /repo/languages ./languages
 # Theme packs shipped with the app; installed ones live in the data volume.

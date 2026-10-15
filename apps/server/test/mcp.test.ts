@@ -12,11 +12,13 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { loadConfig } from '../src/config.ts';
-import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { MCP_RATE_PER_MINUTE } from '../src/mcp/http.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 let runtime: Runtime;

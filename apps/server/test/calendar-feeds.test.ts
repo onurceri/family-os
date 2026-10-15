@@ -2,12 +2,14 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
-import calendar from '@famos/ext-calendar/server';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { sourceExtensions } from './support/extensions.ts';
+
+const [calendar] = await sourceExtensions('calendar');
 
 const BASE = 'http://localhost:3000';
 let runtime: Runtime;

@@ -10,6 +10,9 @@ import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { createThemeRegistry, findBundledThemes } from '../src/themes.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 
@@ -65,6 +68,7 @@ async function boot() {
 		},
 	};
 	runtime = openRuntime(config, {
+		extensions,
 		logger: silentLogger,
 		quiet: true,
 		passwordHasher: fastPasswordHasher,

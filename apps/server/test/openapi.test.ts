@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extensions } from '../src/extensions.ts';
 import { ownerOfPath, splitOpenApi } from '../src/openapi.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const doc = {
 	openapi: '3.1.0',

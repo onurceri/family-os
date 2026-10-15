@@ -6,6 +6,9 @@ import { RESERVED_TABLE_PREFIXES, tablePrefixOf } from '@famos/sdk';
 import { expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { migrate, openRuntime } from '../src/runtime.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 /**
  * Every table the host itself creates (core and each infrastructure adapter) lies under a reserved
@@ -15,7 +18,7 @@ import { migrate, openRuntime } from '../src/runtime.ts';
 it('keeps every host table under a reserved prefix', async () => {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-reserved-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
-	const runtime = openRuntime(config, { logger: silentLogger, quiet: true });
+	const runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true });
 	try {
 		await migrate(runtime);
 		const extensionPrefixes = runtime.kernel.registry.extensions

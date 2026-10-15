@@ -8,10 +8,12 @@ import type { CoreTables } from '@famos/core';
 import type { ExtensionDefinition, Logger } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
-import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 const FAST = {
@@ -131,7 +133,7 @@ async function start(installed?: readonly ExtensionDefinition[]) {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-telegram-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
-		...(installed && { extensions: installed }),
+		extensions: installed ?? extensions,
 		logger: capturingLogger(),
 		quiet: true,
 		passwordHasher: fastPasswordHasher,

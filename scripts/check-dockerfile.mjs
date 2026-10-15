@@ -29,10 +29,25 @@ if (!/COPY --from=build \/repo\/languages \.\/languages/.test(dockerfile)) {
 if (!/COPY --from=build \/repo\/themes \.\/themes/.test(dockerfile)) {
 	missing.push('themes/ (COPY --from=build /repo/themes ./themes)');
 }
+// The server finds its extension packages only beside its bundle (/app/server → /app/extensions).
+if (!/COPY --from=build \/repo\/apps\/server\/dist \.\/server/.test(dockerfile)) {
+	missing.push('the server bundle (COPY --from=build /repo/apps/server/dist ./server)');
+}
+if (!/COPY --from=build \/repo\/dist\/extensions \.\/extensions/.test(dockerfile)) {
+	missing.push('dist/extensions/ (COPY --from=build /repo/dist/extensions ./extensions)');
+}
+if (
+	!dockerfile.includes('pnpm --filter "./extensions/*" build') ||
+	!dockerfile.includes('node scripts/collect-extensions.mjs')
+) {
+	missing.push(
+		'the extension packages (built with famos-pack, then node scripts/collect-extensions.mjs)',
+	);
+}
 if (missing.length > 0) {
 	console.error(`docker/Dockerfile does not copy: ${missing.join(', ')}`);
 	process.exit(1);
 }
 console.log(
-	'✔ Dockerfile copies every workspace package manifest, the language packs and the theme packs',
+	'✔ Dockerfile copies every workspace package manifest, the language, theme and extension packs',
 );

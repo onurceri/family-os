@@ -7,11 +7,13 @@ import { defineTestExtension } from '@famos/testing';
 import type { WSContext } from 'hono/ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
-import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { createRealtimeHub } from '../src/http/realtime.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime, seedAi } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 let runtime: Runtime;
@@ -24,7 +26,7 @@ async function boot(extraExtensions: readonly ExtensionDefinition[] = []) {
 		logger: silentLogger,
 		quiet: true,
 		passwordHasher: fastPasswordHasher,
-		...(extraExtensions.length > 0 && { extensions: [...extensions, ...extraExtensions] }),
+		extensions: [...extensions, ...extraExtensions],
 	});
 	await migrate(runtime);
 	await runtime.kernel.start();

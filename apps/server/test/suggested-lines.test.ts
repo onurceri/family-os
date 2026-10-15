@@ -1,11 +1,15 @@
-import assistant from '@famos/ext-assistant/server';
-import board from '@famos/ext-board/server';
-import calendar from '@famos/ext-calendar/server';
-import kitchen from '@famos/ext-kitchen/server';
-import lists from '@famos/ext-lists/server';
 import { type Actor, createHandleTable, type MemberId, runAgentTool } from '@famos/sdk';
 import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { sourceExtensions } from './support/extensions.ts';
+
+const [calendar, lists, board, kitchen, assistant] = await sourceExtensions(
+	'calendar',
+	'lists',
+	'board',
+	'kitchen',
+	'assistant',
+);
 
 /**
  * Every suggestion an agent makes is told back as one line that names the thing: the assistant

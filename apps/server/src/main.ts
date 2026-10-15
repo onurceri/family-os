@@ -7,7 +7,7 @@ import type { CoreTables } from '@famos/core';
 import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
 import { type Config, loadConfig } from './config.ts';
-import { extensions } from './extensions.ts';
+import { type LoadedExtensions, loadExtensions } from './extensions/load.ts';
 import { createHttpApp, OPENAPI_INFO, resolveActor } from './http/app.ts';
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
@@ -40,7 +40,7 @@ Usage: famos <command>
 
 async function serveCommand() {
 	const config = await loadConfig();
-	const runtime = openRuntime(config);
+	const runtime = await openWithExtensions(config);
 	const { logger, kernel } = runtime;
 	await migrate(runtime);
 	await seedAi(runtime);
@@ -150,6 +150,26 @@ async function serveCommand() {
 	process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
+/** Loads the extensions, then opens the runtime with them and says in the log what it runs. */
+async function openWithExtensions(config: Config): Promise<Runtime> {
+	const { extensions, report } = await loadExtensions();
+	const runtime = openRuntime(config, { extensions });
+	logLoaded(runtime, report);
+	return runtime;
+}
+
+function logLoaded({ logger }: Runtime, report: LoadedExtensions['report']) {
+	if (report.warning) logger.warn({ dir: report.dir }, report.warning);
+	logger.info(
+		{
+			from: report.from,
+			dir: report.dir,
+			extensions: report.loaded.map((e) => `${e.id}@${e.version}`),
+		},
+		'extensions loaded',
+	);
+}
+
 /**
  * While nobody has set the instance up, print where to do it. The code is also in
  * `data/setup-code`; whoever can read the log or the data directory owns the server anyway.
@@ -223,13 +243,13 @@ async function main() {
 		case 'serve':
 			return serveCommand();
 		case 'migrate': {
-			const runtime = openRuntime(await loadConfig());
+			const runtime = await openWithExtensions(await loadConfig());
 			const applied = await migrate(runtime);
 			console.log(applied ? `Applied ${applied} migration(s).` : 'Database is up to date.');
 			return runtime.close();
 		}
 		case 'backup': {
-			const runtime = openRuntime(await loadConfig());
+			const runtime = await openWithExtensions(await loadConfig());
 			const { path } = await backupNow(runtime, 'manual');
 			console.log(`Backup written: ${path}`);
 			console.log('Uploads to remote targets (if any) are sent by the running server.');
@@ -238,7 +258,9 @@ async function main() {
 		case 'restore': {
 			if (!arg) throw new Error('Usage: famos restore <file> [--identity <file>] [--force]');
 			const config = await loadConfig();
+			const { extensions } = await loadExtensions();
 			const manifest = await restoreFile(config, arg, {
+				extensions,
 				...(values.force && { force: true }),
 				...(values.identity && { identity: values.identity }),
 				passphrase: process.env.FAMOS_BACKUP_PASSPHRASE,
@@ -252,7 +274,12 @@ async function main() {
 		case 'openapi': {
 			const out = arg ?? 'openapi.json';
 			// Generation needs the registry only: in-memory database, no data directory.
-			const runtime = openRuntime(generationConfig(), { logger: silentLogger, quiet: true });
+			const { extensions } = await loadExtensions();
+			const runtime = openRuntime(generationConfig(), {
+				extensions,
+				logger: silentLogger,
+				quiet: true,
+			});
 			const app = createHttpApp({
 				kernel: runtime.kernel,
 				ai: runtime.ai,

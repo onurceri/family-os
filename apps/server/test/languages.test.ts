@@ -6,12 +6,14 @@ import { createBackup, restoreBackup } from '@famos/db';
 import { type ExternalHttp, ExternalHttpError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
-import { extensions } from '../src/extensions.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { catalogsOf, createTranslate } from '../src/i18n.ts';
 import { createLanguageRegistry } from '../src/languages.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 
@@ -46,6 +48,7 @@ async function boot() {
 		},
 	};
 	runtime = openRuntime(config, {
+		extensions,
 		logger: silentLogger,
 		quiet: true,
 		passwordHasher: fastPasswordHasher,

@@ -13,6 +13,9 @@ import { createHttpApp } from '../src/http/app.ts';
 import { restoreFile } from '../src/restore.ts';
 import { backupNow, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 const PASSPHRASE = 'a long family passphrase';
@@ -67,6 +70,7 @@ async function startDav() {
 
 const open = () => {
 	const r = openRuntime(config, {
+		extensions,
 		logger: silentLogger,
 		quiet: true,
 		passwordHasher: fastPasswordHasher,
@@ -333,14 +337,14 @@ describe('restoring an encrypted backup', () => {
 		await runtime.close();
 
 		await expect(
-			restoreFile(config, file, { passphrase: 'not the right passphrase' }),
+			restoreFile(config, file, { extensions, passphrase: 'not the right passphrase' }),
 		).rejects.toBeInstanceOf(DecryptError);
-		await expect(restoreFile(config, file, {})).rejects.toThrow(/encrypted/);
+		await expect(restoreFile(config, file, { extensions })).rejects.toThrow(/encrypted/);
 		runtime = open();
 		expect(await names(runtime)).toHaveLength(2);
 		await runtime.close();
 
-		const manifest = await restoreFile(config, file, { passphrase: PASSPHRASE });
+		const manifest = await restoreFile(config, file, { extensions, passphrase: PASSPHRASE });
 		expect(manifest.reason).toBe('manual');
 		runtime = open();
 		expect(await names(runtime)).toEqual(['Parent']);

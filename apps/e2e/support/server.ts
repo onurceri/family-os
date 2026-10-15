@@ -32,7 +32,11 @@ export async function startFamilyOS(options: {
 	emailFakeDir?: string;
 	dataDir?: string;
 }) {
-	if (!existsSync(SERVER) || !existsSync(join(WEB, 'index.html')))
+	if (
+		!existsSync(SERVER) ||
+		!existsSync(join(WEB, 'index.html')) ||
+		!existsSync(join(ROOT, 'dist/extensions/extensions.json'))
+	)
 		throw new Error('Build first: pnpm build (E2E runs the production bundle)');
 	const dataDir = options.dataDir ?? (await mkdtemp(join(tmpdir(), 'famos-e2e-')));
 	const port = await freePort();

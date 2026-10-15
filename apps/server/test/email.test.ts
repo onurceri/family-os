@@ -8,6 +8,9 @@ import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
 import { fastPasswordHasher } from './fast-password.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const BASE = 'http://localhost:3000';
 const PASSWORD = 'mailbox app password 4711';
@@ -112,6 +115,7 @@ beforeEach(async () => {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-email-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
+		extensions,
 		logger: capturingLogger(),
 		quiet: true,
 		passwordHasher: fastPasswordHasher,

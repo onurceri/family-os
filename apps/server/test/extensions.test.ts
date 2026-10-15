@@ -2,26 +2,28 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTestKernel } from '@famos/testing';
 import { describe, expect, it } from 'vitest';
-import { extensions } from '../src/extensions.ts';
 import { catalogsOf } from '../src/i18n.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 const { english } = catalogsOf(extensions);
 const catalog = (namespace: string): Record<string, unknown> => english[namespace] ?? {};
 
-describe('bundled extensions', () => {
+describe('the extensions', () => {
 	it('each bring their English texts under their own id', () => {
 		for (const ext of extensions) expect(ext.messages?.en, ext.id).toBeTruthy();
 		expect(Object.keys(english).sort()).toEqual(['app', ...extensions.map((e) => e.id)].sort());
 	});
 
-	// The server reaches what extensions bring (catalogs included) through the list it loads, so
-	// leaving one out of that list leaves it out entirely.
-	it('are named only by the list the server loads', () => {
+	// The server loads extensions from packages it finds at start; it names none of them, so an
+	// extension that is not installed is simply not there.
+	it('are named nowhere in the server', () => {
 		const src = join(import.meta.dirname, '../src');
 		const naming = readdirSync(src, { recursive: true, encoding: 'utf8' })
 			.filter((file) => /\.ts$/.test(file))
 			.filter((file) => readFileSync(join(src, file), 'utf8').includes('@famos/ext-'));
-		expect(naming).toEqual(['extensions.ts']);
+		expect(naming).toEqual([]);
 	});
 
 	// AGENTS.md rule 8: what the AI may propose can be taken back after it was approved.

@@ -185,7 +185,7 @@ pnpm lint         # Biome, Prettier (.svelte), dependency-cruiser
 pnpm typecheck    # TypeScript and svelte-check
 pnpm e2e          # essential flows in Playwright against the production build
 pnpm gen          # regenerate openapi.json and the typed API client
-pnpm build        # web app and bundled server
+pnpm build        # web app, bundled server and extension packages
 ```
 
 TypeScript end to end: Hono, Kysely on SQLite and better-auth on Node.js; a SvelteKit SPA with

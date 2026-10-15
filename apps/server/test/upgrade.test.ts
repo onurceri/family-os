@@ -8,6 +8,9 @@ import { createFakeHttp } from '@famos/testing';
 import { afterEach, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { migrate, openRuntime, type Runtime } from '../src/runtime.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 /**
  * A family that used the release before extensions were kept apart upgrades: the papers the
@@ -43,7 +46,7 @@ it('keeps filed papers and calendar subscriptions working after the upgrade', as
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
 	const http = createFakeHttp();
 	http.serve(FEED, { text: ICS, contentType: 'text/calendar' });
-	runtime = openRuntime(config, { logger: silentLogger, quiet: true, http });
+	runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true, http });
 	const { handle, kernel } = runtime;
 
 	// The database as the previous release left it.

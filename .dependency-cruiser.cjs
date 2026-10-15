@@ -113,6 +113,14 @@ module.exports = {
 			to: { path: '^packages/(db|adapters)/' },
 		},
 		{
+			name: 'server-names-no-extension',
+			comment:
+				'The server loads extensions from the packages it finds at start (src/extensions/load.ts); it imports none of them, so one that is not installed is simply absent.',
+			severity: 'error',
+			from: { path: '^apps/server/' },
+			to: { path: '^extensions/' },
+		},
+		{
 			name: 'web-no-extension-api',
 			comment:
 				"The app talks to the host's routes only; an extension's API types and client belong to that extension.",

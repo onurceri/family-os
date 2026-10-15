@@ -1,7 +1,9 @@
 import { type Actor, type MemberId, systemActor, type UploadedFile } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { extensions } from '../src/extensions.ts';
+import { discoverSourceExtensions } from './support/extensions.ts';
+
+const extensions = await discoverSourceExtensions();
 
 /**
  * Family search over the real extensions: what is indexed when things are created,

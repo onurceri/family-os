@@ -214,42 +214,6 @@ importers:
       '@famos/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@famos/ext-ambient':
-        specifier: workspace:*
-        version: link:../../extensions/ambient
-      '@famos/ext-assistant':
-        specifier: workspace:*
-        version: link:../../extensions/assistant
-      '@famos/ext-board':
-        specifier: workspace:*
-        version: link:../../extensions/board
-      '@famos/ext-calendar':
-        specifier: workspace:*
-        version: link:../../extensions/calendar
-      '@famos/ext-chores':
-        specifier: workspace:*
-        version: link:../../extensions/chores
-      '@famos/ext-home':
-        specifier: workspace:*
-        version: link:../../extensions/home
-      '@famos/ext-inbox':
-        specifier: workspace:*
-        version: link:../../extensions/inbox
-      '@famos/ext-kitchen':
-        specifier: workspace:*
-        version: link:../../extensions/kitchen
-      '@famos/ext-lists':
-        specifier: workspace:*
-        version: link:../../extensions/lists
-      '@famos/ext-pets':
-        specifier: workspace:*
-        version: link:../../extensions/pets
-      '@famos/ext-records':
-        specifier: workspace:*
-        version: link:../../extensions/records
-      '@famos/ext-vehicles':
-        specifier: workspace:*
-        version: link:../../extensions/vehicles
       '@famos/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -280,6 +244,9 @@ importers:
       hono:
         specifier: 4.13.13
         version: 4.13.13
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
       punycode:
         specifier: 2.3.1
         version: 2.3.1

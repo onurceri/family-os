@@ -54,7 +54,6 @@ import type { ExtensionDefinition, ExternalHttp, Logger } from '@famos/sdk';
 import pkg from '../package.json' with { type: 'json' };
 import type { Config } from './config.ts';
 import { wireEmail } from './email.ts';
-import { extensions } from './extensions.ts';
 import { deviceTokenFromHeaders } from './http/devices.ts';
 import { catalogsOf, createTranslate, createVocabulary } from './i18n.ts';
 import {
@@ -90,7 +89,8 @@ export interface Runtime {
 export function openRuntime(
 	config: Config,
 	options: {
-		extensions?: readonly ExtensionDefinition[];
+		/** The extensions to run (core is always there): what `loadExtensions` found, or a test's. */
+		extensions: readonly ExtensionDefinition[];
 		logger?: Logger;
 		quiet?: boolean;
 		/** Tests: where the Bot API lives, and how fast the poller works. */
@@ -111,7 +111,7 @@ export function openRuntime(
 			errorBaseMs: number;
 			errorMaxMs: number;
 		};
-	} = {},
+	},
 ): Runtime {
 	const logger = options.logger ?? createLogger({ level: config.logLevel });
 	const handle = openDatabase({ path: config.dbPath });
@@ -223,7 +223,7 @@ export function openRuntime(
 		// Core owns the per-area setting; until the kernel exists nothing is open.
 		areaAccess: (id) => kernelRef?.aiAreas.access(id) ?? 'off',
 	});
-	const loaded = options.extensions ?? extensions;
+	const loaded = options.extensions;
 	const languages = createLanguageRegistry({
 		...catalogsOf(loaded),
 		appVersion: APP_VERSION,

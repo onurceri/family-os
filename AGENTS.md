@@ -49,6 +49,7 @@ docs/              Architecture, design system, user guide, releasing
    - `core` imports only `sdk`. It never imports `db` or `adapters`.
    - `web` talks to the server only through `@famos/api-client`.
    - Only `apps/server` imports `db`, `adapters` and concrete libraries.
+   - `apps/server` imports no extension; it loads the extension packages it finds at start.
 2. **Extensions never import each other's internals.** Use actions (`ctx.actions.run`), events, or typed IDs. No foreign keys across extensions; prefix tables with the extension id (`shopping_items`). Each extension's manifest is the `famos` field of its package.json: declare every foreign action it runs in `famos.calls`, the extensions they belong to in `dependsOn` or `optional`, and every capability in `famos.capabilities`; the registry refuses a manifest that disagrees with the code, and each extension's context holds it to its manifest while it runs (its tables, files, secrets, calls and network).
 3. **Access is capabilities, never role names.** Declare what your extension protects with `defineCapability` (choose a level: `view`, `use`, `edit`, `manage`), give routes `requires`, and give data-changing actions `requires` and/or `approval: { unless: capability }`. Never assume a household shape (parents/children): describe people only by their `about`. A sensitive extension may set capability `defaults` that only remove grants its level gives; it can never add one.
 4. **Every state change is an action** (`defineAction`). Permissions and approval are enforced by the action runner, not in route handlers. Route handlers only validate, resolve the actor and delegate. The only exceptions are credential management (passwords, PINs, AI provider keys) and device trust: they set cookies or call an adapter outside a transaction.
@@ -129,11 +130,12 @@ pnpm release x.y.z  # bump, commit and tag a release locally (docs/releasing.md)
 pnpm lint           # Biome, Prettier (.svelte), dependency-cruiser
 pnpm typecheck      # tsc and svelte-check
 pnpm gen            # openapi.json, api-client types, each extension's openapi.json and api.gen.d.ts
-pnpm build          # web SPA + bundled server (apps/server/dist/main.mjs)
+pnpm build          # web SPA, bundled server (apps/server/dist) and extension packages (dist/extensions, which the built server loads)
 docker compose up   # production-like run on http://localhost:3000
 
 # server CLI (also inside the container: node /app/server/main.mjs <cmd>)
-pnpm --filter @famos/server exec tsx src/main.ts migrate|backup|restore <file>|openapi
+# from source the server loads the extensions' source only when told where it is
+FAMOS_DEV_EXTENSIONS=../../extensions pnpm --filter @famos/server exec tsx src/main.ts migrate|backup|restore <file>|openapi
 ```
 
 Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the results honestly.

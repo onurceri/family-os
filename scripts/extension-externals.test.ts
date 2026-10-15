@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SHARED_WEB } from '../packages/pack/src/shared.ts';
+import { SHARED_MODULES } from '../apps/server/src/extensions/hooks.ts';
+import { SHARED_SERVER, SHARED_WEB } from '../packages/pack/src/shared.ts';
 
 /**
  * Extensions are built into packages of their own (`@famos/pack`). The server bundle leaves
@@ -60,5 +61,11 @@ describe('extension bundles leave out what the app shares', () => {
 			),
 		);
 		expect(unshared).toEqual([]);
+	});
+
+	// A package built to leave a module to the host fails to load when the host does not hand it
+	// over, and one the host hands over but packages inline gives two instances.
+	it('leaves to the host exactly what the server hands to packages', () => {
+		expect([...SHARED_SERVER].sort()).toEqual([...SHARED_MODULES].sort());
 	});
 });
