@@ -169,6 +169,15 @@ describe('changing notes', () => {
 		expect(await notes()).toEqual([]);
 	});
 
+	it('lets a supervised author change and take down their own note without approval', async () => {
+		const note = await post({}, elif.actor);
+		await applied(k, 'board.editNote', { id: note.id, endsOn: '2026-10-08' }, elif.actor);
+		expect((await notes())[0]?.endsOn).toBe('2026-10-08');
+		expect(await applied(k, 'board.removeNote', { id: note.id }, elif.actor)).toEqual({
+			removed: true,
+		});
+	});
+
 	it('lets the author remove their note; removing again is harmless', async () => {
 		const note = await post();
 		expect(await applied(k, 'board.removeNote', { id: note.id }, bora.actor)).toEqual({

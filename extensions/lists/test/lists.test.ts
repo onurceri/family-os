@@ -188,7 +188,7 @@ describe('tasks', () => {
 		expect(last.doneAt).not.toBeNull();
 	});
 
-	it('lets supervised members add their own tasks but drafts tasks for others and edits', async () => {
+	it('lets supervised members add and change their own tasks but drafts tasks for others', async () => {
 		const { actor: child, member: kid } = await k.member('supervised');
 		const { member: parent } = await k.member('admin');
 		expect(
@@ -209,7 +209,10 @@ describe('tasks', () => {
 			'applied',
 		);
 		expect((await k.runner.invoke('lists.deleteTask', { id: own?.id }, child)).status).toBe(
-			'drafted',
+			'applied',
+		);
+		expect((await k.runner.invoke('lists.restoreTask', { id: own?.id }, child)).status).toBe(
+			'applied',
 		);
 		expect(
 			(
@@ -220,6 +223,39 @@ describe('tasks', () => {
 				)
 			).status,
 		).toBe('drafted');
+	});
+
+	it("drafts a supervised member's change to a task that is not their own", async () => {
+		const { actor: child, member: kid } = await k.member('supervised');
+		const { actor: parent, member: mum } = await k.member('admin');
+		const own = await applied<Task>(
+			k.runner.invoke('lists.addTask', { title: 'Read a chapter', assigneeId: kid.id }, child),
+		);
+		const homework = await applied<Task>(
+			k.runner.invoke('lists.addTask', { title: 'Fractions', assigneeId: kid.id }, parent),
+		);
+		const change = (input: Record<string, unknown>) =>
+			k.runner.invoke('lists.changeTask', input, child).then((r) => r.status);
+		// Their own: the date changes at once.
+		expect(await change({ id: own.id, dueDate: '2026-10-20' })).toBe('applied');
+		expect((await tasks()).find((t) => t.id === own.id)?.dueDate).toBe('2026-10-20');
+		// Giving their own task to someone else is adding a task for others.
+		expect(await change({ id: own.id, assigneeId: mum.id })).toBe('drafted');
+		expect(await change({ id: own.id, assigneeId: null })).toBe('drafted');
+		expect(
+			(
+				await k.runner.invoke(
+					'lists.updateTask',
+					{ id: own.id, task: { title: 'Read two chapters' } },
+					child,
+				)
+			).status,
+		).toBe('drafted');
+		// A task a parent set for them is not theirs to change or remove.
+		expect(await change({ id: homework.id, dueDate: '2026-10-30' })).toBe('drafted');
+		expect((await k.runner.invoke('lists.deleteTask', { id: homework.id }, child)).status).toBe(
+			'drafted',
+		);
 	});
 
 	it('validates members and dates', async () => {
@@ -271,17 +307,38 @@ describe('shopping', () => {
 		expect(out.lists.map((l) => l.name)).toEqual(['Shopping list']);
 	});
 
-	it('lets supervised members add and tick items but drafts their removal', async () => {
+	it('lets supervised members add, tick and remove their own items but drafts the rest', async () => {
 		const { actor: child } = await k.member('supervised');
 		const { actor: parent } = await k.member('member');
+		await applied(
+			k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Ice cream' }] }, child),
+		);
 		await applied(
 			k.runner.invoke(
 				'lists.addShoppingItems',
 				{ items: [{ title: 'Milk' }, { title: 'Bread' }, { title: 'Eggs' }] },
-				child,
+				parent,
 			),
 		);
-		const [milk, bread, eggs] = await items();
+		const all = await items();
+		const [iceCream, milk, bread, eggs] = ['Ice cream', 'Milk', 'Bread', 'Eggs'].map((title) =>
+			all.find((i) => i.title === title),
+		);
+		// Their own item goes at once.
+		expect(
+			(await k.runner.invoke('lists.deleteShoppingItem', { id: iceCream?.id }, child)).status,
+		).toBe('applied');
+		// Several at once only when every one is theirs.
+		expect(
+			(await k.runner.invoke('lists.restoreShoppingItem', { id: iceCream?.id }, child)).status,
+		).toBe('applied');
+		expect(
+			(await k.runner.invoke('lists.removeShoppingItems', { ids: [iceCream?.id, milk?.id] }, child))
+				.status,
+		).toBe('drafted');
+		expect(
+			(await k.runner.invoke('lists.removeShoppingItems', { ids: [iceCream?.id] }, child)).status,
+		).toBe('applied');
 		expect(
 			(await k.runner.invoke('lists.checkShoppingItem', { id: milk?.id, done: true }, child))
 				.status,
@@ -564,7 +621,7 @@ describe('taking back a suggested shopping add', () => {
 		expect(after.map((i) => i.title)).toEqual(['Süt']);
 	});
 
-	it('lets only those who manage the list take an add back directly', async () => {
+	it("lets only those who manage the list take somebody else's add back directly", async () => {
 		const { actor } = await k.member('admin');
 		const { actor: child } = await k.member('supervised');
 		const added = await applied<{ items: ShoppingItem[]; addedIds: string[]; merged: [] }>(
@@ -576,6 +633,20 @@ describe('taking back a suggested shopping add', () => {
 		expect(await items()).toHaveLength(1);
 		const done = await k.runner.invoke('lists.undoAddShoppingItems', input, actor);
 		expect(done.status).toBe('applied');
+		expect(await items()).toHaveLength(0);
+	});
+
+	it('lets a supervised member take back their own add', async () => {
+		const { actor: child } = await k.member('supervised');
+		const added = await applied<{ addedIds: string[] }>(
+			k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Ice cream' }] }, child),
+		);
+		const undo = await k.runner.invoke(
+			'lists.undoAddShoppingItems',
+			{ addedIds: added.addedIds, merged: [] },
+			child,
+		);
+		expect(undo.status).toBe('applied');
 		expect(await items()).toHaveLength(0);
 	});
 

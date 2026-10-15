@@ -78,6 +78,24 @@ const itemTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
 			.executeTakeFirst()
 	)?.title ?? null;
 
+/**
+ * The member who added every one of these items, or null when someone else added any of them (or
+ * one is no longer on a list): taking back what you added yourself needs nobody's approval.
+ */
+async function addedByOne(ctx: DuplicateContext, ids: readonly string[]): Promise<string | null> {
+	const wanted = [...new Set(ids)];
+	if (wanted.length === 0) return null;
+	const rows = await tables(ctx.db)
+		.selectFrom('lists_shopping_items')
+		.select('added_by')
+		.where('id', 'in', wanted)
+		.where('deleted_at', 'is', null)
+		.execute();
+	const by = new Set(rows.map((r) => r.added_by));
+	if (rows.length !== wanted.length || by.size !== 1) return null;
+	return [...by][0] ?? null;
+}
+
 async function loadItem(uow: UnitOfWork, id: string) {
 	const row = await tables(uow.db)
 		.selectFrom('lists_shopping_items')
@@ -261,7 +279,11 @@ export const undoAddShoppingItems = defineAction({
 	title: 'Take back added shopping items',
 	draftTitle: 'lists:draft_title_undo_add_shopping_items',
 	requires: shoppingEdit.id,
-	approval: { unless: shoppingManage.id },
+	approval: {
+		unless: shoppingManage.id,
+		owner: (ctx, { addedIds, merged }) =>
+			addedByOne(ctx, [...addedIds, ...merged.map((m) => m.id)]),
+	},
 	input: z.object({
 		addedIds: z.array(ShoppingItemIdSchema).max(100),
 		merged: z.array(MergedItemSchema).max(100),
@@ -408,7 +430,7 @@ export const deleteShoppingItem = defineAction({
 	requires: shoppingEdit.id,
 	input: z.object({ id: ShoppingItemIdSchema, label: ReviewLabelSchema }),
 	output: z.object({ ok: z.literal(true), id: z.string() }),
-	approval: { unless: shoppingManage.id },
+	approval: { unless: shoppingManage.id, owner: (ctx, { id }) => addedByOne(ctx, [id]) },
 	undo: ({ id }) => ({ actionId: 'lists.restoreShoppingItem', input: { id } }),
 	ai: {
 		description:
@@ -459,7 +481,7 @@ export const removeShoppingItems = defineAction({
 	requires: shoppingEdit.id,
 	input: z.object({ ids: z.array(ShoppingItemIdSchema).min(1).max(50) }),
 	output: z.object({ removed: z.number().int(), ids: z.array(z.string()) }),
-	approval: { unless: shoppingManage.id },
+	approval: { unless: shoppingManage.id, owner: (ctx, { ids }) => addedByOne(ctx, ids) },
 	undo: ({ ids }) =>
 		ids.length ? { actionId: 'lists.restoreShoppingItems', input: { ids } } : null,
 	ai: {

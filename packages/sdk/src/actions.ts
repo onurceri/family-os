@@ -18,10 +18,23 @@ export type ApprovalPolicy<I> =
 	| 'always'
 	| 'ai'
 	/**
-	 * Applied directly by people with the capability (and in the `except` case); proposed as a
-	 * draft by others who may propose (`core.drafts.propose`). Approving needs the capability.
+	 * Applied directly by people with the capability (and in the `except` and `owner` cases);
+	 * proposed as a draft by others who may propose (`core.drafts.propose`). Approving needs the
+	 * capability.
 	 */
-	| { unless: string; except?: (actor: Actor, input: I) => boolean }
+	| {
+			unless: string;
+			except?: (actor: Actor, input: I) => boolean;
+			/**
+			 * The member whose own thing the input changes (who added the shopping item, who made the
+			 * task for themselves), or null when it is not one member's or is gone. That member acts
+			 * directly when they could have proposed the change: taking back or changing what you
+			 * added yourself needs nobody's approval. Read before the change, outside its
+			 * transaction, so it reads only what does not change under it (who created a row).
+			 * Never asked for the AI, whose changes are always drafts.
+			 */
+			owner?: (ctx: DuplicateContext, input: I) => Promise<string | null>;
+	  }
 	| ((actor: Actor, input: I, can: (capability: string) => boolean) => boolean);
 
 export interface ActionDefinition<

@@ -74,6 +74,27 @@ const taskTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
 			.executeTakeFirst()
 	)?.title ?? null;
 
+/**
+ * A task is a person's own when they made it for themselves (created by them and theirs to do);
+ * they may change or delete it without anyone's approval as long as it stays theirs: giving it to
+ * someone else, or to anyone, is the same as adding a task for others. Deleted tasks count too,
+ * so a deletion can be taken back.
+ */
+async function ownTaskOf(
+	ctx: DuplicateContext,
+	id: string,
+	assigneeId?: string | null,
+): Promise<string | null> {
+	const row = await tables(ctx.db)
+		.selectFrom('lists_tasks')
+		.select(['created_by', 'assignee_id'])
+		.where('id', '=', id)
+		.executeTakeFirst();
+	if (!row?.created_by) return null;
+	const assignee = assigneeId === undefined ? row.assignee_id : assigneeId;
+	return assignee === row.created_by ? row.created_by : null;
+}
+
 async function load(uow: UnitOfWork, id: string) {
 	const row = await tables(uow.db)
 		.selectFrom('lists_tasks')
@@ -164,7 +185,10 @@ export const updateTask = defineAction({
 	draftTitle: 'lists:draft_title_update_task',
 	input: z.object({ id: TaskIdSchema, task: TaskInputSchema }),
 	output: TaskSchema,
-	approval: { unless: tasksEdit.id },
+	approval: {
+		unless: tasksEdit.id,
+		owner: (ctx, { id, task }) => ownTaskOf(ctx, id, task.assigneeId ?? null),
+	},
 	targetTitle: taskTitle,
 	// The form sends the whole task: what differs from the task as it is now is what changes, so
 	// the card lists only those fields, "old → new" (a deadline is its date and time together).
@@ -234,7 +258,10 @@ export const changeTask = defineAction({
 	input: TaskChangeSchema.extend({ id: TaskIdSchema, label: ReviewLabelSchema }),
 	// The old values of what changed, keyed like the input (for undo).
 	output: z.object({ task: TaskSchema, before: z.record(z.string(), z.string().nullable()) }),
-	approval: { unless: tasksEdit.id },
+	approval: {
+		unless: tasksEdit.id,
+		owner: (ctx, { id, assigneeId }) => ownTaskOf(ctx, id, assigneeId),
+	},
 	undo: ({ task, before }) => ({ actionId: 'lists.changeTask', input: { id: task.id, ...before } }),
 	// The task as it is now, for the card's "old → new"; a deadline is its date and time together.
 	async currentValues(ctx, { id, label: _label, ...change }) {
@@ -419,7 +446,7 @@ export const deleteTask = defineAction({
 	draftTitle: 'lists:draft_title_delete_task',
 	input: z.object({ id: TaskIdSchema, label: ReviewLabelSchema }),
 	output: z.object({ ok: z.literal(true), id: z.string() }),
-	approval: { unless: tasksEdit.id },
+	approval: { unless: tasksEdit.id, owner: (ctx, { id }) => ownTaskOf(ctx, id) },
 	undo: ({ id }) => ({ actionId: 'lists.restoreTask', input: { id } }),
 	ai: {
 		description:
@@ -445,7 +472,7 @@ export const restoreTask = defineAction({
 	draftTitle: 'lists:draft_title_restore_task',
 	input: z.object({ id: TaskIdSchema }),
 	output: TaskSchema,
-	approval: { unless: tasksEdit.id },
+	approval: { unless: tasksEdit.id, owner: (ctx, { id }) => ownTaskOf(ctx, id) },
 	async run(uow, { id }) {
 		const row = await tables(uow.db)
 			.selectFrom('lists_tasks')

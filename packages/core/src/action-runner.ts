@@ -234,7 +234,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	}
 
 	/** Whether this call becomes a draft. AI is checked first: its changes are always drafts. */
-	function needsApproval(def: AnyActionDefinition, actor: Actor, input: unknown): boolean {
+	async function needsApproval(
+		def: AnyActionDefinition,
+		actor: Actor,
+		input: unknown,
+	): Promise<boolean> {
 		if (def.readOnly) return false;
 		if (actor.kind === 'ai') return true;
 		const policy = def.approval;
@@ -242,7 +246,14 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (policy === 'always') return true;
 		if (typeof policy === 'object') {
 			if (actor.kind !== 'member') return false;
-			return !(can(actor, policy.unless) || policy.except?.(actor, input) === true);
+			if (can(actor, policy.unless) || policy.except?.(actor, input) === true) return false;
+			// Their own thing: what they could only have proposed, they may do directly. Owning a
+			// thing never lets anyone do more than propose would have.
+			if (policy.owner && can(actor, 'core.drafts.propose')) {
+				const owner = await policy.owner(readContext(def), input);
+				if (owner !== null && owner === actor.memberId) return false;
+			}
+			return true;
 		}
 		return policy(actor, input, (capability) => can(actor, capability));
 	}
@@ -472,7 +483,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const remember = (uow: UnitOfWork, result: ActionResult<unknown>) =>
 			idem ? storeResult(uow.db, idem, actionId, clock.now(), result) : Promise.resolve();
 
-		if (!needsApproval(def, actor, input)) {
+		if (!(await needsApproval(def, actor, input))) {
 			// Slow or networked work (a model call) happens before the transaction opens.
 			const prepared = def.prepare ? await def.prepare(input, actor) : undefined;
 			const output = await unitOfWork(actor, async (uow, view) => {
