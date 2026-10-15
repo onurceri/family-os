@@ -1,7 +1,9 @@
 import { defineProject } from 'vitest/config';
+import { testDefaults } from '../../vitest.shared.ts';
 
 export default defineProject({
 	test: {
+		...testDefaults,
 		name: 'server',
 		include: ['test/**/*.test.ts'],
 		// Tests here boot a whole runtime (migrations, workers, local servers); on a busy machine a

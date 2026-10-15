@@ -1,7 +1,9 @@
 import { defineProject } from 'vitest/config';
+import { testDefaults } from '../../vitest.shared.ts';
 
 export default defineProject({
 	test: {
+		...testDefaults,
 		name: 'adapters',
 		include: ['test/**/*.test.ts'],
 		// Tests here talk to real local servers and hash passwords; on a busy machine a correct run

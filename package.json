@@ -10,8 +10,8 @@
 	"scripts": {
 		"dev": "turbo run dev",
 		"build": "turbo run build && node scripts/collect-extensions.mjs",
-		"test": "vitest run --fsModuleCache --isolate",
-		"test:watch": "vitest --fsModuleCache --isolate",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"typecheck": "turbo run typecheck",
 		"gen": "turbo run gen",
 		"lint": "biome check . && prettier --check \"**/*.svelte\" && depcruise --config .dependency-cruiser.cjs apps packages extensions && node scripts/check-dockerfile.mjs",

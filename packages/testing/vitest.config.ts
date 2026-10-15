@@ -1,3 +1,6 @@
 import { defineProject } from 'vitest/config';
+import { testDefaults } from '../../vitest.shared.ts';
 
-export default defineProject({ test: { name: 'testing', include: ['test/**/*.test.ts'] } });
+export default defineProject({
+	test: { ...testDefaults, name: 'testing', include: ['test/**/*.test.ts'] },
+});
