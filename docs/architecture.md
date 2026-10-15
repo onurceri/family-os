@@ -184,7 +184,7 @@ An illustrative extension (the real ones live in `extensions/`):
   "famos": {
     "id": "shopping",
     "version": "1.2.0",
-    "sdk": "^0.4.0",
+    "sdk": "^0.5.0",
     "capabilities": ["shopping.view", "shopping.edit"]
   }
 }
@@ -257,7 +257,7 @@ Each extension gets its own `ExtensionContext`, built by the kernel from its man
 
 Better-sqlite3 has no authorizer hook, so the database scope lives in Kysely: the plugin only reads the query tree (it never rebuilds it, which would cost three times as much), a raw template's text is checked once per call site, and it adds about half a microsecond to a query that takes twenty on a laptop. In-process code could still reach around it (import a database driver, `withoutPlugins()`, which a test forbids in extensions), so the scope is a guard against mistakes and a contract the host can check, not a sandbox: extensions are official and signed.
 
-The Inbox stores the papers it files on a record under `inbox/` and grants each one to records before it calls `records.attachDocument`; a core migration granted the papers filed before grants existed. Calendar subscription addresses sealed with the key all extensions once shared (`v1.…`) still open and report `needsReseal`; the calendar's sync seals them again with its own key.
+The Inbox stores the papers it files on a record under `inbox/` and grants each one to records before it calls `records.attachDocument`; a core migration granted the papers filed before grants existed. Values sealed with the key all extensions once shared (`v1.…`) no longer open: a calendar subscription that kept one shows that its address cannot be used until it is entered again.
 
 ### Manifest
 
@@ -267,7 +267,7 @@ Every extension describes itself in the `famos` field of its package.json (`Exte
 |---|---|
 | `id` | Lowercase letters and digits; the namespace of everything it declares and its API path segment |
 | `version` | Its own version, the same as the package's |
-| `sdk` | The SDK versions it was built for, as a caret range (`^0.4.0`) |
+| `sdk` | The SDK versions it was built for, as a caret range (`^0.5.0`) |
 | `dependsOn` | Extensions that must be present; their migrations run first |
 | `optional` | Extensions it works with when present and does without otherwise (Quick add files papers on records only when records is there). They do not change the load order |
 | `tablePrefix` | The prefix of its tables; `<id>_` when left out |

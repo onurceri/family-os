@@ -89,7 +89,6 @@ export async function createTestKernel(
 				sealed.startsWith(`sealed:${extensionId}:`)
 					? sealed.slice(`sealed:${extensionId}:`.length)
 					: null,
-			needsReseal: () => false,
 		}),
 		http: {
 			get: async () => {

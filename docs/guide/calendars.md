@@ -31,7 +31,7 @@ Open **Settings → Family → Calendars & tags** (you need the permission to ma
 
 Enter a **Name** and the **Calendar address**, choose a **Colour** and, if you like, **Whose is it?** (left empty, it is for everyone), then press **Add subscription**. Addresses from Google and iCloud are secret; FamilyOS keeps them encrypted and never shows them again.
 
-Subscribed events appear in FamilyOS in the color you chose and cannot be edited. Press **Edit** on a subscription to rename it, change the color, the people or the options, or give it a new address (leave **New calendar address (optional)** empty to keep the current one). FamilyOS fetches the calendar again every 6 hours; **Refresh now** does it immediately. If a calendar cannot be reached, the events from before stay and the reason is shown on the subscription.
+Subscribed events appear in FamilyOS in the color you chose and cannot be edited. Press **Edit** on a subscription to rename it, change the color, the people or the options, or give it a new address (leave **New calendar address (optional)** empty to keep the current one). FamilyOS fetches the calendar again every 6 hours; **Refresh now** does it immediately. If a calendar cannot be reached, the events from before stay and the reason is shown on the subscription. If it says the address cannot be used, press **Edit** and enter the calendar address again.
 
 **Remind about its events** sends the usual reminders for that calendar's events. Leave it off for calendars you only want to look at.
 

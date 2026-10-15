@@ -195,6 +195,7 @@ describe('subscriptions', () => {
 			[new ExternalHttpError('timeout'), 'unreachable'],
 			[new ExternalHttpError('too_large'), 'too_large'],
 			[new ExternalHttpError('blocked_address'), 'blocked_address'],
+			[new ExternalHttpError('bad_url'), 'bad_url'],
 			[new ExternalHttpError('http_503'), 'http_503'],
 			[{ text: '<html>Not found</html>' }, 'not_calendar'],
 		] as const) {

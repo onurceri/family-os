@@ -14,8 +14,9 @@ const extensions = await discoverSourceExtensions();
 
 /**
  * A family that used the release before extensions were kept apart upgrades: the papers the
- * Inbox filed on a record still open from records, and a calendar subscription sealed with the
- * key all extensions shared still syncs, and is sealed again with the calendar's own key.
+ * Inbox filed on a record still open from records. A calendar subscription sealed with the key
+ * all extensions shared no longer opens: it is not fetched and shows that its address cannot be
+ * used, so the family enters the address again.
  */
 let runtime: Runtime | undefined;
 afterEach(async () => {
@@ -41,7 +42,7 @@ const ICS = [
 	'',
 ].join('\r\n');
 
-it('keeps filed papers and calendar subscriptions working after the upgrade', async () => {
+it('keeps filed papers, and marks a subscription sealed with the shared key as unusable', async () => {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-upgrade-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
 	const http = createFakeHttp();
@@ -106,13 +107,9 @@ it('keeps filed papers and calendar subscriptions working after the upgrade', as
 		subscriptionId: 'cal_sub_00000000-0000-7000-8000-000000000001',
 	});
 	await kernel.worker.drain();
-	expect(http.requests.map((r) => r.url)).toContain(FEED);
+	expect(http.requests).toEqual([]);
 	const sub = handle.sqlite
 		.prepare('select sealed_url, last_error, event_count from calendar_subscriptions')
 		.get() as { sealed_url: string; last_error: string | null; event_count: number };
-	expect(sub).toMatchObject({ last_error: null, event_count: 1 });
-	const resealed = sub.sealed_url;
-	expect(resealed.startsWith('v2.')).toBe(true);
-	expect(kernel.contextFor('calendar').secrets.open(resealed)).toBe(FEED);
-	expect(kernel.contextFor('ambient').secrets.open(resealed)).toBeNull();
+	expect(sub).toMatchObject({ sealed_url: sealed, last_error: 'bad_url', event_count: 0 });
 });

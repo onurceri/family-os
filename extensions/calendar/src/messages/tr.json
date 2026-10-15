@@ -147,7 +147,7 @@
 	"sub_error_too_large": "Takvim çok büyük (5 MB üstü). Önceki etkinlikler korunuyor.",
 	"sub_error_not_calendar": "Adres bir takvim döndürmedi. Önceki etkinlikler korunuyor.",
 	"sub_error_blocked_address": "Adres özel bir ağı gösteriyor. Bilerek yaptıysan ev ağı seçeneğini aç.",
-	"sub_error_bad_url": "Bu adres kullanılamıyor.",
+	"sub_error_bad_url": "Bu adres kullanılamıyor. Düzenle'ye basıp takvim adresini yeniden gir. Önceki etkinlikler korunuyor.",
 	"sub_error_http": "Takvimin sunucusu hata verdi ({{status}}). Önceki etkinlikler korunuyor.",
 	"field_tags": "Etiketler",
 	"tags": "Etiketler",
