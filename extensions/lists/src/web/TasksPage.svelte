@@ -99,13 +99,9 @@
 	let showDone = $state(false);
 
 	function report(outcome: Outcome, message: string) {
-		app.toast(
-			outcome === 'queued'
-				? t('queued_toast')
-				: outcome === 'drafted'
-					? t('sent_for_approval')
-					: message,
-		);
+		if (outcome === 'queued') app.toast(t('queued_toast'));
+		else if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
 	}
 
 	async function toggle(task: Task) {
@@ -170,6 +166,14 @@
 	let editingId = $state<string | 'new' | null>(null);
 	let form = $state<TaskFormValue | null>(null);
 	let formEl = $state<HTMLFormElement | null>(null);
+
+	// A new task of one's own is added at once; anything else may go to someone for approval.
+	const approvalNote = $derived(
+		app.needsApproval('lists.tasks.edit') &&
+			!(editingId === 'new' && form?.assignee[0] === app.me()?.id)
+			? app.t('app:draft_approval_note')
+			: undefined,
+	);
 	let showErrors = $state(false);
 	let saveError = $state(false);
 	let busy = $state(false);
@@ -366,6 +370,7 @@
 	saveLabel={editingId === 'new' ? t('add') : t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
+	note={approvalNote}
 	danger={editingId && editingId !== 'new' ? deleteButton : undefined}
 	{dirty}
 	discard={{

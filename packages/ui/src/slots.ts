@@ -600,7 +600,13 @@ export function defineWebExtension(
 	return ext;
 }
 
-export { askedBy, draftHeadline, draftKicker, proposedByMember } from './draft-title.ts';
+export {
+	askedBy,
+	draftHeadline,
+	draftKicker,
+	namedInput,
+	proposedByMember,
+} from './draft-title.ts';
 
 /**
  * What a pending draft's card says about the alternative it offers (a change of what is already

@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { changedValue, type DraftPresenter } from '@famos/ui/slots';
 import { SquareCheckBig, Users } from '@lucide/svelte';
 import type { CreateChoreInput } from '../contract/index.js';
 
@@ -47,23 +47,28 @@ interface SetAssigneesDraft {
 	id: string;
 	memberIds: string[];
 	choreTitle?: string | undefined;
+	/** The chore's name on record, stored with the draft. */
+	label?: string | undefined;
 }
 
-/** A proposed split: who takes turns on a chore. */
+/** A proposed split: who takes turns on a chore, "who now → who then" while it waits. */
 export const setAssigneesPresenter: DraftPresenter<SetAssigneesDraft> = {
 	actionId: 'chores.setAssignees',
 	kind: (c) => c.t('chores:kind_split'),
 	icon: Users,
-	title: (input, c) => input.choreTitle || c.t('chores:draft_a_chore'),
-	fields: (input, c) => [
-		{
-			label: c.t('chores:draft_people'),
-			value: input.memberIds.length
-				? input.memberIds.map((id) => nameOf(c.members, id)).join(' → ')
-				: c.t('chores:anyone'),
-			path: 'memberIds',
-		},
-	],
+	title: (input, c) => input.label || input.choreTitle || c.t('chores:draft_a_chore'),
+	fields: (input, c, before) => {
+		const people = (ids: readonly string[]) =>
+			ids.length ? ids.map((id) => nameOf(c.members, id)).join(', ') : c.t('chores:anyone');
+		const was = Array.isArray(before?.memberIds) ? (before.memberIds as string[]) : undefined;
+		return [
+			{
+				label: c.t('chores:draft_people'),
+				value: changedValue(was && people(was), people(input.memberIds)),
+				path: 'memberIds',
+			},
+		];
+	},
 	approveLabel: (c) => c.t('chores:draft_approve_split'),
 };
 

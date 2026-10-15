@@ -66,8 +66,10 @@
 	});
 
 	const canEdit = $derived(app.can('pets.edit'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
 	const editing = $derived(canEdit && Boolean(petId) && app.query().get('edit') === '1');
@@ -182,7 +184,12 @@
 		{:else if missing}
 			<PageHeader title={t('not_found')} />
 		{:else if pet}
-			<RecordHeader name={pet.name} {facts} actions={wide.current ? actionButtons : undefined}>
+			<RecordHeader
+				name={pet.name}
+				recordId={pet.id}
+				{facts}
+				actions={wide.current ? actionButtons : undefined}
+			>
 				{#snippet icon()}<PawPrint />{/snippet}
 				{#snippet people()}
 					{#if caretakers.length > 0}

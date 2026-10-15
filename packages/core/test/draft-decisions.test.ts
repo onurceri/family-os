@@ -186,8 +186,8 @@ describe('the waiting notice', () => {
 			.where('kind', '=', 'core.draftWaiting')
 			.execute();
 		expect(notes.length).toBeGreaterThan(0);
-		// The action's translated name, followed by the name of the thing it is about.
-		expect(notes.every((n) => n.body_key === 'app:notify_draft_waiting_named')).toBe(true);
+		// Who asked, the action's translated name, and the name of the thing it is about.
+		expect(notes.every((n) => n.body_key === 'app:notify_draft_waiting_named_by')).toBe(true);
 		expect(
 			notes.every((n) => JSON.parse(n.body_params ?? '{}').what === 'shelf:draft_title_remove'),
 		).toBe(true);

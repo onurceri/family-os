@@ -1,23 +1,38 @@
 /**
  * What a draft is called where its presenter does not title it (a remove or archive nobody wrote
  * a presenter for, a draft made by hand): its summary, else the action's own translated name
- * with the review label of the thing it is about, else a generic word (never an action id).
+ * with the name of the thing it is about (the review label, else the subject the server read
+ * from the record), else a generic word (never an action id).
  */
 export function draftHeadline(draft: {
 	summary: string | null;
 	titleKey: string | null;
 	actionId: string;
 	input: unknown;
+	subject?: string | null;
 	t: (key: string) => string;
 }): string {
 	if (draft.summary) return draft.summary;
-	if (!draft.titleKey) return draft.t('app:draft_kind_generic');
-	const name = draft.t(draft.titleKey);
 	const label =
 		typeof draft.input === 'object' && draft.input !== null && 'label' in draft.input
 			? draft.input.label
 			: undefined;
-	return typeof label === 'string' && label.trim() ? `${name} · ${label.trim()}` : name;
+	const named =
+		typeof label === 'string' && label.trim() ? label.trim() : draft.subject?.trim() || '';
+	if (!draft.titleKey) return named || draft.t('app:draft_kind_generic');
+	const name = draft.t(draft.titleKey);
+	return named ? `${name} · ${named}` : name;
+}
+
+/**
+ * A draft's input as its card shows it: with the name of what it is about as its `label` when
+ * the stored input has none (a draft stored before drafts carried it), so a presenter that titles
+ * a change by its label names the thing.
+ */
+export function namedInput(input: unknown, subject: string | null | undefined): unknown {
+	if (!subject || typeof input !== 'object' || input === null) return input;
+	const label = (input as { label?: unknown }).label;
+	return typeof label === 'string' && label.trim() ? input : { ...input, label: subject };
 }
 
 /** Whether the signed-in member is the one behind a draft, so they may withdraw it. */

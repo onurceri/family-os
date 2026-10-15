@@ -19503,6 +19503,12 @@
 													"null"
 												]
 											},
+											"subject": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
 											"mayExist": {
 												"type": "boolean"
 											},
@@ -19573,6 +19579,7 @@
 											"undoable",
 											"reason",
 											"titleKey",
+											"subject",
 											"mayExist",
 											"mayExistSome",
 											"instead",
@@ -20202,6 +20209,12 @@
 												"null"
 											]
 										},
+										"subject": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -20272,6 +20285,7 @@
 										"undoable",
 										"reason",
 										"titleKey",
+										"subject",
 										"mayExist",
 										"mayExistSome",
 										"instead",
@@ -20636,6 +20650,12 @@
 												"null"
 											]
 										},
+										"subject": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -20706,6 +20726,7 @@
 										"undoable",
 										"reason",
 										"titleKey",
+										"subject",
 										"mayExist",
 										"mayExistSome",
 										"instead",
@@ -21070,6 +21091,12 @@
 												"null"
 											]
 										},
+										"subject": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -21140,6 +21167,7 @@
 										"undoable",
 										"reason",
 										"titleKey",
+										"subject",
 										"mayExist",
 										"mayExistSome",
 										"instead",
@@ -21504,6 +21532,12 @@
 												"null"
 											]
 										},
+										"subject": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
 										"mayExist": {
 											"type": "boolean"
 										},
@@ -21574,6 +21608,7 @@
 										"undoable",
 										"reason",
 										"titleKey",
+										"subject",
 										"mayExist",
 										"mayExistSome",
 										"instead",

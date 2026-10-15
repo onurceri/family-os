@@ -14,6 +14,7 @@ import {
 	type Logger,
 	labelNamesTitle,
 	type MemberId,
+	type NotifyRequest,
 	type SecretBox,
 	subjectOf,
 	type UndoStep,
@@ -26,6 +27,7 @@ import { mayUseAsAi } from './ai-tools.ts';
 import {
 	AUTO_APPROVE_JOB,
 	DEFAULT_DRAFT_NOTIFY_DELAY_MS,
+	draftWhat,
 	factsOf,
 	qualifies,
 	readAutoApproval,
@@ -33,7 +35,7 @@ import {
 } from './auto-approval.ts';
 import { draftCreated, draftUpdated, notificationRead } from './core-events.ts';
 import { draftDateOf, hasPassed, WAITING_STATUSES } from './draft-expiry.ts';
-import { settleWaitingNotices } from './draft-notices.ts';
+import { DECIDED_KIND, settleWaitingNotices, waitingDedupeKey } from './draft-notices.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { familyReader } from './family.ts';
 import { type Features, ownerOf } from './features.ts';
@@ -136,6 +138,11 @@ export interface ActionRunner {
 	 * like its input. Null when the action has none, the draft is decided, or the thing is gone.
 	 */
 	currentValues(draft: DraftRow): Promise<Record<string, unknown> | null>;
+	/**
+	 * What a draft is about, by name ("Piano lesson"): the label stored with it, else what the
+	 * thing it points at is called now. Null when nothing names it.
+	 */
+	subject(draft: DraftRow): Promise<string | null>;
 	/**
 	 * What a pending draft could become instead (the action's `instead`), as it would be stored:
 	 * resolved, checked and labelled with the real title of what it changes. Null when nothing fits.
@@ -486,7 +493,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// will happen whoever proposed it (a screen sends only the id).
 		const targetName = def.targetTitle
 			? (checkedTitle ?? (await def.targetTitle(readContext(def), input)))
-			: null;
+			: await namedSubject(def, input);
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		const subject = subjectOf(JSON.stringify(stored));
 		// Personal drafts (memory, questions to a person) go to the member the assistant works for.
@@ -588,7 +595,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
 				return;
 			}
-			// Tell whoever may approve; several drafts from one shared item collapse into one.
+			// Tell whoever may approve, and who asked; several drafts from one shared item collapse
+			// into one.
+			const who =
+				facts.proposerMemberId === null
+					? undefined
+					: (await uow.family.members()).find((m) => m.id === facts.proposerMemberId)?.displayName;
 			await uow.notify(
 				waitingNotice(
 					{
@@ -601,6 +613,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					def,
 					facts.proposerMemberId,
 					deps.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
+					who,
 				),
 			);
 			await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
@@ -742,6 +755,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// A suggestion about a day that has passed never runs (unless an edit moved it on).
 		if ((await passedCheck())({ ...draft, edited_input: JSON.stringify(input) }))
 			throw new FamosError('conflict', 'Draft is expired');
+		// What the household's own setting approved is no news to the person behind it.
+		const told = options.auto ? null : await decidedNotice(draft, def, approverId, 'approved');
 
 		try {
 			await unitOfWork(approver, async (uow, view) => {
@@ -799,6 +814,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.execute();
 				uow.emit(draftUpdated, { draftId, status: 'applied' });
 				await settleNotices(uow, draft);
+				if (told) await uow.notify(told);
 			});
 		} catch (error) {
 			// What it is about is gone: the draft can never be applied, so it leaves the queue
@@ -866,6 +882,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			isProposer(approver, draft) && approver.kind === 'member'
 				? approver.memberId
 				: assertApprover(approver, getAction(draft.action_id), draft);
+		const def = registry.actions.get(draft.action_id);
+		const told = def ? await decidedNotice(draft, def, approverId, 'rejected') : null;
 		await unitOfWork(approver, async (uow) => {
 			const now = clock.now();
 			await uow.db
@@ -877,6 +895,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			await audit(uow, draft.action_id, 'rejected', draftId);
 			uow.emit(draftUpdated, { draftId, status: 'rejected' });
 			await settleNotices(uow, draft);
+			if (told) await uow.notify(told);
 		});
 		return getDraft(deps.db, draftId);
 	}
@@ -1013,6 +1032,72 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		}
 	}
 
+	/** The action's `subject` for an input; only a hint, it never throws. */
+	async function namedSubject(def: AnyActionDefinition, input: unknown): Promise<string | null> {
+		if (!def.subject) return null;
+		try {
+			return await def.subject(readContext(def), input);
+		} catch (error) {
+			logger.warn({ err: error, actionId: def.id }, 'naming the subject failed');
+			return null;
+		}
+	}
+
+	/**
+	 * What a draft is about, by name: what its input says (the label stored with it), else what
+	 * the thing it points at is called now (for a draft stored before it carried the name).
+	 */
+	async function subjectOfDraft(draft: DraftRow): Promise<string | null> {
+		const raw = draft.edited_input ?? draft.input;
+		const named = subjectOf(raw);
+		if (named) return named;
+		const def = registry.actions.get(draft.action_id);
+		if (!def || (!def.targetTitle && !def.subject) || !deps.features.isOn(ownerOf(def.id)))
+			return null;
+		try {
+			const input = def.input.safeParse(JSON.parse(raw));
+			if (!input.success) return null;
+			const name = def.targetTitle
+				? await def.targetTitle(readContext(def), input.data)
+				: await namedSubject(def, input.data);
+			return name?.trim().slice(0, 80) || null;
+		} catch (error) {
+			logger.warn({ err: error, draftId: draft.id }, 'naming the subject failed');
+			return null;
+		}
+	}
+
+	/**
+	 * Tells the person behind a draft what became of it, when somebody else decided it on its
+	 * merits. Worked out before the decision's transaction (it reads outside it); null when nobody
+	 * is to be told (their own decision, or a draft addressed to them alone).
+	 */
+	async function decidedNotice(
+		draft: DraftRow,
+		def: AnyActionDefinition,
+		deciderId: string,
+		outcome: 'approved' | 'rejected',
+	): Promise<NotifyRequest | null> {
+		const proposer = proposerOf(draft);
+		if (proposer === null || proposer === deciderId || draft.for_member !== null) return null;
+		const members = await familyReader(deps.db).members();
+		const decider = members.find((m) => m.id === deciderId)?.displayName;
+		if (!decider) return null;
+		const subject = await subjectOfDraft(draft);
+		const named = subject ? JSON.stringify({ label: subject }) : null;
+		return {
+			kind: DECIDED_KIND,
+			to: { members: [proposer] },
+			title: { key: `app:notify_draft_${outcome}_title`, params: { name: decider } },
+			body: draftWhat({ summary: draft.summary, input: named }, def),
+			url: '/add',
+			source: { kind: draft.source_kind ?? 'draft', id: draft.source_id ?? draft.id },
+			// The suggestions from one shared item decided together make one notice of each outcome.
+			dedupeKey: `${outcome}:${waitingDedupeKey({ id: draft.id, sourceKind: draft.source_kind, sourceId: draft.source_id })}`,
+			delayMs: deps.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
+		};
+	}
+
 	async function replaceDraft(draftId: string, actor: Actor): Promise<DraftRow> {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(actor, draft);
@@ -1118,6 +1203,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		mayExist,
 		alternative,
 		currentValues,
+		subject: subjectOfDraft,
 		replaceDraft,
 		mayDecide,
 		isProposer,

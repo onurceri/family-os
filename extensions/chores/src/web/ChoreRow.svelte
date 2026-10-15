@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Avatar } from '@famos/ui/famos';
+	import { Avatar, AwaitingMark } from '@famos/ui/famos';
 	import { Check, Repeat } from '@lucide/svelte';
 	import type { Chore } from '../contract/index.js';
 	import { dueLabel, groupOf } from './form.js';
@@ -102,6 +102,7 @@
 					>&middot; {t('waiting_to_send')}</span
 				>
 			{/if}
+			<AwaitingMark id={chore.id} />
 		</small>
 	</button>
 	{#if !finished && who}

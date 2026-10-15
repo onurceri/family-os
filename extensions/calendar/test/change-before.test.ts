@@ -3,7 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
-import { changeEventFields } from '../src/web/change.ts';
+import { changeEventFields, updateEventFields } from '../src/web/change.ts';
 
 // A change card reads "old → new": the server sends what the fields it changes hold now.
 const TZ = 'Europe/Istanbul';
@@ -149,5 +149,61 @@ describe('changeEventFields without the event as it is', () => {
 				context,
 			).map((f) => f.value),
 		).toEqual(['Tuesday 20 October · 10:00', 'Clinic']);
+	});
+});
+
+describe('an edit saved from the event form that needs approval', () => {
+	const piano = {
+		title: "Ivy's piano lesson",
+		date: '2026-10-17',
+		startTime: '16:00',
+		endTime: '17:00',
+		location: 'Music school',
+		tags: ['music'],
+	};
+
+	it('names the event and lists only what the edit changes, old → new', async () => {
+		const id = await add(piano);
+		const leo = await k.member('supervised', 'Leo');
+		// The form sends the whole event back with the one field the person changed.
+		const event = { ...piano, title: "Ivy's piano lesson (Leo says hi)" };
+		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
+		const draft = (await k.route('core.listDrafts').call({
+			actor: admin.actor,
+			query: { limit: 20 },
+		})) as { id: string; input: { label?: string }; subject: string | null; before: unknown }[];
+		const mine = draft.find((d) => d.id === draftId);
+		expect(mine?.input.label).toBe("Ivy's piano lesson");
+		expect(mine?.subject).toBe("Ivy's piano lesson");
+		expect(mine?.before).toEqual({ title: "Ivy's piano lesson" });
+		expect(
+			updateEventFields({ id, event }, context, mine?.before as Record<string, unknown>).map(
+				(f) => f.value,
+			),
+		).toEqual(["Ivy's piano lesson → Ivy's piano lesson (Leo says hi)"]);
+	});
+
+	it('lists a new time against the old day and time', async () => {
+		const id = await add(piano);
+		const leo = await k.member('supervised', 'Leo');
+		const event = { ...piano, startTime: '17:00', endTime: '18:00' };
+		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
+		const { before } = await listed(draftId);
+		expect(Object.keys(before ?? {}).sort()).toEqual(
+			['allDay', 'date', 'endDate', 'endTime', 'startTime'].sort(),
+		);
+		const [when] = updateEventFields({ id, event }, context, before as Record<string, unknown>);
+		expect(when?.value).toContain('→');
+		expect(when?.value).toContain('16:00');
+		expect(when?.value).toContain('17:00');
+	});
+
+	it('lists nothing when the form sent the event back as it was', async () => {
+		const id = await add(piano);
+		const leo = await k.member('supervised', 'Leo');
+		// The form fills in the default reminder for an event nobody chose one for.
+		const event = { ...piano, reminder: 30 };
+		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
+		expect((await listed(draftId)).before).toEqual({});
 	});
 });

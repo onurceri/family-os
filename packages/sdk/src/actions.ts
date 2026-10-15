@@ -104,6 +104,14 @@ export interface ActionDefinition<
 	 */
 	readonly targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	/**
+	 * What a draft of this action is about, for an input that names it only by an id (the chore
+	 * whose turns change, the pet a treatment is for): its name as it is on record, or null. The
+	 * runner stores it with the draft as its `label`, so cards and notices say what a suggestion
+	 * is about whoever made it. Unlike `targetTitle`, nobody is asked to name it: use it where an
+	 * AI's words are not checked against the record. Read-only and cheap.
+	 */
+	readonly subject?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	/**
 	 * A qualifier for an input that changes only part of what the title names: one date of a
 	 * repeating event. `key` is a catalog key (in the extension's catalog) that takes `{{date}}`;
 	 * `date` is a day (YYYY-MM-DD) the host writes in the family's format locale. Null when the
@@ -234,6 +242,7 @@ export function defineAction<
 	alreadyThere?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean | 'some'>;
 	instead?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<DraftAlternative | null>;
 	targetTitle?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
+	subject?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	scopeNote?: (
 		ctx: DuplicateContext,
 		input: z.infer<In>,

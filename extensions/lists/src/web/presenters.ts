@@ -6,7 +6,12 @@ import { loadItems, loadLists } from './data.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
 import { draftListName, itemsOnList, quantityChanges, shoppingLists } from './shopping-draft.js';
-import { type ChangeTaskInput, changeTaskFields } from './task-change.js';
+import {
+	type ChangeTaskInput,
+	changeTaskFields,
+	type UpdateTaskInput,
+	updateTaskFields,
+} from './task-change.js';
 
 const tr = (c: PresenterContext): ListsT =>
 	((key: string, options?: Record<string, unknown>) => c.t(`lists:${key}`, options)) as ListsT;
@@ -104,6 +109,21 @@ export const changeTaskPresenter: DraftPresenter<ChangeTaskInput> = {
 	// The label is the model's copy of the title it was shown; the id is what is acted on.
 	title: (input, c) => input.label || input.title || c.t('lists:draft_a_task'),
 	fields: (input, c, before) => changeTaskFields(input, c, before),
+	approveLabel: (c) => c.t('lists:draft_approve_change'),
+};
+
+/**
+ * An edit of a task saved by someone whose changes need approval: named by the task as it is
+ * now, listing only what the edit changes ("old → new"). Once decided nothing is compared any
+ * more, so the task is shown as the edit had it.
+ */
+export const updateTaskPresenter: DraftPresenter<UpdateTaskInput> = {
+	actionId: 'lists.updateTask',
+	kind: (c) => c.t('lists:kind_task_change'),
+	icon: ListChecks,
+	title: (input, c) => input.label || input.task.title || c.t('lists:draft_a_task'),
+	fields: (input, c, before) =>
+		before ? updateTaskFields(input, c, before) : addTaskPresenter.fields(input.task, c),
 	approveLabel: (c) => c.t('lists:draft_approve_change'),
 };
 

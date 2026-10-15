@@ -185,6 +185,11 @@ export const DraftSchema = z.object({
 	reason: z.enum(['gone', 'settled', 'withdrawn']).nullable(),
 	/** i18n key naming what the draft proposes, for a draft no presenter or summary describes. */
 	titleKey: z.string().nullable(),
+	/**
+	 * What it is about, by name ("Piano lesson"): the name stored with it, else what the thing it
+	 * points at is called now. Null when nothing names it.
+	 */
+	subject: z.string().nullable(),
 	/** Pending only: what it proposes seems to exist already ("this may already be there"). */
 	mayExist: z.boolean(),
 	/** Pending only: part of what it proposes seems to exist already. */
@@ -246,6 +251,7 @@ const toDraft = (
 	instead: DraftAlternative | null = null,
 	canDecide = false,
 	before: Record<string, unknown> | null = null,
+	subject: string | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -271,6 +277,7 @@ const toDraft = (
 	undoable,
 	reason: draftReason(row),
 	titleKey,
+	subject,
 	mayExist: mayExist === true,
 	mayExistSome: mayExist === 'some',
 	instead: instead && {
@@ -346,6 +353,13 @@ export const backupFailed = defineNotificationKind({
 	id: 'core.backupFailed',
 	label: 'app:notify_kind_backup_failed',
 	audience: 'core.settings.manage',
+});
+
+/** The person behind a suggestion is told when someone else approved or rejected it. */
+export const draftDecided = defineNotificationKind({
+	id: 'core.draftDecided',
+	label: 'app:notify_kind_draft_decided',
+	audience: 'core.drafts.propose',
 });
 
 /** Approvers are told when a suggestion waits for them (sent by the action runner). */
@@ -1351,11 +1365,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				const raw = row.edited_input ?? row.input;
 				const named = subjectOf(raw);
 				const def = actions.get(row.action_id);
-				if (named || !def?.targetTitle) return named;
+				const look = def?.targetTitle ?? def?.subject;
+				if (named || !def || !look) return named;
 				try {
 					const input = def.input.safeParse(JSON.parse(raw));
 					return input.success
-						? ((await def.targetTitle(ctxOf(def), input.data)) ?? undefined)?.slice(0, 80)
+						? ((await look(ctxOf(def), input.data)) ?? undefined)?.slice(0, 80)
 						: undefined;
 				} catch {
 					return undefined;
@@ -1445,6 +1460,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			await deps.runner().alternative(row),
 			deps.runner().mayDecide(row, reader),
 			await deps.runner().currentValues(row),
+			await deps.runner().subject(row),
 		);
 
 	const approve = defineRoute({
@@ -1546,7 +1562,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.search.jobs,
 			...deps.extensionInstall.jobs,
 		],
-		notifications: [draftWaiting, backupFailed, ...autoApproval.notifications],
+		notifications: [draftWaiting, draftDecided, backupFailed, ...autoApproval.notifications],
 		capabilities: Object.values(CORE_CAPABILITIES),
 		routes: [
 			listRoles,

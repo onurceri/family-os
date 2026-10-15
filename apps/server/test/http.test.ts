@@ -712,6 +712,11 @@ describe('HTTP API', () => {
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{
+				id: 'core.draftDecided',
+				label: 'Önerilerine verilen yanıtlar',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
 				id: 'core.backupFailed',
 				label: 'Bir yedek sunucunun dışına gönderilemedi',
 				defaultChannels: ['webpush', 'telegram'],

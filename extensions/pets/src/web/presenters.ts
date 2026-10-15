@@ -23,14 +23,16 @@ export const addPetPresenter: DraftPresenter<AddPetInput> = {
 };
 
 /** A treatment, as the AI reads it from a vet card or receipt or a person suggests it. */
-export const addTreatmentPresenter: DraftPresenter<AddTreatmentInput> = {
+export const addTreatmentPresenter: DraftPresenter<AddTreatmentInput & { label?: string }> = {
 	actionId: 'pets.addTreatment',
 	kind: (c) => c.t('pets:kind_treatment'),
 	icon: Syringe,
-	title: (input, c) =>
-		input.petName
-			? `${input.petName} · ${c.t(`pets:treatment_kind_${input.kind ?? 'vaccination'}`)}`
-			: c.t(`pets:treatment_kind_${input.kind ?? 'vaccination'}`),
+	// The pet's name on record (stored with the draft), else the one a model read.
+	title: (input, c) => {
+		const pet = input.label || input.petName;
+		const kind = c.t(`pets:treatment_kind_${input.kind ?? 'vaccination'}`);
+		return pet ? `${pet} · ${kind}` : kind;
+	},
 	fields: (input, c) => [
 		{ label: c.t('pets:draft_date'), value: input.givenOn, path: 'givenOn' },
 		...(input.product

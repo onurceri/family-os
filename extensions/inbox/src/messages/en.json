@@ -110,6 +110,7 @@
 	"chip_done_one": "{{count}} done",
 	"chip_done_other": "{{count}} done",
 	"chip_rejected": "Rejected",
+	"chip_approved": "Approved",
 	"chip_undone": "Taken back",
 	"chip_expired": "Day passed",
 	"chip_reading": "Reading…",

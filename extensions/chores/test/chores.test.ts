@@ -472,6 +472,25 @@ describe('the AI', () => {
 		expect(forBora.chores).toEqual([]);
 	});
 
+	it('names the chore and who takes turns now on a split someone sent for approval', async () => {
+		const chore = await create({ title: 'Take out the bins', assigneeIds: [bora.id, ayse.id] });
+		// The page sends only the id and the new people.
+		const proposal = await k.runner.invoke(
+			'chores.setAssignees',
+			{ id: chore.id, memberIds: [elif.id, ayse.id] },
+			elif.actor,
+		);
+		if (proposal.status !== 'drafted') throw new Error('expected a draft');
+		expect(proposal).toMatchObject({ subject: 'Take out the bins' });
+		const drafts = (await k.route('core.listDrafts').call({
+			actor: ayse.actor,
+			query: { limit: 20 },
+		})) as { id: string; input: { label?: string }; before: unknown }[];
+		const draft = drafts.find((d) => d.id === proposal.draftId);
+		expect(draft?.input.label).toBe('Take out the bins');
+		expect(draft?.before).toEqual({ memberIds: [bora.id, ayse.id] });
+	});
+
 	it('proposes a split as a draft, and an approved split can be taken back', async () => {
 		const chore = await create({ assigneeIds: [ayse.id] });
 		const proposal = await k.runner.invoke(

@@ -84,8 +84,10 @@
 	});
 
 	const canEdit = $derived(app.can('records.edit'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 
 	// Marking done: asks for an optional note first.
 	let completing = $state<string | null>(null);

@@ -5,6 +5,9 @@ import type { CoreTables } from './tables.ts';
 /** The notice kind that tells approvers a suggestion waits. */
 export const WAITING_KIND = 'core.draftWaiting';
 
+/** The notice kind that tells the person behind a suggestion what became of it. */
+export const DECIDED_KIND = 'core.draftDecided';
+
 /** Suggestions made from one shared item share one notice; any other has its own. */
 export function waitingDedupeKey(draft: {
 	id: string;

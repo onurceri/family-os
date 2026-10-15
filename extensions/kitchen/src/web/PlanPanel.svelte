@@ -113,7 +113,7 @@
 			const planned = day;
 			onclose();
 			onadded?.();
-			if (outcome === 'drafted') app.toast(t('sent_for_approval'));
+			if (outcome === 'drafted') app.sentForApproval();
 			// On the plan the new meal shows; elsewhere the toast says so and links to it.
 			else if (!onPlan)
 				app.toast(t('planned'), { label: t('see_plan'), run: () => openPath(planPath(planned)) });
@@ -135,6 +135,7 @@
 		(!recipe && !free && chosen === '') ||
 		(repeated !== undefined && !addAnyway)}
 	onsave={() => formEl?.requestSubmit()}
+	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
 	{onclose}
 	{dirty}
 	discard={{

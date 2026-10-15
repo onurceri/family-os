@@ -47,8 +47,10 @@
 	});
 
 	const canEdit = $derived(app.can('pets.edit'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 	const dateOf = (d: string) =>
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 

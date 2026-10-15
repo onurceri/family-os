@@ -77,6 +77,9 @@
 		isAppPath: () => false,
 		share: () => undefined,
 		toast: () => {},
+		sentForApproval: () => {},
+		needsApproval: () => false,
+		awaitsApproval: () => false,
 		// A display only looks: no actions, no offline queue.
 		runAction: () => Promise.reject(new Error('Displays cannot run actions')),
 		waiting: () => [],

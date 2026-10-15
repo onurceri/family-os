@@ -3,6 +3,7 @@
 	import { Button } from '@famos/ui/button';
 	import {
 		ActionSheet,
+		AwaitingMark,
 		Chip,
 		Composer,
 		ConfirmButton,
@@ -178,7 +179,7 @@
 
 	function report(outcome: Outcome, message?: string) {
 		if (outcome === 'queued') app.toast(t('queued_toast'));
-		else if (outcome === 'drafted') app.toast(t('sent_for_approval'));
+		else if (outcome === 'drafted') app.sentForApproval();
 		else if (message) app.toast(message);
 	}
 
@@ -429,6 +430,7 @@
 					>{t('waiting_to_send')}</span
 				>
 			{/if}
+			<AwaitingMark id={item.id} />
 			{#if item.quantity}
 				<span
 					class="{done

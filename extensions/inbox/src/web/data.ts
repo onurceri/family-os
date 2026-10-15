@@ -20,6 +20,13 @@ const loadDrafts = async (status: 'pending' | 'failed'): Promise<Draft[]> =>
 export const loadWaitingDrafts = async (): Promise<Draft[]> =>
 	(await Promise.all([loadDrafts('pending'), loadDrafts('failed')])).flat();
 
+/**
+ * The newest suggestions in every state that the signed-in person may see: theirs, and those they
+ * may decide. Quick add finds the person's own decided requests among them.
+ */
+export const loadRecentDrafts = async (): Promise<Draft[]> =>
+	unwrap(await api.GET('/api/v1/core/drafts', { params: { query: { limit: 200 } } }));
+
 /** Recent inbox drafts in every state, so decided ones still show under their item. */
 export const loadInboxDrafts = async (): Promise<Draft[]> =>
 	unwrap(

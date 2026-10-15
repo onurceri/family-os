@@ -1,20 +1,26 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { findApp } from '../app-context.js';
+	import AwaitingMark from './AwaitingMark.svelte';
 
 	/**
 	 * The head of a record page (design system v2 section 5.8): a 56 px disc (or photo), the name
 	 * at the style's record size (26/800), one meta line of facts separated by
 	 * dots with the members' avatars at the end, and `Edit` and a menu button at the right. Below
-	 * 28 rem of container the actions move under the name.
+	 * 28 rem of container the actions move under the name. With `recordId`, the meta line says
+	 * "Waiting for approval" while a change the viewer made to it waits for someone else.
 	 */
 	let {
 		name,
+		recordId,
 		facts = [],
 		icon,
 		people,
 		actions,
 	}: {
 		name: string;
+		/** The record's id, to mark a change of the viewer's that waits for approval. */
+		recordId?: string;
 		/** Short facts such as the plate, the model, the fuel. Empty ones are left out. */
 		facts?: (string | null | undefined)[];
 		/** The 56 px disc content (an icon) or a photo. */
@@ -26,18 +32,21 @@
 	} = $props();
 
 	const shown = $derived(facts.filter((f): f is string => Boolean(f)));
+	const app = findApp();
+	const awaiting = $derived(recordId !== undefined && (app?.awaitsApproval(recordId) ?? false));
 </script>
 
 <header class="rhead">
 	{#if icon}<span class="disc" aria-hidden="true">{@render icon()}</span>{/if}
 	<div class="txt">
 		<h1 class="type-record">{name}</h1>
-		{#if shown.length > 0 || people}
+		{#if shown.length > 0 || people || awaiting}
 			<p class="meta">
 				{#each shown as fact, i (i)}
 					{#if i > 0}<span class="sep" aria-hidden="true">&middot;</span>{/if}<span>{fact}</span>
 				{/each}
 				{#if people}<span class="pp">{@render people()}</span>{/if}
+				{#if recordId}<AwaitingMark id={recordId} />{/if}
 			</p>
 		{/if}
 	</div>

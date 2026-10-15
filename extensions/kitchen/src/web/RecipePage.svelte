@@ -96,8 +96,10 @@
 	const canEdit = $derived(app.can('kitchen.edit'));
 	// Without edit rights a change is proposed and waits for approval.
 	const canChange = $derived(canEdit || app.can('core.drafts.propose'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 
 	// Ingredients to the shopping list.
 	let picked = $state<Record<string, boolean>>({});
@@ -253,6 +255,7 @@
 		{@const r = recipe}
 		<RecordHeader
 			name={recipe.title}
+			recordId={recipe.id}
 			facts={[
 				recipe.servings ? t('servings_long', { servings: recipe.servings }) : null,
 				recipe.totalMinutes ? t('minutes_long', { count: recipe.totalMinutes }) : null,
@@ -428,6 +431,7 @@
 	saveLabel={t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
+	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
 	onclose={() => (editing = false)}
 	{dirty}
 	discard={{

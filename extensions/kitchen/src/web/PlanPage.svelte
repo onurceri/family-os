@@ -68,7 +68,7 @@
 			: '',
 	);
 	const report = (outcome: Outcome, message?: string) => {
-		if (outcome === 'drafted') app.toast(t('sent_for_approval'));
+		if (outcome === 'drafted') app.sentForApproval();
 		else if (message) app.toast(message);
 	};
 

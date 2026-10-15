@@ -31,6 +31,7 @@ export interface ItemChip {
 	key:
 		| 'chip_suggestions'
 		| 'chip_added'
+		| 'chip_approved'
 		| 'chip_done'
 		| 'chip_rejected'
 		| 'chip_undone'
@@ -215,3 +216,39 @@ export function requestGroups(drafts: readonly Draft[]): RequestGroup[] {
  */
 export const decidableCount = (drafts: readonly Draft[]): number =>
 	drafts.filter((d) => needsAction(d) && d.canDecide).length;
+
+/** How long a decided request of the person's own stays under "Recent". */
+export const DECIDED_RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * The person's own requests (not from a capture) that somebody else decided in the last week,
+ * newest first: what they asked for and what became of it, so a "no" never just disappears.
+ * One the person took back themselves is left out: they know what became of it.
+ */
+export function decidedRequests(
+	drafts: readonly Draft[],
+	memberId: string | undefined,
+	now: number,
+): Draft[] {
+	if (!memberId) return [];
+	return drafts
+		.filter(
+			(d) =>
+				d.sourceKind !== 'inbox' &&
+				!needsAction(d) &&
+				d.decidedAt !== null &&
+				now - d.decidedAt <= DECIDED_RECENT_MS &&
+				d.decidedBy !== memberId &&
+				d.reason !== 'withdrawn' &&
+				personBehind(d) === memberId,
+		)
+		.toSorted((a, b) => (b.decidedAt ?? 0) - (a.decidedAt ?? 0));
+}
+
+/** The outcome chip of a decided request. */
+export function requestChip(draft: Draft): ItemChip {
+	if (draft.status === 'applied') return { tone: 'now', key: 'chip_approved' };
+	if (draft.status === 'undone') return { tone: 'idle', key: 'chip_undone' };
+	if (draft.status === 'expired') return { tone: 'idle', key: 'chip_expired' };
+	return { tone: 'idle', key: 'chip_rejected' };
+}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { describeRecurrence } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { ConfirmButton } from '@famos/ui/famos';
+	import { AwaitingMark, ConfirmButton } from '@famos/ui/famos';
 	import type { EventDetail, Occurrence, Tag } from '../contract/index.js';
 	import { describeWhen } from './format.js';
 	import { reminderKey } from './form.js';
@@ -72,6 +72,7 @@
 </script>
 
 <div class="grid gap-5">
+	<AwaitingMark id={event.id} />
 	<dl class="grid gap-3 text-sm">
 		{#each rows as row (row.label)}
 			<div class="grid gap-0.5">

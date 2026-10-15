@@ -102,7 +102,8 @@
 					...scheduleFor(picks, p.id),
 				})),
 			});
-			app.toast(outcome === 'drafted' ? t('sent_for_approval') : t('saved'));
+			if (outcome === 'drafted') app.sentForApproval();
+			else app.toast(t('saved'));
 			onclosepanel();
 			if (id) openPath(`/home/${id}`);
 			else await load();

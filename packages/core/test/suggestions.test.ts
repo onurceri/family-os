@@ -200,10 +200,11 @@ describe('the name a suggestion carries', () => {
 			.execute();
 		expect(notes.length).toBeGreaterThan(0);
 		for (const note of notes) {
-			expect(note.body_key).toBe('app:notify_draft_waiting_named');
+			expect(note.body_key).toBe('app:notify_draft_waiting_named_by');
 			expect(JSON.parse(note.body_params ?? '{}')).toEqual({
 				what: 'cart:draft_title_tick',
 				name: 'Cheddar',
+				who: kid.member.displayName,
 			});
 		}
 	});
@@ -218,6 +219,7 @@ describe('the name a suggestion carries', () => {
 			expect(JSON.parse(note.body_params ?? '{}')).toEqual({
 				what: 'cart:draft_title_remove',
 				name: 'Swim cap',
+				who: kid.member.displayName,
 			});
 	});
 

@@ -51,6 +51,22 @@ export interface AppContext {
 	/** Show a notice with an optional action (e.g. Undo). */
 	toast(message: string, action?: { label: string; run: () => void }): void;
 	/**
+	 * Says a change was sent for approval, with a way to where it waits (Quick add). For every
+	 * action whose result is `drafted`.
+	 */
+	sentForApproval(): void;
+	/**
+	 * Whether the signed-in member's change guarded by this capability (an action's
+	 * `approval: { unless }`) goes to someone for approval: they may propose but lack it. Forms
+	 * say so before Save.
+	 */
+	needsApproval(capability: string): boolean;
+	/**
+	 * Whether a change of the signed-in member to the thing with this id (a task, an event, a pet)
+	 * waits for someone else's approval (reactive). Rows and record pages mark it.
+	 */
+	awaitsApproval(id: string): boolean;
+	/**
 	 * Runs an action through the API with an idempotency key. With `offline: true`
 	 * (only for actions declared `offline`), a call that cannot reach the server is kept in the
 	 * browser and sent later; it resolves with `{ queued: true }` so the page can show the

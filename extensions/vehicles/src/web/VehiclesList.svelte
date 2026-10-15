@@ -102,7 +102,8 @@
 					...scheduleOfPick(picks[p.id]),
 				})),
 			});
-			app.toast(outcome === 'drafted' ? t('sent_for_approval') : t('saved'));
+			if (outcome === 'drafted') app.sentForApproval();
+			else app.toast(t('saved'));
 			onclosepanel();
 			if (id) openPath(`/vehicles/${id}`);
 			else await load();

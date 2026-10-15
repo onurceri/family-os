@@ -14,6 +14,7 @@
 		tDynamic,
 	} from '#lib/i18n.svelte.js';
 	import { appearance } from '#lib/appearance.svelte.js';
+	import { awaiting } from '#lib/awaiting.svelte.js';
 	import { notifications } from '#lib/notifications.svelte.js';
 	import { offline } from '#lib/offline.svelte.js';
 	import OfflineStatus from '#lib/OfflineStatus.svelte';
@@ -122,6 +123,18 @@
 				disabledExtensions: session.disabledExtensions,
 			}),
 		toast: (message, action) => toasts.show(message, action),
+		sentForApproval: () => {
+			const place = shareFor(contributions.share, {
+				can: (capability) => session.can(capability),
+				disabledExtensions: session.disabledExtensions,
+			});
+			toasts.show(
+				t('draft_sent_for_approval'),
+				place && { label: t('draft_sent_show'), run: () => void goto(place.path) },
+			);
+		},
+		needsApproval: (capability) => !session.can(capability) && session.can('core.drafts.propose'),
+		awaitsApproval: (id) => awaiting.has(id),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
 		waiting: () => offline.waitingChanges(),
 		offline: () => offline.showingOld,
@@ -303,6 +316,13 @@
 		return offline.start();
 	});
 
+	// What the signed-in member's own changes wait on, read again when someone else signs in.
+	$effect(() => {
+		if (isDisplay || session.status !== 'ready') return;
+		void session.me?.id;
+		untrack(() => void awaiting.refresh());
+	});
+
 	// Live updates while signed in.
 	$effect(() => {
 		if (isDisplay || session.status !== 'ready') return;
@@ -318,6 +338,7 @@
 		const offReconnect = onReconnect(() => {
 			void family.refresh();
 			void appearance.refresh();
+			void awaiting.refresh();
 		});
 		// A language pack was installed, updated or removed: reload the list and the active pack.
 		const offLanguages = onEvent('core.languages.', () => {
@@ -340,6 +361,12 @@
 				CHANGED_TOAST_MS,
 			),
 		);
+		// What the member's own changes wait on: marked where the change was made.
+		let awaitTimer: ReturnType<typeof setTimeout> | undefined;
+		const offAwaiting = onEvent('core.draft.', () => {
+			clearTimeout(awaitTimer);
+			awaitTimer = setTimeout(() => void awaiting.refresh(), 300);
+		});
 		// Nav badges (e.g. suggestions waiting in Quick add) refresh after any change, debounced.
 		void refreshBadges();
 		let timer: ReturnType<typeof setTimeout> | undefined;
@@ -356,7 +383,9 @@
 			offFeatures();
 			offChanged();
 			offBadges();
+			offAwaiting();
 			clearTimeout(timer);
+			clearTimeout(awaitTimer);
 			disconnect();
 		};
 	});

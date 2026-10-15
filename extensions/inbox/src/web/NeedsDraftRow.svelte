@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ConfirmButton, TodayRow } from '@famos/ui/famos';
-	import { draftHeadline, type PresenterContext } from '@famos/ui/slots';
+	import { draftHeadline, namedInput, type PresenterContext } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
@@ -25,7 +25,9 @@
 		timeZone: app.timeZone(),
 	});
 	const input = $derived((draft.editedInput ?? draft.input) as Record<string, unknown>);
-	const fields = $derived(presenter?.fields(input, context, draft.before) ?? []);
+	// What the row shows names the thing it is about, even for a draft stored without its name.
+	const shown = $derived(namedInput(input, draft.subject) as Record<string, unknown>);
+	const fields = $derived(presenter?.fields(shown, context, draft.before) ?? []);
 	const uncertain = $derived(
 		fields.some((f) =>
 			[...(f.path ? [f.path] : []), ...(f.paths ?? [])].some((p) =>
@@ -34,12 +36,12 @@
 		),
 	);
 	const headline = $derived(
-		presenter?.title(input, context) ??
+		presenter?.title(shown, context) ??
 			draftHeadline({
 				summary: draft.summary,
 				titleKey: draft.titleKey,
 				actionId: draft.actionId,
-				input,
+				input: shown,
 				t: app.t,
 			}),
 	);

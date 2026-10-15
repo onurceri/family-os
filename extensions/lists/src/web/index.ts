@@ -10,6 +10,7 @@ import {
 	completeTaskPresenter,
 	deleteShoppingItemPresenter,
 	deleteTaskPresenter,
+	updateTaskPresenter,
 } from './presenters.js';
 import { tasksTimeline } from './timeline.js';
 
@@ -92,6 +93,7 @@ export default defineWebExtension({
 		addTaskPresenter,
 		addShoppingItemsPresenter,
 		changeTaskPresenter,
+		updateTaskPresenter,
 		completeTaskPresenter,
 		checkShoppingItemPresenter,
 		deleteTaskPresenter,

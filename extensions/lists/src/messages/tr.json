@@ -55,7 +55,6 @@
 	"too_long": "Çok uzun ({{counter}})",
 	"too_long_item": "Bir ad ya da miktar çok uzun. Kısaltıp tekrar dene.",
 	"deleted": "Silindi",
-	"sent_for_approval": "Onaya gönderildi",
 	"error": "Olmadı. Lütfen tekrar dene.",
 	"add_item": "Ürün ekle",
 	"add_item_placeholder": "Ürün ekle, örneğin 2 kg domates, ekmek",

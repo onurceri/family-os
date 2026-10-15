@@ -163,6 +163,16 @@ export const addTreatment = defineAction({
 	input: AddTreatmentSchema,
 	output: PetTreatmentSchema,
 	approval: { unless: petsEdit.id },
+	// The pet by its name on record: a form sends only its id.
+	async subject(ctx, { petId }) {
+		const row = await tables(ctx.db)
+			.selectFrom('pets_pets')
+			.select('name')
+			.where('id', '=', petId)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		return row?.name ?? null;
+	},
 	undo: (treatment) => ({ actionId: 'pets.removeTreatment', input: { id: treatment.id } }),
 	ai: {
 		description:

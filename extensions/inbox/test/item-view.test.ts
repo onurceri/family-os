@@ -7,6 +7,7 @@ import {
 	askAssistantHref,
 	captureLine,
 	decidableCount,
+	decidedRequests,
 	groupBusyState,
 	isAddition,
 	isQuestionForAssistant,
@@ -18,6 +19,7 @@ import {
 	needsAction,
 	pickedByDefault,
 	pickedDrafts,
+	requestChip,
 	requestGroups,
 } from '../src/web/item-view.ts';
 
@@ -277,5 +279,55 @@ describe('what a group approves', () => {
 		expect(pickedDrafts([gala], new Map([['gala', true]])).map((d) => d.id)).toEqual(['gala']);
 		// Once the list catches up it is a change with no offer: ticked like any other.
 		expect(pickedDrafts([suggestion('gala')], new Map()).map((d) => d.id)).toEqual(['gala']);
+	});
+});
+
+describe('the person’s own requests somebody decided', () => {
+	const DAY = 24 * 60 * 60 * 1000;
+	const NOW = 30 * DAY;
+	const mine = (over: Partial<Draft>) =>
+		({
+			id: 'd',
+			status: 'rejected',
+			actionId: 'calendar.updateEvent',
+			createdAt: NOW - DAY,
+			decidedAt: NOW - DAY,
+			decidedBy: 'mara',
+			reason: null,
+			sourceKind: null,
+			sourceId: null,
+			proposedBy: { kind: 'member', memberId: 'leo' },
+			canDecide: false,
+			...over,
+		}) as Draft;
+
+	it('lists what somebody else decided this week, newest first', () => {
+		const list = decidedRequests(
+			[
+				mine({ id: 'old', decidedAt: NOW - 8 * DAY }),
+				mine({ id: 'piano' }),
+				mine({ id: 'vet', status: 'applied', decidedAt: NOW - 1000 }),
+				mine({ id: 'waiting', status: 'pending', decidedAt: null }),
+				mine({ id: 'took back', reason: 'withdrawn', decidedBy: 'leo' }),
+				mine({ id: 'capture', sourceKind: 'inbox' }),
+				mine({ id: 'tom asked', proposedBy: { kind: 'member', memberId: 'tom' } }),
+				mine({
+					id: 'assistant',
+					sourceKind: 'assistant',
+					proposedBy: { kind: 'ai', mode: 'conversation', source: 'assistant', onBehalfOf: 'leo' },
+				}),
+			],
+			'leo',
+			NOW,
+		);
+		expect(list.map((d) => d.id)).toEqual(['vet', 'piano', 'assistant']);
+		expect(decidedRequests([mine({})], undefined, NOW)).toEqual([]);
+	});
+
+	it('says what became of each', () => {
+		expect(requestChip(mine({ status: 'applied' }))).toEqual({ tone: 'now', key: 'chip_approved' });
+		expect(requestChip(mine({}))).toEqual({ tone: 'idle', key: 'chip_rejected' });
+		expect(requestChip(mine({ status: 'undone' })).key).toBe('chip_undone');
+		expect(requestChip(mine({ status: 'expired' })).key).toBe('chip_expired');
 	});
 });

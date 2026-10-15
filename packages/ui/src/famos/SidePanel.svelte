@@ -47,6 +47,7 @@
 		discard,
 		beforeclose,
 		closeHref,
+		note,
 		children,
 	}: {
 		open: boolean;
@@ -69,6 +70,11 @@
 		beforeclose?: () => boolean | Promise<boolean>;
 		/** Opened through the router after closing: the page's address without `?edit=` or `?new=`. */
 		closeHref?: string;
+		/**
+		 * A line said before Save, already translated: that the change goes to someone for approval.
+		 * Above the buttons in the panel, at the end of the form in the sheet.
+		 */
+		note?: string;
 		children: Snippet;
 	} = $props();
 
@@ -177,6 +183,9 @@
 					class="border-line bg-surface flex shrink-0 flex-wrap items-center gap-2 border-t px-5 py-3"
 					data-testid="side-panel-footer"
 				>
+					{#if note}
+						<p class="text-ink-soft w-full text-[13px]" data-testid="side-panel-note">{note}</p>
+					{/if}
 					{@render bottom()}
 				</footer>
 			{/if}
@@ -193,6 +202,9 @@
 			cancelLabel={cancelLabel ?? closeLabel}
 		>
 			{@render children()}
+			{#if note}
+				<p class="text-ink-soft mt-5 text-[13px]" data-testid="side-panel-note">{note}</p>
+			{/if}
 			{#if danger && !footer}
 				<div class="border-line mt-6 flex flex-wrap items-center gap-1 border-t pt-3">
 					{@render danger()}

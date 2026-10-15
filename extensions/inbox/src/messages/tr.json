@@ -110,6 +110,7 @@
 	"chip_done_one": "{{count}} yapıldı",
 	"chip_done_other": "{{count}} yapıldı",
 	"chip_rejected": "Reddedildi",
+	"chip_approved": "Onaylandı",
 	"chip_undone": "Geri alındı",
 	"chip_expired": "Günü geçti",
 	"chip_reading": "Okunuyor…",

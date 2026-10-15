@@ -207,6 +207,33 @@ export const setAssignees = defineAction({
 	input: SetAssigneesSchema,
 	output: SetAssigneesResultSchema,
 	approval: { unless: choresEdit.id },
+	// The chore by its name on record, whatever title the caller sent along.
+	async subject(ctx, { id }) {
+		const row = await tables(ctx.db)
+			.selectFrom('chores_chores')
+			.select('title')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		return row?.title ?? null;
+	},
+	// Who takes turns now, for the card's "old → new".
+	async currentValues(ctx, { id }) {
+		const row = await tables(ctx.db)
+			.selectFrom('chores_chores')
+			.select('id')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const order = await tables(ctx.db)
+			.selectFrom('chores_assignees')
+			.select('member_id')
+			.where('chore_id', '=', id)
+			.orderBy('position')
+			.execute();
+		return { memberIds: order.map((r) => r.member_id) };
+	},
 	undo: (r) => ({
 		actionId: 'chores.setAssignees',
 		input: { id: r.chore.id, memberIds: r.previousAssigneeIds },

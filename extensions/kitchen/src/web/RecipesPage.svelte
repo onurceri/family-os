@@ -78,7 +78,8 @@
 		busy = true;
 		try {
 			const { outcome, id } = await createRecipe(toFields(form));
-			app.toast(outcome === 'drafted' ? t('sent_for_approval') : t('saved'));
+			if (outcome === 'drafted') app.sentForApproval();
+			else app.toast(t('saved'));
 			mode = 'none';
 			if (id) openPath(`/kitchen/recipes/${id}`);
 			else await load();
@@ -190,6 +191,7 @@
 	saveLabel={t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
+	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
 	onclose={() => (mode = 'none')}
 	{dirty}
 	discard={{

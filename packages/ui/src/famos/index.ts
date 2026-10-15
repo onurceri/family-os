@@ -1,5 +1,6 @@
 export { default as ActionSheet } from './ActionSheet.svelte';
 export { default as Avatar } from './Avatar.svelte';
+export { default as AwaitingMark } from './AwaitingMark.svelte';
 export { default as BigNumber } from './BigNumber.svelte';
 export { default as Card } from './Card.svelte';
 export { default as Chip } from './Chip.svelte';

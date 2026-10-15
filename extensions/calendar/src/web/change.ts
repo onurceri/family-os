@@ -1,10 +1,11 @@
-import { formatClock, formatDate } from '@famos/time';
+import { describeRecurrence, formatClock, formatDate } from '@famos/time';
 import {
 	changedValue,
 	type DraftBefore,
 	type DraftField,
 	type PresenterContext,
 } from '@famos/ui/slots';
+import type { EventInput } from '../contract/index.js';
 import { when } from './instead.js';
 
 /** What a `calendar.changeEvent` draft carries. */
@@ -144,5 +145,72 @@ export function changeEventFields(
 			value: changedValue(text(was?.notes), text(input.notes) as string),
 			path: 'notes',
 		});
+	return fields;
+}
+
+/** What a `calendar.updateEvent` draft carries: the whole event as the form saved it. */
+export type UpdateEventInput = { id: string; label?: string; event: EventInput };
+
+/**
+ * The rows of a saved edit of an event: the form sends every field, and `before` holds the ones
+ * that differ from the event as it is now, so only those are listed, each as "old → new".
+ */
+export function updateEventFields(
+	input: UpdateEventInput,
+	c: PresenterContext,
+	before: Record<string, unknown>,
+): DraftField[] {
+	const t = (key: string) => c.t(`calendar:${key}`);
+	const { event } = input;
+	const values: Record<string, unknown> = {
+		title: event.title,
+		allDay: event.allDay ?? false,
+		date: event.date,
+		endDate: event.endDate ?? null,
+		startTime: event.startTime ?? null,
+		endTime: event.endTime ?? null,
+		memberIds: event.memberIds ?? [],
+		location: event.location ?? null,
+		notes: event.notes ?? null,
+		tags: event.tags ?? [],
+	};
+	const change = Object.fromEntries(
+		Object.keys(before)
+			.filter((k) => k in values)
+			.map((k) => [k, values[k]]),
+	);
+	const fields = changeEventFields({ id: input.id, ...change }, c, before);
+	if ('recurrence' in before) {
+		const repeat = (r: unknown) =>
+			r && typeof r === 'object'
+				? describeRecurrence(
+						{ interval: 1, ...r } as Parameters<typeof describeRecurrence>[0],
+						t,
+						c.formatLocale,
+						c.weekStart,
+					)
+				: t('repeat_none');
+		fields.push({
+			label: t('repeat'),
+			value: changedValue(repeat(before.recurrence), repeat(event.recurrence)),
+			path: 'recurrence',
+		});
+	}
+	// A reminder left at its default is not saved as a choice: only a chosen one is listed.
+	if ('reminder' in before && event.reminder !== undefined) {
+		const allDay = event.allDay ?? false;
+		const reminder = (m: unknown) =>
+			typeof m === 'number'
+				? t(allDay ? `reminder_all_day_${m}` : `reminder_t_${m}`)
+				: t('reminder_none');
+		fields.push({
+			label: t('reminder'),
+			value: changedValue(
+				typeof before.reminder === 'number' ? reminder(before.reminder) : undefined,
+				reminder(event.reminder),
+			),
+			path: 'reminder',
+		});
+	}
 	return fields;
 }

@@ -168,8 +168,10 @@
 		editing = null;
 		if (selectedId) openPath('/chores');
 	}
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
@@ -307,6 +309,7 @@
 	saveLabel={t('save')}
 	saveDisabled={saving}
 	onsave={() => formEl?.requestSubmit()}
+	note={app.needsApproval('chores.edit') ? app.t('app:draft_approval_note') : undefined}
 	danger={editing?.id ? archiveButton : undefined}
 	{dirty}
 	discard={{

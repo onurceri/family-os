@@ -263,6 +263,19 @@ describe('treatments', () => {
 	});
 });
 
+describe('a treatment sent for approval', () => {
+	it('names the pet it is for, though the form sends only its id', async () => {
+		const pet = await addPet({ name: 'Biscuit', species: 'dog' });
+		const ivy = await person(k, 'supervised', 'Ivy');
+		const result = await k.runner.invoke(
+			'pets.addTreatment',
+			{ petId: pet.id, kind: 'vaccination', givenOn: '2026-09-02', product: 'Rabies' },
+			ivy.actor,
+		);
+		expect(result).toMatchObject({ status: 'drafted', subject: 'Biscuit' });
+	});
+});
+
 describe('records follow the pet', () => {
 	it('renames the record when the name changes', async () => {
 		const cat = await withRabies();

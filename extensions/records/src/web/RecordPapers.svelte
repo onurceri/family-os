@@ -53,8 +53,10 @@
 		return app.onEvent('records.document.', () => void load());
 	});
 
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 
 	// Changing label and expiry, in the panel.
 	let editing = $state<RecordDocument | null>(null);

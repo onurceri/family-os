@@ -332,6 +332,7 @@ describe('delivery', () => {
 		const prefs = await k.route('core.getNotificationPreferences').call({ actor: a.actor });
 		expect(prefs.kinds.map((x: { id: string }) => x.id)).toEqual([
 			'core.draftWaiting',
+			'core.draftDecided',
 			'core.backupFailed',
 			'core.autoApprovalStopped',
 		]);
@@ -442,7 +443,8 @@ describe('draft waiting', () => {
 		expect(ids(made)).toEqual([member.member.id]);
 		expect(made[0]?.source_kind).toBe('draft');
 		const list = await k.route('core.listNotifications').call({ actor: member.actor });
-		expect(list.items[0].body).toBe('en|app:notify_draft_waiting_body|Purge notes');
+		// The approvers read who asked for it.
+		expect(list.items[0].body).toBe('en|app:notify_draft_waiting_body_by|Purge notes');
 	});
 });
 
@@ -515,6 +517,11 @@ describe('reading and preferences', () => {
 			{
 				id: 'core.draftWaiting',
 				label: 'en|app:notify_kind_draft_waiting|',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.draftDecided',
+				label: 'en|app:notify_kind_draft_decided|',
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{

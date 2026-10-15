@@ -165,6 +165,35 @@ export const updateTask = defineAction({
 	input: z.object({ id: TaskIdSchema, task: TaskInputSchema }),
 	output: TaskSchema,
 	approval: { unless: tasksEdit.id },
+	targetTitle: taskTitle,
+	// The form sends the whole task: what differs from the task as it is now is what changes, so
+	// the card lists only those fields, "old → new" (a deadline is its date and time together).
+	async currentValues(ctx, { id, task }) {
+		const row = await tables(ctx.db)
+			.selectFrom('lists_tasks')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const next = fields(task);
+		const keys: string[] = [];
+		if (row.title !== next.title) keys.push('title');
+		if (row.assignee_id !== next.assignee_id) keys.push('assigneeId');
+		if (row.due_date !== next.due_date || row.due_time !== next.due_time)
+			keys.push('dueDate', 'dueTime');
+		if ((row.notes ?? null) !== next.notes) keys.push('notes');
+		if (row.rrule !== next.rrule) keys.push('recurrence');
+		const values: Record<string, unknown> = {
+			title: row.title,
+			assigneeId: row.assignee_id,
+			dueDate: row.due_date,
+			dueTime: row.due_time,
+			notes: row.notes,
+			recurrence: toTask(row).recurrence,
+		};
+		return Object.fromEntries(keys.map((k) => [k, values[k] ?? null]));
+	},
 	async run(uow, { id, task }) {
 		await load(uow, id);
 		await assertMember(uow, task.assigneeId);

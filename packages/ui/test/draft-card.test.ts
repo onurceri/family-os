@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { askedBy, draftHeadline, draftKicker, proposedByMember } from '../src/draft-title.js';
+import {
+	askedBy,
+	draftHeadline,
+	draftKicker,
+	namedInput,
+	proposedByMember,
+} from '../src/draft-title.js';
 import { DraftCard, draftButtons } from '../src/famos/index.js';
 import { changedValue, insteadOffer } from '../src/slots.js';
 import { cleanup, click, qa, render } from './helpers.js';
@@ -195,6 +201,21 @@ describe('draftHeadline', () => {
 		expect(draftHeadline({ ...base, titleKey: null, input: {}, t: (key) => `[${key}]` })).toBe(
 			'[app:draft_kind_generic]',
 		);
+	});
+
+	it('names the thing by the subject the server read when the input carries no label', () => {
+		expect(draftHeadline({ ...base, input: { id: 'x' }, subject: 'Oil change' })).toBe(
+			'[vehicles:draft_title_remove_log] · Oil change',
+		);
+		expect(draftHeadline({ ...base, titleKey: null, input: {}, subject: 'Oil change' })).toBe(
+			'Oil change',
+		);
+		expect(namedInput({ id: 'x' }, 'Piano lesson')).toEqual({ id: 'x', label: 'Piano lesson' });
+		expect(namedInput({ id: 'x', label: 'Piano' }, 'Piano lesson')).toEqual({
+			id: 'x',
+			label: 'Piano',
+		});
+		expect(namedInput({ id: 'x' }, null)).toEqual({ id: 'x' });
 	});
 
 	it('knows whether the member is behind a draft', () => {

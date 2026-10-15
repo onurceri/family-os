@@ -1,9 +1,16 @@
 import type { AppContext } from '@famos/ui/app';
 import type { InboxItem } from '../contract/index.js';
-import { type Draft, loadInboxDrafts, loadItems, loadWaitingDrafts } from './data.js';
+import {
+	type Draft,
+	loadInboxDrafts,
+	loadItems,
+	loadRecentDrafts,
+	loadWaitingDrafts,
+} from './data.js';
 import {
 	type Capture,
 	decidableCount,
+	decidedRequests,
 	isWaiting,
 	type RequestGroup,
 	requestGroups,
@@ -16,6 +23,11 @@ export type WaitingEntry =
 
 /** How many captures "Recent" lists. */
 export const RECENT_LIMIT = 20;
+
+/** One line under "Recent": a capture of the person's, or a request of theirs someone decided. */
+export type RecentEntry =
+	| { kind: 'capture'; key: string; capture: Capture; at: number }
+	| { kind: 'request'; key: string; draft: Draft; at: number };
 
 const byCreated = (a: Draft, b: Draft) => a.createdAt - b.createdAt;
 
@@ -33,6 +45,8 @@ export class CaptureFeed {
 	items = $state<InboxItem[]>([]);
 	drafts = $state<Draft[]>([]);
 	requests = $state<Draft[]>([]);
+	/** The person's own requests someone else decided lately. */
+	decided = $state<Draft[]>([]);
 	loaded = $state(false);
 	failed = $state(false);
 	/** The waiting suggestions from captures, for the count. */
@@ -58,10 +72,11 @@ export class CaptureFeed {
 
 	async load() {
 		try {
-			const [items, inboxDrafts, pending] = await Promise.all([
+			const [items, inboxDrafts, pending, recent] = await Promise.all([
 				loadItems(),
 				loadInboxDrafts(),
 				loadWaitingDrafts(),
+				loadRecentDrafts(),
 			]);
 			this.items = items;
 			const waitingInbox = pending.filter((d) => d.sourceKind === 'inbox');
@@ -71,6 +86,7 @@ export class CaptureFeed {
 			this.requests = pending.filter((d) => d.sourceKind !== 'inbox');
 			this.#waitingInbox = waitingInbox;
 			const me = this.#app.me()?.id;
+			this.decided = decidedRequests(recent, me, Date.now());
 			for (const item of items) {
 				if (
 					item.createdBy === me &&
@@ -148,5 +164,33 @@ export class CaptureFeed {
 			.filter((i) => i.createdBy === me && !waiting.has(i.id))
 			.slice(0, RECENT_LIMIT)
 			.map((item) => ({ item, drafts: this.draftsOf(item.id) }));
+	}
+
+	/**
+	 * Everything under "Recent", newest first: the person's earlier captures, and their requests
+	 * that somebody decided lately (when it was decided is when it became news).
+	 */
+	get recentEntries(): RecentEntry[] {
+		return [
+			...this.recent.map((capture) => ({
+				kind: 'capture' as const,
+				key: capture.item.id,
+				capture,
+				at: capture.item.createdAt,
+			})),
+			...this.decided.map((draft) => ({
+				kind: 'request' as const,
+				key: draft.id,
+				draft,
+				at: draft.decidedAt ?? draft.createdAt,
+			})),
+		]
+			.toSorted((a, b) => b.at - a.at)
+			.slice(0, RECENT_LIMIT);
+	}
+
+	/** One of the person's decided requests, to open on its own. */
+	decidedRequest(draftId: string): Draft | undefined {
+		return this.decided.find((d) => d.id === draftId);
 	}
 }

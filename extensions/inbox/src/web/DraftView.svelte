@@ -5,6 +5,7 @@
 		draftHeadline,
 		draftKicker,
 		insteadOffer,
+		namedInput,
 		type PresenterContext,
 		proposedByMember,
 	} from '@famos/ui/slots';
@@ -69,6 +70,8 @@
 	// An edit saved in a group, until the group's approval sends it.
 	let kept = $state<unknown>(undefined);
 	const input = $derived((kept ?? draft.editedInput ?? draft.input) as Record<string, unknown>);
+	// What the card shows names the thing it is about, even for a draft stored without its name.
+	const shown = $derived(namedInput(input, draft.subject) as Record<string, unknown>);
 	let edited = $state<unknown>(undefined);
 	let busy = $state(false);
 	let local = $state<DraftCardStatus | null>(null);
@@ -94,12 +97,12 @@
 	);
 	const a = (key: string) => app.t(`app:${key}`);
 	const title = $derived(
-		presenter?.title(input, context) ??
+		presenter?.title(shown, context) ??
 			draftHeadline({
 				summary: draft.summary,
 				titleKey: draft.titleKey,
 				actionId: draft.actionId,
-				input,
+				input: shown,
 				t: app.t,
 			}),
 	);
@@ -225,7 +228,7 @@
 	askedBy={asker ? app.t('app:draft_asked_by', { name: asker }) : undefined}
 	icon={presenter?.icon}
 	{title}
-	fields={presenter?.fields(input, context, draft.before) ?? []}
+	fields={presenter?.fields(shown, context, draft.before) ?? []}
 	uncertain={draft.uncertainFields}
 	mayExist={draft.mayExist}
 	mayExistSome={draft.mayExistSome}

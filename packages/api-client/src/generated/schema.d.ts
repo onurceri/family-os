@@ -11023,6 +11023,7 @@ export interface operations {
                         /** @enum {string|null} */
                         reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
+                        subject: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                         instead: {
@@ -11321,6 +11322,7 @@ export interface operations {
                         /** @enum {string|null} */
                         reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
+                        subject: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                         instead: {
@@ -11486,6 +11488,7 @@ export interface operations {
                         /** @enum {string|null} */
                         reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
+                        subject: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                         instead: {
@@ -11651,6 +11654,7 @@ export interface operations {
                         /** @enum {string|null} */
                         reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
+                        subject: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                         instead: {
@@ -11816,6 +11820,7 @@ export interface operations {
                         /** @enum {string|null} */
                         reason: "gone" | "settled" | "withdrawn" | null;
                         titleKey: string | null;
+                        subject: string | null;
                         mayExist: boolean;
                         mayExistSome: boolean;
                         instead: {

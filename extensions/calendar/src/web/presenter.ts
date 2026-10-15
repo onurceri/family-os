@@ -2,7 +2,12 @@ import { describeRecurrence } from '@famos/time';
 import type { DraftPresenter } from '@famos/ui/slots';
 import { CalendarDays } from '@lucide/svelte';
 import type { EventInput } from '../contract/index.js';
-import { type ChangeEventInput, changeEventFields } from './change.js';
+import {
+	type ChangeEventInput,
+	changeEventFields,
+	type UpdateEventInput,
+	updateEventFields,
+} from './change.js';
 import { reminderKey } from './form.js';
 import { describeWhen } from './format.js';
 import { moveOffer } from './instead.js';
@@ -64,6 +69,21 @@ export const changeEventPresenter: DraftPresenter<ChangeEventInput> = {
 	fields: (input, c, before) => changeEventFields(input, c, before),
 	approveLabel: (c) => c.t('calendar:draft_approve_change'),
 	instead: moveOffer,
+};
+
+/**
+ * An edit of an event saved by someone whose changes need approval: named by the event as it is
+ * now, listing only what the edit changes ("old → new"). Once decided nothing is compared any
+ * more, so the event is shown as the edit had it.
+ */
+export const updateEventPresenter: DraftPresenter<UpdateEventInput> = {
+	actionId: 'calendar.updateEvent',
+	kind: (c) => c.t('calendar:kind_change'),
+	icon: CalendarDays,
+	title: (input, c) => input.label || input.event.title || c.t('calendar:draft_an_event'),
+	fields: (input, c, before) =>
+		before ? updateEventFields(input, c, before) : createEventPresenter.fields(input.event, c),
+	approveLabel: (c) => c.t('calendar:draft_approve_change'),
 };
 
 /** A proposal to remove an event, or one date of a repeating one. */

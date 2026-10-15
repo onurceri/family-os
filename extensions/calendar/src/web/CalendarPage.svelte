@@ -273,7 +273,8 @@
 	);
 
 	function report(outcome: Outcome, done: 'saved' | 'deleted') {
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : t(done));
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(t(done));
 		close();
 	}
 
@@ -758,6 +759,9 @@
 		saveLabel={editing && form ? t('save') : undefined}
 		saveDisabled={busy}
 		onsave={editing && form ? () => formEl?.requestSubmit() : undefined}
+		note={editing && form && app.needsApproval('calendar.edit')
+			? app.t('app:draft_approval_note')
+			: undefined}
 		danger={editing?.mode === 'edit' && form ? eventDanger : undefined}
 		{dirty}
 		discard={{

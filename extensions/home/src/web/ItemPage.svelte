@@ -65,8 +65,10 @@
 	});
 
 	const canEdit = $derived(app.can('home.edit'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 	const dateOf = (d: string) =>
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -185,7 +187,12 @@
 	{:else if missing}
 		<PageHeader title={t('item_not_found')} />
 	{:else if item}
-		<RecordHeader name={item.name} {facts} actions={wide.current ? actionButtons : undefined}>
+		<RecordHeader
+			name={item.name}
+			recordId={item.id}
+			{facts}
+			actions={wide.current ? actionButtons : undefined}
+		>
 			{#snippet icon()}<Refrigerator />{/snippet}
 		</RecordHeader>
 

@@ -132,6 +132,34 @@ export async function qualifies(
 	return access.effective(proposer.role_id).has(setting.proposerCapability);
 }
 
+/**
+ * What a suggestion proposes, in each reader's language: the proposer's own words (the summary),
+ * else the action's translated name (the English `title` only if an action has no key) with the
+ * name of the thing it is about ("Remove a shopping item: Cheddar"). With `who`, the person who
+ * asked comes first ("Leo: Change an event: Piano lesson").
+ */
+export function draftWhat(
+	draft: { summary: string | null; input?: string | null },
+	action: { title: string; draftTitle?: string },
+	who?: string,
+): NotifyText {
+	const name = draft.input ? subjectOf(draft.input) : undefined;
+	const by = who ? '_by' : '';
+	const asker: Record<string, string> = who ? { who } : {};
+	if (draft.summary === null && action.draftTitle) {
+		if (name)
+			return {
+				key: `app:notify_draft_waiting_named${by}`,
+				params: { what: action.draftTitle, name, ...asker },
+			};
+		return who
+			? { key: 'app:notify_draft_waiting_action_by', params: { what: action.draftTitle, who } }
+			: { key: action.draftTitle };
+	}
+	const what = draft.summary ?? (name ? `${action.title}: ${name}` : action.title);
+	return { key: `app:notify_draft_waiting_body${by}`, params: { what, ...asker } };
+}
+
 /** Tells approvers a suggestion waits for them (collapses several drafts of one source). */
 export function waitingNotice(
 	draft: {
@@ -145,26 +173,15 @@ export function waitingNotice(
 	action: { title: string; draftTitle?: string },
 	except: string | null,
 	delayMs: number,
+	/** The name of the person who asked, when a person is behind it. */
+	who?: string,
 ): NotifyRequest {
 	const sourceKind = draft.sourceKind ?? 'draft';
-	// The summary is the proposer's own words; without one the action names what is proposed, in
-	// each reader's language (the English `title` only if an action has no key), followed by the
-	// name of the thing it is about ("Remove a shopping item: Cheddar").
-	const name = draft.input ? subjectOf(draft.input) : undefined;
-	let body: NotifyText;
-	if (draft.summary === null && action.draftTitle) {
-		body = name
-			? { key: 'app:notify_draft_waiting_named', params: { what: action.draftTitle, name } }
-			: { key: action.draftTitle };
-	} else {
-		const what = draft.summary ?? (name ? `${action.title}: ${name}` : action.title);
-		body = { key: 'app:notify_draft_waiting_body', params: { what } };
-	}
 	return {
 		kind: WAITING_KIND,
 		to: { capability: 'core.drafts.approve', ...(except && { except }) },
 		title: { key: 'app:notify_draft_waiting_title' },
-		body,
+		body: draftWhat(draft, action, who),
 		url: '/add',
 		source: { kind: sourceKind, id: draft.sourceId ?? draft.id },
 		dedupeKey: waitingDedupeKey(draft),
@@ -331,6 +348,7 @@ export function createAutoApproval(deps: AutoApprovalDeps) {
 			if (draft?.status !== 'pending') return;
 			const def = registry().actions.get(draft.action_id);
 			const proposedBy = JSON.parse(draft.proposed_by) as Actor;
+			const who = (await ctx.family.members()).find((m) => m.id === proposerMemberId)?.displayName;
 			const waiting = () =>
 				ctx.notify(
 					waitingNotice(
@@ -344,6 +362,7 @@ export function createAutoApproval(deps: AutoApprovalDeps) {
 						def ?? { title: draft.action_id },
 						proposerMemberId,
 						deps.draftNotifyDelayMs,
+						who,
 					),
 				);
 

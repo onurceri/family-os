@@ -55,7 +55,6 @@
 	"too_long": "Too long ({{counter}})",
 	"too_long_item": "A name or an amount is too long. Shorten it and try again.",
 	"deleted": "Deleted",
-	"sent_for_approval": "Sent for approval",
 	"error": "That did not work. Please try again.",
 	"add_item": "Add an item",
 	"add_item_placeholder": "Add items, e.g. 2 kg tomatoes, bread",

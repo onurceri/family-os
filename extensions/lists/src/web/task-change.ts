@@ -1,10 +1,11 @@
-import { todayIn } from '@famos/time';
+import { describeRecurrence, todayIn } from '@famos/time';
 import {
 	changedValue,
 	type DraftBefore,
 	type DraftField,
 	type PresenterContext,
 } from '@famos/ui/slots';
+import type { TaskInput } from '../contract/index.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
 
@@ -78,5 +79,52 @@ export function changeTaskFields(
 			),
 			path: 'notes',
 		});
+	return fields;
+}
+
+/** What a `lists.updateTask` draft carries: the whole task as the form saved it. */
+export type UpdateTaskInput = { id: string; label?: string; task: TaskInput };
+
+/**
+ * The rows of a saved edit of a task: the form sends every field, and `before` holds the ones
+ * that differ from the task as it is now, so only those are listed, each as "old → new".
+ */
+export function updateTaskFields(
+	input: UpdateTaskInput,
+	c: PresenterContext,
+	before: Record<string, unknown>,
+): DraftField[] {
+	const t = ((key: string, options?: Record<string, unknown>) =>
+		c.t(`lists:${key}`, options)) as ListsT;
+	const { task } = input;
+	const values: Record<string, unknown> = {
+		title: task.title,
+		assigneeId: task.assigneeId ?? null,
+		dueDate: task.dueDate ?? null,
+		dueTime: task.dueDate ? (task.dueTime ?? null) : null,
+		notes: task.notes ?? null,
+	};
+	const change = Object.fromEntries(
+		Object.keys(before)
+			.filter((k) => k in values)
+			.map((k) => [k, values[k]]),
+	);
+	const fields = changeTaskFields({ id: input.id, ...change }, c, before);
+	if ('recurrence' in before) {
+		const repeat = (r: unknown) =>
+			r && typeof r === 'object'
+				? describeRecurrence(
+						{ interval: 1, ...r } as Parameters<typeof describeRecurrence>[0],
+						t,
+						c.formatLocale,
+						c.weekStart,
+					)
+				: t('repeat_none');
+		fields.push({
+			label: t('repeat'),
+			value: changedValue(repeat(before.recurrence), repeat(task.recurrence)),
+			path: 'recurrence',
+		});
+	}
 	return fields;
 }

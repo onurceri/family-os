@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Avatar } from '@famos/ui/famos';
+	import { Avatar, AwaitingMark } from '@famos/ui/famos';
 	import { Check, Repeat } from '@lucide/svelte';
 	import type { Task } from '../contract/index.js';
 	import { dueLabel, urgency } from './format.js';
@@ -64,7 +64,7 @@
 		<span class="truncate text-[15px] leading-snug font-semibold {done ? 'line-through' : ''}"
 			>{task.title}</span
 		>
-		{#if due || repeats || waiting}
+		{#if due || repeats || waiting || app.awaitsApproval(task.id)}
 			<span
 				class="flex items-center gap-1 truncate text-[13px] {!done && level === 'overdue'
 					? 'text-attention font-semibold'
@@ -77,6 +77,7 @@
 						>{due ? '· ' : ''}{t('waiting_to_send')}</span
 					>
 				{/if}
+				<AwaitingMark id={task.id} />
 			</span>
 		{/if}
 		<span class="sr-only">{assignee?.displayName ?? t('anyone')}</span>

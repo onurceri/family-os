@@ -37,6 +37,7 @@ import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
 import {
 	type EventRow,
+	effectiveReminder,
 	ensureTags,
 	eventExists,
 	events,
@@ -269,6 +270,23 @@ export const updateEvent = defineAction({
 	input: z.object({ id: EventIdSchema, event: EventInputSchema }),
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
+	targetTitle: eventTitle,
+	// The form sends the whole event: what differs from the event as it is now is what changes,
+	// so the card lists only those fields, "old → new".
+	async currentValues(ctx, { id, event }) {
+		const row = await events(ctx.db)
+			.selectFrom('calendar_events')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const { timeZone } = await ctx.family.settings();
+		const { current } = eventAsItIs(row, undefined);
+		const keys = eventFieldsChanged(row, toRow(event, timeZone));
+		const now: Record<string, unknown> = { ...current, reminder: effectiveReminder(row) };
+		return Object.fromEntries(keys.map((k) => [k, now[k] ?? null]));
+	},
 	async run(uow, { id, event }) {
 		await loadEvent(uow, id);
 		await assertMembers(uow, event.memberIds ?? []);
@@ -434,6 +452,32 @@ function eventAsItIs(row: EventRow, occurrence: string | undefined) {
 
 /** The fields that together say when an event is: a change of one is shown against all of them. */
 const WHEN_FIELDS = ['allDay', 'date', 'endDate', 'startTime', 'endTime'] as const;
+
+/**
+ * The fields (keyed like an event's input) in which a stored event and the row a whole new
+ * version of it would write differ. Compared as stored, so a form that sends every field back as
+ * it was changes nothing here.
+ */
+function eventFieldsChanged(row: EventRow, next: ReturnType<typeof toRow>): string[] {
+	const keys: string[] = [];
+	if (row.title !== next.title) keys.push('title');
+	const when =
+		row.all_day !== next.all_day ||
+		row.starts_at !== next.starts_at ||
+		row.ends_at !== next.ends_at ||
+		row.start_date !== next.start_date ||
+		row.end_date !== next.end_date;
+	if (when) keys.push(...WHEN_FIELDS);
+	const people = (json: string) => [...(JSON.parse(json) as string[])].sort().join(',');
+	if (people(row.member_ids) !== people(next.member_ids)) keys.push('memberIds');
+	if ((row.location ?? null) !== next.location) keys.push('location');
+	if ((row.notes ?? null) !== next.notes) keys.push('notes');
+	if ((row.tags ?? null) !== next.tags) keys.push('tags');
+	if ((row.rrule ?? null) !== next.rrule) keys.push('recurrence');
+	// The reminder in effect: an event nobody chose one for has the default, which the form shows.
+	if (effectiveReminder(row) !== effectiveReminder({ ...row, ...next })) keys.push('reminder');
+	return keys;
+}
 
 /**
  * Changes some details of an event (the whole series, or one date of it) and keeps the rest: the AI and agents send

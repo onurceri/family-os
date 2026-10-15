@@ -112,8 +112,10 @@
 	});
 
 	const canEdit = $derived(app.can('home.edit'));
-	const report = (outcome: Outcome, message: string) =>
-		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
+	const report = (outcome: Outcome, message: string) => {
+		if (outcome === 'drafted') app.sentForApproval();
+		else app.toast(message);
+	};
 	const failed = () => app.toast(t('error'));
 	const discard = $derived({
 		title: t('discard_title'),
@@ -302,7 +304,12 @@
 {:else if missing}
 	<PageHeader title={t('not_found')} />
 {:else if home}
-	<RecordHeader name={home.name} {facts} actions={wide.current ? actionButtons : undefined}>
+	<RecordHeader
+		name={home.name}
+		recordId={home.id}
+		{facts}
+		actions={wide.current ? actionButtons : undefined}
+	>
 		{#snippet icon()}<House />{/snippet}
 	</RecordHeader>
 
