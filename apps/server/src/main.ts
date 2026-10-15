@@ -95,7 +95,8 @@ async function serveCommand() {
 	}
 	await announceSetup(runtime);
 
-	const stops: (() => void | Promise<void>)[] = [];
+	/** `finishRequests`: answer requests in flight first (a restart asked through the API). */
+	const stops: ((finishRequests: boolean) => void | Promise<void>)[] = [];
 	if (config.roles.worker) {
 		kernel.worker.start();
 		stops.push(startScheduler(runtime));
@@ -176,13 +177,27 @@ async function serveCommand() {
 			socket.once('close', () => upgraded.delete(socket));
 		});
 		stops.push(
-			() =>
+			(finishRequests) =>
 				new Promise<void>((resolve) => {
 					// Open WebSockets and idle keep-alive connections would hold `close` open forever.
 					server.close(() => resolve());
-					if ('closeAllConnections' in server) server.closeAllConnections();
 					for (const socket of upgraded) socket.destroy();
 					for (const socket of sockets.clients) socket.terminate();
+					const closeAll = () => {
+						if ('closeAllConnections' in server) server.closeAllConnections();
+					};
+					if (!finishRequests) return closeAll();
+					// The request that asked for the restart still waits for its answer: idle
+					// connections go now, busy ones as soon as they are answered, and none is waited
+					// on for long.
+					if (!('closeIdleConnections' in server)) return closeAll();
+					server.closeIdleConnections();
+					const idle = setInterval(() => server.closeIdleConnections(), 50);
+					const late = setTimeout(closeAll, 5_000);
+					server.once('close', () => {
+						clearInterval(idle);
+						clearTimeout(late);
+					});
 				}),
 		);
 	}
@@ -192,7 +207,7 @@ async function serveCommand() {
 		if (stopping) return;
 		stopping = true;
 		logger.info({ signal }, code === RESTART_EXIT_CODE ? 'restarting' : 'shutting down');
-		for (const stop of stops.reverse()) await stop();
+		for (const stop of stops.reverse()) await stop(code === RESTART_EXIT_CODE);
 		await runtime.close();
 		process.exit(code);
 	};
