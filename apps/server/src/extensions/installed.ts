@@ -236,6 +236,7 @@ export async function recordStart(
 		installed: [...new Set([...state.installed, ...selection.installed])],
 		known,
 		failed: state.failed.filter((f) => runningVersion.get(f.id) === undefined),
+		loaded: running.flatMap((ext) => (ext.id === 'core' ? [] : [ext.id])).sort(),
 	};
 	await writeExtensionState(db, next, now);
 }

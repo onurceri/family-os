@@ -198,6 +198,17 @@ describe('purging an uninstalled extension', () => {
 			{ extensionId: 'pets' },
 			cli,
 		);
+		// Uninstalled, but the server that loaded it has not started again: it still uses it.
+		const before = await readExtensionState(second.runtime.handle.db);
+		expect(before?.loaded).toContain('pets');
+		expect(() =>
+			purgeTarget('pets', {
+				state: before,
+				installed: [],
+				loaded: [],
+				packages: second.selection.packages.list(),
+			}),
+		).toThrow('pets is still running. Restart FamilyOS first so it stops using pets');
 		await stop(second.runtime);
 
 		const third = await start(dataDir);
@@ -360,6 +371,17 @@ describe('what may not be purged', () => {
 	it('refuses one that still runs', () => {
 		expect(() => purgeTarget('pets', { ...base, loaded: ['records', 'pets'] })).toThrow(
 			/still running/,
+		);
+		// Loaded by the last start, which runs until the next one (a worker-only server too).
+		expect(() =>
+			purgeTarget('pets', {
+				...base,
+				state: { ...base.state, loaded: ['pets', 'records'] },
+			}),
+		).toThrow(/Restart FamilyOS first so it stops using pets/);
+		// The last start ran without it.
+		expect(purgeTarget('pets', { ...base, state: { ...base.state, loaded: ['records'] } })).toEqual(
+			{ id: 'pets', tablePrefix: 'pets_' },
 		);
 	});
 

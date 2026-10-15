@@ -11,7 +11,9 @@ import { readJson, writeJson } from './settings-json.ts';
  *   data can still be found after it is uninstalled;
  * - `failed`: packages whose migrations or start failed; that version is not loaded again, so a
  *   broken package cannot make the server restart over and over;
- * - `restartRequestedAt`: when someone last asked the server to restart.
+ * - `restartRequestedAt`: when someone last asked the server to restart;
+ * - `loaded`: what the last start ran, which is still running until the next start (absent in
+ *   state written before it was recorded).
  */
 /**
  * Why an installed extension does not run, as a stable code a page translates (the `reason`
@@ -65,6 +67,7 @@ export const ExtensionStateSchema = z.object({
 		}),
 	),
 	restartRequestedAt: z.number().nullable(),
+	loaded: z.array(z.string()).optional(),
 });
 export type ExtensionState = z.infer<typeof ExtensionStateSchema>;
 

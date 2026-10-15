@@ -20,7 +20,7 @@ export interface PurgeContext {
 	state: ExtensionState | null;
 	/** The ids the server loads at its next start (always installed ones included). */
 	installed: readonly string[];
-	/** The ids running now: in this process, and in a server that answers on this machine. */
+	/** The ids this process loaded. */
 	loaded: readonly string[];
 	/** Every package this server has, shipped or stored. */
 	packages: readonly ExtensionPackage[];
@@ -46,8 +46,10 @@ export function purgeTarget(id: string, context: PurgeContext): PurgeTarget {
 	if (pkg?.always) throw new Error(`${id} is always installed; its data cannot be removed`);
 	if (context.installed.includes(id) || context.state?.installed.includes(id))
 		throw new Error(`${id} is installed. Uninstall it first: famos extensions uninstall ${id}`);
-	if (context.loaded.includes(id))
-		throw new Error(`${id} is still running. Restart FamilyOS after uninstalling it, then purge`);
+	// What the last start loaded runs until the next one, in every process of that server (a
+	// worker too), so only a start without it shows that nothing uses its tables any more.
+	if (context.loaded.includes(id) || context.state?.loaded?.includes(id))
+		throw new Error(`${id} is still running. Restart FamilyOS first so it stops using ${id}`);
 	const known = context.state?.known[id];
 	if (!known)
 		throw new Error(`${id} never ran on this server, so there is no data of it to remove`);

@@ -382,27 +382,6 @@ async function writeJson(file: string, value: unknown) {
 }
 
 /**
- * The extensions a server running on this machine has loaded, asked on its own port; none when
- * nothing answers. A purge must not drop tables under a server that still runs their code.
- */
-async function servedNow(config: Config): Promise<string[]> {
-	try {
-		const response = await fetch(`http://127.0.0.1:${config.port}/api/v1/core/extensions/loaded`, {
-			redirect: 'manual',
-			signal: AbortSignal.timeout(2000),
-		});
-		if (!response.ok) return [];
-		const body = (await response.json()) as { extensions?: unknown };
-		if (!Array.isArray(body.extensions)) return [];
-		return body.extensions.flatMap((ext: { id?: unknown }) =>
-			typeof ext?.id === 'string' ? [ext.id] : [],
-		);
-	} catch {
-		return [];
-	}
-}
-
-/**
  * `famos extensions list|install|uninstall|purge`: changes the installed set the way Settings does,
  * as the server's own command line; the change loads when the server starts again. Purging the
  * data of an uninstalled extension is done here only.
@@ -478,10 +457,7 @@ async function extensionsCommand(
 				const target = purgeTarget(id, {
 					state: await readExtensionState(runtime.handle.db),
 					installed: selection.installed,
-					loaded: [
-						...kernel.registry.extensions.map((ext) => ext.id),
-						...(await servedNow(runtime.config)),
-					],
+					loaded: kernel.registry.extensions.map((ext) => ext.id),
 					packages: selection.packages.list(),
 				});
 				const preview = await previewPurge(runtime.handle.db, target, runtime.config.filesDir);
