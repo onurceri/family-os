@@ -244,9 +244,8 @@
 			case 'failed':
 				return t('extensions_status_failed');
 			default:
-				return [description(entry), t('extensions_version', { version: entry.version })]
-					.filter(Boolean)
-					.join(' · ');
+				// The version is in Details; the row keeps to one line of what it is for.
+				return description(entry);
 		}
 	}
 
@@ -287,6 +286,7 @@
 								checked={entry.enabled}
 								disabled={!session.can('core.features.manage')}
 								onchange={(enabled) => toggle(entry, enabled)}
+								oneLine
 							>
 								{#snippet end()}<RowMenu name={name(entry)} items={menu(entry)} />{/snippet}
 							</SwitchRow>

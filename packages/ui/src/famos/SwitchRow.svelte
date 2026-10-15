@@ -4,7 +4,8 @@
 	/**
 	 * An on/off setting: label, optional hint and a switch. A native checkbox with role="switch",
 	 * so keyboards, screen readers and forms work without extra code. `end` goes after the switch,
-	 * outside the label, so a button there (a row's `...` menu) never toggles it.
+	 * outside the label, so a button there (a row's `...` menu) never toggles it. The text starts 12 px
+	 * in, as in a `Row`, so switch rows and plain rows line up in the cards of one page.
 	 */
 	let {
 		id,
@@ -14,6 +15,7 @@
 		disabled = false,
 		onchange,
 		end,
+		oneLine = false,
 	}: {
 		id: string;
 		label: string;
@@ -22,19 +24,25 @@
 		disabled?: boolean;
 		onchange?: (checked: boolean) => void;
 		end?: Snippet;
+		/** Keeps the label and the hint to one line each (ellipsis), like a row's title and meta. */
+		oneLine?: boolean;
 	} = $props();
 </script>
 
 {#snippet row()}
 	<label
 		for={id}
-		class="flex min-h-13 cursor-pointer items-center gap-6 px-4 py-3 {disabled
+		class="flex min-h-13 cursor-pointer items-center gap-6 px-3 py-3 {disabled
 			? 'cursor-not-allowed opacity-60'
 			: ''}"
 	>
 		<span class="grid min-w-0 flex-1 gap-0.5">
-			<span class="font-semibold">{label}</span>
-			{#if hint}<small class="text-ink-soft text-xs">{hint}</small>{/if}
+			<span class="font-semibold" class:truncate={oneLine}>{label}</span>
+			{#if hint}<small
+					class="text-ink-soft text-xs"
+					class:truncate={oneLine}
+					title={oneLine ? hint : undefined}>{hint}</small
+				>{/if}
 		</span>
 		<input
 			{id}
