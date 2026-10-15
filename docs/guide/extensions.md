@@ -70,3 +70,17 @@ docker compose exec famos node /app/server/main.mjs extensions install pets
 ```
 
 `extensions install /data/<file>.famext` installs one from a file (copy it into the volume first with `docker compose cp`), and `extensions uninstall <id>` uninstalls one. A change made there loads at the next restart too.
+
+## Removing an extension's data for good
+
+Uninstalling keeps an extension's data, so nothing is lost when you change your mind. When you are sure you will not need it again, its data can be removed for good, from the server's command line only (the app never offers it):
+
+```bash
+docker compose exec famos node /app/server/main.mjs extensions uninstall pets
+docker compose restart famos
+docker compose exec famos node /app/server/main.mjs extensions purge pets
+```
+
+FamilyOS first says what it will remove and asks you to type the extension's name; `--yes` skips the question (for scripts). It then writes a [backup](backups.md) and stops if the backup fails. After that it removes everything the extension stored: its tables, its files, its waiting jobs, drafts and notifications, and what FamilyOS kept about it (who may use it in **Roles**, what displays may show of it, its switch, its **AI** area, notification choices and what Today hides of it). It ends with a list of what it removed. The audit log and the AI usage it counted stay.
+
+It refuses an extension that is still installed (uninstall it first), one the running server still runs (restart after uninstalling), one that is always there, and one that never ran on this server. Installed again later, the extension starts empty, as if it were new. To get the data back, restore the backup written before it was removed.

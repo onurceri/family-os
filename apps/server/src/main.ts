@@ -23,6 +23,7 @@ import {
 	recordStart,
 } from './extensions/installed.ts';
 import { findAvailable, type LoadedExtensions, loadExtensions } from './extensions/load.ts';
+import { describePurge, previewPurge, purgeExtension, purgeTarget } from './extensions/purge.ts';
 import { createHttpApp, loadedWeb, OPENAPI_INFO, resolveActor } from './http/app.ts';
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
@@ -31,7 +32,7 @@ import { ARCHIVE_EXTENSION } from './packages/archive.ts';
 import { OFFICIAL_INDEX_URL } from './packages/official.ts';
 import { createExtensionStore, type ExtensionStore, withStore } from './packages/store.ts';
 import { TRUST_ROOTS } from './packages/trust.ts';
-import { askSecret } from './prompt.ts';
+import { askLine, askSecret } from './prompt.ts';
 import { restoreFile } from './restore.ts';
 import {
 	APP_VERSION,
@@ -59,6 +60,9 @@ Usage: famos <command>
                      signed packages from a file; restart to load them
   extensions uninstall <id>
                      Uninstall an extension (its data is kept); restart to apply
+  extensions purge <id> [--yes]
+                     Remove an uninstalled extension's data for good (tables, files, settings),
+                     after writing a backup; asks first unless --yes
   openapi [file]     Write the OpenAPI document (default: openapi.json). With --extensions <dir>,
                      the file holds core's and the app's routes, and each extension's routes and
                      actions go to <dir>/<id>/openapi.json
@@ -378,10 +382,37 @@ async function writeJson(file: string, value: unknown) {
 }
 
 /**
- * `famos extensions list|install|uninstall`: changes the installed set the way Settings does, as
- * the server's own command line. The change loads when the server starts again.
+ * The extensions a server running on this machine has loaded, asked on its own port; none when
+ * nothing answers. A purge must not drop tables under a server that still runs their code.
  */
-async function extensionsCommand(sub: string | undefined, ids: string[], allOffered: boolean) {
+async function servedNow(config: Config): Promise<string[]> {
+	try {
+		const response = await fetch(`http://127.0.0.1:${config.port}/api/v1/core/extensions/loaded`, {
+			redirect: 'manual',
+			signal: AbortSignal.timeout(2000),
+		});
+		if (!response.ok) return [];
+		const body = (await response.json()) as { extensions?: unknown };
+		if (!Array.isArray(body.extensions)) return [];
+		return body.extensions.flatMap((ext: { id?: unknown }) =>
+			typeof ext?.id === 'string' ? [ext.id] : [],
+		);
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * `famos extensions list|install|uninstall|purge`: changes the installed set the way Settings does,
+ * as the server's own command line; the change loads when the server starts again. Purging the
+ * data of an uninstalled extension is done here only.
+ */
+async function extensionsCommand(
+	sub: string | undefined,
+	ids: string[],
+	flags: { allOffered: boolean; yes: boolean },
+) {
+	const { allOffered } = flags;
 	const { runtime, selection } = await openWithExtensions(await loadConfig(), { quiet: true });
 	try {
 		// The installed set lives in core's tables, which a data directory never started lacks.
@@ -441,9 +472,43 @@ async function extensionsCommand(sub: string | undefined, ids: string[], allOffe
 				console.log(`Uninstalled ${id}; its data is kept. Restart FamilyOS to apply.`);
 				return;
 			}
+			case 'purge': {
+				const [id] = ids;
+				if (!id || ids.length > 1) throw new Error('Usage: famos extensions purge <id> [--yes]');
+				const target = purgeTarget(id, {
+					state: await readExtensionState(runtime.handle.db),
+					installed: selection.installed,
+					loaded: [
+						...kernel.registry.extensions.map((ext) => ext.id),
+						...(await servedNow(runtime.config)),
+					],
+					packages: selection.packages.list(),
+				});
+				const preview = await previewPurge(runtime.handle.db, target, runtime.config.filesDir);
+				console.log(
+					`This removes everything ${id} stored, for good: ${preview.tables.length} table(s) (${target.tablePrefix}…), ${preview.files} file(s), and what FamilyOS keeps about it (its jobs, drafts, notifications, permissions and settings). A backup is written first.`,
+				);
+				if (!flags.yes) {
+					if (!process.stdin.isTTY)
+						throw new Error('Nothing was removed. Add --yes to purge without being asked.');
+					const answer = await askLine(`Type ${id} to remove its data: `);
+					if (answer.trim() !== id) {
+						console.log('Nothing was removed.');
+						return;
+					}
+				}
+				const { path } = await backupNow(runtime, 'manual');
+				console.log(`Backup written: ${path}`);
+				const summary = await purgeExtension(runtime.handle, target, {
+					filesDir: runtime.config.filesDir,
+					now: Date.now(),
+				});
+				for (const line of describePurge(id, summary)) console.log(line);
+				return;
+			}
 			default:
 				throw new Error(
-					'Usage: famos extensions list|install <id…> | --all-offered|uninstall <id>',
+					'Usage: famos extensions list|install <id…> | --all-offered|uninstall <id>|purge <id>',
 				);
 		}
 	} finally {
@@ -460,6 +525,7 @@ async function main() {
 			identity: { type: 'string' },
 			extensions: { type: 'string' },
 			'all-offered': { type: 'boolean' },
+			yes: { type: 'boolean' },
 		},
 	});
 	const [command = 'serve', arg] = positionals;
@@ -485,7 +551,10 @@ async function main() {
 			return runtime.close();
 		}
 		case 'extensions':
-			return extensionsCommand(arg, positionals.slice(2), values['all-offered'] === true);
+			return extensionsCommand(arg, positionals.slice(2), {
+				allOffered: values['all-offered'] === true,
+				yes: values.yes === true,
+			});
 		case 'restore': {
 			if (!arg) throw new Error('Usage: famos restore <file> [--identity <file>] [--force]');
 			const config = await loadConfig();

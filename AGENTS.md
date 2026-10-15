@@ -140,6 +140,8 @@ FAMOS_DEV_EXTENSIONS=../../extensions pnpm --filter @famos/server exec tsx src/m
 # which extensions a family has (also Settings → Family → Extensions): a new family starts with the always set
 # and the defaults (photos & weather); changes load at the next start
 node apps/server/dist/famos.mjs extensions list|install <id…>|install --all-offered|uninstall <id>
+# remove an uninstalled extension's data for good (backup first; asks unless --yes); command line only
+node apps/server/dist/famos.mjs extensions purge <id> [--yes]
 ```
 
 Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the results honestly.

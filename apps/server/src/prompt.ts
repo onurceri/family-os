@@ -24,3 +24,14 @@ export async function askSecret(question: string): Promise<string> {
 		rl.close();
 	}
 }
+
+/** Reads a line from the terminal (a confirmation). Throws when there is no TTY. */
+export async function askLine(question: string): Promise<string> {
+	if (!process.stdin.isTTY) throw new Error('No terminal to ask on');
+	const rl = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+	try {
+		return await new Promise<string>((resolve) => rl.question(question, resolve));
+	} finally {
+		rl.close();
+	}
+}
