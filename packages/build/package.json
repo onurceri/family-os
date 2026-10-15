@@ -1,0 +1,25 @@
+{
+	"name": "@famos/build",
+	"version": "0.0.0",
+	"license": "AGPL-3.0-or-later",
+	"private": true,
+	"type": "module",
+	"bin": {
+		"famos-build": "./bin/famos-build.ts"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc -p .",
+		"platform:update": "node bin/update-platform.ts"
+	},
+	"dependencies": {
+		"@famos/api-client": "workspace:*",
+		"@famos/sdk": "workspace:*",
+		"@famos/time": "workspace:*",
+		"@famos/ui": "workspace:*",
+		"esbuild": "0.28.2",
+		"svelte": "5.57.1"
+	}
+}

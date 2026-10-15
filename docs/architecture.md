@@ -120,9 +120,11 @@ family-os/
 │   ├── i18n/          # translation runtime, catalogs and language packs
 │   ├── themes/        # theme pack contract, validation, stylesheet generation
 │   ├── ui/            # shared Svelte components, <Slot/>
-│   └── api-client/    # generated TypeScript SDK
+│   ├── api-client/    # generated TypeScript SDK
+│   └── build/         # famos-build: builds an extension into a package; the shared-module lists
 ├── extensions/
 │   ├── calendar/  lists/  inbox/  board/  chores/  kitchen/  records/  vehicles/  pets/  home/  assistant/  ambient/   # one package each, subpath exports
+├── extensions.json    # which extension packages the image ships: always there, or offered
 ├── languages/         # bundled language packs (§6)
 ├── themes/            # bundled theme packs (§6)
 ├── docs/              # architecture, design system, user guide, releasing
@@ -137,6 +139,22 @@ Each extension is **one package** with subpath exports:
 | `./contract` | Zod schemas, route definitions, action input/output, event payloads | anyone (other extensions, web, server) |
 | `./server` | action handlers, queries, job handlers, migrations | `apps/server` only |
 | `./web` | Svelte pages, widgets, draft-card renderers | `apps/web` only |
+
+**Extension packages.** `famos-build` (`@famos/build`, each extension's `build` script) builds an extension into a package folder, `extensions/<id>/dist/`:
+
+| File | Contents |
+|---|---|
+| `server/index.mjs` | the server code as one ES module (with its source map) |
+| `messages/*.json` | the extension's catalogs, English and its own translations |
+| `openapi.json` | its routes and actions |
+| `LICENSE` | the extension's license, or the repository's |
+| `famos-package.json` | `format`, `manifest` (its package.json `famos` field, unchanged), `name`, `license`, `built` (`sdk`: the platform version, `svelte`), `entries`, `labels` (each language's `feature_name` and `feature_description`, as `name` and `description`) and `files`: every other file with its SHA-256 |
+
+The server bundle leaves out only the modules the host shares with every package (`SHARED_SERVER`: `@famos/sdk`, `zod`, `kysely`, `@famos/time`) and Node's own `node:` modules; everything else it uses (other extensions' `./contract`, `@famos/i18n`, libraries) is inlined. The build reads the bundle's metafile and fails on any other import it would leave to the host, a builtin written without `node:` or a subpath such as `zod/mini` included. `SHARED_WEB` lists what a web bundle will leave out: the browser subpaths of Svelte and the script subpaths of `@famos/ui`, read from their `package.json` exports, and `@famos/sdk`, `zod`, `@famos/time` and `@famos/api-client`.
+
+`SDK_VERSION` is the platform version that packages are built against. `packages/build/platform.json` records it with Svelte's minor, zod's major, Kysely's minor and the export names of `@famos/sdk`, `@famos/time`, `@famos/api-client` and every `@famos/ui` subpath; a test fails when they change and `SDK_VERSION` was not raised (its minor when something a built package may use changed or went away, at least its patch when names were only added). `pnpm --filter @famos/build platform:update` rewrites the file once the version is raised.
+
+`extensions.json` at the root says which packages the image ships: `always` (calendar, lists, inbox, assistant, board, chores, records: records because home, pets and vehicles need it), `offered` (ambient, kitchen, pets, vehicles, home) and `default`, the offered ones a fresh family gets. `pnpm build` runs turbo, which builds every package, and then `scripts/collect-extensions.mjs`, which copies each listed package and `extensions.json` to `dist/extensions/`; an extension folder the file does not name, or a named one without a built package, fails the build. The server bundles every extension from its source and does not load these packages.
 
 ## 5. Dependency rules (enforced in CI)
 

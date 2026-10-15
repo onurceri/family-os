@@ -1,14 +1,16 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SHARED_WEB } from '../packages/build/src/shared.ts';
 
 /**
- * An extension's web side will be built into a bundle of its own that the app loads, with
- * Svelte, `@famos/ui` and `@famos/sdk` left out of it and taken from the app (one Svelte runtime,
- * one app context). That only works while extensions reach them as packages: Svelte is a peer
- * (never a dependency of its own), and nothing reaches into their files by a relative path or
- * into Svelte's internals, which a bundler would copy in. No bundle is built yet; this keeps the
- * code ready for one.
+ * Extensions are built into packages of their own (`@famos/build`). The server bundle leaves
+ * `SHARED_SERVER` out, and the build refuses anything else it would leave to the host. The web
+ * bundle will leave `SHARED_WEB` out and take Svelte, `@famos/ui` and `@famos/sdk` from the app
+ * (one Svelte runtime, one app context). That only works while extensions reach them as
+ * packages: Svelte is a peer (never a dependency of its own), nothing reaches into their files by
+ * a relative path or into Svelte's internals, which a bundler would copy in, and every subpath of
+ * Svelte or `@famos/ui` an extension imports is one the app shares.
  */
 const root = join(import.meta.dirname, '..');
 const extensions = readdirSync(join(root, 'extensions')).filter((name) =>
@@ -45,5 +47,18 @@ describe('extension bundles leave out what the app shares', () => {
 				.map((file) => file.slice(root.length + 1)),
 		);
 		expect(offenders).toEqual([]);
+	});
+
+	it('imports only the subpaths of Svelte and @famos/ui that the app shares', () => {
+		const specifier = /(?:from|import)\s+['"]((?:svelte|@famos\/ui)(?:\/[^'"]*)?)['"]/g;
+		const unshared = extensions.flatMap((name) =>
+			[...walk(join(root, 'extensions', name, 'src', 'web'))].flatMap((file) =>
+				[...readFileSync(file, 'utf8').matchAll(specifier)]
+					.map((match) => match[1] ?? '')
+					.filter((path) => !SHARED_WEB.includes(path))
+					.map((path) => `${file.slice(root.length + 1)}: ${path}`),
+			),
+		);
+		expect(unshared).toEqual([]);
 	});
 });

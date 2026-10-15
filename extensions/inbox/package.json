@@ -35,6 +35,7 @@
 		}
 	},
 	"scripts": {
+		"build": "famos-build",
 		"typecheck": "tsc -p . && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings",
 		"eval": "tsx eval/run.ts"
 	},
@@ -52,6 +53,7 @@
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
+		"@famos/build": "workspace:*",
 		"@famos/ext-calendar": "workspace:*",
 		"@famos/ext-home": "workspace:*",
 		"@famos/ext-lists": "workspace:*",

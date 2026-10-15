@@ -421,6 +421,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/ext-calendar':
         specifier: workspace:*
         version: link:../calendar
@@ -464,6 +467,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/ext-calendar':
         specifier: workspace:*
         version: link:../calendar
@@ -516,6 +522,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -556,6 +565,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -593,6 +605,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -636,6 +651,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -676,6 +694,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/ext-calendar':
         specifier: workspace:*
         version: link:../calendar
@@ -737,6 +758,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -774,6 +798,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -817,6 +844,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -854,6 +884,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -897,6 +930,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/build':
+        specifier: workspace:*
+        version: link:../../packages/build
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -962,6 +998,27 @@ importers:
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@6.0.3)
+
+  packages/build:
+    dependencies:
+      '@famos/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@famos/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@famos/time':
+        specifier: workspace:*
+        version: link:../time
+      '@famos/ui':
+        specifier: workspace:*
+        version: link:../ui
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      svelte:
+        specifier: 5.57.1
+        version: 5.57.1
 
   packages/core:
     dependencies:

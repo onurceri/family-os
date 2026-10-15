@@ -33,8 +33,10 @@ packages/time      Dates, time zones, recurrence (RRULE) and format-locale helpe
 packages/testing   Test ctx on in-memory SQLite, fakes, port contract suites
 packages/ui        Shared Svelte components, <Slot/>
 packages/api-client  Generated from openapi.json (core and app routes) — never edit by hand
+packages/build     famos-build: builds an extension into a package (dist/); shared-module lists, platform snapshot
 apps/e2e           Playwright end-to-end tests against the production bundle
 extensions/*       Features (calendar, lists, inbox, board, records, home, pets, vehicles, chores, kitchen, assistant, ambient); one package each
+extensions.json    Which extension packages the image ships (always, offered, default)
 languages/         Bundled language packs
 themes/            Bundled theme packs: ev-isigi (the default), coast, forest, plum, paper, high-contrast
 docs/              Architecture, design system, user guide, releasing

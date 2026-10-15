@@ -34,6 +34,7 @@
 		}
 	},
 	"scripts": {
+		"build": "famos-build",
 		"typecheck": "tsc -p . && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings"
 	},
 	"dependencies": {
@@ -51,6 +52,7 @@
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
+		"@famos/build": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",
 		"svelte-check": "4.7.6",

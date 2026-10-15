@@ -26,6 +26,28 @@ describe('extension manifests', () => {
 		expect(manifest.version).toBe(pkg.version);
 	});
 
+	it('are each named once in extensions.json, which says what the image ships', () => {
+		const listed = JSON.parse(readFileSync(join(root, 'extensions.json'), 'utf8')) as {
+			always: string[];
+			offered: string[];
+			default: string[];
+		};
+		const named = [...listed.always, ...listed.offered];
+		expect([...named].sort()).toEqual([...extensions].sort());
+		expect(new Set(named).size).toBe(named.length);
+		// A fresh family's choice comes from what is offered; the rest is always there.
+		expect(listed.default.filter((id) => !listed.offered.includes(id))).toEqual([]);
+		// Something that is always there cannot need something that may be missing.
+		for (const id of listed.always) {
+			const pkg = JSON.parse(readFileSync(join(root, 'extensions', id, 'package.json'), 'utf8'));
+			const needs = parseManifest(pkg.famos).dependsOn;
+			expect(
+				needs.filter((dep) => !listed.always.includes(dep)),
+				id,
+			).toEqual([]);
+		}
+	});
+
 	it('checks SDK errors by their brand, never with instanceof', () => {
 		// An extension installed on its own may carry another copy of the SDK, whose error
 		// classes are different objects: `instanceof` would miss its errors.

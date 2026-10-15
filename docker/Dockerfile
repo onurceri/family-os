@@ -23,6 +23,7 @@ COPY packages/api-client/package.json packages/api-client/
 COPY packages/i18n/package.json packages/i18n/
 COPY packages/time/package.json packages/time/
 COPY packages/themes/package.json packages/themes/
+COPY packages/build/package.json packages/build/
 COPY extensions/ambient/package.json extensions/ambient/
 COPY extensions/assistant/package.json extensions/assistant/
 COPY extensions/board/package.json extensions/board/
