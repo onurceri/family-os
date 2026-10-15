@@ -16,7 +16,7 @@ import { publicKeyOf, type TrustRoot } from './trust.ts';
 /** The file of an archive that signs `famos-package.json` (written by `@famos/pack`). */
 export const SIGNATURE_FILE = 'famos-package.sig';
 
-const SignatureSchema = z.object({ keyId: z.string().max(64), sig: z.base64().max(200) });
+export const SignatureSchema = z.object({ keyId: z.string().max(64), sig: z.base64().max(200) });
 
 const DescriptionSchema = z.object({
 	format: z.literal(1),

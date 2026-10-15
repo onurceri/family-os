@@ -58,6 +58,53 @@ describe('release in a fresh repository', () => {
 		expect(notes).toMatch(/^## 0\.1\.0 \(\d{4}-\d{2}-\d{2}\)\n\nFirst release\.\n$/);
 	});
 
+	describe('with extensions', () => {
+		const manifest = (id: string, version: string) =>
+			`{\n\t"name": "@famos/ext-${id}",\n\t"version": "${version}",\n\t"private": true,\n\t"famos": {\n\t\t"id": "${id}",\n\t\t"dependsOn": [\n\t\t\t"records"\n\t\t],\n\t\t"version": "${version}",\n\t\t"sdk": "^0.5.0"\n\t},\n\t"dependencies": {\n\t\t"zod": "4.6.5"\n\t}\n}\n`;
+		const read = (id: string) => readFileSync(join(repo, 'extensions', id, 'package.json'), 'utf8');
+
+		beforeEach(() => {
+			writeFileSync(
+				join(repo, 'extensions.json'),
+				JSON.stringify({
+					always: ['calendar'],
+					offered: ['pets'],
+					default: [],
+					independent: ['garden'],
+				}),
+			);
+			for (const id of ['calendar', 'pets', 'garden']) {
+				mkdirSync(join(repo, 'extensions', id), { recursive: true });
+				writeFileSync(join(repo, 'extensions', id, 'package.json'), manifest(id, '0.0.3'));
+			}
+			git('add', '.');
+			git('commit', '-q', '-m', 'chore: extensions');
+		});
+
+		it('gives the shipped ones the product version, and leaves an independent one alone', () => {
+			node('scripts/release.mjs', '0.2.0');
+			// Only the two version lines change; the rest of the file is as it was.
+			expect(read('calendar')).toBe(manifest('calendar', '0.2.0'));
+			expect(read('pets')).toBe(manifest('pets', '0.2.0'));
+			expect(read('garden')).toBe(manifest('garden', '0.0.3'));
+			expect(git('status', '--porcelain')).toBe('');
+			expect(git('show', '--name-only', '--format=', 'HEAD').split('\n').sort()).toEqual([
+				'apps/server/package.json',
+				'apps/web/package.json',
+				'extensions/calendar/package.json',
+				'extensions/pets/package.json',
+			]);
+		});
+
+		it('leaves them at their version for a pre-release', () => {
+			node('scripts/release.mjs', '1.0.0-rc.1');
+			expect(read('calendar')).toBe(manifest('calendar', '0.0.3'));
+			expect(JSON.parse(readFileSync(join(repo, 'apps/server/package.json'), 'utf8')).version).toBe(
+				'1.0.0-rc.1',
+			);
+		});
+	});
+
 	it('takes the next release from the previous tag', () => {
 		node('scripts/release.mjs', '0.1.0');
 		commit('feat(lists): shopping categories');

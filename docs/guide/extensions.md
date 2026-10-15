@@ -29,13 +29,23 @@ An extension can also come as a file ending in `.famext`, for example a newer ve
 
 FamilyOS installs a file only when it is **signed by FamilyOS**: the signature proves where it comes from and that nobody changed it since. It checks this again every time it starts, and leaves an extension out if its files were changed. A file it refuses says why:
 
-- **FamilyOS cannot confirm who made this file**: it is not signed by FamilyOS, or it was signed by someone else. (Until the first signed extensions are published, every file is refused this way.)
+- **FamilyOS cannot confirm who made this file**: it is not signed by FamilyOS, or it was signed by someone else.
 - **This file is too large**: an extension file can be at most 20 MB.
 - **This extension is made for another version of FamilyOS**: update FamilyOS, or find the file made for yours.
 - **This file holds an older version**: FamilyOS already has a newer one.
 - **This is not an extension file FamilyOS can read**: the file is damaged or was changed.
 
 A newer FamilyOS that brings a newer version of the extension uses that one. Extensions installed from a file are part of your [backups](backups.md).
+
+## Looking for more online
+
+FamilyOS publishes its extensions, and newer versions of them, in an index on the internet. FamilyOS looks there **only when you ask**: never by itself, in the background or when it starts.
+
+In **⋯** at the top of the Extensions page, choose **Look for more**. FamilyOS fetches the index and checks that FamilyOS signed it. **Found online** then lists what your FamilyOS does not have yet: extensions that did not come with it, and newer versions of the ones you have (**Version 1.1.0 is out**). An extension that came with FamilyOS but is not installed is listed once, under Found online, when the index has a newer version of it.
+
+Tap one to see what it is for, its version and how much it downloads, then press **Download**. FamilyOS downloads it, checks that it is exactly the file the index describes, and checks it like a file: the details then show what it reaches and **Who made it**, with **Install** (or **Update**). It starts working when FamilyOS restarts.
+
+When looking does not work, the page says why: the index could not be reached (check that the server is online), it was **not signed by FamilyOS** (nothing in it is offered), or it is not one your version can read (updating FamilyOS helps). A download that does not match the index is not used; try again.
 
 ## Restarting
 

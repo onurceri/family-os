@@ -31,8 +31,10 @@ describe('extension manifests', () => {
 			always: string[];
 			offered: string[];
 			default: string[];
+			independent: string[];
 		};
-		const named = [...listed.always, ...listed.offered];
+		// Independent ones are released on their own, never shipped in the image.
+		const named = [...listed.always, ...listed.offered, ...listed.independent];
 		expect([...named].sort()).toEqual([...extensions].sort());
 		expect(new Set(named).size).toBe(named.length);
 		// A fresh family's choice comes from what is offered; the rest is always there.
@@ -43,6 +45,19 @@ describe('extension manifests', () => {
 			const needs = parseManifest(pkg.famos).dependsOn;
 			expect(
 				needs.filter((dep) => !listed.always.includes(dep)),
+				id,
+			).toEqual([]);
+		}
+		// What the image ships is released with the product, under its version (a pre-release
+		// leaves them at the last one); nothing shipped needs a package released on its own.
+		const product: string = JSON.parse(
+			readFileSync(join(root, 'apps/server/package.json'), 'utf8'),
+		).version;
+		for (const id of [...listed.always, ...listed.offered]) {
+			const pkg = JSON.parse(readFileSync(join(root, 'extensions', id, 'package.json'), 'utf8'));
+			if (!product.includes('-')) expect(pkg.version, id).toBe(product);
+			expect(
+				parseManifest(pkg.famos).dependsOn.filter((dep) => listed.independent.includes(dep)),
 				id,
 			).toEqual([]);
 		}

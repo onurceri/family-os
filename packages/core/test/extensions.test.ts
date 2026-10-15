@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+	type Actor,
 	defineAction,
 	defineCapability,
 	defineExtension,
@@ -17,6 +18,7 @@ import { restartRequested } from '../src/extension-install.ts';
 import {
 	type ExtensionPackage,
 	type ExtensionPackagesPort,
+	type IndexedPackage,
 	readExtensionState,
 	type StagedPackage,
 	writeExtensionState,
@@ -545,5 +547,180 @@ describe('an uninstalled extension', () => {
 			.select('status')
 			.execute();
 		expect(rows.map((r) => r.status)).toEqual(['pending', 'pending']);
+	});
+});
+
+describe('looking for more in the official index', () => {
+	const notes = ext('notes');
+	const garden = ext('garden');
+	const GARDEN_DIGEST = `3${'c'.repeat(31)}`;
+	const entry = (id: string, version: string, sdk = `^${SDK_VERSION}`): IndexedPackage => ({
+		id,
+		version,
+		sdk,
+		url: `https://index.example/extensions/${id}/${id}-${version}.famext`,
+		sha256: 'f'.repeat(64),
+		size: 1234,
+		labels: { en: { name: id, description: `The ${id}` } },
+	});
+
+	/** The port of `packages` plus an index: `listed`, or the error `fail` gives. */
+	function online(listed: IndexedPackage[], fail?: () => Error) {
+		const base = packages([{ ext: notes, always: true }], [upload(garden, GARDEN_DIGEST, '1.1.0')]);
+		const calls = { find: 0, download: [] as string[] };
+		const port: ExtensionPackagesPort = {
+			...base,
+			async findPackages() {
+				calls.find++;
+				if (fail) throw fail();
+				return listed;
+			},
+			async download(pkg) {
+				calls.download.push(`${pkg.id}@${pkg.version}`);
+				const staged = await base.stage?.(new Uint8Array([3]));
+				if (!staged) throw new Error('not staged');
+				return staged;
+			},
+		};
+		return { port, calls };
+	}
+	const found = async (k: TestKernel) =>
+		k.route('core.getFoundExtensions').call({ actor: (await k.member('admin')).actor });
+
+	it('finds nothing until a person asks, then lists what this server lacks or has older', async () => {
+		const { port, calls } = online([
+			entry('garden', '1.0.0'),
+			entry('garden', '1.1.0'),
+			// Not newer than what the server has, and one it cannot run: neither is offered.
+			entry('notes', '0.0.0'),
+			entry('pond', '1.0.0', '^99.0.0'),
+		]);
+		const k = await kernel({ extensions: [notes], extensionPackages: port });
+		await k.worker.drain();
+		expect(calls.find).toBe(0);
+		expect(await found(k)).toEqual({ search: null, found: [], download: null });
+
+		const admin = (await k.member('admin')).actor;
+		await expect(k.runner.invoke('core.findExtensions', {}, admin)).resolves.toMatchObject({
+			status: 'applied',
+		});
+		expect(await found(k)).toMatchObject({ search: { status: 'looking' } });
+		await k.worker.drain();
+		expect(calls.find).toBe(1);
+		expect(await found(k)).toEqual({
+			search: { status: 'done', at: expect.any(Number), problem: null },
+			found: [
+				{
+					id: 'garden',
+					version: '1.1.0',
+					current: null,
+					size: 1234,
+					labels: { en: { name: 'garden', description: 'The garden' } },
+				},
+			],
+			download: null,
+		});
+		// Looking again: nothing is offered until the new search is done.
+		await k.runner.invoke('core.findExtensions', {}, admin);
+		expect(await found(k)).toMatchObject({ search: { status: 'looking' }, found: [] });
+	});
+
+	it('downloads a listed package into staging, which installs like a file', async () => {
+		const { port, calls } = online([entry('garden', '1.1.0')]);
+		const k = await kernel({ extensions: [notes], extensionPackages: port });
+		const admin = (await k.member('admin')).actor;
+		await k.runner.invoke('core.findExtensions', {}, admin);
+		await k.worker.drain();
+		await expect(
+			k.runner.invoke('core.downloadExtension', { extensionId: 'garden', version: '9.9.9' }, admin),
+		).rejects.toMatchObject({ code: 'not_found' });
+		await k.runner.invoke(
+			'core.downloadExtension',
+			{ extensionId: 'garden', version: '1.1.0' },
+			admin,
+		);
+		expect(await found(k)).toMatchObject({
+			download: { id: 'garden', status: 'downloading', staged: null },
+		});
+		await k.worker.drain();
+		expect(calls.download).toEqual(['garden@1.1.0']);
+		expect((await found(k)).download).toMatchObject({
+			id: 'garden',
+			version: '1.1.0',
+			status: 'ready',
+			problem: null,
+			staged: { digest: GARDEN_DIGEST, id: 'garden', version: '1.1.0', current: null },
+		});
+		await expect(
+			k.runner.invoke('core.installExtension', { staged: GARDEN_DIGEST }, admin),
+		).resolves.toMatchObject({ output: { changed: ['garden'], restartNeeded: true } });
+	});
+
+	it('records why looking or downloading failed, without trying again by itself', async () => {
+		const unsigned = online(
+			[],
+			() =>
+				new FamosError('bad_request', 'The index is signed with a key this server does not trust', {
+					reason: 'unsigned',
+				}),
+		);
+		const k = await kernel({ extensions: [notes], extensionPackages: unsigned.port });
+		const admin = (await k.member('admin')).actor;
+		await k.runner.invoke('core.findExtensions', {}, admin);
+		await k.worker.drain();
+		expect(unsigned.calls.find).toBe(1);
+		expect((await found(k)).search).toEqual({
+			status: 'failed',
+			at: expect.any(Number),
+			problem: { reason: 'unsigned', code: null, params: {} },
+		});
+
+		const { port } = online([entry('garden', '1.1.0')]);
+		const refusing: ExtensionPackagesPort = {
+			...port,
+			download: () =>
+				Promise.reject(
+					new FamosError('bad_request', 'does not match', {
+						reason: 'mismatch',
+						path: 'garden-1.1.0.famext',
+					}),
+				),
+		};
+		const k2 = await kernel({ extensions: [notes], extensionPackages: refusing });
+		const admin2 = (await k2.member('admin')).actor;
+		await k2.runner.invoke('core.findExtensions', {}, admin2);
+		await k2.worker.drain();
+		await k2.runner.invoke(
+			'core.downloadExtension',
+			{ extensionId: 'garden', version: '1.1.0' },
+			admin2,
+		);
+		await k2.worker.drain();
+		expect((await found(k2)).download).toMatchObject({
+			status: 'failed',
+			staged: null,
+			problem: { reason: 'mismatch', code: null, params: { path: 'garden-1.1.0.famext' } },
+		});
+	});
+
+	it('is refused where the server cannot look online, and for anyone but a person', async () => {
+		const k = await kernel({ extensions: [notes], extensionPackages: packages([{ ext: notes }]) });
+		const admin = (await k.member('admin')).actor;
+		await expect(k.runner.invoke('core.findExtensions', {}, admin)).rejects.toMatchObject({
+			code: 'bad_request',
+		});
+		const { port } = online([]);
+		const k2 = await kernel({ extensions: [notes], extensionPackages: port });
+		const admin2 = (await k2.member('admin')).actor;
+		const member = (await k2.member('member')).actor;
+		const actors: Actor[] = [
+			member,
+			{ kind: 'display', deviceId: 'd', capabilities: [], showNames: false },
+			{ kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: admin2.memberId, roleId: 'admin' },
+		];
+		for (const actor of actors)
+			await expect(k2.runner.invoke('core.findExtensions', {}, actor)).rejects.toMatchObject({
+				code: 'forbidden',
+			});
 	});
 });

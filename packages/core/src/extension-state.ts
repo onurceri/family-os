@@ -136,6 +136,23 @@ export interface StagedPackage extends Omit<ExtensionPackage, 'always'> {
 }
 
 /**
+ * A package the official index lists, as the server read it from the signed index: what it is,
+ * where it is (an absolute https address on the index's own host) and the size and SHA-256 its
+ * file must have.
+ */
+export const IndexedPackageSchema = z.object({
+	id: z.string(),
+	version: z.string(),
+	/** The SDK range its manifest asks for. */
+	sdk: z.string(),
+	url: z.string(),
+	sha256: z.string(),
+	size: z.number(),
+	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
+});
+export type IndexedPackage = z.infer<typeof IndexedPackageSchema>;
+
+/**
  * Which package an install is of: one this server offers, by id, or a staged one by its digest.
  */
 export type InstallSource = { id: string } | { staged: string };
@@ -160,6 +177,18 @@ export interface ExtensionPackagesPort {
 	stage?(archive: Uint8Array): Promise<StagedPackage>;
 	/** A staged package by its digest, checked again; undefined when there is none. */
 	staged?(digest: string): Promise<StagedPackage | undefined>;
+	/**
+	 * Fetches the official index and checks its signature. Throws a `FamosError` whose
+	 * `details.reason` says why it failed (`unreachable`, `unsigned`, `invalid`). Absent where
+	 * the server cannot look online. Network I/O: called from a job only, when a person asked.
+	 */
+	findPackages?(): Promise<IndexedPackage[]>;
+	/**
+	 * Downloads a package the index lists, checks its size and SHA-256 against the index
+	 * (`details.reason` `mismatch`), then stages it like an uploaded file. Network I/O: called
+	 * from a job only, when a person asked.
+	 */
+	download?(entry: IndexedPackage): Promise<StagedPackage>;
 }
 
 /** Without packages (tests): nothing beyond what the kernel was given can be installed. */

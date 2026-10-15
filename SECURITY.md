@@ -61,10 +61,15 @@ code it can trust:
   start, before any of its code runs. A file that is changed, added or replaced by a link after
   signing refuses the package. Archives are read with strict limits (20 MB compressed, 60 MB
   unpacked, 2000 files), regular files only, and no path that leaves the package.
-- **Today there is no trust root**: the project's release key is added when the first signed
-  packages are published, so until then every package from a file is refused. Only the FamilyOS
-  project's own key will be trusted at first; there is no setting or environment variable that
-  adds a key. Installing needs an admin who is signed in (never an API token, an agent or the AI).
+- **The only trust root is the FamilyOS project's release key** (id `3bab2b9c2b26fecd`), whose
+  private half exists only as a secret of the project's release workflow. There is no setting or
+  environment variable that adds a key. Installing needs an admin who is signed in (never an API
+  token, an agent or the AI).
+- **Packages from the official index** (Settings → Extensions → Look for more) are downloaded
+  only when an admin asks. The index (`index.json` on the project's GitHub Pages) must carry a
+  signature by a trust root; the server follows no redirect, reads only https from the index's
+  own host, caps every size, and checks each download's size and SHA-256 against the index
+  before it checks the package itself like a file from the family.
 - **Workspace source** (`FAMOS_DEV_EXTENSIONS`) is for development only, unsigned, and refused when
   `NODE_ENV=production`.
 

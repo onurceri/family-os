@@ -1,0 +1,58 @@
+name: Release an extension
+
+# An extension released on its own (listed as `independent` in extensions.json, not shipped in
+# the image) is published by a tag ext-<id>-v<x.y.z>, after its package.json (`version` and
+# `famos.version`) says that version. The checks run first; then the package is built, signed,
+# attached to a GitHub release of the tag and added to the signed index.
+on:
+  push:
+    tags: ["ext-*-v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  tag:
+    needs: checks
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.read.outputs.id }}
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: read
+        name: The tag names an independent extension at its version
+        run: |
+          rest="${GITHUB_REF_NAME#ext-}"
+          id="${rest%-v*}"
+          version="${rest##*-v}"
+          node -e '
+            const [id, version] = process.argv.slice(1);
+            const listed = require("./extensions.json");
+            if (!(listed.independent ?? []).includes(id)) {
+              console.error(`${id} is not an independent extension in extensions.json`);
+              process.exit(1);
+            }
+            const pkg = require(`./extensions/${id}/package.json`);
+            if (pkg.version !== version || pkg.famos.version !== version) {
+              console.error(`extensions/${id} is version ${pkg.version} (famos ${pkg.famos.version}), not ${version}`);
+              process.exit(1);
+            }
+          ' "$id" "$version"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  extensions:
+    needs: tag
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-extensions.yml
+    with:
+      tag: ${{ github.ref_name }}
+      title: ${{ needs.tag.outputs.id }} ${{ needs.tag.outputs.version }}
+      ids: ${{ needs.tag.outputs.id }}
+    secrets:
+      FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}

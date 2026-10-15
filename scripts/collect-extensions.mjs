@@ -2,6 +2,8 @@
 // extensions.json into dist/extensions/, the folder the image ships. Run by `pnpm build` after
 // turbo has built every package. extensions.json says which packages are always there and which
 // are offered; a package it does not name, or one it names that was not built, fails the build.
+// Those it lists as `independent` are released on their own (the official index) and are not
+// shipped in the image.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -16,7 +18,8 @@ const folders = readdirSync(join(root, 'extensions'), { withFileTypes: true })
 	.map((entry) => entry.name)
 	.filter((name) => existsSync(join(root, 'extensions', name, 'package.json')));
 for (const name of folders) {
-	if (!ids.includes(name)) problems.push(`extensions/${name} is not in extensions.json`);
+	if (!ids.includes(name) && !(listed.independent ?? []).includes(name))
+		problems.push(`extensions/${name} is not in extensions.json`);
 }
 
 rmSync(out, { recursive: true, force: true });

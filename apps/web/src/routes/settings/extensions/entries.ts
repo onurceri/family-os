@@ -261,3 +261,108 @@ export function problemOf(
 	if (values.extensionId) values.name = nameOfId(values.extensionId);
 	return { key: PROBLEMS[entry.reasonCode], values };
 }
+
+/** What the last look in the official index found, and the last download from it. */
+export type Found =
+	paths['/api/v1/core/extensions/found']['get']['responses'][200]['content']['application/json'];
+export type FoundPackage = Found['found'][number];
+export type FindProblem = NonNullable<NonNullable<Found['search']>['problem']>;
+
+/**
+ * A found package as a row of the list, for its name and description: what it reaches is known
+ * only once it is downloaded and checked (then it is a staged package).
+ */
+export function foundEntry(pkg: FoundPackage): Entry {
+	return {
+		id: pkg.id,
+		version: pkg.version,
+		status: 'available',
+		reason: null,
+		reasonCode: null,
+		reasonParams: {},
+		always: false,
+		enabled: false,
+		dependsOn: [],
+		optional: [],
+		reaches: { hosts: [], userUrls: false, local: false, calls: [], capabilities: [] },
+		labels: pkg.labels,
+		nextVersion: null,
+	};
+}
+
+/**
+ * The page's sections once the index was read: an extension the server offers in an older
+ * version than the index is listed once, as found (installing it gets the newest); a found
+ * package of an installed extension is an update.
+ */
+export function withFound(
+	grouped: { installed: Entry[]; available: Entry[] },
+	found: readonly FoundPackage[],
+): { available: Entry[]; found: { pkg: FoundPackage; update: boolean }[] } {
+	const foundIds = new Set(found.map((pkg) => pkg.id));
+	const installed = new Set(grouped.installed.map((entry) => entry.id));
+	return {
+		available: grouped.available.filter((entry) => !foundIds.has(entry.id)),
+		found: found.map((pkg) => ({ pkg, update: installed.has(pkg.id) })),
+	};
+}
+
+/** Why looking in the index failed, in the page's words. */
+export function searchProblem(
+	problem: FindProblem,
+): Said<
+	| 'extensions_find_unreachable'
+	| 'extensions_find_unsigned'
+	| 'extensions_find_invalid'
+	| 'extensions_find_failed'
+> {
+	switch (problem.reason) {
+		case 'unreachable':
+			return { key: 'extensions_find_unreachable' };
+		case 'unsigned':
+			return { key: 'extensions_find_unsigned' };
+		case 'invalid':
+			return { key: 'extensions_find_invalid' };
+		default:
+			return { key: 'extensions_find_failed' };
+	}
+}
+
+/** Why a download failed, in the page's words. */
+export interface DownloadProblem {
+	headline: Said<
+		| FileProblem['headline']['key']
+		| 'extensions_download_unreachable'
+		| 'extensions_download_mismatch'
+		| 'extensions_download_gone'
+		| 'extensions_download_failed'
+	>;
+	detail?: FileProblem['detail'];
+}
+
+/**
+ * Why a download failed: the network, or the index's own check (it is not the file the index
+ * describes), else what an uploaded file is refused for, said the same way.
+ */
+export function downloadProblem(problem: FindProblem): DownloadProblem {
+	switch (problem.reason) {
+		case 'unreachable':
+			return { headline: { key: 'extensions_download_unreachable' } };
+		case 'mismatch':
+			return { headline: { key: 'extensions_download_mismatch' } };
+		case 'gone':
+			return { headline: { key: 'extensions_download_gone' } };
+		case 'older':
+			return fileProblem({ status: 409, details: { reason: 'older', ...problem.params } });
+		case 'too_large':
+		case 'unsigned':
+		case 'incompatible':
+		case 'invalid':
+			return fileProblem({
+				status: 400,
+				details: { ...problem.params, reason: problem.reason, code: problem.code },
+			});
+		default:
+			return { headline: { key: 'extensions_download_failed' } };
+	}
+}

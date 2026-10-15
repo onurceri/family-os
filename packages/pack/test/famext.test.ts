@@ -1,4 +1,4 @@
-import { createPublicKey, verify } from 'node:crypto';
+import { createHash, createPublicKey, verify } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,10 +6,15 @@ import * as tar from 'tar';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
 	generateSigningKey,
+	INDEX_FILE,
+	INDEX_SIGNATURE_FILE,
 	keyIdOf,
 	loadSigningKey,
 	pack,
+	readPackedDescription,
 	SIGNATURE_FILE,
+	signFile,
+	writeIndex,
 } from '../src/famext.ts';
 import { hashFiles, PACKAGE_FILE } from '../src/index.ts';
 
@@ -92,3 +97,90 @@ describe('a packed package', () => {
 		);
 	});
 });
+
+describe('the published index', () => {
+	const key = generateSigningKey();
+
+	/** A packed package of `id` at `version`, named as a release names it. */
+	async function packed(id: string, version: string, license = 'license\n'): Promise<string> {
+		const dir = mkdtempSync(join(scratch, `${id}-`));
+		mkdirSync(join(dir, 'server'));
+		writeFileSync(join(dir, 'server/index.mjs'), 'export default {};\n');
+		writeFileSync(join(dir, 'LICENSE'), license);
+		const files = await hashFiles(dir);
+		const description = {
+			format: 1,
+			manifest: { id, version, sdk: '^0.5.0' },
+			labels: { en: { name: id, description: `The ${id}` } },
+			files,
+		};
+		writeFileSync(join(dir, PACKAGE_FILE), `${JSON.stringify(description)}\n`);
+		const out = join(mkdtempSync(join(scratch, 'out-')), `${id}-${version}.famext`);
+		await pack(dir, { privateKey: key.privateKey, out });
+		return out;
+	}
+
+	it('lists every published file, newest version first, and keeps the newest few', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		const first = await packed('garden', '1.0.0');
+		await writeIndex(site, { add: [first, await packed('pond', '0.1.0')] });
+		const { index, removed } = await writeIndex(site, {
+			add: [await packed('garden', '1.10.0'), await packed('garden', '1.2.0')],
+			keep: 2,
+		});
+		expect(removed).toEqual(['garden/garden-1.0.0.famext']);
+		expect(index.extensions.map((e) => `${e.id}@${e.version}`)).toEqual([
+			'garden@1.10.0',
+			'garden@1.2.0',
+			'pond@0.1.0',
+		]);
+		const [newest] = index.extensions;
+		const bytes = readFileSync(join(site, 'garden/garden-1.10.0.famext'));
+		expect(newest).toEqual({
+			id: 'garden',
+			version: '1.10.0',
+			sdk: '^0.5.0',
+			url: 'garden/garden-1.10.0.famext',
+			sha256: createHash('sha256').update(bytes).digest('hex'),
+			size: bytes.byteLength,
+			labels: { en: { name: 'garden', description: 'The garden' } },
+		});
+		expect(JSON.parse(readFileSync(join(site, INDEX_FILE), 'utf8'))).toEqual(index);
+		expect(await readPackedDescription(first)).toMatchObject({ id: 'garden', version: '1.0.0' });
+	});
+
+	it('never publishes one version with other bytes, or under another name', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		await writeIndex(site, { add: [await packed('garden', '1.0.0')] });
+		// The same bytes again (a workflow run twice) are fine.
+		await writeIndex(site, { add: [await packed('garden', '1.0.0')] });
+		await expect(
+			writeIndex(site, { add: [await packed('garden', '1.0.0', 'other\n')] }),
+		).rejects.toThrow(/already published with other contents/);
+		const misnamed = join(scratch, 'garden.famext');
+		writeFileSync(misnamed, readFileSync(await packed('garden', '2.0.0')));
+		await expect(writeIndex(site, { add: [misnamed] })).rejects.toThrow(/name it garden-2.0.0/);
+	});
+
+	it('signs the index file into index.json.sig', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		await writeIndex(site, {});
+		const file = join(site, INDEX_FILE);
+		const signature = await signFile(file, await loadSigningKey({ file: keyFile(key) }));
+		expect(JSON.parse(readFileSync(join(site, INDEX_SIGNATURE_FILE), 'utf8'))).toEqual(signature);
+		const publicKey = createPublicKey({
+			key: Buffer.from(key.publicKey, 'base64'),
+			format: 'der',
+			type: 'spki',
+		});
+		expect(verify(null, readFileSync(file), publicKey, Buffer.from(signature.sig, 'base64'))).toBe(
+			true,
+		);
+	});
+});
+
+function keyFile(key: { privateKey: string }): string {
+	const file = join(mkdtempSync(join(scratch, 'key-')), 'key.pem');
+	writeFileSync(file, key.privateKey);
+	return file;
+}

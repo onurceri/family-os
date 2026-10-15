@@ -15,13 +15,19 @@ export interface TrustRoot {
 }
 
 /**
- * The keys packages from a file or the store must be signed with. There are none yet: the
- * project's release key is committed here when the first signed packages are published, so until
- * then a store install is refused with "signed with a key this server does not trust", and only
- * the packages shipped with the app (trusted by where they are) can be installed. Several keys
- * may be listed at once, so a key can be replaced without stranding the packages it signed.
+ * The keys packages from a file, the official index or the store must be signed with. The
+ * official key's private half is kept only as a secret of the project's release workflow, which
+ * signs every published package and the index. Several keys may be listed at once, so a key can be
+ * replaced without stranding the packages it signed: the new one is added in a release before
+ * the workflow signs with it, and the old one is removed only once no supported release needs it.
  */
-export const TRUST_ROOTS: readonly TrustRoot[] = [];
+export const TRUST_ROOTS: readonly TrustRoot[] = [
+	{
+		keyId: '3bab2b9c2b26fecd',
+		kind: 'official',
+		publicKey: 'MCowBQYDK2VwAyEANJRBm3GwhX/MjRYmvHg3M7WyHurnbhFiwlFFUlvpJj4=',
+	},
+];
 
 /** The id of a public key: the first 16 hex digits of the SHA-256 of its SPKI DER. */
 export function keyIdOf(publicKey: KeyObject): string {

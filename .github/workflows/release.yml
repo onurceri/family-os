@@ -71,3 +71,18 @@ jobs:
           prerelease=""
           case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" --title "FamilyOS $VERSION" --notes-file notes.md $prerelease
+
+  # The extension packages the image ships, released with the product's version: attached to the
+  # release and added to the signed index servers look in (Settings → Extensions → Look for
+  # more). A pre-release publishes none: a package version has no pre-release part.
+  extensions:
+    needs: publish
+    if: ${{ !contains(github.ref_name, '-') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish-extensions.yml
+    with:
+      tag: ${{ github.ref_name }}
+      title: FamilyOS ${{ github.ref_name }}
+    secrets:
+      FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}

@@ -1,0 +1,115 @@
+name: Publish extensions
+
+# Called by the release workflows: builds extension packages, packs and signs
+# them with the project's key, attaches the .famext files to the GitHub release of the tag, and
+# adds them to the official index on GitHub Pages (branch gh-pages, folder extensions/), which
+# is signed with the same key. Servers download from Pages, not from the release: release asset
+# addresses redirect to another host, and a server follows no redirect.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag being released (the GitHub release the files are attached to)
+        type: string
+        required: true
+      title:
+        description: The release's title, used when the release does not exist yet
+        type: string
+        required: true
+      ids:
+        description: Extension ids, space-separated; empty means every one the image ships
+        type: string
+        default: ""
+    secrets:
+      FAMOS_EXTENSION_SIGNING_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the release's files and the gh-pages branch
+    # One index: two releases publishing at once would each write it from the same start.
+    concurrency:
+      group: extension-index
+      cancel-in-progress: false
+    env:
+      FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
+      TAG: ${{ inputs.tag }}
+      TITLE: ${{ inputs.title }}
+      IDS: ${{ inputs.ids }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # A key servers do not trust would publish packages every server refuses.
+      - name: The signing key is one the server trusts
+        run: node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY
+
+      - name: Build the packages
+        run: pnpm exec turbo run build --filter="./extensions/*"
+
+      - name: Pack and sign
+        # Every package must have the version the tag names (v0.2.0, ext-<id>-v1.0.0). IDS is a
+        # space-separated list of ids, split on purpose.
+        run: |
+          VERSION="${TAG##*v}"
+          # shellcheck disable=SC2086
+          node scripts/extensions.mjs pack $IDS --version "$VERSION" --out famext --key-env FAMOS_EXTENSION_SIGNING_KEY
+
+      - name: Attach to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --title "$TITLE" --notes "Extension packages of $TITLE, signed by the FamilyOS release key."
+          gh release upload "$TAG" famext/*.famext --clobber
+
+      - id: pages
+        name: Does the gh-pages branch exist
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.pages.outputs.exists == 'true'
+        uses: actions/checkout@v5
+        with:
+          ref: gh-pages
+          path: pages
+      - if: steps.pages.outputs.exists != 'true'
+        name: Start the gh-pages branch
+        run: git init -q -b gh-pages pages
+
+      - name: Add the packages to the index and sign it
+        run: |
+          node scripts/extensions.mjs index pages/extensions --add famext/*.famext
+          node scripts/extensions.mjs sign pages/extensions/index.json --key-env FAMOS_EXTENSION_SIGNING_KEY
+          # Pages serves the files as they are, without a Jekyll build.
+          touch pages/.nojekyll
+
+      - name: Publish the index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: pages
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The index already holds these packages."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Publish extension packages of $TITLE"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages

@@ -10,6 +10,12 @@ import {
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
+	createExtensionFind,
+	ExtensionDownloadSchema,
+	ExtensionSearchSchema,
+	FoundExtensionSchema,
+} from './extension-find.ts';
+import {
 	type ExtensionPackage,
 	type ExtensionPackagesPort,
 	ExtensionProblemSchema,
@@ -440,10 +446,42 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		},
 	});
 
+	const finder = createExtensionFind({ packages: deps.packages, assertPerson });
+
+	const FoundSchema = z.object({
+		/** The last search, or null when nobody looked yet. */
+		search: ExtensionSearchSchema.nullable(),
+		found: z.array(FoundExtensionSchema),
+		/** The last download, with what was staged once it is ready (null when it is gone). */
+		download: ExtensionDownloadSchema.extend({
+			staged: StagedExtensionSchema.nullable(),
+		}).nullable(),
+	});
+
+	const found = defineRoute({
+		method: 'get',
+		path: '/extensions/found',
+		operationId: 'core.getFoundExtensions',
+		summary: 'What the last look in the official index found, and the last download from it',
+		requires: CORE_CAPABILITIES.extensionsManage.id,
+		response: FoundSchema,
+		async handle(ctx) {
+			const { download, ...rest } = await finder.describe(ctx.db);
+			return {
+				...rest,
+				download: download && {
+					...download,
+					staged: download.staged && describeStaged(download.staged),
+				},
+			};
+		},
+	});
+
 	return {
-		actions: [install, uninstall, restart],
-		routes: [list, upload],
-		events: [extensionsChanged, restartRequested],
+		actions: [install, uninstall, restart, ...finder.actions],
+		routes: [list, upload, found],
+		jobs: finder.jobs,
+		events: [extensionsChanged, restartRequested, ...finder.events],
 		/** What `core.listExtensions` answers. */
 		describe,
 	};

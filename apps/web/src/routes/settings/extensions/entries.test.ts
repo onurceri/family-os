@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
 	descriptionOf,
+	downloadProblem,
 	type Entry,
 	fileProblem,
+	foundEntry,
 	nameOf,
 	neededBy,
 	problemOf,
 	reachOf,
 	restartNeeded,
 	type Staged,
+	searchProblem,
 	sections,
 	stagedEntry,
 	staysInside,
 	updateOf,
+	withFound,
 } from './entries.js';
 
 function entry(id: string, more: Partial<Entry> = {}): Entry {
@@ -257,5 +261,75 @@ describe('why an installed extension is left out', () => {
 			problemOf(entry('pets', { status: 'failed', reason: 'disk says no' }), nameOfId),
 		).toEqual({ key: 'extensions_problem_unknown' });
 		expect(problemOf(entry('pets'), nameOfId)).toBeNull();
+	});
+});
+
+describe('what the official index found', () => {
+	const problem = (reason: string, code: string | null = null, params = {}) => ({
+		reason,
+		code,
+		params,
+	});
+
+	it('names a found package by its labels, like one that can be installed', () => {
+		const found = foundEntry({
+			id: 'garden',
+			version: '1.1.0',
+			current: null,
+			size: 1000,
+			labels: {
+				en: { name: 'Garden', description: 'Beds and seeds' },
+				tr: { name: 'Bahçe', description: 'Tohumlar' },
+			},
+		});
+		expect(nameOf(found, { language: 'tr' })).toBe('Bahçe');
+		expect(descriptionOf(found, { language: 'de' })).toBe('Beds and seeds');
+		expect(found.status).toBe('available');
+	});
+
+	it('lists an extension once: found when the index has it newer, an update when installed', () => {
+		const pkg = (id: string) => ({ id, version: '0.2.0', current: '0.1.0', size: 1, labels: {} });
+		const shown = withFound(
+			{
+				installed: [entry('pets')],
+				available: [
+					entry('home', { status: 'available' }),
+					entry('kitchen', { status: 'available' }),
+				],
+			},
+			[pkg('home'), pkg('pets')],
+		);
+		expect(shown.available.map((e) => e.id)).toEqual(['kitchen']);
+		expect(shown.found.map(({ pkg, update }) => [pkg.id, update])).toEqual([
+			['home', false],
+			['pets', true],
+		]);
+	});
+
+	it('says why looking failed', () => {
+		expect(searchProblem(problem('unreachable'))).toEqual({ key: 'extensions_find_unreachable' });
+		expect(searchProblem(problem('unsigned'))).toEqual({ key: 'extensions_find_unsigned' });
+		expect(searchProblem(problem('invalid'))).toEqual({ key: 'extensions_find_invalid' });
+		expect(searchProblem(problem('failed'))).toEqual({ key: 'extensions_find_failed' });
+	});
+
+	it('says why a download failed, the way a refused file is said', () => {
+		expect(downloadProblem(problem('mismatch'))).toEqual({
+			headline: { key: 'extensions_download_mismatch' },
+		});
+		expect(downloadProblem(problem('gone')).headline.key).toBe('extensions_download_gone');
+		expect(downloadProblem(problem('unreachable')).headline.key).toBe(
+			'extensions_download_unreachable',
+		);
+		expect(downloadProblem(problem('older', null, { version: '2.0.0' }))).toEqual({
+			headline: { key: 'extensions_file_older', values: { version: '2.0.0' } },
+		});
+		expect(
+			downloadProblem(problem('unsigned', 'untrusted_key', { keyId: '0123456789abcdef' })),
+		).toEqual({
+			headline: { key: 'extensions_file_unsigned' },
+			detail: { key: 'extensions_file_untrusted_key', values: { keyId: '0123456789abcdef' } },
+		});
+		expect(downloadProblem(problem('failed')).headline.key).toBe('extensions_download_failed');
 	});
 });

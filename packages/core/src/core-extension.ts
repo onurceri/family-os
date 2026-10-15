@@ -404,7 +404,7 @@ export interface CoreExtensionDeps {
 	/** Installing and uninstalling extensions, and restarting the server. */
 	extensionInstall: Pick<
 		ReturnType<typeof createExtensionInstall>,
-		'actions' | 'routes' | 'events'
+		'actions' | 'routes' | 'events' | 'jobs'
 	>;
 	/** The one-time code first-run setup requires, or undefined when none is required (tests). */
 	setupCode?: string;
@@ -1540,6 +1540,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			pruneIdempotency,
 			expireDrafts,
 			...deps.search.jobs,
+			...deps.extensionInstall.jobs,
 		],
 		notifications: [draftWaiting, backupFailed, ...autoApproval.notifications],
 		capabilities: Object.values(CORE_CAPABILITIES),

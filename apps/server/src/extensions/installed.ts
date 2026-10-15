@@ -11,6 +11,7 @@ import {
 } from '@famos/core';
 import { schemaState } from '@famos/db';
 import { type DbExecutor, type ExtensionDefinition, FamosError, tablePrefixOf } from '@famos/sdk';
+import { downloadPackage, fetchIndex, type OfficialIndex } from '../packages/official.ts';
 import { compareVersions, type ExtensionStore } from '../packages/store.ts';
 import { type Available, type LoadReport, summary } from './load.ts';
 import { chooseInstalled, migrationProblem } from './state.ts';
@@ -45,7 +46,11 @@ export interface InstalledExtensions {
 export async function loadInstalled(
 	db: DbExecutor,
 	available: Available,
-	options: { store?: ExtensionStore } = {},
+	options: {
+		store?: ExtensionStore;
+		/** Where more packages can be found, when someone asks; none without a store. */
+		official?: OfficialIndex;
+	} = {},
 ): Promise<InstalledExtensions> {
 	const scopes = await schemaState(db);
 	// Core's table holds the state; before core's first migration there is none.
@@ -108,7 +113,7 @@ export async function loadInstalled(
 		refused,
 		refusable: available.extensions.filter((ext) => !ext.always).map((ext) => ext.id),
 		installed,
-		packages: packagesPort(available, options.store),
+		packages: packagesPort(available, options.store, options.official),
 		storedInUse: new Map(
 			available.extensions.flatMap((ext) =>
 				ext.stored && installed.includes(ext.id) ? [[ext.id, ext.stored.digest] as const] : [],
@@ -126,11 +131,13 @@ export async function loadInstalled(
 /**
  * The packages that can be installed: those shipped with the app (already in place, so
  * installing one needs no file step) and the store's, plus any placed since this start. Without a
- * store nothing can be installed from a file.
+ * store nothing can be installed from a file; with the official index, a package it lists can be
+ * downloaded into the store's staging the way an uploaded file is.
  */
 function packagesPort(
 	available: Available,
 	store: ExtensionStore | undefined,
+	official: OfficialIndex | undefined,
 ): ExtensionPackagesPort {
 	type Known = ExtensionPackage & { stored: boolean };
 	const byId = new Map<string, Known>(
@@ -157,6 +164,12 @@ function packagesPort(
 				{ reason: 'older', extensionId: staged.id, version: have.version },
 			);
 	};
+	async function stage(archive: Uint8Array) {
+		if (!store) throw new FamosError('bad_request', 'This server cannot install from a file');
+		const staged = await store.stage(archive);
+		assertNotOlder(staged);
+		return staged;
+	}
 	return {
 		list: () => [...byId.values()].map(plain),
 		async place(source) {
@@ -187,13 +200,14 @@ function packagesPort(
 			return plain(pkg);
 		},
 		...(store && {
-			async stage(archive: Uint8Array) {
-				const staged = await store.stage(archive);
-				assertNotOlder(staged);
-				return staged;
-			},
+			stage,
 			staged: (digest: string) => store.staged(digest),
 		}),
+		...(store &&
+			official && {
+				findPackages: () => fetchIndex(official),
+				download: async (entry) => stage(await downloadPackage(entry, official)),
+			}),
 	};
 }
 

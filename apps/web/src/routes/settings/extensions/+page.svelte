@@ -21,6 +21,7 @@
 		FileUp,
 		Info,
 		RotateCcw,
+		Search,
 		Trash2,
 		Undo2,
 	} from '@lucide/svelte';
@@ -34,18 +35,25 @@
 	import { toasts } from '#lib/toast.svelte.js';
 	import {
 		descriptionOf,
+		downloadProblem,
 		type Entry,
 		type ExtensionList,
 		type FileProblem,
+		type Found,
+		type FoundPackage,
 		fileProblem,
+		foundEntry,
 		nameOf,
 		neededBy,
 		type Staged,
+		searchProblem,
 		sections,
 		stagedEntry,
 		updateOf,
+		withFound,
 	} from './entries.js';
 	import ExtensionPanel from './ExtensionPanel.svelte';
+	import FoundPanel from './FoundPanel.svelte';
 	import Restarting from './Restarting.svelte';
 
 	/**
@@ -53,8 +61,10 @@
 	 * once) and a menu to uninstall it; what can be installed, each opening its details with what it
 	 * reaches and Install. Installing and uninstalling take effect when the server restarts, which
 	 * is then the page's one action. A signed package can also come from a file (the head's ⋯):
-	 * the server checks it, and its details open with Install. Only admins manage this (the
-	 * capability is critical).
+	 * the server checks it, and its details open with Install. "Look for more" (the same menu)
+	 * asks the server to read the official index, only then: what it lists that this server lacks
+	 * opens with Download, and a downloaded package is checked and installed like a file. Only
+	 * admins manage this (the capability is critical).
 	 */
 	let list = $state<ExtensionList | null>(null);
 	let error = $state<string | null>(null);
@@ -66,6 +76,12 @@
 	let staged = $state<Staged | null>(null);
 	let fileError = $state<{ text: string; detail?: string } | null>(null);
 	let fileInput = $state<HTMLInputElement | null>(null);
+	/** What the last look in the official index found, and the last download from it. */
+	let found = $state<Found | null>(null);
+	/** The found package whose details are open. */
+	let foundOpen = $state<FoundPackage | null>(null);
+	/** The server would not start the download (the index changed since: look again). */
+	let foundError = $state<string | null>(null);
 
 	const entries = $derived(list?.extensions ?? []);
 	const texts = (entry: Entry) => {
@@ -83,6 +99,7 @@
 	const name = (entry: Entry) => nameOf(entry, texts(entry));
 	const description = (entry: Entry) => descriptionOf(entry, texts(entry));
 	const grouped = $derived(sections(entries, name));
+	const shown = $derived(withFound(grouped, found?.found ?? []));
 
 	// The details panel lives in the address (?open=<id>), so reload and Back work.
 	const here = $derived(page.url.pathname);
@@ -96,8 +113,50 @@
 	const closePanel = () => void goto(here, { replace: true, reset: false });
 
 	async function load() {
-		list = (await api.GET('/api/v1/core/extensions')).data ?? null;
+		const [extensions, online] = await Promise.all([
+			api.GET('/api/v1/core/extensions'),
+			api.GET('/api/v1/core/extensions/found'),
+		]);
+		list = extensions.data ?? null;
+		found = online.data ?? null;
+		// The download this panel waits for is checked and staged: it installs like a file.
+		const download = found?.download;
+		if (
+			foundOpen &&
+			download?.status === 'ready' &&
+			download.staged &&
+			download.id === foundOpen.id &&
+			download.version === foundOpen.version
+		) {
+			staged = download.staged;
+			foundOpen = null;
+		}
 	}
+
+	const looking = $derived(found?.search?.status === 'looking');
+	/** The open found package's download, when it is the last one asked for. */
+	const openDownload = $derived(
+		foundOpen &&
+			found?.download?.id === foundOpen.id &&
+			found.download.version === foundOpen.version
+			? found.download
+			: null,
+	);
+	const downloading = $derived(openDownload?.status === 'downloading');
+	const downloadFailure = $derived.by(() => {
+		if (openDownload?.status !== 'failed' || !openDownload.problem) return null;
+		const said = downloadProblem(openDownload.problem);
+		return {
+			text: t(said.headline.key, said.headline.values),
+			...(said.detail && { detail: t(said.detail.key, said.detail.values) }),
+		};
+	});
+	// The server says when a look or a download is done; this also notices if that word is lost.
+	$effect(() => {
+		if (!looking && !downloading) return;
+		const timer = setInterval(() => void load(), 3000);
+		return () => clearInterval(timer);
+	});
 
 	/** The server's start id when the page opened, so a restart asked elsewhere is noticed. */
 	let bootAtOpen: string | null = null;
@@ -247,7 +306,44 @@
 		}
 	}
 
+	/** Asks the server to read the official index; what it finds shows below Available. */
+	async function look() {
+		error = null;
+		try {
+			unwrap(await api.POST('/api/v1/actions/core.findExtensions', { body: {} }));
+		} catch {
+			error = t('error_generic');
+		} finally {
+			await load();
+		}
+	}
+
+	async function downloadFound(pkg: FoundPackage) {
+		foundError = null;
+		try {
+			unwrap(
+				await api.POST('/api/v1/actions/core.downloadExtension', {
+					body: { extensionId: pkg.id, version: pkg.version },
+				}),
+			);
+		} catch (failure) {
+			foundError =
+				isApiError(failure) && failure.status === 404
+					? t('extensions_download_gone')
+					: t('error_generic');
+		} finally {
+			await load();
+		}
+	}
+
 	const pageMenu = $derived<MenuItem[]>([
+		{
+			id: 'look',
+			label: t('extensions_look'),
+			icon: lookIcon,
+			disabled: looking,
+			onselect: () => void look(),
+		},
 		{
 			id: 'file',
 			label: t('extensions_add_file'),
@@ -348,6 +444,7 @@
 {#snippet keepIcon()}<Undo2 class="size-4" aria-hidden="true" />{/snippet}
 {#snippet uninstallIcon()}<Trash2 class="size-4" aria-hidden="true" />{/snippet}
 {#snippet fileIcon()}<FileUp class="size-4" aria-hidden="true" />{/snippet}
+{#snippet lookIcon()}<Search class="size-4" aria-hidden="true" />{/snippet}
 
 <Page template="settings">
 	<PageHeader title={t('extensions_title')} subtitle={t('extensions_intro')}>
@@ -409,10 +506,10 @@
 				</Card>
 			</Section>
 
-			<Section label={t('extensions_available')} count={grouped.available.length}>
-				{#if grouped.available.length > 0}
+			<Section label={t('extensions_available')} count={shown.available.length}>
+				{#if shown.available.length > 0}
 					<Card rows data-testid="available-extensions">
-						{#each grouped.available as entry (entry.id)}
+						{#each shown.available as entry (entry.id)}
 							<Row
 								title={name(entry)}
 								meta={description(entry)}
@@ -431,6 +528,48 @@
 					</EmptyLine>
 				{/if}
 			</Section>
+
+			{#if found?.search}
+				{@const search = found.search}
+				<Section
+					label={t('extensions_found')}
+					count={search.status === 'done' ? found.found.length : undefined}
+				>
+					{#if search.status === 'looking'}
+						<EmptyLine text={t('extensions_looking')}>
+							{#snippet icon()}<Search aria-hidden="true" />{/snippet}
+						</EmptyLine>
+					{:else if search.status === 'failed' && search.problem}
+						{@const said = searchProblem(search.problem)}
+						<Notice tone="alert">{t(said.key)}</Notice>
+					{:else if found.found.length > 0}
+						<Card rows data-testid="found-extensions">
+							{#each shown.found as { pkg, update } (pkg.id)}
+								{@const entry = foundEntry(pkg)}
+								<Row
+									title={name(entry)}
+									meta={update
+										? t('extensions_found_newer', { version: pkg.version })
+										: description(entry)}
+									onclick={() => {
+										foundError = null;
+										foundOpen = pkg;
+									}}
+									aria-label={name(entry)}
+								>
+									{#snippet trail()}
+										<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
+									{/snippet}
+								</Row>
+							{/each}
+						</Card>
+					{:else}
+						<EmptyLine text={t('extensions_found_none')}>
+							{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
+						</EmptyLine>
+					{/if}
+				</Section>
+			{/if}
 
 			<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('extensions_data_kept')}</p>
 		</div>
@@ -451,6 +590,17 @@
 				panelError = null;
 			} else closePanel();
 		}}
+	/>
+
+	<FoundPanel
+		pkg={staged ? null : foundOpen}
+		update={shown.found.some(({ pkg, update }) => update && pkg.id === foundOpen?.id)}
+		name={foundOpen ? name(foundEntry(foundOpen)) : ''}
+		description={foundOpen ? description(foundEntry(foundOpen)) : ''}
+		{downloading}
+		problem={downloadFailure ?? (foundError ? { text: foundError } : null)}
+		ondownload={(pkg) => void downloadFound(pkg)}
+		onclose={() => (foundOpen = null)}
 	/>
 
 	<Dialog

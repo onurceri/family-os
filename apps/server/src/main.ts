@@ -28,6 +28,7 @@ import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
 import { ARCHIVE_EXTENSION } from './packages/archive.ts';
+import { OFFICIAL_INDEX_URL } from './packages/official.ts';
 import { createExtensionStore, type ExtensionStore, withStore } from './packages/store.ts';
 import { TRUST_ROOTS } from './packages/trust.ts';
 import { askSecret } from './prompt.ts';
@@ -290,7 +291,10 @@ async function openWithExtensions(
 	try {
 		// Every stored copy is checked again here, before any of its code is imported.
 		const available = withStore(findAvailable(), await store.scan());
-		selection = await loadInstalled(handle.db, available, { store });
+		selection = await loadInstalled(handle.db, available, {
+			store,
+			official: { url: config.extensionIndexUrl ?? OFFICIAL_INDEX_URL, trustRoots: TRUST_ROOTS },
+		});
 	} catch (error) {
 		await handle.close();
 		throw error;

@@ -35,6 +35,11 @@ const EnvSchema = z.object({
 	FAMOS_AI_MODEL_SMART: z.string().min(1).optional(),
 	/** For testing: where the Telegram Bot API lives (default https://api.telegram.org). */
 	FAMOS_TELEGRAM_API_ROOT: z.url().optional(),
+	/**
+	 * For testing: where the extension index is (default the official one). Its signature is
+	 * still checked against the server's own trust roots, so this adds no source of code.
+	 */
+	FAMOS_EXTENSION_INDEX_URL: z.url({ protocol: /^https$/ }).optional(),
 	/** For testing only: a directory of .eml files stands in for the IMAP server. */
 	FAMOS_EMAIL_FAKE_DIR: z.string().min(1).optional(),
 	/** For testing only: how long a suggestion waits before it notifies approvers (ms). */
@@ -69,6 +74,8 @@ export interface Config {
 	roles: { api: boolean; worker: boolean };
 	backup: { hour: number; keep: number };
 	logLevel: string;
+	/** For testing: where the extension index is. Unset means the official one. */
+	extensionIndexUrl?: string;
 	/** For testing: where the Telegram Bot API lives. Unset means api.telegram.org. */
 	telegramApiRoot?: string;
 	/** For testing only: a directory of .eml files that stands in for the IMAP server. */
@@ -119,6 +126,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 		backup: { hour: e.FAMOS_BACKUP_HOUR, keep: e.FAMOS_BACKUP_KEEP },
 		logLevel: e.LOG_LEVEL,
 		...(e.FAMOS_TELEGRAM_API_ROOT && { telegramApiRoot: e.FAMOS_TELEGRAM_API_ROOT }),
+		...(e.FAMOS_EXTENSION_INDEX_URL && { extensionIndexUrl: e.FAMOS_EXTENSION_INDEX_URL }),
 		...(e.FAMOS_EMAIL_FAKE_DIR && { emailFakeDir: e.FAMOS_EMAIL_FAKE_DIR }),
 		...(e.FAMOS_NOTIFY_DELAY_MS !== undefined && { notifyDelayMs: e.FAMOS_NOTIFY_DELAY_MS }),
 		...(e.FAMOS_AI_PROVIDER && {

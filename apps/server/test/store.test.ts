@@ -98,8 +98,7 @@ describe('a signed package', () => {
 		);
 	});
 
-	it('is refused by a server that trusts no key yet (the shipped list is empty)', async () => {
-		expect(TRUST_ROOTS).toEqual([]);
+	it('is refused by the shipped server when signed with any key but the official one', async () => {
 		const files = await readArchive(await famext(dir));
 		expect(() => verifyPackage(files, TRUST_ROOTS)).toThrow(/does not trust/);
 	});
