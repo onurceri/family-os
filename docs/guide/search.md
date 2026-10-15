@@ -26,7 +26,7 @@ Search also needs **Use AI** to be on. Until a model is set, the search box is h
 
 - You find only what you may see anyway. Someone without access to Home never sees a Home result, and the assistant working for them does not either.
 - Quick add items are found only by the person who shared them.
-- Search follows the AI areas in **Settings → AI → What the AI may read**. An area that is **Off** is not read at all, and what was read is deleted. **Local only** areas are read only when the Search model also runs on your own network; Settings → AI says when search does not cover an area. An area you turn off in **Settings → Family → Features** is not read either.
+- Search follows the AI areas in **Settings → AI → What the AI may read**. An area that is **Off** is not read at all, and what was read is deleted. **Local only** areas are read only when the Search model also runs on your own network; Settings → AI says when search does not cover an area. An area you turn off in **Settings → Family → Extensions** is not read either.
 - Tasks, shopping lists and chores are never searched.
 
 ## What leaves your home

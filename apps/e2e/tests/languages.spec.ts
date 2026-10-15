@@ -41,6 +41,7 @@ test.describe(() => {
 		await page.getByLabel('E-posta').fill(ADMIN.email);
 		await page.getByLabel('Şifre').fill(ADMIN.password);
 		await page.getByRole('button', { name: 'Hesap oluştur' }).click();
+		await page.getByRole('button', { name: 'Atla' }).click();
 		await expect(page.getByTestId('day-sentence')).toContainText(
 			new RegExp(`^(Günaydın|İyi günler|İyi akşamlar), ${ADMIN.name}`),
 		);

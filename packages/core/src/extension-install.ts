@@ -53,6 +53,8 @@ const ReachesSchema = z.object({
 	local: z.boolean(),
 	/** Other extensions' (and core's) actions it runs. */
 	calls: z.array(z.string()),
+	/** The capabilities it adds, which roles can then be given. */
+	capabilities: z.array(z.string()),
 });
 
 export const ExtensionEntrySchema = z.object({
@@ -178,6 +180,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 					userUrls: manifest?.network?.userUrls ?? false,
 					local: manifest?.network?.local ?? false,
 					calls: manifest?.calls ?? [],
+					capabilities: manifest?.capabilities ?? [],
 				},
 				labels: pkg?.labels ?? {},
 			};

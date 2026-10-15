@@ -24,6 +24,7 @@
 	import { signOut } from '#lib/auth.js';
 	import { buildNav, isSettingsPath, type NavItem, settingsOwner, TODAY } from '#lib/nav.js';
 	import { connectRealtime, onEvent, onReconnect } from '#lib/realtime.js';
+	import { onExtensionsChanged } from '#lib/server-changes.js';
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
@@ -51,6 +52,8 @@
 	});
 
 	const PUBLIC = new Set(['/setup', '/login']);
+	/** Long enough to be seen by someone who looks away for a while; a newer notice replaces it. */
+	const CHANGED_TOAST_MS = 5 * 60_000;
 	const MORE: NavItem = { id: 'core.more', path: '/more', labelKey: 'nav_more', icon: Ellipsis };
 
 	const nav = $derived(
@@ -318,6 +321,15 @@
 		});
 		// An extension turned on or off changes navigation and capabilities everywhere.
 		const offFeatures = onEvent('core.features.', () => void session.refresh());
+		// The server restarted with other extensions: this page still runs the old ones. Reloading
+		// is the person's choice, so nothing they are typing is lost.
+		const offChanged = onExtensionsChanged(() =>
+			toasts.show(
+				t('extensions_changed'),
+				{ label: t('extensions_changed_reload'), run: () => location.reload() },
+				CHANGED_TOAST_MS,
+			),
+		);
 		// Nav badges (e.g. suggestions waiting in Quick add) refresh after any change, debounced.
 		void refreshBadges();
 		let timer: ReturnType<typeof setTimeout> | undefined;
@@ -332,6 +344,7 @@
 			offLanguages();
 			offThemes();
 			offFeatures();
+			offChanged();
 			offBadges();
 			clearTimeout(timer);
 			disconnect();

@@ -29,6 +29,8 @@ const LIST = JSON.parse(
 	readFileSync(join(import.meta.dirname, '../../../extensions.json'), 'utf8'),
 ) as Available['list'];
 const ALWAYS = [...LIST.always].sort();
+/** What a new family starts with: the core set and the defaults (photos and weather). */
+const FRESH = [...LIST.always, ...LIST.default].sort();
 const ALL = [...LIST.always, ...LIST.offered].sort();
 const workspace = await discoverSourceExtensions();
 
@@ -161,15 +163,16 @@ describe('choosing what to load', () => {
 });
 
 describe('starting with the installed set', () => {
-	it('starts a new family with the core set only, and remembers it', async () => {
+	it('starts a new family with the core set and the defaults, and remembers it', async () => {
 		const { runtime, selection } = await start(await newDataDir());
-		expect(ids(selection)).toEqual(ALWAYS);
+		expect(LIST.default).toEqual(['ambient']);
+		expect(ids(selection)).toEqual(FRESH);
 		expect(runtime.kernel.registry.extensions.map((e) => e.id).sort()).toEqual(
-			['core', ...ALWAYS].sort(),
+			['core', ...FRESH].sort(),
 		);
 		const state = await readExtensionState(runtime.handle.db);
-		expect(state?.installed).toEqual(ALWAYS);
-		expect(Object.keys(state?.known ?? {}).sort()).toEqual(ALWAYS);
+		expect(state?.installed).toEqual(FRESH);
+		expect(Object.keys(state?.known ?? {}).sort()).toEqual(FRESH);
 		expect(state?.known.records).toEqual({ tablePrefix: 'records_', version: '0.1.0' });
 	});
 
@@ -274,7 +277,7 @@ describe('starting with the installed set', () => {
 		await stop(second.runtime);
 
 		const third = await start(dataDir);
-		expect(ids(third.selection)).toEqual(ALWAYS);
+		expect(ids(third.selection)).toEqual(FRESH);
 		expect(third.selection.refused).toEqual([
 			{ id: 'pets', version: '0.1.0', reason: expect.stringMatching(/9999_future.*newer version/) },
 		]);

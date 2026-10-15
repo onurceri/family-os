@@ -70,7 +70,7 @@ const PAGES: Entry[] = [
 	{ name: 's-members', path: '/settings/members' },
 	{ name: 's-roles', path: '/settings/roles' },
 	{ name: 's-devices', path: '/settings/devices' },
-	{ name: 's-features', path: '/settings/features' },
+	{ name: 's-extensions', path: '/settings/extensions' },
 	{ name: 's-region', path: '/settings/region' },
 	{ name: 's-theme', path: '/settings/theme' },
 	{ name: 's-calendars', path: '/settings/calendars' },

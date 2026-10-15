@@ -14178,6 +14178,7 @@ export interface operations {
                                 userUrls: boolean;
                                 local: boolean;
                                 calls: string[];
+                                capabilities: string[];
                             };
                             labels: {
                                 [key: string]: {

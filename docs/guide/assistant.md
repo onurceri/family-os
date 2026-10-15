@@ -66,4 +66,4 @@ Members who already use a personal AI agent can connect it to FamilyOS instead. 
 
 An admin can turn the assistant off with the **Assistant chat** switch in Settings → AI. It then answers "The assistant is turned off." and nothing is sent to a model.
 
-To hide it completely, turn **Assistant** off in **Settings → Family → Features**.
+To hide it completely, turn **Assistant** off in **Settings → Family → Extensions**.

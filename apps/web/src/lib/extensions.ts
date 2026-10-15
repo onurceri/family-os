@@ -28,8 +28,17 @@ const list: ExtensionList = import.meta.env.DEV
 	? { fingerprint: '', extensions: [] }
 	: parseExtensionList(document.getElementById('famos-extensions')?.textContent);
 
+/** The fingerprint of what this page loaded (the dev server reads it from the API). */
+let fingerprint = list.fingerprint;
+
 const loaded = import.meta.env.DEV ? await fromSource() : await fromPackages();
 for (const ext of loaded) registerWebExtension(ext);
+
+/**
+ * The fingerprint of the extensions this page runs: when the server's differs, it runs other
+ * ones (after an install and a restart) and the page should be loaded again.
+ */
+export const loadedFingerprint = (): string => fingerprint;
 
 async function fromPackages(): Promise<WebExtension[]> {
 	return importAll(
@@ -43,6 +52,7 @@ async function fromPackages(): Promise<WebExtension[]> {
 
 async function fromSource(): Promise<WebExtension[]> {
 	const { data } = await api.GET('/api/v1/core/extensions/loaded');
+	fingerprint = data?.fingerprint ?? '';
 	const modules = import.meta.glob<{ default: WebExtension }>(
 		'../../../../extensions/*/src/web/index.ts',
 	);

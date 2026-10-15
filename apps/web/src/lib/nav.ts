@@ -158,14 +158,14 @@ const APP_SETTINGS: NavItem[] = [
 		requires: 'core.devices.manage',
 	},
 	{
-		id: 'core.features',
+		id: 'core.extensions',
 		order: 40,
-		path: '/settings/features',
-		labelKey: 'nav_features',
+		path: '/settings/extensions',
+		labelKey: 'nav_extensions',
 		icon: Blocks,
 		group: 'settings',
 		section: 'family',
-		requires: 'core.features.manage',
+		requires: 'core.extensions.manage',
 	},
 	{
 		id: 'core.region',

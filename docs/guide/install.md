@@ -39,9 +39,9 @@ Settings that are not in the app are environment variables. The table is in the 
 
 Open **Settings → Family → Members** and add each person with a role. **Admin** can do everything, **Member** is for adults, **Supervised** is for children and anyone whose changes should be checked, **Guest** can only look. Who can do what, how people sign in and how to set up the kitchen tablet is on [Family members, roles and devices](members.md).
 
-## Turn parts off
+## Choose what FamilyOS does
 
-**Settings → Family → Features** lists the **Parts of FamilyOS**. Switch a part off, such as the calendar, the lists, or Quick add, and it is hidden and stopped for everyone. Nothing is deleted: turn it back on and everything is as it was.
+A new family starts with the calendar, lists, Quick add, the assistant, the board, chores, records, and photos & weather. **Settings → Family → Extensions** installs the others (the kitchen, pets, vehicles, home) and switches any of them off for everyone. See [Extensions](extensions.md).
 
 ## Update
 

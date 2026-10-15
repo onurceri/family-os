@@ -137,7 +137,8 @@ docker compose up   # production-like run on http://localhost:3000
 # server CLI (inside the container: node /app/server/famos.mjs <cmd>, the image's entry point, or main.mjs)
 # from source the server loads the extensions' source only when told where it is
 FAMOS_DEV_EXTENSIONS=../../extensions pnpm --filter @famos/server exec tsx src/main.ts migrate|backup|restore <file>|openapi
-# which extensions a family has: a new family starts with the always set; changes load at the next start
+# which extensions a family has (also Settings → Family → Extensions): a new family starts with the always set
+# and the defaults (photos & weather); changes load at the next start
 node apps/server/dist/famos.mjs extensions list|install <id…>|install --all-offered|uninstall <id>
 ```
 

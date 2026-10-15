@@ -4,7 +4,7 @@ import { createMember, signInAs } from '../support/members.ts';
 type Members = { id: string; displayName: string; roleId: string }[];
 
 const ADMIN_ONLY_ENTRIES = {
-	family: ['Members', 'Roles', 'Devices', 'Features'],
+	family: ['Members', 'Roles', 'Devices', 'Extensions'],
 	ai: ['Provider & models', 'Auto-approval'],
 	system: ['Backups'],
 };

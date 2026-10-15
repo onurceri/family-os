@@ -32,8 +32,9 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 	await page.getByLabel('Your name').fill(ADMIN.name);
 	await page.getByLabel('Email').fill(ADMIN.email);
 	await page.getByLabel('Password').fill(ADMIN.password);
-	// A new family has the core set only: no extension adds a step of its own here.
 	await page.getByRole('button', { name: 'Create account' }).click();
+	// Photos & weather, installed for a new family, offers its place next; it can wait.
+	await page.getByRole('button', { name: 'Skip' }).click();
 	await expect(page.getByTestId('day-sentence').filter({ hasText: ADMIN.name })).toBeVisible();
 
 	// Share a school notice; the (fake) model proposes an event.

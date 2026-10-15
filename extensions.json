@@ -1,5 +1,5 @@
 {
 	"always": ["calendar", "lists", "inbox", "assistant", "board", "chores", "records"],
 	"offered": ["ambient", "kitchen", "pets", "vehicles", "home"],
-	"default": []
+	"default": ["ambient"]
 }

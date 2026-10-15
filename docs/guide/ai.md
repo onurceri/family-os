@@ -56,7 +56,7 @@ FamilyOS is split into areas, such as the calendar, the lists, chores, the kitch
 
 **Sensitive areas.** An area holding private records is marked **Private records** and start **Off**; the others start with **Any provider**. A provider counts as local when its address resolves only to your own machine or home network. Opening a sensitive area to **Any provider** asks for a confirmation (**Allow any provider**), because its data will leave your home. Choosing **Local only** needs no confirmation. Only admins can change these choices.
 
-Only areas that are turned on in **Settings → Family → Features** appear, and only the ones where the AI could do something (an area with no AI actions, such as Display content, is not listed unless it is sensitive).
+Only areas that are turned on in **Settings → Family → Extensions** appear, and only the ones where the AI could do something (an area with no AI actions, such as Display content, is not listed unless it is sensitive).
 
 **Locking an area hides its duties and papers too.** Duties and papers in Records belong to the vehicle, pet or home they are attached to, so setting **Vehicles** to **Off** also hides "Car insurance (Family car)" and the papers filed under Family car from the AI, and so on for pets and the home. Papers you filed yourself with **Add to…** are never shown to the AI at all, whatever the setting. Nobody in the family loses anything: the pages, reminders and papers work as before.
 
@@ -80,4 +80,4 @@ Under **Settings → AI → What the AI may read → AI**:
 - **Use AI** turns every AI call off. Shared items are kept unread (**AI is off. Kept here unread.**); **Read now** reads them once AI is back on.
 - Below it, single AI features (such as **Read shared items** or **Turn voice notes into text**) can be turned off on their own.
 
-To turn Quick add off entirely instead, use **Settings → Family → Features**.
+To turn Quick add off entirely instead, use **Settings → Family → Extensions**.

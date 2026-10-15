@@ -1,11 +1,13 @@
 import { constants, readFileSync } from 'node:fs';
 import { cp, mkdir, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { type BrowserContext, chromium, devices } from '@playwright/test';
 import { startFakeModel } from './fake-model.ts';
 import { startFamilyOS } from './server.ts';
 import { FAMILY_TIME_ZONE, setUpThroughTheUi } from './sign-in.ts';
+
+const ROOT = resolve(import.meta.dirname, '../../..');
 
 /**
  * The prepared family (global setup builds it once per run): a data directory that is migrated
@@ -15,6 +17,11 @@ import { FAMILY_TIME_ZONE, setUpThroughTheUi } from './sign-in.ts';
  * stays valid. Cookies on `localhost` are not bound to a port, so the saved state works on every
  * test's server.
  */
+/** Every extension the image offers. */
+const OFFERED = (
+	JSON.parse(readFileSync(join(ROOT, 'extensions.json'), 'utf8')) as { offered: string[] }
+).offered;
+
 export type Template = { dataDir: string; storageState: string };
 
 type Cookies = Parameters<BrowserContext['addCookies']>[0];
@@ -28,7 +35,10 @@ export function templateFromEnv(): (Template & { cookies: Cookies }) | undefined
 	return { dataDir, storageState, cookies };
 }
 
-export async function buildTemplate(): Promise<Template & { root: string }> {
+/** `leaveOut`: offered extensions the family does not get, for a test that installs them. */
+export async function buildTemplate(
+	leaveOut: readonly string[] = [],
+): Promise<Template & { root: string }> {
 	const root = await mkdtemp(join(tmpdir(), 'famos-e2e-template-'));
 	const dataDir = join(root, 'data');
 	const storageState = join(root, 'signed-in.json');
@@ -54,8 +64,10 @@ export async function buildTemplate(): Promise<Template & { root: string }> {
 		await family.stop();
 		await model.close();
 	}
-	// A new family starts with the core set; the tests cover the offered extensions too.
-	const installed = await family.cli(['extensions', 'install', '--all-offered']);
+	// A new family starts with the core set and photos & weather; the tests cover the other
+	// offered extensions too.
+	const offered = OFFERED.filter((id) => !leaveOut.includes(id));
+	const installed = await family.cli(['extensions', 'install', ...offered]);
 	if (installed.code !== 0)
 		throw new Error(`Installing the offered extensions failed:\n${installed.output}`);
 	// Started once more, so their migrations run here and not in every test.

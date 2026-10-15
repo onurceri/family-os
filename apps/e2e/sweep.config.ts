@@ -9,7 +9,7 @@ export default defineConfig({
 	fullyParallel: true,
 	reporter: 'list',
 	timeout: 1_200_000,
-	globalSetup: './support/global-setup.ts',
+	globalSetup: './support/sweep-setup.ts',
 	globalTeardown: './support/global-teardown.ts',
 	use: { ...devices['Pixel 7'] },
 });

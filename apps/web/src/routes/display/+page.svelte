@@ -9,6 +9,7 @@
 	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { getLocale, loadLanguages, setLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { connectRealtime, onEvent } from '#lib/realtime.js';
+	import { onExtensionsChanged } from '#lib/server-changes.js';
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
 	import FamilyToday from './FamilyToday.svelte';
 	import PairScreen from './PairScreen.svelte';
@@ -164,6 +165,8 @@
 		const offDevice = onEvent('core.device.', () => void check());
 		const offMembers = onEvent('core.member.', () => void loadMembers());
 		const offFeatures = onEvent('core.features.', () => void check());
+		// The server restarted with other extensions: nobody types on a display, so it reloads.
+		const offChanged = onExtensionsChanged(() => location.reload());
 		// A theme was installed, changed or chosen for this display.
 		const offThemes = onEvent('core.themes.', () => void check());
 		// Family language, region formats or time zone changed, or a language pack was updated.
@@ -184,6 +187,7 @@
 			offDevice();
 			offMembers();
 			offFeatures();
+			offChanged();
 			offThemes();
 			offFamily();
 			offLanguages();

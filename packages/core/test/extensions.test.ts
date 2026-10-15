@@ -132,7 +132,11 @@ describe('a kernel with extensions it may refuse', () => {
 describe('installing and uninstalling', () => {
 	const notes = ext('notes');
 	const records = ext('records');
-	const pets = ext('pets', { dependsOn: ['records'] });
+	const pets = ext('pets', {
+		dependsOn: ['records'],
+		network: { hosts: ['vets.example.org'], local: true },
+		capabilities: [defineCapability({ id: 'pets.view', label: 'pets:cap_view', level: 'view' })],
+	});
 	const port = () => packages([{ ext: notes, always: true }, { ext: records }, { ext: pets }]);
 
 	async function admin(k: TestKernel) {
@@ -151,7 +155,13 @@ describe('installing and uninstalling', () => {
 				always: false,
 				dependsOn: ['records'],
 				labels: { en: { name: 'pets', description: 'The pets' } },
-				reaches: { hosts: [], userUrls: false, local: false, calls: [] },
+				reaches: {
+					hosts: ['vets.example.org'],
+					userUrls: false,
+					local: true,
+					calls: [],
+					capabilities: ['pets.view'],
+				},
 			}),
 			expect.objectContaining({ id: 'records', status: 'available' }),
 		]);
