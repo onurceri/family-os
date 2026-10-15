@@ -113,6 +113,8 @@ export function createAccess(
 				if (capability === CORE_CAPABILITIES.membersView.id) return actor.showNames;
 				return actor.capabilities.includes(capability);
 			}
+			// A PIN sign-in never administers, whatever the role (a PIN can be guessed).
+			if (actor.pin === true && definition.critical === true) return false;
 			return effective(actor.roleId).has(capability);
 		},
 		invalidate: () => cache.clear(),

@@ -75,6 +75,8 @@ const PIN_ADDRESS_WINDOW_MS = 60_000;
 const CHILD_EMAIL_DOMAIN = 'child.famos.invalid';
 const PIN_PROVIDER = 'pin';
 const CREDENTIAL_PROVIDER = 'credential';
+/** More logins than any household has; better-auth lists only 100 rows unless told otherwise. */
+const MAX_LOGINS = 10_000;
 
 type AuthUser = { id: string; email: string; name: string; memberId: string };
 
@@ -241,6 +243,28 @@ export function createIdentity(options: IdentityOptions): Identity {
 			const user =
 				existing ?? (await ensureUser(memberId, `${memberId}@${CHILD_EMAIL_DOMAIN}`, displayName));
 			await upsertSecret(user.id, PIN_PROVIDER, pin);
+		},
+		async signInMethods() {
+			const ctx = await context();
+			const users = await ctx.adapter.findMany<AuthUser>({ model: 'user', limit: MAX_LOGINS });
+			const memberOf = new Map(users.map((u) => [u.id, u.memberId]));
+			const accounts = users.length
+				? await ctx.adapter.findMany<{ userId: string; providerId: string }>({
+						model: 'account',
+						where: [{ field: 'userId', operator: 'in', value: [...memberOf.keys()] }],
+						limit: MAX_LOGINS * 2,
+					})
+				: [];
+			const methods = new Map<string, { password: boolean; pin: boolean }>();
+			for (const account of accounts) {
+				const memberId = memberOf.get(account.userId);
+				if (!memberId) continue;
+				const entry = methods.get(memberId) ?? { password: false, pin: false };
+				if (account.providerId === CREDENTIAL_PROVIDER) entry.password = true;
+				if (account.providerId === PIN_PROVIDER) entry.pin = true;
+				methods.set(memberId, entry);
+			}
+			return methods;
 		},
 		async endSessions(memberId) {
 			const user = await findUser(memberId);

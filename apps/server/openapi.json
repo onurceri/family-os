@@ -16015,6 +16015,21 @@
 												"type": "string"
 											}
 										},
+										"signIn": {
+											"type": "object",
+											"properties": {
+												"password": {
+													"type": "boolean"
+												},
+												"pin": {
+													"type": "boolean"
+												}
+											},
+											"required": [
+												"password",
+												"pin"
+											]
+										},
 										"disabledExtensions": {
 											"type": "array",
 											"items": {
@@ -16039,6 +16054,7 @@
 										"createdAt",
 										"archived",
 										"capabilities",
+										"signIn",
 										"disabledExtensions",
 										"nextUp"
 									]
@@ -16860,6 +16876,21 @@
 											},
 											"archived": {
 												"type": "boolean"
+											},
+											"signIn": {
+												"type": "object",
+												"properties": {
+													"password": {
+														"type": "boolean"
+													},
+													"pin": {
+														"type": "boolean"
+													}
+												},
+												"required": [
+													"password",
+													"pin"
+												]
 											}
 										},
 										"required": [

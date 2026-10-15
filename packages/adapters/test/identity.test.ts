@@ -213,6 +213,38 @@ describe('identity-betterauth', () => {
 		expect(res.status).toBe(403);
 	});
 
+	it('gives one person a PIN and a password, both working, and tells which they have', async () => {
+		expect(await identity.admin.signInMethods()).toEqual(new Map());
+		await identity.admin.setPin({ memberId: 'member_teen', pin: '1234', displayName: 'Teen' });
+		await identity.admin.setPasswordLogin({
+			memberId: 'member_teen',
+			email: 'teen@example.com',
+			password: 'correct horse battery',
+			displayName: 'Teen',
+		});
+		await identity.admin.setPasswordLogin({
+			memberId: 'member_a',
+			email: 'parent@example.com',
+			password: 'correct horse battery',
+			displayName: 'P',
+		});
+		expect(await identity.admin.signInMethods()).toEqual(
+			new Map([
+				['member_teen', { password: true, pin: true }],
+				['member_a', { password: true, pin: false }],
+			]),
+		);
+		const byPin = await post('/sign-in/pin', { memberId: 'member_teen', pin: '1234' }, '10.0.0.5');
+		expect(byPin.status).toBe(200);
+		const byPassword = await post('/sign-in/email', {
+			email: 'teen@example.com',
+			password: 'correct horse battery',
+		});
+		expect(byPassword.status).toBe(200);
+		const who = await identity.resolveMember(new Headers({ cookie: cookieOf(byPassword) }));
+		expect(who).toMatchObject({ memberId: 'member_teen', deviceId: null });
+	});
+
 	it('changing a PIN invalidates the old one; revokeAll ends sessions', async () => {
 		await identity.admin.setPin({ memberId: 'member_kid', pin: '1234', displayName: 'Kid' });
 		const session = await post('/sign-in/pin', { memberId: 'member_kid', pin: '1234' }, '10.0.0.4');

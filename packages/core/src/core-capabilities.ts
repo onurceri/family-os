@@ -2,7 +2,8 @@ import { defineCapability } from '@famos/sdk';
 
 /**
  * Core's capabilities. Critical ones are held by the Admin role alone: no custom role
- * can gain them and they never combine with PIN sign-in.
+ * can gain them, and a PIN sign-in never holds them (an admin signed in with a PIN does
+ * everything else).
  */
 export const CORE_CAPABILITIES = {
 	membersView: defineCapability({
@@ -94,11 +95,14 @@ export const CORE_CAPABILITIES = {
 		label: 'app:cap_notifications_receive',
 		level: 'view',
 	}),
-	/** Profile picker + PIN on trusted devices: for those who should not need a password. */
+	/**
+	 * Profile picker + PIN on trusted devices, for whoever an admin gives a PIN. Every built-in
+	 * role may have one; a custom role can be kept to passwords.
+	 */
 	signInPin: defineCapability({
 		id: 'core.signIn.pin',
 		label: 'app:cap_sign_in_pin',
 		level: 'use',
-		defaults: { admin: false, member: false, supervised: true, guest: true },
+		defaults: { admin: true, member: true, supervised: true, guest: true },
 	}),
 } as const;

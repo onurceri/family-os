@@ -47,6 +47,14 @@ export interface FileStore {
 	delete(key: string): Promise<void>;
 }
 
+/** Which logins a member has. */
+export interface SignInMethods {
+	/** An email and password. */
+	password: boolean;
+	/** A PIN (it works only on family devices). */
+	pin: boolean;
+}
+
 /**
  * Credential management, implemented by the identity adapter. Core never sees
  * passwords or PINs beyond passing them through.
@@ -62,8 +70,13 @@ export interface IdentityAdmin {
 		password: string;
 		displayName: string;
 	}): Promise<void>;
-	/** Creates (or replaces) a PIN login for a member whose role signs in with a PIN. */
+	/** Creates (or replaces) a PIN login for a member whose role allows PIN sign-in. */
 	setPin(input: { memberId: string; pin: string; displayName: string }): Promise<void>;
+	/**
+	 * How each member can sign in, by member id; a member with no login at all is left out. Never
+	 * the email, password or PIN: only whether each exists.
+	 */
+	signInMethods(): Promise<ReadonlyMap<string, SignInMethods>>;
 	/** Removes all logins and sessions of a member. */
 	revokeAll(memberId: string): Promise<void>;
 	/** Signs a member out everywhere; their logins stay (archived, role or credentials changed). */

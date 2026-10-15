@@ -94,6 +94,12 @@ export function createFakeIdentity(): FakeIdentity {
 		async setPin({ memberId, pin }) {
 			pins.set(memberId, pin);
 		},
+		async signInMethods() {
+			const ids = new Set([...passwords.keys(), ...pins.keys()]);
+			return new Map(
+				[...ids].map((id) => [id, { password: passwords.has(id), pin: pins.has(id) }]),
+			);
+		},
 		async revokeAll(memberId) {
 			passwords.delete(memberId);
 			pins.delete(memberId);

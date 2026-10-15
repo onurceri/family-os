@@ -30,7 +30,13 @@
 			? tDynamic(`app:role_${session.me.roleId}`)
 			: '',
 	);
-	const pin = $derived(session.can('core.signIn.pin'));
+	/** How you really sign in: the logins you have, not what your role allows. */
+	const signsInWith = $derived.by(() => {
+		const how = session.me?.signIn;
+		if (how?.password && how.pin) return t('members_signin_both');
+		if (how?.pin) return t('members_signin_pin_family');
+		return t('members_signin_password');
+	});
 	const mayManage = $derived(session.can('core.members.manage'));
 
 	/** "My language": empty follows the family. The layout applies it once saved. */
@@ -91,10 +97,7 @@
 
 			<Section label={t('members_signin_title')}>
 				<Card rows>
-					<Row
-						title={t('profile_signs_in_with')}
-						meta={pin ? t('members_signin_pin_family') : t('members_signin_password')}
-					/>
+					<Row title={t('profile_signs_in_with')} meta={signsInWith} />
 					<Row title={t('sign_out')} meta={t('sign_out_hint')} onclick={logout} />
 					<Row
 						title={t('sign_out_everywhere')}

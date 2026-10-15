@@ -346,6 +346,42 @@ describe('HTTP API', () => {
 		expect(reuse.status).toBe(200);
 	});
 
+	it('lets an admin have a PIN on a family device, which never administers', async () => {
+		const { admin, cookie: first } = await setupAndSignIn();
+		const { deviceCookie } = await trustDevice(first);
+		expect(
+			(await call('PUT', `/api/v1/core/members/${admin.id}/pin`, { pin: '8642' }, first)).status,
+		).toBe(200);
+		// A new PIN signs the person out everywhere; the admin signs in with the password again.
+		const cookie = (
+			await call('POST', '/api/auth/sign-in/email', {
+				email: 'parent@example.com',
+				password: 'correct horse battery',
+			})
+		).cookie;
+		const profiles = await call('GET', '/api/v1/core/profiles', undefined, deviceCookie);
+		expect(profiles.body.map((p: { id: string }) => p.id)).toContain(admin.id);
+		const pinSession = (
+			await call('POST', '/api/auth/sign-in/pin', { memberId: admin.id, pin: '8642' }, deviceCookie)
+		).cookie;
+		const me = await call('GET', '/api/v1/core/me', undefined, pinSession);
+		expect(me.status).toBe(200);
+		expect(me.body.capabilities).toContain('core.drafts.approve');
+		expect(me.body.capabilities).not.toContain('core.members.manage');
+		const refused = await call(
+			'POST',
+			'/api/v1/actions/core.createMember',
+			{ displayName: 'Pat', roleId: 'member' },
+			pinSession,
+		);
+		expect(refused.status).toBe(403);
+		expect((await call('GET', '/api/v1/core/members', undefined, pinSession)).status).toBe(200);
+		// With the password, the same admin administers again.
+		expect((await call('GET', '/api/v1/core/me', undefined, cookie)).body.capabilities).toContain(
+			'core.members.manage',
+		);
+	});
+
 	it('ends sessions when a PIN or password changes, a role loses PIN sign-in, or on request', async () => {
 		const { admin, cookie } = await setupAndSignIn();
 		const kid = await addChildWithPin(cookie);
@@ -359,13 +395,19 @@ describe('HTTP API', () => {
 		await call('PUT', `/api/v1/core/members/${kid.id}/pin`, { pin: '1357' }, cookie);
 		expect(await status(first)).toBe(401);
 
-		// A PIN session never outlives its role's PIN sign-in (no admin powers from a guessed PIN).
+		// A PIN session never outlives its role's PIN sign-in.
 		const second = await signInKid('1357');
 		expect(await status(second)).toBe(200);
+		const role = await call(
+			'POST',
+			'/api/v1/actions/core.createRole',
+			{ name: 'Passwords only', base: 'member', overrides: { 'core.signIn.pin': false } },
+			cookie,
+		);
 		await call(
 			'POST',
 			'/api/v1/actions/core.updateMember',
-			{ memberId: kid.id, roleId: 'member' },
+			{ memberId: kid.id, roleId: role.body.output.id },
 			cookie,
 		);
 		expect(await status(second)).toBe(401);

@@ -37,6 +37,8 @@
 	type Roles = paths['/api/v1/core/roles']['get']['responses'][200]['content']['application/json'];
 
 	const PIN = 'core.signIn.pin';
+	/** What a PIN sign-in can never do; a role that holds it is told so beside the PIN. */
+	const ADMINISTERS = 'core.members.manage';
 	// The members come from the shell, which reads them once and again on every member event.
 	const members = $derived<Member[]>(family.members);
 	let roles = $state<Roles['roles']>([]);
@@ -65,10 +67,19 @@
 		if (!role || role.builtIn) return tDynamic(`app:role_${id}_hint`);
 		return t('role_custom_hint', { base: tDynamic(`app:role_${role.base}`) });
 	};
-	const usesPin = (id: string) =>
-		roles.find((r) => r.id === id)?.capabilities.includes(PIN) ?? false;
-	const signIn = (member: Member) =>
-		usesPin(member.roleId) ? t('members_signin_pin_family') : t('members_signin_password');
+	const holds = (id: string, capability: string) =>
+		roles.find((r) => r.id === id)?.capabilities.includes(capability) ?? false;
+	/** Whether the role lets a person have a PIN (every built-in role does). */
+	const mayUsePin = (id: string) => holds(id, PIN);
+	/** How the person really signs in, from the logins they have (not from the role). */
+	const signIn = (member: Member) => {
+		const how = member.signIn;
+		if (!how) return null;
+		if (how.password && how.pin) return t('members_signin_both');
+		if (how.password) return t('members_signin_password');
+		if (how.pin) return t('members_signin_pin_family');
+		return t('members_signin_none');
+	};
 
 	const dirty = $derived(
 		panel !== null &&
@@ -79,7 +90,7 @@
 					pin !== '' ||
 					email !== '' ||
 					password !== ''
-				: name !== '' || about !== ''),
+				: name !== '' || about !== '' || pin !== '' || email !== '' || password !== ''),
 	);
 
 	/** The roles, with how many people hold each one. */
@@ -110,6 +121,32 @@
 			offRoles();
 		};
 	});
+
+	/** Sets the sign-in typed in the panel; returns whether anything was saved. */
+	async function saveSignIn(memberId: string, role: string): Promise<boolean> {
+		let saved = false;
+		if (email || password) {
+			unwrap(
+				await api.PUT('/api/v1/core/members/{memberId}/password', {
+					params: { path: { memberId } },
+					body: { email, password },
+				}),
+			);
+			email = password = '';
+			saved = true;
+		}
+		if (pin && mayUsePin(role)) {
+			unwrap(
+				await api.PUT('/api/v1/core/members/{memberId}/pin', {
+					params: { path: { memberId } },
+					body: { pin },
+				}),
+			);
+			pin = '';
+			saved = true;
+		}
+		return saved;
+	}
 
 	/** A specific message for the refusals people can run into; anything else is generic. */
 	function errorText(e: unknown) {
@@ -147,7 +184,7 @@
 		error = null;
 		try {
 			if (!editing) {
-				unwrap(
+				const created = unwrap(
 					await api.POST('/api/v1/actions/core.createMember', {
 						body: {
 							displayName: name.trim(),
@@ -156,6 +193,13 @@
 						},
 					}),
 				);
+				if (created.status === 'applied') {
+					// From here on the panel is the new person's: if their sign-in is refused (an email
+					// already used), it stays open on them with the message, and Save tries again.
+					await load();
+					panel = { memberId: created.output.id };
+					if (await saveSignIn(created.output.id, roleId)) toasts.show(t('members_login_saved'));
+				}
 			} else {
 				unwrap(
 					await api.POST('/api/v1/actions/core.updateMember', {
@@ -168,23 +212,7 @@
 					}),
 				);
 				// The sign-in is only changed when something was typed for it.
-				if (usesPin(roleId) && pin) {
-					unwrap(
-						await api.PUT('/api/v1/core/members/{memberId}/pin', {
-							params: { path: { memberId: editing.id } },
-							body: { pin },
-						}),
-					);
-					toasts.show(t('members_login_saved'));
-				} else if (!usesPin(roleId) && (email || password)) {
-					unwrap(
-						await api.PUT('/api/v1/core/members/{memberId}/password', {
-							params: { path: { memberId: editing.id } },
-							body: { email, password },
-						}),
-					);
-					toasts.show(t('members_login_saved'));
-				}
+				if (await saveSignIn(editing.id, roleId)) toasts.show(t('members_login_saved'));
 			}
 			panel = null;
 			await load();
@@ -363,48 +391,64 @@
 				<small class="text-ink-soft text-[13px]">{t('members_about_hint')}</small>
 			</div>
 
-			{#if editing}
-				<div class="border-line grid gap-4 border-t pt-4">
+			<div class="border-line grid gap-4 border-t pt-4" data-testid="member-signin">
+				<div class="grid gap-1">
 					<h3 class="text-ink-soft text-xs font-bold tracking-[0.06em] uppercase">
 						{t('members_signin_title')}
 					</h3>
-					{#if usesPin(roleId)}
-						<div class="grid gap-1.5">
-							<Label for="member-pin">{t('members_new_pin')}</Label>
-							<Input
-								id="member-pin"
-								inputmode="numeric"
-								autocomplete="off"
-								pattern={'\\d{4,6}'}
-								bind:value={pin}
-							/>
-							<small class="text-ink-soft text-[13px]">{t('members_pin_hint')}</small>
-						</div>
-					{:else}
-						<div class="grid gap-1.5">
-							<Label for="member-email">{t('members_email')}</Label>
-							<Input
-								id="member-email"
-								type="email"
-								bind:value={email}
-								autocomplete="off"
-								required={password !== ''}
-							/>
-						</div>
-						<div class="grid gap-1.5">
-							<Label for="member-password">{t('members_password')}</Label>
-							<Input
-								id="member-password"
-								type="password"
-								bind:value={password}
-								minlength={10}
-								autocomplete="new-password"
-								required={email !== ''}
-							/>
-							<small class="text-ink-soft text-[13px]">{t('members_signin_leave')}</small>
-						</div>
+					<p class="text-ink-soft text-[13px]">{t('members_signin_intro')}</p>
+					{#if editing && signIn(editing)}
+						<p class="text-[13px] font-semibold">
+							{t('members_signin_now', { how: signIn(editing) })}
+						</p>
 					{/if}
 				</div>
+				<div class="grid gap-1.5">
+					<Label for="member-email">{t('members_email')}</Label>
+					<Input
+						id="member-email"
+						type="email"
+						bind:value={email}
+						autocomplete="off"
+						required={password !== ''}
+					/>
+				</div>
+				<div class="grid gap-1.5">
+					<Label for="member-password">{t('members_password')}</Label>
+					<Input
+						id="member-password"
+						type="password"
+						bind:value={password}
+						minlength={10}
+						autocomplete="new-password"
+						required={email !== ''}
+					/>
+				</div>
+				{#if mayUsePin(roleId)}
+					<div class="grid gap-1.5">
+						<Label for="member-pin"
+							>{editing?.signIn?.pin ? t('members_new_pin') : t('members_pin_label')}</Label
+						>
+						<Input
+							id="member-pin"
+							inputmode="numeric"
+							autocomplete="off"
+							pattern={'\\d{4,6}'}
+							bind:value={pin}
+						/>
+						<small class="text-ink-soft text-[13px]">
+							{t('members_pin_hint')}
+							{#if holds(roleId, ADMINISTERS)}{t('members_pin_admin_hint')}{/if}
+						</small>
+					</div>
+				{:else}
+					<p class="text-ink-soft text-[13px]">{t('members_pin_role_off')}</p>
+				{/if}
+				<small class="text-ink-soft text-[13px]"
+					>{editing ? t('members_signin_leave') : t('members_signin_later')}</small
+				>
+			</div>
+			{#if editing}
 				<p class="text-ink-soft text-[13px]">{t('members_remove_hint')}</p>
 			{/if}
 			{#if error}<p class="text-destructive text-sm font-semibold" role="alert">{error}</p>{/if}

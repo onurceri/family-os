@@ -15,7 +15,12 @@ export const AI_MODES = ['share', 'conversation', 'agent'] as const;
 export type AiMode = (typeof AI_MODES)[number];
 
 export type Actor =
-	| { kind: 'member'; memberId: MemberId; roleId: RoleId }
+	/**
+	 * A person. `pin`: they signed in with a PIN on a family device. A PIN is short, so such a
+	 * sign-in never holds a critical capability (managing people, devices, settings), whatever the
+	 * role: a guessed PIN never yields administration.
+	 */
+	| { kind: 'member'; memberId: MemberId; roleId: RoleId; pin?: boolean }
 	/**
 	 * The AI. `mode` says how it works, and grants what goes with that and nothing else:
 	 * - `share`: it reads what a member shared (untrusted content); what it proposes is the
@@ -49,7 +54,12 @@ export type Actor =
 	| { kind: 'display'; deviceId: string; capabilities: readonly string[]; showNames: boolean };
 
 export const ActorSchema: z.ZodType<Actor> = z.discriminatedUnion('kind', [
-	z.object({ kind: z.literal('member'), memberId: z.custom<MemberId>(), roleId: z.string() }),
+	z.object({
+		kind: z.literal('member'),
+		memberId: z.custom<MemberId>(),
+		roleId: z.string(),
+		pin: z.boolean().optional(),
+	}),
 	z.object({
 		kind: z.literal('ai'),
 		mode: z.enum(AI_MODES),

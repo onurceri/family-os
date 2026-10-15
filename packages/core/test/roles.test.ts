@@ -27,7 +27,8 @@ describe('roles and capabilities', () => {
 				'notes.purge',
 			]),
 		);
-		expect(admin).not.toContain('core.signIn.pin');
+		// Anyone may be given a PIN; a PIN sign-in never administers (below).
+		expect(admin).toContain('core.signIn.pin');
 		const member = await effective('member');
 		expect(member).toEqual(expect.arrayContaining(['core.drafts.approve', 'notes.edit']));
 		expect(member).not.toContain('core.members.manage');
@@ -107,17 +108,47 @@ describe('roles and capabilities', () => {
 		).toBe('applied');
 	});
 
-	it('keeps PINs and the profile picker to roles that sign in with a PIN', async () => {
-		const { member: adminMember } = await k.member('admin');
+	it('lets every role have a PIN, lists only people who have one, and keeps a custom role to passwords', async () => {
+		const { actor: admin, member: adminMember } = await k.member('admin');
 		const { member: adult } = await k.member('member');
 		const { member: kid } = await k.member('supervised');
+		const { member: guest } = await k.member('guest');
 		const setPin = (memberId: string) =>
 			k.route('core.setMemberPin').call({ params: { memberId }, body: { pin: '2468' } });
-		await expect(setPin(adminMember.id)).rejects.toMatchObject({ code: 'conflict' });
-		await expect(setPin(adult.id)).rejects.toMatchObject({ code: 'conflict' });
-		await expect(setPin(kid.id)).resolves.toEqual({ ok: true });
+		for (const who of [adminMember, adult, kid])
+			await expect(setPin(who.id)).resolves.toEqual({ ok: true });
 		const profiles = (await k.route('core.listProfiles').call()) as { id: string }[];
-		expect(profiles.map((p) => p.id)).toEqual([kid.id]);
+		// The guest has no PIN yet: nothing to pick.
+		expect(profiles.map((p) => p.id)).toEqual([adminMember.id, adult.id, kid.id]);
+		expect(profiles.map((p) => p.id)).not.toContain(guest.id);
+
+		const created = await k.runner.invoke<{ id: string }>(
+			'core.createRole',
+			{ name: 'Passwords only', base: 'member', overrides: { 'core.signIn.pin': false } },
+			admin,
+		);
+		if (created.status !== 'applied') throw new Error('expected role');
+		const { member: aunt } = await k.member(created.output.id);
+		await expect(setPin(aunt.id)).rejects.toMatchObject({ code: 'conflict' });
+	});
+
+	it('never lets a PIN sign-in hold a critical capability, whatever the role', async () => {
+		const { actor: admin } = await k.member('admin');
+		const pinAdmin = { ...admin, pin: true };
+		expect(k.access.can(admin, 'core.members.manage')).toBe(true);
+		expect(k.access.can(pinAdmin, 'core.members.manage')).toBe(false);
+		expect(k.access.can(pinAdmin, 'core.extensions.manage')).toBe(false);
+		// Everything that is not administration stays.
+		expect(k.access.can(pinAdmin, 'core.drafts.approve')).toBe(true);
+		expect(k.access.can(pinAdmin, 'notes.purge')).toBe(true);
+		await expect(
+			k.runner.invoke('core.createMember', { displayName: 'Pat', roleId: 'member' }, pinAdmin),
+		).rejects.toMatchObject({ code: 'forbidden' });
+		const me = (await k.route('core.getMe').call({ actor: pinAdmin })) as {
+			capabilities: string[];
+		};
+		expect(me.capabilities).toContain('core.drafts.approve');
+		expect(me.capabilities).not.toContain('core.members.manage');
 	});
 
 	it('lets AI read but never hold a changing capability', () => {

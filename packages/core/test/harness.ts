@@ -68,12 +68,23 @@ export async function createTestKernel(
 	let now = Date.UTC(2026, 0, 1, 9);
 	const clock: TestClock = { now: () => now, advance: (ms) => (now += ms) };
 	const passwords = new Map<string, string>();
+	const pins = new Set<string>();
 	const identity: IdentityAdmin = {
 		setPasswordLogin: async ({ memberId, email }) => void passwords.set(memberId, email),
-		setPin: async () => {},
+		setPin: async ({ memberId }) => void pins.add(memberId),
+		signInMethods: async () =>
+			new Map(
+				[...new Set([...passwords.keys(), ...pins])].map((id) => [
+					id,
+					{ password: passwords.has(id), pin: pins.has(id) },
+				]),
+			),
 		endSessions: async () => {},
 		endDeviceSessions: async () => {},
-		revokeAll: async (memberId) => void passwords.delete(memberId),
+		revokeAll: async (memberId) => {
+			passwords.delete(memberId);
+			pins.delete(memberId);
+		},
 	};
 	const queue = createSqliteQueue({ db: handle.db, clock, ids: uuidv7Ids });
 	const kernel = createKernel({

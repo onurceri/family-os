@@ -95,6 +95,15 @@ export const MemberSchema = z.object({
 });
 export type Member = z.infer<typeof MemberSchema>;
 
+/** Which logins a person has (never the email, password or PIN themselves). */
+export const SignInMethodsSchema = z.object({
+	/** An email and password: works on every device. */
+	password: z.boolean(),
+	/** A PIN: works only on family devices. */
+	pin: z.boolean(),
+});
+const NO_SIGN_IN = { password: false, pin: false };
+
 export const RoleViewSchema = z.object({
 	id: z.string(),
 	/** Null for built-in roles: the UI shows their translated name. */
@@ -894,7 +903,10 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		summary: 'The signed-in member, with what their role allows',
 		requires: 'signedIn',
 		response: MemberSchema.extend({
+			/** What this sign-in allows: a PIN sign-in never holds critical capabilities. */
 			capabilities: z.array(z.string()),
+			/** How this person can sign in. */
+			signIn: SignInMethodsSchema,
 			/** Extensions turned off in Settings → Features; their UI is hidden. */
 			disabledExtensions: z.array(z.string()),
 			/** Whose next thing the hero on Today shows (`core.setMyNextUp`). */
@@ -902,9 +914,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		}),
 		async handle(ctx, { actor }) {
 			const row = await findMember(ctx.db, requireMember(actor).memberId);
+			const access = deps.access();
+			const signIn = (await deps.identity.signInMethods()).get(row.id) ?? NO_SIGN_IN;
 			return {
 				...toMember(row),
-				capabilities: [...deps.access().effective(row.role_id)],
+				capabilities: [...access.effective(row.role_id)].filter((c) => access.can(actor, c)),
+				signIn,
 				disabledExtensions: [...deps.features().disabled()],
 				nextUp: await readNextUp(ctx.db, row.id),
 			};
@@ -965,7 +980,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		operationId: 'core.listMembers',
 		summary: 'Active family members',
 		requires: CORE_CAPABILITIES.membersView.id,
-		response: z.array(MemberSchema),
+		// How each person signs in: only for those who manage people.
+		response: z.array(MemberSchema.extend({ signIn: SignInMethodsSchema.optional() })),
 		async handle(ctx, { actor }) {
 			const rows = await members(ctx.db)
 				.selectFrom('core_members')
@@ -976,7 +992,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			// A display sees names and colors only: no role and no private notes.
 			if (actor.kind === 'display')
 				return rows.map((row) => ({ ...toMember(row), roleId: '', about: null }));
-			return rows.map(toMember);
+			if (!deps.access().can(actor, CORE_CAPABILITIES.membersManage.id)) return rows.map(toMember);
+			const methods = await deps.identity.signInMethods();
+			return rows.map((row) => ({ ...toMember(row), signIn: methods.get(row.id) ?? NO_SIGN_IN }));
 		},
 	});
 
@@ -995,10 +1013,15 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.where('archived_at', 'is', null)
 				.orderBy('created_at')
 				.execute();
-			// Only people whose role signs in with a PIN appear in the picker.
+			// Only people who have a PIN, and whose role lets them use it, appear in the picker.
 			const access = deps.access();
+			const methods = await deps.identity.signInMethods();
 			return rows
-				.filter((r) => access.effective(r.role_id).has(CORE_CAPABILITIES.signInPin.id))
+				.filter(
+					(r) =>
+						methods.get(r.id)?.pin === true &&
+						access.effective(r.role_id).has(CORE_CAPABILITIES.signInPin.id),
+				)
 				.map((r) => ({ id: r.id, displayName: r.display_name, color: r.color }));
 		},
 	});
@@ -1067,7 +1090,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		status: 200,
 		async handle(ctx, { params, body }) {
 			const member = await findMember(ctx.db, params.memberId);
-			// A PIN is a weak secret: only roles without critical capabilities use one.
+			// A custom role may be kept to passwords. (A PIN sign-in never administers, whatever the role.)
 			if (!deps.access().effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) {
 				throw new FamosError('conflict', "This member's role signs in with a password, not a PIN");
 			}

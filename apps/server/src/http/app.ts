@@ -114,8 +114,9 @@ export async function resolveActor(
 
 /**
  * Resolves the session cookie to an active member Actor, or null. A PIN session counts only while
- * its device is still trusted and the member's role still signs in with a PIN, so revoking a device
- * or changing a role takes effect on the next request even if ending the sessions failed.
+ * its device is still trusted and the member's role still allows PIN sign-in, so revoking a device
+ * or changing a role takes effect on the next request even if ending the sessions failed. It is
+ * marked `pin`, so it never holds a critical capability.
  */
 async function resolveMember(
 	kernel: Kernel,
@@ -132,11 +133,11 @@ async function resolveMember(
 		.where('archived_at', 'is', null)
 		.executeTakeFirst();
 	if (!member) return null;
-	if (session.deviceId) {
-		if (!(await kernel.devices.isActive(session.deviceId))) return null;
-		if (!kernel.access.effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) return null;
-	}
-	return { kind: 'member', memberId: member.id as MemberId, roleId: member.role_id };
+	const actor: Actor = { kind: 'member', memberId: member.id as MemberId, roleId: member.role_id };
+	if (!session.deviceId) return actor;
+	if (!(await kernel.devices.isActive(session.deviceId))) return null;
+	if (!kernel.access.effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) return null;
+	return { ...actor, pin: true };
 }
 
 function actorMiddleware(deps: HttpAppDeps): MiddlewareHandler<AppEnv> {

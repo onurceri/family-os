@@ -1,6 +1,6 @@
 # Family members, roles and devices
 
-Everyone in the household gets a place in FamilyOS with a role. The role decides what they can do and how they sign in. Adults sign in with an email and a password. Children and guests can sign in with a PIN, but only on a tablet or phone you have marked as a family device.
+Everyone in the household gets a place in FamilyOS with a role. The role decides what they can do. How they sign in is up to you, whatever their role: with an email and a password (on any device), with a PIN (only on a tablet or phone you have marked as a family device), or both.
 
 Only admins can do what is on this page.
 
@@ -12,14 +12,11 @@ Open **Settings → Family → Members** press **Add a member** and fill in the 
 - **Role**: see below. A short note under the field says what the role is for.
 - **About (optional)**: a few words such as "9 years old, at primary school" or "Deniz's partner". It helps the AI decide whom a school notice or an appointment is for. You can stop the AI from seeing it with **Send names and descriptions** (see [AI and privacy](ai.md)). Up to 300 characters.
 
-Press **Add member**. The new person cannot sign in yet. On their row, press:
+- **Sign-in**: how this person signs in. Give an **Email** and a **Password** (at least 10 characters), a **PIN** (4 to 6 digits), or both. A teenager with their own phone gets an email and password; a young child on the kitchen tablet gets a PIN. Leave them empty to add a sign-in later.
 
-- **Set email & password** for roles that sign in with a password. The password needs at least 10 characters.
-- **Set PIN** for roles that sign in with a PIN. A PIN is 4 to 6 digits.
+Press **Save**. The page shows "Sign-in saved." when a sign-in was given. Each row says how that person really signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", or "No sign-in yet".
 
-Then press **Save**. The page shows "Sign-in saved." Setting a new PIN or password signs that person out on every device, so they sign in again with the new one. An admin who changes their own password stays signed in.
-
-**Edit** changes a person's name (up to 60 characters), role and **About** text. To change their email, use **Set email & password** again. If another member already uses that email, the page says so. At least one admin must stay: the last admin cannot be given another role, and the page says "There must always be one admin."
+**Edit** (on a row) changes a person's name (up to 60 characters), role and **About** text, and their sign-in: the panel says what they have now, and fields you leave empty keep it. Setting a new PIN or password signs that person out on every device, so they sign in again with the new one. An admin who changes their own password stays signed in. If another member already uses that email, the page says so (a new person is then kept, and you can try another email). At least one admin must stay: the last admin cannot be given another role, and the page says "There must always be one admin."
 
 ### Remove a member
 
@@ -33,12 +30,12 @@ Everyone chooses their own language under **Settings → You → Profile & sign-
 |---|---|---|
 | Admin | Whoever runs FamilyOS (there can be several) | Everything. Only admins manage members, roles, devices, features, AI, auto-approval, backups, Telegram, email, languages and region, calendar subscriptions, display content. |
 | Member | Adults | See and change everything else, approve suggestions and ask the assistant. |
-| Supervised | Children, or anyone whose changes should be checked | See everything. Add shopping items and tick them off, tick off tasks and their own chores, share to Quick add and ask the assistant. Other changes, such as a new event or removing a shopping item, become suggestions that someone who may approve suggestions (Admins and Members by default) decides. |
+| Supervised | Children, or anyone whose changes should be checked | See everything. Use the everyday things directly: add shopping items and tick them off, tick off tasks and their own chores, post on the board, share to Quick add and ask the assistant. What they added themselves they can also change or remove directly: their own shopping items, the tasks they made for themselves, their own board notes, and their own tick on a chore that day. Changing or removing other people's things, or a new event, becomes a suggestion that someone who may approve suggestions (Admins and Members by default) decides. Forms say so before they save ("Saving sends this for approval."), and after saving the page says "Sent for approval". |
 | Guest | A babysitter, grandparents visiting | Look only: the calendar, lists, chores, recipes, records, vehicles, home and pets. No sharing, suggesting or assistant. |
 
 Everyone also sees their own notifications and the other members.
 
-Admins and members sign in with an email and a password. Supervised members and guests sign in with a PIN.
+Any role can sign in with an email and password, a PIN, or both. Someone who signs in with a PIN can do everything their role allows except what only admins may do: an admin signed in with a PIN cannot manage people, roles, devices, features, AI or settings. For that, they sign in with their email and password.
 
 **Settings → Family → Roles** (or **What can each role do?** on the members page) shows every permission and which role has it. A lock marks what only admins can have.
 
@@ -48,7 +45,7 @@ Need something in between? On **Settings → Family → Roles**, under **Your ow
 
 - Things added to FamilyOS later follow the role you started from.
 - Admin-only permissions cannot be given to a custom role.
-- **Sign in with a PIN on family devices** is one of the permissions. A custom role from Member that has it signs in with a PIN, and one from Supervised that does not signs in with a password. After you change this, set a PIN or a password for the people who have the role.
+- **Sign in with a PIN on family devices** is one of the permissions. Every built-in role has it. Untick it for a custom role whose people should only use an email and password: their PINs then stop working, and the members page offers no PIN for them.
 - Example: a teenager who uses everything like a Member but should not approve other people's suggestions. Press **New role from Member**, give it a name, untick **Approve suggestions** and press **Create role**.
 - **Delete role** needs a second tap (**Tap again to delete**). It only works when nobody has the role.
 
@@ -66,9 +63,9 @@ The device is now remembered by a cookie in that browser. Clearing the browser's
 
 ### Sign in on a family device
 
-The sign-in page asks **Who's using FamilyOS?** and shows the people whose role uses a PIN. Tap a name, enter the PIN on the number pad and press **Sign in**. Adults press **Sign in with email** below the names. If nobody uses a PIN, only the email form is shown.
+The sign-in page asks **Who's using FamilyOS?** and shows the people who have a PIN. Tap a name, enter the PIN on the number pad and press **Sign in**. Adults press **Sign in with email** below the names. If nobody uses a PIN, only the email form is shown.
 
-A PIN sign-in lasts only as long as the device is a family device and the person's role still uses a PIN.
+A PIN sign-in lasts only as long as the device is a family device and the person's role still allows PINs.
 
 ### Wrong PINs
 

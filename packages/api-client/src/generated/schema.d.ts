@@ -9402,6 +9402,10 @@ export interface operations {
                         createdAt: number;
                         archived: boolean;
                         capabilities: string[];
+                        signIn: {
+                            password: boolean;
+                            pin: boolean;
+                        };
                         disabledExtensions: string[];
                         /** @enum {string} */
                         nextUp: "family" | "me";
@@ -9801,6 +9805,10 @@ export interface operations {
                         locale: string | null;
                         createdAt: number;
                         archived: boolean;
+                        signIn?: {
+                            password: boolean;
+                            pin: boolean;
+                        };
                     }[];
                 };
             };
