@@ -4,9 +4,11 @@ import { join } from 'node:path';
 import {
 	defineAction,
 	defineCapability,
+	defineExtension,
 	type ExtensionDefinition,
 	FamosError,
 	parseManifest,
+	SDK_VERSION,
 	systemActor,
 } from '@famos/sdk';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -99,8 +101,19 @@ describe('a kernel with extensions it may refuse', () => {
 		});
 		expect(k.registry.extensions.map((e) => e.id)).toEqual(['core', 'fine']);
 		expect(k.refused).toEqual([
-			{ id: 'broken', version: '0.0.0', reason: expect.stringContaining('core.noSuchAction') },
-			{ id: 'leaning', version: '0.0.0', reason: 'It needs "broken", which was refused' },
+			{
+				id: 'broken',
+				version: '0.0.0',
+				reason: expect.stringContaining('core.noSuchAction'),
+				code: 'invalid',
+			},
+			{
+				id: 'leaning',
+				version: '0.0.0',
+				reason: 'It needs "broken", which was refused',
+				code: 'dependency_refused',
+				params: { extensionId: 'broken' },
+			},
 		]);
 	});
 
@@ -138,7 +151,30 @@ describe('a kernel with extensions it may refuse', () => {
 			refusable: ['stray'],
 		});
 		expect(k.refused).toEqual([
-			{ id: 'stray', version: '0.0.0', reason: expect.stringContaining('nowhere.view') },
+			{
+				id: 'stray',
+				version: '0.0.0',
+				reason: expect.stringContaining('nowhere.view'),
+				code: 'invalid',
+			},
+		]);
+	});
+
+	it('gives a refusal a code and the values a page names, beside the words for the log', async () => {
+		const future = defineExtension({ manifest: { id: 'future', version: '1.0.0', sdk: '^9.0.0' } });
+		const lonely = ext('lonely', { dependsOn: ['nowhere'] });
+		const k = await kernel({ extensions: [future, lonely], refusable: ['future', 'lonely'] });
+		expect(k.refused).toEqual([
+			expect.objectContaining({
+				id: 'lonely',
+				code: 'missing_dependency',
+				params: { extensionId: 'nowhere' },
+			}),
+			expect.objectContaining({
+				id: 'future',
+				code: 'sdk',
+				params: { needs: '^9.0.0', has: SDK_VERSION },
+			}),
 		]);
 	});
 
@@ -152,7 +188,11 @@ describe('a kernel with extensions it may refuse', () => {
 			(e: unknown) => e,
 		);
 		expect(isExtensionRefusedError(error)).toBe(true);
-		expect(error).toMatchObject({ extensionId: 'failing', reason: 'Its start failed: no luck' });
+		expect(error).toMatchObject({
+			extensionId: 'failing',
+			reason: 'Its start failed: no luck',
+			code: 'start_failed',
+		});
 		// One that is always there fails as it is.
 		await expect(kernel({ extensions: [failing] })).rejects.toThrow('no luck');
 	});

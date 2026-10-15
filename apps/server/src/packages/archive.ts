@@ -18,14 +18,51 @@ export const ARCHIVE_LIMITS = {
 export type PackageFiles = Map<string, Buffer>;
 
 /**
- * Why a package is refused, for the person installing it: it is too big (`too_large`), or it is
- * not a package this server reads (`invalid`); `verifyPackage` adds `unsigned` and
- * `incompatible`. The message says exactly what is wrong.
+ * Why a package is refused, as a stable code a page translates, with the values its sentence
+ * names (a path, a key id, a version). The message beside it is for the log; the group says what
+ * the person can do about it:
+ * - `too_large`: `too_large`, `unpacks_too_large` (`limitMb`), `too_many_files` (`limit`);
+ * - `unsigned`: `not_signed`, `bad_signature_file`, `untrusted_key` (`keyId`),
+ *   `signature_mismatch`;
+ * - `incompatible`: `sdk` (`needs`, `has`), `platform` (`built`, `has`);
+ * - `invalid`: everything else (`not_gzip`, `not_archive`, `unsafe_path`, `not_a_file`,
+ *   `duplicate_path`, `file_missing`, `file_mismatch`, `unlisted_file` with `path`;
+ *   `no_description`, `bad_description`, `bad_manifest`, `reserved_name` with `id`, `bad_entry`).
  */
-export type RefusalReason = 'too_large' | 'invalid' | 'unsigned' | 'incompatible';
+const GROUPS = {
+	too_large: ['too_large', 'unpacks_too_large', 'too_many_files'],
+	unsigned: ['not_signed', 'bad_signature_file', 'untrusted_key', 'signature_mismatch'],
+	incompatible: ['sdk', 'platform'],
+	invalid: [
+		'not_gzip',
+		'not_archive',
+		'unsafe_path',
+		'not_a_file',
+		'duplicate_path',
+		'file_missing',
+		'file_mismatch',
+		'unlisted_file',
+		'no_description',
+		'bad_description',
+		'bad_manifest',
+		'reserved_name',
+		'bad_entry',
+	],
+} as const;
+export type RefusalReason = keyof typeof GROUPS;
+export type PackageProblem = (typeof GROUPS)[RefusalReason][number];
 
-export const refusePackage = (message: string, reason: RefusalReason = 'invalid') =>
-	new FamosError('bad_request', message, { reason });
+const groupOf = (code: PackageProblem): RefusalReason =>
+	(Object.keys(GROUPS) as RefusalReason[]).find((group) =>
+		(GROUPS[group] as readonly string[]).includes(code),
+	) ?? 'invalid';
+
+/** A refusal: the message for the log, and `details` `{ reason, code, ...params }` for a page. */
+export const refusePackage = (
+	message: string,
+	code: PackageProblem,
+	params: Record<string, string> = {},
+) => new FamosError('bad_request', message, { reason: groupOf(code), code, ...params });
 const refuse = refusePackage;
 
 /**
@@ -48,8 +85,13 @@ export function isSafePath(path: string): boolean {
  * allowed and carry nothing.
  */
 export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
+	const limitMb = (limit: number) => ({ limitMb: String(limit / 1024 / 1024) });
 	if (bytes.byteLength > ARCHIVE_LIMITS.compressedBytes)
-		throw refuse(`The package is larger than ${mb(ARCHIVE_LIMITS.compressedBytes)}`, 'too_large');
+		throw refuse(
+			`The package is larger than ${mb(ARCHIVE_LIMITS.compressedBytes)}`,
+			'too_large',
+			limitMb(ARCHIVE_LIMITS.compressedBytes),
+		);
 	let plain: Buffer;
 	try {
 		// The tar's headers and padding count too, so the files alone always stay below the limit.
@@ -61,37 +103,50 @@ export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 		)
 			throw refuse(
 				`The package unpacks to more than ${mb(ARCHIVE_LIMITS.unpackedBytes)}`,
-				'too_large',
+				'unpacks_too_large',
+				limitMb(ARCHIVE_LIMITS.unpackedBytes),
 			);
-		throw refuse('The file is not an extension package (it is not gzip)');
+		throw refuse('The file is not an extension package (it is not gzip)', 'not_gzip');
 	}
 	const files: PackageFiles = new Map();
-	let problem: string | null = null;
-	let tooMany = false;
+	let problem: { message: string; code: PackageProblem; params?: Record<string, string> } | null =
+		null;
 	const parser = new tar.Parser({
 		strict: true,
 		onReadEntry: (entry) => {
-			const fail = (message: string) => {
-				problem ??= message;
+			const fail = (message: string, code: PackageProblem, params?: Record<string, string>) => {
+				problem ??= { message, code, ...(params && { params }) };
 				entry.resume();
 			};
-			if (problem) return fail(problem);
+			const path = { path: entry.path.slice(0, 120) };
+			if (problem) return entry.resume();
 			if (entry.type === 'Directory') {
 				if (!isSafePath(entry.path.replace(/\/$/, '')))
-					return fail(`The package holds an unsafe path: ${printable(entry.path)}`);
+					return fail(
+						`The package holds an unsafe path: ${printable(entry.path)}`,
+						'unsafe_path',
+						path,
+					);
 				return entry.resume();
 			}
 			if (entry.type !== 'File' && entry.type !== 'OldFile')
 				return fail(
 					`The package holds a ${entry.type} entry (${printable(entry.path)}): only files are allowed`,
+					'not_a_file',
+					path,
 				);
 			if (!isSafePath(entry.path))
-				return fail(`The package holds an unsafe path: ${printable(entry.path)}`);
-			if (files.has(entry.path)) return fail(`The package holds ${printable(entry.path)} twice`);
-			if (files.size >= ARCHIVE_LIMITS.files) {
-				tooMany = true;
-				return fail(`The package holds more than ${ARCHIVE_LIMITS.files} files`);
-			}
+				return fail(
+					`The package holds an unsafe path: ${printable(entry.path)}`,
+					'unsafe_path',
+					path,
+				);
+			if (files.has(entry.path))
+				return fail(`The package holds ${printable(entry.path)} twice`, 'duplicate_path', path);
+			if (files.size >= ARCHIVE_LIMITS.files)
+				return fail(`The package holds more than ${ARCHIVE_LIMITS.files} files`, 'too_many_files', {
+					limit: String(ARCHIVE_LIMITS.files),
+				});
 			const chunks: Buffer[] = [];
 			entry.on('data', (chunk: Buffer) => chunks.push(chunk));
 			entry.on('end', () => {
@@ -101,15 +156,23 @@ export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 	});
 	await new Promise<void>((resolve, reject) => {
 		parser.on('error', (error: Error) =>
-			reject(refuse(`The package is not a valid archive: ${error.message}`)),
+			reject(refuse(`The package is not a valid archive: ${error.message}`, 'not_archive')),
 		);
 		parser.on('warn', (_code: string, message: string | Error) => {
-			problem ??= `The package is not a valid archive: ${message instanceof Error ? message.message : message}`;
+			problem ??= {
+				message: `The package is not a valid archive: ${message instanceof Error ? message.message : message}`,
+				code: 'not_archive',
+			};
 		});
 		parser.on('end', () => resolve());
 		parser.end(plain);
 	});
-	if (problem) throw refuse(problem, tooMany ? 'too_large' : 'invalid');
+	const found = problem as {
+		message: string;
+		code: PackageProblem;
+		params?: Record<string, string>;
+	} | null;
+	if (found) throw refuse(found.message, found.code, found.params);
 	return files;
 }
 
@@ -125,17 +188,31 @@ export async function readPackageFolder(dir: string): Promise<PackageFiles> {
 		const full = join(entry.parentPath, entry.name);
 		const path = relative(dir, full).split(sep).join('/');
 		if (entry.isDirectory()) continue;
-		if (!entry.isFile()) throw refuse(`The stored package holds ${path}, which is not a file`);
+		const notAFile = () =>
+			refuse(`The stored package holds ${path}, which is not a file`, 'not_a_file', { path });
+		if (!entry.isFile()) throw notAFile();
 		// `readdir` reports what the entry is; `lstat` again, so a link swapped in is caught.
-		if (!(await lstat(full)).isFile())
-			throw refuse(`The stored package holds ${path}, which is not a file`);
-		if (!isSafePath(path)) throw refuse(`The stored package holds an unsafe path: ${path}`);
+		if (!(await lstat(full)).isFile()) throw notAFile();
+		if (!isSafePath(path))
+			throw refuse(`The stored package holds an unsafe path: ${path}`, 'unsafe_path', { path });
 		if (files.size >= ARCHIVE_LIMITS.files)
-			throw refuse(`The stored package holds more than ${ARCHIVE_LIMITS.files} files`);
+			throw refuse(
+				`The stored package holds more than ${ARCHIVE_LIMITS.files} files`,
+				'too_many_files',
+				{
+					limit: String(ARCHIVE_LIMITS.files),
+				},
+			);
 		const bytes = await readFile(full);
 		total += bytes.byteLength;
 		if (total > ARCHIVE_LIMITS.unpackedBytes)
-			throw refuse(`The stored package is larger than ${mb(ARCHIVE_LIMITS.unpackedBytes)}`);
+			throw refuse(
+				`The stored package is larger than ${mb(ARCHIVE_LIMITS.unpackedBytes)}`,
+				'unpacks_too_large',
+				{
+					limitMb: String(ARCHIVE_LIMITS.unpackedBytes / 1024 / 1024),
+				},
+			);
 		files.set(path, bytes);
 	}
 	return files;

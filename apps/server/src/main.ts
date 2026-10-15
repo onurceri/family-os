@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { createLogger, silentLogger } from '@famos/adapters/runtime';
 import {
 	type CoreTables,
+	type ExtensionProblem,
 	isExtensionRefusedError,
 	readExtensionState,
 	restartRequested,
@@ -247,11 +248,21 @@ async function serveCommand() {
 function failingExtension(
 	error: unknown,
 	selection: Pick<InstalledExtensions, 'refusable'>,
-): { id: string; reason: string } | null {
+): {
+	id: string;
+	reason: string;
+	code: ExtensionProblem;
+	params?: Record<string, string>;
+} | null {
 	if (error instanceof MigrationFailedError && selection.refusable.includes(error.scope))
-		return { id: error.scope, reason: error.message };
+		return { id: error.scope, reason: error.message, code: 'migration_failed' };
 	if (isExtensionRefusedError(error) && selection.refusable.includes(error.extensionId))
-		return { id: error.extensionId, reason: error.reason };
+		return {
+			id: error.extensionId,
+			reason: error.reason,
+			code: error.code,
+			...(error.params && { params: error.params }),
+		};
 	return null;
 }
 

@@ -17,6 +17,7 @@ import {
 	satisfiesCaret,
 	tablePrefixOf,
 } from '@famos/sdk';
+import type { ExtensionProblem } from './extension-state.ts';
 
 export interface Registry {
 	/** Extensions in dependency order (dependencies first). */
@@ -51,12 +52,22 @@ export class ExtensionRefusedError extends Error {
 	readonly [REFUSED] = true;
 	readonly extensionId: string;
 	readonly reason: string;
+	/** What a page says about it (see `EXTENSION_PROBLEMS`); `invalid` unless more is known. */
+	readonly code: ExtensionProblem;
+	readonly params: Record<string, string> | undefined;
 
-	constructor(extensionId: string, reason: string) {
+	constructor(
+		extensionId: string,
+		reason: string,
+		code: ExtensionProblem = 'invalid',
+		params?: Record<string, string>,
+	) {
 		super(reason);
 		this.name = 'ExtensionRefusedError';
 		this.extensionId = extensionId;
 		this.reason = reason;
+		this.code = code;
+		this.params = params;
 	}
 }
 
@@ -65,15 +76,20 @@ export const isExtensionRefusedError = (error: unknown): error is ExtensionRefus
 	error !== null &&
 	(error as Record<symbol, unknown>)[REFUSED] === true;
 
-function refuse(extensionId: string, reason: string): never {
-	throw new ExtensionRefusedError(extensionId, reason);
+function refuse(
+	extensionId: string,
+	reason: string,
+	code?: ExtensionProblem,
+	params?: Record<string, string>,
+): never {
+	throw new ExtensionRefusedError(extensionId, reason, code, params);
 }
 
 /** Orders extensions so that every extension comes after its dependencies. */
 export function orderExtensions(extensions: readonly ExtensionDefinition[]): ExtensionDefinition[] {
 	const byId = new Map<string, ExtensionDefinition>();
 	for (const ext of extensions) {
-		if (byId.has(ext.id)) refuse(ext.id, `Duplicate extension id "${ext.id}"`);
+		if (byId.has(ext.id)) refuse(ext.id, `Duplicate extension id "${ext.id}"`, 'name_clash');
 		byId.set(ext.id, ext);
 	}
 	const ordered: ExtensionDefinition[] = [];
@@ -87,7 +103,12 @@ export function orderExtensions(extensions: readonly ExtensionDefinition[]): Ext
 		for (const dep of ext.manifest.dependsOn) {
 			const target = byId.get(dep);
 			if (!target)
-				return refuse(ext.id, `Extension "${ext.id}" depends on missing extension "${dep}"`);
+				return refuse(
+					ext.id,
+					`Extension "${ext.id}" depends on missing extension "${dep}"`,
+					'missing_dependency',
+					{ extensionId: dep },
+				);
 			visit(target, [...path, ext.id]);
 		}
 		state.set(ext.id, 'done');
@@ -112,7 +133,15 @@ function checkManifests(
 		const where = `Extension "${ext.id}"`;
 		if (manifest.id !== ext.id) refuse(ext.id, `${where} carries the manifest of "${manifest.id}"`);
 		if (!satisfiesCaret(SDK_VERSION, manifest.sdk))
-			refuse(ext.id, `${where} needs SDK ${manifest.sdk}, but this host has ${SDK_VERSION}`);
+			refuse(
+				ext.id,
+				`${where} needs SDK ${manifest.sdk}, but this host has ${SDK_VERSION}`,
+				'sdk',
+				{
+					needs: manifest.sdk,
+					has: SDK_VERSION,
+				},
+			);
 
 		for (const dep of manifest.dependsOn) {
 			if (manifest.optional.includes(dep))
@@ -143,12 +172,13 @@ function checkManifests(
 		const prefix = tablePrefixOf(manifest);
 		// Core is the host itself and owns `core_`.
 		const clash = ext.id === 'core' ? null : reservedClash(ext.id, prefix);
-		if (clash) refuse(ext.id, `${where} cannot be installed: ${clash}`);
+		if (clash) refuse(ext.id, `${where} cannot be installed: ${clash}`, 'name_clash');
 		for (const other of prefixes) {
 			if (prefix.startsWith(other.prefix) || other.prefix.startsWith(prefix))
 				refuse(
 					ext.id,
 					`${where} and "${other.id}" have overlapping table prefixes "${prefix}" and "${other.prefix}"`,
+					'name_clash',
 				);
 		}
 		prefixes.push({ id: ext.id, prefix });

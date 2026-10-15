@@ -577,7 +577,7 @@ export function createKernel(options: KernelOptions): Kernel {
 					// again without it.
 					if (!options.refusable?.includes(ext.id)) throw error;
 					const message = error instanceof Error ? error.message : String(error);
-					throw new ExtensionRefusedError(ext.id, `Its start failed: ${message}`);
+					throw new ExtensionRefusedError(ext.id, `Its start failed: ${message}`, 'start_failed');
 				}
 			}
 			await reconcileSearch();
@@ -620,14 +620,23 @@ function buildLeavingOutRefused(
 			}
 			for (const ext of candidates) {
 				if (!out.has(ext.id)) continue;
-				refused.push({
-					id: ext.id,
-					version: ext.manifest.version,
-					reason:
-						ext.id === error.extensionId
-							? error.reason
-							: `It needs "${error.extensionId}", which was refused`,
-				});
+				refused.push(
+					ext.id === error.extensionId
+						? {
+								id: ext.id,
+								version: ext.manifest.version,
+								reason: error.reason,
+								code: error.code,
+								...(error.params && { params: error.params }),
+							}
+						: {
+								id: ext.id,
+								version: ext.manifest.version,
+								reason: `It needs "${error.extensionId}", which was refused`,
+								code: 'dependency_refused',
+								params: { extensionId: error.extensionId },
+							},
+				);
 			}
 			candidates = candidates.filter((ext) => !out.has(ext.id));
 		}
@@ -651,6 +660,7 @@ function assertNoInfrastructureClash(
 			throw new ExtensionRefusedError(
 				clash.id,
 				`Extension "${clash.id}" clashes with the host's "${scope}" tables`,
+				'name_clash',
 			);
 	}
 }

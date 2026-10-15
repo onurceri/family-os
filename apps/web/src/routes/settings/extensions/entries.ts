@@ -129,6 +129,8 @@ export function stagedEntry(staged: Staged): Entry {
 		version: staged.version,
 		status: 'available',
 		reason: null,
+		reasonCode: null,
+		reasonParams: {},
 		always: false,
 		enabled: false,
 		dependsOn: staged.dependsOn,
@@ -145,40 +147,117 @@ export const updateOf = (staged: Staged): { from: string; to: string } | null =>
 		? { from: staged.current, to: staged.version }
 		: null;
 
-/** Why the server would not take a file, as a key of the page's texts and its values. */
+/** A sentence of the page's texts with the values it names. */
+export interface Said<K extends string = string> {
+	key: K;
+	values?: Record<string, string>;
+}
+
+/** The sentences that explain one part of a refused file, by the server's code. */
+const FILE_DETAILS = {
+	untrusted_key: 'extensions_file_untrusted_key',
+	not_signed: 'extensions_file_not_signed',
+	bad_signature_file: 'extensions_file_not_signed',
+	signature_mismatch: 'extensions_file_signature_mismatch',
+	file_mismatch: 'extensions_file_changed',
+	file_missing: 'extensions_file_missing',
+	unlisted_file: 'extensions_file_unlisted',
+	unsafe_path: 'extensions_file_unsafe_path',
+	not_a_file: 'extensions_file_not_a_file',
+	too_large: 'extensions_file_limit',
+	unpacks_too_large: 'extensions_file_unpacked_limit',
+	too_many_files: 'extensions_file_too_many',
+	sdk: 'extensions_file_sdk',
+	platform: 'extensions_file_platform',
+	reserved_name: 'extensions_file_reserved',
+} as const;
+
+/** Why the server would not take a file: a headline, and what exactly when it is known. */
 export interface FileProblem {
-	key:
+	headline: Said<
 		| 'extensions_file_too_large'
 		| 'extensions_file_unsigned'
 		| 'extensions_file_incompatible'
 		| 'extensions_file_older'
 		| 'extensions_file_invalid'
-		| 'error_generic';
-	values?: Record<string, string>;
-	/** The server's own words, shown small below for whoever wants the detail. */
-	detail?: string;
+		| 'error_generic'
+	>;
+	detail?: Said<(typeof FILE_DETAILS)[keyof typeof FILE_DETAILS]>;
 }
 
-/** Reads the server's refusal of an uploaded file: its status, its reason and its message. */
-export function fileProblem(failure: {
-	status: number;
-	message?: string;
-	details?: unknown;
-}): FileProblem {
-	const details = (failure.details ?? {}) as { reason?: string; version?: string };
-	if (failure.status === 413) return { key: 'extensions_file_too_large' };
+/** Only the plain values a sentence names; anything else the server sent is left out. */
+function valuesOf(details: Record<string, unknown>): Record<string, string> {
+	const values: Record<string, string> = {};
+	for (const [name, value] of Object.entries(details))
+		if (name !== 'reason' && name !== 'code' && typeof value === 'string') values[name] = value;
+	return values;
+}
+
+/**
+ * Reads the server's refusal of an uploaded file from its status and the codes in its details,
+ * never from its words: those are English, for the server's log.
+ */
+export function fileProblem(failure: { status: number; details?: unknown }): FileProblem {
+	const details = (failure.details ?? {}) as Record<string, unknown>;
+	if (failure.status === 413) return { headline: { key: 'extensions_file_too_large' } };
 	if (failure.status === 409 && details.reason === 'older')
-		return { key: 'extensions_file_older', values: { version: details.version ?? '' } };
-	if (failure.status !== 400) return { key: 'error_generic' };
-	const detail = failure.message ? { detail: failure.message } : {};
-	switch (details.reason) {
-		case 'too_large':
-			return { key: 'extensions_file_too_large', ...detail };
-		case 'unsigned':
-			return { key: 'extensions_file_unsigned', ...detail };
-		case 'incompatible':
-			return { key: 'extensions_file_incompatible', ...detail };
-		default:
-			return { key: 'extensions_file_invalid', ...detail };
-	}
+		return {
+			headline: {
+				key: 'extensions_file_older',
+				values: { version: typeof details.version === 'string' ? details.version : '' },
+			},
+		};
+	if (failure.status !== 400) return { headline: { key: 'error_generic' } };
+	const headline = (() => {
+		switch (details.reason) {
+			case 'too_large':
+				return 'extensions_file_too_large' as const;
+			case 'unsigned':
+				return 'extensions_file_unsigned' as const;
+			case 'incompatible':
+				return 'extensions_file_incompatible' as const;
+			default:
+				return 'extensions_file_invalid' as const;
+		}
+	})();
+	const code = typeof details.code === 'string' ? details.code : '';
+	const detailKey = Object.hasOwn(FILE_DETAILS, code)
+		? FILE_DETAILS[code as keyof typeof FILE_DETAILS]
+		: undefined;
+	return {
+		headline: { key: headline },
+		...(detailKey && { detail: { key: detailKey, values: valuesOf(details) } }),
+	};
+}
+
+/** The sentence for each reason an installed extension does not run. */
+const PROBLEMS = {
+	no_package: 'extensions_problem_no_package',
+	package_refused: 'extensions_problem_package_refused',
+	unreadable: 'extensions_problem_unreadable',
+	load_failed: 'extensions_problem_load_failed',
+	newer_data: 'extensions_problem_newer_data',
+	migration_order: 'extensions_problem_migration_order',
+	migration_failed: 'extensions_problem_migration_failed',
+	start_failed: 'extensions_problem_start_failed',
+	sdk: 'extensions_problem_sdk',
+	missing_dependency: 'extensions_error_missing',
+	dependency_refused: 'extensions_problem_dependency_refused',
+	name_clash: 'extensions_problem_name_clash',
+	invalid: 'extensions_problem_invalid',
+} as const satisfies Record<NonNullable<Entry['reasonCode']>, string>;
+
+/**
+ * Why an installed extension is left out, in the page's words: by its code, with the extension
+ * it names given by its name. Without a code (a record from before codes), a general sentence.
+ */
+export function problemOf(
+	entry: Entry,
+	nameOfId: (id: string) => string,
+): Said<(typeof PROBLEMS)[keyof typeof PROBLEMS] | 'extensions_problem_unknown'> | null {
+	if (entry.status !== 'refused' && entry.status !== 'failed') return null;
+	if (!entry.reasonCode) return { key: 'extensions_problem_unknown' };
+	const values = { ...entry.reasonParams };
+	if (values.extensionId) values.name = nameOfId(values.extensionId);
+	return { key: PROBLEMS[entry.reasonCode], values };
 }

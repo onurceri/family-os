@@ -14189,6 +14189,11 @@ export interface operations {
                             /** @enum {string} */
                             status: "loaded" | "pending_install" | "pending_uninstall" | "refused" | "failed" | "available";
                             reason: string | null;
+                            /** @enum {string|null} */
+                            reasonCode: "no_package" | "package_refused" | "unreadable" | "load_failed" | "newer_data" | "migration_order" | "migration_failed" | "start_failed" | "sdk" | "missing_dependency" | "dependency_refused" | "name_clash" | "invalid" | null;
+                            reasonParams: {
+                                [key: string]: string;
+                            };
                             always: boolean;
                             enabled: boolean;
                             dependsOn: string[];

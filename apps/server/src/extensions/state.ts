@@ -1,4 +1,4 @@
-import type { ExtensionState } from '@famos/core';
+import type { ExtensionProblem, ExtensionState } from '@famos/core';
 import type { Migrations } from '@famos/sdk';
 
 /**
@@ -35,14 +35,21 @@ export function chooseInstalled(input: {
 export function migrationProblem(
 	applied: readonly string[] | undefined,
 	migrations: Migrations,
-): string | null {
+): { reason: string; code: ExtensionProblem } | null {
 	if (!applied || applied.length === 0) return null;
 	const unknown = applied.filter((name) => !(name in migrations));
 	if (unknown.length > 0)
-		return `The database holds migrations this version does not have (${unknown.join(', ')}): a newer version made it`;
+		return {
+			reason: `The database holds migrations this version does not have (${unknown.join(', ')}): a newer version made it`,
+			code: 'newer_data',
+		};
 	const last = [...applied].sort().at(-1) as string;
 	const done = new Set(applied);
 	const early = Object.keys(migrations).filter((name) => !done.has(name) && name < last);
-	if (early.length > 0) return `Its migration ${early.join(', ')} sorts before the applied ${last}`;
+	if (early.length > 0)
+		return {
+			reason: `Its migration ${early.join(', ')} sorts before the applied ${last}`,
+			code: 'migration_order',
+		};
 	return null;
 }

@@ -251,11 +251,19 @@ export function withStore(available: Available, scan: StoreScan): Available {
 			copy,
 		});
 	}
+	// An extension whose only copies failed their check has no package: say why it is missing.
+	const unreadable = [
+		...available.unreadable,
+		...scan.refused
+			.filter((r) => !best.has(r.id) && !available.unreadable.some((u) => u.id === r.id))
+			.filter((r, i, all) => all.findIndex((o) => o.id === r.id) === i)
+			.map((r) => ({ id: r.id, reason: r.reason, code: 'package_refused' as const })),
+	];
 	const order = available.extensions.map((e) => e.id);
 	const extensions = [...best.values()]
 		.map((b) => b.extension)
 		.sort((a, b) => rank(order, a.id) - rank(order, b.id) || a.id.localeCompare(b.id));
-	return { ...available, extensions };
+	return { ...available, extensions, unreadable };
 }
 
 const rank = (order: readonly string[], id: string) => {

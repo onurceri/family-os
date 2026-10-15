@@ -12,9 +12,11 @@ import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
 	type ExtensionPackage,
 	type ExtensionPackagesPort,
+	ExtensionProblemSchema,
 	type ExtensionState,
 	emptyExtensionState,
 	type InstallSource,
+	ProblemParamsSchema,
 	type RefusedExtension,
 	readExtensionState,
 	type StagedPackage,
@@ -64,8 +66,12 @@ export const ExtensionEntrySchema = z.object({
 	/** The running version, else the one that would be installed. */
 	version: z.string(),
 	status: z.enum(EXTENSION_STATUS),
-	/** Why it was refused or failed; null otherwise. */
+	/** Why it was refused or failed, in words for the log and the command line; null otherwise. */
 	reason: z.string().nullable(),
+	/** The same as a code a page translates (null when none is known: say it generally). */
+	reasonCode: ExtensionProblemSchema.nullable(),
+	/** The values its sentence names (an extension id, a version). */
+	reasonParams: ProblemParamsSchema,
 	/** Always installed: it cannot be uninstalled (it can be turned off). */
 	always: z.boolean(),
 	/** Turned on (Features); only meaningful while it is loaded. */
@@ -207,6 +213,18 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 						: status === 'refused'
 							? (refusal?.reason ?? null)
 							: null,
+				reasonCode:
+					status === 'failed'
+						? (fail?.code ?? null)
+						: status === 'refused'
+							? (refusal?.code ?? null)
+							: null,
+				reasonParams:
+					(status === 'failed'
+						? fail?.params
+						: status === 'refused'
+							? refusal?.params
+							: undefined) ?? {},
 				always: pkg?.always ?? false,
 				enabled: features.isOn(id),
 				dependsOn: manifest?.dependsOn ?? [],

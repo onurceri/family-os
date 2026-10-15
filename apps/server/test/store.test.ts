@@ -147,14 +147,18 @@ describe('a signed package', () => {
 		);
 		expect(bomb.byteLength).toBeLessThan(1024 * 1024);
 		await expect(readArchive(bomb)).rejects.toThrow(/unpacks to more than 60 MB/);
-		await expect(readArchive(bomb)).rejects.toMatchObject({ details: { reason: 'too_large' } });
+		await expect(readArchive(bomb)).rejects.toMatchObject({
+			details: { reason: 'too_large', code: 'unpacks_too_large', limitMb: '60' },
+		});
 		const many = gzipSync(
 			ustar(
 				Array.from({ length: ARCHIVE_LIMITS.files + 1 }, (_, i) => ({ path: `f/${i}`, body: '' })),
 			),
 		);
 		await expect(readArchive(many)).rejects.toThrow(/more than 2000 files/);
-		await expect(readArchive(many)).rejects.toMatchObject({ details: { reason: 'too_large' } });
+		await expect(readArchive(many)).rejects.toMatchObject({
+			details: { reason: 'too_large', code: 'too_many_files', limit: '2000' },
+		});
 		await expect(readArchive(randomBytes(100))).rejects.toThrow(/not gzip/);
 	});
 
@@ -164,7 +168,48 @@ describe('a signed package', () => {
 		const old = writePackage(scratch, 'old', '1.0.0', { built: '0.0.1' });
 		await expect(stage(await famext(old))).rejects.toThrow(/built for platform 0\.0\.1/);
 		await expect(stage(await famext(old))).rejects.toMatchObject({
-			details: { reason: 'incompatible' },
+			details: { reason: 'incompatible', code: 'platform', built: '0.0.1', has: SDK_VERSION },
+		});
+	});
+
+	it('gives each refusal a stable code and the values its sentence names', async () => {
+		const details = (archive: Uint8Array) =>
+			stage(archive).then(
+				() => null,
+				(error: { details?: unknown }) => error.details,
+			);
+		expect(await details(await famext(dir, OTHER_KEY.privateKey))).toEqual({
+			reason: 'unsigned',
+			code: 'untrusted_key',
+			keyId: OTHER_KEY.keyId,
+		});
+		expect(
+			await details(handMade(dir, { change: { 'server/index.mjs': 'export default {};\n' } })),
+		).toEqual({ reason: 'invalid', code: 'file_mismatch', path: 'server/index.mjs' });
+		expect(await details(handMade(dir, { add: [{ path: 'x.mjs', body: 'x' }] }))).toEqual({
+			reason: 'invalid',
+			code: 'unlisted_file',
+			path: 'x.mjs',
+		});
+		expect(await details(handMade(dir, { add: [{ path: '../evil', body: 'x' }] }))).toEqual({
+			reason: 'invalid',
+			code: 'unsafe_path',
+			path: '../evil',
+		});
+		expect(await details(gzipSync(ustar([{ path: 'famos-package.json', body: '{}' }])))).toEqual({
+			reason: 'unsigned',
+			code: 'not_signed',
+		});
+		expect(await details(randomBytes(64))).toEqual({ reason: 'invalid', code: 'not_gzip' });
+		expect(await details(Buffer.alloc(ARCHIVE_LIMITS.compressedBytes + 1))).toEqual({
+			reason: 'too_large',
+			code: 'too_large',
+			limitMb: '20',
+		});
+		expect(await details(await famext(writePackage(scratch, 'auth', '1.0.0')))).toEqual({
+			reason: 'invalid',
+			code: 'reserved_name',
+			id: 'auth',
 		});
 	});
 });
@@ -381,8 +426,18 @@ describe('installing from a file', () => {
 		]);
 		expect(loadedIds(third.runtime)).toEqual([]);
 		expect(third.runtime.kernel.refused).toEqual([
-			expect.objectContaining({ id: 'garden', reason: 'This server has no package of it' }),
+			expect.objectContaining({
+				id: 'garden',
+				code: 'package_refused',
+				reason: expect.stringMatching(/hash/),
+			}),
 		]);
+		const shown = await third.runtime.kernel.listExtensions();
+		expect(shown.extensions.find((e) => e.id === 'garden')).toMatchObject({
+			status: 'refused',
+			reasonCode: 'package_refused',
+			reasonParams: {},
+		});
 		expect((await readExtensionState(third.runtime.handle.db))?.installed).toEqual(['garden']);
 	});
 
@@ -495,7 +550,11 @@ describe('backups', () => {
 		const again = await start(elsewhere);
 		expect(loadedIds(again.runtime)).toEqual([]);
 		expect(again.runtime.kernel.refused).toEqual([
-			expect.objectContaining({ id: 'garden', reason: 'This server has no package of it' }),
+			expect.objectContaining({
+				id: 'garden',
+				code: 'no_package',
+				reason: 'This server has no package of it',
+			}),
 		]);
 	});
 });

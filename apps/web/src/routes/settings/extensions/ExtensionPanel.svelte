@@ -11,7 +11,7 @@
 		Shield,
 	} from '@lucide/svelte';
 	import { t } from '#lib/i18n.svelte.js';
-	import { type Entry, reachOf, type Staged, staysInside, updateOf } from './entries.js';
+	import { type Entry, problemOf, reachOf, type Staged, staysInside, updateOf } from './entries.js';
 
 	/**
 	 * One extension's details: what it is for and what it reaches beyond its own data, so a family
@@ -57,6 +57,8 @@
 	);
 	const update = $derived(staged ? updateOf(staged) : null);
 	const leftOut = $derived(entry?.status === 'refused' || entry?.status === 'failed');
+	/** Why, in the page's words (the server's own words are in its log). */
+	const problem = $derived(entry ? problemOf(entry, (id) => names([id])) : null);
 </script>
 
 <SidePanel
@@ -105,8 +107,10 @@
 						{entry.status === 'failed'
 							? t('extensions_status_failed')
 							: t('extensions_status_refused')}
-						{#if entry.reason}
-							<span class="text-ink-soft mt-1 block text-[13px] break-words">{entry.reason}</span>
+						{#if problem}
+							<span class="text-ink-soft mt-1 block text-[13px] break-words"
+								>{t(problem.key, problem.values)}</span
+							>
 						{/if}
 					</Notice>
 				</Section>

@@ -36,6 +36,7 @@
 		descriptionOf,
 		type Entry,
 		type ExtensionList,
+		type FileProblem,
 		fileProblem,
 		nameOf,
 		neededBy,
@@ -207,12 +208,12 @@
 				}),
 			);
 		} catch (failure) {
-			const problem = isApiError(failure)
+			const problem: FileProblem = isApiError(failure)
 				? fileProblem(failure)
-				: { key: 'error_generic' as const };
+				: { headline: { key: 'error_generic' } };
 			fileError = {
-				text: t(problem.key, problem.values),
-				...(problem.detail && { detail: problem.detail }),
+				text: t(problem.headline.key, problem.headline.values),
+				...(problem.detail && { detail: t(problem.detail.key, problem.detail.values) }),
 			};
 		} finally {
 			busy = false;

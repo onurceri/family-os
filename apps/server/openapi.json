@@ -26698,6 +26698,34 @@
 															"null"
 														]
 													},
+													"reasonCode": {
+														"type": [
+															"string",
+															"null"
+														],
+														"enum": [
+															"no_package",
+															"package_refused",
+															"unreadable",
+															"load_failed",
+															"newer_data",
+															"migration_order",
+															"migration_failed",
+															"start_failed",
+															"sdk",
+															"missing_dependency",
+															"dependency_refused",
+															"name_clash",
+															"invalid",
+															null
+														]
+													},
+													"reasonParams": {
+														"type": "object",
+														"additionalProperties": {
+															"type": "string"
+														}
+													},
 													"always": {
 														"type": "boolean"
 													},
@@ -26782,6 +26810,8 @@
 													"version",
 													"status",
 													"reason",
+													"reasonCode",
+													"reasonParams",
 													"always",
 													"enabled",
 													"dependsOn",

@@ -156,9 +156,15 @@ describe('choosing what to load', () => {
 		const m = { '0001_init': { up: async () => {} }, '0002_more': { up: async () => {} } };
 		expect(migrationProblem(undefined, m)).toBeNull();
 		expect(migrationProblem(['0001_init'], m)).toBeNull();
-		expect(migrationProblem(['0001_init', '0003_newer'], m)).toMatch(/newer version/);
+		expect(migrationProblem(['0001_init', '0003_newer'], m)).toMatchObject({
+			reason: expect.stringMatching(/newer version/),
+			code: 'newer_data',
+		});
 		const gap = { ...m, '0003_last': { up: async () => {} } };
-		expect(migrationProblem(['0001_init', '0003_last'], gap)).toMatch(/0002_more sorts before/);
+		expect(migrationProblem(['0001_init', '0003_last'], gap)).toMatchObject({
+			reason: expect.stringMatching(/0002_more sorts before/),
+			code: 'migration_order',
+		});
 	});
 });
 
@@ -279,7 +285,12 @@ describe('starting with the installed set', () => {
 		const third = await start(dataDir);
 		expect(ids(third.selection)).toEqual(FRESH);
 		expect(third.selection.refused).toEqual([
-			{ id: 'pets', version: '0.1.0', reason: expect.stringMatching(/9999_future.*newer version/) },
+			{
+				id: 'pets',
+				version: '0.1.0',
+				reason: expect.stringMatching(/9999_future.*newer version/),
+				code: 'newer_data',
+			},
 		]);
 		await third.runtime.kernel.start();
 		const list = await third.runtime.kernel.listExtensions();
@@ -321,8 +332,13 @@ describe('starting with the installed set', () => {
 		await second.runtime.kernel.start();
 		expect(second.runtime.kernel.registry.extensions.map((e) => e.id)).not.toContain('confused');
 		expect(second.runtime.kernel.refused).toEqual([
-			{ id: 'unloadable', version: '0.1.0', reason: 'imports something odd' },
-			{ id: 'confused', version: '0.1.0', reason: expect.stringContaining('core.nothing') },
+			{ id: 'unloadable', version: '0.1.0', reason: 'imports something odd', code: 'load_failed' },
+			{
+				id: 'confused',
+				version: '0.1.0',
+				reason: expect.stringContaining('core.nothing'),
+				code: 'invalid',
+			},
 		]);
 		await stop(second.runtime);
 
@@ -365,18 +381,23 @@ describe('starting with the installed set', () => {
 		const handle = openDatabase({
 			path: (await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://x' })).dbPath,
 		});
-		await recordFailure(handle.db, { id: 'boom', version: '0.1.0', reason: 'disk says no' }, 5);
+		await recordFailure(
+			handle.db,
+			{ id: 'boom', version: '0.1.0', reason: 'disk says no', code: 'migration_failed' },
+			5,
+		);
 		await handle.close();
 
 		const next = await start(dataDir, available([{ def: boom }]));
 		expect(ids(next.selection)).not.toContain('boom');
 		expect(next.selection.refused).toEqual([
-			{ id: 'boom', version: '0.1.0', reason: 'disk says no' },
+			{ id: 'boom', version: '0.1.0', reason: 'disk says no', code: 'migration_failed' },
 		]);
 		const list = await next.runtime.kernel.listExtensions();
 		expect(list.extensions.find((e) => e.id === 'boom')).toMatchObject({
 			status: 'failed',
 			reason: 'disk says no',
+			reasonCode: 'migration_failed',
 		});
 		await stop(next.runtime);
 

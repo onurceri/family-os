@@ -1,6 +1,7 @@
 import {
 	type ExtensionPackage,
 	type ExtensionPackagesPort,
+	type ExtensionProblem,
 	type ExtensionState,
 	emptyExtensionState,
 	type RefusedExtension,
@@ -57,7 +58,7 @@ export async function loadInstalled(
 		fromSource: available.from === 'source',
 	});
 	const byId = new Map(available.extensions.map((ext) => [ext.id, ext]));
-	const unreadable = new Map(available.unreadable.map((u) => [u.id, u.reason]));
+	const unreadable = new Map(available.unreadable.map((u) => [u.id, u] as const));
 	const extensions: ExtensionDefinition[] = [];
 	const web: WebPackage[] = [];
 	const refused: RefusedExtension[] = [];
@@ -67,13 +68,20 @@ export async function loadInstalled(
 			refused.push({
 				id,
 				version: null,
-				reason: unreadable.get(id) ?? 'This server has no package of it',
+				reason: unreadable.get(id)?.reason ?? 'This server has no package of it',
+				code: unreadable.get(id)?.code ?? 'no_package',
 			});
 			continue;
 		}
 		const failed = state?.failed.find((f) => f.id === id && f.version === ext.version);
 		if (failed && !ext.always) {
-			refused.push({ id, version: ext.version, reason: failed.reason });
+			refused.push({
+				id,
+				version: ext.version,
+				reason: failed.reason,
+				code: failed.code ?? 'start_failed',
+				...(failed.params && { params: failed.params }),
+			});
 			continue;
 		}
 		let definition: ExtensionDefinition;
@@ -81,13 +89,13 @@ export async function loadInstalled(
 			definition = await ext.load();
 		} catch (error) {
 			if (ext.always) throw error;
-			refused.push({ id, version: ext.version, reason: messageOf(error) });
+			refused.push({ id, version: ext.version, reason: messageOf(error), code: 'load_failed' });
 			continue;
 		}
 		const problem = migrationProblem(scopes[id], definition.migrations);
 		if (problem) {
-			if (ext.always) throw new Error(`The extension ${id} cannot run here: ${problem}`);
-			refused.push({ id, version: ext.version, reason: problem });
+			if (ext.always) throw new Error(`The extension ${id} cannot run here: ${problem.reason}`);
+			refused.push({ id, version: ext.version, ...problem });
 			continue;
 		}
 		extensions.push(definition);
@@ -221,7 +229,13 @@ export async function recordStart(
 /** Notes that an extension's migrations or start failed: that version is not loaded again. */
 export async function recordFailure(
 	db: DbExecutor,
-	failure: { id: string; version: string; reason: string },
+	failure: {
+		id: string;
+		version: string;
+		reason: string;
+		code: ExtensionProblem;
+		params?: Record<string, string>;
+	},
 	now: number,
 ): Promise<void> {
 	const state = (await readExtensionState(db)) ?? emptyExtensionState();

@@ -5,6 +5,7 @@ import {
 	fileProblem,
 	nameOf,
 	neededBy,
+	problemOf,
 	reachOf,
 	restartNeeded,
 	type Staged,
@@ -27,6 +28,8 @@ function entry(id: string, more: Partial<Entry> = {}): Entry {
 		reaches: { hosts: [], userUrls: false, local: false, calls: [], capabilities: [] },
 		labels: { en: { name: id.toUpperCase(), description: `About ${id}` } },
 		nextVersion: null,
+		reasonCode: null,
+		reasonParams: {},
 		...more,
 	};
 }
@@ -185,25 +188,74 @@ describe('a package from a file', () => {
 		expect(updateOf({ ...staged, current: '1.2.0' })).toBeNull();
 	});
 
-	it('explains each refusal of the server in the page’s words', () => {
-		const bad = (reason: string) => ({
-			status: 400,
-			message: 'The package is signed with a key this server does not trust (ab)',
-			details: { reason },
+	it('explains each refusal from its codes, never the server’s words', () => {
+		const bad = (details: Record<string, string>) => ({ status: 400, details });
+		expect(fileProblem({ status: 413 })).toEqual({
+			headline: { key: 'extensions_file_too_large' },
 		});
-		expect(fileProblem({ status: 413 })).toEqual({ key: 'extensions_file_too_large' });
-		expect(fileProblem(bad('too_large')).key).toBe('extensions_file_too_large');
-		expect(fileProblem(bad('unsigned'))).toEqual({
-			key: 'extensions_file_unsigned',
-			detail: 'The package is signed with a key this server does not trust (ab)',
+		expect(fileProblem(bad({ reason: 'unsigned', code: 'untrusted_key', keyId: 'ab12' }))).toEqual({
+			headline: { key: 'extensions_file_unsigned' },
+			detail: { key: 'extensions_file_untrusted_key', values: { keyId: 'ab12' } },
 		});
-		expect(fileProblem(bad('incompatible')).key).toBe('extensions_file_incompatible');
-		expect(fileProblem(bad('invalid')).key).toBe('extensions_file_invalid');
-		expect(fileProblem({ status: 400 }).key).toBe('extensions_file_invalid');
+		expect(
+			fileProblem(bad({ reason: 'too_large', code: 'too_large', limitMb: '20' })).detail,
+		).toEqual({ key: 'extensions_file_limit', values: { limitMb: '20' } });
+		expect(
+			fileProblem(bad({ reason: 'incompatible', code: 'sdk', needs: '^0.9.0', has: '0.4.0' })),
+		).toEqual({
+			headline: { key: 'extensions_file_incompatible' },
+			detail: { key: 'extensions_file_sdk', values: { needs: '^0.9.0', has: '0.4.0' } },
+		});
+		expect(
+			fileProblem(bad({ reason: 'invalid', code: 'file_mismatch', path: 'server/index.mjs' }))
+				.detail,
+		).toEqual({ key: 'extensions_file_changed', values: { path: 'server/index.mjs' } });
+		// A code without a sentence of its own: the headline alone.
+		expect(fileProblem(bad({ reason: 'invalid', code: 'not_gzip' }))).toEqual({
+			headline: { key: 'extensions_file_invalid' },
+		});
+		expect(fileProblem({ status: 400 })).toEqual({ headline: { key: 'extensions_file_invalid' } });
 		expect(fileProblem({ status: 409, details: { reason: 'older', version: '2.0.0' } })).toEqual({
-			key: 'extensions_file_older',
-			values: { version: '2.0.0' },
+			headline: { key: 'extensions_file_older', values: { version: '2.0.0' } },
 		});
-		expect(fileProblem({ status: 500 }).key).toBe('error_generic');
+		expect(fileProblem({ status: 500 })).toEqual({ headline: { key: 'error_generic' } });
+	});
+});
+
+describe('why an installed extension is left out', () => {
+	const nameOfId = (id: string) => id.toUpperCase();
+
+	it('says it by the reason’s code, naming another extension by its name', () => {
+		expect(
+			problemOf(
+				entry('pets', {
+					status: 'refused',
+					reason: 'It needs "records", which was refused',
+					reasonCode: 'dependency_refused',
+					reasonParams: { extensionId: 'records' },
+				}),
+				nameOfId,
+			),
+		).toEqual({
+			key: 'extensions_problem_dependency_refused',
+			values: { extensionId: 'records', name: 'RECORDS' },
+		});
+		expect(
+			problemOf(
+				entry('pets', {
+					status: 'failed',
+					reasonCode: 'sdk',
+					reasonParams: { needs: '^0.9.0', has: '0.4.0' },
+				}),
+				nameOfId,
+			),
+		).toEqual({ key: 'extensions_problem_sdk', values: { needs: '^0.9.0', has: '0.4.0' } });
+	});
+
+	it('says it generally without a code, and nothing for one that runs', () => {
+		expect(
+			problemOf(entry('pets', { status: 'failed', reason: 'disk says no' }), nameOfId),
+		).toEqual({ key: 'extensions_problem_unknown' });
+		expect(problemOf(entry('pets'), nameOfId)).toBeNull();
 	});
 });

@@ -13,11 +13,56 @@ import { readJson, writeJson } from './settings-json.ts';
  *   broken package cannot make the server restart over and over;
  * - `restartRequestedAt`: when someone last asked the server to restart.
  */
+/**
+ * Why an installed extension does not run, as a stable code a page translates (the `reason`
+ * text beside it is for the log and the command line):
+ * - `no_package`: this server has no package of it;
+ * - `package_refused`: its stored package failed its check at start (changed, or not signed by
+ *   a trusted key);
+ * - `unreadable`: its package cannot be read;
+ * - `load_failed`: its code could not be loaded;
+ * - `newer_data`: the database holds migrations of a newer version;
+ * - `migration_order`: a migration it brings sorts before one already applied;
+ * - `migration_failed`, `start_failed`: its migrations or its start failed (`failed`);
+ * - `sdk` (`needs`, `has`): it needs another version of FamilyOS;
+ * - `missing_dependency`, `dependency_refused` (`extensionId`): what it needs is missing or was
+ *   left out itself;
+ * - `name_clash`: its name or tables clash with the host's or another extension's;
+ * - `invalid`: its manifest and its code disagree (a fault of the package).
+ */
+export const EXTENSION_PROBLEMS = [
+	'no_package',
+	'package_refused',
+	'unreadable',
+	'load_failed',
+	'newer_data',
+	'migration_order',
+	'migration_failed',
+	'start_failed',
+	'sdk',
+	'missing_dependency',
+	'dependency_refused',
+	'name_clash',
+	'invalid',
+] as const;
+export type ExtensionProblem = (typeof EXTENSION_PROBLEMS)[number];
+export const ExtensionProblemSchema = z.enum(EXTENSION_PROBLEMS);
+/** Values a problem's sentence names (an extension id, a version). */
+export const ProblemParamsSchema = z.record(z.string(), z.string());
+
 export const ExtensionStateSchema = z.object({
 	installed: z.array(z.string()),
 	known: z.record(z.string(), z.object({ tablePrefix: z.string(), version: z.string() })),
 	failed: z.array(
-		z.object({ id: z.string(), version: z.string(), reason: z.string(), at: z.number() }),
+		z.object({
+			id: z.string(),
+			version: z.string(),
+			reason: z.string(),
+			/** Absent in records written before codes existed. */
+			code: ExtensionProblemSchema.optional(),
+			params: ProblemParamsSchema.optional(),
+			at: z.number(),
+		}),
 	),
 	restartRequestedAt: z.number().nullable(),
 });
@@ -63,7 +108,11 @@ export interface RefusedExtension {
 	id: string;
 	/** The version that was refused, when one was found. */
 	version: string | null;
+	/** In words, for the log and the command line. */
 	reason: string;
+	/** For a page to say it in the family's language. */
+	code: ExtensionProblem;
+	params?: Record<string, string>;
 }
 
 /** An extension package this server can install: shipped with the app, or placed in its store. */

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import type { ExtensionProblem } from '@famos/core';
 import {
 	type ExtensionDefinition,
 	type ExtensionManifest,
@@ -66,7 +67,7 @@ export interface Available {
 	list: BundledList;
 	extensions: AvailableExtension[];
 	/** Offered packages that could not even be read, and why. */
-	unreadable: { id: string; reason: string }[];
+	unreadable: { id: string; reason: string; code?: ExtensionProblem }[];
 	warning?: string;
 }
 
@@ -102,7 +103,11 @@ export function findAvailable(env: NodeJS.ProcessEnv = process.env): Available {
 		} catch (error) {
 			// What the app always runs must be there; an offered package is only left out.
 			if (always.has(id)) throw error;
-			unreadable.push({ id, reason: error instanceof Error ? error.message : String(error) });
+			unreadable.push({
+				id,
+				reason: error instanceof Error ? error.message : String(error),
+				code: 'unreadable',
+			});
 		}
 	}
 	return { from: 'bundled', dir, list, extensions, unreadable };
