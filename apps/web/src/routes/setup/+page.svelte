@@ -1,14 +1,23 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { isApiError, unwrap } from '@famos/api-client';
+	import {
+		canonicalLocale,
+		defaultHourCycle,
+		defaultTemperatureUnit,
+		defaultWeekStart,
+		isFormatLocale,
+	} from '@famos/time';
 	import { Button } from '@famos/ui/button';
+	import { Combobox, Section } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
 	import { signInWithPassword } from '#lib/auth.js';
-	import { family } from '#lib/family.svelte.js';
+	import { browserFormatLocale, family } from '#lib/family.svelte.js';
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { getLanguages, getLocale, setLocale, t } from '#lib/i18n.svelte.js';
+	import { localeName, offsetOf, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
 	import { session } from '#lib/session.svelte.js';
 	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import Slot from '@famos/ui/slot';
@@ -34,16 +43,47 @@
 	let setupCode = $state(page.url.searchParams.get('code') ?? '');
 	let busy = $state(false);
 	let error = $state<string | null>(null);
-	// The region formats come from the browser; the person can change them in More → Region and formats later.
+	// The time zone and the region formats are guessed from this device and shown for the person
+	// to check before anything is stored: a laptop abroad or an English browser guesses wrong.
+	const zones = timeZoneOptions();
+	let timeZone = $state(family.timeZone);
+	const zoneValid = $derived(zones.some((z) => z.value === timeZone));
+	let formatTag = $state(family.formatLocale);
+	const formatValid = $derived(isFormatLocale(formatTag));
+	const formatOptions = $derived(
+		startingFormatLocales(
+			family.formatLocale,
+			browserFormatLocale(),
+			getLanguages().map((l) => l.code),
+		).map((value) => ({ value, label: localeName(value, getLocale()) })),
+	);
+
+	/** A new region format brings its week, clock and temperature; each can still be changed. */
+	function useFormat() {
+		if (!formatValid) return;
+		const formatLocale = canonicalLocale(formatTag);
+		formatTag = formatLocale;
+		family.apply({
+			formatLocale,
+			weekStart: defaultWeekStart(formatLocale),
+			hourCycle: defaultHourCycle(formatLocale),
+			temperatureUnit: defaultTemperatureUnit(formatLocale),
+		});
+	}
+
+	// A fixed example (14:30), the same whatever the time zone: it shows the format only.
 	const sample = Date.UTC(2026, 9, 8, 14, 30);
 	const regionPreview = $derived(
 		[
-			dateTimeFormat({ dateStyle: 'full', timeZone: family.timeZone }).format(sample),
-			dateTimeFormat({ hour: '2-digit', minute: '2-digit', timeZone: family.timeZone }).format(
-				sample,
-			),
+			dateTimeFormat({ dateStyle: 'full', timeZone: 'UTC' }).format(sample),
+			dateTimeFormat({ hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(sample),
 		].join(' · '),
 	);
+	const zoneNow = $derived.by(() => {
+		if (!zoneValid) return '';
+		const time = dateTimeFormat({ timeStyle: 'short', timeZone }).format(new Date());
+		return `${time}, ${offsetOf(timeZone)}`;
+	});
 
 	const clockOptions = $derived(
 		(['h23', 'h12'] as const).map((hourCycle) => ({
@@ -52,7 +92,7 @@
 				hour: 'numeric',
 				minute: '2-digit',
 				hourCycle,
-				timeZone: family.timeZone,
+				timeZone: 'UTC',
 			}).format(sample),
 		})),
 	);
@@ -66,6 +106,9 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		if (!zoneValid || !formatValid) return;
+		// Enter in the field submits before its change is handled.
+		useFormat();
 		busy = true;
 		error = null;
 		try {
@@ -76,7 +119,7 @@
 						email,
 						password,
 						locale: getLocale(),
-						timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+						timeZone,
 						formatLocale: family.formatLocale,
 						weekStart: family.weekStart,
 						hourCycle: family.hourCycle,
@@ -141,6 +184,7 @@
 			type="button"
 			onclick={() => {
 				family.defaultsFor(getLocale());
+				formatTag = family.formatLocale;
 				step = 'account';
 			}}>{t('setup_continue')}</Button
 		>
@@ -158,9 +202,6 @@
 			<p class="text-ink-soft">{t('setup_intro')}</p>
 		</div>
 		<form class="grid gap-4" onsubmit={submit}>
-			<p class="text-ink-soft text-xs" data-testid="setup-region">
-				{t('setup_region', { preview: regionPreview })}
-			</p>
 			{#snippet choice(
 				id: string,
 				label: string,
@@ -187,20 +228,6 @@
 					</div>
 				</div>
 			{/snippet}
-			{@render choice(
-				'setup-clock-label',
-				t('setup_clock'),
-				clockOptions.map((o) => ({ value: o.hourCycle, label: o.label })),
-				family.hourCycle,
-				(value) => (family.hourCycle = value as typeof family.hourCycle),
-			)}
-			{@render choice(
-				'setup-temperature-label',
-				t('setup_temperature'),
-				temperatureOptions.map((o) => ({ value: o.unit, label: o.label })),
-				family.temperatureUnit,
-				(value) => (family.temperatureUnit = value as typeof family.temperatureUnit),
-			)}
 			{#if session.setupNeedsCode}
 				<div class="grid gap-2">
 					<Label for="setup-code">{t('setup_code')}</Label>
@@ -234,6 +261,59 @@
 				/>
 				<p class="text-ink-soft text-xs">{t('setup_password_hint')}</p>
 			</div>
+			<Section label={t('setup_where_title')}>
+				<div class="grid gap-4">
+					<p class="text-ink-soft text-sm">{t('setup_where_hint')}</p>
+					<div class="grid gap-2">
+						<Label for="setup-time-zone">{t('region_time_zone')}</Label>
+						<Combobox
+							id="setup-time-zone"
+							bind:value={timeZone}
+							options={zones}
+							invalid={!zoneValid}
+							placeholder={t('region_time_zone_search')}
+							max={80}
+							aria-describedby="setup-time-zone-hint"
+						/>
+						<p id="setup-time-zone-hint" class="text-ink-soft text-xs">
+							{zoneValid
+								? t('setup_time_zone_now', { time: zoneNow })
+								: t('setup_time_zone_invalid')}
+						</p>
+					</div>
+					<div class="grid gap-2">
+						<Label for="setup-format-locale">{t('region_locale')}</Label>
+						<Combobox
+							id="setup-format-locale"
+							bind:value={formatTag}
+							options={formatOptions}
+							onpick={useFormat}
+							onchange={useFormat}
+							invalid={!formatValid}
+							aria-describedby="setup-format-hint"
+						/>
+						<p id="setup-format-hint" class="text-ink-soft text-xs" data-testid="setup-region">
+							{formatValid
+								? t('setup_region', { preview: regionPreview })
+								: t('region_locale_invalid')}
+						</p>
+					</div>
+					{@render choice(
+						'setup-clock-label',
+						t('setup_clock'),
+						clockOptions.map((o) => ({ value: o.hourCycle, label: o.label })),
+						family.hourCycle,
+						(value) => (family.hourCycle = value as typeof family.hourCycle),
+					)}
+					{@render choice(
+						'setup-temperature-label',
+						t('setup_temperature'),
+						temperatureOptions.map((o) => ({ value: o.unit, label: o.label })),
+						family.temperatureUnit,
+						(value) => (family.temperatureUnit = value as typeof family.temperatureUnit),
+					)}
+				</div>
+			</Section>
 			<label
 				class="bg-idle flex cursor-pointer items-start gap-3 rounded-lg p-3 text-sm"
 				for="shared-device"
@@ -247,7 +327,9 @@
 				<span>{t('setup_shared_device')}</span>
 			</label>
 			{#if error}<p class="text-attention text-sm font-semibold" role="alert">{error}</p>{/if}
-			<Button type="submit" disabled={busy}>{t('setup_submit')}</Button>
+			<Button type="submit" disabled={busy || !zoneValid || !formatValid}
+				>{t('setup_submit')}</Button
+			>
 			<Button type="button" variant="ghost" onclick={() => (step = 'language')}
 				>{t('setup_change_language')}</Button
 			>

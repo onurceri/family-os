@@ -4,6 +4,7 @@ import {
 	api,
 	draftCard,
 	expect,
+	FAMILY_TIME_ZONE,
 	nextWeek,
 	shareText,
 	test,
@@ -18,6 +19,11 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 	family,
 	model,
 }) => {
+	// Without a session no page but setup renders, so nothing asks the API as a signed-in person.
+	const refused: string[] = [];
+	page.on('response', (r) => {
+		if (r.status() === 401) refused.push(r.url());
+	});
 	// A fresh instance asks for the one-time code; the address from the log carries it.
 	await page.goto('/');
 	await expect(page).toHaveURL(/\/setup$/);
@@ -29,13 +35,30 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 	);
 	await page.getByRole('button', { name: 'Continue' }).click();
 	await expect(page.getByLabel('Setup code')).toHaveValue(SETUP_CODE);
+	// The time zone and region format are this browser's guess, shown to check and correct.
+	await expect(page.getByLabel('Time zone')).toHaveValue(FAMILY_TIME_ZONE);
+	await expect(page.getByLabel('Region format')).toHaveValue('en-US');
+	await page.getByLabel('Region format').fill('en-GB');
 	await page.getByLabel('Your name').fill(ADMIN.name);
 	await page.getByLabel('Email').fill(ADMIN.email);
 	await page.getByLabel('Password').fill(ADMIN.password);
+	// The region brought its own clock.
+	await expect(page.getByRole('radio', { name: /^14:30$/ })).toHaveAttribute(
+		'aria-checked',
+		'true',
+	);
 	await page.getByRole('button', { name: 'Create account' }).click();
 	// Photos & weather, installed for a new family, offers its place next; it can wait.
 	await page.getByRole('button', { name: 'Skip' }).click();
 	await expect(page.getByTestId('day-sentence').filter({ hasText: ADMIN.name })).toBeVisible();
+	expect(refused).toEqual([]);
+	expect(
+		await api<{ timeZone: string; formatLocale: string; hourCycle: string }>(
+			page,
+			'GET',
+			'/api/v1/core/settings/family',
+		),
+	).toMatchObject({ timeZone: FAMILY_TIME_ZONE, formatLocale: 'en-GB', hourCycle: 'h23' });
 
 	// Share a school notice; the (fake) model proposes an event.
 	const date = nextWeek();

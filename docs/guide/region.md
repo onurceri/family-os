@@ -23,4 +23,4 @@ When you change the region format, the week start, clock and temperature jump to
 
 ## At setup
 
-Setup takes the time zone and the region from your browser and shows what dates and times will look like; you can change them later here.
+Setup guesses the time zone and the region format from your browser and shows both under **Time and region**, with what dates and times will look like, before the account is created. Correct a wrong guess there; you can change them later here.

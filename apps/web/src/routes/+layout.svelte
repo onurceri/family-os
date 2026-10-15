@@ -52,6 +52,14 @@
 	});
 
 	const PUBLIC = new Set(['/setup', '/login']);
+	/**
+	 * Without a session there is one page to be on: setup on a new instance, sign-in otherwise.
+	 * Any other page waits for the guard's redirect unrendered, so it never starts its reads (and
+	 * their 401s) on the way.
+	 */
+	const signedOutPage = $derived(
+		session.status === 'setup' ? '/setup' : session.status === 'anonymous' ? '/login' : null,
+	);
 	/** Long enough to be seen by someone who looks away for a while; a newer notice replaces it. */
 	const CHANGED_TOAST_MS = 5 * 60_000;
 	const MORE: NavItem = { id: 'core.more', path: '/more', labelKey: 'nav_more', icon: Ellipsis };
@@ -275,7 +283,7 @@
 		if (session.status === 'setup' && path !== '/setup')
 			// Keep `?code=` from the setup address printed in the server log.
 			void goto(`/setup${page.url.search}`, { replace: true });
-		else if (session.status === 'anonymous' && !PUBLIC.has(path))
+		else if (session.status === 'anonymous' && path !== '/login')
 			void goto('/login', { replace: true });
 		else if (session.status === 'ready' && PUBLIC.has(path)) void goto('/', { replace: true });
 	});
@@ -499,7 +507,7 @@
 			<LoadingMark />
 		{:else if session.status === 'offline'}
 			<p class="text-destructive">{t('error_generic')}</p>
-		{:else}
+		{:else if path === signedOutPage}
 			{@render routed()}
 		{/if}
 	</main>

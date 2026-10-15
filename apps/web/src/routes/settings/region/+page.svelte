@@ -13,6 +13,7 @@
 	import { api } from '#lib/api.js';
 	import { browserFormatLocale, family } from '#lib/family.svelte.js';
 	import { getLanguages, getLocale, t } from '#lib/i18n.svelte.js';
+	import { localeName, timeZoneOptions } from '#lib/region.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
@@ -30,22 +31,7 @@
 	let timeZone = $state(family.timeZone);
 	let error = $state<string | null>(null);
 
-	// Every time zone the browser knows, with its current offset ("GMT+3"). UTC is always offered.
-	const offsetOf = (zone: string): string => {
-		try {
-			return (
-				new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'shortOffset' })
-					.formatToParts(new Date())
-					.find((p) => p.type === 'timeZoneName')?.value ?? ''
-			);
-		} catch {
-			return '';
-		}
-	};
-	const allZones = (() => {
-		const zones = Intl.supportedValuesOf('timeZone');
-		return zones.includes('UTC') ? zones : ['UTC', ...zones];
-	})().map((zone) => ({ value: zone, label: `${zone.replaceAll('_', ' ')} (${offsetOf(zone)})` }));
+	const allZones = timeZoneOptions();
 	const zoneValid = $derived(allZones.some((z) => z.value === timeZone));
 	const zoneNow = $derived.by(() => {
 		try {
@@ -66,15 +52,6 @@
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
 			void goto('/', { replace: true });
 	});
-
-	/** "tr-US" → "Turkish (United States)" in the person's language: a name, not a format. */
-	function localeName(code: string): string {
-		try {
-			return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) ?? '';
-		} catch {
-			return '';
-		}
-	}
 
 	/** Takes the week, clock and temperature a region uses; the person can still change them. */
 	function useRegionDefaults() {
@@ -224,7 +201,7 @@
 							<Combobox
 								id="format-locale"
 								bind:value={formatLocale}
-								options={suggestions.map((s) => ({ value: s, label: localeName(s) }))}
+								options={suggestions.map((s) => ({ value: s, label: localeName(s, getLocale()) }))}
 								onpick={() => {
 									useRegionDefaults();
 									void save();
