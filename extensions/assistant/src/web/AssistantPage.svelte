@@ -407,7 +407,7 @@
 									<AnswerText text={message.content} />
 								{/if}
 								{#if ids.length > 0}
-									<AnswerDrafts messageId={message.id} {ids} />
+									<AnswerDrafts messageId={message.id} {ids} lines={message.suggested} />
 								{/if}
 							</div>
 						</li>

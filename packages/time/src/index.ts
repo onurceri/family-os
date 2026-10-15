@@ -511,6 +511,9 @@ export function nextEveryDue(anchor: string, every: MonthlyOrYearly, after: stri
 }
 
 export {
+	type BareWeekday,
+	bareWeekdays,
+	clockTimes,
 	type DateOrder,
 	type DateWords,
 	dateWords,

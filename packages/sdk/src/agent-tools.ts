@@ -292,14 +292,26 @@ export async function runAgentTool(call: {
 			// What is there is named, so the person hears which one; only they choose to change it,
 			// on the suggestion, when they decide. The agent never does.
 			const exists = there
-				? ` Already there: ${there.name}${there.at ? `, ${when(there.at)}` : ''}; the person can ${
-						there.to ? `move it to ${when(there.to)}` : 'change that one'
-					} instead when deciding. Tell the person.`
+				? ` Already there: ${there.name}${there.at ? `, ${when(there.at)}` : ''}. You can ${
+						there.to ? `move that one to ${when(there.to)}` : 'change that one'
+					} instead when you decide.`
 				: result.mayExist
 					? result.mayExist === 'some'
-						? ' Some of it may already be there; tell the person.'
-						: ` It may already be there${result.subject ? ` (${result.subject})` : ''}; tell the person.`
+						? ' Some of it may already be there.'
+						: ` It may already be there${result.subject ? ` (${result.subject})` : ''}.`
 					: '';
+			const approval = result.autoApproval
+				? `Suggested: ${what}. It will be added automatically in a moment.`
+				: result.decidedByOthers
+					? `Suggested, not added yet: ${what}. It appears once someone else in the household approves it.`
+					: `Suggested, not added yet: ${what}. It appears once someone in the household approves it.`;
+			// For the model only: what the words for the person leave unsaid.
+			const note = [
+				result.decidedByOthers ? 'The person asking cannot approve it themselves.' : '',
+				exists ? 'Say what is already there, too.' : '',
+			]
+				.filter(Boolean)
+				.join(' ');
 			return {
 				ok: true,
 				draftId: result.draftId,
@@ -311,14 +323,10 @@ export async function runAgentTool(call: {
 						status: 'drafted',
 						suggestion: table.add('draft', result.draftId),
 						...(result.mayExist && { mayExist: result.mayExist }),
-						// A ready sentence: models that paraphrase a note still say "added" otherwise.
-						say: `${
-							result.autoApproval
-								? `Suggested: ${what}. It will be added automatically in a moment.`
-								: result.decidedByOthers
-									? `Suggested, not added yet: ${what}. It appears once another person in the household who may approve it does so; this person cannot approve it themselves.`
-									: `Suggested, not added yet: ${what}. It appears once a person in the household approves it.`
-						}${exists}`,
+						// Ready words for the person, written to them: models that paraphrase a note still
+						// say "added" otherwise. Everything in it may be said as it is.
+						say: `${approval}${exists}`,
+						...(note && { note }),
 					}),
 				),
 			};

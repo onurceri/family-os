@@ -111,7 +111,8 @@ describe('the eval cases', () => {
 		for (const event of c.events ?? []) expect(seeded[event.title]).toMatch(/^cal_event_/);
 		for (const items of Object.values(c.shopping ?? {}))
 			for (const item of items) expect(seeded[item.title]).toMatch(/^shop_item_/);
-		for (const task of c.tasks ?? []) expect(seeded[task]).toBeDefined();
+		for (const task of c.tasks ?? [])
+			expect(seeded[typeof task === 'string' ? task : task.title]).toBeDefined();
 		// Every check can read what the case seeded (a mistyped title would throw).
 		const empty: Outcome = { turns: [], seeded, timeZone: TZ };
 		for (const check of [...c.checks, ...ALWAYS]) expect(() => check.pass(empty)).not.toThrow();

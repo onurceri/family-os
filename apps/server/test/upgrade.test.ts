@@ -113,3 +113,40 @@ it('keeps filed papers, and marks a subscription sealed with the shared key as u
 		.get() as { sealed_url: string; last_error: string | null; event_count: number };
 	expect(sub).toMatchObject({ sealed_url: sealed, last_error: 'bad_url', event_count: 0 });
 });
+
+it('keeps the answers the assistant wrote before its suggestion lines were kept apart', async () => {
+	const dataDir = await mkdtemp(join(tmpdir(), 'famos-upgrade-'));
+	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
+	runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true });
+	const { handle, kernel } = runtime;
+	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
+		scope,
+		migrations: Object.fromEntries(
+			Object.entries(migrations).filter(
+				([name]) => `${scope}/${name}` !== 'assistant/0003_message_suggested',
+			),
+		),
+	}));
+	await runMigrations(handle.db, previous);
+	const answer = 'Milk is on the list.\n\nSuggested, not added yet: Add shopping items: Milk';
+	handle.sqlite
+		.prepare(
+			`insert into assistant_threads (id, member_id, title, summarized_count, created_at, updated_at)
+			values ('asst_thread_1', 'member_1', 'Milk', 0, 1, 1)`,
+		)
+		.run();
+	handle.sqlite
+		.prepare(
+			`insert into assistant_messages (id, thread_id, role, content, status, created_at)
+			values ('asst_msg_1', 'asst_thread_1', 'assistant', ?, 'done', 2)`,
+		)
+		.run(answer);
+
+	expect(await migrate(runtime)).toBeGreaterThan(0);
+	await kernel.start();
+	expect(await kernel.conversation.answer('member_1', 'asst_msg_1')).toEqual({
+		status: 'done',
+		text: answer,
+		draftIds: [],
+	});
+});

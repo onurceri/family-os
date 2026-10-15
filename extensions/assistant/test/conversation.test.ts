@@ -55,7 +55,7 @@ describe('the conversation for channels', () => {
 		expect(answered).toEqual([{ memberId: can.member.id, replyId: asked.replyId }]);
 		const answer = await k.conversation.answer(can.member.id, asked.replyId);
 		expect(answer?.status).toBe('done');
-		// The answer as the app shows it, with the fixed line under it for the suggestion.
+		// A chat has no cards: the fixed line for the suggestion comes under the words.
 		expect(answer?.text).toMatch(/^I suggested adding milk\.\n\n/);
 		expect(answer?.draftIds).toHaveLength(1);
 		// Another member cannot read it, even knowing its id.

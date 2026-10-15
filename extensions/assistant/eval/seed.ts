@@ -23,6 +23,15 @@ export interface SeedEvent {
 	who?: string[];
 	recurrence?: Recurrence;
 	location?: string;
+	/** The event's tags; they become the family's tags. */
+	tags?: string[];
+}
+
+export interface SeedTask {
+	title: string;
+	dueDate?: string;
+	/** Display name of the member it is assigned to. */
+	who?: string;
 }
 
 export interface SeedItem {
@@ -47,8 +56,8 @@ export interface Case {
 	events?: SeedEvent[];
 	/** Shopping lists by name, with their items; the first is the default list. */
 	shopping?: Record<string, SeedItem[]>;
-	/** Open tasks. */
-	tasks?: string[];
+	/** Open tasks: a title, or a task with a due date and an assignee. */
+	tasks?: (string | SeedTask)[];
 	/** How far the AI may use an area, for the areas this case changes. */
 	areas?: Record<string, AiAreaAccess>;
 	checks: Check[];
@@ -159,9 +168,16 @@ export async function seed(k: TestKernel, c: Case): Promise<Household> {
 				);
 		}
 	}
-	for (const title of c.tasks ?? []) {
+	for (const task of c.tasks ?? []) {
+		const { title, dueDate, who } = typeof task === 'string' ? { title: task } : task;
+		const assigneeId = who === undefined ? undefined : seeded[who];
+		if (who !== undefined && !assigneeId) throw new Error(`Nobody called ${who} in the family`);
 		const made = applied<{ id: string }>(
-			await k.runner.invoke('lists.addTask', { title }, system),
+			await k.runner.invoke(
+				'lists.addTask',
+				{ title, ...(dueDate && { dueDate }), ...(assigneeId && { assigneeId }) },
+				system,
+			),
 			`task ${title}`,
 		);
 		seeded[title] = made.id;

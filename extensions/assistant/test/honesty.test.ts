@@ -34,11 +34,17 @@ async function ask(text: string) {
 	return result.output;
 }
 
-async function answer(sent: { threadId: string }): Promise<string> {
+async function reply(sent: { threadId: string }) {
 	const detail = await k
 		.route('assistant.getThread')
 		.call({ params: { threadId: sent.threadId }, actor: ayse.actor });
-	return (detail.messages.at(-1) as { content: string }).content;
+	return detail.messages.at(-1) as { content: string; suggested: string[] };
+}
+
+/** The answer as a chat without cards reads it: the model's words, then the app's lines. */
+async function answer(sent: { threadId: string }): Promise<string> {
+	const { content, suggested } = await reply(sent);
+	return [content, suggested.join('\n')].filter(Boolean).join('\n\n');
 }
 
 const drafts = () =>
@@ -112,6 +118,18 @@ describe('the answer never says something else than what was suggested', () => {
 		expect(content).not.toContain('Waiting for approval');
 	});
 
+	it('keeps the lines beside the model’s words, so cards do not say them twice', async () => {
+		k.llm.respondChat([
+			{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Oat milk' }] } },
+			// Real model output: its own sentence already names the suggestion once.
+			{ text: 'Suggested, not added yet: Add shopping items: Oat milk.' },
+		]);
+		const sent = await ask('Add oat milk');
+		const message = await reply(sent);
+		expect(message.content).toBe('Suggested, not added yet: Add shopping items: Oat milk.');
+		expect(message.suggested).toEqual(['Suggested, not added yet: Add shopping items: Oat milk']);
+	});
+
 	it('adds no line when nothing was suggested', async () => {
 		k.llm.respondChat([{ text: 'Nothing to do.' }]);
 		expect(await answer(await ask('Hello'))).toBe('Nothing to do.');
@@ -132,7 +150,7 @@ describe('the answer never says something else than what was suggested', () => {
 					{ title: 'Remove an item', automatic: true },
 				],
 				translate,
-			).split('\n'),
+			),
 		).toEqual([
 			'assistant:proposed|{"what":"lists:draft_title_add_task|{}: Call"}',
 			'assistant:proposed_automatic|{"what":"Remove an item"}',

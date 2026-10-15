@@ -38,7 +38,8 @@ describe('how the assistant answers', () => {
 	});
 
 	it('says who approves a suggestion and when it is automatic', () => {
-		expect(prompt).toContain('including who approves it when it names someone else');
+		expect(prompt).toContain('they are written to the person and can be said as they are');
+		expect(prompt).toContain('A "note" field is for you only: never repeat it.');
 		expect(prompt).toContain('that it will be added automatically');
 	});
 

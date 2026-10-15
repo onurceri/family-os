@@ -215,11 +215,39 @@ describe('what the assistant says about a suggestion', () => {
 		expect(result).not.toContain('cannot approve it themselves');
 	});
 
-	it('says someone else approves it when the asker cannot', async () => {
+	it('says someone else approves it when the asker cannot, in words for the asker', async () => {
 		k.llm.respondChat(addMilk);
 		await ask(kid, 'Add milk to the shopping list');
-		expect(k.llm.chatTrace.at(-1)?.result).toContain(
-			'another person in the household who may approve it',
+		const result = k.llm.chatTrace.at(-1)?.result ?? '';
+		const { say, note } = JSON.parse(
+			result.replace(/^<tool_result[^>]*>\n/, '').replace(/\n<\/tool_result>$/, ''),
+		) as { say: string; note?: string };
+		expect(say).toContain('It appears once someone else in the household approves it.');
+		// A real answer repeated the say text word for word, notes to the model included:
+		// "…; this person cannot approve it themselves. Some of it may already be there; tell the person."
+		expect(say).not.toMatch(/this person|tell the person|the person can/i);
+		expect(note).toBe('The person asking cannot approve it themselves.');
+	});
+
+	it('says to the asker that some of it may already be there', async () => {
+		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Oat milk' }] }, ayse.actor);
+		k.llm.respondChat([
+			{
+				tool: 'lists_addShoppingItems',
+				input: { items: [{ title: 'Oat milk' }, { title: 'Loaf of bread' }] },
+			},
+			{ text: 'Suggested.' },
+		]);
+		await ask(kid, 'Add oat milk and a loaf of bread to the shopping list');
+		const { say, note } = JSON.parse(
+			(k.llm.chatTrace.at(-1)?.result ?? '')
+				.replace(/^<tool_result[^>]*>\n/, '')
+				.replace(/\n<\/tool_result>$/, ''),
+		) as { say: string; note?: string };
+		expect(say).toMatch(
+			/^Suggested, not added yet: .+\. It appears once someone else in the household approves it\. Some of it may already be there\.$/,
 		);
+		expect(note).toContain('cannot approve it themselves');
+		expect(note).toContain('Say what is already there, too.');
 	});
 });

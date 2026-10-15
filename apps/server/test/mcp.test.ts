@@ -718,7 +718,7 @@ describe('tools', () => {
 		const text = res.body.result.content[0].text as string;
 		expect(text).toContain('"status":"drafted"');
 		expect(text).toContain(
-			'Already there: Regional Gala, 2026-11-07 18:00; the person can move it to 2026-11-14 09:00 instead when deciding.',
+			'Already there: Regional Gala, 2026-11-07 18:00. You can move that one to 2026-11-14 09:00 instead when you decide.',
 		);
 		// The agent only suggests: the draft is still the new event until a person chooses.
 		const drafts = (await runtime.handle.db

@@ -26,6 +26,12 @@ export type AssistantTables = {
 		content: string;
 		/** JSON: the tools used (names and outcome only) and the drafts created. Never inputs. */
 		tool_calls: string | null;
+		/**
+		 * JSON: the app's own line for each suggestion the answer made ("Suggested, not added yet:
+		 * …"), kept apart from the model's words so a page that shows the suggestions as cards does
+		 * not say them twice.
+		 */
+		suggested: string | null;
 		status: 'pending' | 'streaming' | 'done' | 'failed';
 		error_code: string | null;
 		created_at: number;
@@ -75,6 +81,11 @@ export const migrations: Migrations = {
 	'0002_thread_handles': {
 		async up(db) {
 			await db.schema.alterTable('assistant_threads').addColumn('handles', 'text').execute();
+		},
+	},
+	'0003_message_suggested': {
+		async up(db) {
+			await db.schema.alterTable('assistant_messages').addColumn('suggested', 'text').execute();
 		},
 	},
 };

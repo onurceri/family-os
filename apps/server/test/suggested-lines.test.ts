@@ -108,16 +108,15 @@ describe('the line that names each suggestion', () => {
 		const thread = await k
 			.route('assistant.getThread')
 			.call({ params: { threadId: sent.output.threadId }, actor: sofia.actor });
-		return thread.messages.at(-1) as { status: string; content: string };
+		return thread.messages.at(-1) as { status: string; content: string; suggested: string[] };
 	}
 
-	const linesOf = (content: string) => content.split('\n').filter((l) => l.startsWith('Suggested'));
-
-	it('is one per suggestion under the assistant’s answer, naming the thing', async () => {
+	it('is one per suggestion beside the assistant’s answer, naming the thing', async () => {
 		const calls = SUGGESTIONS.slice(0, 4);
 		const answer = await answerTo(calls, 'I suggested the changes.');
-		expect(answer.content.startsWith('I suggested the changes.\n\n')).toBe(true);
-		const lines = linesOf(answer.content);
+		// Beside the words, not in them: the page shows the suggestions as cards.
+		expect(answer.content).toBe('I suggested the changes.');
+		const lines = answer.suggested;
 		expect(lines).toHaveLength(calls.length);
 		calls.forEach((s, i) => {
 			expect(lines[i], s.tool).toMatch(/^Suggested, not added yet: .+: /);
@@ -129,7 +128,8 @@ describe('the line that names each suggestion', () => {
 		// Eight tool calls use up the steps: the model never writes its answer.
 		const answer = await answerTo(SUGGESTIONS, 'never reached');
 		expect(answer.status).toBe('done');
-		const lines = linesOf(answer.content);
+		expect(answer.content).toBe('');
+		const lines = answer.suggested;
 		expect(lines).toHaveLength(SUGGESTIONS.length);
 		SUGGESTIONS.forEach((s, i) => {
 			expect(lines[i], s.tool).toMatch(/^Suggested, not added yet: .+: /);

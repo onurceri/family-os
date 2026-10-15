@@ -19,7 +19,8 @@ import {
 	TURN_JOB,
 } from '../contract/index.ts';
 import { formatWeekday } from './format.ts';
-import { systemPrompt, weekdayNotes } from './prompt.ts';
+import { spokenText } from './messages.ts';
+import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
 import { createHandleScrubber, scrubHandles } from './scrub.ts';
 import { tables } from './store.ts';
 import {
@@ -30,6 +31,7 @@ import {
 	type RecordedCall,
 	toolsClosed,
 } from './tools.ts';
+import { readVocabularies } from './vocabulary.ts';
 
 /** The most notes sent to the model, and the most characters of them. */
 export const MEMORY_MAX_NOTES = 20;
@@ -83,23 +85,21 @@ const parseHandles = (json: string | null): RememberedHandles => {
 };
 
 /**
- * The fixed lines under an answer that made suggestions, one per suggestion ("Suggested, not added yet: Add shopping
- * items: Milk, Oat milk"). Built from the suggestions, not from the
- * model's words, so the answer can never claim something else.
+ * The fixed lines of an answer that made suggestions, one per suggestion ("Suggested, not added
+ * yet: Add shopping items: Milk, Oat milk"). Built from the suggestions, not from the model's
+ * words, so the answer can never claim something else.
  */
 export function proposalLines(
 	proposals: readonly Proposal[],
 	translate: (key: string, params?: Record<string, unknown>) => string,
-): string {
-	return proposals
-		.map((p) => {
-			const title = p.titleKey ? translate(p.titleKey) : p.title;
-			const what = p.subject ? `${title}: ${p.subject}` : title;
-			return translate(p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed', {
-				what,
-			});
-		})
-		.join('\n');
+): string[] {
+	return proposals.map((p) => {
+		const title = p.titleKey ? translate(p.titleKey) : p.title;
+		const what = p.subject ? `${title}: ${p.subject}` : title;
+		return translate(p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed', {
+			what,
+		});
+	});
 }
 
 const MAX_STEPS = 8;
@@ -139,6 +139,7 @@ export const turnJob = defineJob({
 		const finish = async (fields: {
 			status: 'done' | 'failed';
 			content?: string;
+			suggested?: readonly string[];
 			errorCode?: string | null;
 			calls?: RecordedCall[];
 		}) => {
@@ -148,6 +149,7 @@ export const turnJob = defineJob({
 				.set({
 					status: fields.status,
 					content: fields.content ?? '',
+					suggested: fields.suggested?.length ? JSON.stringify(fields.suggested) : null,
 					error_code: fields.errorCode ?? null,
 					tool_calls: fields.calls?.length ? JSON.stringify(fields.calls) : null,
 				})
@@ -198,7 +200,7 @@ export const turnJob = defineJob({
 		};
 		const history = await db
 			.selectFrom('assistant_messages')
-			.select(['role', 'content', 'created_at'])
+			.select(['role', 'content', 'suggested', 'created_at'])
 			.where('thread_id', '=', threadId)
 			.where('status', '=', 'done')
 			.where('created_at', '<', reply.created_at)
@@ -206,7 +208,12 @@ export const turnJob = defineJob({
 			.orderBy('id', 'desc')
 			.limit(KEEP_VERBATIM)
 			.execute();
-		const kept = history.filter((m) => m.content !== '').reverse();
+		// The model reads its earlier answers with the app's suggestion lines, so it knows what it
+		// suggested even when it wrote nothing else.
+		const kept = history
+			.map((m) => ({ role: m.role, content: spokenText(m) }))
+			.filter((m) => m.content !== '')
+			.reverse();
 		const messages: LlmChatMessage[] = kept.map((m) => ({
 			role: m.role === 'assistant' ? 'assistant' : 'user',
 			content: m.content,
@@ -256,11 +263,16 @@ export const turnJob = defineJob({
 		const today = todayIn(settings.timeZone, now);
 		// A weekday that does not fit its date in what the person just wrote is pointed out.
 		const asked = kept.findLast((m) => m.role === 'user')?.content ?? '';
-		const notes = weekdayNotes(
-			asked,
-			today,
-			dateWords((key) => ctx.vocabulary(key)),
-			numericDateOrder(settings.formatLocale),
+		const words = dateWords((key) => ctx.vocabulary(key));
+		const order = numericDateOrder(settings.formatLocale);
+		const notes = weekdayNotes(asked, today, words, order);
+		const time = zoned(now, settings.timeZone).toPlainTime().toString({ smallestUnit: 'minute' });
+		// Weekdays named without a date get their dates from code, the same way every time.
+		const days = weekdayDates(asked, today, time, words, order);
+		const vocabularies = await readVocabularies(
+			ctx,
+			actor,
+			new Set(tools.filter((t) => t.kind === 'draft').map((t) => areaOf(t.actionId))),
 		);
 		const calls: RecordedCall[] = [];
 		const proposals: Proposal[] = [];
@@ -289,7 +301,7 @@ export const turnJob = defineJob({
 				system: systemPrompt({
 					today,
 					weekday: formatWeekday(today),
-					now: zoned(now, settings.timeZone).toPlainTime().toString({ smallestUnit: 'minute' }),
+					now: time,
 					weekStart: settings.weekStart,
 					timeZone: settings.timeZone,
 					// The asker's own language, else the family's.
@@ -309,6 +321,9 @@ export const turnJob = defineJob({
 						.slice(-MAX_RECORDS_IN_PROMPT)
 						.map(([handle, label]) => ({ handle, label })),
 					notes,
+					days,
+					areas: [...new Set(tools.map((t) => areaOf(t.actionId)))],
+					vocabularies,
 				}),
 				messages,
 				tools: chatTools(tools, {
@@ -337,22 +352,20 @@ export const turnJob = defineJob({
 			});
 			emit(scrubber.flush());
 			// Whatever the model wrote, the person is told what was really suggested, from the
-			// suggestions themselves.
+			// suggestions themselves. The lines are kept beside the answer, not in it: the app shows
+			// the suggestions as cards, and a chat outside it gets the lines under the words.
 			const locale = member.locale ?? settings.locale;
-			const stated = proposalLines(proposals, (key, params) => ctx.translate(locale, key, params));
+			const suggested = proposalLines(proposals, (key, params) =>
+				ctx.translate(locale, key, params),
+			);
 			// The step limit can end the loop on a tool call, with no answer text. If the turn made
 			// suggestions, the lines naming them are the answer (asking again would suggest them
 			// twice); with nothing at all it is a failure.
 			const answer = result.text ? scrubHandles(result.text, nameOf) : '';
-			if (stated !== '') emit(answer === '' ? stated : `\n\n${stated}`);
 			await finish(
-				answer === '' && stated === ''
+				answer === '' && suggested.length === 0
 					? { status: 'failed', errorCode: 'no_answer', calls }
-					: {
-							status: 'done',
-							content: [answer, stated].filter((part) => part !== '').join('\n\n'),
-							calls,
-						},
+					: { status: 'done', content: answer, suggested, calls },
 			);
 			const total = await db
 				.selectFrom('assistant_messages')

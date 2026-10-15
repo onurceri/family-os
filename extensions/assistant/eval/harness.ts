@@ -99,6 +99,7 @@ export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseR
 				detail.messages as {
 					id: string;
 					content: string;
+					suggested: string[];
 					status: string;
 					errorCode: string | null;
 				}[]
@@ -119,7 +120,14 @@ export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseR
 				);
 			turns.push({
 				ask,
-				reply: reply?.content ?? '',
+				// The model's words with the app's line for each suggestion under them, as a chat
+				// outside the app shows the answer.
+				reply: [
+					reply?.content ?? '',
+					...(reply?.suggested.length ? [reply.suggested.join('\n')] : []),
+				]
+					.filter((part) => part !== '')
+					.join('\n\n'),
 				status:
 					reply?.status === 'failed'
 						? `failed: ${reply.errorCode ?? 'unknown'}`

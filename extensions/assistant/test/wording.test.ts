@@ -111,7 +111,8 @@ describe('suggestions', () => {
 		const result = k.llm.chatTrace[0]?.result ?? '';
 		expect(result).toContain('"status":"drafted"');
 		expect(result).toContain('Suggested, not added yet:');
-		expect(result).toContain('It appears once a person in the household approves it.');
+		expect(result).toContain('It appears once someone in the household approves it.');
+		expect(result).not.toContain('"note"');
 		expect(result).toContain('"suggestion":"draft:1"');
 		expect(result).not.toMatch(/draft_[0-9a-f]{8}-/);
 	});

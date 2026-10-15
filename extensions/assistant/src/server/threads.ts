@@ -93,6 +93,7 @@ export const sendMessage = defineAction({
 					role: 'user',
 					content: input.text,
 					tool_calls: null,
+					suggested: null,
 					status: 'done',
 					error_code: null,
 					created_at: now,
@@ -103,6 +104,7 @@ export const sendMessage = defineAction({
 					role: 'assistant',
 					content: '',
 					tool_calls: null,
+					suggested: null,
 					status: 'pending',
 					error_code: null,
 					// After the question, whatever the clock says.

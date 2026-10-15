@@ -50,6 +50,12 @@ export const MessageSchema = z.object({
 	role: z.enum(['user', 'assistant']),
 	content: z.string(),
 	toolCalls: z.array(ToolCallSchema),
+	/**
+	 * The app's own line for each suggestion the answer made, from the suggestions themselves
+	 * ("Suggested, not added yet: Add a task: Pack the swim bag"). Not part of `content`: a page
+	 * that shows the suggestions as cards needs no line; one that cannot shows these.
+	 */
+	suggested: z.array(z.string()),
 	status: z.enum(MESSAGE_STATUSES),
 	/** Why an answer failed: an `LlmErrorCode` or one of this extension's. */
 	errorCode: z.string().nullable(),

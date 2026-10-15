@@ -368,6 +368,12 @@
 															]
 														}
 													},
+													"suggested": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														}
+													},
 													"status": {
 														"type": "string",
 														"enum": [
@@ -392,6 +398,7 @@
 													"role",
 													"content",
 													"toolCalls",
+													"suggested",
 													"status",
 													"errorCode",
 													"createdAt"

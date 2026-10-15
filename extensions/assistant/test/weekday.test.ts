@@ -65,3 +65,42 @@ describe('a weekday that does not fit its date', () => {
 		expect(system).not.toContain('Checked in the person');
 	});
 });
+
+describe('a weekday with no date', () => {
+	// Real answers, both on a Thursday: "on Thursday" became that very day for one person, and
+	// "Thursday at 18:30" a week later for another. The date now comes from code, the same each time.
+	it("is today when it is today's weekday, else next week once the time has passed", async () => {
+		k.llm.respondChat([{ text: 'Suggested.' }]);
+		const system = await ask('Remind me to pack my swim bag on Wednesday');
+		expect(system).toContain(
+			`"Wednesday" with no date is today's weekday, with no time given: it means today, Wednesday, October 14 (2026-10-14).`,
+		);
+		expect(system).toContain('Say in the answer which date you used');
+		k.llm.respondChat([{ text: 'Suggested.' }]);
+		expect(await ask('Remind me on Wednesday at 8 pm to call Tom')).toContain(
+			`"Wednesday" with no date is today's weekday, and 20:00 is still ahead (it is now 19:00): it means today, Wednesday, October 14 (2026-10-14).`,
+		);
+		k.llm.respondChat([{ text: 'Suggested.' }]);
+		expect(await ask('Remind me on Wednesday at 18:30 to pick Ivy up')).toContain(
+			`"Wednesday" with no date is today's weekday, and 18:30 has passed (it is now 19:00): it means next week, Wednesday, October 21 (2026-10-21).`,
+		);
+	});
+
+	it('is the coming one for any other weekday, in every installed language', async () => {
+		k.llm.respondChat([{ text: 'Nothing.' }]);
+		expect(await ask('What is on Saturday?')).toContain(
+			'"Saturday" with no date means the coming Saturday, Saturday, October 17 (2026-10-17).',
+		);
+		k.llm.respondChat([{ text: 'Nothing.' }]);
+		expect(await ask('Cumartesi ne var?')).toContain(
+			'"Cumartesi" with no date means the coming Saturday, Saturday, October 17 (2026-10-17).',
+		);
+	});
+
+	it('is left alone when the message writes a date', async () => {
+		k.llm.respondChat([{ text: 'Yes.' }]);
+		expect(await ask('Move the Sunday planning on 25 October to 18:00')).not.toContain(
+			'with no date',
+		);
+	});
+});

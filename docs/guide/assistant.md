@@ -14,6 +14,10 @@ When you ask it to change or remove something, it must name the item the way you
 
 It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean.
 
+A weekday without a date ("remind me on Thursday", "what is on Saturday?") means the coming one. When it is today's own weekday, it means today while the time you mean is still ahead (or you give no time), and the same day next week once that time has passed. FamilyOS works the date out before the assistant answers, so the same words give the same date every time, and the assistant says which date it used. Say "next week" when you mean the later one.
+
+When you ask about a span ("this weekend", "this month") and nothing falls in it, the assistant says so. If it mentions other open things, it says that they fall outside that span.
+
 An overview ("give me an overview of this week", "show me the open tasks") covers the whole family. The assistant narrows to one person only when you ask about whose things they are: "my calendar", "what do I have", "am I free" or "Noah's tasks".
 
 Examples to try:
@@ -27,6 +31,8 @@ Examples to try:
 
 The assistant sees only what the person asking may see, and only in the areas the family allows for AI (**Settings → AI → What the AI may read**). Areas that are off are never offered to it. An area set to **Local only** is available only when the model runs on your own network.
 
+When you ask about something none of its areas covers, for example your home after the Home extension was removed, the assistant says plainly that it cannot see anything about it in FamilyOS. It does not ask you for details it could not look up anyway.
+
 It is told people's names and descriptions only when **Send names and descriptions** is on in Settings → AI. Otherwise it cannot refer to anyone by name.
 
 Conversations are private: each person sees only their own.
@@ -37,7 +43,9 @@ Suggestions appear as the same cards as in Quick add, right under the answer. Pe
 
 Ask "was it approved?" and the assistant looks up the suggestions it made in this conversation, with what became of each and who decided it ("approved by Sofia"). Suggestions made elsewhere, in Quick add, another conversation or a connected app, are not its own and it does not report them.
 
-Under an answer that made suggestions, the assistant always adds a fixed line for each one, such as "Suggested, not added yet: Add shopping items: Milk, Oat milk" (or "Added automatically: …" when auto-approval adds it). It is written by the app from the suggestion itself, so it is right even if the wording above it is not, and it is there even when the assistant ran out of steps before writing an answer. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
+For each suggestion, the app also keeps a fixed line written from the suggestion itself, such as "Suggested, not added yet: Add shopping items: Milk, Oat milk" (or "Added automatically: …" when auto-approval adds it), so it is right even if the assistant's wording is not. In the app the card stands for that line, so each suggestion is shown once; the line itself appears only when the cards cannot be shown, and in [Telegram](telegram.md) it comes under the answer. It is there even when the assistant ran out of steps before writing an answer.
+
+When it suggests an event, the assistant uses the calendar tags your family already has, and adds no new tag unless you name one. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
 
 A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation.
 

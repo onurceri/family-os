@@ -1,6 +1,7 @@
 import { defineJob, isLlmError } from '@famos/sdk';
 import { z } from 'zod';
 import { CHAT_FEATURE, SUMMARIZE_JOB } from '../contract/index.ts';
+import { spokenText } from './messages.ts';
 import { tables } from './store.ts';
 import { KEEP_VERBATIM } from './turn.ts';
 
@@ -29,7 +30,7 @@ export const summarizeJob = defineJob({
 		if (!thread) return;
 		const messages = await db
 			.selectFrom('assistant_messages')
-			.select(['role', 'content'])
+			.select(['role', 'content', 'suggested'])
 			.where('thread_id', '=', threadId)
 			.where('status', '=', 'done')
 			.orderBy('created_at')
@@ -53,7 +54,7 @@ export const summarizeJob = defineJob({
 				prompt: [
 					thread.summary ? `Earlier summary:\n${thread.summary}\n` : '',
 					'New messages:',
-					...fresh.map((m) => `${m.role}: ${m.content.slice(0, MAX_MESSAGE_CHARS)}`),
+					...fresh.map((m) => `${m.role}: ${spokenText(m).slice(0, MAX_MESSAGE_CHARS)}`),
 				].join('\n'),
 				timeoutMs: 90_000,
 				// A summary keeps what was said: nothing to invent, so the most likely words.

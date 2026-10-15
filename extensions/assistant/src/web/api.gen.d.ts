@@ -266,6 +266,7 @@ export interface operations {
                                 ok: boolean;
                                 draftId?: string;
                             }[];
+                            suggested: string[];
                             /** @enum {string} */
                             status: "pending" | "streaming" | "done" | "failed";
                             errorCode: string | null;

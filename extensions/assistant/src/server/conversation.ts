@@ -2,6 +2,7 @@ import { type ConversationProvider, FamosError, isFamosError } from '@famos/sdk'
 import type { z } from 'zod';
 import type { SentMessageSchema } from '../contract/index.ts';
 import { assistantUse } from './capabilities.ts';
+import { spokenText } from './messages.ts';
 import { tables } from './store.ts';
 
 /**
@@ -35,6 +36,7 @@ export const conversation: ConversationProvider = {
 			.innerJoin('assistant_threads', 'assistant_threads.id', 'assistant_messages.thread_id')
 			.select([
 				'assistant_messages.content',
+				'assistant_messages.suggested',
 				'assistant_messages.status',
 				'assistant_messages.error_code',
 				'assistant_messages.tool_calls',
@@ -47,7 +49,7 @@ export const conversation: ConversationProvider = {
 		const calls: { draftId?: string }[] = row.tool_calls ? JSON.parse(row.tool_calls) : [];
 		return {
 			status: row.status === 'done' ? 'done' : row.error_code === 'disabled' ? 'ai_off' : 'failed',
-			text: row.status === 'done' ? row.content : '',
+			text: row.status === 'done' ? spokenText(row) : '',
 			draftIds: calls.flatMap((c) => (c.draftId ? [c.draftId] : [])),
 		};
 	},

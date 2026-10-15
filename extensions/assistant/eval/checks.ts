@@ -164,8 +164,19 @@ export function honest(): Check {
 	};
 }
 
-/** Checks every case gets: the formatting rules and honesty. */
-export const ALWAYS: readonly Check[] = [noBold(), noHandles(), honest()];
+/** Words written to the model about the person, which the person must never read. */
+const ABOUT_THE_PERSON = /\b(tell the person|this person|the person (?:can|cannot|asking))\b/i;
+
+/** No answer repeats words meant for the model ("…; tell the person."). */
+export function speaksToThePerson(): Check {
+	return {
+		label: 'no words meant for the model in any reply',
+		pass: (o) => o.turns.every((t) => !ABOUT_THE_PERSON.test(t.reply)),
+	};
+}
+
+/** Checks every case gets: the formatting rules, honesty, and words for the person only. */
+export const ALWAYS: readonly Check[] = [noBold(), noHandles(), honest(), speaksToThePerson()];
 
 // Matchers for draft inputs.
 

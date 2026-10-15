@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { dateWords, isUncertainDate, weekdayMismatches } from '../src/index.ts';
+import {
+	bareWeekdays,
+	clockTimes,
+	dateWords,
+	isUncertainDate,
+	weekdayMismatches,
+} from '../src/index.ts';
 
 /** The words of the English catalog and the bundled Turkish pack, read like the server does. */
 function vocabulary(): (key: string) => readonly string[] {
@@ -84,5 +90,45 @@ describe('isUncertainDate', () => {
 		expect(isUncertainDate('Thursday the 9th', '2026-10-09', words)).toBe(true);
 		expect(isUncertainDate('next Thursday', '2026-10-15', words)).toBe(true);
 		expect(isUncertainDate('tomorrow', '2026-10-15', words)).toBe(false);
+	});
+});
+
+describe('bareWeekdays', () => {
+	it('finds weekdays named without a date, once each', () => {
+		expect(bareWeekdays('Remind me on Thursday at 18:30, and what is on Saturday?', words)).toEqual(
+			[
+				{ said: 'Thursday', weekday: 4 },
+				{ said: 'Saturday', weekday: 6 },
+			],
+		);
+		expect(bareWeekdays('thursday or Thursday?', words)).toEqual([
+			{ said: 'thursday', weekday: 4 },
+		]);
+	});
+
+	it('reads the names of every installed language, with their endings', () => {
+		expect(bareWeekdays('Perşembe günü futbol çantamı hazırlamayı hatırlat', words)).toEqual([
+			{ said: 'Perşembe', weekday: 4 },
+		]);
+	});
+
+	it('leaves a text that writes a date to the other checks', () => {
+		expect(bareWeekdays('Move only the Sunday planning on 25 October', words)).toEqual([]);
+		expect(bareWeekdays('Is there swimming on Wednesday 20/10?', words)).toEqual([]);
+	});
+
+	it('does not read short names or times as weekdays', () => {
+		expect(bareWeekdays('I sat down at 10:30 on the wed mat', words)).toEqual([]);
+	});
+});
+
+describe('clockTimes', () => {
+	it('reads times with minutes or a 12-hour mark as 24-hour times', () => {
+		expect(clockTimes('Remind me on Thursday at 18:30')).toEqual(['18:30']);
+		expect(clockTimes('at 6.30 pm, or 7am, or 12 a.m.')).toEqual(['18:30', '07:00', '00:00']);
+	});
+
+	it('leaves out bare hours, dates and impossible times', () => {
+		expect(clockTimes('at 6 on 20.10.2026, 25:00 or 13pm')).toEqual([]);
 	});
 });

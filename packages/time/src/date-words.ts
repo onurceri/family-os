@@ -284,3 +284,56 @@ export function weekdayMismatches(
 	}
 	return out;
 }
+
+/** A weekday a person named with no date ("on Thursday"). */
+export interface BareWeekday {
+	/** The name, as written. */
+	said: string;
+	/** The weekday it names (1 = Monday … 7 = Sunday). */
+	weekday: number;
+}
+
+/**
+ * The weekdays a text names by their full names when it writes no date at all ("remind me on
+ * Thursday"), once each. A text that also writes a date is left alone: its weekdays may belong to
+ * that date, or to a title ("Sunday planning on 25 October"), and `weekdayMismatches` judges them.
+ */
+export function bareWeekdays(
+	text: string,
+	words: DateWords,
+	order: DateOrder = 'DMY',
+): BareWeekday[] {
+	const clean = withoutTimes(text, words);
+	if (datesIn(clean, words, order).length > 0) return [];
+	const out: BareWeekday[] = [];
+	for (const found of namesIn(clean, words.weekdays, () => false)) {
+		if (out.some((d) => d.weekday === found.value)) continue;
+		out.push({ said: text.slice(found.start, found.end), weekday: found.value });
+	}
+	return out;
+}
+
+/**
+ * The clock times a text writes with minutes or a 12-hour mark ("18:30", "6.30", "6:30 pm",
+ * "6pm"), as `HH:MM` (24-hour). A bare hour ("at 6") is left out: whether it is morning or
+ * evening is not written.
+ */
+export function clockTimes(text: string): string[] {
+	const out: string[] = [];
+	const add = (hour: number, minute: number, mark: string | undefined) => {
+		const pm = mark?.toLowerCase().startsWith('p');
+		const h = mark ? (hour % 12) + (pm ? 12 : 0) : hour;
+		if (h > 23 || minute > 59 || (mark && (hour < 1 || hour > 12))) return;
+		out.push(`${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+	};
+	const blanked = text.replace(
+		/(?<![\d.:])(\d{1,2})[:.](\d{2})(?![\d.:])\s*(am|pm|a\.m\.|p\.m\.)?/giu,
+		(_, h: string, m: string, mark: string | undefined) => {
+			add(Number(h), Number(m), mark);
+			return ' ';
+		},
+	);
+	for (const m of blanked.matchAll(/(?<![\d.:])(\d{1,2})\s*(am|pm|a\.m\.|p\.m\.)/giu))
+		add(Number(m[1]), 0, m[2]);
+	return out;
+}

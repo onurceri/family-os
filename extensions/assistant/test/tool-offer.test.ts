@@ -200,7 +200,7 @@ describe('what the model reads after a suggestion', () => {
 				.replace(/\n<\/tool_result>$/, ''),
 		).say as string;
 		expect(say).toBe(
-			'Suggested, not added yet: Add a task: Pay the swim club fee. It appears once a person in the household approves it.',
+			'Suggested, not added yet: Add a task: Pay the swim club fee. It appears once someone in the household approves it.',
 		);
 		expect(say).not.toContain('Adds a to-do');
 	});
@@ -237,7 +237,7 @@ describe('what the model reads after a suggestion', () => {
 				.replace(/\n<\/tool_result>$/, ''),
 		).say as string;
 		expect(say).toContain(
-			'Already there: Regional Gala, 2026-11-07 18:00; the person can move it to 2026-11-14 09:00 instead when deciding.',
+			'Already there: Regional Gala, 2026-11-07 18:00. You can move that one to 2026-11-14 09:00 instead when you decide.',
 		);
 		expect(say).not.toContain('It may already be there');
 		// The suggestion stays what the model proposed: only the person turns it into a move.

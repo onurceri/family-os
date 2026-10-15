@@ -1,3 +1,4 @@
+import type { Outcome } from './checks.ts';
 import {
 	about,
 	atMost,
@@ -14,7 +15,7 @@ import {
 	on,
 	says,
 } from './checks.ts';
-import type { Case, SeedEvent, SeedItem } from './seed.ts';
+import type { Case, SeedEvent, SeedItem, SeedTask } from './seed.ts';
 
 /**
  * Assistant evaluation cases. Each comes from a mistake the assistant made in use, with the
@@ -175,6 +176,44 @@ const movesOne = (title: string, date: string, time: string) =>
 		`${title} on ${date} to ${time}`,
 		(i, o) => on(title)(i, o) && occurrenceOn(i, date, o.timeZone) && i.startTime === time,
 	);
+
+/** A draft that sets a reminder or a task for `date` (and `time`, when given). */
+const remindsOn = (date: string, time?: string): Check => ({
+	label: `drafted a reminder or task on ${date}${time ? ` at ${time}` : ''}`,
+	pass: (o: Outcome) =>
+		lastTurn(o).drafts.some((d) => {
+			if (d.actionId === 'calendar.createEvent')
+				return d.input.date === date && (time === undefined || d.input.startTime === time);
+			if (d.actionId === 'lists.addTask')
+				return d.input.dueDate === date && (time === undefined || d.input.dueTime === time);
+			return false;
+		}),
+});
+
+/** The calendar with the family's tags on some of its events. */
+const EVENT_TAGS: Record<string, string[]> = {
+	'Football training': ['football'],
+	'Swim training': ['sports'],
+	'Dentist checkup': ['health'],
+};
+const TAGGED_CALENDAR: SeedEvent[] = CALENDAR.map((event) =>
+	EVENT_TAGS[event.title] ? { ...event, tags: EVENT_TAGS[event.title] } : event,
+);
+const FAMILY_TAGS = Object.values(EVENT_TAGS).flat();
+
+/** Ellie's open tasks: none is due on the weekend of 10 and 11 October. */
+const ELLIE_TASKS: SeedTask[] = [
+	{ title: 'Pack the swim bag', dueDate: '2026-10-08', who: 'Ellie' },
+	{ title: 'Fractions worksheet', dueDate: '2026-10-13', who: 'Ellie' },
+	{ title: 'Return the library books', dueDate: '2026-10-16', who: 'Ellie' },
+];
+/** An answer that says nothing falls in the span. */
+const NOTHING = /\b(nothing|no tasks?|none)\b/i;
+/** An answer that says nothing is due in the span, which leaves room for open tasks due later. */
+const DUE = /\bnothing (?:is )?due\b/i;
+/** Words that put what is listed outside the span asked about. */
+const OUTSIDE =
+	/\b(outside|after the weekend|later|beyond|next week|before the weekend|other days|not (?:due )?(?:this|on the|at the) weekend)\b/i;
 
 export const CASES: Case[] = [
 	// Not the closest item: a name that is not there is refused, not mapped to a similar one.
@@ -349,6 +388,87 @@ export const CASES: Case[] = [
 				return /s[üu]t/i.test(titles) && /yumurta/i.test(titles);
 			}),
 			neverSays(/\b(the|you|your|added|suggested|list|will|milk|eggs)\b/i),
+		],
+	},
+
+	// No area covers it: Home is not installed, so nothing about the flat can be looked up.
+	{
+		name: 'no area: the flat papers when Home is not installed',
+		tasks: [{ title: 'Book the car service', dueDate: '2026-10-20' }],
+		asks: ['Where do we keep the flat papers, and what is due this month for the flat?'],
+		checks: [
+			noDrafts(),
+			// The real answer promised what it never looked up, then asked for the flat's name.
+			neverSays(/I can tell you what is due/i, /\?\s*$/),
+			says(/\b(no|not|nothing|cannot|can't|don't)\b/i),
+		],
+	},
+
+	// Nothing in the span asked about, and the other open tasks said to fall outside it.
+	{
+		name: 'span: nothing open for Ellie this weekend',
+		as: 'Ellie',
+		tasks: ELLIE_TASKS,
+		asks: ['What is still open for me this weekend?'],
+		checks: [
+			{
+				// The real answer said "You have nothing open for you this weekend." and then listed
+				// every open task under "Still open for you", as if they were the weekend's.
+				label: 'says nothing falls this weekend, and marks the tasks it lists as outside it',
+				pass: (o) => {
+					const reply = lastTurn(o).reply;
+					const lists = ELLIE_TASKS.some((t) =>
+						reply.toLowerCase().includes(t.title.toLowerCase()),
+					);
+					// "Nothing is due this weekend" and then the open tasks with their dates is
+					// consistent; "nothing open" and then the open tasks is not.
+					return NOTHING.test(reply) && (!lists || OUTSIDE.test(reply) || DUE.test(reply));
+				},
+			},
+		],
+	},
+
+	// A weekday with no date: today when it is today's weekday and the time is still ahead.
+	{
+		name: 'bare weekday: Ellie\'s "on Tuesday" on a Tuesday is today',
+		as: 'Ellie',
+		asks: ['Remind me to pack my swim bag on Tuesday'],
+		checks: [remindsOn('2026-10-06'), says(/today|6 October|October 6/i)],
+	},
+	{
+		name: 'bare weekday: Lukas\'s "Tuesday at 18:30" on a Tuesday morning is today, with a real tag',
+		as: 'Lukas',
+		events: TAGGED_CALENDAR,
+		asks: [
+			'Remind me on Tuesday at 18:30 to pick Noah up after football, and what is on Saturday?',
+		],
+		checks: [
+			remindsOn('2026-10-06', '18:30'),
+			says(/today|6 October|October 6/i, /\b10\b/),
+			// The real assistant tagged such a reminder "reminder", a tag the family did not have.
+			noDraft('with a tag the family does not use', (d) =>
+				((d.input.tags as string[] | undefined) ?? []).some(
+					(tag) => !FAMILY_TAGS.includes(tag.toLowerCase()),
+				),
+			),
+		],
+	},
+	{
+		name: 'bare weekday: "Tuesday at 08:00" said at 10:00 on a Tuesday is next week',
+		as: 'Lukas',
+		asks: ['Remind me on Tuesday at 08:00 to put the bins out'],
+		// The date is what this case is about: a draft can still fail on another field.
+		checks: [
+			{
+				label: 'set the reminder or task for 2026-10-13',
+				pass: (o) =>
+					lastTurn(o).calls.some(
+						(c) =>
+							(c.actionId === 'calendar.createEvent' && c.input.date === '2026-10-13') ||
+							(c.actionId === 'lists.addTask' && c.input.dueDate === '2026-10-13'),
+					),
+			},
+			noDraft('on today', (d) => d.input.date === '2026-10-06' || d.input.dueDate === '2026-10-06'),
 		],
 	},
 ];
