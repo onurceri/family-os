@@ -8,7 +8,7 @@ import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
 import { type Config, loadConfig } from './config.ts';
 import { type LoadedExtensions, loadExtensions } from './extensions/load.ts';
-import { createHttpApp, OPENAPI_INFO, resolveActor } from './http/app.ts';
+import { createHttpApp, loadedWeb, OPENAPI_INFO, resolveActor } from './http/app.ts';
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
@@ -40,8 +40,9 @@ Usage: famos <command>
 
 async function serveCommand() {
 	const config = await loadConfig();
-	const runtime = await openWithExtensions(config);
+	const { runtime, web } = await openWithExtensions(config);
 	const { logger, kernel } = runtime;
+	const extensions = loadedWeb(kernel, web);
 	await migrate(runtime);
 	await seedAi(runtime);
 	await kernel.start();
@@ -75,6 +76,7 @@ async function serveCommand() {
 			appVersion: APP_VERSION,
 			secureCookies: config.baseURL.startsWith('https://'),
 			trustedProxies: config.trustedProxies,
+			extensions,
 		});
 		const hub = createRealtimeHub(kernel.bus, logger);
 		app.get(
@@ -93,7 +95,7 @@ async function serveCommand() {
 				);
 			}),
 		);
-		if (config.webDir) mountSpa(app, config.webDir);
+		if (config.webDir) mountSpa(app, config.webDir, extensions);
 		else logger.warn({}, 'FAMOS_WEB_DIR not set; serving the API only');
 
 		const sockets = new WebSocketServer({ noServer: true });
@@ -151,11 +153,13 @@ async function serveCommand() {
 }
 
 /** Loads the extensions, then opens the runtime with them and says in the log what it runs. */
-async function openWithExtensions(config: Config): Promise<Runtime> {
-	const { extensions, report } = await loadExtensions();
+async function openWithExtensions(
+	config: Config,
+): Promise<{ runtime: Runtime; web: LoadedExtensions['web'] }> {
+	const { extensions, web, report } = await loadExtensions();
 	const runtime = openRuntime(config, { extensions });
 	logLoaded(runtime, report);
-	return runtime;
+	return { runtime, web };
 }
 
 function logLoaded({ logger }: Runtime, report: LoadedExtensions['report']) {
@@ -243,13 +247,13 @@ async function main() {
 		case 'serve':
 			return serveCommand();
 		case 'migrate': {
-			const runtime = await openWithExtensions(await loadConfig());
+			const { runtime } = await openWithExtensions(await loadConfig());
 			const applied = await migrate(runtime);
 			console.log(applied ? `Applied ${applied} migration(s).` : 'Database is up to date.');
 			return runtime.close();
 		}
 		case 'backup': {
-			const runtime = await openWithExtensions(await loadConfig());
+			const { runtime } = await openWithExtensions(await loadConfig());
 			const { path } = await backupNow(runtime, 'manual');
 			console.log(`Backup written: ${path}`);
 			console.log('Uploads to remote targets (if any) are sent by the running server.');

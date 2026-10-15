@@ -9,12 +9,21 @@ import { self } from '$app/service-worker';
  *   the last copy when offline, flagged with `x-famos-offline`. Writes, auth, files and every
  *   other route are never cached; the server stays the source of truth. The copy is dropped on
  *   sign-out (message `CLEAR_API_CACHE`).
+ * - Keeps the extension packages' files (`/extensions/<id>/<digest>/…`) once the app names them
+ *   after it opened (message `CACHE_EXTENSIONS`), and serves them from that copy first: their
+ *   address changes with every build, so a copy is never stale. Files of packages the app no
+ *   longer names are dropped. Each page the server answers refreshes the cached shell, which
+ *   names the packages and maps the modules they share, so an offline start opens what the
+ *   server last ran.
  * - Intercepts share-target POSTs, stores them, and redirects to /share.
  */
 const CACHE = `famos-${version}`;
 const SHARE_CACHE = 'famos-share-target';
 /** Last-seen copies of the allow-listed reads. Not versioned: it survives app updates. */
 const API_CACHE = 'famos-api-reads';
+/** The extension packages' files. Not versioned: addressed by digest, they outlive app updates. */
+const EXTENSIONS_CACHE = 'famos-extensions';
+const EXTENSION_FILES = '/extensions/';
 /**
  * The only API reads kept for offline use: what the app needs to open (who am I, members,
  * family settings), Today's calendar, the shopping lists and items, tasks and chores. The
@@ -45,7 +54,9 @@ self.addEventListener('activate', (event) => {
 			.then((keys) =>
 				Promise.all(
 					keys
-						.filter((k) => k !== CACHE && k !== SHARE_CACHE && k !== API_CACHE)
+						.filter(
+							(k) => k !== CACHE && k !== SHARE_CACHE && k !== API_CACHE && k !== EXTENSIONS_CACHE,
+						)
 						.map((k) => caches.delete(k)),
 				),
 			),
@@ -57,7 +68,46 @@ self.addEventListener('message', (event) => {
 	// The page asks which app this worker serves, so it reloads only when it runs an older one.
 	if (event.data?.type === 'VERSION') event.ports[0]?.postMessage(version);
 	if (event.data?.type === 'CLEAR_API_CACHE') event.waitUntil(caches.delete(API_CACHE));
+	if (event.data?.type === 'CACHE_EXTENSIONS') event.waitUntil(keepExtensions(event.data.files));
 });
+
+/**
+ * Keeps exactly the extension files the app names: drops the others (older builds, removed
+ * packages) and fetches the missing ones. A file that cannot be fetched now is tried again the
+ * next time the app opens.
+ */
+async function keepExtensions(files: unknown): Promise<void> {
+	if (!Array.isArray(files)) return;
+	const wanted = new Set(
+		files.filter((f): f is string => typeof f === 'string' && f.startsWith(EXTENSION_FILES)),
+	);
+	const cache = await caches.open(EXTENSIONS_CACHE);
+	const held = new Set<string>();
+	for (const request of await cache.keys()) {
+		const path = new URL(request.url).pathname;
+		if (wanted.has(path)) held.add(path);
+		else await cache.delete(request);
+	}
+	await Promise.all(
+		[...wanted]
+			.filter((path) => !held.has(path))
+			.map(async (path) => {
+				const response = await fetch(path).catch(() => undefined);
+				if (response?.ok) await cache.put(path, response);
+			}),
+	);
+}
+
+/** From the kept copy first; a file not kept yet comes from the network and is kept. */
+async function handleExtensionFile(request: Request): Promise<Response> {
+	const cache = await caches.open(EXTENSIONS_CACHE);
+	const path = new URL(request.url).pathname;
+	const cached = await cache.match(path);
+	if (cached) return cached;
+	const response = await fetch(request);
+	if (response.ok) await cache.put(path, response.clone());
+	return response;
+}
 
 /** Network first; the last copy when there is no answer (or a slow one), marked as old. */
 async function handleRead(event: FetchEvent): Promise<Response> {
@@ -136,6 +186,10 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 	if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) return;
+	if (url.pathname.startsWith(EXTENSION_FILES)) {
+		event.respondWith(handleExtensionFile(event.request));
+		return;
+	}
 
 	event.respondWith(
 		(async () => {
@@ -145,7 +199,11 @@ self.addEventListener('fetch', (event) => {
 				if (cached) return cached;
 			}
 			try {
-				return await fetch(event.request);
+				const response = await fetch(event.request);
+				// Every page is the shell; the newest one names what the server runs now.
+				if (event.request.mode === 'navigate' && response.ok && isHtml(response))
+					event.waitUntil(cache.put(SHELL, response.clone()));
+				return response;
 			} catch (error) {
 				const fallback =
 					event.request.mode === 'navigate'
@@ -157,6 +215,9 @@ self.addEventListener('fetch', (event) => {
 		})(),
 	);
 });
+
+const isHtml = (response: Response) =>
+	response.headers.get('content-type')?.startsWith('text/html') === true;
 
 /**
  * Web Push. Safari requires a visible notification for every push, so one is always

@@ -32,6 +32,7 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
+import { describeLoaded, type LoadedWeb, type WebPackage } from '../extensions/web.ts';
 import { mountMcp } from '../mcp/http.ts';
 import { mountAiRoutes } from './ai.ts';
 import { mountApiTokenRoutes } from './api-tokens.ts';
@@ -41,6 +42,7 @@ import { deviceMiddleware, deviceTokenFromHeaders, mountDeviceRoutes } from './d
 import { mountEmailRoutes } from './email.ts';
 import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
+import { mountExtensionRoutes } from './extensions.ts';
 import { mountPushRoutes } from './push.ts';
 import { mountTelegramRoutes } from './telegram.ts';
 import {
@@ -70,6 +72,18 @@ export interface HttpAppDeps {
 	secureCookies: boolean;
 	/** Proxies (IPs or CIDRs) whose `X-Forwarded-For` is believed (`FAMOS_TRUSTED_PROXIES`). */
 	trustedProxies?: readonly string[];
+	/** The running extensions and their web packages; by default the kernel's, without packages. */
+	extensions?: LoadedWeb;
+}
+
+/** The kernel's extensions (core is the host's, not one of them) and their web packages. */
+export function loadedWeb(kernel: Kernel, packages: readonly WebPackage[] = []): LoadedWeb {
+	return describeLoaded(
+		kernel.registry.extensions
+			.filter((ext) => ext.id !== 'core')
+			.map((ext) => ({ id: ext.id, version: ext.manifest.version })),
+		packages,
+	);
 }
 
 export const OPENAPI_INFO = {
@@ -531,6 +545,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	app.use('/api/v1/*', actorMiddleware(deps));
 	app.use('/api/v1/*', deviceMiddleware(deps.kernel.devices, deps.secureCookies));
 
+	mountExtensionRoutes(app, deps.extensions ?? loadedWeb(deps.kernel));
 	mountDeviceRoutes(app, deps.kernel, deps.secureCookies, clientIp);
 	mountAiRoutes(app, deps.ai, deps.kernel.access, deps.kernel.ctx.family, () =>
 		deps.kernel.reconcileSearch(),

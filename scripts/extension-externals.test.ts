@@ -2,12 +2,15 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SHARED_MODULES } from '../apps/server/src/extensions/hooks.ts';
+import { SHARED_MODULES_FILE as SERVED_MAP } from '../apps/server/src/http/static.ts';
 import { SHARED_SERVER, SHARED_WEB } from '../packages/pack/src/shared.ts';
+import { LAYER_ORDER } from '../packages/pack/src/styles.ts';
+import { SHARED_MODULES_FILE } from '../packages/pack/src/vite.ts';
 
 /**
  * Extensions are built into packages of their own (`@famos/pack`). The server bundle leaves
  * `SHARED_SERVER` out, and the build refuses anything else it would leave to the host. The web
- * bundle will leave `SHARED_WEB` out and take Svelte, `@famos/ui` and `@famos/sdk` from the app
+ * bundle leaves `SHARED_WEB` out and takes Svelte, `@famos/ui` and `@famos/sdk` from the app
  * (one Svelte runtime, one app context). That only works while extensions reach them as
  * packages: Svelte is a peer (never a dependency of its own), nothing reaches into their files by
  * a relative path or into Svelte's internals, which a bundler would copy in, and every subpath of
@@ -67,5 +70,17 @@ describe('extension bundles leave out what the app shares', () => {
 	// over, and one the host hands over but packages inline gives two instances.
 	it('leaves to the host exactly what the server hands to packages', () => {
 		expect([...SHARED_SERVER].sort()).toEqual([...SHARED_MODULES].sort());
+	});
+
+	// The app's build writes which chunk provides each shared module; the server reads that file
+	// to write the import map.
+	it('maps the shared modules from the file the app build writes', () => {
+		expect(SERVED_MAP).toBe(SHARED_MODULES_FILE);
+	});
+
+	// A package's stylesheet and the app's declare the same layer order, whichever loads first.
+	it('orders the cascade layers in the app as in every package', () => {
+		const css = readFileSync(join(root, 'apps/web/src/app.css'), 'utf8');
+		expect(css).toContain(LAYER_ORDER);
 	});
 });

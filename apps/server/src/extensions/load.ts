@@ -7,9 +7,9 @@ import { z } from 'zod';
 import { findBundledExtensions, readBundledList } from './bundled.ts';
 import { guardImports, type RootKind } from './hooks.ts';
 import { discoverSourceExtensions } from './source.ts';
+import { PACKAGE_FILE, readWebPackage, type WebPackage } from './web.ts';
 
-/** The file that describes a built package (written by `@famos/pack`). */
-export const PACKAGE_FILE = 'famos-package.json';
+export { PACKAGE_FILE };
 
 const PackageDescriptionSchema = z.object({
 	format: z.literal(1),
@@ -21,6 +21,8 @@ const PackageDescriptionSchema = z.object({
 
 export interface LoadedExtensions {
 	extensions: ExtensionDefinition[];
+	/** The browser halves of the loaded packages (none when running from source). */
+	web: WebPackage[];
 	report: LoadReport;
 }
 
@@ -58,10 +60,10 @@ export async function loadExtensions(
 		);
 	}
 	const list = readBundledList(dir);
-	const extensions = await loadPackages(
-		[...list.always, ...list.offered].map((id) => join(dir, id)),
-	);
-	return { extensions, report: { from: 'bundled', dir, loaded: summary(extensions) } };
+	const dirs = [...list.always, ...list.offered].map((id) => join(dir, id));
+	const extensions = await loadPackages(dirs);
+	const web = dirs.map(readWebPackage).filter((pkg) => pkg !== undefined);
+	return { extensions, web, report: { from: 'bundled', dir, loaded: summary(extensions) } };
 }
 
 /** Loads extensions from their workspace source (development and tests). */
@@ -77,6 +79,7 @@ export async function loadSourceExtensions(root: string): Promise<LoadedExtensio
 	}
 	return {
 		extensions,
+		web: [],
 		report: {
 			from: 'source',
 			dir,

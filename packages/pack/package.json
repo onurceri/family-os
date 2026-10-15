@@ -8,7 +8,8 @@
 		"famos-pack": "./bin/famos-pack.ts"
 	},
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./vite": "./src/vite.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc -p .",
@@ -19,7 +20,15 @@
 		"@famos/sdk": "workspace:*",
 		"@famos/time": "workspace:*",
 		"@famos/ui": "workspace:*",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"@tailwindcss/node": "4.3.3",
+		"@tailwindcss/oxide": "4.3.3",
 		"esbuild": "0.28.2",
-		"svelte": "5.57.1"
+		"svelte": "5.57.1",
+		"tailwindcss": "4.3.3",
+		"vite": "8.3.2"
+	},
+	"devDependencies": {
+		"zod": "4.6.5"
 	}
 }

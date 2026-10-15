@@ -73,6 +73,22 @@ function findings(file: string, text: string, paths: ReadonlySet<string>): strin
 }
 
 describe('the web shell never names an extension', () => {
+	// The app imports extensions at run time from the packages the server runs; it builds none in.
+	it('depends on no extension', () => {
+		const pkg = JSON.parse(readFileSync(join(root, 'apps/web/package.json'), 'utf8'));
+		const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+		expect(deps.filter((name) => name.startsWith('@famos/ext-'))).toEqual([]);
+	});
+
+	// Only the dev server compiles extension source (for hot reload), from one place.
+	it('reaches extension source only from the development loader', () => {
+		const found = [...walk(shell, /\.(ts|svelte)$/)]
+			.filter((file) => !file.endsWith('.test.ts'))
+			.filter((file) => /['"`][./]*\/extensions\/\*/.test(readFileSync(file, 'utf8')))
+			.map((file) => file.slice(root.length + 1));
+		expect(found).toEqual(['apps/web/src/lib/extensions.ts']);
+	});
+
 	it('has no route of an extension', () => {
 		const routes = readdirSync(join(shell, 'routes'));
 		expect(routes.filter((name) => extensions.includes(name))).toEqual([]);

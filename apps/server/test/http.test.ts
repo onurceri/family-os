@@ -129,6 +129,17 @@ async function addChildWithPin(adminCookie: string) {
 }
 
 describe('HTTP API', () => {
+	it('tells anyone which extensions it runs, with a fingerprint', async () => {
+		const res = await call('GET', '/api/v1/core/extensions/loaded');
+		expect(res.status).toBe(200);
+		expect(res.headers.get('cache-control')).toBe('no-store');
+		expect(res.body.fingerprint).toMatch(/^[0-9a-f]{16}$/);
+		expect(res.body.extensions.map((e: { id: string }) => e.id).sort()).toEqual(
+			extensions.map((e) => e.id).sort(),
+		);
+		expect(res.body.extensions.find((e: { id: string }) => e.id === 'core')).toBeUndefined();
+	});
+
 	it('serves health and requires setup on a fresh install', async () => {
 		expect((await call('GET', '/health')).body).toMatchObject({ status: 'ok' });
 		expect((await call('GET', '/api/v1/core/setup')).body).toMatchObject({

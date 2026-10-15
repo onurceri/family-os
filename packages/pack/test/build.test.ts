@@ -7,9 +7,11 @@ import { SDK_VERSION } from '@famos/sdk';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
 	buildExtension,
+	LAYER_ORDER,
 	PACKAGE_FILE,
 	type PackageDescription,
 	SHARED_SERVER,
+	SHARED_WEB,
 } from '../src/index.ts';
 
 const repo = join(import.meta.dirname, '..', '..', '..');
@@ -79,6 +81,75 @@ describe.each(extensions)('the package of %s', (name) => {
 			expect(files).toContain(`messages/${code}`);
 		}
 		expect(files).toEqual(expect.arrayContaining(['openapi.json', 'LICENSE', 'server/index.mjs']));
+	});
+
+	it('builds its web half, which takes only what the app shares', async () => {
+		const { webImports, description } = await build();
+		expect(description.entries).toEqual({
+			server: 'server/index.mjs',
+			web: 'web/index.js',
+			css: 'web/styles.css',
+		});
+		expect(webImports.filter((id) => !SHARED_WEB.includes(id))).toEqual([]);
+		expect(webImports).toContain('svelte/internal/client');
+		// Icons are the package's own.
+		expect(webImports.some((id) => id.startsWith('@lucide/'))).toBe(false);
+		const css = readFileSync(join(outDir, 'web/styles.css'), 'utf8');
+		expect(css.startsWith(`${LAYER_ORDER}\n`)).toBe(true);
+		expect(css).toContain('@layer ext{');
+		expect(filesUnder(join(outDir, 'web')).filter((path) => path.endsWith('.css'))).toEqual([
+			'styles.css',
+		]);
+	});
+});
+
+describe('the web bundle', () => {
+	const fixture = join(import.meta.dirname, 'fixtures/web-ext');
+	const outDir = join(scratch, 'web-ext');
+	let building: ReturnType<typeof buildExtension> | undefined;
+	const build = () => {
+		building ??= buildExtension(fixture, { outDir });
+		return building;
+	};
+	const read = (path: string) => readFileSync(join(outDir, path), 'utf8');
+
+	it('keeps pages apart, inlines its own code and leaves the shared modules to the app', async () => {
+		const { webImports } = await build();
+		expect(webImports).toEqual([
+			'@famos/ui/button',
+			'svelte/internal/client',
+			'svelte/internal/disclose-version',
+		]);
+		const entry = read('web/index.js');
+		expect(entry).toMatch(/import\(`\.\/chunks\/GardenPage-[\w-]+\.js`\)/);
+		// The helper the entry and the page share is inlined once, in a chunk of the package.
+		const own = filesUnder(join(outDir, 'web')).filter((path) => path.endsWith('.js'));
+		expect(own.filter((path) => read(`web/${path}`).includes('garden-greeting'))).toHaveLength(1);
+		const page = filesUnder(join(outDir, 'web/chunks')).find((path) =>
+			path.startsWith('GardenPage-'),
+		);
+		expect(read(`web/chunks/${page}`)).toMatch(/from"svelte\/internal\/client"/);
+	});
+
+	it("carries each component's own styles in its code", async () => {
+		await build();
+		const page = filesUnder(join(outDir, 'web/chunks')).find((path) =>
+			path.startsWith('GardenPage-'),
+		);
+		expect(read(`web/chunks/${page}`)).toContain('dashed');
+		expect(read('web/styles.css')).not.toContain('dashed');
+	});
+
+	it('writes the utilities it uses in the ext layer, and none of the theme or base', async () => {
+		await build();
+		const css = read('web/styles.css');
+		expect(css).toContain('.md\\:grid-cols-3');
+		expect(css).toContain('.gap-7');
+		expect(css).toContain('.text-ink-soft');
+		// Referenced, not repeated: the app writes the theme, the base styles and the type roles.
+		expect(css).not.toMatch(/@layer (theme|base|components)\{/);
+		expect(css).not.toContain('--wall:');
+		expect(css).not.toContain('.type-page');
 	});
 });
 

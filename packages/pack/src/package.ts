@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { parseManifest, SDK_VERSION } from '@famos/sdk';
 import { build, type Metafile } from 'esbuild';
 import { type PackageJson, packageJsonOf, SHARED_SERVER } from './shared.ts';
+import { buildWeb, WEB_ENTRY, WEB_STYLES } from './web.ts';
 
 /** The version of the package format, so a host can refuse one it does not understand. */
 export const PACKAGE_FORMAT = 1;
@@ -20,8 +21,8 @@ export interface PackageDescription {
 	license: string;
 	/** The platform the package was built against: the SDK version and Svelte's version. */
 	built: { sdk: string; svelte: string };
-	/** Entry files, relative to the package folder. */
-	entries: { server: string };
+	/** Entry files, relative to the package folder: the server module, the web module and its styles. */
+	entries: { server: string; web?: string; css?: string };
 	/** The feature's name and description in each language it ships, for an install screen. */
 	labels: Record<string, { name: string; description: string }>;
 	/** Every other file of the package, relative to its folder, with its SHA-256 (hex). */
@@ -38,14 +39,17 @@ export interface BuildResult {
 	description: PackageDescription;
 	/** The imports the server bundle leaves to the host (bare specifiers and `node:` modules). */
 	serverImports: string[];
+	/** The modules the web bundle takes from the app (none when the extension has no web entry). */
+	webImports: string[];
 }
 
 const SERVER_ENTRY = 'server/index.mjs';
 
 /**
  * Builds an extension into a package folder: its server code as one ES module that imports only
- * the modules the host shares and Node's own, its message catalogs, its API description, a
- * license and `famos-package.json`, which lists every file with its hash.
+ * the modules the host shares and Node's own, its web code as ES modules that import only what
+ * the app shares (with a stylesheet of the utilities it uses), its message catalogs, its API
+ * description, a license and `famos-package.json`, which lists every file with its hash.
  */
 export async function buildExtension(
 	dir: string,
@@ -60,6 +64,8 @@ export async function buildExtension(
 	await mkdir(outDir, { recursive: true });
 
 	const serverImports = await buildServer(root, outDir);
+	const hasWeb = existsSync(join(root, 'src/web/index.ts'));
+	const webImports = hasWeb ? await buildWeb(root, outDir) : [];
 	const labels = await copyMessages(root, outDir);
 	await copyFile(join(root, 'openapi.json'), join(outDir, 'openapi.json'));
 	await copyFile(findLicense(root), join(outDir, 'LICENSE'));
@@ -70,12 +76,12 @@ export async function buildExtension(
 		name: pkg.name,
 		license: pkg.license ?? 'UNLICENSED',
 		built: { sdk: SDK_VERSION, svelte: packageJsonOf('svelte').pkg.version },
-		entries: { server: SERVER_ENTRY },
+		entries: { server: SERVER_ENTRY, ...(hasWeb && { web: WEB_ENTRY, css: WEB_STYLES }) },
 		labels,
 		files: await hashFiles(outDir),
 	};
 	await writeFile(join(outDir, PACKAGE_FILE), `${JSON.stringify(description, null, '\t')}\n`);
-	return { outDir, description, serverImports };
+	return { outDir, description, serverImports, webImports };
 }
 
 async function buildServer(root: string, outDir: string): Promise<string[]> {

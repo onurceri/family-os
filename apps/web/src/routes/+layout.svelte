@@ -29,7 +29,7 @@
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { shareFor } from '#lib/contributions.js';
-	import { contributions, enabledOnly, isAppPath } from '#lib/extensions.js';
+	import { contributions, enabledOnly, isAppPath, keepExtensionsOffline } from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
 	import LoadingMark from '#lib/LoadingMark.svelte';
 	import { netActivity, shellState } from '#lib/net-activity.svelte.js';
@@ -259,6 +259,9 @@
 		return followDayNight();
 	});
 	$effect(() => enableServiceWorkerUpdates());
+	$effect(() => {
+		keepExtensionsOffline();
+	});
 	$effect(() => {
 		if (!isDisplay) void session.refresh();
 	});

@@ -1,0 +1,12 @@
+{
+	"name": "@example/garden",
+	"version": "0.1.0",
+	"license": "MIT",
+	"private": true,
+	"type": "module",
+	"famos": {
+		"id": "garden",
+		"version": "0.1.0",
+		"sdk": "^0.4.0"
+	}
+}

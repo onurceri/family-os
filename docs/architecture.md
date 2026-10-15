@@ -139,19 +139,21 @@ Each extension is **one package** with subpath exports:
 |---|---|---|
 | `./contract` | Zod schemas, route definitions, action input/output, event payloads | anyone (other extensions, web, server) |
 | `./server` | action handlers, queries, job handlers, migrations | `apps/server` only |
-| `./web` | Svelte pages, widgets, draft-card renderers | `apps/web` only |
+| `./web` | Svelte pages, widgets, draft-card renderers | its own package build (loaded by the app at run time) |
 
 **Extension packages.** `famos-pack` (`@famos/pack`, each extension's `build` script) builds an extension into a package folder, `extensions/<id>/dist/`:
 
 | File | Contents |
 |---|---|
 | `server/index.mjs` | the server code as one ES module (with its source map) |
+| `web/index.js`, `web/chunks/` | the `./web` entry as ES modules (Vite, components with their CSS injected); pages stay chunks of their own, what the entry and its pages share is one `common` chunk |
+| `web/styles.css` | the Tailwind utilities its web code uses, in the `ext` cascade layer |
 | `messages/*.json` | the extension's catalogs, English and its own translations |
 | `openapi.json` | its routes and actions |
 | `LICENSE` | the extension's license, or the repository's |
-| `famos-package.json` | `format`, `manifest` (its package.json `famos` field, unchanged), `name`, `license`, `built` (`sdk`: the platform version, `svelte`), `entries`, `labels` (each language's `feature_name` and `feature_description`, as `name` and `description`) and `files`: every other file with its SHA-256 |
+| `famos-package.json` | `format`, `manifest` (its package.json `famos` field, unchanged), `name`, `license`, `built` (`sdk`: the platform version, `svelte`), `entries` (`server`, `web`, `css`), `labels` (each language's `feature_name` and `feature_description`, as `name` and `description`) and `files`: every other file with its SHA-256 |
 
-The server bundle leaves out only the modules the host shares with every package (`SHARED_SERVER`: `@famos/sdk`, `zod`, `kysely`, `@famos/time`) and Node's own `node:` modules; everything else it uses (other extensions' `./contract`, `@famos/i18n`, libraries) is inlined. The build reads the bundle's metafile and fails on any other import it would leave to the host, a builtin written without `node:` or a subpath such as `zod/mini` included. `SHARED_WEB` lists what a web bundle will leave out: the browser subpaths of Svelte and the script subpaths of `@famos/ui`, read from their `package.json` exports, and `@famos/sdk`, `zod`, `@famos/time` and `@famos/api-client`.
+The server bundle leaves out only the modules the host shares with every package (`SHARED_SERVER`: `@famos/sdk`, `zod`, `kysely`, `@famos/time`) and Node's own `node:` modules; everything else it uses (other extensions' `./contract`, `@famos/i18n`, libraries) is inlined. The build reads the bundle's metafile and fails on any other import it would leave to the host, a builtin written without `node:` or a subpath such as `zod/mini` included. The web bundle leaves out `SHARED_WEB`: the browser subpaths of Svelte and the script subpaths of `@famos/ui`, read from their `package.json` exports, and `@famos/sdk`, `zod`, `@famos/time` and `@famos/api-client`; the app hands those over at run time (§6, Web side). Icons are not shared: each package keeps the ones it uses.
 
 `SDK_VERSION` is the platform version that packages are built against. `packages/pack/platform.json` records it with Svelte's minor, zod's major, Kysely's minor and the export names of `@famos/sdk`, `@famos/time`, `@famos/api-client` and every `@famos/ui` subpath; a test fails when they change and `SDK_VERSION` was not raised (its minor when something a built package may use changed or went away, at least its patch when names were only added). `pnpm --filter @famos/pack platform:update` rewrites the file once the version is raised.
 
@@ -162,7 +164,7 @@ The server bundle leaves out only the modules the host shares with every package
 - `sdk` depends only on `zod` (and Kysely *types*).
 - `extensions/*` may import `sdk`, `ui`, `time`, and other extensions' `./contract` only; their `./web` code may also import `api-client` and the `./api` types of an extension their manifest depends on (server and contract code may not).
 - `core` may import `sdk`; it must not import adapters or `db`.
-- `web` may import `api-client`, `ui`, extensions' `./web` and `./contract`; never server code or an extension's `./api`.
+- `web` may import `api-client`, `ui`, `sdk` and `time`; it depends on no extension and loads their `./web` at run time (only its dev server compiles their source), never server code or an extension's `./api`.
 - `adapters` and `db` are imported only by `apps/server`. Extensions receive the database through `ctx.db`, typed by the SDK.
 - `apps/server` imports no extension: it loads them from packages at start (§3).
 
@@ -280,7 +282,14 @@ The SDK's error classes (`FamosError`, `LlmError`, `ExternalHttpError`) are chec
 
 ### Web side
 
-The web app is a shell that knows no extension: an extension can be installed or left out without changing it. Everything it shows of one comes from the extension's `./web` entry (`defineWebExtension`), which registers once with `registerWebExtension` (`apps/web/src/lib/contributions.svelte.ts`); today a build-time glob only registers the bundled ones, and the app reads the reactive registry (`contributions`), never a list of its own. `scripts/shell-agnostic.test.ts` fails when `apps/web/src` names an extension's API (`/api/v1/<id>`), capability (`can('<id>.…')`), events, a page an extension serves, or has a route folder named after one.
+The web app is a shell that knows no extension: an extension can be installed or left out without changing it. Everything it shows of one comes from the extension's `./web` entry (`defineWebExtension`), which registers once with `registerWebExtension` (`apps/web/src/lib/contributions.svelte.ts`), and the app reads the reactive registry (`contributions`), never a list of its own. `scripts/shell-agnostic.test.ts` fails when `apps/web` depends on an extension, or `apps/web/src` names an extension's API (`/api/v1/<id>`), capability (`can('<id>.…')`), events, a page an extension serves, or has a route folder named after one.
+
+**Loading at run time.** The app's build contains no extension. Each one is the `web/` of its package, imported by the browser at start:
+
+- **One instance of what is shared.** The app's own build provides the modules a package leaves out. The `sharedModules()` Vite plugin (`@famos/pack/vite`, client build only) makes each `SHARED_WEB` specifier an entry chunk of the app with its exports kept exactly (`preserveSignature: 'strict'`); the app's code imports the same module from the same chunk, so a package and the app run one Svelte runtime, one `@famos/ui/app` context, one zod and one Temporal. The plugin writes `_app/shared-modules.json` (specifier → chunk). A shared chunk holds the whole module, since a package may use any export; zod is shared without its `locales` (every language zod has, a third of it), which no extension needs. `@famos/ui` compiles with `css: 'injected'` (`dynamicCompileOptions` in `apps/web/vite.config.ts`), so a component a package uses brings its styles even when no page of the app does.
+- **The shell.** `mountSpa` (`apps/server/src/http/static.ts`) writes, first in `<head>`, an import map from `shared-modules.json`, the list of packages (`<script type="application/json" id="famos-extensions">`: `fingerprint`, and per package `id`, `version`, `entry`, `css`, `files`), a `modulepreload` of each entry, and last in `<head>` each package's stylesheet. The import map is an inline script, so the policy's script hashes cover it. `/` and `/index.html` are always this shell, never the raw file. Package files are served at `/extensions/<id>/<digest>/<path>` (`mountExtensionAssets`), the digest being of `famos-package.json`, which lists every file's hash: cached for good, `nosniff`, and only the `web/` files the package lists. `GET /api/v1/core/extensions/loaded` (`core.loadedExtensions`, public) says which extensions run and their fingerprint.
+- **Importing.** `apps/web/src/lib/extensions.ts` imports every listed entry at once (`Promise.allSettled`, top-level await, so whatever reads `contributions` waits for it); one that fails is logged and left out, and the app opens with the rest. The dev server instead compiles the workspace's extension source with a lazy glob, filtered by `core.loadedExtensions`, which keeps hot reload.
+- **Styles.** A package's `web/styles.css` holds the utilities its code uses in the `ext` layer, built against the app's theme, base and type roles by reference, so none of them is repeated. Every stylesheet declares the same order, `@layer properties, theme, base, components, ext, utilities;` (the first sheet to load places a layer). The app writes every theme variable (`theme(static)`), so a utility the app never uses still finds its value. Layers cannot order a variant against a base class held in two sheets (an extension's `hidden md:inline`, where the app's sheet has `hidden` and only the package's has `md:inline`), so the app's Tailwind also scans the bundled extensions' web source: its sheet rules on every class they use, and their own sheets add nothing for them. A package built after the app (a newer version, one installed later) relies on its sheet alone for the classes the app lacks; a variant of such a class over a base class the app has can lose.
 
 An entry contributes:
 
@@ -292,7 +301,7 @@ An entry contributes:
 
 **Today facets** are what Today shows in shapes of its own rather than as a card, so each style can draw them its way: `perMember` (counts per person: chores as rings, bars, "2 left", a display's total), `photo` (the photo of the day), `weather` (the next hours, for a style that draws them itself) and `setupHint` (a step of a new family's first steps; a `fresh` step also says whether the family is new). A style shows a facet only when an extension that is turned on provides it and the viewer holds its `requires`. **Blocks** are what "What Today shows" lists: the app's own (the clock, the greeting, the weather and the photo when something provides them, the next thing, the day, where everyone is, Needs you, the next days, done today), those extensions add (`blocks`, placed by `order`; the chores and the meals), and every card; a card or a facet names the extension's block it belongs to with `block`. Block ids are what people hide, so they never change.
 
-`requires` is mandatory wherever a family display reads (timeline contributions, facets, `today.atmosphere`, `display.*` and cards with a glance): a display has a day when it holds the `requires` of any timeline contribution, and pairing offers exactly the capabilities these name. App services (translation, members, time zone, realtime events, toasts, `share()`) come from `useApp()` (`@famos/ui/app`), provided through Svelte context under `Symbol.for('famos.app')`, so an extension bundled on its own with another copy of `@famos/ui` still finds it; extensions reach Svelte, `@famos/ui` and `@famos/sdk` only as packages, with Svelte a peer (`scripts/extension-externals.test.ts`), so a bundle can leave them out.
+`requires` is mandatory wherever a family display reads (timeline contributions, facets, `today.atmosphere`, `display.*` and cards with a glance): a display has a day when it holds the `requires` of any timeline contribution, and pairing offers exactly the capabilities these name. App services (translation, members, time zone, realtime events, toasts, `share()`) come from `useApp()` (`@famos/ui/app`), provided through Svelte context under `Symbol.for('famos.app')`; extensions reach Svelte, `@famos/ui` and `@famos/sdk` only as packages, with Svelte a peer (`scripts/extension-externals.test.ts`), so their bundles leave them out and use the app's.
 
 ### Records and record pages
 
@@ -633,7 +642,8 @@ The assistant answers from read tools, which cannot find "the paper about the bo
 ## 14. Realtime and offline
 
 - The server is the source of truth. After commit, the server broadcasts `{ entity, id }` invalidations over one WebSocket; clients refetch.
-- The PWA caches the app shell (including the SPA fallback `index.html`, which is not in `$app/manifest`) and the last read models.
+- The PWA caches the app shell (including the SPA fallback `index.html`, which is not in `$app/manifest`) and the last read models. Every page the server answers is the shell, so each successful navigation refreshes the cached copy: an offline start sees the packages and the import map the server last wrote.
+- Extension packages are kept in a cache of their own (`famos-extensions`). After it opens, the app posts `CACHE_EXTENSIONS` with every file of the listed packages (source maps aside); the service worker fetches the missing ones and drops the files of packages no longer listed. Their addresses carry the package's digest, so `/extensions/*` is served from that cache first, and a page of an extension never opened online still opens offline.
 - Service-worker updates are pushed: the app asks a waiting worker to `SKIP_WAITING` and reloads on `controllerchange`, because display tabs are never closed.
 - Web Share Target posts multipart data to the app; the service worker intercepts it, stores it, and redirects to the share screen, which uploads it to the inbox. CRDTs are deliberately avoided; the offline command queue below replays writes after a disconnect.
 

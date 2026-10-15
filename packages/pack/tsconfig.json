@@ -1,5 +1,6 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": { "types": ["node"] },
-	"include": ["src", "bin", "test"]
+	"include": ["src", "bin", "test"],
+	"exclude": ["test/fixtures"]
 }

@@ -1,17 +1,65 @@
 import type { WebExtension } from '@famos/ui/slots';
+import { api } from './api.js';
 import { matchPage, ownerOf } from './contributions.js';
 import { contributions, registerWebExtension } from './contributions.svelte.js';
+import {
+	type ExtensionList,
+	importAll,
+	packageFiles,
+	parseExtensionList,
+	sourceEntries,
+} from './extension-loading.js';
 
 /**
- * Registers every extension's `./web` entry, found at build time. Extensions are first-party
- * workspace packages, so a glob over the monorepo is enough; no runtime loading. Read what they
- * contribute through `contributions`, imported from here, so the registering has happened.
+ * Registers the web half of every extension the server runs. Read what they contribute through
+ * `contributions`, imported from here, so the registering has happened: the module waits for the
+ * imports (top-level await), and so does everything that imports it.
+ *
+ * In the built app each extension is a package of its own, imported at run time from the list
+ * the server writes into the shell; the import map gives it the app's Svelte, `@famos/ui` and the
+ * rest of what is shared, so it runs in the same context as the app. The dev server compiles the
+ * workspace's extension source instead (with hot reload), limited to the ones the API server runs.
  */
-const modules = import.meta.glob<{ default: WebExtension }>(
-	'../../../../extensions/*/src/web/index.ts',
-	{ eager: true },
-);
-for (const m of Object.values(modules)) registerWebExtension(m.default);
+const failed = (id: string, error: unknown) =>
+	console.error(`The extension ${id} could not be loaded and is left out`, error);
+
+/** What the server wrote into the shell (empty in development). */
+const list: ExtensionList = import.meta.env.DEV
+	? { fingerprint: '', extensions: [] }
+	: parseExtensionList(document.getElementById('famos-extensions')?.textContent);
+
+const loaded = import.meta.env.DEV ? await fromSource() : await fromPackages();
+for (const ext of loaded) registerWebExtension(ext);
+
+async function fromPackages(): Promise<WebExtension[]> {
+	return importAll(
+		list.extensions.map((ext) => ({
+			id: ext.id,
+			load: () => import(/* @vite-ignore */ ext.entry) as Promise<{ default: WebExtension }>,
+		})),
+		failed,
+	);
+}
+
+async function fromSource(): Promise<WebExtension[]> {
+	const { data } = await api.GET('/api/v1/core/extensions/loaded');
+	const modules = import.meta.glob<{ default: WebExtension }>(
+		'../../../../extensions/*/src/web/index.ts',
+	);
+	return importAll(sourceEntries(modules, data?.extensions.map((e) => e.id) ?? []), failed);
+}
+
+/**
+ * Asks the service worker to keep the packages' files for offline use (and to drop those of
+ * packages the server no longer runs), once the app has opened.
+ */
+export function keepExtensionsOffline(): void {
+	if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
+	const files = packageFiles(list);
+	void navigator.serviceWorker.ready.then((reg) =>
+		reg.active?.postMessage({ type: 'CACHE_EXTENSIONS', files }),
+	);
+}
 
 export { enabledOnly, ownerOf } from './contributions.js';
 export { contributions };

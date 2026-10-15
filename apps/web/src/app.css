@@ -1,9 +1,22 @@
-@import "tailwindcss";
+/*
+ * Extension packages bring the utilities their pages use in a stylesheet of their own, in the
+ * `ext` layer: above the app's base and components, below its utilities.
+ */
+@layer properties, theme, base, components, ext, utilities;
+
+/* Every theme variable is written, so a package's utility finds its value whether or not the app uses it. */
+@import "tailwindcss" theme(static);
 @import "@famos/ui/theme.css";
 @import "@famos/ui/styles.css";
 @import "@famos/ui/type.css";
 
-/* Tailwind must see classes used by shared components and extension UIs. */
+/*
+ * Tailwind must see the classes of the shared components, and those of the extensions the app
+ * ships with. A variant only wins over a base class (`hidden md:inline`) when it comes later in
+ * the same sheet; two sheets that each have some of an element's classes can put them in the
+ * wrong order, whatever their layers. So the app's sheet holds every class of the bundled
+ * extensions too, and their own sheets add nothing it does not already rule on.
+ */
 @source "../../../packages/ui/src";
 @source "../../../extensions";
 

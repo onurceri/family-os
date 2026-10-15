@@ -281,45 +281,12 @@ importers:
       '@famos/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
-      '@famos/ext-ambient':
-        specifier: workspace:*
-        version: link:../../extensions/ambient
-      '@famos/ext-assistant':
-        specifier: workspace:*
-        version: link:../../extensions/assistant
-      '@famos/ext-board':
-        specifier: workspace:*
-        version: link:../../extensions/board
-      '@famos/ext-calendar':
-        specifier: workspace:*
-        version: link:../../extensions/calendar
-      '@famos/ext-chores':
-        specifier: workspace:*
-        version: link:../../extensions/chores
-      '@famos/ext-home':
-        specifier: workspace:*
-        version: link:../../extensions/home
-      '@famos/ext-inbox':
-        specifier: workspace:*
-        version: link:../../extensions/inbox
-      '@famos/ext-kitchen':
-        specifier: workspace:*
-        version: link:../../extensions/kitchen
-      '@famos/ext-lists':
-        specifier: workspace:*
-        version: link:../../extensions/lists
-      '@famos/ext-pets':
-        specifier: workspace:*
-        version: link:../../extensions/pets
-      '@famos/ext-records':
-        specifier: workspace:*
-        version: link:../../extensions/records
-      '@famos/ext-vehicles':
-        specifier: workspace:*
-        version: link:../../extensions/vehicles
       '@famos/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@famos/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@famos/time':
         specifier: workspace:*
         version: link:../../packages/time
@@ -335,7 +302,13 @@ importers:
       uqr:
         specifier: 0.1.3
         version: 0.1.3
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
     devDependencies:
+      '@famos/pack':
+        specifier: workspace:*
+        version: link:../../packages/pack
       '@sveltejs/adapter-static':
         specifier: 4.0.0
         version: 4.0.0(@sveltejs/kit@3.0.0(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.1)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))(svelte@5.57.1)(typescript@6.0.3)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)))
@@ -1021,12 +994,31 @@ importers:
       '@famos/ui':
         specifier: workspace:*
         version: link:../ui
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 7.3.1
+        version: 7.3.1(svelte@5.57.1)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      '@tailwindcss/node':
+        specifier: 4.3.3
+        version: 4.3.3
+      '@tailwindcss/oxide':
+        specifier: 4.3.3
+        version: 4.3.3
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
       svelte:
         specifier: 5.57.1
         version: 5.57.1
+      tailwindcss:
+        specifier: 4.3.3
+        version: 4.3.3
+      vite:
+        specifier: 8.3.2
+        version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+    devDependencies:
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
 
   packages/sdk:
     dependencies:
