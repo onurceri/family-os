@@ -23,6 +23,20 @@ A family that upgrades from a version before extensions could be installed keeps
 
 Press **Install**. The extension starts working when FamilyOS restarts.
 
+## Installing one from a file
+
+An extension can also come as a file ending in `.famext`, for example a newer version of one you have. In **⋯** at the top of the Extensions page, choose **Add from a file** and pick the file. FamilyOS checks it first and nothing is installed yet: the details open with what it reaches, what installs with it and **Who made it**. When it is a newer version of an extension you already have, the details say **Updates version 1.0.0 to 1.1.0** and the button is **Update**. Press **Install** (or **Update**); it starts working when FamilyOS restarts, and until then the row says **Updates to 1.1.0 when FamilyOS restarts**.
+
+FamilyOS installs a file only when it is **signed by FamilyOS**: the signature proves where it comes from and that nobody changed it since. It checks this again every time it starts, and leaves an extension out if its files were changed. A file it refuses says why:
+
+- **FamilyOS cannot confirm who made this file**: it is not signed by FamilyOS, or it was signed by someone else. (Until the first signed extensions are published, every file is refused this way.)
+- **This file is too large**: an extension file can be at most 20 MB.
+- **This extension is made for another version of FamilyOS**: update FamilyOS, or find the file made for yours.
+- **This file holds an older version**: FamilyOS already has a newer one.
+- **This is not an extension file FamilyOS can read**: the file is damaged or was changed.
+
+A newer FamilyOS that brings a newer version of the extension uses that one. Extensions installed from a file are part of your [backups](backups.md).
+
 ## Restarting
 
 While something waits to be installed or uninstalled, the page says so and offers **Restart now**. FamilyOS finishes what it is doing, starts again and the page opens again by itself, usually within a few seconds. Nothing is lost.
@@ -45,4 +59,4 @@ docker compose exec famos node /app/server/main.mjs extensions list
 docker compose exec famos node /app/server/main.mjs extensions install pets
 ```
 
-`extensions uninstall <id>` uninstalls one. A change made there loads at the next restart too.
+`extensions install /data/<file>.famext` installs one from a file (copy it into the volume first with `docker compose cp`), and `extensions uninstall <id>` uninstalls one. A change made there loads at the next restart too.

@@ -1,13 +1,23 @@
 <script lang="ts">
 	import { Card, Notice, Row, Section, SidePanel } from '@famos/ui/famos';
-	import { Blocks, Globe, House, KeyRound, Link, PackagePlus, Shield } from '@lucide/svelte';
+	import {
+		BadgeCheck,
+		Blocks,
+		Globe,
+		House,
+		KeyRound,
+		Link,
+		PackagePlus,
+		Shield,
+	} from '@lucide/svelte';
 	import { t } from '#lib/i18n.svelte.js';
-	import { type Entry, reachOf, staysInside } from './entries.js';
+	import { type Entry, reachOf, type Staged, staysInside, updateOf } from './entries.js';
 
 	/**
 	 * One extension's details: what it is for and what it reaches beyond its own data, so a family
 	 * knows before it installs. An available one has Install as the panel's one action; an
-	 * installed one is only read here (its switch and its menu are on the row).
+	 * installed one is only read here (its switch and its menu are on the row). A package from a
+	 * file (`staged`) also says who signed it and which version it replaces.
 	 */
 	let {
 		entry,
@@ -16,6 +26,7 @@
 		description,
 		busy,
 		error,
+		staged = null,
 		oninstall,
 		onclose,
 	}: {
@@ -25,6 +36,7 @@
 		description: (entry: Entry) => string;
 		busy: boolean;
 		error: string | null;
+		staged?: Staged | null;
 		oninstall: (entry: Entry) => void;
 		onclose: () => void;
 	} = $props();
@@ -43,6 +55,7 @@
 			? reach.needs.filter((id) => entry.status !== 'available' || !reach.alongside.includes(id))
 			: [],
 	);
+	const update = $derived(staged ? updateOf(staged) : null);
 	const leftOut = $derived(entry?.status === 'refused' || entry?.status === 'failed');
 </script>
 
@@ -51,7 +64,7 @@
 	title={entry ? name(entry) : ''}
 	closeLabel={t('side_panel_close')}
 	cancelLabel={t('cancel')}
-	saveLabel={t('extensions_install')}
+	saveLabel={update ? t('extensions_update') : t('extensions_install')}
 	onsave={entry?.status === 'available' ? () => entry && oninstall(entry) : undefined}
 	saveDisabled={busy}
 	{onclose}
@@ -62,10 +75,29 @@
 				{#if description(entry)}<p class="max-w-prose">{description(entry)}</p>{/if}
 				{#if entry.version}
 					<p class="text-ink-soft text-[13px]">
-						{t('extensions_version', { version: entry.version })}
+						{update
+							? t('extensions_updates_from', { from: update.from, to: update.to })
+							: t('extensions_version', { version: entry.version })}
 					</p>
 				{/if}
 			</div>
+
+			{#if staged}
+				<Section label={t('extensions_signer')}>
+					<Card rows>
+						<Row
+							wrap
+							title={staged.signer.kind === 'official'
+								? t('extensions_signed_official')
+								: t('extensions_signed_key', { keyId: staged.signer.keyId })}
+							meta={t('extensions_signed_hint', { keyId: staged.signer.keyId })}
+							data-testid="extension-signer"
+						>
+							{#snippet lead()}<BadgeCheck class="size-5" aria-hidden="true" />{/snippet}
+						</Row>
+					</Card>
+				</Section>
+			{/if}
 
 			{#if leftOut}
 				<Section label={t('extensions_why')}>

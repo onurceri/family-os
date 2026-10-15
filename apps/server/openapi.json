@@ -27135,13 +27135,20 @@
 													"items": {
 														"type": "string"
 													}
+												},
+												"capabilities": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
 												}
 											},
 											"required": [
 												"hosts",
 												"userUrls",
 												"local",
-												"calls"
+												"calls",
+												"capabilities"
 											]
 										},
 										"signer": {

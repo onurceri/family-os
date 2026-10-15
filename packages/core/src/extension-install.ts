@@ -93,7 +93,7 @@ export const StagedExtensionSchema = z.object({
 	digest: z.string(),
 	id: z.string(),
 	version: z.string(),
-	/** The version this server has now (running, or shipped), or null when it has none. */
+	/** The version running now, which the package would update, or null when it does not run. */
 	current: z.string().nullable(),
 	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
 	dependsOn: z.array(z.string()),
@@ -291,8 +291,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 	});
 
 	function describeStaged(staged: StagedPackage): StagedExtension {
-		const current =
-			loadedManifests().get(staged.id)?.version ?? packagesById().get(staged.id)?.version ?? null;
+		const current = loadedManifests().get(staged.id)?.version ?? null;
 		return {
 			digest: staged.digest,
 			id: staged.id,

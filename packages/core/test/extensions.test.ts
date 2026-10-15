@@ -320,7 +320,13 @@ describe('installing and uninstalling', () => {
 			labels: { en: { name: 'pets', description: 'The pets' } },
 			dependsOn: ['records'],
 			optional: [],
-			reaches: { hosts: [], userUrls: false, local: false, calls: [] },
+			reaches: {
+				hosts: ['vets.example.org'],
+				userUrls: false,
+				local: true,
+				calls: [],
+				capabilities: ['pets.view'],
+			},
 			signer: { keyId: '0123456789abcdef', kind: 'official' },
 		});
 		// Nothing is installed by the upload itself.

@@ -17,7 +17,16 @@ export const ARCHIVE_LIMITS = {
 /** A package's files by their path inside it (always `/`-separated). */
 export type PackageFiles = Map<string, Buffer>;
 
-const refuse = (message: string) => new FamosError('bad_request', message);
+/**
+ * Why a package is refused, for the person installing it: it is too big (`too_large`), or it is
+ * not a package this server reads (`invalid`); `verifyPackage` adds `unsigned` and
+ * `incompatible`. The message says exactly what is wrong.
+ */
+export type RefusalReason = 'too_large' | 'invalid' | 'unsigned' | 'incompatible';
+
+export const refusePackage = (message: string, reason: RefusalReason = 'invalid') =>
+	new FamosError('bad_request', message, { reason });
+const refuse = refusePackage;
 
 /**
  * Whether `path` is a plain relative path that stays inside the package: no absolute path, no
@@ -40,7 +49,7 @@ export function isSafePath(path: string): boolean {
  */
 export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 	if (bytes.byteLength > ARCHIVE_LIMITS.compressedBytes)
-		throw refuse(`The package is larger than ${mb(ARCHIVE_LIMITS.compressedBytes)}`);
+		throw refuse(`The package is larger than ${mb(ARCHIVE_LIMITS.compressedBytes)}`, 'too_large');
 	let plain: Buffer;
 	try {
 		// The tar's headers and padding count too, so the files alone always stay below the limit.
@@ -50,11 +59,15 @@ export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 			error instanceof RangeError ||
 			(error as NodeJS.ErrnoException).code === 'ERR_BUFFER_TOO_LARGE'
 		)
-			throw refuse(`The package unpacks to more than ${mb(ARCHIVE_LIMITS.unpackedBytes)}`);
+			throw refuse(
+				`The package unpacks to more than ${mb(ARCHIVE_LIMITS.unpackedBytes)}`,
+				'too_large',
+			);
 		throw refuse('The file is not an extension package (it is not gzip)');
 	}
 	const files: PackageFiles = new Map();
 	let problem: string | null = null;
+	let tooMany = false;
 	const parser = new tar.Parser({
 		strict: true,
 		onReadEntry: (entry) => {
@@ -75,8 +88,10 @@ export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 			if (!isSafePath(entry.path))
 				return fail(`The package holds an unsafe path: ${printable(entry.path)}`);
 			if (files.has(entry.path)) return fail(`The package holds ${printable(entry.path)} twice`);
-			if (files.size >= ARCHIVE_LIMITS.files)
+			if (files.size >= ARCHIVE_LIMITS.files) {
+				tooMany = true;
 				return fail(`The package holds more than ${ARCHIVE_LIMITS.files} files`);
+			}
 			const chunks: Buffer[] = [];
 			entry.on('data', (chunk: Buffer) => chunks.push(chunk));
 			entry.on('end', () => {
@@ -94,7 +109,7 @@ export async function readArchive(bytes: Uint8Array): Promise<PackageFiles> {
 		parser.on('end', () => resolve());
 		parser.end(plain);
 	});
-	if (problem) throw refuse(problem);
+	if (problem) throw refuse(problem, tooMany ? 'too_large' : 'invalid');
 	return files;
 }
 

@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
 	descriptionOf,
 	type Entry,
+	fileProblem,
 	nameOf,
 	neededBy,
 	reachOf,
 	restartNeeded,
+	type Staged,
 	sections,
+	stagedEntry,
 	staysInside,
+	updateOf,
 } from './entries.js';
 
 function entry(id: string, more: Partial<Entry> = {}): Entry {
@@ -22,6 +26,7 @@ function entry(id: string, more: Partial<Entry> = {}): Entry {
 		optional: [],
 		reaches: { hosts: [], userUrls: false, local: false, calls: [], capabilities: [] },
 		labels: { en: { name: id.toUpperCase(), description: `About ${id}` } },
+		nextVersion: null,
 		...more,
 	};
 }
@@ -137,5 +142,68 @@ describe('uninstalling and restarting', () => {
 		expect(restartNeeded([entry('a'), entry('b', { status: 'failed' })])).toBe(false);
 		expect(restartNeeded([entry('a', { status: 'pending_install' })])).toBe(true);
 		expect(restartNeeded([entry('a', { status: 'pending_uninstall' })])).toBe(true);
+		// A newer version installed from a file loads at the next start too.
+		expect(restartNeeded([entry('a', { nextVersion: '0.2.0' })])).toBe(true);
+	});
+});
+
+describe('a package from a file', () => {
+	const staged: Staged = {
+		digest: 'a'.repeat(32),
+		id: 'garden',
+		version: '1.2.0',
+		current: null,
+		labels: { en: { name: 'Garden', description: 'Watering and seeds' } },
+		dependsOn: ['records'],
+		optional: ['calendar'],
+		reaches: {
+			hosts: ['seeds.example.org'],
+			userUrls: false,
+			local: false,
+			calls: [],
+			capabilities: ['garden.view'],
+		},
+		signer: { keyId: '0123456789abcdef', kind: 'official' },
+	};
+
+	it('shows like an extension that can be installed, with what installs alongside', () => {
+		const shown = stagedEntry(staged);
+		expect(shown).toMatchObject({ id: 'garden', version: '1.2.0', status: 'available' });
+		expect(nameOf(shown, { language: 'tr' })).toBe('Garden');
+		const list = [entry('records', { status: 'available' }), entry('calendar')];
+		expect(reachOf(shown, list)).toMatchObject({
+			hosts: ['seeds.example.org'],
+			capabilities: 1,
+			alongside: ['records'],
+			worksWith: ['calendar'],
+		});
+	});
+
+	it('says whether it updates one the server has', () => {
+		expect(updateOf(staged)).toBeNull();
+		expect(updateOf({ ...staged, current: '1.0.0' })).toEqual({ from: '1.0.0', to: '1.2.0' });
+		expect(updateOf({ ...staged, current: '1.2.0' })).toBeNull();
+	});
+
+	it('explains each refusal of the server in the page’s words', () => {
+		const bad = (reason: string) => ({
+			status: 400,
+			message: 'The package is signed with a key this server does not trust (ab)',
+			details: { reason },
+		});
+		expect(fileProblem({ status: 413 })).toEqual({ key: 'extensions_file_too_large' });
+		expect(fileProblem(bad('too_large')).key).toBe('extensions_file_too_large');
+		expect(fileProblem(bad('unsigned'))).toEqual({
+			key: 'extensions_file_unsigned',
+			detail: 'The package is signed with a key this server does not trust (ab)',
+		});
+		expect(fileProblem(bad('incompatible')).key).toBe('extensions_file_incompatible');
+		expect(fileProblem(bad('invalid')).key).toBe('extensions_file_invalid');
+		expect(fileProblem({ status: 400 }).key).toBe('extensions_file_invalid');
+		expect(fileProblem({ status: 409, details: { reason: 'older', version: '2.0.0' } })).toEqual({
+			key: 'extensions_file_older',
+			values: { version: '2.0.0' },
+		});
+		expect(fileProblem({ status: 500 }).key).toBe('error_generic');
 	});
 });

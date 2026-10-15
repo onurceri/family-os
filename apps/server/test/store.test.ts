@@ -147,12 +147,14 @@ describe('a signed package', () => {
 		);
 		expect(bomb.byteLength).toBeLessThan(1024 * 1024);
 		await expect(readArchive(bomb)).rejects.toThrow(/unpacks to more than 60 MB/);
+		await expect(readArchive(bomb)).rejects.toMatchObject({ details: { reason: 'too_large' } });
 		const many = gzipSync(
 			ustar(
 				Array.from({ length: ARCHIVE_LIMITS.files + 1 }, (_, i) => ({ path: `f/${i}`, body: '' })),
 			),
 		);
 		await expect(readArchive(many)).rejects.toThrow(/more than 2000 files/);
+		await expect(readArchive(many)).rejects.toMatchObject({ details: { reason: 'too_large' } });
 		await expect(readArchive(randomBytes(100))).rejects.toThrow(/not gzip/);
 	});
 
@@ -161,6 +163,9 @@ describe('a signed package', () => {
 		await expect(stage(await famext(reserved))).rejects.toThrow(/is the host's/);
 		const old = writePackage(scratch, 'old', '1.0.0', { built: '0.0.1' });
 		await expect(stage(await famext(old))).rejects.toThrow(/built for platform 0\.0\.1/);
+		await expect(stage(await famext(old))).rejects.toMatchObject({
+			details: { reason: 'incompatible' },
+		});
 	});
 });
 
@@ -579,7 +584,7 @@ describe('the upload route', () => {
 		);
 		expect(unsigned.status).toBe(400);
 		expect(await unsigned.json()).toMatchObject({
-			error: { message: expect.stringMatching(/does not trust/) },
+			error: { message: expect.stringMatching(/does not trust/), details: { reason: 'unsigned' } },
 		});
 		const huge = await post(
 			'/api/v1/core/extensions/packages',

@@ -14359,6 +14359,7 @@ export interface operations {
                             userUrls: boolean;
                             local: boolean;
                             calls: string[];
+                            capabilities: string[];
                         };
                         signer: {
                             keyId: string;

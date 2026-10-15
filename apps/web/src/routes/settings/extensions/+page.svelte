@@ -15,7 +15,15 @@
 		Section,
 		SwitchRow,
 	} from '@famos/ui/famos';
-	import { ChevronRight, CircleCheck, Info, RotateCcw, Trash2, Undo2 } from '@lucide/svelte';
+	import {
+		ChevronRight,
+		CircleCheck,
+		FileUp,
+		Info,
+		RotateCcw,
+		Trash2,
+		Undo2,
+	} from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { contributions } from '#lib/extensions.js';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
@@ -28,9 +36,13 @@
 		descriptionOf,
 		type Entry,
 		type ExtensionList,
+		fileProblem,
 		nameOf,
 		neededBy,
+		type Staged,
 		sections,
+		stagedEntry,
+		updateOf,
 	} from './entries.js';
 	import ExtensionPanel from './ExtensionPanel.svelte';
 	import Restarting from './Restarting.svelte';
@@ -39,7 +51,9 @@
 	 * Extensions: what the family has installed, each with its switch (on or off for everyone, at
 	 * once) and a menu to uninstall it; what can be installed, each opening its details with what it
 	 * reaches and Install. Installing and uninstalling take effect when the server restarts, which
-	 * is then the page's one action. Only admins manage this (the capability is critical).
+	 * is then the page's one action. A signed package can also come from a file (the head's ⋯):
+	 * the server checks it, and its details open with Install. Only admins manage this (the
+	 * capability is critical).
 	 */
 	let list = $state<ExtensionList | null>(null);
 	let error = $state<string | null>(null);
@@ -47,6 +61,10 @@
 	let panelError = $state<string | null>(null);
 	let uninstalling = $state<Entry | null>(null);
 	let restarting = $state<{ before: string | null } | null>(null);
+	/** A package from a file the server checked, shown in the panel until it is installed. */
+	let staged = $state<Staged | null>(null);
+	let fileError = $state<{ text: string; detail?: string } | null>(null);
+	let fileInput = $state<HTMLInputElement | null>(null);
 
 	const entries = $derived(list?.extensions ?? []);
 	const texts = (entry: Entry) => {
@@ -69,6 +87,7 @@
 	const here = $derived(page.url.pathname);
 	const openId = $derived(page.url.searchParams.get('open'));
 	const opened = $derived(entries.find((e) => e.id === openId) ?? null);
+	const panelEntry = $derived(staged ? stagedEntry(staged) : opened);
 	const openPanel = (entry: Entry) => {
 		panelError = null;
 		void goto(`${here}?open=${encodeURIComponent(entry.id)}`, { reset: false });
@@ -166,6 +185,76 @@
 		}
 	}
 
+	/** Sends the chosen file to be checked; nothing is installed until Install in the panel. */
+	async function upload(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		error = null;
+		fileError = null;
+		panelError = null;
+		busy = true;
+		try {
+			staged = unwrap(
+				await api.POST('/api/v1/core/extensions/packages', {
+					body: {},
+					bodySerializer: () => {
+						const form = new FormData();
+						form.append('files', file, file.name);
+						return form;
+					},
+				}),
+			);
+		} catch (failure) {
+			const problem = isApiError(failure)
+				? fileProblem(failure)
+				: { key: 'error_generic' as const };
+			fileError = {
+				text: t(problem.key, problem.values),
+				...(problem.detail && { detail: problem.detail }),
+			};
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function installStaged(pkg: Staged) {
+		busy = true;
+		panelError = null;
+		const shown = name(stagedEntry(pkg));
+		try {
+			unwrap(
+				await api.POST('/api/v1/actions/core.installExtension', {
+					body: { staged: pkg.digest },
+				}),
+			);
+			staged = null;
+			toasts.show(
+				updateOf(pkg)
+					? t('extensions_updated_toast', { name: shown })
+					: t('extensions_installed_toast', { name: shown }),
+			);
+		} catch (failure) {
+			panelError =
+				isApiError(failure) && failure.status === 404
+					? t('extensions_file_gone')
+					: explain(failure);
+		} finally {
+			busy = false;
+			await load();
+		}
+	}
+
+	const pageMenu = $derived<MenuItem[]>([
+		{
+			id: 'file',
+			label: t('extensions_add_file'),
+			icon: fileIcon,
+			onselect: () => fileInput?.click(),
+		},
+	]);
+
 	async function uninstall(entry: Entry) {
 		uninstalling = null;
 		error = null;
@@ -234,6 +323,7 @@
 
 	/** The row's second line: its state while it waits or is left out, else what it is for. */
 	function meta(entry: Entry): string {
+		if (entry.nextVersion) return t('extensions_status_updates', { version: entry.nextVersion });
 		switch (entry.status) {
 			case 'pending_install':
 				return t('extensions_status_pending_install');
@@ -256,6 +346,7 @@
 {#snippet retryIcon()}<RotateCcw class="size-4" aria-hidden="true" />{/snippet}
 {#snippet keepIcon()}<Undo2 class="size-4" aria-hidden="true" />{/snippet}
 {#snippet uninstallIcon()}<Trash2 class="size-4" aria-hidden="true" />{/snippet}
+{#snippet fileIcon()}<FileUp class="size-4" aria-hidden="true" />{/snippet}
 
 <Page template="settings">
 	<PageHeader title={t('extensions_title')} subtitle={t('extensions_intro')}>
@@ -265,6 +356,15 @@
 					><RotateCcw aria-hidden="true" />{t('extensions_restart')}</Button
 				>
 			{/if}
+			<RowMenu name={t('extensions_title')} items={pageMenu} />
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept=".famext"
+				class="hidden"
+				onchange={upload}
+				data-testid="extension-file"
+			/>
 		{/snippet}
 	</PageHeader>
 
@@ -274,6 +374,14 @@
 				<Notice>{t('extensions_restart_needed')}</Notice>
 			{/if}
 			{#if error}<Notice tone="alert">{error}</Notice>{/if}
+			{#if fileError}
+				<Notice tone="alert">
+					{fileError.text}
+					{#if fileError.detail}
+						<span class="text-ink-soft mt-1 block text-[13px] break-words">{fileError.detail}</span>
+					{/if}
+				</Notice>
+			{/if}
 
 			<Section label={t('extensions_installed')} count={grouped.installed.length}>
 				<Card rows data-testid="installed-extensions">
@@ -328,14 +436,20 @@
 	{/if}
 
 	<ExtensionPanel
-		entry={opened}
+		entry={panelEntry}
 		list={entries}
 		{name}
 		{description}
 		{busy}
+		{staged}
 		error={panelError}
-		oninstall={(entry) => void install(entry)}
-		onclose={closePanel}
+		oninstall={(entry) => (staged ? void installStaged(staged) : void install(entry))}
+		onclose={() => {
+			if (staged) {
+				staged = null;
+				panelError = null;
+			} else closePanel();
+		}}
 	/>
 
 	<Dialog

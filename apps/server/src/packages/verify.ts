@@ -1,7 +1,6 @@
 import { createHash, verify } from 'node:crypto';
 import {
 	type ExtensionManifest,
-	FamosError,
 	parseManifest,
 	reservedClash,
 	SDK_VERSION,
@@ -11,7 +10,7 @@ import {
 import { z } from 'zod';
 import { builtForThisHost } from '../extensions/load.ts';
 import { digestOf, PACKAGE_FILE } from '../extensions/web.ts';
-import { isSafePath, type PackageFiles } from './archive.ts';
+import { isSafePath, type PackageFiles, refusePackage } from './archive.ts';
 import { publicKeyOf, type TrustRoot } from './trust.ts';
 
 /** The file of an archive that signs `famos-package.json` (written by `@famos/pack`). */
@@ -50,7 +49,7 @@ export interface VerifiedPackage {
 	files: PackageFiles;
 }
 
-const refuse = (message: string) => new FamosError('bad_request', message);
+const refuse = refusePackage;
 
 /**
  * Checks a package before any of its code is used:
@@ -67,13 +66,14 @@ export function verifyPackage(
 	const descriptionBytes = files.get(PACKAGE_FILE);
 	if (!descriptionBytes) throw refuse(`The package has no ${PACKAGE_FILE}`);
 	const signatureBytes = files.get(SIGNATURE_FILE);
-	if (!signatureBytes) throw refuse('The package is not signed');
+	if (!signatureBytes) throw refuse('The package is not signed', 'unsigned');
 	const signature = SignatureSchema.safeParse(parseJson(signatureBytes));
-	if (!signature.success) throw refuse(`${SIGNATURE_FILE} is malformed`);
+	if (!signature.success) throw refuse(`${SIGNATURE_FILE} is malformed`, 'unsigned');
 	const root = trustRoots.find((r) => r.keyId === signature.data.keyId);
 	if (!root)
 		throw refuse(
 			`The package is signed with a key this server does not trust (${signature.data.keyId})`,
+			'unsigned',
 		);
 	const signed = verify(
 		null,
@@ -81,7 +81,7 @@ export function verifyPackage(
 		publicKeyOf(root),
 		Buffer.from(signature.data.sig, 'base64'),
 	);
-	if (!signed) throw refuse('The package signature does not match its contents');
+	if (!signed) throw refuse('The package signature does not match its contents', 'unsigned');
 
 	const parsed = DescriptionSchema.safeParse(parseJson(descriptionBytes));
 	if (!parsed.success) throw refuse(`${PACKAGE_FILE} is not a package description this host reads`);
@@ -111,10 +111,12 @@ export function verifyPackage(
 	if (!satisfiesCaret(SDK_VERSION, manifest.sdk))
 		throw refuse(
 			`The extension ${manifest.id} needs SDK ${manifest.sdk}; this server has ${SDK_VERSION}`,
+			'incompatible',
 		);
 	if (!builtForThisHost(description.built.sdk))
 		throw refuse(
 			`The extension ${manifest.id} was built for platform ${description.built.sdk}; this server is ${SDK_VERSION}`,
+			'incompatible',
 		);
 	const { server, web, css } = description.entries;
 	for (const entry of [server, web, css]) {

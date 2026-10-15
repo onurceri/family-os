@@ -68,15 +68,16 @@ export interface Reach {
 export function reachOf(entry: Entry, list: readonly Entry[]): Reach {
 	const byId = new Map(list.map((e) => [e.id, e] as const));
 	const alongside: string[] = [];
-	const visit = (id: string) => {
-		for (const dep of byId.get(id)?.dependsOn ?? []) {
-			if (alongside.includes(dep)) continue;
+	// From the entry's own needs: a package from a file is not in the list.
+	const visit = (deps: readonly string[]) => {
+		for (const dep of deps) {
+			if (alongside.includes(dep) || dep === entry.id) continue;
 			if (byId.get(dep)?.status !== 'available') continue;
 			alongside.push(dep);
-			visit(dep);
+			visit(byId.get(dep)?.dependsOn ?? []);
 		}
 	};
-	visit(entry.id);
+	visit(entry.dependsOn);
 	const callees = entry.reaches.calls.map((action) => action.slice(0, action.indexOf('.')));
 	const worksWith = [...new Set([...entry.optional, ...callees])].filter(
 		(id) => id !== 'core' && id !== entry.id && !entry.dependsOn.includes(id),
@@ -109,4 +110,75 @@ export function neededBy(entry: Entry, list: readonly Entry[]): Entry[] {
 
 /** Whether the server would load something different after a restart. */
 export const restartNeeded = (list: readonly Entry[]) =>
-	list.some((e) => e.status === 'pending_install' || e.status === 'pending_uninstall');
+	list.some(
+		(e) =>
+			e.status === 'pending_install' || e.status === 'pending_uninstall' || e.nextVersion !== null,
+	);
+
+/** A package uploaded from a file and checked by the server, waiting for Install. */
+export type Staged =
+	paths['/api/v1/core/extensions/packages']['post']['responses'][201]['content']['application/json'];
+
+/**
+ * A staged package as a row of the list, so the details panel shows it like any extension that
+ * can be installed: its name, what it reaches, what installs with it.
+ */
+export function stagedEntry(staged: Staged): Entry {
+	return {
+		id: staged.id,
+		version: staged.version,
+		status: 'available',
+		reason: null,
+		always: false,
+		enabled: false,
+		dependsOn: staged.dependsOn,
+		optional: staged.optional,
+		reaches: staged.reaches,
+		labels: staged.labels,
+		nextVersion: null,
+	};
+}
+
+/** The versions of an update (the server runs an older one), or null for a new one. */
+export const updateOf = (staged: Staged): { from: string; to: string } | null =>
+	staged.current && staged.current !== staged.version
+		? { from: staged.current, to: staged.version }
+		: null;
+
+/** Why the server would not take a file, as a key of the page's texts and its values. */
+export interface FileProblem {
+	key:
+		| 'extensions_file_too_large'
+		| 'extensions_file_unsigned'
+		| 'extensions_file_incompatible'
+		| 'extensions_file_older'
+		| 'extensions_file_invalid'
+		| 'error_generic';
+	values?: Record<string, string>;
+	/** The server's own words, shown small below for whoever wants the detail. */
+	detail?: string;
+}
+
+/** Reads the server's refusal of an uploaded file: its status, its reason and its message. */
+export function fileProblem(failure: {
+	status: number;
+	message?: string;
+	details?: unknown;
+}): FileProblem {
+	const details = (failure.details ?? {}) as { reason?: string; version?: string };
+	if (failure.status === 413) return { key: 'extensions_file_too_large' };
+	if (failure.status === 409 && details.reason === 'older')
+		return { key: 'extensions_file_older', values: { version: details.version ?? '' } };
+	if (failure.status !== 400) return { key: 'error_generic' };
+	const detail = failure.message ? { detail: failure.message } : {};
+	switch (details.reason) {
+		case 'too_large':
+			return { key: 'extensions_file_too_large', ...detail };
+		case 'unsigned':
+			return { key: 'extensions_file_unsigned', ...detail };
+		case 'incompatible':
+			return { key: 'extensions_file_incompatible', ...detail };
+		default:
+			return { key: 'extensions_file_invalid', ...detail };
+	}
+}
