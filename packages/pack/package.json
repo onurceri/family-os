@@ -1,11 +1,11 @@
 {
-	"name": "@famos/build",
+	"name": "@famos/pack",
 	"version": "0.0.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"bin": {
-		"famos-build": "./bin/famos-build.ts"
+		"famos-pack": "./bin/famos-pack.ts"
 	},
 	"exports": {
 		".": "./src/index.ts"

@@ -16,7 +16,7 @@ const repo = join(import.meta.dirname, '..', '..', '..');
 const extensions = readdirSync(join(repo, 'extensions')).filter((name) =>
 	statSync(join(repo, 'extensions', name)).isDirectory(),
 );
-const scratch = mkdtempSync(join(tmpdir(), 'famos-build-'));
+const scratch = mkdtempSync(join(tmpdir(), 'famos-pack-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 function filesUnder(dir: string): string[] {

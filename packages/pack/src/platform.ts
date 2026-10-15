@@ -106,7 +106,7 @@ export type PlatformCheck =
 	| { ok: true }
 	| { ok: false; reason: 'bump' | 'update'; message: string; required: 'minor' | 'patch' };
 
-const UPDATE = 'pnpm --filter @famos/build platform:update';
+const UPDATE = 'pnpm --filter @famos/pack platform:update';
 
 /**
  * Compares the committed platform with the current one. A change that can break a package built
@@ -129,7 +129,7 @@ export function checkPlatform(committed: Platform, current: Platform): PlatformC
 			ok: false,
 			reason: 'update',
 			required,
-			message: `The platform snapshot (packages/build/platform.json) is out of date. Run \`${UPDATE}\` and commit it.`,
+			message: `The platform snapshot (packages/pack/platform.json) is out of date. Run \`${UPDATE}\` and commit it.`,
 		};
 	}
 	return {
@@ -142,7 +142,7 @@ export function checkPlatform(committed: Platform, current: Platform): PlatformC
 			breaking
 				? `This can break packages built before it: raise the minor of SDK_VERSION (packages/sdk/src/manifest.ts, now ${current.sdk}) and every extension manifest's "sdk" caret to match.`
 				: `Packages built against it need a host that has it: raise at least the patch of SDK_VERSION (packages/sdk/src/manifest.ts, now ${current.sdk}).`,
-			`Then run \`${UPDATE}\` and commit packages/build/platform.json.`,
+			`Then run \`${UPDATE}\` and commit packages/pack/platform.json.`,
 		].join('\n'),
 	};
 }

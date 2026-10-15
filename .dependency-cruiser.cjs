@@ -148,7 +148,7 @@ module.exports = {
 	],
 	options: {
 		doNotFollow: { path: 'node_modules' },
-		exclude: { path: '(^|/)(node_modules|dist|\\.svelte-kit|generated)/|^apps/[^/]+/build/' },
+		exclude: { path: '(^|/)(node_modules|dist|build|\\.svelte-kit|generated)/' },
 		tsPreCompilationDeps: true,
 		tsConfig: { fileName: 'tsconfig.base.json' },
 		enhancedResolveOptions: {

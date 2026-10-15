@@ -35,7 +35,7 @@
 		}
 	},
 	"scripts": {
-		"build": "famos-build",
+		"build": "famos-pack",
 		"typecheck": "tsc -p . && svelte-check --tsconfig ./tsconfig.web.json --fail-on-warnings",
 		"eval": "tsx eval/run.ts"
 	},
@@ -53,13 +53,13 @@
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
-		"@famos/build": "workspace:*",
 		"@famos/ext-calendar": "workspace:*",
 		"@famos/ext-home": "workspace:*",
 		"@famos/ext-lists": "workspace:*",
 		"@famos/ext-pets": "workspace:*",
 		"@famos/ext-records": "workspace:*",
 		"@famos/ext-vehicles": "workspace:*",
+		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"svelte": "5.57.1",
 		"svelte-check": "4.7.6",

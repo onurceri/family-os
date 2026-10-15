@@ -1,9 +1,6 @@
 **/node_modules
 **/dist
 **/build
-# The extension package build tool is source, not output; only its own dependencies stay out.
-!packages/build
-packages/build/node_modules
 **/.svelte-kit
 **/.turbo
 **/coverage

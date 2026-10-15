@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SHARED_WEB } from '../packages/build/src/shared.ts';
+import { SHARED_WEB } from '../packages/pack/src/shared.ts';
 
 /**
- * Extensions are built into packages of their own (`@famos/build`). The server bundle leaves
+ * Extensions are built into packages of their own (`@famos/pack`). The server bundle leaves
  * `SHARED_SERVER` out, and the build refuses anything else it would leave to the host. The web
  * bundle will leave `SHARED_WEB` out and take Svelte, `@famos/ui` and `@famos/sdk` from the app
  * (one Svelte runtime, one app context). That only works while extensions reach them as

@@ -1,4 +1,4 @@
-// Gathers the built extension packages (extensions/<id>/dist, written by `famos-build`) and
+// Gathers the built extension packages (extensions/<id>/dist, written by `famos-pack`) and
 // extensions.json into dist/extensions/, the folder the image ships. Run by `pnpm build` after
 // turbo has built every package. extensions.json says which packages are always there and which
 // are offered; a package it does not name, or one it names that was not built, fails the build.

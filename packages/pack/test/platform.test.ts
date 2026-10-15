@@ -10,7 +10,7 @@ describe('the platform extension packages are built against', () => {
 		) as Platform;
 		const check = checkPlatform(committed, await currentPlatform());
 		// The message says what changed and what to do: raise SDK_VERSION, then run
-		// `pnpm --filter @famos/build platform:update`.
+		// `pnpm --filter @famos/pack platform:update`.
 		if (!check.ok) expect.fail(check.message);
 	});
 
