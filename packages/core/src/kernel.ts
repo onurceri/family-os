@@ -35,6 +35,12 @@ import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './c
 import { createCoreExtension } from './core-extension.ts';
 import { createDeviceService, type DeviceService } from './devices.ts';
 import { createEventBus, type InProcessEventBus } from './event-bus.ts';
+import { createExtensionInstall, type ExtensionList } from './extension-install.ts';
+import {
+	type ExtensionPackagesPort,
+	noExtensionPackages,
+	type RefusedExtension,
+} from './extension-state.ts';
 import { familyReader } from './family.ts';
 import { createFeatures, type Features, ownerOf } from './features.ts';
 import { createHostDoors, type HostDoors } from './host-doors.ts';
@@ -46,7 +52,12 @@ import {
 	type Translate,
 	type Vocabulary,
 } from './notifications.ts';
-import { buildRegistry, type Registry } from './registry.ts';
+import {
+	buildRegistry,
+	ExtensionRefusedError,
+	isExtensionRefusedError,
+	type Registry,
+} from './registry.ts';
 import { createSchemaNames, hostFiles, scopedFiles, scopedHttp, scopePlugin } from './scope.ts';
 import { createSearch, SEARCH_ACTION, SYNC_JOB } from './search.ts';
 import { createThemes, defaultThemes, type ThemePort, type Themes } from './themes.ts';
@@ -90,6 +101,15 @@ export interface KernelOptions {
 	themes?: ThemePort;
 	/** How long a suggestion waits before it notifies approvers (default 30 s; shortened in E2E). */
 	draftNotifyDelayMs?: number;
+	/** The packages extensions can be installed from. None by default: the installed set is fixed. */
+	extensionPackages?: ExtensionPackagesPort;
+	/**
+	 * Extensions the kernel may leave out when the registry refuses them (those not always
+	 * installed); it starts without them and their dependents. Any other refusal stops it.
+	 */
+	refusable?: readonly string[];
+	/** Installed extensions the composition root already could not load, and why. */
+	refused?: readonly RefusedExtension[];
 }
 
 export interface Kernel {
@@ -135,6 +155,10 @@ export interface Kernel {
 	 * answer once `conversationAnswered` names it.
 	 */
 	readonly conversation: HostDoors['conversation'];
+	/** Installed extensions that are not running, and why (the composition root's and the registry's). */
+	readonly refused: readonly RefusedExtension[];
+	/** The installed, running and installable extensions (`core.listExtensions`). */
+	listExtensions(): Promise<ExtensionList>;
 	/** All migration scopes in execution order: core, infrastructure, extensions. */
 	readonly migrationScopes: readonly { scope: string; migrations: Migrations }[];
 	/** Family search follows the AI settings: run after a model, provider or area changes. */
@@ -194,6 +218,13 @@ export function createKernel(options: KernelOptions): Kernel {
 		contextFor: (id) => contextFor(id),
 	});
 	const themes = createThemes({ themes: () => options.themes ?? defaultThemes });
+	const refused: RefusedExtension[] = [...(options.refused ?? [])];
+	const extensionInstall = createExtensionInstall({
+		packages: () => options.extensionPackages ?? noExtensionPackages,
+		registry: () => registry,
+		refused: () => refused,
+		features: () => features,
+	});
 	const core = createCoreExtension({
 		themes,
 		search,
@@ -215,13 +246,14 @@ export function createKernel(options: KernelOptions): Kernel {
 		aiAreas: () => aiAreas,
 		registry: () => registry,
 		notifications,
+		extensionInstall,
 		extensionDb: (id, db) => views.db(id, db),
 		runner: () => {
 			if (!runner) throw new Error('Kernel not initialised');
 			return runner;
 		},
 	});
-	const registry = buildRegistry([core, ...options.extensions], options.infrastructureJobs);
+	const registry = buildLeavingOutRefused(core, options, refused);
 	const access = createAccess(
 		registry.capabilities,
 		(id) => features.isOn(id),
@@ -250,15 +282,6 @@ export function createKernel(options: KernelOptions): Kernel {
 	});
 
 	const byId = new Map(registry.extensions.map((e) => [e.id, e]));
-	// The registry refuses the names the host reserves; an infrastructure scope added without a
-	// reserved name is refused here too, by its scope name.
-	for (const { scope } of options.infrastructureMigrations) {
-		const clash = registry.extensions.find((e) => {
-			const prefix = tablePrefixOf(e.manifest);
-			return e.id === scope || prefix.startsWith(`${scope}_`) || `${scope}_`.startsWith(prefix);
-		});
-		if (clash) throw new Error(`Extension "${clash.id}" clashes with the host's "${scope}" tables`);
-	}
 	/** Core and the infrastructure adapters are the host: they see everything. */
 	const isHost = (id: string) => id === 'core' || !byId.has(id);
 	const schemaNames = createSchemaNames();
@@ -533,6 +556,8 @@ export function createKernel(options: KernelOptions): Kernel {
 		share: doors.share,
 		shareLimits: doors.shareLimits,
 		conversation: doors.conversation,
+		refused,
+		listExtensions: () => extensionInstall.describe(options.db),
 		migrationScopes,
 		reconcileSearch,
 		async start() {
@@ -541,17 +566,93 @@ export function createKernel(options: KernelOptions): Kernel {
 			await features.refresh(options.db);
 			await aiAreas.refresh(options.db);
 			// Event handlers of a turned-off extension do not run.
-			for (const ext of registry.extensions)
-				await ext.register?.({
-					...contextFor(ext.id),
-					events: gatedEvents(bus, () => features.isOn(ext.id)),
-				});
+			for (const ext of registry.extensions) {
+				try {
+					await ext.register?.({
+						...contextFor(ext.id),
+						events: gatedEvents(bus, () => features.isOn(ext.id)),
+					});
+				} catch (error) {
+					// The composition root records an optional package that cannot start, and starts
+					// again without it.
+					if (!options.refusable?.includes(ext.id)) throw error;
+					const message = error instanceof Error ? error.message : String(error);
+					throw new ExtensionRefusedError(ext.id, `Its start failed: ${message}`);
+				}
+			}
 			await reconcileSearch();
 		},
 		async stop() {
 			await worker?.stop();
 		},
 	};
+}
+
+/**
+ * Builds the registry; an extension it refuses is left out with its dependents when it may be
+ * (it is not always installed), and the registry is built again without them. Each refusal is
+ * added to `refused`.
+ */
+function buildLeavingOutRefused(
+	core: ExtensionDefinition,
+	options: KernelOptions,
+	refused: RefusedExtension[],
+): Registry {
+	const refusable = new Set(options.refusable ?? []);
+	let candidates = [...options.extensions];
+	for (;;) {
+		try {
+			const registry = buildRegistry([core, ...candidates], options.infrastructureJobs);
+			assertNoInfrastructureClash(registry, options.infrastructureMigrations);
+			return registry;
+		} catch (error) {
+			if (!isExtensionRefusedError(error) || !refusable.has(error.extensionId)) throw error;
+			const out = new Set([error.extensionId]);
+			// Whatever depends on a refused extension cannot run either.
+			for (let grew = true; grew; ) {
+				grew = false;
+				for (const ext of candidates) {
+					if (out.has(ext.id) || !ext.manifest.dependsOn.some((dep) => out.has(dep))) continue;
+					if (!refusable.has(ext.id)) throw error;
+					out.add(ext.id);
+					grew = true;
+				}
+			}
+			for (const ext of candidates) {
+				if (!out.has(ext.id)) continue;
+				refused.push({
+					id: ext.id,
+					version: ext.manifest.version,
+					reason:
+						ext.id === error.extensionId
+							? error.reason
+							: `It needs "${error.extensionId}", which was refused`,
+				});
+			}
+			candidates = candidates.filter((ext) => !out.has(ext.id));
+		}
+	}
+}
+
+/**
+ * The registry refuses the names the host reserves; an infrastructure scope added without a
+ * reserved name is refused here too, by its scope name.
+ */
+function assertNoInfrastructureClash(
+	registry: Registry,
+	infrastructure: KernelOptions['infrastructureMigrations'],
+) {
+	for (const { scope } of infrastructure) {
+		const clash = registry.extensions.find((e) => {
+			const prefix = tablePrefixOf(e.manifest);
+			return e.id === scope || prefix.startsWith(`${scope}_`) || `${scope}_`.startsWith(prefix);
+		});
+		if (clash)
+			throw new ExtensionRefusedError(
+				clash.id,
+				`Extension "${clash.id}" clashes with the host's "${scope}" tables`,
+			);
+	}
 }
 
 /** The bus, with subscriptions that only fire while their extension is on. */

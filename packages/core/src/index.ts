@@ -7,6 +7,8 @@ export * from './core-events.ts';
 export * from './core-extension.ts';
 export * from './devices.ts';
 export * from './event-bus.ts';
+export * from './extension-install.ts';
+export * from './extension-state.ts';
 export * from './family.ts';
 export * from './features.ts';
 export { type ChannelShare, type HostDoors, mimeAccepted } from './host-doors.ts';

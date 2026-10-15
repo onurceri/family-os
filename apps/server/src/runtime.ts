@@ -40,7 +40,13 @@ import { createLogger, systemClock, uuidv7Ids } from '@famos/adapters/runtime';
 import { createExtensionSecrets } from '@famos/adapters/secrets';
 import { createTelegram, type Telegram, telegramMigrations } from '@famos/adapters/telegram';
 import { createWebPush, type WebPush, webPushMigrations } from '@famos/adapters/webpush';
-import { CORE_CAPABILITIES, createKernel, type Kernel } from '@famos/core';
+import {
+	CORE_CAPABILITIES,
+	createKernel,
+	type ExtensionPackagesPort,
+	type Kernel,
+	type RefusedExtension,
+} from '@famos/core';
 import {
 	createBackup,
 	type DatabaseHandle,
@@ -91,6 +97,13 @@ export function openRuntime(
 	options: {
 		/** The extensions to run (core is always there): what `loadExtensions` found, or a test's. */
 		extensions: readonly ExtensionDefinition[];
+		/** The database, when it was opened to choose the extensions; opened here otherwise. */
+		handle?: DatabaseHandle;
+		/** The packages extensions are installed from, the ones the kernel may leave out, and the
+		 * installed ones that could not be loaded (`loadInstalled`). */
+		extensionPackages?: ExtensionPackagesPort;
+		refusable?: readonly string[];
+		refused?: readonly RefusedExtension[];
 		logger?: Logger;
 		quiet?: boolean;
 		/** Tests: where the Bot API lives, and how fast the poller works. */
@@ -114,7 +127,7 @@ export function openRuntime(
 	},
 ): Runtime {
 	const logger = options.logger ?? createLogger({ level: config.logLevel });
-	const handle = openDatabase({ path: config.dbPath });
+	const handle = options.handle ?? openDatabase({ path: config.dbPath });
 	const queue = createSqliteQueue({ db: handle.db, clock: systemClock, ids: uuidv7Ids });
 	// The identity adapter asks core whether a request comes from a trusted device (PIN sign-in).
 	let kernelRef: Kernel | undefined;
@@ -249,6 +262,9 @@ export function openRuntime(
 		identity: identity.admin,
 		llm,
 		extensions: loaded,
+		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),
+		...(options.refusable && { refusable: options.refusable }),
+		...(options.refused && { refused: options.refused }),
 		infrastructureJobs: [
 			...createEmailJobs(email),
 			...createBackupJobs({

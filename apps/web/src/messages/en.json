@@ -394,6 +394,7 @@
 	"cap_settings_manage": "Change family settings",
 	"cap_ai_manage": "Set up AI",
 	"cap_features_manage": "Turn features on or off",
+	"cap_extensions_manage": "Install and uninstall extensions",
 	"cap_drafts_propose": "Suggest changes for approval",
 	"cap_drafts_approve": "Approve suggestions",
 	"cap_sign_in_pin": "Sign in with a PIN on family devices",

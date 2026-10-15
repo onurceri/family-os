@@ -54,6 +54,13 @@ export async function buildTemplate(): Promise<Template & { root: string }> {
 		await family.stop();
 		await model.close();
 	}
+	// A new family starts with the core set; the tests cover the offered extensions too.
+	const installed = await family.cli(['extensions', 'install', '--all-offered']);
+	if (installed.code !== 0)
+		throw new Error(`Installing the offered extensions failed:\n${installed.output}`);
+	// Started once more, so their migrations run here and not in every test.
+	await family.start();
+	await family.stop();
 	return { root, dataDir, storageState };
 }
 

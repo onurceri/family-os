@@ -290,7 +290,10 @@ describe('the database', () => {
 			id: 'sloppy',
 			migrations: { '0001': { up: table('everyone_items') } },
 		});
-		await expect(createTestKernel({ extensions: [sloppy] })).rejects.toMatchObject(forbidden);
+		await expect(createTestKernel({ extensions: [sloppy] })).rejects.toMatchObject({
+			scope: 'sloppy',
+			cause: forbidden,
+		});
 	});
 });
 

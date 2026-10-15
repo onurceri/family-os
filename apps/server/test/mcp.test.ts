@@ -294,6 +294,29 @@ describe('the endpoint refuses what it should', () => {
 		expect((await rpc(secret, legacyList)).status).toBe(404);
 	});
 
+	it("cannot install, uninstall or restart anything, not even with an admin's token", async () => {
+		const { adminId, cookie } = await setup();
+		await enable(cookie);
+		const { secret } = await newToken(adminId, 'admin');
+		const names = toolNames(await rpc(secret, legacyList));
+		expect(names.length).toBeGreaterThan(0);
+		expect(names.filter((n) => /extension|restart/i.test(n))).toEqual([]);
+		const called = await rpc(secret, legacyCall('core.installExtension', { extensionId: 'pets' }));
+		expect(JSON.stringify(called.body)).not.toContain('"status":"applied"');
+		// The API takes a token nowhere but at /mcp: the action route wants a session.
+		const viaApi = await app.request(`${BASE}/api/v1/actions/core.installExtension`, {
+			method: 'POST',
+			headers: {
+				origin: BASE,
+				'content-type': 'application/json',
+				authorization: `Bearer ${secret}`,
+				'x-forwarded-for': '10.9.0.2',
+			},
+			body: JSON.stringify({ extensionId: 'pets' }),
+		});
+		expect(viaApi.status).toBe(401);
+	});
+
 	it('answers 401 with a JSON-RPC error for missing, unknown, expired and revoked tokens', async () => {
 		const { adminId, cookie } = await setup();
 		await enable(cookie);

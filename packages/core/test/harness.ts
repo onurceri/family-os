@@ -26,6 +26,7 @@ import {
 	systemActor,
 } from '@famos/sdk';
 import type { Member } from '../src/core-extension.ts';
+import type { ExtensionPackagesPort } from '../src/extension-state.ts';
 import { createKernel, type Kernel } from '../src/kernel.ts';
 import type { LanguagePort } from '../src/languages.ts';
 import type { ThemePort } from '../src/themes.ts';
@@ -57,9 +58,13 @@ export async function createTestKernel(
 		languages?: LanguagePort;
 		themes?: ThemePort;
 		draftNotifyDelayMs?: number;
+		/** A database file, to open the same data with another kernel (default: in memory). */
+		dbPath?: string;
+		refusable?: readonly string[];
+		extensionPackages?: ExtensionPackagesPort;
 	} = {},
 ): Promise<TestKernel> {
-	const handle = openDatabase({ path: ':memory:' });
+	const handle = openDatabase({ path: options.dbPath ?? ':memory:' });
 	let now = Date.UTC(2026, 0, 1, 9);
 	const clock: TestClock = { now: () => now, advance: (ms) => (now += ms) };
 	const passwords = new Map<string, string>();
@@ -124,6 +129,8 @@ export async function createTestKernel(
 		...(options.draftNotifyDelayMs !== undefined && {
 			draftNotifyDelayMs: options.draftNotifyDelayMs,
 		}),
+		...(options.refusable && { refusable: options.refusable }),
+		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),
 	});
 	await runMigrations(handle.db, kernel.migrationScopes, clock.now);
 	await kernel.start();

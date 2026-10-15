@@ -394,6 +394,7 @@
 	"cap_settings_manage": "Aile ayarlarını değiştirmek",
 	"cap_ai_manage": "Yapay zekâyı ayarlamak",
 	"cap_features_manage": "Özellikleri açıp kapatmak",
+	"cap_extensions_manage": "Eklenti kurup kaldırmak",
 	"cap_drafts_propose": "Onay için değişiklik önermek",
 	"cap_drafts_approve": "Önerileri onaylamak",
 	"cap_sign_in_pin": "Aile cihazlarında PIN ile girmek",

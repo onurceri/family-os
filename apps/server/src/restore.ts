@@ -7,7 +7,7 @@ import type { Config } from './config.ts';
 import { openRuntime } from './runtime.ts';
 
 export interface RestoreOptions {
-	/** The extensions this server runs: a backup with migrations none of them knows is refused. */
+	/** The extensions this server has: a backup with migrations newer than theirs is refused. */
 	extensions: readonly ExtensionDefinition[];
 	/** Restore even when the backup is from a newer FamilyOS. */
 	force?: boolean;
@@ -55,9 +55,12 @@ export async function restoreFile(config: Config, file: string, options: Restore
 			probe.kernel.migrationScopes.map((s) => [s.scope, new Set(Object.keys(s.migrations))]),
 		);
 		await probe.close();
-		const unknown = Object.entries(manifest.schema).flatMap(([scope, names]) =>
-			names.filter((n) => !known.get(scope)?.has(n)).map((n) => `${scope}/${n}`),
-		);
+		// A scope no extension here knows is one this server does not have: its data comes back
+		// with the rest and waits, as it does for an extension that is uninstalled.
+		const unknown = Object.entries(manifest.schema).flatMap(([scope, names]) => {
+			const have = known.get(scope);
+			return have ? names.filter((n) => !have.has(n)).map((n) => `${scope}/${n}`) : [];
+		});
 		if (unknown.length > 0 && !options.force) {
 			throw new Error(
 				`Backup is from a newer FamilyOS (${manifest.appVersion}); unknown migrations: ${unknown.join(', ')}`,

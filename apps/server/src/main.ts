@@ -1,13 +1,27 @@
+import { randomUUID } from 'node:crypto';
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Duplex } from 'node:stream';
 import { parseArgs } from 'node:util';
 import { silentLogger } from '@famos/adapters/runtime';
-import type { CoreTables } from '@famos/core';
+import {
+	type CoreTables,
+	isExtensionRefusedError,
+	readExtensionState,
+	restartRequested,
+} from '@famos/core';
+import { MigrationFailedError, openDatabase } from '@famos/db';
+import { systemActor } from '@famos/sdk';
 import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
 import { type Config, loadConfig } from './config.ts';
-import { type LoadedExtensions, loadExtensions } from './extensions/load.ts';
+import {
+	type InstalledExtensions,
+	loadInstalled,
+	recordFailure,
+	recordStart,
+} from './extensions/installed.ts';
+import { findAvailable, type LoadedExtensions, loadExtensions } from './extensions/load.ts';
 import { createHttpApp, loadedWeb, OPENAPI_INFO, resolveActor } from './http/app.ts';
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
@@ -23,6 +37,7 @@ import {
 	seedAi,
 	startScheduler,
 } from './runtime.ts';
+import { RESTART_EXIT_CODE } from './supervisor.ts';
 
 const USAGE = `famos ${APP_VERSION}
 
@@ -33,19 +48,51 @@ Usage: famos <command>
   backup             Write a backup to $FAMOS_DATA_DIR/backups and exit
   restore <file>     Restore a backup (stop the server first). An encrypted .age file asks
                      for its passphrase (or FAMOS_BACKUP_PASSPHRASE), or use --identity <file>
+  extensions list    The extensions installed and the ones that can be
+  extensions install <id…> | --all-offered
+                     Install extensions (what they need comes with them); restart to load them
+  extensions uninstall <id>
+                     Uninstall an extension (its data is kept); restart to apply
   openapi [file]     Write the OpenAPI document (default: openapi.json). With --extensions <dir>,
                      the file holds core's and the app's routes, and each extension's routes and
                      actions go to <dir>/<id>/openapi.json
 `;
 
+/** How often a process that serves no API looks whether a restart was asked for. */
+const RESTART_POLL_MS = 30_000;
+
 async function serveCommand() {
 	const config = await loadConfig();
-	const { runtime, web } = await openWithExtensions(config);
+	const { runtime, web, selection } = await openWithExtensions(config);
 	const { logger, kernel } = runtime;
 	const extensions = loadedWeb(kernel, web);
-	await migrate(runtime);
-	await seedAi(runtime);
-	await kernel.start();
+	const boot = randomUUID();
+	const bootedAt = Date.now();
+	for (const refused of kernel.refused)
+		logger.warn(
+			{ extension: refused.id, version: refused.version, reason: refused.reason },
+			'an installed extension is not loaded',
+		);
+	try {
+		await migrate(runtime);
+		await recordStart(runtime.handle.db, selection, kernel.registry.extensions, Date.now());
+		await seedAi(runtime);
+		await kernel.start();
+	} catch (error) {
+		const failing = failingExtension(error, selection);
+		if (!failing) throw error;
+		// Recorded, so the next start leaves this version out: a broken package cannot make the
+		// server restart over and over, and the family keeps everything else.
+		const version =
+			kernel.registry.extensions.find((ext) => ext.id === failing.id)?.manifest.version ?? '';
+		await recordFailure(runtime.handle.db, { ...failing, version }, Date.now());
+		logger.error(
+			{ extension: failing.id, version, reason: failing.reason },
+			'an extension failed to start; starting again without it',
+		);
+		await runtime.close();
+		process.exit(RESTART_EXIT_CODE);
+	}
 	await announceSetup(runtime);
 
 	const stops: (() => void | Promise<void>)[] = [];
@@ -77,6 +124,7 @@ async function serveCommand() {
 			secureCookies: config.baseURL.startsWith('https://'),
 			trustedProxies: config.trustedProxies,
 			extensions,
+			boot,
 		});
 		const hub = createRealtimeHub(kernel.bus, logger);
 		app.get(
@@ -140,26 +188,71 @@ async function serveCommand() {
 	}
 
 	let stopping = false;
-	const shutdown = async (signal: string) => {
+	const shutdown = async (signal: string, code = 0) => {
 		if (stopping) return;
 		stopping = true;
-		logger.info({ signal }, 'shutting down');
+		logger.info({ signal }, code === RESTART_EXIT_CODE ? 'restarting' : 'shutting down');
 		for (const stop of stops.reverse()) await stop();
 		await runtime.close();
-		process.exit(0);
+		process.exit(code);
 	};
 	process.on('SIGTERM', () => void shutdown('SIGTERM'));
 	process.on('SIGINT', () => void shutdown('SIGINT'));
+	// A restart is asked for through the API, so the process serving it hears it at once (after
+	// the commit); one that serves no API looks at the stored time now and then.
+	if (config.roles.api) {
+		kernel.bus.on(restartRequested, () => void shutdown('restart', RESTART_EXIT_CODE));
+	} else {
+		const timer = setInterval(async () => {
+			try {
+				const at = (await readExtensionState(runtime.handle.db))?.restartRequestedAt ?? null;
+				if (at !== null && at > bootedAt) await shutdown('restart', RESTART_EXIT_CODE);
+			} catch (error) {
+				logger.error({ err: error }, 'checking for a restart failed');
+			}
+		}, RESTART_POLL_MS);
+		timer.unref();
+		stops.push(() => clearInterval(timer));
+	}
 }
 
-/** Loads the extensions, then opens the runtime with them and says in the log what it runs. */
+/** The optional extension behind a migration or start failure, or null when it is the host's. */
+function failingExtension(
+	error: unknown,
+	selection: Pick<InstalledExtensions, 'refusable'>,
+): { id: string; reason: string } | null {
+	if (error instanceof MigrationFailedError && selection.refusable.includes(error.scope))
+		return { id: error.scope, reason: error.message };
+	if (isExtensionRefusedError(error) && selection.refusable.includes(error.extensionId))
+		return { id: error.extensionId, reason: error.reason };
+	return null;
+}
+
+/**
+ * Opens the database, loads the extensions the family installed, then opens the runtime with
+ * them and says in the log what it runs.
+ */
 async function openWithExtensions(
 	config: Config,
-): Promise<{ runtime: Runtime; web: LoadedExtensions['web'] }> {
-	const { extensions, web, report } = await loadExtensions();
-	const runtime = openRuntime(config, { extensions });
-	logLoaded(runtime, report);
-	return { runtime, web };
+	options: { quiet?: boolean } = {},
+): Promise<{ runtime: Runtime; web: LoadedExtensions['web']; selection: InstalledExtensions }> {
+	const handle = openDatabase({ path: config.dbPath });
+	let selection: InstalledExtensions;
+	try {
+		selection = await loadInstalled(handle.db, findAvailable());
+	} catch (error) {
+		await handle.close();
+		throw error;
+	}
+	const runtime = openRuntime(config, {
+		extensions: selection.extensions,
+		handle,
+		extensionPackages: selection.packages,
+		refusable: selection.refusable,
+		refused: selection.refused,
+	});
+	if (!options.quiet) logLoaded(runtime, selection.report);
+	return { runtime, web: selection.web, selection };
 }
 
 function logLoaded({ logger }: Runtime, report: LoadedExtensions['report']) {
@@ -227,6 +320,67 @@ async function writeJson(file: string, value: unknown) {
 	if (current !== text) await writeFile(file, text);
 }
 
+/**
+ * `famos extensions list|install|uninstall`: changes the installed set the way Settings does, as
+ * the server's own command line. The change loads when the server starts again.
+ */
+async function extensionsCommand(sub: string | undefined, ids: string[], allOffered: boolean) {
+	const { runtime } = await openWithExtensions(await loadConfig(), { quiet: true });
+	try {
+		// The installed set lives in core's tables, which a data directory never started lacks.
+		await migrate(runtime);
+		const { kernel } = runtime;
+		const cli = systemActor('cli');
+		const listed = () => kernel.listExtensions();
+		const run = async (actionId: string, extensionId: string) => {
+			const result = await kernel.runner.invoke(actionId, { extensionId }, cli);
+			if (result.status !== 'applied') throw new Error(`${actionId} did not apply`);
+			return result.output as { changed: string[] };
+		};
+		switch (sub) {
+			case 'list': {
+				for (const ext of (await listed()).extensions) {
+					const reason = ext.reason ? `  (${ext.reason})` : '';
+					console.log(
+						`${ext.id.padEnd(12)} ${ext.version.padEnd(9)} ${ext.status}${ext.always ? ', always' : ''}${reason}`,
+					);
+				}
+				return;
+			}
+			case 'install': {
+				const offered = (await listed()).extensions
+					.filter((ext) => !ext.always && ext.status === 'available')
+					.map((ext) => ext.id);
+				const wanted = allOffered ? offered : ids;
+				if (wanted.length === 0 && !allOffered)
+					throw new Error('Usage: famos extensions install <id…> | --all-offered');
+				const changed = new Set<string>();
+				for (const id of wanted)
+					for (const done of (await run('core.installExtension', id)).changed) changed.add(done);
+				console.log(
+					changed.size > 0
+						? `Installed ${[...changed].join(', ')}. Restart FamilyOS to load them.`
+						: 'Nothing to install.',
+				);
+				return;
+			}
+			case 'uninstall': {
+				const [id] = ids;
+				if (!id || ids.length > 1) throw new Error('Usage: famos extensions uninstall <id>');
+				await run('core.uninstallExtension', id);
+				console.log(`Uninstalled ${id}; its data is kept. Restart FamilyOS to apply.`);
+				return;
+			}
+			default:
+				throw new Error(
+					'Usage: famos extensions list|install <id…> | --all-offered|uninstall <id>',
+				);
+		}
+	} finally {
+		await runtime.close();
+	}
+}
+
 async function main() {
 	const { positionals, values } = parseArgs({
 		allowPositionals: true,
@@ -235,6 +389,7 @@ async function main() {
 			help: { type: 'boolean' },
 			identity: { type: 'string' },
 			extensions: { type: 'string' },
+			'all-offered': { type: 'boolean' },
 		},
 	});
 	const [command = 'serve', arg] = positionals;
@@ -259,6 +414,8 @@ async function main() {
 			console.log('Uploads to remote targets (if any) are sent by the running server.');
 			return runtime.close();
 		}
+		case 'extensions':
+			return extensionsCommand(arg, positionals.slice(2), values['all-offered'] === true);
 		case 'restore': {
 			if (!arg) throw new Error('Usage: famos restore <file> [--identity <file>] [--force]');
 			const config = await loadConfig();

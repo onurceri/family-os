@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
-const SERVER = join(ROOT, 'apps/server/dist/main.mjs');
+// The image's entry point: the supervisor, which starts the server again when it asks to.
+const SERVER = join(ROOT, 'apps/server/dist/famos.mjs');
 const WEB = join(ROOT, 'apps/web/build');
 export const SETUP_CODE = 'e2e-setup-code';
 

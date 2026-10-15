@@ -40,6 +40,7 @@ import {
 } from './core-events.ts';
 import type { DeviceService } from './devices.ts';
 import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
+import type { createExtensionInstall } from './extension-install.ts';
 import {
 	FamilySettingsSchema,
 	LanguageCodeSchema,
@@ -400,6 +401,11 @@ export interface CoreExtensionDeps {
 	registry: () => Registry;
 	/** Notification jobs, actions and routes. */
 	notifications: ReturnType<typeof createNotifications>;
+	/** Installing and uninstalling extensions, and restarting the server. */
+	extensionInstall: Pick<
+		ReturnType<typeof createExtensionInstall>,
+		'actions' | 'routes' | 'events'
+	>;
 	/** The one-time code first-run setup requires, or undefined when none is required (tests). */
 	setupCode?: string;
 	/** The language packs available; the composition root builds the registry. */
@@ -1524,6 +1530,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.notifications.actions,
 			...deps.search.actions,
 			...memory.actions,
+			...deps.extensionInstall.actions,
 		],
 		jobs: [
 			...languages.jobs,
@@ -1564,8 +1571,14 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.notifications.routes,
 			...deps.search.routes,
 			...memory.routes,
+			...deps.extensionInstall.routes,
 		],
-		events: [...coreEvents, ...languages.events, ...deps.themes.events],
+		events: [
+			...coreEvents,
+			...languages.events,
+			...deps.themes.events,
+			...deps.extensionInstall.events,
+		],
 		register: async (ctx) => {
 			// First pruning a day after start; the job schedules the next one itself.
 			await schedulePrune(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);

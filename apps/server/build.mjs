@@ -1,7 +1,7 @@
 // Bundles the server into ES modules. Native and runtime-resolved packages stay external and are
 // installed in the production image (see docker/Dockerfile).
 //
-// Besides `main.mjs`, each module the host shares with extension packages gets an entry of its
+// Besides `main.mjs` (and `famos.mjs`, which supervises it), each module the host shares with extension packages gets an entry of its
 // own under `shared/`, listed in `shared/modules.json`; a package's imports of them are pointed
 // there when it loads (src/extensions/hooks.ts). With code splitting the entries and main use the
 // same chunks, so a package gets the very instance of zod, Kysely, the SDK and time the host runs
@@ -22,6 +22,8 @@ await rm('dist', { recursive: true, force: true });
 await build({
 	entryPoints: [
 		{ in: 'src/main.ts', out: 'main' },
+		// The image's entry point: runs `serve` under a supervisor that restarts it on request.
+		{ in: 'src/famos.ts', out: 'famos' },
 		...Object.values(SHARED).map((name) => ({
 			in: `src/shared/${name}.ts`,
 			out: `shared/${name}`,

@@ -182,6 +182,9 @@ export const SETTLED = 'settled';
 export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	const { registry, bus, clock, ids, logger, access } = deps;
 	const can = (actor: Actor, capability: string) => access.can(actor, capability);
+	const criticalCapabilities = new Set(
+		registry.capabilities.filter((c) => c.critical === true).map((c) => c.id),
+	);
 
 	/** Who may invoke at all: `requires`. AI and system actors are judged by policy. */
 	function authorize(def: AnyActionDefinition, actor: Actor): void {
@@ -203,6 +206,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// could make or propose, a read one their capabilities allow.
 		if (actor.kind === 'ai' && !mayUseAsAi(access, def, actor)) {
 			throw new FamosError('forbidden', `The AI may not run ${def.id} for this member`);
+		}
+		// What only an admin may do (a critical capability: installing extensions, managing
+		// members) is a person's own act: the AI never runs it and never proposes it, not even for
+		// an admin, so no draft of it can reach an approver.
+		if (actor.kind === 'ai' && def.requires && criticalCapabilities.has(def.requires)) {
+			throw new FamosError('forbidden', `The AI may not run ${def.id}`);
 		}
 		// A locked area is closed to the AI whatever its actions declare: no read (even without
 		// `requires`) and no draft. Protection does not depend on each extension's discipline.

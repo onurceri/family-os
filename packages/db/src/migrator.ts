@@ -52,6 +52,22 @@ const TABLE = '_migrations';
 
 type MigrationsTable = { _migrations: { scope: string; name: string; applied_at: number } };
 
+/** A migration that threw: its own transaction was rolled back, earlier ones stay applied. */
+export class MigrationFailedError extends Error {
+	readonly scope: string;
+	readonly migration: string;
+
+	constructor(scope: string, migration: string, cause: unknown) {
+		super(
+			`Migration ${scope}/${migration} failed: ${cause instanceof Error ? cause.message : String(cause)}`,
+			{ cause },
+		);
+		this.name = 'MigrationFailedError';
+		this.scope = scope;
+		this.migration = migration;
+	}
+}
+
 async function ensureTable(db: DbExecutor): Promise<void> {
 	await db.schema
 		.createTable(TABLE)
@@ -126,14 +142,18 @@ export async function runMigrations(
 	for (const { scope, name } of plan.pending) {
 		const migration = byScope.get(scope)?.[name];
 		if (!migration) throw new Error(`Missing migration ${scope}/${name}`);
-		await db.transaction().execute(async (trx) => {
-			await migration.up(trx);
-			await trx
-				.withTables<MigrationsTable>()
-				.insertInto(TABLE)
-				.values({ scope, name, applied_at: now() })
-				.execute();
-		});
+		try {
+			await db.transaction().execute(async (trx) => {
+				await migration.up(trx);
+				await trx
+					.withTables<MigrationsTable>()
+					.insertInto(TABLE)
+					.values({ scope, name, applied_at: now() })
+					.execute();
+			});
+		} catch (error) {
+			throw new MigrationFailedError(scope, name, error);
+		}
 	}
 	return plan;
 }

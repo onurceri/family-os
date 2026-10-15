@@ -46,6 +46,7 @@ async function boot(extraExtensions: readonly ExtensionDefinition[] = []) {
 		secureCookies: false,
 		// In-process requests come from 127.0.0.1; each test call rotates X-Forwarded-For.
 		trustedProxies: ['127.0.0.1'],
+		boot: 'boot-1',
 	});
 }
 beforeEach(() => boot());
@@ -141,7 +142,8 @@ describe('HTTP API', () => {
 	});
 
 	it('serves health and requires setup on a fresh install', async () => {
-		expect((await call('GET', '/health')).body).toMatchObject({ status: 'ok' });
+		// `boot` names this start: an app waiting for a restart reloads when it changes.
+		expect((await call('GET', '/health')).body).toMatchObject({ status: 'ok', boot: 'boot-1' });
 		expect((await call('GET', '/api/v1/core/setup')).body).toMatchObject({
 			needsSetup: true,
 			needsCode: true,

@@ -60,6 +60,7 @@ docs/              Architecture, design system, user guide, releasing
 9. **Job handlers and action `run` functions must be idempotent.** Jobs that can run for minutes (uploads) use `lane: 'long'` so they never hold up reminders and notifications.
 10. **Tell people with `uow.notify` / `ctx.notify`**: declare a kind with `defineNotificationKind`, address people by member id or capability, give texts as translation keys. Never call a channel directly.
 11. **AI-facing read actions declare `ai` hints and return handles, never ids** (the host maps ids to handles).
+12. **An extension may not be installed.** Only the always set (`extensions.json`) is certain; any other extension can be missing, refused or uninstalled with its data kept. Reach an `optional` extension only behind a check (its capability, `app.can('<id>.view')`, or a `not_found` from its action), never assume its tables or routes. An always installed extension never `dependsOn` an offered one. Installing, uninstalling and restarting are `core.*` actions behind the critical `core.extensions.manage`; the AI never runs or proposes an action that requires a critical capability.
 
 - **Region-neutral**: no country-specific presets, defaults, enums, prompts or examples; language (words) is separate from region formats (dates, numbers, first day of week, units).
 
@@ -133,9 +134,11 @@ pnpm gen            # openapi.json, api-client types, each extension's openapi.j
 pnpm build          # web SPA, bundled server (apps/server/dist) and extension packages (dist/extensions, which the built server loads)
 docker compose up   # production-like run on http://localhost:3000
 
-# server CLI (also inside the container: node /app/server/main.mjs <cmd>)
+# server CLI (inside the container: node /app/server/famos.mjs <cmd>, the image's entry point, or main.mjs)
 # from source the server loads the extensions' source only when told where it is
 FAMOS_DEV_EXTENSIONS=../../extensions pnpm --filter @famos/server exec tsx src/main.ts migrate|backup|restore <file>|openapi
+# which extensions a family has: a new family starts with the always set; changes load at the next start
+node apps/server/dist/famos.mjs extensions list|install <id…>|install --all-offered|uninstall <id>
 ```
 
 Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` and report the results honestly.

@@ -46,6 +46,13 @@ export const CORE_CAPABILITIES = {
 		level: 'manage',
 		critical: true,
 	}),
+	/** Install and uninstall extensions, and restart the server to load them. */
+	extensionsManage: defineCapability({
+		id: 'core.extensions.manage',
+		label: 'app:cap_extensions_manage',
+		level: 'manage',
+		critical: true,
+	}),
 	/** Auto-approval approves as the person who turned it on, so only admins do. */
 	autoApproveManage: defineCapability({
 		id: 'core.autoApprove.manage',

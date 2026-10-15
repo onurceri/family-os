@@ -36,6 +36,10 @@ if (!/COPY --from=build \/repo\/apps\/server\/dist \.\/server/.test(dockerfile))
 if (!/COPY --from=build \/repo\/dist\/extensions \.\/extensions/.test(dockerfile)) {
 	missing.push('dist/extensions/ (COPY --from=build /repo/dist/extensions ./extensions)');
 }
+// The supervisor is the entry point, so a restart the app asks for starts the server again.
+if (!dockerfile.includes('ENTRYPOINT ["node", "--enable-source-maps", "/app/server/famos.mjs"]')) {
+	missing.push('the supervisor as the entry point (ENTRYPOINT … /app/server/famos.mjs)');
+}
 if (
 	!dockerfile.includes('pnpm --filter "./extensions/*" build') ||
 	!dockerfile.includes('node scripts/collect-extensions.mjs')

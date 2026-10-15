@@ -74,6 +74,8 @@ export interface HttpAppDeps {
 	trustedProxies?: readonly string[];
 	/** The running extensions and their web packages; by default the kernel's, without packages. */
 	extensions?: LoadedWeb;
+	/** Names this start of the process: an app waiting for a restart sees it change. */
+	boot?: string;
 }
 
 /** The kernel's extensions (core is the host's, not one of them) and their web packages. */
@@ -498,7 +500,9 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 
 	app.onError((error, c) => handleError(error, c, deps.logger));
 	app.use('*', secureHeaders({ crossOriginEmbedderPolicy: false }));
-	app.get('/health', (c) => c.json({ status: 'ok', version: deps.appVersion }));
+	app.get('/health', (c) =>
+		c.json({ status: 'ok', version: deps.appVersion, ...(deps.boot && { boot: deps.boot }) }),
+	);
 
 	// Sign-in bodies are tiny; refuse large ones before better-auth parses them.
 	app.use('/api/auth/*', bodyLimit({ maxSize: 16 * 1024 }));
