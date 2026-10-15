@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
 ## Roadmap
 
 - [x] Extensions are isolated from each other: each one reaches only its own data, files and secrets
-- [ ] Install and remove extensions from Settings (official, signed packages); pets, vehicles, home,
+- [x] Install and remove extensions from Settings (official, signed packages); pets, vehicles, home,
       kitchen and photos & weather become optional
 - [ ] Home Assistant: sensors and who is home on Today and the wall display
 - [ ] Home Assistant: FamilyOS notifications and actions from your automations
