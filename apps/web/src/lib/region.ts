@@ -1,4 +1,4 @@
-import { canonicalLocale, isFormatLocale, setupFormatLocale } from '@famos/time';
+import { canonicalLocale, isFormatLocale } from '@famos/time';
 
 /** A time zone's current offset ("GMT+3"), or nothing when the zone is unknown. */
 export function offsetOf(zone: string, at: Date = new Date()): string {
@@ -31,15 +31,24 @@ export function localeName(code: string, uiLocale: string): string {
 	}
 }
 
+const validTags = (tags: readonly string[]) =>
+	tags.filter(isFormatLocale).map((tag) => canonicalLocale(tag));
+
 /**
- * Region formats to offer when nothing is set yet: the one in use, the browser's, and every
- * installed language with the browser's region. Any other valid tag can still be typed.
+ * The region format a browser's preferred languages describe. A region format is about where the
+ * family lives, not which language the app speaks, so it is the browser's own tag: the first one
+ * with a region (`sl-SI`), else the first bare language (`sl`), else `en-US`. It is never a mix of
+ * the app's language and the browser's region.
  */
-export function startingFormatLocales(
-	current: string,
-	browser: string,
-	languages: readonly string[],
-): string[] {
-	const tags = [current, browser, ...languages.map((code) => setupFormatLocale(code, browser))];
-	return [...new Set(tags.filter(isFormatLocale).map((tag) => canonicalLocale(tag)))];
+export function regionFormatLocale(browserTags: readonly string[]): string {
+	const tags = validTags(browserTags);
+	return tags.find((tag) => new Intl.Locale(tag).region) ?? tags[0] ?? 'en-US';
+}
+
+/**
+ * Region formats to offer when nothing is set yet: the one in use, then the browser's own tags in
+ * its order of preference. Any other valid tag can still be typed.
+ */
+export function startingFormatLocales(current: string, browserTags: readonly string[]): string[] {
+	return [...new Set(validTags([current, ...browserTags]))];
 }

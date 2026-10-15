@@ -14,7 +14,7 @@
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
 	import { signInWithPassword } from '#lib/auth.js';
-	import { browserFormatLocale, family } from '#lib/family.svelte.js';
+	import { browserLocales, family } from '#lib/family.svelte.js';
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { getLanguages, getLocale, setLocale, t } from '#lib/i18n.svelte.js';
 	import { localeName, offsetOf, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
@@ -51,11 +51,10 @@
 	let formatTag = $state(family.formatLocale);
 	const formatValid = $derived(isFormatLocale(formatTag));
 	const formatOptions = $derived(
-		startingFormatLocales(
-			family.formatLocale,
-			browserFormatLocale(),
-			getLanguages().map((l) => l.code),
-		).map((value) => ({ value, label: localeName(value, getLocale()) })),
+		startingFormatLocales(family.formatLocale, browserLocales()).map((value) => ({
+			value,
+			label: localeName(value, getLocale()),
+		})),
 	);
 
 	/** A new region format brings its week, clock and temperature; each can still be changed. */
@@ -170,7 +169,6 @@
 						: 'bg-surface'}"
 					onclick={() => {
 						void setLocale(language.code, { remember: true });
-						family.defaultsFor(language.code);
 					}}
 				>
 					<span class="font-semibold">{language.nativeName}</span>
@@ -180,14 +178,7 @@
 				</button>
 			{/each}
 		</div>
-		<Button
-			type="button"
-			onclick={() => {
-				family.defaultsFor(getLocale());
-				formatTag = family.formatLocale;
-				step = 'account';
-			}}>{t('setup_continue')}</Button
-		>
+		<Button type="button" onclick={() => (step = 'account')}>{t('setup_continue')}</Button>
 	{:else if step === 'more'}
 		{#key extraIndex}
 			<Slot

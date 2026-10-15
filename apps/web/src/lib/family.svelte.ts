@@ -1,23 +1,20 @@
 import type { paths } from '@famos/api-client';
-import {
-	defaultHourCycle,
-	defaultTemperatureUnit,
-	defaultWeekStart,
-	setupFormatLocale,
-} from '@famos/time';
+import { defaultHourCycle, defaultTemperatureUnit, defaultWeekStart } from '@famos/time';
 import { api } from './api';
+import { regionFormatLocale } from './region';
 
 type Member =
 	paths['/api/v1/core/members']['get']['responses'][200]['content']['application/json'][number];
 
-/** The browser's preferred region format (`en-US`, `de-DE`), the starting point at setup. */
+/** The browser's preferred languages, most preferred first (`sl-SI`, `en-GB`, `en`). */
+export function browserLocales(): readonly string[] {
+	if (typeof navigator === 'undefined') return [];
+	return navigator.languages?.length ? navigator.languages : [navigator.language];
+}
+
+/** The browser's region format (`sl-SI`, `de-DE`), the starting point at setup. */
 export function browserFormatLocale(): string {
-	const tag = typeof navigator === 'undefined' ? '' : navigator.language;
-	try {
-		return Intl.getCanonicalLocales(tag)[0] ?? 'en-US';
-	} catch {
-		return 'en-US';
-	}
+	return regionFormatLocale(browserLocales());
 }
 
 /** Family-wide data most screens need: active members and the family time zone. */
@@ -45,17 +42,6 @@ class Family {
 		this.weekStart = settings.weekStart;
 		this.hourCycle = settings.hourCycle;
 		this.temperatureUnit = settings.temperatureUnit;
-	}
-
-	/** At setup, before the family exists: region formats that fit the chosen language. */
-	defaultsFor(language: string): void {
-		const formatLocale = setupFormatLocale(language, browserFormatLocale());
-		this.apply({
-			formatLocale,
-			weekStart: defaultWeekStart(formatLocale),
-			hourCycle: defaultHourCycle(formatLocale),
-			temperatureUnit: defaultTemperatureUnit(formatLocale),
-		});
 	}
 
 	async refresh(): Promise<void> {

@@ -1,18 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { offsetOf, startingFormatLocales, timeZoneOptions } from './region.js';
+import { offsetOf, regionFormatLocale, startingFormatLocales, timeZoneOptions } from './region.js';
+
+describe('the region format a browser describes', () => {
+	it('is the first preferred tag with a region, whatever language the app speaks', () => {
+		expect(regionFormatLocale(['sl-SI', 'en-GB', 'en'])).toBe('sl-SI');
+		expect(regionFormatLocale(['sl', 'en-GB'])).toBe('en-GB');
+	});
+
+	it('falls back to a bare language, then en-US', () => {
+		expect(regionFormatLocale(['sl', 'en'])).toBe('sl');
+		expect(regionFormatLocale(['not a tag'])).toBe('en-US');
+		expect(regionFormatLocale([])).toBe('en-US');
+	});
+});
 
 describe('starting region formats', () => {
-	it('offers the current one, the browser one and each installed language with its region', () => {
-		expect(startingFormatLocales('sl-SI', 'sl-SI', ['en', 'tr', 'sl'])).toEqual([
+	it('offers the current one, then the browser tags in order, never mixed with the app language', () => {
+		expect(startingFormatLocales('sl-SI', ['sl-SI', 'en-GB', 'en'])).toEqual([
 			'sl-SI',
-			'en-SI',
-			'tr-SI',
+			'en-GB',
+			'en',
 		]);
 	});
 
-	it('keeps the current choice first and drops tags that are not valid', () => {
-		expect(startingFormatLocales('de-AT', 'en-US', ['en'])).toEqual(['de-AT', 'en-US']);
-		expect(startingFormatLocales('not a tag', 'en-GB', ['en'])).toEqual(['en-GB']);
+	it('drops tags that are not valid', () => {
+		expect(startingFormatLocales('not a tag', ['en-GB'])).toEqual(['en-GB']);
 	});
 });
 

@@ -46,15 +46,15 @@ test.describe(() => {
 			new RegExp(`^(Günaydın|İyi günler|İyi akşamlar), ${ADMIN.name}`),
 		);
 
-		// It is the family's language and the admin's own; the region formats take the chosen
-		// language's words with the browser's region (Turkish in an en-US browser: tr-US).
+		// It is the family's language and the admin's own; the region format is the browser's own
+		// (an en-US browser stays en-US whatever language the app speaks).
 		const family = await api<{ locale: string; formatLocale: string }>(
 			page,
 			'GET',
 			'/api/v1/core/settings/family',
 		);
 		expect(family.locale).toBe('tr');
-		expect(family.formatLocale).toBe('tr-US');
+		expect(family.formatLocale).toBe('en-US');
 
 		// Settings → Languages: Turkish is included; add a German pack from a file.
 		await page.goto('/settings/languages');
