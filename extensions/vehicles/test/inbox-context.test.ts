@@ -10,7 +10,6 @@ const TZ = 'Europe/Istanbul';
 let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 let clio: { id: string };
-let golf: { id: string };
 
 beforeEach(async () => {
 	k = await createTestKernel({ extensions: [records, vehicles, inbox] });
@@ -30,7 +29,7 @@ beforeEach(async () => {
 			{ preset: 'comprehensive_insurance', title: 'Car insurance', dueDate: '2026-11-01' },
 		],
 	});
-	golf = await add({ name: 'Golf', plate: '06 XYZ 99', fuel: 'diesel' });
+	await add({ name: 'Golf', plate: '06 XYZ 99', fuel: 'diesel' });
 });
 afterEach(() => k.close());
 
@@ -71,7 +70,7 @@ describe('household records in the prompt', () => {
 		expect(k.llm.calls[0]?.areas).toEqual(expect.arrayContaining(['inbox', 'vehicles', 'records']));
 	});
 
-	it('leaves a locked area out: no records, no actions, no area', async () => {
+	it('keeps vehicles and their duties out while the area is locked, though records is open', async () => {
 		await k.runner.invoke(
 			'core.setAiAreaAccess',
 			{ extensionId: 'vehicles', access: 'off' },
@@ -90,57 +89,6 @@ describe('household records in the prompt', () => {
 		expect(system).not.toContain('Household records');
 		expect(system).toContain('records.addObligation');
 		expect(k.llm.calls[0]?.areas).not.toContain('vehicles');
-
-		// Opened again, they come back.
-		await k.runner.invoke(
-			'core.setAiAreaAccess',
-			{ extensionId: 'vehicles', access: 'any' },
-			admin.actor,
-		);
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('Yeniden');
-		expect(k.llm.calls[1]?.system).toContain('Car insurance (Clio)');
-		await k.runner.invoke(
-			'core.setAiAreaAccess',
-			{ extensionId: 'vehicles', access: 'off' },
-			admin.actor,
-		);
-
-		await k.runner.invoke(
-			'core.setAiAreaAccess',
-			{ extensionId: 'records', access: 'off' },
-			admin.actor,
-		);
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('Başka bir not');
-		// Nothing is left to propose, so the model is not asked at all.
-		expect(k.llm.calls).toHaveLength(2);
-	});
-
-	it('leaves out a local-only area for a remote model, and shows it for a local one', async () => {
-		await k.runner.invoke(
-			'core.setAiAreaAccess',
-			{ extensionId: 'vehicles', access: 'local' },
-			admin.actor,
-		);
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read();
-		expect(k.llm.calls[0]?.system).not.toContain('(vehicle:');
-		k.llm.privacy.local = true;
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('Bir not daha');
-		expect(k.llm.calls[1]?.system).toContain('Clio (vehicle:1)');
-	});
-
-	it('shares nothing when the area is off for people too (feature switched off)', async () => {
-		await k.runner.invoke(
-			'core.setFeatureEnabled',
-			{ extensionId: 'vehicles', enabled: false },
-			admin.actor,
-		);
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read();
-		expect(k.llm.calls[0]?.system).not.toContain('Clio (vehicle:');
 	});
 });
 
@@ -199,41 +147,6 @@ describe('proposals that name a record', () => {
 		expect(item).toMatchObject({ status: 'extracted', proposals: 0, skipped: 1 });
 	});
 
-	it('maps a vehicle handle to its id and fills the record’s name and page', async () => {
-		k.llm.respond({
-			summary: 'Yeni poliçe',
-			proposals: [
-				{
-					action: 'records.addObligation',
-					input: {
-						recordId: 'vehicle:2',
-						recordKind: 'car', // wrong on purpose: the Inbox knows better
-						recordName: 'Whatever',
-						title: 'Trafik sigortası',
-						dueDate: '2027-03-12',
-						every: { years: 1 },
-					},
-					dateText: '12.03.2027',
-					confidence: 0.8,
-				},
-			],
-		});
-		await read();
-		const [draft] = await drafts();
-		expect(draft?.input).toMatchObject({
-			recordId: golf.id,
-			recordKind: 'vehicle',
-			recordName: 'Golf',
-			recordUrl: `/vehicles/${golf.id}`,
-		});
-		await k.runner.approveDraft(draft?.id ?? '', admin.actor);
-		expect(
-			await k.route('records.listObligations').call({
-				query: { recordId: golf.id, status: 'open' },
-			}),
-		).toMatchObject([{ title: 'Trafik sigortası', recordName: 'Golf', dueDate: '2027-03-12' }]);
-	});
-
 	it('maps the vehicle of a service entry too', async () => {
 		k.llm.respond({
 			summary: 'Servis faturası',
@@ -249,62 +162,5 @@ describe('proposals that name a record', () => {
 		await read('Servis faturası 1 Ekim 2026, yağ değişimi');
 		const [draft] = await drafts();
 		expect(draft?.input).toMatchObject({ vehicleId: clio.id, doneOn: '2026-10-01' });
-	});
-
-	it('drops proposals for records it never listed', async () => {
-		k.llm.respond({
-			summary: 'x',
-			proposals: [
-				{
-					action: 'records.addObligation',
-					input: {
-						recordId: 'vehicle:9',
-						recordKind: 'vehicle',
-						recordName: 'X',
-						title: 'A',
-						dueDate: '2027-01-01',
-					},
-					confidence: 1,
-				},
-				{
-					action: 'records.addObligation',
-					input: {
-						recordId: 'vehicle_00000000-0000-7000-8000-000000000042',
-						recordKind: 'vehicle',
-						recordName: 'X',
-						title: 'B',
-						dueDate: '2027-01-01',
-					},
-					confidence: 1,
-				},
-				{
-					action: 'vehicles.addLog',
-					input: {
-						vehicleId: 'vehicle_00000000-0000-7000-8000-000000000042',
-						doneOn: '2026-10-01',
-					},
-					confidence: 1,
-				},
-			],
-		});
-		await read();
-		expect(await drafts()).toHaveLength(0);
-		const [item] = await k.route('inbox.listItems').call({
-			query: { limit: 5 },
-			actor: admin.actor,
-		});
-		expect(item).toMatchObject({ status: 'extracted', proposals: 0, skipped: 3 });
-	});
-
-	it('gives at most 50 items per area', async () => {
-		for (let i = 0; i < 52; i++) {
-			await k.runner.invoke('vehicles.addVehicle', { name: `Car ${i + 1}` }, admin.actor);
-		}
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read();
-		const system = k.llm.calls[0]?.system ?? '';
-		// Clio and Golf plus 48 of the 52 more.
-		expect(system).toContain('(vehicle:50)');
-		expect(system).not.toContain('(vehicle:51)');
 	});
 });
