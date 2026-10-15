@@ -184,6 +184,9 @@
 													"null"
 												],
 												"properties": {
+													"id": {
+														"type": "string"
+													},
 													"memberId": {
 														"type": "string"
 													},
@@ -192,6 +195,7 @@
 													}
 												},
 												"required": [
+													"id",
 													"memberId",
 													"doneAt"
 												]
@@ -619,6 +623,9 @@
 												"null"
 											],
 											"properties": {
+												"id": {
+													"type": "string"
+												},
 												"memberId": {
 													"type": "string"
 												},
@@ -627,6 +634,7 @@
 												}
 											},
 											"required": [
+												"id",
 												"memberId",
 												"doneAt"
 											]
@@ -1522,6 +1530,9 @@
 																"null"
 															],
 															"properties": {
+																"id": {
+																	"type": "string"
+																},
 																"memberId": {
 																	"type": "string"
 																},
@@ -1530,6 +1541,7 @@
 																}
 															},
 															"required": [
+																"id",
 																"memberId",
 																"doneAt"
 															]
@@ -2147,6 +2159,9 @@
 																"null"
 															],
 															"properties": {
+																"id": {
+																	"type": "string"
+																},
 																"memberId": {
 																	"type": "string"
 																},
@@ -2155,6 +2170,7 @@
 																}
 															},
 															"required": [
+																"id",
 																"memberId",
 																"doneAt"
 															]
@@ -2982,6 +2998,9 @@
 																		"null"
 																	],
 																	"properties": {
+																		"id": {
+																			"type": "string"
+																		},
 																		"memberId": {
 																			"type": "string"
 																		},
@@ -2990,6 +3009,7 @@
 																		}
 																	},
 																	"required": [
+																		"id",
 																		"memberId",
 																		"doneAt"
 																	]
@@ -3504,6 +3524,9 @@
 																		"null"
 																	],
 																	"properties": {
+																		"id": {
+																			"type": "string"
+																		},
 																		"memberId": {
 																			"type": "string"
 																		},
@@ -3512,6 +3535,7 @@
 																		}
 																	},
 																	"required": [
+																		"id",
 																		"memberId",
 																		"doneAt"
 																	]
@@ -4043,6 +4067,9 @@
 																"null"
 															],
 															"properties": {
+																"id": {
+																	"type": "string"
+																},
 																"memberId": {
 																	"type": "string"
 																},
@@ -4051,6 +4078,7 @@
 																}
 															},
 															"required": [
+																"id",
 																"memberId",
 																"doneAt"
 															]

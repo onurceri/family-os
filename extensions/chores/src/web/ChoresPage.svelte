@@ -90,6 +90,8 @@
 	const me = $derived(app.me()?.id ?? null);
 	const canEdit = $derived(app.can('chores.edit'));
 	const canUse = $derived(app.can('chores.use'));
+	// Opening and adding a chore is also for people who may only suggest: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('chores.edit'));
 	const canDo = (c: Chore) => canEdit || (canUse && (c.assigneeId === null || c.assigneeId === me));
 
 	let onlyMine = $state(false);
@@ -149,13 +151,13 @@
 	}
 	// Opening a chore changes the address; the form follows it.
 	function openEdit(chore: Chore) {
-		if (canEdit) openPath(`/chores/${chore.id}`);
+		if (mayChange) openPath(`/chores/${chore.id}`);
 	}
 	$effect(() => {
 		const id = selectedId;
 		// Back to the plain list (same mounted page): close the form of the chore that was open.
 		if (!id && editing?.id) editing = null;
-		if (!id || !loaded || !canEdit || editing?.id === id) return;
+		if (!id || !loaded || !mayChange || editing?.id === id) return;
 		const chore = chores.find((c) => c.id === id);
 		if (!chore) return;
 		const loadedForm = fromChore(chore);
@@ -198,6 +200,21 @@
 			saving = false;
 		}
 	}
+	/** The open chore's latest tick, when it is the viewer's own of today: they may take it back. */
+	const ownTick = $derived.by(() => {
+		const done = editing?.id ? chores.find((c) => c.id === editing?.id)?.lastDone : null;
+		if (!done || done.memberId !== me) return null;
+		return todayIn(app.timeZone(), done.doneAt) === today ? done : null;
+	});
+	async function takeBack(completionId: string) {
+		try {
+			await undoDone(app, completionId, t('label_undo'));
+			await load();
+		} catch {
+			app.toast(t('undo_failed'));
+		}
+	}
+
 	async function archive() {
 		if (!editing?.id) return;
 		try {
@@ -211,7 +228,7 @@
 </script>
 
 {#snippet add()}
-	{#if (canEdit || canUse) && !editing}
+	{#if mayChange && !editing}
 		<Button onclick={openNew} class="max-md:hidden"
 			><Plus class="size-4" />{canEdit ? t('add_chore') : t('suggest_chore')}</Button
 		>
@@ -223,6 +240,13 @@
 {/snippet}
 
 {#snippet formCard()}
+	{#if ownTick}
+		{@const done = ownTick}
+		<div class="border-line mb-4 flex items-center gap-3 border-b pb-4" data-testid="own-tick">
+			<p class="text-ink-soft min-w-0 flex-1 text-sm">{t('own_tick_today')}</p>
+			<Button variant="secondary" size="sm" onclick={() => takeBack(done.id)}>{t('undo')}</Button>
+		</div>
+	{/if}
 	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>
 		<ChoreForm bind:value={form} {errors} idPrefix="chore" />
 	</form>
@@ -265,7 +289,7 @@
 									waiting={waitingIds.has(chore.id)}
 									selected={chore.id === selectedId}
 									ondone={() => tick(chore)}
-									onopen={canEdit ? () => openEdit(chore) : undefined}
+									onopen={mayChange ? () => openEdit(chore) : undefined}
 								/>
 							</li>
 						{/each}
@@ -280,7 +304,7 @@
 	{#snippet list()}
 		{#if empty}
 			<EmptyState art="chores" title={t('empty')} hint={t('empty_hint')}>
-				{#if canEdit || canUse}
+				{#if mayChange}
 					<Button onclick={openNew}
 						><Plus class="size-4" />{canEdit ? t('add_chore') : t('suggest_chore')}</Button
 					>
@@ -293,7 +317,7 @@
 	{#snippet detail()}{/snippet}
 </ListDetail>
 
-{#if !empty && (canEdit || canUse) && !editing}
+{#if !empty && mayChange && !editing}
 	<div class="md:hidden">
 		<Fab label={canEdit ? t('add_chore') : t('suggest_chore')} onclick={openNew} />
 	</div>

@@ -13,7 +13,8 @@
 	 */
 	let { selectedId = '', item }: { selectedId?: string; item?: Snippet } = $props();
 	const { app, t } = useHome();
-	const canEdit = $derived(app.can('home.edit'));
+	// Also for people who may only suggest a change: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('home.edit'));
 	const adding = $derived(app.query().get('new') === '1');
 	let empty = $state(false);
 	let first = $state<string | undefined>();
@@ -22,7 +23,7 @@
 </script>
 
 {#snippet add()}
-	{#if canEdit}
+	{#if mayChange}
 		<Button class="max-md:hidden" onclick={() => setAdding(true)}
 			><Plus class="size-4" />{t('add_home')}</Button
 		>
@@ -39,7 +40,7 @@
 >
 	{#snippet emptyState()}
 		<EmptyState art="home" title={t('empty')} hint={t('empty_hint')}>
-			{#if canEdit}
+			{#if mayChange}
 				<Button onclick={() => setAdding(true)}><Plus class="size-4" />{t('add_home')}</Button>
 			{/if}
 		</EmptyState>
@@ -55,7 +56,7 @@
 	{#snippet detail()}{#if item}{@render item()}{/if}{/snippet}
 </ListDetail>
 
-{#if canEdit && !empty && !selectedId}
+{#if mayChange && !empty && !selectedId}
 	<div class="md:hidden" style="--fab-bottom: 4.25rem">
 		<Fab label={t('add_home')} onclick={() => setAdding(true)} hidden={adding} />
 	</div>

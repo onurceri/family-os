@@ -83,7 +83,8 @@
 		return app.onEvent('records.obligation.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('records.edit'));
+	// Also for people who may only suggest a change: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('records.edit'));
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -192,6 +193,7 @@
 </script>
 
 <SidePanel
+	note={app.needsApproval('records.edit') ? app.t('app:draft_approval_note') : undefined}
 	open={editingId !== null}
 	title={formTitle}
 	closeLabel={t('close')}
@@ -246,7 +248,7 @@
 </SidePanel>
 
 {#snippet addAction()}
-	{#if canEdit}
+	{#if mayChange}
 		<Button variant="ghost" size="sm" onclick={() => openNew()}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('add')}</Button
 		>
@@ -275,7 +277,7 @@
 	{:else if loaded && open.length === 0}
 		<EmptyLine text={t('needs_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
-			{#if canEdit}
+			{#if mayChange}
 				<button
 					type="button"
 					class="text-info min-h-9 font-semibold underline underline-offset-4"
@@ -295,7 +297,7 @@
 						<button
 							type="button"
 							onclick={() => openEdit(o)}
-							disabled={!canEdit}
+							disabled={!mayChange}
 							class="hover:bg-idle/55 flex min-h-14 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent px-3 py-1.5 text-start text-[length:inherit] enabled:cursor-pointer"
 						>
 							<span
@@ -317,7 +319,7 @@
 								</span>
 							</span>
 						</button>
-						{#if canEdit && !o.lapses}
+						{#if mayChange && !o.lapses}
 							<div class="pe-3">
 								<Button
 									variant="secondary"
@@ -354,13 +356,13 @@
 					{/if}
 				</div>
 			{/each}
-			{#if canEdit && suggestions.length > 0}
+			{#if mayChange && suggestions.length > 0}
 				<div role="listitem" class="flex flex-wrap items-center gap-2 px-3 py-2.5">
 					{@render chips()}
 				</div>
 			{/if}
 		</Card>
-	{:else if loaded && canEdit && suggestions.length > 0}
+	{:else if loaded && mayChange && suggestions.length > 0}
 		<div class="flex flex-wrap items-center gap-2 px-1">{@render chips()}</div>
 	{/if}
 

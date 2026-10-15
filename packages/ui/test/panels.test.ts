@@ -112,6 +112,19 @@ describe('SidePanel on a wide window', () => {
 		expect(q('[data-testid=side-panel-footer]')).toBeNull();
 	});
 
+	it('says above the form when saving only suggests the change, on a panel and a sheet', () => {
+		panel();
+		expect(q('[data-testid=side-panel-note]')).toBeNull();
+		cleanup();
+		const note = 'After you save, someone has to approve this.';
+		panel({ note, saveLabel: 'Save', onsave: vi.fn() });
+		expect(q('[data-testid=side-panel-note]')?.textContent).toContain(note);
+		cleanup();
+		wide.current = false;
+		panel({ note, saveLabel: 'Save', onsave: vi.fn() });
+		expect(q('[data-testid=side-panel-note]')?.textContent).toContain(note);
+	});
+
 	it('saves with Ctrl+Enter and closes with Escape', () => {
 		const onsave = vi.fn();
 		const onclose = vi.fn();

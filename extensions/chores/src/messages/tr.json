@@ -21,6 +21,7 @@
 	"archived": "Ev işi arşivlendi",
 	"error": "Olmadı. Lütfen tekrar dene.",
 	"undo": "Geri al",
+	"own_tick_today": "Bunu bugün yapıldı olarak işaretledin.",
 	"undo_failed": "Bu artık geri alınamıyor.",
 	"done_toast": "{{title}} tamamlandı",
 	"empty": "Henüz ev işi yok.",

@@ -18,6 +18,8 @@ The address is shown **only once**. Copy it (**Copy address**), or press **Open 
 
 Your phone refreshes the calendar by itself, usually every few hours.
 
+This page sends the family calendar out. Bringing a calendar from outside in (holidays, school) is done under **Settings → Family → Calendars & tags** by whoever manages the family's calendars (admins by default); the page says so, and shows that link to those who may use it.
+
 **Anyone who has the address can read these events, without signing in.** Treat it like a password. If it gets out, press **Remove** (twice) in **Your addresses** and make a new one. A removed address stops working at once. The list shows when each address was last used.
 
 ## Subscribe to other calendars

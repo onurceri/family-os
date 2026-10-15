@@ -39,4 +39,4 @@ To keep pets away from the AI, set **Pets** to **Off** under **Settings â†’ AI â
 
 ## Who can do what
 
-Members who may edit pets change them directly; supervised members' changes wait for approval. **Archive pet** (at the bottom of its page, tap again to confirm) hides the pet and stops its reminders; its papers and history are kept.
+Members who may edit pets change them directly; supervised members see the same buttons and forms, which say "After you save, someone has to approve this.", and their changes wait for approval. **Archive pet** (at the bottom of its page, tap again to confirm) hides the pet and stops its reminders; its papers and history are kept.

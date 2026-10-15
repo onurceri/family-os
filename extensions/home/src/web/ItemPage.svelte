@@ -64,7 +64,8 @@
 		return app.onEvent('home.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('home.edit'));
+	// Also for people who may only suggest a change: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('home.edit'));
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -73,7 +74,7 @@
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(canEdit && app.query().get('edit') === '1');
+	const editing = $derived(mayChange && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<ItemFormValue>(emptyItem());
 	let baseline = $state('');
@@ -159,7 +160,7 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if canEdit && item}
+	{#if mayChange && item}
 		<Button variant="outline" onclick={() => setEditing(true)}
 			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
 		>
@@ -215,6 +216,7 @@
 </Page>
 
 <SidePanel
+	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
 	open={editing}
 	title={t('item_form_title')}
 	closeLabel={t('close')}

@@ -65,14 +65,15 @@
 		return app.onEvent('pets.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('pets.edit'));
+	// Also for people who may only suggest a change: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('pets.edit'));
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
 	};
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(canEdit && Boolean(petId) && app.query().get('edit') === '1');
+	const editing = $derived(mayChange && Boolean(petId) && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<PetFormValue>(emptyPet());
 	let baseline = $state('');
@@ -155,7 +156,7 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if canEdit && pet}
+	{#if mayChange && pet}
 		<Button variant="outline" onclick={() => setEditing(true)}
 			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
 		>
@@ -229,6 +230,7 @@
 </PetsShell>
 
 <SidePanel
+	note={app.needsApproval('pets.edit') ? app.t('app:draft_approval_note') : undefined}
 	open={editing}
 	title={t('form_title')}
 	closeLabel={t('close')}

@@ -34,7 +34,8 @@
 		return app.onEvent('vehicles.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('vehicles.edit'));
+	// Also for people who may only suggest a change: theirs waits for approval.
+	const mayChange = $derived(app.mayChange('vehicles.edit'));
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -124,6 +125,7 @@
 </script>
 
 <SidePanel
+	note={app.needsApproval('vehicles.edit') ? app.t('app:draft_approval_note') : undefined}
 	open={adding}
 	title={t('log_form_title')}
 	closeLabel={t('close')}
@@ -235,7 +237,7 @@
 					>
 				</div>
 			{/if}
-			{#if canEdit}
+			{#if mayChange}
 				<div>
 					<ConfirmButton
 						label={t('remove')}
@@ -249,7 +251,7 @@
 </SidePanel>
 
 {#snippet addAction()}
-	{#if canEdit}
+	{#if mayChange}
 		<Button variant="ghost" size="sm" onclick={open}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('log_add')}</Button
 		>
@@ -266,7 +268,7 @@
 	{:else if loaded && logs.length === 0}
 		<EmptyLine text={t('log_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
-			{#if canEdit}
+			{#if mayChange}
 				<button
 					type="button"
 					class="text-info min-h-9 font-semibold underline underline-offset-4"

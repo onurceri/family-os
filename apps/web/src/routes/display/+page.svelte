@@ -70,6 +70,8 @@
 		members: () => members,
 		me: () => null,
 		can: (capability) => me?.capabilities.includes(capability) ?? false,
+		// A display only looks: it never changes or suggests anything.
+		mayChange: () => false,
 		timeZone: () => me?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
 		onEvent,
 		draftPresenter: () => undefined,

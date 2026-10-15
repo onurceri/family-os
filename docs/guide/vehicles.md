@@ -40,4 +40,4 @@ To keep vehicles away from the AI, set **Vehicles** to **Off** under **Settings 
 
 ## Who can do what
 
-Members who may edit vehicles change them directly; supervised members' changes wait for approval. **Archive vehicle** (at the bottom of its page, tap again to confirm) hides the vehicle and stops its reminders; its papers and history are kept.
+Members who may edit vehicles change them directly; supervised members see the same buttons and forms, which say "After you save, someone has to approve this.", and their changes wait for approval. **Archive vehicle** (at the bottom of its page, tap again to confirm) hides the vehicle and stops its reminders; its papers and history are kept.

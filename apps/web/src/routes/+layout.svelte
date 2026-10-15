@@ -26,6 +26,7 @@
 	import { buildNav, isSettingsPath, type NavItem, settingsOwner, TODAY } from '#lib/nav.js';
 	import { connectRealtime, onEvent, onReconnect } from '#lib/realtime.js';
 	import { onExtensionsChanged } from '#lib/server-changes.js';
+	import { approvalGates } from '#lib/approval-gates.js';
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
@@ -133,7 +134,7 @@
 				place && { label: t('draft_sent_show'), run: () => void goto(place.path) },
 			);
 		},
-		needsApproval: (capability) => !session.can(capability) && session.can('core.drafts.propose'),
+		...approvalGates((capability) => session.can(capability)),
 		awaitsApproval: (id) => awaiting.has(id),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
 		waiting: () => offline.waitingChanges(),

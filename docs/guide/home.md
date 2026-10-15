@@ -40,4 +40,4 @@ To keep your homes away from the AI, set **Home** to **Off** under **Settings â†
 
 ## Who can do what
 
-Members who may edit the home area change it directly; supervised members' changes wait for approval. **Archive home**, **Archive thing** and **Archive service** (tap again to confirm) hide it and stop its reminders; archiving a home also hides its things and services. Papers and history are kept.
+Members who may edit the home area change it directly; supervised members see the same buttons and forms, which say "After you save, someone has to approve this.", and their changes wait for approval. **Archive home**, **Archive thing** and **Archive service** (tap again to confirm) hide it and stop its reminders; archiving a home also hides its things and services. Papers and history are kept.

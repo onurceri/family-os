@@ -119,6 +119,7 @@
 </script>
 
 <SidePanel
+	note={app.needsApproval('vehicles.edit') ? app.t('app:draft_approval_note') : undefined}
 	open={adding}
 	title={t('form_title')}
 	closeLabel={t('close')}

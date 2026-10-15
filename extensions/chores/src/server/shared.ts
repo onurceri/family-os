@@ -43,7 +43,7 @@ export async function choreViews(
 			.execute(),
 		t
 			.selectFrom('chores_completions')
-			.select(['chore_id', 'member_id', 'done_at'])
+			.select(['id', 'chore_id', 'member_id', 'done_at'])
 			.where('chore_id', 'in', ids)
 			.where('undone_at', 'is', null)
 			.orderBy('done_at', 'desc')
@@ -52,9 +52,10 @@ export async function choreViews(
 	]);
 	const order = new Map<string, string[]>();
 	for (const p of people) order.set(p.chore_id, [...(order.get(p.chore_id) ?? []), p.member_id]);
-	const last = new Map<string, { memberId: string; doneAt: number }>();
+	const last = new Map<string, { id: string; memberId: string; doneAt: number }>();
 	for (const d of done)
-		if (!last.has(d.chore_id)) last.set(d.chore_id, { memberId: d.member_id, doneAt: d.done_at });
+		if (!last.has(d.chore_id))
+			last.set(d.chore_id, { id: d.id, memberId: d.member_id, doneAt: d.done_at });
 	return rows.map((row) => ({
 		id: row.id as Chore['id'],
 		title: row.title,

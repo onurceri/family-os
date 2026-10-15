@@ -131,6 +131,17 @@
 	<div class="grid gap-3">
 		<p class="text-ink-soft max-w-prose px-1 text-sm">{t('feeds_intro')}</p>
 		<Notice tone="warn">{t('feeds_warning')}</Notice>
+		<!-- People who come here to add a holiday or school calendar learn where that is done. -->
+		<p class="text-ink-soft max-w-prose px-1 text-[13px]" data-testid="feeds-outside">
+			{#if mayShareFamily}
+				{t('feeds_outside_manage')}
+				<a class="text-info font-semibold underline underline-offset-2" href="/settings/calendars"
+					>{t('nav_calendars')}</a
+				>.
+			{:else}
+				{t('feeds_outside_hint')}
+			{/if}
+		</p>
 	</div>
 
 	{#if fresh}

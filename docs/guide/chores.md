@@ -16,7 +16,7 @@ Choose **Add chore** and fill in:
   - *Take turns*: after someone does it, the next person in the list is up.
   - *Whoever did it least*: the person who did it the fewest times in the last 90 days is up (ties go to the one listed first).
 
-The page groups chores into **Overdue**, **Today**, **Coming up** and **Done** (one-off chores that are finished). **Everyone** and **Mine** switch the view: **Mine** shows only your turns and the chores anyone can do. If you can edit chores, tap a chore to change it or to **Archive** it (tap again to confirm). People who cannot edit chores see **Suggest a chore** instead of **Add chore**, and their suggestion waits for approval.
+The page groups chores into **Overdue**, **Today**, **Coming up** and **Done** (one-off chores that are finished). **Everyone** and **Mine** switch the view: **Mine** shows only your turns and the chores anyone can do. Tap a chore's name to open it, change it or **Archive** it (tap again to confirm). People who cannot edit chores see **Suggest a chore** instead of **Add chore**; when they open a chore the form says "After you save, someone has to approve this.", and their change waits for approval. If you ticked the chore off yourself today, the opened chore says "You marked this done today." with **Undo**, so a tick can be taken back after the notice is gone.
 
 ## Doing a chore
 

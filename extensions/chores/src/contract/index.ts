@@ -71,7 +71,8 @@ export const ChoreSchema = z.object({
 	assigneeId: z.string().nullable(),
 	/** The people in rotation order. */
 	assigneeIds: z.array(z.string()),
-	lastDone: z.object({ memberId: z.string(), doneAt: z.number() }).nullable(),
+	/** The latest completion still standing; `id` lets its doer take it back (`chores.undoDone`). */
+	lastDone: z.object({ id: z.string(), memberId: z.string(), doneAt: z.number() }).nullable(),
 	createdAt: z.number(),
 	updatedAt: z.number(),
 });

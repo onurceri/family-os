@@ -62,6 +62,13 @@ export interface AppContext {
 	 */
 	needsApproval(capability: string): boolean;
 	/**
+	 * Whether the viewer may change what a capability protects, directly (they hold it) or by
+	 * suggesting the change for approval (`core.drafts.propose`). Gate the controls of actions with
+	 * `approval: { unless: capability }` with it, so people who may suggest see them; `can` stays
+	 * for actions that `require` the capability. Its form then says so when `needsApproval`.
+	 */
+	mayChange(capability: string): boolean;
+	/**
 	 * Whether a change of the signed-in member to the thing with this id (a task, an event, a pet)
 	 * waits for someone else's approval (reactive). Rows and record pages mark it.
 	 */

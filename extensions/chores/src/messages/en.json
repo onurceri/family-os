@@ -21,6 +21,7 @@
 	"archived": "Chore archived",
 	"error": "That did not work. Please try again.",
 	"undo": "Undo",
+	"own_tick_today": "You marked this done today.",
 	"undo_failed": "That cannot be undone any more.",
 	"done_toast": "{{title}} done",
 	"empty": "No chores yet.",

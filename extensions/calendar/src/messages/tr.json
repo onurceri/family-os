@@ -80,6 +80,8 @@
 	"feeds_title": "Telefonumdaki takvim",
 	"feeds_intro": "Aile takvimini telefonunun kendi takvim uygulamasına ekle. Kendiliğinden güncellenir, yalnızca okunur.",
 	"feeds_warning": "Adresi bilen herkes bu etkinlikleri görebilir; bu yüzden şifre gibi sakla. Başkasının eline geçerse aşağıdan kaldır ve yenisini oluştur.",
+	"feeds_outside_hint": "Bu, aile takvimini dışarı gönderir. Dışarıdan bir takvimi (tatiller, okul) getirmek için ailenin takvimlerini yöneten kişiye söyle: onu Ayarlar → Takvimler ve etiketler bölümünden ekler.",
+	"feeds_outside_manage": "Bu, aile takvimini dışarı gönderir. Dışarıdan bir takvimi (tatiller, okul) getirmek için şuradan ekle:",
 	"feed_scope": "Ne gösterilsin",
 	"nav_feed": "Telefonumdaki takvim",
 	"nav_calendars": "Takvimler ve etiketler",

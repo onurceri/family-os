@@ -262,6 +262,7 @@ export interface operations {
                         assigneeId: string | null;
                         assigneeIds: string[];
                         lastDone: {
+                            id: string;
                             memberId: string;
                             doneAt: number;
                         } | null;
@@ -426,6 +427,7 @@ export interface operations {
                         assigneeId: string | null;
                         assigneeIds: string[];
                         lastDone: {
+                            id: string;
                             memberId: string;
                             doneAt: number;
                         } | null;
@@ -773,6 +775,7 @@ export interface operations {
                             assigneeId: string | null;
                             assigneeIds: string[];
                             lastDone: {
+                                id: string;
                                 memberId: string;
                                 doneAt: number;
                             } | null;
@@ -986,6 +989,7 @@ export interface operations {
                             assigneeId: string | null;
                             assigneeIds: string[];
                             lastDone: {
+                                id: string;
                                 memberId: string;
                                 doneAt: number;
                             } | null;
@@ -1314,6 +1318,7 @@ export interface operations {
                                 assigneeId: string | null;
                                 assigneeIds: string[];
                                 lastDone: {
+                                    id: string;
                                     memberId: string;
                                     doneAt: number;
                                 } | null;
@@ -1500,6 +1505,7 @@ export interface operations {
                                 assigneeId: string | null;
                                 assigneeIds: string[];
                                 lastDone: {
+                                    id: string;
                                     memberId: string;
                                     doneAt: number;
                                 } | null;
@@ -1689,6 +1695,7 @@ export interface operations {
                             assigneeId: string | null;
                             assigneeIds: string[];
                             lastDone: {
+                                id: string;
                                 memberId: string;
                                 doneAt: number;
                             } | null;

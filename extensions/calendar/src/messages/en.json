@@ -80,6 +80,8 @@
 	"feeds_title": "Calendar on my phone",
 	"feeds_intro": "Add the family calendar to your phone's own calendar app. It updates by itself and is read-only.",
 	"feeds_warning": "Anyone who has the address can see these events, so keep it like a password. If it gets out, remove it below and make a new one.",
+	"feeds_outside_hint": "This sends the family calendar out. To bring a calendar from outside in (holidays, school), ask whoever manages the family's calendars: they add it under Settings → Calendars & tags.",
+	"feeds_outside_manage": "This sends the family calendar out. To bring a calendar from outside in (holidays, school), add it under",
 	"feed_scope": "What to show",
 	"nav_feed": "Calendar on my phone",
 	"nav_calendars": "Calendars & tags",
