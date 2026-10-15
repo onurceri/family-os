@@ -46,7 +46,7 @@
 			occurrence.start <= now &&
 			now < occurrence.end,
 	);
-	const clock = (at: number) => timeLabel(at, app.timeZone(), app.formatLocale(), app.hourCycle());
+	const clock = (at: number) => timeLabel(at, app.timeZone(), app.dateLocale(), app.hourCycle());
 	const time = $derived(
 		occurrence.allDay || occurrence.start === null ? t('all_day') : clock(occurrence.start),
 	);

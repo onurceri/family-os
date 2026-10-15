@@ -134,7 +134,7 @@
 
 	const caretakers = $derived(app.members().filter((m) => pet?.memberIds.includes(m.id)));
 	const dateOf = (d: string) =>
-		formatDate(d, app.formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 	const facts = $derived(
 		pet
 			? [

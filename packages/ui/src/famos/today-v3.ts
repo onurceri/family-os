@@ -4,8 +4,8 @@ import { groupOf, sortTimeline } from './timeline.js';
 /**
  * The shared model of Today in every style. Pure functions: the next-up item, its
  * countdown and pill, the day by person and each person's one-clause status, plus formatting
- * through `Intl` in the family's format locale and hour cycle. Words come from the caller's
- * catalog (the `*Words` interfaces); this file holds none.
+ * through `Intl` (`TodayFormat`: dates and times in the date locale). Other words come from the
+ * caller's catalog (the `*Words` interfaces); this file holds none.
  */
 
 /** Whose next thing the hero shows: the family's, or the signed-in person's. */
@@ -17,9 +17,12 @@ export const NEXT_UP_DURATION_FROM = 60;
 /** From this many minutes the countdown is the start time itself. */
 export const NEXT_UP_TIME_FROM = 120;
 
-/** The family's region formats, never the UI language. */
+/** The family's region formats, and the reader's language for the words in dates and times. */
 export interface TodayFormat {
+	/** Numbers: the family's region format. */
 	formatLocale: string;
+	/** Dates, times and durations: `dateLocale` from `@famos/time` (words in the reader's language). */
+	dateLocale: string;
 	hourCycle: 'h12' | 'h23';
 	timeZone: string;
 }
@@ -187,9 +190,9 @@ export function choresLeft(memberId: string | null, chores: readonly ChoreCount[
 
 // ---------------------------------------------------------------- formatting
 
-/** A clock time in the family's time zone, format locale and hour cycle ("15:45", "3:45 PM"). */
+/** A clock time in the family's time zone, date locale and hour cycle ("15:45", "3:45 PM"). */
 export function formatClock(at: number, format: TodayFormat): string {
-	return new Intl.DateTimeFormat(format.formatLocale, {
+	return new Intl.DateTimeFormat(format.dateLocale, {
 		hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
 		minute: '2-digit',
 		timeZone: format.timeZone,
@@ -296,7 +299,7 @@ export function showCountdown(
 ): CountdownView {
 	switch (count.kind) {
 		case 'minutes': {
-			const { value, unit } = minuteParts(count.minutes, format.formatLocale);
+			const { value, unit } = minuteParts(count.minutes, format.dateLocale);
 			return { kind: count.kind, value, caption: unit };
 		}
 		case 'duration': {
@@ -329,7 +332,7 @@ export function countdownName(
 			? count.until === null
 				? words.now
 				: words.nowUntil(formatClock(count.until, format))
-			: words.inDuration(formatDuration(minutesUntil(now, start), format.formatLocale, 'long'));
+			: words.inDuration(formatDuration(minutesUntil(now, start), format.dateLocale, 'long'));
 	return `${item.title}, ${formatClock(start, format)}, ${when}`;
 }
 
@@ -367,7 +370,7 @@ export function statusText(status: Status, format: TodayFormat, words: StatusWor
 		case 'now':
 			return words.until(status.item.title, formatClock(status.until, format));
 		case 'soon':
-			return words.soon(status.item.title, formatDuration(status.minutes, format.formatLocale));
+			return words.soon(status.item.title, formatDuration(status.minutes, format.dateLocale));
 		case 'at':
 			return words.at(status.item.title, formatClock(status.at, format));
 		case 'allday':
@@ -381,7 +384,7 @@ export function statusText(status: Status, format: TodayFormat, words: StatusWor
 
 /**
  * The month a photo was added (`YYYY-MM`, from `GET /ambient/photos/today`) as words in the
- * format locale ("October 2025"), for "From the photos · {{month}}". Empty when malformed.
+ * date locale ("October 2025"), for "From the photos · {{month}}". Empty when malformed.
  */
 export function formatPhotoMonth(month: string, locale: string): string {
 	const match = /^(\d{4})-(\d{2})$/.exec(month);

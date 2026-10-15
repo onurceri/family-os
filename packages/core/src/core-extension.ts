@@ -18,6 +18,7 @@ import {
 	type UnitOfWork,
 } from '@famos/sdk';
 import {
+	dateLocale,
 	daysAround,
 	formatDate,
 	formatLocaleForLanguage,
@@ -1362,7 +1363,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			};
 			// A change to one date of a repeating event says so, in the words and the date format
 			// of the person it is for.
-			const { locale, formatLocale } = await uow.family.settings();
+			const { locale, formatLocale, hourCycle } = await uow.family.settings();
 			const language = (await uow.family.members()).find((m) => m.id === owner)?.locale ?? locale;
 			const scopeFor = async (row: DraftRow) => {
 				const def = actions.get(row.action_id);
@@ -1372,7 +1373,10 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					const note = input.success ? await def.scopeNote(ctxOf(def), input.data) : null;
 					return note
 						? uow.translate(language, note.key, {
-								date: formatDate(note.date, formatLocale, { day: 'numeric', month: 'short' }),
+								date: formatDate(note.date, dateLocale(language, formatLocale, hourCycle), {
+									day: 'numeric',
+									month: 'short',
+								}),
 							})
 						: undefined;
 				} catch {

@@ -44,7 +44,7 @@
 	/** Six columns: the titles narrower still, so a word keeps to one line. */
 	const narrow = $derived(lanes.length >= 6);
 	const hourFormat = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
 			timeZone: 'UTC',
 			hourCycle: format.hourCycle,

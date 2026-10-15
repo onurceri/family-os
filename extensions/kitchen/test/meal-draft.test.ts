@@ -9,10 +9,11 @@ const words: Record<string, string> = {
 	'kitchen:slot_dinner': 'Dinner',
 	'kitchen:slot_lunch': 'Lunch',
 };
-const context = (formatLocale: string): PresenterContext => ({
+const context = (locale: string): PresenterContext => ({
 	t: (key) => words[key] ?? key,
 	members: [],
-	formatLocale,
+	formatLocale: locale,
+	dateLocale: locale,
 	weekStart: 1,
 	hourCycle: 'h23',
 	timeZone: 'UTC',

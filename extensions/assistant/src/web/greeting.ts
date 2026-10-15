@@ -40,11 +40,11 @@ export const SUGGESTIONS: readonly Suggestion[] = (
 
 /**
  * When a conversation was last used, in the UI language's words ("5 minutes ago", "yesterday"),
- * `justNow` within the minute, or the date in the family's format once it is a week old.
+ * `justNow` within the minute, or the date (in the date locale) once it is a week old.
  */
 export function usedAgo(
 	ms: number,
-	{ now = Date.now(), language, formatLocale, timeZone, justNow }: Ago,
+	{ now = Date.now(), language, dateLocale, timeZone, justNow }: Ago,
 ): string {
 	const seconds = Math.round((ms - now) / 1000);
 	const abs = Math.abs(seconds);
@@ -53,13 +53,13 @@ export function usedAgo(
 	if (abs < 3600) return words.format(Math.round(seconds / 60), 'minute');
 	if (abs < 86_400) return words.format(Math.round(seconds / 3600), 'hour');
 	if (abs < 7 * 86_400) return words.format(Math.round(seconds / 86_400), 'day');
-	return new Intl.DateTimeFormat(formatLocale, { dateStyle: 'medium', timeZone }).format(ms);
+	return new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeZone }).format(ms);
 }
 
 type Ago = {
 	now?: number;
 	language: string;
-	formatLocale: string;
+	dateLocale: string;
 	timeZone: string;
 	justNow: string;
 };

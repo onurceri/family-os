@@ -51,6 +51,7 @@ describe('a suggested change to a task', () => {
 			t: (key: string) => key,
 			members: [{ id: admin.member.id, displayName: 'Ayse', color: 'sky' }],
 			formatLocale: 'en-GB',
+			dateLocale: 'en-GB',
 			weekStart: 1,
 			hourCycle: 'h23' as const,
 			timeZone: TZ,

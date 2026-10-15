@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatTime } from '@famos/time';
+	import { dateLocale, formatTime } from '@famos/time';
 	import { provideAppContext } from '@famos/ui/app';
 	import { trackWork } from '@famos/ui/famos';
 	import type { SlotContribution } from '@famos/ui/slots';
@@ -54,11 +54,16 @@
 	/** The pairing screen reported "paired" and the first `check()` after it has not finished. */
 	let justPaired = false;
 
+	/** Dates and times on the display: its language's words, the family's region and clock. */
+	const shownDateLocale = () =>
+		dateLocale(getLocale(), me?.formatLocale ?? browserFormatLocale(), me?.hourCycle ?? 'h23');
+
 	// What widgets (written for the app) may use; the display has no member, no toasts, no drafts.
 	provideAppContext({
 		t: (key, options) => tDynamic(key, options),
 		locale: () => getLocale(),
 		formatLocale: () => me?.formatLocale ?? browserFormatLocale(),
+		dateLocale: shownDateLocale,
 		weekStart: () => me?.weekStart ?? 1,
 		hourCycle: () => me?.hourCycle ?? 'h23',
 		temperatureUnit: () => me?.temperatureUnit ?? 'celsius',
@@ -223,17 +228,17 @@
 	);
 
 	const zone = $derived(me?.timeZone);
-	// Written the family's way (locale and hour cycle), the same as Today's times.
+	// Written the family's way (date locale and hour cycle), the same as Today's times.
 	const time = $derived(
 		formatTime(
 			now.getTime(),
 			zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-			me?.formatLocale ?? browserFormatLocale(),
+			shownDateLocale(),
 			me?.hourCycle,
 		),
 	);
 	const date = $derived(
-		new Intl.DateTimeFormat(me?.formatLocale ?? browserFormatLocale(), {
+		new Intl.DateTimeFormat(shownDateLocale(), {
 			weekday: 'long',
 			day: 'numeric',
 			month: 'long',

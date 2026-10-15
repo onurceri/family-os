@@ -127,7 +127,12 @@ describe('WeatherSky', () => {
 });
 
 describe('WeatherBlock with a sky', () => {
-	const format: TodayFormat = { formatLocale: 'en-GB', hourCycle: 'h23', timeZone: 'UTC' };
+	const format: TodayFormat = {
+		formatLocale: 'en-GB',
+		dateLocale: 'en-GB',
+		hourCycle: 'h23',
+		timeZone: 'UTC',
+	};
 
 	it('draws the sky behind the block only when given one', () => {
 		let el = render(WeatherBlock, { temperature: 14, format, stripLabel: 'Next hours' });

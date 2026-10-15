@@ -103,7 +103,7 @@
 			{@const assignee = app.members().find((m) => m.id === chore.assigneeId)}
 			<TodayRow
 				title={chore.title}
-				meta={`${dueLabel(chore.nextDue, today, t, app.formatLocale())}${waitingIds.has(chore.id) ? ` · ${t('waiting_to_send')}` : ''}`}
+				meta={`${dueLabel(chore.nextDue, today, t, app.dateLocale())}${waitingIds.has(chore.id) ? ` · ${t('waiting_to_send')}` : ''}`}
 				metaTone={groupOf(chore, today) === 'overdue' ? 'attention' : 'soft'}
 				check={false}
 				checkLabel={t('mark_done', { title: chore.title })}

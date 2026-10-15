@@ -17,7 +17,7 @@
 	import { browserLocales, family } from '#lib/family.svelte.js';
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { getLanguages, getLocale, setLocale, t } from '#lib/i18n.svelte.js';
-	import { localeName, offsetOf, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
+	import { offsetOf, regionOptions, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
 	import { session } from '#lib/session.svelte.js';
 	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import Slot from '@famos/ui/slot';
@@ -51,10 +51,7 @@
 	let formatTag = $state(family.formatLocale);
 	const formatValid = $derived(isFormatLocale(formatTag));
 	const formatOptions = $derived(
-		startingFormatLocales(family.formatLocale, browserLocales()).map((value) => ({
-			value,
-			label: localeName(value, getLocale()),
-		})),
+		regionOptions(getLocale(), startingFormatLocales(family.formatLocale, browserLocales())),
 	);
 
 	/** A new region format brings its week, clock and temperature; each can still be changed. */
@@ -278,6 +275,8 @@
 							id="setup-format-locale"
 							bind:value={formatTag}
 							options={formatOptions}
+							placeholder={t('region_locale_search')}
+							max={300}
 							onpick={useFormat}
 							onchange={useFormat}
 							invalid={!formatValid}

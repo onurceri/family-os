@@ -25,7 +25,7 @@
 					date: occurrence.startDate as string,
 					endDate: occurrence.endDate,
 				},
-				app.formatLocale(),
+				app.dateLocale(),
 				t('all_day'),
 			);
 		}
@@ -36,10 +36,10 @@
 		return describeWhen(
 			{
 				date,
-				startTime: timeLabel(start, zone, app.formatLocale(), app.hourCycle()),
-				endTime: end > start ? timeLabel(end, zone, app.formatLocale(), app.hourCycle()) : null,
+				startTime: timeLabel(start, zone, app.dateLocale(), app.hourCycle()),
+				endTime: end > start ? timeLabel(end, zone, app.dateLocale(), app.hourCycle()) : null,
 			},
-			app.formatLocale(),
+			app.dateLocale(),
 			t('all_day'),
 			app.hourCycle(),
 		);

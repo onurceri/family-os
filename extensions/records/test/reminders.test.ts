@@ -1,3 +1,4 @@
+import { systemActor } from '@famos/sdk';
 import type { FakeChannel, TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Obligation } from '../src/contract/index.ts';
@@ -152,5 +153,27 @@ describe('obligation reminders', () => {
 		await add({ assigneeId: bob.id, leadDays: 0 });
 		await advanceTo(at('2026-11-02', '08:00'));
 		expect(sent()).toHaveLength(0);
+	});
+
+	it("writes the date in each reader's language with the family's region format", async () => {
+		await k.runner.invoke('core.updateFamilySettings', { formatLocale: 'sl-SI' }, systemActor('t'));
+		const reader = async (locale: string) => {
+			const r = await k.runner.invoke<{ id: string }>(
+				'core.createMember',
+				{ displayName: `Reader ${locale}`, roleId: 'member', locale },
+				systemActor('t'),
+			);
+			if (r.status !== 'applied') throw new Error('expected member');
+			return r.output.id;
+		};
+		const english = await reader('en');
+		const turkish = await reader('tr');
+		await add({ assigneeId: english, leadDays: 14 });
+		await add({ assigneeId: turkish, leadDays: 14, title: 'Inspection' });
+		await advanceTo(at('2026-10-16', '09:00'));
+		const bodies = Object.fromEntries(sent().map((s) => [s.memberId, s.message.body]));
+		// English words in the Slovenian order, never "30. okt. 2026" for an English reader.
+		expect(bodies[english]).toBe('en|records:obligation_due_in|{"count":14,"date":"30 Oct 2026"}');
+		expect(bodies[turkish]).toBe('tr|records:obligation_due_in|{"count":14,"date":"30 Eki 2026"}');
 	});
 });

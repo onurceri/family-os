@@ -186,7 +186,7 @@
 				? t('every_years', { count: o.every.years })
 				: '';
 	const dateOf = (d: string) =>
-		formatDate(d, app.formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 </script>
 
 <SidePanel
@@ -307,7 +307,7 @@
 								<span class="text-ink-soft truncate text-[13px]">
 									<span class="sr-only">{statusLabel(o)}:</span>
 									<span class={stateTextClass(status)}
-										>{dueLabel(o, today, t, app.formatLocale())}</span
+										>{dueLabel(o, today, t, app.dateLocale())}</span
 									>
 									{#if everyLabel(o)}<span> · {everyLabel(o)}</span>{/if}
 									{#if assignee}<span> · {assignee.displayName}</span>{/if}
@@ -373,7 +373,7 @@
 						<span class="text-ink font-semibold">{o.title}</span>
 						{#if o.lastDoneOn}
 							· {dateOf(o.lastDoneOn)}{:else if o.lapses}
-							· {dueLabel(o, today, t, app.formatLocale())}{/if}
+							· {dueLabel(o, today, t, app.dateLocale())}{/if}
 					</li>
 				{/each}
 			</ul>

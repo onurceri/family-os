@@ -1,4 +1,4 @@
-import { canonicalLocale, isFormatLocale } from '@famos/time';
+import { canonicalLocale, isFormatLocale, regionFormats } from '@famos/time';
 
 /** A time zone's current offset ("GMT+3"), or nothing when the zone is unknown. */
 export function offsetOf(zone: string, at: Date = new Date()): string {
@@ -51,4 +51,36 @@ export function regionFormatLocale(browserTags: readonly string[]): string {
  */
 export function startingFormatLocales(current: string, browserTags: readonly string[]): string[] {
 	return [...new Set(validTags([current, ...browserTags]))];
+}
+
+/** "SI" → "Slovenia" in the given UI language. */
+function regionName(code: string, uiLocale: string): string {
+	try {
+		return new Intl.DisplayNames([uiLocale], { type: 'region', fallback: 'none' }).of(code) ?? '';
+	} catch {
+		return '';
+	}
+}
+
+/**
+ * The region formats to pick from, named in the reader's language: one per region `Intl` knows
+ * ("Slovenia" for `sl-SI`), sorted by name, with `first` (the one in use, the browser's own tags,
+ * as `startingFormatLocales` gives them) ahead when the list does not hold them as they are
+ * ("English (Slovenia)" for `en-SI`). Any other valid tag can still be typed.
+ */
+export function regionOptions(
+	uiLocale: string,
+	first: readonly string[] = [],
+): { value: string; label: string }[] {
+	const listed = regionFormats().map((tag) => ({
+		value: tag,
+		label: regionName(new Intl.Locale(tag).region ?? '', uiLocale) || tag,
+	}));
+	const known = new Set(listed.map((o) => o.value));
+	const extra = [...new Set(validTags(first))].filter((tag) => !known.has(tag));
+	const collator = new Intl.Collator(uiLocale);
+	return [
+		...extra.map((tag) => ({ value: tag, label: localeName(tag, uiLocale) || tag })),
+		...listed.toSorted((a, b) => collator.compare(a.label, b.label)),
+	];
 }

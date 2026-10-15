@@ -75,7 +75,7 @@
 	);
 	const nowAt = $derived(nowFraction(nowMinute, axis));
 	const hourFormat = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
 			timeZone: 'UTC',
 			hourCycle: format.hourCycle,

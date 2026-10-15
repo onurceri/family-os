@@ -11,12 +11,12 @@ export interface OfferedChange {
 
 /** A day and maybe a time, short, in the family's formats ("Sat 7 Nov 18:00"). */
 export function when(date: string, time: string | undefined, c: PresenterContext): string {
-	const day = formatDate(date, c.formatLocale, {
+	const day = formatDate(date, c.dateLocale, {
 		weekday: 'short',
 		day: 'numeric',
 		month: 'short',
 	});
-	return time ? `${day} ${formatClock(time, c.formatLocale, c.hourCycle)}` : day;
+	return time ? `${day} ${formatClock(time, c.dateLocale, c.hourCycle)}` : day;
 }
 
 /**

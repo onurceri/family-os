@@ -1,7 +1,7 @@
 import type { Telegram, TelegramHandlers } from '@famos/adapters/telegram';
 import { type CoreTables, type Kernel, memberChanged } from '@famos/core';
 import { conversationAnswered, FamosError, isFamosError, subjectOf } from '@famos/sdk';
-import { formatClock, formatDate } from '@famos/time';
+import { dateLocale, formatClock, formatDate } from '@famos/time';
 
 /**
  * Connects the Telegram adapter to the kernel. Everything a chat can do goes through the same
@@ -12,6 +12,17 @@ import { formatClock, formatDate } from '@famos/time';
 export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 	const translate = kernel.translate;
 	const core = () => kernel.ctx.db.withTables<CoreTables>();
+	/** The member's own language, else the family's. */
+	const languageOf = async (memberId: string | null) => {
+		const row = memberId
+			? await core()
+					.selectFrom('core_members')
+					.select('locale')
+					.where('id', '=', memberId)
+					.executeTakeFirst()
+			: undefined;
+		return row?.locale ?? (await kernel.ctx.family.settings()).locale;
+	};
 
 	const handlers: TelegramHandlers = {
 		async memberName(memberId) {
@@ -25,14 +36,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 		},
 
 		async translate(memberId, key, params) {
-			const row = memberId
-				? await core()
-						.selectFrom('core_members')
-						.select('locale')
-						.where('id', '=', memberId)
-						.executeTakeFirst()
-				: undefined;
-			const locale = row?.locale ?? (await kernel.ctx.family.settings()).locale;
+			const locale = await languageOf(memberId);
 			return translate(locale, key.includes(':') ? key : `app:${key}`, params);
 		},
 
@@ -85,13 +89,15 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			const actor = await kernel.memberActor(memberId);
 			const passed = await kernel.runner.passedCheck();
 			const { formatLocale, hourCycle } = await kernel.ctx.family.settings();
+			// The reader's words for the day, the family's order and clock.
+			const locale = dateLocale(await languageOf(memberId), formatLocale, hourCycle);
 			const when = (at: { date: string; time?: string }) => {
-				const day = formatDate(at.date, formatLocale, {
+				const day = formatDate(at.date, locale, {
 					weekday: 'short',
 					day: 'numeric',
 					month: 'short',
 				});
-				return at.time ? `${day} ${formatClock(at.time, formatLocale, hourCycle)}` : day;
+				return at.time ? `${day} ${formatClock(at.time, locale, hourCycle)}` : day;
 			};
 			const t = (key: string, params?: Record<string, unknown>) =>
 				handlers.translate(memberId, key, params);

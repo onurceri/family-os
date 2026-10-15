@@ -55,7 +55,7 @@ export function changeTaskFields(
 	if (input.dueDate !== undefined || input.dueTime !== undefined) {
 		const today = todayIn(c.timeZone, Date.now());
 		const due = (dueDate: string | null, dueTime: string | null) =>
-			dueDate ? dueLabel({ dueDate, dueTime }, today, t, c.formatLocale, c.hourCycle) : t('no_due');
+			dueDate ? dueLabel({ dueDate, dueTime }, today, t, c.dateLocale, c.hourCycle) : t('no_due');
 		const oldDate = str(was?.dueDate);
 		const oldTime = str(was?.dueTime);
 		const newDate = input.dueDate !== undefined ? input.dueDate : oldDate;

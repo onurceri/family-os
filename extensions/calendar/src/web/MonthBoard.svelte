@@ -56,7 +56,7 @@
 		class="border-line text-ink-soft grid shrink-0 grid-cols-7 border-b text-center text-[11px] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase"
 	>
 		{#each dates.slice(0, 7) as date (date)}
-			<span class="py-2.5">{formatDate(date, app.formatLocale(), { weekday: 'short' })}</span>
+			<span class="py-2.5">{formatDate(date, app.dateLocale(), { weekday: 'short' })}</span>
 		{/each}
 	</div>
 	<ol
@@ -84,7 +84,7 @@
 						: inMonth
 							? 'hover:bg-idle'
 							: 'text-ink-soft hover:bg-idle'}"
-					aria-label={t('open_day', { date: formatDate(date, app.formatLocale()) })}
+					aria-label={t('open_day', { date: formatDate(date, app.dateLocale()) })}
 					onclick={() => onday(date)}>{Number(date.slice(8))}</button
 				>
 				{#each shown as occurrence (`${occurrence.eventId}:${occurrence.key}`)}

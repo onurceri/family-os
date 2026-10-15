@@ -144,7 +144,7 @@
 	}
 
 	const when = (ms: number) =>
-		new Intl.DateTimeFormat(app.formatLocale(), {
+		new Intl.DateTimeFormat(app.dateLocale(), {
 			day: 'numeric',
 			month: 'short',
 			hour: '2-digit',

@@ -3,6 +3,7 @@
 	import { unwrap } from '@famos/api-client';
 	import {
 		canonicalLocale,
+		dateLocale,
 		defaultHourCycle,
 		defaultTemperatureUnit,
 		defaultWeekStart,
@@ -11,9 +12,9 @@
 	import { Button } from '@famos/ui/button';
 	import { Card, Combobox, Notice, Page, PageHeader, Segmented, SettingRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
-	import { browserFormatLocale, family } from '#lib/family.svelte.js';
+	import { browserFormatLocale, browserLocales, family } from '#lib/family.svelte.js';
 	import { getLanguages, getLocale, t } from '#lib/i18n.svelte.js';
-	import { localeName, timeZoneOptions } from '#lib/region.js';
+	import { regionOptions, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
@@ -35,7 +36,7 @@
 	const zoneValid = $derived(allZones.some((z) => z.value === timeZone));
 	const zoneNow = $derived.by(() => {
 		try {
-			return new Intl.DateTimeFormat(tag, { timeStyle: 'short', timeZone, hourCycle }).format(
+			return new Intl.DateTimeFormat(shown, { timeStyle: 'short', timeZone, hourCycle }).format(
 				new Date(),
 			);
 		} catch {
@@ -43,10 +44,15 @@
 		}
 	});
 
-	// Examples to pick from; any valid BCP 47 tag is accepted.
-	const suggestions = ['en-US', 'en-GB', 'en-AU', 'de-DE', 'fr-FR', 'es-ES', 'nl-NL', 'tr-TR'];
+	// Every region the browser knows, named in the reader's language; any valid BCP 47 tag is
+	// accepted too, and the saved one and the browser's are always offered.
+	const regions = $derived(
+		regionOptions(getLocale(), startingFormatLocales(family.formatLocale, browserLocales())),
+	);
 	const valid = $derived(isFormatLocale(formatLocale));
 	const tag = $derived(valid ? canonicalLocale(formatLocale) : family.formatLocale);
+	/** Dates and times as they will be read: the reader's words, the chosen region's order. */
+	const shown = $derived(dateLocale(getLocale(), tag, hourCycle));
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
@@ -63,10 +69,10 @@
 
 	const sample = Date.UTC(2026, 9, 8, 14, 30);
 	const preview = $derived.by(() => {
-		const date = new Intl.DateTimeFormat(tag, { dateStyle: 'full', timeZone: 'UTC' }).format(
+		const date = new Intl.DateTimeFormat(shown, { dateStyle: 'full', timeZone: 'UTC' }).format(
 			sample,
 		);
-		const time = new Intl.DateTimeFormat(tag, {
+		const time = new Intl.DateTimeFormat(shown, {
 			hour: '2-digit',
 			minute: '2-digit',
 			hourCycle,
@@ -91,7 +97,7 @@
 	/** Monday, Saturday and Sunday are the usual first days; the current one is always offered. */
 	const weekOptions = $derived.by(() => {
 		const monday = Date.UTC(2026, 0, 5, 12);
-		const fmt = new Intl.DateTimeFormat(tag, { weekday: 'short', timeZone: 'UTC' });
+		const fmt = new Intl.DateTimeFormat(shown, { weekday: 'short', timeZone: 'UTC' });
 		const day = (n: number) => ({
 			value: String(n),
 			label: fmt.format(monday + (n - 1) * 86_400_000),
@@ -201,7 +207,9 @@
 							<Combobox
 								id="format-locale"
 								bind:value={formatLocale}
-								options={suggestions.map((s) => ({ value: s, label: localeName(s, getLocale()) }))}
+								options={regions}
+								placeholder={t('region_locale_search')}
+								max={300}
 								onpick={() => {
 									useRegionDefaults();
 									void save();

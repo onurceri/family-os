@@ -222,7 +222,7 @@
 			/>
 		{:else if endsOn}
 			<small class="text-note-ink-soft text-xs"
-				>{formatDate(endsOn, app.formatLocale(), {
+				>{formatDate(endsOn, app.dateLocale(), {
 					weekday: 'long',
 					day: 'numeric',
 					month: 'long',

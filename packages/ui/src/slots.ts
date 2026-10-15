@@ -263,8 +263,10 @@ export interface PresenterContext {
 	/** Translate a namespaced key, e.g. `calendar:draft_when`. */
 	t(key: string, options?: Record<string, unknown>): string;
 	members: readonly PresenterMember[];
-	/** BCP 47 tag for dates, times and numbers (the family's region formats, not the language). */
+	/** BCP 47 tag for numbers (the family's region format, not the language). */
 	formatLocale: string;
+	/** BCP 47 tag for dates and times: the UI language's words, the region's order (`useApp().dateLocale()`). */
+	dateLocale: string;
 	/** First day of the week, ISO: 1 = Monday … 7 = Sunday. */
 	weekStart: number;
 	hourCycle: 'h12' | 'h23';
@@ -364,6 +366,7 @@ export interface TimelineItem {
 export interface TimelineApp {
 	t(key: string, options?: Record<string, unknown>): string;
 	formatLocale(): string;
+	dateLocale(): string;
 	hourCycle(): 'h12' | 'h23';
 	timeZone(): string;
 	members(): readonly PresenterMember[];

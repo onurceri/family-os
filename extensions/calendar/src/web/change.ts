@@ -45,7 +45,7 @@ function whenText(w: When, c: PresenterContext, withEnd: boolean, timeOnly = fal
 		const last = w.endDate && w.endDate !== w.date ? `–${when(w.endDate, undefined, c)}` : '';
 		return `${when(w.date, undefined, c)}${last} · ${t('all_day')}`;
 	}
-	const clock = (x: string) => formatClock(x, c.formatLocale, c.hourCycle);
+	const clock = (x: string) => formatClock(x, c.dateLocale, c.hourCycle);
 	const time = w.startTime
 		? `${clock(w.startTime)}${withEnd && w.endTime ? `–${clock(w.endTime)}` : ''}`
 		: '';
@@ -56,12 +56,12 @@ function whenText(w: When, c: PresenterContext, withEnd: boolean, timeOnly = fal
 /** The new "when" alone, as it was always shown when nothing is known of the event as it is. */
 function plainWhen(input: ChangeEventInput, c: PresenterContext): string {
 	return [
-		input.date ? formatDate(input.date, c.formatLocale) : null,
+		input.date ? formatDate(input.date, c.dateLocale) : null,
 		input.allDay
 			? c.t('calendar:all_day')
 			: [input.startTime, input.endTime]
 					.filter((x): x is string => Boolean(x))
-					.map((x) => formatClock(x, c.formatLocale, c.hourCycle))
+					.map((x) => formatClock(x, c.dateLocale, c.hourCycle))
 					.join('–'),
 	]
 		.filter(Boolean)

@@ -40,7 +40,7 @@
 	const when = (ms: number) =>
 		usedAgo(ms, {
 			language: app.locale(),
-			formatLocale: app.formatLocale(),
+			dateLocale: app.dateLocale(),
 			timeZone: app.timeZone(),
 			justNow: t('just_now'),
 		});

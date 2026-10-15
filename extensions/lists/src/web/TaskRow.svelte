@@ -33,7 +33,7 @@
 	const level = $derived(urgency(task, today));
 	const assignee = $derived(app.members().find((m) => m.id === task.assigneeId));
 	const due = $derived(
-		task.dueDate ? dueLabel(task, today, t, app.formatLocale(), app.hourCycle()) : null,
+		task.dueDate ? dueLabel(task, today, t, app.dateLocale(), app.hourCycle()) : null,
 	);
 	const repeats = $derived(Boolean(task.recurrence || task.rrule));
 </script>

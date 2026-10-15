@@ -47,7 +47,10 @@ export interface SentenceItem {
 
 export interface SentenceFormat {
 	timeZone: string;
+	/** Degrees: the family's region format. */
 	formatLocale: string;
+	/** Clock times: the reader's words with the region's order (`dateLocale` in `@famos/time`). */
+	dateLocale: string;
 	hourCycle?: HourCycle | undefined;
 }
 
@@ -94,7 +97,7 @@ export function weatherSentence(
 	now: number,
 	format: SentenceFormat,
 ): WeatherSentence | null {
-	const { timeZone, formatLocale, hourCycle } = format;
+	const { timeZone, formatLocale, dateLocale, hourCycle } = format;
 	const hourly = (forecast.hourly ?? []).toSorted((a, b) => a.at - b.at);
 	const today = todayIn(timeZone, now);
 	const { start: dayStart, end: dayEnd } = dayBounds(today, timeZone);
@@ -103,7 +106,7 @@ export function weatherSentence(
 	const rest = ahead.filter((h) => h.at < dayEnd);
 	if (rest.length === 0) return null;
 
-	const time = (at: number) => formatTime(at, timeZone, formatLocale, hourCycle);
+	const time = (at: number) => formatTime(at, timeZone, dateLocale, hourCycle);
 	const number = new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 0 });
 	const degrees = (value: number) => number.format(Math.round(value) || 0);
 	const at = (clock: string, date = today) => epochOf(date, clock, timeZone);

@@ -43,7 +43,7 @@ export function mealFields(input: AddToMealPlanInput, c: PresenterContext): Draf
 	return [
 		{
 			label: c.t('kitchen:draft_when'),
-			value: [formatDate(input.date, c.formatLocale), c.t(`kitchen:slot_${input.slot ?? 'dinner'}`)]
+			value: [formatDate(input.date, c.dateLocale), c.t(`kitchen:slot_${input.slot ?? 'dinner'}`)]
 				.filter(Boolean)
 				.join(' · '),
 			paths: ['date', 'slot'],

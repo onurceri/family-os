@@ -47,8 +47,8 @@
 	/**
 	 * The next hours of the forecast. `tiles`: hour, icon and temperature per column,
 	 * the hour under way on `idle` (Broadsheet). `bars`: the temperature as bars, wet hours in
-	 * `info`, the hour under way in `ink` (Wall). Night hours get a moon (`isNightHour`). Hours and degrees from `Intl` in the family's
-	 * format locale and hour cycle; `condition` names an hour's weather for screen readers.
+	 * `info`, the hour under way in `ink` (Wall). Night hours get a moon (`isNightHour`). Hours from `Intl` in
+	 * the date locale and hour cycle, degrees in the format locale; `condition` names an hour's weather for screen readers.
 	 */
 	let {
 		hours,
@@ -70,7 +70,7 @@
 
 	const shown = $derived(hours.slice(0, count));
 	const hourOf = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
 			timeZone: format.timeZone,
 			hourCycle: format.hourCycle,

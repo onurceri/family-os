@@ -6,6 +6,7 @@ import {
 	defineJob,
 	defineRoute,
 	type ExtensionContext,
+	type FamilySettings,
 	FamosError,
 	type IdGenerator,
 	type JobQueue,
@@ -13,8 +14,19 @@ import {
 	type NotificationChannel,
 	type NotifyRequest,
 	NotifyRequestSchema,
+	type NotifyWhen,
+	NotifyWhenSchema,
 } from '@famos/sdk';
-import { addDays, epochOf, IsoTimeSchema, zoned } from '@famos/time';
+import {
+	addDays,
+	dateLocale,
+	epochOf,
+	formatClock,
+	formatDate,
+	formatTime,
+	IsoTimeSchema,
+	zoned,
+} from '@famos/time';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -129,9 +141,34 @@ export interface NotificationsDeps {
 	wake: () => void;
 }
 
-const ParamsSchema = z.record(z.string(), z.union([z.string(), z.number()]));
-const parseParams = (json: string | null) =>
-	json === null ? undefined : (ParamsSchema.parse(JSON.parse(json)) as Record<string, unknown>);
+const ParamsSchema = z.record(z.string(), z.union([z.string(), z.number(), NotifyWhenSchema]));
+type Region = Pick<FamilySettings, 'formatLocale' | 'hourCycle' | 'timeZone'>;
+
+function writeWhen(when: NotifyWhen, locale: string, region: Region): string {
+	if ('date' in when)
+		return formatDate(when.date, locale, { day: 'numeric', month: 'short', year: 'numeric' });
+	if ('time' in when) return formatClock(when.time, locale, region.hourCycle);
+	return formatTime(when.at, when.timeZone ?? region.timeZone, locale, region.hourCycle);
+}
+
+/**
+ * A stored text's parameters for one reader: its dates and times are written out only now, in
+ * the reader's language with the family's region format, since readers may differ in language.
+ */
+function readParams(
+	json: string | null,
+	language: string,
+	region: Region,
+): Record<string, unknown> | undefined {
+	if (json === null) return undefined;
+	const locale = dateLocale(language, region.formatLocale, region.hourCycle);
+	return Object.fromEntries(
+		Object.entries(ParamsSchema.parse(JSON.parse(json))).map(([name, value]) => [
+			name,
+			typeof value === 'object' ? writeWhen(value, locale, region) : value,
+		]),
+	);
+}
 
 export function createNotifications(deps: NotificationsDeps) {
 	const { channels } = deps;
@@ -285,9 +322,9 @@ export function createNotifications(deps: NotificationsDeps) {
 
 			const locale = member.locale ?? family.locale;
 			const outcome = await channel.send(row.member_id, {
-				title: deps.translate(locale, row.title_key, parseParams(row.title_params)),
+				title: deps.translate(locale, row.title_key, readParams(row.title_params, locale, family)),
 				body: row.body_key
-					? deps.translate(locale, row.body_key, parseParams(row.body_params))
+					? deps.translate(locale, row.body_key, readParams(row.body_params, locale, family))
 					: null,
 				url: row.url,
 				tag: row.id,
@@ -404,6 +441,7 @@ export function createNotifications(deps: NotificationsDeps) {
 		async handle(ctx, { query, actor }) {
 			const memberId = requireMember(actor);
 			const locale = await memberLocale(ctx, memberId);
+			const family = await ctx.family.settings();
 			const rows = await core(ctx.db)
 				.selectFrom('core_notifications')
 				.selectAll()
@@ -423,8 +461,10 @@ export function createNotifications(deps: NotificationsDeps) {
 				items: rows.map((r) => ({
 					id: r.id,
 					kind: r.kind,
-					title: deps.translate(locale, r.title_key, parseParams(r.title_params)),
-					body: r.body_key ? deps.translate(locale, r.body_key, parseParams(r.body_params)) : null,
+					title: deps.translate(locale, r.title_key, readParams(r.title_params, locale, family)),
+					body: r.body_key
+						? deps.translate(locale, r.body_key, readParams(r.body_params, locale, family))
+						: null,
 					url: r.url,
 					createdAt: r.created_at,
 					read: r.read_at !== null,

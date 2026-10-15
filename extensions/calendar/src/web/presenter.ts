@@ -22,7 +22,7 @@ export const createEventPresenter: DraftPresenter<EventInput> = {
 		const fields = [
 			{
 				label: t('when'),
-				value: describeWhen(input, c.formatLocale, t('all_day'), c.hourCycle),
+				value: describeWhen(input, c.dateLocale, t('all_day'), c.hourCycle),
 				paths: ['date', 'endDate', 'startTime', 'endTime', 'allDay'],
 			},
 			{ label: t('who'), value: who || t('everyone'), path: 'memberIds' },
@@ -34,7 +34,7 @@ export const createEventPresenter: DraftPresenter<EventInput> = {
 			>[0];
 			fields.push({
 				label: t('repeat'),
-				value: describeRecurrence(recurrence, t, c.formatLocale, c.weekStart),
+				value: describeRecurrence(recurrence, t, c.dateLocale, c.weekStart),
 				path: 'recurrence',
 			});
 		}

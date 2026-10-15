@@ -240,11 +240,11 @@
 			/>
 			<span class="sr-only">{t('by_author', { name: author.displayName })}</span>
 		{/if}
-		<span>{postedLabel(note.createdAt, now, t, app.timeZone(), app.formatLocale())}</span>
+		<span>{postedLabel(note.createdAt, now, t, app.timeZone(), app.dateLocale())}</span>
 		{#if note.endsOn}
 			<span class="until bg-note-ink/10 text-note-ink flex items-center gap-1 font-bold">
 				<Clock class="size-3" aria-hidden="true" />
-				{untilLabel(note.endsOn, now, t, app.timeZone(), app.formatLocale())}
+				{untilLabel(note.endsOn, now, t, app.timeZone(), app.dateLocale())}
 			</span>
 		{/if}
 		{#if showSeen}

@@ -106,7 +106,7 @@
 	}
 
 	const day = (ms: number) =>
-		new Intl.DateTimeFormat(app.formatLocale(), {
+		new Intl.DateTimeFormat(app.dateLocale(), {
 			day: 'numeric',
 			month: 'short',
 			timeZone: app.timeZone(),

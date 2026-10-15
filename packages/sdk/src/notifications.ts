@@ -32,10 +32,24 @@ export function defineNotificationKind(
 	return definition;
 }
 
+/**
+ * A date or a time in a notification. It is written out when the notification is delivered, so
+ * its day and month names are in the recipient's language, with the family's region format,
+ * hour cycle and time zone: `{ date: '2026-10-22' }` ("22 Oct 2026"), `{ time: '17:30' }` (a
+ * local time of day) or `{ at: epochMs }` (the clock time of an instant, in `timeZone` when
+ * given, else the family's).
+ */
+export const NotifyWhenSchema = z.union([
+	z.strictObject({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
+	z.strictObject({ time: z.string().regex(/^\d{2}:\d{2}$/) }),
+	z.strictObject({ at: z.number().int(), timeZone: z.string().min(1).optional() }),
+]);
+export type NotifyWhen = z.infer<typeof NotifyWhenSchema>;
+
 /** A translation key with parameters; rendered when delivered, in the recipient's language. */
 export const NotifyTextSchema = z.object({
 	key: z.string().min(1),
-	params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+	params: z.record(z.string(), z.union([z.string(), z.number(), NotifyWhenSchema])).optional(),
 });
 export type NotifyText = z.infer<typeof NotifyTextSchema>;
 

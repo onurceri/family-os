@@ -33,6 +33,7 @@ import { facetsOf, hasDay, type Viewer } from '#lib/contributions.js';
 import { contributions, enabledOnly } from '#lib/extensions.js';
 import type { Step } from '#lib/FirstSteps.svelte';
 import { family } from '#lib/family.svelte.js';
+import { familyDateLocale } from '#lib/format.svelte.js';
 import { t, tDynamic } from '#lib/i18n.svelte.js';
 import { session } from '#lib/session.svelte.js';
 import {
@@ -249,11 +250,13 @@ export class TodayData {
 		this.#familyMode
 			? {
 					formatLocale: this.app.formatLocale(),
+					dateLocale: this.app.dateLocale(),
 					hourCycle: this.app.hourCycle(),
 					timeZone: this.app.timeZone(),
 				}
 			: {
 					formatLocale: family.formatLocale,
+					dateLocale: familyDateLocale(),
 					hourCycle: family.hourCycle,
 					timeZone: family.timeZone,
 				},
@@ -934,7 +937,7 @@ export class TodayData {
 			: '',
 	);
 	readonly tomorrowWeekday = $derived(
-		new Intl.DateTimeFormat(this.format.formatLocale, {
+		new Intl.DateTimeFormat(this.format.dateLocale, {
 			weekday: 'long',
 			timeZone: this.timeZone,
 		}).format(epochOf(this.tomorrow, '12:00', this.timeZone)),
@@ -1056,7 +1059,7 @@ export class TodayData {
 		this.photo && this.shows('photo')
 			? {
 					src: this.photo.src,
-					label: this.words.photo(formatPhotoMonth(this.photo.month, this.format.formatLocale)),
+					label: this.words.photo(formatPhotoMonth(this.photo.month, this.format.dateLocale)),
 				}
 			: null,
 	);
@@ -1065,7 +1068,7 @@ export class TodayData {
 
 	clock = (at: number): string => formatClock(at, this.format);
 	readonly #weekdayShort = $derived(
-		new Intl.DateTimeFormat(this.format.formatLocale, {
+		new Intl.DateTimeFormat(this.format.dateLocale, {
 			weekday: 'short',
 			timeZone: this.timeZone,
 		}),

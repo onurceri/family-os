@@ -30,6 +30,7 @@
 		t: app.t,
 		members: app.members(),
 		formatLocale: app.formatLocale(),
+		dateLocale: app.dateLocale(),
 		weekStart: app.weekStart(),
 		hourCycle: app.hourCycle(),
 		timeZone: app.timeZone(),

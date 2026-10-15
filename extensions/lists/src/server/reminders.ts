@@ -1,5 +1,5 @@
 import { defineJob, defineNotificationKind } from '@famos/sdk';
-import { dayBounds, epochOf, formatClock } from '@famos/time';
+import { dayBounds, epochOf } from '@famos/time';
 import { z } from 'zod';
 import { type TaskRow, tables } from './store.ts';
 
@@ -63,7 +63,7 @@ export const remindJob = defineJob({
 		if (!row || row.done_at !== null) return;
 		if (row.updated_at !== version || row.due_date !== dueDate || row.due_time !== dueTime) return;
 
-		const { timeZone, formatLocale, hourCycle } = await ctx.family.settings();
+		const { timeZone } = await ctx.family.settings();
 		// The job may have waited a long time (server down): do not remind about a past day.
 		if (ctx.clock.now() >= dayBounds(dueDate, timeZone).end) return;
 		await ctx.notify({
@@ -73,7 +73,7 @@ export const remindJob = defineJob({
 			body: dueTime
 				? {
 						key: 'lists:task_due_at',
-						params: { time: formatClock(dueTime, formatLocale, hourCycle) },
+						params: { time: { time: dueTime } },
 					}
 				: { key: 'lists:task_due_today' },
 			url: '/lists/tasks',

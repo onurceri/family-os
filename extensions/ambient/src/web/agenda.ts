@@ -3,8 +3,8 @@ import { formatTime, type HourCycle } from '@famos/time';
 /** A timed event of today as ambient mode lists it. */
 export type AgendaEvent = { id: string; title: string; start: number };
 
-/** How the family writes times: their format locale and hour cycle, in their time zone. */
-export type ClockFormat = { timeZone: string; formatLocale: string; hourCycle: HourCycle };
+/** How the family writes times: their date locale and hour cycle, in their time zone. */
+export type ClockFormat = { timeZone: string; dateLocale: string; hourCycle: HourCycle };
 
 /** An event that started this long ago still shows; after that it is over for this view. */
 const STARTED_GRACE_MS = 15 * 60_000;
@@ -25,6 +25,6 @@ export function nextEvents(
 		.map((e) => ({
 			id: e.id,
 			title: e.title,
-			time: formatTime(e.start, format.timeZone, format.formatLocale, format.hourCycle),
+			time: formatTime(e.start, format.timeZone, format.dateLocale, format.hourCycle),
 		}));
 }

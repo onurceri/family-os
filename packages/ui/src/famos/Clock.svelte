@@ -9,7 +9,7 @@
 	let { now, format }: { now: number; format: TodayFormat } = $props();
 
 	const parts = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
 			minute: '2-digit',
 			timeZone: format.timeZone,

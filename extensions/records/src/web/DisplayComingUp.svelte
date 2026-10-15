@@ -38,7 +38,7 @@
 			<DisplayRow
 				variant="lit"
 				title={o.title}
-				subtitle="{o.recordName} · {dueLabel(o, today, t, app.formatLocale())}"
+				subtitle="{o.recordName} · {dueLabel(o, today, t, app.dateLocale())}"
 			/>
 		{/each}
 		{#if items.length > MAX}<p class="text-ink-soft px-1 text-[13px]">+{items.length - MAX}</p>{/if}

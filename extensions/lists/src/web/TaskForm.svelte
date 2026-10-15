@@ -26,7 +26,7 @@
 
 	const { app, t } = useLists();
 	const days = $derived.by(() => {
-		const names = weekdayNames(app.formatLocale());
+		const names = weekdayNames(app.dateLocale());
 		return orderedWeekdays(app.weekStart()).map((code) => ({ code, label: names[code] }));
 	});
 	// A rule outside the presets (a custom RRULE) is shown but cannot be picked.

@@ -204,6 +204,40 @@ describe('delivery', () => {
 		expect(list.items[0].title).toBe('tr|app:t|');
 	});
 
+	it("writes dates and times out for each reader: their words, the family's region and clock", async () => {
+		const a = await k.member('admin');
+		const b = await k.member('member');
+		await k.runner.invoke('core.updateMember', { memberId: b.member.id, locale: 'tr' }, a.actor);
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ formatLocale: 'sl-SI', hourCycle: 'h12', timeZone: 'Europe/Ljubljana' },
+			a.actor,
+		);
+		const instant = Date.UTC(2026, 9, 22, 15, 5); // 17:05 in Ljubljana
+		await k.ctx.notify({
+			kind: 'notes.announced',
+			to: { members: [a.member.id, b.member.id] },
+			title: { key: 'app:t', params: { what: { date: '2026-10-22' } } },
+			body: { key: 'app:b', params: { what: { at: instant } } },
+		});
+		await k.ctx.notify({
+			kind: 'notes.announced',
+			to: { members: [a.member.id] },
+			title: { key: 'app:u', params: { what: { time: '09:30' } } },
+			body: { key: 'app:v', params: { what: { at: instant, timeZone: 'UTC' } } },
+		});
+		await k.worker.drain();
+		const norm = (text: string | null | undefined) => text?.replace(/[  ]/g, ' ');
+		const shown = web.sent.map((s) => `${norm(s.title)} / ${norm(s.body)}`).sort();
+		expect(shown).toEqual([
+			'en|app:t|22 Oct 2026 / en|app:b|5:05 pm',
+			'en|app:u|9:30 am / en|app:v|3:05 pm',
+			'tr|app:t|22 Eki 2026 / tr|app:b|ÖS 5:05',
+		]);
+		const list = await k.route('core.listNotifications').call({ actor: b.actor });
+		expect(norm(list.items[0].title)).toBe('tr|app:t|22 Eki 2026');
+	});
+
 	it("treats 'gone' as final and retries a thrown error", async () => {
 		const a = await k.member('admin');
 		tg.available = false;

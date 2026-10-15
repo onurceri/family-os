@@ -58,13 +58,13 @@
 	// Without edit rights a change is proposed and waits for approval.
 	const canChange = $derived(canEdit || app.can('core.drafts.propose'));
 	const label = (date: string) =>
-		formatDate(date, app.formatLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
+		formatDate(date, app.dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 	/** A day's heading: the weekday and the day. */
 	const columnLabel = (date: string) =>
-		formatDate(date, app.formatLocale(), { weekday: 'short', day: 'numeric' });
+		formatDate(date, app.dateLocale(), { weekday: 'short', day: 'numeric' });
 	const rangeLabel = $derived(
 		days[0] && days[6]
-			? `${formatDate(days[0], app.formatLocale(), { day: 'numeric', month: 'short' })} – ${formatDate(days[6], app.formatLocale(), { day: 'numeric', month: 'short' })}`
+			? `${formatDate(days[0], app.dateLocale(), { day: 'numeric', month: 'short' })} – ${formatDate(days[6], app.dateLocale(), { day: 'numeric', month: 'short' })}`
 			: '',
 	);
 	const report = (outcome: Outcome, message?: string) => {

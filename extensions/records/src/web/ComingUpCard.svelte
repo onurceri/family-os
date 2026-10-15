@@ -54,7 +54,7 @@
 			variant="outline"
 			icon={CalendarClock}
 			title={o.title}
-			meta={`${o.recordName} · ${dueLabel(o, today, t, app.formatLocale())}`}
+			meta={`${o.recordName} · ${dueLabel(o, today, t, app.dateLocale())}`}
 			metaTone={dueStatus(o, today) === 'soon' ? 'heat' : 'soft'}
 			{...o.recordUrl ? { href: o.recordUrl } : {}}
 		/>

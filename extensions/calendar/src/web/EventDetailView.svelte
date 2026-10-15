@@ -41,7 +41,7 @@
 				startTime: event.startTime,
 				endTime: event.endTime,
 			},
-			app.formatLocale(),
+			app.dateLocale(),
 			t('all_day'),
 			app.hourCycle(),
 		);
@@ -51,7 +51,7 @@
 			? describeRecurrence(
 					event.recurrence as Parameters<typeof describeRecurrence>[0],
 					(key: string, options?: Record<string, unknown>) => app.t(`calendar:${key}`, options),
-					app.formatLocale(),
+					app.dateLocale(),
 					app.weekStart(),
 				)
 			: null,

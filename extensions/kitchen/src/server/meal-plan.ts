@@ -5,7 +5,7 @@ import {
 	FamosError,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { addDays, formatDate, IsoDateSchema, todayIn } from '@famos/time';
+import { addDays, dateLocale, formatDate, IsoDateSchema, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	AddToMealPlanSchema,
@@ -145,9 +145,9 @@ const mealTitle = async (ctx: DuplicateContext, { id }: { id: string }) => {
 	if (!row) return null;
 	// People read this on cards and in notices: the dish first (it is what a label is matched
 	// against), then the meal and the day in the family's own formats.
-	const { locale, formatLocale } = await ctx.family.settings();
+	const { locale, formatLocale, hourCycle } = await ctx.family.settings();
 	const slot = ctx.translate(locale, `kitchen:slot_${row.slot}`).toLocaleLowerCase(locale);
-	const day = formatDate(row.date, formatLocale, {
+	const day = formatDate(row.date, dateLocale(locale, formatLocale, hourCycle), {
 		weekday: 'short',
 		day: 'numeric',
 		month: 'short',

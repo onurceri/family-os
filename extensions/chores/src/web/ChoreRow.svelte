@@ -44,7 +44,7 @@
 	const due = $derived(
 		finished && doer
 			? t('done_by', { name: doer.displayName })
-			: dueLabel(chore.nextDue, today, t, app.formatLocale()),
+			: dueLabel(chore.nextDue, today, t, app.dateLocale()),
 	);
 </script>
 

@@ -10,8 +10,13 @@ export interface AppContext {
 	t(key: string, options?: Record<string, unknown>): string;
 	/** The UI language (`en`, `tr`): for words only. Never pass it to `Intl` for dates or numbers. */
 	locale(): string;
-	/** BCP 47 tag for dates, times, numbers and money, separate from the language. */
+	/** The family's region format (BCP 47): for numbers and money, separate from the language. */
 	formatLocale(): string;
+	/**
+	 * BCP 47 tag for dates and times: day and month names in the UI language, the region's order
+	 * where `Intl` knows it, the family's hour cycle (`dateLocale` from `@famos/time`).
+	 */
+	dateLocale(): string;
 	/** First day of the week, ISO: 1 = Monday … 7 = Sunday. */
 	weekStart(): number;
 	hourCycle(): 'h12' | 'h23';

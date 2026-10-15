@@ -40,6 +40,7 @@ export function sayWeather(
 	const sentence = weatherSentence(forecast, items, now, {
 		timeZone: app.timeZone(),
 		formatLocale: app.formatLocale(),
+		dateLocale: app.dateLocale(),
 		hourCycle: app.hourCycle(),
 	});
 	if (!sentence) return null;

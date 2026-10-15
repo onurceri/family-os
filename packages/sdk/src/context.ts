@@ -19,7 +19,11 @@ export interface FamilySettings {
 	timeZone: string;
 	/** Default language (a BCP 47 code with a language pack, `en` always) for family-wide content. */
 	locale: string;
-	/** BCP 47 tag that formats dates, times, numbers and money (`en-GB`, `de-DE`); not the language. */
+	/**
+	 * The region format, a BCP 47 tag (`en-GB`, `de-DE`): the order of dates, numbers and money;
+	 * not the language. Dates and times with words go through `dateLocale(language, formatLocale,
+	 * hourCycle)` from `@famos/time`, so their day and month names are in the reader's language.
+	 */
 	formatLocale: string;
 	/** First day of the week, ISO: 1 = Monday … 7 = Sunday. */
 	weekStart: number;

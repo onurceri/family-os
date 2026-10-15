@@ -129,7 +129,7 @@ describe('a new conversation', () => {
 			usedAgo(now - ms, {
 				now,
 				language: 'en',
-				formatLocale: 'en-US',
+				dateLocale: 'en-US',
 				timeZone: 'UTC',
 				justNow: 'Just now',
 			});

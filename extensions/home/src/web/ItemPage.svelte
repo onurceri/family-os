@@ -68,7 +68,7 @@
 	const report = (outcome: Outcome, message: string) =>
 		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
 	const dateOf = (d: string) =>
-		formatDate(d, app.formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
 	const editing = $derived(canEdit && app.query().get('edit') === '1');

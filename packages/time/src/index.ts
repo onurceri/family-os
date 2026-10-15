@@ -287,7 +287,8 @@ export function weekdayNames(locale: string): Record<Weekday, string> {
 	) as Record<Weekday, string>;
 }
 
-// Region formats: derived from a BCP 47 format locale, never from the UI language.
+// Region formats: derived from a BCP 47 format locale, never from the UI language. Dates and
+// times join the two in `dateLocale`.
 
 export type HourCycle = 'h12' | 'h23';
 export type TemperatureUnit = 'celsius' | 'fahrenheit';
@@ -325,23 +326,101 @@ export function formatLocaleForLanguage(language: string): string {
 }
 
 /**
- * The starting region format at setup: the chosen language's words with the browser's region
- * (Turkish chosen in an `en-US` browser gives `tr-US`: Turkish day and month names, the United
- * States' first day of the week). A browser already in that language keeps its own locale.
+ * The starting region format at setup: the browser's own (`en-US`), since the words come from
+ * the language and never from the region format. A browser without a region gets the chosen
+ * language's most likely one (`tr` → `tr-TR`).
  */
 export function setupFormatLocale(language: string, browserLocale: string): string {
 	try {
-		const chosen = new Intl.Locale(language).language;
 		const browser = new Intl.Locale(browserLocale);
-		if (browser.language === chosen) return browser.toString();
-		if (browser.region) {
-			const tag = Intl.getCanonicalLocales(`${chosen}-${browser.region}`)[0];
-			if (tag) return tag;
-		}
+		if (browser.region) return browser.toString();
 	} catch {
 		// fall through to the language's own region
 	}
 	return formatLocaleForLanguage(language);
+}
+
+/** Whether `Intl` holds date data for a language as used in `region` (`en-SI` yes, `tr-US` no). */
+function hasRegionData(tag: string, region: string): boolean {
+	const resolved = new Intl.DateTimeFormat(tag).resolvedOptions().locale;
+	return new Intl.Locale(resolved).maximize().region === region;
+}
+
+const dateLocales = new Map<string, string>();
+
+/**
+ * The locale to write dates and times with, for people who read `language` in a family whose
+ * region format is `formatLocale`. Day and month names, "PM" and the like are always words of
+ * the language; the region's order comes with them wherever `Intl` knows that language as used
+ * in that region (English with `sl-SI` gives "Thu, 22 Oct" and 22/10/2026; Slovenian gives
+ * "čet., 22. okt."). Where it does not (Turkish with `en-US`), the language's own phrasing is
+ * kept rather than showing words of a language the reader did not choose. The family's hour
+ * cycle, and the calendar and digits the region tag names, are part of the result. Numbers and
+ * money have no words and keep `formatLocale` itself.
+ */
+export function dateLocale(language: string, formatLocale: string, hourCycle?: HourCycle): string {
+	const key = `${language}|${formatLocale}|${hourCycle ?? ''}`;
+	const cached = dateLocales.get(key);
+	if (cached) return cached;
+	let tag: string;
+	try {
+		const words = new Intl.Locale(language);
+		const format = new Intl.Locale(formatLocale);
+		const region = format.region ?? format.maximize().region;
+		let base = words.baseName;
+		if (words.language === format.language && (!words.script || words.script === format.script))
+			base = format.baseName;
+		else if (region) {
+			const both = new Intl.Locale(words.language, {
+				...(words.script && { script: words.script }),
+				region,
+			}).baseName;
+			if (hasRegionData(both, region)) base = both;
+		}
+		tag = new Intl.Locale(base, {
+			...(hourCycle && { hourCycle }),
+			...(format.calendar && { calendar: format.calendar }),
+			...(format.numberingSystem && { numberingSystem: format.numberingSystem }),
+		}).toString();
+	} catch {
+		tag = formatLocale;
+	}
+	dateLocales.set(key, tag);
+	return tag;
+}
+
+let regionList: readonly string[] | undefined;
+
+/**
+ * Every region `Intl` knows as a place, each with its most likely language (`sl-SI`, `en-US`,
+ * `pt-BR`): the region formats to choose from. A region counts as a place when `Intl` holds
+ * locale data for it or lists time zones in it, which leaves out groupings (`EU`, `UN`), test
+ * regions and retired codes. Any other valid tag can still be typed.
+ */
+export function regionFormats(): readonly string[] {
+	if (regionList) return regionList;
+	const names = new Intl.DisplayNames('en', { type: 'region', fallback: 'none' });
+	const letters = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+	const found: string[] = [];
+	for (const a of letters) {
+		for (const b of letters) {
+			const region = `${a}${b}`;
+			try {
+				if (!names.of(region)) continue;
+				const likely = new Intl.Locale(`und-${region}`).maximize() as Intl.Locale & {
+					getTimeZones?: () => string[] | undefined;
+				};
+				if (likely.region !== region || likely.language === 'und') continue;
+				const tag = `${likely.language}-${region}`;
+				if (hasRegionData(tag, region) || (likely.getTimeZones?.()?.length ?? 0) > 0)
+					found.push(tag);
+			} catch {
+				// not a region this runtime knows
+			}
+		}
+	}
+	regionList = found;
+	return found;
 }
 
 /** First day of the week of a region, from `Intl.Locale` week info (1 = Monday), else Monday. */
@@ -416,14 +495,14 @@ export function numericDateOrder(formatLocale: string): 'DMY' | 'MDY' | 'YMD' {
 	}
 }
 
-/** A clock time for display, in the family's format locale and hour cycle. */
+/** A clock time for display, with a `dateLocale` and the family's hour cycle. */
 export function formatTime(
 	at: number,
 	timeZone: string,
-	formatLocale: string,
+	locale: string,
 	hourCycle?: HourCycle,
 ): string {
-	return new Intl.DateTimeFormat(formatLocale, {
+	return new Intl.DateTimeFormat(locale, {
 		hour: hourCycle === 'h12' ? 'numeric' : '2-digit',
 		minute: '2-digit',
 		timeZone,
@@ -431,10 +510,10 @@ export function formatTime(
 	}).format(at);
 }
 
-/** A local time of day (`HH:MM`) for display, in the family's format locale and hour cycle. */
-export function formatClock(time: string, formatLocale: string, hourCycle?: HourCycle): string {
+/** A local time of day (`HH:MM`) for display, with a `dateLocale` and the family's hour cycle. */
+export function formatClock(time: string, locale: string, hourCycle?: HourCycle): string {
 	if (!TIME.test(time)) return time;
-	return new Intl.DateTimeFormat(formatLocale, {
+	return new Intl.DateTimeFormat(locale, {
 		hour: hourCycle === 'h12' ? 'numeric' : '2-digit',
 		minute: '2-digit',
 		timeZone: 'UTC',

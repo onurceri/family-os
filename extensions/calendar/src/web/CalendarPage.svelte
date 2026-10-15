@@ -252,15 +252,15 @@
 	]);
 	const rangeTitle = $derived(
 		boardMonth
-			? monthLabel(day, app.formatLocale())
+			? monthLabel(day, app.dateLocale())
 			: shown === 'day'
-				? formatDate(day, app.formatLocale(), {
+				? formatDate(day, app.dateLocale(), {
 						weekday: 'long',
 						day: 'numeric',
 						month: 'long',
 						year: 'numeric',
 					})
-				: rangeLabel(week[0] as string, week[6] as string, app.formatLocale()),
+				: rangeLabel(week[0] as string, week[6] as string, app.dateLocale()),
 	);
 	const panelTitle = $derived(
 		viewing
@@ -338,11 +338,11 @@
 			onselect: () => void openEdit(o),
 		})),
 	);
-	const phoneTitle = $derived(monthLabel(day, app.formatLocale()));
+	const phoneTitle = $derived(monthLabel(day, app.dateLocale()));
 
-	const short = (date: string) => formatDate(date, app.formatLocale(), { weekday: 'short' });
+	const short = (date: string) => formatDate(date, app.dateLocale(), { weekday: 'short' });
 	const weekTitle = $derived(
-		`${formatDate(week[0] as string, app.formatLocale(), { day: 'numeric', month: 'short' })} – ${formatDate(week[6] as string, app.formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}`,
+		`${formatDate(week[0] as string, app.dateLocale(), { day: 'numeric', month: 'short' })} – ${formatDate(week[6] as string, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}`,
 	);
 </script>
 
@@ -613,7 +613,7 @@
 		</PageHeader>
 
 		<div class="grid gap-6">
-			<section class="grid gap-4" aria-label={formatDate(day, app.formatLocale())}>
+			<section class="grid gap-4" aria-label={formatDate(day, app.dateLocale())}>
 				<div class="flex items-center gap-1">
 					<Button
 						variant="ghost"
@@ -623,7 +623,7 @@
 						><ChevronLeft /></Button
 					>
 					{#if phoneMonth}
-						<p class="flex-1 text-center font-bold">{monthLabel(day, app.formatLocale())}</p>
+						<p class="flex-1 text-center font-bold">{monthLabel(day, app.dateLocale())}</p>
 					{:else}
 						<ol class="grid flex-1 grid-cols-7 gap-1">
 							{#each week as date (date)}
@@ -677,7 +677,7 @@
 									<button
 										type="button"
 										onclick={() => (selected = date)}
-										aria-label={formatDate(date, app.formatLocale())}
+										aria-label={formatDate(date, app.dateLocale())}
 										aria-pressed={date === day}
 										class="grid min-h-14 w-full content-start justify-items-center gap-1 rounded-lg py-1.5 {sameMonth(
 											date,
@@ -708,7 +708,7 @@
 				{@render tagFilterRow()}
 
 				<div class="flex items-center gap-3">
-					<h2 class="type-dateline">{formatDate(day, app.formatLocale())}</h2>
+					<h2 class="type-dateline">{formatDate(day, app.dateLocale())}</h2>
 					{#if day !== today}
 						<Button variant="secondary" size="sm" onclick={() => (selected = null)}
 							>{t('back_to_today')}</Button

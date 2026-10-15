@@ -22,6 +22,7 @@ const context = {
 	t: (key: string) => key,
 	members: [] as { id: string; displayName: string; color: string }[],
 	formatLocale: 'en-GB',
+	dateLocale: 'en-GB',
 	weekStart: 1,
 	hourCycle: 'h23' as const,
 	timeZone: TZ,

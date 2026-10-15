@@ -32,6 +32,7 @@
 	import { shareFor } from '#lib/contributions.js';
 	import { contributions, enabledOnly, isAppPath, keepExtensionsOffline } from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
+	import { familyDateLocale } from '#lib/format.svelte.js';
 	import LoadingMark from '#lib/LoadingMark.svelte';
 	import { netActivity, shellState } from '#lib/net-activity.svelte.js';
 	import PageGate from '#lib/PageGate.svelte';
@@ -88,6 +89,7 @@
 		t: (key, options) => tDynamic(key, options),
 		locale: () => getLocale(),
 		formatLocale: () => family.formatLocale,
+		dateLocale: familyDateLocale,
 		weekStart: () => family.weekStart,
 		hourCycle: () => family.hourCycle,
 		temperatureUnit: () => family.temperatureUnit,

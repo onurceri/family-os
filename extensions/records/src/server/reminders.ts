@@ -1,5 +1,5 @@
 import { defineJob, defineNotificationKind } from '@famos/sdk';
-import { addDays, dayBounds, epochOf, formatDate, todayIn } from '@famos/time';
+import { addDays, dayBounds, epochOf, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { DEFAULT_AUDIENCE } from '../contract/index.ts';
 import { type ObligationRow, tables } from './store.ts';
@@ -72,7 +72,7 @@ export const remindJob = defineJob({
 		if (!row || row.archived_at !== null) return;
 		if (row.updated_at !== version || row.due_date !== dueDate) return;
 
-		const { timeZone, formatLocale } = await ctx.family.settings();
+		const { timeZone } = await ctx.family.settings();
 		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about a past day.
 		if (now >= dayBounds(dueDate, timeZone).end) return;
@@ -92,7 +92,7 @@ export const remindJob = defineJob({
 					? { key: ends ? 'records:obligation_ends_today' : 'records:obligation_due_today' }
 					: {
 							key: ends ? 'records:obligation_ends_in' : 'records:obligation_due_in',
-							params: { count: days, date: shortDate(dueDate, formatLocale) },
+							params: { count: days, date: { date: dueDate } },
 						},
 			url: row.record_url ?? '/',
 			source: { kind: 'records.obligation', id: row.id },
@@ -110,7 +110,3 @@ export const remindJob = defineJob({
 		}
 	},
 });
-
-/** A date for a notification text, in the family's region format. */
-const shortDate = (date: string, formatLocale: string) =>
-	formatDate(date, formatLocale, { day: 'numeric', month: 'short', year: 'numeric' });

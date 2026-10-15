@@ -114,7 +114,7 @@
 
 	function expiry(d: RecordDocument): { text: string; warn: 'attention' | 'heat' | null } | null {
 		if (!d.expiresOn) return null;
-		const date = formatDate(d.expiresOn, app.formatLocale(), {
+		const date = formatDate(d.expiresOn, app.dateLocale(), {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric',

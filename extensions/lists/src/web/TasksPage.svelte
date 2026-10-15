@@ -125,7 +125,7 @@
 						? t('queued_toast')
 						: next
 							? t('completed_next', {
-									date: formatDate(next, app.formatLocale(), {
+									date: formatDate(next, app.dateLocale(), {
 										weekday: 'long',
 										day: 'numeric',
 										month: 'long',

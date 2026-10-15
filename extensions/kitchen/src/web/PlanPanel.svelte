@@ -84,7 +84,7 @@
 		return plannedAlready(
 			dayMeals,
 			{ date: day, slot: meal, ...(recipeId ? { recipeId } : { title }) },
-			app.formatLocale(),
+			app.locale(),
 		);
 	});
 	// The agreement belongs to one dish on one day and meal.
@@ -94,7 +94,7 @@
 	});
 	const dirty = $derived(open && !recipe && (chosen !== '' || title.trim() !== ''));
 	const longDay = (value: string) =>
-		formatDate(value, app.formatLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
+		formatDate(value, app.dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 	// A short title (a sheet's bar is narrow); the day is the first line of the panel.
 	const heading = $derived(recipe || !date ? t('plan_this') : t('plan_meal'));
 

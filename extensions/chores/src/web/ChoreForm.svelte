@@ -24,7 +24,7 @@
 
 	const { app, t } = useChores();
 	const days = $derived.by(() => {
-		const names = weekdayNames(app.formatLocale());
+		const names = weekdayNames(app.dateLocale());
 		return orderedWeekdays(app.weekStart()).map((code) => ({ code, label: names[code] }));
 	});
 	const repeatLabels = $derived({

@@ -56,7 +56,7 @@ export function postedLabel(
 	now: number,
 	t: BoardT,
 	timeZone: string,
-	formatLocale: string,
+	locale: string,
 ): string {
 	const minutes = Math.max(0, Math.floor((now - createdAt) / 60_000));
 	if (minutes < 1) return t('time_now');
@@ -65,16 +65,16 @@ export function postedLabel(
 	const day = zoned(createdAt, timeZone).toPlainDate().toString();
 	if (day === today) return t('time_hours', { count: Math.floor(minutes / 60) });
 	if (day === addDays(today, -1)) return t('time_yesterday');
-	return formatDate(day, formatLocale, { day: 'numeric', month: 'short' });
+	return formatDate(day, locale, { day: 'numeric', month: 'short' });
 }
 
-/** "Until Fri", "Until tomorrow": the end of a note, with dates in the family's format locale. */
+/** "Until Fri", "Until tomorrow": the end of a note, with dates in the date locale. */
 export function untilLabel(
 	endsOn: string,
 	now: number,
 	t: BoardT,
 	timeZone: string,
-	formatLocale: string,
+	locale: string,
 ): string {
 	const today = todayIn(timeZone, now);
 	if (endsOn === today) return t('until_chip_today');
@@ -83,7 +83,7 @@ export function untilLabel(
 	return t('until_chip', {
 		when: formatDate(
 			endsOn,
-			formatLocale,
+			locale,
 			soon ? { weekday: 'short' } : { day: 'numeric', month: 'short' },
 		),
 	});

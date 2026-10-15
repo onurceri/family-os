@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	addDays,
+	dateLocale,
 	dayBounds,
 	daysAround,
 	defaultHourCycle,
@@ -20,6 +21,7 @@ import {
 	numericDateOrder,
 	orderedWeekdays,
 	type Recurrence,
+	regionFormats,
 	setupFormatLocale,
 	todayIn,
 	toRRule,
@@ -228,21 +230,72 @@ describe('every N months or years', () => {
 });
 
 describe('setupFormatLocale', () => {
-	it('keeps a browser that is already in the chosen language', () => {
+	it("starts from the browser's own region format, whatever the language", () => {
 		expect(setupFormatLocale('tr', 'tr-TR')).toBe('tr-TR');
 		expect(setupFormatLocale('en', 'en-GB')).toBe('en-GB');
-	});
-	it("uses the chosen language's words with the browser's region", () => {
-		expect(setupFormatLocale('tr', 'en-US')).toBe('tr-US');
-		expect(setupFormatLocale('de', 'en-NL')).toBe('de-NL');
-		expect(
-			new Intl.DateTimeFormat(setupFormatLocale('tr', 'en-US'), { weekday: 'short' }).format(
-				new Date(Date.UTC(2026, 9, 8, 12)),
-			),
-		).toBe('Per');
+		expect(setupFormatLocale('tr', 'en-US')).toBe('en-US');
+		expect(setupFormatLocale('de', 'en-NL')).toBe('en-NL');
 	});
 	it("falls back to the language's own region when the browser has none", () => {
 		expect(setupFormatLocale('tr', 'en')).toBe('tr-TR');
+	});
+});
+
+describe('dateLocale', () => {
+	const thursday = Date.UTC(2026, 9, 22, 17, 5);
+	const norm = (v: string) => v.replace(/[  ]/g, ' ');
+	const write = (locale: string, options: Intl.DateTimeFormatOptions) =>
+		norm(new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(thursday));
+	const short = { weekday: 'short', day: 'numeric', month: 'short' } as const;
+	const numeric = { day: '2-digit', month: '2-digit', year: 'numeric' } as const;
+
+	it("writes the language's words in the region's order where Intl knows both together", () => {
+		const english = dateLocale('en', 'sl-SI', 'h23');
+		expect(english).toBe('en-SI-u-hc-h23');
+		expect(write(english, short)).toBe('Thu, 22 Oct');
+		expect(write(english, numeric)).toBe('22/10/2026');
+		expect(write(dateLocale('sl', 'sl-SI'), short)).toBe('čet., 22. okt.');
+	});
+
+	it('keeps the region format itself when it is in the reader language', () => {
+		expect(dateLocale('en', 'en-GB')).toBe('en-GB');
+		expect(dateLocale('tr', 'tr-TR', 'h23')).toBe('tr-TR-u-hc-h23');
+		expect(write(dateLocale('en', 'en-US'), short)).toBe('Thu, Oct 22');
+	});
+
+	it("keeps the language's own phrasing where Intl does not know it in that region", () => {
+		const turkish = dateLocale('tr', 'en-US', 'h12');
+		expect(turkish).toBe('tr-u-hc-h12');
+		expect(write(turkish, short)).toBe('22 Eki Per');
+		expect(write(turkish, { hour: 'numeric', minute: '2-digit' })).toBe('ÖS 5:05');
+	});
+
+	it("carries the family's clock and the region's own digits and calendar", () => {
+		expect(write(dateLocale('en', 'en-US', 'h23'), { hour: '2-digit', minute: '2-digit' })).toBe(
+			'17:05',
+		);
+		expect(dateLocale('en', 'ar-EG-u-nu-arab')).toBe('en-u-nu-arab');
+		expect(dateLocale('en', 'fa-IR-u-ca-persian')).toBe('en-u-ca-persian');
+	});
+
+	it('never fails on a tag Intl rejects', () => {
+		expect(dateLocale('en', 'not a tag')).toBe('not a tag');
+	});
+});
+
+describe('regionFormats', () => {
+	it('lists each place once, with its most likely language', () => {
+		const tags = regionFormats();
+		expect(tags).toEqual(expect.arrayContaining(['sl-SI', 'en-US', 'tr-TR', 'pt-BR', 'de-CH']));
+		const regions = tags.map((tag) => new Intl.Locale(tag).region);
+		expect(new Set(regions).size).toBe(regions.length);
+		expect(tags.length).toBeGreaterThan(200);
+	});
+
+	it('leaves out groupings, test regions and retired codes', () => {
+		const regions = new Set(regionFormats().map((tag) => new Intl.Locale(tag).region));
+		for (const code of ['EU', 'UN', 'EZ', 'QO', 'XA', 'XB', 'ZZ', 'UK', 'SU', 'YU'])
+			expect(regions.has(code)).toBe(false);
 	});
 });
 

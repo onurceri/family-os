@@ -64,7 +64,7 @@
 	const metaOf = (task: Task) =>
 		[
 			app.members().find((m) => m.id === task.assigneeId)?.displayName ?? t('anyone'),
-			dueLabel(task, today, t, app.formatLocale(), app.hourCycle()),
+			dueLabel(task, today, t, app.dateLocale(), app.hourCycle()),
 		].join(' · ');
 
 	async function done(task: Task) {

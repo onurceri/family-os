@@ -50,7 +50,7 @@
 	const report = (outcome: Outcome, message: string) =>
 		app.toast(outcome === 'drafted' ? t('sent_for_approval') : message);
 	const dateOf = (d: string) =>
-		formatDate(d, app.formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 	// The add form, in the panel (a sheet on phones).
 	let adding = $state(false);

@@ -52,7 +52,7 @@
 	const subtitle = (task: Task) =>
 		[
 			assignee(task)?.displayName ?? null,
-			task.dueDate ? dueLabel(task, today, t, app.formatLocale(), app.hourCycle()) : null,
+			task.dueDate ? dueLabel(task, today, t, app.dateLocale(), app.hourCycle()) : null,
 		]
 			.filter(Boolean)
 			.join(' · ') || undefined;

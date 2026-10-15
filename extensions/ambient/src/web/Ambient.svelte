@@ -120,7 +120,7 @@
 	const upcoming = $derived(
 		nextEvents(agenda, now, {
 			timeZone: app.timeZone(),
-			formatLocale: app.formatLocale(),
+			dateLocale: app.dateLocale(),
 			hourCycle: app.hourCycle(),
 		}),
 	);

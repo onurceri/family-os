@@ -15,7 +15,7 @@ export function toTimelineItem(o: Occurrence, day: string, app: TimelineApp): Ti
 	const timeZone = app.timeZone();
 	const { start: dayStart } = dayBounds(day, timeZone);
 	const names = new Map(app.members().map((m) => [m.id, m.displayName]));
-	const clock = (at: number) => timeLabel(at, timeZone, app.formatLocale(), app.hourCycle());
+	const clock = (at: number) => timeLabel(at, timeZone, app.dateLocale(), app.hourCycle());
 	const timed = !o.allDay && o.start !== null && o.end !== null;
 	const who = o.source
 		? o.source.name

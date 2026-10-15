@@ -1,13 +1,5 @@
 import { defineJob, defineNotificationKind, type NotifyRequest } from '@famos/sdk';
-import {
-	addDays,
-	dayBounds,
-	expandDates,
-	expandTimed,
-	formatTime,
-	Temporal,
-	todayIn,
-} from '@famos/time';
+import { addDays, dayBounds, expandDates, expandTimed, Temporal, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { type EventRow, effectiveReminder, events, externalAsEvent } from './store.ts';
 
@@ -166,13 +158,10 @@ function message(
 	key: string,
 	timeZone: string,
 	source: { kind: string; id: string },
-	region: { formatLocale: string; hourCycle: 'h12' | 'h23' },
 ): NotifyRequest {
 	const members = JSON.parse(row.member_ids) as string[];
 	const where = row.location ? { location: row.location } : null;
-	const time = row.all_day
-		? null
-		: formatTime(Number(key), timeZone, region.formatLocale, region.hourCycle);
+	const time = row.all_day ? null : { at: Number(key), timeZone };
 	const body = time
 		? {
 				key: where ? 'calendar:reminder_timed_where' : 'calendar:reminder_timed',
@@ -234,8 +223,7 @@ export const remindJob = defineJob({
 		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about the past.
 		const over = row.all_day ? dayBounds(key, row.time_zone).end : Number(key) + LATE_MS;
-		if (now <= over)
-			await ctx.notify(message(row, key, row.time_zone, source, await ctx.family.settings()));
+		if (now <= over) await ctx.notify(message(row, key, row.time_zone, source));
 		if (row.rrule) {
 			await scheduleReminder(
 				(job, payload, options) => ctx.enqueue(job, payload, options),

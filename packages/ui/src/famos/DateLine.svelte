@@ -4,7 +4,7 @@
 	/**
 	 * The date under the clock: the weekday in tracked caps over the day and month,
 	 * in the serif at `--ramp-date` (`serif`, Broadsheet's italic) or bold in the body face
-	 * (`plain`). Both from `Intl` in the family's format locale.
+	 * (`plain`). Both from `Intl` in the date locale: the reader's words, the region's order.
 	 */
 	let {
 		now,
@@ -20,13 +20,13 @@
 	} = $props();
 
 	const weekday = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			weekday: 'long',
 			timeZone: format.timeZone,
 		}).format(now),
 	);
 	const date = $derived(
-		new Intl.DateTimeFormat(format.formatLocale, {
+		new Intl.DateTimeFormat(format.dateLocale, {
 			day: 'numeric',
 			month: 'long',
 			timeZone: format.timeZone,

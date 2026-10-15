@@ -29,7 +29,12 @@ const MIN = 60_000;
 /** 2026-10-08 12:00 UTC; the family is in UTC so the clock reads as written. */
 const NOON = Date.UTC(2026, 9, 8, 12);
 const at = (hh: number, mm = 0) => Date.UTC(2026, 9, 8, hh, mm);
-const fmt: TodayFormat = { formatLocale: 'en-GB', hourCycle: 'h23', timeZone: 'UTC' };
+const fmt: TodayFormat = {
+	formatLocale: 'en-GB',
+	dateLocale: 'en-GB',
+	hourCycle: 'h23',
+	timeZone: 'UTC',
+};
 
 const item = (id: string, extra: Partial<TimelineItem> = {}): TimelineItem => ({
 	id,
@@ -266,7 +271,7 @@ describe('formatting in the family’s format locale', () => {
 
 	it('writes the clock in the hour cycle and the photo month in the locale', () => {
 		expect(formatClock(at(15, 45), fmt)).toBe('15:45');
-		expect(formatClock(at(15, 45), { ...fmt, formatLocale: 'en-US', hourCycle: 'h12' })).toBe(
+		expect(formatClock(at(15, 45), { ...fmt, dateLocale: 'en-US', hourCycle: 'h12' })).toBe(
 			'3:45 PM',
 		);
 		expect(formatPhotoMonth('2025-10', 'en-GB')).toBe('October 2025');

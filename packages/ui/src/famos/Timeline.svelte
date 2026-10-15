@@ -31,7 +31,7 @@
 	const members = $derived(new Map(app.members().map((m) => [m.id, m])));
 
 	function clock(at: number): string {
-		return new Intl.DateTimeFormat(app.formatLocale(), {
+		return new Intl.DateTimeFormat(app.dateLocale(), {
 			hour: app.hourCycle() === 'h12' ? 'numeric' : '2-digit',
 			minute: '2-digit',
 			timeZone: app.timeZone(),

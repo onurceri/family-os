@@ -70,6 +70,7 @@
 	);
 	const format = $derived({
 		formatLocale: app.formatLocale(),
+		dateLocale: app.dateLocale(),
 		hourCycle: app.hourCycle(),
 		timeZone: app.timeZone(),
 	});

@@ -4,7 +4,7 @@ import type { ForecastHour } from '../src/contract/index.ts';
 import { type SentenceItem, weatherSentence } from '../src/contract/sentence.ts';
 
 const timeZone = 'Europe/Istanbul';
-const format = { timeZone, formatLocale: 'en-GB', hourCycle: 'h23' } as const;
+const format = { timeZone, formatLocale: 'en-GB', dateLocale: 'en-GB', hourCycle: 'h23' } as const;
 const DAY = '2026-10-09';
 const at = (time: string, date = DAY) => epochOf(date, time, timeZone);
 
@@ -157,6 +157,7 @@ describe('weatherSentence', () => {
 			{
 				timeZone,
 				formatLocale: 'en-US',
+				dateLocale: 'en-US',
 				hourCycle: 'h12',
 			},
 		);

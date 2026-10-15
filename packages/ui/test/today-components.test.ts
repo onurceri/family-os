@@ -23,7 +23,12 @@ import { cleanup, click, q, qa, render } from './helpers.js';
 afterEach(cleanup);
 
 const at = (hh: number, mm = 0) => Date.UTC(2026, 9, 8, hh, mm);
-const fmt: TodayFormat = { formatLocale: 'en-GB', hourCycle: 'h23', timeZone: 'UTC' };
+const fmt: TodayFormat = {
+	formatLocale: 'en-GB',
+	dateLocale: 'en-GB',
+	hourCycle: 'h23',
+	timeZone: 'UTC',
+};
 const elif = { displayName: 'Elif', color: 'var(--ink-soft)' };
 
 const piano: TimelineItem = {
@@ -267,12 +272,12 @@ describe('the rest of the kit', () => {
 		cleanup();
 		el = render(Clock, {
 			now: at(15, 45),
-			format: { ...fmt, formatLocale: 'en-US', hourCycle: 'h12' },
+			format: { ...fmt, dateLocale: 'en-US', hourCycle: 'h12' },
 		});
 		expect(q('[data-testid="clock"]', el).textContent).toBe('3:45PM');
 		expect(q('.period', el).textContent).toBe('PM');
 		cleanup();
-		el = render(DateLine, { now: at(12), format: { ...fmt, formatLocale: 'tr-TR' } });
+		el = render(DateLine, { now: at(12), format: { ...fmt, dateLocale: 'tr-TR' } });
 		expect(q('.weekday', el).textContent).toBe('Perşembe');
 		expect(q('.date', el).textContent).toBe('8 Ekim');
 	});

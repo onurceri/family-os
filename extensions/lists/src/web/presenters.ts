@@ -28,7 +28,7 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 					{ dueDate: input.dueDate ?? null, dueTime: input.dueTime ?? null },
 					today,
 					t,
-					c.formatLocale,
+					c.dateLocale,
 					c.hourCycle,
 				),
 				paths: ['dueDate', 'dueTime'],
@@ -41,7 +41,7 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 			>[0];
 			fields.push({
 				label: t('repeat'),
-				value: describeRecurrence(recurrence, t, c.formatLocale, c.weekStart),
+				value: describeRecurrence(recurrence, t, c.dateLocale, c.weekStart),
 				path: 'recurrence',
 			});
 		}

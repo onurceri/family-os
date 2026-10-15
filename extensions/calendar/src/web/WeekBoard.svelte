@@ -138,7 +138,7 @@
 	const hours = Array.from({ length: 23 }, (_, i) => i + 1);
 	function hourLabel(h: number): string {
 		const cycle = app.hourCycle();
-		return new Intl.DateTimeFormat(app.formatLocale(), {
+		return new Intl.DateTimeFormat(app.dateLocale(), {
 			hour: cycle === 'h12' ? 'numeric' : '2-digit',
 			...(cycle === 'h12' ? {} : { minute: '2-digit' }),
 			hourCycle: cycle,
@@ -177,7 +177,7 @@
 		);
 	}
 	const cols = $derived(`${gutter}px repeat(${days.length}, minmax(0, 1fr))`);
-	const nowTag = $derived(timeLabel(now, tz, app.formatLocale(), app.hourCycle()));
+	const nowTag = $derived(timeLabel(now, tz, app.dateLocale(), app.hourCycle()));
 	const nowIn = $derived(days.includes(today));
 </script>
 
@@ -186,7 +186,7 @@
 		class="text-[11px] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase {isToday
 			? 'text-now'
 			: 'text-ink-soft'}"
-		>{formatDate(date, app.formatLocale(), { weekday: single ? 'long' : 'short' })}</small
+		>{formatDate(date, app.dateLocale(), { weekday: single ? 'long' : 'short' })}</small
 	>
 	<b
 		class="type-day grid size-8 shrink-0 place-items-center rounded-full {isToday
@@ -221,7 +221,7 @@
 							<button
 								type="button"
 								onclick={() => onday(date)}
-								aria-label={t('open_day', { date: formatDate(date, app.formatLocale()) })}
+								aria-label={t('open_day', { date: formatDate(date, app.dateLocale()) })}
 								class="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-lg outline-none focus-visible:ring-2"
 							>
 								{@render dayHead(date, isToday)}
@@ -232,7 +232,7 @@
 						<button
 							type="button"
 							class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto grid size-7 shrink-0 place-items-center rounded-lg opacity-0 outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2"
-							aria-label={t('add_on', { date: formatDate(date, app.formatLocale()) })}
+							aria-label={t('add_on', { date: formatDate(date, app.dateLocale()) })}
 							onclick={() => onadd(date)}><Plus class="size-4" aria-hidden="true" /></button
 						>
 					</div>
