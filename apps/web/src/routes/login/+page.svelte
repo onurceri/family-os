@@ -42,6 +42,7 @@
 			return t(locked === 'pin' ? 'login_pin_locked' : 'login_locked', {
 				count: result.minutes,
 			});
+		if (result.kind === 'limited') return t('login_limited', { count: result.minutes });
 		if (result.kind === 'untrusted') return t('login_untrusted');
 		if (result.kind === 'invalid') return invalid;
 		return t('error_generic');

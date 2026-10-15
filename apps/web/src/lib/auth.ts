@@ -6,8 +6,12 @@ import { offline } from './offline.svelte.js';
 
 export type SignInResult =
 	| { kind: 'ok' | 'invalid' | 'untrusted' | 'error' }
-	/** Too many tries: `minutes` is the wait the server reported (rounded up, at least one). */
-	| { kind: 'locked'; minutes: number };
+	/**
+	 * Too many tries; `minutes` is the wait the server reported (rounded up, at least one).
+	 * `locked`: this account had too many wrong secrets. `limited`: this device sent too many
+	 * tries, which says nothing about whether a PIN was wrong.
+	 */
+	| { kind: 'locked' | 'limited'; minutes: number };
 
 const result = (kind: 'ok' | 'invalid' | 'untrusted' | 'error'): SignInResult => ({ kind });
 
@@ -25,7 +29,10 @@ async function post(path: string, body: unknown): Promise<SignInResult> {
 			body: JSON.stringify(body),
 		});
 		if (res.ok) return result('ok');
-		if (res.status === 429) return { kind: 'locked', minutes: waitMinutes(res) };
+		if (res.status === 429) {
+			const body = (await res.json().catch(() => null)) as { code?: unknown } | null;
+			return { kind: body?.code === 'LOCKED' ? 'locked' : 'limited', minutes: waitMinutes(res) };
+		}
 		if (res.status === 403) return result('untrusted');
 		if (res.status === 401 || res.status === 400) return result('invalid');
 		return result('error');

@@ -137,7 +137,7 @@ describe('identity-betterauth', () => {
 		expect(res.status).toBeGreaterThanOrEqual(400);
 	});
 
-	it('signs in with a PIN and rate-limits guessing', async () => {
+	it('signs in with a PIN', async () => {
 		await identity.admin.setPin({ memberId: 'member_kid', pin: '1234', displayName: 'Kid' });
 		expect(
 			(await post('/sign-in/pin', { memberId: 'member_kid', pin: '9999' }, '10.0.0.2')).status,
@@ -147,13 +147,47 @@ describe('identity-betterauth', () => {
 		expect((await identity.resolveMember(new Headers({ cookie: cookieOf(ok) })))?.memberId).toBe(
 			'member_kid',
 		);
+	});
 
-		const statuses: number[] = [];
-		for (let i = 0; i < 6; i++)
-			statuses.push(
-				(await post('/sign-in/pin', { memberId: 'member_kid', pin: '0000' }, '10.0.0.3')).status,
+	it('never limits PIN sign-ins that succeed, however many come from one tablet', async () => {
+		await identity.admin.setPin({ memberId: 'member_a', pin: '1234', displayName: 'A' });
+		await identity.admin.setPin({ memberId: 'member_b', pin: '5678', displayName: 'B' });
+		for (let i = 0; i < 12; i++) {
+			const [memberId, pin] = i % 2 ? ['member_a', '1234'] : ['member_b', '5678'];
+			expect((await post('/sign-in/pin', { memberId, pin }, '10.0.0.3')).status).toBe(200);
+		}
+	});
+
+	it('limits wrong PINs from one address across accounts, with its own code', async () => {
+		for (let i = 0; i < 10; i++) {
+			await identity.admin.setPin({ memberId: `member_${i}`, pin: '1234', displayName: `M${i}` });
+			const res = await post('/sign-in/pin', { memberId: `member_${i}`, pin: '0000' }, '10.0.0.6');
+			expect(res.status).toBe(401);
+		}
+		// Even the right PIN waits: the address has used up its tries, not the account.
+		const limited = await post('/sign-in/pin', { memberId: 'member_0', pin: '1234' }, '10.0.0.6');
+		expect(limited.status).toBe(429);
+		expect(await limited.json()).toMatchObject({ code: 'RATE_LIMITED' });
+		expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0);
+		expect(
+			(await post('/sign-in/pin', { memberId: 'member_0', pin: '1234' }, '10.0.0.8')).status,
+		).toBe(200);
+	});
+
+	it('does not count refusals from untrusted devices toward the lockout', async () => {
+		await identity.admin.setPin({ memberId: 'member_kid', pin: '1234', displayName: 'Kid' });
+		for (let i = 0; i < 8; i++) {
+			const res = await post(
+				'/sign-in/pin',
+				{ memberId: 'member_kid', pin: '0000' },
+				'10.0.0.10',
+				false,
 			);
-		expect(statuses).toContain(429);
+			expect(res.status).toBe(403);
+		}
+		expect(
+			(await post('/sign-in/pin', { memberId: 'member_kid', pin: '1234' }, '10.0.0.10')).status,
+		).toBe(200);
 	});
 
 	it('refuses a correct PIN once the role no longer signs in with a PIN', async () => {
