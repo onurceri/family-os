@@ -55,6 +55,8 @@ export interface AvailableExtension {
 	load(): Promise<ExtensionDefinition>;
 	/** Its web half, if it has one (source has none: the app's dev server compiles it). */
 	web(): WebPackage | undefined;
+	/** Set for a copy from the store (installed from a signed package): which one, and its signer. */
+	stored?: { digest: string; signer: { keyId: string; kind: string } };
 }
 
 export interface Available {
@@ -191,7 +193,7 @@ function sourceLabels(dir: string): AvailableExtension['labels'] {
  * imported only by `load()`, under the import rules of a package, and must carry the manifest
  * the package describes.
  */
-function readPackage(dir: string, always: boolean): AvailableExtension {
+export function readPackage(dir: string, always: boolean): AvailableExtension {
 	const file = join(dir, PACKAGE_FILE);
 	if (!existsSync(file))
 		throw new Error(`No extension package at ${dir} (${PACKAGE_FILE} is missing)`);
@@ -267,7 +269,7 @@ function isDefinition(value: unknown): value is ExtensionDefinition {
  * A package works on the platform it was built for and on later patches of it: within one minor
  * version only names are added, so what it was built against is all there.
  */
-function builtForThisHost(built: string): boolean {
+export function builtForThisHost(built: string): boolean {
 	const parts = (version: string) => /^(\d+)\.(\d+)\.(\d+)$/.exec(version)?.slice(1).map(Number);
 	const b = parts(built);
 	const h = parts(SDK_VERSION);

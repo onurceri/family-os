@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { decryptFile, parseIdentityFile } from '@famos/adapters/backup';
-import { readBackupManifest, restoreBackup } from '@famos/db';
+import { readBackupExtensions, readBackupManifest, restoreBackup } from '@famos/db';
 import type { ExtensionDefinition } from '@famos/sdk';
 import type { Config } from './config.ts';
 import { openRuntime } from './runtime.ts';
@@ -56,10 +56,14 @@ export async function restoreFile(config: Config, file: string, options: Restore
 		);
 		await probe.close();
 		// A scope no extension here knows is one this server does not have: its data comes back
-		// with the rest and waits, as it does for an extension that is uninstalled.
+		// with the rest and waits, as it does for an extension that is uninstalled. One whose
+		// package the backup carries comes back with that package, which is checked (signature,
+		// migrations) when the server starts and refused on its own if it does not fit.
+		const carried = new Set(await readBackupExtensions(plain));
 		const unknown = Object.entries(manifest.schema).flatMap(([scope, names]) => {
 			const have = known.get(scope);
-			return have ? names.filter((n) => !have.has(n)).map((n) => `${scope}/${n}`) : [];
+			if (!have || carried.has(scope)) return [];
+			return names.filter((n) => !have.has(n)).map((n) => `${scope}/${n}`);
 		});
 		if (unknown.length > 0 && !options.force) {
 			throw new Error(
@@ -72,6 +76,7 @@ export async function restoreFile(config: Config, file: string, options: Restore
 			filesDir: config.filesDir,
 			languagesDir: config.languagesDir,
 			themesDir: config.themesDir,
+			extensionsDir: config.extensionsDir,
 		});
 		return manifest;
 	} finally {

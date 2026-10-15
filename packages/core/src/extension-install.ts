@@ -14,8 +14,10 @@ import {
 	type ExtensionPackagesPort,
 	type ExtensionState,
 	emptyExtensionState,
+	type InstallSource,
 	type RefusedExtension,
 	readExtensionState,
+	type StagedPackage,
 	writeExtensionState,
 } from './extension-state.ts';
 import type { Features } from './features.ts';
@@ -74,8 +76,41 @@ export const ExtensionEntrySchema = z.object({
 	reaches: ReachesSchema,
 	/** Its name and description by language code, for one whose texts are not loaded. */
 	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
+	/**
+	 * The version that loads at the next start when it is not the one running (a newer package
+	 * was installed from a file); null otherwise.
+	 */
+	nextVersion: z.string().nullable(),
 });
 export type ExtensionEntry = z.infer<typeof ExtensionEntrySchema>;
+
+/** The most an uploaded package may weigh, with the form around it. */
+export const EXTENSION_UPLOAD_MAX_BYTES = 20 * 1024 * 1024 + 64 * 1024;
+
+/** A package uploaded and checked, which `core.installExtension` can install by its digest. */
+export const StagedExtensionSchema = z.object({
+	/** What `core.installExtension` takes as `staged`. */
+	digest: z.string(),
+	id: z.string(),
+	version: z.string(),
+	/** The version this server has now (running, or shipped), or null when it has none. */
+	current: z.string().nullable(),
+	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
+	dependsOn: z.array(z.string()),
+	optional: z.array(z.string()),
+	reaches: ReachesSchema,
+	/** The key that signed it: `official` is the FamilyOS project's. */
+	signer: z.object({ keyId: z.string(), kind: z.string() }),
+});
+export type StagedExtension = z.infer<typeof StagedExtensionSchema>;
+
+const reachesOf = (manifest: ExtensionManifest | undefined) => ({
+	hosts: manifest?.network?.hosts ?? [],
+	userUrls: manifest?.network?.userUrls ?? false,
+	local: manifest?.network?.local ?? false,
+	calls: manifest?.calls ?? [],
+	capabilities: manifest?.capabilities ?? [],
+});
 
 export interface ExtensionList {
 	extensions: ExtensionEntry[];
@@ -147,7 +182,8 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		const features = deps.features();
 		return ids.map((id): ExtensionEntry => {
 			const pkg = packages.get(id);
-			const manifest = loaded.get(id) ?? pkg?.manifest;
+			const running = loaded.get(id);
+			const manifest = running ?? pkg?.manifest;
 			const fail = failed.get(id);
 			const refusal = refused.get(id);
 			const status = loaded.has(id)
@@ -175,20 +211,23 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 				enabled: features.isOn(id),
 				dependsOn: manifest?.dependsOn ?? [],
 				optional: manifest?.optional ?? [],
-				reaches: {
-					hosts: manifest?.network?.hosts ?? [],
-					userUrls: manifest?.network?.userUrls ?? false,
-					local: manifest?.network?.local ?? false,
-					calls: manifest?.calls ?? [],
-					capabilities: manifest?.capabilities ?? [],
-				},
+				reaches: reachesOf(manifest),
 				labels: pkg?.labels ?? {},
+				nextVersion:
+					running && pkg && installed.has(id) && pkg.version !== running.version
+						? pkg.version
+						: null,
 			};
 		});
 	}
 
 	const needsRestart = (list: readonly ExtensionEntry[]) =>
-		list.some((e) => e.status === 'pending_install' || e.status === 'pending_uninstall');
+		list.some(
+			(e) =>
+				e.status === 'pending_install' ||
+				e.status === 'pending_uninstall' ||
+				e.nextVersion !== null,
+		);
 
 	async function describe(db: DbExecutor): Promise<ExtensionList> {
 		const state = await currentState(db);
@@ -222,29 +261,88 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		restartNeeded: z.boolean(),
 	});
 
+	/**
+	 * Checks an uploaded package and keeps it aside. Nothing is installed yet: the answer says what
+	 * the package is, who signed it and what it reaches, for a person to confirm with
+	 * `core.installExtension` ({ staged: digest }).
+	 */
+	const upload = defineRoute({
+		method: 'post',
+		path: '/extensions/packages',
+		operationId: 'core.uploadExtensionPackage',
+		summary: 'Upload a signed extension package (.famext) to install',
+		requires: CORE_CAPABILITIES.extensionsManage.id,
+		upload: {
+			maxBytes: EXTENSION_UPLOAD_MAX_BYTES,
+			maxFiles: 1,
+			// Browsers know no type for .famext and send it as bytes.
+			accept: ['application/octet-stream', 'application/gzip', 'application/x-gzip'],
+		},
+		response: StagedExtensionSchema,
+		async handle(_ctx, request) {
+			assertPerson(request.actor, 'install extensions');
+			const [file] = request.files;
+			if (!file) throw new FamosError('bad_request', 'Choose a package file');
+			const port = deps.packages();
+			if (!port.stage)
+				throw new FamosError('bad_request', 'This server cannot install from a file');
+			return describeStaged(await port.stage(await file.bytes()));
+		},
+	});
+
+	function describeStaged(staged: StagedPackage): StagedExtension {
+		const current =
+			loadedManifests().get(staged.id)?.version ?? packagesById().get(staged.id)?.version ?? null;
+		return {
+			digest: staged.digest,
+			id: staged.id,
+			version: staged.version,
+			current,
+			labels: staged.labels,
+			dependsOn: staged.manifest.dependsOn,
+			optional: staged.manifest.optional,
+			reaches: reachesOf(staged.manifest),
+			signer: staged.signer,
+		};
+	}
+
 	const install = defineAction({
 		id: 'core.installExtension',
 		title: 'Install an extension',
-		input: z.object({ extensionId: z.string().max(64) }),
+		description:
+			'Installs a package this server offers (`extensionId`), or one uploaded with core.uploadExtensionPackage (`staged`: its digest).',
+		input: z.union([
+			z.object({ extensionId: z.string().max(64) }),
+			z.object({ staged: z.string().regex(/^[0-9a-f]{32}$/) }),
+		]),
 		output: ChangeOutputSchema,
 		requires: CORE_CAPABILITIES.extensionsManage.id,
 		approval: 'never',
 		// Putting a package in place is the action's one effect outside the database. It is
-		// idempotent (a shipped package is already there) and the installed set commits with it.
+		// idempotent (a shipped package is already there, a staged one is moved once) and the
+		// installed set commits with it.
 		async run(uow, input) {
 			assertPerson(uow.actor, 'install extensions');
 			const packages = packagesById();
-			if (!packages.has(input.extensionId))
+			let staged: StagedPackage | undefined;
+			if ('staged' in input) {
+				staged = await deps.packages().staged?.(input.staged);
+				if (!staged) throw new FamosError('not_found', 'No such uploaded package; upload it again');
+			} else if (!packages.has(input.extensionId)) {
 				throw new FamosError('not_found', `No extension "${input.extensionId}" to install`);
+			}
+			const rootId = staged?.id ?? ('extensionId' in input ? input.extensionId : '');
 			const state = await currentState(uow.db);
 			const installed = new Set(state.installed);
-			// What it needs comes with it, dependencies first; all of it must be at hand.
+			// What it needs comes with it, dependencies first; all of it must be at hand. A staged
+			// package is placed even when its extension is installed: it is a new version of it.
 			const adding: string[] = [];
 			const visit = (id: string, path: readonly string[]) => {
-				if (installed.has(id) || adding.includes(id)) return;
-				if (path.includes(id)) return;
-				const manifest = manifestOf(id, packages);
-				if (!manifest || !packages.has(id))
+				if (adding.includes(id) || path.includes(id)) return;
+				const isStaged = id === staged?.id;
+				if (installed.has(id) && !isStaged) return;
+				const manifest = isStaged ? staged?.manifest : manifestOf(id, packages);
+				if (!manifest || (!isStaged && !packages.has(id)))
 					throw new FamosError(
 						'conflict',
 						`"${path.at(-1) ?? id}" needs "${id}", which this server does not have`,
@@ -253,9 +351,12 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 				for (const dep of manifest.dependsOn) visit(dep, [...path, id]);
 				adding.push(id);
 			};
-			visit(input.extensionId, []);
-			for (const id of adding) await deps.packages().place({ id });
-			const failedAgain = new Set([input.extensionId, ...adding]);
+			visit(rootId, []);
+			const sources: InstallSource[] = adding.map((id) =>
+				staged && id === staged.id ? { staged: staged.digest } : { id },
+			);
+			for (const source of sources) await deps.packages().place(source);
+			const failedAgain = new Set([rootId, ...adding]);
 			const next: ExtensionState = {
 				...state,
 				installed: [...installed, ...adding],
@@ -263,7 +364,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 				failed: state.failed.filter((f) => !failedAgain.has(f.id)),
 			};
 			await writeExtensionState(uow.db, next, uow.clock.now());
-			uow.emit(extensionsChanged, { extensionId: input.extensionId });
+			uow.emit(extensionsChanged, { extensionId: rootId });
 			return { changed: adding, restartNeeded: needsRestart(entries(next)) };
 		},
 	});
@@ -324,7 +425,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 
 	return {
 		actions: [install, uninstall, restart],
-		routes: [list],
+		routes: [list, upload],
 		events: [extensionsChanged, restartRequested],
 		/** What `core.listExtensions` answers. */
 		describe,

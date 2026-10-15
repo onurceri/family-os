@@ -1325,6 +1325,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/core/extensions/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a signed extension package (.famext) to install */
+        post: operations["core.uploadExtensionPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/actions/core.decidableSources": {
         parameters: {
             query?: never;
@@ -1966,7 +1983,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Install an extension */
+        /**
+         * Install an extension
+         * @description Installs a package this server offers (`extensionId`), or one uploaded with core.uploadExtensionPackage (`staged`: its digest).
+         */
         post: operations["core.installExtension"];
         delete?: never;
         options?: never;
@@ -14186,9 +14206,164 @@ export interface operations {
                                     description: string;
                                 };
                             };
+                            nextVersion: string | null;
                         }[];
                         restartNeeded: boolean;
                         restartRequestedAt: number | null;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "core.uploadExtensionPackage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    files?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Upload a signed extension package (.famext) to install */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        digest: string;
+                        id: string;
+                        version: string;
+                        current: string | null;
+                        labels: {
+                            [key: string]: {
+                                name: string;
+                                description: string;
+                            };
+                        };
+                        dependsOn: string[];
+                        optional: string[];
+                        reaches: {
+                            hosts: string[];
+                            userUrls: boolean;
+                            local: boolean;
+                            calls: string[];
+                        };
+                        signer: {
+                            keyId: string;
+                            kind: string;
+                        };
                     };
                 };
             };
@@ -19862,6 +20037,8 @@ export interface operations {
             content: {
                 "application/json": {
                     extensionId: string;
+                } | {
+                    staged: string;
                 };
             };
         };

@@ -66,7 +66,7 @@ export interface RefusedExtension {
 	reason: string;
 }
 
-/** An extension package this server can install (shipped with the app, for now). */
+/** An extension package this server can install: shipped with the app, or placed in its store. */
 export interface ExtensionPackage {
 	id: string;
 	version: string;
@@ -78,8 +78,18 @@ export interface ExtensionPackage {
 	labels: Record<string, { name: string; description: string }>;
 }
 
-/** Which package an install is of: one this server offers, by id. */
-export type InstallSource = { id: string };
+/** A signed package that was uploaded and checked, waiting to be installed. */
+export interface StagedPackage extends Omit<ExtensionPackage, 'always'> {
+	/** Names the package exactly (a hash of its description): what an install refers to. */
+	digest: string;
+	/** The key that signed it, and what kind of key that is. */
+	signer: { keyId: string; kind: string };
+}
+
+/**
+ * Which package an install is of: one this server offers, by id, or a staged one by its digest.
+ */
+export type InstallSource = { id: string } | { staged: string };
 
 /**
  * The extension packages the composition root can put in place. Installing records the id in the
@@ -90,14 +100,27 @@ export interface ExtensionPackagesPort {
 	list(): readonly ExtensionPackage[];
 	/**
 	 * Makes the package `source` names loadable at the next start and says which it is. A package
-	 * shipped with the app is already in place. Throws `FamosError('not_found')` for an unknown one.
+	 * shipped with the app is already in place; a staged one is moved into the store. Throws
+	 * `FamosError('not_found')` for an unknown one. Idempotent.
 	 */
 	place(source: InstallSource): Promise<ExtensionPackage>;
+	/**
+	 * Checks an uploaded `.famext` (limits, signature, every file, the manifest) and keeps it
+	 * aside until it is installed. Absent where packages cannot come from a file.
+	 */
+	stage?(archive: Uint8Array): Promise<StagedPackage>;
+	/** A staged package by its digest, checked again; undefined when there is none. */
+	staged?(digest: string): Promise<StagedPackage | undefined>;
 }
 
 /** Without packages (tests): nothing beyond what the kernel was given can be installed. */
 export const noExtensionPackages: ExtensionPackagesPort = {
 	list: () => [],
 	place: (source) =>
-		Promise.reject(new FamosError('not_found', `No package "${source.id}" to install`)),
+		Promise.reject(
+			new FamosError(
+				'not_found',
+				'id' in source ? `No package "${source.id}" to install` : 'No staged package to install',
+			),
+		),
 };

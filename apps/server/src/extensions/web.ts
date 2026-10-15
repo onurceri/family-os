@@ -15,6 +15,14 @@ const WebDescriptionSchema = z.object({
 	files: z.record(z.string(), z.string()),
 });
 
+/**
+ * A package's digest: the first 32 hex digits of the SHA-256 of its `famos-package.json`, which
+ * lists every file's hash, so it names exactly one build. Its web files are served under it and a
+ * stored copy lives in a folder of that name.
+ */
+export const digestOf = (description: Uint8Array): string =>
+	createHash('sha256').update(description).digest('hex').slice(0, 32);
+
 /** The browser half of a built package: what the app imports and what the server may hand out. */
 export interface WebPackage {
 	id: string;
@@ -51,7 +59,7 @@ export function readWebPackage(dir: string): WebPackage | undefined {
 		id: description.manifest.id,
 		version: description.manifest.version,
 		dir,
-		digest: createHash('sha256').update(bytes).digest('hex').slice(0, 32),
+		digest: digestOf(bytes),
 		entry: web,
 		...(css && { css }),
 		files,

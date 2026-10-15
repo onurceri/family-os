@@ -13,7 +13,9 @@ import * as tar from 'tar';
  *   ├── db/famos.db     consistent snapshot via VACUUM INTO
  *   ├── files/          attachments
  *   ├── languages/      installed language packs, when there are any
- *   └── themes/         installed theme packs, when there are any
+ *   ├── themes/         installed theme packs, when there are any
+ *   └── extensions/     extension packages installed from signed files (`<id>/<digest>/`),
+ *                       when there are any; uploads not yet installed are left out
  */
 export const BACKUP_FORMAT = 1;
 const DB_ENTRY = 'db/famos.db';
@@ -35,6 +37,8 @@ export interface CreateBackupOptions {
 	languagesDir?: string;
 	/** Installed theme packs; archived under `themes/` (must be named `themes`). */
 	themesDir?: string;
+	/** The extension store; archived under `extensions/` (must be named `extensions`). */
+	extensionsDir?: string;
 	backupsDir: string;
 	appVersion: string;
 	schema: Record<string, string[]>;
@@ -92,6 +96,23 @@ export async function createBackup(
 			await mkdir(options.themesDir, { recursive: true });
 			await tar.r({ file: partial, cwd: join(options.themesDir, '..'), portable: true }, [name]);
 		}
+		if (options.extensionsDir) {
+			const name = options.extensionsDir.replace(/\/+$/, '').split('/').at(-1);
+			if (name !== 'extensions')
+				throw new Error(`extensionsDir must be named "extensions", got ${options.extensionsDir}`);
+			await mkdir(options.extensionsDir, { recursive: true });
+			// Uploads waiting to be installed (and folders being written) are not part of the family's
+			// setup; only placed packages are.
+			await tar.r(
+				{
+					file: partial,
+					cwd: join(options.extensionsDir, '..'),
+					portable: true,
+					filter: (path) => !/^extensions\/(\.|[^/]+\/[^/]*\.partial(\/|$))/.test(path),
+				},
+				[name],
+			);
+		}
 		await rename(partial, file);
 		return { path: file, manifest };
 	} finally {
@@ -126,6 +147,21 @@ export async function readBackupManifest(file: string): Promise<BackupManifest> 
 	return manifest;
 }
 
+/** The ids of the extension packages a backup carries in its store (`extensions/<id>/…`). */
+export async function readBackupExtensions(file: string): Promise<string[]> {
+	const ids = new Set<string>();
+	await tar.t({
+		file,
+		filter: (path) => path.startsWith('extensions/'),
+		onReadEntry: (entry) => {
+			const [, id, , rest] = entry.path.split('/');
+			if (id && !id.startsWith('.') && rest === 'famos-package.json') ids.add(id);
+			entry.resume();
+		},
+	});
+	return [...ids].sort();
+}
+
 export interface RestoreBackupOptions {
 	file: string;
 	/** Target database file, e.g. /data/famos.db. The server must be stopped. */
@@ -135,6 +171,8 @@ export interface RestoreBackupOptions {
 	languagesDir?: string;
 	/** Where installed theme packs live; restored when the backup carries them. */
 	themesDir?: string;
+	/** The extension store; restored when the backup carries one. */
+	extensionsDir?: string;
 	now?: Date;
 }
 
@@ -191,6 +229,22 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 			) {
 				await rename(options.themesDir, `${options.themesDir}.${suffix}`).catch(ignoreMissing);
 				await cp(restored, options.themesDir, { recursive: true });
+			}
+		}
+		// A backup from before the store keeps the store as it is; the server checks every copy
+		// in it again at its next start, and leaves out an installed extension it has no package of.
+		if (options.extensionsDir) {
+			const restored = join(staging, 'extensions');
+			if (
+				await stat(restored).then(
+					() => true,
+					() => false,
+				)
+			) {
+				await rename(options.extensionsDir, `${options.extensionsDir}.${suffix}`).catch(
+					ignoreMissing,
+				);
+				await cp(restored, options.extensionsDir, { recursive: true });
 			}
 		}
 		return manifest;

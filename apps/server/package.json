@@ -26,10 +26,12 @@
 		"hono": "4.13.13",
 		"kysely": "0.29.6",
 		"punycode": "2.3.1",
+		"tar": "7.5.22",
 		"ws": "8.22.0",
 		"zod": "4.6.5"
 	},
 	"devDependencies": {
+		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",
 		"@modelcontextprotocol/client": "2.3.1",
 		"@types/ws": "8.18.2",

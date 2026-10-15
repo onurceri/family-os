@@ -250,6 +250,9 @@ importers:
       punycode:
         specifier: 2.3.1
         version: 2.3.1
+      tar:
+        specifier: 7.5.22
+        version: 7.5.22
       ws:
         specifier: 8.22.0
         version: 8.22.0
@@ -257,6 +260,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@famos/pack':
+        specifier: workspace:*
+        version: link:../../packages/pack
       '@famos/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -1012,6 +1018,9 @@ importers:
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
+      tar:
+        specifier: 7.5.22
+        version: 7.5.22
       vite:
         specifier: 8.3.2
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)

@@ -44,6 +44,29 @@ FamilyOS has not had an independent security audit.
 - **Uploaded files and email**: stored files served unsafely, metadata (such as photo location)
   not stripped, HTML mail rendered or remote content loaded.
 - **Backups**: encrypted backups that leak content, or secrets that end up inside a backup.
+- **Extension packages**: any way to make the server load extension code it should not trust
+  (see below), or to write outside the extension store while installing one.
+
+## What the server trusts to run
+
+Extensions are code that runs inside the server with the family's data, so the server runs only
+code it can trust:
+
+- **Packages shipped with the app** (`/app/extensions` in the image) are trusted by where they
+  are: they come with the image you chose to run, and no setting moves that folder.
+- **Packages installed from a file** (a `.famext`, kept in `/data/extensions`) are trusted only by
+  their signature: an ed25519 signature over the package's `famos-package.json`, which lists the
+  SHA-256 of every file in it. The server checks it against its trust roots, the public keys
+  committed in `apps/server/src/packages/trust.ts`, when the file is uploaded and again at every
+  start, before any of its code runs. A file that is changed, added or replaced by a link after
+  signing refuses the package. Archives are read with strict limits (20 MB compressed, 60 MB
+  unpacked, 2000 files), regular files only, and no path that leaves the package.
+- **Today there is no trust root**: the project's release key is added when the first signed
+  packages are published, so until then every package from a file is refused. Only the FamilyOS
+  project's own key will be trusted at first; there is no setting or environment variable that
+  adds a key. Installing needs an admin who is signed in (never an API token, an agent or the AI).
+- **Workspace source** (`FAMOS_DEV_EXTENSIONS`) is for development only, unsigned, and refused when
+  `NODE_ENV=production`.
 
 ## Out of scope
 

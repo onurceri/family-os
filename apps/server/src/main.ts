@@ -3,7 +3,7 @@ import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Duplex } from 'node:stream';
 import { parseArgs } from 'node:util';
-import { silentLogger } from '@famos/adapters/runtime';
+import { createLogger, silentLogger } from '@famos/adapters/runtime';
 import {
 	type CoreTables,
 	isExtensionRefusedError,
@@ -26,6 +26,9 @@ import { createHttpApp, loadedWeb, OPENAPI_INFO, resolveActor } from './http/app
 import { createRealtimeHub } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
+import { ARCHIVE_EXTENSION } from './packages/archive.ts';
+import { createExtensionStore, type ExtensionStore, withStore } from './packages/store.ts';
+import { TRUST_ROOTS } from './packages/trust.ts';
 import { askSecret } from './prompt.ts';
 import { restoreFile } from './restore.ts';
 import {
@@ -49,8 +52,9 @@ Usage: famos <command>
   restore <file>     Restore a backup (stop the server first). An encrypted .age file asks
                      for its passphrase (or FAMOS_BACKUP_PASSPHRASE), or use --identity <file>
   extensions list    The extensions installed and the ones that can be
-  extensions install <id…> | --all-offered
-                     Install extensions (what they need comes with them); restart to load them
+  extensions install <id…> | <file.famext…> | --all-offered
+                     Install extensions (what they need comes with them), shipped ones by id or
+                     signed packages from a file; restart to load them
   extensions uninstall <id>
                      Uninstall an extension (its data is kept); restart to apply
   openapi [file]     Write the OpenAPI document (default: openapi.json). With --extensions <dir>,
@@ -63,7 +67,7 @@ const RESTART_POLL_MS = 30_000;
 
 async function serveCommand() {
 	const config = await loadConfig();
-	const { runtime, web, selection } = await openWithExtensions(config);
+	const { runtime, web, selection, store } = await openWithExtensions(config);
 	const { logger, kernel } = runtime;
 	const extensions = loadedWeb(kernel, web);
 	const boot = randomUUID();
@@ -94,6 +98,14 @@ async function serveCommand() {
 		process.exit(RESTART_EXIT_CODE);
 	}
 	await announceSetup(runtime);
+	// Old copies in the store go once this start has chosen what it runs; the previous one of
+	// each stays.
+	try {
+		const removed = await store.collect(selection.storedInUse);
+		if (removed.length > 0) logger.info({ removed }, 'old extension packages removed');
+	} catch (error) {
+		logger.warn({ err: error }, 'removing old extension packages failed');
+	}
 
 	/** `finishRequests`: answer requests in flight first (a restart asked through the API). */
 	const stops: ((finishRequests: boolean) => void | Promise<void>)[] = [];
@@ -250,24 +262,38 @@ function failingExtension(
 async function openWithExtensions(
 	config: Config,
 	options: { quiet?: boolean } = {},
-): Promise<{ runtime: Runtime; web: LoadedExtensions['web']; selection: InstalledExtensions }> {
+): Promise<{
+	runtime: Runtime;
+	web: LoadedExtensions['web'];
+	selection: InstalledExtensions;
+	store: ExtensionStore;
+}> {
+	const logger = createLogger({ level: config.logLevel });
 	const handle = openDatabase({ path: config.dbPath });
+	const store = createExtensionStore({
+		dir: config.extensionsDir,
+		trustRoots: TRUST_ROOTS,
+		...(!options.quiet && { logger }),
+	});
 	let selection: InstalledExtensions;
 	try {
-		selection = await loadInstalled(handle.db, findAvailable());
+		// Every stored copy is checked again here, before any of its code is imported.
+		const available = withStore(findAvailable(), await store.scan());
+		selection = await loadInstalled(handle.db, available, { store });
 	} catch (error) {
 		await handle.close();
 		throw error;
 	}
 	const runtime = openRuntime(config, {
 		extensions: selection.extensions,
+		logger,
 		handle,
 		extensionPackages: selection.packages,
 		refusable: selection.refusable,
 		refused: selection.refused,
 	});
 	if (!options.quiet) logLoaded(runtime, selection.report);
-	return { runtime, web: selection.web, selection };
+	return { runtime, web: selection.web, selection, store };
 }
 
 function logLoaded({ logger }: Runtime, report: LoadedExtensions['report']) {
@@ -310,6 +336,7 @@ function generationConfig(): Config {
 		languagesDir: '/nonexistent/languages',
 		bundledLanguagesDir: undefined,
 		themesDir: '/nonexistent/themes',
+		extensionsDir: '/nonexistent/extensions',
 		bundledThemesDir: undefined,
 		webDir: undefined,
 		port: 0,
@@ -340,17 +367,28 @@ async function writeJson(file: string, value: unknown) {
  * the server's own command line. The change loads when the server starts again.
  */
 async function extensionsCommand(sub: string | undefined, ids: string[], allOffered: boolean) {
-	const { runtime } = await openWithExtensions(await loadConfig(), { quiet: true });
+	const { runtime, selection } = await openWithExtensions(await loadConfig(), { quiet: true });
 	try {
 		// The installed set lives in core's tables, which a data directory never started lacks.
 		await migrate(runtime);
 		const { kernel } = runtime;
 		const cli = systemActor('cli');
 		const listed = () => kernel.listExtensions();
-		const run = async (actionId: string, extensionId: string) => {
-			const result = await kernel.runner.invoke(actionId, { extensionId }, cli);
+		const run = async (actionId: string, input: { extensionId: string } | { staged: string }) => {
+			const result = await kernel.runner.invoke(actionId, input, cli);
 			if (result.status !== 'applied') throw new Error(`${actionId} did not apply`);
 			return result.output as { changed: string[] };
+		};
+		/** A package file is checked and staged first, then installed like any other. */
+		const installInput = async (arg: string) => {
+			if (!arg.endsWith(ARCHIVE_EXTENSION)) return { extensionId: arg };
+			const stage = selection.packages.stage;
+			if (!stage) throw new Error('This server cannot install from a file');
+			const staged = await stage(await readFile(arg));
+			console.log(
+				`${arg}: ${staged.id} ${staged.version}, signed by ${staged.signer.kind} key ${staged.signer.keyId}`,
+			);
+			return { staged: staged.digest };
 		};
 		switch (sub) {
 			case 'list': {
@@ -368,10 +406,12 @@ async function extensionsCommand(sub: string | undefined, ids: string[], allOffe
 					.map((ext) => ext.id);
 				const wanted = allOffered ? offered : ids;
 				if (wanted.length === 0 && !allOffered)
-					throw new Error('Usage: famos extensions install <id…> | --all-offered');
+					throw new Error('Usage: famos extensions install <id…> | <file.famext…> | --all-offered');
 				const changed = new Set<string>();
-				for (const id of wanted)
-					for (const done of (await run('core.installExtension', id)).changed) changed.add(done);
+				for (const arg of wanted) {
+					const result = await run('core.installExtension', await installInput(arg));
+					for (const done of result.changed) changed.add(done);
+				}
 				console.log(
 					changed.size > 0
 						? `Installed ${[...changed].join(', ')}. Restart FamilyOS to load them.`
@@ -382,7 +422,7 @@ async function extensionsCommand(sub: string | undefined, ids: string[], allOffe
 			case 'uninstall': {
 				const [id] = ids;
 				if (!id || ids.length > 1) throw new Error('Usage: famos extensions uninstall <id>');
-				await run('core.uninstallExtension', id);
+				await run('core.uninstallExtension', { extensionId: id });
 				console.log(`Uninstalled ${id}; its data is kept. Restart FamilyOS to apply.`);
 				return;
 			}

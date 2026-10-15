@@ -4,7 +4,7 @@ FamilyOS writes a backup every night (at 03:00 by default, `FAMOS_BACKUP_HOUR`) 
 
 The hour is the server's local time. In the container that is UTC unless you set `TZ` in `docker-compose.yml`.
 
-A backup is a single `.tar` file in `/data/backups` with the database, all shared files, installed language and theme packs and a checksum. Backups on the server itself are not encrypted; they sit next to the database they came from.
+A backup is a single `.tar` file in `/data/backups` with the database, all shared files, installed language and theme packs, extensions installed from a file and a checksum. Backups on the server itself are not encrypted; they sit next to the database they came from.
 
 ## Send copies somewhere else
 
@@ -53,7 +53,9 @@ docker compose run --rm famos restore /data/backups/<file>.tar
 docker compose start famos
 ```
 
-To restore a copy from elsewhere, put it into the volume first (`docker compose cp ./file.tar famos:/data/backups/`). Restoring never deletes the current data: it is moved aside as `famos.db.pre-restore-<time>`, `files.pre-restore-<time>` and, if the backup holds language or theme packs, `languages.pre-restore-<time>` and `themes.pre-restore-<time>`. A backup from a newer FamilyOS is refused.
+To restore a copy from elsewhere, put it into the volume first (`docker compose cp ./file.tar famos:/data/backups/`). Restoring never deletes the current data: it is moved aside as `famos.db.pre-restore-<time>`, `files.pre-restore-<time>` and, if the backup holds language or theme packs or extensions installed from a file, `languages.pre-restore-<time>`, `themes.pre-restore-<time>` and `extensions.pre-restore-<time>`. A backup from a newer FamilyOS is refused.
+
+Extensions installed from a file come back with the backup, and FamilyOS checks their signature again when it starts. A backup from an older FamilyOS that does not hold them still restores: an extension it says is installed but that this server has no package of is left out (Settings lists it with the reason), and everything else starts as usual. Install that extension again to bring it back; its data was kept.
 
 ### Restoring an encrypted backup
 

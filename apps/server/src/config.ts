@@ -53,6 +53,8 @@ export interface Config {
 	bundledLanguagesDir: string | undefined;
 	/** Theme packs an admin installed (`<data>/themes`), included in backups. */
 	themesDir: string;
+	/** Extension packages installed from signed files (`<data>/extensions`), included in backups. */
+	extensionsDir: string;
 	/** Theme packs shipped with the app. */
 	bundledThemesDir: string | undefined;
 	webDir: string | undefined;
@@ -95,6 +97,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 		languagesDir: join(dataDir, 'languages'),
 		bundledLanguagesDir: e.FAMOS_LANGUAGES_DIR ? resolve(e.FAMOS_LANGUAGES_DIR) : undefined,
 		themesDir: join(dataDir, 'themes'),
+		extensionsDir: join(dataDir, 'extensions'),
 		bundledThemesDir: e.FAMOS_THEMES_DIR ? resolve(e.FAMOS_THEMES_DIR) : undefined,
 		webDir: e.FAMOS_WEB_DIR ? resolve(e.FAMOS_WEB_DIR) : undefined,
 		port: e.PORT,
