@@ -143,7 +143,8 @@
 	}
 	.bar {
 		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
+		/* Equal sides keep the title centred; it takes what Cancel and Save leave. */
+		grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
 		align-items: center;
 		min-height: 52px;
 		padding: 0 8px;
