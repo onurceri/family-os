@@ -54,15 +54,26 @@ const weekdayOf = (date: string): Weekday =>
 	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
 
 /**
- * The weekly repeat days after the date changed. Days the person picked stay while they still
- * include the new date's weekday; otherwise the repeat follows the date, so a weekly event
- * never starts on a day other than the one chosen.
+ * The weekly repeat days after the date moved from `previousDate` to `nextDate`. A repeat that
+ * only held the old date's weekday follows the date. Days the person chose themselves are never
+ * dropped: the new date's weekday is added to them, so a weekly event always includes the day it
+ * starts on.
  */
-export function weekdaysAfterDateChange(byDay: readonly string[], nextDate: string): string[] {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) return [...byDay];
+export function weekdaysAfterDateChange(
+	byDay: readonly string[],
+	previousDate: string,
+	nextDate: string,
+): string[] {
+	if (!DATE.test(nextDate)) return [...byDay];
 	const next = weekdayOf(nextDate);
-	return byDay.includes(next) ? [...byDay] : [next];
+	if (byDay.includes(next)) return [...byDay];
+	const followsDate =
+		byDay.length === 0 ||
+		(byDay.length === 1 && DATE.test(previousDate) && byDay[0] === weekdayOf(previousDate));
+	return followsDate ? [next] : [...byDay, next];
 }
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** A sensible new event on `date`: the next full hour today, otherwise 09:00. */
 export function emptyForm(date: string, now: Temporal.ZonedDateTime): EventFormValue {

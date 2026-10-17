@@ -45,8 +45,8 @@ describe('weekly repeat days follow the date', () => {
 	it('starts on the weekday of the first date and moves with the date', () => {
 		const form = { ...emptyForm('2026-10-17', now), title: 'Call', repeat: 'weekly' as const };
 		expect(form.byDay).toEqual(['SA']);
+		form.byDay = weekdaysAfterDateChange(form.byDay, form.date, '2026-10-22');
 		form.date = '2026-10-22';
-		form.byDay = weekdaysAfterDateChange(form.byDay, form.date);
 		expect(form.byDay).toEqual(['TH']);
 		const input = inputFrom(form);
 		expect(input.recurrence).toMatchObject({ freq: 'weekly', byDay: ['TH'] });
@@ -54,18 +54,24 @@ describe('weekly repeat days follow the date', () => {
 
 	it('follows a date changed twice', () => {
 		let byDay = ['SA'];
-		byDay = weekdaysAfterDateChange(byDay, '2026-10-22');
-		byDay = weekdaysAfterDateChange(byDay, '2026-10-26');
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-17', '2026-10-22');
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-22', '2026-10-26');
 		expect(byDay).toEqual(['MO']);
 	});
 
-	it('keeps chosen days that still include the new date, else follows the date', () => {
-		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-22')).toEqual(['TU', 'TH']);
-		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-23')).toEqual(['FR']);
+	it('never drops days the person chose: the weekday of the new date is added', () => {
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-22')).toEqual(['TU', 'TH']);
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-23')).toEqual([
+			'TU',
+			'TH',
+			'FR',
+		]);
+		// One chosen day that is not the old date's weekday is the person's choice too.
+		expect(weekdaysAfterDateChange(['MO'], '2026-10-17', '2026-10-22')).toEqual(['MO', 'TH']);
 	});
 
 	it('leaves the days alone while the date is not complete', () => {
-		expect(weekdaysAfterDateChange(['SA'], '')).toEqual(['SA']);
-		expect(weekdaysAfterDateChange(['SA'], '2026-10-2')).toEqual(['SA']);
+		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '')).toEqual(['SA']);
+		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '2026-10-2')).toEqual(['SA']);
 	});
 });

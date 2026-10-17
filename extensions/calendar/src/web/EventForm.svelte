@@ -70,8 +70,8 @@
 
 	function setDate(event: Event) {
 		const next = (event.currentTarget as HTMLInputElement).value;
+		value.byDay = weekdaysAfterDateChange(value.byDay, value.date, next);
 		value.date = next;
-		value.byDay = weekdaysAfterDateChange(value.byDay, next);
 	}
 
 	function setStart(event: Event) {
