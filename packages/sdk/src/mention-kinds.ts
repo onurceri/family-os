@@ -206,12 +206,12 @@ function monthEnd(date: string): string {
 }
 
 /**
- * The day an end or a deadline names ("until 28 October", "by Friday"). When its words name a
- * month or a span and write no day number ("until the end of October", "by the end of the
- * month"), it is the last day of that month, whatever day a model worked out for it: a model
- * that counts to the last Wednesday of October would otherwise end a weekly series early. The
- * test for a day number is for digits, so it holds in every language. A month the words name is
- * certain; a span without one is this month (or the month of the date read), as a guess.
+ * The day an end or a deadline names ("until 28 October", "by Friday"). When it names a month or
+ * a span but no day ("until the end of October", "by the end of the month": no day number, no
+ * counted days, no weekday, and no digits in its words), it is the last day of that month: read
+ * as a day, a month alone is its first day, which would end a series or a deadline a month
+ * early. A day the model gives is kept, also one written in words ("the twentieth"). A month
+ * named is certain; a span without one is this month (or the month of the date read), as a guess.
  */
 export function endNamed(
 	ctx: Pick<MentionContext, 'day' | 'today'>,
@@ -219,12 +219,12 @@ export function endNamed(
 ): ResolvedDay | null {
 	const found = ctx.day(ref, 'future');
 	if (!ref) return found;
-	const text = ref.text.trim();
 	const spanOnly =
-		text !== '' &&
-		!/\p{N}/u.test(text) &&
-		ref.weekday === undefined &&
+		ref.day === undefined &&
 		ref.inDays === undefined &&
+		ref.weekday === undefined &&
+		!ref.numeric?.trim() &&
+		!/\p{N}/u.test(ref.text) &&
 		(ref.month !== undefined || ref.approximate === true);
 	if (!spanOnly) return found;
 	const date = monthEnd(found?.date ?? ctx.today);

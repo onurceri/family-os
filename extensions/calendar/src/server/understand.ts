@@ -33,6 +33,11 @@ const TAGS_MAX = 2;
 const AHEAD_DAYS = 62;
 /** A message seldom changes or cancels more than a few events; more is a runaway answer. */
 const CHANGE_LIMIT = 4;
+/**
+ * New events read from one message: a letter seldom holds more, and text that tells the model
+ * to add many cannot pile them up. Those beyond are refused as incomplete, so they are named.
+ */
+const EVENT_LIMIT = 6;
 
 const cut = (text: string, max: number) => [...text.trim()].slice(0, max).join('').trim();
 
@@ -131,6 +136,7 @@ export const event = defineMentionKind({
 	},
 	actions: ['calendar.createEvent'],
 	knownFrom: [aiContextTags.id, aiContextEvents.id],
+	limit: EVENT_LIMIT,
 	examples: [
 		{
 			text: 'Ivy has the dentist next Thursday at 4:30pm',

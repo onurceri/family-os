@@ -147,7 +147,7 @@ describe('calendar.event', () => {
 		const deniz = await k.member('supervised', 'Deniz');
 		const text =
 			"Deniz'in piyano dersi her çarşamba saat 17:00'de, Ekim sonuna kadar devam edecek.";
-		// The model counted to the last Wednesday of October for the end.
+		// The end names a month and no day: read as a day it would be 1 October, before the series starts.
 		const out = await resolve(
 			'calendar.event',
 			[
@@ -160,7 +160,7 @@ describe('calendar.event', () => {
 					repeat: {
 						every: 'week',
 						weekdays: [3],
-						until: { text: 'Ekim sonuna kadar', day: 28, month: 10 },
+						until: { text: 'Ekim sonuna kadar', month: 10 },
 					},
 				},
 			],
@@ -317,6 +317,22 @@ describe('calendar.event', () => {
 			},
 		]);
 		expect(proposal(out[0]).input).toMatchObject({ tags: ['Sport', 'School'] });
+	});
+
+	it('takes at most six events from one message, so injected text cannot pile them up', async () => {
+		const out = await resolve(
+			'calendar.event',
+			Array.from({ length: 8 }, (_, i) => ({
+				title: 'Test',
+				date: { text: `${10 + i} October`, day: 10 + i, month: 10 },
+				time: '14:00',
+			})),
+		);
+		expect(out.filter((r) => 'propose' in r)).toHaveLength(6);
+		expect(out.slice(6)).toEqual([
+			{ refuse: { reason: 'incomplete', subject: 'Test', from: [6] } },
+			{ refuse: { reason: 'incomplete', subject: 'Test', from: [7] } },
+		]);
 	});
 
 	it('refuses an event with no title or no day', async () => {

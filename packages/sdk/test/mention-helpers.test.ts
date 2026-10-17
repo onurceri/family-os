@@ -23,10 +23,10 @@ const dayOf =
 describe('endNamed', () => {
 	const ctx = (date: string | null) => ({ day: dayOf(date), today: '2026-10-06' });
 
-	it('reads an end named by its month as the last day of that month, whatever day was worked out', () => {
-		// "until the end of October": a model counted to the last Wednesday, the 28th.
-		const ref: DayRef = { text: 'until the end of October', day: 28, month: 10 };
-		expect(endNamed(ctx('2026-10-28'), ref)).toEqual({ date: '2026-10-31', certain: true });
+	it('reads an end named by its month alone as the last day of that month', () => {
+		// "until the end of October" read as a month is its first day; the end is its last.
+		const ref: DayRef = { text: 'until the end of October', month: 10 };
+		expect(endNamed(ctx('2026-10-06'), ref)).toEqual({ date: '2026-10-31', certain: true });
 		expect(endNamed(ctx('2026-11-01'), { text: 'until November', month: 11 })).toEqual({
 			date: '2026-11-30',
 			certain: true,
@@ -42,6 +42,15 @@ describe('endNamed', () => {
 		expect(
 			endNamed(ctx('2026-10-06'), { text: 'end of the month', month: 10, approximate: true }),
 		).toEqual({ date: '2026-10-31', certain: false, why: 'approximate' });
+	});
+
+	it('keeps a day the model gives, also one written in words', () => {
+		expect(
+			endNamed(ctx('2026-10-20'), { text: 'until the twentieth of October', day: 20, month: 10 }),
+		).toEqual({ date: '2026-10-20', certain: true });
+		expect(
+			endNamed(ctx('2026-10-28'), { text: 'until the end of October', day: 28, month: 10 }),
+		).toEqual({ date: '2026-10-28', certain: true });
 	});
 
 	it('keeps a day the words write, a weekday or a count', () => {

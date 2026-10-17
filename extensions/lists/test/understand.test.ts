@@ -401,7 +401,7 @@ describe('lists.task', () => {
 				repeat: {
 					every: 'week',
 					weekdays: [4],
-					until: { text: 'until the end of November', day: 26, month: 11 },
+					until: { text: 'until the end of November', month: 11 },
 				},
 			},
 		]);
