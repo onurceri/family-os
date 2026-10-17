@@ -366,6 +366,42 @@ describe('runEval', () => {
 		});
 	});
 
+	it('keeps the baseline of a model the provider never answered', async () => {
+		dir = mkdtempSync(join(tmpdir(), 'famos-eval-'));
+		const earlier = {
+			label: 'fake / a',
+			version: 'test/1',
+			promptHash: 'old00000',
+			date: '2026-10-16',
+			cases: 1,
+			passing: ['one'],
+			failing: {},
+			cost: 0,
+		};
+		writeFileSync(join(dir, 'baseline.json'), JSON.stringify({ models: { a: earlier } }));
+		// As OpenRouter answered once its key was refused: every call fails as `auth`.
+		const a = fakeEnv('a', call({ errorCode: 'auth', finishReason: null }));
+		a.fake.respond(new LlmError('auth', 'The provider refused the API key'));
+		const lines: string[] = [];
+		await runEval({
+			title: 'Test eval',
+			version: 'test/1',
+			promptHash: 'new00000',
+			cases: [{ name: 'one' }],
+			models: [a.env],
+			dir,
+			env: { FAMOS_EVAL_BASELINE: '1' },
+			log: (line) => lines.push(line),
+			async run(_c, llm) {
+				await llm.generateObject(request).catch(() => undefined);
+				return { ok: false, checks: 1, failed: ['x'], lines: [] };
+			},
+		});
+		expect(lines).toContain('Baseline of fake / a kept: every case was an outage.');
+		const baseline = JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8')) as Baseline;
+		expect(baseline.models.a).toEqual(earlier);
+	});
+
 	it('stops starting cases at the cost cap and keeps no baseline then', async () => {
 		dir = mkdtempSync(join(tmpdir(), 'famos-eval-'));
 		const a = fakeEnv('a', call({ cost: 0.5 }));

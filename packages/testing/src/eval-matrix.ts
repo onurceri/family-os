@@ -606,11 +606,17 @@ export async function runEval<C extends { name: string }>(
 			);
 		} else {
 			const date = result.at.slice(0, 10);
-			for (const t of totals)
+			for (const t of totals) {
+				// A model the provider never answered was not measured at all: what was known stays.
+				if (t.outages === t.cases) {
+					log(`Baseline of ${t.label} kept: every case was an outage.`);
+					continue;
+				}
 				baseline.models[t.slug] = withEarlierVerdicts(
 					baselineEntry(t, cells, version, date, options.promptHash),
 					baseline.models[t.slug],
 				);
+			}
 			writeFileSync(baselinePath, `${JSON.stringify(baseline, null, '\t')}\n`);
 			log(`Baseline written to ${baselinePath}`);
 		}
