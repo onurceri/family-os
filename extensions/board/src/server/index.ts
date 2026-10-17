@@ -20,6 +20,7 @@ import {
 	uploadNotePhoto,
 } from './notes.ts';
 import { migrations } from './store.ts';
+import { noteKind } from './understand.ts';
 
 /**
  * The family board: short notes for everyone, on papers, with an optional photo, an
@@ -30,6 +31,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
+	ai: { kinds: [noteKind] },
 	actions: [postNote, editNote, removeNote, pinNote, moveNote, markSeen, setNotePhoto, aiListNotes],
 	routes: [getNotes, getNotePhoto, uploadNotePhoto],
 	jobs: [deleteFileJob, cleanupJob],
