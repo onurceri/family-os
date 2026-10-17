@@ -444,8 +444,9 @@ export interface MemberCount {
  * Things of the day counted per person (chores): rings or bars, the "2 left" under a person's
  * day, a display's total. `block` is the extension's block that shows or hides it; `href` the
  * page the rings open. The words are translation keys: `titleKey` the section ("Chores today"),
- * `labelKey` its short name ("Chores"), `ringKey` one ring (`name`, `done`, `total`), `leftKey`
- * what is left for a person (`count`, with plural forms).
+ * `labelKey` its short name ("Chores"), `ringKey` one ring (`name`, `done`, `total`), `noneKey`
+ * a ring with nothing to count today (`name`; `ringKey` when not given), `leftKey` what is left
+ * for a person (`count`, with plural forms).
  */
 export interface MemberCountsFacet extends FacetBase {
 	kind: 'perMember';
@@ -454,6 +455,7 @@ export interface MemberCountsFacet extends FacetBase {
 	titleKey: string;
 	labelKey: string;
 	ringKey: string;
+	noneKey?: string;
 	leftKey: string;
 	load(app: TimelineApp): Promise<readonly MemberCount[]>;
 }

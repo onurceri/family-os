@@ -1011,10 +1011,10 @@
 		}
 	}
 	@media (min-width: 1024px) {
-		.top:not(:has(> .head:has(.when, .sentence, .status), > .blk:not(:empty))) {
+		.top:not(:has(> .head :is(.when, .sentence, .status), > .blk:not(:empty))) {
 			display: none;
 		}
-		.top:not(:has(> .head:has(.when, .sentence, .status))) {
+		.top:not(:has(> .head :is(.when, .sentence, .status))) {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.band:not(:has(> :not(.hidden, .gone, :empty))) {

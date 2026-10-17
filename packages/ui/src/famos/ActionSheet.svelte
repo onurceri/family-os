@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import { focusFirst, trapTab } from './focus.js';
 	import type { MenuItem } from './menu-items.js';
+	import { portal } from './portal.js';
 
 	/**
 	 * The phone version of a Menu: rises from the bottom with the
@@ -59,36 +60,41 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
-	<div class="scrim" onclick={close}></div>
-	<div
-		bind:this={panel}
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="{id}-t"
-		tabindex="-1"
-		class="sheet"
-		{onkeydown}
-	>
-		<h2 id="{id}-t" class="ttl">{title}</h2>
-		<div class="list">
-			{#each items as item (item.id)}
-				<button
-					type="button"
-					class:danger={item.danger}
-					disabled={item.disabled}
-					onclick={() => pick(item)}
-				>
-					{#if item.icon}<span class="ic" aria-hidden="true">{@render item.icon()}</span>{/if}
-					{item.label}
-				</button>
-			{/each}
+	<div class="layer" use:portal>
+		<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+		<div class="scrim" onclick={close}></div>
+		<div
+			bind:this={panel}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="{id}-t"
+			tabindex="-1"
+			class="sheet"
+			{onkeydown}
+		>
+			<h2 id="{id}-t" class="ttl">{title}</h2>
+			<div class="list">
+				{#each items as item (item.id)}
+					<button
+						type="button"
+						class:danger={item.danger}
+						disabled={item.disabled}
+						onclick={() => pick(item)}
+					>
+						{#if item.icon}<span class="ic" aria-hidden="true">{@render item.icon()}</span>{/if}
+						{item.label}
+					</button>
+				{/each}
+			</div>
+			<button type="button" class="cancel" onclick={close}>{cancelLabel}</button>
 		</div>
-		<button type="button" class="cancel" onclick={close}>{cancelLabel}</button>
 	</div>
 {/if}
 
 <style>
+	.layer {
+		display: contents;
+	}
 	.scrim {
 		position: fixed;
 		inset: 0;

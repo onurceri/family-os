@@ -27,8 +27,10 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	await setUpAndSignIn(page);
 	await page.goto('/lists/shopping');
 	await expect(page.getByText('Nothing to buy yet.')).toBeVisible();
-	// Adding needs the list itself to be loaded (its chip shows), not just the empty page.
-	await expect(page.getByRole('button', { name: 'Groceries', exact: true })).toBeVisible();
+	// Adding needs the list itself to be loaded (its name shows), not just the empty page.
+	await expect(
+		page.getByRole('group', { name: 'Shopping lists' }).getByText('Groceries', { exact: true }),
+	).toBeVisible();
 
 	// One line, several items; Enter adds and a leading amount becomes the quantity.
 	const composer = page.getByRole('textbox', { name: 'Add an item' });

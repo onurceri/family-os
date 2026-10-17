@@ -1,5 +1,5 @@
 import { createRawSnippet, flushSync } from 'svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	ActionSheet,
 	Card,
@@ -24,7 +24,13 @@ import {
 } from '../src/famos/index.js';
 import { box } from './box.svelte.js';
 import { cleanup, click, html, key, q, qa, render, settle } from './helpers.js';
+import { wide } from './wide-mock.svelte.js';
 
+vi.mock('../src/famos/wide.svelte.js', () => import('./wide-mock.svelte.js'));
+
+beforeEach(() => {
+	wide.current = true;
+});
 afterEach(cleanup);
 
 const items = (spy = vi.fn()): MenuItem[] => [
@@ -303,7 +309,13 @@ describe('Composer', () => {
 
 describe('Menu', () => {
 	const open = async (spy = vi.fn()) => {
-		const el = render(Menu, { items: items(spy), label: 'Options for Clio', trigger });
+		const el = render(Menu, {
+			items: items(spy),
+			label: 'Options for Clio',
+			title: 'Clio',
+			cancelLabel: 'Cancel',
+			trigger,
+		});
 		const opener = q('#opener', el);
 		opener.focus();
 		click(opener);
@@ -361,6 +373,28 @@ describe('Menu', () => {
 		flushSync();
 		expect(q('[role=menu]', el)).toBeNull();
 	});
+
+	it('rises as an action sheet on phones, titled by the item, and runs the chosen action', async () => {
+		wide.current = false;
+		const spy = vi.fn();
+		const { el, opener } = await open(spy);
+		expect(q('[role=menu]', el)).toBeNull();
+		const dialog = q('[role=dialog]');
+		expect(dialog.getAttribute('aria-modal')).toBe('true');
+		expect(q(`#${dialog.getAttribute('aria-labelledby')}`).textContent).toBe('Clio');
+		const buttons = qa('button', dialog);
+		expect(buttons.map((b) => b.textContent?.trim())).toEqual([
+			'Edit',
+			'Archive',
+			'Delete',
+			'Cancel',
+		]);
+		click(buttons[1] as HTMLElement);
+		await settle();
+		expect(spy).toHaveBeenCalledWith('archive');
+		expect(q('[role=dialog]')).toBeNull();
+		expect(document.activeElement).toBe(opener);
+	});
 });
 
 describe('ActionSheet', () => {
@@ -376,9 +410,12 @@ describe('ActionSheet', () => {
 			cancelLabel: 'Cancel',
 		});
 		await settle();
-		const dialog = q('[role=dialog]', el);
+		// Drawn at the end of the page, so no transformed parent can place or clip it.
+		expect(el.querySelector('[role=dialog]')).toBeNull();
+		const dialog = q('[role=dialog]');
+		expect(dialog.parentElement?.parentElement).toBe(document.body);
 		expect(dialog.getAttribute('aria-modal')).toBe('true');
-		expect(q(`#${dialog.getAttribute('aria-labelledby')}`, el).textContent).toBe('Clio');
+		expect(q(`#${dialog.getAttribute('aria-labelledby')}`).textContent).toBe('Clio');
 		const buttons = qa('button', dialog);
 		expect(buttons.map((b) => b.textContent?.trim())).toEqual([
 			'Edit',
@@ -393,7 +430,7 @@ describe('ActionSheet', () => {
 
 	it('closes with Escape', async () => {
 		const onclose = vi.fn();
-		const el = render(ActionSheet, {
+		render(ActionSheet, {
 			open: true,
 			title: 'Clio',
 			items: items(),
@@ -401,7 +438,7 @@ describe('ActionSheet', () => {
 			onclose,
 		});
 		await settle();
-		key(q('[role=dialog]', el), 'Escape');
+		key(q('[role=dialog]'), 'Escape');
 		expect(onclose).toHaveBeenCalledOnce();
 	});
 });

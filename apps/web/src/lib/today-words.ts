@@ -16,6 +16,8 @@ export interface FacetWords {
 		/** Its short name ("Chores"). */
 		label: string;
 		ring(name: string, done: number, total: number): string;
+		/** A ring with nothing to count today ("Leo: no chores today"); `ring` when not given. */
+		none?(name: string): string;
 		/** What is left for a person ("2 chores left"). */
 		left(count: number): string;
 	};
@@ -90,7 +92,10 @@ export function todayWords(t: Translate, extra: FacetWords = {}): TodayWords {
 		family: t('today_family'),
 		anyone: t('today_anyone'),
 		chores: extra.counts?.label ?? '',
-		choreRing: (name, done, total) => extra.counts?.ring(name, done, total) ?? '',
+		choreRing: (name, done, total) =>
+			(total === 0 ? extra.counts?.none?.(name) : undefined) ??
+			extra.counts?.ring(name, done, total) ??
+			'',
 		hourly: t('today_hourly'),
 		photo: (month) => t('today_photo', { month }),
 		noneForMe: t('today_next_up_none'),

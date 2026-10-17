@@ -123,7 +123,6 @@
 	"sub_url_hint": "Takip edilecek takvimin adresi. https:// ya da webcal:// ile başlar; takvim uygulamaları buna ICS ya da abonelik bağlantısı diyebilir.",
 	"sub_color": "Renk",
 	"sub_members": "Kimin takvimi?",
-	"sub_members_all": "Herkes",
 	"sub_reminders": "Etkinlikleri için hatırlat",
 	"sub_reminders_hint": "Her zamanki etkinlik hatırlatmalarını gönderir.",
 	"sub_allow_local": "Ev ağımdaki bir takvim",

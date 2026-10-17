@@ -2,7 +2,7 @@
 	/**
 	 * A progress ring: a `line` track and an arc in a member's colour (or `ink-soft`
 	 * for anyone), with its value as text in the middle ("1/3"), so the number never lives only in
-	 * the arc. `fraction` overrides `done / total` (the countdown ring); `name` gives the ring an
+	 * the arc. With nothing to count (`total` 0) it is an empty ring: "0/0" would read as a score. `fraction` overrides `done / total` (the countdown ring); `name` gives the ring an
 	 * accessible name of its own ("Elif: 1 of 3 chores done").
 	 */
 	let {
@@ -20,7 +20,7 @@
 		done?: number;
 		total?: number;
 		fraction?: number;
-		/** The text in the middle; `done/total` by default. */
+		/** The text in the middle; `done/total` by default, none when `total` is 0. */
 		text?: string;
 		/** A member's colour; the arc is `ink-soft` without one. */
 		color?: string;
@@ -36,7 +36,7 @@
 	const r = $derived((size - stroke) / 2);
 	const c = $derived(2 * Math.PI * r);
 	const part = $derived(Math.max(0, Math.min(1, fraction ?? (total > 0 ? done / total : 0))));
-	const label = $derived(text ?? `${done}/${total}`);
+	const label = $derived(text ?? (total > 0 ? `${done}/${total}` : ''));
 </script>
 
 <span

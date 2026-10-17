@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import {
-		ActionSheet,
 		Card,
 		ConfirmButton,
 		focusFirstInvalid,
@@ -228,7 +227,6 @@
 	}
 
 	// The menu of the recipe: a popover on a wide window, an action sheet on a phone.
-	let menuOpen = $state(false);
 	const menuItems = $derived<MenuItem[]>([
 		...(canEdit
 			? [
@@ -290,34 +288,18 @@
 					<Button variant="outline" onclick={edit}>{t('edit')}</Button>
 				{/if}
 				{#if menuItems.length}
-					{#if wide.current}
-						<Menu
-							items={menuItems}
-							label={t('options_for', { title: r.title })}
-							bind:open={menuOpen}
-						>
-							{#snippet trigger({ attrs })}
-								<IconButton
-									variant="outline"
-									label={t('options_for', { title: r.title })}
-									{...attrs}><Ellipsis /></IconButton
-								>
-							{/snippet}
-						</Menu>
-					{:else}
-						<IconButton
-							variant="outline"
-							label={t('options_for', { title: r.title })}
-							aria-haspopup="dialog"
-							onclick={() => (menuOpen = true)}><Ellipsis /></IconButton
-						>
-						<ActionSheet
-							bind:open={menuOpen}
-							title={r.title}
-							items={menuItems}
-							cancelLabel={t('cancel')}
-						/>
-					{/if}
+					<Menu
+						items={menuItems}
+						label={t('options_for', { title: r.title })}
+						title={r.title}
+						cancelLabel={t('cancel')}
+					>
+						{#snippet trigger({ attrs })}
+							<IconButton variant="outline" label={t('options_for', { title: r.title })} {...attrs}
+								><Ellipsis /></IconButton
+							>
+						{/snippet}
+					</Menu>
 				{/if}
 			{/snippet}
 		</RecordHeader>

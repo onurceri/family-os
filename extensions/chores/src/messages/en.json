@@ -24,6 +24,8 @@
 	"own_tick_today": "You marked this done today.",
 	"undo_failed": "That cannot be undone any more.",
 	"done_toast": "{{title}} done",
+	"done_toast_tomorrow": "{{title}} done for tomorrow",
+	"done_toast_ahead": "{{title}} done for {{day}}",
 	"empty": "No chores yet.",
 	"empty_hint": "Add the first one, for example “Empty the dishwasher” every day, taking turns.",
 	"nothing_mine": "Nothing is waiting for you.",
@@ -100,6 +102,7 @@
 	"today_left_other": "{{count}} chores left",
 	"today_counts_label": "Chores",
 	"today_ring": "{{name}}: {{done}} of {{total}} done",
+	"today_ring_none": "{{name}}: no chores today",
 	"today_title": "Chores today",
 	"today_block": "Chores",
 	"today_block_hint": "How far each person is with today's chores."

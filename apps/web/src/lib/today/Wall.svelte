@@ -591,9 +591,13 @@
 		align-items: flex-start;
 		gap: 12px;
 	}
-	/* A display's pills: beside the clock when there is room, else under it. */
+	/* A display's pills go under the clock: the clock grows to fill its box, so beside it a pill
+	   would only shrink the clock. */
 	.clockrow:has(.status) {
 		flex-wrap: wrap;
+	}
+	.clockrow:has(.status) > .time {
+		flex-basis: 100%;
 	}
 	.status {
 		display: flex;
@@ -1018,39 +1022,50 @@
 		}
 	}
 	@media (min-width: 1024px) and (max-width: 1279.98px) {
-		.wall:not(.fm) .atm:not(:has(> .head:has(.time, .sentence, .status))) > .weather,
+		.wall:not(.fm) .atm:not(:has(> .head :is(.time, .sentence, .status))) > .weather,
 		.wall:not(.fm) .atm:not(:has(> .weather:not(:empty))) > .head {
 			grid-column: 1 / -1;
 		}
 	}
 	@media (min-width: 1280px) {
 		.wall:not(
-			:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+			:has(> .atm > .head :is(.time, .sentence, .status), > .atm > .blk:not(.search, .gone, :empty))
 		),
 		.wall:not(
-			:has(> .plan > :not(.hidden, .gone, :empty, .tiles:not(:has(> :not(.hidden, .gone, :empty)))))
+			:has(
+				> .plan > :not(.hidden, .gone, :empty, .tiles),
+				> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
+			)
 		) {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.wall:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			)
 			> .atm,
 		.wall:not(
 				:has(
-					> .plan > :not(.hidden, .gone, :empty, .tiles:not(:has(> :not(.hidden, .gone, :empty))))
+					> .plan > :not(.hidden, .gone, :empty, .tiles),
+					> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
 				)
 			)
 			> .plan {
 			display: none;
 		}
 		.wall:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			)
 			> .plan,
 		.wall:not(
 				:has(
-					> .plan > :not(.hidden, .gone, :empty, .tiles:not(:has(> :not(.hidden, .gone, :empty))))
+					> .plan > :not(.hidden, .gone, :empty, .tiles),
+					> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
 				)
 			)
 			> .atm {

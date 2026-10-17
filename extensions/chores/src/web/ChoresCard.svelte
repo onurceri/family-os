@@ -5,7 +5,7 @@
 	import { onDestroy } from 'svelte';
 	import type { Chore } from '../contract/index.js';
 	import { loadChores, loadTodayByMember, markDone, undoDone } from './data.js';
-	import { dueLabel, groupOf } from './form.js';
+	import { doneToast, dueLabel, groupOf } from './form.js';
 	import { useChores } from './i18n.js';
 
 	/**
@@ -85,7 +85,7 @@
 				return;
 			}
 			const completionId = result.completion.id;
-			app.toast(t('done_toast', { title: chore.title }), {
+			app.toast(doneToast(chore.title, chore.nextDue, today, t, app.dateLocale()), {
 				label: t('undo'),
 				run: () => void undoDone(app, completionId, t('label_undo')).then(() => load()),
 			});
