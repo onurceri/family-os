@@ -104,6 +104,24 @@ const server = http.createServer((req, res) => {
 			return res
 				.writeHead(400)
 				.end(JSON.stringify({ error: { message: 'Unsupported parameter: reasoning_effort' } }));
+		// A provider that fails on its side: nothing written, finish "other" and no tokens, as a
+		// gateway sometimes answers. `glitch-once` does it on its first call only.
+		const glitch =
+			model === 'glitch' ||
+			(model === 'glitch-once' && seen.filter((c) => c.body.model === model).length === 1);
+		if (glitch)
+			return res.end(
+				JSON.stringify({
+					id: 'c1',
+					object: 'chat.completion',
+					created: 1,
+					model,
+					choices: [
+						{ index: 0, finish_reason: 'other', message: { role: 'assistant', content: '' } },
+					],
+					usage: { prompt_tokens: 120, completion_tokens: 0, total_tokens: 120 },
+				}),
+			);
 		const format = (body.response_format as { type?: string } | undefined)?.type;
 		// A server that takes no response format at all.
 		if (model === 'plain-server' && format)
@@ -605,6 +623,20 @@ describe('AI SDK LlmPort', () => {
 		await useModel('rambling');
 		await expect(ask()).rejects.toMatchObject({ code: 'invalid_output', retryable: true });
 		expect((await settings.usage()).total).toMatchObject({ calls: 3, errors: 3 });
+	});
+
+	it('asks once more when the provider answers with nothing, and calls it an outage', async () => {
+		await useModel('glitch-once');
+		await expect(ask()).resolves.toMatchObject({ output: { title: 'Zoo trip' } });
+		expect(seen).toHaveLength(2);
+		seen.length = 0;
+		await useModel('glitch');
+		await expect(ask()).rejects.toMatchObject({ code: 'unavailable', retryable: true });
+		// One more try in the same mode, never a step down: the request was fine.
+		expect(seen.map((c) => (c.body.response_format as { type: string }).type)).toEqual([
+			'json_object',
+			'json_object',
+		]);
 	});
 
 	it('passes the output cap on, and fails an answer the cap cut off without a retry', async () => {

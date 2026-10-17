@@ -488,6 +488,16 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					cost: costOf(result.providerMetadata),
 				};
 				const cause = { text: result.text };
+				// Nothing written and no ordinary stop (finish "other", or no tokens at all): the
+				// provider failed on its side, which says nothing about the model or the request.
+				if (
+					result.text.trim() === '' &&
+					(result.finishReason === 'other' || result.usage.outputTokens === 0)
+				)
+					throw new LlmError('unavailable', 'The provider returned an empty answer', {
+						cause,
+						usage,
+					});
 				const found = extractJson(result.text);
 				if (!found) {
 					// The answer was cut off by the output cap: a retry would be cut off the same way.
@@ -533,6 +543,9 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			};
 
 			let mode = request.output ?? outputModeFor(provider.kind, role.model);
+			// A provider that fails on its side once (an empty answer, a broken connection) is
+			// asked once more in the same mode before the failure counts.
+			let again = true;
 			for (;;) {
 				try {
 					const { result, output } = await inMode(mode);
@@ -554,6 +567,22 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				} catch (error) {
 					const failure = toLlmError(error);
 					await record({ ...failureFields(failure), outputMode: mode });
+					if (failure.code === 'unavailable' && again) {
+						again = false;
+						logger.warn(
+							{
+								feature: request.feature,
+								role: request.role,
+								model: label,
+								code: failure.code,
+								outputMode: mode,
+								reason: failure.message.slice(0, 300),
+								...failure.usage,
+							},
+							'the provider failed; asking once more',
+						);
+						continue;
+					}
 					const next = request.output ? null : fallbackFrom(mode, failure);
 					logger.warn(
 						// The provider's error text describes the request, not family content.

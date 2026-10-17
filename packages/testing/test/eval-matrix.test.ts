@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LlmError } from '@famos/sdk';
@@ -168,6 +168,10 @@ describe('the report', () => {
 		]);
 		expect(formatCell(failed)).toBe('✗ 2.4k/20 $0.0010 0.5s length+output_too_long');
 		expect(formatCell(cellOf('one', 'a', null, []))).toBe('- skipped');
+		const broken = cellOf('one', 'a', verdict(false), [
+			{ ...call({ finishReason: 'other', errorCode: 'unavailable' }), answer },
+		]);
+		expect(formatCell(broken)).toBe('! outage 100/20 $0.0010 0.5s other+unavailable');
 		const fellBack = cellOf('one', 'a', verdict(true), [
 			{ ...call({ outputMode: 'schema>json' }), answer },
 		]);
@@ -310,27 +314,53 @@ describe('runEval', () => {
 		expect(lines).toContain('✗ bread');
 	});
 
-	it('keeps no baseline from a run the provider broke off', async () => {
+	it('counts a case the provider broke off as an outage, and keeps what the baseline knew of it', async () => {
 		dir = mkdtempSync(join(tmpdir(), 'famos-eval-'));
+		writeFileSync(
+			join(dir, 'baseline.json'),
+			JSON.stringify({
+				models: {
+					a: {
+						label: 'fake / a',
+						version: null,
+						date: '2026-10-16',
+						cases: 2,
+						passing: ['one'],
+						failing: {},
+						cost: 0,
+					},
+				},
+			}),
+		);
 		const a = fakeEnv('a', call({ errorCode: 'unavailable', finishReason: null }));
-		a.fake.respond(new LlmError('unavailable', 'The provider is unavailable'));
+		a.fake.respond(new LlmError('unavailable', 'The provider is unavailable'), { title: 'Milk' });
 		const lines: string[] = [];
 		await runEval({
 			title: 'Test eval',
-			cases: [{ name: 'one' }],
+			cases: [{ name: 'one' }, { name: 'two' }],
 			models: [a.env],
 			dir,
-			env: { FAMOS_EVAL_BASELINE: '1' },
+			env: { FAMOS_EVAL_BASELINE: '1', FAMOS_EVAL_CONCURRENCY: '1' },
 			log: (line) => lines.push(line),
 			async run(_c, llm) {
-				await llm.generateObject(request).catch(() => null);
-				return { ok: false, checks: 1, failed: ['x'], lines: [] };
+				const ok = await llm.generateObject(request).then(
+					() => true,
+					() => false,
+				);
+				return { ok, checks: 1, failed: ok ? [] : ['x'], lines: [] };
 			},
 		});
-		expect(
-			lines.some((l) => l.startsWith('No baseline kept: the provider failed (unavailable)')),
-		).toBe(true);
-		expect(existsSync(join(dir, 'baseline.json'))).toBe(false);
+		expect(lines.find((l) => l.startsWith('passed'))).toMatch(/1\/2 \(1 outage\)/);
+		expect(lines).toContain(
+			'Outages (the provider failed, which says nothing about the model): one · a',
+		);
+		expect(lines.some((l) => l.includes('nothing newly failing'))).toBe(true);
+		const baseline = JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8')) as Baseline;
+		expect(baseline.models.a).toMatchObject({
+			passing: ['two', 'one'],
+			failing: {},
+			outages: ['one'],
+		});
 	});
 
 	it('stops starting cases at the cost cap and keeps no baseline then', async () => {

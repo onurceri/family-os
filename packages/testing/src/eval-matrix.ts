@@ -50,7 +50,11 @@ export interface CaseVerdict {
 export interface Cell {
 	case: string;
 	model: string;
-	status: 'passed' | 'failed' | 'skipped';
+	/**
+	 * `outage`: the case failed and the provider failed on its side in it (see `OUTAGES`), so it
+	 * says nothing about the model and counts neither way.
+	 */
+	status: 'passed' | 'failed' | 'outage' | 'skipped';
 	checks: number;
 	failed: string[];
 	calls: number;
@@ -71,6 +75,8 @@ export interface ModelTotals {
 	cases: number;
 	passed: number;
 	skipped: number;
+	/** Cases the provider's own failure ended (`Cell.status` `outage`). */
+	outages: number;
 	checks: number;
 	failedChecks: number;
 	calls: number;
@@ -98,6 +104,8 @@ export interface BaselineEntry {
 	passing: string[];
 	/** Failing cases with the labels of their failed checks. */
 	failing: Record<string, string[]>;
+	/** Cases the provider's own failure ended in that run: neither passing nor failing. */
+	outages?: string[];
 	cost: number;
 }
 
@@ -246,7 +254,14 @@ export function cellOf(
 	return {
 		case: name,
 		model,
-		status: verdict === null ? 'skipped' : verdict.ok ? 'passed' : 'failed',
+		status:
+			verdict === null
+				? 'skipped'
+				: verdict.ok
+					? 'passed'
+					: [...errors].some((e) => OUTAGES.has(e))
+						? 'outage'
+						: 'failed',
 		checks: verdict?.checks ?? 0,
 		failed: verdict?.failed ?? [],
 		calls: calls.length,
@@ -292,6 +307,7 @@ export function totalsOf(model: EnvLlm, cells: readonly Cell[]): ModelTotals {
 		cases: own.length,
 		passed: own.filter((c) => c.status === 'passed').length,
 		skipped: own.filter((c) => c.status === 'skipped').length,
+		outages: own.filter((c) => c.status === 'outage').length,
 		checks: own.reduce((n, c) => n + c.checks, 0),
 		failedChecks: own.reduce((n, c) => n + c.failed.length, 0),
 		calls: own.reduce((n, c) => n + c.calls, 0),
@@ -314,7 +330,8 @@ export function formatCell(cell: Cell): string {
 	if (cell.status === 'skipped') return '- skipped';
 	const stop = [...cell.finishReasons, ...cell.errors].join('+') || '-';
 	const modes = cell.outputModes.length ? ` ${cell.outputModes.join(',')}` : '';
-	return `${cell.status === 'passed' ? '✓' : '✗'} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}${modes}`;
+	const mark = cell.status === 'passed' ? '✓' : cell.status === 'outage' ? '! outage' : '✗';
+	return `${mark} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}${modes}`;
 }
 
 /** The table: one row per case and one column per model, then the totals of each model. */
@@ -338,7 +355,10 @@ export function formatTable(
 		]),
 		[
 			'passed',
-			...models.map((m) => `${m.passed}/${m.cases}${m.skipped ? ` (${m.skipped} skipped)` : ''}`),
+			...models.map(
+				(m) =>
+					`${m.passed}/${m.cases}${m.outages ? ` (${m.outages} outage${m.outages > 1 ? 's' : ''})` : ''}${m.skipped ? ` (${m.skipped} skipped)` : ''}`,
+			),
 		],
 		['checks', ...models.map((m) => `${m.checks - m.failedChecks}/${m.checks}`)],
 		['calls', ...models.map((m) => String(m.calls))],
@@ -375,6 +395,9 @@ export function baselineEntry(
 		failing: Object.fromEntries(
 			own.filter((c) => c.status === 'failed').map((c) => [c.case, c.failed]),
 		),
+		...(own.some((c) => c.status === 'outage') && {
+			outages: own.filter((c) => c.status === 'outage').map((c) => c.case),
+		}),
 		cost: Number(totals.cost.toFixed(4)),
 	};
 }
@@ -396,6 +419,25 @@ export function compareToBaseline(
 			.filter((c) => c.status === 'passed' && failing.has(c.case))
 			.map((c) => c.case),
 	};
+}
+
+/**
+ * A new baseline entry that keeps, for each case an outage ended, the verdict the earlier entry
+ * had for it: the run measured nothing there, so what was known stays known.
+ */
+export function withEarlierVerdicts(
+	entry: BaselineEntry,
+	earlier: BaselineEntry | undefined,
+): BaselineEntry {
+	if (!entry.outages?.length || !earlier) return entry;
+	const passing = [...entry.passing];
+	const failing = { ...entry.failing };
+	for (const name of entry.outages) {
+		if (earlier.passing.includes(name)) passing.push(name);
+		const checks = earlier.failing[name];
+		if (checks) failing[name] = checks;
+	}
+	return { ...entry, passing, failing };
 }
 
 export interface EvalOptions<C extends { name: string }> {
@@ -543,19 +585,23 @@ export async function runEval<C extends { name: string }>(
 		writeFileSync(env.FAMOS_EVAL_REPORT, `${JSON.stringify(result, null, '\t')}\n`);
 		log(`Report written to ${env.FAMOS_EVAL_REPORT}`);
 	}
-	const outages = [...new Set(cells.flatMap((c) => c.errors.filter((e) => OUTAGES.has(e))))];
+	const outages = cells.filter((c) => c.status === 'outage');
+	if (outages.length)
+		log(
+			`Outages (the provider failed, which says nothing about the model): ${outages.map((c) => `${c.case} · ${c.model}`).join('; ')}`,
+		);
 	if (env.FAMOS_EVAL_BASELINE) {
-		if (outages.length) {
-			log(
-				`No baseline kept: the provider failed (${outages.join(', ')}), which says nothing about the model; run again.`,
-			);
-		} else if (only || skipped) {
+		if (only || skipped) {
 			log(
 				'The baseline is kept only from a run of every case (no FAMOS_EVAL_CASE, no cost cap hit).',
 			);
 		} else {
 			const date = result.at.slice(0, 10);
-			for (const t of totals) baseline.models[t.slug] = baselineEntry(t, cells, version, date);
+			for (const t of totals)
+				baseline.models[t.slug] = withEarlierVerdicts(
+					baselineEntry(t, cells, version, date),
+					baseline.models[t.slug],
+				);
 			writeFileSync(baselinePath, `${JSON.stringify(baseline, null, '\t')}\n`);
 			log(`Baseline written to ${baselinePath}`);
 		}
