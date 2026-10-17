@@ -44,7 +44,7 @@
 			.filter(
 				(task) =>
 					task.doneAt === null &&
-					urgency(task, today) === 'overdue' &&
+					urgency(task, today, app.weekStart()) === 'overdue' &&
 					(task.assigneeId === meId || task.assigneeId === null),
 			)
 			.toSorted((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''));

@@ -283,9 +283,23 @@ export type DraftBefore = Readonly<Record<string, unknown>> | null;
 export const changedValue = (from: string | undefined, to: string): string =>
 	from === undefined || from === to ? to : `${from} \u2192 ${to}`;
 
+/**
+ * A change row's `value` and `to`: the value reads "old → new" (`changedValue`), and `to` keeps the
+ * new value alone, for places that say only what it will become.
+ */
+export const changed = (from: string | undefined, to: string): { value: string; to: string } => ({
+	value: changedValue(from, to),
+	to,
+});
+
 export interface DraftField {
 	label: string;
 	value: string;
+	/**
+	 * The new value alone, when `value` reads "old → new" (`changed`): what a mark beside the
+	 * thing says it will become. `value` when left out.
+	 */
+	to?: string;
 	/** Input path this field shows; matched against the draft's uncertain fields. */
 	path?: string;
 	/** Several input paths, when one row shows more than one field (date and times). */
@@ -636,4 +650,35 @@ export function insteadOffer(draft: {
 				: draft.t('app:draft_instead_there_unnamed'),
 		action: draft.t('app:draft_instead'),
 	};
+}
+
+/**
+ * What a mark beside a thing says while the member's change to it waits for approval: "Waiting for
+ * approval", followed by what the change makes of it, from the presenter of its action ("Due: Tue
+ * 20 Oct"). Each row gives its new value alone (`DraftField.to`): the thing on screen already shows
+ * what it holds now. Without a presenter, or rows, the plain words.
+ */
+export function awaitingText(change: {
+	input: unknown;
+	before: DraftBefore;
+	presenter: AnyDraftPresenter | undefined;
+	context: PresenterContext;
+}): string {
+	const { context, presenter } = change;
+	const waiting = context.t('app:draft_waiting');
+	if (!presenter) return waiting;
+	let fields: DraftField[];
+	try {
+		fields = presenter.fields(change.input, context, change.before ?? undefined);
+	} catch {
+		// An input stored by another version may not fit today's presenter: say only that it waits.
+		return waiting;
+	}
+	const parts = fields
+		.map((f) => ({ label: f.label, value: (f.to ?? f.value).trim() }))
+		.filter((f) => f.value !== '')
+		.map((f) => context.t('app:draft_waiting_field', f));
+	return parts.length === 0
+		? waiting
+		: context.t('app:draft_waiting_change', { change: parts.join(', ') });
 }

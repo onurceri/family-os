@@ -120,6 +120,7 @@
 	"group_overdue": "Overdue",
 	"group_today": "Today",
 	"group_week": "This week",
+	"group_next_week": "Next week",
 	"group_later": "Later",
 	"group_no_date": "No date",
 	"list_name_taken": "A list with this name already exists.",

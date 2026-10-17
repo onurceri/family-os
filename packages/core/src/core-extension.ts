@@ -224,6 +224,8 @@ export const DraftSchema = z.object({
 	replacedFrom: z.string().nullable(),
 	/** Whether the member reading it may decide it (approve or reject it on its merits). */
 	canDecide: z.boolean(),
+	/** Undone only: it was suggested again (`core.suggestDraftAgain`), as another draft. */
+	suggestedAgain: z.boolean(),
 });
 
 const toMember = (row: MemberRow): Member => ({
@@ -261,6 +263,7 @@ const toDraft = (
 	canDecide = false,
 	before: Record<string, unknown> | null = null,
 	subject: string | null = null,
+	suggestedAgain = false,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -298,6 +301,7 @@ const toDraft = (
 	replacedFrom:
 		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
 	canDecide,
+	suggestedAgain,
 });
 
 const members = (db: DbExecutor) => db.withTables<CoreTables>();
@@ -1484,6 +1488,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			deps.runner().mayDecide(row, reader),
 			await deps.runner().currentValues(row),
 			await deps.runner().subject(row),
+			await deps.runner().suggestedAgain(row),
 		);
 
 	const approve = defineRoute({
@@ -1524,6 +1529,19 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		response: DraftSchema,
 		async handle(_ctx, { params, actor }) {
 			return view(await deps.runner().undoDraft(params.draftId, actor), actor);
+		},
+	});
+
+	const suggestAgain = defineRoute({
+		method: 'post',
+		path: '/drafts/{draftId}/suggest-again',
+		operationId: 'core.suggestDraftAgain',
+		summary: 'Suggest an undone draft again, as a new waiting draft (only the person behind it)',
+		requires: CORE_CAPABILITIES.draftsPropose.id,
+		params: DraftParams,
+		response: DraftSchema,
+		async handle(_ctx, { params, actor }) {
+			return view(await deps.runner().suggestAgain(params.draftId, actor), actor);
 		},
 	});
 
@@ -1608,6 +1626,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			approve,
 			reject,
 			undo,
+			suggestAgain,
 			replace,
 			...languages.routes,
 			...deps.themes.routes,

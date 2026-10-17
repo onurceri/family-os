@@ -82,6 +82,7 @@
 		sentForApproval: () => {},
 		needsApproval: () => false,
 		awaitsApproval: () => false,
+		awaitedChange: () => undefined,
 		// A display only looks: no actions, no offline queue.
 		runAction: () => Promise.reject(new Error('Displays cannot run actions')),
 		waiting: () => [],

@@ -126,6 +126,53 @@ describe('drafts', () => {
 		);
 	});
 
+	it('suggests an undone draft again for the person behind it, once', async () => {
+		const { actor: admin } = await k.member('admin');
+		const { actor: kid } = await k.member('supervised');
+		const drafted = await k.runner.invoke('notes.addNote', { body: 'a' }, kid, {
+			draft: { sourceKind: 'inbox', sourceId: 'inbox_item_1', summary: 'A note' },
+		});
+		if (drafted.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(drafted.draftId, admin);
+		await k.runner.undoDraft(drafted.draftId, admin);
+
+		// Approving it again is refused, and the refusal says what can be done instead.
+		const refused = await k.runner.approveDraft(drafted.draftId, admin).catch((e: unknown) => e);
+		expect(refused).toMatchObject({
+			code: 'conflict',
+			details: { status: 'undone', next: 'core.suggestDraftAgain' },
+		});
+		expect((refused as Error).message).toContain('suggest it again');
+
+		// Only the person who suggested it sends it again.
+		expect(await codeOf(k.runner.suggestAgain(drafted.draftId, admin))).toBe('forbidden');
+		const again = await k.route('core.suggestDraftAgain').call({
+			params: { draftId: drafted.draftId },
+			actor: kid,
+		});
+		expect(again).toMatchObject({
+			status: 'pending',
+			actionId: 'notes.addNote',
+			input: { body: 'a' },
+			sourceKind: 'inbox',
+			sourceId: 'inbox_item_1',
+			summary: 'A note',
+			proposedBy: { kind: 'member', memberId: kid.memberId },
+		});
+		expect(again.id).not.toBe(drafted.draftId);
+		const undone = await k.route('core.listDrafts').call({
+			query: { status: 'undone', limit: 50 },
+			actor: kid,
+		});
+		expect(undone).toMatchObject([{ id: drafted.draftId, suggestedAgain: true }]);
+		// Asking twice gives the same new suggestion.
+		expect((await k.runner.suggestAgain(drafted.draftId, kid)).id).toBe(again.id);
+		// The new one is not undone: it is decided like any other.
+		expect(await codeOf(k.runner.suggestAgain(again.id, kid))).toBe('conflict');
+		await k.runner.approveDraft(again.id, admin);
+		expect(await count()).toBe(1);
+	});
+
 	it('drafts once per dedupe key and filters drafts by source', async () => {
 		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
 		const meta = { sourceKind: 'inbox', sourceId: 'inbox_item_1', dedupeKey: 'inbox:1:0' };

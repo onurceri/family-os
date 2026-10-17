@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isApiError } from '@famos/api-client';
 	import { DraftCard, type DraftCardStatus } from '@famos/ui/famos';
 	import {
 		askedBy,
@@ -9,7 +10,14 @@
 		proposedByMember,
 	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { approveDraft, type Draft, rejectDraft, replaceDraft, undoDraft } from './data.js';
+	import {
+		approveDraft,
+		type Draft,
+		rejectDraft,
+		replaceDraft,
+		suggestDraftAgain,
+		undoDraft,
+	} from './data.js';
 	import { useAssistant } from './i18n.js';
 
 	/**
@@ -22,8 +30,11 @@
 
 	// The draft as this card turned it into the change it offered, until the list catches up.
 	let swapped = $state<Draft | null>(null);
+	// The suggestion sent again after it was taken back: the card shows it from then on.
+	let again = $state<Draft | null>(null);
 	const draft = $derived(
-		swapped && swapped.id === given.id && swapped.actionId !== given.actionId ? swapped : given,
+		again ??
+			(swapped && swapped.id === given.id && swapped.actionId !== given.actionId ? swapped : given),
 	);
 	const presenter = $derived(app.draftPresenter(draft.actionId));
 	const context = $derived<PresenterContext>({
@@ -94,6 +105,7 @@
 		withdrawn: a('draft_withdrawn'),
 		withdraw: a('draft_withdraw'),
 		undo: a('draft_undo'),
+		suggestAgain: a('draft_suggest_again'),
 		mayExist: a('draft_may_exist'),
 		mayExistSome: a('draft_may_exist_some'),
 		addAsNew: a('draft_add_as_new'),
@@ -147,8 +159,31 @@
 					t('approved'),
 					result.undoable ? { label: a('draft_undo'), run: () => void undo(id) } : undefined,
 				);
+		} catch (error) {
+			// Taken back meanwhile (on another screen): it says so, and can be suggested again.
+			if (
+				isApiError(error) &&
+				(error.details as { status?: unknown } | undefined)?.status === 'undone'
+			)
+				local = 'undone';
+			else failed = true;
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function suggestAgain() {
+		busy = true;
+		try {
+			again = await suggestDraftAgain(draft.id);
+			local = null;
+			closedBy = null;
+			undoable = null;
+			failed = false;
+			edited = undefined;
+			app.toast(a('draft_suggested_again'));
 		} catch {
-			failed = true;
+			app.toast(t('error'));
 		} finally {
 			busy = false;
 		}
@@ -200,6 +235,9 @@
 	onreject={() => reject()}
 	reason={local ? closedBy : draft.reason}
 	onwithdraw={mine && !canDecide ? () => reject(true) : undefined}
+	onsuggestagain={status === 'undone' && mine && !draft.suggestedAgain
+		? () => void suggestAgain()
+		: undefined}
 	onundo={status === 'applied' && (undoable ?? draft.undoable) && canDecide
 		? () => void undo(draft.id)
 		: undefined}

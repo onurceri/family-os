@@ -127,6 +127,13 @@ export interface ActionRunner {
 	rejectDraft(draftId: string, approver: Actor): Promise<DraftRow>;
 	/** Takes back an applied draft with its action's inverse, in one transaction. */
 	undoDraft(draftId: string, approver: Actor): Promise<DraftRow>;
+	/**
+	 * Sends an undone draft again as a new waiting one, for the person behind it: the change it
+	 * applied, with the same source and notes, decided like any other. Once per undone draft.
+	 */
+	suggestAgain(draftId: string, actor: Actor): Promise<DraftRow>;
+	/** Whether an undone draft was suggested again already. */
+	suggestedAgain(draft: DraftRow): Promise<boolean>;
 	/** The inverse step of an applied draft, or null when it cannot be undone. */
 	undoStep(draft: DraftRow): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
@@ -766,6 +773,14 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(approver, draft);
 		if (draft.status === 'applied') return draft; // idempotent
+		// What was taken back stays taken back: the person behind it may send it again as a new
+		// suggestion, which is decided like any other.
+		if (draft.status === 'undone')
+			throw new FamosError(
+				'conflict',
+				'Draft is undone, so it cannot be approved again. The person who suggested it can suggest it again (core.suggestDraftAgain), and that new suggestion is approved as usual.',
+				{ status: 'undone', next: 'core.suggestDraftAgain' },
+			);
 		if (draft.status !== 'pending' && draft.status !== 'failed') {
 			throw new FamosError('conflict', `Draft is ${draft.status}`);
 		}
@@ -1189,6 +1204,103 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return getDraft(deps.db, draftId);
 	}
 
+	const againKey = (draftId: string) => `again:${draftId}`;
+
+	async function suggestedAgain(draft: DraftRow): Promise<boolean> {
+		if (draft.status !== 'undone') return false;
+		const row = await coreDb()
+			.selectFrom('core_drafts')
+			.select('id')
+			.where('dedupe_key', '=', againKey(draft.id))
+			.executeTakeFirst();
+		return row !== undefined;
+	}
+
+	async function suggestAgain(draftId: string, actor: Actor): Promise<DraftRow> {
+		const draft = await getDraft(deps.db, draftId);
+		assertAddressee(actor, draft);
+		if (!isProposer(actor, draft) || actor.kind !== 'member')
+			throw new FamosError('forbidden', 'Only the person who suggested it can suggest it again');
+		if (draft.status !== 'undone')
+			throw new FamosError(
+				'conflict',
+				`Draft is ${draft.status}; only an undone one is suggested again`,
+			);
+		const def = getAction(draft.action_id);
+		if (!can(actor, 'core.drafts.propose') && !mayDecide(draft, actor))
+			throw new FamosError('forbidden', `Not allowed to suggest ${def.id}`);
+		const dedupeKey = againKey(draft.id);
+		const existing = await coreDb()
+			.selectFrom('core_drafts')
+			.selectAll()
+			.where('dedupe_key', '=', dedupeKey)
+			.executeTakeFirst();
+		if (existing) return existing; // idempotent
+		// What it applied, edits included, is what is suggested again.
+		const input = draft.edited_input ?? draft.input;
+		if ((await passedCheck())({ ...draft, status: 'pending', input, edited_input: null }))
+			throw new FamosError('conflict', 'Draft is expired');
+		const id = ids.next('draft');
+		await unitOfWork(actor, async (uow) => {
+			const now = clock.now();
+			await uow.db
+				.withTables<CoreTables>()
+				.insertInto('core_drafts')
+				.values({
+					id,
+					action_id: draft.action_id,
+					input,
+					edited_input: null,
+					status: 'pending',
+					proposed_by: draft.proposed_by,
+					source_kind: draft.source_kind,
+					source_id: draft.source_id,
+					summary: draft.summary,
+					model: draft.model,
+					prompt_version: draft.prompt_version,
+					confidence: draft.confidence,
+					uncertain_fields: draft.uncertain_fields,
+					dedupe_key: dedupeKey,
+					decided_by: null,
+					decided_at: null,
+					applied_at: null,
+					result: null,
+					error: null,
+					for_member: draft.for_member,
+					created_at: now,
+					updated_at: now,
+				})
+				.execute();
+			await audit(uow, draft.action_id, 'drafted', id);
+			uow.emit(draftCreated, {
+				draftId: id,
+				actionId: draft.action_id,
+				proposerKind: (JSON.parse(draft.proposed_by) as Actor).kind,
+				proposerMemberId: actor.memberId,
+				sourceKind: draft.source_kind,
+			});
+			// A draft addressed to one member is theirs to decide; the others are told it waits.
+			if (draft.for_member !== null) return;
+			const who = (await uow.family.members()).find((m) => m.id === actor.memberId)?.displayName;
+			await uow.notify(
+				waitingNotice(
+					{
+						id,
+						summary: draft.summary,
+						sourceKind: draft.source_kind,
+						sourceId: draft.source_id,
+						input,
+					},
+					def,
+					actor.memberId,
+					deps.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
+					who,
+				),
+			);
+		});
+		return getDraft(deps.db, id);
+	}
+
 	async function passedCheck(db: DbExecutor = deps.db): Promise<(draft: PassedFacts) => boolean> {
 		const { timeZone } = await familyReader(db).settings();
 		const today = todayIn(timeZone, clock.now());
@@ -1229,6 +1341,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		approveDraft,
 		rejectDraft,
 		undoDraft,
+		suggestAgain,
+		suggestedAgain,
 		undoStep,
 		mayExist,
 		alternative,
