@@ -260,9 +260,9 @@ export const aiMealPlan = defineAction({
 				recipeId: m.recipeId,
 			})),
 			// An empty result says what it covers, so "nothing planned" is answered as exactly
-			// that: the meal plan only knows what was planned in it.
+			// that, and points to the calendar for meals made elsewhere.
 			...(meals.length === 0 && {
-				note: `Nothing is planned in the meal plan from ${start} to ${addDays(start, days - 1)}.`,
+				note: `Nothing is planned in the meal plan from ${start} to ${addDays(start, days - 1)}. A meal out or at someone else's home would be on the calendar.`,
 			}),
 		};
 	},

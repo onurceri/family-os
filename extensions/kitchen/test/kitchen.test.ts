@@ -462,7 +462,7 @@ describe('AI', () => {
 		const empty = await applied(k, 'kitchen.mealPlan', { from: '2026-10-23', days: 1 }, AI);
 		expect(empty).toMatchObject({
 			meals: [],
-			note: 'Nothing is planned in the meal plan from 2026-10-23 to 2026-10-23.',
+			note: "Nothing is planned in the meal plan from 2026-10-23 to 2026-10-23. A meal out or at someone else's home would be on the calendar.",
 		});
 		const r = await addRecipe();
 		await applied(k, 'kitchen.addToMealPlan', { date: '2026-10-06', recipeId: r.id }, admin.actor);
