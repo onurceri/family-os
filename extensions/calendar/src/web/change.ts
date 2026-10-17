@@ -186,7 +186,7 @@ export function updateEventFields(
 				? describeRecurrence(
 						{ interval: 1, ...r } as Parameters<typeof describeRecurrence>[0],
 						t,
-						c.formatLocale,
+						c.dateLocale,
 						c.weekStart,
 					)
 				: t('repeat_none');

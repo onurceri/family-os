@@ -92,6 +92,7 @@ describe('an edit saved from the task form that needs approval', () => {
 			t: (key: string) => key,
 			members: [],
 			formatLocale: 'en-GB',
+			dateLocale: 'en-GB',
 			weekStart: 1,
 			hourCycle: 'h23' as const,
 			timeZone: TZ,
