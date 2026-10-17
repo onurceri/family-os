@@ -12,6 +12,8 @@ import {
 	resolveReferences,
 	runAgentTool,
 	toolFailure,
+	weekdayOf,
+	withWeekdays,
 } from '../src/index.ts';
 
 const id = (prefix: string, n: number) =>
@@ -157,5 +159,44 @@ describe('refusals', () => {
 		expect(refusalText('ambiguous')).toBe(
 			'Error (ambiguous): several things fit; ask the person which one they mean',
 		);
+	});
+});
+
+describe('dates in results', () => {
+	it('gives each date its weekday, worked out in code', () => {
+		// A model told a child the bins go out "Monday 20 October": 20 October 2026 is a Tuesday.
+		expect(
+			withWeekdays({
+				chores: [{ title: 'Take out the bins', nextDue: '2026-10-20', done: false }],
+				nextAfter: { title: 'Inspection', dueDate: '2026-12-02', at: '2026-12-02T09:30' },
+			}),
+		).toEqual({
+			chores: [
+				{
+					title: 'Take out the bins',
+					nextDue: '2026-10-20',
+					nextDueWeekday: 'Tuesday',
+					done: false,
+				},
+			],
+			nextAfter: {
+				title: 'Inspection',
+				dueDate: '2026-12-02',
+				dueDateWeekday: 'Wednesday',
+				at: '2026-12-02T09:30',
+				atWeekday: 'Wednesday',
+			},
+		});
+	});
+
+	it('leaves what is no day, an instant, and objects that name their weekday', () => {
+		expect(weekdayOf('2026-02-31')).toBeNull();
+		expect(weekdayOf('2026-10-20T22:30:00Z')).toBeNull();
+		expect(weekdayOf('Trip on 2026-10-20')).toBeNull();
+		const event = { date: '2026-10-20', weekday: 'Tuesday' };
+		expect(withWeekdays(event)).toEqual(event);
+		const task = { dueDate: '2026-10-20', dueWeekday: 'Tuesday' };
+		expect(withWeekdays(task)).toEqual(task);
+		expect(withWeekdays(['2026-10-20'])).toEqual(['2026-10-20']);
 	});
 });

@@ -1368,7 +1368,7 @@ export interface operations {
                                 when?: "past" | "now" | "upcoming";
                             }[];
                             note?: string;
-                            /** @description Only when nothing matched in the range: the next match after it */
+                            /** @description Only when nothing is in the range: the next event after it (of the same search) */
                             nextMatch?: {
                                 /** @description The event; null for subscribed calendars */
                                 id: string | null;

@@ -93,8 +93,10 @@
 			"typedIdKind",
 			"unknownIdFields",
 			"unsureFields",
+			"weekdayOf",
 			"wholeRecord",
-			"withHandles"
+			"withHandles",
+			"withWeekdays"
 		],
 		"@famos/time": [
 			"IsoDateSchema",
@@ -109,6 +111,7 @@
 			"canonicalLocale",
 			"clockTimes",
 			"compareDates",
+			"correctWeekdays",
 			"dateLocale",
 			"dateWords",
 			"dayBounds",

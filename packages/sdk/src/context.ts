@@ -227,6 +227,17 @@ export interface DraftMeta {
 	forMember?: string;
 }
 
+/** An area the AI cannot look into here (see `ActionInvoker.aiMissingAreas`). */
+export interface AiMissingArea {
+	/** The extension id. */
+	id: string;
+	/** Its name and what it keeps, in English (prompts are English). */
+	name: string;
+	description: string;
+	/** Not installed, installed but turned off, or closed to the AI. */
+	why: 'not_installed' | 'turned_off' | 'closed_to_ai';
+}
+
 /** An action AI may propose, with its input as JSON Schema (for the model). */
 export interface AiActionInfo {
 	id: string;
@@ -272,6 +283,13 @@ export interface ActionInvoker {
 	 * caller invokes it as the AI actor, which refuses areas that are off for the AI.
 	 */
 	aiContextActions(): ReadonlyMap<string, readonly string[]>;
+	/**
+	 * The areas of FamilyOS the AI cannot look into here, so an agent can say so plainly ("Home is
+	 * not installed here") instead of reading an empty answer from another area as "there is
+	 * none": extensions this server can install that are not installed, installed ones that are
+	 * turned off, and areas closed to the AI (off, or local-only when the model is not `local`).
+	 */
+	aiMissingAreas(options?: { local?: boolean }): AiMissingArea[];
 	/**
 	 * What an action's input schema rejects in `input` (`path: message` lines), without running
 	 * anything; empty when the input is valid or the action is unknown. For the AI pipeline, to

@@ -11,6 +11,7 @@ import { silentLogger, uuidv7Ids } from '@famos/adapters/runtime';
 import { createExtensionSecrets } from '@famos/adapters/secrets';
 import {
 	createKernel,
+	type ExtensionPackagesPort,
 	type Kernel,
 	type LanguagePort,
 	type Member,
@@ -446,6 +447,8 @@ export async function createTestKernel(
 		languages?: LanguagePort;
 		/** The theme packs; by default only the default theme is listed. */
 		themes?: ThemePort;
+		/** The packages extensions can be installed from; by default none beyond those given. */
+		extensionPackages?: ExtensionPackagesPort;
 	} = {},
 ): Promise<TestKernel> {
 	const handle = openDatabase({ path: ':memory:' });
@@ -474,6 +477,7 @@ export async function createTestKernel(
 		vocabulary: options.vocabulary ?? repoVocabulary(),
 		...(options.languages && { languages: options.languages }),
 		...(options.themes && { themes: options.themes }),
+		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),
 	});
 	await runMigrations(handle.db, kernel.migrationScopes, clock.now);
 	await kernel.start();

@@ -18,6 +18,7 @@ import {
 	SUMMARIZE_JOB,
 	TURN_JOB,
 } from '../contract/index.ts';
+import { answerWithRealWeekdays } from './answer-dates.ts';
 import { formatWeekday } from './format.ts';
 import { spokenText } from './messages.ts';
 import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
@@ -325,6 +326,7 @@ export const turnJob = defineJob({
 					notes,
 					days,
 					areas: [...new Set(tools.map((t) => areaOf(t.actionId)))],
+					missing: ctx.actions.aiMissingAreas({ local: policy.local }),
 					vocabularies,
 				}),
 				messages,
@@ -382,7 +384,24 @@ export const turnJob = defineJob({
 			// A model can end the loop with no words (the last step is kept for an answer, but it may
 			// say nothing). If the turn made suggestions, the lines naming them are the answer (asking
 			// again would suggest them twice); with nothing at all it is a failure.
-			const answer = result.text ? scrubHandles(result.text, nameOf) : '';
+			const written = result.text ? scrubHandles(result.text, nameOf) : '';
+			// A weekday the answer puts next to a date of another weekday is the model's slip: the
+			// date comes from a tool. The stored answer says the real one, and so does the stream.
+			const answer = answerWithRealWeekdays(written, {
+				today,
+				words,
+				order,
+				asked,
+				locales: [locale, settings.locale, 'en'],
+				translate: (lng, key) => ctx.translate(lng, key),
+			});
+			if (answer !== written)
+				await ctx.events.emitTo(memberId, assistantDelta, {
+					threadId,
+					messageId,
+					text: answer,
+					reset: true,
+				});
 			await finish(
 				answer === '' && suggested.length === 0
 					? { status: 'failed', errorCode: 'no_answer', calls }

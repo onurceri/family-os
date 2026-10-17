@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	bareWeekdays,
 	clockTimes,
+	correctWeekdays,
 	dateWords,
 	isUncertainDate,
 	weekdayMismatches,
@@ -81,6 +82,68 @@ describe('weekdayMismatches', () => {
 
 	it('ignores dates that do not exist', () => {
 		expect(weekdayMismatches('Monday 31 February', TODAY, words)).toEqual([]);
+	});
+});
+
+describe('correctWeekdays', () => {
+	/** A weekday's first catalog word in the language of the word it replaces (English or not). */
+	const catalog = vocabulary();
+	const english = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+	const name = ({ weekday }: { weekday: number }, said: string) =>
+		english.includes(said.toLowerCase())
+			? (english[weekday - 1] as string)
+			: (catalog(`app:words_weekday_${weekday}`).find((w) => !english.includes(w)) ?? null);
+
+	it('gives a date its real weekday, in the case it was written', () => {
+		// 20 October 2026 is a Tuesday.
+		const fixed = correctWeekdays(
+			"The chore 'Take out the bins' is scheduled for Monday 20 October.",
+			TODAY,
+			words,
+			'DMY',
+			name,
+		);
+		expect(fixed.text).toBe("The chore 'Take out the bins' is scheduled for Tuesday 20 October.");
+		expect(fixed.corrected).toEqual([
+			{ said: 'Monday 20 October.', date: '2026-10-20', saidWeekday: 1, weekday: 2 },
+		]);
+		expect(correctWeekdays('MONDAY 20 OCTOBER', TODAY, words, 'DMY', name).text).toBe(
+			'TUESDAY 20 OCTOBER',
+		);
+		expect(correctWeekdays('on monday, 20 october', TODAY, words, 'DMY', name).text).toBe(
+			'on tuesday, 20 october',
+		);
+	});
+
+	it('corrects several, and leaves the ones that fit', () => {
+		expect(
+			correctWeekdays(
+				'Monday 19 October, Monday 20 October and Friday 23 October',
+				TODAY,
+				words,
+				'DMY',
+				name,
+			).text,
+		).toBe('Monday 19 October, Tuesday 20 October and Friday 23 October');
+	});
+
+	it('keeps a weekday that fits one of the dates next to it', () => {
+		const text = 'From 19 October, Tuesday 20 October';
+		expect(correctWeekdays(text, TODAY, words, 'DMY', name)).toEqual({ text, corrected: [] });
+	});
+
+	it('works in any language the catalogs hold', () => {
+		expect(correctWeekdays('Pazartesi 20 Ekim', TODAY, words, 'DMY', name).text).toBe(
+			'Salı 20 Ekim',
+		);
+	});
+
+	it('leaves a weekday it has no word for', () => {
+		const text = 'Monday 20 October';
+		expect(correctWeekdays(text, TODAY, words, 'DMY', () => null)).toEqual({
+			text,
+			corrected: [],
+		});
 	});
 });
 

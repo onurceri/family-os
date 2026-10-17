@@ -839,7 +839,7 @@ export const findEvents = defineAction({
 				date: z.string(),
 			})
 			.optional()
-			.describe('Only when nothing matched in the range: the next match after it'),
+			.describe('Only when nothing is in the range: the next event after it (of the same search)'),
 	}),
 	readOnly: true,
 	requires: calendarView.id,
@@ -924,8 +924,8 @@ export const findEvents = defineAction({
 			| { id: string | null; occurrence?: string; title: string; date: string }
 			| undefined;
 		// Nothing in the range, but the same search finds something later: say what and when,
-		// so the answer is "the next one is on …" and not "there is none".
-		if (all.length === 0 && (needle || wanted)) {
+		// so the answer is "nothing this weekend; the next one is on …" and not "there is none".
+		if (all.length === 0) {
 			const next = (await between(addDays(to, 1), addDays(to, NEXT_MATCH_DAYS)))[0];
 			if (next) {
 				const day = next.allDay
@@ -934,7 +934,7 @@ export const findEvents = defineAction({
 							.toPlainDate()
 							.toString();
 				notes.push(
-					`Nothing from ${from} to ${to}. The next match is "${next.title}" on ${day} (see nextMatch).`,
+					`Nothing from ${from} to ${to}. The next ${needle || wanted ? 'match' : 'event'} after it is "${next.title}" on ${day} (see nextMatch).`,
 				);
 				nextMatch = {
 					id: next.source === null ? next.eventId : null,
