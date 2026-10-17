@@ -1,0 +1,272 @@
+import {
+	defineRoute,
+	type ExtensionContext,
+	type ExternalHttpRequest,
+	isExternalHttpError,
+} from '@famos/sdk';
+import {
+	type Entities,
+	EntitiesQuerySchema,
+	EntitiesSchema,
+	type Value,
+	type Values,
+	ValuesSchema,
+} from '../contract/index.ts';
+import { homeassistantManage, homeassistantView } from './capabilities.ts';
+import { load } from './connection.ts';
+import { loadItems } from './items.ts';
+import { type PickedState, pickState, toValue } from './state.ts';
+
+/**
+ * Home Assistant's values, read live and kept for a minute, so many Today pages and displays
+ * cause one round of requests a minute. Only ever GET requests, and only the six picked fields of
+ * an entity are kept (see `pickState`). Nothing is stored: a stale value is never shown as current.
+ */
+
+const CACHE_MS = 60_000;
+const ENTITY_TIMEOUT_MS = 5_000;
+const ENTITY_MAX_BYTES = 64 * 1024;
+const AT_ONCE = 4;
+const LIST_TIMEOUT_MS = 10_000;
+const LIST_MAX_BYTES = 4 * 1024 * 1024;
+const MAX_ENTITIES = 50;
+
+interface Cached<T> {
+	key: string;
+	at: number;
+	value: T;
+}
+
+/** What one running server remembers, per extension context; it is never persisted. */
+interface Memory {
+	values: Cached<Values> | null;
+	entities: Cached<{ status: Entities['status']; all: Listed[] }> | null;
+	/** Rounds in flight, so concurrent callers share one. */
+	inflight: Map<string, Promise<unknown>>;
+}
+
+interface Listed {
+	entityId: string;
+	name: string;
+	value: Value;
+}
+
+const memories = new WeakMap<object, Memory>();
+
+function memoryOf(ctx: ExtensionContext): Memory {
+	let memory = memories.get(ctx);
+	if (!memory) {
+		memory = { values: null, entities: null, inflight: new Map() };
+		memories.set(ctx, memory);
+	}
+	return memory;
+}
+
+function once<T>(memory: Memory, key: string, work: () => Promise<T>): Promise<T> {
+	const running = memory.inflight.get(key);
+	if (running) return running as Promise<T>;
+	const promise = work().finally(() => memory.inflight.delete(key));
+	memory.inflight.set(key, promise);
+	return promise;
+}
+
+/** The address and the opened token, or null when not connected (or the token cannot be opened). */
+async function credentials(ctx: ExtensionContext) {
+	const row = await load(ctx.db);
+	if (!row) return null;
+	const token = ctx.secrets.open(row.sealed_token);
+	return { baseUrl: row.base_url, token, stamp: row.updated_at };
+}
+
+const request = (
+	baseUrl: string,
+	token: string,
+	path: string,
+	timeoutMs: number,
+	maxBytes: number,
+): ExternalHttpRequest => ({
+	url: `${baseUrl}${path}`,
+	allowLocal: true,
+	headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+	timeoutMs,
+	maxBytes,
+});
+
+const UNAVAILABLE: Value = { kind: 'unavailable' };
+
+/** Runs `work` for each of `list`, at most `limit` at a time; stops starting new ones after a throw. */
+async function inParallel<T>(
+	list: readonly T[],
+	limit: number,
+	work: (entry: T) => Promise<void>,
+): Promise<void> {
+	let next = 0;
+	let failure: { error: unknown } | null = null;
+	const worker = async () => {
+		while (!failure && next < list.length) {
+			const entry = list[next++] as T;
+			try {
+				await work(entry);
+			} catch (error) {
+				failure ??= { error };
+			}
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(limit, list.length) }, worker));
+	if (failure) throw (failure as { error: unknown }).error;
+}
+
+async function readValues(ctx: ExtensionContext): Promise<Values> {
+	const connection = await credentials(ctx);
+	if (!connection || connection.token === null) return { items: [], status: 'not_connected' };
+	const rows = await loadItems(ctx.db);
+	if (rows.length === 0) return { items: [], status: 'ok' };
+	const { baseUrl, token } = connection;
+	const found = new Map<string, PickedState | null>();
+	try {
+		await inParallel(rows, AT_ONCE, async (row) => {
+			try {
+				const response = await ctx.http.get(
+					request(
+						baseUrl,
+						token,
+						`/api/states/${row.entity_id}`,
+						ENTITY_TIMEOUT_MS,
+						ENTITY_MAX_BYTES,
+					),
+				);
+				const picked = response.status === 200 ? safePick(response.text) : null;
+				// Asked for this entity and got another one: nothing to trust.
+				found.set(row.id, picked?.entityId === row.entity_id ? picked : null);
+			} catch (error) {
+				// Home Assistant answers 404 for an entity it does not have (any more): that item only.
+				if (isExternalHttpError(error) && error.code === 'http_404') found.set(row.id, null);
+				else throw error;
+			}
+		});
+	} catch (error) {
+		// A refused token, an unreachable or broken Home Assistant: nothing is current, show nothing.
+		ctx.logger.info(
+			{ code: isExternalHttpError(error) ? error.code : 'failed' },
+			'home assistant values unavailable',
+		);
+		return { items: [], status: 'unavailable' };
+	}
+	return {
+		status: 'ok',
+		items: rows.map((row) => {
+			const picked = found.get(row.id) ?? null;
+			return {
+				id: row.id,
+				entityId: row.entity_id as Values['items'][number]['entityId'],
+				label: row.label,
+				name: picked?.name ?? null,
+				value: picked ? toValue(picked) : UNAVAILABLE,
+				changedAt: picked?.changedAt ?? null,
+			};
+		}),
+	};
+}
+
+function safePick(body: string): PickedState | null {
+	try {
+		return pickState(JSON.parse(body));
+	} catch {
+		return null;
+	}
+}
+
+export const getValues = defineRoute({
+	method: 'get',
+	path: '/values',
+	operationId: 'homeassistant.getValues',
+	summary: 'What the family shows from Home Assistant, read live (cached for a minute)',
+	requires: homeassistantView.id,
+	response: ValuesSchema,
+	async handle(ctx) {
+		const memory = memoryOf(ctx);
+		const connection = await credentials(ctx);
+		if (!connection) return { items: [], status: 'not_connected' as const };
+		const rows = await loadItems(ctx.db);
+		const key = JSON.stringify([
+			connection.stamp,
+			rows.map((r) => [r.id, r.entity_id, r.updated_at]),
+		]);
+		const now = ctx.clock.now();
+		const hit = memory.values;
+		if (hit && hit.key === key && now - hit.at >= 0 && now - hit.at < CACHE_MS) return hit.value;
+		const value = await once(memory, `values:${key}`, () => readValues(ctx));
+		memory.values = { key, at: ctx.clock.now(), value };
+		return value;
+	},
+});
+
+/** Every entity Home Assistant has that may be shown, reduced to name and value. */
+async function readEntities(
+	ctx: ExtensionContext,
+): Promise<{ status: Entities['status']; all: Listed[] }> {
+	const connection = await credentials(ctx);
+	if (!connection || connection.token === null) return { status: 'not_connected', all: [] };
+	try {
+		const response = await ctx.http.get(
+			request(connection.baseUrl, connection.token, '/api/states', LIST_TIMEOUT_MS, LIST_MAX_BYTES),
+		);
+		if (response.status !== 200) return { status: 'unavailable', all: [] };
+		const body: unknown = JSON.parse(response.text);
+		if (!Array.isArray(body)) return { status: 'unavailable', all: [] };
+		const all: Listed[] = [];
+		for (const entry of body) {
+			const picked = pickState(entry);
+			if (picked)
+				all.push({
+					entityId: picked.entityId,
+					name: picked.name ?? picked.entityId,
+					value: toValue(picked),
+				});
+		}
+		all.sort((a, b) => a.name.localeCompare(b.name) || a.entityId.localeCompare(b.entityId));
+		return { status: 'ok', all };
+	} catch (error) {
+		if (isExternalHttpError(error) && error.code === 'too_large')
+			return { status: 'too_many', all: [] };
+		ctx.logger.info(
+			{ code: isExternalHttpError(error) ? error.code : 'failed' },
+			'home assistant entities unavailable',
+		);
+		return { status: 'unavailable', all: [] };
+	}
+}
+
+export const getEntities = defineRoute({
+	method: 'get',
+	path: '/entities',
+	operationId: 'homeassistant.findEntities',
+	summary:
+		'The entities Home Assistant has that can be shown (not people or places), by name or id (at most 50)',
+	requires: homeassistantManage.id,
+	query: EntitiesQuerySchema,
+	response: EntitiesSchema,
+	async handle(ctx, { query }) {
+		const memory = memoryOf(ctx);
+		const connection = await credentials(ctx);
+		if (!connection) return { entities: [], status: 'not_connected' as const };
+		const key = String(connection.stamp);
+		const now = ctx.clock.now();
+		let hit = memory.entities;
+		if (!(hit && hit.key === key && now - hit.at >= 0 && now - hit.at < CACHE_MS)) {
+			const value = await once(memory, `entities:${key}`, () => readEntities(ctx));
+			hit = { key, at: ctx.clock.now(), value };
+			memory.entities = hit;
+		}
+		const { status, all } = hit.value;
+		const needle = query.q?.toLowerCase();
+		const entities = (
+			needle
+				? all.filter((e) => e.entityId.includes(needle) || e.name.toLowerCase().includes(needle))
+				: all
+		)
+			.slice(0, MAX_ENTITIES)
+			.map((e) => ({ ...e, entityId: e.entityId as Entities['entities'][number]['entityId'] }));
+		return { entities, status };
+	},
+});

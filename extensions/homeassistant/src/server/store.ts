@@ -9,7 +9,7 @@ export type HomeAssistantTables = {
 		id: string;
 		/** Normalized address, without a trailing slash or `/api`. Not a secret. */
 		base_url: string;
-		/** The long-lived access token, sealed. Opened only by the check job. */
+		/** The long-lived access token, sealed. Opened only to read from Home Assistant. */
 		sealed_token: string;
 		status: ConnectionStatus;
 		checked_at: number | null;
@@ -19,6 +19,17 @@ export type HomeAssistantTables = {
 		ha_name: string | null;
 		created_at: number;
 		/** Moves on every change; a check only writes if it has not moved since it started. */
+		updated_at: number;
+	};
+	/** What the family chose to show; the entity is read live and never stored. */
+	homeassistant_items: {
+		id: string;
+		/** A `sensor.` or `binary_sensor.` entity, once. */
+		entity_id: string;
+		label: string;
+		/** 0, 1, 2 … in the order shown. */
+		position: number;
+		created_at: number;
 		updated_at: number;
 	};
 };
@@ -39,6 +50,20 @@ export const migrations: Migrations = {
 				.addColumn('checked_at', 'integer')
 				.addColumn('ha_version', 'text')
 				.addColumn('ha_name', 'text')
+				.addColumn('created_at', 'integer', (c) => c.notNull())
+				.addColumn('updated_at', 'integer', (c) => c.notNull())
+				.modifyEnd(sql`strict`)
+				.execute();
+		},
+	},
+	'0002_items': {
+		async up(db) {
+			await db.schema
+				.createTable('homeassistant_items')
+				.addColumn('id', 'text', (c) => c.primaryKey())
+				.addColumn('entity_id', 'text', (c) => c.notNull().unique())
+				.addColumn('label', 'text', (c) => c.notNull())
+				.addColumn('position', 'integer', (c) => c.notNull())
 				.addColumn('created_at', 'integer', (c) => c.notNull())
 				.addColumn('updated_at', 'integer', (c) => c.notNull())
 				.modifyEnd(sql`strict`)

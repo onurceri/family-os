@@ -20,8 +20,8 @@ import { CONNECTION_ID, type HomeAssistantTables, tables } from './store.ts';
 
 /**
  * The connection to the family's Home Assistant. An admin enters the address and a long-lived
- * access token; the token is sealed and only the check job opens it. FamilyOS only ever reads from
- * Home Assistant (GET `/api/`, `/api/config`, later `/api/states/<entity>`): a token cannot be
+ * access token; the token is sealed and opened only to read from Home Assistant. FamilyOS only ever reads from
+ * Home Assistant (GET `/api/`, `/api/config`, `/api/states`): a token cannot be
  * limited there, so no request that changes anything is ever sent.
  */
 
@@ -46,7 +46,7 @@ export function toConnection(row: Row | undefined): Connection {
 	};
 }
 
-const load = (db: UnitOfWork['db']) =>
+export const load = (db: UnitOfWork['db']) =>
 	tables(db).selectFrom('homeassistant_connection').selectAll().executeTakeFirst();
 
 const CheckPayload = z.object({

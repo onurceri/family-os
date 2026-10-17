@@ -5,7 +5,7 @@ import en from '../messages/en.json' with { type: 'json' };
 
 const SETTINGS_PATH = '/settings/home-assistant';
 
-/** Home Assistant UI: the connection, in Settings → Family. */
+/** Home Assistant UI: the connection and what to show, in Settings → Family; the values on Today and on displays. */
 export default defineWebExtension({
 	manifest: pkg.famos,
 	messages: en,
@@ -23,6 +23,25 @@ export default defineWebExtension({
 			// After Photos and weather.
 			order: 40,
 			requires: 'homeassistant.manage',
+		},
+	],
+	slots: [
+		{
+			slot: 'dashboard.card',
+			id: 'homeassistant.values',
+			labelKey: 'homeassistant:today_block',
+			hintKey: 'homeassistant:today_block_hint',
+			band: 'notes',
+			order: 20,
+			requires: 'homeassistant.view',
+			component: () => import('./ValuesCard.svelte'),
+		},
+		{
+			slot: 'display.widget',
+			id: 'homeassistant.values',
+			order: 25,
+			requires: 'homeassistant.view',
+			component: () => import('./DisplayValues.svelte'),
 		},
 	],
 	pages: [

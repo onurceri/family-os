@@ -1,5 +1,5 @@
 import { defineCapability, defineEvent } from '@famos/sdk';
-import { connectionChangedPayload } from '../contract/index.ts';
+import { connectionChangedPayload, itemsChangedPayload } from '../contract/index.ts';
 
 /** What the family chose to show from Home Assistant. */
 export const homeassistantView = defineCapability({
@@ -19,3 +19,6 @@ export const connectionChanged = defineEvent(
 	'homeassistant.connection.changed',
 	connectionChangedPayload,
 );
+
+/** What the family shows from Home Assistant was added to, renamed, moved or removed. */
+export const itemsChanged = defineEvent('homeassistant.items.changed', itemsChangedPayload);

@@ -35,7 +35,7 @@ The address works like a password: anyone who has it can read the calendar, with
 
 ## Connect FamilyOS to Home Assistant
 
-This is the other direction: FamilyOS looks at your Home Assistant. For now it only connects and checks that the connection works. Showing sensors and who is home comes next.
+This is the other direction: FamilyOS looks at your Home Assistant. You choose a few things to show on Today and on the family display. Who is home comes next.
 
 FamilyOS **only reads** from Home Assistant. It never switches a light, a lock or anything else, and it never asks Home Assistant to do anything. Home Assistant cannot limit what a token may do, so this is a promise FamilyOS keeps by what it sends, not something Home Assistant enforces.
 
@@ -57,7 +57,23 @@ What the result means:
 - **Cannot be reached** or **No answer**: is Home Assistant running, and is the address right? A name ending in `.local` never works; use the IP address.
 - **Check failed**: something else went wrong. Choose **Check again**, or **Change** to enter the details again.
 
+## Show sensors on Today and on the display
+
+Once the connection says **Connected**, the same page has a **What to show** section. Pick the few things you want the family to see, for example the temperature outside, whether the front door is open, or what the washing machine is doing.
+
+1. Press **Add**. Search by name or by id (such as `sensor.kitchen_temperature`) and choose it.
+2. Give it a short name of your own, up to 40 characters. It starts with Home Assistant's name for it.
+3. Press **Save**.
+
+You can show up to 12 things. Tap a row to rename it, move it up or down, or remove it. Disconnecting keeps the list, so connecting to the same Home Assistant again finds it as it was.
+
+You can show sensors, doors and windows, lights, switches, locks, covers, thermostats and anything else Home Assistant reports a state for. FamilyOS only reads the state: it never switches a light or opens a lock, and showing one does not let anyone else do it. **People, their phones and places** are not offered: where someone is will have its own, separate choice later. If your home has so many things that FamilyOS cannot list them, type the entity's id instead, for example `sensor.kitchen_temperature`.
+
+Everyone who may see Home Assistant values finds them on Today, in a small section that can be hidden in **What Today shows**. A family display shows them too, when you have allowed it to see Home Assistant values in **Settings → Devices**. Values are read live and are about a minute old at most. When Home Assistant cannot be reached, nothing is shown rather than an old value, and Today says nothing about it.
+
+Numbers keep the unit Home Assistant uses and follow your region's format. Doors, windows and covers read **Open** or **Closed**, locks **Locked** or **Unlocked**, motion **Detected** or **Clear**, smoke or a problem **Alert** or **OK**, lights and switches **On** or **Off**, and a thermostat its mode and the current temperature. Anything else is shown the way Home Assistant words it. A thing with no value reads **Not available**.
+
 ## Not possible yet
 
 - **Home Assistant's assistant (Assist)** cannot connect to FamilyOS's AI door ([MCP](mcp.md)) yet, because Home Assistant connects only with a sign-in method that FamilyOS does not offer. Other AI apps work today; see [Bring your own agent (MCP)](mcp.md).
-- **Showing Home Assistant's sensors, and who is home, on Today and on the family display** comes next. The connection above already exists; what to show is not chosen yet.
+- **Who is home** comes next. Things like sensors and lights are shown today; people and their phones are not offered.

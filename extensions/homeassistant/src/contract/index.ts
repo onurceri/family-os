@@ -66,3 +66,89 @@ export const ConnectionSchema = z.discriminatedUnion('connected', [
 export type Connection = z.infer<typeof ConnectionSchema>;
 
 export const connectionChangedPayload = z.object({});
+
+/** The most things a family can show from Home Assistant. */
+export const MAX_ITEMS = 12;
+
+/**
+ * Any Home Assistant entity can be read, except where people are: persons, device trackers and
+ * zones. Presence and location are not shown from here. FamilyOS only reads; showing a light or a
+ * lock never lets anyone switch it.
+ */
+export const ENTITY_ID_PATTERN = /^(?!person\.|device_tracker\.|zone\.)[a-z_]+\.[a-z0-9_]+$/;
+export const EntityIdSchema = z.string().max(200).regex(ENTITY_ID_PATTERN);
+
+export const LabelSchema = z.string().trim().min(1).max(40);
+
+export const ItemIdSchema = z.string().min(1).max(100);
+
+/** One thing the family chose to show, with its own short name. */
+export const ItemSchema = z.object({
+	id: ItemIdSchema,
+	entityId: EntityIdSchema,
+	label: LabelSchema,
+	position: z.number().int().min(0),
+});
+export type Item = z.infer<typeof ItemSchema>;
+
+export const ItemListSchema = z.object({ items: z.array(ItemSchema) });
+
+export const AddItemInputSchema = z.object({ entityId: EntityIdSchema, label: LabelSchema });
+export const RenameItemInputSchema = z.object({ id: ItemIdSchema, label: LabelSchema });
+export const RemoveItemInputSchema = z.object({ id: ItemIdSchema });
+export const MoveItemInputSchema = z.object({
+	id: ItemIdSchema,
+	position: z.number().int().min(0).max(MAX_ITEMS),
+});
+
+/** The domains whose state words FamilyOS knows how to say. */
+export const STATE_DOMAINS = ['lock', 'cover', 'climate'] as const;
+
+/**
+ * What an entity reads right now, as data and not as words: the interface says it in the
+ * reader's language and region.
+ */
+export const ValueSchema = z.discriminatedUnion('kind', [
+	z.object({ kind: z.literal('unavailable') }),
+	z.object({ kind: z.literal('time'), at: z.number().int() }),
+	z.object({ kind: z.literal('number'), value: z.number(), unit: z.string().nullable() }),
+	z.object({ kind: z.literal('binary'), on: z.boolean(), deviceClass: z.string().nullable() }),
+	/** A lock, a cover or a thermostat: Home Assistant's state word, and a temperature if it has one. */
+	z.object({
+		kind: z.literal('state'),
+		domain: z.enum(STATE_DOMAINS),
+		state: z.string(),
+		temperature: z.number().nullable(),
+	}),
+	z.object({ kind: z.literal('text'), text: z.string() }),
+]);
+export type Value = z.infer<typeof ValueSchema>;
+
+export const VALUES_STATUSES = ['ok', 'not_connected', 'unavailable'] as const;
+
+export const ValuesSchema = z.object({
+	items: z.array(
+		z.object({
+			id: ItemIdSchema,
+			entityId: EntityIdSchema,
+			label: LabelSchema,
+			/** Home Assistant's own name for the entity. */
+			name: z.string().nullable(),
+			value: ValueSchema,
+			changedAt: z.number().int().nullable(),
+		}),
+	),
+	status: z.enum(VALUES_STATUSES),
+});
+export type Values = z.infer<typeof ValuesSchema>;
+
+export const EntitiesQuerySchema = z.object({ q: z.string().trim().max(80).optional() });
+
+export const EntitiesSchema = z.object({
+	entities: z.array(z.object({ entityId: EntityIdSchema, name: z.string(), value: ValueSchema })),
+	/** `too_many`: the home has more than FamilyOS reads at once; the picker takes a typed id. */
+	status: z.enum(['ok', 'too_many', 'not_connected', 'unavailable']),
+});
+export type Entities = z.infer<typeof EntitiesSchema>;
+
+export const itemsChangedPayload = z.object({});

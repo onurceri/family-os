@@ -23,11 +23,13 @@
 	import {
 		type Connection,
 		type ConnectionStatus,
+		MAX_ITEMS,
 		normalizeBaseUrl,
 		TokenSchema,
 	} from '../contract/index.js';
 	import { checkAgain, connect, disconnect, loadConnection } from './data.js';
 	import { useHomeAssistant } from './i18n.js';
+	import ItemsSection from './ItemsSection.svelte';
 
 	/**
 	 * Settings, Family, Home Assistant: the address and the token of the family's Home Assistant,
@@ -45,6 +47,8 @@
 	let failed = $state(false);
 	let showErrors = $state(false);
 	let formEl = $state<HTMLFormElement>();
+	let items = $state<{ add(): void }>();
+	let full = $state(false);
 
 	async function load() {
 		try {
@@ -133,10 +137,14 @@
 			connected?.status === 'blocked_address',
 	);
 
+	/** Connected and answering: the page is about what to show, and Add is its one main action. */
+	const working = $derived(connected?.status === 'ok');
+
 	const menu = $derived<MenuItem[]>([
-		needsChange
-			? { id: 'check', label: t('check_again'), onselect: recheck }
-			: { id: 'change', label: t('change'), onselect: startConnect },
+		...(needsChange || working
+			? [{ id: 'check', label: t('check_again'), onselect: recheck }]
+			: []),
+		...(needsChange ? [] : [{ id: 'change', label: t('change'), onselect: startConnect }]),
 		{
 			id: 'disconnect',
 			label: t('disconnect'),
@@ -189,7 +197,14 @@
 	<PageHeader title={t('nav_label')} subtitle={t('subtitle')}>
 		{#snippet actions()}
 			{#if connected}
-				{#if needsChange}
+				{#if working}
+					<Button
+						disabled={full}
+						title={full ? t('show_limit', { count: MAX_ITEMS }) : undefined}
+						onclick={() => items?.add()}
+						><Plus class="size-4" aria-hidden="true" />{t('show_add')}</Button
+					>
+				{:else if needsChange}
 					<Button variant="outline" onclick={startConnect}>{t('change')}</Button>
 				{:else}
 					<Button variant="outline" onclick={recheck}
@@ -229,6 +244,7 @@
 				>
 				{advice(connected)}
 			</Notice>
+			<ItemsSection bind:this={items} bind:full />
 		{:else}
 			<Card variant="quiet" pad>
 				<p class="font-semibold">{t('none')}</p>
