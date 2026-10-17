@@ -181,6 +181,27 @@ describe('calendar.event', () => {
 		expect(await draft(out[0])).toBe('drafted');
 	});
 
+	it('keeps an end day the model worked out from words without digits, marked for a look', async () => {
+		const out = await resolve('calendar.event', [
+			{
+				title: 'Piyano dersi',
+				date: { text: 'her çarşamba', weekday: 3 },
+				time: '17:00',
+				repeat: {
+					every: 'week',
+					weekdays: [3],
+					until: { text: 'Ekim sonuna kadar', day: 28, month: 10 },
+				},
+			},
+			{ title: 'Recital', date: { text: 'on the fifteenth', day: 15 }, time: '18:00' },
+		]);
+		expect(proposal(out[0])).toMatchObject({
+			input: { recurrence: { until: '2026-10-28' } },
+			uncertain: ['recurrence'],
+		});
+		expect(proposal(out[1])).toMatchObject({ input: { date: '2026-10-15' }, uncertain: ['date'] });
+	});
+
 	it('starts a series on its own weekday, and ends a counted one on its last date', async () => {
 		const out = await resolve('calendar.event', [
 			{

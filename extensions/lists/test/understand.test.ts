@@ -359,6 +359,21 @@ describe('lists.task', () => {
 		});
 	});
 
+	it('keeps a deadline day the words do not write in digits, marked for a look', async () => {
+		const out = await resolve('lists.task', [
+			{
+				title: 'Return the form',
+				date: { text: 'by the twentieth of October', day: 20, month: 10 },
+			},
+			{ title: 'Pay the fee', date: { text: 'by 20 October', day: 20, month: 10 } },
+		]);
+		expect(out[0] && 'propose' in out[0] && out[0].propose).toMatchObject({
+			input: { dueDate: '2026-10-20' },
+			uncertain: ['dueDate'],
+		});
+		expect(out[1] && 'propose' in out[1] && out[1].propose.uncertain).toBeUndefined();
+	});
+
 	it('doubts a deadline that names a weekday its date does not fall on', async () => {
 		// 9 October 2026 is a Friday; the notice says Thursday.
 		const out = await resolve(

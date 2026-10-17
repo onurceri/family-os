@@ -190,8 +190,8 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 			sharer: env.sharer,
 			members,
 			records: env.records,
-			day: (ref, direction = 'future', time) =>
-				resolveDay(ref, {
+			day(ref, direction = 'future', time) {
+				const found = resolveDay(ref, {
 					today,
 					weekStart: settings.weekStart,
 					order: dateOrder,
@@ -199,7 +199,15 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 					time,
 					now: nowTime,
 					words: dates,
-				}),
+				});
+				// A day number the quoted words do not write in digits ("the twentieth", or one the
+				// model worked out for "the end of October") is the model's reading: kept, checked.
+				const unwritten =
+					ref?.day !== undefined && ref.text.trim() !== '' && !/\p{N}/u.test(ref.text);
+				return found && unwritten && found.certain
+					? { date: found.date, certain: false, why: 'mismatch' }
+					: found;
+			},
 			time(mention) {
 				const written = mention.timeText ? clockTimes(mention.timeText) : [];
 				const [only] = written;
