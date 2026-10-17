@@ -4,7 +4,7 @@ import { api, expect, setUpAndSignIn, test } from '../support/fixtures.ts';
 /**
  * Settings → Appearance: the style first, as three live pictures of
  * Today, then the colors. A style is chosen for oneself, tried on the whole app until it is used or
- * stopped (the preview bar), defaulted by the family and chosen per display under Family → Theme.
+ * stopped (the preview bar), defaulted by the family and chosen per display under Family → Family look.
  */
 const DESKTOP = { width: 1440, height: 900 };
 

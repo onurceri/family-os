@@ -11,7 +11,7 @@
 	/**
 	 * What this person is trying (Settings → Appearance), on every page until they
 	 * decide: "Trying Lanes · Forest" with Use for me, Keep looking (back to Appearance) and Stop.
-	 * A theme tried as the family's default has its own bar on Family → Theme and is left out.
+	 * A theme tried as the family's default has its own bar on Family → Family look and is left out.
 	 * It sits above the phone tab bar, and at the foot of the content column from 768 px.
 	 */
 	const APPEARANCE = '/settings/appearance';

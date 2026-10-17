@@ -33,7 +33,7 @@ On a phone every style stacks into one column and nothing scrolls sideways; Lane
 **Settings → You → Appearance** shows the **Style** first, as three live pictures of Today on a made-up day in the colors you use, then the **Colors**: day or night on this device, a sample of the real parts of FamilyOS, and every theme as a small picture (day colors next to night colors). What you use on this device is marked **In use**.
 
 - **For yourself:** **Use for me** on a style or a theme. It follows you to every device you sign in on. **Use the family style** (shown while you have your own) takes it back.
-- **For the family:** **Settings → Family → Theme** (admins, and anyone allowed to change family settings). **Family style** and **Make family default** on a theme set what everyone sees who has not chosen their own, and the sign-in page.
+- **For the family:** **Settings → Family → Family look** (admins, and anyone allowed to change family settings). **Family style** and **Make family default** on a theme set what everyone sees who has not chosen their own, and the sign-in page.
 - **For a display:** the same page lists the **Displays**, each with its own **Style** and **Theme** (or **Same as the family**).
 
 A theme may suggest a style. The suggestion is used only while the family has never chosen a style; **Family style** then says which theme suggests it. Otherwise the order is: the display's own, then the person's own, then the family's, then the theme's suggestion, then Broadsheet.
@@ -45,7 +45,7 @@ Changes show on open screens within a moment, without a reload.
 Under the style, **What Today shows** lists every part of Today (the time and date, the sentence, the weather, the photo, next up, the rest of the day, where everyone is, chores, Needs you, meals, the next days, done today, and the cards of each feature such as the board, tasks, shopping, coming up and Ask the assistant), each with a switch. Turn off what you do not need: the part is simply not there, and your style arranges what is left (a column with nothing left gives its room to the others). It is show or hide only; the order stays the style's.
 
 - **For yourself:** **Follow the family** or **My own choice**, like the style. Changing a switch makes the choice your own. On Today, the **⋯** at the end of a section's label offers **Hide from Today**, with **Undo**.
-- **For the family:** **Settings → Family → Theme**, **What Today shows**: what everyone sees who has not made their own choice.
+- **For the family:** **Settings → Family → Family look**, **What Today shows**: what everyone sees who has not made their own choice.
 - **For a display:** the same page, under each display, **What Today shows** (or **Same as the family**). The display still leaves out what does not fit its screen.
 
 Hiding **Needs you** never hides what waits for approval: Quick add still shows its count, and notifications still come. If everything is hidden, Today says so and offers **Choose what Today shows**. A part added later (a new feature) is shown until someone hides it.
@@ -64,7 +64,7 @@ Trying is only on this screen and only for now: it also ends when you sign out, 
 
 ## Adding a theme
 
-On **Settings → Family → Theme**, with **Add a theme** (family settings permission required):
+On **Settings → Family → Family look**, with **Add a theme** (family settings permission required):
 
 - **From a file.** Choose a theme pack as one `.json` file (see below).
 - **From an address.** Enter an `https` address that returns the pack as JSON. FamilyOS fetches it in the background with the same protections as other outbound requests (https only, no private addresses, a size limit). You typed the address, so this is not a call you did not configure.
@@ -206,4 +206,4 @@ prints what is wrong, or `OK`. To install a pack from a folder, put it into one 
 }
 ```
 
-and add it from **Settings → Family → Theme → Add a theme → From a file**, or host the same JSON at an `https` address. To ship a theme with the app, put the folder into `themes/` in the repository.
+and add it from **Settings → Family → Family look → Add a theme → From a file**, or host the same JSON at an `https` address. To ship a theme with the app, put the folder into `themes/` in the repository.

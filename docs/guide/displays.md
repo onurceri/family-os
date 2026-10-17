@@ -37,7 +37,7 @@ Under **The family's devices** every screen and family device has a row: what it
 
 A display shows **Today**, the same page the family sees at home, in **family mode**: there is no person on it, so it has no "Needs you", nothing to press and no links, no notification bell and no menu. From a tablet's width up the type is a step larger so you can read it from across the room, and on a TV-sized screen one step more.
 
-A display has its own look. Under **Settings → Family → Theme → Displays** each display has a **Style** (Broadsheet, Lanes or Wall, see [Appearance](appearance.md)) and a **Theme**; left at **Same as the family**, it follows the family's. What a person chooses for themselves, or tries, never changes a display.
+A display has its own look. Under **Settings → Family → Family look → Displays** each display has a **Style** (Broadsheet, Lanes or Wall, see [Appearance](appearance.md)) and a **Theme**; left at **Same as the family**, it follows the family's. What a person chooses for themselves, or tries, never changes a display.
 
 What it shows depends on what you ticked under **What it may show** when you connected it. Only permissions a display can use are listed, everything is ticked at first, and each tick is a permission to look:
 

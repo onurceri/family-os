@@ -121,7 +121,7 @@ class Appearance {
 	 * Stop, sign-out or a reload). It is kept in memory only, so a reload shows the real choice.
 	 */
 	previewing = $state<string | null>(null);
-	/** The theme is tried as the family's default (Family → Theme), not as this person's own. */
+	/** The theme is tried as the family's default (Family → Family look), not as this person's own. */
 	previewingForFamily = $state(false);
 	/** The style in use on this device. */
 	style = $state<StyleId>(DEFAULT_STYLE);
