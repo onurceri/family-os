@@ -42,6 +42,8 @@
 		withdraw?: string;
 		/** The button that takes an applied draft back. */
 		undo?: string;
+		/** The button with which the person behind an undone draft sends it again. */
+		suggestAgain?: string;
 		/** Shown on a pending draft that seems to exist already. */
 		mayExist?: string;
 		/** Shown on a pending draft of which only some things exist already. */
@@ -74,6 +76,7 @@
 		onsave,
 		onundo,
 		onwithdraw,
+		onsuggestagain,
 		selectable,
 		quiet = false,
 		oneditchange,
@@ -118,6 +121,11 @@
 		 * waiting note that takes it back. Omit to hide "Withdraw".
 		 */
 		onwithdraw?: () => void;
+		/**
+		 * For the person behind an undone draft: a button that sends it again as a new suggestion.
+		 * Omit to hide "Suggest again".
+		 */
+		onsuggestagain?: () => void;
 		/**
 		 * A suggestion in a group that is decided together: a checkbox instead of Approve and
 		 * Reject (the group has the buttons); Edit stays. Only for people who may decide.
@@ -218,6 +226,15 @@
 			>
 				{labels.undo}
 			</button>
+		{:else if status === 'undone' && onsuggestagain && labels.suggestAgain}
+			<button
+				type="button"
+				disabled={busy}
+				class="bg-idle min-h-11 rounded-lg px-4 text-sm font-bold disabled:opacity-50"
+				onclick={onsuggestagain}
+			>
+				{labels.suggestAgain}
+			</button>
 		{/if}
 	</article>
 {:else}
@@ -260,6 +277,16 @@
 			{/if}
 		{:else if status === 'rejected' || status === 'undone' || status === 'expired'}
 			<p class="text-ink-soft text-sm" role="status">{settled}</p>
+			{#if status === 'undone' && onsuggestagain && labels.suggestAgain}
+				<button
+					type="button"
+					disabled={busy}
+					class="bg-idle min-h-11 justify-self-start rounded-lg px-4 font-bold disabled:opacity-50"
+					onclick={onsuggestagain}
+				>
+					{labels.suggestAgain}
+				</button>
+			{/if}
 		{:else if editing && editor}
 			<!-- The editor sizes its fields from this container, not from the window. -->
 			<div class="@container grid gap-3">{@render editor()}</div>

@@ -1,20 +1,21 @@
+import type { AwaitedChange } from '@famos/ui/app';
 import { api } from './api';
-import { awaitedIds } from './awaiting.js';
+import { awaitedChanges } from './awaiting.js';
 import { session } from './session.svelte.js';
 
 /**
- * The records the signed-in member's own changes wait on someone else to approve, so pages can
- * mark them "Waiting for approval" where the change was made. Read again after every change to a
- * suggestion.
+ * The records the signed-in member's own changes wait on someone else to approve, with the change
+ * that waits, so pages can mark them "Waiting for approval" where the change was made and say what
+ * it will become. Read again after every change to a suggestion.
  */
 class Awaiting {
-	ids = $state(new Set<string>());
+	changes = $state(new Map<string, AwaitedChange>());
 
 	async refresh(): Promise<void> {
 		const me = session.me?.id;
 		// Only people who may propose have changes that wait.
 		if (!me || !session.can('core.drafts.propose')) {
-			this.ids = new Set();
+			this.changes = new Map();
 			return;
 		}
 		const read = async (status: 'pending' | 'failed') => {
@@ -24,15 +25,22 @@ class Awaiting {
 			return res.data ?? [];
 		};
 		try {
-			const drafts = (await Promise.all([read('pending'), read('failed')])).flat();
-			this.ids = awaitedIds(drafts, me);
+			// Newest first, so a thing with several waiting changes shows the latest.
+			const drafts = (await Promise.all([read('pending'), read('failed')]))
+				.flat()
+				.toSorted((a, b) => b.createdAt - a.createdAt);
+			this.changes = awaitedChanges(drafts, me);
 		} catch {
 			// Keep the marks known so far; the next change to a suggestion reads them again.
 		}
 	}
 
 	has(id: string): boolean {
-		return this.ids.has(id);
+		return this.changes.has(id);
+	}
+
+	get(id: string): AwaitedChange | undefined {
+		return this.changes.get(id);
 	}
 }
 

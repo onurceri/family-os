@@ -1002,6 +1002,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/core/drafts/{draftId}/suggest-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suggest an undone draft again, as a new waiting draft (only the person behind it) */
+        post: operations["core.suggestDraftAgain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/core/drafts/{draftId}/replace": {
         parameters: {
             query?: never;
@@ -11047,6 +11064,7 @@ export interface operations {
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
+                        suggestedAgain: boolean;
                     }[];
                 };
             };
@@ -11346,6 +11364,7 @@ export interface operations {
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
+                        suggestedAgain: boolean;
                     };
                 };
             };
@@ -11512,6 +11531,7 @@ export interface operations {
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
+                        suggestedAgain: boolean;
                     };
                 };
             };
@@ -11678,6 +11698,174 @@ export interface operations {
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
+                        suggestedAgain: boolean;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "core.suggestDraftAgain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draftId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggest an undone draft again, as a new waiting draft (only the person behind it) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        actionId: string;
+                        input?: unknown;
+                        editedInput?: unknown;
+                        /** @enum {string} */
+                        status: "pending" | "approved" | "rejected" | "applied" | "failed" | "undone" | "expired";
+                        proposedBy?: unknown;
+                        sourceKind: string | null;
+                        sourceId: string | null;
+                        summary: string | null;
+                        confidence: number | null;
+                        uncertainFields: string[];
+                        error: string | null;
+                        forMember: string | null;
+                        createdAt: number;
+                        decidedAt: number | null;
+                        autoApproved: boolean;
+                        decidedBy: string | null;
+                        undoable: boolean;
+                        /** @enum {string|null} */
+                        reason: "gone" | "settled" | "withdrawn" | null;
+                        titleKey: string | null;
+                        subject: string | null;
+                        mayExist: boolean;
+                        mayExistSome: boolean;
+                        instead: {
+                            actionId: string;
+                            input?: unknown;
+                            at?: {
+                                date: string;
+                                time?: string;
+                            };
+                        } | null;
+                        before: {
+                            [key: string]: unknown;
+                        } | null;
+                        replacedFrom: string | null;
+                        canDecide: boolean;
+                        suggestedAgain: boolean;
                     };
                 };
             };
@@ -11844,6 +12032,7 @@ export interface operations {
                         } | null;
                         replacedFrom: string | null;
                         canDecide: boolean;
+                        suggestedAgain: boolean;
                     };
                 };
             };
