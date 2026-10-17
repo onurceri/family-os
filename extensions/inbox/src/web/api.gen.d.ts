@@ -167,6 +167,11 @@ export interface operations {
                         proposals: number;
                         skipped: number;
                         skippedUnknown: number;
+                        skips: {
+                            /** @enum {string} */
+                            reason: "already" | "unknown" | "incomplete" | "not_allowed";
+                            subject: string | null;
+                        }[];
                         createdBy: string | null;
                         createdAt: number;
                         updatedAt: number;
@@ -346,6 +351,11 @@ export interface operations {
                         proposals: number;
                         skipped: number;
                         skippedUnknown: number;
+                        skips: {
+                            /** @enum {string} */
+                            reason: "already" | "unknown" | "incomplete" | "not_allowed";
+                            subject: string | null;
+                        }[];
                         createdBy: string | null;
                         createdAt: number;
                         updatedAt: number;
@@ -665,6 +675,11 @@ export interface operations {
                             proposals: number;
                             skipped: number;
                             skippedUnknown: number;
+                            skips: {
+                                /** @enum {string} */
+                                reason: "already" | "unknown" | "incomplete" | "not_allowed";
+                                subject: string | null;
+                            }[];
                             createdBy: string | null;
                             createdAt: number;
                             updatedAt: number;
@@ -841,6 +856,11 @@ export interface operations {
                             proposals: number;
                             skipped: number;
                             skippedUnknown: number;
+                            skips: {
+                                /** @enum {string} */
+                                reason: "already" | "unknown" | "incomplete" | "not_allowed";
+                                subject: string | null;
+                            }[];
                             createdBy: string | null;
                             createdAt: number;
                             updatedAt: number;
@@ -1169,6 +1189,11 @@ export interface operations {
                             proposals: number;
                             skipped: number;
                             skippedUnknown: number;
+                            skips: {
+                                /** @enum {string} */
+                                reason: "already" | "unknown" | "incomplete" | "not_allowed";
+                                subject: string | null;
+                            }[];
                             createdBy: string | null;
                             createdAt: number;
                             updatedAt: number;

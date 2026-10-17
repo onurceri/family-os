@@ -94,6 +94,22 @@ export const ItemFileSchema = z.object({
 export const ExtractionKindSchema = z.enum(['actionable', 'nothing', 'question']);
 export type ExtractionKind = z.infer<typeof ExtractionKindSchema>;
 
+/**
+ * Why a proposal was left out: what it asks for is already so (the item is already on the list,
+ * the task already done), it pointed at something the household does not have, it was missing
+ * something it needs, or the person it was made for may not do it.
+ */
+export const SKIP_REASONS = ['already', 'unknown', 'incomplete', 'not_allowed'] as const;
+export const SkipReasonSchema = z.enum(SKIP_REASONS);
+export type SkipReason = z.infer<typeof SkipReasonSchema>;
+
+/** A proposal that was left out: why, and what it was about when that is known ("Ice cream"). */
+export const SkipSchema = z.object({
+	reason: SkipReasonSchema,
+	subject: z.string().nullable(),
+});
+export type Skip = z.infer<typeof SkipSchema>;
+
 export const InboxItemSchema = z.object({
 	id: z.string(),
 	channel: ChannelSchema,
@@ -122,6 +138,8 @@ export const InboxItemSchema = z.object({
 	skipped: z.number().int(),
 	/** Of the skipped, those that pointed at something that is not on the household's lists. */
 	skippedUnknown: z.number().int(),
+	/** Each proposal that was left out, with why, in the order the model made them. */
+	skips: z.array(SkipSchema),
 	createdBy: z.string().nullable(),
 	createdAt: z.number(),
 	updatedAt: z.number(),

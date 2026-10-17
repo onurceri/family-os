@@ -155,7 +155,9 @@
 				<CaptureIcon {item} />
 			</span>
 			<div class="grid min-w-0 flex-1 gap-0.5">
-				<h3 class="text-[17px] leading-snug font-bold text-balance">{captureLine(item)}</h3>
+				<h3 class="line-clamp-2 text-[17px] leading-snug font-bold text-balance">
+					{captureLine(item)}
+				</h3>
 				<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
 					<span>{t(`channel_${item.channel}`)} · {captureTime(app, item.createdAt)}</span>
 					{#if !mine && author}

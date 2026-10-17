@@ -170,6 +170,7 @@ export const addItem = defineAction({
 			proposals: 0,
 			skipped: 0,
 			skipped_unknown: 0,
+			skips: '[]',
 			model: null,
 			extraction: 0,
 			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
@@ -225,8 +226,10 @@ export const fileItem = defineAction({
 });
 
 /**
- * Reads a failed or held item again (after fixing AI settings, turning AI on, or an outage).
- * An item that is still being read is refused: it is already on its way.
+ * Reads a failed or held item again (after fixing AI settings, turning AI on, or an outage), or
+ * one that was read without a suggestion (after installing the area it was about, or adding the
+ * thing it named). An item that is still being read is refused: it is already on its way. One
+ * that gave suggestions is not read again, which would suggest the same things twice.
  */
 export const retryItem = defineAction({
 	id: 'inbox.retryItem',
@@ -241,7 +244,11 @@ export const retryItem = defineAction({
 		// Still being read (or waiting for the job's own retry): reading again now would do nothing.
 		if (row.status === 'received' || row.status === 'normalized')
 			throw new FamosError('conflict', 'This item is still being read');
-		if (row.status !== 'failed' && row.status !== 'held') return toItem(row);
+		const readAgain =
+			row.status === 'failed' ||
+			row.status === 'held' ||
+			(row.status === 'extracted' && row.proposals === 0);
+		if (!readAgain) return toItem(row);
 		const extraction = row.extraction + 1;
 		const patch = {
 			// A voice note that could not be read goes through reading from the start.

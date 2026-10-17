@@ -1,4 +1,4 @@
-import { type InboxItem, itemTitle } from '../contract/index.js';
+import { type InboxItem, itemTitle, type Skip, type SkipReason } from '../contract/index.js';
 import type { Draft } from './data.js';
 
 export { itemTitle };
@@ -41,6 +41,7 @@ export interface ItemChip {
 		| 'chip_held'
 		| 'chip_filed'
 		| 'chip_nothing'
+		| 'chip_left_out'
 		| 'chip_question';
 	count?: number;
 }
@@ -106,7 +107,40 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 	if (item.status === 'filed') return { tone: 'idle', key: 'chip_filed' };
 	if (item.status === 'held') return { tone: 'idle', key: 'chip_held' };
 	if (isQuestionForAssistant(item)) return { tone: 'info', key: 'chip_question' };
+	// Something was found and left out: "Nothing to add" would hide that it can be read again.
+	if (isLeftOut(item)) return { tone: 'attention', key: 'chip_left_out', count: item.skips.length };
 	return { tone: 'idle', key: 'chip_nothing' };
+}
+
+/** Read with nothing proposed, though the model did find something: every proposal was left out. */
+export const isLeftOut = (item: InboxItem): boolean =>
+	item.status === 'extracted' && item.proposals === 0 && item.skips.length > 0;
+
+/** One line about the proposals left out for one reason. */
+export interface SkipLine {
+	reason: SkipReason;
+	/** What they were about ("Ice cream, Football"), when every one of them is known. */
+	names: string | null;
+	count: number;
+}
+
+/** The order the reasons are told in: what the person can act on first. */
+const SKIP_ORDER: readonly SkipReason[] = ['already', 'unknown', 'not_allowed', 'incomplete'];
+
+/**
+ * The proposals left out, one line per reason, naming them when each one's subject is known (the
+ * same name once), else counting them.
+ */
+export function skipLines(skips: readonly Skip[]): SkipLine[] {
+	return SKIP_ORDER.flatMap((reason) => {
+		const these = skips.filter((skip) => skip.reason === reason);
+		if (these.length === 0) return [];
+		const subjects = these.map((skip) => skip.subject?.trim() ?? '');
+		const named = subjects.every(Boolean);
+		return [
+			{ reason, names: named ? [...new Set(subjects)].join(', ') : null, count: these.length },
+		];
+	});
 }
 
 /**

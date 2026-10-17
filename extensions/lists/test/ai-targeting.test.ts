@@ -71,7 +71,10 @@ describe('shopping items an AI points at', () => {
 				AI,
 				{ draft: { sourceKind: 'assistant', sourceId: 'turn_1' } },
 			),
-		).rejects.toMatchObject({ code: 'conflict' });
+		).rejects.toMatchObject({
+			code: 'conflict',
+			details: { refused: 'other_target', subject: 'Bread' },
+		});
 	});
 
 	it('refuses to remove the closest item when the named one is not on the list', async () => {
@@ -109,7 +112,11 @@ describe('shopping items an AI points at', () => {
 				{ id: items.Milk?.id, done: true, label: 'Milk' },
 				AI,
 			),
-		).rejects.toMatchObject({ message: expect.stringContaining('Milk is already ticked off.') });
+		).rejects.toMatchObject({
+			message: expect.stringContaining('Milk is already ticked off.'),
+			// What a caller tells the person, without reading the message: it was already so.
+			details: { refused: 'settled', subject: 'Milk' },
+		});
 		await expect(
 			k.runner.invoke(
 				'lists.checkShoppingItem',
@@ -118,6 +125,7 @@ describe('shopping items an AI points at', () => {
 			),
 		).rejects.toMatchObject({
 			message: expect.stringContaining('Oat milk is already on the list, not ticked off.'),
+			details: { refused: 'settled', subject: 'Oat milk' },
 		});
 		const oat = await k.runner.invoke(
 			'lists.checkShoppingItem',

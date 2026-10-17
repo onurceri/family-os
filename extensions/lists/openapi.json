@@ -6430,7 +6430,7 @@
 														"null"
 													],
 													"maxLength": 40,
-													"description": "Free text, e.g. \"2 kg\" or \"3\""
+													"description": "How much, as written: a number, a count or a measure, e.g. \"2 kg\", \"3\" or \"a dozen\". Never a word that describes the product (\"new\", \"big\"); omit it when no amount is given"
 												},
 												"category": {
 													"type": "string",

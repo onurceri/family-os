@@ -266,6 +266,33 @@
 										"skippedUnknown": {
 											"type": "integer"
 										},
+										"skips": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"reason": {
+														"type": "string",
+														"enum": [
+															"already",
+															"unknown",
+															"incomplete",
+															"not_allowed"
+														]
+													},
+													"subject": {
+														"type": [
+															"string",
+															"null"
+														]
+													}
+												},
+												"required": [
+													"reason",
+													"subject"
+												]
+											}
+										},
 										"createdBy": {
 											"type": [
 												"string",
@@ -296,6 +323,7 @@
 										"proposals",
 										"skipped",
 										"skippedUnknown",
+										"skips",
 										"createdBy",
 										"createdAt",
 										"updatedAt"
@@ -719,6 +747,33 @@
 											"skippedUnknown": {
 												"type": "integer"
 											},
+											"skips": {
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"reason": {
+															"type": "string",
+															"enum": [
+																"already",
+																"unknown",
+																"incomplete",
+																"not_allowed"
+															]
+														},
+														"subject": {
+															"type": [
+																"string",
+																"null"
+															]
+														}
+													},
+													"required": [
+														"reason",
+														"subject"
+													]
+												}
+											},
 											"createdBy": {
 												"type": [
 													"string",
@@ -749,6 +804,7 @@
 											"proposals",
 											"skipped",
 											"skippedUnknown",
+											"skips",
 											"createdBy",
 											"createdAt",
 											"updatedAt"
@@ -1560,6 +1616,33 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
+														"skips": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"reason": {
+																		"type": "string",
+																		"enum": [
+																			"already",
+																			"unknown",
+																			"incomplete",
+																			"not_allowed"
+																		]
+																	},
+																	"subject": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	}
+																},
+																"required": [
+																	"reason",
+																	"subject"
+																]
+															}
+														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -1590,6 +1673,7 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
+														"skips",
 														"createdBy",
 														"createdAt",
 														"updatedAt"
@@ -2070,6 +2154,33 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
+														"skips": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"reason": {
+																		"type": "string",
+																		"enum": [
+																			"already",
+																			"unknown",
+																			"incomplete",
+																			"not_allowed"
+																		]
+																	},
+																	"subject": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	}
+																},
+																"required": [
+																	"reason",
+																	"subject"
+																]
+															}
+														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -2100,6 +2211,7 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
+														"skips",
 														"createdBy",
 														"createdAt",
 														"updatedAt"
@@ -2938,6 +3050,33 @@
 														"skippedUnknown": {
 															"type": "integer"
 														},
+														"skips": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"reason": {
+																		"type": "string",
+																		"enum": [
+																			"already",
+																			"unknown",
+																			"incomplete",
+																			"not_allowed"
+																		]
+																	},
+																	"subject": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	}
+																},
+																"required": [
+																	"reason",
+																	"subject"
+																]
+															}
+														},
 														"createdBy": {
 															"type": [
 																"string",
@@ -2968,6 +3107,7 @@
 														"proposals",
 														"skipped",
 														"skippedUnknown",
+														"skips",
 														"createdBy",
 														"createdAt",
 														"updatedAt"

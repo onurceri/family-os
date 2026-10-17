@@ -15,6 +15,8 @@ import {
 	labelNamesTitle,
 	type MemberId,
 	type NotifyRequest,
+	type ProposalRefusal,
+	type ProposalRefusalDetails,
 	type SecretBox,
 	subjectOf,
 	type UndoStep,
@@ -179,6 +181,17 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
  * so the refusal tells it to stop and say so.
  */
 const CLOSED_MATTER = ' Tell the person this and do not suggest anything else for it.';
+
+/**
+ * The `details` of a refused AI proposal, so a caller can tell the person why it was left out
+ * without reading the English message: what it asked for is already so (`settled`), it named
+ * something other than what it pointed at (`other_target`), or it named nothing (`no_label`).
+ * `subject` is what it was about, in the stored title or the model's words, when known.
+ */
+const refusal = (refused: ProposalRefusal, subject?: string | null): ProposalRefusalDetails => ({
+	refused,
+	...(subject && { subject }),
+});
 
 /** `core_drafts.error` of a draft closed because what it was about no longer exists. */
 export const GONE = 'gone';
@@ -943,13 +956,19 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				throw new FamosError(
 					'conflict',
 					'Say which one you mean: send `label` with the name the person used for it, in their words.',
+					refusal('no_label'),
 				);
 			title = await def.targetTitle(ctx, input);
 			if (title !== null && !labelNamesTitle(said, title))
-				throw new FamosError('conflict', `That is '${title}', not '${said}'.${CLOSED_MATTER}`);
+				throw new FamosError(
+					'conflict',
+					`That is '${title}', not '${said}'.${CLOSED_MATTER}`,
+					refusal('other_target', said),
+				);
 		}
 		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
-		if (reason !== null) throw new FamosError('conflict', `${reason}${CLOSED_MATTER}`);
+		if (reason !== null)
+			throw new FamosError('conflict', `${reason}${CLOSED_MATTER}`, refusal('settled', title));
 		return title;
 	}
 

@@ -4,7 +4,7 @@
 	import { type InboxItem, READ_ATTEMPTS } from '../contract/index.js';
 	import { retryItem } from './data.js';
 	import { useInbox } from './i18n.js';
-	import { askAssistantHref, isQuestionForAssistant } from './item-view.js';
+	import { askAssistantHref, isLeftOut, isQuestionForAssistant, skipLines } from './item-view.js';
 
 	/** Failures an admin fixes in AI settings. */
 	const AI_SETTINGS_ERRORS: ReadonlySet<string> = new Set([
@@ -17,7 +17,8 @@
 
 	/**
 	 * How reading a capture went, in place: still reading, could not be read (Try again), kept
-	 * unread because AI is off (Read now), filed by hand, or read with nothing to add or a
+	 * unread because AI is off (Read now), filed by hand, read with everything it found left out
+	 * (each reason said, and Read again once that is fixed), or read with nothing to add or a
 	 * question for the assistant. Suggestions are shown by the caller.
 	 */
 	let { item, showFound = false }: { item: InboxItem; showFound?: boolean } = $props();
@@ -26,6 +27,7 @@
 	const reading = $derived(item.status === 'received' || item.status === 'normalized');
 	const canSetUpAi = $derived(app.can('core.ai.manage'));
 	const isQuestion = $derived(isQuestionForAssistant(item));
+	const leftOut = $derived(isLeftOut(item));
 
 	async function retry() {
 		try {
@@ -37,12 +39,13 @@
 </script>
 
 {#snippet skippedLines()}
-	{#if item.skippedUnknown}<small class="text-ink-soft block text-xs"
-			>{t('status_skipped_unknown', { count: item.skippedUnknown })}</small
-		>{/if}
-	{#if item.skipped > item.skippedUnknown}<small class="text-ink-soft block text-xs"
-			>{t('status_skipped', { count: item.skipped - item.skippedUnknown })}</small
-		>{/if}
+	{#each skipLines(item.skips) as line (line.reason)}
+		<small class="text-ink-soft block text-xs" data-testid="skip-line"
+			>{line.names
+				? t(`skip_${line.reason}`, { names: line.names })
+				: t(`skip_${line.reason}_count`, { count: line.count })}</small
+		>
+	{/each}
 {/snippet}
 
 <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -82,6 +85,9 @@
 	{:else if item.status === 'held'}
 		<span class="text-ink-soft font-semibold" role="status">{t('status_held')}</span>
 		<Button variant="outline" class="ml-auto" onclick={retry}>{t('read_now')}</Button>
+	{:else if leftOut}
+		<span class="min-w-0 flex-1 basis-56" role="status">{@render skippedLines()}</span>
+		<Button variant="outline" class="ml-auto" onclick={retry}>{t('read_again')}</Button>
 	{:else if showFound || !item.proposals}
 		<Sparkles class="text-info size-4 shrink-0" aria-hidden="true" />
 		<span class="min-w-0 flex-1 {isQuestion ? 'basis-56' : ''}">
@@ -99,7 +105,7 @@
 				>{t('ask_assistant')}</Button
 			>
 		{/if}
-	{:else if item.skipped > 0}
+	{:else if item.skips.length > 0}
 		<span class="min-w-0 flex-1">{@render skippedLines()}</span>
 	{/if}
 </div>

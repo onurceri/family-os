@@ -53,3 +53,15 @@ export const ERROR_HTTP_STATUS: Record<FamosErrorCode, number> = {
 	idempotency_mismatch: 422,
 	unavailable: 503,
 };
+
+/**
+ * Why the action runner refused an AI's proposal, in `details.refused` of the `conflict` it
+ * throws: what it asks for is already so (`settled`), its words name something other than what it
+ * points at (`other_target`), or it named nothing (`no_label`).
+ */
+export type ProposalRefusal = 'settled' | 'other_target' | 'no_label';
+/** The `details` of such a refusal; `subject` is what the proposal was about, when known. */
+export interface ProposalRefusalDetails {
+	refused: ProposalRefusal;
+	subject?: string;
+}

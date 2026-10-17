@@ -7,6 +7,7 @@ import {
 	createHandleTable,
 	defineJob,
 	defineNotificationKind,
+	type FamosError,
 	type HandleTable,
 	isFamosError,
 	isLlmError,
@@ -14,7 +15,9 @@ import {
 	type LlmFile,
 	type ModelRole,
 	namedShares,
+	type ProposalRefusalDetails,
 	repairInput,
+	subjectOf,
 } from '@famos/sdk';
 import { dateWords, formatDate, isUncertainDate, numericDateOrder, todayIn } from '@famos/time';
 import { z } from 'zod';
@@ -24,6 +27,7 @@ import {
 	type ExtractionKind,
 	ExtractionKindSchema,
 	READ_ATTEMPTS,
+	type Skip,
 	TRANSCRIBE_FEATURE,
 } from '../contract/index.ts';
 import { datePaths, dateTable } from './dates.ts';
@@ -31,7 +35,7 @@ import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 
 /** Bump when the prompt changes meaningfully; stored on every draft for later comparison. */
-export const PROMPT_VERSION = 'inbox.extract/22';
+export const PROMPT_VERSION = 'inbox.extract/23';
 
 const MODEL_TYPES = new Set([
 	'image/jpeg',
@@ -278,6 +282,24 @@ function timesIn(value: unknown): string[] {
 }
 
 /**
+ * Quantities that may be a word describing the thing rather than an amount ("a new ball" read as
+ * quantity "new"): a single word without a digit. An amount almost always has a number or is
+ * said in more than one word ("2 kg", "a dozen"), so this needs no word list; the model is asked,
+ * and keeps a real amount written as one word.
+ */
+export function describingQuantities(value: unknown): { quantity: string; of: string }[] {
+	if (Array.isArray(value)) return value.flatMap(describingQuantities);
+	if (!value || typeof value !== 'object') return [];
+	const fields = value as Record<string, unknown>;
+	const quantity = typeof fields.quantity === 'string' ? fields.quantity.trim() : '';
+	const own =
+		quantity && !/\p{N}/u.test(quantity) && !/\s/u.test(quantity)
+			? [{ quantity, of: typeof fields.title === 'string' ? fields.title : 'the item' }]
+			: [];
+	return [...own, ...Object.values(fields).flatMap(describingQuantities)];
+}
+
+/**
  * What the code finds wrong in a model's answer, as notes for the model: proposals the actions
  * would reject (`check` returns the schema's complaints), and clock times the item states that
  * no proposal uses. Empty when there is nothing to fix.
@@ -301,9 +323,10 @@ export function reviewProblems(
 		const issues = check(proposal);
 		if (issues.length) problems.push(`${name} is invalid: ${issues.join('; ')}.`);
 		const input = (proposal.input ?? {}) as Record<string, unknown>;
-		// A date marked as a guess but left out: the guess is what the person needs to check.
+		// A date marked as a guess but left out: the guess is what the person needs to check. The
+		// date of a repeating event (`occurrence`) too: without it a change takes in every date.
 		const leftOut = (proposal.uncertainFields ?? []).filter(
-			(f) => /date$/i.test(f) && input[f] === undefined,
+			(f) => (/date$/i.test(f) || f === 'occurrence') && input[f] === undefined,
 		);
 		if (leftOut.length)
 			problems.push(
@@ -312,6 +335,10 @@ export function reviewProblems(
 		if (datePaths(input).length > 0 && !proposal.dateText?.trim())
 			problems.push(
 				`${name} has a date but no dateText. Copy the words of the item that give the day.`,
+			);
+		for (const { quantity, of } of describingQuantities(input))
+			problems.push(
+				`${name} gives "${quantity}" as the quantity of ${of}. A quantity is only an amount (a number, a count or a measure): if "${quantity}" describes the thing, leave quantity out.`,
 			);
 	}
 	if (output.kind === 'actionable' || output.proposals.length > 0) {
@@ -587,6 +614,67 @@ export function unnamedMemberFields(
 	return fields;
 }
 
+/** The kind of the calendar's upcoming events among the records the areas share. */
+const EVENT_KIND = 'event';
+
+/** Fields where a model writes a guess about who something is for as if it were a fact. */
+const DETAIL_FIELDS = ['notes', 'tags'] as const;
+
+/**
+ * Members a proposal's notes or tags name ("For Ivy", the tag "Ivy") although the item never
+ * names them: the model guessed who it is for and wrote the guess as a fact. The fields and the
+ * display names, matched by whole words the way `unnamedMemberFields` matches the item, so this
+ * works in any language.
+ */
+export function membersNamedInDetails(
+	input: Record<string, unknown>,
+	members: readonly { id: string; displayName: string }[],
+	text: string,
+	locale: string,
+): { fields: string[]; names: string[] } {
+	const wordsOf = (value: string) =>
+		new Set(
+			value
+				.toLocaleLowerCase(locale)
+				.split(/[^\p{L}\p{N}]+/u)
+				.filter((word) => word.length > 1),
+		);
+	const inText = wordsOf(text);
+	const guessed = members.filter((m) => ![...wordsOf(m.displayName)].some((p) => inText.has(p)));
+	const fields: string[] = [];
+	const names = new Set<string>();
+	for (const field of DETAIL_FIELDS) {
+		const value = input[field];
+		const said = (Array.isArray(value) ? value : [value]).filter(
+			(v): v is string => typeof v === 'string',
+		);
+		const words = wordsOf(said.join(' '));
+		const named = guessed.filter((m) => [...wordsOf(m.displayName)].some((p) => words.has(p)));
+		if (named.length === 0) continue;
+		fields.push(field);
+		for (const m of named) names.add(m.displayName);
+	}
+	return { fields, names: [...names] };
+}
+
+/**
+ * A change to a listed thing that the model sent without `label` (its words for the thing): the
+ * runner refuses that, since it cannot tell whether the model meant it. The Inbox has already
+ * judged that the shared text names this very thing (`namesOtherTarget`), so it says the thing's
+ * own title for the model. Only for actions that take a label and point at something that exists.
+ */
+export async function withTargetLabel(
+	actions: Pick<ActionInvoker, 'targetTitle'>,
+	action: AiActionInfo | undefined,
+	input: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+	const declared = (action?.inputSchema.properties ?? {}) as Record<string, unknown>;
+	if (!action || declared.label === undefined) return input;
+	if (typeof input.label === 'string' && input.label.trim()) return input;
+	const title = await actions.targetTitle(action.id, input);
+	return title === null ? input : { ...input, label: title.slice(0, 200) };
+}
+
 /** Tells the model how this family writes numeric dates and clock times. */
 export function regionNote(order: 'DMY' | 'MDY' | 'YMD', hourCycle: 'h12' | 'h23'): string {
 	const dates =
@@ -622,6 +710,8 @@ function systemPrompt(input: {
 	/** Who shared the item: the name too when names may be sent. */
 	sharer: { handle: string; displayName: string | null } | null;
 }): string {
+	// Upcoming events are among the records: news that one is cancelled or moved changes it.
+	const hasEvents = input.records.some((group) => group.kind === EVENT_KIND);
 	const records = input.records
 		.map(
 			(group) =>
@@ -669,7 +759,7 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 		: ''
 }Rules:
 - Propose only what the item asks for or clearly implies. One item can yield several proposals (a trip has a date for the calendar and a fee to pay as a task). If nothing is actionable, return no proposals.
-- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. When the item clearly concerns one or more members without naming them (for example a school notice and only one member's description mentions that school or class), choose them and list the field in uncertainFields. Otherwise leave member lists empty ([]).${
+- In member fields, refer to members only by their handle from the list above (for example member:1); never invent handles. Who a proposal is for goes in its member field (memberIds, assigneeId), never in its tags or notes. When the item names a member a proposal is for ("Deniz has the dentist"), put that member in the member field. When the item clearly concerns one or more members without naming them (for example a school notice and only one member's description mentions that school or class), choose them and list the field in uncertainFields. When it concerns nobody in particular, leave member lists empty ([]).${
 		input.sharer
 			? `
 - The person who shared the item (${input.sharer.handle}) is the one a message addressed to "you" or written about "me" or "my" concerns: when the item is clearly about them alone, use them in the member field instead of leaving it empty. A message to the whole household or group concerns everyone: leave the list empty.`
@@ -677,12 +767,17 @@ ${vocabularies ? `${vocabularies}\nReuse these exact words where a field takes s
 	}${
 		records
 			? `
-- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty. When the item says that something listed under the shopping items has been bought, tick it off with its handle (lists.checkShoppingItem) instead of adding it again; when it says a listed task is done, complete that task. Name it in label as the item words it. If the thing is not listed, propose nothing for it.`
+- Records: in fields that name a record or an entry of the household records (such as recordId or id), use its handle from the list above (for example vehicle:1); never invent a handle or an id, and propose nothing for a record that is not listed. When a shared item shows that a listed duty has already been done (a policy that has been renewed, a bill that has been paid, a service or vaccination that took place), complete that duty instead of adding a second one. A reminder, a renewal notice, an offer, a quote or a coming due date is not done: never complete a duty for it. The duty is already listed and reminds the family by itself; propose a task only when the item asks for a step the family must take, and never a second copy of the duty. When the item says that something listed under the shopping items has been bought, tick it off with its handle (lists.checkShoppingItem) instead of adding it again; when it says a listed task is done, complete that task. Name it in label as the item words it. If the thing is not listed, propose nothing for it. When the item asks to buy something that is already listed under the shopping items, add it with the other things to buy as usual (the list never holds it twice); never tick it off or untick it for that.${
+					hasEvents
+						? `
+- Calendar events: when the item says that a listed upcoming event is cancelled or called off, propose deleting that event by its handle; when it says the event moved or changed (another day, time or place), propose changing it by its handle with the new values. Name the event in label as the item words it ("football"). For a repeating event, set occurrence to the date the news is about (one of its listed dates), so only that date changes. Never add an event named after the news ("Football cancelled", "Swimming moved"), and never add a second copy of a listed event: an item that repeats a listed event at its listed day and time needs no proposal for it.`
+						: ''
+				}`
 			: ''
 	}
 - Carry every detail the item gives into the proposal it belongs to: the time (startTime, dueTime), the place (location), the people it concerns (member fields), quantities. Never drop a detail the item states. When the item gives the day of an event but no time, leave the time and allDay out: the event is kept as an all-day event that a person checks. Set allDay yourself only for something that fills the whole day (a holiday, a trip day, a birthday), never for an appointment or an activity whose time is simply not given.
-- Quantities: an amount the item gives for a thing to buy ("2 litres of milk", "a dozen eggs", "3 packs") goes into that item's quantity field with its unit, as written ("2 litres", "a dozen", "3 packs"); the title is the product alone ("Milk"), never the amount.
-- Notes: notes must be readable on their own, as a short phrase that says what the detail is ("Fee: 45", "Bring a swim cap"). Never a bare number, amount or word with nothing around it; when a detail has no name in the item, leave it out of the notes.
+- Quantities: an amount the item gives for a thing to buy ("2 litres of milk", "a dozen eggs", "3 packs") goes into that item's quantity field with its unit, as written ("2 litres", "a dozen", "3 packs"); the title is the product alone ("Milk"), never the amount. A quantity is only an amount: a number, a count or a measure. Words that describe the thing ("new", "big", "red", "for school") are never a quantity: leave them out, or keep them in the title when they tell products apart ("a new football" is title "Football" with no quantity). Without an amount, leave quantity out.
+- Notes: notes must be readable on their own, as a short phrase that says what the detail is ("Fee: 45", "Bring a swim cap"). Never a bare number, amount or word with nothing around it; when a detail has no name in the item, leave it out of the notes. Never name a person in notes ("For Ivy"): who a proposal concerns goes in its member field, and when you inferred it, list that field in uncertainFields.
 - Dates: whenever the item names the day of a proposal (a full date, a weekday, a day of the month such as "the 15th", or words such as today and tomorrow), set the date field, also when you are unsure (then list it in uncertainFields as below). Put the exact words that give the day in dateText (the day only, not the time). A full date (day and month) and words that name one day (today, tomorrow) are certain: do not list them in uncertainFields. If a weekday and a day number in the item disagree, keep the day number and list the date field in uncertainFields. A weekday without a date is ambiguous: "next Thursday" can mean this week's or next week's. When the text does not settle it, choose the nearer one and list the date field in uncertainFields. Do the same for a missing month or year, a time without am/pm or context ("at 4"), and vague spans ("end of the month").
 - Omit only fields the item does not give; never send null. Give arrays and objects as JSON values, not as strings.
 - Before you answer, read the item once more: every appointment, deadline, payment and thing to buy in it must be in a proposal, with its date and time.
@@ -723,6 +818,29 @@ export function namesRecordBadly(details: unknown): boolean {
 }
 
 export { repairInput };
+
+/** What a proposal is about in its own words ("Ice cream"), or null when it names nothing. */
+const subjectIn = (input: unknown): string | null => subjectOf(JSON.stringify(input ?? {})) ?? null;
+
+/**
+ * Why the actions refused a proposal, as the person reads it: already so (the runner's
+ * `settled`), pointing at something the household does not have (another thing than it names, or
+ * an id that fails), not allowed for whoever it is made for, or else incomplete. The subject is
+ * the real title of what it pointed at when the runner knows it, else the proposal's own words.
+ */
+export function skipOf(error: Pick<FamosError, 'code' | 'details'>, input: unknown): Skip {
+	const refusal =
+		error.code === 'conflict'
+			? (error.details as Partial<ProposalRefusalDetails> | null | undefined)
+			: undefined;
+	const subject = refusal?.subject?.trim() || subjectIn(input);
+	if (error.code === 'forbidden') return { reason: 'not_allowed', subject };
+	if (refusal?.refused === 'settled') return { reason: 'already', subject };
+	if (refusal?.refused === 'other_target') return { reason: 'unknown', subject };
+	if (error.code === 'bad_request' && namesRecordBadly(error.details))
+		return { reason: 'unknown', subject };
+	return { reason: 'incomplete', subject };
+}
 
 async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
 	await tables(ctx.db)
@@ -786,9 +904,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 	const catalog = ctx.actions.aiCatalog({ local: policy.local });
 
 	let drafted = 0;
-	let skipped = 0;
-	// Skipped because they pointed at a record that is not on the household's lists.
-	let skippedUnknown = 0;
+	// Each proposal left out, with why, so the person reads what became of it.
+	const skips: Skip[] = [];
 	let summary: string | null = null;
 	let kind: ExtractionKind | null = null;
 	let model: string | null = null;
@@ -870,9 +987,25 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				action,
 			);
 		};
-		const problems = reviewProblems(result.output, text, (proposal) =>
-			ctx.actions.checkInput(proposal.action, prepare(proposal).input),
-		);
+		const problems = [
+			...reviewProblems(result.output, text, (proposal) =>
+				ctx.actions.checkInput(proposal.action, prepare(proposal).input),
+			),
+			...result.output.proposals.flatMap((proposal, i) => {
+				const { fields, names } = membersNamedInDetails(
+					prepare(proposal).input,
+					family,
+					text,
+					settings.formatLocale,
+				);
+				const where = fields.join(' and ');
+				return names.length
+					? [
+							`Proposal ${i + 1} (${proposal.action}) names ${names.join(', ')} in ${where}, but the item never names them. Remove the name from ${where}; put who it concerns in the member field and list that field in uncertainFields.`,
+						]
+					: [];
+			}),
+		];
 		if (problems.length > 0) {
 			try {
 				result = await extract(
@@ -891,13 +1024,14 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		const known = new Set(catalog.map((a) => a.id));
 		for (const [i, proposal] of result.output.proposals.entries()) {
 			if (!known.has(proposal.action)) {
-				skipped++;
+				skips.push({ reason: 'incomplete', subject: subjectIn(proposal.input) });
 				continue;
 			}
-			const { input, guessed } = prepare(proposal);
+			const prepared = prepare(proposal);
+			const { guessed } = prepared;
+			let { input } = prepared;
 			if (namesUnknownRecord(input, records)) {
-				skipped++;
-				skippedUnknown++;
+				skips.push({ reason: 'unknown', subject: subjectIn(input) });
 				continue;
 			}
 			// A change to an existing item must be about something the shared text names: with many
@@ -907,10 +1041,15 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				files.length === 0 &&
 				(await namesOtherTarget(ctx.actions, proposal.action, input, text, listed))
 			) {
-				skipped++;
-				skippedUnknown++;
+				skips.push({ reason: 'unknown', subject: subjectIn(input) });
 				continue;
 			}
+			if (files.length === 0)
+				input = await withTargetLabel(
+					ctx.actions,
+					catalog.find((a) => a.id === proposal.action),
+					input,
+				);
 			// The model's own doubt, plus the code's: a date whose quoted source names no day, or
 			// disagrees with it, is always marked "check this".
 			const uncertain = new Set([...proposal.uncertainFields, ...guessed]);
@@ -932,6 +1071,9 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				settings.formatLocale,
 				row.created_by,
 			))
+				uncertain.add(field);
+			// Still naming a guessed person in the notes or tags after the review: a person checks it.
+			for (const field of membersNamedInDetails(input, family, text, settings.formatLocale).fields)
 				uncertain.add(field);
 			try {
 				await ctx.actions.invoke(
@@ -955,13 +1097,12 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				drafted++;
 			} catch (error) {
 				// An input the action rejects, or a proposal it refuses (a conflict: already done,
-				// nothing would change), is dropped; the item shows how many were skipped.
+				// nothing would change), is dropped; the item says which, and why.
 				if (
 					isFamosError(error) &&
 					(error.code === 'bad_request' || error.code === 'forbidden' || error.code === 'conflict')
 				) {
-					skipped++;
-					if (error.code === 'bad_request' && namesRecordBadly(error.details)) skippedUnknown++;
+					skips.push(skipOf(error, input));
 					// Field paths and messages only, never values: they come from family content.
 					ctx.logger.info(
 						{
@@ -1000,8 +1141,9 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			kind,
 			model,
 			proposals: drafted,
-			skipped,
-			skipped_unknown: skippedUnknown,
+			skipped: skips.length,
+			skipped_unknown: skips.filter((skip) => skip.reason === 'unknown').length,
+			skips: JSON.stringify(skips),
 			error_code: null,
 			read_attempt: null,
 			updated_at: ctx.clock.now(),

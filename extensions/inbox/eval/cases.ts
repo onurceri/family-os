@@ -55,7 +55,13 @@ export interface Case {
 	/** Open tasks. */
 	tasks?: string[];
 	/** Events already on the calendar. */
-	events?: { title: string; date: string; startTime: string }[];
+	events?: {
+		title: string;
+		date: string;
+		startTime: string;
+		endTime?: string;
+		recurrence?: { freq: 'weekly'; byDay: string[] };
+	}[];
 	checks: Check[];
 }
 export interface SeededObligation {
@@ -642,6 +648,102 @@ const CALENDAR_CASES: Case[] = [
 	},
 ];
 
+/** The Novak household, whose messages these cases come from. */
+const NOVAKS: Person[] = [
+	{ name: 'Tom', roleId: 'member', about: "Mara's partner, a teacher" },
+	{ name: 'Mara', roleId: 'admin', about: "Tom's partner" },
+	{ name: 'Ivy', roleId: 'supervised', about: '13 years old, plays football, does piano' },
+	{ name: 'Leo', roleId: 'supervised', about: '6 years old, the youngest' },
+];
+const NOVAK_NAMES = /\b(Tom|Mara|Ivy|Leo)\b/;
+
+/** Messages about what the household already has: an event that is off, a letter repeating one. */
+const ALREADY_THERE_CASES: Case[] = [
+	{
+		// Found in use: "football thursday was cancelled" became a new all-day event "Football
+		// cancelled", the ball came out as "Football (new)" and the ice cream was lost.
+		name: 'A cancelled date of a weekly activity, in a messy message (English)',
+		family: [NOVAKS[3] as Person, ...NOVAKS.slice(0, 3)],
+		events: [
+			{
+				title: 'Football training',
+				date: '2026-10-01',
+				startTime: '17:30',
+				endTime: '19:00',
+				recurrence: { freq: 'weekly', byDay: ['TH'] },
+			},
+		],
+		text: 'um so football thursday was cancelled?? coach said tell mum, also i need a new ball and ice cream pls thx',
+		checks: [
+			{
+				label: 'calendar.deleteEvent: the training on Thursday 8 Oct only',
+				pass: (ds) =>
+					of(ds, 'calendar.deleteEvent').some(
+						(d) =>
+							d.input.occurrence === '2026-10-08' ||
+							Number(d.input.occurrence) === Date.UTC(2026, 9, 8, 17, 30),
+					),
+			},
+			none('calendar.createEvent'),
+			has('lists.addShoppingItems', 'the ball and the ice cream', (i) => {
+				const titles = items(i).map((x) => x.title.toLowerCase());
+				return titles.some((t) => /ball/.test(t)) && titles.some((t) => /ice cream/.test(t));
+			}),
+			{
+				label: 'no quantity that is a describing word ("new")',
+				pass: (ds) =>
+					of(ds, 'lists.addShoppingItems').every((d) =>
+						items(d.input).every((x) => !/new/i.test(x.quantity ?? '')),
+					),
+			},
+		],
+	},
+	{
+		// Found in use: with the ice cream already on the list, it was "put back on the list"
+		// (refused, and shown as incomplete) and the football got the quantity "new".
+		name: 'Something to buy that is already on the list (English)',
+		family: [NOVAKS[3] as Person, ...NOVAKS.slice(0, 3)],
+		shopping: [{ title: 'Ice cream' }],
+		text: 'ice cream and a new football pls',
+		checks: [
+			none('lists.checkShoppingItem'),
+			has('lists.addShoppingItems', 'the football, with no quantity "new"', (i) =>
+				items(i).some((x) => /football/i.test(x.title) && !/new/i.test(x.quantity ?? '')),
+			),
+		],
+	},
+	{
+		// Found in use: Tom's school letter gave a second "Parents' evening" next to "Parents'
+		// evening at school" at the same time, ticked to add, and trip tasks with "For Ivy" in
+		// their notes while nobody was assigned.
+		name: 'A school letter repeating an event the calendar has (English)',
+		family: NOVAKS,
+		timeZone: 'Europe/Ljubljana',
+		events: [{ title: "Parents' evening at school", date: '2026-10-20', startTime: '18:00' }],
+		text: "Dear parents, Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30. Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. The cost is 14 EUR, payable through the school e-office by 23 October. Parents' evening moved to 20 October, 18:00 in the school hall. Kind regards, Mrs. Zupančič, form teacher 7.B",
+		checks: [
+			has(
+				'calendar.createEvent',
+				'the trip on 29 Oct 07:50',
+				(i) => i.date === '2026-10-29' && i.startTime === '07:50',
+			),
+			has('lists.addTask', 'pay 14 EUR by 23 Oct', (i) => i.dueDate === '2026-10-23'),
+			has('lists.addTask', 'the permission slip by 26 Oct', (i) => i.dueDate === '2026-10-26'),
+			{
+				label: 'no second parents\' evening unless marked "may already be there"',
+				pass: (ds) =>
+					of(ds, 'calendar.createEvent')
+						.filter((d) => /parent/i.test(String(d.input.title)))
+						.every((d) => d.mayExist),
+			},
+			{
+				label: 'no notes name a person the letter does not name',
+				pass: (ds) => ds.every((d) => !NOVAK_NAMES.test(String(d.input.notes ?? ''))),
+			},
+		],
+	},
+];
+
 /** Items with nothing to file: a question for the assistant, or plain chatter. */
 const NON_ACTIONABLE_CASES: Case[] = [
 	{
@@ -749,6 +851,7 @@ export const CASES: Case[] = [
 	...LIST_CASES,
 	...UNLISTED_RECORD_CASES,
 	...CALENDAR_CASES,
+	...ALREADY_THERE_CASES,
 	...CLUB_CASES,
 	...NOTES_CASES,
 ];

@@ -10,6 +10,7 @@ import {
 	decidedRequests,
 	groupBusyState,
 	isAddition,
+	isLeftOut,
 	isQuestionForAssistant,
 	isWaiting,
 	itemChip,
@@ -21,6 +22,7 @@ import {
 	pickedDrafts,
 	requestChip,
 	requestGroups,
+	skipLines,
 } from '../src/web/item-view.ts';
 
 const item = (over: Partial<InboxItem> = {}): InboxItem => ({
@@ -40,6 +42,7 @@ const item = (over: Partial<InboxItem> = {}): InboxItem => ({
 	proposals: 0,
 	skipped: 0,
 	skippedUnknown: 0,
+	skips: [],
 	createdBy: null,
 	createdAt: 1,
 	updatedAt: 1,
@@ -62,6 +65,23 @@ describe('item view', () => {
 		expect(isQuestionForAssistant(item({ proposals: 1 }))).toBe(false);
 		expect(itemChip(item({ kind: 'nothing' }), []).key).toBe('chip_nothing');
 		expect(itemChip(item({ kind: null }), []).key).toBe('chip_nothing');
+	});
+	it('says what was left out when nothing was kept, instead of "nothing to add"', () => {
+		// Real reading: two duties on a flat that was no longer listed, both left out.
+		const flat = item({
+			kind: 'actionable',
+			skipped: 2,
+			skippedUnknown: 2,
+			skips: [
+				{ reason: 'unknown', subject: 'Boiler service' },
+				{ reason: 'unknown', subject: 'Flat insurance' },
+			],
+		});
+		expect(isLeftOut(flat)).toBe(true);
+		expect(itemChip(flat, [])).toEqual({ tone: 'attention', key: 'chip_left_out', count: 2 });
+		expect(isLeftOut(item({ kind: 'nothing' }))).toBe(false);
+		expect(isLeftOut({ ...flat, proposals: 1 })).toBe(false);
+		expect(isLeftOut({ ...flat, status: 'normalized' })).toBe(false);
 	});
 	it('links to the assistant with the text encoded', () => {
 		expect(askAssistantHref(item({ text: 'a & b?' }))).toBe('/assistant?q=a%20%26%20b%3F');
@@ -329,5 +349,29 @@ describe('the person’s own requests somebody decided', () => {
 		expect(requestChip(mine({}))).toEqual({ tone: 'idle', key: 'chip_rejected' });
 		expect(requestChip(mine({ status: 'undone' })).key).toBe('chip_undone');
 		expect(requestChip(mine({ status: 'expired' })).key).toBe('chip_expired');
+	});
+});
+
+describe('skipLines', () => {
+	it('names what was left out, one line per reason, the reasons a person can act on first', () => {
+		expect(
+			skipLines([
+				{ reason: 'incomplete', subject: 'Football' },
+				{ reason: 'already', subject: 'Ice cream' },
+				{ reason: 'already', subject: 'Ice cream' },
+			]),
+		).toEqual([
+			{ reason: 'already', names: 'Ice cream', count: 2 },
+			{ reason: 'incomplete', names: 'Football', count: 1 },
+		]);
+	});
+	it('counts them when one of them names nothing', () => {
+		expect(
+			skipLines([
+				{ reason: 'unknown', subject: 'Boiler service' },
+				{ reason: 'unknown', subject: null },
+			]),
+		).toEqual([{ reason: 'unknown', names: null, count: 2 }]);
+		expect(skipLines([])).toEqual([]);
 	});
 });

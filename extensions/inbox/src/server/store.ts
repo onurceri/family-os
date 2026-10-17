@@ -1,6 +1,14 @@
 import type { DbExecutor, Migrations } from '@famos/sdk';
 import { sql } from 'kysely';
-import type { ErrorCode, ExtractionKind, InboxItem, ItemStatus } from '../contract/index.ts';
+import { z } from 'zod';
+import {
+	type ErrorCode,
+	type ExtractionKind,
+	type InboxItem,
+	type ItemStatus,
+	type Skip,
+	SkipSchema,
+} from '../contract/index.ts';
 
 /** Storage for the Family Inbox (tables prefixed `inbox_`). */
 export type InboxTables = {
@@ -29,6 +37,8 @@ export type InboxTables = {
 		skipped: number;
 		/** Of the skipped, those that pointed at a record that is not on the household's lists. */
 		skipped_unknown: number;
+		/** JSON array of { reason, subject }: each proposal left out, and why. */
+		skips: string;
 		/** `provider / model` of the last extraction. */
 		model: string | null;
 		/** Incremented on every retry, so drafts from a new extraction get new dedupe keys. */
@@ -91,11 +101,44 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
+	'0004_skips': {
+		async up(db) {
+			await db.schema
+				.alterTable('inbox_items')
+				.addColumn('skips', 'text', (c) => c.notNull().defaultTo('[]'))
+				.execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<InboxTables>();
 
 export const filesOf = (row: ItemRow): StoredFile[] => JSON.parse(row.files) as StoredFile[];
+
+const StoredSkipsSchema = z.array(SkipSchema);
+
+/**
+ * Why each proposal was left out. An item read before the reasons were kept has only its counts:
+ * those it pointed at nothing real, and the rest, which were then all called incomplete.
+ */
+export function skipsOf(row: Pick<ItemRow, 'skips' | 'skipped' | 'skipped_unknown'>): Skip[] {
+	let stored: Skip[] = [];
+	try {
+		const parsed = StoredSkipsSchema.safeParse(JSON.parse(row.skips));
+		if (parsed.success) stored = parsed.data;
+	} catch {
+		// Not JSON: read as if no reasons were kept.
+	}
+	if (stored.length > 0 || row.skipped === 0) return stored;
+	const unknown = Math.min(row.skipped_unknown, row.skipped);
+	return [
+		...Array.from({ length: unknown }, () => ({ reason: 'unknown' as const, subject: null })),
+		...Array.from({ length: row.skipped - unknown }, () => ({
+			reason: 'incomplete' as const,
+			subject: null,
+		})),
+	];
+}
 
 export function toItem(row: ItemRow): InboxItem {
 	return {
@@ -115,6 +158,7 @@ export function toItem(row: ItemRow): InboxItem {
 		proposals: row.proposals,
 		skipped: row.skipped,
 		skippedUnknown: row.skipped_unknown,
+		skips: skipsOf(row),
 		createdBy: row.created_by,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,

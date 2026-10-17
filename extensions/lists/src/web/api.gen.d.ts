@@ -2960,7 +2960,7 @@ export interface operations {
                     items: {
                         /** @description The product, e.g. "Milk" */
                         title: string;
-                        /** @description Free text, e.g. "2 kg" or "3" */
+                        /** @description How much, as written: a number, a count or a measure, e.g. "2 kg", "3" or "a dozen". Never a word that describes the product ("new", "big"); omit it when no amount is given */
                         quantity?: string | null;
                         /**
                          * @description Store section; omit to reuse the last one used for this product

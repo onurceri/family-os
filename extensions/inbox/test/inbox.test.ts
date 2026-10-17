@@ -587,7 +587,8 @@ describe('inbox pipeline', () => {
 		expect(system).toContain('Existing calendar tags: School, swim club');
 		expect(system).not.toContain('calendar_tag:');
 		expect(system).not.toContain('### calendar.aiContext');
-		expect(system).not.toContain('Household records');
+		// Tags are words to reuse, never records with handles.
+		expect(system).not.toMatch(/- (School|swim club) \(/);
 	});
 
 	it('tells the model who shared the item, by handle only when names are off', async () => {
