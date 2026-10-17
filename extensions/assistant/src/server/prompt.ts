@@ -7,6 +7,7 @@ import {
 	type DateWords,
 	daysAround,
 	formatDate,
+	resolveDay,
 	weekdayMismatches,
 	weekOf,
 } from '@famos/time';
@@ -84,20 +85,24 @@ export function weekdayDates(
 		`${formatWeekday(date)}, ${formatDate(date, 'en', { day: 'numeric', month: 'long' })} (${date})`;
 	const times = clockTimes(text);
 	const ahead = times.filter((t) => t > now);
+	const passed = times.filter((t) => t <= now);
 	return bareWeekdays(text, words, order).map(({ said, weekday }) => {
 		const name = weekdayName(weekday);
-		if (formatWeekday(today) === name) {
+		// A weekday always resolves; the fallback only satisfies the type.
+		const on = (time?: string) =>
+			resolveDay({ text: said, weekday }, { today, now, time })?.date ?? today;
+		const coming = on();
+		if (coming === today) {
 			const start = `"${said}" with no date is today's weekday`;
 			if (times.length === 0)
 				return `${start}, with no time given: it means today, ${long(today)}.`;
-			if (ahead.length === times.length)
-				return `${start}, and ${times.join(', ')} is still ahead (it is now ${now}): it means today, ${long(today)}.`;
+			if (passed.length === 0)
+				return `${start}, and ${times.join(', ')} is still ahead (it is now ${now}): it means today, ${long(on(ahead[0]))}.`;
 			if (ahead.length === 0)
-				return `${start}, and ${times.join(', ')} has passed (it is now ${now}): it means next week, ${long(addDays(today, 7))}.`;
-			return `${start}: it means today, ${long(today)}, for a time still ahead (it is now ${now}), and ${long(addDays(today, 7))} for a time that has passed.`;
+				return `${start}, and ${times.join(', ')} has passed (it is now ${now}): it means next week, ${long(on(passed[0]))}.`;
+			return `${start}: it means today, ${long(on(ahead[0]))}, for a time still ahead (it is now ${now}), and ${long(on(passed[0]))} for a time that has passed.`;
 		}
-		const offset = [1, 2, 3, 4, 5, 6].find((k) => formatWeekday(addDays(today, k)) === name) ?? 7;
-		return `"${said}" with no date means the coming ${name}, ${long(addDays(today, offset))}.`;
+		return `"${said}" with no date means the coming ${name}, ${long(coming)}.`;
 	});
 }
 

@@ -285,6 +285,32 @@ export function weekdayMismatches(
 	return out;
 }
 
+/**
+ * The dates a text writes out ("20 October", "2026-10-20", "20/10"), clock times left out, as
+ * day, month and the year when one is written. For `resolveDay`'s check of a model's reading
+ * against the words it quotes.
+ */
+export function writtenDates(
+	text: string,
+	words: DateWords,
+	order: DateOrder = 'DMY',
+): { day: number; month: number; year?: number }[] {
+	return datesIn(withoutTimes(text, words), words, order)
+		.filter((d) => d.month >= 1 && d.month <= 12 && d.day >= 1 && d.day <= 31)
+		.map(({ day, month, year }) => (year === undefined ? { day, month } : { day, month, year }));
+}
+
+/** The weekdays (1 = Monday) a text names by their full or short names, once each. */
+export function namedWeekdays(text: string, words: DateWords): number[] {
+	const clean = withoutTimes(text, words);
+	return [
+		...new Set([
+			...namesIn(clean, words.weekdays, () => false).map((f) => f.value),
+			...namesIn(clean, words.weekdaysShort, () => true).map((f) => f.value),
+		]),
+	];
+}
+
 /** A weekday a person named with no date ("on Thursday"). */
 export interface BareWeekday {
 	/** The name, as written. */

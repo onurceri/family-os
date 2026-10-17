@@ -600,3 +600,12 @@ export {
 	type WeekdayMismatch,
 	weekdayMismatches,
 } from './date-words.ts';
+
+export {
+	type DayDirection,
+	type DayDoubt,
+	type DayParts,
+	type DayResult,
+	type ResolveDayOptions,
+	resolveDay,
+} from './resolve-day.ts';
