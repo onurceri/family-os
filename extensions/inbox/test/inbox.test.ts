@@ -18,7 +18,13 @@ import {
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { type InboxItem, itemTitle, UPLOAD_LIMITS, UPLOAD_QUOTA } from '../src/contract/index.ts';
+import {
+	type InboxItem,
+	itemTitle,
+	READ_ATTEMPTS,
+	UPLOAD_LIMITS,
+	UPLOAD_QUOTA,
+} from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
 import { EXTRACT_MAX_OUTPUT_TOKENS, processItem, tidySummary } from '../src/server/process.ts';
 
@@ -538,6 +544,29 @@ describe('inbox pipeline', () => {
 		await share({ text: NOTICE });
 		await k.worker.drain();
 		expect(k.llm.calls).toHaveLength(1);
+		expect((await items())[0]).toMatchObject({
+			status: 'extracted',
+			proposals: 1,
+			skips: [{ reason: 'incomplete', subject: null }],
+		});
+	});
+
+	it('asks again when an answer is not JSON, and keeps its complete mentions on the last try', async () => {
+		// As gemini-2.5-flash answered on every try: one closing brace too many after the mention.
+		const broken = `{"label":"Water off","intent":"actionable","mentions":[{"kind":"calendar.event","title":"Water off","date":{"text":"Thursday","weekday":4},"time":"09:00","timeText":"9"}}]}`;
+		const notJson = () =>
+			new LlmError('invalid_output', 'The model did not answer with JSON', {
+				cause: { text: broken },
+			});
+		k.llm.respond(...Array.from({ length: READ_ATTEMPTS }, notJson));
+		await share({ text: 'The water is off on Thursday from 9' });
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'normalized', attempt: 2 });
+		for (let i = 1; i < READ_ATTEMPTS; i++) {
+			k.clock.advance(10 * 60_000);
+			await k.worker.drain();
+		}
+		expect(k.llm.calls).toHaveLength(READ_ATTEMPTS);
 		expect((await items())[0]).toMatchObject({
 			status: 'extracted',
 			proposals: 1,

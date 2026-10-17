@@ -151,7 +151,7 @@ function resolveNew(
 export const itemKind = defineMentionKind({
 	id: 'home.item',
 	describe:
-		'A durable thing the household owns (an appliance, electronics, furniture), from a receipt, an invoice or a warranty card: one just bought, or new facts about a listed thing (its warranty was extended). Not for something still to buy.',
+		'A durable thing the household owns (an appliance, electronics, furniture), from a receipt, an invoice or a warranty card: one just bought, or new facts about a listed thing (its warranty was extended). Not for something still to buy (that goes on the shopping list).',
 	slots: {
 		title: 'What the thing is, in a few words ("Washing machine")',
 		target:
@@ -191,11 +191,6 @@ export const itemKind = defineMentionKind({
 				},
 			],
 			why: 'news about a listed thing changes it',
-		},
-		{
-			text: 'We should get a new kettle at the weekend',
-			mentions: [],
-			why: 'something still to buy is not a thing the household owns',
 		},
 	],
 	async resolve(ctx, mentions) {

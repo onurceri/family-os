@@ -27,11 +27,6 @@ export const noteKind = defineMentionKind({
 				},
 			],
 		},
-		{
-			text: 'The plumber comes Thursday at 9',
-			mentions: [],
-			why: 'nobody asked to tell the family on the board (it is an event)',
-		},
 	],
 	async resolve(ctx, mentions) {
 		const now = ctx.now;

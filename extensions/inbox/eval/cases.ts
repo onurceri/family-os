@@ -914,6 +914,18 @@ const AREA_CASES: Case[] = [
 		],
 	},
 	{
+		name: 'An appliance still to buy goes on the shopping list (English)',
+		seed: [{ action: 'home.addHome', input: { name: 'Our house', tenure: 'owner' } }],
+		text: 'The old toaster finally died, can someone pick up a new one when you go into town?',
+		checks: [
+			has('lists.addShoppingItems', 'a toaster', (i) =>
+				items(i).some((x) => /toaster/i.test(x.title)),
+			),
+			none('home.addItem'),
+			none('home.updateItem'),
+		],
+	},
+	{
 		name: 'A recipe shared to keep (English)',
 		text: "Grandma's banana bread (serves 8, 70 min): 3 ripe bananas, 250 g flour, 100 g sugar, 1 egg, 1 tsp baking soda. Mash the bananas, mix in everything else, then bake at 175 C for 60 minutes.",
 		checks: [

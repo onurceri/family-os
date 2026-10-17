@@ -213,6 +213,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		sendPeople: policy.sendPeople,
 		model: policy.model,
 		jobId: run.id,
+		lastTry: run.attempt >= run.maxAttempts,
 	});
 
 	// From outside the app the person is not looking at the item: tell them it is ready, once per

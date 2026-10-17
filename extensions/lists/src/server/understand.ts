@@ -113,6 +113,11 @@ export const shoppingItem = defineMentionKind({
 			],
 			why: 'News that something was bought ticks it off; what is still needed is added.',
 		},
+		{
+			text: 'We should get a new kettle at the weekend',
+			mentions: [{ kind: 'lists.shoppingItem', title: 'Kettle', variant: 'household' }],
+			why: 'A thing still to buy goes on the list, also one the household will keep for years.',
+		},
 	],
 	async resolve(ctx, mentions) {
 		const lists = await activeLists(ctx);

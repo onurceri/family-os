@@ -327,6 +327,8 @@ export interface ReadingInput {
 	/** The configured model's key, for an answer that was cut off and has no result. */
 	model: string | null;
 	jobId: string;
+	/** No try of the reading comes after this one. */
+	lastTry: boolean;
 }
 
 export interface Reading {
@@ -368,8 +370,13 @@ async function askModel(
 		const parsed = read(result.output);
 		return parsed ? { parsed, model: result.model } : null;
 	} catch (error) {
-		// Cut off at the cap: the complete mentions before the cut still count.
-		if (isLlmError(error) && error.code === 'output_too_long') {
+		// Cut off at the cap, or not JSON on the last try (a stray or missing character that
+		// asking again did not mend): the complete mentions in the text still count. Before the
+		// last try a broken answer is asked again instead, which mostly comes back whole.
+		if (
+			isLlmError(error) &&
+			(error.code === 'output_too_long' || (error.code === 'invalid_output' && input.lastTry))
+		) {
 			const text = (error.cause as { text?: unknown } | undefined)?.text;
 			const parsed = typeof text === 'string' ? read(text) : null;
 			if (parsed && parsed.mentions.length + parsed.skips.length > 0)
