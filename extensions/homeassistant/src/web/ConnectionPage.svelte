@@ -126,8 +126,17 @@
 		}
 	}
 
+	/** A refused token or a wrong address is not fixed by checking again: the way out is Change. */
+	const needsChange = $derived(
+		connected?.status === 'token_refused' ||
+			connected?.status === 'not_home_assistant' ||
+			connected?.status === 'blocked_address',
+	);
+
 	const menu = $derived<MenuItem[]>([
-		{ id: 'change', label: t('change'), onselect: startConnect },
+		needsChange
+			? { id: 'check', label: t('check_again'), onselect: recheck }
+			: { id: 'change', label: t('change'), onselect: startConnect },
 		{
 			id: 'disconnect',
 			label: t('disconnect'),
@@ -180,9 +189,13 @@
 	<PageHeader title={t('nav_label')} subtitle={t('subtitle')}>
 		{#snippet actions()}
 			{#if connected}
-				<Button variant="outline" onclick={recheck}
-					><RefreshCw class="size-4" aria-hidden="true" />{t('check_again')}</Button
-				>
+				{#if needsChange}
+					<Button variant="outline" onclick={startConnect}>{t('change')}</Button>
+				{:else}
+					<Button variant="outline" onclick={recheck}
+						><RefreshCw class="size-4" aria-hidden="true" />{t('check_again')}</Button
+					>
+				{/if}
 				<Menu label={t('options')} title={t('nav_label')} cancelLabel={t('cancel')} items={menu}>
 					{#snippet trigger({ attrs })}
 						<IconButton label={t('options')} variant="outline" {...attrs}

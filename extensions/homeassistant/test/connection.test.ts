@@ -291,6 +291,18 @@ describe('the check', () => {
 		expect(k.http.requests.filter((r) => r.url === `${BASE}/api/config`)).toHaveLength(1);
 	});
 
+	it('can be asked for again when a check never answered', async () => {
+		serveHomeAssistant();
+		// The server stopped before the worker ran the check: the row stays "checking".
+		await connect();
+		await k.runner.invoke('homeassistant.check', {}, admin);
+		expect(k.http.requests).toHaveLength(0);
+		k.clock.advance(3 * 60_000);
+		await k.runner.invoke('homeassistant.check', {}, admin);
+		await k.worker.drain();
+		expect((await row())?.status).toBe('ok');
+	});
+
 	it('leaves a connection that changed while it ran alone', async () => {
 		serveHomeAssistant();
 		serveHomeAssistant('https://ha.example.net');

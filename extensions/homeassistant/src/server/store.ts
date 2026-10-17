@@ -1,6 +1,6 @@
 import type { DbExecutor, Migrations } from '@famos/sdk';
 import { sql } from 'kysely';
-import { CONNECTION_STATUSES, type ConnectionStatus } from '../contract/index.ts';
+import type { ConnectionStatus } from '../contract/index.ts';
 
 /** Storage for the Home Assistant connection (tables prefixed `homeassistant_`). */
 export type HomeAssistantTables = {
@@ -25,8 +25,6 @@ export type HomeAssistantTables = {
 
 export const CONNECTION_ID = 'home';
 
-const quoted = (values: readonly string[]) => values.map((v) => `'${v}'`).join(', ');
-
 export const migrations: Migrations = {
 	'0001_init': {
 		async up(db) {
@@ -35,9 +33,9 @@ export const migrations: Migrations = {
 				.addColumn('id', 'text', (c) => c.primaryKey().check(sql`id = 'home'`))
 				.addColumn('base_url', 'text', (c) => c.notNull())
 				.addColumn('sealed_token', 'text', (c) => c.notNull())
-				.addColumn('status', 'text', (c) =>
-					c.notNull().check(sql`status in (${sql.raw(quoted(CONNECTION_STATUSES))})`),
-				)
+				// No CHECK on the status: a released migration never changes, and a new status would
+				// otherwise need the table rebuilt. The code only ever writes a known one.
+				.addColumn('status', 'text', (c) => c.notNull())
 				.addColumn('checked_at', 'integer')
 				.addColumn('ha_version', 'text')
 				.addColumn('ha_name', 'text')

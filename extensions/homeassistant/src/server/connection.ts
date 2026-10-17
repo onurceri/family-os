@@ -29,6 +29,8 @@ type Row = HomeAssistantTables['homeassistant_connection'];
 
 const TIMEOUT_MS = 10_000;
 const MAX_BYTES = 64 * 1024;
+/** Longer than the check job can run (two attempts of at most 40 s each). */
+const STUCK_AFTER_MS = 2 * 60_000;
 
 /** The connection as the API shows it. Never the token. */
 export function toConnection(row: Row | undefined): Connection {
@@ -179,8 +181,10 @@ export const check = defineAction({
 	async run(uow) {
 		const current = await load(uow.db);
 		if (!current) throw new FamosError('not_found', 'Home Assistant is not connected');
-		// Already being checked: asking again would only check twice.
-		if (current.status === 'checking') return toConnection(current);
+		// Already being checked: asking again would only check twice. A check that never answered
+		// (the server stopped while it ran) must not keep the button from working, though.
+		if (current.status === 'checking' && uow.clock.now() - current.updated_at < STUCK_AFTER_MS)
+			return toConnection(current);
 		const now = Math.max(uow.clock.now(), current.updated_at + 1);
 		await tables(uow.db)
 			.updateTable('homeassistant_connection')
