@@ -4,6 +4,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { vehiclesEdit, vehiclesView } from './capabilities.ts';
 import { migrations } from './store.ts';
+import { logKind } from './understand.ts';
 import {
 	addLog,
 	addVehicle,
@@ -26,7 +27,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { context: aiContext.id },
+	ai: { context: aiContext.id, kinds: [logKind] },
 	actions: [addVehicle, updateVehicle, archiveVehicle, addLog, removeLog, aiContext],
 	routes: [listVehicles, getVehicle, listLogs],
 	events: [vehicleChanged],

@@ -2,6 +2,8 @@ import { idSchema } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
+export * from './mentions.ts';
+
 /**
  * Records contract: duties that come back (obligations) and papers (documents) for
  * any record that a domain extension owns (a vehicle, a pet, a home…). Records are known only by

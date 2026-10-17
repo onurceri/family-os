@@ -16,9 +16,11 @@ import {
 	DEFAULT_AUDIENCE,
 	type Every,
 	HistoryEntrySchema,
+	OBLIGATION_CONTEXT_KIND,
 	ObligationIdSchema,
 	ObligationSchema,
 	obligationChangedPayload,
+	obligationContextLabel,
 	RecordIdSchema,
 	RenameRecordSchema,
 	UndoCompletionSchema,
@@ -459,7 +461,7 @@ export const aiContext = defineAction({
 			.execute();
 		const visible = rows.filter((r) => aiMayRead(uow, r.audience));
 		return {
-			kind: 'obligation',
+			kind: OBLIGATION_CONTEXT_KIND,
 			label: 'Things that need doing',
 			items: visible.slice(0, MAX_CONTEXT).map((r) => {
 				const every = fromRule(r.rrule);
@@ -470,7 +472,7 @@ export const aiContext = defineAction({
 						: '';
 				return {
 					id: r.id,
-					label: `${r.title} (${r.record_name})`,
+					label: obligationContextLabel(r.title, r.record_name),
 					details: `due ${r.due_date}${repeat}`,
 				};
 			}),

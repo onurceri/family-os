@@ -16,6 +16,7 @@ import {
 	updatePet,
 } from './pets.ts';
 import { migrations } from './store.ts';
+import { treatmentKind } from './understand.ts';
 
 /**
  * Pets: the household's animals with a treatment history. Their duties (vaccines, parasite
@@ -26,7 +27,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { context: aiContext.id },
+	ai: { context: aiContext.id, kinds: [treatmentKind] },
 	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext],
 	routes: [listPets, getPet, listTreatments],
 	events: [petChanged],
