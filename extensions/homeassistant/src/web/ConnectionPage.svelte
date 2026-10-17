@@ -211,7 +211,9 @@
 			<Notice
 				tone={connected.status === 'ok' || connected.status === 'checking' ? 'info' : 'alert'}
 			>
-				<strong>{t(STATUS_TEXT[connected.status])}</strong>
+				<strong
+					>{t(STATUS_TEXT[connected.status])}{connected.status === 'checking' ? '' : '.'}</strong
+				>
 				{advice(connected)}
 			</Notice>
 		{:else}
