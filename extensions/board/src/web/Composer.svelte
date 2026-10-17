@@ -172,6 +172,8 @@
 			type="file"
 			accept="image/*"
 			class="sr-only"
+			tabindex="-1"
+			aria-hidden="true"
 			id="{id}-photo"
 			onchange={choosePhoto}
 			data-testid="composer-photo"

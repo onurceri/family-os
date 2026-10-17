@@ -316,9 +316,9 @@
 				accept="image/jpeg,image/png,image/webp"
 				class="sr-only"
 				tabindex="-1"
+				aria-hidden="true"
 				disabled={uploading}
 				onchange={onPhoto}
-				aria-label={t('photo_input')}
 			/>
 		{/if}
 

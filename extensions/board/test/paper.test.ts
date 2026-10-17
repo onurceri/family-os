@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fastenerOf, isShortNote, PIN_COLORS, tiltOf } from '../src/web/paper.ts';
 
@@ -43,6 +44,21 @@ describe('fastenerOf', () => {
 			expect(chosen.some((f) => f.kind === 'pin' && f.color === color)).toBe(true);
 		}
 		expect(chosen.some((f) => f.kind === 'pin' && f.color === 'accent')).toBe(false);
+	});
+
+	it('never gives an ordinary note a pin that looks like the pinned one in the default theme', () => {
+		const tokens = JSON.parse(
+			readFileSync(new URL('../../../themes/ev-isigi/tokens.json', import.meta.url), 'utf8'),
+		) as Record<'day' | 'night', Record<string, string>>;
+		const rgb = (hex: string) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+		const distance = (a: string, b: string) =>
+			Math.hypot(...rgb(a).map((v, i) => v - (rgb(b)[i] ?? 0)));
+		for (const mode of ['day', 'night'] as const) {
+			const accent = tokens[mode].accent ?? '';
+			for (const color of PIN_COLORS) {
+				expect(distance(tokens[mode][color] ?? accent, accent)).toBeGreaterThan(100);
+			}
+		}
 	});
 });
 

@@ -29,8 +29,13 @@ export function tiltOf(id: string): number {
 	return Math.round((unitOf(id, 'tilt') * 4 - 2) * 100) / 100;
 }
 
-/** The colours a push pin's head comes in (tokens); a pinned note's pin is always `accent`. */
-export const PIN_COLORS = ['ink', 'info', 'sun'] as const;
+/**
+ * The colours a push pin's head comes in (tokens); a pinned note's pin is always `accent`.
+ * No warm yellow among them: `sun` sits next to `accent` in most themes, and an ordinary note
+ * must never look pinned. A theme may still bring one close to its accent, so a pinned note's
+ * pin also differs in shape (bigger, with a halo).
+ */
+export const PIN_COLORS = ['ink', 'info', 'now'] as const;
 export type Fastener =
 	| { kind: 'pin'; color: (typeof PIN_COLORS)[number] | 'accent' }
 	| { kind: 'tape' };

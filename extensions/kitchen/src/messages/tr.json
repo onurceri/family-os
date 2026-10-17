@@ -53,7 +53,6 @@
 	"source_link": "{{host}} sitesinde aç",
 	"photo_add": "Fotoğraf ekle",
 	"photo_change": "Fotoğrafı değiştir",
-	"photo_input": "Tarif fotoğrafı",
 	"photo_error": "Fotoğraf kaydedilemedi. 8 MB’tan küçük bir JPEG, PNG ya da WebP kullan.",
 	"shopping_add_selected": "Seçilenleri alışveriş listesine ekle",
 	"shopping_list_choice": "Alışveriş listesi",

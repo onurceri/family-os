@@ -53,7 +53,6 @@
 	"source_link": "Open on {{host}}",
 	"photo_add": "Add photo",
 	"photo_change": "Change photo",
-	"photo_input": "Recipe photo",
 	"photo_error": "The photo could not be saved. Use a JPEG, PNG or WebP image under 8 MB.",
 	"shopping_add_selected": "Add selected to shopping list",
 	"shopping_list_choice": "Shopping list",

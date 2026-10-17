@@ -377,15 +377,18 @@
 			0 0 0 0.5px color-mix(in srgb, var(--backdrop) 25%, transparent),
 			2px 3px 2px -1px color-mix(in srgb, var(--backdrop) 40%, transparent);
 	}
-	/* A note pinned to the top: a bigger pin in the accent, ringed, easy to tell from the rest. */
+	/* A note pinned to the top: a bigger pin in the accent with a halo of its own colour around a
+	   light ring, so it reads as pinned by its shape even where a theme's pin colours sit near the
+	   accent. */
 	.pin.pinned {
 		top: -0.6rem;
 		width: 19px;
 		height: 19px;
 		margin-left: -9.5px;
 		box-shadow:
-			0 0 0 2px color-mix(in srgb, var(--surface) 70%, transparent),
-			0 0 0 2.5px color-mix(in srgb, var(--backdrop) 22%, transparent),
+			0 0 0 2px var(--surface),
+			0 0 0 4px var(--pin),
+			0 0 0 4.5px color-mix(in srgb, var(--backdrop) 22%, transparent),
 			2px 4px 3px -1px color-mix(in srgb, var(--backdrop) 45%, transparent);
 	}
 	.text {
