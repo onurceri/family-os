@@ -232,7 +232,9 @@
 		const said = JSON.stringify(leftOut);
 		if (said === reported) return;
 		reported = said;
-		void api.POST('/api/v1/core/displays/me/fit', { body: { leftOut } }).catch(() => {
+		void api
+			.GET('/api/v1/core/displays/me/fit', { params: { query: { leftOut: leftOut.join(',') } } })
+			.catch(() => {
 			// Not said this time; the next fit or refresh says it again.
 			reported = null;
 		});

@@ -181,10 +181,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /** The display tells what its screen had no room for */
-        post: operations["core.reportDisplayFit"];
+        get: operations["core.reportDisplayFit"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3470,18 +3470,14 @@ export interface operations {
     };
     "core.reportDisplayFit": {
         parameters: {
-            query?: never;
+            query?: {
+                leftOut?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    leftOut: string[];
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Noted */
             204: {

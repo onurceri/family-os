@@ -2854,36 +2854,24 @@
 			}
 		},
 		"/api/v1/core/displays/me/fit": {
-			"post": {
+			"get": {
 				"operationId": "core.reportDisplayFit",
 				"summary": "The display tells what its screen had no room for",
 				"tags": [
 					"core"
 				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"properties": {
-									"leftOut": {
-										"type": "array",
-										"items": {
-											"type": "string",
-											"minLength": 1,
-											"maxLength": 100
-										},
-										"maxItems": 40
-									}
-								},
-								"required": [
-									"leftOut"
-								]
-							}
-						}
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"maxLength": 4000,
+							"default": ""
+						},
+						"required": false,
+						"name": "leftOut",
+						"in": "query"
 					}
-				},
+				],
 				"responses": {
 					"204": {
 						"description": "Noted"

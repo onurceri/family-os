@@ -943,23 +943,21 @@ describe('family displays', () => {
 			).find((d) => d.id === deviceId)?.display?.leftOut;
 		expect(await leftOut()).toEqual([]);
 
-		const said = await call(
-			'POST',
-			fit,
-			{ leftOut: ['homeassistant.values', 'family', 'family'] },
-			displayCookie,
-		);
+		const report = (ids: string, who?: string) =>
+			call('GET', `${fit}?leftOut=${encodeURIComponent(ids)}`, undefined, who);
+		const said = await report('homeassistant.values,family,family', displayCookie);
 		expect(said.status).toBe(204);
 		expect(await leftOut()).toEqual(['family', 'homeassistant.values']);
 
-		// A member, a stranger or a malformed report changes nothing.
-		expect((await call('POST', fit, { leftOut: [] }, cookie)).status).toBe(409);
-		expect((await call('POST', fit, { leftOut: [] })).status).toBe(401);
-		expect((await call('POST', fit, { leftOut: [''] }, displayCookie)).status).toBe(400);
+		// A member or a stranger changes nothing; empty and overlong ids are dropped.
+		expect((await report('', cookie)).status).toBe(409);
+		expect((await report('')).status).toBe(401);
 		expect(await leftOut()).toEqual(['family', 'homeassistant.values']);
+		expect((await report(` , ,${'x'.repeat(101)},family`, displayCookie)).status).toBe(204);
+		expect(await leftOut()).toEqual(['family']);
 
 		// Everything fits again: nothing to say.
-		expect((await call('POST', fit, { leftOut: [] }, displayCookie)).status).toBe(204);
+		expect((await report('', displayCookie)).status).toBe(204);
 		expect(await leftOut()).toEqual([]);
 	});
 
