@@ -26,7 +26,7 @@ const EXTENSIONS = /\.(svelte|ts|css|html)$/;
 const ALLOWED: Record<string, string> = {
 	'packages/ui/src/theme.css': 'the token layer itself (the built-in Ev Işığı values)',
 	'apps/web/src/app.html': 'the theme-color meta fallback before the theme is applied',
-	'apps/web/src/lib/today/sample.ts':
+	'apps/web/src/lib/today/sample-people.ts':
 		"the made-up people of the style previews: a person's color is data (core's member colors), not interface styling",
 	'extensions/calendar/src/contract/index.ts':
 		'the colors people pick for calendars: data they choose, not interface styling',

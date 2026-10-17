@@ -3,19 +3,18 @@
 	import { Avatar, Chip, Pill, Row } from '@famos/ui/famos';
 	import { Check } from '@lucide/svelte';
 	import { t } from '#lib/i18n.svelte.js';
-	import { SAMPLE_PEOPLE } from '#lib/today/sample.js';
+	import { family } from '#lib/family.svelte.js';
+	import { samplePeople } from '#lib/today/sample-people.js';
 
 	/**
 	 * The colors at work (Settings → Appearance): the real components with a made-up day
 	 * (the hero on `accent`, a row, a button, chips and a pill), drawn in the palette on screen, so
 	 * a tried theme shows at once. It is a picture: inert and hidden from assistive technology
-	 * (`name` says which colors it shows). The people's colours are core's member colours, as in
-	 * the style previews.
+	 * (`name` says which colors it shows). The people are the family's own, as in the style previews.
 	 */
 	let { name }: { name: string } = $props();
 
-	const alex = t('appearance_sample_person_a');
-	const sam = t('appearance_sample_person_b');
+	const [first, second] = $derived(samplePeople(family.members, t));
 </script>
 
 <figure class="grid gap-2" data-testid="palette-sample">
@@ -26,7 +25,7 @@
 	>
 		<div class="bg-accent text-on-accent grid content-start gap-1.5 rounded-[var(--r-card)] p-4">
 			<span class="text-[11px] font-bold tracking-[0.08em] uppercase opacity-80"
-				>{t('today_next_up')} · {alex}</span
+				>{t('today_next_up')} · {first.displayName}</span
 			>
 			<span class="font-serif text-[22px] leading-tight font-bold"
 				>{t('appearance_sample_piano')}</span
@@ -35,8 +34,12 @@
 		</div>
 		<div class="grid content-start gap-2.5">
 			<div class="bg-surface shadow-lit rounded-[var(--r-card)] px-1">
-				<Row title={t('appearance_sample_dentist')} meta={sam}>
-					{#snippet lead()}<Avatar name={sam} color={SAMPLE_PEOPLE[1].color} size={28} />{/snippet}
+				<Row title={t('appearance_sample_dentist')} meta={second.displayName}>
+					{#snippet lead()}<Avatar
+							name={second.displayName}
+							color={second.color}
+							size={28}
+						/>{/snippet}
 					{#snippet trail()}<Pill tone="now"
 							>{#snippet icon()}<Check aria-hidden="true" />{/snippet}{t(
 								'appearance_sample_done',
@@ -46,8 +49,8 @@
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
 				<Button type="button" size="sm" variant="secondary">{t('appearance_use')}</Button>
-				<Chip on>{alex}</Chip>
-				<Chip>{sam}</Chip>
+				<Chip on>{first.displayName}</Chip>
+				<Chip>{second.displayName}</Chip>
 				<Pill tone="attention">{t('appearance_sample_library')}</Pill>
 			</div>
 		</div>

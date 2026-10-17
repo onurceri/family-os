@@ -3,6 +3,7 @@
 	import {
 		type Axis,
 		foldedScale,
+		hasTimed,
 		type LaneItem,
 		type LaneView,
 		layoutColumn,
@@ -17,7 +18,8 @@
 	 * the height. A block keeps its column's whole width and room for two lines of its title; one
 	 * that overlaps the block above it moves below it. All-day things are chips under the names,
 	 * not blocks. The now-line crosses every column. It is a chart, not a scroll: it always fits
-	 * the width.
+	 * the width. A day with nothing timed draws only the heads (and the all-day chips): a frame of
+	 * hatched, empty columns would carry no news and read as content.
 	 */
 	let {
 		lanes,
@@ -44,8 +46,10 @@
 	/** Six columns: the titles narrower still, so a word keeps to one line. */
 	const narrow = $derived(lanes.length >= 6);
 	const hourFormat = $derived(
+		// "07:00", or "7 AM" on a 12-hour clock: a bare "07" does not read as a time.
 		new Intl.DateTimeFormat(format.dateLocale, {
 			hour: format.hourCycle === 'h12' ? 'numeric' : '2-digit',
+			...(format.hourCycle === 'h12' ? {} : { minute: '2-digit' }),
 			timeZone: 'UTC',
 			hourCycle: format.hourCycle,
 		}),
@@ -54,6 +58,7 @@
 		hourFormat.format(Date.UTC(2026, 0, 1, Math.floor(minute / 60) % 24));
 
 	const timedOf = (lane: LaneView) => lane.items.filter((c) => c.kind !== 'allday');
+	const timed = $derived(hasTimed(lanes));
 	const long = $derived(
 		new Set(lanes.flatMap((l) => l.items.filter((c) => c.kind === 'long').map((c) => c.item.id))),
 	);
@@ -204,60 +209,62 @@
 		</ul>
 	{/if}
 
-	<div class="vax" style:height="{height}px" aria-hidden="true">
-		{#each marks as m (m.minute)}
-			<!-- The now-tag takes the place of a mark it would cover. -->
-			{#if nowAt === null || Math.abs(m.top - nowAt) >= 14}
-				<span style:top="{m.top}px">{hourLabel(m.minute)}</span>
-			{/if}
-		{/each}
-		{#if nowAt !== null}
-			<span class="nowtag" style:top="{nowAt}px" data-testid="now-tag"
-				>{formatClock(now, format)}</span
-			>
-		{/if}
-	</div>
-	{#each columns as { lane, items, blocks }, ci (lane.key)}
-		<div class="vlane" style:height="{height}px" role="group" aria-label={lane.name}>
-			{#if ci === 0}<span class="width" bind:clientWidth={columnWidth} aria-hidden="true"
-				></span>{/if}
-			{#each scale.segments as s (s.from)}
-				<span
-					class="seg"
-					class:gap={s.gap}
-					style:top="{s.top}px"
-					style:height="{s.height}px"
-					aria-hidden="true"
-				></span>
-			{/each}
-			{#each items as c, i (c.item.id)}
-				{@const b = blocks[i]}
-				{#if b}
-					<svelte:element
-						this={c.item.href ? 'a' : 'div'}
-						href={c.item.href || undefined}
-						role={c.item.href ? undefined : 'img'}
-						class="vblk {c.kind}"
-						class:past={isEnded(c)}
-						class:next={c.item.id === nextId}
-						style:--m={c.color || 'var(--ink-soft)'}
-						style:--lines={Math.max(2, linesFor(c.item.title))}
-						style:top="{b.top}px"
-						style:height="{b.height}px"
-						aria-label={blockName(c)}
-						data-testid="chart-block"
-						><span class="tt">{c.item.title}</span
-						>{#if b.height >= minOf(c.item.id) + 14 && c.item.start !== undefined}<small
-								>{formatClock(c.item.start, format)}</small
-							>{/if}</svelte:element
-					>
+	{#if timed}
+		<div class="vax" style:height="{height}px" aria-hidden="true">
+			{#each marks as m (m.minute)}
+				<!-- The now-tag takes the place of a mark it would cover. -->
+				{#if nowAt === null || Math.abs(m.top - nowAt) >= 14}
+					<span style:top="{m.top}px">{hourLabel(m.minute)}</span>
 				{/if}
 			{/each}
 			{#if nowAt !== null}
-				<span class="vnow" style:top="{nowAt}px" aria-hidden="true"></span>
+				<span class="nowtag" style:top="{nowAt}px" data-testid="now-tag"
+					>{formatClock(now, format)}</span
+				>
 			{/if}
 		</div>
-	{/each}
+		{#each columns as { lane, items, blocks }, ci (lane.key)}
+			<div class="vlane" style:height="{height}px" role="group" aria-label={lane.name}>
+				{#if ci === 0}<span class="width" bind:clientWidth={columnWidth} aria-hidden="true"
+					></span>{/if}
+				{#each scale.segments as s (s.from)}
+					<span
+						class="seg"
+						class:gap={s.gap}
+						style:top="{s.top}px"
+						style:height="{s.height}px"
+						aria-hidden="true"
+					></span>
+				{/each}
+				{#each items as c, i (c.item.id)}
+					{@const b = blocks[i]}
+					{#if b}
+						<svelte:element
+							this={c.item.href ? 'a' : 'div'}
+							href={c.item.href || undefined}
+							role={c.item.href ? undefined : 'img'}
+							class="vblk {c.kind}"
+							class:past={isEnded(c)}
+							class:next={c.item.id === nextId}
+							style:--m={c.color || 'var(--ink-soft)'}
+							style:--lines={Math.max(2, linesFor(c.item.title))}
+							style:top="{b.top}px"
+							style:height="{b.height}px"
+							aria-label={blockName(c)}
+							data-testid="chart-block"
+							><span class="tt">{c.item.title}</span
+							>{#if b.height >= minOf(c.item.id) + 14 && c.item.start !== undefined}<small
+									>{formatClock(c.item.start, format)}</small
+								>{/if}</svelte:element
+						>
+					{/if}
+				{/each}
+				{#if nowAt !== null}
+					<span class="vnow" style:top="{nowAt}px" aria-hidden="true"></span>
+				{/if}
+			</div>
+		{/each}
+	{/if}
 </div>
 
 <style>

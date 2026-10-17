@@ -1,25 +1,23 @@
 import { addDays, epochOf, todayIn } from '@famos/time';
 import type { TimelineItem } from '@famos/ui/slots';
 import { t } from '#lib/i18n.svelte.js';
+import { type SamplePerson, samplePeople } from './sample-people.js';
 import type { TodaySample } from './today-data.svelte.js';
+
+/** The made-up events are drawn as links, like real ones; the picture is inert, so where is moot. */
+const SAMPLE_HREF = '/';
 
 /**
  * The made-up day the style previews show (Settings → Appearance): three people and a
  * family plan, at a quarter past ten this morning in the family's time zone, so every style shows
- * a next thing, a past thing, the people and their chores. Every word comes from the catalog;
- * the colours are three of core's member colours (people's colours are data, not styling).
+ * a next thing, a past thing, the people and their chores. Every word comes from the catalog.
  */
-export const SAMPLE_PEOPLE = [
-	{ id: 'sample_a', nameKey: 'appearance_sample_person_a', color: '#3d7aae' },
-	{ id: 'sample_b', nameKey: 'appearance_sample_person_b', color: '#c38f22' },
-	{ id: 'sample_c', nameKey: 'appearance_sample_person_c', color: '#2f9a94' },
-] as const;
-
-const [A, B, C] = SAMPLE_PEOPLE.map((p) => p.id) as [string, string, string];
-/** The made-up events are drawn as links, like real ones; the picture is inert, so where is moot. */
-const SAMPLE_HREF = '/';
-
-export function sampleDay(timeZone: string, now = Date.now()): TodaySample {
+export function sampleDay(
+	timeZone: string,
+	people: [SamplePerson, SamplePerson, SamplePerson] = samplePeople([], t),
+	now = Date.now(),
+): TodaySample {
+	const [A, B, C] = people.map((p) => p.id) as [string, string, string];
 	const today = todayIn(timeZone, now);
 	const tomorrow = addDays(today, 1);
 	const at = (day: string, time: string) => epochOf(day, time, timeZone);
@@ -42,17 +40,11 @@ export function sampleDay(timeZone: string, now = Date.now()): TodaySample {
 		...(location && { location, subtitle: location }),
 	});
 
-	const members = SAMPLE_PEOPLE.map((p) => ({
-		id: p.id,
-		displayName: t(p.nameKey),
-		color: p.color,
-		roleId: 'member',
-		about: null,
-	}));
+	const members = people.map((p) => ({ ...p, roleId: 'member', about: null }));
 	return {
 		now: at(today, '10:15'),
 		members,
-		me: { id: A, displayName: t('appearance_sample_person_a'), nextUp: 'family' },
+		me: { id: A, displayName: people[0].displayName, nextUp: 'family' },
 		todayItems: [
 			{
 				id: 'sample:library',

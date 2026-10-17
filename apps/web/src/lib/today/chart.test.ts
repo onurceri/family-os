@@ -10,6 +10,7 @@ import {
 	fractionOf,
 	GAP_HEIGHT,
 	HOUR_HEIGHT,
+	hasTimed,
 	hoursOf,
 	type LaneMember,
 	layoutColumn,
@@ -333,5 +334,23 @@ describe("the day's items on the chart", () => {
 			zone,
 		);
 		expect(late?.span).toEqual({ id: 'late', start: 1380, end: 1440 });
+	});
+});
+
+describe('a day with something timed', () => {
+	const lane = (...kinds: ('event' | 'meal' | 'long' | 'allday')[]) => ({
+		items: kinds.map((kind) => ({ kind })),
+	});
+
+	it('is a day where some lane has an event, a meal or a long thing', () => {
+		expect(hasTimed([lane(), lane('event')])).toBe(true);
+		expect(hasTimed([lane('meal')])).toBe(true);
+		expect(hasTimed([lane('allday', 'long')])).toBe(true);
+	});
+
+	it('is not a day of empty lanes or all-day things only', () => {
+		expect(hasTimed([])).toBe(false);
+		expect(hasTimed([lane(), lane()])).toBe(false);
+		expect(hasTimed([lane('allday'), lane('allday')])).toBe(false);
 	});
 });

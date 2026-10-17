@@ -4,8 +4,10 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { innerHeight, innerWidth } from 'svelte/reactivity/window';
 	import { family } from '#lib/family.svelte.js';
+	import { t } from '#lib/i18n.svelte.js';
 	import { compositionFor } from './compositions.js';
 	import { sampleDay } from './sample.js';
+	import { samplePeople } from './sample-people.js';
 	import { TodayData } from './today-data.svelte.js';
 
 	/**
@@ -32,7 +34,9 @@
 	provideAppContext(app);
 
 	// The day is made in the family's time zone when the picture is made (the page keys it on it).
-	const data = new TodayData(app, { sample: sampleDay(family.timeZone) });
+	const data = new TodayData(app, {
+		sample: sampleDay(family.timeZone, samplePeople(family.members, t)),
+	});
 	const Composition = $derived(compositionFor(style));
 
 	/** Wide windows have the sidebar beside Today; the picture leaves it out. */

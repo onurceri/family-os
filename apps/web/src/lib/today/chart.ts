@@ -447,6 +447,13 @@ export interface LaneItem extends ChartItem {
 	color: string;
 }
 
+/**
+ * Whether any lane has something with a time. Without one, the phone's chart is only empty,
+ * folded columns under a quiet sentence that already says so, so it draws the heads alone.
+ */
+export const hasTimed = (lanes: readonly { items: readonly { kind: ChartKind }[] }[]): boolean =>
+	lanes.some((lane) => lane.items.some((c) => c.kind !== 'allday'));
+
 /** One lane of the wide chart, or one column of the phone's. */
 export interface LaneView {
 	key: string;
