@@ -10,13 +10,31 @@ export function significantWords(text: string): string[] {
 	return words.filter((w) => [...w].length > 2 && !/^\p{N}+$/u.test(w));
 }
 
+/**
+ * The codes and numbers of a label: every token with a digit in it ("1b", "u13", "10", "29"), and
+ * a number glued to a letter or two by a dot or a dash ("8.b" is "8b"). They tell things apart in
+ * any language: "Class 1B trip" is not "Class 3B trip" and "Pay 10 EUR" is not "Pay 18 EUR",
+ * although all their words are shared. Anything in brackets is left out, as for the words.
+ */
+function codeTokens(text: string): string[] {
+	const bare = text.replace(/\([^)]*\)|\[[^\]]*\]/gu, ' ');
+	const glued = bare.replace(
+		/(?<![\p{L}\p{N}])(\p{N}+)[.-](\p{L}{1,2})(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])(\p{L}{1,2})[.-](\p{N}+)(?![\p{L}\p{N}])/gu,
+		'$1$2$3$4',
+	);
+	const tokens = glued.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+	return [...new Set(tokens.filter((t) => /\p{N}/u.test(t)))];
+}
+
 const sameWord = (a: string, b: string) => a === b || a === `${b}s` || b === `${a}s`;
 
 /**
  * Whether the person's own words (`label`) name the thing titled `title`: the significant words
  * of one side are all whole words of the other (a trailing plural "s" does not matter), so
  * "the bread" and "Bread" meet, "Milk" is in "Oat milk", but "Dental cleaning" is not
- * "Dentist checkup". A side without a significant word ("4") must equal the other.
+ * "Dentist checkup". Codes and numbers tell things apart: when both sides have some, one side's
+ * must all be the other's ("Class 1B trip" is not "Class 3B trip"). A side without a significant
+ * word ("4") must equal the other.
  */
 export function labelNamesTitle(label: string, title: string): boolean {
 	const wanted = significantWords(label);
@@ -26,7 +44,14 @@ export function labelNamesTitle(label: string, title: string): boolean {
 		return plain(label) !== '' && plain(label) === plain(title);
 	}
 	const within = (a: string[], b: string[]) => a.every((w) => b.some((h) => sameWord(w, h)));
-	return within(wanted, have) || within(have, wanted);
+	if (!(within(wanted, have) || within(have, wanted))) return false;
+	// When both name codes or numbers, one side's must all be the other's.
+	const codes = [codeTokens(label), codeTokens(title)] as const;
+	if (codes[0].length > 0 && codes[1].length > 0) {
+		const inside = (a: string[], b: string[]) => a.every((c) => b.includes(c));
+		return inside(codes[0], codes[1]) || inside(codes[1], codes[0]);
+	}
+	return true;
 }
 
 /**

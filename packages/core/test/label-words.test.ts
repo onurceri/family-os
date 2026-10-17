@@ -79,6 +79,27 @@ describe('labelNamesTitle', () => {
 	});
 });
 
+describe('codes and numbers in labelNamesTitle', () => {
+	it('tells classes and amounts apart', () => {
+		expect(labelNamesTitle('8.B trip to bled on thu 29.10', 'Class 1B trip to Bled')).toBe(false);
+		expect(labelNamesTitle('Class 3B trip to Bled', 'Class 1B trip to Bled')).toBe(false);
+		expect(labelNamesTitle('Pay 18 EUR', 'Pay 10 EUR for the bus')).toBe(false);
+	});
+
+	it('still matches the same code, and a side without codes', () => {
+		expect(labelNamesTitle('1B trip to Bled', 'Class 1B trip to Bled')).toBe(true);
+		expect(labelNamesTitle('Class 8.B trip', 'Class 8b trip to Bled')).toBe(true);
+		expect(labelNamesTitle('Class trip to Bled', 'Class 1B trip to Bled')).toBe(true);
+		expect(labelNamesTitle('Pay 10 EUR', 'Pay 10 EUR for the bus')).toBe(true);
+	});
+
+	it('reads dotted and dashed codes, and ignores bracketed dates', () => {
+		expect(labelNamesTitle('Match u-13 (Sat 24.10)', 'Match U13')).toBe(true);
+		expect(labelNamesTitle('Match u-13', 'Match U15')).toBe(false);
+		expect(labelNamesTitle('Yüzme 3.A sınıfı', 'Yüzme 3a sınıfı gezisi')).toBe(true);
+	});
+});
+
 describe('searchFinds', () => {
 	it('finds another form of a word when one starts the other and the shorter has four letters', () => {
 		// "When is the swimming this week?" missed the "Swim training" events.
