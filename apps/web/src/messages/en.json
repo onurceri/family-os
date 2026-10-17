@@ -332,7 +332,7 @@
 	"ai_privacy_voice_hint": "Voice notes are turned into text by the speech-to-text model. When off, they are kept but not read.",
 	"ai_privacy_voice_openrouter": "With OpenRouter, voice notes cannot be limited to providers that keep no data.",
 	"ai_privacy_zdr": "Only providers that keep no data",
-	"ai_privacy_zdr_hint": "OpenRouter only: requests go to providers that do not store prompts or train on them. Some models have none. This applies to reading shared items, not to speech to text.",
+	"ai_privacy_zdr_hint": "OpenRouter only. On: requests go only to providers that do not store prompts or train on them; some models have no such provider. Off: OpenRouter may send them to any provider of the model, which keeps or uses them under its own rules. It covers reading shared items and the assistant, not voice notes or search.",
 	"ai_areas_title": "Areas the AI may use",
 	"ai_areas_intro": "Choose which parts of FamilyOS the AI may read and make suggestions in. Everything keeps working by hand when an area is off.",
 	"ai_area_off": "Off",

@@ -332,7 +332,7 @@
 	"ai_privacy_voice_hint": "Sesli notlar, konuşmayı yazıya çeviren modelle metne dönüştürülür. Kapalıyken saklanır ama okunmaz.",
 	"ai_privacy_voice_openrouter": "OpenRouter ile sesli notlar yalnızca veri saklamayan sağlayıcılarla sınırlanamaz.",
 	"ai_privacy_zdr": "Yalnızca veri saklamayan sağlayıcılar",
-	"ai_privacy_zdr_hint": "Yalnızca OpenRouter: istekler, istemleri saklamayan ve onlarla model eğitmeyen sağlayıcılara gider. Bazı modellerin böyle sağlayıcısı yoktur. Bu, paylaşılanların okunması için geçerlidir; konuşmadan yazıya için geçerli değildir.",
+	"ai_privacy_zdr_hint": "Yalnızca OpenRouter. Açıkken: istekler yalnızca istemleri saklamayan ve onlarla model eğitmeyen sağlayıcılara gider; bazı modellerin böyle bir sağlayıcısı yoktur. Kapalıyken: OpenRouter istekleri modelin herhangi bir sağlayıcısına gönderebilir; o sağlayıcı onları kendi kurallarına göre saklayabilir ya da kullanabilir. Paylaşılanların okunması ve asistan için geçerlidir; sesli notlar ve arama için geçerli değildir.",
 	"ai_areas_title": "Yapay zekânın kullanabileceği alanlar",
 	"ai_areas_intro": "Yapay zekânın FamilyOS'un hangi bölümlerini okuyup öneri verebileceğini seç. Bir alan kapalıyken her şey elle çalışmaya devam eder.",
 	"ai_area_off": "Kapalı",
