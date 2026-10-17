@@ -1063,7 +1063,7 @@
 	"members_signin_title": "Giriş",
 	"members_new_pin": "Yeni PIN (4-6 rakam)",
 	"members_signin_leave": "Mevcut girişi korumak için boş bırak.",
-	"members_signin_both": "E-posta ve şifre, ayrıca PIN",
+	"members_signin_both": "E-posta ve parola, ayrıca PIN",
 	"members_signin_none": "Henüz giriş yolu yok",
 	"members_signin_intro": "E-posta ve şifre her cihazda, PIN yalnızca aile cihazlarında çalışır. Birini ya da ikisini ver.",
 	"members_signin_later": "Giriş yolunu sonra eklemek için bunları boş bırak.",
