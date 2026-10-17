@@ -5,6 +5,7 @@ import type {
 	MealEntry,
 	Recipe,
 	RecipeFields,
+	RecipeReplace,
 	RecipeSummary,
 } from '../contract/index.js';
 import { api } from './api.js';
@@ -33,7 +34,7 @@ export async function createRecipe(
 	return { outcome: result.status, id: result.status === 'applied' ? result.output.id : null };
 }
 
-export async function updateRecipe(id: string, recipe: RecipeFields): Promise<Outcome> {
+export async function updateRecipe(id: string, recipe: RecipeReplace): Promise<Outcome> {
 	return unwrap(await api.POST('/api/v1/actions/kitchen.updateRecipe', { body: { id, recipe } }))
 		.status;
 }

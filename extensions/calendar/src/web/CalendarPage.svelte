@@ -28,17 +28,25 @@
 	import MonthBoard from './MonthBoard.svelte';
 	import WeekBoard from './WeekBoard.svelte';
 	import {
+		createEvent,
 		deleteEvent,
 		loadEvent,
 		loadRange,
 		loadTags,
 		type Outcome,
 		onDay,
-		saveEvent,
+		replaceEvent,
 	} from './data.js';
 	import EventForm from './EventForm.svelte';
 	import ExternalDetail from './ExternalDetail.svelte';
-	import { emptyForm, type EventFormValue, formFrom, inputFrom, validate } from './form.js';
+	import {
+		emptyForm,
+		type EventFormValue,
+		formFrom,
+		inputFrom,
+		replaceFrom,
+		validate,
+	} from './form.js';
 	import { useCalendar } from './i18n.js';
 	import TagChip from './TagChip.svelte';
 	import { toTimelineItem } from './timeline.js';
@@ -292,7 +300,10 @@
 		try {
 			const id = editing.mode === 'edit' ? editing.occurrence.eventId : undefined;
 			const date = form.date;
-			report(await saveEvent(inputFrom(form), id), 'saved');
+			report(
+				await (id ? replaceEvent(id, replaceFrom(form)) : createEvent(inputFrom(form))),
+				'saved',
+			);
 			selected = date;
 		} catch {
 			saveError = true;

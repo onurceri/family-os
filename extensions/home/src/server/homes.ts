@@ -6,6 +6,7 @@ import {
 	HOME_AUDIENCE,
 	HOME_KIND,
 	HOME_PRESETS,
+	type HomeFieldsSchema,
 	HomeIdSchema,
 	HomeSchema,
 	homeUrl,
@@ -16,7 +17,7 @@ import { ITEM_SEARCH_KIND, SERVICE_SEARCH_KIND } from './search.ts';
 import { homeChanged, loadHome, memberId } from './shared.ts';
 import { tables, toHome } from './store.ts';
 
-const fieldsOf = (h: z.output<typeof UpdateHomeSchema>['home']) => ({
+const fieldsOf = (h: z.output<typeof HomeFieldsSchema>) => ({
 	name: h.name,
 	address: h.address,
 	tenure: h.tenure,

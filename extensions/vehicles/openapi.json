@@ -1526,18 +1526,15 @@
 											},
 											"plate": {
 												"type": "string",
-												"maxLength": 20,
-												"default": ""
+												"maxLength": 20
 											},
 											"make": {
 												"type": "string",
-												"maxLength": 60,
-												"default": ""
+												"maxLength": 60
 											},
 											"model": {
 												"type": "string",
-												"maxLength": 60,
-												"default": ""
+												"maxLength": 60
 											},
 											"year": {
 												"type": [
@@ -1556,8 +1553,7 @@
 													"electric",
 													"lpg",
 													"other"
-												],
-												"default": "other"
+												]
 											},
 											"vin": {
 												"type": [
@@ -1573,7 +1569,6 @@
 													"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 												},
 												"maxItems": 20,
-												"default": [],
 												"description": "Who drives or owns it"
 											},
 											"notes": {
@@ -1585,7 +1580,15 @@
 											}
 										},
 										"required": [
-											"name"
+											"name",
+											"plate",
+											"make",
+											"model",
+											"year",
+											"fuel",
+											"vin",
+											"memberIds",
+											"notes"
 										]
 									}
 								},

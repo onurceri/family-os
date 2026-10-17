@@ -2034,7 +2034,6 @@
 													"maxLength": 300
 												},
 												"maxItems": 100,
-												"default": [],
 												"description": "One ingredient per line, exactly as written, with its amount; no conversions"
 											},
 											"steps": {
@@ -2045,7 +2044,6 @@
 													"maxLength": 3000
 												},
 												"maxItems": 100,
-												"default": [],
 												"description": "One step per entry, in order"
 											},
 											"notes": {
@@ -2071,12 +2069,18 @@
 													"maxLength": 40
 												},
 												"maxItems": 20,
-												"default": [],
 												"description": "Short labels, e.g. \"soup\", \"quick\""
 											}
 										},
 										"required": [
-											"title"
+											"title",
+											"servings",
+											"totalMinutes",
+											"ingredients",
+											"steps",
+											"notes",
+											"sourceUrl",
+											"tags"
 										]
 									}
 								},
@@ -3537,8 +3541,7 @@
 													"lunch",
 													"dinner",
 													"other"
-												],
-												"default": "dinner"
+												]
 											},
 											"recipeId": {
 												"type": [
@@ -3551,7 +3554,6 @@
 											"title": {
 												"type": "string",
 												"maxLength": 160,
-												"default": "",
 												"description": "What is cooked, when it is not a recipe"
 											},
 											"note": {
@@ -3563,7 +3565,11 @@
 											}
 										},
 										"required": [
-											"date"
+											"date",
+											"slot",
+											"recipeId",
+											"title",
+											"note"
 										]
 									}
 								},

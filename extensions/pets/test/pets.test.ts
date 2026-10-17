@@ -62,12 +62,36 @@ describe('pets', () => {
 		const changed = await applied<Pet>(
 			k,
 			'pets.updatePet',
-			{ id: cat.id, pet: { name: 'Pamuk', species: 'cat', memberIds: [admin.id] } },
+			{
+				id: cat.id,
+				pet: {
+					name: 'Pamuk',
+					species: 'cat',
+					breed: '',
+					sex: 'female',
+					birthDate: '2022-04-01',
+					chipNumber: null,
+					vet: 'Pati Klinik, 0212 555 00 00',
+					memberIds: [admin.id],
+					notes: null,
+				},
+			},
 			admin.actor,
 		);
-		expect(changed).toMatchObject({ memberIds: [admin.id], breed: '' });
-		// A field left out is cleared: the form always sends the whole pet.
-		expect(changed.chipNumber).toBeNull();
+		expect(changed).toMatchObject({ memberIds: [admin.id], breed: '', chipNumber: null });
+		// The form always sends the whole pet: one that leaves fields out is refused, not cleared.
+		await expect(
+			k.runner.invoke(
+				'pets.updatePet',
+				{ id: cat.id, pet: { name: 'Pamuk', species: 'cat' } },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await k.route('pets.getPet').call({ params: { petId: cat.id } })).toMatchObject({
+			sex: 'female',
+			vet: 'Pati Klinik, 0212 555 00 00',
+			memberIds: [admin.id],
+		});
 	});
 
 	it('refuses an unknown member, a species that does not exist, a bad date and a missing name', async () => {
@@ -282,7 +306,20 @@ describe('records follow the pet', () => {
 		await applied(
 			k,
 			'pets.updatePet',
-			{ id: cat.id, pet: { name: 'Pamuk 2', species: 'cat' } },
+			{
+				id: cat.id,
+				pet: {
+					name: 'Pamuk 2',
+					species: 'cat',
+					breed: '',
+					sex: null,
+					birthDate: null,
+					chipNumber: null,
+					vet: '',
+					memberIds: [],
+					notes: null,
+				},
+			},
 			admin.actor,
 		);
 		expect((await obligations(cat.id))[0]).toMatchObject({

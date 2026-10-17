@@ -3,6 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
+import { wholeEvent } from './whole-event.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -287,6 +288,32 @@ describe('calendar', () => {
 		expect(still?.end).toBe(epochOf('2026-10-10', '07:00', TZ));
 	});
 
+	it('refuses a replace that leaves fields out, and keeps the event as it was', async () => {
+		const { actor } = await k.member('admin');
+		const r = await k.runner.invoke<{ id: string }>(
+			'calendar.createEvent',
+			{
+				title: 'Dentist',
+				date: '2026-10-08',
+				startTime: '10:00',
+				location: 'Clinic',
+				notes: 'X-ray',
+			},
+			actor,
+		);
+		if (r.status !== 'applied') throw new Error('expected applied');
+		await expect(
+			k.runner.invoke(
+				'calendar.updateEvent',
+				{ id: r.output.id, event: { title: 'Dentist', date: '2026-10-09', startTime: '10:00' } },
+				actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(
+			await k.route('calendar.getEvent').call({ params: { eventId: r.output.id } }),
+		).toMatchObject({ date: '2026-10-08', location: 'Clinic', notes: 'X-ray' });
+	});
+
 	it('updates and deletes events and emits changes', async () => {
 		const { actor } = await k.member('admin');
 		const seen: string[] = [];
@@ -303,7 +330,11 @@ describe('calendar', () => {
 			'calendar.updateEvent',
 			{
 				id: r.output.id,
-				event: { title: 'Veli toplantısı (ertelendi)', date: '2026-10-09', startTime: '19:00' },
+				event: wholeEvent({
+					title: 'Veli toplantısı (ertelendi)',
+					date: '2026-10-09',
+					startTime: '19:00',
+				}),
 			},
 			actor,
 		);

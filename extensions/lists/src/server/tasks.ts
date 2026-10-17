@@ -18,6 +18,7 @@ import {
 	TASK_TITLE_MAX,
 	TaskIdSchema,
 	TaskInputSchema,
+	TaskReplaceSchema,
 	TaskSchema,
 	taskChangedPayload,
 } from '../contract/index.ts';
@@ -182,8 +183,10 @@ export const addTask = defineAction({
 export const updateTask = defineAction({
 	id: 'lists.updateTask',
 	title: 'Change a task',
+	description:
+		'Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.',
 	draftTitle: 'lists:draft_title_update_task',
-	input: z.object({ id: TaskIdSchema, task: TaskInputSchema }),
+	input: z.object({ id: TaskIdSchema, task: TaskReplaceSchema }),
 	output: TaskSchema,
 	approval: {
 		unless: tasksEdit.id,

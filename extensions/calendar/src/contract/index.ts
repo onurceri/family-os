@@ -1,4 +1,4 @@
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema, IsoTimeSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -120,6 +120,28 @@ export const EventInputSchema = z
 		}
 	});
 export type EventInput = z.input<typeof EventInputSchema>;
+
+/**
+ * The whole event as the form saves it: every field, null for one left empty (a null reminder
+ * is no reminder).
+ */
+export const EventReplaceSchema = wholeRecord(EventInputSchema);
+export type EventReplace = z.input<typeof EventReplaceSchema>;
+
+/** The event a whole replacement describes, with its empty fields left out. */
+export function eventFromReplace(event: EventReplace): EventInput {
+	const { endDate, startTime, endTime, location, notes, recurrence, tags, ...rest } = event;
+	return {
+		...rest,
+		...(endDate !== null && { endDate }),
+		...(startTime !== null && { startTime }),
+		...(endTime !== null && { endTime }),
+		...(location !== null && { location }),
+		...(notes !== null && { notes }),
+		...(recurrence !== null && { recurrence }),
+		...(tags !== null && { tags }),
+	};
+}
 
 /** A timed event whose end time is earlier than its start ends the next day (an overnight event). */
 export const endsNextDay = (

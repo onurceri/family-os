@@ -1,7 +1,7 @@
 import { describeRecurrence } from '@famos/time';
 import type { DraftPresenter } from '@famos/ui/slots';
 import { CalendarDays } from '@lucide/svelte';
-import type { EventInput } from '../contract/index.js';
+import { type EventInput, eventFromReplace } from '../contract/index.js';
 import {
 	type ChangeEventInput,
 	changeEventFields,
@@ -82,7 +82,9 @@ export const updateEventPresenter: DraftPresenter<UpdateEventInput> = {
 	icon: CalendarDays,
 	title: (input, c) => input.label || input.event.title || c.t('calendar:draft_an_event'),
 	fields: (input, c, before) =>
-		before ? updateEventFields(input, c, before) : createEventPresenter.fields(input.event, c),
+		before
+			? updateEventFields(input, c, before)
+			: createEventPresenter.fields(eventFromReplace(input.event), c),
 	approveLabel: (c) => c.t('calendar:draft_approve_change'),
 };
 

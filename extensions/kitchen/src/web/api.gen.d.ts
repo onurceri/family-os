@@ -1129,27 +1129,18 @@ export interface operations {
                         /** @description The name of the dish, as written */
                         title: string;
                         /** @description How many it serves, as written, e.g. "4" or "4–6" */
-                        servings?: string | null;
+                        servings: string | null;
                         /** @description Total time in minutes, if stated */
-                        totalMinutes?: number | null;
-                        /**
-                         * @description One ingredient per line, exactly as written, with its amount; no conversions
-                         * @default []
-                         */
-                        ingredients?: string[];
-                        /**
-                         * @description One step per entry, in order
-                         * @default []
-                         */
-                        steps?: string[];
-                        notes?: string | null;
+                        totalMinutes: number | null;
+                        /** @description One ingredient per line, exactly as written, with its amount; no conversions */
+                        ingredients: string[];
+                        /** @description One step per entry, in order */
+                        steps: string[];
+                        notes: string | null;
                         /** @description Where the recipe came from, if known */
-                        sourceUrl?: string | null;
-                        /**
-                         * @description Short labels, e.g. "soup", "quick"
-                         * @default []
-                         */
-                        tags?: string[];
+                        sourceUrl: string | null;
+                        /** @description Short labels, e.g. "soup", "quick" */
+                        tags: string[];
                     };
                 };
             };
@@ -1767,19 +1758,13 @@ export interface operations {
                     entry: {
                         /** @description The day, YYYY-MM-DD */
                         date: string;
-                        /**
-                         * @default dinner
-                         * @enum {string}
-                         */
-                        slot?: "breakfast" | "lunch" | "dinner" | "other";
+                        /** @enum {string} */
+                        slot: "breakfast" | "lunch" | "dinner" | "other";
                         /** @description A saved recipe (its handle from the recipe list), if it is one */
-                        recipeId?: string | null;
-                        /**
-                         * @description What is cooked, when it is not a recipe
-                         * @default
-                         */
-                        title?: string;
-                        note?: string | null;
+                        recipeId: string | null;
+                        /** @description What is cooked, when it is not a recipe */
+                        title: string;
+                        note: string | null;
                     };
                 };
             };

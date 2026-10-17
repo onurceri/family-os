@@ -5,6 +5,7 @@ import {
 	CHORES_EDIT,
 	type Chore,
 	ChoreDetailSchema,
+	type ChoreDetailsSchema,
 	ChoreIdSchema,
 	ChoreSchema,
 	type Completion,
@@ -82,7 +83,7 @@ async function writeAssignees(uow: UnitOfWork, choreId: string, memberIds: reado
 			.execute();
 }
 
-const fieldsOf = (c: z.output<typeof UpdateChoreSchema>['chore']) => ({
+const fieldsOf = (c: z.output<typeof ChoreDetailsSchema>) => ({
 	title: c.title,
 	notes: c.notes || null,
 	recurrence: c.recurrence ? JSON.stringify(c.recurrence) : null,

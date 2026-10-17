@@ -1,4 +1,4 @@
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { z } from 'zod';
 
 /**
@@ -45,7 +45,8 @@ export const AmbientSettingsSchema = z.object({
 export type AmbientSettings = z.infer<typeof AmbientSettingsSchema>;
 
 export const UpdateWeatherInputSchema = WeatherSettingsSchema;
-export const UpdateTimingInputSchema = TimingSchema;
+/** Both timings, as the settings page saves them: one left out is refused, never reset. */
+export const UpdateTimingInputSchema = wholeRecord(TimingSchema);
 
 export const PhotoIdSchema = idSchema('amb_photo');
 

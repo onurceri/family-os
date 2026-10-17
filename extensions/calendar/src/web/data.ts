@@ -4,6 +4,7 @@ import { sharedRead } from '@famos/ui/famos';
 import type {
 	EventDetail,
 	EventInput,
+	EventReplace,
 	Feed,
 	Occurrence,
 	Subscription,
@@ -27,11 +28,14 @@ export async function loadEvent(eventId: string): Promise<EventDetail> {
 
 export type Outcome = 'applied' | 'drafted';
 
-export async function saveEvent(event: EventInput, id?: string): Promise<Outcome> {
-	const result = id
-		? unwrap(await api.POST('/api/v1/actions/calendar.updateEvent', { body: { id, event } }))
-		: unwrap(await api.POST('/api/v1/actions/calendar.createEvent', { body: event }));
-	return result.status;
+export async function createEvent(event: EventInput): Promise<Outcome> {
+	return unwrap(await api.POST('/api/v1/actions/calendar.createEvent', { body: event })).status;
+}
+
+/** Replaces the event with the whole form. */
+export async function replaceEvent(id: string, event: EventReplace): Promise<Outcome> {
+	return unwrap(await api.POST('/api/v1/actions/calendar.updateEvent', { body: { id, event } }))
+		.status;
 }
 
 export async function deleteEvent(id: string, occurrence?: string): Promise<Outcome> {

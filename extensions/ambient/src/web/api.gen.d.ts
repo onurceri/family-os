@@ -1755,10 +1755,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @default 5 */
-                    idleMinutes?: number;
-                    /** @default 30 */
-                    slideSeconds?: number;
+                    idleMinutes: number;
+                    slideSeconds: number;
                 };
             };
         };

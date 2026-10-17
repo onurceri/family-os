@@ -3,8 +3,8 @@ import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '
 import {
 	type Chore,
 	ChoreDetailsSchema,
-	type CreateChoreInput,
 	type Rotation,
+	type UpdateChoreInput,
 } from '../contract/index.js';
 import type { ChoresT } from './i18n.js';
 
@@ -52,7 +52,7 @@ export function fromChore(chore: Chore): ChoreFormValue {
 	};
 }
 
-export function toDetails(v: ChoreFormValue): Omit<CreateChoreInput, 'assigneeIds'> {
+export function toDetails(v: ChoreFormValue): UpdateChoreInput['chore'] {
 	const until = v.until.trim() || null;
 	const recurrence =
 		v.repeat === 'daily' || v.repeat === 'monthly'

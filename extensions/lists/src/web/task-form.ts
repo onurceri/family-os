@@ -1,6 +1,6 @@
 import { Temporal, WEEKDAYS, type Weekday } from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
-import { type Task, type TaskInput, TaskInputSchema } from '../contract/index.js';
+import { type Task, type TaskInput, TaskInputSchema, type TaskReplace } from '../contract/index.js';
 
 /** Editable task form state; plain strings so inputs can bind to them. */
 export interface TaskFormValue {
@@ -50,7 +50,7 @@ export function taskFormFrom(source: TaskInput | Task, today: string): TaskFormV
 	};
 }
 
-export function taskInputFrom(v: TaskFormValue): TaskInput {
+export function taskInputFrom(v: TaskFormValue): TaskReplace {
 	const text = (s: string) => s.trim() || null;
 	const until = text(v.until);
 	const recurrence =

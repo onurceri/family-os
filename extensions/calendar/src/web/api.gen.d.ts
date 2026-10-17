@@ -149,7 +149,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change an event */
+        /**
+         * Change an event
+         * @description Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.
+         */
         post: operations["calendar.updateEvent"];
         delete?: never;
         options?: never;
@@ -1727,28 +1730,22 @@ export interface operations {
                     event: {
                         /** @description Short title, e.g. "Zoo trip" */
                         title: string;
-                        /**
-                         * @description True when the event has no time of day
-                         * @default false
-                         */
-                        allDay?: boolean;
+                        /** @description True when the event has no time of day */
+                        allDay: boolean;
                         /** @description Start date, YYYY-MM-DD, in the family time zone */
                         date: string;
                         /** @description Last day of a multi-day all-day event (inclusive) */
-                        endDate?: string;
+                        endDate: string | null;
                         /** @description Start time HH:MM; required unless allDay */
-                        startTime?: string;
+                        startTime: string | null;
                         /** @description End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day. */
-                        endTime?: string;
-                        /**
-                         * @description Family members involved; empty means the whole family
-                         * @default []
-                         */
-                        memberIds?: string[];
-                        location?: string;
-                        notes?: string;
+                        endTime: string | null;
+                        /** @description Family members involved; empty means the whole family */
+                        memberIds: string[];
+                        location: string | null;
+                        notes: string | null;
                         /** @description Repeat rule; omit for a one-off event */
-                        recurrence?: {
+                        recurrence: {
                             /** @enum {string} */
                             freq: "daily";
                             /** @default 1 */
@@ -1767,11 +1764,11 @@ export interface operations {
                             /** @default 1 */
                             interval?: number;
                             until?: string;
-                        };
+                        } | null;
                         /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default */
-                        reminder?: number | null;
+                        reminder: number | null;
                         /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
-                        tags?: string[];
+                        tags: string[] | null;
                     };
                 };
             };

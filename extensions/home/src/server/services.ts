@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
 	AddServiceSchema,
 	HomeIdSchema,
+	type ServiceFieldsSchema,
 	ServiceIdSchema,
 	ServiceSchema,
 	serviceUrl,
@@ -24,7 +25,7 @@ async function loadService(uow: UnitOfWork, id: string): Promise<ServiceRow> {
 	return row;
 }
 
-const fieldsOf = (s: z.output<typeof UpdateServiceSchema>['service']) => ({
+const fieldsOf = (s: z.output<typeof ServiceFieldsSchema>) => ({
 	kind: s.kind,
 	provider: s.provider,
 	account_number: s.accountNumber || null,

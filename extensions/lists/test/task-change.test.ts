@@ -78,7 +78,14 @@ describe('an edit saved from the task form that needs approval', () => {
 		if (made.status !== 'applied') throw new Error('expected a task');
 		const ivy = await k.member('supervised', 'Ivy');
 		// The form sends the whole task back with the one field the person changed.
-		const task = { title: 'Fractions worksheet', notes: 'Pages 4 and 5', dueDate: '2026-10-20' };
+		const task = {
+			title: 'Fractions worksheet',
+			assigneeId: null,
+			notes: 'Pages 4 and 5',
+			dueDate: '2026-10-20',
+			dueTime: null,
+			recurrence: null,
+		};
 		const result = await k.runner.invoke(
 			'lists.updateTask',
 			{ id: made.output.id, task },

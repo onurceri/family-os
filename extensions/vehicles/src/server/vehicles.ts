@@ -16,6 +16,7 @@ import {
 	UpdateVehicleSchema,
 	VEHICLE_AUDIENCE,
 	VEHICLE_PRESETS,
+	type VehicleFieldsSchema,
 	VehicleIdSchema,
 	VehicleLogIdSchema,
 	VehicleLogSchema,
@@ -48,7 +49,7 @@ async function load(uow: UnitOfWork, id: string): Promise<VehicleRow> {
 	return row;
 }
 
-const fieldsOf = (v: z.output<typeof UpdateVehicleSchema>['vehicle']) => ({
+const fieldsOf = (v: z.output<typeof VehicleFieldsSchema>) => ({
 	name: v.name,
 	plate: v.plate,
 	make: v.make,

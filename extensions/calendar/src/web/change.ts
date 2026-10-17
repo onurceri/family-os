@@ -5,7 +5,7 @@ import {
 	type DraftField,
 	type PresenterContext,
 } from '@famos/ui/slots';
-import type { EventInput } from '../contract/index.js';
+import type { EventReplace } from '../contract/index.js';
 import { when } from './instead.js';
 
 /** What a `calendar.changeEvent` draft carries. */
@@ -149,7 +149,7 @@ export function changeEventFields(
 }
 
 /** What a `calendar.updateEvent` draft carries: the whole event as the form saved it. */
-export type UpdateEventInput = { id: string; label?: string; event: EventInput };
+export type UpdateEventInput = { id: string; label?: string; event: EventReplace };
 
 /**
  * The rows of a saved edit of an event: the form sends every field, and `before` holds the ones

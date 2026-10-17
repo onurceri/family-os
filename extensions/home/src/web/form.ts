@@ -7,12 +7,12 @@ import {
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import type {
 	Home,
-	HomeFields,
+	HomeReplace,
 	Item,
 	ItemFields,
 	Service,
-	ServiceFields,
 	ServiceKind,
+	ServiceReplace,
 	Tenure,
 } from '../contract/index.js';
 
@@ -35,7 +35,7 @@ export const fromHome = (h: Home): HomeFormValue => ({
 	tenure: h.tenure,
 	notes: h.notes ?? '',
 });
-export const toHomeFields = (v: HomeFormValue): HomeFields => ({
+export const toHomeFields = (v: HomeFormValue): HomeReplace => ({
 	name: v.name.trim(),
 	address: v.address.trim(),
 	tenure: v.tenure,
@@ -113,7 +113,7 @@ export const fromService = (s: Service): ServiceFormValue => ({
 	dueDay: s.dueDay === null ? '' : String(s.dueDay),
 	notes: s.notes ?? '',
 });
-export const toServiceFields = (v: ServiceFormValue): ServiceFields => {
+export const toServiceFields = (v: ServiceFormValue): ServiceReplace => {
 	const day = Number.parseInt(v.dueDay, 10);
 	return {
 		kind: v.kind,

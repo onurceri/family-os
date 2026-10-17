@@ -2346,8 +2346,7 @@
 											},
 											"address": {
 												"type": "string",
-												"maxLength": 300,
-												"default": ""
+												"maxLength": 300
 											},
 											"tenure": {
 												"type": "string",
@@ -2355,8 +2354,7 @@
 													"owner",
 													"tenant",
 													"other"
-												],
-												"default": "owner"
+												]
 											},
 											"notes": {
 												"type": [
@@ -2367,7 +2365,10 @@
 											}
 										},
 										"required": [
-											"name"
+											"name",
+											"address",
+											"tenure",
+											"notes"
 										]
 									}
 								},
@@ -4771,8 +4772,7 @@
 													"insurance",
 													"dues",
 													"other"
-												],
-												"default": "other"
+												]
 											},
 											"provider": {
 												"type": "string",
@@ -4805,7 +4805,11 @@
 											}
 										},
 										"required": [
-											"provider"
+											"kind",
+											"provider",
+											"accountNumber",
+											"dueDay",
+											"notes"
 										]
 									}
 								},

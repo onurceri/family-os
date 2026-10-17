@@ -6,6 +6,7 @@ import {
 	type EventDetail,
 	type EventInput,
 	EventInputSchema,
+	type EventReplace,
 	TIMED_REMINDERS,
 } from '../contract/index.js';
 
@@ -138,6 +139,25 @@ export function inputFrom(v: EventFormValue): EventInput {
 	if (recurrence) input.recurrence = recurrence;
 	if (v.tags.length) input.tags = v.tags;
 	return input;
+}
+
+/** Form → the whole event for a replace: every field, null for one left empty. */
+export function replaceFrom(v: EventFormValue): EventReplace {
+	const input = inputFrom(v);
+	return {
+		title: input.title,
+		allDay: v.allDay,
+		date: input.date,
+		endDate: input.endDate ?? null,
+		startTime: input.startTime ?? null,
+		endTime: input.endTime ?? null,
+		memberIds: v.memberIds,
+		location: input.location ?? null,
+		notes: input.notes ?? null,
+		recurrence: input.recurrence ?? null,
+		reminder: input.reminder ?? null,
+		tags: input.tags ?? [],
+	};
 }
 
 /**

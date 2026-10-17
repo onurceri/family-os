@@ -23,6 +23,8 @@ import {
 	EventDetailSchema,
 	EventIdSchema,
 	EventInputSchema,
+	EventReplaceSchema,
+	eventFromReplace,
 	MemberIdSchema,
 	OccurrenceSchema,
 	RangeQuerySchema,
@@ -276,8 +278,10 @@ export const createEvent = defineAction({
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
 	title: 'Change an event',
+	description:
+		'Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.',
 	draftTitle: 'calendar:draft_title_update_event',
-	input: z.object({ id: EventIdSchema, event: EventInputSchema }),
+	input: z.object({ id: EventIdSchema, event: EventReplaceSchema }),
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
 	targetTitle: eventTitle,
@@ -293,12 +297,13 @@ export const updateEvent = defineAction({
 		if (!row) return null;
 		const { timeZone } = await ctx.family.settings();
 		const { current } = eventAsItIs(row, undefined);
-		const keys = eventFieldsChanged(row, toRow(event, timeZone));
+		const keys = eventFieldsChanged(row, toRow(eventFromReplace(event), timeZone));
 		const now: Record<string, unknown> = { ...current, reminder: effectiveReminder(row) };
 		return Object.fromEntries(keys.map((k) => [k, now[k] ?? null]));
 	},
-	async run(uow, { id, event }) {
+	async run(uow, { id, event: whole }) {
 		await loadEvent(uow, id);
+		const event = eventFromReplace(whole);
 		await assertMembers(uow, event.memberIds ?? []);
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();

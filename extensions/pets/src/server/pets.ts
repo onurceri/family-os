@@ -14,6 +14,7 @@ import {
 	AddTreatmentSchema,
 	PET_AUDIENCE,
 	PET_PRESETS,
+	type PetFieldsSchema,
 	PetIdSchema,
 	PetSchema,
 	PetTreatmentIdSchema,
@@ -48,7 +49,7 @@ async function load(uow: UnitOfWork, id: string): Promise<PetRow> {
 	return row;
 }
 
-const fieldsOf = (p: z.output<typeof UpdatePetSchema>['pet']) => ({
+const fieldsOf = (p: z.output<typeof PetFieldsSchema>) => ({
 	name: p.name,
 	species: p.species,
 	breed: p.breed,

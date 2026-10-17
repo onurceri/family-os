@@ -246,7 +246,17 @@ describe('tasks', () => {
 			(
 				await k.runner.invoke(
 					'lists.updateTask',
-					{ id: own.id, task: { title: 'Read two chapters' } },
+					{
+						id: own.id,
+						task: {
+							title: 'Read two chapters',
+							assigneeId: null,
+							dueDate: '2026-10-20',
+							dueTime: null,
+							recurrence: null,
+							notes: null,
+						},
+					},
 					child,
 				)
 			).status,
@@ -272,6 +282,49 @@ describe('tasks', () => {
 		).rejects.toMatchObject({
 			code: 'bad_request',
 		});
+	});
+
+	it('refuses a replace that leaves fields out, and keeps the task as it was', async () => {
+		const { actor } = await k.member('admin');
+		const ivy = await k.member('supervised', 'Ivy');
+		const made = await applied<Task>(
+			k.runner.invoke(
+				'lists.addTask',
+				{
+					title: 'Fractions worksheet',
+					assigneeId: ivy.member.id,
+					dueDate: '2026-10-20',
+					notes: 'Page 4',
+				},
+				actor,
+			),
+		);
+		const refused = await k.runner
+			.invoke('lists.updateTask', { id: made.id, task: { title: 'Fractions' } }, actor)
+			.catch((error: unknown) => error);
+		expect(refused).toMatchObject({ code: 'bad_request' });
+		const missing = Object.keys(
+			(refused as { details: { properties: { task: { properties: object } } } }).details.properties
+				.task.properties,
+		);
+		expect(missing.sort()).toEqual(['assigneeId', 'dueDate', 'dueTime', 'notes', 'recurrence']);
+		expect((await tasks()).find((t) => t.id === made.id)).toMatchObject({
+			title: 'Fractions worksheet',
+			assigneeId: ivy.member.id,
+			dueDate: '2026-10-20',
+			notes: 'Page 4',
+		});
+		// The whole task, with null for what is left empty, replaces it.
+		const whole = {
+			title: 'Fractions',
+			assigneeId: ivy.member.id,
+			dueDate: null,
+			dueTime: null,
+			recurrence: null,
+			notes: null,
+		};
+		await k.runner.invoke('lists.updateTask', { id: made.id, task: whole }, actor);
+		expect((await tasks()).find((t) => t.id === made.id)).toMatchObject(whole);
 	});
 
 	it('lists dated tasks first, by date and time', async () => {

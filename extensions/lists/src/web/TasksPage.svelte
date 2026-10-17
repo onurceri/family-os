@@ -13,6 +13,7 @@
 	import { onDestroy } from 'svelte';
 	import { TASK_TITLE_MAX, type Task } from '../contract/index.js';
 	import {
+		addTask,
 		completeTask,
 		deleteTask,
 		loadTask,
@@ -162,7 +163,7 @@
 	// False when it failed, so the composer gives the typing back.
 	async function quickAdd(title: string): Promise<boolean> {
 		try {
-			report(await saveTask({ title, assigneeId: defaultAssignee }), t('saved'));
+			report(await addTask({ title, assigneeId: defaultAssignee }), t('saved'));
 			return true;
 		} catch {
 			app.toast(t('error'));

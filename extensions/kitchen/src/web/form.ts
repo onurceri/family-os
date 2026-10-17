@@ -1,5 +1,5 @@
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
-import type { Recipe, RecipeFields } from '../contract/index.js';
+import type { Recipe, RecipeReplace } from '../contract/index.js';
 
 /** The recipe form as the inputs hold it: lists are one entry per line. */
 export interface RecipeFormValue {
@@ -41,7 +41,7 @@ const lines = (text: string) =>
 		.map((l) => l.trim())
 		.filter(Boolean);
 
-export function toFields(v: RecipeFormValue): RecipeFields {
+export function toFields(v: RecipeFormValue): RecipeReplace {
 	const minutes = Number.parseInt(v.minutes, 10);
 	return {
 		title: v.title.trim(),

@@ -125,7 +125,17 @@ describe('task reminders', () => {
 		);
 		await k.runner.invoke(
 			'lists.updateTask',
-			{ id, task: { title: 'Form', assigneeId: ann.id, dueDate: '2026-10-10', dueTime: '12:00' } },
+			{
+				id,
+				task: {
+					title: 'Form',
+					assigneeId: ann.id,
+					dueDate: '2026-10-10',
+					dueTime: '12:00',
+					recurrence: null,
+					notes: null,
+				},
+			},
 			ann.actor,
 		);
 		await advanceTo(at('2026-10-08', '09:30'));

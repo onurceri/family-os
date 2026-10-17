@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "vehicles",
 		"version": "0.1.0",
-		"sdk": "^0.6.0",
+		"sdk": "^0.6.4",
 		"dependsOn": [
 			"records"
 		],

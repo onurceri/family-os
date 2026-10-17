@@ -1580,13 +1580,11 @@
 													"fish",
 													"reptile",
 													"other"
-												],
-												"default": "other"
+												]
 											},
 											"breed": {
 												"type": "string",
-												"maxLength": 80,
-												"default": ""
+												"maxLength": 80
 											},
 											"sex": {
 												"type": [
@@ -1615,7 +1613,6 @@
 											"vet": {
 												"type": "string",
 												"maxLength": 300,
-												"default": "",
 												"description": "Clinic and phone, free text"
 											},
 											"memberIds": {
@@ -1625,7 +1622,6 @@
 													"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 												},
 												"maxItems": 20,
-												"default": [],
 												"description": "Who looks after it"
 											},
 											"notes": {
@@ -1637,7 +1633,15 @@
 											}
 										},
 										"required": [
-											"name"
+											"name",
+											"species",
+											"breed",
+											"sex",
+											"birthDate",
+											"chipNumber",
+											"vet",
+											"memberIds",
+											"notes"
 										]
 									}
 								},

@@ -4,10 +4,10 @@ import type {
 	AddItemInput,
 	AddServiceInput,
 	Home,
-	HomeFields,
+	HomeReplace,
 	Item,
 	Service,
-	ServiceFields,
+	ServiceReplace,
 	UpdateItemInput,
 } from '../contract/index.js';
 import { api } from './api.js';
@@ -44,7 +44,7 @@ const result = (r: { status: Outcome; output?: unknown }): Result => ({
 export async function addHome(input: AddHomeInput): Promise<Result> {
 	return result(unwrap(await api.POST('/api/v1/actions/home.addHome', { body: input })));
 }
-export const updateHome = async (id: string, home: HomeFields): Promise<Outcome> =>
+export const updateHome = async (id: string, home: HomeReplace): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/home.updateHome', { body: { id, home } })).status;
 export const archiveHome = async (id: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/home.archiveHome', { body: { id } })).status;
@@ -60,7 +60,7 @@ export const archiveItem = async (id: string): Promise<Outcome> =>
 export async function addService(input: AddServiceInput): Promise<Result> {
 	return result(unwrap(await api.POST('/api/v1/actions/home.addService', { body: input })));
 }
-export const updateService = async (id: string, service: ServiceFields): Promise<Outcome> =>
+export const updateService = async (id: string, service: ServiceReplace): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/home.updateService', { body: { id, service } })).status;
 export const archiveService = async (id: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/home.archiveService', { body: { id } })).status;

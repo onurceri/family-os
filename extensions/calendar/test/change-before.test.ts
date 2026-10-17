@@ -4,6 +4,7 @@ import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
 import { changeEventFields, updateEventFields } from '../src/web/change.ts';
+import { wholeEvent } from './whole-event.ts';
 
 // A change card reads "old → new": the server sends what the fields it changes hold now.
 const TZ = 'Europe/Istanbul';
@@ -166,7 +167,7 @@ describe('an edit saved from the event form that needs approval', () => {
 		const id = await add(piano);
 		const leo = await k.member('supervised', 'Leo');
 		// The form sends the whole event back with the one field the person changed.
-		const event = { ...piano, title: "Ivy's piano lesson (Leo says hi)" };
+		const event = wholeEvent({ ...piano, title: "Ivy's piano lesson (Leo says hi)" });
 		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
 		const draft = (await k.route('core.listDrafts').call({
 			actor: admin.actor,
@@ -186,7 +187,7 @@ describe('an edit saved from the event form that needs approval', () => {
 	it('lists a new time against the old day and time', async () => {
 		const id = await add(piano);
 		const leo = await k.member('supervised', 'Leo');
-		const event = { ...piano, startTime: '17:00', endTime: '18:00' };
+		const event = wholeEvent({ ...piano, startTime: '17:00', endTime: '18:00' });
 		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
 		const { before } = await listed(draftId);
 		expect(Object.keys(before ?? {}).sort()).toEqual(
@@ -202,7 +203,7 @@ describe('an edit saved from the event form that needs approval', () => {
 		const id = await add(piano);
 		const leo = await k.member('supervised', 'Leo');
 		// The form fills in the default reminder for an event nobody chose one for.
-		const event = { ...piano, reminder: 30 };
+		const event = wholeEvent(piano);
 		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
 		expect((await listed(draftId)).before).toEqual({});
 	});
