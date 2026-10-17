@@ -74,6 +74,11 @@ export interface AppContext {
 	 */
 	awaitsApproval(id: string): boolean;
 	/**
+	 * The change of the signed-in member to the thing with this id that waits for someone else's
+	 * approval, newest first (reactive), so a mark can say what it will become.
+	 */
+	awaitedChange(id: string): AwaitedChange | undefined;
+	/**
 	 * Runs an action through the API with an idempotency key. With `offline: true`
 	 * (only for actions declared `offline`), a call that cannot reach the server is kept in the
 	 * browser and sent later; it resolves with `{ queued: true }` so the page can show the
@@ -112,6 +117,15 @@ export type RunActionResult<O = unknown> =
 	| { queued: true }
 	| { queued: false; status: 'applied'; output: O }
 	| { queued: false; status: 'drafted'; draftId: string };
+
+/** A change waiting for approval, as a mark needs it to say what the thing will become. */
+export interface AwaitedChange {
+	actionId: string;
+	/** The input it would run with (a saved edit, else what was proposed). */
+	input: unknown;
+	/** What the fields it changes hold now, keyed like its input; null when not known. */
+	before: Readonly<Record<string, unknown>> | null;
+}
 
 /** A queued call, as pages need it to mark items "waiting to send". */
 export interface WaitingChange {

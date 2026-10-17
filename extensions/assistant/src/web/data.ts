@@ -70,6 +70,14 @@ export const rejectDraft = async (draftId: string): Promise<Draft> =>
 export const undoDraft = async (draftId: string): Promise<Draft> =>
 	unwrap(await api.POST('/api/v1/core/drafts/{draftId}/undo', { params: { path: { draftId } } }));
 
+/** Sends a suggestion that was taken back again, as a new one waiting for approval. */
+export const suggestDraftAgain = async (draftId: string): Promise<Draft> =>
+	unwrap(
+		await api.POST('/api/v1/core/drafts/{draftId}/suggest-again', {
+			params: { path: { draftId } },
+		}),
+	);
+
 /** Turns a suggestion into the change it offers instead (moving the event already there). */
 export const replaceDraft = async (draftId: string): Promise<Draft> =>
 	unwrap(

@@ -136,6 +136,7 @@
 		},
 		...approvalGates((capability) => session.can(capability)),
 		awaitsApproval: (id) => awaiting.has(id),
+		awaitedChange: (id) => awaiting.get(id),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
 		waiting: () => offline.waitingChanges(),
 		offline: () => offline.showingOld,

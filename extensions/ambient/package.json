@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "ambient",
 		"version": "0.1.0",
-		"sdk": "^0.6.5",
+		"sdk": "^0.6.6",
 		"optional": [
 			"calendar"
 		],

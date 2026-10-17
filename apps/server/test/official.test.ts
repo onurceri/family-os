@@ -119,7 +119,7 @@ describe('the official index', () => {
 		});
 		rmSync(`${index}.sig`);
 		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
-			details: { reason: 'unreachable' },
+			details: { reason: 'unsigned' },
 		});
 	});
 
@@ -134,6 +134,19 @@ describe('the official index', () => {
 			details: { reason: 'unreachable' },
 		});
 		site.answers.set(INDEX_URL, () => new Response('', { status: 500 }));
+		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+			details: { reason: 'unreachable' },
+		});
+		// No index published there (yet): the host answered, so it is not this server's connection.
+		site.answers.set(INDEX_URL, () => new Response('', { status: 404 }));
+		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+			details: { reason: 'missing' },
+		});
+		site.answers.set(INDEX_URL, () => new Response('', { status: 410 }));
+		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+			details: { reason: 'missing' },
+		});
+		site.answers.set(INDEX_URL, () => new Response('', { status: 503 }));
 		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
 			details: { reason: 'unreachable' },
 		});
@@ -232,6 +245,10 @@ describe('downloading a package the index lists', () => {
 		site.answers.set(entry.url, () => new Response('', { status: 301 }));
 		await expect(downloadPackage(entry, official(site.fetch))).rejects.toMatchObject({
 			details: { reason: 'unreachable' },
+		});
+		site.answers.set(entry.url, () => new Response('', { status: 404 }));
+		await expect(downloadPackage(entry, official(site.fetch))).rejects.toMatchObject({
+			details: { reason: 'missing' },
 		});
 	});
 });

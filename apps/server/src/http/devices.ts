@@ -138,6 +138,12 @@ const PollSchema = z.discriminatedUnion('status', [
 	z.object({ status: z.literal('paired'), device: z.object({ id: z.string(), name: z.string() }) }),
 ]);
 
+const PairingStatusSchema = z.discriminatedUnion('status', [
+	z.object({ status: z.literal('waiting'), answering: z.boolean() }),
+	z.object({ status: z.literal('connected'), deviceId: z.string() }),
+	z.object({ status: z.literal('expired') }),
+]);
+
 const GrantSchema = z.object({
 	name: z.string().trim().min(1).max(60),
 	capabilities: z.array(z.string().max(80)).max(50),
@@ -229,7 +235,10 @@ function mountDisplayRoutes(
 			},
 		},
 		responses: {
-			200: { description: 'Confirmed', ...json(z.object({ name: z.string() })) },
+			200: {
+				description: 'Confirmed; the display is connected once it claims it (see the pairing)',
+				...json(z.object({ name: z.string(), pairingId: z.string() })),
+			},
 			...errorResponses,
 		},
 		security: [{ session: [] }],
@@ -240,6 +249,26 @@ function mountDisplayRoutes(
 			throw new FamosError('unauthenticated', 'Sign in required');
 		const { userCode, ...grant } = c.req.valid('json');
 		return c.json(await devices.confirmPairing(actor, userCode, grant), 200);
+	});
+
+	const pairing = createRoute({
+		method: 'get',
+		path: '/api/v1/core/displays/pairings/{pairingId}',
+		operationId: 'core.getDisplayPairing',
+		summary: 'Whether the display of a confirmed code has claimed it yet',
+		tags: ['core'],
+		request: { params: z.object({ pairingId: z.string().max(80) }) },
+		responses: {
+			200: { description: 'The pairing, seen from the admin', ...json(PairingStatusSchema) },
+			...errorResponses,
+		},
+		security: [{ session: [] }],
+	});
+	app.openapi(pairing, async (c) => {
+		const actor = c.get('actor');
+		if (!actor || actor.kind === 'display')
+			throw new FamosError('unauthenticated', 'Sign in required');
+		return c.json(await devices.pairingStatus(actor, c.req.valid('param').pairingId), 200);
 	});
 
 	const grantable = createRoute({

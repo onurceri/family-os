@@ -53,8 +53,10 @@ const IndexSchema = z.object({
 	extensions: z.array(EntrySchema).max(5000),
 });
 
-const problem = (reason: 'unreachable' | 'unsigned' | 'invalid' | 'mismatch', message: string) =>
-	new FamosError('bad_request', message, { reason });
+const problem = (
+	reason: 'unreachable' | 'missing' | 'unsigned' | 'invalid' | 'mismatch',
+	message: string,
+) => new FamosError('bad_request', message, { reason });
 
 /**
  * Reads an address with plain `fetch`, to a fixed host only: https, no redirect followed (a
@@ -78,6 +80,12 @@ async function fetchCapped(
 	if (res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)) {
 		await res.body?.cancel();
 		throw problem('unreachable', `${url.href} answered with a redirect, which is not followed`);
+	}
+	// The host answered but has no such file (not published yet, or taken down): that is not this
+	// server's connection, so it is told apart from a host that could not be reached.
+	if (res.status === 404 || res.status === 410) {
+		await res.body?.cancel();
+		throw problem('missing', `${url.href} answered ${res.status}`);
 	}
 	if (res.status !== 200) {
 		await res.body?.cancel();
@@ -141,7 +149,12 @@ export async function fetchIndex(official: OfficialIndex): Promise<IndexedPackag
 		new URL(`${url.href}.sig`),
 		INDEX_LIMITS.signatureBytes,
 		INDEX_LIMITS.indexMs,
-	);
+	).catch((error: unknown) => {
+		// The index is there and its signature is not: it is unsigned, not missing.
+		if (isFamosError(error) && (error.details as { reason?: string })?.reason === 'missing')
+			throw problem('unsigned', 'The index has no signature');
+		throw error;
+	});
 	checkSignature(bytes, signature, official.trustRoots);
 	let index: z.infer<typeof IndexSchema>;
 	try {

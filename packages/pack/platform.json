@@ -1,5 +1,5 @@
 {
-	"sdk": "0.6.5",
+	"sdk": "0.6.6",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -152,6 +152,8 @@
 		"@famos/ui/slots": [
 			"SETTINGS_SECTIONS",
 			"askedBy",
+			"awaitingText",
+			"changed",
 			"changedValue",
 			"defineWebExtension",
 			"draftHeadline",

@@ -30,7 +30,7 @@
 	} = $props();
 
 	const { app, t } = useLists();
-	const level = $derived(urgency(task, today));
+	const level = $derived(urgency(task, today, app.weekStart()));
 	const assignee = $derived(app.members().find((m) => m.id === task.assigneeId));
 	const due = $derived(
 		task.dueDate ? dueLabel(task, today, t, app.dateLocale(), app.hourCycle()) : null,

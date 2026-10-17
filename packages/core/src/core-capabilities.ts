@@ -61,11 +61,16 @@ export const CORE_CAPABILITIES = {
 		level: 'manage',
 		critical: true,
 	}),
-	/** Create personal API tokens, so AI apps can use FamilyOS through MCP. */
+	/**
+	 * Create personal API tokens, so AI apps can use FamilyOS through MCP. Not for supervised
+	 * members by default: a token lets an app the family never chose read all they can see and
+	 * send it to its own provider, outside the family's AI settings. An admin can still grant it.
+	 */
 	mcpUse: defineCapability({
 		id: 'core.mcp.use',
 		label: 'app:cap_mcp_use',
 		level: 'use',
+		defaults: { admin: true, member: true, supervised: false, guest: false },
 	}),
 	/** Keep personal notes the assistant remembers. */
 	memoryUse: defineCapability({

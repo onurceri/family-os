@@ -128,6 +128,21 @@ async function addMember(cookie: string, displayName: string, roleId: string) {
 	return res.body.output.id as string;
 }
 
+/**
+ * A role from Supervised that an admin allowed AI apps: supervised members do not have app keys
+ * by default.
+ */
+async function teenRole(cookie: string) {
+	const res = await call(
+		'POST',
+		'/api/v1/actions/core.createRole',
+		{ name: 'Teen', base: 'supervised', overrides: { 'core.mcp.use': true } },
+		cookie,
+	);
+	expect(res.body.status).toBe('applied');
+	return res.body.output.id as string;
+}
+
 async function enable(cookie: string, on = true) {
 	expect((await call('PUT', '/api/v1/mcp/settings', { enabled: on }, cookie)).status).toBe(200);
 }
@@ -228,18 +243,19 @@ describe('personal API tokens', () => {
 
 	it('keeps tokens private; an admin sees and revokes everyone’s; guests cannot create', async () => {
 		const { adminId, cookie } = await setup();
-		const kid = await addMember(cookie, 'Kid', 'supervised');
+		const teen = await teenRole(cookie);
+		const kid = await addMember(cookie, 'Kid', teen);
 		const guest = await addMember(cookie, 'Guest', 'guest');
-		const mine = await newToken(kid, 'supervised');
+		const mine = await newToken(kid, teen);
 		const theirs = await newToken(adminId, 'admin', 'read', 'Admin laptop');
 
-		const kidSees = await runtime.kernel.apiTokens.list(memberActor(kid, 'supervised'));
+		const kidSees = await runtime.kernel.apiTokens.list(memberActor(kid, teen));
 		expect(kidSees.map((t) => t.id)).toEqual([mine.token.id]);
 		await expect(
-			runtime.kernel.apiTokens.list(memberActor(kid, 'supervised'), { all: true }),
+			runtime.kernel.apiTokens.list(memberActor(kid, teen), { all: true }),
 		).rejects.toMatchObject({ code: 'forbidden' });
 		await expect(
-			runtime.kernel.apiTokens.revoke(memberActor(kid, 'supervised'), theirs.token.id),
+			runtime.kernel.apiTokens.revoke(memberActor(kid, teen), theirs.token.id),
 		).rejects.toMatchObject({ code: 'not_found' });
 
 		const all = await call('GET', '/api/v1/mcp/tokens?all=true', undefined, cookie);
@@ -252,6 +268,26 @@ describe('personal API tokens', () => {
 		expect(gone.status).toBe(200);
 
 		await expect(newToken(guest, 'guest')).rejects.toMatchObject({ code: 'forbidden' });
+	});
+
+	it('gives supervised members no app key by default, and stops a key once its role loses it', async () => {
+		const { cookie } = await setup();
+		await enable(cookie);
+		const child = await addMember(cookie, 'Leo', 'supervised');
+		await expect(newToken(child, 'supervised')).rejects.toMatchObject({ code: 'forbidden' });
+
+		const teen = await teenRole(cookie);
+		const kid = await addMember(cookie, 'Kid', teen);
+		const key = await newToken(kid, teen);
+		expect((await rpc(key.secret, legacyList)).status).toBe(200);
+		const back = await call(
+			'POST',
+			'/api/v1/actions/core.updateRole',
+			{ id: teen, overrides: {} },
+			cookie,
+		);
+		expect(back.body.status).toBe('applied');
+		expect((await rpc(key.secret, legacyList)).status).toBe(403);
 	});
 
 	it('revokes a member’s tokens when they are archived', async () => {
@@ -419,9 +455,10 @@ describe('tools', () => {
 	async function family() {
 		const { adminId, cookie } = await setup();
 		await enable(cookie);
-		const kid = await addMember(cookie, 'Kid', 'supervised');
+		const teen = await teenRole(cookie);
+		const kid = await addMember(cookie, 'Kid', teen);
 		const admin = await newToken(adminId, 'admin');
-		const child = await newToken(kid, 'supervised');
+		const child = await newToken(kid, teen);
 		return { adminId, cookie, kid, admin, child };
 	}
 

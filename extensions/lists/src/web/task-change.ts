@@ -1,10 +1,5 @@
 import { describeRecurrence, todayIn } from '@famos/time';
-import {
-	changedValue,
-	type DraftBefore,
-	type DraftField,
-	type PresenterContext,
-} from '@famos/ui/slots';
+import { changed, type DraftBefore, type DraftField, type PresenterContext } from '@famos/ui/slots';
 import type { TaskReplace } from '../contract/index.js';
 import { dueLabel } from './format.js';
 import type { ListsT } from './i18n.js';
@@ -38,7 +33,7 @@ export function changeTaskFields(
 	if (input.title !== undefined && (was !== undefined || input.title !== input.label))
 		fields.push({
 			label: was === undefined ? t('draft_new_title') : t('field_title'),
-			value: changedValue(str(was?.title) ?? undefined, input.title),
+			...changed(str(was?.title) ?? undefined, input.title),
 			path: 'title',
 		});
 	if (input.assigneeId !== undefined) {
@@ -46,7 +41,7 @@ export function changeTaskFields(
 			c.members.find((m) => m.id === id)?.displayName ?? t('anyone');
 		fields.push({
 			label: t('who'),
-			value: changedValue(
+			...changed(
 				was && 'assigneeId' in was ? name(str(was.assigneeId)) : undefined,
 				name(input.assigneeId),
 			),
@@ -63,20 +58,16 @@ export function changeTaskFields(
 		const newTime = input.dueTime !== undefined ? input.dueTime : oldTime;
 		fields.push({
 			label: t('due'),
-			value:
-				was && 'dueDate' in was
-					? changedValue(due(oldDate, oldTime), due(newDate, newDate ? newTime : null))
-					: due(input.dueDate ?? null, input.dueTime ?? null),
+			...(was && 'dueDate' in was
+				? changed(due(oldDate, oldTime), due(newDate, newDate ? newTime : null))
+				: { value: due(input.dueDate ?? null, input.dueTime ?? null) }),
 			paths: ['dueDate', 'dueTime'],
 		});
 	}
 	if (input.notes !== undefined)
 		fields.push({
 			label: t('notes'),
-			value: changedValue(
-				was && 'notes' in was ? (str(was.notes) ?? '—') : undefined,
-				input.notes || '—',
-			),
+			...changed(was && 'notes' in was ? (str(was.notes) ?? '—') : undefined, input.notes || '—'),
 			path: 'notes',
 		});
 	return fields;
@@ -122,7 +113,7 @@ export function updateTaskFields(
 				: t('repeat_none');
 		fields.push({
 			label: t('repeat'),
-			value: changedValue(repeat(before.recurrence), repeat(task.recurrence)),
+			...changed(repeat(before.recurrence), repeat(task.recurrence)),
 			path: 'recurrence',
 		});
 	}

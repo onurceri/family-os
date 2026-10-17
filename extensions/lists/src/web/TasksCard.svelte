@@ -37,14 +37,14 @@
 		return app.onEvent('lists.task.', () => void load());
 	});
 
-	const RANK = { today: 0, soon: 1, later: 2, none: 3, overdue: 4 } as const;
+	const RANK = { today: 0, soon: 1, nextWeek: 2, later: 3, none: 4, overdue: 5 } as const;
 	const open = $derived.by(() => {
 		const meId = app.me()?.id;
 		return tasks
-			.filter((task) => task.doneAt === null && urgency(task, today) !== 'overdue')
+			.filter((task) => task.doneAt === null && urgency(task, today, app.weekStart()) !== 'overdue')
 			.toSorted(
 				(a, b) =>
-					RANK[urgency(a, today)] - RANK[urgency(b, today)] ||
+					RANK[urgency(a, today, app.weekStart())] - RANK[urgency(b, today, app.weekStart())] ||
 					Number(b.assigneeId === meId) - Number(a.assigneeId === meId),
 			);
 	});
@@ -57,7 +57,7 @@
 		report({
 			count: open.length,
 			quietKey: 'lists:quiet_tasks',
-			urgent: open.filter((task) => urgency(task, today) === 'today').length,
+			urgent: open.filter((task) => urgency(task, today, app.weekStart()) === 'today').length,
 		});
 	});
 
@@ -96,7 +96,7 @@
 			<TodayRow
 				title={task.title}
 				meta={metaOf(task)}
-				metaTone={urgency(task, today) === 'today' ? 'heat' : 'soft'}
+				metaTone={urgency(task, today, app.weekStart()) === 'today' ? 'heat' : 'soft'}
 				check={false}
 				checkLabel={t('mark_done_task', { title: task.title })}
 				busy={task.id in busy}
