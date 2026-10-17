@@ -1,0 +1,35 @@
+import { openDatabase, runMigrations } from '@famos/testing';
+import { sql } from 'kysely';
+import { expect, it } from 'vitest';
+import { migrations } from '../src/server/store.ts';
+
+/** What the release before who-is-home had. */
+const { '0003_people': _people, ...before } = migrations;
+
+it('adds the people to a home connected before, keeping what it shows', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	await runMigrations(db, [{ scope: 'homeassistant', migrations: before }]);
+	await sql`insert into homeassistant_connection (id, base_url, sealed_token, status, created_at, updated_at)
+		values ('home', 'http://192.168.1.20:8123', 'sealed', 'ok', 1, 1)`.execute(db);
+	await sql`insert into homeassistant_items (id, entity_id, label, position, created_at, updated_at)
+		values ('ha_item_1', 'sensor.outside', 'Outside', 0, 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'homeassistant', migrations }]);
+
+	const items = await sql<{ label: string }>`select label from homeassistant_items`.execute(db);
+	expect(items.rows).toEqual([{ label: 'Outside' }]);
+	const list = await sql<{ name: string; strict: number }>`pragma table_list`.execute(db);
+	expect(list.rows.find((t) => t.name === 'homeassistant_people')?.strict).toBe(1);
+
+	// A new link shows nothing and nothing on displays until the person chooses.
+	await sql`insert into homeassistant_people (member_id, person_entity, created_at, updated_at)
+		values ('member_1', 'person.alex', 1, 1)`.execute(db);
+	const people = await sql<{ level: string; on_displays: number }>`
+		select level, on_displays from homeassistant_people`.execute(db);
+	expect(people.rows).toEqual([{ level: 'none', on_displays: 0 }]);
+	// A person is one member's at most.
+	await expect(
+		sql`insert into homeassistant_people (member_id, person_entity, created_at, updated_at)
+			values ('member_2', 'person.alex', 1, 1)`.execute(db),
+	).rejects.toThrow();
+});

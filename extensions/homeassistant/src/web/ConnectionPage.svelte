@@ -30,10 +30,11 @@
 	import { checkAgain, connect, disconnect, loadConnection } from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import ItemsSection from './ItemsSection.svelte';
+	import PeopleSection from './PeopleSection.svelte';
 
 	/**
 	 * Settings, Family, Home Assistant: the address and the token of the family's Home Assistant,
-	 * and what the last check found. Managers only. The token is typed into the panel once; it is
+	 * what the last check found, what to show and which person each member is. Managers only. The token is typed into the panel once; it is
 	 * never shown again, so changing the connection asks for it again.
 	 */
 	const { app, t } = useHomeAssistant();
@@ -245,6 +246,7 @@
 				{advice(connected)}
 			</Notice>
 			<ItemsSection bind:this={items} bind:full />
+			<PeopleSection />
 		{:else}
 			<Card variant="quiet" pad>
 				<p class="font-semibold">{t('none')}</p>

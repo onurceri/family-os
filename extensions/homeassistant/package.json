@@ -10,6 +10,7 @@
 		"sdk": "^0.7.0",
 		"capabilities": [
 			"homeassistant.view",
+			"homeassistant.presence",
 			"homeassistant.manage"
 		],
 		"network": {

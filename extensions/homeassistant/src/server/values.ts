@@ -8,6 +8,9 @@ import {
 	type Entities,
 	EntitiesQuerySchema,
 	EntitiesSchema,
+	type Persons,
+	PersonsSchema,
+	type PresenceList,
 	type Value,
 	type Values,
 	ValuesSchema,
@@ -15,6 +18,7 @@ import {
 import { homeassistantManage, homeassistantView } from './capabilities.ts';
 import { load } from './connection.ts';
 import { loadItems } from './items.ts';
+import { pickPerson } from './presence.ts';
 import { type PickedState, pickState, toValue } from './state.ts';
 
 /**
@@ -23,10 +27,10 @@ import { type PickedState, pickState, toValue } from './state.ts';
  * an entity are kept (see `pickState`). Nothing is stored: a stale value is never shown as current.
  */
 
-const CACHE_MS = 60_000;
-const ENTITY_TIMEOUT_MS = 5_000;
-const ENTITY_MAX_BYTES = 64 * 1024;
-const AT_ONCE = 4;
+export const CACHE_MS = 60_000;
+export const ENTITY_TIMEOUT_MS = 5_000;
+export const ENTITY_MAX_BYTES = 64 * 1024;
+export const AT_ONCE = 4;
 const LIST_TIMEOUT_MS = 10_000;
 const LIST_MAX_BYTES = 4 * 1024 * 1024;
 const MAX_ENTITIES = 50;
@@ -40,7 +44,13 @@ interface Cached<T> {
 /** What one running server remembers, per extension context; it is never persisted. */
 interface Memory {
 	values: Cached<Values> | null;
-	entities: Cached<{ status: Entities['status']; all: Listed[] }> | null;
+	entities: Cached<{
+		status: Entities['status'];
+		all: Listed[];
+		persons: Persons['persons'];
+	}> | null;
+	/** By who asks (a display sees fewer people), each with its own key. */
+	presence: Map<string, Cached<PresenceList>>;
 	/** Rounds in flight, so concurrent callers share one. */
 	inflight: Map<string, Promise<unknown>>;
 }
@@ -53,16 +63,16 @@ interface Listed {
 
 const memories = new WeakMap<object, Memory>();
 
-function memoryOf(ctx: ExtensionContext): Memory {
+export function memoryOf(ctx: ExtensionContext): Memory {
 	let memory = memories.get(ctx);
 	if (!memory) {
-		memory = { values: null, entities: null, inflight: new Map() };
+		memory = { values: null, entities: null, presence: new Map(), inflight: new Map() };
 		memories.set(ctx, memory);
 	}
 	return memory;
 }
 
-function once<T>(memory: Memory, key: string, work: () => Promise<T>): Promise<T> {
+export function once<T>(memory: Memory, key: string, work: () => Promise<T>): Promise<T> {
 	const running = memory.inflight.get(key);
 	if (running) return running as Promise<T>;
 	const promise = work().finally(() => memory.inflight.delete(key));
@@ -71,14 +81,14 @@ function once<T>(memory: Memory, key: string, work: () => Promise<T>): Promise<T
 }
 
 /** The address and the opened token, or null when not connected (or the token cannot be opened). */
-async function credentials(ctx: ExtensionContext) {
+export async function credentials(ctx: ExtensionContext) {
 	const row = await load(ctx.db);
 	if (!row) return null;
 	const token = ctx.secrets.open(row.sealed_token);
 	return { baseUrl: row.base_url, token, stamp: row.updated_at };
 }
 
-const request = (
+export const request = (
 	baseUrl: string,
 	token: string,
 	path: string,
@@ -95,7 +105,7 @@ const request = (
 const UNAVAILABLE: Value = { kind: 'unavailable' };
 
 /** Runs `work` for each of `list`, at most `limit` at a time; stops starting new ones after a throw. */
-async function inParallel<T>(
+export async function inParallel<T>(
 	list: readonly T[],
 	limit: number,
 	work: (entry: T) => Promise<void>,
@@ -201,21 +211,31 @@ export const getValues = defineRoute({
 	},
 });
 
-/** Every entity Home Assistant has that may be shown, reduced to name and value. */
-async function readEntities(
-	ctx: ExtensionContext,
-): Promise<{ status: Entities['status']; all: Listed[] }> {
+type Listing = { status: Entities['status']; all: Listed[]; persons: Persons['persons'] };
+
+/**
+ * Every entity Home Assistant has that may be shown, reduced to name and value, and its people,
+ * reduced to id and name: one read of the whole list serves both pickers.
+ */
+async function readEntities(ctx: ExtensionContext): Promise<Listing> {
+	const none = (status: Entities['status']): Listing => ({ status, all: [], persons: [] });
 	const connection = await credentials(ctx);
-	if (!connection || connection.token === null) return { status: 'not_connected', all: [] };
+	if (!connection || connection.token === null) return none('not_connected');
 	try {
 		const response = await ctx.http.get(
 			request(connection.baseUrl, connection.token, '/api/states', LIST_TIMEOUT_MS, LIST_MAX_BYTES),
 		);
-		if (response.status !== 200) return { status: 'unavailable', all: [] };
+		if (response.status !== 200) return none('unavailable');
 		const body: unknown = JSON.parse(response.text);
-		if (!Array.isArray(body)) return { status: 'unavailable', all: [] };
+		if (!Array.isArray(body)) return none('unavailable');
 		const all: Listed[] = [];
+		const persons: Persons['persons'] = [];
 		for (const entry of body) {
+			const person = pickPerson(entry);
+			if (person) {
+				persons.push(person as Persons['persons'][number]);
+				continue;
+			}
 			const picked = pickState(entry);
 			if (picked)
 				all.push({
@@ -224,17 +244,31 @@ async function readEntities(
 					value: toValue(picked),
 				});
 		}
-		all.sort((a, b) => a.name.localeCompare(b.name) || a.entityId.localeCompare(b.entityId));
-		return { status: 'ok', all };
+		const byName = (a: { name: string; entityId: string }, b: { name: string; entityId: string }) =>
+			a.name.localeCompare(b.name) || a.entityId.localeCompare(b.entityId);
+		all.sort(byName);
+		persons.sort(byName);
+		return { status: 'ok', all, persons };
 	} catch (error) {
-		if (isExternalHttpError(error) && error.code === 'too_large')
-			return { status: 'too_many', all: [] };
+		if (isExternalHttpError(error) && error.code === 'too_large') return none('too_many');
 		ctx.logger.info(
 			{ code: isExternalHttpError(error) ? error.code : 'failed' },
 			'home assistant entities unavailable',
 		);
-		return { status: 'unavailable', all: [] };
+		return none('unavailable');
 	}
+}
+
+/** The whole list, read at most once a minute for both pickers. */
+async function listing(ctx: ExtensionContext, stamp: number): Promise<Listing> {
+	const memory = memoryOf(ctx);
+	const key = String(stamp);
+	const now = ctx.clock.now();
+	const hit = memory.entities;
+	if (hit && hit.key === key && now - hit.at >= 0 && now - hit.at < CACHE_MS) return hit.value;
+	const value = await once(memory, `entities:${key}`, () => readEntities(ctx));
+	memory.entities = { key, at: ctx.clock.now(), value };
+	return value;
 }
 
 export const getEntities = defineRoute({
@@ -247,18 +281,9 @@ export const getEntities = defineRoute({
 	query: EntitiesQuerySchema,
 	response: EntitiesSchema,
 	async handle(ctx, { query }) {
-		const memory = memoryOf(ctx);
 		const connection = await credentials(ctx);
 		if (!connection) return { entities: [], status: 'not_connected' as const };
-		const key = String(connection.stamp);
-		const now = ctx.clock.now();
-		let hit = memory.entities;
-		if (!(hit && hit.key === key && now - hit.at >= 0 && now - hit.at < CACHE_MS)) {
-			const value = await once(memory, `entities:${key}`, () => readEntities(ctx));
-			hit = { key, at: ctx.clock.now(), value };
-			memory.entities = hit;
-		}
-		const { status, all } = hit.value;
+		const { status, all } = await listing(ctx, connection.stamp);
 		const needle = query.q?.toLowerCase();
 		const entities = (
 			needle
@@ -268,5 +293,20 @@ export const getEntities = defineRoute({
 			.slice(0, MAX_ENTITIES)
 			.map((e) => ({ ...e, entityId: e.entityId as Entities['entities'][number]['entityId'] }));
 		return { entities, status };
+	},
+});
+
+export const getPersons = defineRoute({
+	method: 'get',
+	path: '/persons',
+	operationId: 'homeassistant.listPersons',
+	summary: 'The people Home Assistant has, by id and name only, to link them to members',
+	requires: homeassistantManage.id,
+	response: PersonsSchema,
+	async handle(ctx) {
+		const connection = await credentials(ctx);
+		if (!connection) return { persons: [], status: 'not_connected' as const };
+		const { status, persons } = await listing(ctx, connection.stamp);
+		return { persons, status };
 	},
 });

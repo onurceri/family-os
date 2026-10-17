@@ -1,5 +1,15 @@
 import { unwrap } from '@famos/api-client';
-import type { Connection, Entities, Item, Values } from '../contract/index.js';
+import type {
+	Connection,
+	Entities,
+	Item,
+	MySharing,
+	PersonLink,
+	Persons,
+	PresenceList,
+	SharingLevel,
+	Values,
+} from '../contract/index.js';
 import { api } from './api.js';
 
 /** Home Assistant API calls, all through the generated client. */
@@ -42,4 +52,31 @@ export async function removeItem(id: string): Promise<void> {
 
 export async function moveItem(id: string, position: number): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/homeassistant.moveItem', { body: { id, position } }));
+}
+
+export const loadPresence = async (): Promise<PresenceList> =>
+	unwrap(await api.GET('/api/v1/homeassistant/presence'));
+
+export const loadLinks = async (): Promise<PersonLink[]> =>
+	unwrap(await api.GET('/api/v1/homeassistant/people')).links;
+
+export const loadPersons = async (): Promise<Persons> =>
+	unwrap(await api.GET('/api/v1/homeassistant/persons'));
+
+export async function linkPerson(input: { memberId: string; personEntity: string }): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.linkPerson', { body: input }));
+}
+
+export async function unlinkPerson(memberId: string): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.unlinkPerson', { body: { memberId } }));
+}
+
+export const loadMySharing = async (): Promise<MySharing> =>
+	unwrap(await api.GET('/api/v1/homeassistant/people/me'));
+
+export async function setMySharing(input: {
+	level: SharingLevel;
+	onDisplays: boolean;
+}): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.setMySharing', { body: input }));
 }

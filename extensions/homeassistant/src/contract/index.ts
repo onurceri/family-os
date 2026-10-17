@@ -152,3 +152,85 @@ export const EntitiesSchema = z.object({
 export type Entities = z.infer<typeof EntitiesSchema>;
 
 export const itemsChangedPayload = z.object({});
+
+/**
+ * Who is home. A Home Assistant person (`person.*`) is linked to a member by an admin; what
+ * FamilyOS then shows about that member is theirs alone to choose. Nothing of a person is stored
+ * but the link and that choice: never a place, a coordinate or a time.
+ */
+export const PERSON_ENTITY_PATTERN = /^person\.[a-z0-9_]+$/;
+export const PersonEntitySchema = z.string().max(200).regex(PERSON_ENTITY_PATTERN);
+
+/** What a person shows: nothing, whether they are home, or the name of the zone they are in. */
+export const SHARING_LEVELS = ['none', 'home', 'place'] as const;
+export const SharingLevelSchema = z.enum(SHARING_LEVELS);
+export type SharingLevel = z.infer<typeof SharingLevelSchema>;
+
+export const MemberIdSchema = z.string().min(1).max(100);
+
+export const LinkPersonInputSchema = z.object({
+	memberId: MemberIdSchema,
+	personEntity: PersonEntitySchema,
+});
+export const UnlinkPersonInputSchema = z.object({ memberId: MemberIdSchema });
+
+/**
+ * A person's own choice. There is no member in it: whoever runs it changes only their own, so
+ * nobody can choose for someone else.
+ */
+export const SetMySharingInputSchema = z.strictObject({
+	level: SharingLevelSchema,
+	onDisplays: z.boolean(),
+});
+
+/** One link, as the admin sees it: the person's choice is shown, never changed, there. */
+export const PersonLinkSchema = z.object({
+	memberId: MemberIdSchema,
+	personEntity: PersonEntitySchema,
+	level: SharingLevelSchema,
+	onDisplays: z.boolean(),
+});
+export type PersonLink = z.infer<typeof PersonLinkSchema>;
+export const PersonLinksSchema = z.object({ links: z.array(PersonLinkSchema) });
+
+/** The signed-in member's own choice, or that they are not linked. */
+export const MySharingSchema = z.discriminatedUnion('linked', [
+	z.object({ linked: z.literal(false) }),
+	z.object({ linked: z.literal(true), level: SharingLevelSchema, onDisplays: z.boolean() }),
+]);
+export type MySharing = z.infer<typeof MySharingSchema>;
+
+/** The people Home Assistant has, with nothing but their id and name. */
+export const PersonsSchema = z.object({
+	persons: z.array(z.object({ entityId: PersonEntitySchema, name: z.string() })),
+	status: z.enum(['ok', 'too_many', 'not_connected', 'unavailable']),
+});
+export type Persons = z.infer<typeof PersonsSchema>;
+
+/** The longest zone name shown. */
+export const MAX_PLACE = 60;
+
+/** Where someone is, as much as they chose to show. */
+export const PresenceSchema = z.discriminatedUnion('kind', [
+	z.object({ kind: z.literal('unknown') }),
+	z.object({ kind: z.literal('home') }),
+	z.object({ kind: z.literal('away') }),
+	/** A Home Assistant zone, by the name Home Assistant gives it ("School"). */
+	z.object({ kind: z.literal('place'), name: z.string().max(MAX_PLACE) }),
+]);
+export type Presence = z.infer<typeof PresenceSchema>;
+
+export const PresenceListSchema = z.object({
+	people: z.array(
+		z.object({
+			memberId: MemberIdSchema,
+			presence: PresenceSchema,
+			/** When it last changed, in epoch ms (Home Assistant's `last_changed`). */
+			since: z.number().int().nullable(),
+		}),
+	),
+	status: z.enum(VALUES_STATUSES),
+});
+export type PresenceList = z.infer<typeof PresenceListSchema>;
+
+export const peopleChangedPayload = z.object({});
