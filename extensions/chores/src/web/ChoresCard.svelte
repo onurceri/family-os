@@ -51,8 +51,7 @@
 	);
 
 	const me = $derived(app.me()?.id ?? null);
-	const canEdit = $derived(app.can('chores.edit'));
-	const canUse = $derived(app.can('chores.use'));
+	const mayTick = $derived(app.access('chores.markDone') !== 'no');
 	const due = $derived(
 		chores
 			.filter((c) => ['overdue', 'today'].includes(groupOf(c, today)))
@@ -105,9 +104,9 @@
 				title={chore.title}
 				meta={`${dueLabel(chore.nextDue, today, t, app.dateLocale())}${waitingIds.has(chore.id) ? ` · ${t('waiting_to_send')}` : ''}`}
 				metaTone={groupOf(chore, today) === 'overdue' ? 'attention' : 'soft'}
-				check={false}
+				check={mayTick ? false : undefined}
 				checkLabel={t('mark_done', { title: chore.title })}
-				busy={busy[chore.id] || waitingIds.has(chore.id) || !(canEdit || canUse)}
+				busy={busy[chore.id] || waitingIds.has(chore.id)}
 				oncheck={() => tick(chore)}
 			>
 				{#snippet trailing()}

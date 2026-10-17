@@ -10,6 +10,7 @@
 		Section,
 		Segmented,
 		SidePanel,
+		ViewOnly,
 	} from '@famos/ui/famos';
 	import { Plus } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
@@ -90,11 +91,15 @@
 	});
 
 	const me = $derived(app.me()?.id ?? null);
-	const canEdit = $derived(app.can('chores.edit'));
-	const canUse = $derived(app.can('chores.use'));
+	// Whoever holds the right to change chores adds and ticks any; others only suggest.
+	const holdsEdit = $derived(app.access('chores.updateChore') === 'apply');
+	const mayTick = $derived(app.access('chores.markDone') !== 'no');
 	// Opening and adding a chore is also for people who may only suggest: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('chores.edit'));
-	const canDo = (c: Chore) => canEdit || (canUse && (c.assigneeId === null || c.assigneeId === me));
+	const mayAdd = $derived(app.access('chores.createChore') !== 'no');
+	const mayEdit = $derived(app.access('chores.updateChore') !== 'no');
+	const mayArchive = $derived(app.access('chores.archiveChore') !== 'no');
+	const canDo = (c: Chore) =>
+		mayTick && (holdsEdit || c.assigneeId === null || c.assigneeId === me);
 
 	let onlyMine = $state(false);
 	const visible = $derived(
@@ -153,13 +158,13 @@
 	}
 	// Opening a chore changes the address; the form follows it.
 	function openEdit(chore: Chore) {
-		if (mayChange) openPath(`/chores/${chore.id}`);
+		if (mayEdit) openPath(`/chores/${chore.id}`);
 	}
 	$effect(() => {
 		const id = selectedId;
 		// Back to the plain list (same mounted page): close the form of the chore that was open.
 		if (!id && editing?.id) editing = null;
-		if (!id || !loaded || !mayChange || editing?.id === id) return;
+		if (!id || !loaded || !mayEdit || editing?.id === id) return;
 		const chore = chores.find((c) => c.id === id);
 		if (!chore) return;
 		const loadedForm = fromChore(chore);
@@ -233,15 +238,19 @@
 </script>
 
 {#snippet add()}
-	{#if mayChange && !editing}
+	{#if mayAdd && !editing}
 		<Button onclick={openNew} class="max-md:hidden"
-			><Plus class="size-4" />{canEdit ? t('add_chore') : t('suggest_chore')}</Button
+			><Plus class="size-4" />{holdsEdit ? t('add_chore') : t('suggest_chore')}</Button
 		>
+	{:else if !mayAdd && !mayTick}
+		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
 	{/if}
 {/snippet}
 
 {#snippet archiveButton()}
-	<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+	{#if mayArchive}
+		<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+	{/if}
 {/snippet}
 
 {#snippet formCard()}
@@ -290,11 +299,12 @@
 									{chore}
 									{today}
 									canDo={canDo(chore)}
+									{mayTick}
 									busy={chore.id in busy}
 									waiting={waitingIds.has(chore.id)}
 									selected={chore.id === selectedId}
 									ondone={() => tick(chore)}
-									onopen={mayChange ? () => openEdit(chore) : undefined}
+									onopen={mayEdit ? () => openEdit(chore) : undefined}
 								/>
 							</li>
 						{/each}
@@ -309,9 +319,9 @@
 	{#snippet list()}
 		{#if empty}
 			<EmptyState art="chores" title={t('empty')} hint={t('empty_hint')}>
-				{#if mayChange}
+				{#if mayAdd}
 					<Button onclick={openNew}
-						><Plus class="size-4" />{canEdit ? t('add_chore') : t('suggest_chore')}</Button
+						><Plus class="size-4" />{holdsEdit ? t('add_chore') : t('suggest_chore')}</Button
 					>
 				{/if}
 			</EmptyState>
@@ -322,9 +332,9 @@
 	{#snippet detail()}{/snippet}
 </ListDetail>
 
-{#if !empty && mayChange && !editing}
+{#if !empty && mayAdd && !editing}
 	<div class="md:hidden">
-		<Fab label={canEdit ? t('add_chore') : t('suggest_chore')} onclick={openNew} />
+		<Fab label={holdsEdit ? t('add_chore') : t('suggest_chore')} onclick={openNew} />
 	</div>
 {/if}
 
@@ -338,7 +348,7 @@
 	saveLabel={t('save')}
 	saveDisabled={saving}
 	onsave={() => formEl?.requestSubmit()}
-	note={app.needsApproval('chores.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval(editing?.id ? 'chores.updateChore' : 'chores.createChore')}
 	danger={editing?.id ? archiveButton : undefined}
 	{dirty}
 	discard={{

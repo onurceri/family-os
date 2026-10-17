@@ -15,6 +15,7 @@
 		chore,
 		today,
 		canDo,
+		mayTick,
 		busy = false,
 		waiting = false,
 		selected = false,
@@ -24,6 +25,8 @@
 		chore: Chore;
 		today: string;
 		canDo: boolean;
+		/** Whether the viewer can tick chores at all: if not, the mark is a plain status. */
+		mayTick: boolean;
 		busy?: boolean;
 		/** The tap is kept on this device and not sent yet. */
 		waiting?: boolean;
@@ -53,25 +56,42 @@
 		? 'bg-idle text-ink-soft'
 		: 'bg-surface text-ink shadow-lit'} {selected ? 'ring-ink ring-2 ring-inset' : ''}"
 >
-	<button
-		type="button"
-		onclick={ondone}
-		disabled={busy || waiting || finished || !canDo}
-		aria-label={notYourTurn
-			? `${t('mark_done', { title: chore.title })} (${notYourTurn})`
-			: t('mark_done', { title: chore.title })}
-		title={notYourTurn ?? undefined}
-		class="focus-visible:ring-ring grid size-11 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 disabled:opacity-60"
-	>
-		<span
-			class="grid size-[26px] place-items-center rounded-full border-2 transition-colors {finished
-				? 'bg-now text-on-color border-transparent'
-				: 'border-ink-soft/55 hover:border-now text-transparent'}"
-			style:border-color={!finished && who ? who.color : undefined}
-		>
-			<Check class="size-4" strokeWidth={3} aria-hidden="true" />
+	{#if !mayTick}
+		<!-- A role that cannot tick sees the state, not a control that never works. -->
+		<span class="grid size-11 shrink-0 place-items-center" data-testid="chore-status">
+			{#if finished}
+				<span class="bg-now text-on-color grid size-[26px] place-items-center rounded-full">
+					<Check class="size-4" strokeWidth={3} aria-hidden="true" />
+				</span>
+			{:else}
+				<span
+					class="bg-ink-soft/55 size-2.5 rounded-full"
+					style:background-color={who ? who.color : undefined}
+					aria-hidden="true"
+				></span>
+			{/if}
 		</span>
-	</button>
+	{:else}
+		<button
+			type="button"
+			onclick={ondone}
+			disabled={busy || waiting || finished || !canDo}
+			aria-label={notYourTurn
+				? `${t('mark_done', { title: chore.title })} (${notYourTurn})`
+				: t('mark_done', { title: chore.title })}
+			title={notYourTurn ?? undefined}
+			class="focus-visible:ring-ring grid size-11 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 disabled:opacity-60"
+		>
+			<span
+				class="grid size-[26px] place-items-center rounded-full border-2 transition-colors {finished
+					? 'bg-now text-on-color border-transparent'
+					: 'border-ink-soft/55 hover:border-now text-transparent'}"
+				style:border-color={!finished && who ? who.color : undefined}
+			>
+				<Check class="size-4" strokeWidth={3} aria-hidden="true" />
+			</span>
+		</button>
+	{/if}
 	<button
 		type="button"
 		onclick={onopen}
