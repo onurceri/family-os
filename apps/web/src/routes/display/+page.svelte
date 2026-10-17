@@ -235,9 +235,9 @@
 		void api
 			.GET('/api/v1/core/displays/me/fit', { params: { query: { leftOut: leftOut.join(',') } } })
 			.catch(() => {
-			// Not said this time; the next fit or refresh says it again.
-			reported = null;
-		});
+				// Not said this time; the next fit or refresh says it again.
+				reported = null;
+			});
 	}
 	const statuses = $derived(visible('display.status'));
 	/** Nothing granted that the display could show: it says where to choose. */
