@@ -22,13 +22,16 @@
 	import { ChevronRight, Monitor, Tablet } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { t } from '#lib/i18n.svelte.js';
+	import { onEvent } from '#lib/realtime.js';
 	import QrCode from '#lib/QrCode.svelte';
 	import DisplayForm from './DisplayForm.svelte';
+	import { initialGrant } from './display-options.js';
 
 	/**
 	 * "Add a device" (guided steps): first what is being added, then numbered steps. A
 	 * screen for the wall: open the address on it, type the code it shows, choose what it may show,
-	 * done (the display's pairing screen says the same steps from its side). A tablet or phone the
+	 * then wait until the screen has claimed the code, and only then say it is connected (the
+	 * display's pairing screen says the same steps from its side). A tablet or phone the
 	 * family shares: open FamilyOS on it, sign in once, make it a family device (the button itself
 	 * when this browser is that device), done.
 	 */
@@ -39,6 +42,7 @@
 		open,
 		start = null,
 		options,
+		optIn,
 		optionsLoaded,
 		/** Whether this browser is already a family device (then it cannot be made one here). */
 		thisTrusted,
@@ -48,6 +52,8 @@
 		open: boolean;
 		start?: AddStart;
 		options: Option[];
+		/** What a new screen starts without; the admin ticks it to add it. */
+		optIn: ReadonlySet<string>;
 		optionsLoaded: boolean;
 		thisTrusted: boolean;
 		onclose: () => void;
@@ -65,6 +71,12 @@
 	let busy = $state(false);
 	/** The name of what was added, for the last step. */
 	let added = $state('');
+	/** The confirmed code, until its screen claims it, and what the server says of it. */
+	let pairingId = $state<string | null>(null);
+	let pairing = $state<'waiting' | 'connected' | 'expired'>('waiting');
+	/** A screen asked with the code lately; after a few seconds without one, the admin is told. */
+	let answering = $state(true);
+	let waitedLong = $state(false);
 	let screenForm = $state<HTMLFormElement>();
 	// The device name's reason shows from the first refused submit on, and goes once it is typed.
 	let triedName = $state(false);
@@ -86,13 +98,15 @@
 		showNames = false;
 		error = null;
 		added = '';
+		pairingId = null;
 		capsFilled = false;
 		triedName = false;
 	});
-	// Everything a display can show is ticked at first; the admin unticks what it should not.
+	// What makes up the day is ticked at first, and the admin unticks what it should not; the rest
+	// (a status pill) is theirs to add.
 	$effect(() => {
 		if (!open || !optionsLoaded || capsFilled) return;
-		caps = options.map((o) => o.id);
+		caps = initialGrant(options, optIn);
 		capsFilled = true;
 	});
 
@@ -122,8 +136,11 @@
 				}),
 			);
 			added = done.name;
+			pairingId = done.pairingId;
+			pairing = 'waiting';
+			answering = true;
+			waitedLong = false;
 			step = 4;
-			onchanged();
 		} catch (e) {
 			const badCode = typeof e === 'object' && e !== null && 'status' in e && e.status === 404;
 			error = badCode ? t('devices_display_bad_code') : t('error_generic');
@@ -132,6 +149,43 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	/** Asks whether the screen has claimed the code yet; a new device is the page's to list. */
+	async function checkPairing() {
+		const id = pairingId;
+		if (!id || pairing !== 'waiting') return;
+		const res = await api.GET('/api/v1/core/displays/pairings/{pairingId}', {
+			params: { path: { pairingId: id } },
+		});
+		if (!res.data || id !== pairingId) return;
+		pairing = res.data.status;
+		answering = res.data.status === 'waiting' ? res.data.answering : true;
+		if (res.data.status === 'connected') onchanged();
+	}
+
+	// The screen claims the code on its next poll (every few seconds); the device's event usually
+	// says so first, and asking every two seconds covers a lost one.
+	$effect(() => {
+		if (!open || !pairingId || pairing !== 'waiting') return;
+		const timer = setInterval(() => void checkPairing(), 2000);
+		// A screen asks every five seconds; after a restart of the server it is not known to ask
+		// until its next poll, so silence is said only after a while.
+		const patience = setTimeout(() => (waitedLong = true), 8000);
+		const off = onEvent('core.device.', () => void checkPairing());
+		return () => {
+			clearInterval(timer);
+			clearTimeout(patience);
+			off();
+		};
+	});
+
+	/** The code ran out: the screen shows a new one, typed in the code step. */
+	function typeNewCode() {
+		pairingId = null;
+		code = '';
+		error = null;
+		step = 2;
 	}
 
 	async function trust() {
@@ -273,9 +327,42 @@
 						>
 					</div>
 				</Step>
-				<Step n={4} title={t('devices_step_done')}>
-					<p role="status">{t('devices_display_done', { name: added })}</p>
-					<div><Button variant="primary" onclick={onclose}>{t('devices_close')}</Button></div>
+				<Step
+					n={4}
+					title={pairing === 'connected'
+						? t('devices_step_done')
+						: pairing === 'expired'
+							? t('devices_step_not_connected')
+							: t('devices_step_waiting')}
+				>
+					<div class="grid gap-3" role="status" data-testid="pairing-status" data-state={pairing}>
+						{#if pairing === 'connected'}
+							<p>{t('devices_display_done', { name: added })}</p>
+						{:else if pairing === 'expired'}
+							<p>{t('devices_display_expired', { name: added })}</p>
+						{:else}
+							<p>{t('devices_display_waiting', { name: added, address: displayAddress })}</p>
+							{#if waitedLong && !answering}
+								<p class="text-attention text-sm font-semibold">
+									{t('devices_display_not_answering', {
+										code: code.trim().toUpperCase(),
+										address: displayAddress,
+									})}
+								</p>
+							{/if}
+						{/if}
+					</div>
+					<div>
+						{#if pairing === 'expired'}
+							<Button variant="primary" onclick={typeNewCode}
+								>{t('devices_display_new_code')}</Button
+							>
+						{:else}
+							<Button variant={pairing === 'connected' ? 'primary' : 'ghost'} onclick={onclose}
+								>{t('devices_close')}</Button
+							>
+						{/if}
+					</div>
 				</Step>
 			</Steps>
 		{:else}

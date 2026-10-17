@@ -844,8 +844,37 @@ describe('family displays', () => {
 		});
 		expect(poll.body.status).toBe('paired');
 		expect(poll.cookie).toMatch(/^famos_device=/);
-		return { start, poll, displayCookie: poll.cookie, deviceId: poll.body.device.id as string };
+		return {
+			start,
+			poll,
+			pairingId: confirm.body.pairingId as string,
+			displayCookie: poll.cookie,
+			deviceId: poll.body.device.id as string,
+		};
 	}
+
+	it('tells the admin when the display has claimed the code, and only the admin', async () => {
+		const { cookie } = await setupAndSignIn();
+		// Confirmed, but no screen asks with this code: waiting, not connected.
+		const start = await call('POST', '/api/v1/core/displays/pair');
+		const confirm = await call(
+			'POST',
+			'/api/v1/core/displays/confirm',
+			{ userCode: start.body.userCode, name: 'Kitchen wall', capabilities: [], showNames: false },
+			cookie,
+		);
+		const path = `/api/v1/core/displays/pairings/${confirm.body.pairingId}`;
+		expect((await call('GET', path, undefined, cookie)).body).toEqual({
+			status: 'waiting',
+			answering: false,
+		});
+		expect((await call('GET', path)).status).toBe(401);
+
+		const { pairingId, deviceId } = await pairDisplay(cookie);
+		expect(
+			(await call('GET', `/api/v1/core/displays/pairings/${pairingId}`, undefined, cookie)).body,
+		).toEqual({ status: 'connected', deviceId });
+	});
 
 	it('pairs by code: the token is set once, the display reads only what it was granted', async () => {
 		const { cookie } = await setupAndSignIn();
