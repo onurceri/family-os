@@ -29,9 +29,11 @@ export const DOWNLOAD_JOB = 'core.fetchExtensionPackage';
 
 /**
  * Why looking or downloading failed, from the `details` of the error, for a page to say:
- * - looking: `unreachable` (no answer, not 200, a redirect, too slow), `unsigned` (the index's
- *   signature is missing, by an unknown key or wrong), `invalid` (not an index this server reads);
- * - downloading: `unreachable`, `mismatch` (size or SHA-256 differ from the index), `gone` (the
+ * - looking: `unreachable` (no answer, not 200, a redirect, too slow), `missing` (the host has no
+ *   index: 404 or 410), `unsigned` (the index's signature is missing, by an unknown key or wrong),
+ *   `invalid` (not an index this server reads);
+ * - downloading: `unreachable`, `missing` (the index lists a file its host does not have),
+ *   `mismatch` (size or SHA-256 differ from the index), `gone` (the
  *   index no longer lists it), or what an uploaded file would be refused for (`too_large`,
  *   `unsigned`, `incompatible`, `invalid` with a `code`; `older` with `version`);
  * - `failed`: anything else (the server's log says why).

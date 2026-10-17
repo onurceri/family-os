@@ -45,8 +45,17 @@ export interface DeviceService {
 	startPairing(input?: { ip?: string }): Promise<PairingStart>;
 	/** The display asks whether it was confirmed. The token comes back exactly once. */
 	pollPairing(deviceCode: string): Promise<PairingPoll>;
-	/** An admin types the user code, names the display and chooses what it may show. */
-	confirmPairing(actor: Actor, userCode: string, input: DisplayGrant): Promise<{ name: string }>;
+	/**
+	 * An admin types the user code, names the display and chooses what it may show. The display is
+	 * connected only once it claims the confirmed code (its next poll): `pairingStatus` says when.
+	 */
+	confirmPairing(
+		actor: Actor,
+		userCode: string,
+		input: DisplayGrant,
+	): Promise<{ name: string; pairingId: string }>;
+	/** Whether the display of a confirmed code has claimed it yet, for the admin who confirmed it. */
+	pairingStatus(actor: Actor, pairingId: string): Promise<PairingStatus>;
 	/** Renames a display or changes what it may show. */
 	updateDisplay(actor: Actor, deviceId: string, patch: Partial<DisplayGrant>): Promise<DeviceRow>;
 	/** The view capabilities an admin can give a display (extensions that are on). */
@@ -73,11 +82,23 @@ export type PairingPoll =
 	| { status: 'pending' | 'slow_down' | 'expired' }
 	| { status: 'paired'; token: string; device: DeviceRow };
 
+/**
+ * A confirmed code, seen from the admin's side: `waiting` until the display claims it (`answering`
+ * says whether a display asked with it lately, so a screen that was closed is told apart),
+ * `connected` with the new device once it has, `expired` when the code ran out first.
+ */
+export type PairingStatus =
+	| { status: 'waiting'; answering: boolean }
+	| { status: 'connected'; deviceId: string }
+	| { status: 'expired' };
+
 /** Pairing codes live ten minutes. */
 export const PAIRING_TTL_MS = 10 * 60 * 1000;
 export const PAIRING_INTERVAL_SECONDS = 5;
 /** A display polling faster than this is told to slow down. */
 const MIN_POLL_MS = 4000;
+/** A display that asked within this long is still there (it asks every five seconds). */
+const ANSWERING_MS = 15_000;
 const MAX_WRONG_CODES = 5;
 const MAX_OPEN_PAIRINGS = 100;
 /** No 0/O, 1/I/L: a code read from a screen and typed on a phone must not be ambiguous. */
@@ -413,7 +434,24 @@ export function createDeviceService(deps: {
 				.returning('id')
 				.executeTakeFirst();
 			if (!confirmed) throw new FamosError('not_found', 'This code is not valid (any more)');
-			return { name };
+			return { name, pairingId: row.id };
+		},
+
+		async pairingStatus(actor, pairingId) {
+			requireAdmin(actor);
+			const now = deps.clock.now();
+			const row = await pairings()
+				.selectFrom('core_display_pairings')
+				.select(['status', 'device_id', 'expires_at', 'device_code_hash'])
+				.where('id', '=', pairingId)
+				.executeTakeFirst();
+			// Gone: cleaned up long after it ran out.
+			if (!row) return { status: 'expired' };
+			if (row.status === 'consumed' && row.device_id)
+				return { status: 'connected', deviceId: row.device_id };
+			if (row.status !== 'confirmed' || row.expires_at <= now) return { status: 'expired' };
+			const last = lastPoll.get(row.device_code_hash);
+			return { status: 'waiting', answering: last !== undefined && now - last < ANSWERING_MS };
 		},
 
 		async updateDisplay(actor, deviceId, patch) {

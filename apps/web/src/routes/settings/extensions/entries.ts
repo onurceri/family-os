@@ -312,6 +312,7 @@ export function searchProblem(
 	problem: FindProblem,
 ): Said<
 	| 'extensions_find_unreachable'
+	| 'extensions_find_missing'
 	| 'extensions_find_unsigned'
 	| 'extensions_find_invalid'
 	| 'extensions_find_failed'
@@ -319,6 +320,8 @@ export function searchProblem(
 	switch (problem.reason) {
 		case 'unreachable':
 			return { key: 'extensions_find_unreachable' };
+		case 'missing':
+			return { key: 'extensions_find_missing' };
 		case 'unsigned':
 			return { key: 'extensions_find_unsigned' };
 		case 'invalid':
@@ -333,6 +336,7 @@ export interface DownloadProblem {
 	headline: Said<
 		| FileProblem['headline']['key']
 		| 'extensions_download_unreachable'
+		| 'extensions_download_missing'
 		| 'extensions_download_mismatch'
 		| 'extensions_download_gone'
 		| 'extensions_download_failed'
@@ -348,6 +352,8 @@ export function downloadProblem(problem: FindProblem): DownloadProblem {
 	switch (problem.reason) {
 		case 'unreachable':
 			return { headline: { key: 'extensions_download_unreachable' } };
+		case 'missing':
+			return { headline: { key: 'extensions_download_missing' } };
 		case 'mismatch':
 			return { headline: { key: 'extensions_download_mismatch' } };
 		case 'gone':

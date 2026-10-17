@@ -132,6 +132,45 @@ describe('pairing a display', () => {
 		expect(await k.devices.list()).toHaveLength(1);
 	});
 
+	it('says connected only once the display has claimed the confirmed code', async () => {
+		const { actor: admin } = await k.member('admin');
+		const grant = { name: 'Kitchen wall', capabilities: ['peek.view'], showNames: false };
+
+		// Nobody polls this code (the screen was closed, or it was asked for by hand): it waits,
+		// says no screen is asking, and runs out without a device.
+		const unclaimed = await k.devices.startPairing();
+		const lonely = await k.devices.confirmPairing(admin, unclaimed.userCode, grant);
+		expect(await k.devices.pairingStatus(admin, lonely.pairingId)).toEqual({
+			status: 'waiting',
+			answering: false,
+		});
+		k.clock.advance(PAIRING_TTL_MS + 1);
+		expect(await k.devices.pairingStatus(admin, lonely.pairingId)).toEqual({ status: 'expired' });
+		expect(await k.devices.list()).toHaveLength(0);
+
+		// A screen that keeps asking: waiting while it asks, connected once its next poll claims it.
+		const start = await k.devices.startPairing();
+		expect((await k.devices.pollPairing(start.deviceCode)).status).toBe('pending');
+		const { pairingId } = await k.devices.confirmPairing(admin, start.userCode, grant);
+		expect(await k.devices.pairingStatus(admin, pairingId)).toEqual({
+			status: 'waiting',
+			answering: true,
+		});
+		k.clock.advance(5000);
+		const paired = await k.devices.pollPairing(start.deviceCode);
+		if (paired.status !== 'paired') throw new Error('expected paired');
+		expect(await k.devices.pairingStatus(admin, pairingId)).toEqual({
+			status: 'connected',
+			deviceId: paired.device.id,
+		});
+
+		expect(await k.devices.pairingStatus(admin, 'pairing_unknown')).toEqual({ status: 'expired' });
+		const { actor: member } = await k.member('member');
+		await expect(k.devices.pairingStatus(member, pairingId)).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+	});
+
 	it('tells a display that polls too fast to slow down', async () => {
 		const start = await k.devices.startPairing();
 		expect((await k.devices.pollPairing(start.deviceCode)).status).toBe('pending');
