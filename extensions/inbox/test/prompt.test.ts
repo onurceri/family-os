@@ -92,4 +92,28 @@ describe('the prompt fingerprint', () => {
 		);
 		expect(PROMPT_VERSION).toMatch(/^inbox\.understand\/\d+$/);
 	});
+
+	it('covers each part of a kind the model sees', () => {
+		const base = kind('garden.note', { knownFrom: ['garden.aiContext'], variants: ['a'] });
+		const changed: Partial<AiKindInfo>[] = [
+			{ slots: { title: 'What it is called' } },
+			{ variants: ['a', 'b'] },
+			{ knownFrom: ['garden.otherContext'] },
+			{ examples: [{ text: 'Another example', mentions: [{ kind: 'garden.note', title: 'X' }] }] },
+			{ limit: 4 },
+		];
+		for (const change of changed)
+			expect(promptHash([{ ...base, ...change }]), JSON.stringify(change)).not.toBe(
+				promptHash([base]),
+			);
+		// An example the prompt leaves out (it needs a kind that is not offered) does not count.
+		const hidden = {
+			...base,
+			examples: [
+				...base.examples,
+				{ text: 'Hidden', mentions: [{ kind: 'garden.watered', about: 'Fern' }] },
+			],
+		};
+		expect(promptHash([hidden])).toBe(promptHash([base]));
+	});
 });

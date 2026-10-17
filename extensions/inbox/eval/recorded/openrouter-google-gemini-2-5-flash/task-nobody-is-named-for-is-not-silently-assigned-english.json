@@ -2,6 +2,7 @@
 	"case": "Task nobody is named for is not silently assigned (English)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

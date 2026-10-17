@@ -3,6 +3,7 @@
 		"openrouter-google-gemini-2-5-flash": {
 			"label": "openrouter / google/gemini-2.5-flash",
 			"version": "inbox.understand/1",
+			"promptHash": "c5c20732",
 			"date": "2026-10-17",
 			"cases": 36,
 			"passing": [
@@ -49,6 +50,7 @@
 		"openrouter-openai-gpt-4-1-mini": {
 			"label": "openrouter / openai/gpt-4.1-mini",
 			"version": "inbox.understand/1",
+			"promptHash": "c5c20732",
 			"date": "2026-10-17",
 			"cases": 36,
 			"passing": [

@@ -98,6 +98,11 @@ export interface MatrixResult {
 export interface BaselineEntry {
 	label: string;
 	version: string | null;
+	/**
+	 * The fingerprint of what the model was asked in that run (the eval's `promptHash`). A test
+	 * compares it with today's, so a change to the prompt cannot go out without a new run.
+	 */
+	promptHash?: string;
 	/** YYYY-MM-DD of the run. */
 	date: string;
 	cases: number;
@@ -384,11 +389,13 @@ export function baselineEntry(
 	cells: readonly Cell[],
 	version: string | null,
 	date: string,
+	promptHash?: string,
 ): BaselineEntry {
 	const own = cells.filter((c) => c.model === totals.slug);
 	return {
 		label: totals.label,
 		version,
+		...(promptHash !== undefined && { promptHash }),
 		date,
 		cases: own.length,
 		passing: own.filter((c) => c.status === 'passed').map((c) => c.case),
@@ -445,6 +452,8 @@ export interface EvalOptions<C extends { name: string }> {
 	title: string;
 	/** The prompt version the cases ran against, kept in the baseline. */
 	version?: string;
+	/** A fingerprint of everything the model is asked, kept in the baseline and the recordings. */
+	promptHash?: string;
 	cases: readonly C[];
 	/** Runs one case on its own kernel with the given model. */
 	run(c: C, llm: LlmPort): Promise<CaseVerdict>;
@@ -532,7 +541,7 @@ export async function runEval<C extends { name: string }>(
 				mkdirSync(folder, { recursive: true });
 				writeFileSync(
 					join(folder, `${slugOf(c.name)}.json`),
-					`${JSON.stringify({ case: c.name, model: model.label, version, answers: observed.calls.map((call) => call.answer) }, null, '\t')}\n`,
+					`${JSON.stringify({ case: c.name, model: model.label, version, ...(options.promptHash !== undefined && { promptHash: options.promptHash }), answers: observed.calls.map((call) => call.answer) }, null, '\t')}\n`,
 				);
 			}
 			return cell;
@@ -599,7 +608,7 @@ export async function runEval<C extends { name: string }>(
 			const date = result.at.slice(0, 10);
 			for (const t of totals)
 				baseline.models[t.slug] = withEarlierVerdicts(
-					baselineEntry(t, cells, version, date),
+					baselineEntry(t, cells, version, date, options.promptHash),
 					baseline.models[t.slug],
 				);
 			writeFileSync(baselinePath, `${JSON.stringify(baseline, null, '\t')}\n`);

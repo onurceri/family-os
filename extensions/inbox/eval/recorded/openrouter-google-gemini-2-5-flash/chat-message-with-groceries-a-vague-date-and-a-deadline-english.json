@@ -2,6 +2,7 @@
 	"case": "Chat message with groceries, a vague date and a deadline (English)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

@@ -2,6 +2,7 @@
 	"case": "A cancelled date of a weekly activity, in a messy message (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

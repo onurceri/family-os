@@ -2,6 +2,7 @@
 	"case": "US school email: MM/DD dates and 4pm",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

@@ -2,6 +2,7 @@
 	"case": "Nothing to tick off when the item is not listed (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

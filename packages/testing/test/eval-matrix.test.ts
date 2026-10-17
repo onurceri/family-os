@@ -272,6 +272,7 @@ describe('runEval', () => {
 		const code = await runEval({
 			title: 'Test eval',
 			version: 'test/1',
+			promptHash: 'abcd1234',
 			cases,
 			models: [a.env, b.env],
 			dir,
@@ -299,11 +300,13 @@ describe('runEval', () => {
 			case: 'bread',
 			model: 'fake / b',
 			version: 'test/1',
+			promptHash: 'abcd1234',
 			answers: [{ kind: 'object', feature: 'test.read', output: { title: 'Butter' } }],
 		});
 		const baseline = JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8')) as Baseline;
 		expect(baseline.models.b).toMatchObject({
 			version: 'test/1',
+			promptHash: 'abcd1234',
 			cases: 2,
 			passing: ['milk'],
 			failing: { bread: ['the title'] },

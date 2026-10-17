@@ -231,20 +231,60 @@ export function systemPrompt(parts: PromptParts): string {
 		.join('\n\n');
 }
 
+/** What the message itself is wrapped in, as the user turn of the call. */
+export function sharedItemPrompt(item: {
+	channel: string;
+	text: string;
+	unreadable: readonly string[];
+	withheld: number;
+}): string {
+	return [
+		`<shared_item channel="${item.channel}">`,
+		item.text || '(no text; see the attached files)',
+		item.unreadable.length ? `(Attached but unreadable here: ${item.unreadable.join(', ')})` : '',
+		item.withheld ? `(${item.withheld} attached file(s) not shared with you)` : '',
+		'</shared_item>',
+	]
+		.filter(Boolean)
+		.join('\n');
+}
+
 /**
  * A short fingerprint of everything that shapes what the model is asked, but not of the family's
- * data: the fixed rules, the host examples, the answer schema and each offered kind's text and
- * examples. Stored with each draft next to `PROMPT_VERSION`, so readings can be compared across
- * versions and installations.
+ * data. The prompts are rendered with placeholders where the family's data goes (every optional
+ * part present), so the fixed wording, the host examples, how kinds are laid out, each offered
+ * kind's text, slots and examples, and the answer schema all count, while names, dates and the
+ * message do not. Stored with each draft next to `PROMPT_VERSION`, so readings can be compared
+ * across versions and installations; the eval's baseline keeps it, so a change to any of it
+ * shows that the eval has to run again.
  */
 export function promptHash(kinds: readonly AiKindInfo[]): string {
+	const sources = [...new Set(kinds.flatMap((kind) => kind.knownFrom ?? []))];
+	const system = systemPrompt({
+		kinds,
+		weekday: '{weekday}',
+		today: '{today}',
+		timeZone: '{timeZone}',
+		language: '{language}',
+		members: [{ displayName: '{member}', about: '{about}' }],
+		sharer: '{sharer}',
+		known: sources.map((from) => ({
+			from,
+			label: `{${from}}`,
+			items: [{ label: '{name}', details: '{details}' }],
+		})),
+	});
+	const user = sharedItemPrompt({
+		channel: '{channel}',
+		text: '{text}',
+		unreadable: ['{file}'],
+		withheld: 1,
+	});
 	const hash = createHash('sha256');
-	hash.update(FIXED_RULES('{language}'));
-	hash.update(json(HOST_EXAMPLES));
+	hash.update(system);
+	hash.update(user);
 	hash.update(json(understandingJsonSchema(kinds.map((k) => k.id))));
-	for (const kind of kinds)
-		hash.update(
-			json([kind.id, kind.describe, kind.slots, kind.variants ?? null, kind.examples, kind.limit]),
-		);
+	// Not shown, but it decides how many of a kind's mentions are kept.
+	hash.update(json(kinds.map((kind) => [kind.id, kind.limit])));
 	return hash.digest('hex').slice(0, 8);
 }

@@ -2,6 +2,7 @@
 	"case": "Weekly lessons with an end (Turkish)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
+	"promptHash": "c5c20732",
 	"answers": [
 		{
 			"kind": "object",

@@ -29,6 +29,7 @@ import {
 	MAX_KNOWN,
 	PROMPT_VERSION,
 	promptHash,
+	sharedItemPrompt,
 	systemPrompt,
 	understandingJsonSchema,
 } from './prompt.ts';
@@ -343,15 +344,7 @@ async function askModel(
 	kinds: readonly AiKindInfo[],
 	system: string,
 ): Promise<{ parsed: ParsedUnderstanding; model: string | null } | null> {
-	const prompt = [
-		`<shared_item channel="${input.channel}">`,
-		input.text || '(no text; see the attached files)',
-		input.unreadable.length ? `(Attached but unreadable here: ${input.unreadable.join(', ')})` : '',
-		input.withheld ? `(${input.withheld} attached file(s) not shared with you)` : '',
-		'</shared_item>',
-	]
-		.filter(Boolean)
-		.join('\n');
+	const prompt = sharedItemPrompt(input);
 	const ids = kinds.map((k) => k.id);
 	const read = (raw: unknown) => parseUnderstanding(raw, ids, { clockTimes });
 	try {
