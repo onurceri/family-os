@@ -41,8 +41,8 @@
 		/** The items belong to these days (not a previous range still on screen). */
 		ready: boolean;
 		onopen: (occurrence: Occurrence) => void;
-		/** Add an event on `date`, at `time` (HH:MM) when a slot was clicked. */
-		onadd: (date: string, time?: string) => void;
+		/** Add an event on `date`, at `time` (HH:MM) when a slot was clicked. Omitted: the viewer cannot add. */
+		onadd?: (date: string, time?: string) => void;
 		/** Open one day (week view only). */
 		onday?: (date: string) => void;
 	} = $props();
@@ -168,7 +168,7 @@
 	});
 
 	function slot(event: MouseEvent, date: string) {
-		if (event.target !== event.currentTarget) return;
+		if (!onadd || event.target !== event.currentTarget) return;
 		const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
 		const minutes = snapSlot(((event.clientY - rect.top) / hour) * 60);
 		onadd(
@@ -229,12 +229,14 @@
 						{:else}
 							<div class="flex min-w-0 items-center gap-2">{@render dayHead(date, isToday)}</div>
 						{/if}
-						<button
-							type="button"
-							class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto grid size-7 shrink-0 place-items-center rounded-lg opacity-0 outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2"
-							aria-label={t('add_on', { date: formatDate(date, app.dateLocale()) })}
-							onclick={() => onadd(date)}><Plus class="size-4" aria-hidden="true" /></button
-						>
+						{#if onadd}
+							<button
+								type="button"
+								class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto grid size-7 shrink-0 place-items-center rounded-lg opacity-0 outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2"
+								aria-label={t('add_on', { date: formatDate(date, app.dateLocale()) })}
+								onclick={() => onadd(date)}><Plus class="size-4" aria-hidden="true" /></button
+							>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -299,7 +301,8 @@
 				<div
 					data-testid="day-column"
 					data-date={d.date}
-					class="border-line relative min-w-0 cursor-pointer border-s {d.date === today
+					class="border-line relative min-w-0 border-s {onadd ? 'cursor-pointer' : ''} {d.date ===
+					today
 						? 'bg-now/5'
 						: ''}"
 					style:background-image="linear-gradient(to bottom, var(--line) 1px, transparent 1px)"

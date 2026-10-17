@@ -16,12 +16,17 @@
 		tags,
 		onedit,
 		ondelete,
+		mayEdit,
+		mayDelete,
 	}: {
 		occurrence: Occurrence;
 		event: EventDetail;
 		tags: readonly Tag[];
 		onedit: () => void;
 		ondelete: (onlyThis: boolean) => void;
+		/** What the viewer may do with it; a control they may not use is not drawn. */
+		mayEdit: boolean;
+		mayDelete: boolean;
 	} = $props();
 	const { app, t } = useCalendar();
 
@@ -96,27 +101,31 @@
 			</div>
 		{/if}
 	</dl>
-	<div class="flex flex-wrap items-center gap-2">
-		<Button type="button" size="lg" onclick={onedit}>{t('edit_event')}</Button>
-		<span class="ms-auto flex flex-wrap gap-1">
-			{#if occurrence.recurring}
-				<ConfirmButton
-					label={t('delete_one')}
-					confirmLabel={t('delete_one_confirm')}
-					onconfirm={() => ondelete(true)}
-				/>
-				<ConfirmButton
-					label={t('delete_series')}
-					confirmLabel={t('delete_series_confirm')}
-					onconfirm={() => ondelete(false)}
-				/>
-			{:else}
-				<ConfirmButton
-					label={t('delete')}
-					confirmLabel={t('delete_confirm')}
-					onconfirm={() => ondelete(false)}
-				/>
+	{#if mayEdit || mayDelete}
+		<div class="flex flex-wrap items-center gap-2">
+			{#if mayEdit}<Button type="button" size="lg" onclick={onedit}>{t('edit_event')}</Button>{/if}
+			{#if mayDelete}
+				<span class="ms-auto flex flex-wrap gap-1">
+					{#if occurrence.recurring}
+						<ConfirmButton
+							label={t('delete_one')}
+							confirmLabel={t('delete_one_confirm')}
+							onconfirm={() => ondelete(true)}
+						/>
+						<ConfirmButton
+							label={t('delete_series')}
+							confirmLabel={t('delete_series_confirm')}
+							onconfirm={() => ondelete(false)}
+						/>
+					{:else}
+						<ConfirmButton
+							label={t('delete')}
+							confirmLabel={t('delete_confirm')}
+							onconfirm={() => ondelete(false)}
+						/>
+					{/if}
+				</span>
 			{/if}
-		</span>
-	</div>
+		</div>
+	{/if}
 </div>

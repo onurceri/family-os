@@ -9,6 +9,7 @@
 		Page,
 		PageHeader,
 		SidePanel,
+		ViewOnly,
 		Timeline,
 	} from '@famos/ui/famos';
 	import { ChevronLeft, ChevronRight, Plus, Settings2 } from '@lucide/svelte';
@@ -158,6 +159,12 @@
 		return [...new Set(colors)].slice(0, 4);
 	};
 
+	// What the viewer may do with events: a control they may not use is not drawn, and an event they
+	// may not change opens as details only. Suggesting counts as being able to: it waits for approval.
+	const mayAdd = $derived(app.access('calendar.createEvent') !== 'no');
+	const mayEdit = $derived(app.access('calendar.updateEvent') !== 'no');
+	const mayDelete = $derived(app.access('calendar.deleteEvent') !== 'no');
+
 	// Editor: a new event, or an existing one opened from one of its occurrences.
 	type Editing = { mode: 'new' } | { mode: 'edit'; occurrence: Occurrence };
 	let editing = $state<Editing | null>(null);
@@ -176,6 +183,7 @@
 	const errors = $derived(form && showErrors ? validate(form) : {});
 
 	function openNew() {
+		if (!mayAdd) return;
 		viewing = null;
 		detail = null;
 		form = emptyForm(day, zoned(Date.now(), tz));
@@ -188,6 +196,10 @@
 		if (!occurrence.editable) {
 			close();
 			viewing = occurrence;
+			return;
+		}
+		if (!mayEdit) {
+			await openOnBoard(occurrence);
 			return;
 		}
 		viewing = null;
@@ -224,7 +236,7 @@
 	}
 
 	function editDetail() {
-		if (!detail) return;
+		if (!detail || !mayEdit) return;
 		form = formFrom(detail.event);
 		arm();
 		editing = { mode: 'edit', occurrence: detail.occurrence };
@@ -234,6 +246,7 @@
 
 	/** Wide board: empty space (or "+") in a day adds an event on that day. */
 	function addOn(date: string, time?: string) {
+		if (!mayAdd) return;
 		close();
 		form = emptyForm(date, zoned(Date.now(), tz));
 		if (time) {
@@ -384,7 +397,7 @@
 {/snippet}
 
 {#snippet eventDanger()}
-	{#if editing?.mode === 'edit'}
+	{#if editing?.mode === 'edit' && mayDelete}
 		{#if editing.occurrence.recurring}
 			<ConfirmButton
 				label={t('delete_one')}
@@ -529,7 +542,11 @@
 					>
 						<Settings2 />
 					</Button>
-					<Button size="lg" onclick={() => addOn(day)}><Plus class="size-4" />{t('add')}</Button>
+					{#if mayAdd}
+						<Button size="lg" onclick={() => addOn(day)}><Plus class="size-4" />{t('add')}</Button>
+					{:else}
+						<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+					{/if}
 				</div>
 			</header>
 
@@ -593,7 +610,7 @@
 						{today}
 						{ready}
 						onopen={openOnBoard}
-						onadd={addOn}
+						onadd={mayAdd ? addOn : undefined}
 						onday={(date) => {
 							selected = date;
 							view = 'day';
@@ -605,6 +622,9 @@
 	{:else}
 		<PageHeader title={t('title')} subtitle={phoneTitle}>
 			{#snippet actions()}
+				{#if !mayAdd}
+					<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+				{/if}
 				<Button
 					size="icon-lg"
 					variant="ghost"
@@ -750,7 +770,7 @@
 			{/if}
 		</div>
 
-		{#if !editing && !viewing}
+		{#if !editing && !viewing && mayAdd}
 			<button
 				type="button"
 				aria-label={t('add')}
@@ -766,7 +786,7 @@
 	<SidePanel
 		open={tablet.current
 			? Boolean(viewing || detail || (editing && form))
-			: Boolean(editing && form)}
+			: Boolean(detail || (editing && form))}
 		title={panelTitle}
 		onclose={close}
 		closeLabel={t('close')}
@@ -774,10 +794,10 @@
 		saveLabel={editing && form ? t('save') : undefined}
 		saveDisabled={busy}
 		onsave={editing && form ? () => formEl?.requestSubmit() : undefined}
-		note={editing && form && app.needsApproval('calendar.edit')
-			? app.t('app:draft_approval_note')
+		approval={editing && form
+			? app.approval(editing.mode === 'new' ? 'calendar.createEvent' : 'calendar.updateEvent')
 			: undefined}
-		danger={editing?.mode === 'edit' && form ? eventDanger : undefined}
+		danger={editing?.mode === 'edit' && form && mayDelete ? eventDanger : undefined}
 		{dirty}
 		discard={{
 			title: t('discard_title'),
@@ -795,6 +815,8 @@
 				{tags}
 				onedit={editDetail}
 				ondelete={remove}
+				{mayEdit}
+				{mayDelete}
 			/>
 		{:else}
 			{@render eventForm()}
