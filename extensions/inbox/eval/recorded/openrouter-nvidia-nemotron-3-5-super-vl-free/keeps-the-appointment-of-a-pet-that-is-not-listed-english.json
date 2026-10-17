@@ -1,8 +1,8 @@
 {
 	"case": "Keeps the appointment of a pet that is not listed (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,7 +22,8 @@
 						},
 						"time": "10:30",
 						"timeText": "10:30",
-						"place": "Riverside Vet Clinic"
+						"place": "Riverside Vet Clinic",
+						"quote": "Miso's annual check Thu 15 10:30, Riverside Vet Clinic"
 					}
 				]
 			}

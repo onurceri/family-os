@@ -1,14 +1,14 @@
 {
 	"case": "Exact date with year (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Aşı randevusu",
+				"label": "Deniz'in aşı randevusu",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -26,7 +26,8 @@
 						},
 						"time": "10:15",
 						"timeText": "10:15",
-						"place": "Şehitkamil Aile Sağlığı Merkezi"
+						"place": "Şehitkamil Aile Sağlığı Merkezi",
+						"quote": "Deniz’in aşı randevusu 3 Kasım 2026 Salı saat 10:15, Şehitkamil Aile Sağlığı Merkezi."
 					}
 				]
 			}

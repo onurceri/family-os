@@ -1,8 +1,8 @@
 {
 	"case": "Message addressed to the person who shared it (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,7 +22,8 @@
 							"weekday": 6
 						},
 						"time": "09:00",
-						"timeText": "9am"
+						"timeText": "9am",
+						"quote": "my dentist check-up is on Saturday 10 October at 9am"
 					}
 				]
 			}

@@ -1,8 +1,8 @@
 {
 	"case": "Meals planned for the week (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -17,15 +17,14 @@
 						"date": {
 							"text": "Wednesday",
 							"weekday": 3
-						}
+						},
+						"quote": "tacos on Wednesday"
 					},
 					{
 						"kind": "kitchen.meal",
 						"title": "Fish pie",
 						"variant": "dinner",
-						"unsure": [
-							": date.text: \"Friday\" gives weekday 5, but today is Tuesday 2026-10-06, so Friday 2026-10-10 is correct; no guess needed for date as the weekday is given directly."
-						]
+						"quote": "fish pie for dinner on Friday"
 					}
 				]
 			}

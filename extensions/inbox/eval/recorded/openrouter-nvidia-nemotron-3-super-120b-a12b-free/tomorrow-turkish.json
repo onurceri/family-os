@@ -1,14 +1,14 @@
 {
 	"case": "Tomorrow (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Su tesisatçısı randevusu",
+				"label": "Su tesisatçısı yarın sabah 9'da",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -20,7 +20,8 @@
 						},
 						"time": "09:00",
 						"timeText": "9'da",
-						"notes": "Evde biri olmalı"
+						"notes": "Evde biri olmalı",
+						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı"
 					}
 				]
 			}

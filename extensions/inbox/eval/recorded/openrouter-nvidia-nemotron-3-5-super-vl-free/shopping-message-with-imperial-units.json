@@ -1,45 +1,45 @@
 {
 	"case": "Shopping message with imperial units",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Pancake ingredients for Saturday",
+				"label": "Pancake ingredients",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Flour",
 						"quantity": "2 lb",
-						"variant": "pantry"
+						"quote": "2 lb flour"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Milk",
 						"quantity": "1 gallon",
-						"variant": "dairy"
+						"quote": "1 gallon milk"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Eggs",
 						"quantity": "a dozen",
-						"variant": "dairy"
+						"quote": "a dozen eggs"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Butter",
 						"quantity": "12 oz",
-						"variant": "dairy"
+						"quote": "12 oz butter"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Pumpkin puree",
 						"quantity": "1 can",
-						"variant": "pantry"
+						"quote": "1 can pumpkin puree"
 					}
 				]
 			}

@@ -1,14 +1,14 @@
 {
 	"case": "UK council and school notice: DD/MM dates and Year 5",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Bin and parents evening",
+				"label": "Bin change and parents' evening",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -18,7 +18,8 @@
 							"text": "09/10",
 							"day": 9,
 							"month": 10
-						}
+						},
+						"quote": "your green bin collection moves from 08/10 to 09/10 this week."
 					},
 					{
 						"kind": "calendar.event",
@@ -31,9 +32,21 @@
 						},
 						"time": "17:30",
 						"timeText": "5.30pm",
-						"notes": "Please book a slot with the class teacher"
+						"quote": "Year 5 parents' evening is on 15/10 at 5.30pm."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Book a slot with the class teacher",
+						"date": {
+							"text": "15/10",
+							"day": 15,
+							"month": 10,
+							"weekday": 4
+						},
+						"quote": "Please book a slot with the class teacher."
 					}
-				]
+				],
+				"addressed": []
 			}
 		}
 	]

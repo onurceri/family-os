@@ -1,34 +1,21 @@
 {
 	"case": "A vet card for a listed pet (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Vaccination record for Luna",
+				"label": "Vaccination record",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "pets.treatment",
 						"about": "Luna",
-						"date": {
-							"text": "02.10.2026",
-							"numeric": "02.10.2026"
-						},
-						"endDate": {
-							"text": "02.10.2027",
-							"numeric": "02.10.2027"
-						},
-						"notes": "batch L4471",
 						"variant": "vaccination",
-						"unsure": [
-							"title",
-							"target",
-							"place"
-						]
+						"quote": "Vaccination record, Riverside Vet. Patient: Luna (cat). Given 02.10.2026: Purevax RCP, batch L4471. Next booster due 02.10.2027."
 					}
 				]
 			}

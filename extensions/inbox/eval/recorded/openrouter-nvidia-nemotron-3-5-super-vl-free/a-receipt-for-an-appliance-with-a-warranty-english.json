@@ -1,14 +1,14 @@
 {
 	"case": "A receipt for an appliance with a warranty (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Bosch Serie 4 dishwasher",
+				"label": "Bosch dishwasher receipt",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -16,13 +16,14 @@
 						"title": "Dishwasher",
 						"lines": [
 							"Bosch",
-							"Serie 4 SMS4HVI33G"
+							"Serie 4 dishwasher SMS4HVI33G"
 						],
 						"date": {
 							"text": "04/10/2026",
 							"numeric": "04/10/2026"
 						},
-						"amount": "24"
+						"amount": "24",
+						"quote": "ElectroMart receipt 04/10/2026. Bosch Serie 4 dishwasher SMS4HVI33G x1. Warranty: 2 years from date of purchase."
 					}
 				]
 			}

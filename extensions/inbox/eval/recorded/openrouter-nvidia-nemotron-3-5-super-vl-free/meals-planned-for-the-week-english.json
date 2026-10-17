@@ -1,8 +1,8 @@
 {
 	"case": "Meals planned for the week (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,20 +14,22 @@
 					{
 						"kind": "kitchen.meal",
 						"title": "Tacos",
-						"variant": "dinner",
 						"date": {
 							"text": "Wednesday",
 							"weekday": 3
-						}
+						},
+						"variant": "dinner",
+						"quote": "tacos on Wednesday"
 					},
 					{
 						"kind": "kitchen.meal",
 						"title": "Fish pie",
-						"variant": "dinner",
 						"date": {
 							"text": "Friday",
 							"weekday": 5
-						}
+						},
+						"variant": "dinner",
+						"quote": "fish pie for dinner on Friday"
 					}
 				]
 			}

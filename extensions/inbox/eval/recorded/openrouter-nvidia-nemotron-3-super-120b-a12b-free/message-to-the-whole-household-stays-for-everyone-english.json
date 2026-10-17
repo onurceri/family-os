@@ -1,8 +1,8 @@
 {
 	"case": "Message to the whole household stays for everyone (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -21,7 +21,8 @@
 							"weekday": 7
 						},
 						"time": "12:00",
-						"timeText": "noon"
+						"timeText": "noon",
+						"quote": "Family picnic at the lake on Sunday 11 October at noon, everyone is welcome."
 					}
 				]
 			}

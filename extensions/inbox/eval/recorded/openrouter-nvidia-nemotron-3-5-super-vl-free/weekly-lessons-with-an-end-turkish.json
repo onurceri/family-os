@@ -1,14 +1,14 @@
 {
 	"case": "Weekly lessons with an end (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Deniz'in piyano dersi",
+				"label": "Piyano dersi",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -32,7 +32,8 @@
 								"text": "Ekim sonuna kadar",
 								"month": 10
 							}
-						}
+						},
+						"quote": "Deniz'in piyano dersi her çarşamba saat 17:00'de, Ekim sonuna kadar devam edecek."
 					}
 				]
 			}

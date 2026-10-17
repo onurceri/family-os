@@ -1,8 +1,8 @@
 {
 	"case": "A vet card for a listed pet (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -25,7 +25,8 @@
 							"numeric": "02.10.2027"
 						},
 						"place": "Riverside Vet",
-						"notes": "Batch L4471"
+						"notes": "Batch L4471",
+						"quote": "Given 02.10.2026: Purevax RCP, batch L4471. Next booster due 02.10.2027."
 					}
 				]
 			}

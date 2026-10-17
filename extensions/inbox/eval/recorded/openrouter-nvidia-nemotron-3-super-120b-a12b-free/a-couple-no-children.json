@@ -1,22 +1,19 @@
 {
 	"case": "A couple, no children",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dental and dinner plans",
+				"label": "Dental visit and dinner with parents",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Diş randevusu",
-						"people": [
-							"Selin"
-						],
 						"date": {
 							"text": "8 Ekim Perşembe",
 							"day": 8,
@@ -24,7 +21,8 @@
 							"weekday": 4
 						},
 						"time": "15:00",
-						"timeText": "15:00"
+						"timeText": "15:00",
+						"quote": "Selin'in diş randevusu 8 Ekim Perşembe 15:00'te"
 					},
 					{
 						"kind": "calendar.event",
@@ -37,7 +35,8 @@
 							"weekday": 5
 						},
 						"time": "19:30",
-						"timeText": "19:30"
+						"timeText": "19:30",
+						"quote": "Ben de 9 Ekim Cuma akşam 19:30'da annemleri yemeğe götürüyorum"
 					}
 				]
 			}

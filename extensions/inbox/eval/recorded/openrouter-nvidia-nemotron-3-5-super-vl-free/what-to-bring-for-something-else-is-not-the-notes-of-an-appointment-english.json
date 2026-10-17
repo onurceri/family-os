@@ -1,0 +1,44 @@
+{
+	"case": "What to bring for something else is not the notes of an appointment (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Dentist, football kit, groceries",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Dentist",
+						"date": {
+							"text": "thurs",
+							"weekday": 4
+						},
+						"notes": "bring the football kit",
+						"quote": "dentist thurs?? and bring the football kit"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Milk",
+						"quote": "milk"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Bread",
+						"quote": "bread"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Lemons",
+						"quantity": "2",
+						"quote": "2 lemons"
+					}
+				]
+			}
+		}
+	]
+}

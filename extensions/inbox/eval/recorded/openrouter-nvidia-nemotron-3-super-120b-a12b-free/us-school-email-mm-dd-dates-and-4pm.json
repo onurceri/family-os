@@ -1,14 +1,14 @@
 {
 	"case": "US school email: MM/DD dates and 4pm",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Picture day and field trip permission",
+				"label": "Picture day and field trip",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -22,7 +22,8 @@
 						},
 						"time": "16:00",
 						"timeText": "4pm",
-						"place": "Gym"
+						"place": "Gym",
+						"quote": "Picture day is Friday 10/9 at 4pm in the gym."
 					},
 					{
 						"kind": "lists.task",
@@ -31,7 +32,8 @@
 							"text": "10/8",
 							"day": 8,
 							"month": 10
-						}
+						},
+						"quote": "Please return the signed permission slip for the field trip by 10/8."
 					}
 				]
 			}

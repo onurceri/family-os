@@ -1,8 +1,8 @@
 {
 	"case": "A chore done and new turns on it (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -12,13 +12,10 @@
 				"intent": "actionable",
 				"mentions": [
 					{
-						"kind": "lists.bought",
-						"target": "the bins",
+						"kind": "chores.done",
+						"target": "Take out the bins",
 						"forMe": true,
-						"date": {
-							"text": "this morning",
-							"inDays": 0
-						}
+						"quote": "I took the bins out this morning"
 					},
 					{
 						"kind": "chores.turns",
@@ -26,7 +23,8 @@
 						"people": [
 							"Ivy",
 							"Leo"
-						]
+						],
+						"quote": "From now on Ivy and Leo take turns on the bins, Ivy first"
 					}
 				]
 			}

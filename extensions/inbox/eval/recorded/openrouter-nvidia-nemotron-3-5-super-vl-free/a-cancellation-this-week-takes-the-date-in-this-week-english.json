@@ -1,0 +1,27 @@
+{
+	"case": "A cancellation this week takes the date in this week (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Football cancelled this week",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Football",
+						"date": {
+							"text": "this week",
+							"week": "this"
+						},
+						"quote": "Football is cancelled this week"
+					}
+				]
+			}
+		}
+	]
+}

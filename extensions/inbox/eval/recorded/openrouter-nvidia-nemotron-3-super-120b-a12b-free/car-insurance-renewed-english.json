@@ -1,14 +1,14 @@
 {
 	"case": "Car insurance renewed (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Car insurance renewed",
+				"label": "Car insurance renewal",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -25,7 +25,8 @@
 							"day": 19,
 							"month": 10,
 							"year": 2027
-						}
+						},
+						"quote": "Thank you, your car insurance has been renewed\n\nYour payment was received and your comprehensive car insurance policy for your Golf has been renewed. New period of cover: 20 October 2026 to 19 October 2027."
 					}
 				]
 			}

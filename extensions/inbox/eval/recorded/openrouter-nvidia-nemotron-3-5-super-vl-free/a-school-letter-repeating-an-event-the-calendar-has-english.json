@@ -1,8 +1,8 @@
 {
 	"case": "A school letter repeating an event the calendar has (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Year 7 class trip to Postojna Cave",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",
@@ -28,31 +29,31 @@
 						"timeText": "7:50",
 						"endTime": "16:30",
 						"place": "Postojna Cave",
-						"notes": "Bus leaves school at 7:50 and returns about 16:30. Send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. Cost 14 EUR, payable through the school e-office by 23 October."
+						"notes": "Bus leaves school at 7:50 and returns about 16:30. Send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October.",
+						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30."
 					},
 					{
 						"kind": "lists.task",
 						"title": "Send packed lunch, sturdy shoes and signed permission slip",
-						"people": [
-							"Ivy"
-						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Monday 26 October",
 							"day": 26,
 							"month": 10,
 							"weekday": 1
-						}
+						},
+						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay class trip fee",
+						"title": "Pay the class trip cost",
 						"date": {
 							"text": "23 October",
 							"day": 23,
-							"month": 10
+							"month": 10,
+							"weekday": 5
 						},
-						"notes": "Fee: 14 EUR, payable through the school e-office"
+						"notes": "Cost: 14 EUR, payable through the school e-office",
+						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
 					},
 					{
 						"kind": "calendar.eventChange",
@@ -60,11 +61,13 @@
 						"date": {
 							"text": "20 October",
 							"day": 20,
-							"month": 10
+							"month": 10,
+							"weekday": 2
 						},
 						"time": "18:00",
 						"timeText": "18:00",
-						"place": "School hall"
+						"place": "School hall",
+						"quote": "Parents' evening moved to 20 October, 18:00 in the school hall."
 					}
 				]
 			}

@@ -1,8 +1,8 @@
 {
 	"case": "A note for the family board (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,15 +14,11 @@
 					{
 						"kind": "board.note",
 						"notes": "The water is off on Thursday from 9 to 12, so fill some bottles the night before",
-						"tags": [
-							"water",
-							"preparation"
-						],
-						"unsure": [
-							"time",
-							"endTime"
-						]
+						"quote": "the water is off on Thursday from 9 to 12, so fill some bottles the night before"
 					}
+				],
+				"addressed": [
+					"Can you put this on the board for everyone: the water is off on Thursday from 9 to 12, so fill some bottles the night before."
 				]
 			}
 		}

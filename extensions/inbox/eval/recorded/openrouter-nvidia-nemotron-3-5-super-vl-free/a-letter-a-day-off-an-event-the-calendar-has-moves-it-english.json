@@ -1,0 +1,33 @@
+{
+	"case": "A letter a day off an event the calendar has moves it (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Parents' evening",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Parents' evening",
+						"date": {
+							"text": "Tuesday 20 October",
+							"day": 20,
+							"month": 10,
+							"weekday": 1
+						},
+						"time": "18:00",
+						"timeText": "18:00",
+						"place": "School hall",
+						"quote": "Parents' evening is on Tuesday 20 October at 18:00 in the school hall."
+					}
+				]
+			}
+		}
+	]
+}

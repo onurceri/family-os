@@ -1,8 +1,8 @@
 {
 	"case": "European appointment letter: DD.MM. dates and 24-hour times",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/1",
-	"promptHash": "4e5f4b61",
+	"version": "inbox.understand/2",
+	"promptHash": "ecc8049b",
 	"answers": [
 		{
 			"kind": "object",
@@ -13,10 +13,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Dentist appointment at Dr. Braun",
-						"people": [
-							"Katrin"
-						],
+						"title": "Dentist",
 						"date": {
 							"text": "Wednesday, 14.10.2026",
 							"day": 14,
@@ -27,14 +24,12 @@
 						"time": "14:30",
 						"timeText": "14:30",
 						"place": "Dental practice of Dr. Braun",
-						"notes": "Bring your insurance card"
+						"notes": "Bring your insurance card",
+						"quote": "your appointment at the dental practice of Dr. Braun is on Wednesday, 14.10.2026 at 14:30. Please bring your insurance card."
 					},
 					{
 						"kind": "lists.task",
-						"title": "Cancel dentist appointment if unable to come",
-						"people": [
-							"Katrin"
-						],
+						"title": "Cancel dentist appointment",
 						"date": {
 							"text": "12.10.2026, 12:00",
 							"day": 12,
@@ -42,7 +37,8 @@
 							"year": 2026
 						},
 						"time": "12:00",
-						"timeText": "12:00"
+						"timeText": "12:00",
+						"quote": "If you cannot come, please cancel by 12.10.2026, 12:00."
 					}
 				]
 			}
