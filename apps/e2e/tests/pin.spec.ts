@@ -68,14 +68,16 @@ test('a wrong PIN is refused; a PIN session is a member session without admin se
 	await tablet.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await expect(tablet.getByTestId('day-sentence').filter({ hasText: 'Elif' })).toBeVisible();
 
-	// No admin entries, the admin pages send her home, the admin API refuses.
+	// No admin entries, the admin pages say they are not for her, the admin API refuses.
 	await tablet.goto('/more');
 	await expect(tablet.getByRole('heading', { name: 'More' })).toBeVisible();
 	for (const name of ['Members', 'Roles', 'Devices', 'Backups', 'Provider & models'])
 		await expect(tablet.getByRole('link', { name, exact: true }), name).toHaveCount(0);
 	for (const path of ['/settings/devices', '/settings/members']) {
 		await tablet.goto(path);
-		await expect(tablet).toHaveURL(/\/$/);
+		await expect(
+			tablet.getByRole('heading', { name: /^This page is for people who may use / }),
+		).toBeVisible();
 	}
 	const origin = family.url;
 	const post = async (path: string, data: unknown) =>

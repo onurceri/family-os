@@ -28,8 +28,18 @@ export default defineWebExtension({
 	],
 	pages: [
 		// One component for the list and a record, so opening one keeps the list mounted (read once).
-		{ id: 'pets.page', path: '/pets', component: () => import('./PetPage.svelte') },
-		{ id: 'pets.pet', path: '/pets/:id', component: () => import('./PetPage.svelte') },
+		{
+			id: 'pets.page',
+			requires: 'pets.view',
+			path: '/pets',
+			component: () => import('./PetPage.svelte'),
+		},
+		{
+			id: 'pets.pet',
+			requires: 'pets.view',
+			path: '/pets/:id',
+			component: () => import('./PetPage.svelte'),
+		},
 	],
 	slots: [
 		{

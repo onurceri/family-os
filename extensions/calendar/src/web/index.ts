@@ -54,11 +54,13 @@ export default defineWebExtension({
 		{ id: 'calendar.page', path: '/calendar', component: () => import('./CalendarPage.svelte') },
 		{
 			id: 'calendar.feeds',
+			requires: 'calendar.view',
 			path: '/settings/calendar-feed',
 			component: () => import('./FeedsPage.svelte'),
 		},
 		{
 			id: 'calendar.calendars',
+			requires: 'calendar.manage',
 			path: '/settings/calendars',
 			component: () => import('./CalendarsPage.svelte'),
 		},

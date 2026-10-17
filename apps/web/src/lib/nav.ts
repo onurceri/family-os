@@ -76,9 +76,11 @@ export const TODAY: NavItem = { id: 'core.today', path: '/', labelKey: 'nav_home
 /**
  * Pages owned by the app itself, all of them settings (the settings list; More on phones). Their
  * `order` leaves room for the pages extensions add to a part of the list (Photos and weather, 35,
- * comes after Devices and displays); on a tie the app's own page comes first.
+ * comes after Devices and displays); on a tie the app's own page comes first. Each entry is also
+ * its page's declaration: its `requires` is who may open the page (and the pages under its path
+ * or in its `alsoOn`), so the entry and the page cannot disagree.
  */
-const APP_SETTINGS: NavItem[] = [
+export const APP_SETTINGS: readonly NavItem[] = [
 	{
 		id: 'core.account',
 		order: 10,
@@ -259,6 +261,9 @@ const APP_SETTINGS: NavItem[] = [
 		requires: 'core.settings.manage',
 	},
 ];
+
+/** The app's own page on a path, as the shell checks it before opening it. */
+export const appPageFor = (path: string): NavItem | undefined => settingsOwner(APP_SETTINGS, path);
 
 type Can = (capability: string) => boolean;
 const allowed = (item: { requires?: string | undefined }, can: Can) =>

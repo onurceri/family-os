@@ -23,7 +23,17 @@
 	import SettingsSidebar from '#lib/SettingsSidebar.svelte';
 	import { settingsOrigin } from '#lib/settings-origin.svelte.js';
 	import { signOut } from '#lib/auth.js';
-	import { buildNav, isSettingsPath, type NavItem, settingsOwner, TODAY } from '#lib/nav.js';
+	import {
+		APP_SETTINGS,
+		appPageFor,
+		buildNav,
+		isSettingsPath,
+		type NavItem,
+		settingsOwner,
+		TODAY,
+	} from '#lib/nav.js';
+	import NoAccess from '#lib/NoAccess.svelte';
+	import { OPEN, pageAccess } from '#lib/page-access.js';
 	import { connectRealtime, onEvent, onReconnect } from '#lib/realtime.js';
 	import { onExtensionsChanged } from '#lib/server-changes.js';
 	import { approvalGates } from '#lib/approval-gates.js';
@@ -32,7 +42,13 @@
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { shareFor } from '#lib/contributions.js';
-	import { contributions, enabledOnly, isAppPath, keepExtensionsOffline } from '#lib/extensions.js';
+	import {
+		contributions,
+		enabledOnly,
+		isAppPath,
+		keepExtensionsOffline,
+		pageFor,
+	} from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
 	import { familyDateLocale } from '#lib/format.svelte.js';
 	import LoadingMark from '#lib/LoadingMark.svelte';
@@ -83,6 +99,22 @@
 				: item.path === '/'
 					? path === '/'
 					: path === item.path || path.startsWith(`${item.path}/`);
+	/**
+	 * Whether the viewer may open this page, asked once here for every page: the app's own (their
+	 * settings entry is their declaration) and the extensions' (their page's `requires`).
+	 */
+	const access = $derived.by(() => {
+		if (session.status !== 'ready') return OPEN;
+		const can = (capability: string) => session.can(capability);
+		return page.route.id === '/[...path]'
+			? pageAccess({
+					path,
+					page: pageFor(path)?.page,
+					entries: contributions.nav,
+					can,
+				})
+			: pageAccess({ path, page: appPageFor(path), entries: APP_SETTINGS, can });
+	});
 	const label = (item: NavItem) =>
 		item.labelKey.includes(':') ? tDynamic(item.labelKey) : tDynamic(`app:${item.labelKey}`);
 
@@ -417,9 +449,16 @@
 </script>
 
 <!-- Every page opens whole: hidden until its first data is in (PageGate). The extension pages are
-     gated where they are mounted (routes/[...path]), keyed by the page component. -->
+     gated where they are mounted (routes/[...path]), keyed by the page component. A page that is
+     not for the viewer is never mounted: they get the one state that says who it is for. -->
 {#snippet routed()}
-	{#if page.route.id === '/[...path]'}
+	{#if !access.open}
+		{#key path}
+			<PageGate>
+				<NoAccess labelKey={access.labelKey} settings={isSettingsPath(path)} />
+			</PageGate>
+		{/key}
+	{:else if page.route.id === '/[...path]'}
 		{@render children()}
 	{:else}
 		{#key page.route.id}<PageGate>{@render children()}</PageGate>{/key}

@@ -602,6 +602,14 @@ export interface PageContribution {
 	 * (`/vehicles/:id`) and arrives in the component's `params`. Exact paths win over patterns.
 	 */
 	path: string;
+	/**
+	 * The capability needed to open the page, as on its navigation entry (the same one: a page
+	 * and its entry on one path, or a record page under its list's entry, ask for the same). Without
+	 * it the app shows a calm "this page is for people who may use …" in place of the page and
+	 * never loads it, so a typed address, a bookmark or a shared link opens no page of refused
+	 * reads. The server still checks every read and action; this is what the person sees.
+	 */
+	requires?: string;
 	/** A page without parameters may take no props at all. */
 	component: () => Promise<{ default: Component | Component<PageProps> }>;
 }

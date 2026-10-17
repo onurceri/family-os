@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { type paths, unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -47,11 +46,6 @@
 	let formEl = $state<HTMLFormElement>();
 	/** The role the phone shows. */
 	let shownRole = $state<string | null>(null);
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.roles.manage'))
-			void goto('/', { replace: true });
-	});
 
 	async function load() {
 		data = (await api.GET('/api/v1/core/roles')).data ?? null;

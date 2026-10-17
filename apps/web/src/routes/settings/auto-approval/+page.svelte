@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { type paths, unwrap } from '@famos/api-client';
 	import {
 		Card,
@@ -30,10 +29,6 @@
 		loaded = true;
 	}
 
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.autoApprove.manage'))
-			void goto('/', { replace: true });
-	});
 	$effect(() => {
 		if (session.can('core.autoApprove.manage')) void load();
 	});

@@ -119,11 +119,6 @@
 	}
 
 	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.devices.manage'))
-			void goto('/', { replace: true });
-	});
-
-	$effect(() => {
 		if (!session.can('core.devices.manage')) return;
 		void load();
 		return onEvent('core.device.', () => void load());

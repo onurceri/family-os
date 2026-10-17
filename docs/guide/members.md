@@ -35,6 +35,8 @@ Everyone chooses their own language under **Settings → You → Profile & sign-
 
 Everyone also sees their own notifications and the other members.
 
+Menus show only the pages your role may open. If you follow a link or a bookmark to one that is not for you, the page says so ("This page is for people who may use Members") and offers the way back to Today.
+
 Any role can sign in with an email and password, a PIN, or both. Someone who signs in with a PIN can do everything their role allows except what only admins may do: an admin signed in with a PIN cannot manage people, roles, devices, features, AI or settings. For that, they sign in with their email and password.
 
 **Settings → Family → Roles** (or **What can each role do?** on the members page) shows every permission and which role has it. A lock marks what only admins can have.

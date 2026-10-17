@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { isApiError, type paths, unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -103,12 +102,6 @@
 	async function load() {
 		await Promise.all([family.refresh(), loadRoles()]);
 	}
-
-	// The API enforces access; this only keeps others out of a screen they cannot use.
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.members.manage'))
-			void goto('/', { replace: true });
-	});
 
 	$effect(() => {
 		if (!session.can('core.members.manage')) return;

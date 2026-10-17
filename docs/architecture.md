@@ -432,6 +432,10 @@ A pack may hold no CSS, selectors or scripts, because CSS can load images from o
 
 A web extension's page `path` may contain `:name` segments (`/vehicles/:id`). The catch-all route matches exact paths first, then patterns, and passes the values to the page component as `params`. A page without parameters takes no props.
 
+### Who may open a page
+
+A page declares the capability needed to open it with `requires`, the same one as its navigation entry (an entry hides the way to a page; `requires` on the page keeps a typed address, a bookmark or a shared link from opening it). The shell checks it once for every page, before the page loads (`apps/web/src/lib/page-access.ts`, asked by the root layout): the app's own settings pages are declared by their settings entry (`APP_SETTINGS`), an extension's by its `PageContribution`. Someone without it gets one shared state, `NoAccess` (design system §3.8), never a redirect. The server still refuses every read and action they may not run; this only spares them a page of refusals. `scripts/page-access.test.ts` fails when an extension's page and its entry (the one on its path, or the one it lies under) ask for different capabilities, and when an app settings page sends people away by hand.
+
 ## 7. Actions: one definition, many surfaces
 
 An action is the unit of change in FamilyOS. A single `defineAction` produces:

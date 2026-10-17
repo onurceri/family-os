@@ -53,11 +53,6 @@
 	let newMember = $state('');
 	let newLabel = $state('');
 
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replace: true });
-	});
-
 	async function load() {
 		const [s, list] = await Promise.all([
 			api.GET('/api/v1/email/settings'),

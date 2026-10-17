@@ -133,6 +133,10 @@ A page opens once, whole. It never shows its head first and its body a moment la
 
 This is built in, not something a page does: `PageGate` (`apps/web/src/lib`) wraps every route and every extension page, and it waits on the reads the app has in flight (counted at `fetch`, `net-activity.svelte.ts`). A page only loads its data the way it already does, and renders an empty state from the load that proves emptiness (`loaded && items.length === 0`), never before it.
 
+### 3.8 A page that is not for you
+
+A page says who may open it with `requires` (a capability), the same as its navigation entry: the menu hides the way to it, and the page itself stays closed to a typed address, a bookmark or a link someone sent. The shell checks it once for every page, the app's and the extensions', and shows **`NoAccess`** instead of the page, which is never loaded: the page's own frame and its name as the menu has it as the head, an `EmptyState` (`generic` art) with the line `This page is for people who may use Members`, one line on who can give access, and **Back to Today**. Never a redirect, never a toast, never a page of refused reads. A page never checks this itself: give it `requires` (an extension's `PageContribution`, the app's settings entry), and a record page under a list asks for what the list asks for (`scripts/page-access.test.ts`).
+
 ## 4. Creating and editing
 
 ### 4.1 Which container

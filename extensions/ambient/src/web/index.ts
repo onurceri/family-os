@@ -32,6 +32,7 @@ export default defineWebExtension({
 	pages: [
 		{
 			id: 'ambient.settings',
+			requires: 'ambient.manage',
 			path: SETTINGS_PATH,
 			component: () => import('./PhotosWeatherPage.svelte'),
 		},

@@ -51,11 +51,6 @@
 	});
 	let perTask = $state(false);
 
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.ai.manage'))
-			void goto('/', { replace: true });
-	});
-
 	/** Whether the three chat tasks use one provider and model (or none is set yet). */
 	function sameForChat(r: Roles): boolean {
 		const set = CHAT_ROLES.map((role) => r[role]).filter(Boolean);

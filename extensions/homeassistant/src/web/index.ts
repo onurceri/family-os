@@ -68,11 +68,13 @@ export default defineWebExtension({
 	pages: [
 		{
 			id: 'homeassistant.settings',
+			requires: 'homeassistant.manage',
 			path: SETTINGS_PATH,
 			component: () => import('./ConnectionPage.svelte'),
 		},
 		{
 			id: 'homeassistant.mine',
+			requires: 'core.notifications.receive',
 			path: MINE_PATH,
 			component: () => import('./MySharingPage.svelte'),
 		},

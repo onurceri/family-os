@@ -44,6 +44,11 @@ export default defineWebExtension({
 		},
 	],
 	pages: [
-		{ id: 'assistant.page', path: '/assistant', component: () => import('./AssistantPage.svelte') },
+		{
+			id: 'assistant.page',
+			requires: 'assistant.use',
+			path: '/assistant',
+			component: () => import('./AssistantPage.svelte'),
+		},
 	],
 });

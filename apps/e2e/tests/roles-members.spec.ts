@@ -49,10 +49,20 @@ test('a plain member sees no admin entries and is refused by the admin-only API'
 		await expect(phone.getByRole('heading', { name: 'More' })).toBeVisible();
 	}
 
-	// The pages themselves send her home.
-	for (const path of ['/settings/members', '/settings/roles', '/settings/auto-approval']) {
+	// The pages themselves (the app's and an extension's) say who they are for, and offer Today.
+	for (const path of [
+		'/settings/members',
+		'/settings/roles',
+		'/settings/auto-approval',
+		'/settings/photos-weather',
+	]) {
 		await phone.goto(path);
-		await expect(phone).toHaveURL(/\/$/);
+		await expect(
+			phone.getByRole('heading', { name: /^This page is for people who may use / }),
+			path,
+		).toBeVisible();
+		await expect(phone).toHaveURL(new RegExp(`${path}$`));
+		await expect(phone.getByRole('link', { name: 'Back to Today' })).toHaveAttribute('href', '/');
 	}
 
 	// And the API refuses, whatever the UI shows.

@@ -28,9 +28,15 @@ export default defineWebExtension({
 	],
 	pages: [
 		// One component for the list and a record, so opening one keeps the list mounted (read once).
-		{ id: 'vehicles.page', path: '/vehicles', component: () => import('./VehiclePage.svelte') },
+		{
+			id: 'vehicles.page',
+			requires: 'vehicles.view',
+			path: '/vehicles',
+			component: () => import('./VehiclePage.svelte'),
+		},
 		{
 			id: 'vehicles.vehicle',
+			requires: 'vehicles.view',
 			path: '/vehicles/:id',
 			component: () => import('./VehiclePage.svelte'),
 		},

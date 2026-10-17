@@ -29,11 +29,27 @@ export default defineWebExtension({
 	],
 	pages: [
 		// One component for the list and a record, so opening one keeps the list mounted (read once).
-		{ id: 'home.page', path: '/home', component: () => import('./HomePage.svelte') },
-		{ id: 'home.home', path: '/home/:id', component: () => import('./HomePage.svelte') },
-		{ id: 'home.item', path: '/home/items/:id', component: () => import('./ItemPage.svelte') },
+		{
+			id: 'home.page',
+			requires: 'home.view',
+			path: '/home',
+			component: () => import('./HomePage.svelte'),
+		},
+		{
+			id: 'home.home',
+			requires: 'home.view',
+			path: '/home/:id',
+			component: () => import('./HomePage.svelte'),
+		},
+		{
+			id: 'home.item',
+			requires: 'home.view',
+			path: '/home/items/:id',
+			component: () => import('./ItemPage.svelte'),
+		},
 		{
 			id: 'home.service',
+			requires: 'home.view',
 			path: '/home/services/:id',
 			component: () => import('./ServicePage.svelte'),
 		},

@@ -32,10 +32,21 @@ export default defineWebExtension({
 	],
 	pages: [
 		// One component for the recipes and a recipe, so opening one keeps the list mounted (read once).
-		{ id: 'kitchen.page', path: '/kitchen', component: () => import('./RecipePage.svelte') },
-		{ id: 'kitchen.plan', path: '/kitchen/plan', component: () => import('./PlanPage.svelte') },
+		{
+			id: 'kitchen.page',
+			requires: 'kitchen.view',
+			path: '/kitchen',
+			component: () => import('./RecipePage.svelte'),
+		},
+		{
+			id: 'kitchen.plan',
+			requires: 'kitchen.view',
+			path: '/kitchen/plan',
+			component: () => import('./PlanPage.svelte'),
+		},
 		{
 			id: 'kitchen.recipe',
+			requires: 'kitchen.view',
 			path: '/kitchen/recipes/:id',
 			component: () => import('./RecipePage.svelte'),
 		},

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -84,11 +83,6 @@
 	// Trying the family's theme never outlives the page.
 	onDestroy(() => {
 		if (appearance.previewingForFamily) appearance.endPreview();
-	});
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replace: true });
 	});
 
 	async function refresh() {

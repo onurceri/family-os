@@ -166,10 +166,6 @@
 	});
 
 	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.extensions.manage'))
-			void goto('/', { replace: true });
-	});
-	$effect(() => {
 		if (!session.can('core.extensions.manage')) return;
 		void load();
 		const offChanged = onEvent('core.extensions.', () => void load());

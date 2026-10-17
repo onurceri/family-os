@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { dateTimeFormat } from '#lib/format.svelte.js';
-	import { goto } from '$app/navigation';
 	import { type paths, unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -55,11 +54,6 @@
 				: t('mcp_expires', { date: token.expiresAt ? when(token.expiresAt) : '-' });
 	const live = (token: Token) =>
 		token.revokedAt === null && (token.expiresAt === null || token.expiresAt > Date.now());
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.mcp.use'))
-			void goto('/', { replace: true });
-	});
 
 	async function load() {
 		const [settings, list] = await Promise.all([

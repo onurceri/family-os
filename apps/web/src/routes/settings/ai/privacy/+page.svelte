@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { unwrap } from '@famos/api-client';
 	import { Card, Notice, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
@@ -12,11 +11,6 @@
 
 	let settings = $state<AiSettings | null>(null);
 	let error = $state<string | null>(null);
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.ai.manage'))
-			void goto('/', { replace: true });
-	});
 
 	async function load() {
 		settings = (await api.GET('/api/v1/ai/settings')).data ?? null;

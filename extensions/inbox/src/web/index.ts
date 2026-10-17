@@ -69,7 +69,17 @@ export default defineWebExtension({
 		},
 	],
 	pages: [
-		{ id: 'inbox.page', path: '/add', component: () => import('./QuickAddPage.svelte') },
-		{ id: 'inbox.share', path: '/share', component: () => import('./SharePage.svelte') },
+		{
+			id: 'inbox.page',
+			requires: 'inbox.share',
+			path: '/add',
+			component: () => import('./QuickAddPage.svelte'),
+		},
+		{
+			id: 'inbox.share',
+			requires: 'inbox.share',
+			path: '/share',
+			component: () => import('./SharePage.svelte'),
+		},
 	],
 });

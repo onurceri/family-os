@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { unwrap } from '@famos/api-client';
 	import {
 		canonicalLocale,
@@ -53,11 +52,6 @@
 	const tag = $derived(valid ? canonicalLocale(formatLocale) : family.formatLocale);
 	/** Dates and times as they will be read: the reader's words, the chosen region's order. */
 	const shown = $derived(dateLocale(getLocale(), tag, hourCycle));
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replace: true });
-	});
 
 	/** Takes the week, clock and temperature a region uses; the person can still change them. */
 	function useRegionDefaults() {

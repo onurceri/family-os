@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
-	import { goto } from '$app/navigation';
 	import { Button } from '@famos/ui/button';
 	import { Card, Notice, Page, PageHeader, Section } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
@@ -14,11 +13,6 @@
 	let next = $state<string | null>(null);
 	let loaded = $state(false);
 	let loading = $state(false);
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.ai.manage'))
-			void goto('/', { replace: true });
-	});
 
 	async function load(before?: string) {
 		loading = true;

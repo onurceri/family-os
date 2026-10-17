@@ -25,7 +25,14 @@ export default defineWebExtension({
 			requires: 'board.view',
 		},
 	],
-	pages: [{ id: 'board.page', path: '/board', component: () => import('./BoardPage.svelte') }],
+	pages: [
+		{
+			id: 'board.page',
+			requires: 'board.view',
+			path: '/board',
+			component: () => import('./BoardPage.svelte'),
+		},
+	],
 	slots: [
 		{
 			slot: 'dashboard.card',

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { isApiError, type paths, unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -33,11 +32,6 @@
 	// The token's reason shows from the first refused Connect on, and goes once it is pasted.
 	let tried = $state(false);
 	const tokenError = $derived(tried && !token.trim() ? 'app:telegram_token_required' : undefined);
-
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replace: true });
-	});
 
 	async function load() {
 		status = (await api.GET('/api/v1/telegram/settings')).data ?? null;

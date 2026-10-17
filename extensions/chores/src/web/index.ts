@@ -28,9 +28,19 @@ export default defineWebExtension({
 		},
 	],
 	pages: [
-		{ id: 'chores.page', path: '/chores', component: () => import('./ChoresPage.svelte') },
+		{
+			id: 'chores.page',
+			requires: 'chores.view',
+			path: '/chores',
+			component: () => import('./ChoresPage.svelte'),
+		},
 		// A chore opened in the detail pane (a link opens the same chore).
-		{ id: 'chores.chore', path: '/chores/:id', component: () => import('./ChoresPage.svelte') },
+		{
+			id: 'chores.chore',
+			requires: 'chores.view',
+			path: '/chores/:id',
+			component: () => import('./ChoresPage.svelte'),
+		},
 	],
 	slots: [
 		{

@@ -19,11 +19,6 @@
 	let error = $state<string | null>(null);
 	let running = $state(false);
 
-	$effect(() => {
-		if (session.status === 'ready' && !session.can('core.settings.manage'))
-			void goto('/', { replace: true });
-	});
-
 	async function load() {
 		data = (await api.GET('/api/v1/backups')).data ?? null;
 	}
