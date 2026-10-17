@@ -63,13 +63,17 @@ export function parseState(body: string): PickedState | null {
 	}
 }
 
+const LAST_USED_DOMAINS = new Set(['scene', 'button', 'input_button']);
+const domainOf = (entityId: string) => entityId.slice(0, entityId.indexOf('.'));
+
 const NUMBER = /^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 
 /** What the entity reads, as data. Words and number formats are the interface's job. */
 export function toValue(state: PickedState): Value {
 	const word = state.state.trim();
 	if (word === 'unknown' || word === 'unavailable' || word === '') return { kind: 'unavailable' };
-	if (state.deviceClass === 'timestamp') {
+	// A scene or a button has no state of its own: Home Assistant gives when it was last used.
+	if (state.deviceClass === 'timestamp' || LAST_USED_DOMAINS.has(domainOf(state.entityId))) {
 		const at = Date.parse(word);
 		if (Number.isFinite(at)) return { kind: 'time', at };
 	}
@@ -77,7 +81,7 @@ export function toValue(state: PickedState): Value {
 		const value = Number(word);
 		if (Number.isFinite(value)) return { kind: 'number', value, unit: state.unit };
 	}
-	const domain = state.entityId.slice(0, state.entityId.indexOf('.'));
+	const domain = domainOf(state.entityId);
 	if ((STATE_DOMAINS as readonly string[]).includes(domain))
 		return {
 			kind: 'state',

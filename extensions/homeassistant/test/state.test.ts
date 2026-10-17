@@ -123,6 +123,18 @@ describe('toValue', () => {
 		).toEqual({ kind: 'time', at: Date.parse('2026-10-17T10:15:00+00:00') });
 	});
 
+	it('reads a scene or a button as when it was last used', () => {
+		// What the lab Home Assistant answered for a scene that had just run.
+		expect(value('scene.evening', '2026-10-17T19:13:34.384776+00:00')).toEqual({
+			kind: 'time',
+			at: Date.parse('2026-10-17T19:13:34.384776+00:00'),
+		});
+		expect(value('input_button.bell', '2026-10-17T10:15:00+00:00')).toMatchObject({
+			kind: 'time',
+		});
+		expect(value('scene.evening', 'unknown')).toEqual({ kind: 'unavailable' });
+	});
+
 	it('reads an enum sensor as Home Assistant’s own word', () => {
 		expect(value('sensor.mode', 'eco', { device_class: 'enum', options: ['eco'] })).toEqual({
 			kind: 'text',
