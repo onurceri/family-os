@@ -10,6 +10,7 @@
 
 <script lang="ts">
 	import { tick, type Snippet } from 'svelte';
+	import type { Approval } from '../app-context.js';
 	import { Button } from '../components/button/index.js';
 	import Dialog from './Dialog.svelte';
 	import { openPath } from './open-path.js';
@@ -47,7 +48,7 @@
 		discard,
 		beforeclose,
 		closeHref,
-		note,
+		approval,
 		children,
 	}: {
 		open: boolean;
@@ -71,10 +72,11 @@
 		/** Opened through the router after closing: the page's address without `?edit=` or `?new=`. */
 		closeHref?: string;
 		/**
-		 * A line said before Save, already translated: that the change goes to someone for approval.
-		 * Above the buttons in the panel, at the end of the form in the sheet.
+		 * Given when the change goes to someone for approval (`app.approval(actionId)`): its line is
+		 * said under the title, where it is seen before anything is typed, and Save reads as the
+		 * suggestion it is.
 		 */
-		note?: string;
+		approval?: Approval;
 		children: Snippet;
 	} = $props();
 
@@ -82,7 +84,8 @@
 	let opener: HTMLElement | null = null;
 	let asking = $state(false);
 
-	const hasFooter = $derived(Boolean(footer || (onsave && saveLabel)));
+	const shownSaveLabel = $derived(approval?.saveLabel ?? saveLabel);
+	const hasFooter = $derived(Boolean(footer || (onsave && shownSaveLabel)));
 
 	$effect(() => {
 		if (!open || !wide.current) return;
@@ -137,8 +140,8 @@
 	{#if footer}
 		{@render footer()}
 	{:else}
-		{#if onsave && saveLabel}
-			<Button variant="primary" disabled={saveDisabled} onclick={onsave}>{saveLabel}</Button>
+		{#if onsave && shownSaveLabel}
+			<Button variant="primary" disabled={saveDisabled} onclick={onsave}>{shownSaveLabel}</Button>
 			<Button variant="ghost" onclick={requestClose}>{cancelLabel ?? closeLabel}</Button>
 		{/if}
 		{#if danger}<span class="ms-auto flex flex-wrap items-center gap-1">{@render danger()}</span
@@ -177,15 +180,20 @@
 					>
 				</button>
 			</header>
+			{#if approval}
+				<p
+					class="text-ink-soft border-line shrink-0 border-b px-5 py-2.5 text-[13px]"
+					data-testid="side-panel-note"
+				>
+					{approval.note}
+				</p>
+			{/if}
 			<div class="min-h-0 flex-1 overflow-y-auto p-5">{@render children()}</div>
 			{#if hasFooter}
 				<footer
 					class="border-line bg-surface flex shrink-0 flex-wrap items-center gap-2 border-t px-5 py-3"
 					data-testid="side-panel-footer"
 				>
-					{#if note}
-						<p class="text-ink-soft w-full text-[13px]" data-testid="side-panel-note">{note}</p>
-					{/if}
 					{@render bottom()}
 				</footer>
 			{/if}
@@ -197,14 +205,12 @@
 			testid="side-panel"
 			onclose={requestClose}
 			{onsave}
-			{saveLabel}
+			saveLabel={shownSaveLabel}
+			note={approval?.note}
 			{saveDisabled}
 			cancelLabel={cancelLabel ?? closeLabel}
 		>
 			{@render children()}
-			{#if note}
-				<p class="text-ink-soft mt-5 text-[13px]" data-testid="side-panel-note">{note}</p>
-			{/if}
 			{#if danger && !footer}
 				<div class="border-line mt-6 flex flex-wrap items-center gap-1 border-t pt-3">
 					{@render danger()}

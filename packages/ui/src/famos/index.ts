@@ -120,6 +120,7 @@ export {
 } from './timeline.js';
 export { getTodayBlock, type TodayBlockOptions } from './today-block.js';
 export * from './today-v3.js';
+export { default as ViewOnly } from './ViewOnly.svelte';
 export { default as WeatherBlock } from './WeatherBlock.svelte';
 export { default as WeatherIcon, type WeatherShape, weatherShape } from './WeatherIcon.svelte';
 export { default as WeatherSky } from './WeatherSky.svelte';

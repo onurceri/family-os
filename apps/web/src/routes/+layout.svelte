@@ -36,7 +36,7 @@
 	import { OPEN, pageAccess } from '#lib/page-access.js';
 	import { connectRealtime, onEvent, onReconnect } from '#lib/realtime.js';
 	import { onExtensionsChanged } from '#lib/server-changes.js';
-	import { approvalGates } from '#lib/approval-gates.js';
+	import { accessBook } from '#lib/access.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
@@ -64,6 +64,13 @@
 
 	// Counts reads in flight, so a page can stay hidden until its first data is in (PageGate).
 	netActivity.install();
+	// A refused change means the role changed since the controls were drawn: read it again.
+	let lastRefused = 0;
+	netActivity.onForbidden = () => {
+		if (Date.now() - lastRefused < 3000 || session.status !== 'ready') return;
+		lastRefused = Date.now();
+		void session.refresh();
+	};
 	// A navigation on its way is work too: the page it leads to (a list's first item opening by
 	// itself) only starts its reads once it has arrived.
 	$effect(() => {
@@ -166,7 +173,15 @@
 				place && { label: t('draft_sent_show'), run: () => void goto(place.path) },
 			);
 		},
-		...approvalGates((capability) => session.can(capability)),
+		access: (actionId) => accessBook.access(actionId),
+		accessFor: (actionId, input) => accessBook.accessFor(actionId, input),
+		approval: (actionId, input) => {
+			const answer =
+				input === undefined ? accessBook.access(actionId) : accessBook.accessFor(actionId, input);
+			return answer === 'suggest'
+				? { note: t('draft_approval_note'), saveLabel: t('send_for_approval') }
+				: undefined;
+		},
 		awaitsApproval: (id) => awaiting.has(id),
 		awaitedChange: (id) => awaiting.get(id),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
@@ -366,6 +381,8 @@
 			void session.refresh();
 			void family.refresh();
 		});
+		// A role's capabilities changed: what the controls offer follows (me and access).
+		const offRole = onEvent('core.role.', () => void session.refresh());
 		// Family settings (language, region formats, time zone) changed on another device.
 		const offFamily = onEvent('core.family.', () => void family.refresh());
 		// Changes made while the socket was not yet (or no longer) open were missed.
@@ -373,6 +390,7 @@
 			void family.refresh();
 			void appearance.refresh();
 			void awaiting.refresh();
+			void accessBook.load();
 		});
 		// A language pack was installed, updated or removed: reload the list and the active pack.
 		const offLanguages = onEvent('core.languages.', () => {
@@ -410,6 +428,7 @@
 		});
 		return () => {
 			off();
+			offRole();
 			offFamily();
 			offReconnect();
 			offLanguages();

@@ -198,6 +198,18 @@ One pattern for every flow that has more than one thing to do: `Steps` with numb
 
 Use it when a person has to do things in order, possibly on another device, and would otherwise read a long intro above a form: adding a device (*What are you adding?*, then the steps for a screen or for a shared tablet or phone), **Lock the copies** in Backups (why, choose a passphrase with the "written down" tick, what to keep where), **Connect an app** in Connected apps (turn on, create a key, copy the settings). Do not use it for an ordinary form (one panel, one Save) or for a single confirmation. The texts say what happens, not how it works; a word the family needs later (a "passphrase") is explained once, in the step where it is first used. A first choice that decides which steps follow (a screen or a shared device) comes before the steps, as rows that open them.
 
+### 4.8 What you may do
+
+The page offers what the viewer may do and says so when it does not. What a viewer may do is the server's own decision for each action (`GET /core/access`, and `POST /actions/{id}/check` where it turns on the input), read through `app.access(actionId)` and `app.accessFor(actionId, input)` (`@famos/ui/app`); a page never works it out from a capability or a role. The answer is `apply`, `suggest`, `no` or `depends` (the input decides, such as whose thing it is: offer the control, and ask `accessFor` once a form holds the input). It is read with the session and again when a role, a member or an extension changes, and after any refused change.
+
+- **`no`: the control is not drawn.** No disabled buttons, and no look-alikes: a check circle that cannot be ticked is a plain status mark (a filled disc when done, a small dot when open), not a circle button. A row whose tap would open an editor the viewer may not use does not open one, or opens details only (an event).
+- **`suggest`: the form says so before anything is typed.** `SidePanel` takes `approval={app.approval(actionId, input?)}`: one line under the title (in the sheet it stays under the bar while the form scrolls) and the save button reads **Send for approval**. The line is for the exact answer: where the input decides (a task of one's own is saved at once), pass the input so the form never says "someone has to approve" when it will not.
+- **`apply`: as before.**
+- **A page whose main action is `no` says "View only"**: a quiet `ViewOnly` pill (the §5.7 pill with a hint, "Your role can look but not change this.") in the page head, in place of the primary button, once for the whole page. A page with two main acts (Chores: add and tick; Shopping: add and tick; Tasks: add and tick) says it only when neither is open to the viewer.
+- **A display shows, never offers.** A display's answers are all `no`: nothing on it is actionable.
+
+A refused change (the role changed since the page was drawn) reads the answers again, so the next draw is right.
+
 ## 5. Components
 
 All of them live in `@famos/ui/famos` (vendored shadcn-svelte primitives in `@famos/ui/components`); extensions use them too, never a look of their own.
@@ -240,6 +252,7 @@ All of them live in `@famos/ui/famos` (vendored shadcn-svelte primitives in `@fa
 | `IconButton` | 36 / 40 / 44 px ghost or outline. |
 | `Fab` | §4.3. |
 | `Notice` | §5.10. |
+| `ViewOnly` | The "View only" pill in a page head, §4.8. |
 
 ### 5.1 Buttons
 

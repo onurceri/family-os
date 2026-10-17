@@ -1,4 +1,5 @@
 import type { paths } from '@famos/api-client';
+import { accessBook } from './access.svelte';
 import { api } from './api';
 
 export type Member =
@@ -41,8 +42,11 @@ class Session {
 				this.status = 'setup';
 				return;
 			}
-			this.me = await loadMe();
-			this.status = this.me ? 'ready' : 'anonymous';
+			// What the member may do is known before the app shows, so no control flashes in and out.
+			const [me] = await Promise.all([loadMe(), accessBook.load()]);
+			this.me = me;
+			if (!me) accessBook.clear();
+			this.status = me ? 'ready' : 'anonymous';
 		} catch {
 			this.status = 'offline';
 		}

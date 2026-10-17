@@ -14,6 +14,8 @@ class NetActivity {
 		return pendingWork.current;
 	}
 	#installed = false;
+	/** Called when a change was refused (403), so the app can read what the person may do again. */
+	onForbidden: (() => void) | undefined;
 
 	/** Wraps `fetch` once. Writes (actions) and other origins are not counted. */
 	install(): void {
@@ -24,6 +26,15 @@ class NetActivity {
 			// A write changes what reads would answer: none may be shared across it.
 			if (this.#writes(input, init)) forgetSharedReads();
 			const request = original(input, init);
+			// Refused: the role may have changed since the controls were drawn.
+			if (this.#writes(input, init)) {
+				void request.then(
+					(response) => {
+						if (response.status === 403) this.onForbidden?.();
+					},
+					() => {},
+				);
+			}
 			if (this.#counts(input, init)) {
 				const done = beginWork();
 				request.then((response) => untilRead(response, done), done);

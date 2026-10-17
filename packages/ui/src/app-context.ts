@@ -56,18 +56,24 @@ export interface AppContext {
 	 */
 	sentForApproval(): void;
 	/**
-	 * Whether the signed-in member's change guarded by this capability (an action's
-	 * `approval: { unless }`) goes to someone for approval: they may propose but lack it. Forms
-	 * say so before Save.
+	 * What running a data-changing action would do for the viewer, as the server decides it
+	 * (reactive): `apply` (directly), `suggest` (it becomes a suggestion someone approves), `no`
+	 * (it is refused: show no control for it) or `depends` (the input decides, such as whose thing
+	 * it is: offer the control, and ask `accessFor` with the input when a form has one). An action
+	 * that is not on (its extension is off) is `no`.
 	 */
-	needsApproval(capability: string): boolean;
+	access(actionId: string): ActionAccess;
 	/**
-	 * Whether the viewer may change what a capability protects, directly (they hold it) or by
-	 * suggesting the change for approval (`core.drafts.propose`). Gate the controls of actions with
-	 * `approval: { unless: capability }` with it, so people who may suggest see them; `can` stays
-	 * for actions that `require` the capability. Its form then says so when `needsApproval`.
+	 * The same for one input: the exact answer once the server has given it (a moment after the
+	 * input stops changing; the general answer until then, `depends` included).
 	 */
-	mayChange(capability: string): boolean;
+	accessFor(actionId: string, input: unknown): ActionAccess;
+	/**
+	 * What a form shows when its change goes to someone for approval: the line that says so and
+	 * the save button's words. Undefined when the change is applied directly or refused. With an
+	 * input, the exact answer for it.
+	 */
+	approval(actionId: string, input?: unknown): Approval | undefined;
 	/**
 	 * Whether a change of the signed-in member to the thing with this id (a task, an event, a pet)
 	 * waits for someone else's approval (reactive). Rows and record pages mark it.
@@ -104,6 +110,16 @@ export interface AppContext {
 	 * `replace: true` for changes that are not a navigation.
 	 */
 	setQuery(changes: Record<string, string | null>, options?: { replace?: boolean }): void;
+}
+
+export type ActionAccess = 'apply' | 'suggest' | 'no' | 'depends';
+
+/** What a form shows when its change waits for approval. */
+export interface Approval {
+	/** The line under the form's title, already translated. */
+	note: string;
+	/** The save button's words, already translated. */
+	saveLabel: string;
 }
 
 export interface RunActionOptions {

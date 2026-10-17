@@ -71,7 +71,9 @@
 		me: () => null,
 		can: (capability) => me?.capabilities.includes(capability) ?? false,
 		// A display only looks: it never changes or suggests anything.
-		mayChange: () => false,
+		access: () => 'no',
+		accessFor: () => 'no',
+		approval: () => undefined,
 		timeZone: () => me?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
 		onEvent,
 		draftPresenter: () => undefined,
@@ -80,7 +82,6 @@
 		share: () => undefined,
 		toast: () => {},
 		sentForApproval: () => {},
-		needsApproval: () => false,
 		awaitsApproval: () => false,
 		awaitedChange: () => undefined,
 		// A display only looks: no actions, no offline queue.

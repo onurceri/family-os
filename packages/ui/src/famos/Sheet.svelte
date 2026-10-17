@@ -20,6 +20,7 @@
 		saveDisabled = false,
 		half = false,
 		testid,
+		note,
 		children,
 	}: {
 		open: boolean;
@@ -33,6 +34,8 @@
 		half?: boolean;
 		/** A `data-testid` for the sheet element. */
 		testid?: string;
+		/** A line under the bar that stays in sight while the form scrolls (already translated). */
+		note?: string;
 		children: Snippet;
 	} = $props();
 
@@ -79,20 +82,23 @@
 		{onkeydown}
 	>
 		{#if !half}<span class="grab" aria-hidden="true"></span>{/if}
-		<header class="bar">
-			<span class="l"
-				><Button variant="ghost" size="sm" onclick={onclose}>{cancelLabel}</Button></span
-			>
-			<h2 id="{id}-t">{title}</h2>
-			<span class="r"
-				>{#if onsave && saveLabel}<Button
-						variant="primary"
-						size="sm"
-						disabled={saveDisabled}
-						onclick={onsave}>{saveLabel}</Button
-					>{/if}</span
-			>
-		</header>
+		<div class="head">
+			<header class="bar">
+				<span class="l"
+					><Button variant="ghost" size="sm" onclick={onclose}>{cancelLabel}</Button></span
+				>
+				<h2 id="{id}-t">{title}</h2>
+				<span class="r"
+					>{#if onsave && saveLabel}<Button
+							variant="primary"
+							size="sm"
+							disabled={saveDisabled}
+							onclick={onsave}>{saveLabel}</Button
+						>{/if}</span
+				>
+			</header>
+			{#if note}<p class="note" data-testid="side-panel-note">{note}</p>{/if}
+		</div>
 		<div class="body">{@render children()}</div>
 	</div>
 {/if}
@@ -167,6 +173,13 @@
 	}
 	.r {
 		justify-self: end;
+	}
+	.note {
+		margin: 0;
+		padding: 8px 16px;
+		border-bottom: 1px solid var(--line);
+		color: var(--ink-soft);
+		font-size: 13px;
 	}
 	.body {
 		overflow: auto;
