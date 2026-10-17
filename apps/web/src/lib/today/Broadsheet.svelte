@@ -902,7 +902,10 @@
 	}
 	@media (min-width: 1024px) {
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			)
 			> .atm {
 			display: none;
@@ -972,18 +975,24 @@
 
 		/* Without the atmosphere, the day and the family take its room. */
 		.bs:not(
-			:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+			:has(> .atm > .head :is(.time, .sentence, .status), > .atm > .blk:not(.search, .gone, :empty))
 		) {
 			grid-template-columns: minmax(0, 1fr) 18.75rem;
 		}
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			)
 			> .plan {
 			grid-column: 1;
 		}
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			)
 			> .fam {
 			grid-column: 2;
@@ -1001,10 +1010,16 @@
 		}
 		/* Only one column with something: it takes the whole width. */
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			):not(:has(> .fam > :not(.hidden, .gone, :empty))),
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			):not(:has(> .plan > :not(.hidden, .gone, :empty))),
 		.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))):not(
 				:has(> .fam > :not(.hidden, .gone, :empty))
@@ -1012,7 +1027,10 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.bs:not(
-				:has(> .atm > :is(.head:has(.time, .sentence, .status), .blk:not(.search, .gone, :empty)))
+				:has(
+					> .atm > .head :is(.time, .sentence, .status),
+					> .atm > .blk:not(.search, .gone, :empty)
+				)
 			):not(:has(> .plan > :not(.hidden, .gone, :empty)))
 			> .fam {
 			grid-column: 1;
