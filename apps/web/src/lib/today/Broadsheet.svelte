@@ -579,9 +579,14 @@
 		min-width: 0;
 		flex: 1;
 	}
-	/* A display's pills: beside the clock when there is room, else under it. */
+	/* A display's pills: beside the clock when there is room, else under it. The clock keeps its
+	   own width, so a pill that does not fit beside it wraps instead of lying over the digits. */
 	.clockrow:has(.status) {
 		flex-wrap: wrap;
+	}
+	.clockrow:has(.status) > .time {
+		flex: 1 1 auto;
+		min-width: min-content;
 	}
 	.status {
 		display: flex;
