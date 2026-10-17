@@ -700,6 +700,13 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				]),
 			);
 
+			// What the finished steps used, kept outside the loop so a call that fails after a step
+			// still records the tokens and cost that step was charged.
+			let input: number | null = null;
+			let output: number | null = null;
+			let cost: number | null = null;
+			let finishReason: string | null = null;
+			const spent = () => cost ?? (provider.kind === 'ollama' ? 0 : null);
 			try {
 				const result = streamText({
 					model: factory(provider, role.model),
@@ -723,9 +730,6 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				});
 				let text = '';
 				let stepStart = true;
-				let input: number | null = null;
-				let output: number | null = null;
-				let cost: number | null = null;
 				for await (const part of result.fullStream) {
 					if (part.type === 'error') throw part.error;
 					// The time limit of the whole loop ran out.
@@ -759,18 +763,23 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 						if (part.usage.outputTokens != null) output = (output ?? 0) + part.usage.outputTokens;
 						const reported = (part.providerMetadata?.famos as { cost?: number } | undefined)?.cost;
 						if (typeof reported === 'number') cost = (cost ?? 0) + reported;
+						finishReason = part.finishReason;
 					}
+					if (part.type === 'finish') finishReason = part.finishReason;
 				}
-				const usage = {
-					inputTokens: input,
-					outputTokens: output,
-					cost: cost ?? (provider.kind === 'ollama' ? 0 : null),
-				};
-				await record({ input, output, cost: usage.cost });
+				const usage = { inputTokens: input, outputTokens: output, cost: spent() };
+				await record({ input, output, cost: usage.cost, finishReason });
 				return { text: text.trim(), toolCalls: calls, model: label, usage };
 			} catch (error) {
 				const failure = toLlmError(error);
-				await record({ errorCode: failure.code });
+				// Before any step finished nothing was charged, not even the zero of a local model.
+				await record({
+					errorCode: failure.code,
+					input,
+					output,
+					cost: finishReason === null ? null : spent(),
+					finishReason,
+				});
 				logger.warn(
 					{
 						feature: request.feature,
@@ -812,6 +821,9 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			}
 			await checkLimits();
 
+			// Known once the provider answered: an answer that is then refused was still charged.
+			let tokens: number | null = null;
+			const free = provider.kind === 'ollama' ? 0 : null;
 			try {
 				const result = await embedMany({
 					model: embedder(provider, role.model),
@@ -819,6 +831,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),
 				});
+				tokens = Number.isFinite(result.usage.tokens) ? result.usage.tokens : null;
 				const vectors = result.embeddings.map((e) => Float32Array.from(e));
 				const dimensions = vectors[0]?.length ?? 0;
 				if (
@@ -828,8 +841,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				) {
 					throw new LlmError('invalid_output', 'The model did not return one vector per text');
 				}
-				const tokens = Number.isFinite(result.usage.tokens) ? result.usage.tokens : null;
-				await record({ input: tokens, cost: provider.kind === 'ollama' ? 0 : null });
+				await record({ input: tokens, cost: free });
 				return { vectors, model: `${provider.id}:${role.model}`, dimensions };
 			} catch (error) {
 				// The SDK throws a plain error when the provider returns fewer vectors than texts.
@@ -839,7 +851,11 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 								cause: error,
 							})
 						: toLlmError(error);
-				await record({ errorCode: failure.code });
+				await record({
+					errorCode: failure.code,
+					input: tokens,
+					cost: tokens === null ? null : free,
+				});
 				logger.warn(
 					{
 						feature: request.feature,
@@ -899,6 +915,8 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			}
 			await checkLimits();
 
+			// What the provider says the call cost, also when its answer holds no transcript.
+			let cost: number | null = null;
 			try {
 				const form = new FormData();
 				form.append(
@@ -920,11 +938,11 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					text?: unknown;
 					usage?: { cost?: unknown };
 				} | null;
+				const reported = body?.usage?.cost;
+				cost = typeof reported === 'number' ? reported : null;
 				if (typeof body?.text !== 'string') {
 					throw new LlmError('invalid_output', 'The provider did not return a transcript');
 				}
-				const reported = body.usage?.cost;
-				const cost = typeof reported === 'number' ? reported : null;
 				await record({ cost });
 				return {
 					text: body.text.trim(),
@@ -933,7 +951,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				};
 			} catch (error) {
 				const failure = toLlmError(error);
-				await record({ errorCode: failure.code });
+				await record({ errorCode: failure.code, cost });
 				logger.warn(
 					{
 						feature: request.feature,

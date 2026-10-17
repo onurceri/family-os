@@ -73,6 +73,7 @@ const server = http.createServer((req, res) => {
 			if (model === 'big-stt') return res.writeHead(413).end('{"error":"too big"}');
 			if (model === 'missing-stt') return res.writeHead(404).end('{}');
 			if (model === 'down-stt') return res.writeHead(503).end('{}');
+			if (model === 'blank-stt') return res.end(JSON.stringify({ usage: { cost: 0.0006 } }));
 			return res.end(
 				JSON.stringify({
 					text: ' Ayşe will pick up Elif at four. ',
@@ -90,7 +91,8 @@ const server = http.createServer((req, res) => {
 			const data = (model === 'embed-short' ? input.slice(1) : input).map((text, index) => ({
 				object: 'embedding',
 				index,
-				embedding: [text.length, 1, 0, 0],
+				// `embed-ragged` answers vectors of different lengths, which the port refuses.
+				embedding: model === 'embed-ragged' && index === 1 ? [1, 0] : [text.length, 1, 0, 0],
 			}));
 			return res.end(
 				JSON.stringify({
@@ -202,6 +204,9 @@ function streamChat(model: string, body: Record<string, unknown>, res: http.Serv
 	if (model === 'chat-down') return void res.writeHead(503).end('{}');
 	const messages = body.messages as { role: string; content?: unknown }[];
 	const lastTool = messages.findLast((m) => m.role === 'tool');
+	// Calls a tool, then the provider refuses the step that would answer.
+	if (model === 'chat-fails-late' && lastTool)
+		return void res.writeHead(401).end(JSON.stringify({ error: { message: 'bad key' } }));
 	const send = (delta: Record<string, unknown>, finish: string | null) =>
 		res.write(
 			`data: ${JSON.stringify({
@@ -217,7 +222,8 @@ function streamChat(model: string, body: Record<string, unknown>, res: http.Serv
 		// Like a real provider, no tool call once the request offers no tool choice.
 		body.tool_choice !== 'none' &&
 		(model === 'chat-loop' ||
-			(['chat-tools', 'chat-priced', 'chat-unknown'].includes(model) && !lastTool))
+			(['chat-tools', 'chat-priced', 'chat-unknown', 'chat-fails-late'].includes(model) &&
+				!lastTool))
 	) {
 		send(
 			{
@@ -253,7 +259,7 @@ function streamChat(model: string, body: Record<string, unknown>, res: http.Serv
 				prompt_tokens: 100,
 				completion_tokens: 10,
 				total_tokens: 110,
-				...(model === 'chat-priced' && { cost: 0.001 }),
+				...((model === 'chat-priced' || model === 'chat-fails-late') && { cost: 0.001 }),
 			},
 		})}\n\n`,
 	);
@@ -1153,6 +1159,16 @@ describe('embeddings', () => {
 		await useEmbedder('embed-short');
 		await expect(embed()).rejects.toMatchObject({ code: 'invalid_output' });
 	});
+
+	it('records the tokens of an answer it refused', async () => {
+		await useEmbedder('embed-ragged');
+		await expect(embed()).rejects.toMatchObject({ code: 'invalid_output' });
+		const row = await db
+			.selectFrom('ai_usage' as never)
+			.select(['error_code', 'input_tokens'] as never[])
+			.executeTakeFirstOrThrow();
+		expect(row).toEqual({ error_code: 'invalid_output', input_tokens: 7 });
+	});
 });
 
 describe('speech to text', () => {
@@ -1234,6 +1250,16 @@ describe('speech to text', () => {
 		await useTranscriber('slow-stt');
 		await expect(say(200)).rejects.toMatchObject({ code: 'timeout', retryable: true });
 		expect((await settings.usage()).total).toMatchObject({ calls: 5, errors: 5 });
+	});
+
+	it('records the cost of an answer without a transcript', async () => {
+		await useTranscriber('blank-stt');
+		await expect(say()).rejects.toMatchObject({ code: 'invalid_output' });
+		const row = await db
+			.selectFrom('ai_usage' as never)
+			.select(['error_code', 'cost_micros'] as never[])
+			.executeTakeFirstOrThrow();
+		expect(row).toEqual({ error_code: 'invalid_output', cost_micros: 600 });
 	});
 
 	it('counts toward the monthly call limit', async () => {
@@ -1501,15 +1527,17 @@ describe('chat with tools', () => {
 				'input_tokens',
 				'output_tokens',
 				'cost_micros',
+				'finish_reason',
 			] as never[])
 			.execute() as Promise<
 			{
 				feature: string;
 				error_code: string | null;
 				areas: string;
-				input_tokens: number;
-				output_tokens: number;
+				input_tokens: number | null;
+				output_tokens: number | null;
 				cost_micros: number | null;
+				finish_reason: string | null;
 			}[]
 		>;
 	const executed: unknown[] = [];
@@ -1579,6 +1607,7 @@ describe('chat with tools', () => {
 				input_tokens: 200,
 				output_tokens: 20,
 				cost_micros: null,
+				finish_reason: 'stop',
 			},
 		]);
 	});
@@ -1677,6 +1706,23 @@ describe('chat with tools', () => {
 		await settings.setLimits({ monthlyCallLimit: 1, monthlyCostLimit: null });
 		await chat().run;
 		await expect(chat().run).rejects.toMatchObject({ code: 'limit_reached' });
+	});
+
+	it('records what the finished steps used when a later step fails', async () => {
+		await useModel('chat-fails-late');
+		await expect(chat().run).rejects.toMatchObject({ code: 'auth', retryable: false });
+		expect(executed).toEqual([{ x: 1 }]);
+		expect(await usage()).toEqual([
+			{
+				feature: 'assistant.chat',
+				error_code: 'auth',
+				areas: '["assistant","calendar"]',
+				input_tokens: 100,
+				output_tokens: 10,
+				cost_micros: 1_000,
+				finish_reason: 'tool-calls',
+			},
+		]);
 	});
 
 	it('maps provider failures to error codes and records them', async () => {
