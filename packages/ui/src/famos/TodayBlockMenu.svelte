@@ -66,17 +66,13 @@
 		transition: opacity 120ms;
 	}
 	/* With a mouse, the ⋯ shows while its section is hovered or holds the focus, or while its
-	   menu is open. Hidden it also takes no room, so a link before it ("Open list") stays flush
-	   with the column's edge; it is only clipped, so keyboards and screen readers still reach it,
-	   and focusing it shows it. On touch it is always there. (Hovering or focusing an inner
-	   section also counts for the outer ones, so any section around it that is not hovered is its
-	   own.) */
+	   menu is open; it is only transparent, so keyboards and screen readers still reach it, and
+	   focusing it shows it. On touch it is always there. A section's label row takes it out of the
+	   flow, so showing it moves nothing. (Hovering or focusing an inner section also counts for
+	   the outer ones, so any section around it that is not hovered is its own.) */
 	@media (hover: hover) and (pointer: fine) {
 		:global(section:not(:hover, :focus-within))
 			.today-block-menu:not(:has([aria-expanded='true'])) {
-			width: 0;
-			margin-inline: 0;
-			overflow: hidden;
 			opacity: 0;
 		}
 	}

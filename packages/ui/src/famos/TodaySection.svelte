@@ -38,7 +38,7 @@
 			{title}{#if count}<span class="ml-2 font-semibold tracking-normal normal-case">{count}</span
 				>{/if}
 		</h2>
-		<span class="ml-auto flex shrink-0 items-baseline empty:hidden [&>.today-block-menu]:ms-1">
+		<span class="end ml-auto flex shrink-0 items-baseline empty:hidden">
 			{#if href && more}
 				<a
 					{href}
@@ -53,3 +53,24 @@
 		{@render children()}
 	</div>
 </section>
+
+<style>
+	.end {
+		position: relative;
+	}
+	.end > :global(.today-block-menu) {
+		margin-inline-start: 4px;
+	}
+	/* With a mouse the ⋯ only shows while the section is hovered or focused. It sits just past the
+	   row's end, out of the flow, so the link ("Calendar") stays at the column's edge and nothing
+	   moves when it appears. On touch it is always there, after the link. */
+	@media (hover: hover) and (pointer: fine) {
+		.end > :global(.today-block-menu) {
+			position: absolute;
+			inset-inline-start: 100%;
+			top: 50%;
+			margin-block: 0;
+			translate: 0 -50%;
+		}
+	}
+</style>
