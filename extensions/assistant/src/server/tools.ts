@@ -7,6 +7,8 @@ import {
 	type HandleTable,
 	type LlmChatTool,
 	MAX_RESULT_BYTES,
+	referenceFields,
+	referenceId,
 	refusalText,
 	runAgentTool,
 	subjectOf,
@@ -94,6 +96,12 @@ export interface ToolEnv {
 	grounded?: Record<string, string>;
 	/** What the person wrote in this conversation, and the family's names, for `grounded`. */
 	said?: string;
+	/**
+	 * The person's latest message, who they are and their words for themselves ("me", "my"), so a
+	 * change to an existing record takes people only when the message names them (see
+	 * `withoutUnnamedPeople`).
+	 */
+	asked?: { text: string; memberId: string; self: readonly string[] };
 	/** A catalog key in the asker's language (the names of suggestions). */
 	translate: (key: string) => string;
 	/** Told about each failed call (for the log). */
@@ -119,6 +127,50 @@ function callKey(actionId: string, input: unknown): string {
 		return value;
 	};
 	return `${actionId} ${JSON.stringify(sorted(input ?? {}))}`;
+}
+
+/**
+ * A change to an existing record (its input has an `id`) without the person fields whose people
+ * the person's latest message does not name: a model that puts the asker into every person field
+ * would otherwise replace who an event or a task is for. A person is named by a whole word of
+ * their name, or, for the asker, by a word of their own for themselves ("me", from the catalog).
+ * A field left out is not changed. Everything else is kept as the model sent it.
+ */
+export function withoutUnnamedPeople(
+	raw: unknown,
+	schema: Record<string, unknown>,
+	env: Pick<ToolEnv, 'asked' | 'people' | 'table' | 'locale'>,
+): unknown {
+	const input = raw as Record<string, unknown> | null;
+	if (!env.asked || !input || typeof input !== 'object' || typeof input.id !== 'string') return raw;
+	const locale = env.locale ?? 'en';
+	const words = (value: string) =>
+		value
+			.toLocaleLowerCase(locale)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter((word) => word !== '');
+	const said = new Set(words(env.asked.text));
+	const self = env.asked.self.some((word) => said.has(word.toLocaleLowerCase(locale)));
+	const book = { table: env.table, ...(env.people && { people: env.people }), locale };
+	const named = (value: unknown) => {
+		if (typeof value !== 'string') return false;
+		const id = referenceId('member', value, book);
+		if (!id) return false;
+		if (id === env.asked?.memberId && self) return true;
+		const person = env.people?.find((p) => p.id === id);
+		return (
+			person !== undefined && words(person.displayName).some((w) => w.length > 1 && said.has(w))
+		);
+	};
+	const out = { ...input };
+	for (const field of referenceFields(schema, 'member')) {
+		if (!(field in out) || out[field] === null) continue;
+		const value = out[field];
+		const values = Array.isArray(value) ? value : [value];
+		// An empty list names nobody either: it would make the record the whole family's.
+		if (values.length === 0 || !values.every(named)) delete out[field];
+	}
+	return out;
 }
 
 /** At least this share of a grounded text's words must be the person's own. */
@@ -199,6 +251,7 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 				),
 			);
 		}
+		const given = kind === 'draft' ? withoutUnnamedPeople(raw, schema, env) : raw;
 		const outcome = await runAgentTool({
 			actions: env.actions,
 			actor: env.actor,
@@ -206,8 +259,8 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 			actionId,
 			kind,
 			input: env.inject?.[actionId]
-				? { ...(raw as Record<string, unknown> | null), ...env.inject[actionId] }
-				: raw,
+				? { ...(given as Record<string, unknown> | null), ...env.inject[actionId] }
+				: given,
 			draft: {
 				sourceKind: 'assistant',
 				sourceId: env.turnId,

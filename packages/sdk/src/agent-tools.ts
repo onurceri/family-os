@@ -149,6 +149,23 @@ export function agentInputSchema(schema: JsonSchema): JsonSchema {
 	return walk(schema) as JsonSchema;
 }
 
+/**
+ * The top-level fields of an input schema that hold references of `kind` (one, or a list), such
+ * as the people of an event (`memberIds`) or of a task (`assigneeId`).
+ */
+export function referenceFields(schema: JsonSchema, kind: string): string[] {
+	const properties = (schema.properties ?? {}) as JsonSchema;
+	return Object.entries(properties)
+		.filter(([, node]) =>
+			branches(node).some(
+				(o) =>
+					referenceKind(o) === kind ||
+					branches(o.items).some((item) => referenceKind(item) === kind),
+			),
+		)
+		.map(([key]) => key);
+}
+
 /** What the host knows to turn a model's reference into an id. */
 export interface ReferenceBook {
 	table: HandleTable;

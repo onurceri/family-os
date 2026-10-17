@@ -67,6 +67,7 @@
 	"today_block": "Asistana sor",
 	"today_block_hint": "Altta, soru sormak için bir bağlantı.",
 	"someone": "biri",
+	"words_self": "ben, beni, bana, bende, benim, benimle, kendim, kendime",
 	"proposed": "Önerildi, henüz eklenmedi: {{what}}",
 	"proposed_automatic": "Otomatik eklendi: {{what}}"
 }

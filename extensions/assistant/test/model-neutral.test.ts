@@ -162,3 +162,68 @@ describe('a note to remember', () => {
 		expect(saidBy('', 'anything', 'en')).toBe(false);
 	});
 });
+
+describe('people on a change', () => {
+	async function sundayPlanning() {
+		const made = await k.runner.invoke<{ id: string }>(
+			'calendar.createEvent',
+			{
+				title: 'Sunday planning',
+				date: '2026-09-06',
+				startTime: '19:30',
+				endTime: '20:00',
+				memberIds: [ellie.member.id],
+				recurrence: { freq: 'weekly', interval: 1, byDay: ['SU'] },
+			},
+			systemActor('test'),
+		);
+		if (made.status !== 'applied') throw new Error('expected the event');
+	}
+	const find = {
+		tool: 'calendar_findEvents',
+		input: { from: '2026-10-11', to: '2026-10-11', text: 'planning' },
+	};
+	// gpt-4.1-mini's call for "Move Sunday planning to 18:00", asked by Sofia, field for field:
+	// it filled every field, and put the asker into memberIds.
+	const move = (memberIds: string[]) => ({
+		tool: 'calendar_changeEvent',
+		input: {
+			title: 'Sunday planning',
+			allDay: false,
+			date: '2026-10-11',
+			endDate: null,
+			startTime: '18:00',
+			endTime: '19:00',
+			memberIds,
+			location: null,
+			notes: null,
+			id: 'cal_event:1',
+			occurrence: '2026-10-11',
+			label: 'Sunday planning',
+		},
+	});
+	const changes = async () => (await drafts()).filter((d) => d.actionId === 'calendar.changeEvent');
+
+	it('never takes people the person did not name', async () => {
+		await sundayPlanning();
+		k.llm.respondChat([find, move(['Sofia']), { text: 'Suggested.' }]);
+		await ask('Move Sunday planning to 18:00');
+		const [change] = await changes();
+		expect(change?.input.startTime).toBe('18:00');
+		expect(change?.input).not.toHaveProperty('memberIds');
+	});
+
+	it('drops an empty list of people too', async () => {
+		await sundayPlanning();
+		k.llm.respondChat([find, move([]), { text: 'Suggested.' }]);
+		await ask('Move Sunday planning to 18:00');
+		expect((await changes())[0]?.input).not.toHaveProperty('memberIds');
+	});
+
+	it('takes the people the message names, and the asker who says "me"', async () => {
+		await sundayPlanning();
+		k.llm.respondChat([find, move(['Ellie', 'Sofia']), { text: 'Suggested.' }]);
+		await ask('Move Sunday planning to 18:00, for Ellie and me');
+		expect((await changes())[0]?.input.memberIds).toEqual([ellie.member.id, sofia.member.id]);
+	});
+});

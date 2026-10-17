@@ -347,6 +347,12 @@ export const turnJob = defineJob({
 					loop,
 					// A note to remember says what the person said, not what the model guessed.
 					grounded: { 'core.addMemory': 'text' },
+					// A change takes people only when the latest message names them.
+					asked: {
+						text: asked,
+						memberId: member.id,
+						self: ctx.vocabulary('assistant:words_self'),
+					},
 					said: [
 						...kept.filter((m) => m.role === 'user').map((m) => m.content),
 						...family.map((m) => m.displayName),

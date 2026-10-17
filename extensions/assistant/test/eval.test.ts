@@ -126,6 +126,18 @@ describe('a case run end to end with a scripted model', () => {
 		return found;
 	};
 
+	it('reads a typographic apostrophe as a plain one (real model output)', async () => {
+		const llm = createFakeLlm();
+		llm.respondChat([
+			{ tool: 'calendar_findEvents', input: { text: 'Dental cleaning' } },
+			{
+				text: 'I couldn’t find any calendar event titled “Dental cleaning.” If you meant a different event (for example, the “Dentist checkup” on October 8 at 09:30), please let me know the exact title or date so I can update it for you.',
+			},
+		]);
+		const result = await runCase(byName('not there: "Dental cleaning"'), llm);
+		expect(result.failed).toEqual([]);
+	});
+
 	it('passes the single-date move when the model gives the date', async () => {
 		const llm = createFakeLlm();
 		llm.respondChat([

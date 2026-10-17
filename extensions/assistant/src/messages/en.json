@@ -67,6 +67,7 @@
 	"today_block": "Ask the assistant",
 	"today_block_hint": "A link at the bottom to ask a question.",
 	"someone": "someone",
+	"words_self": "me, my, mine, myself, i",
 	"proposed": "Suggested, not added yet: {{what}}",
 	"proposed_automatic": "Added automatically: {{what}}"
 }

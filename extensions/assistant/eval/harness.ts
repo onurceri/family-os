@@ -121,13 +121,15 @@ export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseR
 			turns.push({
 				ask,
 				// The model's words with the app's line for each suggestion under them, as a chat
-				// outside the app shows the answer.
+				// outside the app shows the answer. Typographic apostrophes ("couldn’t") read as plain
+				// ones, so the checks' words match however a model types them.
 				reply: [
 					reply?.content ?? '',
 					...(reply?.suggested.length ? [reply.suggested.join('\n')] : []),
 				]
 					.filter((part) => part !== '')
-					.join('\n\n'),
+					.join('\n\n')
+					.replace(/[‘’]/g, "'"),
 				status:
 					reply?.status === 'failed'
 						? `failed: ${reply.errorCode ?? 'unknown'}`
