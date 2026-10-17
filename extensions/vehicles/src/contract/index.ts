@@ -1,5 +1,5 @@
 import { type ObligationPreset, PresetScheduleSchema } from '@famos/ext-records/contract';
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -109,7 +109,12 @@ export const AddVehicleSchema = VehicleFieldsSchema.extend({
 });
 export type AddVehicleInput = z.input<typeof AddVehicleSchema>;
 
-export const UpdateVehicleSchema = z.object({ id: VehicleIdSchema, vehicle: VehicleFieldsSchema });
+/** The whole vehicle as the form saves it: every field, null for one left empty. */
+export const UpdateVehicleSchema = z.object({
+	id: VehicleIdSchema,
+	vehicle: wholeRecord(VehicleFieldsSchema),
+});
+export type VehicleReplace = z.input<typeof UpdateVehicleSchema>['vehicle'];
 
 export const VehicleSchema = z.object({
 	id: z.string(),

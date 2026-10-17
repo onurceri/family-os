@@ -7,7 +7,7 @@ import {
 	proposedByMember,
 } from '../src/draft-title.js';
 import { DraftCard, draftButtons } from '../src/famos/index.js';
-import { changedValue, insteadOffer } from '../src/slots.js';
+import { awaitingText, changed, changedValue, insteadOffer } from '../src/slots.js';
 import { cleanup, click, qa, render } from './helpers.js';
 
 afterEach(cleanup);
@@ -96,6 +96,31 @@ describe('DraftCard', () => {
 		expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Withdraw']);
 		buttons[0]?.click();
 		expect(onwithdraw).toHaveBeenCalledOnce();
+	});
+
+	it('lets the person behind an undone suggestion suggest it again, on both layouts', () => {
+		const onsuggestagain = vi.fn();
+		const undone = (compact: boolean, again: boolean) =>
+			render(DraftCard, {
+				kind: 'Meal',
+				title: 'Lentil soup',
+				fields: [],
+				status: 'undone',
+				compact,
+				labels: { ...labels, undone: 'Undone', suggestAgain: 'Suggest again' },
+				onapprove: vi.fn(),
+				onreject: vi.fn(),
+				...(again && { onsuggestagain }),
+			});
+		for (const compact of [false, true]) {
+			expect(qa('button', undone(compact, false))).toHaveLength(0);
+			cleanup();
+			const buttons = qa('button', undone(compact, true));
+			expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Suggest again']);
+			buttons[0]?.click();
+			cleanup();
+		}
+		expect(onsuggestagain).toHaveBeenCalledTimes(2);
 	});
 });
 
@@ -393,5 +418,57 @@ describe('changedValue', () => {
 		expect(changedValue('1 l', '2 l')).toBe('1 l → 2 l');
 		expect(changedValue('2 l', '2 l')).toBe('2 l');
 		expect(changedValue(undefined, '2 l')).toBe('2 l');
+	});
+});
+
+describe('awaitingText', () => {
+	const context = {
+		t: (key: string, o?: Record<string, unknown>) =>
+			key === 'app:draft_waiting_change'
+				? `Waiting for approval · ${String(o?.change)}`
+				: key === 'app:draft_waiting_field'
+					? `${String(o?.label)}: ${String(o?.value)}`
+					: key === 'app:draft_waiting'
+						? 'Waiting for approval'
+						: key,
+		members: [],
+		formatLocale: 'en-GB',
+		dateLocale: 'en-GB',
+		weekStart: 1,
+		hourCycle: 'h23' as const,
+		timeZone: 'UTC',
+	};
+	const presenter = (fields: () => { label: string; value: string; to?: string }[]) => ({
+		actionId: 'x.change',
+		kind: () => 'Change',
+		title: () => 'Thing',
+		fields,
+	});
+
+	it('says what the change will make of the thing, with each new value alone', () => {
+		const text = awaitingText({
+			input: {},
+			before: { due: null },
+			presenter: presenter(() => [
+				{ label: 'Due', ...changed('No date', 'Tue 20 Oct') },
+				{ label: 'Who', value: 'Ivy' },
+			]),
+			context,
+		});
+		expect(text).toBe('Waiting for approval · Due: Tue 20 Oct, Who: Ivy');
+	});
+
+	it('says only that it waits without a presenter, rows, or with an input that does not fit', () => {
+		const plain = (p: ReturnType<typeof presenter> | undefined) =>
+			awaitingText({ input: {}, before: null, presenter: p, context });
+		expect(plain(undefined)).toBe('Waiting for approval');
+		expect(plain(presenter(() => []))).toBe('Waiting for approval');
+		expect(
+			plain(
+				presenter(() => {
+					throw new Error('old input');
+				}),
+			),
+		).toBe('Waiting for approval');
 	});
 });

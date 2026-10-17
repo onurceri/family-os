@@ -48,13 +48,38 @@ describe('vehicles', () => {
 			'vehicles.updateVehicle',
 			{
 				id: car.id,
-				vehicle: { name: 'Clio', plate: '06 XYZ 99', fuel: 'diesel', memberIds: [admin.id] },
+				vehicle: {
+					name: 'Clio',
+					plate: '06 XYZ 99',
+					make: '',
+					model: 'Clio',
+					year: 2019,
+					fuel: 'diesel',
+					vin: null,
+					memberIds: [admin.id],
+					notes: null,
+				},
 			},
 			admin.actor,
 		);
-		expect(changed).toMatchObject({ plate: '06 XYZ 99', fuel: 'diesel', memberIds: [admin.id] });
-		// A field left out is cleared: the form always sends the whole vehicle.
-		expect(changed.make).toBe('');
+		expect(changed).toMatchObject({
+			plate: '06 XYZ 99',
+			make: '',
+			fuel: 'diesel',
+			vin: null,
+			memberIds: [admin.id],
+		});
+		// The form always sends the whole vehicle: one that leaves fields out is refused, not cleared.
+		await expect(
+			k.runner.invoke(
+				'vehicles.updateVehicle',
+				{ id: car.id, vehicle: { name: 'Clio', plate: '34 ABC 123' } },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(
+			await k.route('vehicles.getVehicle').call({ params: { vehicleId: car.id } }),
+		).toMatchObject({ plate: '06 XYZ 99', model: 'Clio', year: 2019 });
 	});
 
 	it('refuses an unknown member, a bad year and a missing name', async () => {
@@ -219,7 +244,20 @@ describe('records follow the vehicle', () => {
 			applied(
 				k,
 				'vehicles.updateVehicle',
-				{ id: car.id, vehicle: { name, plate: '34 ABC 123' } },
+				{
+					id: car.id,
+					vehicle: {
+						name,
+						plate: '34 ABC 123',
+						make: 'Renault',
+						model: 'Clio',
+						year: 2019,
+						fuel: 'other',
+						vin: null,
+						memberIds: [],
+						notes: null,
+					},
+				},
 				admin.actor,
 			);
 		await update('Clio 2');

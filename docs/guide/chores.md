@@ -20,7 +20,7 @@ The page groups chores into **Overdue**, **Today**, **Coming up** and **Done** (
 
 ## Doing a chore
 
-Tap the circle in front of a chore. The next due date is set, the turn passes on, and a notice offers **Undo** (you can undo your own tick the same day; someone who can edit chores can undo any). Double taps do not count twice. If a chore was missed for a while, the next date is after today, so chores never pile up behind a holiday. A chore that does not repeat moves to **Done** and shows who did it.
+Tap the circle in front of a chore. The next due date is set, the turn passes on, and a notice offers **Undo** (you can undo your own tick the same day; someone who can edit chores can undo any). Double taps do not count twice. A chore can be ticked off ahead of its day (a weekly one a day early); the notice then names the day it counted for, such as **Walk the dog done for tomorrow**. If a chore was missed for a while, the next date is after today, so chores never pile up behind a holiday. A chore that does not repeat moves to **Done** and shows who did it.
 
 You can tick off your own turn and chores anyone may do. Members who can edit chores can tick off any chore, and it is counted as done by the person whose turn it was, so turns and "least done" stay fair. A chore anyone may do is counted for the person who taps.
 

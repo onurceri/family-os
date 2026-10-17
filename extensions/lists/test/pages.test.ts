@@ -58,7 +58,7 @@ describe('groupTasks', () => {
 	const tasks = [
 		task('no date', null),
 		task('later', '2026-10-30'),
-		task('this week', '2026-10-16'),
+		task('this week', '2026-10-11'),
 		task('today late', today, { dueTime: '18:00' }),
 		task('today early', today, { dueTime: '08:00', assigneeId: 'm1' }),
 		task('today any time', today),
@@ -69,7 +69,7 @@ describe('groupTasks', () => {
 		groups.map((g) => [g.key, g.tasks.map((t) => t.title)]);
 
 	it('groups the open tasks by when they are due, earliest first', () => {
-		expect(titles(groupTasks(tasks, today))).toEqual([
+		expect(titles(groupTasks(tasks, today, 1))).toEqual([
 			['overdue', ['overdue']],
 			['today', ['today early', 'today late', 'today any time']],
 			['soon', ['this week']],
@@ -79,19 +79,37 @@ describe('groupTasks', () => {
 	});
 
 	it('shows only one person’s tasks for Mine and leaves out empty groups', () => {
-		expect(titles(groupTasks(tasks, today, 'm1'))).toEqual([
+		expect(titles(groupTasks(tasks, today, 1, 'm1'))).toEqual([
 			['overdue', ['overdue']],
 			['today', ['today early']],
 		]);
-		expect(groupTasks([task('done', null, { doneAt: 1 })], today)).toEqual([]);
+		expect(groupTasks([task('done', null, { doneAt: 1 })], today, 1)).toEqual([]);
 	});
 
-	it('counts the sixth day ahead as this week and the seventh as later', () => {
-		expect(
-			titles(groupTasks([task('day 6', '2026-10-16'), task('day 7', '2026-10-17')], today)),
-		).toEqual([
-			['soon', ['day 6']],
-			['later', ['day 7']],
+	it('groups by the family’s weeks: this week, next week, then later', () => {
+		// Saturday 17 October: with weeks from Monday, only Sunday is left of this week, and next
+		// week runs Monday 19 to Sunday 25.
+		const saturday = '2026-10-17';
+		const coming = [
+			task('Sunday', '2026-10-18'),
+			task('Tuesday', '2026-10-20'),
+			task('next Sunday', '2026-10-25'),
+			task('the Monday after', '2026-10-26'),
+		];
+		expect(titles(groupTasks(coming, saturday, 1))).toEqual([
+			['soon', ['Sunday']],
+			['nextWeek', ['Tuesday', 'next Sunday']],
+			['later', ['the Monday after']],
+		]);
+		// With weeks from Sunday, Saturday is the week's last day: tomorrow is already next week.
+		expect(titles(groupTasks([task('tomorrow', '2026-10-18')], saturday, 7))).toEqual([
+			['nextWeek', ['tomorrow']],
+		]);
+		// With weeks from Saturday, the whole coming week up to Friday is this week.
+		const week = [task('Friday', '2026-10-23'), task('next Saturday', '2026-10-24')];
+		expect(titles(groupTasks(week, saturday, 6))).toEqual([
+			['soon', ['Friday']],
+			['nextWeek', ['next Saturday']],
 		]);
 	});
 });

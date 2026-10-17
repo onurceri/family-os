@@ -1,5 +1,6 @@
 import type { AnyActionDefinition, ExtensionContext } from '@famos/sdk';
 import { addDays, compareDates, dayBounds, isValidDate, todayIn } from '@famos/time';
+import { readStoredInput } from './stored-input.ts';
 
 /**
  * Suggestions about a day that has passed go away by themselves: a dinner planned for last
@@ -22,7 +23,7 @@ export function draftDateOf(
 ): string | undefined {
 	if (!def?.draftDate) return undefined;
 	try {
-		return def.draftDate(JSON.parse(draft.edited_input ?? draft.input)) ?? undefined;
+		return def.draftDate(readStoredInput(def, draft.edited_input ?? draft.input)) ?? undefined;
 	} catch {
 		// An input stored by an older version may not fit today's shape: it never expires.
 		return undefined;

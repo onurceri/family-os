@@ -275,10 +275,12 @@
 		<ColorChoice bind:value={color} name="sub-color" legend={t('sub_color')} />
 		<div class="grid gap-2">
 			<span class="text-sm font-semibold">{t('sub_members')}</span>
-			<MemberChips members={app.members()} bind:selected={memberIds} multiple />
-			{#if memberIds.length === 0}<small class="text-ink-soft text-[13px]"
-					>{t('sub_members_all')}</small
-				>{/if}
+			<MemberChips
+				members={app.members()}
+				bind:selected={memberIds}
+				multiple
+				noneLabel={t('everyone')}
+			/>
 		</div>
 		<Card rows>
 			<SwitchRow

@@ -190,7 +190,7 @@
 			<!-- In the paper's top corner; on a polaroid in the caption row, never over the photo. The
 			     actions open over the board, so the card never changes height. -->
 			<div class="menu absolute z-10" class:on-frame={polaroid}>
-				<Menu bind:open={menuOpen} {items} label={t('note_menu')}>
+				<Menu bind:open={menuOpen} {items} label={t('note_menu')} cancelLabel={t('cancel')}>
 					{#snippet trigger({ attrs })}
 						<button
 							type="button"

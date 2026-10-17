@@ -1,6 +1,7 @@
 import { type Actor, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf, todayIn } from '@famos/time';
+import { awaitingText } from '@famos/ui/slots';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import lists from '../src/server/index.ts';
 import { dueLabel } from '../src/web/format.ts';
@@ -78,7 +79,14 @@ describe('an edit saved from the task form that needs approval', () => {
 		if (made.status !== 'applied') throw new Error('expected a task');
 		const ivy = await k.member('supervised', 'Ivy');
 		// The form sends the whole task back with the one field the person changed.
-		const task = { title: 'Fractions worksheet', notes: 'Pages 4 and 5', dueDate: '2026-10-20' };
+		const task = {
+			title: 'Fractions worksheet',
+			assigneeId: null,
+			notes: 'Pages 4 and 5',
+			dueDate: '2026-10-20',
+			dueTime: null,
+			recurrence: null,
+		};
 		const result = await k.runner.invoke(
 			'lists.updateTask',
 			{ id: made.output.id, task },
@@ -111,5 +119,26 @@ describe('an edit saved from the task form that needs approval', () => {
 			'h23',
 		);
 		expect(fields.map((f) => f.value)).toEqual([`lists:no_due → ${due}`]);
+
+		// Beside the task, while it waits, the mark says what it will become: the new value alone.
+		const words = (key: string, o?: Record<string, unknown>) =>
+			key === 'app:draft_waiting_change'
+				? `Waiting for approval · ${String(o?.change)}`
+				: key === 'app:draft_waiting_field'
+					? `${String(o?.label)}: ${String(o?.value)}`
+					: key;
+		const mark = awaitingText({
+			input: { id: made.output.id, task },
+			before: before as Record<string, unknown>,
+			// What the task change's presenter lists while it waits (its icon needs a browser).
+			presenter: {
+				actionId: 'lists.updateTask',
+				kind: () => 'Task change',
+				title: () => task.title,
+				fields: (i, c, b) => updateTaskFields(i, c, b ?? {}),
+			},
+			context: { ...context, t: words },
+		});
+		expect(mark).toBe(`Waiting for approval · lists:due: ${due}`);
 	});
 });

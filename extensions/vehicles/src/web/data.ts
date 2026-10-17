@@ -1,6 +1,12 @@
 import { unwrap } from '@famos/api-client';
 import type { RecordDocument } from '@famos/ext-records/contract';
-import type { AddLogInput, AddVehicleInput, Vehicle, VehicleLog } from '../contract/index.js';
+import type {
+	AddLogInput,
+	AddVehicleInput,
+	Vehicle,
+	VehicleLog,
+	VehicleReplace,
+} from '../contract/index.js';
 import { api } from './api.js';
 
 /** Vehicles API calls, all through the generated client. */
@@ -25,7 +31,8 @@ export const loadLogs = async (vehicleId: string): Promise<VehicleLog[]> =>
 export const loadPapers = async (recordId: string): Promise<RecordDocument[]> =>
 	unwrap(await api.GET('/api/v1/records/documents', { params: { query: { recordId } } }));
 
-export type VehicleValues = Omit<AddVehicleInput, 'obligations'>;
+/** What the form saves: the whole vehicle, null for a field left empty. */
+export type VehicleValues = VehicleReplace;
 
 export async function addVehicle(
 	input: AddVehicleInput,

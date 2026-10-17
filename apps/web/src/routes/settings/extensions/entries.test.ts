@@ -308,6 +308,7 @@ describe('what the official index found', () => {
 
 	it('says why looking failed', () => {
 		expect(searchProblem(problem('unreachable'))).toEqual({ key: 'extensions_find_unreachable' });
+		expect(searchProblem(problem('missing'))).toEqual({ key: 'extensions_find_missing' });
 		expect(searchProblem(problem('unsigned'))).toEqual({ key: 'extensions_find_unsigned' });
 		expect(searchProblem(problem('invalid'))).toEqual({ key: 'extensions_find_invalid' });
 		expect(searchProblem(problem('failed'))).toEqual({ key: 'extensions_find_failed' });
@@ -321,6 +322,7 @@ describe('what the official index found', () => {
 		expect(downloadProblem(problem('unreachable')).headline.key).toBe(
 			'extensions_download_unreachable',
 		);
+		expect(downloadProblem(problem('missing')).headline.key).toBe('extensions_download_missing');
 		expect(downloadProblem(problem('older', null, { version: '2.0.0' }))).toEqual({
 			headline: { key: 'extensions_file_older', values: { version: '2.0.0' } },
 		});

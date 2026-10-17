@@ -144,6 +144,18 @@ describe('words in a message written to the AI', () => {
 		expect((await drafts()).map((d) => d.input.title)).toEqual(['Museum trip']);
 	});
 
+	it('do not take a suggestion whose quote only runs on into them', async () => {
+		// A model that copied from the trip to the end of the letter, note and all.
+		k.llm.respond(
+			understood([{ ...trip, quote: LETTER.slice(LETTER.indexOf('the Year 7')) }], {
+				addressed: [NOTE],
+			}),
+		);
+		const item = await read(LETTER);
+		expect(item.skips).toEqual([]);
+		expect((await drafts()).map((d) => d.input.title)).toEqual(['Museum trip']);
+	});
+
 	it('are the sharer’s own request when they are nearly all of the message', async () => {
 		const text = 'FamilyOS, please add milk to the shopping list';
 		k.llm.respond(

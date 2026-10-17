@@ -15,6 +15,7 @@ import { parseCalendar } from '../src/server/ical-import.ts';
 import calendar, { createEvent } from '../src/server/index.ts';
 import { events } from '../src/server/store.ts';
 import { ics } from './fixtures.ts';
+import { wholeEvent } from './whole-event.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -104,14 +105,17 @@ describe('tags on events', () => {
 		expect(await stored(a.id)).toBeNull();
 		await k.runner.invoke(
 			'calendar.updateEvent',
-			{ id: a.id, event: { title: 'E', date: '2026-10-20', startTime: '10:00', tags: ['car'] } },
+			{
+				id: a.id,
+				event: wholeEvent({ title: 'E', date: '2026-10-20', startTime: '10:00', tags: ['car'] }),
+			},
 			admin.actor,
 		);
 		expect(await stored(a.id)).toBe('["car"]');
 		expect((await listTags()).map((t) => t.name)).toEqual(['car']);
 		await k.runner.invoke(
 			'calendar.updateEvent',
-			{ id: a.id, event: { title: 'E', date: '2026-10-20', startTime: '10:00' } },
+			{ id: a.id, event: wholeEvent({ title: 'E', date: '2026-10-20', startTime: '10:00' }) },
 			admin.actor,
 		);
 		expect(await stored(a.id)).toBeNull();

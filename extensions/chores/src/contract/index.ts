@@ -1,4 +1,4 @@
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -54,7 +54,11 @@ export const CreateChoreSchema = ChoreDetailsSchema.extend({
 });
 export type CreateChoreInput = z.input<typeof CreateChoreSchema>;
 
-export const UpdateChoreSchema = z.object({ id: ChoreIdSchema, chore: ChoreDetailsSchema });
+/** The whole chore as the form saves it: every field, null for one left empty. */
+export const UpdateChoreSchema = z.object({
+	id: ChoreIdSchema,
+	chore: wholeRecord(ChoreDetailsSchema),
+});
 export type UpdateChoreInput = z.input<typeof UpdateChoreSchema>;
 
 export const ChoreSchema = z.object({

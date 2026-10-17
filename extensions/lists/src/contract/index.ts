@@ -1,4 +1,4 @@
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema, IsoTimeSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -74,6 +74,10 @@ export const TaskInputSchema = z
 		}
 	});
 export type TaskInput = z.input<typeof TaskInputSchema>;
+
+/** The whole task as a form saves it: every field, null for one left empty. */
+export const TaskReplaceSchema = wholeRecord(TaskInputSchema);
+export type TaskReplace = z.input<typeof TaskReplaceSchema>;
 
 export const TaskSchema = z.object({
 	id: z.string(),

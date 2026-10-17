@@ -299,7 +299,10 @@ export function placeReading(
 	const instructions = new Set<number>();
 	if (!own)
 		evidence.forEach((span, i) => {
-			if (span && spoken.some((s) => overlaps(s, span))) instructions.add(i);
+			// Where its words begin decides: a quote that starts in what the message states and
+			// runs on into the note still rests on what the message states.
+			if (span && spoken.some((s) => s.start <= span.start && span.start < s.end))
+				instructions.add(i);
 		});
 	const foreignNotes = new Set<number>();
 	mentions.forEach((m, i) => {

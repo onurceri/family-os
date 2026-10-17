@@ -97,8 +97,7 @@ export const logKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'vehicles.log',
-					quote:
-						'Invoice, City Garage, 1 October 2026: oil change and new brake pads for the family car. Mileage 84,000 km.',
+					quote: 'oil change and new brake pads for the family car',
 					about: 'Family car',
 					title: 'Oil change and new brake pads',
 					variant: 'service',

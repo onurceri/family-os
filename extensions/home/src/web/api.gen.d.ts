@@ -1320,14 +1320,10 @@ export interface operations {
                     home: {
                         /** @description What the family calls it, e.g. "Our flat" */
                         name: string;
-                        /** @default  */
-                        address?: string;
-                        /**
-                         * @default owner
-                         * @enum {string}
-                         */
-                        tenure?: "owner" | "tenant" | "other";
-                        notes?: string | null;
+                        address: string;
+                        /** @enum {string} */
+                        tenure: "owner" | "tenant" | "other";
+                        notes: string | null;
                     };
                 };
             };
@@ -2302,17 +2298,14 @@ export interface operations {
                 "application/json": {
                     id: string;
                     service: {
-                        /**
-                         * @default other
-                         * @enum {string}
-                         */
-                        kind?: "electricity" | "gas" | "water" | "internet" | "phone" | "tv" | "insurance" | "dues" | "other";
+                        /** @enum {string} */
+                        kind: "electricity" | "gas" | "water" | "internet" | "phone" | "tv" | "insurance" | "dues" | "other";
                         /** @description The company, e.g. "the electricity company" */
                         provider: string;
-                        accountNumber?: string | null;
+                        accountNumber: string | null;
                         /** @description The usual billing day of the month; informational */
-                        dueDay?: number | null;
-                        notes?: string | null;
+                        dueDay: number | null;
+                        notes: string | null;
                     };
                 };
             };

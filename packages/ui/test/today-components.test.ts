@@ -170,7 +170,8 @@ describe('Ring and ChoreRings', () => {
 		const items = qa('li', el);
 		expect(items.map((li) => li.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
 			'1/3 Elif',
-			'0/0 Anyone',
+			// Nothing to count is an empty ring: "0/0" would read as a score.
+			'Anyone',
 		]);
 		expect(q('[data-testid="ring"]', items[1]).classList.contains('dim')).toBe(true);
 		expect(q('[data-testid="ring"]', items[0]).getAttribute('aria-label')).toBe('Elif: 1 of 3');

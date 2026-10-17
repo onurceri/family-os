@@ -28,6 +28,7 @@
 	} from './data.js';
 	import {
 		type ChoreFormValue,
+		doneToast,
 		emptyChore,
 		fromChore,
 		type Group,
@@ -116,7 +117,7 @@
 				return;
 			}
 			const completionId = result.completion.id;
-			app.toast(t('done_toast', { title: chore.title }), {
+			app.toast(doneToast(chore.title, chore.nextDue, today, t, app.dateLocale()), {
 				label: t('undo'),
 				run: () => {
 					void undoDone(app, completionId, t('label_undo')).then(

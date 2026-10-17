@@ -14,7 +14,6 @@ import {
 	CompletedObligationSchema,
 	CompleteObligationSchema,
 	DEFAULT_AUDIENCE,
-	type Every,
 	HistoryEntrySchema,
 	OBLIGATION_CONTEXT_KIND,
 	ObligationIdSchema,
@@ -142,8 +141,9 @@ export const updateObligation = defineAction({
 		if (row.archived_at !== null) throw new FamosError('conflict', 'This obligation is archived');
 		await assertMember(uow, obligation.assigneeId);
 		const lapses = obligation.lapses ?? row.lapses === 1;
-		const every: Every | null = lapses ? null : (obligation.every ?? null);
-		const rrule = every ? toRule(every) : null;
+		// Left out, the repeat stays as it is, like every other field a change may skip.
+		const { every } = obligation;
+		const rrule = lapses ? null : every === undefined ? row.rrule : every ? toRule(every) : null;
 		// The series keeps counting from its first date unless the repeat or the due date changed.
 		const keepAnchor = rrule !== null && rrule === row.rrule && obligation.dueDate === row.due_date;
 		await tables(uow.db)

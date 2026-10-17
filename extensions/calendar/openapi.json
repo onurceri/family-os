@@ -3140,6 +3140,7 @@
 			"post": {
 				"operationId": "calendar.updateEvent",
 				"summary": "Change an event",
+				"description": "Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.",
 				"tags": [
 					"actions",
 					"calendar"
@@ -3184,7 +3185,6 @@
 											},
 											"allDay": {
 												"type": "boolean",
-												"default": false,
 												"description": "True when the event has no time of day"
 											},
 											"date": {
@@ -3192,16 +3192,25 @@
 												"description": "Start date, YYYY-MM-DD, in the family time zone"
 											},
 											"endDate": {
-												"type": "string",
+												"type": [
+													"string",
+													"null"
+												],
 												"description": "Last day of a multi-day all-day event (inclusive)"
 											},
 											"startTime": {
-												"type": "string",
+												"type": [
+													"string",
+													"null"
+												],
 												"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
 												"description": "Start time HH:MM; required unless allDay"
 											},
 											"endTime": {
-												"type": "string",
+												"type": [
+													"string",
+													"null"
+												],
 												"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
 												"description": "End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day."
 											},
@@ -3211,15 +3220,20 @@
 													"type": "string",
 													"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 												},
-												"default": [],
 												"description": "Family members involved; empty means the whole family"
 											},
 											"location": {
-												"type": "string",
+												"type": [
+													"string",
+													"null"
+												],
 												"maxLength": 200
 											},
 											"notes": {
-												"type": "string",
+												"type": [
+													"string",
+													"null"
+												],
 												"maxLength": 2000
 											},
 											"recurrence": {
@@ -3310,6 +3324,9 @@
 														"required": [
 															"freq"
 														]
+													},
+													{
+														"type": "null"
 													}
 												],
 												"description": "Repeat rule; omit for a one-off event"
@@ -3322,7 +3339,10 @@
 												"description": "Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default"
 											},
 											"tags": {
-												"type": "array",
+												"type": [
+													"array",
+													"null"
+												],
 												"items": {
 													"type": "string",
 													"minLength": 1,
@@ -3334,7 +3354,17 @@
 										},
 										"required": [
 											"title",
-											"date"
+											"allDay",
+											"date",
+											"endDate",
+											"startTime",
+											"endTime",
+											"memberIds",
+											"location",
+											"notes",
+											"recurrence",
+											"reminder",
+											"tags"
 										]
 									}
 								},

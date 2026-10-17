@@ -12,7 +12,7 @@ A family that upgrades from a version before extensions could be installed keeps
 
 ## Installing one
 
-**Settings → Family → Extensions** lists what is **Installed** and what is **Available**. Tap an available extension to see what it is for and **What it reaches**:
+**Settings → Family → Extensions** lists what you can install first, under **Available**, and then what is **Installed**. When everything that comes with FamilyOS is installed, Available moves below the installed list and says so. Tap an available extension to see what it is for and **What it reaches**:
 
 - **Stays inside FamilyOS**: it connects to nothing on the internet.
 - **Connects to the internet**: the addresses it calls by itself (the weather calls Open-Meteo, for one).
@@ -41,11 +41,11 @@ A newer FamilyOS that brings a newer version of the extension uses that one. Ext
 
 FamilyOS publishes its extensions, and newer versions of them, in an index on the internet. FamilyOS looks there **only when you ask**: never by itself, in the background or when it starts.
 
-In **⋯** at the top of the Extensions page, choose **Look for more**. FamilyOS fetches the index and checks that FamilyOS signed it. **Found online** appears right under the page title while it looks, and then lists what your FamilyOS does not have yet: extensions that did not come with it, and newer versions of the ones you have (**Version 1.1.0 is out**). An extension that came with FamilyOS but is not installed is listed once, under Found online, when the index has a newer version of it.
+In **⋯** at the top of the Extensions page, choose **Look for more**. FamilyOS fetches the index and checks that FamilyOS signed it. **Found online** appears with what you can install, above the installed list, while it looks, and then lists what your FamilyOS does not have yet: extensions that did not come with it, and newer versions of the ones you have (**Version 1.1.0 is out**). An extension that came with FamilyOS but is not installed is listed once, under Found online, when the index has a newer version of it.
 
 Tap one to see what it is for, its version and how much it downloads, then press **Download**. FamilyOS downloads it, checks that it is exactly the file the index describes, and checks it like a file: the details then show what it reaches and **Who made it**, with **Install** (or **Update**). It starts working when FamilyOS restarts.
 
-When looking does not work, the page says why: the index could not be reached (check that the server is online), it was **not signed by FamilyOS** (nothing in it is offered), or it is not one your version can read (updating FamilyOS helps). A download that does not match the index is not used; try again.
+When looking does not work, the page says why: FamilyOS **has not published its list of extensions yet** (there is nothing to download; what comes with FamilyOS is under Available and installs without the internet), the index could not be reached (check this server's internet connection), it was **not signed by FamilyOS** (nothing in it is offered), or it is not one your version can read (updating FamilyOS helps). A download that does not match the index is not used; try again.
 
 ## Restarting
 
@@ -57,7 +57,7 @@ Other phones and tablets notice it when they reconnect: family displays reload b
 
 - **The switch** on an installed extension hides it and stops it for everyone at once, without a restart. Only the switch itself does this: tapping the extension's name opens its details. The message that follows names it (**Lists is off for everyone**) and has **Undo**. Turn it back on and everything is as it was. Meanwhile its pages say **Lists is switched off for the family**, and who can switch it on again, instead of "This page does not exist".
 - **Uninstalling** removes it from everyone's menu after the restart; its pages then no longer exist.
-- **Uninstall** (in the **⋯** menu) removes it when FamilyOS restarts. **Its data is kept**: install it again and you find everything as it was. While it waits for the restart, **Keep it** in the same menu takes the uninstall back. An extension that another installed one needs cannot be uninstalled before that one.
+- **Uninstall** (in the **⋯** menu) removes it when FamilyOS restarts. **Its data is kept**, and so is the extension itself: after the restart it is listed under **Available** at the top of the page, and installing it again from there needs no internet. You then find everything as it was. While it waits for the restart, **Keep it** in the same menu takes the uninstall back. An extension that another installed one needs cannot be uninstalled before that one.
 
 ## When an extension is left out
 

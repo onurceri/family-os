@@ -38,7 +38,9 @@
 	const open = $derived(tasks.filter((task) => task.doneAt === null));
 	/** Due or overdue first, then tasks without a date, then the ones further away. */
 	const ordered = $derived.by(() => {
-		const due = open.filter((task) => ['overdue', 'today'].includes(urgency(task, today)));
+		const due = open.filter((task) =>
+			['overdue', 'today'].includes(urgency(task, today, app.weekStart())),
+		);
 		const undated = open.filter((task) => task.dueDate === null);
 		const later = open.filter((task) => !due.includes(task) && task.dueDate !== null);
 		return [
@@ -74,7 +76,11 @@
 						<Avatar name={member.displayName} color={member.color} size={32} />
 					{:else}
 						<span
-							class="size-8 shrink-0 rounded-full border-2 {urgency(task, today) === 'overdue'
+							class="size-8 shrink-0 rounded-full border-2 {urgency(
+								task,
+								today,
+								app.weekStart(),
+							) === 'overdue'
 								? 'border-attention'
 								: lit
 									? 'border-now'

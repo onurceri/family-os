@@ -85,6 +85,7 @@
 			"searchFinds",
 			"significantWords",
 			"stillToCome",
+			"storedAsWhole",
 			"subjectOf",
 			"systemActor",
 			"tablePrefixOf",
@@ -92,6 +93,7 @@
 			"typedIdKind",
 			"unknownIdFields",
 			"unsureFields",
+			"wholeRecord",
 			"withHandles"
 		],
 		"@famos/time": [
@@ -152,6 +154,8 @@
 		"@famos/ui/slots": [
 			"SETTINGS_SECTIONS",
 			"askedBy",
+			"awaitingText",
+			"changed",
 			"changedValue",
 			"defineWebExtension",
 			"draftHeadline",

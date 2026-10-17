@@ -166,7 +166,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Change a task */
+        /**
+         * Change a task
+         * @description Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.
+         */
         post: operations["lists.updateTask"];
         delete?: never;
         options?: never;
@@ -1903,13 +1906,13 @@ export interface operations {
                         /** @description What needs doing, e.g. "Pay the school trip fee" */
                         title: string;
                         /** @description The member who should do it; omit or null when anyone can */
-                        assigneeId?: string | null;
+                        assigneeId: string | null;
                         /** @description Deadline, YYYY-MM-DD, in the family time zone */
-                        dueDate?: string | null;
+                        dueDate: string | null;
                         /** @description Deadline time HH:MM; only with a due date */
-                        dueTime?: string | null;
+                        dueTime: string | null;
                         /** @description Repeat rule for chores; requires a due date (the first occurrence) */
-                        recurrence?: {
+                        recurrence: {
                             /** @enum {string} */
                             freq: "daily";
                             /** @default 1 */
@@ -1929,7 +1932,7 @@ export interface operations {
                             interval?: number;
                             until?: string;
                         } | null;
-                        notes?: string | null;
+                        notes: string | null;
                     };
                 };
             };

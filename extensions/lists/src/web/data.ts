@@ -8,6 +8,7 @@ import type {
 	ShoppingList,
 	Task,
 	TaskInput,
+	TaskReplace,
 } from '../contract/index.js';
 import { type AddedItems, type AlreadyOnList, alreadyOnList } from './already-on-list.js';
 import { api } from './api.js';
@@ -26,11 +27,14 @@ export const loadTasks = (): Promise<Task[]> =>
 export const loadTask = async (taskId: string): Promise<Task> =>
 	unwrap(await api.GET('/api/v1/lists/tasks/{taskId}', { params: { path: { taskId } } }));
 
-export async function saveTask(task: TaskInput, id?: string): Promise<Outcome> {
-	const result = id
-		? unwrap(await api.POST('/api/v1/actions/lists.updateTask', { body: { id, task } }))
-		: unwrap(await api.POST('/api/v1/actions/lists.addTask', { body: task }));
-	return result.status;
+export async function addTask(task: TaskInput): Promise<Outcome> {
+	return unwrap(await api.POST('/api/v1/actions/lists.addTask', { body: task })).status;
+}
+
+/** Saves the whole form: a new task without an id, or that task replaced by it. */
+export async function saveTask(task: TaskReplace, id?: string): Promise<Outcome> {
+	if (!id) return addTask(task);
+	return unwrap(await api.POST('/api/v1/actions/lists.updateTask', { body: { id, task } })).status;
 }
 
 /** Completes a task; the task after it, 'queued' without a connection, or null (a draft). */

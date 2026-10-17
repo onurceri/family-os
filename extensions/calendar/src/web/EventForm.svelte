@@ -165,9 +165,12 @@
 			<legend class="mb-1.5 text-sm font-medium"
 				>{t('field_members')}{@render check('memberIds')}</legend
 			>
-			<MemberChips members={app.members()} bind:selected={value.memberIds} multiple />
-			{#if value.memberIds.length === 0}<small class="text-ink-soft text-xs">{t('everyone')}</small
-				>{/if}
+			<MemberChips
+				members={app.members()}
+				bind:selected={value.memberIds}
+				multiple
+				noneLabel={t('everyone')}
+			/>
 		</fieldset>
 
 		<fieldset class="grid gap-2">

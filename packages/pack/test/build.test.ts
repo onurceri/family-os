@@ -24,7 +24,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 // Each package is built once, before its tests, which then only read what the build wrote. A
 // build compiles the package's Svelte and Tailwind and takes under a second on an idle machine;
-// the whole suite keeps every core busy, so the hook gets room for several times that.
+// the whole suite keeps every core busy, so each build gets room for several times that.
 const BUILD_TIMEOUT = 30_000;
 
 function filesUnder(dir: string): string[] {
@@ -177,27 +177,41 @@ describe('the server bundle', () => {
 		return dir;
 	}
 
-	it('refuses a builtin named without node:, which the host does not hand out', async () => {
-		const dir = await fixture(
-			'bare',
-			"import { readFileSync } from 'fs';\nexport default readFileSync;\n",
-		);
-		await expect(buildExtension(dir)).rejects.toThrow(/imports fs, which the host does not share/);
-	});
+	it(
+		'refuses a builtin named without node:, which the host does not hand out',
+		async () => {
+			const dir = await fixture(
+				'bare',
+				"import { readFileSync } from 'fs';\nexport default readFileSync;\n",
+			);
+			await expect(buildExtension(dir)).rejects.toThrow(
+				/imports fs, which the host does not share/,
+			);
+		},
+		BUILD_TIMEOUT,
+	);
 
-	it('refuses a subpath of a shared module, which is another module', async () => {
-		const dir = await fixture('subpath', "import { z } from 'zod/mini';\nexport default z;\n");
-		await expect(buildExtension(dir)).rejects.toThrow(/imports zod\/mini/);
-	});
+	it(
+		'refuses a subpath of a shared module, which is another module',
+		async () => {
+			const dir = await fixture('subpath', "import { z } from 'zod/mini';\nexport default z;\n");
+			await expect(buildExtension(dir)).rejects.toThrow(/imports zod\/mini/);
+		},
+		BUILD_TIMEOUT,
+	);
 
-	it('inlines what the host does not share and keeps the shared modules out', async () => {
-		const dir = await fixture(
-			'inlined',
-			"import { z } from 'zod';\nimport { createHash } from 'node:crypto';\nexport default [z, createHash];\n",
-		);
-		const { serverImports, description } = await buildExtension(dir);
-		expect(serverImports).toEqual(['node:crypto', 'zod']);
-		expect(description.labels).toEqual({ en: { name: 'Example', description: 'An example.' } });
-		expect(description.license).toBe('MIT');
-	});
+	it(
+		'inlines what the host does not share and keeps the shared modules out',
+		async () => {
+			const dir = await fixture(
+				'inlined',
+				"import { z } from 'zod';\nimport { createHash } from 'node:crypto';\nexport default [z, createHash];\n",
+			);
+			const { serverImports, description } = await buildExtension(dir);
+			expect(serverImports).toEqual(['node:crypto', 'zod']);
+			expect(description.labels).toEqual({ en: { name: 'Example', description: 'An example.' } });
+			expect(description.license).toBe('MIT');
+		},
+		BUILD_TIMEOUT,
+	);
 });

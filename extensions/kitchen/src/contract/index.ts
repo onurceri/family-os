@@ -1,5 +1,5 @@
 import { ShoppingListIdSchema } from '@famos/ext-lists/contract';
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -69,7 +69,12 @@ export type RecipeFields = z.input<typeof RecipeFieldsSchema>;
 
 export const CreateRecipeSchema = RecipeFieldsSchema;
 export type CreateRecipeInput = z.input<typeof CreateRecipeSchema>;
-export const UpdateRecipeSchema = z.object({ id: RecipeIdSchema, recipe: RecipeFieldsSchema });
+/** The whole recipe as the form saves it: every field, null for one left empty. */
+export const UpdateRecipeSchema = z.object({
+	id: RecipeIdSchema,
+	recipe: wholeRecord(RecipeFieldsSchema),
+});
+export type RecipeReplace = z.input<typeof UpdateRecipeSchema>['recipe'];
 
 export const RecipeSchema = z.object({
 	id: z.string(),
@@ -121,9 +126,10 @@ export const AddToMealPlanSchema = MealEntryFieldsSchema.refine((v) => v.recipeI
 	path: ['title'],
 });
 export type AddToMealPlanInput = z.input<typeof AddToMealPlanSchema>;
+/** The whole planned meal as the form saves it: every field, null for one left empty. */
 export const UpdateMealEntrySchema = z.object({
 	id: MealIdSchema,
-	entry: MealEntryFieldsSchema.refine((v) => v.recipeId || v.title, {
+	entry: wholeRecord(MealEntryFieldsSchema).refine((v) => v.recipeId || v.title, {
 		message: 'Name a recipe or write what is cooked',
 		path: ['title'],
 	}),

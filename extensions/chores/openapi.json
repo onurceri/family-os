@@ -1977,13 +1977,15 @@
 													"round_robin",
 													"least_done"
 												],
-												"default": "fixed",
 												"description": "fixed: the same person; round_robin: take turns in the listed order; least_done: whoever did it least lately"
 											}
 										},
 										"required": [
 											"title",
-											"startDate"
+											"notes",
+											"recurrence",
+											"startDate",
+											"rotation"
 										]
 									}
 								},

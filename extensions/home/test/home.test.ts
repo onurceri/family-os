@@ -65,12 +65,18 @@ describe('homes', () => {
 		const changed = await applied<Home>(
 			k,
 			'home.updateHome',
-			{ id: flat.id, home: { name: 'Flat', tenure: 'owner' } },
+			{ id: flat.id, home: { name: 'Flat', address: '', tenure: 'owner', notes: null } },
 			admin.actor,
 		);
-		expect(changed).toMatchObject({ name: 'Flat', tenure: 'owner' });
-		// The form always sends the whole home: a field left out is cleared.
-		expect(changed.address).toBe('');
+		expect(changed).toMatchObject({ name: 'Flat', address: '', tenure: 'owner', notes: null });
+		// The form always sends the whole home: one that leaves fields out is refused, not cleared.
+		await expect(
+			k.runner.invoke('home.updateHome', { id: flat.id, home: { name: 'Flat 2' } }, admin.actor),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await k.route('home.getHome').call({ params: { homeId: flat.id } })).toMatchObject({
+			name: 'Flat',
+			tenure: 'owner',
+		});
 	});
 
 	it('refuses a missing name, a bad tenure and an unknown home', async () => {
@@ -429,7 +435,10 @@ describe('services', () => {
 		const changed = await applied<Service>(
 			k,
 			'home.updateService',
-			{ id: power.id, service: { kind: 'gas', provider: 'Igdaş' } },
+			{
+				id: power.id,
+				service: { kind: 'gas', provider: 'Igdaş', accountNumber: null, dueDay: null, notes: null },
+			},
 			admin.actor,
 		);
 		expect(changed).toMatchObject({
@@ -438,6 +447,13 @@ describe('services', () => {
 			accountNumber: null,
 			dueDay: null,
 		});
+		await expect(
+			k.runner.invoke(
+				'home.updateService',
+				{ id: power.id, service: { provider: 'Igdaş' } },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
 
 		await expect(addService(flat.id, { dueDay: 32 })).rejects.toBeInstanceOf(FamosError);
 		await expect(addService(flat.id, { kind: 'lottery' })).rejects.toBeInstanceOf(FamosError);
@@ -462,7 +478,16 @@ describe('services', () => {
 		await applied(
 			k,
 			'home.updateService',
-			{ id: net.id, service: { kind: 'internet', provider: 'Superonline' } },
+			{
+				id: net.id,
+				service: {
+					kind: 'internet',
+					provider: 'Superonline',
+					accountNumber: null,
+					dueDay: null,
+					notes: null,
+				},
+			},
 			admin.actor,
 		);
 		expect(await obligations(net.id)).toMatchObject([{ recordName: 'Superonline' }]);
@@ -488,7 +513,7 @@ describe('records follow the home', () => {
 		await applied(
 			k,
 			'home.updateHome',
-			{ id: flat.id, home: { name: 'Flat in Moda' } },
+			{ id: flat.id, home: { name: 'Flat in Moda', address: '', tenure: 'tenant', notes: null } },
 			admin.actor,
 		);
 		expect((await obligations(flat.id))[0]).toMatchObject({

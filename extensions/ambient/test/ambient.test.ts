@@ -115,6 +115,14 @@ describe('settings', () => {
 			idleMinutes: 2,
 			slideSeconds: 10,
 		});
+		// One timing left out is refused, never put back to its default.
+		await expect(run('ambient.updateTiming', { idleMinutes: 3 })).rejects.toMatchObject({
+			code: 'bad_request',
+		});
+		expect((await k.route('ambient.getSettings').call()).timing).toEqual({
+			idleMinutes: 2,
+			slideSeconds: 10,
+		});
 	});
 });
 

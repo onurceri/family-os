@@ -129,7 +129,12 @@
 								<span class="when">{when(thread.updatedAt)}</span>
 							</button>
 							<span class="more">
-								<Menu label={t('thread_options', { title: thread.title })} items={items(thread)}>
+								<Menu
+									label={t('thread_options', { title: thread.title })}
+									title={thread.title}
+									cancelLabel={t('cancel')}
+									items={items(thread)}
+								>
 									{#snippet trigger({ attrs })}
 										<IconButton
 											label={t('thread_options', { title: thread.title })}

@@ -39,6 +39,10 @@ describe('roles and capabilities', () => {
 		);
 		expect(supervised).not.toContain('notes.edit');
 		expect(supervised).not.toContain('core.drafts.approve');
+		// Their own notes for the family's assistant, but no app key for an outside AI app.
+		expect(supervised).toContain('core.memory.use');
+		expect(supervised).not.toContain('core.mcp.use');
+		expect(member).toContain('core.mcp.use');
 		expect(await effective('guest')).toEqual([
 			'core.members.view',
 			'core.drafts.waiting',

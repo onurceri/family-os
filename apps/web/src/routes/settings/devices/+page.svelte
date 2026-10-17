@@ -27,6 +27,7 @@
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
 	import AddDevice, { type AddStart } from './AddDevice.svelte';
 	import DisplayForm from './DisplayForm.svelte';
+	import { displayOptions } from './display-options.js';
 
 	/**
 	 * Devices: this device in one sentence and one button; one list of the
@@ -55,17 +56,7 @@
 	let optionsLoaded = $state(false);
 	// Only what a display can show: a capability is offered when the display's Today (family
 	// mode), a display widget, a status pill or ambient mode needs it (`requires`).
-	const shown = new Set([
-		...familyModeCapabilities(),
-		...contributions.slots.flatMap((c) =>
-			(c.slot === 'display.widget' ||
-				c.slot === 'display.status' ||
-				c.slot === 'display.ambient') &&
-			c.requires
-				? [c.requires]
-				: [],
-		),
-	]);
+	const { offered: shown, optIn } = displayOptions(familyModeCapabilities(), contributions.slots);
 	const options = $derived(allOptions.filter((o) => shown.has(o.id)));
 
 	// Adding a device. A display's pairing link (`?code=`) opens the sheet at the screen's steps.
@@ -283,6 +274,7 @@
 		open={adding}
 		{start}
 		{options}
+		{optIn}
 		{optionsLoaded}
 		{thisTrusted}
 		onclose={closeAdd}

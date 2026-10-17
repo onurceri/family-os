@@ -44,7 +44,8 @@ test('a wall display pairs with a code, shows Today in family mode, follows live
 	await expect(display.getByTestId('pair-address')).toContainText(`/settings/devices?code=${code}`);
 
 	// An admin adds it from Settings: Add a device asks what it is, then walks through the steps.
-	// Everything a display can show is ticked at first, the day and chores among it; names are off.
+	// What makes up the day is ticked at first, chores among it; the waiting-suggestions pill and
+	// names are off.
 	await page.goto('/settings/devices');
 	await page.getByRole('button', { name: 'Add a device' }).click();
 	const sheet = page.getByTestId('add-device');
@@ -57,8 +58,13 @@ test('a wall display pairs with a code, shows Today in family mode, follows live
 	await expect(sheet.getByText(`Code ${code}`)).toBeVisible();
 	await expect(sheet.getByLabel('See the calendar')).toBeChecked();
 	await expect(sheet.getByLabel('See the chores and whose turn it is')).toBeChecked();
+	await expect(sheet.getByLabel('See how many suggestions are waiting')).not.toBeChecked();
 	await sheet.getByLabel('Name of the screen').fill('Hallway');
 	await sheet.getByRole('button', { name: 'Connect the screen' }).click();
+	// Connected only once the screen has claimed the code, on its next poll (every five seconds).
+	await expect(sheet.getByTestId('pairing-status')).toHaveAttribute('data-state', 'connected', {
+		timeout: 20_000,
+	});
 	await expect(sheet.getByText('Hallway is connected.')).toBeVisible();
 	await sheet.getByRole('button', { name: 'Close' }).click();
 

@@ -122,8 +122,10 @@ describe('chores', () => {
 				id: chore.id,
 				chore: {
 					title: 'Wash up',
+					notes: null,
 					startDate: TODAY,
 					recurrence: { freq: 'weekly', interval: 1, byDay: ['MO'] },
+					rotation: 'round_robin',
 				},
 			},
 			ayse.actor,
@@ -136,8 +138,10 @@ describe('chores', () => {
 				id: chore.id,
 				chore: {
 					title: 'Wash up',
+					notes: null,
 					startDate: TODAY,
 					recurrence: { freq: 'weekly', interval: 1, byDay: ['FR'] },
+					rotation: 'round_robin',
 				},
 			},
 			ayse.actor,
@@ -145,6 +149,17 @@ describe('chores', () => {
 		expect(moved.nextDue).toBe('2026-10-09');
 		// People are kept when the chore itself is edited.
 		expect(moved.assigneeIds).toEqual([ayse.id, bora.id]);
+		// The form sends the whole chore: one that leaves fields out is refused, not cleared.
+		expect(
+			await rejected(
+				k.runner.invoke(
+					'chores.updateChore',
+					{ id: chore.id, chore: { title: 'Dishes', startDate: TODAY } },
+					ayse.actor,
+				),
+			),
+		).toBe('bad_request');
+		expect(await get(chore.id)).toMatchObject({ title: 'Wash up', rotation: 'round_robin' });
 	});
 
 	it('archives a chore, hiding it and its reminders, and again without harm', async () => {

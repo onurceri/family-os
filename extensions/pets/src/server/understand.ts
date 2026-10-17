@@ -112,8 +112,7 @@ export const treatmentKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'pets.treatment',
-					quote:
-						'Luna, Nobivac Rabies, batch A123, 05.10.2026, Riverside Vet. Next due 05.10.2027.',
+					quote: 'Nobivac Rabies, batch A123, 05.10.2026',
 					about: 'Luna',
 					title: 'Nobivac Rabies',
 					variant: 'vaccination',

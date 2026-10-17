@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { awaitedIds, type WaitingDraft } from './awaiting.js';
+import { awaitedChanges, type WaitingDraft } from './awaiting.js';
+
+const awaitedIds = (drafts: readonly WaitingDraft[], memberId: string | undefined) =>
+	new Set(awaitedChanges(drafts, memberId).keys());
 
 const draft = (over: Partial<WaitingDraft>): WaitingDraft => ({
+	actionId: 'lists.updateTask',
 	status: 'pending',
 	input: {},
 	editedInput: null,
@@ -58,5 +62,24 @@ describe('what the member’s own changes wait on', () => {
 			'ivy',
 		);
 		expect([...ids]).toEqual(['task_9']);
+	});
+
+	it('keeps the change that waits, the newest of several, with what it changes now', () => {
+		const changes = awaitedChanges(
+			[
+				draft({
+					actionId: 'lists.updateTask',
+					input: { id: 'task_1', task: { title: 'Worksheet', dueDate: '2026-10-20' } },
+					before: { dueDate: null },
+				}),
+				draft({ actionId: 'lists.deleteTask', input: { id: 'task_1' } }),
+			],
+			'ivy',
+		);
+		expect(changes.get('task_1')).toEqual({
+			actionId: 'lists.updateTask',
+			input: { id: 'task_1', task: { title: 'Worksheet', dueDate: '2026-10-20' } },
+			before: { dueDate: null },
+		});
 	});
 });

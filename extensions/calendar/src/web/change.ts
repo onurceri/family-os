@@ -1,11 +1,6 @@
 import { describeRecurrence, formatClock, formatDate } from '@famos/time';
-import {
-	changedValue,
-	type DraftBefore,
-	type DraftField,
-	type PresenterContext,
-} from '@famos/ui/slots';
-import type { EventInput } from '../contract/index.js';
+import { changed, type DraftBefore, type DraftField, type PresenterContext } from '@famos/ui/slots';
+import type { EventReplace } from '../contract/index.js';
 import { describeWhen } from './format.js';
 import { when } from './instead.js';
 
@@ -88,7 +83,7 @@ export function changeEventFields(
 	if (input.title !== undefined && (was !== undefined || input.title !== input.label))
 		fields.push({
 			label: was === undefined ? t('draft_new_title') : t('field_title'),
-			value: changedValue(text(was?.title), input.title),
+			...changed(text(was?.title), input.title),
 			path: 'title',
 		});
 	if (WHEN_KEYS.some((k) => input[k] !== undefined)) {
@@ -108,7 +103,7 @@ export function changeEventFields(
 			const to = whenText(next, c, withEnd, sameDay);
 			fields.push({
 				label: t('when'),
-				value: from === whenText(next, c, withEnd) ? to : changedValue(from, to),
+				...changed(from === whenText(next, c, withEnd) ? undefined : from, to),
 				paths,
 			});
 		} else fields.push({ label: t('when'), value: plainWhen(input, c), paths });
@@ -122,35 +117,35 @@ export function changeEventFields(
 		const old = Array.isArray(was?.memberIds) ? names(was.memberIds as string[]) : undefined;
 		fields.push({
 			label: t('who'),
-			value: changedValue(old, names(input.memberIds)),
+			...changed(old, names(input.memberIds)),
 			path: 'memberIds',
 		});
 	}
 	if (input.location !== undefined)
 		fields.push({
 			label: t('where'),
-			value: changedValue(text(was?.location), text(input.location) as string),
+			...changed(text(was?.location), text(input.location) as string),
 			path: 'location',
 		});
 	if (input.tags !== undefined) {
 		const old = Array.isArray(was?.tags) ? (was.tags as string[]).join(', ') : undefined;
 		fields.push({
 			label: t('tags'),
-			value: changedValue(old === undefined ? undefined : old || '—', input.tags.join(', ') || '—'),
+			...changed(old === undefined ? undefined : old || '—', input.tags.join(', ') || '—'),
 			path: 'tags',
 		});
 	}
 	if (input.notes !== undefined)
 		fields.push({
 			label: t('notes'),
-			value: changedValue(text(was?.notes), text(input.notes) as string),
+			...changed(text(was?.notes), text(input.notes) as string),
 			path: 'notes',
 		});
 	return fields;
 }
 
 /** What a `calendar.updateEvent` draft carries: the whole event as the form saved it. */
-export type UpdateEventInput = { id: string; label?: string; event: EventInput };
+export type UpdateEventInput = { id: string; label?: string; event: EventReplace };
 
 /**
  * The rows of a saved edit of an event: the form sends every field, and `before` holds the ones
@@ -193,7 +188,7 @@ export function updateEventFields(
 				: t('repeat_none');
 		fields.push({
 			label: t('repeat'),
-			value: changedValue(repeat(before.recurrence), repeat(event.recurrence)),
+			...changed(repeat(before.recurrence), repeat(event.recurrence)),
 			path: 'recurrence',
 		});
 	}
@@ -206,7 +201,7 @@ export function updateEventFields(
 				: t('reminder_none');
 		fields.push({
 			label: t('reminder'),
-			value: changedValue(
+			...changed(
 				typeof before.reminder === 'number' ? reminder(before.reminder) : undefined,
 				reminder(event.reminder),
 			),

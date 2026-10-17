@@ -913,9 +913,9 @@ export interface operations {
                     chore: {
                         /** @description The chore, e.g. "Empty the dishwasher" */
                         title: string;
-                        notes?: string | null;
+                        notes: string | null;
                         /** @description How it repeats; omit or null for a one-off chore */
-                        recurrence?: {
+                        recurrence: {
                             /** @enum {string} */
                             freq: "daily";
                             /** @default 1 */
@@ -939,10 +939,9 @@ export interface operations {
                         startDate: string;
                         /**
                          * @description fixed: the same person; round_robin: take turns in the listed order; least_done: whoever did it least lately
-                         * @default fixed
                          * @enum {string}
                          */
-                        rotation?: "fixed" | "round_robin" | "least_done";
+                        rotation: "fixed" | "round_robin" | "least_done";
                     };
                 };
             };

@@ -66,16 +66,37 @@ describe('recipes', () => {
 		const changed = await applied<Recipe>(
 			k,
 			'kitchen.updateRecipe',
-			{ id: created.id, recipe: { title: 'Red lentil soup', ingredients: ['lentils'] } },
+			{
+				id: created.id,
+				recipe: {
+					title: 'Red lentil soup',
+					servings: null,
+					totalMinutes: null,
+					ingredients: ['lentils'],
+					steps: [],
+					notes: 'Less salt',
+					sourceUrl: null,
+					tags: ['soup'],
+				},
+			},
 			admin.actor,
 		);
-		// A field left out is cleared: the form always sends the whole recipe.
 		expect(changed).toMatchObject({
 			title: 'Red lentil soup',
 			ingredients: ['lentils'],
 			servings: null,
 			steps: [],
+			notes: 'Less salt',
 		});
+		// The form always sends the whole recipe: one that leaves fields out is refused, not cleared.
+		await expect(
+			k.runner.invoke(
+				'kitchen.updateRecipe',
+				{ id: created.id, recipe: { title: 'Soup' } },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await recipes()).toMatchObject([{ title: 'Red lentil soup', tags: ['soup'] }]);
 	});
 
 	it('searches by title and tag, in the order of the titles', async () => {
@@ -224,10 +245,26 @@ describe('meal plan', () => {
 		const changed = await applied<MealEntry>(
 			k,
 			'kitchen.updateMealPlanEntry',
-			{ id: m.id, entry: { date: '2026-10-08', slot: 'lunch', title: 'Pasta bake' } },
+			{
+				id: m.id,
+				entry: {
+					date: '2026-10-08',
+					slot: 'lunch',
+					recipeId: null,
+					title: 'Pasta bake',
+					note: null,
+				},
+			},
 			admin.actor,
 		);
 		expect(changed).toMatchObject({ date: '2026-10-08', slot: 'lunch', title: 'Pasta bake' });
+		await expect(
+			k.runner.invoke(
+				'kitchen.updateMealPlanEntry',
+				{ id: m.id, entry: { date: '2026-10-09', title: 'Pasta bake' } },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
 		await applied(k, 'kitchen.removeMealPlanEntry', { id: m.id }, admin.actor);
 		await applied(k, 'kitchen.removeMealPlanEntry', { id: m.id }, admin.actor);
 		expect(await meals()).toEqual([]);
@@ -235,7 +272,10 @@ describe('meal plan', () => {
 			applied(
 				k,
 				'kitchen.updateMealPlanEntry',
-				{ id: m.id, entry: { date: '2026-10-08', title: 'x' } },
+				{
+					id: m.id,
+					entry: { date: '2026-10-08', slot: 'dinner', recipeId: null, title: 'x', note: null },
+				},
 				admin.actor,
 			),
 		).rejects.toMatchObject({ code: 'not_found' });

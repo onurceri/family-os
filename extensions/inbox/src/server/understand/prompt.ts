@@ -30,12 +30,12 @@ const FIXED_RULES = (language: string) =>
 	[
 		'Read only what the message states. Never invent a thing, a day, a time, a place or a person.',
 		'Write one mention per thing, with a kind from the list below, and fill only the slots that kind uses.',
-		'quote: the shortest words of the message the mention rests on, copied exactly as written (same spelling and language, nothing added).',
 		'Days: copy the words that give the day into date.text and fill only the parts those words give (day, month, year, weekday, week, inDays, numeric, approximate). Never work out a date the words do not give.',
 		'Times: time is HH:MM on a 24-hour clock, and timeText the words of the time as written.',
 		'People: names as the message or the family list writes them. forMe when it is about the person who shared it ("I", "me", "my"). peopleGuessed when you chose people from their descriptions because the message does not name them.',
 		`Write titles and the label in ${language}, the family language, keeping names of people, places and products as written. A title reads like a list entry and starts with a capital letter where the language has them.`,
 		'List in unsure every slot you guessed.',
+		'After its slots, give each mention its quote: the few words of the message it rests on (rarely more than ten), copied exactly as written.',
 		'label: a short heading of a few words for the whole message, never a sentence.',
 		'addressed: copy word for word every sentence of the message that speaks to FamilyOS, an assistant, an AI or "the system" rather than to people, such as a note for the assistant or words telling the app what to add, change or mark. Leave it out when there is none. A person\'s own list or reminder ("milk and eggs", "remind me to call the vet") is not addressed.',
 		'intent: "actionable" when the message holds something to add, change or tick off; "question" when it asks the family organizer or its assistant something (then no mentions: never answer it); "nothing" otherwise (no mentions).',

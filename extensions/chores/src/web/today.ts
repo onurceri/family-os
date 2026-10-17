@@ -25,6 +25,7 @@ export const choresToday: MemberCountsFacet = {
 	titleKey: 'chores:today_title',
 	labelKey: 'chores:today_counts_label',
 	ringKey: 'chores:today_ring',
+	noneKey: 'chores:today_ring_none',
 	leftKey: 'chores:today_left',
 	invalidateOn: ['chores.'],
 	load: () => loadTodayByMember(),

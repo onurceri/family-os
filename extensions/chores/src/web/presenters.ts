@@ -1,4 +1,4 @@
-import { changedValue, type DraftPresenter } from '@famos/ui/slots';
+import { changed, type DraftPresenter } from '@famos/ui/slots';
 import { SquareCheckBig, Users } from '@lucide/svelte';
 import type { CreateChoreInput } from '../contract/index.js';
 
@@ -64,7 +64,7 @@ export const setAssigneesPresenter: DraftPresenter<SetAssigneesDraft> = {
 		return [
 			{
 				label: c.t('chores:draft_people'),
-				value: changedValue(was && people(was), people(input.memberIds)),
+				...changed(was && people(was), people(input.memberIds)),
 				path: 'memberIds',
 			},
 		];

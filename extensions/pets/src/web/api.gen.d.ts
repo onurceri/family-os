@@ -803,28 +803,18 @@ export interface operations {
                     pet: {
                         /** @description What the family calls it, e.g. "Luna" */
                         name: string;
-                        /**
-                         * @default other
-                         * @enum {string}
-                         */
-                        species?: "dog" | "cat" | "bird" | "rabbit" | "fish" | "reptile" | "other";
-                        /** @default  */
-                        breed?: string;
+                        /** @enum {string} */
+                        species: "dog" | "cat" | "bird" | "rabbit" | "fish" | "reptile" | "other";
+                        breed: string;
                         /** @enum {string|null} */
-                        sex?: "female" | "male" | null;
-                        birthDate?: string | null;
-                        chipNumber?: string | null;
-                        /**
-                         * @description Clinic and phone, free text
-                         * @default
-                         */
-                        vet?: string;
-                        /**
-                         * @description Who looks after it
-                         * @default []
-                         */
-                        memberIds?: string[];
-                        notes?: string | null;
+                        sex: "female" | "male" | null;
+                        birthDate: string | null;
+                        chipNumber: string | null;
+                        /** @description Clinic and phone, free text */
+                        vet: string;
+                        /** @description Who looks after it */
+                        memberIds: string[];
+                        notes: string | null;
                     };
                 };
             };

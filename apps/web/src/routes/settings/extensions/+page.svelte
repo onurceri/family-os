@@ -58,9 +58,9 @@
 	import Restarting from './Restarting.svelte';
 
 	/**
-	 * Extensions: what the family has installed, each with its switch (on or off for everyone, at
-	 * once) and a menu to uninstall it; what can be installed, each opening its details with what it
-	 * reaches and Install. Installing and uninstalling take effect when the server restarts, which
+	 * Extensions: what can be installed first (what this server has, then what the index offers),
+	 * each opening its details with what it reaches and Install; then what the family has
+	 * installed, each with its switch (on or off for everyone, at once) and a menu to uninstall it. Installing and uninstalling take effect when the server restarts, which
 	 * is then the page's one action. A signed package can also come from a file (the head's ⋯):
 	 * the server checks it, and its details open with Install. "Look for more" (the same menu)
 	 * asks the server to read the official index, only then: what it lists that this server lacks
@@ -319,17 +319,12 @@
 		}
 	}
 
-	/**
-	 * Once someone asks here, what the index gives shows right under the header, where they
-	 * asked, and takes focus; otherwise an earlier look stays at the end of the page.
-	 */
-	let lookedHere = $state(false);
+	/** What the index gives takes focus once someone asks here, so it is announced where it is. */
 	let foundBox = $state<HTMLElement | null>(null);
 
-	/** Asks the server to read the official index; what it finds shows under the header. */
+	/** Asks the server to read the official index; what it finds shows with what can be installed. */
 	async function look() {
 		error = null;
-		lookedHere = true;
 		try {
 			unwrap(await api.POST('/api/v1/actions/core.findExtensions', { body: {} }));
 		} catch {
@@ -522,6 +517,31 @@
 	{/if}
 {/snippet}
 
+{#snippet availableSection()}
+	<Section label={t('extensions_available')} count={shown.available.length}>
+		{#if shown.available.length > 0}
+			<Card rows data-testid="available-extensions">
+				{#each shown.available as entry (entry.id)}
+					<Row
+						title={name(entry)}
+						meta={description(entry)}
+						onclick={() => openPanel(entry)}
+						aria-label={name(entry)}
+					>
+						{#snippet trail()}
+							<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
+						{/snippet}
+					</Row>
+				{/each}
+			</Card>
+		{:else}
+			<EmptyLine text={t('extensions_available_none')}>
+				{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
+			</EmptyLine>
+		{/if}
+	</Section>
+{/snippet}
+
 <Page template="settings">
 	<PageHeader title={t('extensions_title')} subtitle={t('extensions_intro')}>
 		{#snippet actions()}
@@ -556,7 +576,10 @@
 					{/if}
 				</Notice>
 			{/if}
-			{#if lookedHere}{@render foundSection()}{/if}
+			<!-- What can be installed comes first: the installed list is long, and an extension that
+			     was uninstalled is found again here, not below it. -->
+			{#if shown.available.length > 0}{@render availableSection()}{/if}
+			{@render foundSection()}
 
 			<Section label={t('extensions_installed')} count={grouped.installed.length}>
 				<Card rows data-testid="installed-extensions">
@@ -584,30 +607,7 @@
 				</Card>
 			</Section>
 
-			<Section label={t('extensions_available')} count={shown.available.length}>
-				{#if shown.available.length > 0}
-					<Card rows data-testid="available-extensions">
-						{#each shown.available as entry (entry.id)}
-							<Row
-								title={name(entry)}
-								meta={description(entry)}
-								onclick={() => openPanel(entry)}
-								aria-label={name(entry)}
-							>
-								{#snippet trail()}
-									<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
-								{/snippet}
-							</Row>
-						{/each}
-					</Card>
-				{:else}
-					<EmptyLine text={t('extensions_available_none')}>
-						{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
-					</EmptyLine>
-				{/if}
-			</Section>
-
-			{#if !lookedHere}{@render foundSection()}{/if}
+			{#if shown.available.length === 0}{@render availableSection()}{/if}
 
 			<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('extensions_data_kept')}</p>
 		</div>

@@ -123,7 +123,6 @@
 	"sub_url_hint": "The address of a calendar to follow. It starts with https:// or webcal://; calendar apps may call it an ICS or subscription link.",
 	"sub_color": "Colour",
 	"sub_members": "Whose is it?",
-	"sub_members_all": "Everyone",
 	"sub_reminders": "Remind about its events",
 	"sub_reminders_hint": "Sends the usual event reminders.",
 	"sub_allow_local": "Calendar on my home network",

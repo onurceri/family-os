@@ -1,5 +1,5 @@
 import { type ObligationPreset, PresetScheduleSchema } from '@famos/ext-records/contract';
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -134,7 +134,9 @@ export const AddHomeSchema = HomeFieldsSchema.extend({
 	obligations: z.array(HomePresetPickSchema).max(HOME_PRESET_IDS.length).default([]),
 });
 export type AddHomeInput = z.input<typeof AddHomeSchema>;
-export const UpdateHomeSchema = z.object({ id: HomeIdSchema, home: HomeFieldsSchema });
+/** The whole home as the form saves it: every field, null for one left empty. */
+export const UpdateHomeSchema = z.object({ id: HomeIdSchema, home: wholeRecord(HomeFieldsSchema) });
+export type HomeReplace = z.input<typeof UpdateHomeSchema>['home'];
 
 export const HomeSchema = z.object({
 	id: z.string(),
@@ -242,10 +244,12 @@ export type ServiceFields = z.input<typeof ServiceFieldsSchema>;
 
 export const AddServiceSchema = ServiceFieldsSchema.extend({ homeId: HomeIdSchema });
 export type AddServiceInput = z.input<typeof AddServiceSchema>;
+/** The whole service as the form saves it: every field, null for one left empty. */
 export const UpdateServiceSchema = z.object({
 	id: ServiceIdSchema,
-	service: ServiceFieldsSchema,
+	service: wholeRecord(ServiceFieldsSchema),
 });
+export type ServiceReplace = z.input<typeof UpdateServiceSchema>['service'];
 
 export const ServiceSchema = z.object({
 	id: z.string(),

@@ -173,7 +173,7 @@ export const itemKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'home.item',
-					quote: 'Samsung RB38 fridge, 05.10.2026, 2 years warranty',
+					quote: 'Samsung RB38 fridge',
 					title: 'Fridge',
 					lines: ['Samsung', 'RB38'],
 					date: { text: '05.10.2026', numeric: '05.10.2026' },

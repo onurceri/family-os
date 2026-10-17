@@ -13,6 +13,7 @@
 	import { onDestroy } from 'svelte';
 	import { TASK_TITLE_MAX, type Task } from '../contract/index.js';
 	import {
+		addTask,
 		completeTask,
 		deleteTask,
 		loadTask,
@@ -36,7 +37,7 @@
 
 	/**
 	 * The Tasks page: the add field on top, the open tasks by when they are due (Overdue, Today,
-	 * This week, Later, No date), then Done, folded. Everyone's or only mine. The details open in
+	 * This week, Next week, Later, No date), then Done, folded. Everyone's or only mine. The details open in
 	 * the side panel, or in a sheet on phones.
 	 */
 	const { app, t } = useLists();
@@ -91,16 +92,21 @@
 		overdue: () => t('group_overdue'),
 		today: () => t('group_today'),
 		soon: () => t('group_week'),
+		nextWeek: () => t('group_next_week'),
 		later: () => t('group_later'),
 		none: () => t('group_no_date'),
 	};
-	const groups = $derived(groupTasks(tasks, today, mine ? (me?.id ?? null) : null));
+	const groups = $derived(
+		groupTasks(tasks, today, app.weekStart(), mine ? (me?.id ?? null) : null),
+	);
 	const openCount = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
 	const done = $derived(tasks.filter((task) => task.doneAt !== null));
 	// On a wide page (container 70 rem) what is near and what is later sit side by side, but only
 	// when both sides have something: never a half-empty column.
 	const near = $derived(
-		groups.filter((g) => g.key === 'overdue' || g.key === 'today' || g.key === 'soon'),
+		groups.filter(
+			(g) => g.key === 'overdue' || g.key === 'today' || g.key === 'soon' || g.key === 'nextWeek',
+		),
 	);
 	const far = $derived(groups.filter((g) => g.key === 'later' || g.key === 'none'));
 	const split = $derived(near.length > 0 && far.length > 0);
@@ -162,7 +168,7 @@
 	// False when it failed, so the composer gives the typing back.
 	async function quickAdd(title: string): Promise<boolean> {
 		try {
-			report(await saveTask({ title, assigneeId: defaultAssignee }), t('saved'));
+			report(await addTask({ title, assigneeId: defaultAssignee }), t('saved'));
 			return true;
 		} catch {
 			app.toast(t('error'));

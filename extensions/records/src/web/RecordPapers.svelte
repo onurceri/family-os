@@ -2,7 +2,6 @@
 	import { addDays, compareDates, formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import {
-		ActionSheet,
 		Card,
 		Dialog,
 		EmptyLine,
@@ -12,7 +11,6 @@
 		Pill,
 		Section,
 		SidePanel,
-		wide,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -101,8 +99,6 @@
 	}
 
 	// The phone's action sheet, one for every row.
-	let sheetFor = $state<RecordDocument | null>(null);
-	let sheetOpen = $state(false);
 	const itemsOf = (d: RecordDocument): MenuItem[] => [
 		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => edit(d) },
 		{
@@ -188,15 +184,6 @@
 	{/snippet}
 </Dialog>
 
-{#if sheetFor}
-	<ActionSheet
-		bind:open={sheetOpen}
-		title={sheetFor.name}
-		items={itemsOf(sheetFor)}
-		cancelLabel={t('cancel')}
-	/>
-{/if}
-
 {#snippet addAction()}
 	{#if canEdit}
 		<Button variant="ghost" size="sm" href="/add"
@@ -250,23 +237,18 @@
 					</a>
 					{#if canEdit}
 						<div class="pe-2">
-							{#if wide.current}
-								<Menu label={t('options_for', { name: d.name })} items={itemsOf(d)}>
-									{#snippet trigger({ attrs })}
-										<IconButton label={t('options_for', { name: d.name })} {...attrs}
-											><Ellipsis class="size-5" /></IconButton
-										>
-									{/snippet}
-								</Menu>
-							{:else}
-								<IconButton
-									label={t('options_for', { name: d.name })}
-									onclick={() => {
-										sheetFor = d;
-										sheetOpen = true;
-									}}><Ellipsis class="size-5" /></IconButton
-								>
-							{/if}
+							<Menu
+								label={t('options_for', { name: d.name })}
+								title={d.name}
+								cancelLabel={t('cancel')}
+								items={itemsOf(d)}
+							>
+								{#snippet trigger({ attrs })}
+									<IconButton label={t('options_for', { name: d.name })} {...attrs}
+										><Ellipsis class="size-5" /></IconButton
+									>
+								{/snippet}
+							</Menu>
 						</div>
 					{/if}
 				</div>

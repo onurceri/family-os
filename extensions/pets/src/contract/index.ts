@@ -1,5 +1,5 @@
 import { type ObligationPreset, PresetScheduleSchema } from '@famos/ext-records/contract';
-import { idSchema } from '@famos/sdk';
+import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -123,7 +123,9 @@ export const AddPetSchema = PetFieldsSchema.extend({
 });
 export type AddPetInput = z.input<typeof AddPetSchema>;
 
-export const UpdatePetSchema = z.object({ id: PetIdSchema, pet: PetFieldsSchema });
+/** The whole pet as the form saves it: every field, null for one left empty. */
+export const UpdatePetSchema = z.object({ id: PetIdSchema, pet: wholeRecord(PetFieldsSchema) });
+export type PetReplace = z.input<typeof UpdatePetSchema>['pet'];
 
 export const PetSchema = z.object({
 	id: z.string(),

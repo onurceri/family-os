@@ -6,6 +6,7 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
+	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -14,6 +15,7 @@ import {
 	AddTreatmentSchema,
 	PET_AUDIENCE,
 	PET_PRESETS,
+	PetFieldsSchema,
 	PetIdSchema,
 	PetSchema,
 	PetTreatmentIdSchema,
@@ -48,7 +50,7 @@ async function load(uow: UnitOfWork, id: string): Promise<PetRow> {
 	return row;
 }
 
-const fieldsOf = (p: z.output<typeof UpdatePetSchema>['pet']) => ({
+const fieldsOf = (p: z.output<typeof PetFieldsSchema>) => ({
 	name: p.name,
 	species: p.species,
 	breed: p.breed,
@@ -116,6 +118,8 @@ export const updatePet = defineAction({
 	title: 'Change a pet',
 	draftTitle: 'pets:draft_title_update_pet',
 	input: UpdatePetSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(PetFieldsSchema, 'pet'),
 	output: PetSchema,
 	approval: { unless: petsEdit.id },
 	async run(uow, { id, pet }) {

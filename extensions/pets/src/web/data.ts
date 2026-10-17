@@ -1,6 +1,12 @@
 import { unwrap } from '@famos/api-client';
 import type { Obligation, RecordDocument } from '@famos/ext-records/contract';
-import type { AddPetInput, AddTreatmentInput, Pet, PetTreatment } from '../contract/index.js';
+import type {
+	AddPetInput,
+	AddTreatmentInput,
+	Pet,
+	PetReplace,
+	PetTreatment,
+} from '../contract/index.js';
 import { api } from './api.js';
 
 /** Pets API calls, all through the generated client. */
@@ -26,7 +32,8 @@ export const loadDuties = async (recordId: string): Promise<Obligation[]> =>
 		}),
 	);
 
-export type PetValues = Omit<AddPetInput, 'obligations'>;
+/** What the form saves: the whole pet, null for a field left empty. */
+export type PetValues = PetReplace;
 
 export async function addPet(input: AddPetInput): Promise<{ outcome: Outcome; id: string | null }> {
 	const result = unwrap(await api.POST('/api/v1/actions/pets.addPet', { body: input }));

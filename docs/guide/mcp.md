@@ -12,7 +12,7 @@ FamilyOS does not talk to other agents on its own (the "agent-to-agent" kind of 
 
 AI apps cannot connect until an admin allows it: **Settings → You → Connected apps**, then **Allow AI apps to connect** (under **For the whole family**). The assistant's page links here too (**Use your own AI agent**), and so does **Settings → AI → Usage & limits**. While it is off, no app key works.
 
-Who may create app keys is a permission, **Connect AI apps with their own app key**. Admins, members and supervised members have it by default; guests do not. Change it per role in **Settings → Family → Roles**.
+Who may create app keys is a permission, **Connect AI apps with their own app key**. Admins and members have it by default; supervised members and guests do not. An app key lets an app the family did not choose read everything its holder can see and send it to that app's own AI provider, which the family's AI settings do not cover, so children do not get it unless an admin decides so. Change it per role in **Settings → Family → Roles**; a key someone already made stops working as soon as their role no longer has the permission.
 
 ## Connect an app
 

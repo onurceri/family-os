@@ -69,8 +69,12 @@ describe('kitchen', () => {
 			id: recipe.id,
 			recipe: {
 				title: 'Lentil soup',
+				servings: null,
+				totalMinutes: null,
 				ingredients: ['2 cups yellow split peas'],
 				steps: ['Simmer'],
+				notes: null,
+				sourceUrl: null,
 				tags: [],
 			},
 		});
@@ -132,7 +136,20 @@ describe('calendar', () => {
 		expect((await find('dental clinic x-ray')).map((h) => h.id)).toEqual([event.id]);
 		await run('calendar.updateEvent', {
 			id: event.id,
-			event: { title: 'Dentist', date: '2026-10-21', startTime: '14:00', notes: 'Bring cash' },
+			event: {
+				title: 'Dentist',
+				allDay: false,
+				date: '2026-10-21',
+				endDate: null,
+				startTime: '14:00',
+				endTime: null,
+				memberIds: [],
+				location: null,
+				notes: 'Bring cash',
+				recurrence: null,
+				reminder: null,
+				tags: [],
+			},
 		});
 		expect(await find('x-ray')).toEqual([]);
 		expect((await find('bring cash')).map((h) => h.id)).toEqual([event.id]);

@@ -4,11 +4,13 @@ import {
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
 	CreateRecipeSchema,
+	RecipeFieldsSchema,
 	RecipeIdSchema,
 	RecipeSchema,
 	RecipeSummarySchema,
@@ -98,6 +100,8 @@ export const updateRecipe = defineAction({
 	title: 'Change a recipe',
 	draftTitle: 'kitchen:draft_title_update_recipe',
 	input: UpdateRecipeSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(RecipeFieldsSchema, 'recipe'),
 	output: RecipeSchema,
 	approval: { unless: kitchenEdit.id },
 	async run(uow, { id, recipe }) {

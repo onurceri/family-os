@@ -1,9 +1,10 @@
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import { defineAction, defineRoute, FamosError, storedAsWhole, type UnitOfWork } from '@famos/sdk';
 import {
 	type AmbientSettings,
 	AmbientSettingsSchema,
 	roundCoordinate,
 	type StoredSettings,
+	TimingSchema,
 	UpdateTimingInputSchema,
 	UpdateWeatherInputSchema,
 } from '../contract/index.ts';
@@ -52,6 +53,8 @@ export const updateTiming = defineAction({
 	id: 'ambient.updateTiming',
 	title: 'Set when displays switch to ambient mode and how long each photo stays',
 	input: UpdateTimingInputSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(TimingSchema),
 	output: AmbientSettingsSchema,
 	requires: ambientManage.id,
 	approval: 'never',

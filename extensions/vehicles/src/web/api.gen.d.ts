@@ -792,25 +792,16 @@ export interface operations {
                     vehicle: {
                         /** @description What the family calls it, e.g. "Family car" */
                         name: string;
-                        /** @default  */
-                        plate?: string;
-                        /** @default  */
-                        make?: string;
-                        /** @default  */
-                        model?: string;
-                        year?: number | null;
-                        /**
-                         * @default other
-                         * @enum {string}
-                         */
-                        fuel?: "petrol" | "diesel" | "hybrid" | "electric" | "lpg" | "other";
-                        vin?: string | null;
-                        /**
-                         * @description Who drives or owns it
-                         * @default []
-                         */
-                        memberIds?: string[];
-                        notes?: string | null;
+                        plate: string;
+                        make: string;
+                        model: string;
+                        year: number | null;
+                        /** @enum {string} */
+                        fuel: "petrol" | "diesel" | "hybrid" | "electric" | "lpg" | "other";
+                        vin: string | null;
+                        /** @description Who drives or owns it */
+                        memberIds: string[];
+                        notes: string | null;
                     };
                 };
             };

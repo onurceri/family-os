@@ -2950,7 +2950,7 @@
 														"maximum": 50
 													}
 												},
-												"description": "Repeat by months or years; omit for once"
+												"description": "Repeat by months or years; null for once; omit to keep it"
 											},
 											"leadDays": {
 												"type": "integer",

@@ -4,6 +4,7 @@ import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
 import { events } from '../src/server/store.ts';
+import { wholeEvent } from './whole-event.ts';
 
 const TZ = 'Europe/Istanbul';
 const MIN = 60_000;
@@ -110,7 +111,12 @@ describe('timed events', () => {
 			'calendar.updateEvent',
 			{
 				id,
-				event: { title: 'Meeting', date: '2026-10-10', startTime: '16:00', memberIds: [ann.id] },
+				event: wholeEvent({
+					title: 'Meeting',
+					date: '2026-10-10',
+					startTime: '16:00',
+					memberIds: [ann.id],
+				}),
 			},
 			ann.actor,
 		);
@@ -135,13 +141,13 @@ describe('timed events', () => {
 			'calendar.updateEvent',
 			{
 				id,
-				event: {
+				event: wholeEvent({
 					title: 'Meeting',
 					date: '2026-10-10',
 					startTime: '14:00',
 					memberIds: [ann.id],
 					reminder: 60,
-				},
+				}),
 			},
 			ann.actor,
 		);

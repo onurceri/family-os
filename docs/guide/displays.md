@@ -13,7 +13,7 @@ Adding a screen takes four short steps. You need the screen and a phone or compu
 3. **Type the code it shows.** The screen now shows **Connect this screen** and a code like `ABCD-EFGH`. Type it under **Code on the screen** and press **Next**.
 4. **Choose what it may show.** Give it a **Name of the screen** such as "Hallway", untick what it should not show (see below) and press **Connect the screen**.
 
-**Done**: the family's day appears on the screen a few seconds later. If the code does not work (typed wrong, or it ran out), the panel goes back to the code step; a done step can be tapped to open it again.
+**Waiting for the screen**: the panel waits until the screen has picked up the code, which takes a few seconds, and then says **Hallway is connected**; the family's day appears on the screen right after. You can close the panel meanwhile, and the screen still connects. If no screen is asking with that code (the address was closed on it, for one), the panel says so. If the code runs out before the screen answers, it says **Not connected**: the screen shows a new code by itself, and **Type the new code** takes you back to the code step. If the code does not work (typed wrong, or it ran out), the panel goes back to the code step; a done step can be tapped to open it again.
 
 ### What the screen says
 
@@ -39,7 +39,7 @@ A display shows **Today**, the same page the family sees at home, in **family mo
 
 A display has its own look. Under **Settings → Family → Family look → Displays** each display has a **Style** (Broadsheet, Lanes or Wall, see [Appearance](appearance.md)) and a **Theme**; left at **Same as the family**, it follows the family's. What a person chooses for themselves, or tries, never changes a display.
 
-What it shows depends on what you ticked under **What it may show** when you connected it. Only permissions a display can use are listed, everything is ticked at first, and each tick is a permission to look:
+What it shows depends on what you ticked under **What it may show** when you connected it. Only permissions a display can use are listed, and each tick is a permission to look. Everything that makes up the day is ticked at first; **See how many suggestions are waiting** is not, since it tells anyone passing by about the family's waiting work, so tick it yourself if you want it on this screen:
 
 - **See the calendar**: the next thing, with its countdown, and the day (a column, lane or row per person). Without it the display has no day at all.
 - **See the chores and whose turn it is**: today's chores as rings (in Lanes, a ring at the start of each lane).
