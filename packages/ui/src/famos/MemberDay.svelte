@@ -295,21 +295,21 @@
 		padding: 6px 0;
 	}
 	.row:has(.name.sr-only) {
-		grid-template-columns: minmax(44px, auto) minmax(0, 1fr) auto;
+		grid-template-columns: 44px minmax(0, 1fr) auto;
 	}
 	.who {
 		display: grid;
-		justify-items: center;
 		gap: 6px;
 		min-width: 0;
 	}
-	.who:has(.note) .ringed {
-		justify-self: center;
-		margin-inline-start: 0;
-	}
-	/* Under the avatar on a phone: short ("Home", "At School"), cut beyond that. */
+	/*
+	 * Under the avatar on a phone: short ("Home", "At School"), cut beyond that. It may reach into
+	 * the gaps beside the avatar's column, so every row keeps the same columns.
+	 */
 	.who .note {
-		max-width: 72px;
+		justify-self: center;
+		width: max-content;
+		max-width: 68px;
 		overflow: hidden;
 		font-size: 11px;
 		font-weight: 600;

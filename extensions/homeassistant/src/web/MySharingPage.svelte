@@ -67,8 +67,7 @@
 	{:else if linked}
 		<div class="grid gap-7">
 			<Section label={t('mine_show_label')}>
-				<fieldset class="m-0 border-0 p-0" disabled={busy}>
-					<legend class="sr-only">{t('mine_show_label')}</legend>
+				<fieldset class="m-0 border-0 p-0" disabled={busy} aria-label={t('mine_show_label')}>
 					<Card rows>
 						{#each LEVELS as choice (choice.level)}
 							<label class="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2">
@@ -78,11 +77,14 @@
 									value={choice.level}
 									checked={linked.level === choice.level}
 									onchange={() => void save(choice.level, linked.onDisplays)}
+									aria-labelledby="ha-sharing-{choice.level}-label"
 									aria-describedby="ha-sharing-{choice.level}-hint"
 									class="accent-ink size-5 shrink-0"
 								/>
 								<span class="grid min-w-0 flex-1 gap-0.5">
-									<span class="text-[15px] font-semibold">{t(choice.label)}</span>
+									<span id="ha-sharing-{choice.level}-label" class="text-[15px] font-semibold"
+										>{t(choice.label)}</span
+									>
 									<small id="ha-sharing-{choice.level}-hint" class="text-ink-soft text-[13px]"
 										>{t(choice.hint)}</small
 									>
