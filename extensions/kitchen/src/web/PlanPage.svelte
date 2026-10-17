@@ -54,9 +54,10 @@
 		);
 	});
 
-	const canEdit = $derived(app.can('kitchen.edit'));
-	// Without edit rights a change is proposed and waits for approval.
-	const canChange = $derived(canEdit || app.can('core.drafts.propose'));
+	// Without the right to plan, a change is proposed and waits for approval.
+	const mayPlan = $derived(app.access('kitchen.addToMealPlan') !== 'no');
+	const mayUnplan = $derived(app.access('kitchen.removeMealPlanEntry') !== 'no');
+	const suggestsPlan = $derived(app.access('kitchen.addToMealPlan') === 'suggest');
 	const label = (date: string) =>
 		formatDate(date, app.dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 	/** A day's heading: the weekday and the day. */
@@ -113,7 +114,7 @@
 				<Section label={columnLabel(date)} level={2}>
 					{#snippet actions()}
 						{#if date === today}<Pill tone="info">{t('today')}</Pill>{/if}
-						{#if canChange}
+						{#if mayPlan}
 							<IconButton
 								size="sm"
 								label={t('plan_for', { date: label(date) })}
@@ -138,7 +139,7 @@
 											<span class="text-[15px] leading-snug font-semibold">{m.title}</span>
 										{/if}
 									</div>
-									{#if canChange}
+									{#if mayUnplan}
 										<IconButton
 											size="sm"
 											label={t('remove_meal', { title: m.title })}
@@ -148,7 +149,7 @@
 								</div>
 							{:else}
 								<!-- An empty meal: tap to fill it. -->
-								{#if canChange}
+								{#if mayPlan}
 									<button
 										type="button"
 										class="text-ink-soft hover:text-ink flex min-h-11 w-full items-center gap-2 px-3 py-1.5 text-start text-[14px] font-medium"
@@ -173,7 +174,7 @@
 			</li>
 		{/each}
 	</ul>
-	{#if canChange && !canEdit}<p class="text-ink-soft text-sm">{t('plan_proposal_hint')}</p>{/if}
+	{#if suggestsPlan}<p class="text-ink-soft text-sm">{t('plan_proposal_hint')}</p>{/if}
 	<PlanPanel
 		open={addingFor !== null}
 		date={addingFor}

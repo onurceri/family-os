@@ -46,7 +46,8 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('vehicles.edit'));
+	const mayAdd = $derived(app.access('vehicles.addLog') !== 'no');
+	const mayRemove = $derived(app.access('vehicles.removeLog') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -139,7 +140,7 @@
 </script>
 
 <SidePanel
-	note={app.needsApproval('vehicles.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('vehicles.addLog')}
 	open={adding}
 	title={t('log_form_title')}
 	closeLabel={t('close')}
@@ -252,7 +253,7 @@
 					>
 				</div>
 			{/if}
-			{#if mayChange}
+			{#if mayRemove}
 				<div>
 					<ConfirmButton
 						label={t('remove')}
@@ -266,7 +267,7 @@
 </SidePanel>
 
 {#snippet addAction()}
-	{#if mayChange}
+	{#if mayAdd}
 		<Button variant="ghost" size="sm" onclick={open}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('log_add')}</Button
 		>
@@ -283,7 +284,7 @@
 	{:else if loaded && logs.length === 0}
 		<EmptyLine text={t('log_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
-			{#if mayChange}
+			{#if mayAdd}
 				<button
 					type="button"
 					class="text-info min-h-9 font-semibold underline underline-offset-4"

@@ -71,14 +71,15 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('vehicles.edit'));
+	const mayEdit = $derived(app.access('vehicles.updateVehicle') !== 'no');
+	const mayArchive = $derived(app.access('vehicles.archiveVehicle') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
 	};
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(mayChange && Boolean(vehicleId) && app.query().get('edit') === '1');
+	const editing = $derived(mayEdit && Boolean(vehicleId) && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<VehicleFormValue>(emptyVehicle());
 	let baseline = $state('');
@@ -133,14 +134,20 @@
 		}
 	}
 	const menu = $derived<MenuItem[]>([
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) },
-		{
-			id: 'archive',
-			label: t('archive'),
-			icon: box,
-			danger: true,
-			onselect: () => (archiving = true),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			: []),
+		...(mayArchive
+			? [
+					{
+						id: 'archive',
+						label: t('archive'),
+						icon: box,
+						danger: true,
+						onselect: () => (archiving = true),
+					},
+				]
+			: []),
 	]);
 
 	const drivers = $derived(app.members().filter((m) => vehicle?.memberIds.includes(m.id)));
@@ -161,16 +168,20 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if mayChange && vehicle}
-		<Button variant="outline" onclick={() => setEditing(true)}
-			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
-		>
-		<RecordMenu
-			name={vehicle.name}
-			label={t('options_for', { name: vehicle.name })}
-			cancelLabel={t('cancel')}
-			items={menu}
-		/>
+	{#if vehicle}
+		{#if mayEdit}
+			<Button variant="outline" onclick={() => setEditing(true)}
+				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+			>
+		{/if}
+		{#if menu.length > 0}
+			<RecordMenu
+				name={vehicle.name}
+				label={t('options_for', { name: vehicle.name })}
+				cancelLabel={t('cancel')}
+				items={menu}
+			/>
+		{/if}
 	{/if}
 {/snippet}
 
@@ -235,7 +246,7 @@
 </VehiclesShell>
 
 <SidePanel
-	note={app.needsApproval('vehicles.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('vehicles.updateVehicle')}
 	open={editing}
 	title={t('form_title')}
 	closeLabel={t('close')}

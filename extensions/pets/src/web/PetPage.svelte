@@ -67,14 +67,15 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('pets.edit'));
+	const mayEdit = $derived(app.access('pets.updatePet') !== 'no');
+	const mayArchive = $derived(app.access('pets.archivePet') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
 	};
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(mayChange && Boolean(petId) && app.query().get('edit') === '1');
+	const editing = $derived(mayEdit && Boolean(petId) && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<PetFormValue>(emptyPet());
 	let baseline = $state('');
@@ -129,14 +130,20 @@
 		}
 	}
 	const menu = $derived<MenuItem[]>([
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) },
-		{
-			id: 'archive',
-			label: t('archive'),
-			icon: box,
-			danger: true,
-			onselect: () => (archiving = true),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			: []),
+		...(mayArchive
+			? [
+					{
+						id: 'archive',
+						label: t('archive'),
+						icon: box,
+						danger: true,
+						onselect: () => (archiving = true),
+					},
+				]
+			: []),
 	]);
 
 	const caretakers = $derived(app.members().filter((m) => pet?.memberIds.includes(m.id)));
@@ -160,16 +167,20 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if mayChange && pet}
-		<Button variant="outline" onclick={() => setEditing(true)}
-			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
-		>
-		<RecordMenu
-			name={pet.name}
-			label={t('options_for', { name: pet.name })}
-			cancelLabel={t('cancel')}
-			items={menu}
-		/>
+	{#if pet}
+		{#if mayEdit}
+			<Button variant="outline" onclick={() => setEditing(true)}
+				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+			>
+		{/if}
+		{#if menu.length > 0}
+			<RecordMenu
+				name={pet.name}
+				label={t('options_for', { name: pet.name })}
+				cancelLabel={t('cancel')}
+				items={menu}
+			/>
+		{/if}
 	{/if}
 {/snippet}
 
@@ -234,7 +245,7 @@
 </PetsShell>
 
 <SidePanel
-	note={app.needsApproval('pets.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('pets.updatePet')}
 	open={editing}
 	title={t('form_title')}
 	closeLabel={t('close')}

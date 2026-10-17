@@ -25,7 +25,9 @@
 			live = false;
 		};
 	});
-	const allowed = $derived(app.can('pets.view') && app.can('records.edit'));
+	const allowed = $derived(
+		app.can('pets.view') && app.access('records.attachDocument') === 'apply',
+	);
 	const target = (p: Pet): FileTarget => ({
 		recordId: p.id,
 		recordKind: RECORD_KIND,

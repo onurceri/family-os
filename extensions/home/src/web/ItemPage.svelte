@@ -66,7 +66,8 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('home.edit'));
+	const mayEdit = $derived(app.access('home.updateItem') !== 'no');
+	const mayArchive = $derived(app.access('home.archiveItem') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -75,7 +76,7 @@
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(mayChange && app.query().get('edit') === '1');
+	const editing = $derived(mayEdit && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<ItemFormValue>(emptyItem());
 	let baseline = $state('');
@@ -131,14 +132,20 @@
 		}
 	}
 	const menu = $derived<MenuItem[]>([
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) },
-		{
-			id: 'archive',
-			label: t('archive_item'),
-			icon: box,
-			danger: true,
-			onselect: () => (archiving = true),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			: []),
+		...(mayArchive
+			? [
+					{
+						id: 'archive',
+						label: t('archive_item'),
+						icon: box,
+						danger: true,
+						onselect: () => (archiving = true),
+					},
+				]
+			: []),
 	]);
 
 	// A warranty that has ended is a plain fact of the thing, not something late.
@@ -164,16 +171,20 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if mayChange && item}
-		<Button variant="outline" onclick={() => setEditing(true)}
-			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
-		>
-		<RecordMenu
-			name={item.name}
-			label={t('options_for', { name: item.name })}
-			cancelLabel={t('cancel')}
-			items={menu}
-		/>
+	{#if item}
+		{#if mayEdit}
+			<Button variant="outline" onclick={() => setEditing(true)}
+				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+			>
+		{/if}
+		{#if menu.length > 0}
+			<RecordMenu
+				name={item.name}
+				label={t('options_for', { name: item.name })}
+				cancelLabel={t('cancel')}
+				items={menu}
+			/>
+		{/if}
 	{/if}
 {/snippet}
 
@@ -220,7 +231,7 @@
 </Page>
 
 <SidePanel
-	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('home.updateItem')}
 	open={editing}
 	title={t('item_form_title')}
 	closeLabel={t('close')}

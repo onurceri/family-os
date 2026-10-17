@@ -42,7 +42,9 @@
 			live = false;
 		};
 	});
-	const allowed = $derived(app.can('home.view') && app.can('records.edit'));
+	const allowed = $derived(
+		app.can('home.view') && app.access('records.attachDocument') === 'apply',
+	);
 	const choices = $derived([
 		...homes.map((h) => ({ recordId: h.id, recordKind: HOME_KIND, name: h.name, icon: House })),
 		...items.map((i) => ({

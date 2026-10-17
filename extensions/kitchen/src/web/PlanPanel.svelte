@@ -135,7 +135,7 @@
 		(!recipe && !free && chosen === '') ||
 		(repeated !== undefined && !addAnyway)}
 	onsave={() => formEl?.requestSubmit()}
-	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('kitchen.addToMealPlan')}
 	{onclose}
 	{dirty}
 	discard={{

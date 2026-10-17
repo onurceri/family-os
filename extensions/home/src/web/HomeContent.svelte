@@ -115,7 +115,10 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('home.edit'));
+	const mayEdit = $derived(app.access('home.updateHome') !== 'no');
+	const mayArchive = $derived(app.access('home.archiveHome') !== 'no');
+	const mayAddItem = $derived(app.access('home.addItem') !== 'no');
+	const mayAddService = $derived(app.access('home.addService') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -129,7 +132,7 @@
 	});
 
 	// Editing the home: a panel, reflected as `?edit=1`.
-	const editing = $derived(mayChange && app.query().get('edit') === '1');
+	const editing = $derived(mayEdit && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<HomeFormValue>(emptyHome());
 	let baseline = $state('');
@@ -183,14 +186,20 @@
 		}
 	}
 	const menu = $derived<MenuItem[]>([
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) },
-		{
-			id: 'archive',
-			label: t('archive_home'),
-			icon: box,
-			danger: true,
-			onselect: () => (archiving = true),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			: []),
+		...(mayArchive
+			? [
+					{
+						id: 'archive',
+						label: t('archive_home'),
+						icon: box,
+						danger: true,
+						onselect: () => (archiving = true),
+					},
+				]
+			: []),
 	]);
 
 	// Adding a thing.
@@ -291,16 +300,20 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if mayChange && home}
-		<Button variant="outline" onclick={() => setEditing(true)}
-			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
-		>
-		<RecordMenu
-			name={home.name}
-			label={t('options_for', { name: home.name })}
-			cancelLabel={t('cancel')}
-			items={menu}
-		/>
+	{#if home}
+		{#if mayEdit}
+			<Button variant="outline" onclick={() => setEditing(true)}
+				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+			>
+		{/if}
+		{#if menu.length > 0}
+			<RecordMenu
+				name={home.name}
+				label={t('options_for', { name: home.name })}
+				cancelLabel={t('cancel')}
+				items={menu}
+			/>
+		{/if}
 	{/if}
 {/snippet}
 
@@ -350,7 +363,7 @@
 		/>
 
 		{#snippet addItemAction()}
-			{#if mayChange}
+			{#if mayAddItem}
 				<Button variant="ghost" size="sm" onclick={openItem}
 					><Plus class="size-[15px]" aria-hidden="true" />{t('add_item')}</Button
 				>
@@ -386,7 +399,7 @@
 		</Section>
 
 		{#snippet addServiceAction()}
-			{#if mayChange}
+			{#if mayAddService}
 				<Button variant="ghost" size="sm" onclick={openService}
 					><Plus class="size-[15px]" aria-hidden="true" />{t('add_service')}</Button
 				>
@@ -433,7 +446,7 @@
 {/if}
 
 <SidePanel
-	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('home.updateHome')}
 	open={editing}
 	title={t('home_form_title')}
 	closeLabel={t('close')}
@@ -451,7 +464,7 @@
 </SidePanel>
 
 <SidePanel
-	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('home.addItem')}
 	open={addingItem}
 	title={t('item_form_title')}
 	closeLabel={t('close')}
@@ -474,7 +487,7 @@
 </SidePanel>
 
 <SidePanel
-	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('home.addService')}
 	open={addingService}
 	title={t('service_form_title')}
 	closeLabel={t('close')}

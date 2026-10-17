@@ -25,7 +25,9 @@
 			live = false;
 		};
 	});
-	const allowed = $derived(app.can('vehicles.view') && app.can('records.edit'));
+	const allowed = $derived(
+		app.can('vehicles.view') && app.access('records.attachDocument') === 'apply',
+	);
 	const target = (v: Vehicle): FileTarget => ({
 		recordId: v.id,
 		recordKind: RECORD_KIND,

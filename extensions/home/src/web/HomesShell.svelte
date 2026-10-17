@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
-	import { EmptyState, Fab, ListDetail } from '@famos/ui/famos';
+	import { EmptyState, Fab, ListDetail, ViewOnly } from '@famos/ui/famos';
 	import { Plus } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import { useHome } from './i18n.js';
@@ -13,8 +13,8 @@
 	 */
 	let { selectedId = '', item }: { selectedId?: string; item?: Snippet } = $props();
 	const { app, t } = useHome();
-	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('home.edit'));
+	// Also for people who may only suggest a home: theirs waits for approval.
+	const mayAdd = $derived(app.access('home.addHome') !== 'no');
 	const adding = $derived(app.query().get('new') === '1');
 	let empty = $state(false);
 	let first = $state<string | undefined>();
@@ -23,10 +23,12 @@
 </script>
 
 {#snippet add()}
-	{#if mayChange}
+	{#if mayAdd}
 		<Button class="max-md:hidden" onclick={() => setAdding(true)}
 			><Plus class="size-4" />{t('add_home')}</Button
 		>
+	{:else}
+		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
 	{/if}
 {/snippet}
 
@@ -40,7 +42,7 @@
 >
 	{#snippet emptyState()}
 		<EmptyState art="home" title={t('empty')} hint={t('empty_hint')}>
-			{#if mayChange}
+			{#if mayAdd}
 				<Button onclick={() => setAdding(true)}><Plus class="size-4" />{t('add_home')}</Button>
 			{/if}
 		</EmptyState>
@@ -56,7 +58,7 @@
 	{#snippet detail()}{#if item}{@render item()}{/if}{/snippet}
 </ListDetail>
 
-{#if mayChange && !empty && !selectedId}
+{#if mayAdd && !empty && !selectedId}
 	<div class="md:hidden" style="--fab-bottom: 4.25rem">
 		<Fab label={t('add_home')} onclick={() => setAdding(true)} hidden={adding} />
 	</div>

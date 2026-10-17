@@ -93,9 +93,11 @@
 		return app.onEvent('kitchen.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('kitchen.edit'));
-	// Without edit rights a change is proposed and waits for approval.
-	const canChange = $derived(canEdit || app.can('core.drafts.propose'));
+	// Without the right to change a recipe, a change is proposed and waits for approval.
+	const mayPlan = $derived(app.access('kitchen.addToMealPlan') !== 'no');
+	const mayEdit = $derived(app.access('kitchen.updateRecipe') !== 'no');
+	const mayArchive = $derived(app.access('kitchen.archiveRecipe') !== 'no');
+	const mayPhoto = $derived(app.access('kitchen.setRecipePhoto') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -228,7 +230,7 @@
 
 	// The menu of the recipe: a popover on a wide window, an action sheet on a phone.
 	const menuItems = $derived<MenuItem[]>([
-		...(canEdit
+		...(mayPhoto
 			? [
 					{
 						id: 'photo',
@@ -280,11 +282,13 @@
 				{/if}
 			{/snippet}
 			{#snippet actions()}
-				{#if canChange}
-					<!-- Outline like Edit: the one filled button of the view is Add recipe in the header. -->
+				<!-- Outline like Edit: the one filled button of the view is Add recipe in the header. -->
+				{#if mayPlan}
 					<Button variant="outline" onclick={() => (planning = true)}
 						><CalendarPlus class="size-4" />{t('plan_this')}</Button
 					>
+				{/if}
+				{#if mayEdit}
 					<Button variant="outline" onclick={edit}>{t('edit')}</Button>
 				{/if}
 				{#if menuItems.length}
@@ -304,7 +308,7 @@
 			{/snippet}
 		</RecordHeader>
 
-		{#if canEdit}
+		{#if mayPhoto}
 			<input
 				bind:this={photoInput}
 				type="file"
@@ -428,7 +432,7 @@
 	saveLabel={t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
-	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('kitchen.updateRecipe')}
 	onclose={() => (editing = false)}
 	{dirty}
 	discard={{
@@ -439,7 +443,9 @@
 	}}
 >
 	{#snippet danger()}
-		<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+		{#if mayArchive}
+			<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+		{/if}
 	{/snippet}
 	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>
 		<RecipeForm bind:value={form} {errors} idPrefix="edit-recipe" />

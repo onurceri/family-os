@@ -58,7 +58,8 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('pets.edit'));
+	const mayAdd = $derived(app.access('pets.addTreatment') !== 'no');
+	const mayRemove = $derived(app.access('pets.removeTreatment') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -171,7 +172,7 @@
 {#snippet optional()}<span class="text-ink-soft font-normal">{t('optional')}</span>{/snippet}
 
 <SidePanel
-	note={app.needsApproval('pets.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('pets.addTreatment')}
 	open={adding}
 	title={t('treatment_form_title')}
 	closeLabel={t('close')}
@@ -310,7 +311,7 @@
 					>
 				</div>
 			{/if}
-			{#if mayChange}
+			{#if mayRemove}
 				<div>
 					<ConfirmButton
 						label={t('remove')}
@@ -324,7 +325,7 @@
 </SidePanel>
 
 {#snippet addAction()}
-	{#if mayChange}
+	{#if mayAdd}
 		<Button variant="ghost" size="sm" onclick={open}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('treatment_add')}</Button
 		>
@@ -341,7 +342,7 @@
 	{:else if loaded && treatments.length === 0}
 		<EmptyLine text={t('treatment_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
-			{#if mayChange}
+			{#if mayAdd}
 				<button
 					type="button"
 					class="text-info min-h-9 font-semibold underline underline-offset-4"

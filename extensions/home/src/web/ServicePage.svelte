@@ -70,14 +70,15 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('home.edit'));
+	const mayEdit = $derived(app.access('home.updateService') !== 'no');
+	const mayArchive = $derived(app.access('home.archiveService') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
 	};
 
 	// Editing: a panel (a sheet on phones), reflected as `?edit=1`.
-	const editing = $derived(mayChange && app.query().get('edit') === '1');
+	const editing = $derived(mayEdit && app.query().get('edit') === '1');
 	const setEditing = (on: boolean) => app.setQuery({ edit: on ? '1' : null }, { replace: !on });
 	let form = $state<ServiceFormValue>(emptyService());
 	let baseline = $state('');
@@ -130,14 +131,20 @@
 		}
 	}
 	const menu = $derived<MenuItem[]>([
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) },
-		{
-			id: 'archive',
-			label: t('archive_service'),
-			icon: box,
-			danger: true,
-			onselect: () => (archiving = true),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			: []),
+		...(mayArchive
+			? [
+					{
+						id: 'archive',
+						label: t('archive_service'),
+						icon: box,
+						danger: true,
+						onselect: () => (archiving = true),
+					},
+				]
+			: []),
 	]);
 
 	const facts = $derived(
@@ -155,16 +162,20 @@
 {#snippet box()}<Archive class="size-4" />{/snippet}
 
 {#snippet actionButtons()}
-	{#if mayChange && service}
-		<Button variant="outline" onclick={() => setEditing(true)}
-			><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
-		>
-		<RecordMenu
-			name={service.provider}
-			label={t('options_for', { name: service.provider })}
-			cancelLabel={t('cancel')}
-			items={menu}
-		/>
+	{#if service}
+		{#if mayEdit}
+			<Button variant="outline" onclick={() => setEditing(true)}
+				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+			>
+		{/if}
+		{#if menu.length > 0}
+			<RecordMenu
+				name={service.provider}
+				label={t('options_for', { name: service.provider })}
+				cancelLabel={t('cancel')}
+				items={menu}
+			/>
+		{/if}
 	{/if}
 {/snippet}
 
@@ -210,7 +221,7 @@
 </Page>
 
 <SidePanel
-	note={app.needsApproval('home.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('home.updateService')}
 	open={editing}
 	title={t('service_form_title')}
 	closeLabel={t('close')}

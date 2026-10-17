@@ -30,7 +30,9 @@
 
 	const { app, t } = useRecords();
 	const today = $derived(todayIn(app.timeZone(), Date.now()));
-	const canEdit = $derived(app.can('records.edit'));
+	const mayAttach = $derived(app.access('records.attachDocument') !== 'no');
+	const mayEdit = $derived(app.access('records.updateDocument') !== 'no');
+	const mayDetach = $derived(app.access('records.detachDocument') !== 'no');
 
 	let docs = $state<RecordDocument[]>([]);
 	let loaded = $state(false);
@@ -100,14 +102,18 @@
 
 	// The phone's action sheet, one for every row.
 	const itemsOf = (d: RecordDocument): MenuItem[] => [
-		{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => edit(d) },
-		{
-			id: 'detach',
-			label: t('detach'),
-			icon: unlink,
-			danger: true,
-			onselect: () => (detaching = d),
-		},
+		...(mayEdit ? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => edit(d) }] : []),
+		...(mayDetach
+			? [
+					{
+						id: 'detach',
+						label: t('detach'),
+						icon: unlink,
+						danger: true,
+						onselect: () => (detaching = d),
+					},
+				]
+			: []),
 	];
 
 	function expiry(d: RecordDocument): { text: string; warn: 'attention' | 'heat' | null } | null {
@@ -130,6 +136,7 @@
 {#snippet unlink()}<Unlink class="size-4" />{/snippet}
 
 <SidePanel
+	approval={app.approval('records.updateDocument')}
 	open={editing !== null}
 	title={editing?.name ?? t('papers_title')}
 	closeLabel={t('close')}
@@ -185,7 +192,7 @@
 </Dialog>
 
 {#snippet addAction()}
-	{#if canEdit}
+	{#if mayAttach}
 		<Button variant="ghost" size="sm" href="/add"
 			><Plus class="size-[15px]" aria-hidden="true" />{t('papers_add')}</Button
 		>
@@ -235,7 +242,7 @@
 						</span>
 						{#if exp?.warn}<Pill tone={exp.warn}>{exp.text}</Pill>{/if}
 					</a>
-					{#if canEdit}
+					{#if mayEdit || mayDetach}
 						<div class="pe-2">
 							<Menu
 								label={t('options_for', { name: d.name })}

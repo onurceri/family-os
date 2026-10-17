@@ -92,7 +92,10 @@
 	});
 
 	// Also for people who may only suggest a change: theirs waits for approval.
-	const mayChange = $derived(app.mayChange('records.edit'));
+	const mayAdd = $derived(app.access('records.addObligation') !== 'no');
+	const mayEdit = $derived(app.access('records.updateObligation') !== 'no');
+	const mayComplete = $derived(app.access('records.completeObligation') !== 'no');
+	const mayRemove = $derived(app.access('records.removeObligation') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -204,7 +207,9 @@
 </script>
 
 <SidePanel
-	note={app.needsApproval('records.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval(
+		editingId === 'new' ? 'records.addObligation' : 'records.updateObligation',
+	)}
 	open={editingId !== null}
 	title={formTitle}
 	closeLabel={t('close')}
@@ -247,7 +252,7 @@
 		{/if}
 	{/if}
 	{#snippet danger()}
-		{#if editingId && editingId !== 'new'}
+		{#if editingId && editingId !== 'new' && mayRemove}
 			{@const id = editingId}
 			<ConfirmButton
 				label={t('remove')}
@@ -259,7 +264,7 @@
 </SidePanel>
 
 {#snippet addAction()}
-	{#if mayChange}
+	{#if mayAdd}
 		<Button variant="ghost" size="sm" onclick={() => openNew()}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('add')}</Button
 		>
@@ -288,7 +293,7 @@
 	{:else if loaded && open.length === 0}
 		<EmptyLine text={t('needs_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
-			{#if mayChange}
+			{#if mayAdd}
 				<button
 					type="button"
 					class="text-info min-h-9 font-semibold underline underline-offset-4"
@@ -308,8 +313,8 @@
 						<button
 							type="button"
 							onclick={() => openEdit(o)}
-							disabled={!mayChange}
-							class="hover:bg-idle/55 flex min-h-14 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent px-3 py-1.5 text-start text-[length:inherit] enabled:cursor-pointer"
+							disabled={!mayEdit}
+							class="enabled:hover:bg-idle/55 flex min-h-14 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent px-3 py-1.5 text-start text-[length:inherit] enabled:cursor-pointer"
 						>
 							<span
 								class="bg-idle text-ink-soft grid size-9 shrink-0 place-items-center rounded-full"
@@ -337,7 +342,7 @@
 								</span>
 							</span>
 						</button>
-						{#if mayChange && !o.lapses}
+						{#if mayComplete && !o.lapses}
 							<div class="pe-3">
 								<Button
 									variant="secondary"
@@ -374,13 +379,13 @@
 					{/if}
 				</div>
 			{/each}
-			{#if mayChange && suggestions.length > 0}
+			{#if mayAdd && suggestions.length > 0}
 				<div role="listitem" class="flex flex-wrap items-center gap-2 px-3 py-2.5">
 					{@render chips()}
 				</div>
 			{/if}
 		</Card>
-	{:else if loaded && mayChange && suggestions.length > 0}
+	{:else if loaded && mayAdd && suggestions.length > 0}
 		<div class="flex flex-wrap items-center gap-2 px-1">{@render chips()}</div>
 	{/if}
 

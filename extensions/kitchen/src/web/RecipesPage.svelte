@@ -9,6 +9,7 @@
 		ListDetail,
 		Row,
 		SidePanel,
+		ViewOnly,
 	} from '@famos/ui/famos';
 	import { CalendarPlus, CookingPot, Plus, Search } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
@@ -51,9 +52,9 @@
 		return app.onEvent('kitchen.', () => void load());
 	});
 
-	const canEdit = $derived(app.can('kitchen.edit'));
-	// Without edit rights a change is proposed and waits for approval.
-	const canChange = $derived(canEdit || app.can('core.drafts.propose'));
+	// Without the right to add, a recipe is proposed and waits for approval.
+	const mayAdd = $derived(app.access('kitchen.createRecipe') !== 'no');
+	const mayPlan = $derived(app.access('kitchen.addToMealPlan') !== 'no');
 	const tags = $derived(
 		[...new Set(all.flatMap((r) => r.tags))].toSorted((a, b) => a.localeCompare(b)),
 	);
@@ -153,7 +154,7 @@
 			<li class="relative">
 				<Row
 					tile
-					trail={canChange ? planRoom : undefined}
+					trail={mayPlan ? planRoom : undefined}
 					href="/kitchen/recipes/{r.id}"
 					title={r.title}
 					meta={meta(r) || undefined}
@@ -174,7 +175,7 @@
 						{/if}
 					{/snippet}
 				</Row>
-				{#if canChange}
+				{#if mayPlan}
 					<span class="absolute end-3 top-1/2 -translate-y-1/2">
 						<IconButton
 							size="sm"
@@ -189,9 +190,11 @@
 {/snippet}
 
 {#snippet add()}
-	{#if canChange}
+	{#if mayAdd}
 		<Button onclick={openAdd} class="max-md:hidden"><Plus class="size-4" />{t('add_recipe')}</Button
 		>
+	{:else if !mayPlan}
+		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
 	{/if}
 {/snippet}
 
@@ -203,7 +206,7 @@
 	saveLabel={t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
-	note={app.needsApproval('kitchen.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('kitchen.createRecipe')}
 	onclose={() => (mode = 'none')}
 	{dirty}
 	discard={{
@@ -229,7 +232,7 @@
 		{#snippet list()}
 			{#if empty}
 				<EmptyState art="kitchen" title={t('empty_recipes')} hint={t('empty_recipes_hint')}>
-					{#if canChange}
+					{#if mayAdd}
 						<Button onclick={openAdd}><Plus class="size-4" />{t('add_recipe')}</Button>
 					{/if}
 				</EmptyState>
@@ -241,6 +244,6 @@
 	</ListDetail>
 </KitchenFrame>
 
-{#if !empty && canChange && mode !== 'add' && !selectedDetail}
+{#if !empty && mayAdd && mode !== 'add' && !selectedDetail}
 	<div class="md:hidden"><Fab label={t('add_recipe')} onclick={openAdd} /></div>
 {/if}

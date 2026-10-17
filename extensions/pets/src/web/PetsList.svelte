@@ -123,7 +123,7 @@
 </script>
 
 <SidePanel
-	note={app.needsApproval('pets.edit') ? app.t('app:draft_approval_note') : undefined}
+	approval={app.approval('pets.addPet')}
 	open={adding}
 	title={t('form_title')}
 	closeLabel={t('close')}
