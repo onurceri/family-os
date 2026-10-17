@@ -42,8 +42,6 @@
 	"completed_next": "Done. Next: {{date}}",
 	"reopened": "Back on the list",
 	"undo": "Undo",
-	"mark_done": "Mark done",
-	"mark_open": "Mark not done",
 	"no_tasks": "Nothing to do yet.",
 	"no_tasks_hint": "Write down what needs doing, and everyone can see it and tick it off.",
 	"edit_task": "Edit task",

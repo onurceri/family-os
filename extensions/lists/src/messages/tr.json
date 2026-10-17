@@ -42,8 +42,6 @@
 	"completed_next": "Tamamlandı. Sıradaki: {{date}}",
 	"reopened": "Listeye geri döndü",
 	"undo": "Geri al",
-	"mark_done": "Tamamlandı olarak işaretle",
-	"mark_open": "Tamamlanmadı olarak işaretle",
 	"no_tasks": "Henüz yapılacak bir şey yok.",
 	"no_tasks_hint": "Yapılacakları yaz; herkes görür ve bitince işaretler.",
 	"edit_task": "Görevi düzenle",

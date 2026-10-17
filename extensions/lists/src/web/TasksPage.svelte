@@ -239,7 +239,7 @@
 
 {#snippet taskList(list: Task[], receded: boolean)}
 	<ul
-		class="bg-surface divide-line grid divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
+		class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
 	>
 		{#each list as task (task.id)}
 			<li>

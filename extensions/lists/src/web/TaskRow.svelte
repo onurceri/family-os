@@ -44,7 +44,7 @@
 		onclick={ontoggle}
 		disabled={busy}
 		aria-pressed={done}
-		aria-label={done ? t('mark_open') : t('mark_done')}
+		aria-label={t('mark_done_task', { title: task.title })}
 		class="group grid size-11 shrink-0 place-items-center rounded-full"
 	>
 		<span

@@ -590,12 +590,15 @@
 
 					{#if queuedAdds.length || sections.length}
 						<ul
-							class="bg-surface divide-line grid divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
+							class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
 							aria-label={t('to_get_label')}
 						>
 							{#if queuedAdds.length}
 								<li>
-									<ul class="divide-line grid divide-y" aria-label={t('waiting_to_send')}>
+									<ul
+										class="divide-line grid grid-cols-[minmax(0,1fr)] divide-y"
+										aria-label={t('waiting_to_send')}
+									>
 										{#each queuedAdds as item (item.id)}
 											<li
 												class="flex min-h-[52px] items-center gap-3 ps-4 pe-4"
@@ -626,7 +629,7 @@
 												{catLabel(section.category)}
 											</h2>
 										{/if}
-										<ul class="divide-line grid divide-y">
+										<ul class="divide-line grid grid-cols-[minmax(0,1fr)] divide-y">
 											{#each section.items as item (item.id)}
 												<li transition:move={{ id: item.id }}>{@render itemRow(item)}</li>
 											{/each}
@@ -674,7 +677,9 @@
 							{/if}
 						</div>
 						{#if cartOpen}
-							<ul class="bg-idle divide-line grid divide-y rounded-[var(--r-card)]">
+							<ul
+								class="bg-idle divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)]"
+							>
 								{#each bought as item (item.id)}
 									<li transition:move={{ id: item.id }}>{@render itemRow(item)}</li>
 								{/each}

@@ -154,13 +154,13 @@ test('tasks: create, assign to someone else, set a due date, complete and uncomp
 	expect(form).toMatchObject({ assigneeId: elif, dueDate: today, doneAt: null });
 
 	// Move the other task to tomorrow and to Elif through its details.
-	await page.getByRole('button', { name: /Buy a birthday present/ }).click();
+	await page.getByRole('button', { name: /^Buy a birthday present/ }).click();
 	await page.getByTestId('side-panel').getByRole('button', { name: 'Elif' }).click();
 	await page.getByTestId('side-panel').getByLabel('Due date').fill(tomorrow);
 	await page.getByTestId('side-panel').getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('Saved')).toBeVisible();
 	const soon = page.getByRole('region', { name: 'This week' });
-	await expect(soon.getByRole('button', { name: /Buy a birthday present/ })).toContainText(
+	await expect(soon.getByRole('button', { name: /^Buy a birthday present/ })).toContainText(
 		'Tomorrow',
 	);
 	await expect(soon).toContainText('Elif');
@@ -178,7 +178,7 @@ test('tasks: create, assign to someone else, set a due date, complete and uncomp
 	await dueToday
 		.getByRole('listitem')
 		.filter({ hasText: 'Sign the school form' })
-		.getByRole('button', { name: 'Mark done' })
+		.getByRole('button', { name: 'Mark “Sign the school form” done', pressed: false })
 		.click();
 	const done = page.getByRole('region', { name: 'Done', exact: true });
 	await expect(done.getByRole('button', { name: /^Done/ })).toContainText('1');
@@ -201,7 +201,7 @@ test('tasks: create, assign to someone else, set a due date, complete and uncomp
 		.click();
 	await page
 		.getByRole('region', { name: 'Done', exact: true })
-		.getByRole('button', { name: 'Mark not done' })
+		.getByRole('button', { name: 'Mark “Sign the school form” done', pressed: true })
 		.click();
 	await expect(
 		page.getByRole('region', { name: 'Today', exact: true }).getByText('Sign the school form'),
@@ -215,7 +215,7 @@ test('tasks: create, assign to someone else, set a due date, complete and uncomp
 
 	// Delete from the details (two taps).
 	await page.goto('/lists/tasks');
-	await page.getByRole('button', { name: /Sign the school form/ }).click();
+	await page.getByRole('button', { name: /^Sign the school form/ }).click();
 	await page.getByRole('button', { name: 'Delete', exact: true }).click();
 	await page.getByRole('button', { name: 'Tap again to delete' }).click();
 	await expect(page.getByText('Sign the school form')).toHaveCount(0);
