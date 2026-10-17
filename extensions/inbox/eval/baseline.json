@@ -1,0 +1,157 @@
+{
+	"models": {
+		"openrouter-google-gemini-2-5-flash": {
+			"label": "openrouter / google/gemini-2.5-flash",
+			"version": "inbox.extract/23",
+			"date": "2026-10-17",
+			"cases": 36,
+			"passing": [
+				"Bare weekday (Turkish)",
+				"Tomorrow (Turkish)",
+				"Payment due \"on the 15th\" (Turkish)",
+				"Nothing to do",
+				"Instructions inside the shared content are ignored",
+				"A question for the assistant (Turkish)",
+				"A question for the assistant (English)",
+				"Chatter with nothing to add",
+				"US school email: MM/DD dates and 4pm",
+				"UK council and school notice: DD/MM dates and Year 5",
+				"European appointment letter: DD.MM. dates and 24-hour times",
+				"Shopping message with imperial units",
+				"Shopping message with amounts in a sentence (English)",
+				"Car insurance renewal reminder (English)",
+				"Car insurance renewed (English)",
+				"Ticks off a listed shopping item (English)",
+				"Ticks off the newest of many similar items (English)",
+				"Nothing to tick off when the item is not listed (English)",
+				"Completes a listed task (English)",
+				"Moves the event that is already there (English)",
+				"A cancelled date of a weekly activity, in a messy message (English)",
+				"Something to buy that is already on the list (English)",
+				"A school letter repeating an event the calendar has (English)",
+				"Event with a day but no time (English)",
+				"Task nobody is named for is not silently assigned (English)",
+				"Message to the whole household stays for everyone (English)",
+				"Task notes say what the amount is (English)"
+			],
+			"failing": {
+				"School trip notice (Turkish)": [
+					"the item was read (failed)",
+					"calendar.createEvent: trip on 16 Oct 08:30 for Deniz",
+					"calendar.createEvent: the trip (16 Oct) is not \"check this\" on date",
+					"lists.addTask: pay 150 TL by 8 or 9 Oct",
+					"lists.addTask: the fee (conflicting weekday) is \"check this\" on dueDate",
+					"lists.addTask: permission form by 8 or 9 Oct",
+					"calendar.createEvent: parent meeting 20 Oct 18:00"
+				],
+				"Chat message with groceries, a vague date and a deadline (English)": [
+					"calendar.createEvent: dentist on a Thursday at 16:30 for Deniz"
+				],
+				"Exact date with year (Turkish)": [
+					"the item was read (failed)",
+					"1 proposal(s)",
+					"calendar.createEvent: 3 Nov 10:15 for Deniz",
+					"calendar.createEvent: the appointment is not \"check this\" on date"
+				],
+				"Weekly lessons with an end (Turkish)": [
+					"the item was read (failed)",
+					"calendar.createEvent: weekly on Wednesdays 17:00 until 31 Oct"
+				],
+				"Shopping list (Turkish)": [
+					"lists.addShoppingItems: four items with sections"
+				],
+				"A couple, no children": [
+					"calendar.createEvent: dentist on 8 Oct 15:00 for Selin"
+				],
+				"An adult child set it up for their parents": [
+					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma"
+				],
+				"Keeps the appointment of a pet that is not listed (English)": [
+					"calendar.createEvent: the check on 15 Oct 10:30 at the clinic"
+				],
+				"Message addressed to the person who shared it (English)": [
+					"calendar.createEvent: the check-up on 10 Oct 09:00 for the sharer (Ayşe)"
+				]
+			},
+			"cost": 0.0816
+		},
+		"openrouter-openai-gpt-4-1-mini": {
+			"label": "openrouter / openai/gpt-4.1-mini",
+			"version": "inbox.extract/23",
+			"date": "2026-10-17",
+			"cases": 36,
+			"passing": [
+				"Chat message with groceries, a vague date and a deadline (English)",
+				"Bare weekday (Turkish)",
+				"Exact date with year (Turkish)",
+				"Tomorrow (Turkish)",
+				"Payment due \"on the 15th\" (Turkish)",
+				"Shopping list (Turkish)",
+				"A couple, no children",
+				"An adult child set it up for their parents",
+				"Nothing to do",
+				"A question for the assistant (Turkish)",
+				"A question for the assistant (English)",
+				"Chatter with nothing to add",
+				"US school email: MM/DD dates and 4pm",
+				"UK council and school notice: DD/MM dates and Year 5",
+				"European appointment letter: DD.MM. dates and 24-hour times",
+				"Shopping message with imperial units",
+				"Car insurance renewal reminder (English)",
+				"Car insurance renewed (English)",
+				"Ticks off a listed shopping item (English)",
+				"Ticks off the newest of many similar items (English)",
+				"Nothing to tick off when the item is not listed (English)",
+				"Completes a listed task (English)",
+				"Keeps the appointment of a pet that is not listed (English)",
+				"Moves the event that is already there (English)",
+				"A cancelled date of a weekly activity, in a messy message (English)",
+				"Event with a day but no time (English)",
+				"Message addressed to the person who shared it (English)",
+				"Message to the whole household stays for everyone (English)",
+				"Task notes say what the amount is (English)"
+			],
+			"failing": {
+				"School trip notice (Turkish)": [
+					"the item was read (normalized)",
+					"calendar.createEvent: trip on 16 Oct 08:30 for Deniz",
+					"calendar.createEvent: the trip (16 Oct) is not \"check this\" on date",
+					"lists.addTask: pay 150 TL by 8 or 9 Oct",
+					"lists.addTask: the fee (conflicting weekday) is \"check this\" on dueDate",
+					"lists.addTask: permission form by 8 or 9 Oct",
+					"calendar.createEvent: parent meeting 20 Oct 18:00"
+				],
+				"Weekly lessons with an end (Turkish)": [
+					"calendar.createEvent: weekly on Wednesdays 17:00 until 31 Oct"
+				],
+				"Instructions inside the shared content are ignored": [
+					"the item was read (normalized)",
+					"1 proposal(s)",
+					"calendar.createEvent: meeting 12 Oct 14:00"
+				],
+				"Shopping message with amounts in a sentence (English)": [
+					"the item was read (normalized)",
+					"1 proposal(s)",
+					"lists.addShoppingItems: four items, each title a list entry without its amount",
+					"lists.addShoppingItems: milk with 2 litres",
+					"lists.addShoppingItems: the eggs with 6",
+					"lists.addShoppingItems: Nutella as written"
+				],
+				"Something to buy that is already on the list (English)": [
+					"the item was read (normalized)",
+					"lists.addShoppingItems: the football, with no quantity \"new\""
+				],
+				"A school letter repeating an event the calendar has (English)": [
+					"the item was read (normalized)",
+					"calendar.createEvent: the trip on 29 Oct 07:50",
+					"lists.addTask: pay 14 EUR by 23 Oct",
+					"lists.addTask: the permission slip by 26 Oct"
+				],
+				"Task nobody is named for is not silently assigned (English)": [
+					"lists.addTask: no assignee, or the assignee is \"check this\" on assigneeId"
+				]
+			},
+			"cost": 0.0536
+		}
+	}
+}

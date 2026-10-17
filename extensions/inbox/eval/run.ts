@@ -1,71 +1,26 @@
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
 import records from '@famos/ext-records/server';
-import { isLlmError, type LlmPort, systemActor } from '@famos/sdk';
-import { createTestKernel, llmFromEnv } from '@famos/testing';
+import { type LlmPort, systemActor } from '@famos/sdk';
+import { type CaseVerdict, createTestKernel, runEval } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import inbox from '../src/server/index.ts';
 import { PROMPT_VERSION } from '../src/server/process.ts';
 import { CASES, DEFAULT_FAMILY, type Draft, type Listed, type Members } from './cases.ts';
 
 /**
- * Runs the extraction cases against a real model and reports which checks pass. Not part of CI:
- * it costs money and depends on the provider. Cases run in parallel (each on its own kernel), so
- * the run takes about as long as the slowest case. Usage:
- *   FAMOS_EVAL_API_KEY=… [FAMOS_EVAL_MODEL=…] [FAMOS_EVAL_CASE=substring] pnpm --filter @famos/ext-inbox eval
+ * Runs the extraction cases against real models and reports which checks pass, one column per
+ * model. Not part of CI: it costs money and depends on the provider. Each case runs on its own
+ * kernel. Usage (the other variables are described in `runEval` of `@famos/testing`):
+ *   FAMOS_EVAL_API_KEY=… FAMOS_EVAL_MODELS=openrouter:google/gemini-2.5-flash,openrouter:openai/gpt-4.1-mini \
+ *   [FAMOS_EVAL_CASE=substring] pnpm --filter @famos/ext-inbox eval
  */
-const env = await llmFromEnv();
-if (!env) {
-	console.error(
-		'Set FAMOS_EVAL_API_KEY (and optionally FAMOS_EVAL_MODEL, FAMOS_EVAL_PROVIDER, FAMOS_EVAL_BASE_URL).',
-	);
-	process.exit(2);
-}
-const only = process.env.FAMOS_EVAL_CASE?.toLowerCase();
-const cases = CASES.filter((c) => !only || c.name.toLowerCase().includes(only));
-console.log(`Inbox extraction eval · ${env.label} · ${PROMPT_VERSION} · ${cases.length} cases\n`);
-
-const llm = env.llm;
-
-/** The model, recording how long the case's call took and why it failed. */
-function observed(): { llm: LlmPort; notes: string[] } {
-	const notes: string[] = [];
-	return {
-		notes,
-		llm: {
-			policy: (feature, role) => llm.policy(feature, role),
-			transcribe: (request) => llm.transcribe(request),
-			embed: (request) => llm.embed(request),
-			chat: (request) => llm.chat(request),
-			async generateObject(request) {
-				const started = Date.now();
-				try {
-					const result = await llm.generateObject(request);
-					// FAMOS_EVAL_RAW=1 shows what the model answered, before the app checks or drops any of it.
-					if (process.env.FAMOS_EVAL_RAW) notes.push(`raw ${JSON.stringify(result.output)}`);
-					return result;
-				} catch (error) {
-					notes.push(
-						isLlmError(error) ? `${error.code}: ${error.message.slice(0, 160)}` : String(error),
-					);
-					throw error;
-				} finally {
-					notes.push(`${((Date.now() - started) / 1000).toFixed(1)}s`);
-				}
-			},
-		},
-	};
-}
-
-type Outcome = { ok: boolean; checks: number; failed: number; lines: string[] };
-
-async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
-	const model = observed();
+async function runCase(c: (typeof CASES)[number], llm: LlmPort): Promise<CaseVerdict> {
 	const lines: string[] = [];
 	// The records area only for cases that bring duties, so the other cases keep their catalog.
 	const k = await createTestKernel({
 		extensions: c.obligations ? [calendar, lists, records, inbox] : [calendar, lists, inbox],
-		llm: model.llm,
+		llm,
 	});
 	try {
 		await k.runner.invoke(
@@ -156,7 +111,7 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 		}));
 		const ok = state.status === 'extracted' && results.every((r) => r.ok);
 		lines.push(
-			`${ok ? '✓' : '✗'} ${c.name}${state.status === 'extracted' ? '' : ` [${state.status}: ${state.errorCode}]`}${state.skipped ? ` (${state.skipped} skipped)` : ''} · ${model.notes.join(' · ')}`,
+			`${ok ? '✓' : '✗'} ${c.name}${state.status === 'extracted' ? '' : ` [${state.status}: ${state.errorCode}]`}${state.skipped ? ` (${state.skipped} skipped)` : ''}`,
 		);
 		for (const r of results.filter((r) => !r.ok)) lines.push(`    ✗ ${r.check.label}`);
 		if (!ok || process.env.FAMOS_EVAL_VERBOSE) {
@@ -170,21 +125,22 @@ async function runCase(c: (typeof cases)[number]): Promise<Outcome> {
 				);
 			}
 		}
-		const failed = results.filter((r) => !r.ok).length;
+		const failed = [
+			...(state.status === 'extracted' ? [] : [`the item was read (${state.status})`]),
+			...results.filter((r) => !r.ok).map((r) => r.check.label),
+		];
 		return { ok, checks: results.length, failed, lines };
 	} finally {
 		await k.close();
 	}
 }
 
-const started = Date.now();
-const outcomes = await Promise.all(cases.map(runCase));
-for (const o of outcomes) for (const line of o.lines) console.log(line);
-const passed = outcomes.filter((o) => o.ok).length;
-const checks = outcomes.reduce((n, o) => n + o.checks, 0);
-const failedChecks = outcomes.reduce((n, o) => n + o.failed, 0);
-const usage = await env.usage();
-console.log(
-	`\n${passed}/${cases.length} cases passed · ${checks - failedChecks}/${checks} checks · ${usage.total.calls} calls · $${usage.total.cost.toFixed(4)} · ${((Date.now() - started) / 1000).toFixed(0)}s`,
+process.exit(
+	await runEval({
+		title: 'Inbox extraction eval',
+		version: PROMPT_VERSION,
+		cases: CASES,
+		run: runCase,
+		dir: import.meta.dirname,
+	}),
 );
-process.exit(passed === cases.length ? 0 : 1);
