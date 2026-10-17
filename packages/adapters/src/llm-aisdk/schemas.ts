@@ -113,7 +113,15 @@ export const AiSettingsSchema = z.object({
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
 
 export const ModelListSchema = z.discriminatedUnion('ok', [
-	z.object({ ok: z.literal(true), models: z.array(z.string()) }),
+	z.object({
+		ok: z.literal(true),
+		models: z.array(z.string()),
+		/**
+		 * OpenRouter: the models at least one provider serves without keeping data. The others fail
+		 * while "only providers that keep no data" is on. Absent when it is not known.
+		 */
+		zeroRetentionModels: z.array(z.string()).optional(),
+	}),
 	z.object({
 		ok: z.literal(false),
 		reason: z.enum(['auth', 'unreachable', 'unexpected']),

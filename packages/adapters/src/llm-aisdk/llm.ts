@@ -225,7 +225,7 @@ function toLlmError(error: unknown): LlmError {
 		) {
 			return new LlmError(
 				'data_policy',
-				'No provider of this model keeps zero data; choose another model or relax the privacy setting',
+				'No provider of this model meets the data rules: turn off "Only providers that keep no data" in AI privacy, choose another model, or check the privacy settings of the OpenRouter account',
 				{ cause: error },
 			);
 		}

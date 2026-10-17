@@ -25,6 +25,7 @@ import {
 	UPLOAD_LIMITS,
 	UPLOAD_QUOTA,
 } from '../src/contract/index.ts';
+import en from '../src/messages/en.json' with { type: 'json' };
 import inbox from '../src/server/index.ts';
 import { EXTRACT_MAX_OUTPUT_TOKENS, processItem, tidySummary } from '../src/server/process.ts';
 
@@ -486,6 +487,27 @@ describe('inbox pipeline', () => {
 		await k.worker.drain();
 		expect((await items())[0]).toMatchObject({ status: 'extracted', proposals: 2 });
 		expect(k.llm.calls).toHaveLength(2); // the failure, then the answer
+	});
+
+	it('fails at once when no provider of the model meets the data rules, and says how to fix it', async () => {
+		// What the AI adapter throws when OpenRouter finds no provider that keeps no data.
+		k.llm.respond(
+			new LlmError(
+				'data_policy',
+				'No provider of this model meets the data rules: turn off "Only providers that keep no data" in AI privacy, choose another model, or check the privacy settings of the OpenRouter account',
+			),
+		);
+		const item = await share({ text: NOTICE });
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'failed', errorCode: 'data_policy' });
+		expect(k.llm.calls).toHaveLength(1);
+		expect(en.error_data_policy).toContain('Only providers that keep no data');
+
+		// Once the family turned the option off or chose another model, reading again works.
+		k.llm.respond(proposals());
+		await k.runner.invoke('inbox.retryItem', { id: item.id }, parent.actor);
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'extracted', proposals: 2 });
 	});
 
 	it('does not ask again when the answer is fine', async () => {

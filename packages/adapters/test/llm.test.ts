@@ -35,6 +35,17 @@ const server = http.createServer((req, res) => {
 		if (req.url?.endsWith('/key')) {
 			return res.writeHead(auth === 'Bearer good-key' ? 200 : 401).end('{}');
 		}
+		if (req.url?.endsWith('/endpoints/zdr')) {
+			// OpenRouter's list of endpoints that keep no data, one entry per provider of a model.
+			return res.end(
+				JSON.stringify({
+					data: [
+						{ model_id: 'vendor/b-model', provider_name: 'One' },
+						{ model_id: 'vendor/b-model', provider_name: 'Two' },
+					],
+				}),
+			);
+		}
 		if (req.url?.endsWith('/models')) {
 			// Under /public/ the list needs no key, like OpenRouter's.
 			if (auth !== 'Bearer good-key' && !req.url.includes('/public/'))
@@ -419,7 +430,8 @@ describe('AI settings', () => {
 	});
 
 	it('tests a connection by listing models', async () => {
-		const provider = await useModel('priced');
+		const provider = await useModel('priced', 'openai-compatible');
+		// Only OpenRouter says which models keep no data.
 		expect(await settings.listModels(provider.id)).toEqual({
 			ok: true,
 			models: ['vendor/a-model', 'vendor/b-model'],
@@ -435,7 +447,12 @@ describe('AI settings', () => {
 		});
 		expect(await settings.listModels(router.id)).toMatchObject({ ok: false, reason: 'auth' });
 		await settings.updateProvider(router.id, { apiKey: 'good-key' });
-		expect(await settings.listModels(router.id)).toMatchObject({ ok: true });
+		// OpenRouter also says which models a provider serves without keeping data.
+		expect(await settings.listModels(router.id)).toEqual({
+			ok: true,
+			models: ['vendor/a-model', 'vendor/b-model'],
+			zeroRetentionModels: ['vendor/b-model'],
+		});
 		await settings.updateProvider(provider.id, { baseUrl: 'http://127.0.0.1:9/v1' });
 		expect(await settings.listModels(provider.id)).toMatchObject({
 			ok: false,
@@ -532,11 +549,11 @@ describe('AI SDK LlmPort', () => {
 			auth: 'Bearer good-key',
 			body: {
 				usage: { include: true },
-				// Zero data retention by default.
-				provider: { zdr: true, data_collection: 'deny' },
 				response_format: { type: 'json_object' },
 			},
 		});
+		// Any provider of the model may serve it unless the family limits that.
+		expect(seen[0]?.body.provider).toBeUndefined();
 		expect(systemOf(seen[0])).toContain('"title"');
 		const usage = await settings.usage();
 		expect(usage).toMatchObject({
@@ -551,7 +568,7 @@ describe('AI SDK LlmPort', () => {
 			sendFiles: true,
 			sendPeople: true,
 			sendVoice: true,
-			zeroRetention: true,
+			zeroRetention: false,
 		});
 		expect(await llm.policy('test.extract', 'smart')).toEqual({
 			enabled: true,
@@ -601,9 +618,21 @@ describe('AI SDK LlmPort', () => {
 		expect(seen).toHaveLength(1);
 	});
 
-	it('explains when no provider meets the data policy', async () => {
+	it('asks OpenRouter for providers that keep no data when the family chose that', async () => {
+		await useModel('priced');
+		await settings.setPrivacy({ ...(await settings.privacy()), zeroRetention: true });
+		await ask();
+		expect(seen[0]?.body.provider).toEqual({ zdr: true, data_collection: 'deny' });
+	});
+
+	it('explains when no provider meets the data policy, naming the option', async () => {
 		await useModel('no-zdr');
-		await expect(ask()).rejects.toMatchObject({ code: 'data_policy', retryable: false });
+		await settings.setPrivacy({ ...(await settings.privacy()), zeroRetention: true });
+		const error = await ask().catch((e: unknown) => e);
+		expect(error).toMatchObject({ code: 'data_policy', retryable: false });
+		expect((error as Error).message).toContain('Only providers that keep no data');
+		const { entries } = await settings.activity();
+		expect(entries[0]).toMatchObject({ errorCode: 'data_policy' });
 	});
 
 	it('sends files as image parts', async () => {
@@ -924,8 +953,10 @@ describe('AI SDK LlmPort', () => {
 
 	it('records the output mode on usage kept from before it existed', async () => {
 		({ db } = openDatabase({ path: ':memory:' }));
-		const { '0003_usage_output_mode': added, ...previous } = aiMigrations;
-		expect(added).toBeDefined();
+		expect(aiMigrations['0003_usage_output_mode']).toBeDefined();
+		const previous = Object.fromEntries(
+			Object.entries(aiMigrations).filter(([name]) => name < '0003'),
+		);
 		await runMigrations(db, [{ scope: 'ai', migrations: previous }]);
 		await aiTables(db)
 			.insertInto('ai_usage')
@@ -951,6 +982,66 @@ describe('AI SDK LlmPort', () => {
 		await runMigrations(db, [{ scope: 'ai', migrations: aiMigrations }]);
 		const rows = await aiTables(db).selectFrom('ai_usage').select(['id', 'output_mode']).execute();
 		expect(rows).toEqual([{ id: 'ai_call_old', output_mode: null }]);
+	});
+
+	describe('the "only providers that keep no data" choice of families from before it was off by default', () => {
+		const { '0004_keep_zero_retention': added, ...previous } = aiMigrations;
+		const PRIVACY_BEFORE = {
+			sendFiles: true,
+			sendPeople: true,
+			sendVoice: true,
+			zeroRetention: true,
+		};
+		/** A database as the previous release left it, with `fill` run on it, then upgraded. */
+		async function upgraded(fill: () => Promise<unknown>) {
+			({ db } = openDatabase({ path: ':memory:' }));
+			expect(added).toBeDefined();
+			await runMigrations(db, [{ scope: 'ai', migrations: previous }]);
+			await fill();
+			await runMigrations(db, [{ scope: 'ai', migrations: aiMigrations }]);
+			return createAiSettings({
+				db,
+				box: createSecretBox('s'.repeat(32)),
+				clock,
+				ids: uuidv7Ids,
+				timeZone,
+			});
+		}
+		const store = (value: object) =>
+			aiTables(db)
+				.insertInto('ai_settings')
+				.values({ key: 'privacy', value: JSON.stringify(value), updated_at: NOW })
+				.execute();
+
+		it('is off for a new install', async () => {
+			const fresh = await upgraded(async () => {});
+			expect((await fresh.privacy()).zeroRetention).toBe(false);
+		});
+
+		it('stays on for a family that used AI without ever saving it', async () => {
+			const before = await upgraded(() =>
+				aiTables(db)
+					.insertInto('ai_providers')
+					.values({
+						id: 'ai_provider_old',
+						name: 'Router',
+						kind: 'openrouter',
+						base_url: baseUrl,
+						api_key: null,
+						created_at: NOW,
+						updated_at: NOW,
+					})
+					.execute(),
+			);
+			expect(await before.privacy()).toEqual(PRIVACY_BEFORE);
+		});
+
+		it('keeps a stored choice exactly as it was', async () => {
+			const on = await upgraded(() => store({ ...PRIVACY_BEFORE, sendFiles: false }));
+			expect(await on.privacy()).toEqual({ ...PRIVACY_BEFORE, sendFiles: false });
+			const off = await upgraded(() => store({ ...PRIVACY_BEFORE, zeroRetention: false }));
+			expect((await off.privacy()).zeroRetention).toBe(false);
+		});
 	});
 
 	it('stops at the monthly limits', async () => {

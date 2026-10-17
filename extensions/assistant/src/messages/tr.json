@@ -23,6 +23,8 @@
 	"failed_not_configured": "Yapay zekâ henüz kurulmadı. Yönetici bunu Ayarlar → Yapay zekâ bölümünden yapabilir.",
 	"failed_limit_reached": "Aylık yapay zekâ sınırına ulaşıldı.",
 	"failed_auth": "Yapay zekâ hizmeti anahtarı reddetti. Yönetici bunu Ayarlar → Yapay zekâ bölümünden kontrol edebilir.",
+	"failed_data_policy": "Seçilen yapay zekâ modelinin veri kurallarına uyan bir sağlayıcısı yok. Yönetici Ayarlar → Yapay zekânın okuyabildikleri bölümünden “Yalnızca veri saklamayan sağlayıcılar” seçeneğini kapatabilir ya da başka bir model seçebilir.",
+	"open_ai_privacy": "Yapay zekânın okuyabildiklerini aç",
 	"failed_local_required": "Bir alan yalnızca kendi ağındaki yapay zekâya izin veriyor, seçilen yapay zekâ ise orada değil.",
 	"failed_timeout": "Asistan zamanında yanıt veremedi. Tekrar deneyin.",
 	"failed_no_answer": "Asistanın yanıtlamaya adımı yetmedi. Daha basit bir soru deneyin.",

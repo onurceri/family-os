@@ -23,6 +23,8 @@
 	"failed_not_configured": "The AI is not set up yet. An admin can set it up in Settings → AI.",
 	"failed_limit_reached": "The monthly AI limit is reached.",
 	"failed_auth": "The AI service refused its key. An admin can check it in Settings → AI.",
+	"failed_data_policy": "No provider of the chosen AI model met the data rules. An admin can turn off “Only providers that keep no data” in Settings → What the AI may read, or choose another model.",
+	"open_ai_privacy": "Open What the AI may read",
 	"failed_local_required": "An area may only use AI on your own network, and the AI chosen is not there.",
 	"failed_timeout": "The assistant took too long to answer. Try again.",
 	"failed_no_answer": "The assistant ran out of steps before it could answer. Try a simpler question.",

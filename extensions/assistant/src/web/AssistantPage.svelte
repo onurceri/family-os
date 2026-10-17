@@ -60,6 +60,7 @@
 		not_configured: 'failed_not_configured',
 		limit_reached: 'failed_limit_reached',
 		auth: 'failed_auth',
+		data_policy: 'failed_data_policy',
 		local_required: 'failed_local_required',
 		timeout: 'failed_timeout',
 		no_answer: 'failed_no_answer',
@@ -371,6 +372,11 @@
 									<p class="text-attention font-semibold" role="alert">
 										{failure(message.errorCode)}
 									</p>
+									{#if isAdmin && message.errorCode === 'data_policy'}
+										<a href="/settings/ai/privacy" class="quiet-link text-sm"
+											>{t('open_ai_privacy')}</a
+										>
+									{/if}
 									{#if lastFailed === message.id && lastQuestion}
 										<Button
 											type="button"

@@ -44,7 +44,7 @@
 	"error_invalid_output": "The AI's answer could not be understood.",
 	"error_output_too_long": "The AI's answer got out of hand. Try again.",
 	"error_unsupported": "This kind of file cannot be read.",
-	"error_data_policy": "No provider of this model keeps zero data. Choose another model, or allow providers that keep data, in Settings → AI.",
+	"error_data_policy": "No provider of the chosen AI model met the data rules. An admin can turn off “Only providers that keep no data” in Settings → What the AI may read, or choose another model.",
 	"error_ai_local_required": "This area may only use AI on your own network, and none is set for this kind of work. Choose a service on your network in Settings → AI, or change the area's AI access.",
 	"error_files_off": "Photos and documents are not sent to the AI (Settings → AI).",
 	"error_voice_not_read": "This voice note could not be turned into text. Choose a speech-to-text model in Settings → AI, and check that voice notes are sent.",

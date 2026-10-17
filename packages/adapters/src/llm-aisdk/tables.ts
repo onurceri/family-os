@@ -101,4 +101,57 @@ export const aiMigrations: Migrations = {
 			await db.schema.alterTable('ai_usage').addColumn('output_mode', 'text').execute();
 		},
 	},
+	/**
+	 * "Only providers that keep no data" used to be on unless a family turned it off, and is now
+	 * off unless they turn it on. A family that already uses AI keeps what it had: the privacy
+	 * choice it never saved is written down as it was. A new install has nothing in these tables
+	 * yet and gets the new default.
+	 */
+	'0004_keep_zero_retention': {
+		async up(db) {
+			const ai = aiTables(db);
+			const privacy = await ai
+				.selectFrom('ai_settings')
+				.select('value')
+				.where('key', '=', 'privacy')
+				.executeTakeFirst();
+			if (privacy) {
+				let stored: unknown;
+				try {
+					stored = JSON.parse(privacy.value);
+				} catch {
+					stored = null;
+				}
+				if (stored && typeof stored === 'object' && 'zeroRetention' in stored) return;
+				const value = JSON.stringify({
+					...(stored && typeof stored === 'object' ? stored : {}),
+					zeroRetention: true,
+				});
+				await ai
+					.updateTable('ai_settings')
+					.set({ value, updated_at: Date.now() })
+					.where('key', '=', 'privacy')
+					.execute();
+				return;
+			}
+			const inUse =
+				(await ai.selectFrom('ai_providers').select('id').limit(1).executeTakeFirst()) ??
+				(await ai.selectFrom('ai_settings').select('key').limit(1).executeTakeFirst()) ??
+				(await ai.selectFrom('ai_usage').select('id').limit(1).executeTakeFirst());
+			if (!inUse) return;
+			await ai
+				.insertInto('ai_settings')
+				.values({
+					key: 'privacy',
+					value: JSON.stringify({
+						sendFiles: true,
+						sendPeople: true,
+						sendVoice: true,
+						zeroRetention: true,
+					}),
+					updated_at: Date.now(),
+				})
+				.execute();
+		},
+	},
 };

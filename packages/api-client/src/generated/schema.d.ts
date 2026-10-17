@@ -4004,6 +4004,7 @@ export interface operations {
                         /** @enum {boolean} */
                         ok: true;
                         models: string[];
+                        zeroRetentionModels?: string[];
                     } | {
                         /** @enum {boolean} */
                         ok: false;

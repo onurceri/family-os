@@ -100,9 +100,9 @@ export async function llmsFromEnv(env: NodeJS.ProcessEnv = process.env): Promise
 			];
 	const apiKey = env.FAMOS_EVAL_API_KEY;
 	const usable = specs.filter((spec) => apiKey || spec.baseUrl);
-	// Free hosted models are served only by providers that keep data: FAMOS_EVAL_ZERO_RETENTION=0
-	// lets the made-up cases reach them.
-	const zeroRetention = env.FAMOS_EVAL_ZERO_RETENTION !== '0';
+	// Like a new family, any provider of the model may serve it; FAMOS_EVAL_ZERO_RETENTION=1 limits
+	// OpenRouter to providers that keep no data, as a family can choose to.
+	const zeroRetention = env.FAMOS_EVAL_ZERO_RETENTION === '1';
 	return Promise.all(usable.map((spec) => envLlm(spec, apiKey, zeroRetention)));
 }
 
@@ -130,13 +130,7 @@ async function envLlm(
 		...(apiKey && { apiKey }),
 		models: { fast: model, vision: model, smart: model },
 	});
-	if (!zeroRetention)
-		await settings.setPrivacy({
-			sendFiles: true,
-			sendPeople: true,
-			sendVoice: true,
-			zeroRetention: false,
-		});
+	if (zeroRetention) await settings.setPrivacy({ ...(await settings.privacy()), zeroRetention });
 	const llm = createAiSdkLlm({
 		db,
 		settings,

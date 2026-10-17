@@ -31,12 +31,16 @@ import { type AiTables, aiTables } from './tables.ts';
 
 const NO_ROLES: Roles = Object.fromEntries(MODEL_ROLES.map((r) => [r, null])) as Roles;
 const NO_LIMITS: Limits = { monthlyCostLimit: null, monthlyCallLimit: null };
-/** Private by default where it costs nothing; files and names are on because reading needs them. */
+/**
+ * Files and names are on because reading needs them. Limiting OpenRouter to providers that keep
+ * no data is the family's choice, off unless they turn it on: it makes many models, most free
+ * ones among them, unavailable, and the family decides which model to use.
+ */
 const DEFAULT_PRIVACY: Privacy = {
 	sendFiles: true,
 	sendPeople: true,
 	sendVoice: true,
-	zeroRetention: true,
+	zeroRetention: false,
 };
 const DEFAULT_SWITCHES: Switches = { enabled: true, off: [] };
 
@@ -85,6 +89,30 @@ function parseAreas(raw: string | null): string[] | null {
 	try {
 		const parsed: unknown = JSON.parse(raw);
 		return Array.isArray(parsed) ? parsed.filter((a): a is string => typeof a === 'string') : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * The models OpenRouter can serve from at least one provider that keeps no data, so the model
+ * picker can mark the others. Only a hint: when the list cannot be read, nothing is marked.
+ */
+async function openRouterZeroRetentionModels(
+	baseUrl: string,
+	headers: Record<string, string>,
+	doFetch: typeof fetch = fetch,
+): Promise<string[] | null> {
+	try {
+		const response = await doFetch(`${baseUrl}/endpoints/zdr`, {
+			headers,
+			signal: AbortSignal.timeout(10_000),
+		});
+		if (!response.ok) return null;
+		const body = (await response.json()) as { data?: { model_id?: unknown }[] };
+		if (!Array.isArray(body.data)) return null;
+		const ids = body.data.map((e) => e.model_id).filter((m): m is string => typeof m === 'string');
+		return [...new Set(ids)].sort((a, b) => a.localeCompare(b));
 	} catch {
 		return null;
 	}
@@ -356,7 +384,13 @@ export function createAiSettings(deps: AiSettingsDeps) {
 					.map((m) => m.id)
 					.filter((m): m is string => typeof m === 'string')
 					.sort((a, b) => a.localeCompare(b));
-				return { ok: true, models };
+				if (provider.kind !== 'openrouter') return { ok: true, models };
+				const zeroRetentionModels = await openRouterZeroRetentionModels(
+					provider.baseUrl,
+					headers,
+					doFetch,
+				);
+				return { ok: true, models, ...(zeroRetentionModels && { zeroRetentionModels }) };
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				return { ok: false, reason: 'unreachable', message };

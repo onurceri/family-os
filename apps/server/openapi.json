@@ -4135,6 +4135,12 @@
 													"items": {
 														"type": "string"
 													}
+												},
+												"zeroRetentionModels": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
 												}
 											},
 											"required": [

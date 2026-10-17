@@ -26,7 +26,7 @@ Under **Models** on the same page, pick a provider and a model for each **role**
 
 One model for the first three is fine: leave **Choose a different model for each task** off and the one choice is used for Smart, Vision and Fast. The optional roles sit in the same card. Press **Save** at the top of the page when you are done.
 
-Tap a provider (or **Add provider**) to open it in a panel, a sheet on phones. There **Test connection** checks the address and key without running a model, and shows how many models it found. You can change its name, address or key, **Remove key** deletes only the key, and **Remove** deletes the provider (roles that used it become unset).
+Tap a provider (or **Add provider**) to open it in a panel, a sheet on phones. There **Test connection** checks the address and key without running a model, and shows how many models it found; the model fields then suggest them. You can change its name, address or key, **Remove key** deletes only the key, and **Remove** deletes the provider (roles that used it become unset).
 
 Under **Monthly limits** a **Budget (USD)** (as reported by the provider) or a number of **Model calls** pauses AI until next month when it is reached. Months follow the family's time zone. Leave a field empty for no limit. Usage for the month, per feature, is shown under **This month**.
 
@@ -71,7 +71,9 @@ Under **Settings → AI → What the AI may read → What the AI sees**:
 - **Send photos and documents.** When off, only text is read. A share that is only a photo then shows a note saying so.
 - **Send names and descriptions.** When off, the AI is told nobody's name or description. Names your message itself writes ("Ivy has the dentist") are still matched to the people in your family by FamilyOS, on your server, after the AI has answered; for anyone else, add people when you edit a suggestion.
 - **Send voice notes.** When off, voice notes are kept but never sent to the speech-to-text model. Audio is sent as it was recorded, so unlike photos it cannot be stripped of anything. With OpenRouter, voice notes cannot be limited to providers that keep no data, so the next switch does not apply to them; use OpenAI, Groq or your own server if that matters.
-- **Only providers that keep no data** (OpenRouter, on by default). **On:** requests go only to providers that do not store prompts or train on them. Some models have no such provider; you then see "No provider of this model keeps zero data" and can pick another model or turn this off. **Off:** OpenRouter may send requests to any provider of the model, and that provider keeps or uses them under its own rules (some store prompts for a while, some train on them). It covers reading shared items and the assistant; voice notes (above) and search are not covered.
+- **Only providers that keep no data** (OpenRouter; off unless you turn it on). It is your choice, and FamilyOS never limits which model you may use. **On:** only providers that keep no data and don't train on it serve your requests; some models, including most free ones, are then unavailable. **Off:** any provider of the chosen model may serve it, under its own data rules (some store prompts for a while, some train on them). It covers reading shared items and the assistant; voice notes (above) and search are not covered.
+
+  If a model has no such provider while this is on, nothing gets stuck: the shared item, the assistant's answer and **See what the AI did** say that no provider met the data rules, and point here. Turn this off or choose another model, then press **Try again**. After **Test connection** on an OpenRouter provider, the model list marks the models that need this off, and a note under the model says so when you pick one. If it happens while this is off, the limit comes from the privacy settings of your OpenRouter account (on openrouter.ai).
 
 ## Turning AI off
 

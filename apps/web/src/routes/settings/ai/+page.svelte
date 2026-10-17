@@ -31,10 +31,16 @@
 		type Role,
 		type Roles,
 	} from './types.js';
+	import { needsAnyProvider } from './zero-retention.js';
 
 	let settings = $state<AiSettings | null>(null);
 	/** Models found by connection tests, per provider, for the model pickers. */
 	let models = $state<Record<string, string[]>>({});
+	/** Per provider, the models some provider serves without keeping data, when the test said. */
+	let zeroRetentionModels = $state<Record<string, ReadonlySet<string>>>({});
+	const zeroRetention = $derived(settings?.privacy.zeroRetention ?? false);
+	const needsOff = (providerId: string, model: string) =>
+		needsAnyProvider(model, zeroRetentionModels[providerId], zeroRetention);
 	let error = $state<string | null>(null);
 	let roles = $state<Roles>({
 		fast: null,
@@ -144,9 +150,20 @@
 					role === 'main' ? setMainModel(m) : (roles[role] = { ...choice, model: m })}
 				onchange={(m) =>
 					role === 'main' ? setMainModel(m) : (roles[role] = { ...choice, model: m })}
-				options={(models[choice.providerId] ?? []).map((m) => ({ value: m }))}
+				options={(models[choice.providerId] ?? []).map((m) => ({
+					value: m,
+					...(needsOff(choice.providerId, m) && { label: t('ai_model_needs_any_provider') }),
+				}))}
 				placeholder={t('ai_model_placeholder')}
 			/>
+			{#if needsOff(choice.providerId, choice.model)}
+				<p class="text-attention text-xs" data-testid="model-needs-any-provider">
+					{t('ai_model_needs_any_provider_hint')}
+					<a href="/settings/ai/privacy" class="underline underline-offset-4"
+						>{t('nav_ai_privacy')}</a
+					>
+				</p>
+			{/if}
 		{/if}
 	</div>
 {/snippet}
@@ -244,6 +261,10 @@
 		provider={adding ? null : editing}
 		onclose={() => void goto(here, { replace: true, reset: false })}
 		onchanged={load}
-		onmodels={(id, list) => (models[id] = list)}
+		onmodels={(id, list, kept) => {
+			models[id] = list;
+			if (kept) zeroRetentionModels[id] = new Set(kept);
+			else delete zeroRetentionModels[id];
+		}}
 	/>
 </Page>

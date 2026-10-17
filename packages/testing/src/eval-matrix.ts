@@ -19,8 +19,8 @@ import { type EnvCall, type EnvLlm, llmsFromEnv, slugOf } from './llm-from-env.t
  * - `FAMOS_EVAL_BASELINE=1`: writes `<eval folder>/baseline.json` for the models of a full run.
  * - `FAMOS_EVAL_RAW=1`: shows every answer, and the text of an answer the app refused.
  * - `FAMOS_EVAL_VERBOSE=1`: passed to the case runner, which shows more of passed cases.
- * - `FAMOS_EVAL_ZERO_RETENTION=0`: lets the made-up cases reach providers that keep data (the
- *   only ones serving free models); the app itself always asks for zero retention by default.
+ * - `FAMOS_EVAL_ZERO_RETENTION=1`: limits OpenRouter to providers that keep no data, as a family
+ *   can choose to; most free models are then unavailable. Off by default, as for a new family.
  */
 
 /** A model's answer as a fake model replays it. */

@@ -6,6 +6,7 @@ import { type Actor, LlmError, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Message, ThreadDetail } from '../src/contract/index.ts';
+import en from '../src/messages/en.json' with { type: 'json' };
 import assistant from '../src/server/index.ts';
 import { KEEP_VERBATIM } from '../src/server/turn.ts';
 
@@ -336,6 +337,21 @@ describe('a turn', () => {
 			status: 'failed',
 			errorCode: 'limit_reached',
 		});
+
+		// No provider of the model meets the data rules: failed at once, with a reason that names
+		// the option.
+		k.llm.respondChat(
+			new LlmError(
+				'data_policy',
+				'No provider of this model meets the data rules: turn off "Only providers that keep no data" in AI privacy, choose another model, or check the privacy settings of the OpenRouter account',
+			),
+		);
+		const blocked = await ask(ayse, 'one again');
+		expect(await reply(ayse, blocked)).toMatchObject({
+			status: 'failed',
+			errorCode: 'data_policy',
+		});
+		expect(en.failed_data_policy).toContain('Only providers that keep no data');
 
 		k.llm.respondChat(new LlmError('timeout', 'slow'), [{ text: 'second time lucky' }]);
 		const sent = await ask(ayse, 'two');

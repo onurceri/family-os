@@ -66,7 +66,7 @@
 			{t(`error_${item.errorCode ?? 'unavailable'}`)}
 			{#if canSetUpAi && item.errorCode && AI_SETTINGS_ERRORS.has(item.errorCode)}
 				<a
-					href="/settings/ai"
+					href={item.errorCode === 'data_policy' ? '/settings/ai/privacy' : '/settings/ai'}
 					class="text-ink-soft text-xs font-medium underline underline-offset-4"
 					>{item.errorCode === 'not_configured'
 						? t('error_not_configured_admin')

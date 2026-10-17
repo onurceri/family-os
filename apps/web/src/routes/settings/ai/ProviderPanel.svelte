@@ -30,7 +30,7 @@
 		onclose: () => void;
 		onchanged: () => void;
 		/** Models found by a successful test, for the model pickers. */
-		onmodels: (providerId: string, models: string[]) => void;
+		onmodels: (providerId: string, models: string[], zeroRetentionModels?: string[]) => void;
 	} = $props();
 
 	let kind = $state<ProviderKind>('openrouter');
@@ -114,7 +114,7 @@
 				}),
 			);
 			test = result;
-			if (result.ok) onmodels(provider.id, result.models);
+			if (result.ok) onmodels(provider.id, result.models, result.zeroRetentionModels);
 		} catch {
 			test = { ok: false, reason: 'unexpected', message: '' };
 		}
