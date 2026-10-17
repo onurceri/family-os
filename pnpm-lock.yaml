@@ -613,6 +613,43 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
+  extensions/homeassistant:
+    dependencies:
+      '@famos/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@famos/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@famos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@lucide/svelte':
+        specifier: 1.52.0
+        version: 1.52.0(svelte@5.57.1)
+      kysely:
+        specifier: 0.29.6
+        version: 0.29.6
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@famos/pack':
+        specifier: workspace:*
+        version: link:../../packages/pack
+      '@famos/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      svelte:
+        specifier: 5.57.1
+        version: 5.57.1
+      svelte-check:
+        specifier: 4.7.6
+        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
   extensions/inbox:
     dependencies:
       '@famos/api-client':

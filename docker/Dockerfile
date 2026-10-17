@@ -31,6 +31,7 @@ COPY extensions/calendar/package.json extensions/calendar/
 COPY extensions/chores/package.json extensions/chores/
 COPY extensions/lists/package.json extensions/lists/
 COPY extensions/home/package.json extensions/home/
+COPY extensions/homeassistant/package.json extensions/homeassistant/
 COPY extensions/inbox/package.json extensions/inbox/
 COPY extensions/kitchen/package.json extensions/kitchen/
 COPY extensions/pets/package.json extensions/pets/

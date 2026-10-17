@@ -1,0 +1,1500 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "FamilyOS API: homeassistant",
+		"version": "v1",
+		"description": "Generated from route and action definitions. Do not edit."
+	},
+	"components": {
+		"securitySchemes": {
+			"session": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "better-auth.session_token"
+			}
+		},
+		"schemas": {},
+		"parameters": {}
+	},
+	"paths": {
+		"/api/v1/homeassistant/connection": {
+			"get": {
+				"operationId": "homeassistant.getConnection",
+				"summary": "The connection to Home Assistant (never the token)",
+				"tags": [
+					"homeassistant"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The connection to Home Assistant (never the token)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"connected": {
+													"type": "boolean",
+													"enum": [
+														false
+													]
+												}
+											},
+											"required": [
+												"connected"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"connected": {
+													"type": "boolean",
+													"enum": [
+														true
+													]
+												},
+												"address": {
+													"type": "object",
+													"properties": {
+														"scheme": {
+															"type": "string",
+															"enum": [
+																"http",
+																"https"
+															]
+														},
+														"host": {
+															"type": "string"
+														},
+														"port": {
+															"type": [
+																"integer",
+																"null"
+															]
+														},
+														"path": {
+															"type": [
+																"string",
+																"null"
+															]
+														}
+													},
+													"required": [
+														"scheme",
+														"host",
+														"port",
+														"path"
+													]
+												},
+												"status": {
+													"type": "string",
+													"enum": [
+														"checking",
+														"ok",
+														"token_refused",
+														"not_home_assistant",
+														"unreachable",
+														"blocked_address",
+														"timeout",
+														"failed"
+													]
+												},
+												"checkedAt": {
+													"type": [
+														"integer",
+														"null"
+													]
+												},
+												"version": {
+													"type": [
+														"string",
+														"null"
+													]
+												},
+												"name": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"connected",
+												"address",
+												"status",
+												"checkedAt",
+												"version",
+												"name"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/homeassistant.connect": {
+			"post": {
+				"operationId": "homeassistant.connect",
+				"summary": "Connect to Home Assistant, or change the connection",
+				"tags": [
+					"actions",
+					"homeassistant"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"url": {
+										"type": "string",
+										"maxLength": 2000
+									},
+									"token": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 1024,
+										"pattern": "^\\S+$"
+									}
+								},
+								"required": [
+									"url",
+									"token"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"oneOf": [
+														{
+															"type": "object",
+															"properties": {
+																"connected": {
+																	"type": "boolean",
+																	"enum": [
+																		false
+																	]
+																}
+															},
+															"required": [
+																"connected"
+															]
+														},
+														{
+															"type": "object",
+															"properties": {
+																"connected": {
+																	"type": "boolean",
+																	"enum": [
+																		true
+																	]
+																},
+																"address": {
+																	"type": "object",
+																	"properties": {
+																		"scheme": {
+																			"type": "string",
+																			"enum": [
+																				"http",
+																				"https"
+																			]
+																		},
+																		"host": {
+																			"type": "string"
+																		},
+																		"port": {
+																			"type": [
+																				"integer",
+																				"null"
+																			]
+																		},
+																		"path": {
+																			"type": [
+																				"string",
+																				"null"
+																			]
+																		}
+																	},
+																	"required": [
+																		"scheme",
+																		"host",
+																		"port",
+																		"path"
+																	]
+																},
+																"status": {
+																	"type": "string",
+																	"enum": [
+																		"checking",
+																		"ok",
+																		"token_refused",
+																		"not_home_assistant",
+																		"unreachable",
+																		"blocked_address",
+																		"timeout",
+																		"failed"
+																	]
+																},
+																"checkedAt": {
+																	"type": [
+																		"integer",
+																		"null"
+																	]
+																},
+																"version": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"name": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"connected",
+																"address",
+																"status",
+																"checkedAt",
+																"version",
+																"name"
+															]
+														}
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/homeassistant.check": {
+			"post": {
+				"operationId": "homeassistant.check",
+				"summary": "Check the connection to Home Assistant again",
+				"tags": [
+					"actions",
+					"homeassistant"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"oneOf": [
+														{
+															"type": "object",
+															"properties": {
+																"connected": {
+																	"type": "boolean",
+																	"enum": [
+																		false
+																	]
+																}
+															},
+															"required": [
+																"connected"
+															]
+														},
+														{
+															"type": "object",
+															"properties": {
+																"connected": {
+																	"type": "boolean",
+																	"enum": [
+																		true
+																	]
+																},
+																"address": {
+																	"type": "object",
+																	"properties": {
+																		"scheme": {
+																			"type": "string",
+																			"enum": [
+																				"http",
+																				"https"
+																			]
+																		},
+																		"host": {
+																			"type": "string"
+																		},
+																		"port": {
+																			"type": [
+																				"integer",
+																				"null"
+																			]
+																		},
+																		"path": {
+																			"type": [
+																				"string",
+																				"null"
+																			]
+																		}
+																	},
+																	"required": [
+																		"scheme",
+																		"host",
+																		"port",
+																		"path"
+																	]
+																},
+																"status": {
+																	"type": "string",
+																	"enum": [
+																		"checking",
+																		"ok",
+																		"token_refused",
+																		"not_home_assistant",
+																		"unreachable",
+																		"blocked_address",
+																		"timeout",
+																		"failed"
+																	]
+																},
+																"checkedAt": {
+																	"type": [
+																		"integer",
+																		"null"
+																	]
+																},
+																"version": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"name": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																}
+															},
+															"required": [
+																"connected",
+																"address",
+																"status",
+																"checkedAt",
+																"version",
+																"name"
+															]
+														}
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/homeassistant.disconnect": {
+			"post": {
+				"operationId": "homeassistant.disconnect",
+				"summary": "Disconnect from Home Assistant and forget the token",
+				"tags": [
+					"actions",
+					"homeassistant"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"ok": {
+															"type": "boolean",
+															"enum": [
+																true
+															]
+														}
+													},
+													"required": [
+														"ok"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"webhooks": {}
+}

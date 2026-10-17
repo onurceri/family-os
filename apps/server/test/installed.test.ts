@@ -32,7 +32,8 @@ const ALWAYS = [...LIST.always].sort();
 /** What a new family starts with: the core set and the defaults (photos and weather). */
 const FRESH = [...LIST.always, ...LIST.default].sort();
 const ALL = [...LIST.always, ...LIST.offered].sort();
-const workspace = await discoverSourceExtensions();
+// What the image carries: an independent extension (released on its own) is not in it.
+const workspace = (await discoverSourceExtensions()).filter((def) => ALL.includes(def.id));
 
 /** The shipped packages, as the server finds them, from the workspace's definitions. */
 function available(
