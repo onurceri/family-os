@@ -39,6 +39,9 @@ function everyOf(repeat: Mention['repeat']): Every | null | undefined {
  * The records of other extensions a reading listed (vehicles, pets, homes): those with a typed
  * id, a kind and a page, so a duty can name them. Obligations themselves are not records.
  */
+/** The areas that keep the household records a duty belongs to. */
+const HOUSEHOLD_AREAS = ['home', 'vehicles', 'pets'] as const;
+
 const householdRecords = (ctx: MentionContext): MentionRecord[] =>
 	ctx.records.filter(
 		(r) =>
@@ -191,6 +194,7 @@ export const dutyKind = defineMentionKind({
 	variants: ['due', 'ends'],
 	actions: ['records.addObligation'],
 	knownFrom: [aiContext.id],
+	drawsOn: HOUSEHOLD_AREAS,
 	examples: [
 		{
 			text: 'Our new home insurance for the flat starts today and runs until 31 March 2027.',
@@ -261,6 +265,7 @@ export const dutyDoneKind = defineMentionKind({
 	},
 	actions: ['records.completeObligation'],
 	knownFrom: [aiContext.id],
+	drawsOn: HOUSEHOLD_AREAS,
 	limit: 8,
 	examples: [
 		{

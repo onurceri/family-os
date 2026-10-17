@@ -2,7 +2,7 @@
 	"case": "UK council and school notice: DD/MM dates and Year 5",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -19,7 +19,7 @@
 							"day": 9,
 							"month": 10
 						},
-						"quote": "Council notice: your green bin collection moves from 08/10 to 09/10 this week."
+						"quote": "your green bin collection moves from 08/10 to 09/10 this week."
 					},
 					{
 						"kind": "calendar.event",

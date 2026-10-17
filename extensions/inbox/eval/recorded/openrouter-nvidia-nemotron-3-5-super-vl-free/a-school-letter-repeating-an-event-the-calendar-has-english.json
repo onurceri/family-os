@@ -2,13 +2,13 @@
 	"case": "A school letter repeating an event the calendar has (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Year 7 class trip and parents' evening move",
+				"label": "Year 7 class trip to Postojna Cave",
 				"intent": "actionable",
 				"addressed": [],
 				"mentions": [
@@ -29,7 +29,7 @@
 						"timeText": "7:50",
 						"endTime": "16:30",
 						"place": "Postojna Cave",
-						"notes": "Send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. Cost 14 EUR, payable through the school e-office by 23 October.",
+						"notes": "Send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. The cost is 14 EUR, payable through the school e-office by 23 October.",
 						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30."
 					},
 					{
@@ -45,14 +45,13 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay class trip cost",
+						"title": "Pay the class trip cost",
 						"date": {
 							"text": "23 October",
 							"day": 23,
-							"month": 10,
-							"weekday": 5
+							"month": 10
 						},
-						"notes": "Cost 14 EUR, payable through the school e-office",
+						"notes": "Cost: 14 EUR, payable through the school e-office",
 						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
 					},
 					{
@@ -61,8 +60,7 @@
 						"date": {
 							"text": "20 October",
 							"day": 20,
-							"month": 10,
-							"weekday": 2
+							"month": 10
 						},
 						"time": "18:00",
 						"timeText": "18:00",

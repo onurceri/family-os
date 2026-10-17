@@ -169,8 +169,13 @@ export interface operations {
                         skippedUnknown: number;
                         skips: {
                             /** @enum {string} */
-                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
+                            reason: "already" | "unknown" | "other_day" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                             subject: string | null;
+                            areas?: {
+                                name: string;
+                                /** @enum {string} */
+                                why: "not_installed" | "turned_off" | "closed_to_ai";
+                            }[];
                         }[];
                         createdBy: string | null;
                         createdAt: number;
@@ -356,8 +361,13 @@ export interface operations {
                         skippedUnknown: number;
                         skips: {
                             /** @enum {string} */
-                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
+                            reason: "already" | "unknown" | "other_day" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                             subject: string | null;
+                            areas?: {
+                                name: string;
+                                /** @enum {string} */
+                                why: "not_installed" | "turned_off" | "closed_to_ai";
+                            }[];
                         }[];
                         createdBy: string | null;
                         createdAt: number;
@@ -686,8 +696,13 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
+                                reason: "already" | "unknown" | "other_day" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
+                                areas?: {
+                                    name: string;
+                                    /** @enum {string} */
+                                    why: "not_installed" | "turned_off" | "closed_to_ai";
+                                }[];
                             }[];
                             createdBy: string | null;
                             createdAt: number;
@@ -870,8 +885,13 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
+                                reason: "already" | "unknown" | "other_day" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
+                                areas?: {
+                                    name: string;
+                                    /** @enum {string} */
+                                    why: "not_installed" | "turned_off" | "closed_to_ai";
+                                }[];
                             }[];
                             createdBy: string | null;
                             createdAt: number;
@@ -1209,8 +1229,13 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
+                                reason: "already" | "unknown" | "other_day" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
+                                areas?: {
+                                    name: string;
+                                    /** @enum {string} */
+                                    why: "not_installed" | "turned_off" | "closed_to_ai";
+                                }[];
                             }[];
                             createdBy: string | null;
                             createdAt: number;

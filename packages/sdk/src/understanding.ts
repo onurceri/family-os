@@ -125,6 +125,8 @@ export type Understanding = z.infer<typeof UnderstandingSchema>;
  * Why something a model read did not become a suggestion, in one list for every AI surface:
  * - `already`: it is already so (on the calendar, on the list, done);
  * - `unknown`: what it names is not there;
+ * - `other_day`: what it names is there, but on another day than the message says (the subject
+ *   carries the real day);
  * - `ambiguous`: several things fit;
  * - `incomplete`: something it needs is missing, or the reading cannot be used;
  * - `not_allowed`: the AI may not do it;
@@ -134,6 +136,7 @@ export type Understanding = z.infer<typeof UnderstandingSchema>;
 export const REFUSAL_REASONS = [
 	'already',
 	'unknown',
+	'other_day',
 	'ambiguous',
 	'incomplete',
 	'not_allowed',
@@ -788,6 +791,7 @@ export interface AiKindInfo {
 	slots: Partial<Record<Slot, string>>;
 	variants?: readonly string[];
 	knownFrom?: readonly string[];
+	drawsOn?: readonly string[];
 	examples: readonly MentionExample[];
 	/** At most this many of its mentions are resolved from one reading. */
 	limit: number;

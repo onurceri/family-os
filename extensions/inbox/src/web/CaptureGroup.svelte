@@ -7,7 +7,7 @@
 	import CaptureSource from './CaptureSource.svelte';
 	import CaptureStatus from './CaptureStatus.svelte';
 	import DraftView from './DraftView.svelte';
-	import { approvals, type Edits, withEdit } from './edits.js';
+	import { approvals, choicesAfterEdit, type Edits, withEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
 	import {
@@ -206,7 +206,10 @@
 						onpick={open && canDecide ? (on) => setPicked(draft.id, on) : undefined}
 						oneditchange={(on) => setEditing(draft.id, on)}
 						onedit={open && canDecide
-							? (input) => (edits = withEdit(edits, draft.id, input))
+							? (input) => {
+									edits = withEdit(edits, draft.id, input);
+									choices = choicesAfterEdit(choices, draft.id, input);
+								}
 							: undefined}
 						onreplaced={() => {
 							edits = withEdit(edits, draft.id, undefined);

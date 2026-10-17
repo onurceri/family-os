@@ -45,6 +45,11 @@
 				? t(`skip_${line.reason}`, { names: line.names })
 				: t(`skip_${line.reason}_count`, { count: line.count })}</small
 		>
+		{#each line.areas as area (`${area.why}:${area.name}`)}
+			<small class="text-ink-soft block text-xs" data-testid="skip-area"
+				>{t(`area_${area.why}`, { area: area.name })}</small
+			>
+		{/each}
 	{/each}
 {/snippet}
 

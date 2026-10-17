@@ -2,7 +2,7 @@
 	"case": "An adult child set it up for their parents",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -13,10 +13,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Kardiyoloji kontrolü",
-						"people": [
-							"Ali"
-						],
+						"title": "Babamın kardiyoloji kontrolü",
 						"date": {
 							"text": "21 Ekim Çarşamba",
 							"day": 21,
@@ -30,7 +27,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Eczaneden ilaçlarını al",
+						"title": "Eczaneden babamın ilaçlarını al",
 						"forMe": true,
 						"quote": "Eczaneden ilaçlarını almayı unutmayalım."
 					}

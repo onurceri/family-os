@@ -94,6 +94,12 @@ export interface MentionKindDefinition {
 	actions: readonly string[];
 	/** This extension's `ai.context` actions whose item labels are shown as known names. */
 	knownFrom?: readonly string[];
+	/**
+	 * Extensions whose records the resolver looks among (the home, pets and vehicles a duty
+	 * belongs to). When it finds none of what a mention names while one of them is not installed,
+	 * turned off or closed to the AI, the person is told which, not only that nothing was found.
+	 */
+	drawsOn?: readonly string[];
 	/** Examples, edge cases included; the first few are shown to the model. */
 	examples: readonly MentionExample[];
 	/**
@@ -225,7 +231,7 @@ function monthEnd(date: string): string {
  * a span but no day ("until the end of October", "by the end of the month": no day number, no
  * counted days, no weekday, and no digits in its words), it is the last day of that month: read
  * as a day, a month alone is its first day, which would end a series or a deadline a month
- * early. A day the model gives is kept, also one written in words ("the twentieth"). A month
+ * early. A week named ends on its last day. A day the model gives is kept, also one written in words ("the twentieth"). A month
  * named is certain; a span without one is this month (or the month of the date read), as a guess.
  */
 export function endNamed(
@@ -244,6 +250,10 @@ export function endNamed(
 	const monthInWords =
 		ref.month === undefined && found?.certain === false && found.why === 'approximate';
 	const spanOnly = noDay && (ref.month !== undefined || ref.approximate === true || monthInWords);
+	// A week or a month the words name ends where that span ends, in the family's week start:
+	// "by the end of this week" is its last day, never the end of the month.
+	if (noDay && found?.to !== undefined && ref.month === undefined)
+		return { date: found.to, certain: false, why: 'approximate' };
 	if (!spanOnly) return found;
 	const date = monthEnd(found?.date ?? ctx.today);
 	return ref.month !== undefined && ref.approximate !== true

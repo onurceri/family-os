@@ -361,8 +361,21 @@ describe('skipLines', () => {
 				{ reason: 'already', subject: 'Ice cream' },
 			]),
 		).toEqual([
-			{ reason: 'already', names: 'Ice cream', count: 2 },
-			{ reason: 'incomplete', names: 'Football', count: 1 },
+			{ reason: 'already', names: 'Ice cream', count: 2, areas: [] },
+			{ reason: 'incomplete', names: 'Football', count: 1, areas: [] },
+		]);
+	});
+	it('tells the areas that could not be looked into once, and the day an event is on', () => {
+		const home = { name: 'Home', why: 'not_installed' } as const;
+		expect(
+			skipLines([
+				{ reason: 'unknown', subject: 'Boiler service', areas: [home] },
+				{ reason: 'unknown', subject: 'Flat insurance', areas: [home] },
+				{ reason: 'other_day', subject: 'Football training (Wed, Oct 7)' },
+			]),
+		).toEqual([
+			{ reason: 'unknown', names: 'Boiler service, Flat insurance', count: 2, areas: [home] },
+			{ reason: 'other_day', names: 'Football training (Wed, Oct 7)', count: 1, areas: [] },
 		]);
 	});
 	it('counts them when one of them names nothing', () => {
@@ -371,7 +384,7 @@ describe('skipLines', () => {
 				{ reason: 'unknown', subject: 'Boiler service' },
 				{ reason: 'unknown', subject: null },
 			]),
-		).toEqual([{ reason: 'unknown', names: null, count: 2 }]);
+		).toEqual([{ reason: 'unknown', names: null, count: 2, areas: [] }]);
 		expect(skipLines([])).toEqual([]);
 	});
 });

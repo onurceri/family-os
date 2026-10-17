@@ -276,6 +276,7 @@
 														"enum": [
 															"already",
 															"unknown",
+															"other_day",
 															"ambiguous",
 															"incomplete",
 															"not_allowed",
@@ -287,6 +288,29 @@
 															"string",
 															"null"
 														]
+													},
+													"areas": {
+														"type": "array",
+														"items": {
+															"type": "object",
+															"properties": {
+																"name": {
+																	"type": "string"
+																},
+																"why": {
+																	"type": "string",
+																	"enum": [
+																		"not_installed",
+																		"turned_off",
+																		"closed_to_ai"
+																	]
+																}
+															},
+															"required": [
+																"name",
+																"why"
+															]
+														}
 													}
 												},
 												"required": [
@@ -774,6 +798,7 @@
 															"enum": [
 																"already",
 																"unknown",
+																"other_day",
 																"ambiguous",
 																"incomplete",
 																"not_allowed",
@@ -785,6 +810,29 @@
 																"string",
 																"null"
 															]
+														},
+														"areas": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"name": {
+																		"type": "string"
+																	},
+																	"why": {
+																		"type": "string",
+																		"enum": [
+																			"not_installed",
+																			"turned_off",
+																			"closed_to_ai"
+																		]
+																	}
+																},
+																"required": [
+																	"name",
+																	"why"
+																]
+															}
 														}
 													},
 													"required": [
@@ -1675,6 +1723,7 @@
 																		"enum": [
 																			"already",
 																			"unknown",
+																			"other_day",
 																			"ambiguous",
 																			"incomplete",
 																			"not_allowed",
@@ -1686,6 +1735,29 @@
 																			"string",
 																			"null"
 																		]
+																	},
+																	"areas": {
+																		"type": "array",
+																		"items": {
+																			"type": "object",
+																			"properties": {
+																				"name": {
+																					"type": "string"
+																				},
+																				"why": {
+																					"type": "string",
+																					"enum": [
+																						"not_installed",
+																						"turned_off",
+																						"closed_to_ai"
+																					]
+																				}
+																			},
+																			"required": [
+																				"name",
+																				"why"
+																			]
+																		}
 																	}
 																},
 																"required": [
@@ -2230,6 +2302,7 @@
 																		"enum": [
 																			"already",
 																			"unknown",
+																			"other_day",
 																			"ambiguous",
 																			"incomplete",
 																			"not_allowed",
@@ -2241,6 +2314,29 @@
 																			"string",
 																			"null"
 																		]
+																	},
+																	"areas": {
+																		"type": "array",
+																		"items": {
+																			"type": "object",
+																			"properties": {
+																				"name": {
+																					"type": "string"
+																				},
+																				"why": {
+																					"type": "string",
+																					"enum": [
+																						"not_installed",
+																						"turned_off",
+																						"closed_to_ai"
+																					]
+																				}
+																			},
+																			"required": [
+																				"name",
+																				"why"
+																			]
+																		}
 																	}
 																},
 																"required": [
@@ -3158,6 +3254,7 @@
 																		"enum": [
 																			"already",
 																			"unknown",
+																			"other_day",
 																			"ambiguous",
 																			"incomplete",
 																			"not_allowed",
@@ -3169,6 +3266,29 @@
 																			"string",
 																			"null"
 																		]
+																	},
+																	"areas": {
+																		"type": "array",
+																		"items": {
+																			"type": "object",
+																			"properties": {
+																				"name": {
+																					"type": "string"
+																				},
+																				"why": {
+																					"type": "string",
+																					"enum": [
+																						"not_installed",
+																						"turned_off",
+																						"closed_to_ai"
+																					]
+																				}
+																			},
+																			"required": [
+																				"name",
+																				"why"
+																			]
+																		}
 																	}
 																},
 																"required": [

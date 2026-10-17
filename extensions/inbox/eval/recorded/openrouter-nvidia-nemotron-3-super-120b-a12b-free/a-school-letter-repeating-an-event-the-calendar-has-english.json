@@ -2,22 +2,18 @@
 	"case": "A school letter repeating an event the calendar has (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Year 7 class trip to Postojna Cave",
+				"label": "Year 7 class trip and parents' evening",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Year 7 class trip to Postojna Cave",
-						"people": [
-							"Ivy"
-						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Thursday 29 October",
 							"day": 29,
@@ -27,74 +23,8 @@
 						"time": "07:50",
 						"timeText": "7:50",
 						"place": "School",
-						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50"
-					},
-					{
-						"kind": "calendar.event",
-						"title": "Return from Postojna Cave trip",
-						"people": [
-							"Ivy"
-						],
-						"peopleGuessed": true,
-						"date": {
-							"text": "Thursday 29 October",
-							"day": 29,
-							"month": 10,
-							"weekday": 4
-						},
-						"time": "16:30",
-						"timeText": "16:30",
-						"place": "School",
-						"quote": "returns about 16:30"
-					},
-					{
-						"kind": "lists.task",
-						"title": "Send packed lunch for Postojna Cave trip",
-						"forMe": true,
-						"date": {
-							"text": "Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						},
-						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Send sturdy shoes for Postojna Cave trip",
-						"forMe": true,
-						"date": {
-							"text": "Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						},
-						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Send signed permission slip for Postojna Cave trip",
-						"forMe": true,
-						"date": {
-							"text": "Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						},
-						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Pay for Postojna Cave trip",
-						"forMe": true,
-						"date": {
-							"text": "23 October",
-							"day": 23,
-							"month": 10,
-							"weekday": 5
-						},
-						"notes": "Cost is 14 EUR, payable through the school e-office",
-						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
+						"notes": "Bus leaves school at 7:50 and returns about 16:30. Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October.",
+						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30. Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
 					},
 					{
 						"kind": "calendar.eventChange",
@@ -109,6 +39,29 @@
 						"timeText": "18:00",
 						"place": "School hall",
 						"quote": "Parents' evening moved to 20 October, 18:00 in the school hall."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send packed lunch, sturdy shoes and signed permission slip",
+						"date": {
+							"text": "Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						},
+						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay the cost for Year 7 class trip",
+						"date": {
+							"text": "23 October",
+							"day": 23,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Cost is 14 EUR, payable through the school e-office",
+						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
 					}
 				],
 				"addressed": []

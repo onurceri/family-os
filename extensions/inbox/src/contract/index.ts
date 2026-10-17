@@ -103,6 +103,7 @@ export type ExtractionKind = z.infer<typeof ExtractionKindSchema>;
 export const SKIP_REASONS = [
 	'already',
 	'unknown',
+	'other_day',
 	'ambiguous',
 	'incomplete',
 	'not_allowed',
@@ -115,6 +116,15 @@ export type SkipReason = z.infer<typeof SkipReasonSchema>;
 export const SkipSchema = z.object({
 	reason: SkipReasonSchema,
 	subject: z.string().nullable(),
+	/**
+	 * Areas the proposal would have drawn on that the AI cannot look into, by name in the family's
+	 * language: "Home" is not installed, so a duty for the flat found no record.
+	 */
+	areas: z
+		.array(
+			z.object({ name: z.string(), why: z.enum(['not_installed', 'turned_off', 'closed_to_ai']) }),
+		)
+		.optional(),
 });
 export type Skip = z.infer<typeof SkipSchema>;
 

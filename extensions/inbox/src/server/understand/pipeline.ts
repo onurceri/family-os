@@ -573,9 +573,24 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	resolved.sort((a, b) => first(a.resolution) - first(b.resolution));
 
 	const hash = promptHash(kinds);
+	const missing = ctx.actions.aiMissingAreas({ local: input.local });
 	for (const [i, { resolution, mentions, from }] of resolved.entries()) {
 		if ('refuse' in resolution) {
-			reading.skips.push({ reason: resolution.refuse.reason, subject: resolution.refuse.subject });
+			const { reason, subject } = resolution.refuse;
+			// Nothing found where an area that keeps those records is off: say which, instead of
+			// leaving the person to think it was never entered.
+			const drawsOn = kinds.find((k) => k.id === mentions[0]?.kind)?.drawsOn ?? [];
+			const areas =
+				reason === 'unknown'
+					? missing
+							.filter((area) => drawsOn.includes(area.id))
+							.map(({ id, name, why }) => {
+								const key = `${id}:feature_name`;
+								const own = ctx.translate(settings.locale, key);
+								return { name: own === key ? name : own, why };
+							})
+					: [];
+			reading.skips.push({ reason, subject, ...(areas.length > 0 && { areas }) });
 			continue;
 		}
 		const proposal: MentionProposal = resolution.propose;

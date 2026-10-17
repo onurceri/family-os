@@ -638,7 +638,19 @@ describe('calendar.eventCancel', () => {
 		);
 		// The training is not on Thursday: nothing the message names is off that day.
 		expect(out).toEqual([
-			{ refuse: { reason: 'unknown', subject: 'football (thursday)', from: [0] } },
+			{ refuse: { reason: 'other_day', subject: 'Football training (Tue, Oct 13)', from: [0] } },
+		]);
+	});
+
+	// Found in use: "no training thurs" with the training on Wednesday said it was "not found",
+	// though it is on the calendar; the person must hear which day it is on.
+	it('says which day a one-off event is on when the message names another', async () => {
+		await addEvent({ title: 'Football training', date: '2026-10-07', startTime: '17:00' });
+		const out = await resolve('calendar.eventCancel', [
+			{ target: 'football training', date: { text: 'thurs', weekday: 4 } },
+		]);
+		expect(out).toEqual([
+			{ refuse: { reason: 'other_day', subject: 'Football training (Wed, Oct 7)', from: [0] } },
 		]);
 	});
 
@@ -675,7 +687,7 @@ describe('calendar.eventCancel', () => {
 				},
 			},
 			{
-				refuse: { reason: 'unknown', subject: "Noah's football match (this week)", from: [1] },
+				refuse: { reason: 'other_day', subject: "Noah's football match (Sat, Oct 17)", from: [1] },
 			},
 		]);
 	});

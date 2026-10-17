@@ -2,7 +2,7 @@
 	"case": "A cancelled date of a weekly activity, in a messy message (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,7 +22,7 @@
 					},
 					{
 						"kind": "lists.shoppingItem",
-						"title": "Football",
+						"title": "Ball",
 						"quote": "i need a new ball"
 					},
 					{

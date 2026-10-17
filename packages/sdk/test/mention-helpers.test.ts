@@ -46,6 +46,17 @@ describe('endNamed', () => {
 		).toEqual({ date: '2026-10-31', certain: false, why: 'approximate' });
 	});
 
+	// Found in use: "Practise every day this week" got a deadline at the end of the month.
+	it('ends a week named on its last day, with or without the model calling it approximate', () => {
+		const week: ResolvedDay = { date: '2026-10-05', to: '2026-10-11', certain: true };
+		const inWeek = { day: () => week, today: '2026-10-06' };
+		const expected = { date: '2026-10-11', certain: false, why: 'approximate' };
+		expect(endNamed(inWeek, { text: 'this week', week: 'this' })).toEqual(expected);
+		expect(endNamed(inWeek, { text: 'this week', week: 'this', approximate: true })).toEqual(
+			expected,
+		);
+	});
+
 	it('keeps a day the model gives, also one written in words', () => {
 		expect(
 			endNamed(ctx('2026-10-20'), { text: 'until the twentieth of October', day: 20, month: 10 }),

@@ -785,6 +785,25 @@ const ALREADY_THERE_CASES: Case[] = [
 		checks: [none('calendar.deleteEvent'), none('calendar.createEvent')],
 	},
 	{
+		// Found in use: the training was on Wednesday, the coach wrote Thursday; the card said
+		// "not found" though the event is on the calendar.
+		name: 'A cancellation naming another day says which day the event is on (English)',
+		events: [
+			{ title: 'Football training', date: '2026-10-07', startTime: '17:00', endTime: '18:30' },
+		],
+		text: 'no football training thurs, coach is away',
+		checks: [
+			none('calendar.deleteEvent'),
+			{
+				label: 'the training is left out as being on another day, with its day',
+				pass: (_ds, _m, reading) =>
+					(reading.skips ?? []).some(
+						(skip) => skip.reason === 'other_day' && /Football training/.test(skip.subject ?? ''),
+					),
+			},
+		],
+	},
+	{
 		// Found in use: "cancelled this week" removed the whole of a match two weeks away.
 		name: 'A cancellation this week takes the date in this week (English)',
 		events: [
@@ -989,6 +1008,23 @@ const NOTES_CASES: Case[] = [
 				const titles = items(i).map((x) => x.title.toLowerCase());
 				return ['milk', 'bread', 'lemon'].every((w) => titles.some((t) => t.includes(w)));
 			}),
+		],
+	},
+	{
+		// Found in use: what to take to a match ("Bring white shirt, shin pads & water") went on the
+		// shared shopping list.
+		name: 'What to bring to a match is the notes of the match, not the shopping list (English)',
+		text: 'Hi parents, Saturday match vs Riverside: meet at the school gate 9:15, kick-off 10:00. Bring white shirt, shin pads & water. Thanks, Coach',
+		checks: [
+			has('calendar.createEvent', 'the match on Saturday 10 Oct', (i) => i.date === '2026-10-10'),
+			{
+				label: 'the match notes hold the kit',
+				pass: (ds) =>
+					of(ds, 'calendar.createEvent').some((d) =>
+						/shin|shirt|water/i.test(String(d.input.notes ?? '')),
+					),
+			},
+			none('lists.addShoppingItems'),
 		],
 	},
 	{

@@ -2,13 +2,8 @@
 	"case": "European appointment letter: DD.MM. dates and 24-hour times",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
-		{
-			"kind": "object",
-			"feature": "inbox.extract",
-			"error": "timeout"
-		},
 		{
 			"kind": "object",
 			"feature": "inbox.extract",

@@ -2,7 +2,7 @@
 	"case": "Keeps the appointment of a pet that is not listed (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -16,6 +16,8 @@
 						"title": "Miso's annual check",
 						"date": {
 							"text": "Thu 15",
+							"day": 15,
+							"month": 10,
 							"weekday": 4
 						},
 						"time": "10:30",

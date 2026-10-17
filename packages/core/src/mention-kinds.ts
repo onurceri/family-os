@@ -287,6 +287,7 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 				slots: kind.slots,
 				...(kind.variants && { variants: kind.variants }),
 				...(kind.knownFrom && { knownFrom: kind.knownFrom }),
+				...(kind.drawsOn && { drawsOn: kind.drawsOn }),
 				examples: kind.examples,
 				limit: kind.limit ?? MENTION_LIMIT,
 			})),

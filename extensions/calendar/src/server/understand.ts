@@ -9,7 +9,7 @@ import {
 	type ResolvedDay,
 	unsureFields,
 } from '@famos/sdk';
-import { addDays, repeatRule, zoned } from '@famos/time';
+import { addDays, dateLocale, formatDate, repeatRule, zoned } from '@famos/time';
 import { MAX_TAG_LENGTH, type Occurrence, tagKey } from '../contract/index.ts';
 import { aiContextEvents } from './context.ts';
 import { startOf } from './moved.ts';
@@ -47,7 +47,7 @@ const MOVE_DAYS = 3;
 const cut = (text: string, max: number) => [...text.trim()].slice(0, max).join('').trim();
 
 const refuse = (
-	reason: 'already' | 'unknown' | 'ambiguous' | 'incomplete',
+	reason: 'already' | 'unknown' | 'other_day' | 'ambiguous' | 'incomplete',
 	subject: string | null,
 	from: readonly number[],
 ): Resolution => ({ refuse: { reason, subject, from } });
@@ -329,6 +329,22 @@ export const event = defineMentionKind({
 				},
 			],
 			why: 'No time is written, so none is given.',
+		},
+		{
+			text: 'Saturday match vs Riverside: meet at the school gate 9:15, kick-off 10:00. Bring white shirt, shin pads and water.',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					quote: 'Saturday match vs Riverside: meet at the school gate 9:15, kick-off 10:00',
+					title: 'Match vs Riverside',
+					date: { text: 'Saturday', weekday: 6 },
+					time: '09:15',
+					timeText: '9:15',
+					place: 'School gate',
+					notes: 'Bring white shirt, shin pads and water',
+				},
+			],
+			why: 'What to take along to an event is its notes; it is not something to buy.',
 		},
 		{
 			text: 'Note to self: my check-up is on Saturday 10 October at 9am. Family picnic on Sunday at noon, everyone welcome.',
@@ -646,8 +662,17 @@ export const eventCancel = defineMentionKind({
 			const first = dates[0] as Occurrence;
 			const uncertain: string[] = [];
 			let o = first;
-			// Named with its day, as the message writes it, when the event is not on that day.
-			const offDay = refuse('unknown', `${words} (${mention.date?.text.trim() ?? ''})`, [index]);
+			// The event exists, on another day than the message says: told with the day it is on,
+			// in the family's formats, so the person can open it and decide.
+			const offDay = refuse(
+				'other_day',
+				`${label} (${formatDate(
+					startOf(first, ctx.timeZone).date,
+					dateLocale(ctx.locale, ctx.formatLocale, ctx.hourCycle),
+					{ weekday: 'short', day: 'numeric', month: 'short' },
+				)})`,
+				[index],
+			);
 			if (first.recurring) {
 				// Read the day again at the time it happens: a weekday named on that very day after
 				// the event is next week's.

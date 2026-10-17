@@ -2,7 +2,7 @@
 	"case": "Exact date with year (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -13,7 +13,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Aşı randevusu",
+						"title": "Deniz'in aşı randevusu",
 						"people": [
 							"Deniz"
 						],

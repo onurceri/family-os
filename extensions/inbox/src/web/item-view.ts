@@ -122,12 +122,15 @@ export interface SkipLine {
 	/** What they were about ("Ice cream, Football"), when every one of them is known. */
 	names: string | null;
 	count: number;
+	/** Areas that could not be looked into, once each. */
+	areas: NonNullable<Skip['areas']>;
 }
 
 /** The order the reasons are told in: what the person can act on first. */
 const SKIP_ORDER: readonly SkipReason[] = [
 	'already',
 	'unknown',
+	'other_day',
 	'ambiguous',
 	'not_allowed',
 	'instruction',
@@ -145,7 +148,18 @@ export function skipLines(skips: readonly Skip[]): SkipLine[] {
 		const subjects = these.map((skip) => skip.subject?.trim() ?? '');
 		const named = subjects.every(Boolean);
 		return [
-			{ reason, names: named ? [...new Set(subjects)].join(', ') : null, count: these.length },
+			{
+				reason,
+				names: named ? [...new Set(subjects)].join(', ') : null,
+				count: these.length,
+				areas: [
+					...new Map(
+						these
+							.flatMap((skip) => skip.areas ?? [])
+							.map((area) => [`${area.why}:${area.name}`, area]),
+					).values(),
+				],
+			},
 		];
 	});
 }

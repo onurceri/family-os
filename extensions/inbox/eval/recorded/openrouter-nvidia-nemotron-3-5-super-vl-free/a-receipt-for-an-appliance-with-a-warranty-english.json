@@ -2,13 +2,13 @@
 	"case": "A receipt for an appliance with a warranty (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dishwasher receipt",
+				"label": "Bosch dishwasher receipt",
 				"intent": "actionable",
 				"mentions": [
 					{

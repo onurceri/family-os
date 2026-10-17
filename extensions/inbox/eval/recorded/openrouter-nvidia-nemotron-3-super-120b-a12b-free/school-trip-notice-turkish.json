@@ -2,7 +2,7 @@
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,9 +14,11 @@
 					{
 						"kind": "calendar.event",
 						"title": "Gaziantep Hayvanat Bahçesi eğitim gezisi",
-						"peopleGuessed": true,
+						"people": [
+							"Deniz"
+						],
 						"date": {
-							"text": "16 Ekim Cuma günü",
+							"text": "16 Ekim Cuma",
 							"day": 16,
 							"month": 10,
 							"weekday": 5
@@ -24,6 +26,7 @@
 						"time": "08:30",
 						"timeText": "08:30",
 						"place": "Gaziantep Hayvanat Bahçesi",
+						"notes": "Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır. Öğrencilerimizin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalarını rica ederiz.",
 						"quote": "4-B sınıfımız 16 Ekim Cuma günü Gaziantep Hayvanat Bahçesi'ne eğitim gezisine gidecektir. Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır."
 					},
 					{
@@ -31,31 +34,19 @@
 						"title": "Gezi ücretini öde",
 						"forMe": true,
 						"date": {
-							"text": "en geç 9 Ekim Perşembe gününe kadar",
+							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "150 TL, sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız.",
+						"notes": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız.",
 						"quote": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Beslenme çantası, su şişesi ve yağmurluk hazırla",
-						"forMe": true,
-						"date": {
-							"text": "16 Ekim Cuma günü",
-							"day": 16,
-							"month": 10,
-							"weekday": 5
-						},
-						"quote": "Öğrencilerimizin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalarını rica ederiz."
 					},
 					{
 						"kind": "calendar.event",
 						"title": "Veli toplantısı",
 						"date": {
-							"text": "20 Ekim Salı günü",
+							"text": "20 Ekim Salı",
 							"day": 20,
 							"month": 10,
 							"weekday": 2

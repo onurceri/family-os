@@ -359,6 +359,22 @@ describe('lists.task', () => {
 		});
 	});
 
+	// Found in use: "Practise every day this week pls!" got the last day of the month.
+	it('reads "this week" as the last day of the week, marked for a look', async () => {
+		for (const approximate of [true, undefined]) {
+			const out = await resolve('lists.task', [
+				{
+					title: 'Practise piano every day',
+					date: { text: 'this week', week: 'this', ...(approximate && { approximate }) },
+				},
+			]);
+			expect(out[0] && 'propose' in out[0] && out[0].propose).toMatchObject({
+				input: { title: 'Practise piano every day', dueDate: '2026-10-11' },
+				uncertain: ['dueDate'],
+			});
+		}
+	});
+
 	it('keeps a deadline day the words do not write in digits, marked for a look', async () => {
 		const out = await resolve('lists.task', [
 			{

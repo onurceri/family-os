@@ -2,7 +2,7 @@
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -35,10 +35,6 @@
 					{
 						"kind": "lists.task",
 						"title": "Gezi ücretini sınıf öğretmenine elden teslim et",
-						"people": [
-							"Ayşe"
-						],
-						"forMe": true,
 						"date": {
 							"text": "9 Ekim Perşembe",
 							"day": 9,
@@ -52,10 +48,6 @@
 					{
 						"kind": "lists.task",
 						"title": "İmzalı veli izin formunu getir",
-						"people": [
-							"Ayşe"
-						],
-						"forMe": true,
 						"date": {
 							"text": "9 Ekim Perşembe",
 							"day": 9,

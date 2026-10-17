@@ -2,7 +2,7 @@
 	"case": "Meals planned for the week (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -16,7 +16,7 @@
 						"title": "Tacos",
 						"date": {
 							"text": "Wednesday",
-							"weekday": 3
+							"weekday": 2
 						},
 						"variant": "dinner",
 						"quote": "tacos on Wednesday"

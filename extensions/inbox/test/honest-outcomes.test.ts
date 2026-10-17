@@ -1,11 +1,12 @@
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
 import records from '@famos/ext-records/server';
-import { FamosError, systemActor } from '@famos/sdk';
+import { FamosError, parseManifest, systemActor } from '@famos/sdk';
 import {
 	createTestKernel,
 	mention,
 	openDatabase,
+	repoTranslate,
 	runMigrations,
 	type TestKernel,
 	understood,
@@ -123,6 +124,76 @@ describe('why a suggestion was left out', () => {
 		await k.worker.drain();
 		expect(k.llm.calls).toHaveLength(before + 1);
 		expect(await latest()).toMatchObject({ status: 'extracted', proposals: 0, skips: [] });
+	});
+
+	it('says Home is not installed when a duty for the flat finds no record, not only "not found"', async () => {
+		// The package ships with the image but the family removed it.
+		await k.close();
+		const manifest = parseManifest({
+			id: 'home',
+			version: '0.1.0',
+			sdk: '^0.7.0',
+			dependsOn: ['records'],
+		});
+		k = await createTestKernel({
+			extensions: [calendar, lists, records, inbox],
+			translate: repoTranslate(),
+			extensionPackages: {
+				list: () => [
+					{
+						id: 'home',
+						version: '0.1.0',
+						always: false,
+						manifest,
+						labels: { en: { name: 'Home', description: 'The household' } },
+					},
+				],
+				place: () => Promise.reject(new Error('nothing to install')),
+			},
+		});
+		mara = await k.member('admin', 'Mara Novak');
+		// Found in use: "2 left out" with "not found in FamilyOS" while Home had been removed.
+		k.llm.respond(
+			understood([
+				mention('records.duty', {
+					title: 'Boiler service',
+					about: 'our flat',
+					date: { text: 'in March', month: 3 },
+				}),
+				mention('lists.shoppingItem', { title: 'Milk', variant: 'dairy' }),
+			]),
+		);
+		await read('Boiler service for our flat is due in March. Milk too.');
+		const item = await latest();
+		expect(item.skips).toEqual([
+			{
+				reason: 'unknown',
+				subject: 'Boiler service',
+				areas: [{ name: 'Home', why: 'not_installed' }],
+			},
+		]);
+	});
+
+	it('says the day an event is on when a cancellation names another', async () => {
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Football training', date: '2026-10-07', startTime: '17:00' },
+			mara.actor,
+		);
+		// What the model made of "no training thurs": the training is on Wednesday.
+		k.llm.respond(
+			understood([
+				mention('calendar.eventCancel', {
+					target: 'football training',
+					date: { text: 'thurs', weekday: 4 },
+				}),
+			]),
+		);
+		await read('no training thurs, coach is away');
+		expect((await latest()).skips).toEqual([
+			{ reason: 'other_day', subject: 'Football training (Wed, Oct 7)' },
+		]);
+		expect(await drafts()).toHaveLength(0);
 	});
 
 	it('does not read again an item that gave suggestions', async () => {

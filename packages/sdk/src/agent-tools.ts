@@ -67,6 +67,7 @@ function issues(details: unknown): string {
 const REFUSAL_WORDS: Record<RefusalReason, string> = {
 	already: 'it is already so, nothing needs to change',
 	unknown: 'what it names is not there',
+	other_day: 'it exists, but on another day than the one named',
 	ambiguous: 'several things fit; ask the person which one they mean',
 	incomplete: 'the input is incomplete or not valid',
 	not_allowed: 'not allowed for this person',

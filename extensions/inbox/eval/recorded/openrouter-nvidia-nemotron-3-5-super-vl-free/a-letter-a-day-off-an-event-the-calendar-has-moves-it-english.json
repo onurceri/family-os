@@ -2,13 +2,8 @@
 	"case": "A letter a day off an event the calendar has moves it (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
-		{
-			"kind": "object",
-			"feature": "inbox.extract",
-			"error": "timeout"
-		},
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
@@ -23,11 +18,11 @@
 							"text": "Tuesday 20 October",
 							"day": 20,
 							"month": 10,
-							"weekday": 2
+							"weekday": 1
 						},
 						"time": "18:00",
 						"timeText": "18:00",
-						"place": "school hall",
+						"place": "School hall",
 						"quote": "Parents' evening is on Tuesday 20 October at 18:00 in the school hall."
 					}
 				]

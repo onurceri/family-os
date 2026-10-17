@@ -2,7 +2,7 @@
 	"case": "Shopping message with imperial units",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -40,15 +40,6 @@
 						"title": "Pumpkin puree",
 						"quantity": "1 can",
 						"quote": "1 can pumpkin puree"
-					},
-					{
-						"kind": "kitchen.meal",
-						"title": "Pancakes",
-						"date": {
-							"text": "Saturday",
-							"weekday": 6
-						},
-						"quote": "the pancakes on Saturday"
 					}
 				]
 			}

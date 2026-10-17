@@ -2,21 +2,18 @@
 	"case": "A vet appointment tomorrow is an event, not a treatment (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Biscuit aşı randevusu",
+				"label": "Biscuit vaccination appointment",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Biscuit aşı randevusu",
-						"people": [
-							"Biscuit"
-						],
+						"title": "Biscuit vaccination",
 						"date": {
 							"text": "yarın",
 							"inDays": 1

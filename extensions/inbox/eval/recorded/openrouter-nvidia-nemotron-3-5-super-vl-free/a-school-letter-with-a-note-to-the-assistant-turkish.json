@@ -2,7 +2,7 @@
 	"case": "A school letter with a note to the assistant (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "d78e697a",
+	"promptHash": "cb4481c9",
 	"answers": [
 		{
 			"kind": "object",
@@ -24,6 +24,7 @@
 							"text": "15 Ekim Perşembe",
 							"day": 15,
 							"month": 10,
+							"year": 2026,
 							"weekday": 4
 						},
 						"time": "08:10",
@@ -34,17 +35,18 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Müze gezisi ücretini öde",
+						"title": "Müze gezisi ücretini ödemek",
 						"people": [
 							"Deniz"
 						],
 						"date": {
-							"text": "12 Ekim Pazartesi",
+							"text": "12 Ekim Pazartesi’ye kadar",
 							"day": 12,
 							"month": 10,
+							"year": 2026,
 							"weekday": 1
 						},
-						"notes": "Gezi ücreti 150 TL, okul idaresine",
+						"notes": "Ücret: 150 TL, okul idaresine",
 						"quote": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli."
 					}
 				]

@@ -52,6 +52,7 @@ describe('the understanding schema', () => {
 		expect(REFUSAL_REASONS).toEqual([
 			'already',
 			'unknown',
+			'other_day',
 			'ambiguous',
 			'incomplete',
 			'not_allowed',
