@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buttonVariants } from '../src/components/button/button.svelte';
 
-describe('buttonVariants (design system v2 section 5.1)', () => {
+describe('buttonVariants', () => {
 	it('knows the v2 variants', () => {
 		for (const variant of ['primary', 'secondary', 'outline', 'ghost', 'go', 'danger'] as const) {
 			expect(buttonVariants({ variant })).toContain('rounded-[var(--r-ctl)]');

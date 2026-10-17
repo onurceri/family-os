@@ -33,7 +33,7 @@ export function dueLabel(
 	return t('due_in_days', { count: days, date });
 }
 
-/** State text of a row meta (design system v2 section 5.7): 13/700, one per row. */
+/** State text of a row meta: 13/700, one per row. */
 export const stateTextClass = (status: DueStatus) =>
 	status === 'overdue'
 		? 'text-attention font-bold'

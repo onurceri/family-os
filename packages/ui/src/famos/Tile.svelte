@@ -3,7 +3,7 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	/**
-	 * A standalone row on the wall (design system v2 sections 3.4 and 5.6): 48 px, 56 with a
+	 * A standalone row on the wall: 48 px, 56 with a
 	 * subtitle, title 15/600. Lit (`surface` + `shadow-lit`) by default; `idle` recedes into the wall;
 	 * `selected` adds a 2 px `ink` inset ring and `aria-current`; `done` strikes the title. Renders
 	 * a link when `href` is set, a button when `onclick` is set, otherwise a div.

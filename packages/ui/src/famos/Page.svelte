@@ -8,7 +8,7 @@
 	import PageHeader from './PageHeader.svelte';
 
 	/**
-	 * The one page frame (design system v2 section 3.2): every page renders inside it, and it alone
+	 * The one page frame: every page renders inside it, and it alone
 	 * decides a page's width and centring. The template picks a width class (`page-frame.ts`); pages
 	 * of one class share their maximum width and their left edge, so titles line up. A page never
 	 * writes its own width, centring or negative margins (a test enforces it).

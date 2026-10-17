@@ -4,7 +4,7 @@
 	import type { EmptyArtName } from './empty-art.js';
 
 	/**
-	 * One shape for every empty page (design system v2 section 3.6): a card of at most 420 px, a
+	 * One shape for every empty page: a card of at most 420 px, a
 	 * small drawing of the area (`art`, or a 52 px disc with an icon), a line saying what the page is
 	 * for, a line on what to do, the primary action.
 	 */

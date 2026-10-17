@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * A section label on the wall (design system v2 section 5.5): uppercase label, a plain count,
+	 * A section label on the wall: uppercase label, a plain count,
 	 * actions at the right (ghost buttons), then its content (rows or a card).
 	 */
 	let {

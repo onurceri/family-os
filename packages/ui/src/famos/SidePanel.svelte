@@ -17,7 +17,7 @@
 	import { wide } from './wide.svelte.js';
 
 	/**
-	 * Details and forms next to the page (design system v2 section 4.4). On windows 1024 px wide and
+	 * Details and forms next to the page. On windows 1024 px wide and
 	 * more it is a panel on the right (360 px up to 1279, 420 px above) and the page stays visible;
 	 * on narrower ones it is a `Sheet` with Cancel, the title and Save. The width decides, never the
 	 * device. Esc closes (asks first when `dirty`); `Cmd/Ctrl+Enter` saves; focus moves in and

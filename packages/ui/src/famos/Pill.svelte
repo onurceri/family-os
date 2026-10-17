@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * A status pill (design system v2 section 5.7), 24 px. Tinted tones put a 15 % tint of the
+	 * A status pill, 24 px. Tinted tones put a 15 % tint of the
 	 * state colour behind text that is the state colour mixed toward `ink` (65/35 for
 	 * attention, now and info; 50/50 for heat and sun), so the text keeps 4.5:1 on its own tint in
 	 * every bundled pack (packages/themes/test/pill-contrast.test.ts). `solid` is for done.

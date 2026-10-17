@@ -6,7 +6,7 @@
 	import { wide } from './wide.svelte.js';
 
 	/**
-	 * The "list and detail" page pattern (design system v2 section 3.2), in the `list-detail`
+	 * The "list and detail" page pattern, in the `list-detail`
 	 * template's frame (`Page`, the standard width). The page title and its
 	 * main action sit across the full width; below, a list column on the left (260 px at 1024-1279,
 	 * 280 px above) and the chosen item on the right (the rest of the 1200 px frame). The selection lives in the URL,

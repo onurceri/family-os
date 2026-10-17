@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
-	 * Totals of an overview (design system v2 section 5.8): a card with two to four facts, each a
-	 * 12/600 uppercase label above a value in the style's display face (`type-figure`).
+	 * Totals of an overview: a card with two to four facts, each a 12/600 uppercase label above a
+	 * value in the style's display face (`type-figure`), so the numbers carry the page's voice.
 	 */
 	let {
 		items,

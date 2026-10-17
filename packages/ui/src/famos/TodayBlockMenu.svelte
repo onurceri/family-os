@@ -7,7 +7,7 @@
 	import { wide } from './wide.svelte.js';
 
 	/**
-	 * The `...` at the end of a Today block's label (design system v2 section 5.11): "Hide from
+	 * The `...` at the end of a Today block's label: "Hide from
 	 * Today". A menu from the button on wide windows, an action sheet from the bottom on phones and
 	 * tablets. Renders nothing outside a `TodayBlock` that may be hidden.
 	 */

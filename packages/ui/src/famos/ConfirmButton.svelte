@@ -4,7 +4,7 @@
 	/**
 	 * Two-tap confirmation (Ev Işığı): the first tap arms the button and shows `confirmLabel`;
 	 * a second tap within `windowMs` runs `onconfirm`. Waiting, or leaving, disarms it. The danger
-	 * look (design system v2 section 5.1): `destructive` text, a filled `destructive` once armed.
+	 * look: `destructive` text, a filled `destructive` once armed.
 	 */
 	let {
 		label,

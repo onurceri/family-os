@@ -4,7 +4,7 @@
 
 <script lang="ts">
 	/**
-	 * One style for every choice of up to four options (design system v2 section 5.3). A
+	 * One style for every choice of up to four options. A
 	 * radiogroup: one tab stop, arrow keys move and choose, Home and End jump.
 	 */
 	let {

@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * A quiet row with an icon and a sentence (design system v2 section 5.10): previews,
+	 * A quiet row with an icon and a sentence: previews,
 	 * server-set values and warnings inside the form that needs them. `warn` is `heat`, `alert` is
 	 * `attention`; an alert is announced.
 	 */

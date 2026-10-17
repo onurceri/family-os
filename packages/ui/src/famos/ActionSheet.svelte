@@ -4,7 +4,7 @@
 	import type { MenuItem } from './menu-items.js';
 
 	/**
-	 * The phone version of a Menu (design system v2 section 5.11): rises from the bottom with the
+	 * The phone version of a Menu: rises from the bottom with the
 	 * item's name as title, 48 px actions and a Cancel row. A modal dialog: focus moves in, Tab is
 	 * trapped, Escape or the scrim closes, focus returns to what opened it.
 	 */

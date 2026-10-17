@@ -246,7 +246,7 @@ export type NavChild = Pick<
 >;
 
 /**
- * The groups of the settings list (design system v2 section 7.2): what is about you, the family,
+ * The groups of the settings list: what is about you, the family,
  * the AI, and the system. The list is the settings sidebar on wide windows and More on phones.
  */
 export const SETTINGS_SECTIONS = ['you', 'family', 'ai', 'system'] as const;

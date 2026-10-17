@@ -3,7 +3,7 @@
 	import { focusFirst, trapTab } from './focus.js';
 
 	/**
-	 * A centred modal for the few interrupts that must block (design system v2 section 5.11):
+	 * A centred modal for the few interrupts that must block:
 	 * 400 px, 90 % on phones. A native `<dialog>` shown with `showModal()`: the page behind is
 	 * inert; Tab is also trapped here, Escape asks `onclose`, and focus returns to what opened
 	 * it. Put the safe choice first in `actions`, or mark it `data-autofocus`.

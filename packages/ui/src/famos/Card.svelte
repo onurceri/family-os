@@ -3,7 +3,7 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	/**
-	 * A container (design system v2 section 5.6): `surface` with a 1 px line and no shadow.
+	 * A container: `surface` with a 1 px line and no shadow.
 	 * `lit` has the shadow and no line (the one thing that matters on a page); `quiet` is `idle`.
 	 * `rows` divides its children with 1 px lines. A card never contains a card.
 	 */

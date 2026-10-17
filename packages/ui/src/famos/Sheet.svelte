@@ -4,7 +4,7 @@
 	import { focusFirst, trapTab } from './focus.js';
 
 	/**
-	 * The form container on phones and tablets (design system v2 section 4.4): full height from
+	 * The form container on phones and tablets: full height from
 	 * 12 px below the top, radius 14, a grab handle and a bar with Cancel, the title and Save. A
 	 * `half` sheet (at most 85 %) is for pickers. A modal dialog: focus moves to the first field,
 	 * Tab is trapped, Escape or the scrim asks `onclose`, focus returns to what opened it. Omit

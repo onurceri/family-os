@@ -3,7 +3,7 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	/**
-	 * A line (design system v2 section 5.6): 48 px, 56 with a meta line; leading visual, title,
+	 * A line: 48 px, 56 with a meta line; leading visual, title,
 	 * meta, trailing content. A link when `href` is set, a button when `onclick` is set, else a div.
 	 * `tile` makes it a standalone row on the wall (lit, radius 12); `idle` a receded one.
 	 */

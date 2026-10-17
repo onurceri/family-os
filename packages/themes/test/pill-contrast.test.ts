@@ -4,7 +4,7 @@ import { contrastRatio, parseColor, type Rgba, validateThemePack } from '../src/
 import { listThemeDirsSync, readThemeDirSync } from '../src/node.ts';
 
 /**
- * Design system v2 section 5.7: a status pill puts a 15 % tint of the state colour behind text
+ * A status pill puts a 15 % tint of the state colour behind text
  * that is the state colour mixed toward `ink` (65/35 for attention, now and info; 50/50 for heat
  * and sun), mixed in oklab like CSS `color-mix(in oklab, ...)` in packages/ui/src/famos/Pill.svelte.
  * This computes those mixes for every bundled pack, day and night, so a new pack cannot ship a
@@ -82,7 +82,7 @@ const color = (text: string): Rgba => {
 	return parsed;
 };
 
-describe('status pills keep 4.5:1 in every bundled pack (design system v2 section 5.7)', () => {
+describe('status pills keep 4.5:1 in every bundled pack', () => {
 	const ids = listThemeDirsSync(join(root, 'themes')).map((dir) => dir.split('/').pop() as string);
 
 	it('finds the six bundled packs', () => {

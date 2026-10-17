@@ -6,10 +6,10 @@
 	import { useChores } from './i18n.js';
 
 	/**
-	 * One chore as a tile (design system v2 section 5.6): a round check (one tap marks it done), the
-	 * title with when it is due and whose turn it is, and the way into the editor. The due time is
-	 * coloured in the meta only (state is said once); colors on the check and avatar are the
-	 * member's, never semantic.
+	 * One chore as a tile: a round check (one tap marks it done), the title with when it is due
+	 * and whose turn it is, and the way into the editor. The due time is coloured in the meta only,
+	 * so the state is said once; the colours on the check and the avatar are the member's, never a
+	 * state colour, because a member's colour must not read as "late" or "done".
 	 */
 	let {
 		chore,

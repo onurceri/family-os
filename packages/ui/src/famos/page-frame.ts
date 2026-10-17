@@ -1,5 +1,5 @@
 /**
- * The page templates (design system v2 section 3.2) and the width class each one sits in. Pages of
+ * The page templates and the width class each one sits in. Pages of
  * one width class share one frame: the same maximum width, centred the same way, so their titles
  * start at the same x.
  *

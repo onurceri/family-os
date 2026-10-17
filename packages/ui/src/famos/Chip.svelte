@@ -3,7 +3,7 @@
 	import type { HTMLButtonAttributes } from 'svelte/elements';
 
 	/**
-	 * Design system v2 section 5.3. `filter`: idle, an ink ring when on (a toggle, aria-pressed).
+	 * A small rounded choice or shortcut. `filter`: idle, an ink ring when on (a toggle, aria-pressed).
 	 * `member`: avatar in `lead`, the member `color` is the ring when on (a toggle). `preset`:
 	 * outlined, a "+" in `lead`; it adds something when tapped (a plain button).
 	 */

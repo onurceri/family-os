@@ -3,7 +3,7 @@
 	import { Ellipsis } from '@lucide/svelte';
 
 	/**
-	 * The `...` button of a record's head (design system v2 sections 4.1 and 5.11): a menu from the
+	 * The `...` button of a record's head: a menu from the
 	 * button on wide windows, an action sheet from the bottom on phones and tablets.
 	 */
 	let {

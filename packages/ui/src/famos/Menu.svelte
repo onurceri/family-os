@@ -3,7 +3,7 @@
 	import type { MenuItem } from './menu-items.js';
 
 	/**
-	 * A popover list of actions from a `...` button (design system v2 section 5.11). `trigger`
+	 * A popover list of actions from a `...` button. `trigger`
 	 * receives attributes to spread on the button that opens it. `role="menu"`: the first item
 	 * takes focus, arrow keys move (wrapping), Home and End jump, Escape closes and returns focus
 	 * to the button, Tab and a click outside close it. On phones use ActionSheet instead.

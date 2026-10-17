@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * The floating add button on phone list pages (design system v2 section 4.3): 56 px, `ink`,
+	 * The floating add button on phone list pages: 56 px, `ink`,
 	 * `shadow-pop`, right side, above the tab bar and the safe area (`--fab-bottom` is the tab
 	 * bar's height, set by the shell). Hide it while a sheet is open or the keyboard is up.
 	 */

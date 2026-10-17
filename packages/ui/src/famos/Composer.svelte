@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * The inline add field (design system v2 section 5.9): a tile with a "+", a placeholder that
+	 * The inline add field: a tile with a "+", a placeholder that
 	 * teaches the syntax. Enter adds and keeps focus, Esc clears. With text, `onmore` shows an
 	 * "Add details" link that opens the panel or sheet pre-filled.
 	 */

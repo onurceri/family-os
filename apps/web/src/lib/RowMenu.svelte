@@ -4,9 +4,8 @@
 	import { t } from '#lib/i18n.svelte.js';
 
 	/**
-	 * The `...` button of a row: a popover Menu on wide windows, an ActionSheet on phones (design
-	 * system v2 sections 5.11 and 5.12). `name` is the row's name, so the button says `Options for
-	 * Amy`.
+	 * The `...` button of a row: a popover Menu on wide windows, an ActionSheet on phones, where a
+	 * small popover is hard to hit. `name` is the row's name, so the button says `Options for Amy`.
 	 */
 	let { name, items }: { name: string; items: MenuItem[] } = $props();
 	let sheet = $state(false);
