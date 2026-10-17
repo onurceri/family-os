@@ -10,6 +10,7 @@ import { searchIndex } from './search.ts';
 import { addService, archiveService, getService, listServices, updateService } from './services.ts';
 import { homeChanged } from './shared.ts';
 import { migrations } from './store.ts';
+import { itemKind } from './understand.ts';
 
 /**
  * Home: the household's homes, the things in them with their warranties, the utilities and
@@ -22,7 +23,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { context: [aiContext.id, aiContextItems.id], index: searchIndex },
+	ai: { context: [aiContext.id, aiContextItems.id], index: searchIndex, kinds: [itemKind] },
 	actions: [
 		addHome,
 		updateHome,

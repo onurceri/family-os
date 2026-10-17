@@ -29,6 +29,7 @@ import {
 import { obligationDueKind, remindJob } from './reminders.ts';
 import { searchIndex } from './search.ts';
 import { migrations } from './store.ts';
+import { dutyDoneKind, dutyKind } from './understand.ts';
 
 /**
  * Records: obligations (duties that come back, with reminders) and papers for any record a
@@ -39,7 +40,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { context: aiContext.id, index: searchIndex },
+	ai: { context: aiContext.id, index: searchIndex, kinds: [dutyKind, dutyDoneKind] },
 	actions: [
 		aiContext,
 		upcoming,

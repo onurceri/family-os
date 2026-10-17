@@ -18,6 +18,7 @@ import { choreDueKind, remindJob } from './reminders.ts';
 import { choresChanged } from './shared.ts';
 import { migrations } from './store.ts';
 import { getTodayByMember, todayByMemberAction } from './today.ts';
+import { choreKind, doneKind, turnsKind } from './understand.ts';
 
 /**
  * Chores: shared household work that rotates fairly and is ticked off with one tap. The AI may
@@ -28,6 +29,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
+	ai: { kinds: [choreKind, doneKind, turnsKind] },
 	actions: [
 		createChore,
 		updateChore,
