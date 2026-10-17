@@ -231,11 +231,11 @@ describe('naming one date of a repeating event by its day', () => {
 
 describe('finding an event by its text', () => {
 	const find = (input: Record<string, unknown>) =>
-		k.runner.invoke<{ events: { title: string; date: string }[]; note?: string }>(
-			'calendar.findEvents',
-			input,
-			{ kind: 'ai', mode: 'conversation', source: 'assistant' },
-		);
+		k.runner.invoke<{
+			events: { title: string; date: string }[];
+			forOthers?: { title: string }[];
+			note?: string;
+		}>('calendar.findEvents', input, { kind: 'ai', mode: 'conversation', source: 'assistant' });
 
 	it('searches from today for two months when only text is given', async () => {
 		await create({ title: 'Delft project call', date: '2026-11-20', startTime: '10:00' });
@@ -290,6 +290,40 @@ describe('finding an event by its text', () => {
 		expect(found.output).toMatchObject({
 			nextMatch: { id: gala, title: 'Swimming gala', date: '2026-11-07' },
 		});
+	});
+
+	it('shows the other members’ matches when a person filter left a search empty', async () => {
+		// gpt-4.1-mini sent "When is the swimming this week?" from Lukas with members: [Lukas], and
+		// answered "no swimming" while Noah swims on Tuesday.
+		const lukas = await k.member('member', 'Lukas');
+		const noah = await k.member('member', 'Noah');
+		await create({
+			title: 'Swimming',
+			date: '2026-10-13',
+			startTime: '17:00',
+			memberIds: [noah.member.id],
+		});
+		await create({
+			title: 'Dentist',
+			date: '2026-10-14',
+			startTime: '09:00',
+			memberIds: [noah.member.id],
+		});
+		const found = await find({
+			from: '2026-10-12',
+			to: '2026-10-18',
+			text: 'swimming',
+			members: [lukas.member.id],
+		});
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.events).toEqual([]);
+		expect(found.output.forOthers?.map((e) => e.title)).toEqual(['Swimming']);
+		expect(found.output.note).toContain('the matches in it for other members are in forOthers');
+		// Without a text, the filter keeps the person's own and counts what it left out.
+		const week = await find({ from: '2026-10-12', to: '2026-10-18', members: [lukas.member.id] });
+		if (week.status !== 'applied') throw new Error('expected applied');
+		expect(week.output.forOthers).toBeUndefined();
+		expect(week.output.note).toContain('2 more events match in this range for other members only');
 	});
 
 	it('names the next match when the searched range has none', async () => {

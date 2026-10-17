@@ -126,6 +126,27 @@ export const REFUSAL_REASONS = [
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 
+/**
+ * Why an action refused an AI's call, in the one list above: a person may not (`forbidden`), it
+ * is already so (the runner's `settled`), what it names is not there (the runner's `other_target`,
+ * `not_found`, or an input that fails on the field naming the record), else incomplete.
+ */
+export function refusalOf(error: { code: string; details?: unknown }): RefusalReason {
+	if (error.code === 'forbidden') return 'not_allowed';
+	if (error.code === 'not_found') return 'unknown';
+	if (error.code === 'conflict') {
+		const refused = (error.details as { refused?: unknown } | null | undefined)?.refused;
+		if (refused === 'settled') return 'already';
+		if (refused === 'other_target') return 'unknown';
+	}
+	if (error.code === 'bad_request') {
+		const tree = error.details as { properties?: Record<string, unknown> } | null | undefined;
+		if (tree?.properties && ('id' in tree.properties || 'recordId' in tree.properties))
+			return 'unknown';
+	}
+	return 'incomplete';
+}
+
 /** At most this many mentions are read from one answer; a longer one is a runaway answer. */
 export const MENTION_LIMIT = 16;
 

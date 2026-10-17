@@ -1329,6 +1329,37 @@ export interface operations {
                                 when?: "past" | "now" | "upcoming";
                             }[];
                             truncated: boolean;
+                            /** @description Only when `members` left a search by `text` empty: the matches in the range for other members */
+                            forOthers?: {
+                                /** @description The event, for changing or deleting it; null for subscribed calendars */
+                                id: string | null;
+                                /** @description Repeating events only: the key of this date, for changing or deleting only that one */
+                                occurrence?: string;
+                                title: string;
+                                date: string;
+                                endDate: string | null;
+                                /** @description HH:MM-HH:MM local time; null for all-day events */
+                                time: string | null;
+                                /** @description Left out means the whole family */
+                                memberIds: string[];
+                                location: string | null;
+                                tags: string[];
+                                /**
+                                 * @description Only on repeating events
+                                 * @enum {boolean}
+                                 */
+                                recurring?: true;
+                                /**
+                                 * @description Only on events from a subscribed calendar
+                                 * @enum {boolean}
+                                 */
+                                external?: true;
+                                /**
+                                 * @description Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date
+                                 * @enum {string}
+                                 */
+                                when?: "past" | "now" | "upcoming";
+                            }[];
                             note?: string;
                             /** @description Only when nothing matched in the range: the next match after it */
                             nextMatch?: {

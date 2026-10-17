@@ -171,9 +171,9 @@ export const addLog = defineAction({
 	undo: (log) => ({ actionId: 'vehicles.removeLog', input: { id: log.id } }),
 	ai: {
 		description:
-			'Record a service or repair of a household vehicle from an invoice, a service receipt or a message: the date, the place and what was done. Choose it when the shared item shows work that was done on a listed vehicle.',
+			'Record a service or repair of a household vehicle from an invoice, a service receipt or a message: the date, the place and what was done. The vehicle must be one of the household vehicles.',
 		guidance:
-			'vehicleId is the vehicle handle from the household records (for example vehicle:1); never invent one, and propose nothing when the vehicle is not listed. doneOn is the date of the work (the invoice date). kind is service for regular maintenance, repair for fixing something, other otherwise. place is the garage. notes say what was done in a few words; a mileage may be written there. Do not put amounts of money anywhere. vehicleName is the vehicle as listed.',
+			'vehicleId is the vehicle’s reference from the vehicles list; look the vehicle up first, and when it is not there, say so instead. doneOn is the date of the work. kind is service for regular maintenance, repair for fixing something, other otherwise. place is the garage. notes say what was done in a few words; a mileage may be written there. Do not put amounts of money anywhere. vehicleName is the vehicle as listed.',
 	},
 	async alreadyThere(ctx, input) {
 		const row = await tables(ctx.db)

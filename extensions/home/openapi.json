@@ -3097,7 +3097,7 @@
 									"homeId": {
 										"type": "string",
 										"pattern": "^home_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-										"description": "The home it is in (its handle from the household records)"
+										"description": "The home it is in"
 									},
 									"obligations": {
 										"type": "array",
@@ -3534,7 +3534,7 @@
 									"id": {
 										"type": "string",
 										"pattern": "^home_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-										"description": "The thing (its handle from the household records)"
+										"description": "The thing"
 									},
 									"name": {
 										"type": "string",

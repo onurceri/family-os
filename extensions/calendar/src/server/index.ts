@@ -238,7 +238,7 @@ export const createEvent = defineAction({
 		description:
 			'Adds an event to the family calendar: appointments, school trips, classes, visits, deliveries, services. Use for anything that happens at a date (and usually a time).',
 		guidance:
-			'Use the family time zone. Resolve relative dates ("Friday", "tomorrow") from today\'s date. Set allDay only when no time is given. List the members involved; leave empty for the whole family. Use one of the existing family tags when it fits (they are listed when known); add a new short tag only when none does. At most 2. An event the item states is added even when the person, pet or thing it is for is not in the household records: name them in the title.',
+			'Use the family time zone. Resolve relative dates ("Friday", "tomorrow") from today\'s date. Set allDay only when no time is given. List the members involved; leave empty for the whole family. Use one of the existing family tags when it fits (they are listed when known); add a new short tag only when none does. At most 2. When the person, pet or thing it is for is not a member, name them in the title.',
 	},
 	async run(uow, input) {
 		await assertMembers(uow, input.memberIds ?? []);
@@ -717,6 +717,35 @@ const NEXT_MATCH_DAYS = 366;
 const clock = (ms: number, timeZone: string) =>
 	zoned(ms, timeZone).toPlainTime().toString({ smallestUnit: 'minute' });
 
+/** One event as `calendar.findEvents` gives it to the model. */
+const FoundEventSchema = z.object({
+	id: z
+		.string()
+		.nullable()
+		.describe('The event, for changing or deleting it; null for subscribed calendars'),
+	occurrence: z
+		.string()
+		.optional()
+		.describe(
+			'Repeating events only: the key of this date, for changing or deleting only that one',
+		),
+	title: z.string(),
+	date: z.string(),
+	endDate: z.string().nullable(),
+	time: z.string().nullable().describe('HH:MM-HH:MM local time; null for all-day events'),
+	memberIds: z.array(z.string()).describe('Left out means the whole family'),
+	location: z.string().nullable(),
+	tags: z.array(z.string()),
+	recurring: z.literal(true).optional().describe('Only on repeating events'),
+	external: z.literal(true).optional().describe('Only on events from a subscribed calendar'),
+	when: z
+		.enum(['past', 'now', 'upcoming'])
+		.optional()
+		.describe(
+			'Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date',
+		),
+});
+
 export const findEvents = defineAction({
 	id: 'calendar.findEvents',
 	title: 'Find events in a date range, for the AI',
@@ -750,36 +779,14 @@ export const findEvents = defineAction({
 			.describe('Only events with this existing family tag; leave out unless a tag was named'),
 	}),
 	output: z.object({
-		events: z.array(
-			z.object({
-				id: z
-					.string()
-					.nullable()
-					.describe('The event, for changing or deleting it; null for subscribed calendars'),
-				occurrence: z
-					.string()
-					.optional()
-					.describe(
-						'Repeating events only: the key of this date, for changing or deleting only that one',
-					),
-				title: z.string(),
-				date: z.string(),
-				endDate: z.string().nullable(),
-				time: z.string().nullable().describe('HH:MM-HH:MM local time; null for all-day events'),
-				memberIds: z.array(z.string()).describe('Left out means the whole family'),
-				location: z.string().nullable(),
-				tags: z.array(z.string()),
-				recurring: z.literal(true).optional().describe('Only on repeating events'),
-				external: z.literal(true).optional().describe('Only on events from a subscribed calendar'),
-				when: z
-					.enum(['past', 'now', 'upcoming'])
-					.optional()
-					.describe(
-						'Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date',
-					),
-			}),
-		),
+		events: z.array(FoundEventSchema),
 		truncated: z.boolean(),
+		forOthers: z
+			.array(FoundEventSchema)
+			.optional()
+			.describe(
+				'Only when `members` left a search by `text` empty: the matches in the range for other members',
+			),
 		note: z.string().optional(),
 		nextMatch: z
 			.object({
@@ -832,7 +839,7 @@ export const findEvents = defineAction({
 				.executeTakeFirst();
 			if (!known) notes.push(`There is no family tag "${tag}"; use \`text\` to search by subject.`);
 		}
-		const between = async (a: string, b: string) => {
+		const between = async (a: string, b: string, byMembers = true) => {
 			const [own, external] = await Promise.all([
 				occurrencesBetween(uow.db, a, b, timeZone),
 				externalOccurrencesBetween(uow.db, a, b, timeZone),
@@ -840,6 +847,7 @@ export const findEvents = defineAction({
 			return sortOccurrences([...own, ...external], timeZone)
 				.filter(
 					(o) =>
+						!byMembers ||
 						!members?.length ||
 						o.memberIds.length === 0 ||
 						o.memberIds.some((m) => (members as readonly string[]).includes(m)),
@@ -850,6 +858,25 @@ export const findEvents = defineAction({
 				);
 		};
 		const all = await between(from, to);
+		// What the person filter left out is told, so an agent that filtered when the question was
+		// about the whole family learns there is more instead of answering "nothing". A search by
+		// name that the filter left empty also shows the other members' matches: "the swimming"
+		// may be anyone's, and only the person's words say whether it had to be theirs.
+		type Found = (typeof all)[number];
+		let forOthers: Found[] = [];
+		if (members?.length) {
+			const unfiltered = await between(from, to, false);
+			const others = unfiltered.length - all.length;
+			if (all.length === 0 && needle && others > 0) {
+				forOthers = unfiltered.slice(0, MAX_FOUND);
+				notes.push(
+					'Nothing in this range for the members asked about; the matches in it for other members are in forOthers.',
+				);
+			} else if (others > 0)
+				notes.push(
+					`${others} more ${others === 1 ? 'event matches' : 'events match'} in this range for other members only; leave \`members\` out to see them.`,
+				);
+		}
 		let nextMatch:
 			| { id: string | null; occurrence?: string; title: string; date: string }
 			| undefined;
@@ -878,36 +905,38 @@ export const findEvents = defineAction({
 			notes.push(
 				`Only the first ${MAX_FOUND} of ${all.length} events are shown. Narrow the query (a shorter date range or a text filter) to see the rest.`,
 			);
+		const view = (o: Found) => {
+			const date = o.allDay
+				? (o.startDate as string)
+				: zoned(o.start as number, timeZone)
+						.toPlainDate()
+						.toString();
+			const when = whenOf(o, now, today);
+			return {
+				id: o.source === null ? o.eventId : null,
+				...(o.recurring && { occurrence: o.key }),
+				title: o.title,
+				date,
+				endDate: o.allDay && o.endDate && o.endDate !== o.startDate ? o.endDate : null,
+				time:
+					!o.allDay && o.start !== null
+						? `${clock(o.start, timeZone)}${o.end !== null ? `-${clock(o.end, timeZone)}` : ''}`
+						: null,
+				memberIds: o.memberIds,
+				location: o.location,
+				tags: o.tags,
+				// Flags only when set: most events are neither, and every field costs tokens.
+				...(o.recurring && { recurring: true as const }),
+				...(o.source !== null && { external: true as const }),
+				// Other days are before or after today by their date; the model needs this only
+				// to tell what is over from what is still to come today.
+				...((date === today || when === 'now') && { when }),
+			};
+		};
 		return {
-			events: all.slice(0, MAX_FOUND).map((o) => {
-				const date = o.allDay
-					? (o.startDate as string)
-					: zoned(o.start as number, timeZone)
-							.toPlainDate()
-							.toString();
-				const when = whenOf(o, now, today);
-				return {
-					id: o.source === null ? o.eventId : null,
-					...(o.recurring && { occurrence: o.key }),
-					title: o.title,
-					date,
-					endDate: o.allDay && o.endDate && o.endDate !== o.startDate ? o.endDate : null,
-					time:
-						!o.allDay && o.start !== null
-							? `${clock(o.start, timeZone)}${o.end !== null ? `-${clock(o.end, timeZone)}` : ''}`
-							: null,
-					memberIds: o.memberIds,
-					location: o.location,
-					tags: o.tags,
-					// Flags only when set: most events are neither, and every field costs tokens.
-					...(o.recurring && { recurring: true as const }),
-					...(o.source !== null && { external: true as const }),
-					// Other days are before or after today by their date; the model needs this only
-					// to tell what is over from what is still to come today.
-					...((date === today || when === 'now') && { when }),
-				};
-			}),
+			events: all.slice(0, MAX_FOUND).map(view),
 			truncated: all.length > MAX_FOUND,
+			...(forOthers.length > 0 && { forOthers: forOthers.map(view) }),
 			...(nextMatch && { nextMatch }),
 			...(notes.length > 0 && { note: notes.join(' ') }),
 		};

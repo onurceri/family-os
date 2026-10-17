@@ -1641,7 +1641,7 @@ export interface operations {
                     /** @description The last day of the warranty, YYYY-MM-DD */
                     warrantyUntil?: string | null;
                     notes?: string | null;
-                    /** @description The home it is in (its handle from the household records) */
+                    /** @description The home it is in */
                     homeId: string;
                     /** @default [] */
                     obligations?: {
@@ -1811,7 +1811,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The thing (its handle from the household records) */
+                    /** @description The thing */
                     id: string;
                     name?: string;
                     room?: string;

@@ -176,9 +176,9 @@ export const addTreatment = defineAction({
 	undo: (treatment) => ({ actionId: 'pets.removeTreatment', input: { id: treatment.id } }),
 	ai: {
 		description:
-			'Record a treatment given to a household pet from a vet card, a vet receipt or a message: a vaccination, a parasite treatment, a check-up or a medication, with the date and the product. Choose it when the shared item shows that a listed pet was treated.',
+			'Record a treatment given to a household pet from a vet card, a vet receipt or a message: a vaccination, a parasite treatment, a check-up or a medication, with the date and the product. The pet must be one of the household pets.',
 		guidance:
-			'petId is the pet handle from the household records (for example pet:1); never invent one, and propose nothing when the pet is not listed. givenOn is the day it was given (the card or receipt date). kind is vaccination, parasite_internal, parasite_external, checkup, medication or other. product is what was given, batch the lot number, vet the clinic. If an open duty of that pet matches (for example the rabies vaccination), include its handle from the household records as obligationId and, when the document says when the next one is due, nextDueDate; otherwise leave both out. Do not put amounts of money anywhere. petName is the pet as listed.',
+			'petId is the pet’s reference from the pets list; look the pet up first, and when it is not there, say so instead. givenOn is the day it was given. kind is vaccination, parasite_internal, parasite_external, checkup, medication or other. product is what was given, batch the lot number, vet the clinic. When an open duty of that pet matches (for example the rabies vaccination), give its reference from the list of duties as obligationId and, when the next one’s date is known, nextDueDate; otherwise leave both out. Do not put amounts of money anywhere. petName is the pet as listed.',
 	},
 	async alreadyThere(ctx, input) {
 		const row = await tables(ctx.db)

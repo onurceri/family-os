@@ -71,7 +71,7 @@ export const addToMealPlan = defineAction({
 		description:
 			'Put a meal on the family meal plan for a day: breakfast, lunch, dinner or something else, either a saved recipe or a written dish.',
 		guidance:
-			'date is the day it is cooked (YYYY-MM-DD). slot is breakfast, lunch, dinner or other (dinner when not said). Use recipeId only with a recipe handle from the recipe list; otherwise write the dish in title, in the family language.',
+			'date is the day it is cooked (YYYY-MM-DD). slot is breakfast, lunch, dinner or other (dinner when not said). Use recipeId only with a recipe’s reference from the recipe list; otherwise write the dish in title, in the family language.',
 	},
 	async alreadyThere(ctx, input) {
 		const rows = await tables(ctx.db)

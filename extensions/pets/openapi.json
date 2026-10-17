@@ -2359,7 +2359,7 @@
 									"petId": {
 										"type": "string",
 										"pattern": "^pet_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-										"description": "The pet (its handle from the household records)"
+										"description": "The pet"
 									},
 									"kind": {
 										"type": "string",
@@ -2423,7 +2423,7 @@
 									},
 									"nextDueDate": {
 										"type": "string",
-										"description": "When the next one is due, YYYY-MM-DD, if the document says so; only with obligationId"
+										"description": "When the next one is due, YYYY-MM-DD, when known; only with obligationId"
 									},
 									"petName": {
 										"type": "string",

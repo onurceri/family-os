@@ -121,7 +121,10 @@ export interface LlmChatRequest {
 	system?: string;
 	messages: readonly LlmChatMessage[];
 	tools: readonly LlmChatTool[];
-	/** The most model round trips (a round trip that calls tools is one step). */
+	/**
+	 * The most model round trips (a round trip that calls tools is one step). The last one gets no
+	 * tools, nor does any step once most of `timeoutMs` is gone: the loop ends with an answer.
+	 */
 	maxSteps: number;
 	/**
 	 * Asked before each step: once it returns true the model gets no tools and must answer

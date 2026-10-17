@@ -142,7 +142,7 @@ export const PetSchema = z.object({
 export type Pet = z.infer<typeof PetSchema>;
 
 export const AddTreatmentSchema = z.object({
-	petId: PetIdSchema.describe('The pet (its handle from the household records)'),
+	petId: PetIdSchema.describe('The pet'),
 	kind: TreatmentKindSchema.default('vaccination'),
 	givenOn: IsoDateSchema.describe('The day it was given, YYYY-MM-DD'),
 	product: z
@@ -163,7 +163,7 @@ export const AddTreatmentSchema = z.object({
 		.optional()
 		.describe('The open duty this fulfils (its handle, e.g. obligation:2), if one matches'),
 	nextDueDate: IsoDateSchema.optional().describe(
-		'When the next one is due, YYYY-MM-DD, if the document says so; only with obligationId',
+		'When the next one is due, YYYY-MM-DD, when known; only with obligationId',
 	),
 	/** Only for people reviewing a suggestion: which pet it is. Never stored. */
 	petName: z

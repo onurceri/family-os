@@ -19,6 +19,7 @@ import {
 	type ProposalRefusalDetails,
 	parseUnderstanding,
 	type Resolution,
+	refusalOf,
 	subjectOf,
 } from '@famos/sdk';
 import { clockTimes, formatDate, todayIn } from '@famos/time';
@@ -150,20 +151,9 @@ export async function readRecordContexts(
 const subjectIn = (input: unknown): string | null => subjectOf(JSON.stringify(input ?? {})) ?? null;
 
 /**
- * Whether a rejected input failed on the field that names a record (`id`, `recordId`): the
- * suggestion pointed at something that is not there, which a person reads differently from a
- * missing field.
- */
-export function namesRecordBadly(details: unknown): boolean {
-	const tree = details as { properties?: Record<string, unknown> } | null;
-	return Boolean(tree?.properties && ('id' in tree.properties || 'recordId' in tree.properties));
-}
-
-/**
- * Why the actions refused a suggestion, as the person reads it: already so (the runner's
- * `settled`), pointing at something the household does not have (another thing than it names, or
- * an id that fails), not allowed for whoever it is made for, or else incomplete. The subject is
- * the real title of what it pointed at when the runner knows it, else the suggestion's own words.
+ * Why the actions refused a suggestion, as the person reads it, in the reasons every AI surface
+ * shares (`refusalOf`). The subject is the real title of what it pointed at when the runner knows
+ * it, else the suggestion's own words.
  */
 export function skipOf(
 	error: Pick<FamosError, 'code' | 'details'>,
@@ -175,12 +165,7 @@ export function skipOf(
 			? (error.details as Partial<ProposalRefusalDetails> | null | undefined)
 			: undefined;
 	const named = refusal?.subject?.trim() || subject || subjectIn(input);
-	if (error.code === 'forbidden') return { reason: 'not_allowed', subject: named };
-	if (refusal?.refused === 'settled') return { reason: 'already', subject: named };
-	if (refusal?.refused === 'other_target') return { reason: 'unknown', subject: named };
-	if (error.code === 'bad_request' && namesRecordBadly(error.details))
-		return { reason: 'unknown', subject: named };
-	return { reason: 'incomplete', subject: named };
+	return { reason: refusalOf(error), subject: named };
 }
 
 /** `path: message` pairs from a treeified Zod error, for diagnostics without values. */

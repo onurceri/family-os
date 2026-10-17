@@ -2297,7 +2297,7 @@
 									"vehicleId": {
 										"type": "string",
 										"pattern": "^vehicle_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-										"description": "The vehicle (its handle from the household records)"
+										"description": "The vehicle"
 									},
 									"kind": {
 										"type": "string",

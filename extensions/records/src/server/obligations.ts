@@ -78,9 +78,9 @@ export const addObligation = defineAction({
 	undo: (o) => ({ actionId: 'records.removeObligation', input: { id: o.id } }),
 	ai: {
 		description:
-			'Add something that comes back or has a deadline to a household record (a vehicle, a pet…): a new policy, a warranty ending, an inspection or vaccination date. Choose it when the shared item introduces a duty that is not in the household records yet. If the item shows that a duty that is already listed (obligation:N) has been done, use records.completeObligation instead; if it only reminds of a listed duty, add nothing.',
+			'Add something that comes back or has a deadline to a household record (a vehicle, a pet…): a new policy, a warranty ending, an inspection or vaccination date. Use it for a duty that is not listed yet; when a listed duty has been done, use records.completeObligation instead.',
 		guidance:
-			'recordId is the handle of the record from the household records (for example vehicle:1); never invent one. recordKind and recordName: copy them from that entry. dueDate is when it is due (for a policy: the end of its cover); every is how often it comes back (omit for once). Do not put amounts of money in title or notes.',
+			'recordId is the reference of the record it belongs to (a vehicle, a pet, a home) from that record’s list; look it up first. recordKind and recordName: copy them from that entry. dueDate is when it is due (for a policy: the end of its cover); every is how often it comes back (leave it out for once). Do not put amounts of money in title or notes.',
 	},
 	async alreadyThere(ctx, input) {
 		const row = await tables(ctx.db)
@@ -196,9 +196,9 @@ export const completeObligation = defineAction({
 		before ? { actionId: 'records.undoCompletion', input: { id, ...before } } : null,
 	ai: {
 		description:
-			'Record that a household duty has been done (for example insurance renewed, a service done, a vaccination given) and set the next due date. Choose it only when the shared item shows that a listed obligation (obligation:N in the household records) has already been done: a renewed policy, a payment confirmation, a service invoice, a vet card. Never choose it for a reminder, a renewal notice, an offer or a coming due date: those say the duty is still to do.',
+			'Record that a household duty has been done (for example insurance renewed, a service done, a vaccination given) and set the next due date. Use it only when a listed duty has already been done (a policy renewed, a payment made, a service done), never for one that is only coming up or due.',
 		guidance:
-			'id is the obligation handle from the household records (for example obligation:2); never invent one. doneOn is the day it was done (a policy start date, the invoice date). nextDueDate is when the new cover ends or the next one is due, when the document says so (the end date of the renewed policy); omit it when unknown. label is the entry as listed. note is short and has no amounts of money.',
+			'id is the duty’s reference from the list of duties; look it up first. doneOn is the day it was done (for a policy: the day the new cover starts). nextDueDate is when the new cover ends or the next one is due, when it is known; leave it out otherwise. label is what the person called it, in their words. note is short and has no amounts of money.',
 	},
 	async run(uow, { id, doneOn, note, dueDate, nextDueDate }) {
 		const row = await load(uow, id);
@@ -503,7 +503,7 @@ export const upcoming = defineAction({
 	requires: recordsView.id,
 	ai: {
 		description:
-			'Duties of the household records (vehicle inspection, insurance, vaccination, service) that are overdue or due within the next days, soonest first. Use it for "what is coming up" questions.',
+			'Duties of the household (vehicle inspection, insurance, vaccination, service) that are overdue or due within the next days, soonest first. Use it for "what is coming up" questions.',
 	},
 	async run(uow, { days }) {
 		const { timeZone } = await uow.family.settings();

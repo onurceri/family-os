@@ -122,9 +122,9 @@ export const addItem = defineAction({
 	undo: (item) => ({ actionId: 'home.archiveItem', input: { id: item.id } }),
 	ai: {
 		description:
-			'Add something the household owns (an appliance, electronics, furniture) to a home from a receipt, an invoice or a warranty card: what was bought, its brand and model, the purchase date and when the warranty ends. Choose it when the shared item shows a purchase of a durable thing. If the thing is already listed (home_item:N), use home.updateItem instead.',
+			'Add something the household owns (an appliance, electronics, furniture) to a home from a receipt, an invoice or a warranty card: what was bought, its brand and model, the purchase date and when the warranty ends. If the thing is already listed in the home, use home.updateItem instead.',
 		guidance:
-			'homeId is the home handle from the household records (for example home:1); never invent one, and propose nothing when no home is listed. name is what the thing is in a few words ("Washing machine"). brand and model as printed. purchasedOn is the purchase or invoice date. warrantyUntil is the last day of the warranty when the document says so (or the purchase date plus the stated warranty period); omit it when unknown. room only if the document says where it goes. Do not copy serial numbers into notes and do not put amounts of money anywhere. homeName is the home as listed.',
+			'homeId is the home’s reference from the homes list; look it up first, and when no home is there, say so instead. name is what the thing is in a few words ("Washing machine"). brand and model as given. purchasedOn is the purchase date. warrantyUntil is the last day of the warranty when it is known (or the purchase date plus the stated warranty period); leave it out otherwise. room only when it is said where it goes. Do not put serial numbers into notes or amounts of money anywhere. homeName is the home as listed.',
 	},
 	async alreadyThere(ctx, input) {
 		const row = await tables(ctx.db)
@@ -209,9 +209,9 @@ export const updateItem = defineAction({
 	undo: ({ id, before }) => ({ actionId: 'home.updateItem', input: { id, ...before } }),
 	ai: {
 		description:
-			'Change what is known about a listed thing (home_item:N), for example when the warranty was extended or a model or purchase date is printed on a document. Choose it when the shared item is about a thing that is already in the household records.',
+			'Change what is known about a thing already listed in a home, for example when the warranty was extended or its model or purchase date is now known.',
 		guidance:
-			'id is the thing handle from the household records (for example home_item:2); never invent one. Give only the fields that the document states and leave every other field out: a field left out stays as it is. warrantyUntil is the new last day of the warranty (for an extension: the new end date). Do not put amounts of money or serial numbers in notes. itemName is the thing as listed.',
+			'id is the thing’s reference from the list of things in the home; look it up first. Give only the fields that change and leave every other field out: a field left out stays as it is. warrantyUntil is the new last day of the warranty (for an extension: the new end date). Do not put amounts of money or serial numbers in notes. itemName is the thing as listed.',
 	},
 	async run(uow, { id, itemName: _itemName, ...given }) {
 		const row = await loadItem(uow, id);

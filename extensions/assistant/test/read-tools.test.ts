@@ -173,7 +173,7 @@ describe('calendar.findEvents', () => {
 });
 
 describe('lists tools', () => {
-	it('lists open tasks, optionally for one assignee', async () => {
+	it('lists open tasks, optionally for one assignee and anyone', async () => {
 		const add = (input: Record<string, unknown>) =>
 			k.runner.invoke('lists.addTask', input, admin.actor);
 		await add({ title: 'Pay the fee', dueDate: '2026-01-09', assigneeId: admin.member.id });
@@ -195,7 +195,9 @@ describe('lists tools', () => {
 		const hers = await read<{ tasks: { title: string }[] }>('lists.openTasks', {
 			assignee: kid.member.id,
 		});
-		expect(hers.tasks.map((t) => t.title)).toEqual(['Elif’s form']);
+		// Hers come with the ones anyone may do, as a calendar comes with the family's events.
+		expect(hers.tasks.map((t) => t.title)).toEqual(['Elif’s form', 'Someday']);
+		expect(hers).toMatchObject({ otherTasks: 1 });
 	});
 
 	it('shows what is still to buy, by list name', async () => {
@@ -221,12 +223,42 @@ describe('lists tools', () => {
 		const seen = JSON.stringify(readableOutput(list, createHandleTable()));
 		expect(seen).toMatch(/"id":"shop_item:\d+"/);
 		expect(seen).not.toContain('shop_item_');
-		expect(
-			(await read<{ lists: unknown[] }>('lists.shoppingList', { list: 'Nope' })).lists,
-		).toEqual([]);
+		// A name that is no list is refused with the real names (gpt-4.1-mini sent "default" and
+		// read the empty answer as "nothing on the list").
+		await expect(read('lists.shoppingList', { list: 'default', text: 'milk' })).rejects.toThrow(
+			"There is no list called 'default'. The lists are: Shopping list.",
+		);
 		expect(
 			(await read<{ lists: unknown[] }>('lists.shoppingList', { list: 'market' })).lists,
 		).toHaveLength(1);
+	});
+
+	it('finds an item on another list when the named one does not have it', async () => {
+		// gpt-4.1-mini read "the shopping list" as the list named "Shopping list" while the
+		// cheddar was on Groceries, and said it was not there.
+		const made = await k.runner.invoke<{ id: string }>(
+			'lists.createShoppingList',
+			{ name: 'Groceries' },
+			admin.actor,
+		);
+		if (made.status !== 'applied') throw new Error('expected the list');
+		await k.runner.invoke(
+			'lists.addShoppingItems',
+			{ listId: made.output.id, items: [{ title: 'Cheddar' }] },
+			admin.actor,
+		);
+		const found = await read<{ note?: string; lists: { name: string; items: unknown[] }[] }>(
+			'lists.shoppingList',
+			{ list: 'Shopping list', text: 'cheddar' },
+		);
+		expect(found.lists.map((l) => l.name)).toEqual(['Groceries']);
+		expect(found.note).toContain('Not on the list asked for');
+		const none = await read<{ note?: string; lists: { items: unknown[] }[] }>(
+			'lists.shoppingList',
+			{ list: 'Shopping list', text: 'anchovies' },
+		);
+		expect(none.note).toBeUndefined();
+		expect(none.lists).toMatchObject([{ items: [] }]);
 	});
 });
 

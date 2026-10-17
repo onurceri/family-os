@@ -1439,7 +1439,8 @@
 								"properties": {
 									"assignee": {
 										"type": "string",
-										"description": "Leave it out (the default) for all open tasks of the family, also when the person says \"give me\" or \"show me the open tasks\" (that is who gets the answer, not whose tasks). Only for a question about one person's own tasks (\"what do I still have to do\", \"Sam's tasks\"): their handle"
+										"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+										"description": "Leave it out (the default) for all open tasks of the family, also when the person says \"give me\" or \"show me the open tasks\" (that is who gets the answer, not whose tasks). Only for a question about one person's own tasks (\"what do I still have to do\", \"Sam's tasks\"): that person"
 									}
 								}
 							}
@@ -1465,6 +1466,10 @@
 												"output": {
 													"type": "object",
 													"properties": {
+														"otherTasks": {
+															"type": "integer",
+															"description": "With `assignee`: how many more open tasks are for someone else; leave `assignee` out to see them"
+														},
 														"tasks": {
 															"type": "array",
 															"items": {
@@ -1842,6 +1847,9 @@
 														"truncated": {
 															"type": "boolean",
 															"description": "True when more items matched than are shown; pass `text` or `list` to see them"
+														},
+														"note": {
+															"type": "string"
 														},
 														"lists": {
 															"type": "array",

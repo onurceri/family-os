@@ -293,7 +293,7 @@ describe('a turn', () => {
 				.executeTakeFirstOrThrow()
 		).input;
 		expect(JSON.parse(input)).toMatchObject({ title: 'Pay the fee', assigneeId: can.member.id });
-		expect(k.llm.chatTrace[1]?.result).toContain('unknown reference');
+		expect(k.llm.chatTrace[1]?.result).toContain('Error (unknown)');
 	});
 
 	it('leaves out the tools of a local-only area for a model that is not local', async () => {
@@ -361,16 +361,36 @@ describe('a turn', () => {
 		expect(await reply(ayse, hopeless)).toMatchObject({ status: 'failed', errorCode: 'timeout' });
 	});
 
-	it('fails with no_answer when the step limit ends the loop on a tool call', async () => {
-		const calls = Array.from({ length: 10 }, () => ({
+	it('keeps the last step for the answer when the model keeps calling tools', async () => {
+		const calls = Array.from({ length: 10 }, (_, i) => ({
 			tool: 'calendar_findEvents',
-			input: { from: '2026-01-01', to: '2026-01-02' },
+			input: { from: `2026-01-${String(i + 1).padStart(2, '0')}`, to: '2026-01-20' },
 		}));
-		k.llm.respondChat([...calls, { text: 'never reached' }]);
+		k.llm.respondChat([...calls, { text: 'Nothing on those days.' }]);
 		const sent = await ask(ayse, 'loop');
 		const message = await reply(ayse, sent);
-		expect(message).toMatchObject({ status: 'failed', errorCode: 'no_answer' });
-		expect(k.llm.chatTrace).toHaveLength(8);
+		expect(message).toMatchObject({ status: 'done', content: 'Nothing on those days.' });
+		expect(k.llm.chatTrace).toHaveLength(7);
+	});
+
+	it('answers a repeated call from the turn and closes the tools when it keeps repeating', async () => {
+		// gpt-4.1-mini sent the same lookup again and again until the step limit, with no answer.
+		const same = { tool: 'calendar_findEvents', input: { from: '2026-01-01', to: '2026-01-02' } };
+		k.llm.respondChat([same, same, same, same, same, { text: 'Nothing then.' }]);
+		const sent = await ask(ayse, 'loop');
+		const message = await reply(ayse, sent);
+		expect(message).toMatchObject({ status: 'done', content: 'Nothing then.' });
+		// Run once, answered twice from the turn, then no more tools.
+		expect(k.llm.chatTrace).toHaveLength(3);
+		expect(message.toolCalls).toHaveLength(1);
+		expect(k.llm.chatTrace[1]?.result).toContain('already made in this turn');
+		expect(k.llm.chatTrace[1]?.result).toContain(k.llm.chatTrace[0]?.result ?? '-');
+	});
+
+	it('fails with no_answer when the model ends without any words or suggestions', async () => {
+		k.llm.respondChat([{ tool: 'calendar_findEvents', input: { from: '2026-01-01' } }]);
+		const sent = await ask(ayse, 'quiet');
+		expect(await reply(ayse, sent)).toMatchObject({ status: 'failed', errorCode: 'no_answer' });
 	});
 
 	it('does not answer a member who was archived meanwhile', async () => {

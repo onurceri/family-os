@@ -1112,7 +1112,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The vehicle (its handle from the household records) */
+                    /** @description The vehicle */
                     vehicleId: string;
                     /**
                      * @default service

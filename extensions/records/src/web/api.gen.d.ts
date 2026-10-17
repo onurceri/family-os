@@ -1357,7 +1357,7 @@ export interface operations {
                      * @default false
                      */
                     lapses?: boolean;
-                    /** @description The record it belongs to (its handle from the household records) */
+                    /** @description The record it belongs to */
                     recordId: string;
                     /** @description The kind of that record, e.g. "vehicle" */
                     recordKind: string;
@@ -1710,7 +1710,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The obligation (its handle from the household records) */
+                    /** @description The obligation */
                     id: string;
                     /** @description The day it was done, YYYY-MM-DD; omit for today */
                     doneOn?: string;

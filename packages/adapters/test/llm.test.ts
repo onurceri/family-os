@@ -203,8 +203,10 @@ function streamChat(model: string, body: Record<string, unknown>, res: http.Serv
 		);
 	res.writeHead(200, { 'content-type': 'text/event-stream' });
 	if (
-		model === 'chat-loop' ||
-		(['chat-tools', 'chat-priced', 'chat-unknown'].includes(model) && !lastTool)
+		// Like a real provider, no tool call once the request offers no tool choice.
+		body.tool_choice !== 'none' &&
+		(model === 'chat-loop' ||
+			(['chat-tools', 'chat-priced', 'chat-unknown'].includes(model) && !lastTool))
 	) {
 		send(
 			{
@@ -1513,12 +1515,30 @@ describe('chat with tools', () => {
 		expect(result.text).toBe('Pong: Error: boom');
 	});
 
-	it('stops at the step limit without an answer', async () => {
+	it('keeps the last step for the answer when the model keeps calling tools', async () => {
+		// gpt-4.1-mini called tools until the step limit and the turn ended with no answer.
 		await useModel('chat-loop');
 		const result = await chat({ maxSteps: 3 }).run;
-		expect(executed).toHaveLength(3);
-		expect(result.text).toBe('');
-		expect(result.toolCalls).toHaveLength(3);
+		expect(executed).toHaveLength(2);
+		expect(result.toolCalls).toHaveLength(2);
+		expect(result.text).toBe('Pong: pong 1');
+		const bodies = seen.map((s) => s.body as { tool_choice?: unknown });
+		expect(bodies.map((b) => b.tool_choice === 'none')).toEqual([false, false, true]);
+	});
+
+	it('gives no more tools once most of the time limit is gone', async () => {
+		await useModel('chat-loop');
+		const slow = {
+			...ping,
+			async execute(input: unknown) {
+				executed.push(input);
+				await new Promise((resolve) => setTimeout(resolve, 700));
+				return 'pong 1';
+			},
+		};
+		const result = await chat({ maxSteps: 8, timeoutMs: 1_000, tools: [slow] }).run;
+		expect(executed).toHaveLength(1);
+		expect(result.text).toBe('Pong: pong 1');
 	});
 
 	it('sums the reported cost', async () => {

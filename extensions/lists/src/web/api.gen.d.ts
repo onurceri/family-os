@@ -1071,7 +1071,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description Leave it out (the default) for all open tasks of the family, also when the person says "give me" or "show me the open tasks" (that is who gets the answer, not whose tasks). Only for a question about one person's own tasks ("what do I still have to do", "Sam's tasks"): their handle */
+                    /** @description Leave it out (the default) for all open tasks of the family, also when the person says "give me" or "show me the open tasks" (that is who gets the answer, not whose tasks). Only for a question about one person's own tasks ("what do I still have to do", "Sam's tasks"): that person */
                     assignee?: string;
                 };
             };
@@ -1087,6 +1087,8 @@ export interface operations {
                         /** @enum {string} */
                         status: "applied";
                         output: {
+                            /** @description With `assignee`: how many more open tasks are for someone else; leave `assignee` out to see them */
+                            otherTasks?: number;
                             tasks: {
                                 id: string;
                                 title: string;
@@ -1247,6 +1249,7 @@ export interface operations {
                         output: {
                             /** @description True when more items matched than are shown; pass `text` or `list` to see them */
                             truncated?: boolean;
+                            note?: string;
                             lists: {
                                 /** @description The list, for adding items to it (listId) */
                                 id: string;

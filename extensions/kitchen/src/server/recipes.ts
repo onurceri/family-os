@@ -83,7 +83,7 @@ export const createRecipe = defineAction({
 		description:
 			'Save a recipe the family shared (a photo of a recipe, a page, a message with a recipe) so it can be cooked later: title, ingredients and steps.',
 		guidance:
-			'Keep the original language. One ingredient per entry, exactly as written with its amount ("2 cups flour", "1 kg tomato"); do not convert or merge units. One step per entry, in order, without numbering. servings and totalMinutes only when stated. Put the address in sourceUrl only when the shared item shows one. Propose nothing when the item is not a recipe.',
+			'Keep the original language. One ingredient per entry, exactly as written with its amount ("2 cups flour", "1 kg tomato"); do not convert or merge units. One step per entry, in order, without numbering. servings and totalMinutes only when stated. sourceUrl only when the recipe’s web address is given.',
 	},
 	async alreadyThere(ctx, input) {
 		return sameTitle(ctx.db, input.title);

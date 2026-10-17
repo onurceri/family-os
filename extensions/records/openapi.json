@@ -2465,7 +2465,7 @@
 									"recordId": {
 										"type": "string",
 										"pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-										"description": "The record it belongs to (its handle from the household records)"
+										"description": "The record it belongs to"
 									},
 									"recordKind": {
 										"type": "string",
@@ -3411,7 +3411,7 @@
 									"id": {
 										"type": "string",
 										"pattern": "^obligation_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-										"description": "The obligation (its handle from the household records)"
+										"description": "The obligation"
 									},
 									"doneOn": {
 										"type": "string",

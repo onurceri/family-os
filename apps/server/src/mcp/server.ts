@@ -1,7 +1,14 @@
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
 import { aiTables } from '@famos/adapters/llm-aisdk';
 import type { ApiTokenService, AuthenticatedToken, Kernel } from '@famos/core';
-import { type Actor, type AiActionInfo, asData, type MemberId, runAgentTool } from '@famos/sdk';
+import {
+	type Actor,
+	type AiActionInfo,
+	agentInputSchema,
+	asData,
+	type MemberId,
+	runAgentTool,
+} from '@famos/sdk';
 import { McpServer, type StandardSchemaWithJSON } from '@modelcontextprotocol/server';
 import { createStableHandles, STABLE_HANDLE, type StableHandleTable } from './handles.ts';
 
@@ -171,7 +178,7 @@ export async function createServerFor(
 				description: [tool.info.description, tool.info.guidance, draft ? DRAFT_NOTE : '']
 					.filter(Boolean)
 					.join(' '),
-				inputSchema: jsonSchema(tool.info.inputSchema),
+				inputSchema: jsonSchema(agentInputSchema(tool.info.inputSchema)),
 				annotations: draft
 					? {
 							readOnlyHint: false,
@@ -221,6 +228,9 @@ export async function createServerFor(
 							: tool.info.title,
 						onFailure: ({ actionId, code, inputKeys }) =>
 							kernel.ctx.logger.warn({ actionId, code, inputKeys }, 'MCP tool call failed'),
+						schema: tool.info.inputSchema,
+						people: await kernel.ctx.family.members(),
+						locale: settings.locale,
 					});
 					text = outcome.text;
 					ok = outcome.ok;

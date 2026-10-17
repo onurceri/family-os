@@ -9,6 +9,7 @@ import {
 	unknownIdFields,
 	withHandles,
 } from './handles.ts';
+import { type RefusalReason, refusalOf, resolvePeople } from './understanding.ts';
 
 /**
  * What every agent (the in-app assistant, MCP clients) shares when a model
@@ -59,20 +60,180 @@ function issues(details: unknown): string {
 	return out.slice(0, 8).join('; ');
 }
 
+/**
+ * What each refusal reason tells a model calling a tool, so every agent hears the same words for
+ * the same reason, whichever action refused.
+ */
+const REFUSAL_WORDS: Record<RefusalReason, string> = {
+	already: 'it is already so, nothing needs to change',
+	unknown: 'what it names is not there',
+	ambiguous: 'several things fit; ask the person which one they mean',
+	incomplete: 'the input is incomplete or not valid',
+	not_allowed: 'not allowed for this person',
+};
+
+/** A refusal as the model reads it: the reason, its words, and what to do about it. */
+export function refusalText(reason: RefusalReason, detail?: string): string {
+	return `Error (${reason}): ${REFUSAL_WORDS[reason]}${detail ? `. ${detail}` : ''}`;
+}
+
 /** What a failed call tells the model: enough to fix the input or to say it cannot be done. */
 export function toolFailure(error: unknown): string {
-	if (isFamosError(error)) {
-		if (error.code === 'bad_request')
-			// Without details the action itself refused the input and says why (an unknown list
-			// name, with the real names).
-			return error.details
-				? `Error: invalid input (${issues(error.details)})`
-				: `Error: ${error.message}`;
-		if (error.code === 'forbidden') return 'Error: not allowed for this person';
-		if (error.code === 'not_found') return 'Error: not found';
-		return `Error: ${error.message}`;
+	if (!isFamosError(error)) return 'Error: the tool failed';
+	const refusals = ['bad_request', 'forbidden', 'not_found', 'conflict'];
+	if (!refusals.includes(error.code)) return `Error: ${error.message}`;
+	const reason = refusalOf(error);
+	// Without details the action itself refused the input and says why (an unknown list name,
+	// with the real names; "That is X, not Y"). Validation details name the fields to fix, never
+	// their values. A missing record says nothing more: its message may hold the id.
+	const detail =
+		error.code === 'not_found' || error.code === 'forbidden'
+			? undefined
+			: error.code === 'bad_request' && error.details
+				? `Fix: ${issues(error.details)}`
+				: error.message;
+	return refusalText(reason, detail);
+}
+
+/** The prefix a typed-id pattern in a JSON Schema names (`^shop_list_[0-9a-f]{8}-…$`). */
+const ID_PATTERN = /^\^([a-z][a-z0-9]*(?:_[a-z0-9]+)*)_\[0-9a-f\]\{8\}-/;
+
+type JsonSchema = Record<string, unknown>;
+
+/** The kind of record a schema node refers to, when it is a typed id. */
+function referenceKind(node: unknown): string | null {
+	const schema = node as JsonSchema | null;
+	if (!schema || typeof schema !== 'object' || typeof schema.pattern !== 'string') return null;
+	return ID_PATTERN.exec(schema.pattern)?.[1] ?? null;
+}
+
+/** The schemas a value under `node` may follow: the node, or the branches of a union. */
+function branches(node: unknown): JsonSchema[] {
+	const schema = node as JsonSchema | null;
+	if (!schema || typeof schema !== 'object') return [];
+	const union = [schema.anyOf, schema.oneOf, schema.allOf].find(Array.isArray) as
+		| JsonSchema[]
+		| undefined;
+	return union ? [schema, ...union.flatMap(branches)] : [schema];
+}
+
+const referenceWords = (kind: string) =>
+	kind === 'member'
+		? `A person: the "member:…" reference the family list or a tool result gives, or the person's name.`
+		: `A "${kind}:…" reference exactly as a tool result gave it; look it up with a read tool first. Never make one up.`;
+
+/**
+ * An action's input schema as an agent reads it. A typed id is described as a reference
+ * (`shop_list:…`) with no id pattern: a model that reads the pattern writes a made-up id that fits
+ * it instead of the reference it was given. Ids never reach the model, not even their shape.
+ */
+export function agentInputSchema(schema: JsonSchema): JsonSchema {
+	const walk = (node: unknown): unknown => {
+		if (Array.isArray(node)) return node.map(walk);
+		if (!node || typeof node !== 'object') return node;
+		const kind = referenceKind(node);
+		const out: JsonSchema = {};
+		for (const [key, value] of Object.entries(node as JsonSchema)) {
+			if (kind && key === 'pattern') continue;
+			out[key] =
+				key === 'properties' && value && typeof value === 'object'
+					? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, walk(v)]))
+					: walk(value);
+		}
+		if (kind)
+			out.description = [out.description, referenceWords(kind)]
+				.filter((part) => typeof part === 'string' && part !== '')
+				.join('. ');
+		return out;
+	};
+	return walk(schema) as JsonSchema;
+}
+
+/** What the host knows to turn a model's reference into an id. */
+export interface ReferenceBook {
+	table: HandleTable;
+	/** The family, so a person's name in a member field is that member. */
+	people?: readonly { id: string; displayName: string }[];
+	/** The family language, for matching names. */
+	locale?: string;
+}
+
+/**
+ * The id a model's reference to a `kind` stands for: a reference it was shown, also as models
+ * miswrite it (`member_3`, `Member 3`, `3` for `member:3`), or for a person their name, when exactly
+ * one member has it. Undefined when it names nothing the host knows.
+ */
+export function referenceId(kind: string, text: string, book: ReferenceBook): string | undefined {
+	const said = text.trim();
+	if (book.table.ids().has(said)) return said;
+	const shown = book.table.toId.get(said);
+	if (shown) return shown;
+	// The number alone ("2" for member:2).
+	const numbered = /^\d+$/.test(said) ? book.table.toId.get(`${kind}:${said}`) : undefined;
+	if (numbered) return numbered;
+	if (said.toLowerCase().startsWith(kind)) {
+		const rest = said
+			.slice(kind.length)
+			.replace(/^[\s_:#-]+/, '')
+			.toLowerCase();
+		const written = /^[0-9a-f]+$/.test(rest) ? book.table.toId.get(`${kind}:${rest}`) : undefined;
+		if (written) return written;
 	}
-	return 'Error: the tool failed';
+	if (kind === 'member' && book.people && said !== '') {
+		const { ids } = resolvePeople(
+			{ people: [said] },
+			{ members: book.people, sharer: null, text: null, locale: book.locale ?? 'en' },
+		);
+		if (ids.length === 1) return ids[0];
+	}
+	return undefined;
+}
+
+/**
+ * Turns the references in a model's input into ids, guided by the action's input schema: each
+ * typed-id field is looked up (`referenceId`). An empty text in such a field counts as left out
+ * (models fill every field they see). Returns the input and the paths of references that name
+ * nothing known, which are invented.
+ */
+export function resolveReferences(
+	input: unknown,
+	schema: JsonSchema,
+	book: ReferenceBook,
+): { input: unknown; unknown: string[] } {
+	const unknown: string[] = [];
+	const walk = (value: unknown, node: unknown, path: string): unknown => {
+		const options = branches(node);
+		if (typeof value === 'string') {
+			const kind = options.map(referenceKind).find((k) => k !== null);
+			if (!kind) return value;
+			const id = referenceId(kind, value, book);
+			if (id) return id;
+			unknown.push(path || '(input)');
+			return value;
+		}
+		if (Array.isArray(value)) {
+			const items = options.map((o) => o.items).find((i) => i && typeof i === 'object');
+			const kept = items
+				? value.filter((v) => !(v === '' && referenceKind(items) !== null))
+				: value;
+			return kept.map((v, i) => walk(v, items, `${path}[${i}]`));
+		}
+		if (value && typeof value === 'object') {
+			const properties = Object.assign(
+				{},
+				...options.map((o) => (o.properties as JsonSchema | undefined) ?? {}),
+			) as JsonSchema;
+			const out: Record<string, unknown> = {};
+			for (const [key, v] of Object.entries(value)) {
+				const sub = properties[key];
+				if (v === '' && branches(sub).some((o) => referenceKind(o) !== null)) continue;
+				out[key] = walk(v, sub, path ? `${path}.${key}` : key);
+			}
+			return out;
+		}
+		return value;
+	};
+	return { input: walk(input, schema, ''), unknown };
 }
 
 /**
@@ -247,9 +408,26 @@ export async function runAgentTool(call: {
 	 * values: they come from the model and may hold family content), so failures can be logged.
 	 */
 	onFailure?: (failure: ToolFailureInfo) => void;
+	/**
+	 * The action's input schema (`AiActionInfo.inputSchema`), so references in typed-id fields are
+	 * resolved forgivingly (`resolveReferences`); without it only exact handles are mapped.
+	 */
+	schema?: Record<string, unknown>;
+	/** The family, so a member field may hold a person's name. */
+	people?: readonly { id: string; displayName: string }[];
+	/** The family language, for matching names. */
+	locale?: string;
 }): Promise<AgentToolOutcome> {
 	const { actionId, table } = call;
-	const input = repairInput(call.input ?? {}, table.toId);
+	const repaired = repairInput(call.input ?? {}, table.toId);
+	const resolved = call.schema
+		? resolveReferences(repaired, call.schema, {
+				table,
+				...(call.people && { people: call.people }),
+				...(call.locale && { locale: call.locale }),
+			})
+		: { input: repaired, unknown: [] };
+	const input = resolved.input;
 	const inputKeys =
 		call.input && typeof call.input === 'object' && !Array.isArray(call.input)
 			? Object.keys(call.input)
@@ -258,23 +436,29 @@ export async function runAgentTool(call: {
 		call.onFailure?.({ actionId, code, inputKeys });
 		return { ok: false, text: asData(actionId, message) };
 	};
-	const unknown = unknownIdFields(input, table);
+	const unknown = [...new Set([...resolved.unknown, ...unknownIdFields(input, table)])];
 	if (unknown.length > 0)
 		return fail(
 			'unknown_reference',
-			`Error: unknown reference in ${unknown
-				.slice(0, 4)
-				.map((field) => `'${field}'`)
-				.join(
-					', ',
-				)}: it is not a handle from earlier results. Look the thing up again with a read tool and use the handle it returns, or pass its name where the tool takes one.`,
+			refusalText(
+				'unknown',
+				`No such reference in ${unknown
+					.slice(0, 4)
+					.map((field) => `'${field}'`)
+					.join(
+						', ',
+					)}: it is not one an earlier result gave. Leave the field out when it is optional, pass the name where the tool takes one, or look the thing up with a read tool and use the reference it returns.`,
+			),
 		);
 	const target = call.kind === 'draft' ? targetOf(input) : null;
 	const earlier = target ? call.targets?.get(target.id) : undefined;
 	if (target && earlier !== undefined && earlier.toLocaleLowerCase() !== target.words)
 		return fail(
 			'second_target',
-			`Error: a change to this one was already suggested in this turn for '${earlier}', which is not '${target.said}'. If '${target.said}' is not on the list, tell the person.`,
+			refusalText(
+				'unknown',
+				`A change to this one was already suggested in this turn for '${earlier}', which is not '${target.said}'. If '${target.said}' is not on the list, tell the person.`,
+			),
 		);
 	try {
 		const result: ActionResult<unknown> = await call.actions.invoke(

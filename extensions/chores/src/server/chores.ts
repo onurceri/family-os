@@ -102,7 +102,7 @@ export const createChore = defineAction({
 		description:
 			'Adds a household chore that repeats or is done once (take out the bins, empty the dishwasher, water the plants), with the people who take turns doing it. Use it when the family wants shared housework organised, not for one person’s own to-do (use a task for that).',
 		guidance:
-			'startDate is the first day it is due, resolved from today’s date in the family time zone. recurrence is omitted for a one-off chore. Put the people who should take turns in assigneeIds using the member handles, in the order they should go (the first one is up first); judge who can do the chore from the members’ descriptions, and leave it empty when anyone may. Use rotation round_robin to take turns, least_done to even out the load, fixed when it is always the same person. Spread chores fairly across people rather than giving them all to one.',
+			'startDate is the first day it is due. Leave recurrence out for a one-off chore. Put the people who should take turns in assigneeIds, in the order they should go (the first one is up first); judge who can do the chore from the members’ descriptions, and leave it empty when anyone may. Use rotation round_robin to take turns, least_done to even out the load, fixed when it is always the same person. Spread chores fairly across people rather than giving them all to one.',
 	},
 	async alreadyThere(ctx, input) {
 		const row = await tables(ctx.db)
@@ -242,7 +242,7 @@ export const setAssignees = defineAction({
 		description:
 			'Changes who takes turns on an existing household chore, for example to split the chores fairly between the people in the family. Use it when asked to share out, reassign or rebalance chores.',
 		guidance:
-			'id is the chore handle from the chores list. memberIds are member handles in turn order (the first is up first); an empty list means anyone. Judge who can do each chore from the members’ descriptions and spread the chores evenly instead of giving one person most of them. Propose one change per chore, and repeat the chore title in choreTitle.',
+			'id is the chore’s reference from the chores list. memberIds are the people in turn order (the first is up first); an empty list means anyone. Judge who can do each chore from the members’ descriptions and spread the chores evenly instead of giving one person most of them. Propose one change per chore, and repeat the chore title in choreTitle.',
 	},
 	async run(uow, { id, memberIds }) {
 		const row = await loadChore(uow.db, id);

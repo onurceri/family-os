@@ -128,7 +128,7 @@ export const VehicleSchema = z.object({
 export type Vehicle = z.infer<typeof VehicleSchema>;
 
 export const AddLogSchema = z.object({
-	vehicleId: VehicleIdSchema.describe('The vehicle (its handle from the household records)'),
+	vehicleId: VehicleIdSchema.describe('The vehicle'),
 	kind: LogKindSchema.default('service'),
 	doneOn: IsoDateSchema.describe('The day it was done, YYYY-MM-DD'),
 	place: z.string().trim().max(160).nullable().optional().describe('Garage or workshop'),

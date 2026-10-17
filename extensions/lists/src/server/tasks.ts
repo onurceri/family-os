@@ -500,14 +500,18 @@ export const openTasks = defineAction({
 	id: 'lists.openTasks',
 	title: 'Open tasks, for the AI',
 	input: z.object({
-		assignee: z
-			.string()
-			.optional()
-			.describe(
-				'Leave it out (the default) for all open tasks of the family, also when the person says "give me" or "show me the open tasks" (that is who gets the answer, not whose tasks). Only for a question about one person\'s own tasks ("what do I still have to do", "Sam\'s tasks"): their handle',
-			),
+		assignee: MemberIdSchema.optional().describe(
+			'Leave it out (the default) for all open tasks of the family, also when the person says "give me" or "show me the open tasks" (that is who gets the answer, not whose tasks). Only for a question about one person\'s own tasks ("what do I still have to do", "Sam\'s tasks"): that person',
+		),
 	}),
 	output: z.object({
+		otherTasks: z
+			.number()
+			.int()
+			.optional()
+			.describe(
+				'With `assignee`: how many more open tasks are for someone else; leave `assignee` out to see them',
+			),
 		tasks: z.array(
 			z.object({
 				id: z.string(),
@@ -532,7 +536,11 @@ export const openTasks = defineAction({
 			.selectAll()
 			.where('deleted_at', 'is', null)
 			.where('done_at', 'is', null);
-		if (assignee) query = query.where('assignee_id', '=', assignee);
+		// One person's tasks come with the ones anyone may do, as their calendar comes with the family's events.
+		if (assignee)
+			query = query.where((eb) =>
+				eb.or([eb('assignee_id', '=', assignee), eb('assignee_id', 'is', null)]),
+			);
 		const rows = await query
 			.orderBy(sql`due_date is null`)
 			.orderBy('due_date')
@@ -541,7 +549,19 @@ export const openTasks = defineAction({
 			.orderBy('created_at')
 			.limit(MAX_TASKS + 1)
 			.execute();
+		// What the person filter left out is counted, so an agent that filtered when the question
+		// was about the whole family learns there is more instead of answering "nothing".
+		const others = assignee
+			? await tables(uow.db)
+					.selectFrom('lists_tasks')
+					.select((eb) => eb.fn.countAll<number>().as('n'))
+					.where('deleted_at', 'is', null)
+					.where('done_at', 'is', null)
+					.where('assignee_id', '!=', assignee)
+					.executeTakeFirstOrThrow()
+			: null;
 		return {
+			...(others && Number(others.n) > 0 && { otherTasks: Number(others.n) }),
 			tasks: rows.slice(0, MAX_TASKS).map((r) => ({
 				id: r.id,
 				title: r.title,

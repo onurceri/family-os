@@ -91,7 +91,9 @@ describe('adding to a list the person names', () => {
 		]);
 		await ask('Add picture wire to the Hardware store list');
 		const result = k.llm.chatTrace[0]?.result ?? '';
-		expect(result).toContain("unknown reference in 'listId'");
-		expect(result).toContain('Look the thing up again with a read tool');
+		expect(result).toContain(
+			"Error (unknown): what it names is not there. No such reference in 'listId'",
+		);
+		expect(result).toContain('Leave the field out when it is optional');
 	});
 });

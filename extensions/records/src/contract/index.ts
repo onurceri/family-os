@@ -147,9 +147,7 @@ export const ObligationFieldsSchema = z.object({
 });
 
 export const AddObligationSchema = ObligationFieldsSchema.extend({
-	recordId: RecordIdSchema.describe(
-		'The record it belongs to (its handle from the household records)',
-	),
+	recordId: RecordIdSchema.describe('The record it belongs to'),
 	recordKind: RecordKindSchema.describe('The kind of that record, e.g. "vehicle"'),
 	recordName: RecordNameSchema.describe('The name of that record as listed, e.g. "Family car"'),
 	recordUrl: RecordUrlSchema.nullable().optional(),
@@ -208,7 +206,7 @@ export const HistoryEntrySchema = z.object({
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 
 export const CompleteObligationSchema = z.object({
-	id: ObligationIdSchema.describe('The obligation (its handle from the household records)'),
+	id: ObligationIdSchema.describe('The obligation'),
 	/** The day it was done; defaults to today. */
 	doneOn: IsoDateSchema.optional().describe('The day it was done, YYYY-MM-DD; omit for today'),
 	note: z

@@ -60,6 +60,12 @@ export interface ModelOptions {
 	reasoning?: LlmReasoning;
 }
 
+/**
+ * The share of a chat's time limit after which the model gets no more tools: what is left is
+ * for the answer, so a slow tool loop ends with one instead of a timeout.
+ */
+export const ANSWER_BY_SHARE = 0.6;
+
 /** The provider-neutral level as the OpenAI-compatible `reasoning_effort` value. */
 const effortOf = (level: LlmReasoning) => (level === 'off' ? ('none' as const) : level);
 
@@ -667,6 +673,8 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			}
 			await checkLimits();
 
+			// Wall time, like the abort signal that ends the loop (the clock may be a test's).
+			const began = performance.now();
 			const calls: { name: string; ok: boolean }[] = [];
 			const tools = Object.fromEntries(
 				request.tools.map((t) => [
@@ -700,8 +708,15 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					tools,
 					...(request.temperature !== undefined && { temperature: request.temperature }),
 					stopWhen: isStepCount(Math.max(1, request.maxSteps)),
-					// Once the host closes the tools, the next step can only be the answer.
-					prepareStep: () => (request.toolsClosed?.() ? { toolChoice: 'none' as const } : {}),
+					// Once the host closes the tools, the next step can only be the answer. So is the
+					// last step, and any step once most of the time is gone: a model still calling
+					// tools then ends with what it found, not with no answer or a timeout.
+					prepareStep: ({ stepNumber }) =>
+						request.toolsClosed?.() ||
+						stepNumber >= request.maxSteps - 1 ||
+						performance.now() - began > request.timeoutMs * ANSWER_BY_SHARE
+							? { toolChoice: 'none' as const }
+							: {},
 					providerOptions: { openaiCompatible: { strictJsonSchema: false } },
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),

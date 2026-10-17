@@ -164,7 +164,7 @@ export const ItemFieldsSchema = z.object({
 export type ItemFields = z.input<typeof ItemFieldsSchema>;
 
 export const AddItemSchema = ItemFieldsSchema.extend({
-	homeId: HomeIdSchema.describe('The home it is in (its handle from the household records)'),
+	homeId: HomeIdSchema.describe('The home it is in'),
 	obligations: z.array(ItemPresetPickSchema).max(ITEM_PRESET_IDS.length).default([]),
 	/** Only for people reviewing a suggestion: which home it is. Never stored. */
 	homeName: z
@@ -181,7 +181,7 @@ export type AddItemInput = z.input<typeof AddItemSchema>;
  * suggestion such as "warranty extended" touches nothing else; the form sends every field.
  */
 export const UpdateItemSchema = z.object({
-	id: ItemIdSchema.describe('The thing (its handle from the household records)'),
+	id: ItemIdSchema.describe('The thing'),
 	// Plain optionals, not the fields' defaults: a field left out must stay as it is.
 	name: z.string().trim().min(1).max(80).optional(),
 	room: z.string().trim().max(60).optional(),

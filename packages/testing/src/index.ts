@@ -156,7 +156,8 @@ export interface FakeLlm extends LlmPort {
 	/**
 	 * Queues scripted chat turns, one per `chat()` call. Tool steps run the request's tools like
 	 * the real loop (a tool the request lacks fails), text steps stream through `onText`; at most
-	 * `maxSteps` tool rounds run, and when the limit is hit the answer stays empty.
+	 * `maxSteps - 1` tool rounds run (the last step is kept for the answer), and tool steps after
+	 * that, or after the host closes the tools, are skipped.
 	 */
 	respondChat(...turns: FakeChatTurn[]): void;
 	/** Every request, in order. */
@@ -236,16 +237,15 @@ export function createFakeLlm(): FakeLlm {
 			const toolCalls: { name: string; ok: boolean }[] = [];
 			let rounds = 0;
 			for (const step of steps) {
-				// The answer is a step of its own: after `maxSteps` tool rounds there is none left.
-				if (rounds >= request.maxSteps) break;
 				if ('text' in step) {
 					const delta = (text ? '\n\n' : '') + step.text;
 					for (const piece of delta.match(/\S+\s*|\s+/g) ?? []) request.onText?.(piece);
 					text += delta;
 					break;
 				}
-				// The real loop offers no tools once the host closes them.
-				if (request.toolsClosed?.()) continue;
+				// The real loop offers no tools once the host closes them, nor on its last step,
+				// which is kept for the answer.
+				if (request.toolsClosed?.() || rounds >= request.maxSteps - 1) continue;
 				rounds++;
 				const tool = request.tools.find((t) => t.name === step.tool);
 				request.onToolCall?.(step.tool, step.input);

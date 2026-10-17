@@ -167,7 +167,7 @@ describe('a follow-up in the same thread', () => {
 			{ text: 'I could not.' },
 		]);
 		await ask(ayse, 'Move it to 18:00');
-		expect(k.llm.chatTrace.at(-1)?.result).toContain('Error:');
+		expect(k.llm.chatTrace.at(-1)?.result).toContain('Error (unknown)');
 		expect(await drafts()).toEqual([]);
 	});
 

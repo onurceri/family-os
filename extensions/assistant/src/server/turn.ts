@@ -27,6 +27,7 @@ import {
 	type AssistantTool,
 	areaOf,
 	chatTools,
+	newLoopState,
 	type Proposal,
 	type RecordedCall,
 	toolsClosed,
@@ -246,6 +247,7 @@ export const turnJob = defineJob({
 		);
 		const labels = new Map(Object.entries(remembered).map(([handle, r]) => [handle, r.label]));
 		const targets = new Map<string, string>();
+		const loop = newLoopState();
 		persistHandles = async () => {
 			const kept = [...table.toId]
 				.filter(([handle]) => !handle.startsWith('member:') && !handle.startsWith('draft:'))
@@ -339,12 +341,22 @@ export const turnJob = defineJob({
 					translate: (key) => ctx.translate(member.locale ?? settings.locale, key),
 					onFailure: ({ actionId, code, inputKeys }) =>
 						ctx.logger.warn({ actionId, code, inputKeys }, 'assistant tool call failed'),
+					// Names are matched here, at home, so this works when names are not sent too.
+					people: family,
+					locale: settings.locale,
+					loop,
+					// A note to remember says what the person said, not what the model guessed.
+					grounded: { 'core.addMemory': 'text' },
+					said: [
+						...kept.filter((m) => m.role === 'user').map((m) => m.content),
+						...family.map((m) => m.displayName),
+					].join('\n'),
 				}),
 				maxSteps: MAX_STEPS,
 				// The same question should get the same lookups and suggestions: at the provider's
 				// default the model picks different tools (or none) from one run to the next.
 				temperature: 0,
-				toolsClosed: () => toolsClosed(calls),
+				toolsClosed: () => toolsClosed(calls, loop),
 				timeoutMs: CHAT_TIMEOUT_MS,
 				memberId,
 				jobId: run.id,
@@ -358,9 +370,9 @@ export const turnJob = defineJob({
 			const suggested = proposalLines(proposals, (key, params) =>
 				ctx.translate(locale, key, params),
 			);
-			// The step limit can end the loop on a tool call, with no answer text. If the turn made
-			// suggestions, the lines naming them are the answer (asking again would suggest them
-			// twice); with nothing at all it is a failure.
+			// A model can end the loop with no words (the last step is kept for an answer, but it may
+			// say nothing). If the turn made suggestions, the lines naming them are the answer (asking
+			// again would suggest them twice); with nothing at all it is a failure.
 			const answer = result.text ? scrubHandles(result.text, nameOf) : '';
 			await finish(
 				answer === '' && suggested.length === 0

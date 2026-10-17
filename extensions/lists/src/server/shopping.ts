@@ -671,6 +671,7 @@ export const shoppingList = defineAction({
 			.boolean()
 			.optional()
 			.describe('True when more items matched than are shown; pass `text` or `list` to see them'),
+		note: z.string().optional(),
 		lists: z.array(
 			z.object({
 				id: z.string().describe('The list, for adding items to it (listId)'),
@@ -710,50 +711,74 @@ export const shoppingList = defineAction({
 				(!listId || l.id === listId) &&
 				(!wanted || namesOf(l).some((n) => titleKey(n, locale) === wanted)),
 		);
+		// A name that is no list is said to be one, with the real names: an empty answer would
+		// read as "nothing on the list".
+		if (wanted && chosen.length === 0 && !listId)
+			throw new FamosError(
+				'bad_request',
+				`There is no list called '${list}'. The lists are: ${lists.map((l) => l.name || DEFAULT_LIST_LABEL).join(', ')}. Use one of these names, or leave the list out for all lists.`,
+			);
 		const matches = (r: ItemRow) =>
 			!text || labelNamesTitle(text, r.title) || searchFinds(text, r.title);
 		const boughtSince = uow.clock.now() - BOUGHT_VISIBLE_MS;
-		let budget = MAX_SHOPPING;
-		let truncated = false;
-		const out = [];
-		for (const l of chosen) {
-			const all = await tables(uow.db)
-				.selectFrom('lists_shopping_items')
-				.selectAll()
-				.where('list_id', '=', l.id)
-				.where('deleted_at', 'is', null)
-				.where((eb) => eb.or([eb('done_at', 'is', null), eb('done_at', '>=', boughtSince)]))
-				.orderBy('created_at')
-				.execute();
-			// What was just bought stays findable, so a name that matches it is not mapped to
-			// another row.
-			const open = all.filter((r) => r.done_at === null && matches(r));
-			const bought = all
-				.filter((r) => r.done_at !== null && matches(r))
-				.sort((a, b) => (b.done_at as number) - (a.done_at as number));
-			const shownOpen = open.slice(0, budget);
-			budget -= shownOpen.length;
-			const shownBought = bought.slice(0, budget);
-			budget -= shownBought.length;
-			if (shownOpen.length < open.length || shownBought.length < bought.length) truncated = true;
-			const rank = (r: ItemRow) => CATEGORIES.indexOf(r.category);
-			const view = (r: ItemRow, isBought: boolean) => ({
-				id: r.id,
-				title: r.title,
-				quantity: r.quantity,
-				category: r.category,
-				bought: isBought,
-			});
-			out.push({
-				id: l.id,
-				name: l.name || DEFAULT_LIST_LABEL,
-				items: [
-					...shownOpen.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),
-					...shownBought.map((r) => view(r, true)),
-				],
-			});
+		const first = await collect(chosen);
+		// An item looked for on a named list that is on another one instead is shown there: "the
+		// shopping list" in the person's words may be any of the lists.
+		const narrowed = Boolean(text) && chosen.length < lists.length;
+		if (narrowed && first.out.every((l) => l.items.length === 0)) {
+			const wider = await collect(lists);
+			if (wider.out.some((l) => l.items.length > 0))
+				return {
+					...(wider.truncated && { truncated: true }),
+					note: 'Not on the list asked for; these are on the other lists.',
+					lists: wider.out.filter((l) => l.items.length > 0),
+				};
 		}
-		return { ...(truncated && { truncated }), lists: out };
+		return { ...(first.truncated && { truncated: true }), lists: first.out };
+
+		async function collect(chosen: typeof lists) {
+			let budget = MAX_SHOPPING;
+			let truncated = false;
+			const out = [];
+			for (const l of chosen) {
+				const all = await tables(uow.db)
+					.selectFrom('lists_shopping_items')
+					.selectAll()
+					.where('list_id', '=', l.id)
+					.where('deleted_at', 'is', null)
+					.where((eb) => eb.or([eb('done_at', 'is', null), eb('done_at', '>=', boughtSince)]))
+					.orderBy('created_at')
+					.execute();
+				// What was just bought stays findable, so a name that matches it is not mapped to
+				// another row.
+				const open = all.filter((r) => r.done_at === null && matches(r));
+				const bought = all
+					.filter((r) => r.done_at !== null && matches(r))
+					.sort((a, b) => (b.done_at as number) - (a.done_at as number));
+				const shownOpen = open.slice(0, budget);
+				budget -= shownOpen.length;
+				const shownBought = bought.slice(0, budget);
+				budget -= shownBought.length;
+				if (shownOpen.length < open.length || shownBought.length < bought.length) truncated = true;
+				const rank = (r: ItemRow) => CATEGORIES.indexOf(r.category);
+				const view = (r: ItemRow, isBought: boolean) => ({
+					id: r.id,
+					title: r.title,
+					quantity: r.quantity,
+					category: r.category,
+					bought: isBought,
+				});
+				out.push({
+					id: l.id,
+					name: l.name || DEFAULT_LIST_LABEL,
+					items: [
+						...shownOpen.sort((a, b) => rank(a) - rank(b)).map((r) => view(r, false)),
+						...shownBought.map((r) => view(r, true)),
+					],
+				});
+			}
+			return { truncated, out };
+		}
 	},
 });
 

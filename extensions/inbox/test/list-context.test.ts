@@ -1,10 +1,9 @@
 import lists from '@famos/ext-lists/server';
-import { systemActor } from '@famos/sdk';
+import { refusalOf, systemActor } from '@famos/sdk';
 import { createTestKernel, mention, type TestKernel, understood } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import inbox from '../src/server/index.ts';
-import { namesRecordBadly } from '../src/server/understand/pipeline.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -147,9 +146,10 @@ describe('ticking something off from a shared message', () => {
 
 describe('which rejected inputs pointed at a record', () => {
 	it('is true when the id field failed, not when another field did', () => {
-		expect(namesRecordBadly({ properties: { id: { errors: ['Invalid'] } } })).toBe(true);
-		expect(namesRecordBadly({ properties: { recordId: { errors: ['Invalid'] } } })).toBe(true);
-		expect(namesRecordBadly({ properties: { title: { errors: ['Required'] } } })).toBe(false);
-		expect(namesRecordBadly(null)).toBe(false);
+		const bad = (details: unknown) => refusalOf({ code: 'bad_request', details });
+		expect(bad({ properties: { id: { errors: ['Invalid'] } } })).toBe('unknown');
+		expect(bad({ properties: { recordId: { errors: ['Invalid'] } } })).toBe('unknown');
+		expect(bad({ properties: { title: { errors: ['Required'] } } })).toBe('incomplete');
+		expect(bad(null)).toBe('incomplete');
 	});
 });

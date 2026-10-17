@@ -124,14 +124,15 @@ describe('the line that names each suggestion', () => {
 		});
 	});
 
-	it('names the suggestions even when the turn ran out of steps before an answer', async () => {
-		// Eight tool calls use up the steps: the model never writes its answer.
-		const answer = await answerTo(SUGGESTIONS, 'never reached');
+	it('names the suggestions even when the model ends without an answer', async () => {
+		// Seven tool calls use up the tool steps, and the last step says nothing.
+		const calls = SUGGESTIONS.slice(0, 5);
+		const answer = await answerTo(calls, '');
 		expect(answer.status).toBe('done');
 		expect(answer.content).toBe('');
 		const lines = answer.suggested;
-		expect(lines).toHaveLength(SUGGESTIONS.length);
-		SUGGESTIONS.forEach((s, i) => {
+		expect(lines).toHaveLength(calls.length);
+		calls.forEach((s, i) => {
 			expect(lines[i], s.tool).toMatch(/^Suggested, not added yet: .+: /);
 			expect(lines[i], s.tool).toContain(s.names);
 		});

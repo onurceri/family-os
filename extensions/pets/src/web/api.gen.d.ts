@@ -1127,7 +1127,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The pet (its handle from the household records) */
+                    /** @description The pet */
                     petId: string;
                     /**
                      * @default vaccination
@@ -1149,7 +1149,7 @@ export interface operations {
                     documentId?: string | null;
                     /** @description The open duty this fulfils (its handle, e.g. obligation:2), if one matches */
                     obligationId?: string | null;
-                    /** @description When the next one is due, YYYY-MM-DD, if the document says so; only with obligationId */
+                    /** @description When the next one is due, YYYY-MM-DD, when known; only with obligationId */
                     nextDueDate?: string;
                     /** @description The pet as listed, e.g. "Luna"; only shown to the reviewer */
                     petName?: string;
