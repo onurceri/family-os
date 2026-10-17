@@ -408,6 +408,34 @@ describe('who may change what', () => {
 		expect((await open())[0]?.lastDoneOn).toBeNull();
 	});
 
+	it('closes a suggestion for an area that is not installed as gone, and writes nothing', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		// What a pet check-up looks like once the pets extension is uninstalled: records stays,
+		// but the capability the suggestion names is no longer declared.
+		const input = {
+			recordId: CAR,
+			recordKind: 'pet',
+			recordName: 'Pamuk',
+			recordUrl: `/pets/${CAR}`,
+			audience: 'pets.view',
+			title: 'Check-up',
+			dueDate: '2026-11-01',
+		};
+		const r = await k.runner.invoke('records.addObligation', input, kid.actor);
+		expect(r.status).toBe('drafted');
+		if (r.status !== 'drafted') return;
+		const closed = await k.runner.approveDraft(r.draftId, admin.actor);
+		expect(closed).toMatchObject({ status: 'rejected', error: 'gone' });
+		expect(await open()).toHaveLength(0);
+		// A direct change is refused the same way.
+		await expect(
+			k.runner.invoke('records.addObligation', input, admin.actor),
+		).rejects.toMatchObject({ code: 'not_found' });
+		// The same suggestion for an area that is installed still goes through.
+		const fine = await add({ audience: 'records.edit' });
+		expect(fine.audience).toBe('records.edit');
+	});
+
 	it('refuses guests, and declares view access on every read', async () => {
 		const guest = await person(k, 'guest');
 		await expect(

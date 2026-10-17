@@ -91,7 +91,14 @@ describe('obligation reminders', () => {
 	});
 
 	it('falls back to the people who may see records when the audience is unknown', async () => {
-		await add({ audience: 'garage.view', leadDays: 0 });
+		// The area's extension was uninstalled after the duty was added: its capability is gone.
+		const o = await add({ audience: 'records.edit', leadDays: 0 });
+		await k.ctx.db
+			.withTables<{ records_obligations: { id: string; audience: string } }>()
+			.updateTable('records_obligations')
+			.set({ audience: 'garage.view' })
+			.where('id', '=', o.id)
+			.execute();
 		await advanceTo(at('2026-10-30', '09:00'));
 		expect(sent().length).toBeGreaterThanOrEqual(2);
 	});

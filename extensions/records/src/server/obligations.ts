@@ -67,6 +67,21 @@ async function scheduleReminders(uow: UnitOfWork, id: string) {
 	);
 }
 
+/**
+ * An obligation belongs to the area of its `audience` capability. When that area's extension is
+ * not installed its page, its people and its reminders' audience are gone, so a suggestion for it
+ * can never be carried out: refusing it as gone closes the suggestion instead of writing a duty
+ * nobody can open.
+ */
+function assertAreaExists(uow: UnitOfWork, audience: string) {
+	if (audience === DEFAULT_AUDIENCE) return;
+	try {
+		uow.can(audience);
+	} catch {
+		throw new FamosError('not_found', 'The area this belongs to is not installed');
+	}
+}
+
 export const addObligation = defineAction({
 	id: 'records.addObligation',
 	title: 'Add something that needs doing to a record',
@@ -93,6 +108,7 @@ export const addObligation = defineAction({
 		return row !== undefined;
 	},
 	async run(uow, input) {
+		assertAreaExists(uow, input.audience);
 		await assertMember(uow, input.assigneeId);
 		const now = uow.clock.now();
 		// A date that only passes has nothing to roll forward to.
@@ -139,6 +155,7 @@ export const updateObligation = defineAction({
 	async run(uow, { id, obligation }) {
 		const row = await load(uow, id);
 		if (row.archived_at !== null) throw new FamosError('conflict', 'This obligation is archived');
+		if (obligation.audience !== undefined) assertAreaExists(uow, obligation.audience);
 		await assertMember(uow, obligation.assigneeId);
 		const lapses = obligation.lapses ?? row.lapses === 1;
 		// Left out, the repeat stays as it is, like every other field a change may skip.
