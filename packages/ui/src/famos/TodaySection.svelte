@@ -38,7 +38,7 @@
 			{title}{#if count}<span class="ml-2 font-semibold tracking-normal normal-case">{count}</span
 				>{/if}
 		</h2>
-		<span class="ml-auto flex shrink-0 items-baseline gap-1 empty:hidden">
+		<span class="ml-auto flex shrink-0 items-baseline empty:hidden [&>.today-block-menu]:ms-1">
 			{#if href && more}
 				<a
 					{href}

@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { tick, type Snippet } from 'svelte';
+	import ActionSheet from './ActionSheet.svelte';
+	import { menuSide } from './menu-place.js';
 	import type { MenuItem } from './menu-items.js';
+	import { wide } from './wide.svelte.js';
 
 	/**
-	 * A popover list of actions from a `...` button. `trigger`
-	 * receives attributes to spread on the button that opens it. `role="menu"`: the first item
-	 * takes focus, arrow keys move (wrapping), Home and End jump, Escape closes and returns focus
-	 * to the button, Tab and a click outside close it. On phones use ActionSheet instead.
+	 * The actions of a `...` button. `trigger` receives attributes to spread on the button that
+	 * opens it. On wide windows a popover: `role="menu"`, the first item takes focus, arrow keys
+	 * move (wrapping), Home and End jump, Escape closes and returns focus to the button, Tab and a
+	 * click outside close it, and it opens toward the middle when its side would leave the window.
+	 * On phones and tablets the same items rise as an ActionSheet, where a small popover is hard to
+	 * hit and easily cut off, so no caller has to choose.
 	 */
 	let {
 		items,
 		label,
+		title,
+		cancelLabel,
 		open = $bindable(false),
 		align = 'end',
 		trigger,
@@ -18,13 +25,17 @@
 		items: MenuItem[];
 		/** Accessible name of the menu: name the item (`Options for Clio`). */
 		label: string;
+		/** The action sheet's title on phones: the item's name. `label` when not given. */
+		title?: string;
+		/** The action sheet's Cancel row (already translated). */
+		cancelLabel: string;
 		open?: boolean;
 		align?: 'start' | 'end';
 		trigger: Snippet<
 			[
 				{
 					attrs: {
-						'aria-haspopup': 'menu';
+						'aria-haspopup': 'menu' | 'dialog';
 						'aria-expanded': boolean;
 						'aria-controls': string;
 						onclick: () => void;
@@ -35,6 +46,10 @@
 		>;
 	} = $props();
 
+	const popover = $derived(wide.current);
+	/** Set on open when the popover lined up with `align` would leave the window. */
+	let flipped = $state(false);
+	const side = $derived(flipped ? (align === 'start' ? 'end' : 'start') : align);
 	const id = $props.id();
 	let wrap = $state<HTMLElement>();
 	let list = $state<HTMLElement>();
@@ -55,13 +70,30 @@
 	}
 
 	$effect(() => {
-		if (!open) return;
+		if (!open || !popover) return;
+		flipped = false;
 		opener =
 			document.activeElement instanceof HTMLElement
 				? document.activeElement
 				: (wrap?.querySelector<HTMLElement>('[aria-haspopup]') ?? null);
-		void tick().then(() => (buttons()[0] ?? list)?.focus());
+		void tick().then(() => {
+			place();
+			(buttons()[0] ?? list)?.focus();
+		});
 	});
+
+	function place() {
+		if (!wrap || !list) return;
+		const anchor = wrap.getBoundingClientRect();
+		flipped =
+			menuSide({
+				anchor: { left: anchor.left, right: anchor.right },
+				width: list.offsetWidth,
+				viewport: document.documentElement.clientWidth,
+				preferred: align,
+				dir: getComputedStyle(wrap).direction === 'rtl' ? 'rtl' : 'ltr',
+			}) !== align;
+	}
 
 	function move(to: number) {
 		const all = buttons();
@@ -70,7 +102,7 @@
 	}
 
 	function onkeydown(e: KeyboardEvent) {
-		if (!open) return;
+		if (!open || !popover) return;
 		const all = buttons();
 		const at = all.indexOf(document.activeElement as HTMLElement);
 		if (e.key === 'ArrowDown') (e.preventDefault(), move(at + 1));
@@ -91,7 +123,7 @@
 	}
 
 	function onwindowclick(e: MouseEvent) {
-		if (open && wrap && !wrap.contains(e.target as Node)) close(false);
+		if (open && popover && wrap && !wrap.contains(e.target as Node)) close(false);
 	}
 </script>
 
@@ -100,21 +132,23 @@
 <span class="wrap" bind:this={wrap} {onkeydown} role="presentation">
 	{@render trigger({
 		attrs: {
-			'aria-haspopup': 'menu',
+			'aria-haspopup': popover ? 'menu' : 'dialog',
 			'aria-expanded': open,
 			'aria-controls': `${id}-menu`,
 			onclick: toggle,
 		},
 		open,
 	})}
-	{#if open}
+	{#if !popover}
+		<ActionSheet bind:open title={title ?? label} {items} {cancelLabel} />
+	{:else if open}
 		<div
 			bind:this={list}
 			id="{id}-menu"
 			role="menu"
 			aria-label={label}
 			tabindex="-1"
-			class="menu {align}"
+			class="menu {side}"
 		>
 			{#each items as item, i (item.id)}
 				{#if item.danger && i > 0 && !items[i - 1]?.danger}
