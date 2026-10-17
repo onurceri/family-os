@@ -4,14 +4,9 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promi
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { parseManifest, SDK_VERSION } from '@famos/sdk';
 import { build, type Metafile } from 'esbuild';
+import { PACKAGE_FILE, PACKAGE_FORMAT } from './format.ts';
 import { type PackageJson, packageJsonOf, SHARED_SERVER } from './shared.ts';
 import { buildWeb, WEB_ENTRY, WEB_STYLES } from './web.ts';
-
-/** The version of the package format, so a host can refuse one it does not understand. */
-export const PACKAGE_FORMAT = 1;
-
-/** The file that describes a built package; every other file is listed in it with its hash. */
-export const PACKAGE_FILE = 'famos-package.json';
 
 export interface PackageDescription {
 	format: typeof PACKAGE_FORMAT;

@@ -4,8 +4,9 @@ import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { SDK_VERSION } from '@famos/sdk';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+	type BuildResult,
 	buildExtension,
 	LAYER_ORDER,
 	PACKAGE_FILE,
@@ -21,6 +22,11 @@ const extensions = readdirSync(join(repo, 'extensions')).filter((name) =>
 const scratch = mkdtempSync(join(tmpdir(), 'famos-pack-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
+// Each package is built once, before its tests, which then only read what the build wrote. A
+// build compiles the package's Svelte and Tailwind and takes under a second on an idle machine;
+// the whole suite keeps every core busy, so the hook gets room for several times that.
+const BUILD_TIMEOUT = 30_000;
+
 function filesUnder(dir: string): string[] {
 	return readdirSync(dir, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
@@ -31,14 +37,13 @@ function filesUnder(dir: string): string[] {
 describe.each(extensions)('the package of %s', (name) => {
 	const dir = join(repo, 'extensions', name);
 	const outDir = join(scratch, name);
-	let building: ReturnType<typeof buildExtension> | undefined;
-	const build = () => {
-		building ??= buildExtension(dir, { outDir });
-		return building;
-	};
+	let built: BuildResult;
+	beforeAll(async () => {
+		built = await buildExtension(dir, { outDir });
+	}, BUILD_TIMEOUT);
 
-	it('builds, and its server bundle imports only what the host shares', async () => {
-		const { serverImports } = await build();
+	it('builds, and its server bundle imports only what the host shares', () => {
+		const { serverImports } = built;
 		const unshared = serverImports.filter(
 			(path) => !SHARED_SERVER.includes(path) && !path.startsWith('node:'),
 		);
@@ -46,8 +51,7 @@ describe.each(extensions)('the package of %s', (name) => {
 		expect(serverImports).toContain('@famos/sdk');
 	});
 
-	it('carries the manifest of its package.json, unchanged', async () => {
-		await build();
+	it('carries the manifest of its package.json, unchanged', () => {
 		const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
 		const description = JSON.parse(
 			readFileSync(join(outDir, PACKAGE_FILE), 'utf8'),
@@ -64,8 +68,7 @@ describe.each(extensions)('the package of %s', (name) => {
 		});
 	});
 
-	it('lists every other file with its hash, and nothing else', async () => {
-		await build();
+	it('lists every other file with its hash, and nothing else', () => {
 		const description = JSON.parse(
 			readFileSync(join(outDir, PACKAGE_FILE), 'utf8'),
 		) as PackageDescription;
@@ -83,8 +86,8 @@ describe.each(extensions)('the package of %s', (name) => {
 		expect(files).toEqual(expect.arrayContaining(['openapi.json', 'LICENSE', 'server/index.mjs']));
 	});
 
-	it('builds its web half, which takes only what the app shares', async () => {
-		const { webImports, description } = await build();
+	it('builds its web half, which takes only what the app shares', () => {
+		const { webImports, description } = built;
 		expect(description.entries).toEqual({
 			server: 'server/index.mjs',
 			web: 'web/index.js',
@@ -106,15 +109,14 @@ describe.each(extensions)('the package of %s', (name) => {
 describe('the web bundle', () => {
 	const fixture = join(import.meta.dirname, 'fixtures/web-ext');
 	const outDir = join(scratch, 'web-ext');
-	let building: ReturnType<typeof buildExtension> | undefined;
-	const build = () => {
-		building ??= buildExtension(fixture, { outDir });
-		return building;
-	};
+	let built: BuildResult;
+	beforeAll(async () => {
+		built = await buildExtension(fixture, { outDir });
+	}, BUILD_TIMEOUT);
 	const read = (path: string) => readFileSync(join(outDir, path), 'utf8');
 
-	it('keeps pages apart, inlines its own code and leaves the shared modules to the app', async () => {
-		const { webImports } = await build();
+	it('keeps pages apart, inlines its own code and leaves the shared modules to the app', () => {
+		const { webImports } = built;
 		expect(webImports).toEqual([
 			'@famos/ui/button',
 			'svelte/internal/client',
@@ -131,8 +133,7 @@ describe('the web bundle', () => {
 		expect(read(`web/chunks/${page}`)).toMatch(/from"svelte\/internal\/client"/);
 	});
 
-	it("carries each component's own styles in its code", async () => {
-		await build();
+	it("carries each component's own styles in its code", () => {
 		const page = filesUnder(join(outDir, 'web/chunks')).find((path) =>
 			path.startsWith('GardenPage-'),
 		);
@@ -140,8 +141,7 @@ describe('the web bundle', () => {
 		expect(read('web/styles.css')).not.toContain('dashed');
 	});
 
-	it('writes the utilities it uses in the ext layer, and none of the theme or base', async () => {
-		await build();
+	it('writes the utilities it uses in the ext layer, and none of the theme or base', () => {
 		const css = read('web/styles.css');
 		expect(css).toContain('.md\\:grid-cols-3');
 		expect(css).toContain('.gap-7');

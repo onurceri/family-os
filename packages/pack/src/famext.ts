@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import * as tar from 'tar';
-import { PACKAGE_FILE } from './package.ts';
+import { PACKAGE_FILE } from './format.ts';
 
 /** The file in a `.famext` archive that holds the signature of `famos-package.json`. */
 export const SIGNATURE_FILE = 'famos-package.sig';

@@ -42,6 +42,10 @@ export async function buildWeb(root: string, outDir: string): Promise<string[]> 
 				input: { index: join(root, 'src/web/index.ts') },
 				preserveEntrySignatures: 'strict',
 				external: (id) => SHARED_WEB.includes(id),
+				// Icon sets are side-effect-free barrels of a thousand or more components; without
+				// this every one of them is compiled for each package, only for all but a few to
+				// be shaken out afterwards.
+				experimental: { lazyBarrel: true },
 				output: {
 					format: 'es',
 					entryFileNames: '[name].js',
