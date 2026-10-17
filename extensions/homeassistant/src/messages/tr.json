@@ -63,6 +63,7 @@
 	"discard_keep": "Düzenlemeye devam et",
 	"discard_confirm": "Sil",
 	"card_title": "Evin durumu",
+	"switch_hint": "Bunları yalnızca cihazları açıp kapatma izni olanlar değiştirebilir.",
 	"today_block": "Home Assistant",
 	"today_block_hint": "Home Assistant’tan göstermeyi seçtiğiniz şeyler.",
 	"quiet_values": "Home Assistant’tan gösterilecek bir şey yok",

@@ -17,7 +17,7 @@
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useHomeAssistant();
 	const allowed = $derived(app.can('homeassistant.view'));
-	const maySwitch = $derived(app.can('homeassistant.control'));
+	const maySwitch = $derived(app.access('homeassistant.switch') !== 'no');
 
 	let values = $state<Values | null>(null);
 	let loaded = $state(false);
@@ -71,6 +71,11 @@
 					{/snippet}
 				</TodayRow>
 			{/each}
+			{#if !maySwitch && shown.some((item) => item.control)}
+				<p class="text-ink-soft px-1 text-[13px]" data-testid="homeassistant-switch-hint">
+					{t('switch_hint')}
+				</p>
+			{/if}
 		</div>
 	</TodaySection>
 {/if}

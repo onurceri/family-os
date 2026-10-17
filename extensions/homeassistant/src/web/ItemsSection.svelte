@@ -63,7 +63,7 @@
 		}
 		return values;
 	}
-	const maySwitch = $derived(app.can('homeassistant.control'));
+	const maySwitch = $derived(app.access('homeassistant.switch') !== 'no');
 	const switcher = createSwitcher({
 		app,
 		t,

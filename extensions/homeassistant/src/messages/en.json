@@ -63,6 +63,7 @@
 	"discard_keep": "Keep editing",
 	"discard_confirm": "Discard",
 	"card_title": "Around the house",
+	"switch_hint": "Only people allowed to switch devices can switch these.",
 	"today_block": "Home Assistant",
 	"today_block_hint": "The things you chose to show from Home Assistant.",
 	"quiet_values": "nothing from Home Assistant",
