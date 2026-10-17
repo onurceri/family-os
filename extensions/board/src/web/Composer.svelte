@@ -233,7 +233,7 @@
 		{/if}
 	</div>
 
-	{#if !note && app.can('board.manage')}
+	{#if !note && app.access('board.pinNote') !== 'no'}
 		<label class="flex min-h-11 items-center gap-2 text-sm font-bold">
 			<input type="checkbox" bind:checked={pinned} class="size-5" data-testid="composer-pin" />
 			{t('pin_label')}

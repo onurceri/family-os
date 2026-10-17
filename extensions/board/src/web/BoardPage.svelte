@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { EmptyState, Page, PageHeader } from '@famos/ui/famos';
+	import { EmptyState, Page, PageHeader, ViewOnly } from '@famos/ui/famos';
 	import { PenLine, X } from '@lucide/svelte';
 	import { onDestroy, tick } from 'svelte';
 	import type { BoardNote } from '../contract/index.js';
@@ -27,8 +27,10 @@
 	onDestroy(() => clearInterval(clock));
 
 	const canView = $derived(app.can('board.view'));
-	const canPost = $derived(app.can('board.post'));
-	const canManage = $derived(app.can('board.manage'));
+	// Posting and pinning, as the server decides them for this viewer; editing, moving and removing
+	// a note also turn on who wrote it.
+	const canPost = $derived(app.access('board.postNote') !== 'no');
+	const canManage = $derived(app.access('board.pinNote') !== 'no');
 	const me = $derived(app.me()?.id ?? null);
 
 	let writing = $state(false);
@@ -340,6 +342,10 @@
 	</button>
 {/snippet}
 
+{#snippet viewOnly()}
+	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+{/snippet}
+
 {#snippet cork()}
 	<div class="cork"><Garland /></div>
 {/snippet}
@@ -354,7 +360,7 @@
 				<EmptyState title={t('no_access')} />
 			</div>
 		{:else}
-			<PageHeader title={t('title')} />
+			<PageHeader title={t('title')} actions={canPost ? undefined : viewOnly} />
 			<section bind:this={boardEl} aria-label={t('board_label')} data-testid="board">
 				{#if loadError}
 					<p class="text-ink mb-4 font-semibold" role="alert">{t('error')}</p>
