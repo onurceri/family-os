@@ -271,6 +271,9 @@ export class TodayData {
 					title: tDynamic(counts.titleKey),
 					label: tDynamic(counts.labelKey),
 					ring: (name, done, total) => tDynamic(counts.ringKey, { name, done, total }),
+					...(counts.noneKey && {
+						none: (name: string) => tDynamic(counts.noneKey as string, { name }),
+					}),
 					left: (count) => tDynamic(counts.leftKey, { count }),
 				},
 			}),

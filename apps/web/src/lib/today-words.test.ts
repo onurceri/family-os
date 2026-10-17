@@ -21,15 +21,14 @@ function translator(catalog: Record<string, string>, used: Set<string>): Transla
 }
 
 /** What an extension's facet and block would give (their words are in their own catalogs). */
-const extra: FacetWords = {
-	counts: {
-		title: 'Chores today',
-		label: 'Chores',
-		ring: (name, done, total) => `${name}: ${done} of ${total} done`,
-		left: (count) => `${count} left`,
-	},
-	meals: 'Kitchen',
+const counts: NonNullable<FacetWords['counts']> = {
+	title: 'Chores today',
+	label: 'Chores',
+	ring: (name, done, total) => `${name}: ${done} of ${total} done`,
+	none: (name) => `${name}: no chores today`,
+	left: (count) => `${count} left`,
 };
+const extra: FacetWords = { counts, meals: 'Kitchen' };
 
 /** Calls every function in the words so each key is looked up. */
 function exercise(words: ReturnType<typeof todayWords>) {
@@ -68,6 +67,11 @@ describe('Today words', () => {
 		expect(english).toContain('Piano lesson in 25 min');
 		expect(english).toContain('3 left');
 		expect(english).toContain('Elif: 1 of 3 done');
+		expect(words.choreRing('Leo', 0, 0)).toBe('Leo: no chores today');
+		// A facet without its own words for none falls back to the ring's.
+		const { none: _none, ...ringOnly } = counts;
+		const fallback = todayWords(translator(en, new Set()), { counts: ringOnly });
+		expect(fallback.choreRing('Leo', 0, 0)).toBe('Leo: 0 of 0 done');
 		expect(english).toContain('From the photos · October 2025');
 		expect(english).toContain('Deniz, Amy and Elif');
 		expect(words.nextUp.nextUp).toBe('Next up');

@@ -107,6 +107,23 @@ export function dueLabel(
 	);
 }
 
+/**
+ * The toast after a tick. A chore may be done ahead of its day (a weekly one a day early); then
+ * the toast names the day it counted for, so a tick on the wrong row is seen and can be undone.
+ */
+export function doneToast(
+	title: string,
+	dueDate: string | null,
+	today: string,
+	t: ChoresT,
+	locale: string,
+): string {
+	const days = dueDate ? Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000) : 0;
+	if (!dueDate || days <= 0) return t('done_toast', { title });
+	if (days === 1) return t('done_toast_tomorrow', { title });
+	return t('done_toast_ahead', { title, day: dueLabel(dueDate, today, t, locale) });
+}
+
 export type Group = 'overdue' | 'today' | 'upcoming' | 'done';
 
 export function groupOf(chore: Pick<Chore, 'nextDue'>, today: string): Group {

@@ -24,6 +24,8 @@
 	"own_tick_today": "Bunu bugün yapıldı olarak işaretledin.",
 	"undo_failed": "Bu artık geri alınamıyor.",
 	"done_toast": "{{title}} tamamlandı",
+	"done_toast_tomorrow": "{{title}} yarın için tamamlandı",
+	"done_toast_ahead": "{{title}} {{day}} için tamamlandı",
 	"empty": "Henüz ev işi yok.",
 	"empty_hint": "İlkini ekle, örneğin her gün sırayla “Bulaşık makinesini boşalt”.",
 	"nothing_mine": "Seni bekleyen bir şey yok.",
@@ -100,6 +102,7 @@
 	"today_left_other": "{{count}} iş kaldı",
 	"today_counts_label": "Ev işleri",
 	"today_ring": "{{name}}: {{total}} işten {{done}} tanesi bitti",
+	"today_ring_none": "{{name}}: bugün ev işi yok",
 	"today_title": "Bugünün işleri",
 	"today_block": "Ev işleri",
 	"today_block_hint": "Herkesin bugünkü ev işlerinde nerede olduğu."
