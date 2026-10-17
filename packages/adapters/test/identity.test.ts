@@ -137,6 +137,41 @@ describe('identity-betterauth', () => {
 		expect(res.status).toBeGreaterThanOrEqual(400);
 	});
 
+	it('never limits password sign-ins that succeed, however many come from one address', async () => {
+		await identity.admin.setPasswordLogin({
+			memberId: 'member_a',
+			email: 'a@example.com',
+			password: 'correct horse battery',
+			displayName: 'A',
+		});
+		for (let i = 0; i < 8; i++) {
+			const res = await post(
+				'/sign-in/email',
+				{ email: 'a@example.com', password: 'correct horse battery' },
+				'10.0.0.20',
+			);
+			expect(res.status).toBe(200);
+		}
+	});
+
+	it('limits wrong passwords from one address across accounts', async () => {
+		for (let i = 0; i < 10; i++) {
+			const res = await post(
+				'/sign-in/email',
+				{ email: `nobody${i}@example.com`, password: 'wrong password!!' },
+				'10.0.0.21',
+			);
+			expect(res.status).toBe(401);
+		}
+		const limited = await post(
+			'/sign-in/email',
+			{ email: 'nobody0@example.com', password: 'wrong password!!' },
+			'10.0.0.21',
+		);
+		expect(limited.status).toBe(429);
+		expect(await limited.json()).toMatchObject({ code: 'RATE_LIMITED' });
+	});
+
 	it('signs in with a PIN', async () => {
 		await identity.admin.setPin({ memberId: 'member_kid', pin: '1234', displayName: 'Kid' });
 		expect(

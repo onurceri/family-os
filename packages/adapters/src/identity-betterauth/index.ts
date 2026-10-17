@@ -66,11 +66,11 @@ export const CLIENT_IP_HEADER = 'x-famos-client-ip';
 const LOCK_AFTER = 5;
 const LOCK_MS = 15 * 60_000;
 /**
- * Wrong PINs one address may send in a window, across all accounts. The per-account lock stops
- * guessing one PIN; this stops one device from walking through every child's account.
+ * Wrong PINs or passwords one address may send in a window, across all accounts. The per-account
+ * lock stops guessing one secret; this stops one device from walking through every account.
  */
-const PIN_FAILURES_PER_ADDRESS = 10;
-const PIN_ADDRESS_WINDOW_MS = 60_000;
+const FAILURES_PER_ADDRESS = 10;
+const ADDRESS_WINDOW_MS = 60_000;
 
 const CHILD_EMAIL_DOMAIN = 'child.famos.invalid';
 const PIN_PROVIDER = 'pin';
@@ -164,8 +164,9 @@ export function authOptions(options: IdentityOptions): BetterAuthOptions {
 			max: 100,
 			// better-auth counts every request, successful ones too: on one kitchen tablet a few
 			// children switching profiles would be refused. PIN sign-in is limited by its wrong PINs
-			// instead (per account and per address, in `createIdentity`).
-			customRules: { '/sign-in/pin': false },
+			// instead (per account and per address, in `createIdentity`); so is password sign-in, since
+			// a family behind one router shares an address and would hit the same few-per-seconds rule.
+			customRules: { '/sign-in/pin': false, '/sign-in/email': false },
 		},
 		advanced: {
 			ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
@@ -186,7 +187,7 @@ export function createIdentity(options: IdentityOptions): Identity {
 
 	const context = () => auth.$context;
 	const lockout = createLockout();
-	const pinAddresses = createAddressLimit();
+	const addressFailures = createAddressLimit();
 	const findUser = async (memberId: string) =>
 		(await context()).adapter.findOne<AuthUser>({
 			model: 'user',
@@ -298,8 +299,9 @@ export function createIdentity(options: IdentityOptions): Identity {
 					{ status: 429, headers: { 'retry-after': String(retryAfter) } },
 				);
 			}
-			const address = key?.startsWith('pin:') ? request.headers.get(CLIENT_IP_HEADER) : null;
-			const waitMs = address ? pinAddresses.waitFor(address) : 0;
+			const ip = key ? request.headers.get(CLIENT_IP_HEADER) : null;
+			const address = key && ip ? `${key.split(':')[0]}:${ip}` : null;
+			const waitMs = address ? addressFailures.waitFor(address) : 0;
 			if (waitMs > 0) {
 				const retryAfter = Math.ceil(waitMs / 1000);
 				return Response.json(
@@ -313,7 +315,7 @@ export function createIdentity(options: IdentityOptions): Identity {
 			// secret, and must not lock a child out of the family tablet.
 			const failed = response.status === 401;
 			if (key && (failed || response.ok)) lockout.record(key, response.ok);
-			if (address && failed) pinAddresses.fail(address);
+			if (address && failed) addressFailures.fail(address);
 			return response;
 		},
 		async resolveMember(headers) {
@@ -391,14 +393,14 @@ function createAddressLimit(now: () => number = Date.now) {
 				if (entry) windows.delete(address);
 				return 0;
 			}
-			return entry.count >= PIN_FAILURES_PER_ADDRESS ? entry.ends - now() : 0;
+			return entry.count >= FAILURES_PER_ADDRESS ? entry.ends - now() : 0;
 		},
 		fail(address: string) {
 			const current = windows.get(address);
 			const entry =
 				current && current.ends > now()
 					? current
-					: { count: 0, ends: now() + PIN_ADDRESS_WINDOW_MS };
+					: { count: 0, ends: now() + ADDRESS_WINDOW_MS };
 			entry.count += 1;
 			windows.set(address, entry);
 		},
