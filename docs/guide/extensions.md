@@ -7,6 +7,7 @@ Everything FamilyOS does comes from an **extension**: the calendar, the lists, Q
 - **Always there:** Calendar, Lists, Quick add, the assistant, the board, chores and records (the duties and papers that vehicles, pets and the home use). They cannot be uninstalled, but each can be switched off.
 - **Installed for a new family:** Photos and weather, so Today shows the weather and the family's photos from the first day. Setup asks for your city right after you create your account; **Skip** leaves it for later.
 - **Ready to install:** the kitchen, pets, vehicles and home.
+- **Found online:** Home Assistant, which connects FamilyOS to your Home Assistant (see [Home Assistant](home-assistant.md)). It is not part of FamilyOS itself; you download it with **Look for more**.
 
 A family that upgrades from a version before extensions could be installed keeps every extension it used.
 
