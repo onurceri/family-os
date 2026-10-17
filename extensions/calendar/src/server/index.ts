@@ -31,6 +31,7 @@ import {
 	subscriptionChanged,
 	tagChanged,
 } from './capabilities.ts';
+import { aiContextEvents } from './context.ts';
 import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
 import { movedEvent } from './moved.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
@@ -528,12 +529,29 @@ export const changeEvent = defineAction({
 		const keys = new Set([...changed, ...(when ? WHEN_FIELDS : [])]);
 		return Object.fromEntries([...keys].map((k) => [k, current[k] ?? null]));
 	},
-	// A model sometimes names the event but leaves out what changes; such a draft would change
-	// nothing, so the model is told to give the new values instead.
-	refuseProposal: async (_ctx, { id: _id, label: _label, occurrence: _occurrence, ...change }) =>
-		Object.values(change).some((value) => value !== undefined)
-			? null
-			: 'Nothing would change: give the new values (date, startTime, endTime, location…) in their fields.',
+	// A model sometimes names the event but leaves out what changes, or sends what the event
+	// already is (a letter repeating the date of a listed event); such a draft would change
+	// nothing, so it is refused.
+	async refuseProposal(ctx, { id, label: _label, occurrence, ...change }) {
+		const given = Object.entries(change).filter(([, value]) => value !== undefined);
+		if (given.length === 0)
+			return 'Nothing would change: give the new values (date, startTime, endTime, location…) in their fields.';
+		const row = await events(ctx.db)
+			.selectFrom('calendar_events')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const key = occurrence && row.rrule ? occurrenceKey(row, occurrence) : undefined;
+		const { current } = eventAsItIs(row, key);
+		// Lists (tags, people) in any order; a cleared field is the same as one never set.
+		const plain = (value: unknown) =>
+			JSON.stringify(Array.isArray(value) ? [...value].sort() : (value ?? null));
+		return given.every(([field, value]) => plain(value) === plain(current[field]))
+			? `${row.title} is already like that: nothing would change.`
+			: null;
+	},
 	undo: ({ event, before, split }) =>
 		split
 			? {
@@ -941,7 +959,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { index: searchIndex, context: aiContext.id },
+	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id] },
 	actions: [
 		findEvents,
 		createEvent,
@@ -953,6 +971,7 @@ export default defineExtension({
 		updateTag,
 		deleteTag,
 		aiContext,
+		aiContextEvents,
 		createFeed,
 		revokeFeed,
 		touchFeed,

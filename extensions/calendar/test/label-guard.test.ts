@@ -112,3 +112,27 @@ describe('the words an AI uses for a thing must name it', () => {
 		expect(result.status).toBe('applied');
 	});
 });
+
+describe('a change that changes nothing', () => {
+	it('is refused as already so, when the AI sends what the event already is', async () => {
+		// Real case: a school letter repeated the evening's date and time, and the model proposed
+		// changing the listed evening to exactly that.
+		await expect(
+			k.runner.invoke(
+				'calendar.changeEvent',
+				{ id: eventId, label: 'Biology test', date: '2099-03-01', startTime: '09:00' },
+				AI,
+			),
+		).rejects.toMatchObject({
+			code: 'conflict',
+			message: expect.stringContaining('Biology test is already like that'),
+			details: { refused: 'settled', subject: 'Biology test' },
+		});
+		const moved = await k.runner.invoke(
+			'calendar.changeEvent',
+			{ id: eventId, label: 'Biology test', date: '2099-03-01', startTime: '10:00' },
+			AI,
+		);
+		expect(moved.status).toBe('drafted');
+	});
+});

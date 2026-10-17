@@ -1,4 +1,4 @@
-import type { DbExecutor, Migrations } from '@famos/sdk';
+import { type DbExecutor, labelNamesTitle, type Migrations } from '@famos/sdk';
 import {
 	addDays,
 	compareDates,
@@ -272,30 +272,25 @@ export const sameTitle = (a: string, b: string) => {
 export const SAME_EVENT_DAYS = 30;
 
 /**
- * Whether an event with the same title already starts within a month either side of the day
- * (family time zone): news that an event moved arrives with the new day, and the event is still
- * the one on the calendar, not a second one.
+ * Whether the event seems to be on the calendar already, by the same title matching that finds a
+ * moved event (`labelNamesTitle`: the words of one title are all words of the other, so
+ * "Parents' evening" is "Parents' evening at school"), or the same title written differently
+ * (case, accents). Any day within a month either side counts: news that an event moved arrives
+ * with the new day, and the event is still the one on the calendar, not a second one. Repeating
+ * events count by each of their dates.
  */
 export async function eventExists(
 	db: DbExecutor,
 	input: { title: string; date: string },
 	timeZone: string,
 ): Promise<boolean> {
-	const first = addDays(input.date, -SAME_EVENT_DAYS);
-	const last = addDays(input.date, SAME_EVENT_DAYS);
-	const start = dayBounds(first, timeZone).start;
-	const end = dayBounds(last, timeZone).end;
-	const rows = await events(db)
-		.selectFrom('calendar_events')
-		.select('title')
-		.where((eb) =>
-			eb.or([
-				eb.and([eb('start_date', '>=', first), eb('start_date', '<=', last)]),
-				eb.and([eb('starts_at', '>=', start), eb('starts_at', '<', end)]),
-			]),
-		)
-		.execute();
-	return rows.some((row) => sameTitle(row.title, input.title));
+	const near = await occurrencesBetween(
+		db,
+		addDays(input.date, -SAME_EVENT_DAYS),
+		addDays(input.date, SAME_EVENT_DAYS),
+		timeZone,
+	);
+	return near.some((o) => sameTitle(o.title, input.title) || labelNamesTitle(input.title, o.title));
 }
 
 const HOUR = 3_600_000;

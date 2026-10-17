@@ -357,6 +357,65 @@ describe('duplicate hint', () => {
 		);
 		expect(byDate).toEqual({ '2026-10-17': true, '2026-10-18': true, '2026-12-18': false });
 	});
+
+	it('matches titles the way a moved event is found: one names the other', async () => {
+		const { actor } = await k.member('admin');
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: "Parents' evening at school", date: '2026-10-20', startTime: '18:00' },
+			actor,
+		);
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{
+				title: 'Football training',
+				date: '2026-10-08',
+				startTime: '17:30',
+				recurrence: { freq: 'weekly', byDay: ['TH'] },
+			},
+			actor,
+		);
+		const removed = await k.runner.invoke<{ id: string }>(
+			'calendar.createEvent',
+			{ title: 'Dentist', date: '2026-10-21', startTime: '09:00' },
+			actor,
+		);
+		if (removed.status !== 'applied') throw new Error('expected applied');
+		await k.runner.invoke('calendar.deleteEvent', { id: removed.output.id }, actor);
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
+		const propose = async (input: object) => {
+			const result = await k.runner.invoke('calendar.createEvent', input, ai);
+			if (result.status !== 'drafted') throw new Error('expected a draft');
+			return result.draftId;
+		};
+		// A school letter with the same evening at the same time, under a shorter title.
+		const evening = await propose({
+			title: "Parents' evening",
+			date: '2026-10-20',
+			startTime: '18:00',
+		});
+		// A date of a repeating event, weeks after it began.
+		const football = await propose({
+			title: 'Football training',
+			date: '2026-11-05',
+			startTime: '17:30',
+		});
+		// A removed event is not there; "Dental cleaning" does not name "Dentist" word for word.
+		const dentist = await propose({ title: 'Dentist', date: '2026-10-21', startTime: '09:00' });
+		const other = await propose({
+			title: 'Dental cleaning',
+			date: '2026-10-20',
+			startTime: '18:00',
+		});
+		const drafts = (await k
+			.route('core.listDrafts')
+			.call({ query: { status: 'pending', limit: 10 } })) as { id: string; mayExist: boolean }[];
+		const mayExist = (id: string) => drafts.find((d) => d.id === id)?.mayExist;
+		expect(mayExist(evening)).toBe(true);
+		expect(mayExist(football)).toBe(true);
+		expect(mayExist(dentist)).toBe(false);
+		expect(mayExist(other)).toBe(false);
+	});
 });
 
 describe('a suggested event whose day has passed', () => {
