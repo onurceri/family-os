@@ -122,7 +122,7 @@ The first list is called **Groceries**. Your lists are the buttons at the top: t
 A task is one person's to-do with an optional date: "sign the school form". Shared rotating housework belongs in [Chores](chores.md).
 
 - **Add:** type the title in the box at the top and press Enter. It goes under **Anyone**. For more, press **Add details** after typing: **Who** (the person it is for), **Due date**, **Time**, **Repeats** (a repeating task needs a due date) and **Notes**, then **Save**. If you may not add tasks for others, a quick task is given to you.
-- **Groups:** tasks are grouped by when they are due: **Overdue**, **Today**, **This week** (up to the last day of the family's week, see [Region](region.md)), **Later** and **No date**. Each shows the face of the person it is for. **Everyone | Mine** at the top shows all tasks or only yours.
+- **Groups:** tasks are grouped by when they are due: **Overdue**, **Today**, **This week** (up to the last day of the family's week, see [Region](region.md)), **Next week**, **Later** and **No date**. Each shows the face of the person it is for. **Everyone | Mine** at the top shows all tasks or only yours.
 - **Tick:** tap the circle. A message with **Undo** shows. A repeating task moves to its next date (**Done. Next: …**). Finished tasks are listed under **Done**; tap the circle again to put one back.
 - **Change or delete:** tap a task to change it in the panel (a sheet on a phone), or **Delete** it there (then **Tap again to delete**).
 - **Reminders:** a task with a date reminds the person it is for (everyone when it is for **Anyone**) at its time, or at 09:00.

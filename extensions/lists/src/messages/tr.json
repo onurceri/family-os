@@ -120,6 +120,7 @@
 	"group_overdue": "Gecikmiş",
 	"group_today": "Bugün",
 	"group_week": "Bu hafta",
+	"group_next_week": "Gelecek hafta",
 	"group_later": "Daha sonra",
 	"group_no_date": "Tarihsiz",
 	"list_name_taken": "Bu adla bir liste zaten var.",

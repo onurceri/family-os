@@ -37,7 +37,7 @@
 		return app.onEvent('lists.task.', () => void load());
 	});
 
-	const RANK = { today: 0, soon: 1, later: 2, none: 3, overdue: 4 } as const;
+	const RANK = { today: 0, soon: 1, nextWeek: 2, later: 3, none: 4, overdue: 5 } as const;
 	const open = $derived.by(() => {
 		const meId = app.me()?.id;
 		return tasks

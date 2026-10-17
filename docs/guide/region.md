@@ -8,7 +8,7 @@ Open **Settings → Family → Language & region** (you need the permission to c
 
 - **Time zone.** Search the list and pick the family's zone; it decides what "today" is and when reminders go off. Other open screens update by themselves when any of these settings change.
 - **Region format.** Search for your country or region (every one your browser knows is in the list) or type a tag such as `en-GB` or `de-DE`. It decides the order of day, month and year, the marks in numbers (`1,234.56` or `1.234,56`) and how money is written. Day and month names stay in each person's language: with Slovenia picked, someone who reads English sees "Thu, 22 Oct" and someone who reads Slovenian "čet., 22. okt.". The button **Use this browser's region** fills it in from your browser. A tag that is not valid cannot be saved.
-- **First day of the week.** Calendar and meal plan weeks start here, the Tasks page's **This week** ends the day before it, and the day pickers of repeating events, tasks and chores list the days in that order. Changing it never changes the days an event repeats on.
+- **First day of the week.** Calendar and meal plan weeks start here, the Tasks page's **This week** and **Next week** follow it, and the day pickers of repeating events, tasks and chores list the days in that order. Changing it never changes the days an event repeats on.
 - **Clock.** 24-hour (14:30) or 12-hour (2:30 PM).
 - **Temperature.** °C or °F, for the weather on the family display.
 

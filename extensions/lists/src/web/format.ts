@@ -1,13 +1,21 @@
-import { compareDates, formatClock, formatDate, type HourCycle, weekOf } from '@famos/time';
+import {
+	addDays,
+	compareDates,
+	formatClock,
+	formatDate,
+	type HourCycle,
+	weekOf,
+} from '@famos/time';
 import type { Task } from '../contract/index.js';
 import type { ListsT } from './i18n.js';
 
-export type Urgency = 'overdue' | 'today' | 'soon' | 'later' | 'none';
+export type Urgency = 'overdue' | 'today' | 'soon' | 'nextWeek' | 'later' | 'none';
 
 /**
- * When a task is due, as the Tasks page groups it. `soon` ("This week") ends on the last day of
- * the family's week (`weekStart`, ISO 1 = Monday … 7 = Sunday), so on the week's last day only
- * that day is left of it and the days after belong to next week (`later`).
+ * When a task is due, as the Tasks page groups it, by the family's weeks (`weekStart`, ISO
+ * 1 = Monday … 7 = Sunday): `soon` ("This week") ends on the last day of this week, `nextWeek`
+ * is the whole week after it, and only what comes after that is `later`. On the last day of a
+ * week, tomorrow is next week.
  */
 export function urgency(task: Pick<Task, 'dueDate'>, today: string, weekStart: number): Urgency {
 	if (!task.dueDate) return 'none';
@@ -15,11 +23,13 @@ export function urgency(task: Pick<Task, 'dueDate'>, today: string, weekStart: n
 	if (c < 0) return 'overdue';
 	if (c === 0) return 'today';
 	const lastOfWeek = weekOf(today, weekStart)[6] ?? today;
-	return compareDates(task.dueDate, lastOfWeek) <= 0 ? 'soon' : 'later';
+	if (compareDates(task.dueDate, lastOfWeek) <= 0) return 'soon';
+	const lastOfNext = weekOf(addDays(lastOfWeek, 1), weekStart)[6] ?? lastOfWeek;
+	return compareDates(task.dueDate, lastOfNext) <= 0 ? 'nextWeek' : 'later';
 }
 
 /** The groups of the Tasks page, in order: late first, then by when, those without a date last. */
-export const TASK_GROUPS = ['overdue', 'today', 'soon', 'later', 'none'] as const;
+export const TASK_GROUPS = ['overdue', 'today', 'soon', 'nextWeek', 'later', 'none'] as const;
 
 /**
  * The open tasks by when they are due, for everyone or for one person (`mine`). Groups with
