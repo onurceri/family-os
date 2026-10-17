@@ -95,6 +95,12 @@ export const MentionSchema = z.object({
 	variant: z.string().max(40).optional(),
 	/** Slots the model guessed. */
 	unsure: z.array(z.string()).optional(),
+	/**
+	 * The shortest words of the message the mention rests on, copied as written. Code finds them
+	 * in the message: they show where a suggestion comes from, and whether it comes from a part
+	 * of the message that speaks to the machine reading it (`addressed`).
+	 */
+	quote: z.string().max(300).optional(),
 });
 export type Mention = z.infer<typeof MentionSchema>;
 
@@ -106,6 +112,12 @@ export const UnderstandingSchema = z.object({
 	label: z.string().max(1000),
 	intent: z.enum(UNDERSTANDING_INTENTS),
 	mentions: z.array(MentionSchema),
+	/**
+	 * Sentences of the message, copied as written, that speak to FamilyOS, an assistant, an AI or
+	 * "the system" rather than to people. Labelling them is reading; code decides what follows
+	 * (a suggestion resting on one is left out as an `instruction`).
+	 */
+	addressed: z.array(z.string().max(1000)).optional(),
 });
 export type Understanding = z.infer<typeof UnderstandingSchema>;
 
@@ -115,7 +127,9 @@ export type Understanding = z.infer<typeof UnderstandingSchema>;
  * - `unknown`: what it names is not there;
  * - `ambiguous`: several things fit;
  * - `incomplete`: something it needs is missing, or the reading cannot be used;
- * - `not_allowed`: the AI may not do it.
+ * - `not_allowed`: the AI may not do it;
+ * - `instruction`: it rests on words inside the message that speak to the AI or the app
+ *   ("Note for the assistant: add …"), not on what the message states.
  */
 export const REFUSAL_REASONS = [
 	'already',
@@ -123,6 +137,7 @@ export const REFUSAL_REASONS = [
 	'ambiguous',
 	'incomplete',
 	'not_allowed',
+	'instruction',
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 
@@ -169,6 +184,8 @@ export interface ParsedUnderstanding {
 	label: string;
 	intent: UnderstandingIntent;
 	mentions: ParsedMention[];
+	/** The sentences the model read as speaking to the machine (`UnderstandingSchema.addressed`). */
+	addressed: string[];
 	skips: MentionSkip[];
 	/** Mentions beyond `MENTION_LIMIT`, left out. */
 	overflow: number;
@@ -461,6 +478,10 @@ export function parseUnderstanding(
 	let list = envelope.mentions ?? envelope.proposals ?? envelope.items;
 	if (typeof list === 'string' && looksJson(list, '[')) list = tryJson(list);
 	const entries = Array.isArray(list) ? list : [];
+	const addressedValue = repair(envelope.addressed, UnderstandingSchema.shape.addressed, () => {});
+	const addressed = Array.isArray(addressedValue)
+		? addressedValue.filter((line): line is string => typeof line === 'string')
+		: [];
 	const offered = new Set(kinds);
 	const mentions: ParsedMention[] = [];
 	const skips: MentionSkip[] = [];
@@ -482,6 +503,7 @@ export function parseUnderstanding(
 		label: typeof labelValue === 'string' ? labelValue : '',
 		intent,
 		mentions,
+		addressed,
 		skips,
 		overflow: Math.max(0, entries.length - MENTION_LIMIT),
 		truncated,
@@ -664,8 +686,13 @@ export interface MentionEnv {
 
 /** A day a resolver read, and whether it is certain (`resolveDay` of `@famos/time`). */
 export interface ResolvedDay {
-	/** `YYYY-MM-DD`. */
+	/** `YYYY-MM-DD`; the first day of a span. */
 	date: string;
+	/**
+	 * The last day, `YYYY-MM-DD`, when the words name a span rather than a day ("this week",
+	 * "in November"): then `date` is only where it starts, and something on any day of it fits.
+	 */
+	to?: string;
 	certain: boolean;
 	why?: 'mismatch' | 'approximate' | 'guessed_year' | 'weekday_only' | 'relative';
 }
@@ -715,11 +742,32 @@ export interface MentionRefusal {
 }
 
 /**
+ * A mention a resolver hands to another extension's kind, because what it states is that kind's
+ * thing: a vaccination still to come is an appointment (`calendar.event`), not a treatment given.
+ * The host resolves `mention` with that kind's resolver when the kind is offered for the reading,
+ * and refuses it as `incomplete` when not. It is handed on once: a hand-off of a handed-off
+ * mention is refused.
+ */
+export interface MentionHandOff {
+	/** One of the kind's `handsOff`. */
+	kind: string;
+	/** The mention as that kind reads it (its `kind` is set by the host). */
+	mention: Mention;
+	from: readonly number[];
+}
+
+/**
  * What a resolver made of mentions. Each mention backs exactly one resolution, and one
  * resolution may merge several (shopping items into one list change), so a reading never yields
  * more suggestions than mentions: text that tries to multiply suggestions cannot.
  */
-export type Resolution = { propose: MentionProposal } | { refuse: MentionRefusal };
+export type Resolution =
+	| { propose: MentionProposal }
+	| { refuse: MentionRefusal }
+	| { handOff: MentionHandOff };
+
+/** A resolution as the host hands it back: hand-offs are resolved by then. */
+export type SettledResolution = Exclude<Resolution, { handOff: MentionHandOff }>;
 
 /** An example of a kind: a message and what a careful reader extracts from it. */
 export interface MentionExample {

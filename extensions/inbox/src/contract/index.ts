@@ -97,7 +97,8 @@ export type ExtractionKind = z.infer<typeof ExtractionKindSchema>;
 /**
  * Why a proposal was left out: what it asks for is already so (the item is already on the list,
  * the task already done), it pointed at something the household does not have, it was missing
- * something it needs, or the person it was made for may not do it.
+ * something it needs, the person it was made for may not do it, or it came from words inside the
+ * message written to the AI or the app rather than from what the message states.
  */
 export const SKIP_REASONS = [
 	'already',
@@ -105,6 +106,7 @@ export const SKIP_REASONS = [
 	'ambiguous',
 	'incomplete',
 	'not_allowed',
+	'instruction',
 ] as const;
 export const SkipReasonSchema = z.enum(SKIP_REASONS);
 export type SkipReason = z.infer<typeof SkipReasonSchema>;

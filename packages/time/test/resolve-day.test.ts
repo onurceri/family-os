@@ -22,15 +22,21 @@ function vocabulary(): (key: string) => readonly string[] {
 const words = dateWords(vocabulary());
 const TODAY = '2026-10-14'; // a Wednesday
 
-type Row = [string, DayParts, Partial<ResolveDayOptions>, string, string | undefined];
+type Row = [string, DayParts, Partial<ResolveDayOptions>, string, string | undefined, string?];
 
-/** Each row: what it shows, the parts, options beyond today, the date, and the doubt (if any). */
+/**
+ * Each row: what it shows, the parts, options beyond today, the date, the doubt (if any), and the
+ * last day when it names a span.
+ */
 function table(rows: Row[]) {
-	for (const [name, ref, options, date, why] of rows)
+	for (const [name, ref, options, date, why, to] of rows)
 		it(name, () => {
 			const result = resolveDay(ref, { today: TODAY, ...options });
+			const span = to === undefined ? {} : { to };
 			expect(result).toEqual(
-				why === undefined ? { date, certain: true } : { date, certain: false, why },
+				why === undefined
+					? { date, certain: true, ...span }
+					: { date, certain: false, why, ...span },
 			);
 		});
 }
@@ -47,6 +53,7 @@ describe('resolveDay', () => {
 	it('reads a month the words alone name, as approximate', () => {
 		expect(resolveDay({ text: 'Ekim sonuna kadar' }, { today: TODAY, words })).toEqual({
 			date: TODAY,
+			to: '2026-10-31',
 			certain: false,
 			why: 'approximate',
 		});
@@ -55,7 +62,7 @@ describe('resolveDay', () => {
 				{ text: 'until the end of December' },
 				{ today: TODAY, words, direction: 'future' },
 			),
-		).toEqual({ date: '2026-12-01', certain: false, why: 'approximate' });
+		).toEqual({ date: '2026-12-01', to: '2026-12-31', certain: false, why: 'approximate' });
 		// Two months say nothing about which one.
 		expect(resolveDay({ text: 'October or November' }, { today: TODAY, words })).toBeNull();
 	});
@@ -119,6 +126,7 @@ describe('resolveDay', () => {
 		it('falls back to the month, as a guess, for a day the month does not have', () => {
 			expect(resolveDay({ day: 31, month: 11, year: 2026 }, { today: TODAY })).toEqual({
 				date: '2026-11-01',
+				to: '2026-11-30',
 				certain: false,
 				why: 'approximate',
 			});
@@ -338,11 +346,72 @@ describe('resolveDay', () => {
 
 	describe('a month or a span', () => {
 		table([
-			['early next month', { month: 11, approximate: true }, {}, '2026-11-01', 'approximate'],
-			['a month alone is a span', { month: 11 }, {}, '2026-11-01', 'approximate'],
-			['this month, from today', { month: 10, approximate: true }, {}, '2026-10-14', 'approximate'],
-			['a past month, done', { month: 3 }, { direction: 'past' }, '2026-03-01', 'approximate'],
-			['a month with a year', { month: 1, year: 2027 }, {}, '2027-01-01', 'approximate'],
+			[
+				'early next month',
+				{ month: 11, approximate: true },
+				{},
+				'2026-11-01',
+				'approximate',
+				'2026-11-30',
+			],
+			['a month alone is a span', { month: 11 }, {}, '2026-11-01', 'approximate', '2026-11-30'],
+			[
+				'this month, from today',
+				{ month: 10, approximate: true },
+				{},
+				'2026-10-14',
+				'approximate',
+				'2026-10-31',
+			],
+			[
+				'a past month, done',
+				{ month: 3 },
+				{ direction: 'past' },
+				'2026-03-01',
+				'approximate',
+				'2026-03-31',
+			],
+			[
+				'a month with a year',
+				{ month: 1, year: 2027 },
+				{},
+				'2027-01-01',
+				'approximate',
+				'2027-01-31',
+			],
+			// Found in use: "cancelled this week" named no day, so the whole calendar was searched.
+			[
+				'this week, from today',
+				{ text: 'this week', week: 'this' },
+				{},
+				'2026-10-14',
+				'approximate',
+				'2026-10-18',
+			],
+			[
+				'next week, from its first day',
+				{ text: 'next week', week: 'next' },
+				{},
+				'2026-10-19',
+				'approximate',
+				'2026-10-25',
+			],
+			[
+				'this week, by the family week',
+				{ text: 'this week', week: 'this' },
+				{ weekStart: 7 },
+				'2026-10-14',
+				'approximate',
+				'2026-10-17',
+			],
+			[
+				'this week, for something done',
+				{ text: 'this week', week: 'this' },
+				{ direction: 'past' },
+				'2026-10-12',
+				'approximate',
+				'2026-10-14',
+			],
 			[
 				'a day marked vague',
 				{ day: 31, month: 10, approximate: true },
@@ -401,6 +470,35 @@ describe('resolveDay', () => {
 			],
 			// Found in use: "Yarın" quoted with no parts.
 			['tomorrow in the words only', { text: 'Yarın' }, { words }, '2026-10-15', undefined],
+			// Found in use: "yarın" read with today's day number became today.
+			[
+				'tomorrow in the words wins over a day number they do not write',
+				{ text: 'yarın', day: 14, month: 10 },
+				{ words },
+				'2026-10-15',
+				undefined,
+			],
+			[
+				'tomorrow in the words wins over a count of today',
+				{ text: 'tomorrow', inDays: 0 },
+				{ words },
+				'2026-10-15',
+				undefined,
+			],
+			[
+				'the day after tomorrow keeps its count',
+				{ text: 'the day after tomorrow', inDays: 2 },
+				{ words },
+				'2026-10-16',
+				'relative',
+			],
+			[
+				'a date written in digits wins over the word',
+				{ text: 'tomorrow, 20 October', day: 20, month: 10 },
+				{ words },
+				'2026-10-20',
+				undefined,
+			],
 			['yesterday in the words only', { text: 'yesterday' }, { words }, '2026-10-13', undefined],
 			// Found in use: "ayın 15'i" quoted with no parts.
 			[

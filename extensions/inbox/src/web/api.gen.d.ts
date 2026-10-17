@@ -169,7 +169,7 @@ export interface operations {
                         skippedUnknown: number;
                         skips: {
                             /** @enum {string} */
-                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed";
+                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                             subject: string | null;
                         }[];
                         createdBy: string | null;
@@ -353,7 +353,7 @@ export interface operations {
                         skippedUnknown: number;
                         skips: {
                             /** @enum {string} */
-                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed";
+                            reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                             subject: string | null;
                         }[];
                         createdBy: string | null;
@@ -677,7 +677,7 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed";
+                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
                             }[];
                             createdBy: string | null;
@@ -858,7 +858,7 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed";
+                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
                             }[];
                             createdBy: string | null;
@@ -1191,7 +1191,7 @@ export interface operations {
                             skippedUnknown: number;
                             skips: {
                                 /** @enum {string} */
-                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed";
+                                reason: "already" | "unknown" | "ambiguous" | "incomplete" | "not_allowed" | "instruction";
                                 subject: string | null;
                             }[];
                             createdBy: string | null;

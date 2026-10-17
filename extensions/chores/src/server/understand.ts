@@ -185,6 +185,7 @@ export const choreKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'chores.chore',
+					quote: 'From Monday Ivy and Leo take turns emptying the dishwasher, every day',
 					title: 'Empty the dishwasher',
 					people: ['Ivy', 'Leo'],
 					date: { text: 'Monday', weekday: 1 },
@@ -197,6 +198,7 @@ export const choreKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'chores.chore',
+					quote: 'Someone has to water the plants every Saturday',
 					title: 'Water the plants',
 					repeat: { every: 'week', weekdays: [6] },
 				},
@@ -220,11 +222,25 @@ export const doneKind = defineMentionKind({
 	examples: [
 		{
 			text: 'Leo emptied the dishwasher',
-			mentions: [{ kind: 'chores.done', target: 'Empty the dishwasher', people: ['Leo'] }],
+			mentions: [
+				{
+					kind: 'chores.done',
+					quote: 'Leo emptied the dishwasher',
+					target: 'Empty the dishwasher',
+					people: ['Leo'],
+				},
+			],
 		},
 		{
 			text: 'I took the bins out',
-			mentions: [{ kind: 'chores.done', target: 'Take out the bins', forMe: true }],
+			mentions: [
+				{
+					kind: 'chores.done',
+					quote: 'I took the bins out',
+					target: 'Take out the bins',
+					forMe: true,
+				},
+			],
 		},
 	],
 	resolve: each(resolveDone),
@@ -243,7 +259,14 @@ export const turnsKind = defineMentionKind({
 	examples: [
 		{
 			text: 'From now on Sam and Ivy share the bins, Sam first',
-			mentions: [{ kind: 'chores.turns', target: 'Take out the bins', people: ['Sam', 'Ivy'] }],
+			mentions: [
+				{
+					kind: 'chores.turns',
+					quote: 'Sam and Ivy share the bins, Sam first',
+					target: 'Take out the bins',
+					people: ['Sam', 'Ivy'],
+				},
+			],
 		},
 	],
 	resolve: each(resolveTurns),

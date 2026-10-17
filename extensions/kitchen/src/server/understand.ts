@@ -191,6 +191,7 @@ export const recipeKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'kitchen.recipe',
+					quote: 'Lentil soup (serves 4, 40 min)',
 					title: 'Lentil soup',
 					lines: [
 						'1 cup red lentils',
@@ -233,12 +234,14 @@ export const mealKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'kitchen.meal',
+					quote: 'Pancakes for breakfast on Sunday',
 					title: 'Pancakes',
 					variant: 'breakfast',
 					date: { text: 'Sunday', weekday: 7 },
 				},
 				{
 					kind: 'kitchen.meal',
+					quote: 'lentil soup for dinner on Monday',
 					title: 'Lentil soup',
 					variant: 'dinner',
 					date: { text: 'Monday', weekday: 1 },
@@ -250,6 +253,7 @@ export const mealKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'kitchen.meal',
+					quote: "Let's do pizza tonight",
 					title: 'Pizza',
 					variant: 'dinner',
 					date: { text: 'tonight', inDays: 0 },
@@ -276,9 +280,15 @@ export const mealOffKind = defineMentionKind({
 		{
 			text: 'No fish on Friday after all, we are having pasta instead',
 			mentions: [
-				{ kind: 'kitchen.mealOff', target: 'Fish', date: { text: 'Friday', weekday: 5 } },
+				{
+					kind: 'kitchen.mealOff',
+					quote: 'No fish on Friday after all',
+					target: 'Fish',
+					date: { text: 'Friday', weekday: 5 },
+				},
 				{
 					kind: 'kitchen.meal',
+					quote: 'we are having pasta instead',
 					title: 'Pasta',
 					variant: 'dinner',
 					date: { text: 'Friday', weekday: 5 },

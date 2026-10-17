@@ -1,9 +1,11 @@
 import { pickRecord } from '@famos/ext-records/contract';
 import {
+	asAppointment,
 	defineMentionKind,
 	type IndexedMention,
 	type MentionContext,
 	type Resolution,
+	stillToCome,
 } from '@famos/sdk';
 import { LOG_KINDS, type LogKind } from '../contract/index.ts';
 import { tables } from './store.ts';
@@ -14,6 +16,9 @@ const isKind = (value: string | undefined): value is LogKind =>
 
 const NOTES_MAX = 2000;
 
+/** The calendar's kind for appointments, which work still to come on a car is. */
+const EVENT_KIND = 'calendar.event';
+
 async function resolveLog(
 	ctx: MentionContext,
 	{ index, mention }: IndexedMention,
@@ -21,6 +26,17 @@ async function resolveLog(
 ): Promise<Resolution> {
 	const subject = mention.title ?? mention.about ?? null;
 	const vehicle = pickRecord(ctx, mention.about, vehicles);
+	// A log holds work done: work still to come is a booking, also for a vehicle not listed.
+	if (stillToCome(ctx, mention)) {
+		const name = 'found' in vehicle ? vehicle.found.label : (mention.about?.trim() ?? null);
+		return {
+			handOff: {
+				kind: EVENT_KIND,
+				mention: asAppointment(mention, name, ctx.locale),
+				from: [index],
+			},
+		};
+	}
 	if ('refuse' in vehicle) return { refuse: { reason: vehicle.refuse, subject, from: [index] } };
 	if (!mention.title && !mention.notes)
 		return { refuse: { reason: 'incomplete', subject, from: [index] } };
@@ -72,6 +88,7 @@ export const logKind = defineMentionKind({
 	},
 	variants: LOG_KINDS,
 	actions: ['vehicles.addLog'],
+	handsOff: [EVENT_KIND],
 	knownFrom: [aiContext.id],
 	limit: 8,
 	examples: [
@@ -80,6 +97,8 @@ export const logKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'vehicles.log',
+					quote:
+						'Invoice, City Garage, 1 October 2026: oil change and new brake pads for the family car. Mileage 84,000 km.',
 					about: 'Family car',
 					title: 'Oil change and new brake pads',
 					variant: 'service',
@@ -94,6 +113,7 @@ export const logKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'vehicles.log',
+					quote: 'The windscreen of the van was replaced yesterday',
 					about: 'Van',
 					title: 'Windscreen replaced',
 					variant: 'repair',

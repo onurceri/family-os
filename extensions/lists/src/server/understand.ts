@@ -88,34 +88,65 @@ export const shoppingItem = defineMentionKind({
 		{
 			text: 'Can you grab 2 litres of milk, a dozen eggs and bananas on your way home?',
 			mentions: [
-				{ kind: 'lists.shoppingItem', title: 'Milk', quantity: '2 litres', variant: 'dairy' },
-				{ kind: 'lists.shoppingItem', title: 'Eggs', quantity: 'a dozen', variant: 'dairy' },
-				{ kind: 'lists.shoppingItem', title: 'Bananas', variant: 'produce' },
+				{
+					kind: 'lists.shoppingItem',
+					quote: '2 litres of milk',
+					title: 'Milk',
+					quantity: '2 litres',
+					variant: 'dairy',
+				},
+				{
+					kind: 'lists.shoppingItem',
+					quote: 'a dozen eggs',
+					title: 'Eggs',
+					quantity: 'a dozen',
+					variant: 'dairy',
+				},
+				{ kind: 'lists.shoppingItem', quote: 'bananas', title: 'Bananas', variant: 'produce' },
 			],
 		},
 		{
 			text: 'ice cream and a new football pls',
 			mentions: [
-				{ kind: 'lists.shoppingItem', title: 'Ice cream', variant: 'frozen' },
-				{ kind: 'lists.shoppingItem', title: 'Football' },
+				{ kind: 'lists.shoppingItem', quote: 'ice cream', title: 'Ice cream', variant: 'frozen' },
+				{ kind: 'lists.shoppingItem', quote: 'a new football', title: 'Football' },
 			],
 			why: '"new" describes the ball, it is not an amount.',
 		},
 		{
 			text: 'Put picture hooks on the Hardware store list',
-			mentions: [{ kind: 'lists.shoppingItem', title: 'Picture hooks', place: 'Hardware store' }],
+			mentions: [
+				{
+					kind: 'lists.shoppingItem',
+					quote: 'Put picture hooks on the Hardware store list',
+					title: 'Picture hooks',
+					place: 'Hardware store',
+				},
+			],
 		},
 		{
 			text: 'Got the bread, we still need batteries',
 			mentions: [
-				{ kind: 'lists.bought', target: 'bread' },
-				{ kind: 'lists.shoppingItem', title: 'Batteries', variant: 'household' },
+				{ kind: 'lists.bought', quote: 'Got the bread', target: 'bread' },
+				{
+					kind: 'lists.shoppingItem',
+					quote: 'we still need batteries',
+					title: 'Batteries',
+					variant: 'household',
+				},
 			],
 			why: 'News that something was bought ticks it off; what is still needed is added.',
 		},
 		{
 			text: 'We should get a new kettle at the weekend',
-			mentions: [{ kind: 'lists.shoppingItem', title: 'Kettle', variant: 'household' }],
+			mentions: [
+				{
+					kind: 'lists.shoppingItem',
+					quote: 'get a new kettle',
+					title: 'Kettle',
+					variant: 'household',
+				},
+			],
 			why: 'A thing still to buy goes on the list, also one the household will keep for years.',
 		},
 	],
@@ -210,13 +241,20 @@ export const bought = defineMentionKind({
 	examples: [
 		{
 			text: 'Got the E27 light bulbs already, tick them off the Hardware store list',
-			mentions: [{ kind: 'lists.bought', target: 'E27 light bulbs', place: 'Hardware store' }],
+			mentions: [
+				{
+					kind: 'lists.bought',
+					quote: 'Got the E27 light bulbs already',
+					target: 'E27 light bulbs',
+					place: 'Hardware store',
+				},
+			],
 		},
 		{
 			text: 'picked up bread and eggs',
 			mentions: [
-				{ kind: 'lists.bought', target: 'bread' },
-				{ kind: 'lists.bought', target: 'eggs' },
+				{ kind: 'lists.bought', quote: 'picked up bread', target: 'bread' },
+				{ kind: 'lists.bought', quote: 'eggs', target: 'eggs' },
 			],
 		},
 	],
@@ -316,6 +354,7 @@ export const task = defineMentionKind({
 			mentions: [
 				{
 					kind: 'lists.task',
+					quote: 'Please pay the trip fee of 14 through the school office by Friday 23 October.',
 					title: 'Pay the trip fee',
 					date: { text: 'Friday 23 October', day: 23, month: 10, weekday: 5 },
 					notes: 'Fee: 14, through the school office',
@@ -327,6 +366,7 @@ export const task = defineMentionKind({
 			mentions: [
 				{
 					kind: 'lists.task',
+					quote: 'the autumn term fee is due on the 15th. Please pay at the front desk.',
 					title: 'Pay the swim club term fee',
 					date: { text: 'on the 15th', day: 15 },
 					notes: 'Pay at the front desk',
@@ -339,12 +379,14 @@ export const task = defineMentionKind({
 			mentions: [
 				{
 					kind: 'lists.task',
+					quote: 'Sam, can you call the plumber tomorrow?',
 					title: 'Call the plumber',
 					people: ['Sam'],
 					date: { text: 'tomorrow', inDays: 1 },
 				},
 				{
 					kind: 'lists.task',
+					quote: 'remind me to renew my passport before the end of the month',
 					title: 'Renew the passport',
 					forMe: true,
 					date: { text: 'before the end of the month', approximate: true },
@@ -355,8 +397,13 @@ export const task = defineMentionKind({
 		{
 			text: 'I paid the swim course fee, still need to book the dentist',
 			mentions: [
-				{ kind: 'lists.taskDone', target: 'swim course fee' },
-				{ kind: 'lists.task', title: 'Book the dentist', forMe: true },
+				{ kind: 'lists.taskDone', quote: 'I paid the swim course fee', target: 'swim course fee' },
+				{
+					kind: 'lists.task',
+					quote: 'still need to book the dentist',
+					title: 'Book the dentist',
+					forMe: true,
+				},
 			],
 			why: 'News that a task is done completes it; it is not a new task.',
 		},
@@ -451,11 +498,23 @@ export const taskDone = defineMentionKind({
 	examples: [
 		{
 			text: 'I paid the swim course fee this morning.',
-			mentions: [{ kind: 'lists.taskDone', target: 'swim course fee' }],
+			mentions: [
+				{
+					kind: 'lists.taskDone',
+					quote: 'I paid the swim course fee this morning',
+					target: 'swim course fee',
+				},
+			],
 		},
 		{
 			text: 'The permission slip is signed and back at school',
-			mentions: [{ kind: 'lists.taskDone', target: 'permission slip' }],
+			mentions: [
+				{
+					kind: 'lists.taskDone',
+					quote: 'The permission slip is signed and back at school',
+					target: 'permission slip',
+				},
+			],
 		},
 	],
 	async resolve(ctx, mentions) {

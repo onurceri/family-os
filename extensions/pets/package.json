@@ -7,9 +7,12 @@
 	"famos": {
 		"id": "pets",
 		"version": "0.1.0",
-		"sdk": "^0.6.0",
+		"sdk": "^0.7.0",
 		"dependsOn": [
 			"records"
+		],
+		"optional": [
+			"calendar"
 		],
 		"capabilities": [
 			"pets.view",
@@ -52,6 +55,7 @@
 		"svelte": "5.57.1"
 	},
 	"devDependencies": {
+		"@famos/ext-calendar": "workspace:*",
 		"@famos/ext-inbox": "workspace:*",
 		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",

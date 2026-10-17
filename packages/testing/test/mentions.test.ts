@@ -39,6 +39,7 @@ const reminder = defineMentionKind({
 			mentions: [
 				{
 					kind: 'reminders.reminder',
+					quote: 'Remind me to water the plants on Friday',
 					title: 'Water the plants',
 					forMe: true,
 					date: { text: 'Friday', weekday: 5 },

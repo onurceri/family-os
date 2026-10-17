@@ -380,9 +380,17 @@ export const m0004_file_grants: Migration = {
 	},
 };
 
+/** Drafts keep the words of the shared message they rest on, shown on their cards. */
+export const m0005_draft_quote: Migration = {
+	async up(db) {
+		await db.schema.alterTable('core_drafts').addColumn('quote', 'text').execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
 	'0003_ai_mode': m0003_ai_mode,
 	'0004_file_grants': m0004_file_grants,
+	'0005_draft_quote': m0005_draft_quote,
 };

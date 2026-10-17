@@ -336,6 +336,20 @@ export const deleteEvent = defineAction({
 	targetTitle: eventTitle,
 	scopeNote: occurrenceScope,
 	resolveNames: resolveOccurrence,
+	// When the event (or the one date of it) that would go is, so the card says which one.
+	async currentValues(ctx, { id, occurrence }) {
+		const row = await events(ctx.db)
+			.selectFrom('calendar_events')
+			.selectAll()
+			.where('id', '=', id)
+			.where('deleted_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) return null;
+		const key = occurrence && row.rrule ? occurrenceKey(row, occurrence) : undefined;
+		const { current } = eventAsItIs(row, key);
+		const keys = [...WHEN_FIELDS, ...(key ? [] : (['recurrence'] as const))];
+		return Object.fromEntries(keys.map((k) => [k, current[k] ?? null]));
+	},
 	undo: ({ id, occurrence }) => ({
 		actionId: 'calendar.restoreEvent',
 		input: occurrence ? { id, occurrence } : { id },

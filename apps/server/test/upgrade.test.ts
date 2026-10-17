@@ -25,7 +25,7 @@ afterEach(async () => {
 });
 
 /** The migrations that release had: everything but what this change adds. */
-const NEW_MIGRATIONS = new Set(['core/0004_file_grants']);
+const NEW_MIGRATIONS = new Set(['core/0004_file_grants', 'core/0005_draft_quote']);
 
 const FEED = 'https://school.example/cal/private.ics?key=SECRET';
 const ICS = [
@@ -149,4 +149,31 @@ it('keeps the answers the assistant wrote before its suggestion lines were kept 
 		text: answer,
 		draftIds: [],
 	});
+});
+
+it('keeps the drafts made before drafts kept the words they rest on', async () => {
+	const dataDir = await mkdtemp(join(tmpdir(), 'famos-upgrade-'));
+	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
+	runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true });
+	const { handle, kernel } = runtime;
+	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
+		scope,
+		migrations: Object.fromEntries(
+			Object.entries(migrations).filter(([name]) => `${scope}/${name}` !== 'core/0005_draft_quote'),
+		),
+	}));
+	await runMigrations(handle.db, previous);
+	handle.sqlite
+		.prepare(
+			`insert into core_drafts (id, action_id, input, status, proposed_by, created_at, updated_at)
+			values ('draft_1', 'lists.addTask', '{"title":"Milk"}', 'pending',
+				'{"kind":"ai","mode":"share","source":"inbox"}', 1, 1)`,
+		)
+		.run();
+
+	expect(await migrate(runtime)).toBeGreaterThan(0);
+	await kernel.start();
+	expect(handle.sqlite.prepare('select id, input, quote from core_drafts').all()).toEqual([
+		{ id: 'draft_1', input: '{"title":"Milk"}', quote: null },
+	]);
 });

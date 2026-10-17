@@ -8,16 +8,21 @@ export function mention(kind: string, fields: Omit<Partial<Mention>, 'kind'> = {
 
 /**
  * A model's answer to Quick add, for `k.llm.respond(...)`: the label, the intent (actionable
- * unless said) and the mentions.
+ * unless said), the mentions, and the sentences it read as written to the machine.
  */
 export function understood(
 	mentions: readonly Mention[] = [],
-	options: { label?: string; intent?: 'actionable' | 'question' | 'nothing' } = {},
-): { label: string; intent: string; mentions: Mention[] } {
+	options: {
+		label?: string;
+		intent?: 'actionable' | 'question' | 'nothing';
+		addressed?: readonly string[];
+	} = {},
+): { label: string; intent: string; mentions: Mention[]; addressed?: string[] } {
 	return {
 		label: options.label ?? 'Shared item',
 		intent: options.intent ?? (mentions.length > 0 ? 'actionable' : 'nothing'),
 		mentions: [...mentions],
+		...(options.addressed && { addressed: [...options.addressed] }),
 	};
 }
 

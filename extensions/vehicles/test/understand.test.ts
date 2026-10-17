@@ -1,3 +1,4 @@
+import calendar from '@famos/ext-calendar/server';
 import { type Mention, systemActor } from '@famos/sdk';
 import { resolveMentions, SHARE_AI, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -108,6 +109,51 @@ describe('work done on a vehicle', () => {
 			{ refuse: { reason: 'ambiguous', subject: 'Car wash', from: [1] } },
 			{ refuse: { reason: 'incomplete', subject: 'Golf', from: [2] } },
 		]);
+	});
+
+	it('hands a service still to come to the calendar, as a booking', async () => {
+		const withCalendar = await createKernel({ extensions: [calendar] });
+		try {
+			await withCalendar.runner.invoke(
+				'core.updateFamilySettings',
+				{ formatLocale: 'en-GB', hourCycle: 'h23' },
+				systemActor('test'),
+			);
+			const owner = await person(withCalendar, 'admin', 'Mara');
+			await applied(
+				withCalendar,
+				'vehicles.addVehicle',
+				{ name: 'Clio', fuel: 'petrol' },
+				owner.actor,
+			);
+			const text = 'Clio service at City Garage on 9 October, 8:30';
+			const mention = log({
+				about: 'Clio',
+				title: 'Service',
+				variant: 'service',
+				date: { text: '9 October', day: 9, month: 10 },
+				time: '08:30',
+				timeText: '8:30',
+				place: 'City Garage',
+			});
+			const [out] = await resolveMentions(withCalendar, 'vehicles.log', [mention], { text });
+			expect(out).toEqual({
+				propose: {
+					actionId: 'calendar.createEvent',
+					input: {
+						title: 'Clio · Service',
+						startTime: '08:30',
+						date: '2026-10-09',
+						memberIds: [],
+						location: 'City Garage',
+					},
+					subject: 'Clio · Service',
+					from: [0],
+				},
+			});
+		} finally {
+			await withCalendar.close();
+		}
 	});
 
 	it('leaves out an entry that is already in the log, and marks a missing day and kind', async () => {

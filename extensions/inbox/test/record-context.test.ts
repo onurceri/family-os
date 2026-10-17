@@ -70,7 +70,14 @@ const noteKind = defineMentionKind({
 	examples: [
 		{
 			text: 'The olive tree must come inside before frost',
-			mentions: [{ kind: 'garden.note', about: 'Olive tree', title: 'Bring inside before frost' }],
+			mentions: [
+				{
+					kind: 'garden.note',
+					quote: 'The olive tree must come inside before frost',
+					about: 'Olive tree',
+					title: 'Bring inside before frost',
+				},
+			],
 		},
 	],
 	async resolve(ctx, mentions) {
@@ -100,7 +107,12 @@ const wateredKind = defineMentionKind({
 	slots: { about: 'The plant' },
 	actions: ['garden.water'],
 	knownFrom: [contextAction.id],
-	examples: [{ text: 'Watered the fern', mentions: [{ kind: 'garden.watered', about: 'Fern' }] }],
+	examples: [
+		{
+			text: 'Watered the fern',
+			mentions: [{ kind: 'garden.watered', quote: 'Watered the fern', about: 'Fern' }],
+		},
+	],
 	async resolve(ctx, mentions) {
 		return mentions.map(({ index, mention: m }): Resolution => {
 			const plant = plantOf(ctx, m.about, index);

@@ -74,6 +74,7 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 		model: true,
 		prompt_version: true,
 		uncertain_fields: true,
+		quote: true,
 		dedupe_key: true,
 		confidence: true,
 		decided_by: true,

@@ -70,6 +70,8 @@ const REFUSAL_WORDS: Record<RefusalReason, string> = {
 	ambiguous: 'several things fit; ask the person which one they mean',
 	incomplete: 'the input is incomplete or not valid',
 	not_allowed: 'not allowed for this person',
+	instruction:
+		'it comes from words that speak to the AI or the app, not from what the person wants',
 };
 
 /** A refusal as the model reads it: the reason, its words, and what to do about it. */

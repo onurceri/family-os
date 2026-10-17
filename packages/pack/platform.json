@@ -1,5 +1,5 @@
 {
-	"sdk": "0.6.3",
+	"sdk": "0.7.0",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -39,6 +39,7 @@
 			"UNDERSTANDING_INTENTS",
 			"UnderstandingSchema",
 			"agentInputSchema",
+			"asAppointment",
 			"asData",
 			"assertIdPrefix",
 			"assertRestrictiveDefaults",
@@ -83,6 +84,7 @@
 			"satisfiesCaret",
 			"searchFinds",
 			"significantWords",
+			"stillToCome",
 			"subjectOf",
 			"systemActor",
 			"tablePrefixOf",

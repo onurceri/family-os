@@ -327,6 +327,51 @@ describe('calendar.event', () => {
 		expect(await draft(out[0])).toBe('drafted');
 	});
 
+	// Found in use: a letter said 20 October for the parents' evening the calendar has on the
+	// 19th, and a second parents' evening was suggested.
+	it('moves a single event of the same name a day off at the same time, the date to check', async () => {
+		const evening = await addEvent({
+			title: "Parents' evening at Ivy's school",
+			date: '2026-10-19',
+			startTime: '18:00',
+		});
+		const text = "Reminder: Parents' evening is on Tuesday 20 October at 18:00 in the school hall.";
+		const out = await resolve(
+			'calendar.event',
+			[
+				{
+					title: "Parents' evening",
+					date: { text: 'Tuesday 20 October', day: 20, month: 10, weekday: 2 },
+					time: '18:00',
+					timeText: '18:00',
+				},
+			],
+			{ text },
+		);
+		expect(proposal(out[0])).toEqual({
+			actionId: 'calendar.changeEvent',
+			input: { id: evening.id, date: '2026-10-20', label: "Parents' evening" },
+			subject: "Parents' evening",
+			targetTitle: "Parents' evening at Ivy's school",
+			uncertain: ['date'],
+			from: [0],
+		});
+		expect(await draft(out[0])).toBe('drafted');
+	});
+
+	it('still suggests a new event when the one of that name is at another time, or far off', async () => {
+		await addEvent({ title: 'Dentist', date: '2026-10-19', startTime: '09:00' });
+		await addEvent({ title: 'Swimming gala', date: '2026-10-08', startTime: '10:00' });
+		const out = await resolve('calendar.event', [
+			{ title: 'Dentist', date: { text: '20 October', day: 20, month: 10 }, time: '15:00' },
+			{ title: 'Swimming gala', date: { text: '20 October', day: 20, month: 10 }, time: '10:00' },
+		]);
+		expect(out.map((r) => proposal(r).actionId)).toEqual([
+			'calendar.createEvent',
+			'calendar.createEvent',
+		]);
+	});
+
 	it('doubts an event given to the sharer alone when the message names nobody', async () => {
 		await k.member('member', 'Tom');
 		const out = await resolve(
@@ -576,6 +621,61 @@ describe('calendar.eventCancel', () => {
 					uncertain: ['occurrence'],
 					from: [1],
 				},
+			},
+		]);
+	});
+
+	// Found in use: "football thursday was cancelled" removed "Pick Ivy up after football", the
+	// only event on Thursday whose title holds the word, while the training was on Tuesday.
+	it('finds the event by its name, the day deciding only between names that fit as well', async () => {
+		await addEvent({ title: 'Football training', date: '2026-10-13', startTime: '17:00' });
+		await addEvent({ title: 'Pick Ivy up after football', date: '2026-10-08', startTime: '18:30' });
+		const text = 'um so football thursday was cancelled?? coach said tell mum';
+		const out = await resolve(
+			'calendar.eventCancel',
+			[{ target: 'football', date: { text: 'thursday', weekday: 4 } }],
+			{ text },
+		);
+		// The training is not on Thursday: nothing the message names is off that day.
+		expect(out).toEqual([
+			{ refuse: { reason: 'unknown', subject: 'football (thursday)', from: [0] } },
+		]);
+	});
+
+	it('takes the one of two events named alike that is on the day the message gives', async () => {
+		await addEvent({ title: 'Swimming', date: '2026-10-08', startTime: '17:00' });
+		const saturday = await addEvent({ title: 'Swimming', date: '2026-10-10', startTime: '09:00' });
+		const out = await resolve('calendar.eventCancel', [
+			{ target: 'swimming', date: { text: 'Saturday', weekday: 6 } },
+		]);
+		expect(proposal(out[0]).input).toEqual({ id: saturday.id, label: 'swimming' });
+	});
+
+	// Found in use: "Football is cancelled this week" removed the whole of a match weeks away.
+	it('keeps a cancellation "this week" to that week', async () => {
+		const training = await footballTraining();
+		await addEvent({ title: "Noah's football match", date: '2026-10-17', startTime: '10:00' });
+		const week = { text: 'this week', week: 'this' as const };
+		const out = await resolve('calendar.eventCancel', [
+			{ target: 'Football', date: week },
+			{ target: "Noah's football match", date: week },
+		]);
+		expect(out).toEqual([
+			{
+				propose: {
+					actionId: 'calendar.deleteEvent',
+					input: {
+						id: training.id,
+						occurrence: String(Date.UTC(2026, 9, 8, 17, 30)),
+						label: 'Football',
+					},
+					subject: 'Football',
+					targetTitle: 'Football training',
+					from: [0],
+				},
+			},
+			{
+				refuse: { reason: 'unknown', subject: "Noah's football match (this week)", from: [1] },
 			},
 		]);
 	});

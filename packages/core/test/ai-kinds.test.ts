@@ -67,7 +67,12 @@ const noteKind = (extra: Partial<MentionKindDefinition> = {}): MentionKindDefini
 			{
 				text: 'Note: call the plumber on Friday',
 				mentions: [
-					{ kind: 'notes.note', title: 'Call the plumber', date: { text: 'Friday', weekday: 5 } },
+					{
+						kind: 'notes.note',
+						quote: 'call the plumber on Friday',
+						title: 'Call the plumber',
+						date: { text: 'Friday', weekday: 5 },
+					},
 				],
 			},
 		],
@@ -487,14 +492,19 @@ describe('the registry holds kinds to their extension', () => {
 			refused([
 				noteKind({
 					examples: [
-						{ text: 'x', mentions: [{ kind: 'notes.note', title: 5 as unknown as string }] },
+						{
+							text: 'x',
+							mentions: [{ kind: 'notes.note', quote: 'x', title: 5 as unknown as string }],
+						},
 					],
 				}),
 			]),
 		).toThrow(/does not read as a mention/);
 		expect(
 			refused([
-				noteKind({ examples: [{ text: 'x', mentions: [{ kind: 'notes.note', place: 'Home' }] }] }),
+				noteKind({
+					examples: [{ text: 'x', mentions: [{ kind: 'notes.note', quote: 'x', place: 'Home' }] }],
+				}),
 			]),
 		).toThrow(/fills "place"/);
 	});
@@ -520,5 +530,137 @@ describe('the registry holds kinds to their extension', () => {
 		const ext = { ...notes(), ai: { kinds: [kind] } } as ExtensionDefinition;
 		expect(build(ext)).toThrow(/must be namespaced as "notes.<name>"/);
 		expect(() => notes([kind])).toThrow(/must be namespaced/);
+	});
+
+	it('refuses a hand-off to a kind of an extension its manifest does not name', () => {
+		expect(refused([noteKind({ handsOff: ['agenda.item'] })])).toThrow(
+			/hands mentions to "agenda.item", but "agenda" is neither a dependency nor optional/,
+		);
+		expect(
+			build(notes([noteKind({ handsOff: ['agenda.item'] })], { optional: ['agenda'] })),
+		).not.toThrow();
+	});
+});
+
+describe('a mention handed to another kind', () => {
+	// An agenda whose kind takes what a note is not: something that happens at a time.
+	const agendaEdit = defineCapability({ id: 'agenda.edit', label: 'agenda:cap', level: 'edit' });
+	const addItem = defineAction({
+		id: 'agenda.addItem',
+		title: 'Add to the agenda',
+		input: z.object({ title: z.string().min(1) }),
+		output: z.object({}),
+		approval: { unless: agendaEdit.id },
+		ai: { description: 'Adds to the agenda.' },
+		async run() {
+			return {};
+		},
+	});
+	let agendaResolver: Resolver = async (_ctx, mentions) =>
+		mentions.map(({ index, mention }) => ({
+			propose: {
+				actionId: 'agenda.addItem',
+				input: { title: mention.title },
+				subject: mention.title ?? null,
+				from: [index],
+			},
+		}));
+	const agenda = () =>
+		defineTestExtension({
+			id: 'agenda',
+			capabilities: [agendaEdit],
+			actions: [addItem],
+			ai: {
+				kinds: [
+					defineMentionKind({
+						id: 'agenda.item',
+						describe: 'Something at a time.',
+						slots: { title: 'What', time: 'When' },
+						actions: ['agenda.addItem'],
+						handsOff: ['notes.note'],
+						examples: [
+							{
+								text: 'Dentist at 4',
+								mentions: [{ kind: 'agenda.item', quote: 'Dentist at 4', title: 'Dentist' }],
+							},
+						],
+						resolve: (ctx, mentions) => agendaResolver(ctx, mentions),
+					}),
+				],
+			},
+			optional: ['notes'],
+		});
+	const handing = notes([noteKind({ handsOff: ['agenda.item'] })], { optional: ['agenda'] });
+	const handOff = (from: number[], title = 'Dentist'): Resolution => ({
+		handOff: { kind: 'agenda.item', mention: { kind: 'notes.note', title, time: '16:00' }, from },
+	});
+	afterEach(() => {
+		agendaResolver = async (_ctx, mentions) =>
+			mentions.map(({ index, mention }) => ({
+				propose: {
+					actionId: 'agenda.addItem',
+					input: { title: mention.title },
+					subject: mention.title ?? null,
+					from: [index],
+				},
+			}));
+	});
+
+	it('is resolved by that kind, as the mention it was given', async () => {
+		await start([handing, agenda()]);
+		let seen: IndexedMention[] = [];
+		const resolveAgenda = agendaResolver;
+		agendaResolver = async (ctx, mentions) => {
+			seen = [...mentions];
+			return resolveAgenda(ctx, mentions);
+		};
+		resolver = async () => [handOff([0])];
+		const out = await k.ctx.actions.resolveMentions('notes.note', at(note('Dentist')), ENV, AI);
+		expect(seen).toEqual([
+			{ index: 0, mention: { kind: 'agenda.item', title: 'Dentist', time: '16:00' } },
+		]);
+		expect(out).toEqual([
+			{
+				propose: {
+					actionId: 'agenda.addItem',
+					input: { title: 'Dentist' },
+					subject: 'Dentist',
+					from: [0],
+				},
+			},
+		]);
+	});
+
+	it('is refused as incomplete when that kind is not there, not named, or hands it on again', async () => {
+		await start([handing]);
+		resolver = async () => [handOff([0])];
+		expect(await k.ctx.actions.resolveMentions('notes.note', at(note('A')), ENV, AI)).toEqual([
+			{ refuse: { reason: 'incomplete', subject: 'Dentist', from: [0] } },
+		]);
+		await k.close();
+
+		await start([notes(), agenda()]);
+		resolver = async () => [handOff([0])];
+		expect(await k.ctx.actions.resolveMentions('notes.note', at(note('A')), ENV, AI)).toEqual([
+			{ refuse: { reason: 'incomplete', subject: null, from: [0] } },
+		]);
+		await k.close();
+
+		await start([handing, agenda()]);
+		resolver = async () => [handOff([0])];
+		agendaResolver = async () => [
+			{ handOff: { kind: 'notes.note', mention: { kind: 'agenda.item' }, from: [0] } },
+		];
+		expect(await k.ctx.actions.resolveMentions('notes.note', at(note('A')), ENV, AI)).toEqual([
+			{ refuse: { reason: 'incomplete', subject: 'Dentist', from: [0] } },
+		]);
+	});
+
+	it('is one mention at a time', async () => {
+		await start([handing, agenda()]);
+		resolver = async () => [handOff([0, 1])];
+		expect(
+			await k.ctx.actions.resolveMentions('notes.note', at(note('A'), note('B')), ENV, AI),
+		).toEqual([{ refuse: { reason: 'incomplete', subject: null, from: [0, 1] } }]);
 	});
 });

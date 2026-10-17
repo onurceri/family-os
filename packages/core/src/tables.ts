@@ -61,6 +61,8 @@ export type DraftsTable = {
 	confidence: number | null;
 	/** JSON array of input paths the proposer was unsure about. */
 	uncertain_fields: string | null;
+	/** The words of the shared message it rests on, as the message writes them. */
+	quote: string | null;
 	/** Makes drafting idempotent; unique where set. */
 	dedupe_key: string | null;
 	decided_by: string | null;

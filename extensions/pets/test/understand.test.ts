@@ -1,3 +1,4 @@
+import calendar from '@famos/ext-calendar/server';
 import { AiContextSchema, type Mention, type MentionRecord, systemActor } from '@famos/sdk';
 import { resolveMentions, SHARE_AI, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -174,6 +175,52 @@ describe('a treatment read from a message', () => {
 				uncertain: ['givenOn', 'kind'],
 			},
 		});
+	});
+
+	// Found in use: "yarın biscuit aşı randevusu saat 10" became a vaccination given today.
+	it('hands a treatment still to come to the calendar, as an appointment', async () => {
+		const withCalendar = await createKernel({ extensions: [calendar] });
+		try {
+			await withCalendar.runner.invoke(
+				'core.updateFamilySettings',
+				{ formatLocale: 'en-GB', hourCycle: 'h23' },
+				systemActor('test'),
+			);
+			const owner = await person(withCalendar, 'admin', 'Mara');
+			await applied(withCalendar, 'pets.addPet', { name: 'Max', species: 'dog' }, owner.actor);
+			const text = 'yarın max aşı randevusu saat 10 veteriner, unutma';
+			const mention = treatment({
+				about: 'max',
+				title: 'Aşı randevusu',
+				variant: 'vaccination',
+				// The model's own day number for today next to the word for tomorrow.
+				date: { text: 'yarın', day: 6, month: 10 },
+				time: '10:00',
+				timeText: 'saat 10',
+				place: 'Veteriner',
+			});
+			const [out] = await resolveMentions(withCalendar, 'pets.treatment', [mention], { text });
+			expect(out).toEqual({
+				propose: {
+					actionId: 'calendar.createEvent',
+					input: {
+						title: 'Max · Aşı randevusu',
+						startTime: '10:00',
+						date: '2026-10-07',
+						memberIds: [],
+						location: 'Veteriner',
+					},
+					subject: 'Max · Aşı randevusu',
+					from: [0],
+				},
+			});
+			// Without a calendar there is nowhere for it to go, and it is no treatment either.
+			expect(await resolveMentions(k, 'pets.treatment', [mention], { text })).toEqual([
+				{ refuse: { reason: 'incomplete', subject: 'Max · Aşı randevusu', from: [0] } },
+			]);
+		} finally {
+			await withCalendar.close();
+		}
 	});
 
 	it('leaves out a treatment that is already in the history', async () => {

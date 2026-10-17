@@ -197,6 +197,7 @@ export const dutyKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'records.duty',
+					quote: 'Our new home insurance for the flat starts today and runs until 31 March 2027.',
 					title: 'Home insurance',
 					about: 'Our flat',
 					variant: 'due',
@@ -210,6 +211,7 @@ export const dutyKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'records.duty',
+					quote: 'Luna needs her rabies booster every year, the next one on 3 May.',
 					title: 'Rabies vaccination',
 					about: 'Luna',
 					variant: 'due',
@@ -228,6 +230,8 @@ export const dutyKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'records.duty',
+					quote:
+						'The family car must pass its inspection by 15 June, and every two years after that.',
 					title: 'Vehicle inspection',
 					about: 'Family car',
 					variant: 'due',
@@ -264,6 +268,8 @@ export const dutyDoneKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'records.dutyDone',
+					quote:
+						'your car insurance has been renewed. New period of cover: 20 October 2026 to 19 October 2027.',
 					target: 'Car insurance',
 					date: { text: '20 October 2026', day: 20, month: 10, year: 2026 },
 					endDate: { text: '19 October 2027', day: 19, month: 10, year: 2027 },
@@ -281,6 +287,7 @@ export const dutyDoneKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'records.dutyDone',
+					quote: 'Paid the road tax for the family car this morning.',
 					target: 'Road tax',
 					about: 'Family car',
 					date: { text: 'this morning', inDays: 0 },

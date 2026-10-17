@@ -176,6 +176,8 @@ export const DraftSchema = z.object({
 	summary: z.string().nullable(),
 	confidence: z.number().nullable(),
 	uncertainFields: z.array(z.string()),
+	/** The words of the shared message it rests on, as the message writes them; null when none. */
+	quote: z.string().nullable(),
 	error: z.string().nullable(),
 	/** Addressed to this member alone (a memory, a question): only they decide it. */
 	forMember: z.string().nullable(),
@@ -273,6 +275,7 @@ const toDraft = (
 	summary: row.summary,
 	confidence: row.confidence,
 	uncertainFields: row.uncertain_fields ? (JSON.parse(row.uncertain_fields) as string[]) : [],
+	quote: row.quote,
 	// The stored message can carry internals (SQL, paths); members see only that it failed.
 	error:
 		row.error === null || row.error === GONE || row.error === SETTLED

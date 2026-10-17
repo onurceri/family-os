@@ -3,7 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
-import { changeEventFields, updateEventFields } from '../src/web/change.ts';
+import { changeEventFields, deleteEventFields, updateEventFields } from '../src/web/change.ts';
 
 // A change card reads "old → new": the server sends what the fields it changes hold now.
 const TZ = 'Europe/Istanbul';
@@ -205,5 +205,47 @@ describe('an edit saved from the event form that needs approval', () => {
 		const event = { ...piano, reminder: 30 };
 		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
 		expect((await listed(draftId)).before).toEqual({});
+	});
+});
+
+// Found in use: a removal card read "What: The whole event" for a single match and never said
+// which one, so it looked like the removal of a whole series.
+describe('a removal suggestion says when the event that would go is', () => {
+	it('names the day and time of a single event, and of the one date of a series', async () => {
+		const match = await add({ title: 'Football match', date: '2026-10-24', startTime: '10:00' });
+		const training = await add({
+			title: 'Football training',
+			date: '2026-10-01',
+			startTime: '17:30',
+			recurrence: { freq: 'weekly', byDay: ['TH'] },
+		});
+		const share: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
+		const single = await propose('calendar.deleteEvent', { id: match, label: 'match' }, share);
+		const one = await propose(
+			'calendar.deleteEvent',
+			{ id: training, occurrence: '2026-10-22', label: 'training' },
+			share,
+		);
+		const whole = await propose('calendar.deleteEvent', { id: training, label: 'training' }, share);
+		const fields = async (draftId: string, input: object) =>
+			deleteEventFields(input as never, context, (await listed(draftId)).before).map((f) => [
+				f.label,
+				f.value,
+			]);
+		expect(await fields(single, { id: match })).toEqual([
+			['calendar:when', 'Saturday 24 October, 10:00–11:00'],
+		]);
+		expect(await fields(one, { id: training, occurrence: '2026-10-22' })).toEqual([
+			['calendar:when', 'Thursday 22 October, 17:30–18:30'],
+			['calendar:draft_what', 'calendar:draft_only_this'],
+		]);
+		expect(await fields(whole, { id: training })).toEqual([
+			['calendar:when', 'Thursday 1 October, 17:30–18:30'],
+			['calendar:draft_what', 'calendar:draft_whole'],
+		]);
+		// Decided, nothing is compared any more: the card says only what goes.
+		expect(deleteEventFields({ id: match }, context, null)).toEqual([
+			{ label: 'calendar:draft_what', value: 'calendar:draft_whole', path: 'occurrence' },
+		]);
 	});
 });

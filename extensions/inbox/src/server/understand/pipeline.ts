@@ -18,13 +18,14 @@ import {
 	type ParsedUnderstanding,
 	type ProposalRefusalDetails,
 	parseUnderstanding,
-	type Resolution,
 	refusalOf,
+	type SettledResolution,
 	subjectOf,
 } from '@famos/sdk';
 import { clockTimes, formatDate, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { EXTRACT_FEATURE, type ExtractionKind, type Skip } from '../../contract/index.ts';
+import { coverage, locate, overlaps, type Span, wordsOf as spanWords } from './evidence.ts';
 import {
 	type KnownGroup,
 	MAX_KNOWN,
@@ -236,18 +237,83 @@ export function grounding(mention: Mention, text: string, locale: string): Groun
 /**
  * The places (in `mentions`) of the mentions the shared message does not hold: the model's own
  * inventions, or what text in the message told it to make up. Neither becomes a suggestion.
- * Titles are written in the family language, which may not be the message's: when not one
- * mention's title, target or record is in the message, the reading was translated and no title
- * can be checked against it, so then only each kind's limit holds the reading.
+ * A mention whose quote the message writes (`quoted`) rests on it. Otherwise its words are
+ * checked: titles are written in the family language, which may not be the message's, so when
+ * not one mention is quoted or has its title, target or record in the message, the reading was
+ * translated and no title can be checked against it; then only each kind's limit holds it.
  */
 export function ungrounded(
 	mentions: readonly Mention[],
 	text: string,
 	locale: string,
+	quoted: readonly boolean[] = [],
 ): Set<number> {
-	const found = mentions.map((m) => grounding(m, text, locale));
+	const found = mentions.map((m, i) => (quoted[i] ? 'named' : grounding(m, text, locale)));
 	if (!found.includes('named')) return new Set();
 	return new Set(found.flatMap((g, i) => (g === 'none' ? [i] : [])));
+}
+
+/**
+ * When the sentences that speak to the machine cover this much of a message, the message is the
+ * sharer's own request ("FamilyOS, add milk"), not something written into what they forwarded.
+ */
+const OWN_REQUEST = 0.8;
+
+/** Where a reading rests in the shared message, as `placeReading` finds it. */
+export interface Placed {
+	/** Each mention's own words in the message (its quote, else its title or target), or null. */
+	evidence: (Span | null)[];
+	/** Whether the evidence is the mention's quote. */
+	quoted: boolean[];
+	/** The mentions that rest on words written to the machine inside the message. */
+	instructions: Set<number>;
+	/** The mentions whose notes are another mention's thing, to be left out of them. */
+	foreignNotes: Set<number>;
+}
+
+/**
+ * Where each mention rests in the shared message, by the words the model copied:
+ * - A mention resting on a sentence that speaks to FamilyOS or an AI (`addressed`) is an
+ *   instruction written into the message, not something it states, unless such sentences are
+ *   nearly all of it (the sharer telling FamilyOS what to add). Its quote decides; without one,
+ *   where the message writes its title or target.
+ * - Notes that repeat what another mention of the reading is about ("Bring the football kit" as
+ *   the notes of a dentist visit, next to a task of that name), and that its own quote does not
+ *   hold, belong to that other mention.
+ */
+export function placeReading(
+	mentions: readonly Mention[],
+	addressed: readonly string[],
+	text: string,
+	locale: string,
+): Placed {
+	const quotes = mentions.map((m) => (m.quote ? locate(m.quote, text, locale) : null));
+	const evidence = mentions.map((m, i) => {
+		const words = m.title ?? m.target;
+		return quotes[i] ?? (words ? locate(words, text, locale) : null);
+	});
+	const spoken = addressed
+		.map((line) => locate(line, text, locale))
+		.filter((span): span is Span => span !== null);
+	const own = coverage(spoken, text, locale) >= OWN_REQUEST;
+	const instructions = new Set<number>();
+	if (!own)
+		evidence.forEach((span, i) => {
+			if (span && spoken.some((s) => overlaps(s, span))) instructions.add(i);
+		});
+	const foreignNotes = new Set<number>();
+	mentions.forEach((m, i) => {
+		const quote = quotes[i];
+		if (!m.notes?.trim() || !quote) return;
+		const notes = locate(m.notes, text, locale);
+		if (notes && overlaps(notes, quote)) return;
+		const elsewhere = mentions.some((other, j) => {
+			const about = other.title ?? other.target;
+			return j !== i && about !== undefined && (namedShares(m.notes ?? '', [about])[0] ?? 0) > 0.5;
+		});
+		if (elsewhere) foreignNotes.add(i);
+	});
+	return { evidence, quoted: quotes.map((q) => q !== null), instructions, foreignNotes };
 }
 
 /** One mention per thing: an exact repeat of one is the model saying it twice. */
@@ -441,39 +507,53 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	const locale = settings.locale;
 	const seen = new Set<string>();
 	const groups = new Map<string, IndexedMention[]>();
+	const read = parsed.mentions.map((m) => m.mention);
+	const placed = text === null ? null : placeReading(read, parsed.addressed, text, locale);
 	const invented =
-		text === null
-			? new Set<number>()
-			: ungrounded(
-					parsed.mentions.map((m) => m.mention),
-					text,
-					locale,
-				);
+		text === null ? new Set<number>() : ungrounded(read, text, locale, placed?.quoted);
+	/** The message's own words each mention rests on, by its place in the answer. */
+	const quoteOf = new Map<number, string>();
 	for (const [at, { index, mention, dropped: lost }] of parsed.mentions.entries()) {
 		const key = keyOf(mention);
 		if (seen.has(key)) continue;
 		seen.add(key);
+		const subject = mention.title ?? mention.target ?? null;
 		if (invented.has(at)) {
 			ctx.logger.info({ itemId: input.itemId, kind: mention.kind }, 'mention not in the message');
-			reading.skips.push({
-				reason: 'incomplete',
-				subject: mention.title ?? mention.target ?? null,
-			});
+			reading.skips.push({ reason: 'incomplete', subject });
 			continue;
 		}
+		if (placed?.instructions.has(at)) {
+			ctx.logger.info(
+				{ itemId: input.itemId, kind: mention.kind },
+				'mention rests on words written to the AI',
+			);
+			reading.skips.push({ reason: 'instruction', subject });
+			continue;
+		}
+		const span = placed?.quoted[at] ? placed.evidence[at] : null;
+		if (span && text !== null) quoteOf.set(index, spanWords(span, text));
 		// A field the parser had to drop was in the answer but unusable: what the resolver makes
 		// of the rest is marked for a look where that field would have gone.
-		const marked =
+		let marked =
 			lost.length > 0
 				? { ...mention, unsure: [...new Set([...(mention.unsure ?? []), ...lost])] }
 				: mention;
+		if (placed?.foreignNotes.has(at)) {
+			const { notes: _notes, ...rest } = marked;
+			marked = rest;
+		}
 		const group = groups.get(mention.kind) ?? [];
 		group.push({ index, mention: marked });
 		groups.set(mention.kind, group);
 	}
 
 	const env = { text, sharer: input.sharer, records };
-	const resolved: { resolution: Resolution; mentions: Mention[] }[] = [];
+	const resolved: {
+		resolution: SettledResolution;
+		mentions: Mention[];
+		from: readonly number[];
+	}[] = [];
 	for (const [kindId, mentions] of groups) {
 		const byIndex = new Map(mentions.map((m) => [m.index, m.mention]));
 		const out = await ctx.actions.resolveMentions(kindId, mentions, env, actor);
@@ -482,14 +562,15 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 			resolved.push({
 				resolution,
 				mentions: from.map((i) => byIndex.get(i)).filter((m): m is Mention => m !== undefined),
+				from,
 			});
 		}
 	}
-	const first = (r: Resolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
+	const first = (r: SettledResolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
 	resolved.sort((a, b) => first(a.resolution) - first(b.resolution));
 
 	const hash = promptHash(kinds);
-	for (const [i, { resolution, mentions }] of resolved.entries()) {
+	for (const [i, { resolution, mentions, from }] of resolved.entries()) {
 		if ('refuse' in resolution) {
 			reading.skips.push({ reason: resolution.refuse.reason, subject: resolution.refuse.subject });
 			continue;
@@ -500,9 +581,11 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 			for (const mention of mentions)
 				for (const field of guessedNamesIn(proposal.input, mention, family, text, locale))
 					uncertain.add(field);
+		const quote = [...new Set(from.flatMap((at) => quoteOf.get(at) ?? []))].join(' … ');
 		try {
 			await ctx.actions.invoke(proposal.actionId, proposal.input, actor, {
 				draft: {
+					...(quote && { quote }),
 					sourceKind: 'inbox',
 					sourceId: input.itemId,
 					...(input.sharer && { forMember: input.sharer }),

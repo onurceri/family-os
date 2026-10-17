@@ -469,6 +469,7 @@
 	"draft_settled": "Zaten yapılmış",
 	"draft_kind_generic": "Öneri",
 	"draft_asked_by": "{{name}} istedi",
+	"draft_from_message": "Mesajda geçen: “{{quote}}”",
 	"draft_undo": "Geri al",
 	"draft_sent_for_approval": "Onaya gönderildi",
 	"draft_sent_show": "Göster",

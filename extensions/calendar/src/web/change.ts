@@ -6,6 +6,7 @@ import {
 	type PresenterContext,
 } from '@famos/ui/slots';
 import type { EventInput } from '../contract/index.js';
+import { describeWhen } from './format.js';
 import { when } from './instead.js';
 
 /** What a `calendar.changeEvent` draft carries. */
@@ -213,4 +214,48 @@ export function updateEventFields(
 		});
 	}
 	return fields;
+}
+
+/** When a removal's event is, from what its waiting draft says the event holds now. */
+function removedWhen(
+	before: DraftBefore,
+): (Parameters<typeof describeWhen>[0] & { recurrence?: unknown }) | null {
+	if (!before || typeof before.date !== 'string') return null;
+	const text = (value: unknown) => (typeof value === 'string' ? value : undefined);
+	return {
+		date: before.date,
+		allDay: before.allDay === true,
+		endDate: text(before.endDate),
+		startTime: text(before.startTime),
+		endTime: text(before.endTime),
+		...(before.recurrence != null && { recurrence: before.recurrence }),
+	};
+}
+
+/**
+ * The lines of a `calendar.deleteEvent` card. While it waits it says when the event (or the one
+ * date of a series) that would go is: the removal of a single event and of one date of a series
+ * must not read alike. Whether it is that date or the whole series is said for series only.
+ */
+export function deleteEventFields(
+	input: { id: string; occurrence?: string },
+	c: PresenterContext,
+	before: DraftBefore,
+): DraftField[] {
+	const t = (key: string) => c.t(`calendar:${key}`);
+	const what: DraftField = {
+		label: t('draft_what'),
+		value: input.occurrence ? t('draft_only_this') : t('draft_whole'),
+		path: 'occurrence',
+	};
+	const at = removedWhen(before);
+	if (!at) return [what];
+	const fields: DraftField[] = [
+		{
+			label: t('when'),
+			value: describeWhen(at, c.dateLocale, t('all_day'), c.hourCycle),
+			path: 'occurrence',
+		},
+	];
+	return input.occurrence !== undefined || at.recurrence !== undefined ? [...fields, what] : fields;
 }

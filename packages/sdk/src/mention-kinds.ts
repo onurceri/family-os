@@ -31,6 +31,8 @@ export interface MentionContext extends DuplicateContext {
 	readonly today: string;
 	/** Epoch milliseconds. */
 	readonly now: number;
+	/** The time now in the family time zone, `HH:MM`. */
+	readonly clock: string;
 	readonly timeZone: string;
 	/** 1 = Monday … 7 = Sunday. */
 	readonly weekStart: number;
@@ -101,8 +103,14 @@ export interface MentionKindDefinition {
 	 */
 	limit?: number;
 	/**
+	 * Kinds of other extensions (named in the manifest's `dependsOn` or `optional`) the resolver
+	 * may hand a mention to, when what the mention states is that kind's thing (`handOff`).
+	 */
+	handsOff?: readonly string[];
+	/**
 	 * Turns mentions of this kind, in answer order, into suggestions and refusals. Each mention
-	 * goes into exactly one resolution's `from`; one left out is refused as `incomplete`. It only
+	 * goes into exactly one resolution's `from`; one left out is refused as `incomplete`. A mention
+	 * that is another kind's thing is handed to it (`handOff`, to one of `handsOff`). It only
 	 * reads, and may be called again with the same mentions.
 	 */
 	resolve(ctx: MentionContext, mentions: readonly IndexedMention[]): Promise<readonly Resolution[]>;
@@ -112,9 +120,9 @@ export function defineMentionKind(definition: MentionKindDefinition): MentionKin
 	return definition;
 }
 
-/** The slot of a mention field; the bookkeeping fields (`kind`, `unsure`) have none. */
+/** The slot of a mention field; the bookkeeping fields (`kind`, `unsure`, `quote`) have none. */
 function slotOfField(field: string): Slot | null {
-	if (field === 'kind' || field === 'unsure') return null;
+	if (field === 'kind' || field === 'unsure' || field === 'quote') return null;
 	if (field === 'forMe' || field === 'peopleGuessed') return 'people';
 	if (field === 'timeText') return 'time';
 	return field as Slot;
@@ -162,6 +170,9 @@ export function mentionKindProblems(
 	)
 		problems.push(`${where} has a limit outside 1 to ${MENTION_LIMIT}`);
 	if (kind.examples.length === 0) problems.push(`${where} has no example`);
+	for (const other of kind.handsOff ?? [])
+		if (!/^[a-z][a-z0-9-]*\.[a-z][A-Za-z0-9]*$/u.test(other) || other.startsWith(`${extensionId}.`))
+			problems.push(`${where} hands mentions to "${other}", which is no kind of another extension`);
 	const byId = new Map(kinds.map((k) => [k.id, k]));
 	kind.examples.forEach((example, i) => {
 		const at = `${where}, example ${i + 1},`;
@@ -176,6 +187,10 @@ export function mentionKindProblems(
 				continue;
 			}
 			const mention = parsed.data;
+			// The model copies what the examples do: each shows the words it rests on, as written.
+			if (!mention.quote?.trim()) problems.push(`${at} has a mention without its quote`);
+			else if (!example.text.includes(mention.quote))
+				problems.push(`${at} quotes "${mention.quote}", which its text does not write`);
 			const owner = byId.get(mention.kind);
 			if (!owner) {
 				problems.push(`${at} names kind "${mention.kind}", which "${extensionId}" lacks`);
@@ -234,6 +249,50 @@ export function endNamed(
 	return ref.month !== undefined && ref.approximate !== true
 		? { date, certain: true }
 		: { date, certain: false, why: 'approximate' };
+}
+
+/**
+ * Whether what a mention states is still to come: its day is after today, or it is today (or it
+ * names no day) at a time still ahead. A kind for things done (a treatment given, work done on a
+ * car) reads such a mention as an appointment and hands it to the calendar's kind. The day is
+ * read as the nearest one, so a date written without a year is not pushed into last year, and a
+ * weekday alone is not enough.
+ */
+export function stillToCome(
+	ctx: Pick<MentionContext, 'day' | 'time' | 'today' | 'clock'>,
+	mention: Pick<Mention, 'date' | 'time' | 'timeText'>,
+): boolean {
+	const time = ctx.time(mention);
+	const day = ctx.day(mention.date, 'nearest', time?.time);
+	if (day && day.date < ctx.today) return false;
+	// A weekday alone fits a coming day and a past one alike; the kind chosen says done.
+	if (day && day.date > ctx.today) return day.why !== 'weekday_only';
+	return time !== null && time.time > ctx.clock;
+}
+
+/**
+ * A mention of something done (a treatment, work on a car) that is still to come, as the
+ * appointment it is, for a hand-off to the calendar's kind: its title with the name of what it is
+ * for in front (unless the title holds it), and its day, time, place, notes and quote. The host
+ * sets the kind.
+ */
+export function asAppointment(mention: Mention, about: string | null, locale: string): Mention {
+	const what = mention.title?.trim() ?? '';
+	const named =
+		about !== null && what.toLocaleLowerCase(locale).includes(about.toLocaleLowerCase(locale));
+	const title =
+		about === null || named ? what || (about ?? '') : what ? `${about} · ${what}` : about;
+	return {
+		kind: mention.kind,
+		...(title && { title }),
+		...(mention.quote && { quote: mention.quote }),
+		...(mention.date && { date: mention.date }),
+		...(mention.time && { time: mention.time }),
+		...(mention.timeText && { timeText: mention.timeText }),
+		...(mention.place && { place: mention.place }),
+		...(mention.notes && { notes: mention.notes }),
+		...(mention.unsure && { unsure: mention.unsure }),
+	};
 }
 
 /** The words of a name or a text, the way `resolvePeople` splits them. */

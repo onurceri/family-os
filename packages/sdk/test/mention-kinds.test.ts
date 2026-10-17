@@ -25,6 +25,7 @@ const kind = (extra: Partial<MentionKindDefinition> = {}): MentionKindDefinition
 				mentions: [
 					{
 						kind: 'pets.treatment',
+						quote: 'Rex had his vaccine yesterday',
 						about: 'Rex',
 						variant: 'vaccine',
 						date: { text: 'yesterday', inDays: -1 },
@@ -97,7 +98,12 @@ describe('a mention kind', () => {
 		const example = (mention: object, text = 'Rex') =>
 			kind({
 				examples: [
-					{ text, mentions: [mention as MentionKindDefinition['examples'][0]['mentions'][0]] },
+					{
+						text,
+						mentions: [
+							{ quote: 'Rex', ...mention } as MentionKindDefinition['examples'][0]['mentions'][0],
+						],
+					},
 				],
 			});
 		expect(problems(kind({ examples: [] }))).toContain(
@@ -125,6 +131,21 @@ describe('a mention kind', () => {
 		expect(problems(example({ kind: 'pets.treatment', variant: 'grooming' }))[0]).toMatch(
 			/variant "grooming"/,
 		);
+		// Each shows the words of its text it rests on, as written.
+		expect(problems(example({ kind: 'pets.treatment', quote: undefined }))[0]).toMatch(
+			/has a mention without its quote/,
+		);
+		expect(problems(example({ kind: 'pets.treatment', quote: 'Max' }))[0]).toMatch(
+			/quotes "Max", which its text does not write/,
+		);
+	});
+
+	it('hands mentions only to kinds of other extensions', () => {
+		expect(problems(kind({ handsOff: ['calendar.event'] }))).toEqual([]);
+		expect(problems(kind({ handsOff: ['pets.other'] }))[0]).toMatch(
+			/hands mentions to "pets.other", which is no kind of another extension/,
+		);
+		expect(problems(kind({ handsOff: ['calendar'] }))[0]).toMatch(/hands mentions to "calendar"/);
 	});
 
 	it('may show its extension’s other kinds in an example, by their own slots', () => {
@@ -136,8 +157,13 @@ describe('a mention kind', () => {
 				{
 					text: 'Rex got his vaccine; book the next one',
 					mentions: [
-						{ kind: 'pets.treatmentDone', target: 'vaccine' },
-						{ kind: 'pets.treatment', about: 'Rex', variant: 'vaccine' },
+						{ kind: 'pets.treatmentDone', quote: 'Rex got his vaccine', target: 'vaccine' },
+						{
+							kind: 'pets.treatment',
+							quote: 'book the next one',
+							about: 'Rex',
+							variant: 'vaccine',
+						},
 					],
 				},
 			],
@@ -147,7 +173,7 @@ describe('a mention kind', () => {
 	});
 
 	it('is owned by the extension that declares it', () => {
-		const manifest = { id: 'vehicles', version: '1.0.0', sdk: '^0.6.0' };
+		const manifest = { id: 'vehicles', version: '1.0.0', sdk: '^0.7.0' };
 		expect(() => defineExtension({ manifest, ai: { kinds: [kind()] } })).toThrow(
 			'Mention kind "pets.treatment" must be namespaced as "vehicles.…"',
 		);

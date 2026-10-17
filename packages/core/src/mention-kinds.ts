@@ -20,6 +20,7 @@ import {
 	type RefusalReason,
 	type Resolution,
 	resolvePeople,
+	type SettledResolution,
 } from '@famos/sdk';
 import { clockTimes, dateWords, numericDateOrder, resolveDay, todayIn, zoned } from '@famos/time';
 import type { Registry } from './registry.ts';
@@ -45,7 +46,7 @@ export interface MentionKinds {
 		mentions: readonly IndexedMention[],
 		env: MentionEnv,
 		actor: Actor,
-	): Promise<Resolution[]>;
+	): Promise<SettledResolution[]>;
 }
 
 interface OwnedKind {
@@ -68,7 +69,7 @@ const refusal = (reason: RefusalReason, subject: string | null, from: readonly n
 const fromOf = (resolution: unknown): unknown => {
 	if (typeof resolution !== 'object' || resolution === null) return undefined;
 	const r = resolution as Record<string, { from?: unknown } | undefined>;
-	return (r.propose ?? r.refuse)?.from;
+	return (r.propose ?? r.refuse ?? r.handOff)?.from;
 };
 
 /**
@@ -101,6 +102,18 @@ export function settleResolutions(
 		const held = (indexes as number[]).toSorted((a, b) => a - b);
 		for (const i of held) claimed.add(i);
 		const r = resolution as Resolution;
+		if ('handOff' in r) {
+			const h = r.handOff;
+			const mention = MentionSchema.safeParse({ ...(h.mention ?? {}), kind: h.kind });
+			// One mention is handed on at a time, to a kind the definition names.
+			if (held.length !== 1 || !kind.handsOff?.includes(h.kind) || !mention.success) {
+				logger.warn({ kind: kind.id, to: h.kind }, 'a resolver handed a mention on wrongly');
+				settled.push(refusal('incomplete', null, held));
+				continue;
+			}
+			settled.push({ handOff: { kind: h.kind, mention: mention.data, from: held } });
+			continue;
+		}
 		if ('propose' in r) {
 			const p = r.propose;
 			if (!kind.actions.includes(p.actionId)) {
@@ -137,7 +150,9 @@ export function settleResolutions(
 	return settled;
 }
 
-const firstOf = (r: Resolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
+const fromIn = (r: Resolution) =>
+	('propose' in r ? r.propose : 'refuse' in r ? r.refuse : r.handOff).from;
+const firstOf = (r: Resolution) => Math.min(...fromIn(r));
 
 /**
  * The mention kinds extensions declare, as the AI pipeline reaches them: which are offered for a
@@ -180,6 +195,7 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 			vocabulary: deps.vocabulary,
 			today,
 			now,
+			clock: nowTime,
 			timeZone: settings.timeZone,
 			weekStart: settings.weekStart,
 			dateOrder,
@@ -202,10 +218,15 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 				});
 				// A day number the quoted words do not write in digits ("the twentieth", or one the
 				// model worked out for "the end of October") is the model's reading: kept, checked.
+				// When the words settled the day another way ("tomorrow"), the number was not used.
 				const unwritten =
-					ref?.day !== undefined && ref.text.trim() !== '' && !/\p{N}/u.test(ref.text);
+					ref?.day !== undefined &&
+					ref.text.trim() !== '' &&
+					!/\p{N}/u.test(ref.text) &&
+					found !== null &&
+					Number(found.date.slice(8)) === ref.day;
 				return found && unwritten && found.certain
-					? { date: found.date, certain: false, why: 'mismatch' }
+					? { ...found, certain: false, why: 'mismatch' }
 					: found;
 			},
 			time(mention) {
@@ -235,6 +256,26 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 					{ text },
 				),
 		};
+	};
+
+	/** A kind's resolver on some of its mentions, its answer held to them. */
+	const run = async (
+		owned: OwnedKind,
+		given: readonly IndexedMention[],
+		env: MentionEnv,
+	): Promise<Resolution[]> => {
+		const { kind, extension } = owned;
+		let returned: readonly unknown[] = [];
+		if (given.length > 0) {
+			try {
+				const out: unknown = await kind.resolve(await contextFor(extension, env), given);
+				if (Array.isArray(out)) returned = out;
+				else deps.logger.warn({ kind: kind.id }, 'a resolver returned no list');
+			} catch (error) {
+				deps.logger.error({ err: error, kind: kind.id }, 'a resolver failed');
+			}
+		}
+		return settleResolutions(kind, given, returned, deps.logger);
 	};
 
 	return {
@@ -267,26 +308,31 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 				if (!MentionSchema.safeParse(mention).success || mention.kind !== kindId)
 					throw new FamosError('bad_request', `Every mention must be a "${kindId}" mention`);
 			}
-			const { kind, extension } = owned;
 			const ordered = mentions.toSorted((a, b) => a.index - b.index);
-			const limit = kind.limit ?? MENTION_LIMIT;
-			const given = ordered.slice(0, limit);
+			const limit = owned.kind.limit ?? MENTION_LIMIT;
 			const beyond = ordered
 				.slice(limit)
 				.map((m) => refusal('incomplete', subjectOf(m), [m.index]));
-			let returned: readonly unknown[] = [];
-			if (given.length > 0) {
-				try {
-					const out: unknown = await kind.resolve(await contextFor(extension, env), given);
-					if (Array.isArray(out)) returned = out;
-					else deps.logger.warn({ kind: kindId }, 'a resolver returned no list');
-				} catch (error) {
-					deps.logger.error({ err: error, kind: kindId }, 'a resolver failed');
+			const settled = await run(owned, ordered.slice(0, limit), env);
+			const out: SettledResolution[] = [...beyond];
+			for (const resolution of settled) {
+				if (!('handOff' in resolution)) {
+					out.push(resolution);
+					continue;
 				}
+				// Handed to another kind: resolved there when it is offered too, and only once.
+				const { kind: to, mention, from } = resolution.handOff;
+				const target = byId.get(to);
+				const subject = subjectText(mention.title) ?? subjectText(mention.target);
+				if (!target || !offered(options).includes(target)) {
+					out.push(refusal('incomplete', subject, from));
+					continue;
+				}
+				const again = await run(target, [{ index: from[0] as number, mention }], env);
+				for (const r of again)
+					out.push('handOff' in r ? refusal('incomplete', subject, fromIn(r)) : r);
 			}
-			return [...settleResolutions(kind, given, returned, deps.logger), ...beyond].toSorted(
-				(a, b) => firstOf(a) - firstOf(b),
-			);
+			return out.toSorted((a, b) => firstOf(a) - firstOf(b));
 		},
 	};
 }

@@ -469,6 +469,7 @@
 	"draft_settled": "Already done",
 	"draft_kind_generic": "Suggestion",
 	"draft_asked_by": "Asked by {{name}}",
+	"draft_from_message": "From the message: “{{quote}}”",
 	"draft_undo": "Undo",
 	"draft_sent_for_approval": "Sent for approval",
 	"draft_sent_show": "Show",

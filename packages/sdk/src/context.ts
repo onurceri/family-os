@@ -12,7 +12,7 @@ import type {
 	Logger,
 	SecretBox,
 } from './ports.ts';
-import type { AiKindInfo, IndexedMention, MentionEnv, Resolution } from './understanding.ts';
+import type { AiKindInfo, IndexedMention, MentionEnv, SettledResolution } from './understanding.ts';
 
 /** Household-wide settings every extension may read. */
 export interface FamilySettings {
@@ -212,6 +212,11 @@ export interface DraftMeta {
 	confidence?: number;
 	/** Input fields the proposer is unsure about (dot paths), shown as "check this". */
 	uncertainFields?: string[];
+	/**
+	 * The words of the shared message the suggestion rests on, exactly as the message writes them,
+	 * shown on the card so the person deciding sees where it comes from.
+	 */
+	quote?: string;
 	/** Proposing again with the same key returns the existing draft (idempotent jobs). */
 	dedupeKey?: string;
 	/**
@@ -292,12 +297,15 @@ export interface ActionInvoker {
 	 * `MENTION_LIMIT`. What comes back is held to them: every mention in exactly one resolution,
 	 * mentions beyond the kind's `limit` and any a resolver leaves out or claims twice refused as
 	 * `incomplete`, and a suggestion of an action the kind does not name refused too. Sorted by
-	 * the first mention each comes from. A resolver that fails refuses all its mentions.
+	 * the first mention each comes from. A resolver that fails refuses all its mentions. A
+	 * mention a resolver hands to another kind (`handOff`) is resolved by that kind here, when it
+	 * is one of the kind's `handsOff` and offered to the actor; otherwise it is refused as
+	 * `incomplete`.
 	 */
 	resolveMentions(
 		kindId: string,
 		mentions: readonly IndexedMention[],
 		env: MentionEnv,
 		actor: Actor,
-	): Promise<Resolution[]>;
+	): Promise<SettledResolution[]>;
 }

@@ -1,6 +1,7 @@
 import type { AiKindInfo } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 import {
+	HOST_EXAMPLES,
 	PROMPT_VERSION,
 	promptHash,
 	systemPrompt,
@@ -115,5 +116,26 @@ describe('the prompt fingerprint', () => {
 			],
 		};
 		expect(promptHash([hidden])).toBe(promptHash([base]));
+	});
+});
+
+describe('the host’s own examples', () => {
+	it('quote only words their message writes, as written', () => {
+		for (const example of HOST_EXAMPLES) {
+			for (const line of example.answer.addressed ?? []) expect(example.text).toContain(line);
+			for (const m of example.answer.mentions) {
+				expect(m.quote, example.text).toBeDefined();
+				expect(example.text).toContain(m.quote);
+			}
+		}
+	});
+
+	it('show each mention’s quote last, after what was read', () => {
+		const prompt = systemPrompt({
+			...parts([kind('calendar.event'), kind('lists.task')]),
+		});
+		expect(prompt).toContain(
+			'"timeText":"15:00","place":"Library","quote":"Book fair at the library on Friday 16 October at 15:00"}',
+		);
 	});
 });

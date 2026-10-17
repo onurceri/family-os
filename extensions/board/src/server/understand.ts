@@ -22,6 +22,7 @@ export const noteKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'board.note',
+					quote: 'the plumber comes Thursday morning, keep the kitchen clear until then',
 					notes: 'The plumber comes Thursday morning: keep the kitchen clear until then',
 					endDate: { text: 'Thursday', weekday: 4 },
 				},

@@ -1,9 +1,11 @@
 import { isObligationOf, OBLIGATION_CONTEXT_KIND, pickRecord } from '@famos/ext-records/contract';
 import {
+	asAppointment,
 	defineMentionKind,
 	type IndexedMention,
 	type MentionContext,
 	type Resolution,
+	stillToCome,
 } from '@famos/sdk';
 import { compareDates } from '@famos/time';
 import { TREATMENT_KINDS, type TreatmentKind } from '../contract/index.ts';
@@ -13,6 +15,9 @@ import { tables } from './store.ts';
 const isKind = (value: string | undefined): value is TreatmentKind =>
 	(TREATMENT_KINDS as readonly string[]).includes(value ?? '');
 
+/** The calendar's kind for appointments, which a treatment still to come is. */
+const EVENT_KIND = 'calendar.event';
+
 async function resolveTreatment(
 	ctx: MentionContext,
 	{ index, mention }: IndexedMention,
@@ -20,6 +25,18 @@ async function resolveTreatment(
 ): Promise<Resolution> {
 	const subject = mention.title ?? mention.about ?? null;
 	const pet = pickRecord(ctx, mention.about, pets);
+	// A treatment is only ever one already given: one still to come is an appointment, also for
+	// a pet that is not listed.
+	if (stillToCome(ctx, mention)) {
+		const name = 'found' in pet ? pet.found.label : (mention.about?.trim() ?? null);
+		return {
+			handOff: {
+				kind: EVENT_KIND,
+				mention: asAppointment(mention, name, ctx.locale),
+				from: [index],
+			},
+		};
+	}
 	if ('refuse' in pet) return { refuse: { reason: pet.refuse, subject, from: [index] } };
 	const given = ctx.day(mention.date, 'past');
 	const givenOn = given?.date ?? ctx.today;
@@ -86,6 +103,7 @@ export const treatmentKind = defineMentionKind({
 	},
 	variants: TREATMENT_KINDS,
 	actions: ['pets.addTreatment'],
+	handsOff: [EVENT_KIND],
 	knownFrom: [aiContext.id],
 	limit: 8,
 	examples: [
@@ -94,6 +112,8 @@ export const treatmentKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'pets.treatment',
+					quote:
+						'Luna, Nobivac Rabies, batch A123, 05.10.2026, Riverside Vet. Next due 05.10.2027.',
 					about: 'Luna',
 					title: 'Nobivac Rabies',
 					variant: 'vaccination',
@@ -111,6 +131,7 @@ export const treatmentKind = defineMentionKind({
 			mentions: [
 				{
 					kind: 'pets.treatment',
+					quote: 'Gave Max his worm tablet this morning',
 					about: 'Max',
 					title: 'Worm tablet',
 					variant: 'parasite_internal',

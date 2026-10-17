@@ -130,6 +130,7 @@ const SKIP_ORDER: readonly SkipReason[] = [
 	'unknown',
 	'ambiguous',
 	'not_allowed',
+	'instruction',
 	'incomplete',
 ];
 

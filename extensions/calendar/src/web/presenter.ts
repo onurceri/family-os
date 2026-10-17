@@ -5,6 +5,7 @@ import type { EventInput } from '../contract/index.js';
 import {
 	type ChangeEventInput,
 	changeEventFields,
+	deleteEventFields,
 	type UpdateEventInput,
 	updateEventFields,
 } from './change.js';
@@ -96,12 +97,6 @@ export const deleteEventPresenter: DraftPresenter<{
 	kind: (c) => c.t('calendar:kind_remove'),
 	icon: CalendarDays,
 	title: (input, c) => input.label || c.t('calendar:draft_an_event'),
-	fields: (input, c) => [
-		{
-			label: c.t('calendar:draft_what'),
-			value: input.occurrence ? c.t('calendar:draft_only_this') : c.t('calendar:draft_whole'),
-			path: 'occurrence',
-		},
-	],
+	fields: (input, c, before) => deleteEventFields(input, c, before ?? null),
 	approveLabel: (c) => c.t('calendar:draft_approve_remove'),
 };

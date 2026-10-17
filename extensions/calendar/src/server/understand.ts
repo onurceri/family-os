@@ -38,6 +38,11 @@ const CHANGE_LIMIT = 4;
  * to add many cannot pile them up. Those beyond are refused as incomplete, so they are named.
  */
 const EVENT_LIMIT = 6;
+/**
+ * A new event this close to one of the same name at the same time is that event with one of the
+ * two dates wrong (a letter's typo, a misread day): a second one is not what the family needs.
+ */
+const MOVE_DAYS = 3;
 
 const cut = (text: string, max: number) => [...text.trim()].slice(0, max).join('').trim();
 
@@ -182,6 +187,20 @@ async function newEvent(
 	if (there) {
 		return refuse('already', title, [index]);
 	}
+	const moved = recurrence === undefined ? await sameEventNear(ctx, title, date, time) : null;
+	if (moved) {
+		return {
+			propose: {
+				actionId: 'calendar.changeEvent',
+				input: { id: moved.eventId, date, label: cut(title, LABEL_MAX) },
+				subject: title,
+				targetTitle: moved.title,
+				// One of the two dates is wrong, and only a person can say which.
+				uncertain: ['date'],
+				from: [index],
+			},
+		};
+	}
 	const tags = tagsOf(mention.tags, known);
 	const place = mention.place ? cut(mention.place, PLACE_MAX) : '';
 	const notes = mention.notes ? cut(mention.notes, NOTES_MAX) : '';
@@ -207,6 +226,31 @@ async function newEvent(
 	};
 }
 
+/**
+ * The one single event of the same name a few days from `date`, at the same time (any time when
+ * either is all day), or null when there is none or several.
+ */
+async function sameEventNear(
+	ctx: MentionContext,
+	title: string,
+	date: string,
+	time: { time: string } | null,
+): Promise<Occurrence | null> {
+	const near = await occurrencesBetween(
+		ctx.db,
+		addDays(date, -MOVE_DAYS),
+		addDays(date, MOVE_DAYS),
+		ctx.timeZone,
+	);
+	const same = near.filter((o) => {
+		if (o.recurring || o.source !== null || !o.editable || !sameEvent(title, o.title)) return false;
+		const at = startOf(o, ctx.timeZone);
+		return at.date !== date && (time === null || o.allDay || at.time === time.time);
+	});
+	const ids = new Set(same.map((o) => o.eventId));
+	return ids.size === 1 ? (same[0] as Occurrence) : null;
+}
+
 export const event = defineMentionKind({
 	id: 'calendar.event',
 	describe:
@@ -226,15 +270,16 @@ export const event = defineMentionKind({
 		notes: 'What to bring or know, briefly',
 		tags: 'One or two short labels; a known tag when one fits',
 	},
-	actions: ['calendar.createEvent'],
+	actions: ['calendar.createEvent', 'calendar.changeEvent'],
 	knownFrom: [aiContextTags.id, aiContextEvents.id],
 	limit: EVENT_LIMIT,
 	examples: [
 		{
-			text: 'Ivy has the dentist next Thursday at 4:30pm, and Max goes to the vet for his yearly check-up on Friday at 10:00',
+			text: 'Ivy has the dentist next Thursday at 4:30pm, and Max has his vaccination appointment at the vet on Friday at 10:00',
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: 'Ivy has the dentist next Thursday at 4:30pm',
 					title: 'Dentist',
 					people: ['Ivy'],
 					date: { text: 'next Thursday', weekday: 4, week: 'next' },
@@ -243,19 +288,21 @@ export const event = defineMentionKind({
 				},
 				{
 					kind: 'calendar.event',
-					title: "Max's yearly check-up at the vet",
+					quote: 'Max has his vaccination appointment at the vet on Friday at 10:00',
+					title: "Max's vaccination at the vet",
 					date: { text: 'Friday', weekday: 5 },
 					time: '10:00',
 					timeText: '10:00',
 				},
 			],
-			why: 'An appointment still to come is an event, also for a pet or a car.',
+			why: 'An appointment still to come is an event, also for a pet or a car: the vaccination is not given yet.',
 		},
 		{
 			text: "Leo's piano lesson is every Wednesday at 17:00, until the end of October",
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: "Leo's piano lesson is every Wednesday at 17:00, until the end of October",
 					title: 'Piano lesson',
 					people: ['Leo'],
 					date: { text: 'every Wednesday', weekday: 3 },
@@ -275,6 +322,7 @@ export const event = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: 'Choir rehearsal on Thursday, bring your folder',
 					title: 'Choir rehearsal',
 					date: { text: 'Thursday', weekday: 4 },
 					notes: 'Bring your folder',
@@ -287,6 +335,7 @@ export const event = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: 'my check-up is on Saturday 10 October at 9am',
 					title: 'Check-up',
 					forMe: true,
 					date: { text: 'Saturday 10 October', day: 10, month: 10, weekday: 6 },
@@ -295,6 +344,7 @@ export const event = defineMentionKind({
 				},
 				{
 					kind: 'calendar.event',
+					quote: 'Family picnic on Sunday at noon',
 					title: 'Family picnic',
 					date: { text: 'Sunday', weekday: 7 },
 					time: '12:00',
@@ -308,6 +358,7 @@ export const event = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: "Class 3A's trip to the science museum is tomorrow",
 					title: 'Science museum trip',
 					people: ['Ivy'],
 					peopleGuessed: true,
@@ -325,6 +376,7 @@ export const event = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.event',
+					quote: 'My mum has her eye test on Monday 19 October at 11:00',
 					title: 'Eye test',
 					people: ['Rosa', 'Leo'],
 					peopleGuessed: true,
@@ -349,24 +401,31 @@ type Found =
 	| { event: { id: string; label: string; dates: Occurrence[] } }
 	| { refusal: Resolution };
 
+/** Whether a date is the day read, or inside the span read ("this week"). */
+const within = (date: string, day: ResolvedDay) =>
+	day.to === undefined ? date === day.date : date >= day.date && date <= day.to;
+
 /**
- * The event `target` words name: among those with a date on `day` when one is given and any of
- * them fits, else among all coming ones.
+ * The event `target` words name, by its name among all coming ones: the day the message gives
+ * only decides between events the words name equally well. A name that merely appears in the
+ * title of something else that day ("Pick Ivy up after football") must not win over the event
+ * the words name ("Football training") because of the day.
  */
 function eventNamed(
 	ctx: MentionContext,
 	coming: Awaited<ReturnType<typeof eventsBetween>>,
 	words: string,
-	day: string | null,
+	day: ResolvedDay | null,
 	index: number,
 ): Found {
-	const onDay =
-		day === null
-			? []
-			: coming.filter((e) => e.dates.some((o) => startOf(o, ctx.timeZone).date === day));
-	const there = onDay.length > 0 ? ctx.target(words, onDay) : null;
-	const found = there && 'found' in there ? there : ctx.target(words, coming);
+	const found = ctx.target(words, coming);
 	if ('found' in found) return { event: found.found };
+	if ('ambiguous' in found && day) {
+		const onDay = found.ambiguous.filter((e) =>
+			e.dates.some((o) => within(startOf(o, ctx.timeZone).date, day)),
+		);
+		if (onDay.length === 1) return { event: onDay[0] as (typeof coming)[number] };
+	}
 	return { refusal: refuse('ambiguous' in found ? 'ambiguous' : 'unknown', words, [index]) };
 }
 
@@ -422,6 +481,7 @@ export const eventChange = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.eventChange',
+					quote: 'Regional gala moved to Sat 14 Nov 09:00',
 					target: 'Regional gala',
 					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
 					time: '09:00',
@@ -435,6 +495,7 @@ export const eventChange = defineMentionKind({
 			mentions: [
 				{
 					kind: 'calendar.eventChange',
+					quote: "Parents' evening will be in the school hall, starting at 19:00",
 					target: "Parents' evening",
 					time: '19:00',
 					timeText: '19:00',
@@ -531,19 +592,38 @@ export const eventCancel = defineMentionKind({
 	limit: CHANGE_LIMIT,
 	examples: [
 		{
-			text: 'um so football thursday was cancelled?? coach said tell mum',
+			text: 'no choir wednesday, the hall is booked!! pls tell the others',
 			mentions: [
 				{
 					kind: 'calendar.eventCancel',
-					target: 'football',
-					date: { text: 'thursday', weekday: 4 },
+					quote: 'no choir wednesday',
+					target: 'choir',
+					date: { text: 'wednesday', weekday: 3 },
 				},
 			],
-			why: 'News that it is off cancels that date of the training; it is not a new event.',
+			why: 'News that it is off cancels that date; it is not a new event.',
+		},
+		{
+			text: 'Swimming is cancelled this week, the pool is closed for repairs',
+			mentions: [
+				{
+					kind: 'calendar.eventCancel',
+					quote: 'Swimming is cancelled this week',
+					target: 'swimming',
+					date: { text: 'this week', week: 'this' },
+				},
+			],
+			why: 'A week named without a day is copied as the week; code finds the date in it.',
 		},
 		{
 			text: 'The piano recital is called off',
-			mentions: [{ kind: 'calendar.eventCancel', target: 'piano recital' }],
+			mentions: [
+				{
+					kind: 'calendar.eventCancel',
+					quote: 'The piano recital is called off',
+					target: 'piano recital',
+				},
+			],
 		},
 	],
 	async resolve(ctx, mentions) {
@@ -557,7 +637,7 @@ export const eventCancel = defineMentionKind({
 				continue;
 			}
 			let day = mention.date ? ctx.day(mention.date, 'future') : null;
-			const found = eventNamed(ctx, coming, words, day?.date ?? null, index);
+			const found = eventNamed(ctx, coming, words, day, index);
 			if ('refusal' in found) {
 				out.push(found.refusal);
 				continue;
@@ -566,12 +646,24 @@ export const eventCancel = defineMentionKind({
 			const first = dates[0] as Occurrence;
 			const uncertain: string[] = [];
 			let o = first;
+			// Named with its day, as the message writes it, when the event is not on that day.
+			const offDay = refuse('unknown', `${words} (${mention.date?.text.trim() ?? ''})`, [index]);
 			if (first.recurring) {
 				// Read the day again at the time it happens: a weekday named on that very day after
 				// the event is next week's.
 				if (mention.date && !first.allDay)
 					day = ctx.day(mention.date, 'future', startOf(first, ctx.timeZone).time);
-				if (day) {
+				if (day?.to !== undefined) {
+					// A span ("this week"): its date in that span, sure when it has only one there.
+					const span = day;
+					const inside = dates.filter((d) => within(startOf(d, ctx.timeZone).date, span));
+					if (inside.length === 0) {
+						out.push(offDay);
+						continue;
+					}
+					o = inside[0] as Occurrence;
+					if (inside.length > 1) uncertain.push('occurrence');
+				} else if (day) {
 					const on = dates.find((d) => startOf(d, ctx.timeZone).date === day?.date);
 					if (!on && (await skippedOn(ctx, first.eventId, day.date))) {
 						out.push(refuse('already', words, [index]));
@@ -582,6 +674,10 @@ export const eventCancel = defineMentionKind({
 					const sure = day.certain || (on !== undefined && day.why === 'weekday_only');
 					if (!on || !sure) uncertain.push('occurrence');
 				} else uncertain.push('occurrence');
+			} else if (day && !within(startOf(first, ctx.timeZone).date, day)) {
+				// A single event on another day than the message says is not the one it means.
+				out.push(offDay);
+				continue;
 			}
 			const key = `${o.eventId}:${first.recurring ? o.key : ''}`;
 			const seen = cancelled.get(key);

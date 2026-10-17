@@ -48,8 +48,13 @@ export async function seedSampleFamily(page: Page, model: FakeModel): Promise<Sa
 				date: on(nextWeek()),
 				time: '17:00',
 				unsure: ['time'],
+				quote: 'Parent meetings next week from 17:00',
 			}),
-			mention('lists.task', { title: 'Sign the trip form', date: on(day(2)) }),
+			mention('lists.task', {
+				title: 'Sign the trip form',
+				date: on(day(2)),
+				quote: 'Please sign the trip form by Friday',
+			}),
 		),
 	);
 	await shareText(
@@ -95,6 +100,18 @@ export async function seedSampleFamily(page: Page, model: FakeModel): Promise<Sa
 		date: day(2),
 		startTime: '10:00',
 	});
+	// A removal waiting for approval: its card says which date goes.
+	model.answer(
+		answer(
+			'Football off',
+			mention('calendar.eventCancel', {
+				target: 'Football',
+				date: on(day(2)),
+				quote: `Football on ${day(2)} is off`,
+			}),
+		),
+	);
+	await shareText(page, `Football on ${day(2)} is off, the pitch is closed.`);
 	// Shopping: two lists; eight things on the first, three of them already in the cart.
 	type Added = { output: { items: { id: string; title: string }[] } };
 	const groceries = await api<Added>(page, 'POST', '/api/v1/actions/lists.addShoppingItems', {

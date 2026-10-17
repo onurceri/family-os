@@ -48,8 +48,14 @@ export type DayDirection = 'future' | 'past' | 'nearest';
 export type DayDoubt = 'mismatch' | 'approximate' | 'guessed_year' | 'weekday_only' | 'relative';
 
 export interface DayResult {
-	/** `YYYY-MM-DD`. */
+	/** `YYYY-MM-DD`; the first day of a span. */
 	date: string;
+	/**
+	 * The last day of a span, `YYYY-MM-DD`, when the words name one rather than a day: a week
+	 * ("this week", "next week") or a month ("in November"). `date` is then where it starts (today,
+	 * for plans, when it has begun), and the result is `approximate`.
+	 */
+	to?: string;
 	/** True when the words name exactly this day; otherwise `why` says what was guessed. */
 	certain: boolean;
 	why?: DayDoubt;
@@ -309,12 +315,20 @@ export function resolveDay(
 				doubt('mismatch');
 			}
 		}
-		// Only the words, without the parts: a day they name by its distance ("tomorrow") is
-		// that day, as certain as if the model had counted it.
-		const distance = date === null ? namedDistance(text, options.words) : null;
-		if (distance !== null) {
-			date = today.add({ days: distance });
-			source = 'count';
+		// A day the words name by its distance ("tomorrow", "yarın") is that day, as certain as if
+		// the model had counted it. It wins over parts the model worked out (a day number or a
+		// weekday the words do not write), since those are its own arithmetic; a date written in
+		// digits is kept instead. A count of two days or more is left alone: "the day after
+		// tomorrow" holds the word for tomorrow.
+		const distance = written.length === 0 ? namedDistance(text, options.words) : null;
+		const counted = ref.inDays !== undefined && Math.abs(ref.inDays) > 1;
+		if (distance !== null && !counted) {
+			const named = today.add({ days: distance });
+			if (date === null || !named.equals(date)) {
+				date = named;
+				source = 'count';
+				why = undefined;
+			}
 		}
 		const named = namedWeekdays(text, options.words);
 		// Only the words, without the parts: a weekday they name is read as a weekday alone.
@@ -351,8 +365,30 @@ export function resolveDay(
 		}
 	}
 
+	// A week named without a day ("this week", "next week"): the span of that week.
+	let last = null as PlainDate | null;
+	if (date === null && ref.week !== undefined && ref.weekday === undefined) {
+		const weekStart = options.weekStart ?? 1;
+		const start = today
+			.subtract({ days: (today.dayOfWeek - weekStart + 7) % 7 })
+			.add({ days: { this: 0, next: 7, after_next: 14 }[ref.week] });
+		date = start;
+		last = start.add({ days: 6 });
+		doubt('approximate');
+	} else if (date !== null && source === 'month') {
+		// A month without a day is a span too: to its last day.
+		last = date.with({ day: date.daysInMonth });
+	}
 	if (date === null) return null;
+	if (last !== null) {
+		// What is still to come starts no earlier than today, and what was done ends no later.
+		if (direction === 'future' && cmp(date, today) < 0 && cmp(last, today) >= 0) date = today;
+		if (direction === 'past' && cmp(last, today) > 0 && cmp(date, today) <= 0) last = today;
+	}
 	if (ref.approximate) doubt('approximate');
 	const iso = date.toString();
-	return why === undefined ? { date: iso, certain: true } : { date: iso, certain: false, why };
+	const span = last === null ? {} : { to: last.toString() };
+	return why === undefined
+		? { date: iso, certain: true, ...span }
+		: { date: iso, certain: false, why, ...span };
 }

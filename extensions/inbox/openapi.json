@@ -278,7 +278,8 @@
 															"unknown",
 															"ambiguous",
 															"incomplete",
-															"not_allowed"
+															"not_allowed",
+															"instruction"
 														]
 													},
 													"subject": {
@@ -760,7 +761,8 @@
 																"unknown",
 																"ambiguous",
 																"incomplete",
-																"not_allowed"
+																"not_allowed",
+																"instruction"
 															]
 														},
 														"subject": {
@@ -1630,7 +1632,8 @@
 																			"unknown",
 																			"ambiguous",
 																			"incomplete",
-																			"not_allowed"
+																			"not_allowed",
+																			"instruction"
 																		]
 																	},
 																	"subject": {
@@ -2169,7 +2172,8 @@
 																			"unknown",
 																			"ambiguous",
 																			"incomplete",
-																			"not_allowed"
+																			"not_allowed",
+																			"instruction"
 																		]
 																	},
 																	"subject": {
@@ -3066,7 +3070,8 @@
 																			"unknown",
 																			"ambiguous",
 																			"incomplete",
-																			"not_allowed"
+																			"not_allowed",
+																			"instruction"
 																		]
 																	},
 																	"subject": {

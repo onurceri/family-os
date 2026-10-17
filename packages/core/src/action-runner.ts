@@ -182,6 +182,9 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
  */
 const CLOSED_MATTER = ' Tell the person this and do not suggest anything else for it.';
 
+/** A draft keeps at most this much of the message it rests on: a line on its card, not a copy. */
+const QUOTE_MAX = 300;
+
 /**
  * The `details` of a refused AI proposal, so a caller can tell the person why it was left out
  * without reading the English message: what it asked for is already so (`settled`), it named
@@ -581,6 +584,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					uncertain_fields: meta.uncertainFields?.length
 						? JSON.stringify(meta.uncertainFields)
 						: null,
+					quote: meta.quote?.trim() ? meta.quote.trim().slice(0, QUOTE_MAX) : null,
 					dedupe_key: meta.dedupeKey ?? null,
 					decided_by: null,
 					decided_at: null,

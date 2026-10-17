@@ -204,8 +204,8 @@ function checkManifests(
 
 /**
  * An extension's mention kinds: well formed (`mentionKindProblems`), each id once, suggesting only
- * AI-proposable actions it owns or lists in `calls`, and showing names only from its own AI
- * context actions.
+ * AI-proposable actions it owns or lists in `calls`, handing mentions only to kinds of
+ * extensions its manifest names, and showing names only from its own AI context actions.
  */
 function checkMentionKinds(
 	ext: ExtensionDefinition,
@@ -233,6 +233,14 @@ function checkMentionKinds(
 			// A foreign action is checked once its extension is there; `calls` says it must exist.
 			if (action && (action.readOnly || !action.ai))
 				refuse(ext.id, `${where} names "${id}", which the AI cannot propose`);
+		}
+		for (const id of kind.handsOff ?? []) {
+			const owner = id.slice(0, id.indexOf('.'));
+			if (!ext.manifest.dependsOn.includes(owner) && !ext.manifest.optional.includes(owner))
+				refuse(
+					ext.id,
+					`${where} hands mentions to "${id}", but "${owner}" is neither a dependency nor optional`,
+				);
 		}
 		for (const id of kind.knownFrom ?? [])
 			if (!contexts.has(id))

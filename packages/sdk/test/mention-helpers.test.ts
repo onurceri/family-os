@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+	asAppointment,
 	type DayRef,
 	endNamed,
 	type MentionContext,
 	peopleNamed,
 	type ResolvedDay,
 	resolvePeople,
+	stillToCome,
 	unsureFields,
 } from '../src/index.ts';
 
@@ -117,5 +119,60 @@ describe('unsureFields', () => {
 			'memberIds',
 		]);
 		expect(unsureFields({}, fields)).toEqual([]);
+	});
+});
+
+describe('stillToCome', () => {
+	const ctx = (day: ResolvedDay | null) => ({
+		day: () => day,
+		time: (m: { time?: string }) => (m.time ? { time: m.time, certain: true } : null),
+		today: '2026-10-17',
+		clock: '09:00',
+	});
+	const tomorrow = { date: '2026-10-18', certain: true };
+
+	it('is a day after today, or today at a time still ahead', () => {
+		// Found in use: "yarın … aşı randevusu saat 10" became a vaccination given today.
+		expect(stillToCome(ctx(tomorrow), { date: { text: 'yarın' }, time: '10:00' })).toBe(true);
+		expect(stillToCome(ctx(tomorrow), { date: { text: 'yarın' } })).toBe(true);
+		expect(stillToCome(ctx(null), { time: '10:00' })).toBe(true);
+		expect(stillToCome(ctx({ date: '2026-10-17', certain: true }), { time: '10:00' })).toBe(true);
+	});
+
+	it('is not something done: a past day, an hour gone, no day and no time, or a weekday alone', () => {
+		expect(stillToCome(ctx({ date: '2026-10-16', certain: true }), { time: '10:00' })).toBe(false);
+		expect(stillToCome(ctx(null), { time: '08:00' })).toBe(false);
+		expect(stillToCome(ctx(null), {})).toBe(false);
+		const weekday = { date: '2026-10-19', certain: false, why: 'weekday_only' as const };
+		expect(stillToCome(ctx(weekday), { date: { text: 'Monday', weekday: 1 } })).toBe(false);
+	});
+});
+
+describe('asAppointment', () => {
+	it('keeps when and where, and names what it is for in front of the title', () => {
+		const mention = {
+			kind: 'pets.treatment',
+			quote: 'biscuit aşı randevusu saat 10',
+			title: 'Aşı randevusu',
+			about: 'biscuit',
+			variant: 'vaccination',
+			date: { text: 'yarın', inDays: 1 },
+			time: '10:00',
+			timeText: 'saat 10',
+			place: 'Veteriner',
+		};
+		expect(asAppointment(mention, 'Biscuit', 'tr')).toEqual({
+			kind: 'pets.treatment',
+			title: 'Biscuit · Aşı randevusu',
+			quote: 'biscuit aşı randevusu saat 10',
+			date: { text: 'yarın', inDays: 1 },
+			time: '10:00',
+			timeText: 'saat 10',
+			place: 'Veteriner',
+		});
+		expect(
+			asAppointment({ ...mention, title: "Biscuit's vaccination" }, 'Biscuit', 'en').title,
+		).toBe("Biscuit's vaccination");
+		expect(asAppointment({ kind: 'pets.treatment' }, 'Biscuit', 'en').title).toBe('Biscuit');
 	});
 });

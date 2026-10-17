@@ -900,7 +900,10 @@ const stash = defineTestExtension({
 				slots: { title: 'What it is' },
 				actions: ['stash.addRecord'],
 				examples: [
-					{ text: 'Stash the receipt', mentions: [{ kind: 'stash.record', title: 'Receipt' }] },
+					{
+						text: 'Stash the receipt',
+						mentions: [{ kind: 'stash.record', quote: 'Stash the receipt', title: 'Receipt' }],
+					},
 				],
 				async resolve(_ctx, mentions) {
 					return mentions.map(({ index, mention }) => ({
