@@ -107,7 +107,13 @@ describe('recorded model answers, replayed', () => {
 			});
 			// Every recorded answer was asked for again, and no more.
 			expect(asked).toHaveLength(recording.answers.length);
-			expect(failedChecks(outcome).filter((label) => !knownMisses.has(label))).toEqual([]);
+			const failed = failedChecks(outcome);
+			expect(failed.filter((label) => !knownMisses.has(label))).toEqual([]);
+			// A miss the baseline's run measured that code now gets right is no error: the next
+			// full run moves it to passing (the baseline is never edited by hand).
+			const mended = [...knownMisses].filter((label) => !failed.includes(label));
+			if (mended.length > 0)
+				console.info(`newly passing · ${model} · ${c.name}: ${mended.join('; ')}`);
 		},
 	);
 });

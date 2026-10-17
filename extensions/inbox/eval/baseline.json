@@ -136,12 +136,14 @@
 				"A recipe shared to keep (English)",
 				"Meals planned for the week (English)",
 				"A note for the family board (English)",
-				"A chore done and new turns on it (English)",
-				"Keeps the appointment of a pet that is not listed (English)"
+				"A chore done and new turns on it (English)"
 			],
 			"failing": {
 				"Shopping message with imperial units": [
 					"1 proposal(s)"
+				],
+				"Keeps the appointment of a pet that is not listed (English)": [
+					"calendar.createEvent: the check on 15 Oct 10:30 at the clinic"
 				]
 			},
 			"cost": 0
