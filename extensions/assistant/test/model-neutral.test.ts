@@ -5,7 +5,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
-import { saidBy } from '../src/server/tools.ts';
+import { namedBy, saidBy } from '../src/server/tools.ts';
 
 /*
  * What gpt-4.1-mini sent as tool calls, word for word, in the assistant eval: it fills every
@@ -160,6 +160,38 @@ describe('a note to remember', () => {
 			),
 		).toBe(false);
 		expect(saidBy('', 'anything', 'en')).toBe(false);
+	});
+});
+
+describe('the words for the thing to change', () => {
+	it('must be the person’s, not the title the model found instead', async () => {
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Dentist checkup', date: '2026-10-08', startTime: '09:30' },
+			systemActor('test'),
+		);
+		// xing4.0 for "Change Dental cleaning to 10:00": it found the dentist and labelled the change
+		// with that title, which the runner's own check of label against title lets through.
+		k.llm.respondChat([
+			{ tool: 'calendar_findEvents', input: { from: '2026-10-05', to: '2026-10-11' } },
+			{
+				tool: 'calendar_changeEvent',
+				input: { id: 'cal_event:1', startTime: '10:00', label: 'Dentist checkup' },
+			},
+			{ text: 'There is no Dental cleaning.' },
+		]);
+		await ask('Change Dental cleaning to 10:00');
+		expect(k.llm.chatTrace[1]?.result).toContain(
+			"Error (unknown): what it names is not there. 'label' must be the name the person used",
+		);
+		expect(await drafts()).toEqual([]);
+	});
+
+	it('counts whole words, with a plural s aside', () => {
+		expect(namedBy('the bananas', 'Tick off the banana', 'en')).toBe(true);
+		expect(namedBy('Sunday planning', 'Move Sunday planning to 18:00', 'en')).toBe(true);
+		expect(namedBy('Dentist checkup', 'Change Dental cleaning to 10:00', 'en')).toBe(false);
+		expect(namedBy('', 'anything', 'en')).toBe(false);
 	});
 });
 

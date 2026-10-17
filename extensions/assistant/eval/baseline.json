@@ -83,6 +83,78 @@
 				]
 			},
 			"cost": 0.0517
+		},
+		"openrouter-nvidia-nemotron-3-super-120b-a12b-free": {
+			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+			"version": null,
+			"date": "2026-10-17",
+			"cases": 20,
+			"passing": [
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+				"not there: anchovies on no list",
+				"one date: Sunday planning on 25 October only",
+				"one date: follow-up \"Only this Sunday\"",
+				"tick off: \"the bananas\" on a long list",
+				"tick off: milk already bought, oat milk open",
+				"find: swimming this week",
+				"find: Lukas's Wednesday",
+				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
+				"duplicate: a present for Mila is already a task",
+				"duplicate: sandpaper is already on the Hardware store list",
+				"remove: the cheddar is on the list (without naming the list)",
+				"honesty: calendar off for the AI, asked to add an appointment",
+				"formatting: an overview of the week",
+				"Turkish: add milk and eggs",
+				"no area: the flat papers when Home is not installed",
+				"span: nothing open for Ellie this weekend",
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
+				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
+				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
+			],
+			"failing": {},
+			"cost": 0
+		},
+		"openrouter-xingchen-agi-xing4-0-29b-a4b-free": {
+			"label": "openrouter / xingchen-agi/xing4.0-29b-a4b:free",
+			"version": null,
+			"date": "2026-10-17",
+			"cases": 20,
+			"passing": [
+				"not there: anchovies on no list",
+				"one date: Sunday planning on 25 October only",
+				"tick off: \"the bananas\" on a long list",
+				"tick off: milk already bought, oat milk open",
+				"find: swimming this week",
+				"find: Lukas's Wednesday",
+				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
+				"duplicate: a present for Mila is already a task",
+				"duplicate: sandpaper is already on the Hardware store list",
+				"remove: the cheddar is on the list (without naming the list)",
+				"honesty: calendar off for the AI, asked to add an appointment",
+				"Turkish: add milk and eggs",
+				"no area: the flat papers when Home is not installed",
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
+				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
+			],
+			"failing": {
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": [
+					"no draft"
+				],
+				"one date: follow-up \"Only this Sunday\"": [
+					"the case ran to the end"
+				],
+				"formatting: an overview of the week": [
+					"reply says /sunday planning|swim/i and /mila/i"
+				],
+				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag": [
+					"drafted a reminder or task on 2026-10-06 at 18:30",
+					"reply says /today|6 October|October 6/i and /\\b10\\b/"
+				]
+			},
+			"outages": [
+				"span: nothing open for Ellie this weekend"
+			],
+			"cost": 0
 		}
 	}
 }

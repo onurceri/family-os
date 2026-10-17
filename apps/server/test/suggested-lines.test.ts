@@ -100,7 +100,7 @@ describe('the line that names each suggestion', () => {
 		]);
 		const sent = await k.runner.invoke<{ threadId: string }>(
 			'assistant.sendMessage',
-			{ text: 'Move my Delft call to 14:00, tick off the paracetamol, and so on' },
+			{ text: 'Move my Delft project call to 14:00, tick off the paracetamol, and so on' },
 			sofia.actor,
 		);
 		if (sent.status !== 'applied') throw new Error('expected the message to be stored');

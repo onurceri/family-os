@@ -173,6 +173,23 @@ export function withoutUnnamedPeople(
 	return out;
 }
 
+/**
+ * Whether words name something the way the person did: each of their words of three or more
+ * letters (a trailing plural `s` aside, as the runner's own check of titles does) is a whole word
+ * of what the person wrote.
+ */
+export function namedBy(label: string, said: string, locale: string): boolean {
+	const words = (value: string) =>
+		value
+			.toLocaleLowerCase(locale)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter((word) => [...word].length > 2)
+			.map((word) => (word.endsWith('s') ? word.slice(0, -1) : word));
+	const theirs = new Set(words(said));
+	const own = words(label);
+	return own.length > 0 && own.every((word) => theirs.has(word));
+}
+
 /** At least this share of a grounded text's words must be the person's own. */
 const GROUNDED_SHARE = 0.5;
 
@@ -248,6 +265,27 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 				refusalText(
 					'incomplete',
 					`'${field}' must say what the person said in this conversation, in their words; it is not what they said. Do not suggest it.`,
+				),
+			);
+		}
+		// The words for the thing to change are the person's: a model that writes the title it found
+		// instead ("Dentist checkup" for "Dental cleaning") would pass the runner's check of
+		// the words against that title.
+		const target = raw as { id?: unknown; label?: unknown } | null;
+		if (
+			kind === 'draft' &&
+			env.said !== undefined &&
+			typeof target?.id === 'string' &&
+			typeof target.label === 'string' &&
+			!namedBy(target.label, env.said, env.locale ?? 'en')
+		) {
+			env.onFailure?.({ actionId, code: 'label_not_said', inputKeys: ['label'] });
+			if (env.loop) env.loop.failuresInARow++;
+			return asData(
+				actionId,
+				refusalText(
+					'unknown',
+					`'label' must be the name the person used for it, in their own words, and '${target.label}' is not what they said. If what they named is not there, tell them; do not change something else.`,
 				),
 			);
 		}
