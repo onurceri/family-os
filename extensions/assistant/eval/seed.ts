@@ -58,6 +58,8 @@ export interface Case {
 	shopping?: Record<string, SeedItem[]>;
 	/** Open tasks: a title, or a task with a due date and an assignee. */
 	tasks?: (string | SeedTask)[];
+	/** Extensions shipped with FamilyOS that this household has not installed. */
+	notInstalled?: string[];
 	/** How far the AI may use an area, for the areas this case changes. */
 	areas?: Record<string, AiAreaAccess>;
 	checks: Check[];

@@ -28,6 +28,7 @@ import { z } from 'zod';
 import { type Access, createAccess } from './access.ts';
 import { type ActionRunner, createActionRunner, type ExtensionViews } from './action-runner.ts';
 import { type AiAreas, createAiAreas } from './ai-areas.ts';
+import { aiMissingAreas } from './ai-missing-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { type ApiTokenService, createApiTokenService } from './api-tokens.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
@@ -440,6 +441,17 @@ export function createKernel(options: KernelOptions): Kernel {
 		aiReadTools: (catalogOptions) => offered(aiReadActions, catalogOptions),
 		aiContextActions: () =>
 			new Map(aiContexts.filter(([extensionId]) => features.isOn(extensionId))),
+		aiMissingAreas: (areaOptions) =>
+			aiMissingAreas(
+				{
+					loaded: registry.extensions.map((e) => e.id),
+					packages: (options.extensionPackages ?? noExtensionPackages).list(),
+					isOn: (id) => features.isOn(id),
+					access: (id) => aiAreas.access(id),
+					translate: options.translate ?? defaultTranslate,
+				},
+				areaOptions?.local === true,
+			),
 		checkInput(id, input) {
 			const def = registry.actions.get(id);
 			if (!def) return [];

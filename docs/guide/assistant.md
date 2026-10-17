@@ -12,11 +12,11 @@ People with the permission **Ask the assistant** can use it. Admins, members and
 
 When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.
 
-It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean.
+It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean. Its own answers are checked the same way: dates reach it with their weekday, and if it still writes a weekday that does not fit its date, FamilyOS puts in the right one.
 
 A weekday without a date ("remind me on Thursday", "what is on Saturday?") means the coming one. When it is today's own weekday, it means today while the time you mean is still ahead (or you give no time), and the same day next week once that time has passed. FamilyOS works the date out before the assistant answers, so the same words give the same date every time, and the assistant says which date it used. Say "next week" when you mean the later one.
 
-When you ask about a span ("this weekend", "this month") and nothing falls in it, the assistant says so. If it mentions other open things, it says that they fall outside that span.
+When you ask about a span ("this weekend", "this month") and nothing falls in it, the assistant says so. If it mentions other open things, it says that they fall outside that span. When the calendar or the household's dates have nothing in the span, the assistant is told what comes next, so it can say "nothing this weekend; the next is Date night on Saturday 24 October".
 
 An overview ("give me an overview of this week", "show me the open tasks") covers the whole family. The assistant narrows to one person only when you ask about whose things they are: "my calendar", "what do I have", "am I free" or "Noah's tasks". One person's tasks come with the tasks anyone may do, as their calendar comes with the family's events. When the assistant looks something up by name for one person and finds nothing, FamilyOS also shows it what other family members have under that name, so "when is the swimming?" is not answered with "nothing" because someone else swims.
 
@@ -31,7 +31,7 @@ Examples to try:
 
 The assistant sees only what the person asking may see, and only in the areas the family allows for AI (**Settings → AI → What the AI may read**). Areas that are off are never offered to it. An area set to **Local only** is available only when the model runs on your own network.
 
-When you ask about something none of its areas covers, for example your home after the Home extension was removed, the assistant says plainly that it cannot see anything about it in FamilyOS. It does not ask you for details it could not look up anyway.
+When you ask about something none of its areas covers, for example your home after the Home extension was removed, the assistant says plainly that it cannot see anything about it in FamilyOS. FamilyOS tells it which areas are not here and why (not installed, turned off, or closed to the AI), so it can say "Home is not installed here". It does not ask you for details it could not look up anyway.
 
 It is told people's names and descriptions only when **Send names and descriptions** is on in Settings → AI. Otherwise it cannot refer to anyone by name.
 

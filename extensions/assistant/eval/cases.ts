@@ -394,6 +394,7 @@ export const CASES: Case[] = [
 	// No area covers it: Home is not installed, so nothing about the flat can be looked up.
 	{
 		name: 'no area: the flat papers when Home is not installed',
+		notInstalled: ['home'],
 		tasks: [{ title: 'Book the car service', dueDate: '2026-10-20' }],
 		asks: ['Where do we keep the flat papers, and what is due this month for the flat?'],
 		checks: [
@@ -401,7 +402,34 @@ export const CASES: Case[] = [
 			// The real answer promised what it never looked up, then asked for the flat's name.
 			neverSays(/I can tell you what is due/i, /\?\s*$/),
 			says(/\b(no|not|nothing|cannot|can't|don't)\b/i),
+			// Later it read the empty notes as "no household obligations listed for the flat",
+			// never saying that Home is not installed.
+			says(/\bhome\b/i, /\bnot installed|isn't installed|is not installed|uninstalled\b/i),
 		],
+	},
+
+	// A weekday the model works out itself: the date came from the tool, the weekday did not.
+	{
+		name: 'answer weekday: the bins on Tuesday 13 October',
+		as: 'Noah',
+		tasks: [{ title: 'Take out the bins', dueDate: '2026-10-13' }],
+		asks: ['are the bins going out tonight? whats on for me this week'],
+		checks: [
+			// The real answer: "scheduled for Monday 20 October", a Tuesday.
+			says(/tuesday,? 13 october|october 13/i),
+			neverSays(/\b(monday|wednesday|thursday|friday|saturday|sunday),? 13 october/i),
+		],
+	},
+
+	// Nothing in the span asked about: the answer says when the next one is.
+	{
+		name: 'span: nothing on this weekend, the next event is the Saturday after',
+		events: [
+			{ title: 'Dentist checkup', date: '2026-10-08', startTime: '09:30', who: ['Noah'] },
+			{ title: 'Date night', date: '2026-10-17', startTime: '19:00', who: ['Sofia', 'Lukas'] },
+		],
+		asks: ["What's on this weekend?"],
+		checks: [says(/\b(nothing|no events?|none|free)\b/i, /date night/i, /17 october|october 17/i)],
 	},
 
 	// Nothing in the span asked about, and the other open tasks said to fall outside it.

@@ -324,7 +324,48 @@ export function fitResult(value: unknown): string {
 	return render(low);
 }
 
-/** An action's output as the model reads it: ids become handles, and record lists are compact. */
+/**
+ * A day (`2026-10-20`) or a local time on it (`2026-10-20T18:00`). An instant with an offset is
+ * left out: its day depends on the time zone it is read in.
+ */
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T[\d:.]+)?$/;
+
+const WEEKDAY = new Intl.DateTimeFormat('en', { weekday: 'long', timeZone: 'UTC' });
+
+/** The English weekday of a date written at the start of a value, or null. */
+export function weekdayOf(value: string): string | null {
+	const m = ISO_DATE.exec(value);
+	if (!m) return null;
+	const at = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+	// A date that does not exist (2026-02-31) rolls over: it gets no weekday.
+	if (at.getUTCDate() !== Number(m[3])) return null;
+	return WEEKDAY.format(at);
+}
+
+/**
+ * Every date in a result with its weekday beside it (`dueDate` → `dueDateWeekday`): models name
+ * the weekday of a date themselves and get it wrong ("Monday 20 October" for a Tuesday), so code
+ * says it. An object whose action names its weekdays already (a `weekday` or `…Weekday` field)
+ * is left as it is. The date stays as it was, so a model can send it back in a tool input.
+ */
+export function withWeekdays(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(withWeekdays);
+	if (!value || typeof value !== 'object') return value;
+	const record = value as Record<string, unknown>;
+	const named = Object.keys(record).some((key) => key === 'weekday' || key.endsWith('Weekday'));
+	const out: Record<string, unknown> = {};
+	for (const [key, v] of Object.entries(record)) {
+		out[key] = withWeekdays(v);
+		const weekday = !named && typeof v === 'string' ? weekdayOf(v) : null;
+		if (weekday) out[`${key}Weekday`] = weekday;
+	}
+	return out;
+}
+
+/**
+ * An action's output as the model reads it: ids become handles, record lists are compact, and
+ * dates carry their weekdays.
+ */
 export function readableOutput(output: unknown, table: HandleTable): unknown {
 	const context = AiContextSchema.safeParse(output);
 	if (context.success && context.data.plain) {
@@ -339,7 +380,7 @@ export function readableOutput(output: unknown, table: HandleTable): unknown {
 			})),
 		};
 	}
-	return compact(withHandles(output, table));
+	return withWeekdays(compact(withHandles(output, table)));
 }
 
 /** The id and the person's words of a change aimed at one record, or null. */

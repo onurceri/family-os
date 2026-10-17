@@ -1,6 +1,8 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
-import { isLlmError, type LlmPort } from '@famos/sdk';
+import { isLlmError, type LlmPort, parseManifest } from '@famos/sdk';
 import { createTestKernel, repoTranslate } from '@famos/testing';
 import assistant from '../src/server/index.ts';
 import { ALWAYS, type Call, type Check, type Draft, type Outcome, type Turn } from './checks.ts';
@@ -54,6 +56,41 @@ export function observed(llm: LlmPort, raw = false) {
 	return { llm: port, calls, notes };
 }
 
+type PackagesPort = NonNullable<Parameters<typeof createTestKernel>[0]>['extensionPackages'];
+
+/**
+ * The packages of extensions shipped in this repository that a case leaves uninstalled, read like
+ * the server reads its bundled ones (the manifest, and the name and description of each catalog),
+ * so the assistant knows they exist and are not here.
+ */
+export function notInstalledPackages(ids: readonly string[]): PackagesPort {
+	const root = join(import.meta.dirname, '../..');
+	const list = ids.map((id) => {
+		const dir = join(root, id);
+		const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as {
+			famos: Parameters<typeof parseManifest>[0];
+		};
+		const manifest = parseManifest(pkg.famos);
+		const labels: Record<string, { name: string; description: string }> = {};
+		for (const file of readdirSync(join(dir, 'src/messages')).filter((f) => f.endsWith('.json'))) {
+			const catalog = JSON.parse(readFileSync(join(dir, 'src/messages', file), 'utf8')) as Record<
+				string,
+				string
+			>;
+			if (catalog.feature_name && catalog.feature_description)
+				labels[file.slice(0, -'.json'.length)] = {
+					name: catalog.feature_name,
+					description: catalog.feature_description,
+				};
+		}
+		return { id: manifest.id, version: manifest.version, always: false, manifest, labels };
+	});
+	return {
+		list: () => list,
+		place: () => Promise.reject(new Error('The eval installs nothing')),
+	};
+}
+
 /** Typographic quotes as plain ones (U+2018, U+2019). */
 const CURLY_QUOTES = /[\u2018\u2019]/g;
 /** No-break and thin spaces as plain ones (U+00A0, U+2007, U+2009, U+202F). */
@@ -88,6 +125,7 @@ export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseR
 		extensions: [calendar, lists, assistant],
 		llm: model.llm,
 		translate: repoTranslate(),
+		...(c.notInstalled && { extensionPackages: notInstalledPackages(c.notInstalled) }),
 	});
 	try {
 		const { seeded, asker } = await seed(k, c);

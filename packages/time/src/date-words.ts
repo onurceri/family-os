@@ -256,6 +256,36 @@ export function weekdayMismatches(
 	words: DateWords,
 	order: DateOrder = 'DMY',
 ): WeekdayMismatch[] {
+	const out: WeekdayMismatch[] = [];
+	const seen = new Set<string>();
+	for (const { mismatch } of mismatchesIn(text, today, words, order)) {
+		const key = `${mismatch.date}:${mismatch.saidWeekday}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(mismatch);
+	}
+	return out;
+}
+
+/** A mismatch with where its weekday word stands in the text. */
+interface PlacedMismatch {
+	mismatch: WeekdayMismatch;
+	start: number;
+	end: number;
+}
+
+/**
+ * Every weekday of a text written next to a date of another weekday. Each weekday goes with one
+ * date and each date with one weekday, the closest pairs first: in "Monday 19 October, Tuesday
+ * 20 October" the Tuesday is 20 October's, not 19 October's, whatever order a language writes
+ * them in.
+ */
+function mismatchesIn(
+	text: string,
+	today: string,
+	words: DateWords,
+	order: DateOrder,
+): PlacedMismatch[] {
 	const clean = withoutTimes(text, words);
 	const weekdays = [
 		...namesIn(clean, words.weekdays, () => false),
@@ -265,34 +295,80 @@ export function weekdayMismatches(
 	const dates = datesIn(clean, words, order).filter(
 		(d) => d.month >= 1 && d.month <= 12 && d.day >= 1 && d.day <= 31,
 	);
-	const now = Temporal.PlainDate.from(today);
-	const out: WeekdayMismatch[] = [];
-	const seen = new Set<string>();
-	for (const weekday of weekdays) {
-		for (const found of dates) {
+	const pairs = weekdays.flatMap((weekday) =>
+		dates.flatMap((found) => {
 			const gap =
 				found.start >= weekday.end
 					? clean.slice(weekday.end, found.start)
 					: weekday.start >= found.end
 						? clean.slice(found.end, weekday.start)
 						: null;
-			if (gap === null || !ADJACENT.test(gap)) continue;
-			const date = resolve(found, now);
-			if (!date || date.dayOfWeek === weekday.value) continue;
-			const key = `${date}:${weekday.value}`;
-			if (seen.has(key)) continue;
-			seen.add(key);
-			const start = Math.min(weekday.start, found.start);
-			const end = Math.max(weekday.end, found.end);
-			out.push({
+			return gap !== null && ADJACENT.test(gap) ? [{ weekday, found, gap: gap.length }] : [];
+		}),
+	);
+	const now = Temporal.PlainDate.from(today);
+	const usedWeekdays = new Set<Found>();
+	const usedDates = new Set<DateFound>();
+	const out: PlacedMismatch[] = [];
+	for (const { weekday, found } of pairs.toSorted(
+		(a, b) => a.gap - b.gap || a.weekday.start - b.weekday.start,
+	)) {
+		if (usedWeekdays.has(weekday) || usedDates.has(found)) continue;
+		usedWeekdays.add(weekday);
+		usedDates.add(found);
+		const date = resolve(found, now);
+		if (!date || date.dayOfWeek === weekday.value) continue;
+		const start = Math.min(weekday.start, found.start);
+		const end = Math.max(weekday.end, found.end);
+		out.push({
+			mismatch: {
 				said: text.slice(start, end).trim(),
 				date: date.toString(),
 				saidWeekday: weekday.value,
 				weekday: date.dayOfWeek,
-			});
-		}
+			},
+			start: weekday.start,
+			end: weekday.end,
+		});
 	}
-	return out;
+	return out.toSorted((a, b) => a.start - b.start);
+}
+
+/**
+ * A text with each weekday written next to a date of another weekday replaced by the date's real
+ * one: models name dates right and miscount their weekdays ("Monday 20 October" for a Tuesday).
+ * `name` gives the word for the real weekday (`mismatch.weekday`, 1 = Monday) in the language of
+ * the word it replaces, or null to leave that one as it is; the replacement takes the written
+ * word's capitals.
+ */
+export function correctWeekdays(
+	text: string,
+	today: string,
+	words: DateWords,
+	order: DateOrder,
+	name: (mismatch: WeekdayMismatch, said: string) => string | null,
+): { text: string; corrected: WeekdayMismatch[] } {
+	const corrected: WeekdayMismatch[] = [];
+	let out = text;
+	// From the end, so the places of the earlier ones stay where they were.
+	for (const { mismatch, start, end } of mismatchesIn(text, today, words, order).toReversed()) {
+		const said = text.slice(start, end);
+		const word = name(mismatch, said);
+		if (!word) continue;
+		out = `${out.slice(0, start)}${sameCase(word, said)}${out.slice(end)}`;
+		corrected.unshift(mismatch);
+	}
+	return { text: out, corrected };
+}
+
+/** `word` written with the capitals of `like`: all of them, the first, or none. */
+function sameCase(word: string, like: string): string {
+	if (like.length > 1 && like === like.toLocaleUpperCase() && like !== like.toLocaleLowerCase())
+		return word.toLocaleUpperCase();
+	const first = like.slice(0, 1);
+	if (first !== first.toLocaleLowerCase())
+		return `${word.slice(0, 1).toLocaleUpperCase()}${word.slice(1)}`;
+	return word.toLocaleLowerCase();
 }
 
 /**

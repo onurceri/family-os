@@ -694,6 +694,7 @@ export {
 	type BareWeekday,
 	bareWeekdays,
 	clockTimes,
+	correctWeekdays,
 	type DateOrder,
 	type DateWords,
 	dateWords,

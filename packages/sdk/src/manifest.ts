@@ -6,7 +6,7 @@ import { z } from 'zod';
  * start one whose range this version does not satisfy. Raise the minor for an addition, the major
  * for a change that breaks an extension built against the old one (while below 1.0, the minor).
  */
-export const SDK_VERSION = '0.6.6';
+export const SDK_VERSION = '0.6.7';
 
 const EXTENSION_ID = /^[a-z][a-z0-9]*$/;
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
