@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "lists",
 		"version": "0.1.0",
-		"sdk": "^0.7.2",
+		"sdk": "^0.8.0",
 		"capabilities": [
 			"lists.view",
 			"lists.tasks.edit",

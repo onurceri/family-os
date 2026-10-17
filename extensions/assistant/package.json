@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "assistant",
 		"version": "0.1.0",
-		"sdk": "^0.7.0",
+		"sdk": "^0.8.0",
 		"capabilities": [
 			"assistant.use"
 		],
