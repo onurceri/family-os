@@ -143,7 +143,7 @@
 	}
 	.bar {
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
 		min-height: 52px;
 		padding: 0 8px;
@@ -151,10 +151,15 @@
 	}
 	h2 {
 		margin: 0;
-		max-width: 50vw;
+		padding: 6px 8px;
+		/* A long title takes the room Cancel and Save leave and wraps to two lines. */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
 		font-size: 16px;
 		font-weight: 800;
 		text-align: center;

@@ -81,10 +81,10 @@
 		<b class="truncate text-[15px] leading-snug font-semibold {finished ? 'line-through' : ''}"
 			>{chore.title}</b
 		>
-		<small class="flex items-center gap-1 truncate text-[13px] leading-snug">
+		<small class="flex flex-wrap items-center gap-x-1 text-[13px] leading-snug">
 			{#if chore.recurrence}<Repeat class="size-3 shrink-0" aria-hidden="true" />{/if}
 			<span
-				class="truncate {finished
+				class="shrink-0 {finished
 					? ''
 					: group === 'overdue'
 						? 'text-attention font-bold'
@@ -93,7 +93,7 @@
 							: 'text-ink-soft'}">{due}</span
 			>
 			{#if !finished}
-				<span class="text-ink-soft shrink-0"
+				<span class="text-ink-soft min-w-0 truncate"
 					>&middot; {notYourTurn ?? (who ? who.displayName : t('anyone'))}</span
 				>
 			{/if}
