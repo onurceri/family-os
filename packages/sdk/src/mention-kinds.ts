@@ -197,3 +197,84 @@ export function mentionKindProblems(
 	});
 	return problems;
 }
+
+/** `YYYY-MM-DD` of the last day of the month a date is in. */
+function monthEnd(date: string): string {
+	const [year, month] = date.split('-').map(Number) as [number, number];
+	const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+	return `${date.slice(0, 8)}${String(last).padStart(2, '0')}`;
+}
+
+/**
+ * The day an end or a deadline names ("until 28 October", "by Friday"). When its words name a
+ * month or a span and write no day number ("until the end of October", "by the end of the
+ * month"), it is the last day of that month, whatever day a model worked out for it: a model
+ * that counts to the last Wednesday of October would otherwise end a weekly series early. The
+ * test for a day number is for digits, so it holds in every language. A month the words name is
+ * certain; a span without one is this month (or the month of the date read), as a guess.
+ */
+export function endNamed(
+	ctx: Pick<MentionContext, 'day' | 'today'>,
+	ref: DayRef | undefined,
+): ResolvedDay | null {
+	const found = ctx.day(ref, 'future');
+	if (!ref) return found;
+	const text = ref.text.trim();
+	const spanOnly =
+		text !== '' &&
+		!/\p{N}/u.test(text) &&
+		ref.weekday === undefined &&
+		ref.inDays === undefined &&
+		(ref.month !== undefined || ref.approximate === true);
+	if (!spanOnly) return found;
+	const date = monthEnd(found?.date ?? ctx.today);
+	return ref.month !== undefined && ref.approximate !== true
+		? { date, certain: true }
+		: { date, certain: false, why: 'approximate' };
+}
+
+/** The words of a name or a text, the way `resolvePeople` splits them. */
+const nameWords = (value: string, locale: string) =>
+	value
+		.toLocaleLowerCase(locale)
+		.split(/[^\p{L}\p{N}]+/u)
+		.filter((word) => [...word].length > 1);
+
+/**
+ * The members a mention names (`ctx.people`), with one more doubt: when they are only the person
+ * who shared it and the shared text writes no member's name, the model may have given it to the
+ * sharer because nobody else was named, so it is not certain. "Note to self: my check-up" still
+ * goes to the sharer, marked for a look; a fee nobody is named for is not silently theirs. When
+ * files were read there is no text to check, so it is not certain either.
+ */
+export function peopleNamed(
+	ctx: Pick<MentionContext, 'people' | 'sharer' | 'text' | 'members' | 'locale'>,
+	mention: Pick<Mention, 'people' | 'forMe' | 'peopleGuessed'>,
+): PeopleResult {
+	const found = ctx.people(mention);
+	const onlySharer = ctx.sharer !== null && found.ids.length === 1 && found.ids[0] === ctx.sharer;
+	if (!onlySharer || !found.certain) return found;
+	if (ctx.text === null) return { ...found, certain: false };
+	const said = new Set(nameWords(ctx.text, ctx.locale));
+	const namesSomeone = ctx.members.some((m) =>
+		nameWords(m.displayName, ctx.locale).some((word) => said.has(word)),
+	);
+	return namesSomeone ? found : { ...found, certain: false };
+}
+
+/**
+ * The input fields of the slots a model marked `unsure`, by a kind's own map from slot to the
+ * fields it fills. A slot the map leaves out marks nothing.
+ */
+export function unsureFields(
+	mention: Pick<Mention, 'unsure'>,
+	fields: Partial<Record<Slot, string | readonly string[]>>,
+): string[] {
+	const out = new Set<string>();
+	for (const field of mention.unsure ?? []) {
+		const slot = slotOfField(field);
+		const of = slot === null ? undefined : fields[slot];
+		for (const name of typeof of === 'string' ? [of] : (of ?? [])) out.add(name);
+	}
+	return [...out];
+}

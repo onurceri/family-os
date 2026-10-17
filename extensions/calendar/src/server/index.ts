@@ -60,6 +60,7 @@ import {
 	updateSubscription,
 } from './subscriptions.ts';
 import { aiContext, deleteTag, listTags, updateTag } from './tags.ts';
+import { calendarKinds } from './understand.ts';
 import { whenOf } from './when.ts';
 
 /**
@@ -959,7 +960,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id] },
+	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id], kinds: calendarKinds },
 	actions: [
 		findEvents,
 		createEvent,

@@ -50,7 +50,7 @@ const DEFAULT_LIST_LABEL = 'Shopping list';
 const DEFAULT_LIST_ALIASES = [DEFAULT_LIST_LABEL, 'Groceries', 'Market'];
 
 /** The names a list answers to: its own, or the aliases of the list that has none. */
-const namesOf = (list: { name: string }) => (list.name ? [list.name] : DEFAULT_LIST_ALIASES);
+export const namesOf = (list: { name: string }) => (list.name ? [list.name] : DEFAULT_LIST_ALIASES);
 
 async function activeList(uow: UnitOfWork, id: string | undefined) {
 	let query = tables(uow.db)
@@ -784,7 +784,7 @@ export const listShoppingLists = defineRoute({
 });
 
 /** Bought items stay visible for a week (or until cleared). */
-const BOUGHT_VISIBLE_MS = 7 * 86_400_000;
+export const BOUGHT_VISIBLE_MS = 7 * 86_400_000;
 
 export const listShoppingItems = defineRoute({
 	method: 'get',

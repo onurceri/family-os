@@ -41,13 +41,14 @@ import {
 	tasksEdit,
 	updateTask,
 } from './tasks.ts';
+import { listKinds } from './understand.ts';
 
 /** Lists extension: family tasks (with repeating chores) and shopping lists. */
 export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
-	ai: { context: [aiContext.id, aiContextTasks.id] },
+	ai: { context: [aiContext.id, aiContextTasks.id], kinds: listKinds },
 	actions: [
 		openTasks,
 		shoppingList,

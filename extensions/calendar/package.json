@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "calendar",
 		"version": "0.1.0",
-		"sdk": "^0.6.0",
+		"sdk": "^0.6.1",
 		"capabilities": [
 			"calendar.view",
 			"calendar.edit",

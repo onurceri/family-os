@@ -4,7 +4,7 @@ import type { EventInput, Occurrence } from '../contract/index.ts';
 import { occurrencesBetween, SAME_EVENT_DAYS } from './store.ts';
 
 /** The day and the time of day (timed occurrences) an occurrence starts, in the family time zone. */
-function startOf(o: Occurrence, timeZone: string): { date: string; time?: string } {
+export function startOf(o: Occurrence, timeZone: string): { date: string; time?: string } {
 	if (o.allDay) return { date: o.startDate as string };
 	const at = zoned(o.start as number, timeZone);
 	return { date: at.toPlainDate().toString(), time: at.toPlainTime().toString().slice(0, 5) };
