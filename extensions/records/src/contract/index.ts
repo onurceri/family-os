@@ -155,8 +155,8 @@ export const AddObligationSchema = ObligationFieldsSchema.extend({
 export type AddObligationInput = z.input<typeof AddObligationSchema>;
 
 /**
- * Changing an obligation keeps its kind, audience, lead time, assignee, notes and whether it
- * lapses unless they are given (`null` clears the assignee or the notes).
+ * Changing an obligation keeps its kind, repeat, audience, lead time, assignee, notes and whether
+ * it lapses unless they are given (`null` clears the repeat, the assignee or the notes).
  */
 export const UpdateObligationSchema = z.object({
 	id: ObligationIdSchema,
@@ -164,6 +164,9 @@ export const UpdateObligationSchema = z.object({
 		kind: ObligationKindSchema.optional(),
 		leadDays: ObligationFieldsSchema.shape.leadDays.unwrap().optional(),
 		audience: ObligationFieldsSchema.shape.audience.unwrap().optional(),
+		every: ObligationFieldsSchema.shape.every.describe(
+			'Repeat by months or years; null for once; omit to keep it',
+		),
 		lapses: ObligationFieldsSchema.shape.lapses.unwrap().optional(),
 	}),
 });

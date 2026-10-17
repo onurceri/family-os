@@ -178,6 +178,19 @@ describe('changing and removing', () => {
 		});
 	});
 
+	it('keeps the repeat when an edit leaves it out, and null makes it a one-off', async () => {
+		const o = await add({ dueDate: '2026-11-01', every: { years: 1 } });
+		const edit = (obligation: Record<string, unknown>) =>
+			applied<Obligation>(k, 'records.updateObligation', { id: o.id, obligation }, admin.actor);
+		expect(await edit({ title: 'Inspection', dueDate: '2026-11-01' })).toMatchObject({
+			title: 'Inspection',
+			every: { years: 1 },
+		});
+		expect(await edit({ title: 'Inspection', dueDate: '2026-11-01', every: null })).toMatchObject({
+			every: null,
+		});
+	});
+
 	it('keeps showing and repeating an obligation whose preset no longer exists', async () => {
 		// Presets removed since (earthquake insurance, kasko, MTV…): the kind is
 		// only a label for the person who made it; the stored title, repeat and dates are what count.

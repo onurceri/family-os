@@ -1535,7 +1535,7 @@ export interface operations {
                         title: string;
                         /** @description When it is due, YYYY-MM-DD, in the family time zone */
                         dueDate: string;
-                        /** @description Repeat by months or years; omit for once */
+                        /** @description Repeat by months or years; null for once; omit to keep it */
                         every?: {
                             months?: number;
                             years?: number;
