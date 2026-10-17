@@ -1,5 +1,5 @@
 {
-	"sdk": "0.7.1",
+	"sdk": "0.7.2",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -246,6 +246,7 @@
 			"TodayBlockMenu",
 			"TodayRow",
 			"TodaySection",
+			"ViewOnly",
 			"WeatherBlock",
 			"WeatherIcon",
 			"WeatherSky",

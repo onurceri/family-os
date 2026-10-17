@@ -114,5 +114,3 @@ export class AccessBook {
 		);
 	}
 }
-
-export const accessBook = new AccessBook();
