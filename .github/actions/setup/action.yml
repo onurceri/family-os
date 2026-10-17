@@ -1,0 +1,13 @@
+name: Set up the workspace
+description: The pinned pnpm and Node, the pnpm store from cache, and the workspace's dependencies.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4 # reads "packageManager" from package.json
+    - uses: actions/setup-node@v5
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash

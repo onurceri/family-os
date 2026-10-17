@@ -1,5 +1,6 @@
 {
 	"$schema": "https://turborepo.com/schema.json",
+	"globalDependencies": ["tsconfig.base.json", ".nvmrc"],
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build", "gen", "@famos/server#gen"],
@@ -9,8 +10,11 @@
 			"dependsOn": ["^gen"],
 			"outputs": ["openapi.json", "src/generated/**"]
 		},
+		"transit": {
+			"dependsOn": ["^transit"]
+		},
 		"typecheck": {
-			"dependsOn": ["gen", "^gen", "@famos/server#gen"]
+			"dependsOn": ["transit", "gen", "^gen", "@famos/server#gen"]
 		},
 		"dev": {
 			"cache": false,
@@ -31,10 +35,28 @@
 		"@famos/web#gen": {
 			"outputs": [".svelte-kit/types/**", ".svelte-kit/tsconfig.json", ".svelte-kit/ambient.d.ts"]
 		},
+		"@famos/web#build": {
+			"dependsOn": ["^build", "gen", "@famos/server#gen"],
+			"inputs": [
+				"$TURBO_DEFAULT$",
+				"$TURBO_ROOT$/extensions/*/package.json",
+				"$TURBO_ROOT$/extensions/*/src/**"
+			],
+			"outputs": ["dist/**", "build/**"]
+		},
 		"@famos/server#gen": {
 			"dependsOn": [],
 			"cache": false,
 			"outputs": ["openapi.json"]
+		},
+		"@famos/server#typecheck": {
+			"dependsOn": ["transit", "gen", "^gen", "@famos/server#gen"],
+			"inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/src/messages/en.json"]
+		},
+		"@famos/server#build": {
+			"dependsOn": ["^build", "gen", "@famos/server#gen"],
+			"inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/src/messages/en.json"],
+			"outputs": ["dist/**", "build/**"]
 		}
 	}
 }

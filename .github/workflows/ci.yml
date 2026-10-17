@@ -1,10 +1,14 @@
 name: CI
 
-# Runs for pull requests, by hand, and from the release workflow; not on every push to main.
+# Runs for pull requests, by hand, from the release workflows, and after a merge to main. The run
+# on main is what lets a new pull request start from warm caches: a pull request can read caches
+# saved on its base branch, but never those of another pull request.
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
-  # The release workflow runs the same checks before publishing.
+  # The release workflows run the same checks before publishing.
   workflow_call:
 
 concurrency:
@@ -18,18 +22,18 @@ env:
   # Privacy-first project: no tool telemetry from CI.
   TURBO_TELEMETRY_DISABLED: "1"
   DO_NOT_TRACK: "1"
+  # The Turborepo cache is carried between runs with actions/cache; entries nobody has written for
+  # a week are dropped so it does not grow without end.
+  TURBO_CACHE_MAX_AGE: 7d
 
+# Every job starts at once; none waits for another. `ci-ok` is the one check to require.
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4 # reads "packageManager" from package.json
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       - name: Generated code is up to date (OpenAPI, API client, extension API types)
         run: |
@@ -38,37 +42,104 @@ jobs:
           if [ -n "$changed" ]; then echo "$changed"; git diff --stat; exit 1; fi
 
       - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
 
-  e2e:
+  # Split in three because type checking is CPU-bound: every extension is two TypeScript programs
+  # (server and web) that each load the shared packages again, and a runner has four cores.
+  # Turborepo's cache skips the packages a change does not reach. A new extension falls in the
+  # first part, so none goes unchecked.
+  typecheck:
     runs-on: ubuntu-latest
-    needs: check
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: extensions-1
+            filter: >-
+              '--filter=./extensions/*' '--filter=!./extensions/inbox' '--filter=!./extensions/kitchen'
+              '--filter=!./extensions/lists' '--filter=!./extensions/pets' '--filter=!./extensions/records'
+              '--filter=!./extensions/vehicles'
+          - part: extensions-2
+            filter: >-
+              --filter=./extensions/inbox --filter=./extensions/kitchen --filter=./extensions/lists
+              --filter=./extensions/pets --filter=./extensions/records --filter=./extensions/vehicles
+          - part: apps-and-packages
+            filter: "'--filter=!./extensions/*'"
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: ./.github/actions/setup
+      # Turborepo keys every task on its own inputs (sources, lockfile, task definition), so a
+      # restored cache from an older commit only ever replays results whose inputs still match.
+      - uses: actions/cache@v4
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-typecheck-${{ matrix.part }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-typecheck-${{ matrix.part }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-${{ runner.os }}-typecheck-${{ matrix.part }}-
+      - run: pnpm exec turbo run typecheck ${{ matrix.filter }}
+
+  # Vitest is not run through Turborepo (one root run over all projects), so it is split by files.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - name: SvelteKit's generated types for the web app's tests
+        run: pnpm --filter @famos/web gen
+      - run: pnpm test --shard=${{ matrix.shard }}/3
+
+  # Each shard builds the production bundle itself (a cache hit when nothing changed), which also
+  # proves `pnpm build` works.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-build-${{ matrix.shard }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-build-${{ matrix.shard }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-${{ runner.os }}-build-${{ matrix.shard }}-
+      - run: pnpm build
+
+      - id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+        working-directory: apps/e2e
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      # Downloads the browser only on a cache miss; the system libraries it needs are always installed.
       - run: pnpm --filter @famos/e2e exec playwright install --with-deps --only-shell chromium
-      - run: pnpm e2e
+
+      - run: pnpm --filter @famos/e2e exec playwright test --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: apps/e2e/playwright-report
           retention-days: 7
 
-  # A pull request proves the image still builds; a release builds and publishes it itself.
+  # A pull request proves the image still builds, and main keeps the layer cache warm for the next
+  # one; a release builds and publishes the image itself.
   docker:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # The arm64 half builds under emulation; a hung build would otherwise hold the PR for hours.
     timeout-minutes: 30
-    needs: check
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-qemu-action@v3
@@ -82,3 +153,15 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # The single check for branch protection: green only when every job above passed (docker may be
+  # skipped outside pull requests and main).
+  ci-ok:
+    if: always()
+    needs: [lint, typecheck, test, e2e, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
