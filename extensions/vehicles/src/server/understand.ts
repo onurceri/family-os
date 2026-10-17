@@ -61,7 +61,7 @@ async function resolveLog(
 export const logKind = defineMentionKind({
 	id: 'vehicles.log',
 	describe:
-		'Work that was done on a listed vehicle, from an invoice, a service receipt or a message: a service, a repair, new tyres. Only for work already done; a booking still to come is not a log entry.',
+		'Work that was done on a listed vehicle, from an invoice, a service receipt or a message: a service, a repair, new tyres. Only for work already done; a booking still to come (a service next week) is an event, not a log entry.',
 	slots: {
 		about: 'The vehicle, by its listed name',
 		title: 'What was done, in a few words ("Oil change and new brake pads")',
@@ -100,11 +100,6 @@ export const logKind = defineMentionKind({
 					date: { text: 'yesterday', inDays: -1 },
 				},
 			],
-		},
-		{
-			text: 'The family car is booked in for a service next Tuesday',
-			mentions: [],
-			why: 'work still to come is not done yet',
 		},
 	],
 	async resolve(ctx, mentions) {

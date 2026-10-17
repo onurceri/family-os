@@ -73,7 +73,7 @@ async function resolveTreatment(
 export const treatmentKind = defineMentionKind({
 	id: 'pets.treatment',
 	describe:
-		'A treatment a listed pet was given, from a vet card, a vet receipt or a message: a vaccination, a parasite treatment, a check-up or a medication. Only for something already given; an appointment still to come is not a treatment.',
+		'A treatment a listed pet was given, from a vet card, a vet receipt or a message: a vaccination, a parasite treatment, a check-up or a medication. Only for something already given; an appointment still to come (a check-up next week) is an event, not a treatment.',
 	slots: {
 		about: 'The pet, by its listed name',
 		title: 'What was given, as written ("Nobivac Rabies", "Worm tablet")',
@@ -117,11 +117,6 @@ export const treatmentKind = defineMentionKind({
 					date: { text: 'this morning', inDays: 0 },
 				},
 			],
-		},
-		{
-			text: 'Max has his yearly check-up on Thursday at 10:30',
-			mentions: [],
-			why: 'an appointment still to come is not a treatment given',
 		},
 	],
 	async resolve(ctx, mentions) {

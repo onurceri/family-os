@@ -231,7 +231,7 @@ export const event = defineMentionKind({
 	limit: EVENT_LIMIT,
 	examples: [
 		{
-			text: 'Ivy has the dentist next Thursday at 4:30pm',
+			text: 'Ivy has the dentist next Thursday at 4:30pm, and Max goes to the vet for his yearly check-up on Friday at 10:00',
 			mentions: [
 				{
 					kind: 'calendar.event',
@@ -241,7 +241,15 @@ export const event = defineMentionKind({
 					time: '16:30',
 					timeText: '4:30pm',
 				},
+				{
+					kind: 'calendar.event',
+					title: "Max's yearly check-up at the vet",
+					date: { text: 'Friday', weekday: 5 },
+					time: '10:00',
+					timeText: '10:00',
+				},
 			],
+			why: 'An appointment still to come is an event, also for a pet or a car.',
 		},
 		{
 			text: "Leo's piano lesson is every Wednesday at 17:00, until the end of October",
