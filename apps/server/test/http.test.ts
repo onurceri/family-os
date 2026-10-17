@@ -1278,3 +1278,68 @@ describe('family displays', () => {
 		expect((await create('Cem')).headers.get('idempotent-replayed')).toBeNull();
 	});
 });
+
+describe('asking what you may do', () => {
+	async function signInKid() {
+		const { cookie } = await setupAndSignIn();
+		const kid = await addChildWithPin(cookie);
+		const { deviceCookie } = await trustDevice(cookie);
+		const session = (
+			await call('POST', '/api/auth/sign-in/pin', { memberId: kid.id, pin: '2468' }, deviceCookie)
+		).cookie;
+		return { adminCookie: cookie, kidCookie: session };
+	}
+	const newMember = { displayName: 'Pat', roleId: 'member' };
+
+	it('answers every action for the viewer, and one input exactly, without running it', async () => {
+		const { kidCookie } = await signInKid();
+		const access = await call('GET', '/api/v1/core/access', undefined, kidCookie);
+		expect(access.status).toBe(200);
+		expect(access.body.actions['core.createMember']).toEqual({
+			outcome: 'refuse',
+			reason: 'capability',
+			capability: 'core.members.manage',
+		});
+		expect(access.body.actions['lists.addShoppingItems']).toEqual({ outcome: 'apply' });
+		expect(access.body.actions['lists.deleteShoppingItem']).toMatchObject({ depends: true });
+
+		const check = (actionId: string, input: unknown) =>
+			call('POST', `/api/v1/actions/${actionId}/check`, { input }, kidCookie);
+		expect((await check('core.createMember', newMember)).body).toEqual({
+			outcome: 'refuse',
+			reason: 'capability',
+			capability: 'core.members.manage',
+		});
+		expect((await check('core.nothing', {})).status).toBe(404);
+		expect((await check('lists.addShoppingItems', { items: 'oops' })).status).toBe(400);
+		expect((await call('GET', '/api/v1/core/members', undefined, kidCookie)).body).toHaveLength(2);
+	});
+
+	it('needs a sign-in, and limits how often one person asks', async () => {
+		expect((await call('GET', '/api/v1/core/access')).status).toBe(401);
+		expect(
+			(await call('POST', '/api/v1/actions/core.createMember/check', { input: newMember })).status,
+		).toBe(401);
+		const { kidCookie } = await signInKid();
+		const ask = () =>
+			call('POST', '/api/v1/actions/core.createMember/check', { input: newMember }, kidCookie);
+		let status = 200;
+		for (let i = 0; i < 241 && status === 200; i++) status = (await ask()).status;
+		expect(status).toBe(429);
+	});
+
+	it('says why a call was refused, without naming the action', async () => {
+		const { kidCookie } = await signInKid();
+		const refused = await call('POST', '/api/v1/actions/core.createMember', newMember, kidCookie);
+		expect(refused.status).toBe(403);
+		expect(refused.body.error).toMatchObject({
+			code: 'forbidden',
+			reason: 'capability',
+			capability: 'core.members.manage',
+		});
+		expect(refused.body.error.message).not.toMatch(/core\./);
+		const route = await call('GET', '/api/v1/core/devices', undefined, kidCookie);
+		expect(route.status).toBe(403);
+		expect(route.body.error).toMatchObject({ reason: 'capability' });
+	});
+});

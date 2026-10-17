@@ -188,7 +188,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -443,7 +458,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -725,7 +755,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1127,7 +1172,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1473,7 +1533,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1794,7 +1869,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -2122,7 +2212,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -2453,7 +2558,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -2774,7 +2894,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3112,7 +3247,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3462,7 +3612,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",

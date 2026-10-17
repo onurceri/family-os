@@ -433,6 +433,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -567,6 +570,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -733,6 +739,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -896,6 +905,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1028,6 +1040,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1161,6 +1176,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1295,6 +1313,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1441,6 +1462,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1602,6 +1626,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1760,6 +1787,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -1903,6 +1933,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2053,6 +2086,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2203,6 +2239,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2348,6 +2387,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2500,6 +2542,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2651,6 +2696,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2798,6 +2846,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -2947,6 +2998,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -3092,6 +3146,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };
@@ -3245,6 +3302,9 @@ export interface operations {
                             code: string;
                             message: string;
                             details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
                         };
                     };
                 };

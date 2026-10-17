@@ -47,6 +47,7 @@ Need something in between? On **Settings → Family → Roles**, under **Your ow
 
 - Things added to FamilyOS later follow the role you started from.
 - Admin-only permissions cannot be given to a custom role.
+- What a role may add directly, its people may also take back when they added it themselves, even without **Suggest changes for approval**: a Guest role with **Add and tick off shopping items** can delete the shopping items its member added, but not other people's.
 - **Sign in with a PIN on family devices** is one of the permissions. Every built-in role has it. Untick it for a custom role whose people should only use an email and password: their PINs then stop working, and the members page offers no PIN for them.
 - Example: a teenager who uses everything like a Member but should not approve other people's suggestions. Press **New role from Member**, give it a name, untick **Approve suggestions** and press **Create role**.
 - **Delete role** needs a second tap (**Tap again to delete**). It only works when nobody has the role.

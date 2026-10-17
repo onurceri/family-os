@@ -141,7 +141,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -454,7 +469,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -744,7 +774,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1049,7 +1094,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1342,7 +1402,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1647,7 +1722,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -1909,7 +1999,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -2241,7 +2346,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -2562,7 +2682,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3041,7 +3176,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3364,7 +3514,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3688,7 +3853,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -3950,7 +4130,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -4258,7 +4453,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -4729,7 +4939,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -5026,7 +5251,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -5319,7 +5559,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -5606,7 +5861,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -5985,7 +6255,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -6358,7 +6643,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -6609,7 +6909,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -6907,7 +7222,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -7179,7 +7509,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -7442,7 +7787,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -7693,7 +8053,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -8013,7 +8388,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -8352,7 +8742,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -8657,7 +9062,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -8912,7 +9332,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -9179,7 +9614,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -9457,7 +9907,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -9758,7 +10223,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -10027,7 +10507,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -10284,7 +10779,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -10536,7 +11046,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -10858,7 +11383,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -11272,7 +11812,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -11524,7 +12079,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -11775,7 +12345,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -12040,7 +12625,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -12329,7 +12929,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -12595,7 +13210,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -12849,7 +13479,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -13256,7 +13901,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -13510,7 +14170,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -13839,7 +14514,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -14296,7 +14986,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -14667,7 +15372,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -14929,7 +15649,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -15194,7 +15929,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -15532,7 +16282,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -15786,7 +16551,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -16131,7 +16911,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -16455,7 +17250,328 @@
 												"message": {
 													"type": "string"
 												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
 												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/core/access": {
+			"get": {
+				"operationId": "core.getAccess",
+				"summary": "What the signed-in member may do with each action (apply, suggest or not at all); `depends` answers can change with the input",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "What the signed-in member may do with each action (apply, suggest or not at all); `depends` answers can change with the input",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"actions": {
+											"type": "object",
+											"additionalProperties": {
+												"type": "object",
+												"properties": {
+													"outcome": {
+														"type": "string",
+														"enum": [
+															"apply",
+															"draft",
+															"refuse"
+														]
+													},
+													"reason": {
+														"type": "string",
+														"enum": [
+															"owner",
+															"except",
+															"settled",
+															"capability",
+															"approval",
+															"display",
+															"sign_in",
+															"ai",
+															"critical",
+															"area"
+														]
+													},
+													"capability": {
+														"type": "string"
+													},
+													"depends": {
+														"type": "boolean",
+														"enum": [
+															true
+														]
+													}
+												},
+												"required": [
+													"outcome"
+												]
+											}
+										}
+									},
+									"required": [
+										"actions"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -16717,7 +17833,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -16997,7 +18128,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -17301,7 +18447,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -17563,7 +18724,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -17846,7 +19022,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -18142,7 +19333,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -18403,7 +19609,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -18707,7 +19928,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -18991,7 +20227,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -19281,7 +20532,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -19535,7 +20801,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -20027,7 +21308,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -20278,7 +21574,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -20743,7 +22054,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -21195,7 +22521,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -21647,7 +22988,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -22099,7 +23455,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -22551,7 +23922,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -22851,7 +24237,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -23125,7 +24526,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -23384,7 +24800,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -23710,7 +25141,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -24039,7 +25485,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -24313,7 +25774,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -24559,7 +26035,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -24810,7 +26301,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -25059,7 +26565,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -25318,7 +26839,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -25577,7 +27113,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -25894,7 +27445,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -26203,7 +27769,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -26538,7 +28119,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -26845,7 +28441,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -27122,7 +28733,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -27396,7 +29022,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -27807,7 +29448,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -28178,7 +29834,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -28704,7 +30375,344 @@
 												"message": {
 													"type": "string"
 												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
 												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/{actionId}/check": {
+			"post": {
+				"operationId": "core.checkAction",
+				"summary": "What running an action with this input would do for you: apply, suggest or refuse",
+				"description": "Decided exactly as running it would be (its capability, its approval rule, whose thing it is), but nothing runs and nothing is recorded.",
+				"tags": [
+					"actions",
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 200
+						},
+						"required": true,
+						"name": "actionId",
+						"in": "path"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"input": {}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "The decision for this input",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"outcome": {
+											"type": "string",
+											"enum": [
+												"apply",
+												"draft",
+												"refuse"
+											]
+										},
+										"reason": {
+											"type": "string",
+											"enum": [
+												"owner",
+												"except",
+												"settled",
+												"capability",
+												"approval",
+												"display",
+												"sign_in",
+												"ai",
+												"critical",
+												"area"
+											]
+										},
+										"capability": {
+											"type": "string"
+										},
+										"depends": {
+											"type": "boolean",
+											"enum": [
+												true
+											]
+										}
+									},
+									"required": [
+										"outcome"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -29029,7 +31037,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -29403,7 +31426,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -29748,7 +31786,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -30123,7 +32176,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -30507,7 +32575,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -30866,7 +32949,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -31194,7 +33292,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -31550,7 +33663,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -31878,7 +34006,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -32219,7 +34362,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -32595,7 +34753,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -33025,7 +35198,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -33346,7 +35534,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -33671,7 +35874,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -34107,7 +36325,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -34428,7 +36661,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -34753,7 +37001,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -35074,7 +37337,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -35401,7 +37679,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -35737,7 +38030,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -36067,7 +38375,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -36405,7 +38728,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -36752,7 +39090,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -37080,7 +39433,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -37414,7 +39782,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -37757,7 +40140,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -38095,7 +40493,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -38430,7 +40843,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -38754,7 +41182,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -39097,7 +41540,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -39421,7 +41879,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -39795,7 +42268,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -40159,7 +42647,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -40492,7 +42995,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -40839,7 +43357,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -41163,7 +43696,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -41506,7 +44054,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -41851,7 +44414,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -42179,7 +44757,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -42492,7 +45085,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -42808,7 +45416,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",
@@ -43137,7 +45760,22 @@
 												"message": {
 													"type": "string"
 												},
-												"details": {}
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
 											},
 											"required": [
 												"code",

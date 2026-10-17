@@ -8,6 +8,7 @@ import {
 	ANONYMOUS,
 	CORE_CAPABILITIES,
 	type CoreTables,
+	DecisionSchema,
 	displayActor,
 	IDEMPOTENCY_KEY,
 	type Kernel,
@@ -44,6 +45,7 @@ import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
 import { mountExtensionRoutes } from './extensions.ts';
 import { mountPushRoutes } from './push.ts';
+import { createRateLimiter } from './rate-limit.ts';
 import { mountTelegramRoutes } from './telegram.ts';
 import {
 	bodyLimits,
@@ -164,7 +166,10 @@ function requireActor(c: Context<AppEnv>, access: AccessControl, requires: Route
 	if (requires === 'signedIn' && actor.kind === 'display')
 		throw new FamosError('unauthenticated', 'Sign in required');
 	if (requires !== 'signedIn' && !access.can(actor, requires))
-		throw new FamosError('forbidden', 'Not allowed');
+		throw new FamosError('forbidden', 'Your role does not allow this', {
+			reason: actor.kind === 'display' ? 'display' : 'capability',
+			capability: requires,
+		});
 	return actor;
 }
 
@@ -487,6 +492,44 @@ function mountAction(app: OpenAPIHono<AppEnv>, deps: HttpAppDeps, def: AnyAction
 	}) as never);
 }
 
+/**
+ * A form asks this while it is open (when a field that decides it changes), so it is cheap and
+ * frequent; the limit only keeps a runaway page from turning it into a stream of queries.
+ */
+const CHECKS_PER_MINUTE = 240;
+
+/** What running an action with an input would do for the caller, without running it. */
+function mountActionCheck(app: OpenAPIHono<AppEnv>, deps: HttpAppDeps) {
+	const limit = createRateLimiter({ max: CHECKS_PER_MINUTE, windowMs: 60_000 });
+	const route = createRoute({
+		method: 'post',
+		path: '/api/v1/actions/{actionId}/check',
+		operationId: 'core.checkAction',
+		summary: 'What running an action with this input would do for you: apply, suggest or refuse',
+		description:
+			'Decided exactly as running it would be (its capability, its approval rule, whose thing it is), but nothing runs and nothing is recorded.',
+		tags: ['actions', 'core'],
+		request: {
+			params: z.object({ actionId: z.string().min(1).max(200) }),
+			body: { ...json(z.object({ input: z.unknown() })), required: true },
+		},
+		responses: {
+			200: { description: 'The decision for this input', ...json(DecisionSchema) },
+			...errorResponses,
+		},
+		security: [{ session: [] }],
+	});
+	// biome-ignore lint/suspicious/noExplicitAny: the body's input is checked by the action's own schema.
+	app.openapi(route, (async (c: any) => {
+		const actor = requireActor(c, deps.kernel.access, 'signedIn');
+		const who = actor.kind === 'member' ? actor.memberId : actor.kind;
+		if (!limit.hit(who)) throw new FamosError('limit_reached', 'Too many checks; try again soon');
+		const { actionId } = c.req.valid('param');
+		const { input } = c.req.valid('json');
+		return c.json(await deps.kernel.runner.check(actionId, input, actor), 200);
+	}) as never);
+}
+
 export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	const app = new OpenAPIHono<AppEnv>({
 		defaultHook: (result, c) => {
@@ -574,6 +617,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	});
 	for (const { extension, route } of deps.kernel.registry.routes)
 		mountRoute(app, deps, extension, route);
+	mountActionCheck(app, deps);
 	for (const action of deps.kernel.registry.actions.values()) mountAction(app, deps, action);
 
 	app.openAPIRegistry.registerComponent('securitySchemes', 'session', {

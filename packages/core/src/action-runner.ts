@@ -24,8 +24,7 @@ import {
 } from '@famos/sdk';
 import { todayIn } from '@famos/time';
 import { z } from 'zod';
-import { type Access, ANONYMOUS } from './access.ts';
-import { mayUseAsAi } from './ai-tools.ts';
+import type { Access } from './access.ts';
 import {
 	AUTO_APPROVE_JOB,
 	DEFAULT_DRAFT_NOTIFY_DELAY_MS,
@@ -36,6 +35,15 @@ import {
 	waitingNotice,
 } from './auto-approval.ts';
 import { draftCreated, draftUpdated, notificationRead } from './core-events.ts';
+import {
+	admission,
+	type DecideEnv,
+	type DecideFacts,
+	type Decision,
+	decide,
+	needsOwner,
+	refusalError,
+} from './decide.ts';
 import { draftDateOf, hasPassed, WAITING_STATUSES } from './draft-expiry.ts';
 import { DECIDED_KIND, settleWaitingNotices, waitingDedupeKey } from './draft-notices.ts';
 import type { InProcessEventBus } from './event-bus.ts';
@@ -126,6 +134,13 @@ export interface ActionRunner {
 		options?: { auto?: boolean },
 	): Promise<DraftRow>;
 	rejectDraft(draftId: string, approver: Actor): Promise<DraftRow>;
+	/**
+	 * What running an action with this input would do for this actor (apply, draft or refuse),
+	 * decided exactly as `invoke` decides it, without running anything or recording it.
+	 */
+	check(actionId: string, input: unknown, actor: Actor): Promise<Decision>;
+	/** The decision for every data-changing action that is on, for any input (see `decide`). */
+	decisions(actor: Actor): Record<string, Decision>;
 	/** Takes back an applied draft with its action's inverse, in one transaction. */
 	undoDraft(draftId: string, approver: Actor): Promise<DraftRow>;
 	/**
@@ -217,69 +232,57 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		registry.capabilities.filter((c) => c.critical === true).map((c) => c.id),
 	);
 
-	/** Who may invoke at all: `requires`. AI and system actors are judged by policy. */
+	const env: DecideEnv = {
+		access,
+		critical: criticalCapabilities,
+		...(deps.aiAreaAccess && { aiArea: deps.aiAreaAccess }),
+	};
+
+	/** Who may invoke at all (see `admission`); approval is decided separately. */
 	function authorize(def: AnyActionDefinition, actor: Actor): void {
-		// A display only looks: no action, not even a read-only one.
-		if (actor.kind === 'display') {
-			throw new FamosError('forbidden', `Displays cannot run ${def.id}`);
-		}
-		if (actor.kind === 'member' && def.requires && !can(actor, def.requires)) {
-			throw new FamosError('forbidden', `Not allowed to run ${def.id}`);
-		}
-		// The AI is checked like a member: it may read what its capabilities and the
-		// area switches allow, so a locked area refuses it. Its data-changing proposals are not
-		// judged here (they only become drafts, which a person approves; `requires` is checked
-		// against the approver).
-		if (actor.kind === 'ai' && def.readOnly && def.requires && !can(actor, def.requires)) {
-			throw new FamosError('forbidden', `The AI may not run ${def.id}`);
-		}
-		// Acting for a member, it never exceeds them: a change must be one that member
-		// could make or propose, a read one their capabilities allow.
-		if (actor.kind === 'ai' && !mayUseAsAi(access, def, actor)) {
-			throw new FamosError('forbidden', `The AI may not run ${def.id} for this member`);
-		}
-		// What only an admin may do (a critical capability: installing extensions, managing
-		// members) is a person's own act: the AI never runs it and never proposes it, not even for
-		// an admin, so no draft of it can reach an approver.
-		if (actor.kind === 'ai' && def.requires && criticalCapabilities.has(def.requires)) {
-			throw new FamosError('forbidden', `The AI may not run ${def.id}`);
-		}
-		// A locked area is closed to the AI whatever its actions declare: no read (even without
-		// `requires`) and no draft. Protection does not depend on each extension's discipline.
-		if (actor.kind === 'ai' && deps.aiAreaAccess?.(ownerOf(def.id)) === 'off') {
-			throw new FamosError('forbidden', `The AI may not use ${ownerOf(def.id)}`);
-		}
-		// An unauthenticated caller of a public route holds no capability: it can never run an
-		// action that requires one (or change data at all). Routes that need bookkeeping use their
-		// own named system actor.
-		if (actor.kind === 'system' && actor.source === ANONYMOUS && (def.requires || !def.readOnly)) {
-			throw new FamosError('forbidden', `Sign in to run ${def.id}`);
-		}
+		const refusal = admission(def, actor, env);
+		if (refusal) throw refusalError(refusal);
 	}
 
-	/** Whether this call becomes a draft. AI is checked first: its changes are always drafts. */
-	async function needsApproval(
+	/**
+	 * The decision for one parsed input: the facts it needs are read here (the owner only when the
+	 * decision turns on it, since that costs a query).
+	 */
+	async function decideInput(
 		def: AnyActionDefinition,
 		actor: Actor,
 		input: unknown,
-	): Promise<boolean> {
-		if (def.readOnly) return false;
-		if (actor.kind === 'ai') return true;
+		settled: string | null,
+	): Promise<Decision> {
+		const facts: DecideFacts = { input, settled };
 		const policy = def.approval;
-		if (policy === 'never' || policy === 'ai') return false;
-		if (policy === 'always') return true;
-		if (typeof policy === 'object') {
-			if (actor.kind !== 'member') return false;
-			if (can(actor, policy.unless) || policy.except?.(actor, input) === true) return false;
-			// Their own thing: what they could only have proposed, they may do directly. Owning a
-			// thing never lets anyone do more than propose would have.
-			if (policy.owner && can(actor, 'core.drafts.propose')) {
-				const owner = await policy.owner(readContext(def), input);
-				if (owner !== null && owner === actor.memberId) return false;
-			}
-			return true;
+		if (typeof policy === 'object' && policy.owner && needsOwner(def, actor, env, facts))
+			facts.owner = await policy.owner(readContext(def), input);
+		return decide(def, actor, env, facts);
+	}
+
+	/** Why an AI's proposal would change nothing (the action's `refuseProposal`), or null. */
+	async function settledReason(def: AnyActionDefinition, actor: Actor, input: unknown) {
+		if (actor.kind !== 'ai' || !def.refuseProposal) return null;
+		return def.refuseProposal(readContext(def), input);
+	}
+
+	function decisionsFor(actor: Actor): Record<string, Decision> {
+		const out: Record<string, Decision> = {};
+		for (const def of registry.actions.values()) {
+			if (def.readOnly || !deps.features.isOn(ownerOf(def.id))) continue;
+			out[def.id] = decide(def, actor, env);
 		}
-		return policy(actor, input, (capability) => can(actor, capability));
+		return out;
+	}
+
+	async function check(actionId: string, rawInput: unknown, actor: Actor): Promise<Decision> {
+		const def = getAction(actionId);
+		const before = decide(def, actor, env);
+		if (before.outcome === 'refuse' && !before.depends) return before;
+		const parsed = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
+		const input = def.resolveNames ? await def.resolveNames(readContext(def), parsed) : parsed;
+		return decideInput(def, actor, input, await settledReason(def, actor, input));
 	}
 	const coreDb = () => deps.db.withTables<CoreTables>();
 
@@ -494,10 +497,23 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	): Promise<ActionResult<O>> {
 		const def = getAction(actionId);
 		assertCallable(options.caller ?? 'core', def, actor);
-		authorize(def, actor);
+		// What is refused whatever the input is refused before the input is read.
+		const before = decide(def, actor, env);
+		if (before.outcome === 'refuse' && !before.depends) throw refusalError(before);
 		const parsed = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
 		const input = def.resolveNames ? await def.resolveNames(readContext(def), parsed) : parsed;
 		const checkedTitle = await checkTarget(def, input, actor);
+		const settled = await settledReason(def, actor, input);
+		const decision = await decideInput(def, actor, input, settled);
+		if (decision.outcome === 'refuse') {
+			if (decision.reason === 'settled')
+				throw new FamosError(
+					'conflict',
+					`${settled}${CLOSED_MATTER}`,
+					refusal('settled', checkedTitle),
+				);
+			throw refusalError(decision);
+		}
 		/** Inside the transaction: a concurrent request may have stored the key meanwhile. */
 		const guard = async (uow: UnitOfWork) => {
 			if (!idem) return;
@@ -507,7 +523,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const remember = (uow: UnitOfWork, result: ActionResult<unknown>) =>
 			idem ? storeResult(uow.db, idem, actionId, clock.now(), result) : Promise.resolve();
 
-		if (!(await needsApproval(def, actor, input))) {
+		if (decision.outcome === 'apply') {
 			// Slow or networked work (a model call) happens before the transaction opens.
 			const prepared = def.prepare ? await def.prepare(input, actor) : undefined;
 			const output = await unitOfWork(actor, async (uow, view) => {
@@ -518,11 +534,6 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			});
 			return { status: 'applied', output: output as O };
 		}
-		// Members without the capability may still propose, if their role allows proposing.
-		if (actor.kind === 'member' && !can(actor, 'core.drafts.propose')) {
-			throw new FamosError('forbidden', `Not allowed to run ${def.id}`);
-		}
-
 		const meta = options.draft ?? {};
 		// Every draft carries the real name of what it changes, so cards and notices show what
 		// will happen whoever proposed it (a screen sends only the id).
@@ -734,13 +745,13 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (draft.for_member !== null) {
 			assertAddressee(approver, draft);
 		} else if (approver.kind !== 'member' || !can(approver, 'core.drafts.approve')) {
-			throw new FamosError('forbidden', 'Not allowed to decide drafts');
+			throw refusalError({ reason: 'capability', capability: 'core.drafts.approve' });
 		}
 		if (approver.kind !== 'member')
-			throw new FamosError('forbidden', 'Not allowed to decide drafts');
+			throw refusalError({ reason: 'capability', capability: 'core.drafts.approve' });
 		authorize(def, approver);
 		if (typeof def.approval === 'object' && !can(approver, def.approval.unless)) {
-			throw new FamosError('forbidden', `Not allowed to approve ${def.id}`);
+			throw refusalError({ reason: 'capability', capability: def.approval.unless });
 		}
 		return approver.memberId;
 	}
@@ -986,9 +997,6 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					refusal('other_target', said),
 				);
 		}
-		const reason = def.refuseProposal ? await def.refuseProposal(ctx, input) : null;
-		if (reason !== null)
-			throw new FamosError('conflict', `${reason}${CLOSED_MATTER}`, refusal('settled', title));
 		return title;
 	}
 
@@ -1233,7 +1241,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			);
 		const def = getAction(draft.action_id);
 		if (!can(actor, 'core.drafts.propose') && !mayDecide(draft, actor))
-			throw new FamosError('forbidden', `Not allowed to suggest ${def.id}`);
+			throw refusalError({ reason: 'approval', capability: 'core.drafts.propose' });
 		const dedupeKey = againKey(draft.id);
 		const existing = await coreDb()
 			.selectFrom('core_drafts')
@@ -1343,6 +1351,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	return {
 		invoke,
+		check,
+		decisions: decisionsFor,
 		approveDraft,
 		rejectDraft,
 		undoDraft,

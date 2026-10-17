@@ -39,6 +39,7 @@ import {
 	memberChanged,
 	roleChanged,
 } from './core-events.ts';
+import { DecisionSchema } from './decide.ts';
 import type { DeviceService } from './devices.ts';
 import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
 import type { createExtensionInstall } from './extension-install.ts';
@@ -774,7 +775,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		}),
 		async handle(ctx, { actor }) {
 			// A display may see who lives here (with "show names"), not how roles are set up.
-			if (actor.kind === 'display') throw new FamosError('forbidden', 'Not allowed');
+			if (actor.kind === 'display')
+				throw new FamosError('forbidden', 'A display only shows', { reason: 'display' });
 			const access = deps.access();
 			const counts = await members(ctx.db)
 				.selectFrom('core_members')
@@ -932,6 +934,24 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				disabledExtensions: [...deps.features().disabled()],
 				nextUp: await readNextUp(ctx.db, row.id),
 			};
+		},
+	});
+
+	/**
+	 * For every data-changing action that is on, what running it would do for this sign-in, for
+	 * any input. An answer marked `depends` can change with the input (their own thing, an
+	 * exception of the action): `POST /api/v1/actions/{actionId}/check` gives the exact one.
+	 */
+	const myAccess = defineRoute({
+		method: 'get',
+		path: '/access',
+		operationId: 'core.getAccess',
+		summary:
+			'What the signed-in member may do with each action (apply, suggest or not at all); `depends` answers can change with the input',
+		requires: 'signedIn',
+		response: z.object({ actions: z.record(z.string(), DecisionSchema) }),
+		async handle(_ctx, { actor }) {
+			return { actions: deps.runner().decisions(actor) };
 		},
 	});
 
@@ -1616,6 +1636,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			setupStatus,
 			setup,
 			me,
+			myAccess,
 			listFeatures,
 			listAiAreas,
 			listMembers,

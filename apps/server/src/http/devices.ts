@@ -291,7 +291,10 @@ function mountDisplayRoutes(
 		if (!actor || actor.kind === 'display')
 			throw new FamosError('unauthenticated', 'Sign in required');
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
-			throw new FamosError('forbidden', 'Not allowed');
+			throw new FamosError('forbidden', 'Your role does not allow this', {
+				reason: 'capability',
+				capability: CORE_CAPABILITIES.devicesManage.id,
+			});
 		return c.json(
 			devices.grantableCapabilities().map((cap) => ({
 				id: cap.id,

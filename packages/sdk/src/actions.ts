@@ -28,8 +28,9 @@ export type ApprovalPolicy<I> =
 			/**
 			 * The member whose own thing the input changes (who added the shopping item, who made the
 			 * task for themselves), or null when it is not one member's or is gone. That member acts
-			 * directly when they could have proposed the change: taking back or changing what you
-			 * added yourself needs nobody's approval. Read before the change, outside its
+			 * directly when they could have proposed the change, or when their role holds the
+			 * action's `requires`: taking back or changing what you added yourself needs nobody's
+			 * approval. Read before the change, outside its
 			 * transaction, so it reads only what does not change under it (who created a row).
 			 * Never asked for the AI, whose changes are always drafts.
 			 */

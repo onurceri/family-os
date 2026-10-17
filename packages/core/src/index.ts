@@ -5,6 +5,13 @@ export * from './api-tokens.ts';
 export * from './core-capabilities.ts';
 export * from './core-events.ts';
 export * from './core-extension.ts';
+export {
+	ACCESS_REFUSALS,
+	type AccessRefusal,
+	accessRefusalOf,
+	type Decision,
+	DecisionSchema,
+} from './decide.ts';
 export * from './devices.ts';
 export * from './event-bus.ts';
 export * from './extension-find.ts';
