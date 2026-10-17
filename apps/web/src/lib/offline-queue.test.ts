@@ -7,6 +7,7 @@ import {
 	type QueueStore,
 	type SendResult,
 } from './offline-queue.js';
+import { refusalOfError } from './refusal.js';
 
 interface Sent {
 	actionId: string;
@@ -104,6 +105,16 @@ describe('running actions', () => {
 			status: 500,
 		});
 		expect(queue.changes).toHaveLength(0);
+	});
+
+	it('keeps why a change was refused, so the app can say it in words', async () => {
+		answer = () => ({
+			status: 403,
+			body: { error: { code: 'forbidden', message: 'Not allowed', reason: 'approval' } },
+		});
+		const error = await queue.run('lists.completeTask', {}).catch((e) => e);
+		expect(error).toMatchObject({ status: 403, reason: 'approval' });
+		expect(refusalOfError(error)).toEqual({ reason: 'approval' });
 	});
 
 	it('refuses unsafe action ids', async () => {

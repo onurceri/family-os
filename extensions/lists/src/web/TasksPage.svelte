@@ -209,7 +209,7 @@
 			app.accessFor('lists.deleteTask', { id: editingId }) !== 'no',
 	);
 	let showErrors = $state(false);
-	let saveError = $state(false);
+	let saveError = $state<string | null>(null);
 	let busy = $state(false);
 	let snapshot = '';
 	const errors = $derived(form && showErrors ? validateTask(form) : {});
@@ -219,7 +219,8 @@
 		form = value;
 		snapshot = JSON.stringify(value);
 		editingId = id;
-		showErrors = saveError = false;
+		showErrors = false;
+		saveError = null;
 	}
 
 	function openNew(text: string) {
@@ -249,15 +250,15 @@
 			return;
 		}
 		busy = true;
-		saveError = false;
+		saveError = null;
 		try {
 			report(
 				await saveTask(taskInputFrom(form), editingId === 'new' ? undefined : editingId),
 				t('saved'),
 			);
 			close();
-		} catch {
-			saveError = true;
+		} catch (error) {
+			saveError = app.failureText(error, t('error'));
 		} finally {
 			busy = false;
 		}
@@ -428,7 +429,7 @@
 		<form bind:this={formEl} onsubmit={submit} class="grid gap-5" novalidate>
 			<TaskForm bind:value={form} {errors} />
 			{#if saveError}<p class="text-attention text-sm font-semibold" role="alert">
-					{t('error')}
+					{saveError}
 				</p>{/if}
 			<button type="submit" class="sr-only" tabindex="-1" aria-hidden="true">{t('save')}</button>
 		</form>

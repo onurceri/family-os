@@ -179,7 +179,7 @@
 	const arm = () => (baseline = JSON.stringify(form));
 	let showErrors = $state(false);
 	let busy = $state(false);
-	let saveError = $state(false);
+	let saveError = $state<string | null>(null);
 	const errors = $derived(form && showErrors ? validate(form) : {});
 
 	function openNew() {
@@ -189,7 +189,8 @@
 		form = emptyForm(day, zoned(Date.now(), tz));
 		arm();
 		editing = { mode: 'new' };
-		showErrors = saveError = false;
+		showErrors = false;
+		saveError = null;
 	}
 
 	async function openEdit(occurrence: Occurrence) {
@@ -208,7 +209,8 @@
 			form = formFrom(detail);
 			arm();
 			editing = { mode: 'edit', occurrence };
-			showErrors = saveError = false;
+			showErrors = false;
+			saveError = null;
 		} catch {
 			app.toast(t('error'));
 		}
@@ -241,7 +243,8 @@
 		arm();
 		editing = { mode: 'edit', occurrence: detail.occurrence };
 		detail = null;
-		showErrors = saveError = false;
+		showErrors = false;
+		saveError = null;
 	}
 
 	/** Wide board: empty space (or "+") in a day adds an event on that day. */
@@ -256,7 +259,8 @@
 		}
 		arm();
 		editing = { mode: 'new' };
-		showErrors = saveError = false;
+		showErrors = false;
+		saveError = null;
 	}
 
 	function shift(direction: -1 | 1) {
@@ -309,7 +313,7 @@
 			return;
 		}
 		busy = true;
-		saveError = false;
+		saveError = null;
 		try {
 			const id = editing.mode === 'edit' ? editing.occurrence.eventId : undefined;
 			const date = form.date;
@@ -318,8 +322,8 @@
 				'saved',
 			);
 			selected = date;
-		} catch {
-			saveError = true;
+		} catch (error) {
+			saveError = app.failureText(error, t('error'));
 		} finally {
 			busy = false;
 		}
@@ -390,7 +394,7 @@
 				<p class="text-ink-soft text-sm">{t('edit_series_hint')}</p>
 			{/if}
 			{#if saveError}<p class="text-attention text-sm font-semibold" role="alert">
-					{t('error')}
+					{saveError}
 				</p>{/if}
 		</form>
 	{/if}

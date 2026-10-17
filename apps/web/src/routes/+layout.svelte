@@ -41,6 +41,7 @@
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
+	import { refusalKey, refusalOfError } from '#lib/refusal.js';
 	import { shareFor } from '#lib/contributions.js';
 	import {
 		contributions,
@@ -66,8 +67,12 @@
 	netActivity.install();
 	// A refused change means the role changed since the controls were drawn: read it again.
 	let lastRefused = 0;
-	netActivity.onForbidden = () => {
-		if (Date.now() - lastRefused < 3000 || session.status !== 'ready') return;
+	netActivity.onForbidden = (reason) => {
+		// Said once, in words, whoever asked: a page, an extension or the offline queue.
+		// Not before sign-in: a wrong code there is the form's to explain.
+		if (session.status !== 'ready') return;
+		toasts.refuse(tDynamic(`app:${refusalKey(reason)}`));
+		if (Date.now() - lastRefused < 3000) return;
 		lastRefused = Date.now();
 		void session.refresh();
 	};
@@ -163,6 +168,10 @@
 				disabledExtensions: session.disabledExtensions,
 			}),
 		toast: (message, action) => toasts.show(message, action),
+		failureText: (error, fallback) => {
+			const refusal = refusalOfError(error);
+			return refusal ? tDynamic(`app:${refusalKey(refusal.reason)}`) : fallback;
+		},
 		sentForApproval: () => {
 			const place = shareFor(contributions.share, {
 				can: (capability) => session.can(capability),

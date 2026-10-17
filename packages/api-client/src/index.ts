@@ -18,6 +18,8 @@ export interface ApiError {
 	code: string;
 	message: string;
 	details?: unknown;
+	/** Why a 403 refused (`capability`, `approval`, `display`, `sign_in` …), when the server says. */
+	reason?: string;
 }
 
 export function createApiClient<Own extends object = NoPaths>(
@@ -36,13 +38,14 @@ export function createApiClient<Own extends object = NoPaths>(
 export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
 	if (result.error !== undefined || result.data === undefined) {
 		const body = result.error as
-			| { error?: { code?: string; message?: string; details?: unknown } }
+			| { error?: { code?: string; message?: string; details?: unknown; reason?: string } }
 			| undefined;
 		throw {
 			status: result.response.status,
 			code: body?.error?.code ?? 'unknown',
 			message: body?.error?.message ?? result.response.statusText,
 			details: body?.error?.details,
+			...(typeof body?.error?.reason === 'string' && { reason: body.error.reason }),
 		} satisfies ApiError;
 	}
 	return result.data;

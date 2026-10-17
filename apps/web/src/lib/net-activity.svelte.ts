@@ -1,5 +1,7 @@
 import { beginWork, forgetSharedReads, pendingWork } from '@famos/ui/famos';
 
+import { reasonOfBody } from './refusal.js';
+
 /**
  * Whether a page is still opening. The page gate (`PageGate.svelte`) keeps a page invisible until
  * its first data has arrived, which is when this count settles at zero. It counts the reads (GET
@@ -15,7 +17,7 @@ class NetActivity {
 	}
 	#installed = false;
 	/** Called when a change was refused (403), so the app can read what the person may do again. */
-	onForbidden: (() => void) | undefined;
+	onForbidden: ((reason: string | undefined) => void) | undefined;
 
 	/** Wraps `fetch` once. Writes (actions) and other origins are not counted. */
 	install(): void {
@@ -29,8 +31,14 @@ class NetActivity {
 			// Refused: the role may have changed since the controls were drawn.
 			if (this.#writes(input, init)) {
 				void request.then(
-					(response) => {
-						if (response.status === 403) this.onForbidden?.();
+					async (response) => {
+						if (response.status !== 403) return;
+						// The reason is in the body; read a copy so the caller's own read is untouched.
+						const body: unknown = await response
+							.clone()
+							.json()
+							.catch(() => null);
+						this.onForbidden?.(reasonOfBody(body));
 					},
 					() => {},
 				);

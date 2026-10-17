@@ -39,6 +39,8 @@ A button is there only when you may use it. A role that can look but not change 
 
 Menus show only the pages your role may open. If you follow a link or a bookmark to one that is not for you, the page says so ("This page is for people who may use Members") and offers the way back to Today.
 
+If something is refused anyway (your role changed while the page was open), a notice says why in plain words: "Your role does not allow this.", "This needs someone's approval, and your role cannot send suggestions." or, on a display, that a display only shows things.
+
 Any role can sign in with an email and password, a PIN, or both. Someone who signs in with a PIN can do everything their role allows except what only admins may do: an admin signed in with a PIN cannot manage people, roles, devices, features, AI or settings. For that, they sign in with their email and password.
 
 **Settings → Family → Roles** (or **What can each role do?** on the members page) shows every permission and which role has it. A lock marks what only admins can have.

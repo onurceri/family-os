@@ -51,6 +51,12 @@ export interface AppContext {
 	/** Show a notice with an optional action (e.g. Undo). */
 	toast(message: string, action?: { label: string; run: () => void }): void;
 	/**
+	 * The words for an error a `catch` holds: when the server refused the change (403), why in the
+	 * reader's language (the app also says it in a notice at once); otherwise `fallback`. For a form
+	 * that shows its failure inline instead of a notice. Never shows an action or capability id.
+	 */
+	failureText(error: unknown, fallback: string): string;
+	/**
 	 * Says a change was sent for approval, with a way to where it waits (Quick add). For every
 	 * action whose result is `drafted`.
 	 */

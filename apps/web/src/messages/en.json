@@ -1305,5 +1305,12 @@
 	"memory_from_assistant": "Suggested by the assistant",
 	"memory_kind": "Memory",
 	"memory_remember_title": "Remember: {{text}}",
-	"memory_remember_approve": "Remember this"
+	"memory_remember_approve": "Remember this",
+	"refused_capability": "Your role does not allow this.",
+	"refused_approval": "This needs someone's approval, and your role cannot send suggestions.",
+	"refused_display": "A display only shows things; it cannot change them.",
+	"refused_sign_in": "Sign in first.",
+	"refused_ai": "The assistant cannot do this for you.",
+	"refused_critical": "Only a person can do this, not the assistant.",
+	"refused_area": "The assistant is kept out of this part of the app."
 }

@@ -1,3 +1,4 @@
+import { RefusalWindow } from './refusal.js';
 import { ACTION_MS, HoldableTimer, PLAIN_MS } from './toast-timer.js';
 
 /**
@@ -17,7 +18,17 @@ class Toasts {
 	#timer = new HoldableTimer();
 	#seq = 0;
 
+	/** The last refusal said, so a page's generic failure notice does not cover it. */
+	readonly refusals = new RefusalWindow();
+
+	/** A refused change, in words: it stays the notice while the page reports its own failure. */
+	refuse(message: string) {
+		this.show(message);
+		this.refusals.said(message);
+	}
+
 	show(message: string, action?: { label: string; run: () => void }, durationMs?: number) {
+		if (!action && this.refusals.quiet() && message !== this.current?.message) return;
 		const id = ++this.#seq;
 		this.current = {
 			id,

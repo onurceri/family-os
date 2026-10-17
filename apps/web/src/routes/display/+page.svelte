@@ -81,6 +81,7 @@
 		isAppPath: () => false,
 		share: () => undefined,
 		toast: () => {},
+		failureText: (_error, fallback) => fallback,
 		sentForApproval: () => {},
 		awaitsApproval: () => false,
 		awaitedChange: () => undefined,

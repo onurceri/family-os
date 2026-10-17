@@ -65,12 +65,15 @@ export class ActionError extends Error {
 	readonly status: number;
 	readonly code: string;
 	readonly details: unknown;
-	constructor(status: number, code: string, message: string, details?: unknown) {
+	/** Why a 403 refused, when the server says. */
+	readonly reason: string | undefined;
+	constructor(status: number, code: string, message: string, details?: unknown, reason?: string) {
 		super(message);
 		this.name = 'ActionError';
 		this.status = status;
 		this.code = code;
 		this.details = details;
+		this.reason = reason;
 	}
 }
 
@@ -85,14 +88,22 @@ export const backoffMs = (attempts: number) =>
 const isFinalRefusal = (status: number) =>
 	status >= 400 && status < 500 && status !== 401 && status !== 408 && status !== 429;
 
-function errorOf(result: SendResult): { code: string; message: string; details: unknown } {
+function errorOf(result: SendResult): {
+	code: string;
+	message: string;
+	details: unknown;
+	reason: string | undefined;
+} {
 	const error = (
-		result.body as { error?: { code?: unknown; message?: unknown; details?: unknown } }
+		result.body as {
+			error?: { code?: unknown; message?: unknown; details?: unknown; reason?: unknown };
+		}
 	)?.error;
 	return {
 		code: typeof error?.code === 'string' ? error.code : 'unknown',
 		message: typeof error?.message === 'string' ? error.message : `Error ${result.status}`,
 		details: error?.details,
+		reason: typeof error?.reason === 'string' ? error.reason : undefined,
 	};
 }
 
@@ -181,8 +192,8 @@ export class OfflineQueue {
 		if (result.status >= 200 && result.status < 300) {
 			return { queued: false, ...(result.body as object) } as RunActionResult<O>;
 		}
-		const { code, message, details } = errorOf(result);
-		throw new ActionError(result.status, code, message, details);
+		const { code, message, details, reason } = errorOf(result);
+		throw new ActionError(result.status, code, message, details, reason);
 	}
 
 	/** Sends waiting changes in order. `force` ignores the backoff (we are online again). */

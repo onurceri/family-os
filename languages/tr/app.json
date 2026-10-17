@@ -1305,5 +1305,12 @@
 	"memory_from_assistant": "Asistan önerdi",
 	"memory_kind": "Not",
 	"memory_remember_title": "Hatırla: {{text}}",
-	"memory_remember_approve": "Bunu hatırla"
+	"memory_remember_approve": "Bunu hatırla",
+	"refused_capability": "Rolün buna izin vermiyor.",
+	"refused_approval": "Bunun için birinin onayı gerekiyor ve rolün öneri gönderemiyor.",
+	"refused_display": "Ekran yalnızca gösterir; hiçbir şeyi değiştiremez.",
+	"refused_sign_in": "Önce giriş yap.",
+	"refused_ai": "Asistan bunu senin için yapamaz.",
+	"refused_critical": "Bunu yalnızca bir kişi yapabilir, asistan yapamaz.",
+	"refused_area": "Asistan uygulamanın bu bölümüne girmez."
 }
