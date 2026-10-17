@@ -46,7 +46,9 @@ FamilyOS does not replace Home Assistant. It reads what you chose to show, and i
    - **Address**: where Home Assistant is, for example `http://192.168.1.20:8123` or `https://ha.example.net`. Use the **IP address**: names ending in `.local` do not work from FamilyOS. Leave off a trailing `/` or `/api`; FamilyOS removes them.
    - **Token**: the one you just copied.
 
-FamilyOS then checks the connection and the page shows the address, your Home Assistant's name and version, and the result. The token is kept sealed and is never shown again, so **Change** asks for it again. **Disconnect** (in the **⋯** menu) makes FamilyOS forget the address and the token; nothing changes in Home Assistant. If a token was ever exposed, delete it in Home Assistant too.
+Press **Test connection** first. FamilyOS tries the address and the token without saving anything and tells you at once: "Connected to Home, version 2026.10.2", or what is wrong and what to do about it (a name ending in `.local` gets the reminder to use the IP address). After a good test, **Save** is the button. After a failed one you can fix the details and **Test again**, or press **Save anyway**, for example when Home Assistant is switched off for now. Changing the address or the token clears the result, so the test always belongs to what is in the form.
+
+FamilyOS then checks the connection again and the page shows the address, your Home Assistant's name and version, and the result. The token is kept sealed and is never shown again, so **Change** asks for it again. **Disconnect** (in the **⋯** menu) makes FamilyOS forget the address and the token; nothing changes in Home Assistant. If a token was ever exposed, delete it in Home Assistant too.
 
 What the result means:
 
@@ -71,7 +73,7 @@ You can show sensors, doors and windows, lights, switches, locks, covers, thermo
 
 Everyone who may see Home Assistant values finds them on Today, in a small section that can be hidden in **What Today shows**. A family display shows them too, when you have allowed it to see Home Assistant values in **Settings → Devices**. Values are read live and are about a minute old at most. When Home Assistant cannot be reached, nothing is shown rather than an old value, and Today says nothing about it.
 
-Numbers keep the unit Home Assistant uses and follow your region's format. Doors, windows and covers read **Open** or **Closed**, locks **Locked** or **Unlocked**, motion **Detected** or **Clear**, smoke or a problem **Alert** or **OK**, lights and switches **On** or **Off**, and a thermostat its mode and the current temperature. Anything else is shown the way Home Assistant words it. A thing with no value reads **Not available**.
+Numbers keep the unit Home Assistant uses and follow your region's format. Doors, windows and covers read **Open** or **Closed**, locks **Locked** or **Unlocked**, motion **Detected** or **Clear**, smoke or a problem **Alert** or **OK**, lights and switches **On** or **Off**, and a thermostat its mode and the current temperature. Anything else is shown the way Home Assistant words it. A scene or a button reads **Last run 22:10**, with the date when it was another day, and **Never run** until it has been used. A thing with no value reads **Not available**.
 
 ## Switch things from FamilyOS
 
@@ -79,7 +81,7 @@ Lights, switches, fans, helpers that are on or off (`input_boolean`), covers (bl
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
 2. Turn on **Can be switched from FamilyOS**. It starts off for everything.
-3. Leave **Ask before switching** on for anything that matters, such as a lock or a garage door: FamilyOS then asks first, naming the thing and what will happen ("Unlock Front door?"). Turn it off for a light you switch every evening. It starts on.
+3. Decide whether FamilyOS should ask first. **Ask before switching** appears right under the first switch and starts **off** for every item: the family decides, FamilyOS does not guess from the kind of thing. Turn it on for anything that matters, such as a lock or a garage door: FamilyOS then asks first, naming the thing and what will happen ("Unlock Front door?"). Things that were already set up keep the choice they had.
 4. Press **Save**.
 
 On Today, and on the same settings page, the row then has a switch (lights, switches, fans), **Open** and **Close** (covers, and **Stop** while one moves), **Lock** or **Unlock** (locks) or **Run** (scenes and scripts). The value beside it says **Switching…** until Home Assistant shows the new state, usually within seconds.
@@ -95,12 +97,12 @@ On Today, and on the same settings page, the row then has a switch (lights, swit
 Home Assistant knows where the people of the house are, from their phones (its app) or from the router. FamilyOS can show beside each name on Today whether they are **Home**, **Away**, or **At School**, but only what each person chooses to show about themselves. Nobody can choose it for someone else, an admin included.
 
 1. **An admin links people.** In **Settings → Family → Home Assistant**, the **People** section lists the family. Tap a member and choose who they are in Home Assistant (the people Home Assistant has under its **Settings → People**), then **Save**. **Unlink** in the same panel takes the link away. Linking shows nothing yet: each row says what that person shares (**Shares nothing yet** at first), and only they can change it.
-2. **Each person chooses.** Under **Settings → You → Home Assistant**, a linked person picks what FamilyOS shows about them:
+2. **Each person chooses.** Under **Settings → You → Where I am**, a linked person picks what FamilyOS shows about them:
    - **Nothing** (the start): nobody sees where they are.
    - **Home or away**: only whether they are at home.
    - **Place**: the name of the Home Assistant zone they are in, like School or Work, as Home Assistant names it. Anywhere else reads **Away**. Zones are made in Home Assistant under **Settings → Areas, labels & zones**.
 
-   Someone who is not linked sees "You are not linked to a Home Assistant person" there.
+   Someone who is not linked sees one line there: "Not linked to anyone in Home Assistant yet. Ask whoever set up Home Assistant."
 3. **Displays are a choice of their own.** With **Show on family displays** on (it starts off), a family display that was allowed to see who is home (**Settings → Devices**) shows it too. With it off, displays never show that person, whatever the display may see.
 
 **Who sees it**: people whose role has **See who is home** (every role has it at first; change it under **Settings → Family → Roles**). They see it on Today, beside each name, in every style. It is a block of its own, **Who is home**, which anyone can hide under **What Today shows**. It is read live and is about a minute old at most; when Home Assistant cannot be reached, nothing is shown rather than an old place. Someone whose whereabouts Home Assistant does not know shows nothing.

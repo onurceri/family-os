@@ -8,6 +8,8 @@ import type { Value } from '../contract/index.js';
 /** Catalog keys of the words a value can be said with. */
 export type ValueWord =
 	| 'value_unavailable'
+	| 'value_never_run'
+	| 'value_last_run'
 	| 'value_open'
 	| 'value_closed'
 	| 'value_detected'
@@ -37,7 +39,7 @@ export type ValueWord =
 	| 'value_off';
 
 export interface WordDeps {
-	t(key: ValueWord): string;
+	t(key: ValueWord, params?: Record<string, string>): string;
 	/** A number in the family's region format. */
 	number(value: number): string;
 	/** A time in the family's region format, relative to today. */
@@ -111,6 +113,10 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 			return { text: deps.t('value_unavailable'), tone: 'soft' };
 		case 'time':
 			return { text: deps.time(value.at), tone: 'ink' };
+		case 'lastRun':
+			return value.at === null
+				? { text: deps.t('value_never_run'), tone: 'soft' }
+				: { text: deps.t('value_last_run', { time: deps.time(value.at) }), tone: 'ink' };
 		case 'number':
 			return {
 				text: value.unit ? `${deps.number(value.value)} ${value.unit}` : deps.number(value.value),

@@ -71,9 +71,16 @@ const NUMBER = /^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 /** What the entity reads, as data. Words and number formats are the interface's job. */
 export function toValue(state: PickedState): Value {
 	const word = state.state.trim();
+	// A scene or a button has no state of its own: Home Assistant gives when it was last used,
+	// and `unknown` until the first time.
+	if (LAST_USED_DOMAINS.has(domainOf(state.entityId))) {
+		if (word === 'unknown' || word === '') return { kind: 'lastRun', at: null };
+		if (word === 'unavailable') return { kind: 'unavailable' };
+		const at = Date.parse(word);
+		return Number.isFinite(at) ? { kind: 'lastRun', at } : { kind: 'unavailable' };
+	}
 	if (word === 'unknown' || word === 'unavailable' || word === '') return { kind: 'unavailable' };
-	// A scene or a button has no state of its own: Home Assistant gives when it was last used.
-	if (state.deviceClass === 'timestamp' || LAST_USED_DOMAINS.has(domainOf(state.entityId))) {
+	if (state.deviceClass === 'timestamp') {
 		const at = Date.parse(word);
 		if (Number.isFinite(at)) return { kind: 'time', at };
 	}

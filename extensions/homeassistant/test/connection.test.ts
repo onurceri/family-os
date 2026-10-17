@@ -403,3 +403,61 @@ describe('disconnect and the route', () => {
 		expect(k.access.can(child, 'homeassistant.manage')).toBe(false);
 	});
 });
+
+describe('test the connection before saving', () => {
+	const test = (url = BASE, token = TOKEN) =>
+		k.route('homeassistant.testConnection').call({ actor: admin, body: { url, token } });
+
+	it('finds the name and the version and stores nothing', async () => {
+		serveHomeAssistant();
+		expect(await test('HTTP://192.168.1.20:8123/api/')).toEqual({
+			status: 'ok',
+			version: '2026.10.2',
+			name: 'Home',
+		});
+		expect(await row()).toBeUndefined();
+		expect(await everythingStored()).not.toContain('sentinel');
+		// Only reads, and a short wait: a person is waiting.
+		expect(k.http.requests.map((r) => r.url)).toEqual([`${BASE}/api/`, `${BASE}/api/config`]);
+		expect(k.http.requests.every((r) => r.timeoutMs === 8_000)).toBe(true);
+	});
+
+	it('does not touch a connection that already exists', async () => {
+		serveHomeAssistant();
+		await connect();
+		await k.worker.drain();
+		const before = await row();
+		k.http.serve('http://192.168.1.99:8123/api/', new ExternalHttpError('http_401'));
+		expect(await test('http://192.168.1.99:8123')).toMatchObject({ status: 'token_refused' });
+		expect(await row()).toEqual(before);
+	});
+
+	it.each([
+		['http_401', 'token_refused'],
+		['http_404', 'not_home_assistant'],
+		['timeout', 'timeout'],
+		['unreachable', 'unreachable'],
+		['blocked_address', 'blocked_address'],
+		['http_500', 'failed'],
+	] as const)('answers %s as %s, as the check does', async (code, status) => {
+		k.http.serve(`${BASE}/api/`, new ExternalHttpError(code));
+		expect(await test()).toEqual({ status, version: null, name: null });
+	});
+
+	it('says an answer that is not Home Assistant is not', async () => {
+		k.http.serve(`${BASE}/api/`, { text: '<html>router</html>' });
+		expect(await test()).toMatchObject({ status: 'not_home_assistant' });
+	});
+
+	it('refuses an address that is not an http address', async () => {
+		await expect(test('ftp://192.168.1.20')).rejects.toBeDefined();
+		expect(k.http.requests).toEqual([]);
+	});
+
+	it('is for people who manage the connection only', async () => {
+		const declared = k.registry.routes.find(
+			(r) => r.route.operationId === 'homeassistant.testConnection',
+		);
+		expect(declared?.route.requires).toBe('homeassistant.manage');
+	});
+});

@@ -179,7 +179,7 @@
 	let editing = $state<Item | null>(null);
 	let editLabel = $state('');
 	let editControl = $state(false);
-	let editConfirm = $state(true);
+	let editConfirm = $state(false);
 	let editForm = $state<HTMLFormElement>();
 	const editError = $derived(
 		LabelSchema.safeParse(editLabel).success ? undefined : 'homeassistant:show_label_error',

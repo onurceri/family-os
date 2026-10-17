@@ -13,7 +13,14 @@ import {
 	switchFailed,
 	valuesChanged,
 } from './capabilities.ts';
-import { check, checkJob, connect, disconnect, getConnection } from './connection.ts';
+import {
+	check,
+	checkJob,
+	connect,
+	disconnect,
+	getConnection,
+	testConnection,
+} from './connection.ts';
 import { addItem, listItems, moveItem, removeItem, renameItem, setItemControl } from './items.ts';
 import {
 	getMySharing,
@@ -55,6 +62,7 @@ export default defineExtension({
 	jobs: [checkJob, switchJob],
 	routes: [
 		getConnection,
+		testConnection,
 		listItems,
 		getValues,
 		getEntities,

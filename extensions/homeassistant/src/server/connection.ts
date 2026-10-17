@@ -14,6 +14,7 @@ import {
 	ConnectionSchema,
 	type ConnectionStatus,
 	normalizeBaseUrl,
+	TestResultSchema,
 } from '../contract/index.ts';
 import { connectionChanged, homeassistantManage } from './capabilities.ts';
 import { isApiRoot, readConfig, statusOfError } from './check.ts';
@@ -29,6 +30,8 @@ import { CONNECTION_ID, type HomeAssistantTables, tables } from './store.ts';
 type Row = HomeAssistantTables['homeassistant_connection'];
 
 const TIMEOUT_MS = 10_000;
+/** A person is waiting while an address is tried, so it gets less time than a background check. */
+const TEST_TIMEOUT_MS = 8_000;
 const MAX_BYTES = 64 * 1024;
 /** Longer than the check job can run (two attempts of at most 40 s each). */
 const STUCK_AFTER_MS = 2 * 60_000;
@@ -78,12 +81,13 @@ export async function checkHomeAssistant(
 	http: ExternalHttp,
 	baseUrl: string,
 	token: string,
+	timeoutMs = TIMEOUT_MS,
 ): Promise<CheckResult> {
 	const request = (path: string) => ({
 		url: `${baseUrl}${path}`,
 		allowLocal: true,
 		headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-		timeoutMs: TIMEOUT_MS,
+		timeoutMs,
 		maxBytes: MAX_BYTES,
 	});
 	try {
@@ -235,5 +239,27 @@ export const getConnection = defineRoute({
 	response: ConnectionSchema,
 	async handle(ctx) {
 		return toConnection(await load(ctx.db));
+	},
+});
+
+/**
+ * Tries an address and a token before they are saved, so the form can say what is wrong while the
+ * person is still typing them. The same two reads as the check job, answered with the same
+ * statuses; nothing is stored and the token is neither kept nor logged.
+ */
+export const testConnection = defineRoute({
+	method: 'post',
+	path: '/connection/test',
+	operationId: 'homeassistant.testConnection',
+	summary: 'Try an address and a token without saving them',
+	requires: homeassistantManage.id,
+	body: ConnectInputSchema,
+	response: TestResultSchema,
+	async handle(ctx, { body }) {
+		const base = normalizeBaseUrl(body.url);
+		if (!base) throw new FamosError('bad_request', 'The address is not an http or https address');
+		const result = await checkHomeAssistant(ctx.http, base.url, body.token, TEST_TIMEOUT_MS);
+		ctx.logger.info({ status: result.status }, 'home assistant tested');
+		return result;
 	},
 });

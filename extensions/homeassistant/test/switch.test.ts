@@ -89,9 +89,9 @@ describe('what may be switched', () => {
 });
 
 describe('setItemControl', () => {
-	it('starts off and asking, and is for those who manage Home Assistant only', async () => {
+	it('starts off and not asking (the family decides), and is for those who manage Home Assistant only', async () => {
 		const light = await add('light.ceiling_lights', 'Ceiling');
-		expect(light).toMatchObject({ control: false, confirm: true });
+		expect(light).toMatchObject({ control: false, confirm: false });
 		await expect(allow(light.id, true, true, alex)).rejects.toMatchObject({ code: 'forbidden' });
 		expect(await allow(light.id, true, false)).toMatchObject({
 			status: 'applied',

@@ -73,7 +73,7 @@ describe('values', () => {
 				value: { kind: 'number', value: 15.6, unit: '°C' },
 				changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
 				control: false,
-				confirm: true,
+				confirm: false,
 			},
 			{
 				id: expect.stringMatching(/^ha_item_/),
@@ -83,7 +83,7 @@ describe('values', () => {
 				value: { kind: 'binary', on: true, deviceClass: 'door' },
 				changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
 				control: false,
-				confirm: true,
+				confirm: false,
 			},
 		]);
 		const shown = JSON.stringify(result);

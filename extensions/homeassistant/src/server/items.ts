@@ -82,9 +82,9 @@ export const addItem = defineAction({
 			entity_id: input.entityId,
 			label: input.label,
 			position: rows.length === 0 ? 0 : Math.max(...rows.map((r) => r.position)) + 1,
-			// Shown only: switching it is a choice of its own, and then it asks first until told not to.
+			// Shown only: switching it is a choice of its own, and so is asking first.
 			control: 0,
-			confirm: 1,
+			confirm: 0,
 			created_at: now,
 			updated_at: now,
 		};

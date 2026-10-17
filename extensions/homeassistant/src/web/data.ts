@@ -9,6 +9,7 @@ import type {
 	Persons,
 	PresenceList,
 	SharingLevel,
+	TestResult,
 	Values,
 } from '../contract/index.js';
 import { api } from './api.js';
@@ -21,6 +22,10 @@ export const loadConnection = async (): Promise<Connection> =>
 export async function connect(input: { url: string; token: string }): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/homeassistant.connect', { body: input }));
 }
+
+/** Tries an address and a token without saving them. */
+export const testConnection = async (input: { url: string; token: string }): Promise<TestResult> =>
+	unwrap(await api.POST('/api/v1/homeassistant/connection/test', { body: input }));
 
 export async function checkAgain(): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/homeassistant.check', { body: {} }));

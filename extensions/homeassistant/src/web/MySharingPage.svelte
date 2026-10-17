@@ -58,11 +58,10 @@
 </script>
 
 <Page template="settings">
-	<PageHeader title={t('nav_label')} />
+	<PageHeader title={t('nav_label_mine')} />
 	{#if sharing && !linked}
 		<Card variant="quiet" pad>
-			<p class="font-semibold">{t('mine_not_linked')}</p>
-			<p class="text-ink-soft mt-1 max-w-prose text-sm">{t('mine_not_linked_hint')}</p>
+			<p class="max-w-prose">{t('mine_not_linked')}</p>
 		</Card>
 	{:else if linked}
 		<div class="grid gap-7">

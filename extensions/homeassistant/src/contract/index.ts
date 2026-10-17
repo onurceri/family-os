@@ -42,6 +42,14 @@ export const ConnectInputSchema = z.object({
 });
 export type ConnectInput = z.infer<typeof ConnectInputSchema>;
 
+/** What testing an address and a token found; nothing is stored. */
+export const TestResultSchema = z.object({
+	status: ConnectionStatusSchema.exclude(['checking']),
+	version: z.string().nullable(),
+	name: z.string().nullable(),
+});
+export type TestResult = z.infer<typeof TestResultSchema>;
+
 /** The address without anything that could be a secret in it. */
 export const ConnectionAddressSchema = z.object({
 	scheme: z.enum(['http', 'https']),
@@ -183,6 +191,8 @@ export const STATE_DOMAINS = ['lock', 'cover', 'climate'] as const;
 export const ValueSchema = z.discriminatedUnion('kind', [
 	z.object({ kind: z.literal('unavailable') }),
 	z.object({ kind: z.literal('time'), at: z.number().int() }),
+	/** A scene or a button: when it last ran, or null when it never has. */
+	z.object({ kind: z.literal('lastRun'), at: z.number().int().nullable() }),
 	z.object({ kind: z.literal('number'), value: z.number(), unit: z.string().nullable() }),
 	z.object({ kind: z.literal('binary'), on: z.boolean(), deviceClass: z.string().nullable() }),
 	/** A lock, a cover or a thermostat: Home Assistant's state word, and a temperature if it has one. */

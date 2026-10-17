@@ -123,16 +123,25 @@ describe('toValue', () => {
 		).toEqual({ kind: 'time', at: Date.parse('2026-10-17T10:15:00+00:00') });
 	});
 
-	it('reads a scene or a button as when it was last used', () => {
+	it('reads a scene or a button as when it last ran', () => {
 		// What the lab Home Assistant answered for a scene that had just run.
 		expect(value('scene.evening', '2026-10-17T19:13:34.384776+00:00')).toEqual({
-			kind: 'time',
+			kind: 'lastRun',
 			at: Date.parse('2026-10-17T19:13:34.384776+00:00'),
 		});
 		expect(value('input_button.bell', '2026-10-17T10:15:00+00:00')).toMatchObject({
-			kind: 'time',
+			kind: 'lastRun',
 		});
-		expect(value('scene.evening', 'unknown')).toEqual({ kind: 'unavailable' });
+		expect(value('button.doorbell', '2026-10-17T10:15:00+00:00')).toMatchObject({
+			kind: 'lastRun',
+		});
+	});
+
+	it('reads a scene that never ran as never run, and an unreachable one as not available', () => {
+		expect(value('scene.evening', 'unknown')).toEqual({ kind: 'lastRun', at: null });
+		expect(value('button.doorbell', 'unknown')).toEqual({ kind: 'lastRun', at: null });
+		expect(value('scene.evening', 'unavailable')).toEqual({ kind: 'unavailable' });
+		expect(value('scene.evening', 'not a time')).toEqual({ kind: 'unavailable' });
 	});
 
 	it('reads an enum sensor as Home Assistant’s own word', () => {

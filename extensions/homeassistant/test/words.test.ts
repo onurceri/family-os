@@ -4,7 +4,8 @@ import tr from '../src/messages/tr.json' with { type: 'json' };
 import { describeValue, numberWords, timeWords, type WordDeps } from '../src/web/words.ts';
 
 const deps = (catalog: Record<string, string> = en): WordDeps => ({
-	t: (key) => catalog[key] as string,
+	t: (key, params) =>
+		(catalog[key] as string).replace(/{{(\w+)}}/g, (_, name: string) => params?.[name] ?? ''),
 	number: (n) => numberWords(n, 'en-US'),
 	time: (at) => `time:${at}`,
 });
@@ -50,6 +51,33 @@ describe('describeValue', () => {
 
 	it('says a time through the time formatter', () => {
 		expect(describeValue({ kind: 'time', at: 5 }, deps()).text).toBe('time:5');
+	});
+
+	it('says when a scene or a button last ran, and that it never has', () => {
+		expect(describeValue({ kind: 'lastRun', at: 5 }, deps())).toEqual({
+			text: 'Last run time:5',
+			tone: 'ink',
+		});
+		expect(describeValue({ kind: 'lastRun', at: null }, deps())).toEqual({
+			text: 'Never run',
+			tone: 'soft',
+		});
+		expect(describeValue({ kind: 'lastRun', at: 5 }, deps(tr)).text).toBe('Son çalıştırma: time:5');
+		expect(describeValue({ kind: 'lastRun', at: null }, deps(tr)).text).toBe('Hiç çalıştırılmadı');
+	});
+
+	it('says a last run on another day with its date, through the same time words', () => {
+		const now = Date.parse('2026-10-17T12:00:00Z');
+		const words: WordDeps = {
+			...deps(),
+			time: (when) => timeWords(when, now, 'en-GB', 'h23', 'UTC'),
+		};
+		const yesterday = Date.parse('2026-10-16T22:10:00Z');
+		const today = Date.parse('2026-10-17T09:30:00Z');
+		expect(describeValue({ kind: 'lastRun', at: yesterday }, words).text).toBe(
+			'Last run 16 Oct, 22:10',
+		);
+		expect(describeValue({ kind: 'lastRun', at: today }, words).text).toBe('Last run 09:30');
 	});
 
 	it.each([

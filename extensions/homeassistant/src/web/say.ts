@@ -13,7 +13,7 @@ interface SayApp {
 /** A value in the reader's language and the family's region format. */
 export function sayValue(app: SayApp, t: HomeAssistantT, value: Value): ValueText {
 	return describeValue(value, {
-		t: (key) => t(key),
+		t: (key, params) => t(key, params),
 		number: (n) => numberWords(n, app.formatLocale()),
 		time: (at) => timeWords(at, Date.now(), app.dateLocale(), app.hourCycle(), app.timeZone()),
 	});

@@ -33,7 +33,7 @@ export default defineWebExtension({
 		{
 			id: 'homeassistant.mine',
 			path: MINE_PATH,
-			labelKey: 'homeassistant:nav_label',
+			labelKey: 'homeassistant:nav_label_mine',
 			icon: MapPin,
 			placement: 'more',
 			group: 'settings',

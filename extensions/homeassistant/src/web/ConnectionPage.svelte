@@ -27,10 +27,11 @@
 		normalizeBaseUrl,
 		TokenSchema,
 	} from '../contract/index.js';
-	import { checkAgain, connect, disconnect, loadConnection } from './data.js';
+	import { checkAgain, connect, disconnect, loadConnection, testConnection } from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import ItemsSection from './ItemsSection.svelte';
 	import PeopleSection from './PeopleSection.svelte';
+	import { formStep, type Tested, testKey } from './testflow.js';
 
 	/**
 	 * Settings, Family, Home Assistant: the address and the token of the family's Home Assistant,
@@ -48,6 +49,8 @@
 	let failed = $state(false);
 	let showErrors = $state(false);
 	let formEl = $state<HTMLFormElement>();
+	let testing = $state(false);
+	let tested = $state<Tested | null>(null);
 	let items = $state<{ add(): void }>();
 	let full = $state(false);
 
@@ -80,6 +83,7 @@
 		token = '';
 		showErrors = false;
 		failed = false;
+		tested = null;
 		panelOpen = true;
 	}
 
@@ -88,13 +92,26 @@
 		...(TokenSchema.safeParse(token).success ? {} : { token: 'homeassistant:token_error' }),
 	} as Record<string, string>);
 
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
-		showErrors = true;
-		if (Object.keys(errors).length) {
-			void focusFirstInvalid(event.currentTarget);
-			return;
+	const key = $derived(testKey(address, token));
+	const step = $derived(formStep(tested, key));
+
+	/** Tries the details without saving them, and keeps what was found for exactly these details. */
+	async function runTest() {
+		if (!key) return;
+		testing = true;
+		failed = false;
+		try {
+			const result = await testConnection({ url: address.trim(), token: token.trim() });
+			tested = { key, result };
+		} catch {
+			tested = null;
+			failed = true;
+		} finally {
+			testing = false;
 		}
+	}
+
+	async function save() {
 		busy = true;
 		failed = false;
 		try {
@@ -108,6 +125,18 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	/** Test first; after a good test, save. A bad test leaves the choice to the person. */
+	async function submit(event: SubmitEvent) {
+		event.preventDefault();
+		showErrors = true;
+		if (Object.keys(errors).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
+		if (step === 'save') await save();
+		else await runTest();
 	}
 
 	async function recheck() {
@@ -187,11 +216,27 @@
 	} as const satisfies Record<ConnectionStatus, string>;
 
 	/** What to do about the status; a name ending in .local gets the reason it cannot work. */
-	function advice(c: NonNullable<typeof connected>): string {
-		if (c.status === 'unreachable' && c.address.host.endsWith('.local'))
-			return t('advice_unreachable_local');
-		return t(ADVICE_TEXT[c.status]);
+	function adviceFor(status: ConnectionStatus, host: string): string {
+		if (status === 'unreachable' && host.endsWith('.local')) return t('advice_unreachable_local');
+		return t(ADVICE_TEXT[status]);
 	}
+	const advice = (c: NonNullable<typeof connected>) => adviceFor(c.status, c.address.host);
+
+	/** What the test found, said for the address that was tried. */
+	const testedSays = $derived.by(() => {
+		if (step === 'test' || !tested) return null;
+		const { status, name, version } = tested.result;
+		if (status === 'ok')
+			return {
+				tone: 'info' as const,
+				text: t('test_ok', { name: name ?? t('test_unnamed'), version: version ?? '?' }),
+			};
+		const host = normalizeBaseUrl(address)?.host ?? '';
+		return {
+			tone: 'alert' as const,
+			text: `${t(STATUS_TEXT[status])}. ${adviceFor(status, host)}`,
+		};
+	});
 </script>
 
 <Page template="settings">
@@ -261,8 +306,14 @@
 	title={connected ? t('change_title') : t('connect_title')}
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
-	saveLabel={t('connect_save')}
-	saveDisabled={busy}
+	saveLabel={testing
+		? t('test_testing')
+		: step === 'save'
+			? t('connect_save')
+			: step === 'failed'
+				? t('test_again')
+				: t('test_button')}
+	saveDisabled={busy || testing}
 	onsave={() => formEl?.requestSubmit()}
 	onclose={() => (panelOpen = false)}
 	dirty={panelOpen && (token !== '' || address !== (connected ? addressText(connected) : ''))}
@@ -311,6 +362,16 @@
 			<p class="text-ink-soft text-[13px]">{t('token_hint')}</p>
 			{#if connected}<p class="text-ink-soft text-[13px]">{t('token_change_hint')}</p>{/if}
 		</div>
+		{#if testedSays}
+			<div class="grid gap-2" aria-live="polite">
+				<Notice tone={testedSays.tone}>{testedSays.text}</Notice>
+				{#if step === 'failed'}
+					<Button variant="outline" type="button" disabled={busy} onclick={save}
+						>{t('test_save_anyway')}</Button
+					>
+				{/if}
+			</div>
+		{/if}
 		{#if failed}<p class="text-attention text-sm font-semibold" role="alert">{t('error')}</p>{/if}
 	</form>
 </SidePanel>
