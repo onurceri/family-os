@@ -87,6 +87,16 @@ const STATE_WORDS: Record<string, Record<string, ValueWord>> = {
 		opening: 'value_opening',
 		closing: 'value_closing',
 	},
+	// Home Assistant's HVAC modes, a fixed list of its own.
+	climate: {
+		off: 'value_off',
+		heat: 'value_heat',
+		cool: 'value_cool',
+		heat_cool: 'value_heat_cool',
+		auto: 'value_auto',
+		dry: 'value_dry_mode',
+		fan_only: 'value_fan_only',
+	},
 };
 
 export function describeValue(value: Value, deps: WordDeps): ValueText {
@@ -115,7 +125,7 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 			const key = STATE_WORDS[value.domain]?.[value.state];
 			const word = key ? deps.t(key) : value.state;
 			return {
-				text: value.temperature === null ? word : `${word} · ${deps.number(value.temperature)}`,
+				text: value.temperature === null ? word : `${word} · ${deps.number(value.temperature)}°`,
 				tone: value.state === 'jammed' ? 'attention' : 'ink',
 			};
 		}

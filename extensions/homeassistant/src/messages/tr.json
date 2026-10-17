@@ -55,11 +55,11 @@
 	"discard_hint": "Buraya yazdıklarınız kaydedilmedi.",
 	"discard_keep": "Düzenlemeye devam et",
 	"discard_confirm": "Sil",
-	"card_title": "Evde",
+	"card_title": "Evin durumu",
 	"today_block": "Home Assistant",
 	"today_block_hint": "Home Assistant’tan göstermeyi seçtiğiniz şeyler.",
 	"quiet_values": "Home Assistant’tan gösterilecek bir şey yok",
-	"display_title": "Evde",
+	"display_title": "Evin durumu",
 	"value_unavailable": "Yok",
 	"value_open": "Açık",
 	"value_closed": "Kapalı",
@@ -108,5 +108,11 @@
 	"value_locking": "Kilitleniyor…",
 	"value_unlocking": "Kilit açılıyor…",
 	"value_opening": "Açılıyor…",
-	"value_closing": "Kapanıyor…"
+	"value_closing": "Kapanıyor…",
+	"value_heat": "Isıtıyor",
+	"value_cool": "Soğutuyor",
+	"value_heat_cool": "Isıtma ve soğutma",
+	"value_auto": "Otomatik",
+	"value_fan_only": "Yalnızca fan",
+	"value_dry_mode": "Nem alıyor"
 }

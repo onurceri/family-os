@@ -55,11 +55,11 @@
 	"discard_hint": "What you typed here has not been saved.",
 	"discard_keep": "Keep editing",
 	"discard_confirm": "Discard",
-	"card_title": "At home",
+	"card_title": "Around the house",
 	"today_block": "Home Assistant",
 	"today_block_hint": "The things you chose to show from Home Assistant.",
 	"quiet_values": "nothing from Home Assistant",
-	"display_title": "At home",
+	"display_title": "Around the house",
 	"value_unavailable": "Not available",
 	"value_open": "Open",
 	"value_closed": "Closed",
@@ -108,5 +108,11 @@
 	"value_locking": "Locking…",
 	"value_unlocking": "Unlocking…",
 	"value_opening": "Opening…",
-	"value_closing": "Closing…"
+	"value_closing": "Closing…",
+	"value_heat": "Heating",
+	"value_cool": "Cooling",
+	"value_heat_cool": "Heating and cooling",
+	"value_auto": "Automatic",
+	"value_fan_only": "Fan only",
+	"value_dry_mode": "Drying"
 }

@@ -89,8 +89,10 @@ describe('describeValue', () => {
 		expect(state('lock', 'jammed').tone).toBe('attention');
 		expect(state('cover', 'closed').text).toBe('Closed');
 		expect(state('cover', 'opening').text).toBe('Opening…');
-		expect(state('climate', 'heat', 21.5).text).toBe('heat · 21.5');
-		expect(state('climate', 'off').text).toBe('off');
+		expect(state('climate', 'heat', 21.5).text).toBe('Heating · 21.5°');
+		expect(state('climate', 'off').text).toBe('Off');
+		expect(state('climate', 'dry').text).toBe('Drying');
+		expect(state('climate', 'eco_boost').text).toBe('eco_boost');
 	});
 
 	it('asks for a look at an alert, and at nothing else', () => {
