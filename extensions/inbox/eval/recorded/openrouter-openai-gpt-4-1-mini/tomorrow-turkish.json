@@ -2,7 +2,7 @@
 	"case": "Tomorrow (Turkish)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -15,11 +15,11 @@
 						"kind": "calendar.event",
 						"title": "Su tesisatçısı ziyareti",
 						"date": {
-							"text": "Yarın",
+							"text": "yarın",
 							"inDays": 1
 						},
 						"time": "09:00",
-						"timeText": "sabah 9'da",
+						"timeText": "sabah 9",
 						"notes": "Evde biri olmalı"
 					}
 				]

@@ -2,20 +2,19 @@
 	"case": "Shopping message with imperial units",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Pancake ingredients",
+				"label": "Pancakes shopping list",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Flour",
-						"quantity": "2 lb",
-						"variant": "pantry"
+						"quantity": "2 lb"
 					},
 					{
 						"kind": "lists.shoppingItem",
@@ -38,8 +37,7 @@
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Pumpkin puree",
-						"quantity": "1 can",
-						"variant": "pantry"
+						"quantity": "1 can"
 					}
 				]
 			}

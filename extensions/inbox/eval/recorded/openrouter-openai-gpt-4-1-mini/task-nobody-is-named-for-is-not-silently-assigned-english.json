@@ -2,18 +2,18 @@
 	"case": "Task nobody is named for is not silently assigned (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Swim club term fee payment",
+				"label": "Swim club autumn term fee due",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "lists.task",
-						"title": "Pay the swim club term fee",
+						"title": "Pay the swim club autumn term fee",
 						"date": {
 							"text": "Friday 16 October",
 							"day": 16,

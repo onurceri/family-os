@@ -2,7 +2,7 @@
 	"case": "A school letter repeating an event the calendar has (English)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -28,7 +28,7 @@
 						"timeText": "7:50",
 						"endTime": "16:30",
 						"place": "Postojna Cave",
-						"notes": "Packed lunch, sturdy shoes"
+						"notes": "Bus leaves school at 7:50 and returns about 16:30. Send a packed lunch and sturdy shoes."
 					},
 					{
 						"kind": "lists.task",
@@ -39,7 +39,7 @@
 						],
 						"peopleGuessed": true,
 						"date": {
-							"text": "by Monday 26 October",
+							"text": "Monday 26 October",
 							"day": 26,
 							"month": 10,
 							"weekday": 1
@@ -47,14 +47,14 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay for class trip",
+						"title": "Pay class trip cost",
 						"people": [
 							"Tom",
 							"Mara"
 						],
 						"peopleGuessed": true,
 						"date": {
-							"text": "by 23 October",
+							"text": "23 October",
 							"day": 23,
 							"month": 10
 						},

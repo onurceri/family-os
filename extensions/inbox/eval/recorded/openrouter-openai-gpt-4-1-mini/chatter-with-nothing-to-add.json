@@ -2,13 +2,13 @@
 	"case": "Chatter with nothing to add",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Lovely weather",
+				"label": "Lovely weather today",
 				"intent": "nothing",
 				"mentions": []
 			}

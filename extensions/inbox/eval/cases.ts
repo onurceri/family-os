@@ -6,7 +6,8 @@
  * 24-hour) writing, and imperial units. Dates are expected the way the family's region reads
  * them. Unless a case brings its own household, it is Ayşe (admin), Mehmet (member) and Deniz
  * (supervised, "9 years old, class 4-B"); roles are never shown to the model, only names and
- * descriptions. Add a case for every extraction mistake found in use.
+ * descriptions. Every shipped extension is installed (see `household.ts`). Add a case for every
+ * extraction mistake found in use.
  */
 export interface Draft {
 	actionId: string;
@@ -53,8 +54,13 @@ export interface Case {
 	formatLocale?: string;
 	/** The family language; English by default. */
 	locale?: string;
-	/** Duties the household records already hold (the records area is on only when given). */
+	/** Duties the household records already hold. */
 	obligations?: SeededObligation[];
+	/**
+	 * Anything else the household already has, added in order after the family: a string
+	 * `@Name` stands for that member's id and `$n` for the id step n made.
+	 */
+	seed?: { action: string; input: Record<string, unknown> }[];
 	/** Shopping items already open on a list (a list made for the case when it is named). */
 	shopping?: { list?: string; title: string }[];
 	/** Open tasks. */
@@ -850,6 +856,132 @@ const NOTES_CASES: Case[] = [
 	},
 ];
 
+/** One message for each of the other areas a family can install. */
+const AREA_CASES: Case[] = [
+	{
+		name: 'A vet card for a listed pet (English)',
+		formatLocale: 'en-GB',
+		seed: [{ action: 'pets.addPet', input: { name: 'Luna', species: 'cat' } }],
+		text: 'Vaccination record, Riverside Vet. Patient: Luna (cat). Given 02.10.2026: Purevax RCP, batch L4471. Next booster due 02.10.2027.',
+		checks: [
+			has(
+				'pets.addTreatment',
+				"Luna's vaccination on 2 Oct",
+				(i) => i.petName === 'Luna' && i.kind === 'vaccination' && i.givenOn === '2026-10-02',
+			),
+			none('calendar.createEvent'),
+			none('lists.addTask'),
+		],
+	},
+	{
+		name: 'A garage invoice for a listed car (English)',
+		seed: [{ action: 'vehicles.addVehicle', input: { name: 'Corolla', fuel: 'petrol' } }],
+		text: 'Northside Garage - invoice 3 October 2026. Corolla: annual service, oil and filter, new wiper blades. Mileage 62,300 km. Total 189.00',
+		checks: [
+			has(
+				'vehicles.addLog',
+				'the service on 3 Oct at Northside Garage',
+				(i) =>
+					i.vehicleName === 'Corolla' &&
+					i.kind === 'service' &&
+					i.doneOn === '2026-10-03' &&
+					/northside/i.test(String(i.place ?? '')),
+			),
+			{
+				label: 'vehicles.addLog: no amount of money in the notes',
+				pass: (ds) => of(ds, 'vehicles.addLog').every((d) => !/189/.test(String(d.input.notes))),
+			},
+			none('calendar.createEvent'),
+		],
+	},
+	{
+		name: 'A receipt for an appliance with a warranty (English)',
+		formatLocale: 'en-GB',
+		seed: [{ action: 'home.addHome', input: { name: 'Our house', tenure: 'owner' } }],
+		text: 'ElectroMart receipt 04/10/2026. Bosch Serie 4 dishwasher SMS4HVI33G x1. Warranty: 2 years from date of purchase.',
+		checks: [
+			has(
+				'home.addItem',
+				'the dishwasher bought on 4 Oct, warranty to 4 Oct 2028',
+				(i) =>
+					/dishwasher/i.test(String(i.name)) &&
+					/bosch/i.test(String(i.brand ?? '')) &&
+					i.purchasedOn === '2026-10-04' &&
+					i.warrantyUntil === '2028-10-04',
+			),
+			none('lists.addShoppingItems'),
+			none('lists.addTask'),
+		],
+	},
+	{
+		name: 'A recipe shared to keep (English)',
+		text: "Grandma's banana bread (serves 8, 70 min): 3 ripe bananas, 250 g flour, 100 g sugar, 1 egg, 1 tsp baking soda. Mash the bananas, mix in everything else, then bake at 175 C for 60 minutes.",
+		checks: [
+			has(
+				'kitchen.createRecipe',
+				'the banana bread with its ingredients and steps',
+				(i) =>
+					/banana bread/i.test(String(i.title)) &&
+					((i.ingredients as unknown[] | undefined) ?? []).length >= 5 &&
+					((i.steps as unknown[] | undefined) ?? []).length >= 2,
+			),
+			none('lists.addShoppingItems'),
+			total(1),
+		],
+	},
+	{
+		name: 'Meals planned for the week (English)',
+		text: 'Meal plan: tacos on Wednesday, and fish pie for dinner on Friday.',
+		checks: [
+			has('kitchen.addToMealPlan', 'tacos on Wed 7 Oct', (i) => i.date === '2026-10-07'),
+			has(
+				'kitchen.addToMealPlan',
+				'fish pie for dinner on Fri 9 Oct',
+				(i) => i.date === '2026-10-09' && i.slot === 'dinner',
+			),
+			none('calendar.createEvent'),
+			none('lists.addShoppingItems'),
+		],
+	},
+	{
+		name: 'A note for the family board (English)',
+		text: 'Can you put this on the board for everyone: the water is off on Thursday from 9 to 12, so fill some bottles the night before.',
+		checks: [
+			has('board.postNote', 'the water notice', (i) => /water/i.test(String(i.text))),
+			none('lists.addShoppingItems'),
+		],
+	},
+	{
+		name: 'A chore done and new turns on it (English)',
+		family: NOVAKS,
+		seed: [
+			{
+				action: 'chores.createChore',
+				input: {
+					title: 'Take out the bins',
+					startDate: '2026-10-06',
+					recurrence: { freq: 'weekly', byDay: ['TU'] },
+					assigneeIds: ['@Tom', '@Ivy'],
+					rotation: 'round_robin',
+				},
+			},
+		],
+		text: 'I took the bins out this morning. From now on Ivy and Leo take turns on the bins, Ivy first.',
+		checks: [
+			{
+				label: 'chores.markDone: the bins, by the sharer (Tom)',
+				pass: (ds, m) => of(ds, 'chores.markDone').some((d) => d.input.doneBy === m.Tom),
+			},
+			has(
+				'chores.setAssignees',
+				'Ivy then Leo',
+				(i, m) => JSON.stringify(i.memberIds) === JSON.stringify([m.Ivy, m.Leo]),
+			),
+			none('chores.createChore'),
+		],
+	},
+];
+
 export const CASES: Case[] = [
 	...TURKISH_CASES.map((c) => ({ ...TURKEY, ...c })),
 	...NON_ACTIONABLE_CASES.map((c, i) => (i === 0 ? { ...TURKEY, ...c } : c)),
@@ -861,4 +993,5 @@ export const CASES: Case[] = [
 	...ALREADY_THERE_CASES,
 	...CLUB_CASES,
 	...NOTES_CASES,
+	...AREA_CASES,
 ];

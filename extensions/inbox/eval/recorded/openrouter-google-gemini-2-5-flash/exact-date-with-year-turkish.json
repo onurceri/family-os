@@ -2,7 +2,7 @@
 	"case": "Exact date with year (Turkish)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",

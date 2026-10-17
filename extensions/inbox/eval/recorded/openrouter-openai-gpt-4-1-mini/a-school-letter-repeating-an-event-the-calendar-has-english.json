@@ -2,18 +2,22 @@
 	"case": "A school letter repeating an event the calendar has (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Year 7 class trip and Parents' evening update",
+				"label": "Year 7 class trip and parents' evening update",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Year 7 class trip to Postojna Cave",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
 						"date": {
 							"text": "Thursday 29 October",
 							"day": 29,
@@ -24,13 +28,13 @@
 						"timeText": "7:50",
 						"endTime": "16:30",
 						"place": "Postojna Cave",
-						"notes": "Bus leaves school, bring packed lunch, sturdy shoes, signed permission slip"
+						"notes": "Bus leaves school, bring packed lunch, sturdy shoes, signed permission slip by Monday 26 October, cost 14 EUR payable by 23 October through school e-office"
 					},
 					{
 						"kind": "lists.task",
-						"title": "Send packed lunch for Year 7 trip",
+						"title": "Send signed permission slip",
 						"date": {
-							"text": "by Monday 26 October",
+							"text": "Monday 26 October",
 							"day": 26,
 							"month": 10,
 							"weekday": 1
@@ -38,33 +42,13 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Send sturdy shoes for Year 7 trip",
-						"date": {
-							"text": "by Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						}
-					},
-					{
-						"kind": "lists.task",
-						"title": "Send signed permission slip for Year 7 trip",
-						"date": {
-							"text": "by Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						}
-					},
-					{
-						"kind": "lists.task",
-						"title": "Pay Year 7 trip fee",
+						"title": "Pay 14 EUR for Year 7 trip",
 						"date": {
 							"text": "by 23 October",
 							"day": 23,
 							"month": 10
 						},
-						"notes": "Fee: 14 EUR, through school e-office"
+						"notes": "Pay through school e-office"
 					},
 					{
 						"kind": "calendar.eventChange",

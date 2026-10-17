@@ -2,7 +2,7 @@
 	"case": "Shopping list (Turkish)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -25,8 +25,7 @@
 					},
 					{
 						"kind": "lists.shoppingItem",
-						"title": "Beyaz peynir",
-						"variant": "dairy"
+						"title": "Beyaz peynir"
 					},
 					{
 						"kind": "lists.shoppingItem",

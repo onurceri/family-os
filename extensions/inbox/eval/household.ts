@@ -1,14 +1,11 @@
-import { createHash } from 'node:crypto';
-import calendar from '@famos/ext-calendar/server';
-import lists from '@famos/ext-lists/server';
-import records from '@famos/ext-records/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { type ExtensionDefinition, type LlmPort, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { defaultHourCycle, defaultWeekStart, epochOf, formatLocaleForLanguage } from '@famos/time';
-import inbox from '../src/server/index.ts';
 import { promptHash } from '../src/server/understand/prompt.ts';
 import {
-	CASES,
 	type Case,
 	type Check,
 	DEFAULT_FAMILY,
@@ -22,32 +19,54 @@ import {
  * recordings in the tests (the fake model), so both read a message on the same kernel.
  */
 
-/** The records area only for cases that bring duties, so the other cases keep their catalog. */
-export function extensionsOf(c: Case): ExtensionDefinition[] {
-	return c.obligations ? [calendar, lists, records, inbox] : [calendar, lists, inbox];
+const REPO = join(import.meta.dirname, '..', '..', '..');
+
+/** Longer than any backoff of the queue between two tries of a job. */
+const RETRY_WAIT_MS = 60 * 60_000;
+
+let bundled: Promise<ExtensionDefinition[]> | undefined;
+
+/**
+ * Every extension the app ships, always installed or offered, as a family that installed them
+ * all has them: the model is then asked with every kind and example a real family can be shown.
+ * They are loaded from their workspace folders by the list the app ships (`extensions.json`)
+ * rather than imported by name, because several of them already depend on the inbox for their
+ * own tests, and a package cannot depend back on them.
+ */
+export function bundledExtensions(): Promise<ExtensionDefinition[]> {
+	bundled ??= (async () => {
+		const shipped = JSON.parse(readFileSync(join(REPO, 'extensions.json'), 'utf8')) as {
+			always: string[];
+			offered: string[];
+		};
+		const ids = [...new Set([...shipped.always, ...shipped.offered])].sort();
+		return Promise.all(
+			ids.map(async (id) => {
+				const dir = join(REPO, 'extensions', id);
+				const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as {
+					exports: { './server': string };
+				};
+				const module = (await import(pathToFileURL(join(dir, pkg.exports['./server'])).href)) as {
+					default: ExtensionDefinition;
+				};
+				return module.default;
+			}),
+		);
+	})();
+	return bundled;
 }
 
 /**
- * A fingerprint of every prompt the cases are read with (one per set of installed extensions).
- * The baseline keeps it: when it changes, the model is asked something else and the eval has to
- * run again.
+ * A fingerprint of the prompt every case is read with. The baseline keeps it: when it changes,
+ * the model is asked something else and the eval has to run again.
  */
-export async function casesPromptHash(cases: readonly Case[] = CASES): Promise<string> {
-	const sets = new Map<string, ExtensionDefinition[]>();
-	for (const c of cases) {
-		const extensions = extensionsOf(c);
-		sets.set(extensions.map((e) => e.id).join(','), extensions);
+export async function casesPromptHash(): Promise<string> {
+	const k = await createTestKernel({ extensions: await bundledExtensions() });
+	try {
+		return promptHash(k.ctx.actions.aiKinds());
+	} finally {
+		await k.close();
 	}
-	const hashes: string[] = [];
-	for (const [key, extensions] of [...sets].sort(([a], [b]) => a.localeCompare(b))) {
-		const k = await createTestKernel({ extensions });
-		try {
-			hashes.push(`${key}:${promptHash(k.ctx.actions.aiKinds())}`);
-		} finally {
-			await k.close();
-		}
-	}
-	return createHash('sha256').update(hashes.join('\n')).digest('hex').slice(0, 8);
 }
 
 export interface CaseOutcome {
@@ -77,7 +96,7 @@ export async function runCaseOn(
 	options: { llm?: LlmPort; prepare?: (k: TestKernel) => void } = {},
 ): Promise<CaseOutcome> {
 	const k = await createTestKernel({
-		extensions: extensionsOf(c),
+		extensions: await bundledExtensions(),
 		...(options.llm && { llm: options.llm }),
 	});
 	try {
@@ -157,16 +176,48 @@ export async function runCaseOn(
 			members[person.name] = created.member.id;
 			sharer ??= created;
 		}
+		const made: string[] = [];
+		const filled = (value: unknown): unknown => {
+			if (typeof value === 'string') {
+				if (value.startsWith('@')) return members[value.slice(1)] ?? value;
+				if (/^\$\d+$/u.test(value)) return made[Number(value.slice(1))] ?? value;
+				return value;
+			}
+			if (Array.isArray(value)) return value.map(filled);
+			if (value && typeof value === 'object')
+				return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, filled(v)]));
+			return value;
+		};
+		for (const step of c.seed ?? []) {
+			const done = await k.runner.invoke<{ id?: string }>(
+				step.action,
+				filled(step.input),
+				systemActor('eval'),
+			);
+			if (done.status !== 'applied') throw new Error(`expected ${step.action} to be applied`);
+			made.push(done.output.id ?? '');
+		}
 		options.prepare?.(k);
 		const item = await k.route('inbox.createItem').call({
 			body: { channel: 'share', text: c.text },
 			files: [],
 			actor: sharer?.actor,
 		});
+		const read = async () =>
+			(await k.route('inbox.listItems').call({ query: { limit: 1 }, actor: sharer?.actor }))[0];
 		await k.worker.drain();
-		const [state] = await k
-			.route('inbox.listItems')
-			.call({ query: { limit: 1 }, actor: sharer?.actor });
+		let state = await read();
+		// A reading that failed in a way worth another try waits for it, as it would at home: the
+		// queue asks again after its backoff, so the case is judged on what the family would get.
+		for (
+			let tries = 0;
+			state.status === 'normalized' && state.attempt != null && tries < 5;
+			tries++
+		) {
+			k.clock.advance(RETRY_WAIT_MS);
+			await k.worker.drain();
+			state = await read();
+		}
 		const drafts: Draft[] = (
 			await k
 				.route('core.listDrafts')

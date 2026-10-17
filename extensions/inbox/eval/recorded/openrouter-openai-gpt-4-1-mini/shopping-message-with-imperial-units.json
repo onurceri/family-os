@@ -2,44 +2,39 @@
 	"case": "Shopping message with imperial units",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Shopping list for Saturday pancakes",
+				"label": "Shopping for pancakes on Saturday",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Flour",
-						"quantity": "2 lb",
-						"variant": "pantry"
+						"quantity": "2 lb"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Milk",
-						"quantity": "1 gallon",
-						"variant": "dairy"
+						"quantity": "1 gallon"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Eggs",
-						"quantity": "a dozen",
-						"variant": "dairy"
+						"quantity": "a dozen"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Butter",
-						"quantity": "12 oz",
-						"variant": "dairy"
+						"quantity": "12 oz"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Pumpkin puree",
-						"quantity": "1 can",
-						"variant": "pantry"
+						"quantity": "1 can"
 					}
 				]
 			}

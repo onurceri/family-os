@@ -2,7 +2,7 @@
 	"case": "UK council and school notice: DD/MM dates and Year 5",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -18,16 +18,14 @@
 							"text": "09/10",
 							"day": 9,
 							"month": 10
-						},
-						"unsure": [
-							"date"
-						]
+						}
 					},
 					{
 						"kind": "calendar.event",
-						"title": "Year 5 parents' evening",
+						"title": "Parents' evening",
 						"people": [
-							"Oliver"
+							"Priya",
+							"Tom"
 						],
 						"peopleGuessed": true,
 						"date": {
@@ -38,8 +36,8 @@
 						"time": "17:30",
 						"timeText": "5.30pm",
 						"notes": "Book a slot with the class teacher",
-						"unsure": [
-							"date"
+						"tags": [
+							"Year 5"
 						]
 					}
 				]

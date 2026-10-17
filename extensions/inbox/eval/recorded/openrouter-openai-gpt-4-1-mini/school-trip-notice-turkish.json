@@ -2,7 +2,7 @@
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -17,6 +17,7 @@
 						"people": [
 							"Deniz"
 						],
+						"peopleGuessed": true,
 						"date": {
 							"text": "16 Ekim Cuma",
 							"day": 16,
@@ -34,13 +35,14 @@
 						"people": [
 							"Deniz"
 						],
+						"peopleGuessed": true,
 						"date": {
 							"text": "en geç 9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "150 TL, sınıf öğretmenine elden teslim"
+						"notes": "Ücret 150 TL, sınıf öğretmenine elden teslim edilmeli"
 					},
 					{
 						"kind": "lists.task",
@@ -48,6 +50,7 @@
 						"people": [
 							"Deniz"
 						],
+						"peopleGuessed": true,
 						"date": {
 							"text": "en geç 9 Ekim Perşembe",
 							"day": 9,

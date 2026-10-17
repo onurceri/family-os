@@ -2,7 +2,7 @@
 	"case": "Message to the whole household stays for everyone (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,8 +22,8 @@
 						},
 						"time": "12:00",
 						"timeText": "noon",
-						"place": "Lake",
-						"notes": "Everyone is welcome"
+						"notes": "Everyone is welcome",
+						"place": "Lake"
 					}
 				]
 			}

@@ -2,7 +2,7 @@
 	"case": "Bare weekday (Turkish)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -18,16 +18,14 @@
 							"Deniz"
 						],
 						"date": {
-							"text": "Cuma günü",
-							"weekday": 5
+							"text": "Cuma günü"
 						},
 						"time": "15:00",
 						"timeText": "saat 15:00"
 					},
 					{
 						"kind": "lists.task",
-						"title": "Hediye al",
-						"notes": "Elif için"
+						"title": "Hediye almayı unutma"
 					}
 				]
 			}

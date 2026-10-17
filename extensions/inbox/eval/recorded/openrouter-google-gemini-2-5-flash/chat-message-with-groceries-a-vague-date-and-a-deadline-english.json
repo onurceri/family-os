@@ -2,7 +2,7 @@
 	"case": "Chat message with groceries, a vague date and a deadline (English)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,13 +14,13 @@
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Süt",
-						"quantity": "2 liters",
+						"quantity": "2 litre",
 						"variant": "dairy"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Yumurta",
-						"quantity": "a dozen",
+						"quantity": "bir düzine",
 						"variant": "dairy"
 					},
 					{
@@ -40,7 +40,7 @@
 							"Deniz"
 						],
 						"date": {
-							"text": "next Thursday",
+							"text": "gelecek Perşembe",
 							"weekday": 4,
 							"week": "next"
 						},
@@ -51,7 +51,7 @@
 						"kind": "lists.task",
 						"title": "Araba sigortasını yenile",
 						"date": {
-							"text": "before the end of the month",
+							"text": "ayın sonundan önce",
 							"approximate": true
 						}
 					}

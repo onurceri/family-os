@@ -2,7 +2,7 @@
 	"case": "An adult child set it up for their parents",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -31,7 +31,13 @@
 					{
 						"kind": "lists.task",
 						"title": "İlaçlarını al",
-						"notes": "Eczaneden"
+						"date": {
+							"text": "21 Ekim Çarşamba",
+							"day": 21,
+							"month": 10,
+							"weekday": 3
+						},
+						"place": "Eczane"
 					}
 				]
 			}

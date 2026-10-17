@@ -2,7 +2,7 @@
 	"case": "Ticks off the newest of many similar items (English)",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -13,7 +13,7 @@
 				"mentions": [
 					{
 						"kind": "lists.bought",
-						"target": "Picture wire",
+						"target": "picture wire",
 						"place": "Hardware store"
 					}
 				]

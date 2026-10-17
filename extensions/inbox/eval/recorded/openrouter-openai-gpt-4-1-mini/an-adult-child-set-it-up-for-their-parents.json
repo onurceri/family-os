@@ -2,7 +2,7 @@
 	"case": "An adult child set it up for their parents",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
@@ -30,8 +30,8 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "İlaçları eczaneden al",
-						"notes": "Babamın ilaçları"
+						"title": "İlaçları almak",
+						"notes": "Eczaneden"
 					}
 				]
 			}

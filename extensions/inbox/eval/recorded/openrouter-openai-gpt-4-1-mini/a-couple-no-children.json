@@ -2,18 +2,18 @@
 	"case": "A couple, no children",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Diş randevusu ve akşam yemeği",
+				"label": "Diş randevusu ve yemek planı",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Diş randevu",
+						"title": "Diş randevusu",
 						"people": [
 							"Selin"
 						],
@@ -29,9 +29,7 @@
 					{
 						"kind": "calendar.event",
 						"title": "Annemleri yemeğe götürme",
-						"people": [
-							"Kerem"
-						],
+						"forMe": true,
 						"date": {
 							"text": "9 Ekim Cuma",
 							"day": 9,

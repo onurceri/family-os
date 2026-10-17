@@ -1,0 +1,26 @@
+{
+	"case": "A note for the family board (English)",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"promptHash": "ff1a350d",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Water off notice",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "board.note",
+						"notes": "The water is off on Thursday from 9 to 12, so fill some bottles the night before",
+						"endDate": {
+							"text": "Thursday",
+							"weekday": 4
+						}
+					}
+				]
+			}
+		}
+	]
+}

@@ -2,13 +2,13 @@
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / google/gemini-2.5-flash",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "4-B sınıfı gezisi ve veli toplantısı",
+				"label": "4-B sınıfı duyuruları",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -27,7 +27,7 @@
 						"timeText": "08:30",
 						"endTime": "15:00",
 						"place": "Gaziantep Hayvanat Bahçesi",
-						"notes": "Beslenme çantası, su şişesi ve yağmurluk bulundurulmalı"
+						"notes": "Beslenme çantası, su şişesi ve yağmurluk bulundurun"
 					},
 					{
 						"kind": "lists.task",
@@ -37,22 +37,22 @@
 							"Mehmet"
 						],
 						"date": {
-							"text": "en geç 9 Ekim Perşembe gününe kadar",
+							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "Ücret: 150 TL, sınıf öğretmenine elden teslim edilmeli"
+						"notes": "Ücret: 150 TL, sınıf öğretmenine elden teslim edin"
 					},
 					{
 						"kind": "lists.task",
-						"title": "İmzalı veli izin formunu getir",
+						"title": "İmzalı veli izin formunu teslim et",
 						"people": [
 							"Ayşe",
 							"Mehmet"
 						],
 						"date": {
-							"text": "aynı gün",
+							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4

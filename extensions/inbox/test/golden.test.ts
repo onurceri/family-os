@@ -107,3 +107,40 @@ describe('recorded model answers, replayed', () => {
 		},
 	);
 });
+
+describe('the eval household', () => {
+	it('waits for the retry of a reading the provider broke, as the queue would at home', async () => {
+		const c = CASES.find((one) => one.name === 'Meals planned for the week (English)');
+		if (!c) throw new Error('expected the case');
+		// As gemini-2.5-flash once answered in a full run: a stray character between two mentions.
+		const broken =
+			'{"label":"Meal plan","intent":"actionable","mentions":[{"kind":"kitchen.meal","title":"Tacos","date":{"text":"Wednesday","weekday":3}},跹{"kind":"kitchen.meal","title":"Fish pie","variant":"dinner","date":{"text":"Friday","weekday":5}}]}';
+		const answer = {
+			label: 'Meal plan',
+			intent: 'actionable',
+			mentions: [
+				{ kind: 'kitchen.meal', title: 'Tacos', date: { text: 'Wednesday', weekday: 3 } },
+				{
+					kind: 'kitchen.meal',
+					title: 'Fish pie',
+					variant: 'dinner',
+					date: { text: 'Friday', weekday: 5 },
+				},
+			],
+		};
+		let asked: readonly unknown[] = [];
+		const outcome = await runCaseOn(c, {
+			prepare(k) {
+				k.llm.respond(
+					new LlmError('invalid_output', 'The model did not answer with JSON', {
+						cause: { text: broken },
+					}),
+					answer,
+				);
+				asked = k.llm.calls;
+			},
+		});
+		expect(asked).toHaveLength(2);
+		expect(failedChecks(outcome)).toEqual([]);
+	});
+});

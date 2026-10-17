@@ -3,9 +3,9 @@
 		"openrouter-google-gemini-2-5-flash": {
 			"label": "openrouter / google/gemini-2.5-flash",
 			"version": "inbox.understand/1",
-			"promptHash": "c5c20732",
+			"promptHash": "ff1a350d",
 			"date": "2026-10-17",
-			"cases": 36,
+			"cases": 43,
 			"passing": [
 				"School trip notice (Turkish)",
 				"Chat message with groceries, a vague date and a deadline (English)",
@@ -42,17 +42,24 @@
 				"Task nobody is named for is not silently assigned (English)",
 				"Message addressed to the person who shared it (English)",
 				"Message to the whole household stays for everyone (English)",
-				"Task notes say what the amount is (English)"
+				"Task notes say what the amount is (English)",
+				"A vet card for a listed pet (English)",
+				"A garage invoice for a listed car (English)",
+				"A receipt for an appliance with a warranty (English)",
+				"A recipe shared to keep (English)",
+				"Meals planned for the week (English)",
+				"A note for the family board (English)",
+				"A chore done and new turns on it (English)"
 			],
 			"failing": {},
-			"cost": 0.0451
+			"cost": 0.0494
 		},
 		"openrouter-openai-gpt-4-1-mini": {
 			"label": "openrouter / openai/gpt-4.1-mini",
 			"version": "inbox.understand/1",
-			"promptHash": "c5c20732",
+			"promptHash": "ff1a350d",
 			"date": "2026-10-17",
-			"cases": 36,
+			"cases": 43,
 			"passing": [
 				"School trip notice (Turkish)",
 				"Chat message with groceries, a vague date and a deadline (English)",
@@ -89,10 +96,17 @@
 				"Task nobody is named for is not silently assigned (English)",
 				"Message addressed to the person who shared it (English)",
 				"Message to the whole household stays for everyone (English)",
-				"Task notes say what the amount is (English)"
+				"Task notes say what the amount is (English)",
+				"A vet card for a listed pet (English)",
+				"A garage invoice for a listed car (English)",
+				"A receipt for an appliance with a warranty (English)",
+				"A recipe shared to keep (English)",
+				"Meals planned for the week (English)",
+				"A note for the family board (English)",
+				"A chore done and new turns on it (English)"
 			],
 			"failing": {},
-			"cost": 0.0211
+			"cost": 0.0528
 		}
 	}
 }

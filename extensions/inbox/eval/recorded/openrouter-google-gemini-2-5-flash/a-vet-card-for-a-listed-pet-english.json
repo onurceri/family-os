@@ -1,0 +1,34 @@
+{
+	"case": "A vet card for a listed pet (English)",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"promptHash": "ff1a350d",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Luna's vaccination record",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "pets.treatment",
+						"about": "Luna",
+						"title": "Purevax RCP",
+						"variant": "vaccination",
+						"date": {
+							"text": "02.10.2026",
+							"numeric": "02.10.2026"
+						},
+						"endDate": {
+							"text": "02.10.2027",
+							"numeric": "02.10.2027"
+						},
+						"place": "Riverside Vet",
+						"notes": "Batch L4471"
+					}
+				]
+			}
+		}
+	]
+}

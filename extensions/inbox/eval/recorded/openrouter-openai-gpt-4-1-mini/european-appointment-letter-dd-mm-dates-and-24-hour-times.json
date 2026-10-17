@@ -2,20 +2,20 @@
 	"case": "European appointment letter: DD.MM. dates and 24-hour times",
 	"model": "openrouter / openai/gpt-4.1-mini",
 	"version": "inbox.understand/1",
-	"promptHash": "c5c20732",
+	"promptHash": "ff1a350d",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dental appointment on 14 October",
+				"label": "Dental appointment for Ms. Keller",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Appointment at dental practice of Dr. Braun",
+						"title": "Dental appointment at Dr. Braun",
 						"people": [
-							"Katrin"
+							"Ms. Keller"
 						],
 						"date": {
 							"text": "Wednesday, 14.10.2026",
@@ -27,21 +27,6 @@
 						"time": "14:30",
 						"timeText": "14:30",
 						"notes": "Bring your insurance card"
-					},
-					{
-						"kind": "lists.task",
-						"title": "Cancel dental appointment if needed",
-						"people": [
-							"Katrin"
-						],
-						"date": {
-							"text": "by 12.10.2026",
-							"day": 12,
-							"month": 10,
-							"year": 2026
-						},
-						"time": "12:00",
-						"timeText": "12:00"
 					}
 				]
 			}
