@@ -1494,6 +1494,10 @@
 																			"null"
 																		]
 																	},
+																	"dueWeekday": {
+																		"type": "string",
+																		"description": "The weekday of `dueDate`, in English: read it from here, never work it out"
+																	},
 																	"dueTime": {
 																		"type": [
 																			"string",

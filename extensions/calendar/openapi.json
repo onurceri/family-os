@@ -2036,6 +2036,10 @@
 																	"date": {
 																		"type": "string"
 																	},
+																	"weekday": {
+																		"type": "string",
+																		"description": "The weekday of `date`, in English: read it from here, never work it out"
+																	},
 																	"endDate": {
 																		"type": [
 																			"string",
@@ -2096,6 +2100,7 @@
 																	"id",
 																	"title",
 																	"date",
+																	"weekday",
 																	"endDate",
 																	"time",
 																	"memberIds",
@@ -2129,6 +2134,10 @@
 																	"date": {
 																		"type": "string"
 																	},
+																	"weekday": {
+																		"type": "string",
+																		"description": "The weekday of `date`, in English: read it from here, never work it out"
+																	},
 																	"endDate": {
 																		"type": [
 																			"string",
@@ -2189,6 +2198,7 @@
 																	"id",
 																	"title",
 																	"date",
+																	"weekday",
 																	"endDate",
 																	"time",
 																	"memberIds",

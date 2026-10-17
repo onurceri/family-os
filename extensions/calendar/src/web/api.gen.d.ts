@@ -1305,6 +1305,8 @@ export interface operations {
                                 occurrence?: string;
                                 title: string;
                                 date: string;
+                                /** @description The weekday of `date`, in English: read it from here, never work it out */
+                                weekday: string;
                                 endDate: string | null;
                                 /** @description HH:MM-HH:MM local time; null for all-day events */
                                 time: string | null;
@@ -1337,6 +1339,8 @@ export interface operations {
                                 occurrence?: string;
                                 title: string;
                                 date: string;
+                                /** @description The weekday of `date`, in English: read it from here, never work it out */
+                                weekday: string;
                                 endDate: string | null;
                                 /** @description HH:MM-HH:MM local time; null for all-day events */
                                 time: string | null;

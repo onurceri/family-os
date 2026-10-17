@@ -9,7 +9,7 @@ import {
 	labelNamesTitle,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { IsoDateSchema, IsoTimeSchema, nextDate, todayIn, toRRule } from '@famos/time';
+import { formatDate, IsoDateSchema, IsoTimeSchema, nextDate, todayIn, toRRule } from '@famos/time';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import {
@@ -518,6 +518,10 @@ export const openTasks = defineAction({
 				title: z.string(),
 				assigneeId: z.string().nullable().describe('Null means anyone'),
 				dueDate: z.string().nullable(),
+				dueWeekday: z
+					.string()
+					.optional()
+					.describe('The weekday of `dueDate`, in English: read it from here, never work it out'),
 				dueTime: z.string().nullable(),
 				repeats: z.boolean(),
 			}),
@@ -567,6 +571,8 @@ export const openTasks = defineAction({
 				title: r.title,
 				assigneeId: r.assignee_id,
 				dueDate: r.due_date,
+				// Models work weekdays out wrongly from a date; code gives it.
+				...(r.due_date && { dueWeekday: formatDate(r.due_date, 'en', { weekday: 'long' }) }),
 				dueTime: r.due_time,
 				repeats: r.rrule !== null,
 			})),

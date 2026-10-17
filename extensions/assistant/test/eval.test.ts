@@ -17,7 +17,7 @@ import {
 	says,
 	type Turn,
 } from '../eval/checks.ts';
-import { actionIdOf, report, runCase } from '../eval/harness.ts';
+import { actionIdOf, plainText, report, runCase } from '../eval/harness.ts';
 import { DEFAULT_FAMILY, seed } from '../eval/seed.ts';
 import assistant from '../src/server/index.ts';
 
@@ -85,6 +85,13 @@ describe('the eval checks', () => {
 		expect(atMost(2, 'on Oat milk', about).pass(two)).toBe(true);
 		expect(either(says(/already/), says(/oat/i)).pass(outcome({ reply: 'Oat milk' }))).toBe(true);
 		expect(either(says(/already/), says(/oat/i)).pass(outcome({ reply: 'Milk' }))).toBe(false);
+	});
+
+	it('reads answers in plain typography (real model output)', () => {
+		// nemotron wrote "Tuesday 6 October" with narrow no-break spaces.
+		expect(plainText('Tuesday\u202f6\u00a0October, I couldn\u2019t')).toBe(
+			"Tuesday 6 October, I couldn't",
+		);
 	});
 
 	it('maps tool names back to action ids', () => {

@@ -54,6 +54,17 @@ export function observed(llm: LlmPort, raw = false) {
 	return { llm: port, calls, notes };
 }
 
+/** Typographic quotes as plain ones (U+2018, U+2019). */
+const CURLY_QUOTES = /[\u2018\u2019]/g;
+/** No-break and thin spaces as plain ones (U+00A0, U+2007, U+2009, U+202F). */
+const ODD_SPACES = /[\u00a0\u2007\u2009\u202f]/g;
+
+/**
+ * An answer in plain typography, so the checks' words match however a model types them: some
+ * write "couldn’t" with a curly apostrophe, or a no-break space in "6 October".
+ */
+export const plainText = (text: string) => text.replace(CURLY_QUOTES, "'").replace(ODD_SPACES, ' ');
+
 export interface CaseResult {
 	name: string;
 	ok: boolean;
@@ -121,15 +132,12 @@ export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseR
 			turns.push({
 				ask,
 				// The model's words with the app's line for each suggestion under them, as a chat
-				// outside the app shows the answer. Typographic apostrophes ("couldn’t") read as plain
-				// ones, so the checks' words match however a model types them.
-				reply: [
-					reply?.content ?? '',
-					...(reply?.suggested.length ? [reply.suggested.join('\n')] : []),
-				]
-					.filter((part) => part !== '')
-					.join('\n\n')
-					.replace(/[‘’]/g, "'"),
+				// outside the app shows the answer, in plain typography (see `plainText`).
+				reply: plainText(
+					[reply?.content ?? '', ...(reply?.suggested.length ? [reply.suggested.join('\n')] : [])]
+						.filter((part) => part !== '')
+						.join('\n\n'),
+				),
 				status:
 					reply?.status === 'failed'
 						? `failed: ${reply.errorCode ?? 'unknown'}`

@@ -7,7 +7,15 @@ import {
 	searchFinds,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { addDays, IsoDateSchema, IsoTimeSchema, isValidDate, todayIn, zoned } from '@famos/time';
+import {
+	addDays,
+	formatDate,
+	IsoDateSchema,
+	IsoTimeSchema,
+	isValidDate,
+	todayIn,
+	zoned,
+} from '@famos/time';
 import { z } from 'zod';
 import pkg from '../../package.json' with { type: 'json' };
 import {
@@ -731,6 +739,9 @@ const FoundEventSchema = z.object({
 		),
 	title: z.string(),
 	date: z.string(),
+	weekday: z
+		.string()
+		.describe('The weekday of `date`, in English: read it from here, never work it out'),
 	endDate: z.string().nullable(),
 	time: z.string().nullable().describe('HH:MM-HH:MM local time; null for all-day events'),
 	memberIds: z.array(z.string()).describe('Left out means the whole family'),
@@ -917,6 +928,8 @@ export const findEvents = defineAction({
 				...(o.recurring && { occurrence: o.key }),
 				title: o.title,
 				date,
+				// Models work weekdays out wrongly from a date; code gives it.
+				weekday: formatDate(date, 'en', { weekday: 'long' }),
 				endDate: o.allDay && o.endDate && o.endDate !== o.startDate ? o.endDate : null,
 				time:
 					!o.allDay && o.start !== null

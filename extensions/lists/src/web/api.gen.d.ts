@@ -1095,6 +1095,8 @@ export interface operations {
                                 /** @description Null means anyone */
                                 assigneeId: string | null;
                                 dueDate: string | null;
+                                /** @description The weekday of `dueDate`, in English: read it from here, never work it out */
+                                dueWeekday?: string;
                                 dueTime: string | null;
                                 repeats: boolean;
                             }[];
