@@ -1,15 +1,21 @@
-import { addDays, compareDates, formatClock, formatDate, type HourCycle } from '@famos/time';
+import { compareDates, formatClock, formatDate, type HourCycle, weekOf } from '@famos/time';
 import type { Task } from '../contract/index.js';
 import type { ListsT } from './i18n.js';
 
 export type Urgency = 'overdue' | 'today' | 'soon' | 'later' | 'none';
 
-export function urgency(task: Pick<Task, 'dueDate'>, today: string): Urgency {
+/**
+ * When a task is due, as the Tasks page groups it. `soon` ("This week") ends on the last day of
+ * the family's week (`weekStart`, ISO 1 = Monday … 7 = Sunday), so on the week's last day only
+ * that day is left of it and the days after belong to next week (`later`).
+ */
+export function urgency(task: Pick<Task, 'dueDate'>, today: string, weekStart: number): Urgency {
 	if (!task.dueDate) return 'none';
 	const c = compareDates(task.dueDate, today);
 	if (c < 0) return 'overdue';
 	if (c === 0) return 'today';
-	return compareDates(task.dueDate, addDays(today, 6)) <= 0 ? 'soon' : 'later';
+	const lastOfWeek = weekOf(today, weekStart)[6] ?? today;
+	return compareDates(task.dueDate, lastOfWeek) <= 0 ? 'soon' : 'later';
 }
 
 /** The groups of the Tasks page, in order: late first, then by when, those without a date last. */
@@ -22,6 +28,7 @@ export const TASK_GROUPS = ['overdue', 'today', 'soon', 'later', 'none'] as cons
 export function groupTasks<T extends Pick<Task, 'dueDate' | 'dueTime' | 'doneAt' | 'assigneeId'>>(
 	tasks: readonly T[],
 	today: string,
+	weekStart: number,
 	mine: string | null = null,
 ): { key: Urgency; tasks: T[] }[] {
 	const open = tasks.filter((task) => task.doneAt === null && (!mine || task.assigneeId === mine));
@@ -29,7 +36,7 @@ export function groupTasks<T extends Pick<Task, 'dueDate' | 'dueTime' | 'doneAt'
 	return TASK_GROUPS.map((key) => ({
 		key,
 		tasks: open
-			.filter((task) => urgency(task, today) === key)
+			.filter((task) => urgency(task, today, weekStart) === key)
 			.toSorted((a, b) => (when(a) < when(b) ? -1 : when(a) > when(b) ? 1 : 0)),
 	})).filter((group) => group.tasks.length > 0);
 }

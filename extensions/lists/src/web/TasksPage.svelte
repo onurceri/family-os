@@ -94,7 +94,9 @@
 		later: () => t('group_later'),
 		none: () => t('group_no_date'),
 	};
-	const groups = $derived(groupTasks(tasks, today, mine ? (me?.id ?? null) : null));
+	const groups = $derived(
+		groupTasks(tasks, today, app.weekStart(), mine ? (me?.id ?? null) : null),
+	);
 	const openCount = $derived(groups.reduce((n, g) => n + g.tasks.length, 0));
 	const done = $derived(tasks.filter((task) => task.doneAt !== null));
 	// On a wide page (container 70 rem) what is near and what is later sit side by side, but only

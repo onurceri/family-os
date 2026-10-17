@@ -159,11 +159,10 @@ test('tasks: create, assign to someone else, set a due date, complete and uncomp
 	await page.getByTestId('side-panel').getByLabel('Due date').fill(tomorrow);
 	await page.getByTestId('side-panel').getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('Saved')).toBeVisible();
-	const soon = page.getByRole('region', { name: 'This week' });
-	await expect(soon.getByRole('button', { name: /^Buy a birthday present/ })).toContainText(
-		'Tomorrow',
-	);
-	await expect(soon).toContainText('Elif');
+	// Tomorrow is this week or, on the last day of the family's week, next week ("Later").
+	const moved = page.getByRole('button', { name: /^Buy a birthday present/ });
+	await expect(moved).toContainText('Tomorrow');
+	await expect(moved).toContainText('Elif');
 	await expect(page.getByRole('region', { name: 'No date' })).toHaveCount(0);
 
 	// The Today page lists the open tasks, what is due first.
