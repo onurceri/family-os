@@ -1,0 +1,36 @@
+{
+	"case": "Meals planned for the week (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Meal plan",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "kitchen.meal",
+						"title": "Tacos",
+						"variant": "dinner",
+						"date": {
+							"text": "Wednesday",
+							"weekday": 3
+						}
+					},
+					{
+						"kind": "kitchen.meal",
+						"title": "Fish pie",
+						"variant": "dinner",
+						"date": {
+							"text": "Friday",
+							"weekday": 5
+						}
+					}
+				]
+			}
+		}
+	]
+}

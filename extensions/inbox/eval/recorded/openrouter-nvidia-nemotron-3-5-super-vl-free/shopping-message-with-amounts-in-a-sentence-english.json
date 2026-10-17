@@ -1,0 +1,41 @@
+{
+	"case": "Shopping message with amounts in a sentence (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Shopping on the way back",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Milk",
+						"quantity": "2 litres",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Minced beef",
+						"quantity": "half a kilo",
+						"variant": "meat"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Eggs",
+						"quantity": "6",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Nutella",
+						"variant": "pantry"
+					}
+				]
+			}
+		}
+	]
+}

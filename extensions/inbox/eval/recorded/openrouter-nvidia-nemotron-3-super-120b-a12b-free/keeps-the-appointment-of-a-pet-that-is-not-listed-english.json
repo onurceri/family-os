@@ -1,0 +1,31 @@
+{
+	"case": "Keeps the appointment of a pet that is not listed (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Miso's check-up",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Miso's annual check",
+						"date": {
+							"text": "Thu 15",
+							"day": 15,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "10:30",
+						"timeText": "10:30",
+						"place": "Riverside Vet Clinic"
+					}
+				]
+			}
+		}
+	]
+}

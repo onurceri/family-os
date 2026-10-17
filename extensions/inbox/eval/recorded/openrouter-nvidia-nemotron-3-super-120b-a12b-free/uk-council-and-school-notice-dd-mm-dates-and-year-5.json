@@ -1,0 +1,40 @@
+{
+	"case": "UK council and school notice: DD/MM dates and Year 5",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Bin and parents evening",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Green bin collection",
+						"date": {
+							"text": "09/10",
+							"day": 9,
+							"month": 10
+						}
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Year 5 parents' evening",
+						"date": {
+							"text": "15/10",
+							"day": 15,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "17:30",
+						"timeText": "5.30pm",
+						"notes": "Please book a slot with the class teacher"
+					}
+				]
+			}
+		}
+	]
+}

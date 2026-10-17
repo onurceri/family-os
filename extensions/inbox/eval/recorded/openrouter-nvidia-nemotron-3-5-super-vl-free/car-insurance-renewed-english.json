@@ -1,0 +1,35 @@
+{
+	"case": "Car insurance renewed (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Car insurance renewed",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "records.dutyDone",
+						"target": "Car insurance",
+						"about": "Golf",
+						"date": {
+							"text": "20 October 2026",
+							"day": 20,
+							"month": 10,
+							"year": 2026
+						},
+						"endDate": {
+							"text": "19 October 2027",
+							"day": 19,
+							"month": 10,
+							"year": 2027
+						}
+					}
+				]
+			}
+		}
+	]
+}

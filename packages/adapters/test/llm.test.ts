@@ -14,7 +14,7 @@ import {
 	monthBounds,
 } from '../src/llm-aisdk/index.ts';
 import { retryAfterOf } from '../src/llm-aisdk/llm.ts';
-import { extractJson, outputModeFor } from '../src/llm-aisdk/output.ts';
+import { extractJson, outputModeFor, reasoningFor } from '../src/llm-aisdk/output.ts';
 import { silentLogger, uuidv7Ids } from '../src/runtime/index.ts';
 
 // A stand-in OpenAI-compatible server: behaviour is chosen by the requested model id.
@@ -759,6 +759,16 @@ describe('AI SDK LlmPort', () => {
 			expect(seen[1]?.body.reasoning).toEqual({ effort: 'none' });
 		});
 
+		it('turns thinking off for a model that would think the whole answer away, unless asked', async () => {
+			await useModel('nvidia/nemotron-3.5-super-vl:free');
+			await askWith();
+			expect(seen[0]?.body.reasoning).toEqual({ effort: 'none' });
+			await askWith('high');
+			expect(seen[1]?.body.reasoning).toEqual({ effort: 'high' });
+			expect(reasoningFor('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBe('off');
+			expect(reasoningFor('openrouter', 'google/gemini-2.5-flash')).toBeUndefined();
+		});
+
 		it('asks again without it when the provider refuses the setting', async () => {
 			await useModel('no-thinking', 'openai-compatible');
 			await expect(askWith('low')).resolves.toMatchObject({ output: { title: 'Zoo trip' } });
@@ -785,6 +795,8 @@ describe('AI SDK LlmPort', () => {
 			// The prefix belongs to its provider: another server may host something else by the name.
 			expect(outputModeFor('ollama', 'gpt-4.1')).toBe('json');
 			expect(outputModeFor('ollama', 'qwen3:8b')).toBe('json');
+			expect(outputModeFor('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBe('schema');
+			expect(outputModeFor('openrouter', 'nvidia/nemotron-3.5-super-vl:free')).toBe('json');
 		});
 
 		it('gives a model that follows a JSON Schema the schema, and records the mode', async () => {

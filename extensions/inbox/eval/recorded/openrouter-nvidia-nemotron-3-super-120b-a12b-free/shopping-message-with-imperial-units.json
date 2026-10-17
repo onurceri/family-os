@@ -1,0 +1,43 @@
+{
+	"case": "Shopping message with imperial units",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Pancake ingredients",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Flour",
+						"quantity": "2 lb"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Milk",
+						"quantity": "1 gallon"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Eggs",
+						"quantity": "a dozen"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Butter",
+						"quantity": "12 oz"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Pumpkin puree",
+						"quantity": "1 can"
+					}
+				]
+			}
+		}
+	]
+}

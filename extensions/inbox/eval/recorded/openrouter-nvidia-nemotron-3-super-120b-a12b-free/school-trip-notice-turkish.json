@@ -1,0 +1,47 @@
+{
+	"case": "School trip notice (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "4-B sınıfı gezisi ve veli toplantısı",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Gaziantep Hayvanat Bahçesi eğitim gezisi",
+						"people": [
+							"Deniz"
+						],
+						"date": {
+							"text": "16 Ekim Cuma günü",
+							"day": 16,
+							"month": 10,
+							"weekday": 5
+						},
+						"time": "08:30",
+						"timeText": "08:30",
+						"place": "Gaziantep Hayvanat Bahçesi",
+						"notes": "Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır. Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız. Öğrencilerimizin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalarını rica ederiz."
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Veli toplantısı",
+						"date": {
+							"text": "20 Ekim Salı günü",
+							"day": 20,
+							"month": 10,
+							"weekday": 2
+						},
+						"time": "18:00",
+						"timeText": "18:00"
+					}
+				]
+			}
+		}
+	]
+}

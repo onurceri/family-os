@@ -1,0 +1,23 @@
+{
+	"case": "Ticks off the newest of many similar items (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Picture wire bought",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "Picture wire",
+						"place": "Hardware store"
+					}
+				]
+			}
+		}
+	]
+}

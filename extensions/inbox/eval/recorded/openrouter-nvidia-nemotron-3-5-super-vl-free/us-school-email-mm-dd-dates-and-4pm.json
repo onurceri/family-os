@@ -1,0 +1,40 @@
+{
+	"case": "US school email: MM/DD dates and 4pm",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Picture day and field trip slip",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Picture day",
+						"date": {
+							"text": "Friday 10/9",
+							"day": 10,
+							"month": 9,
+							"weekday": 5
+						},
+						"time": "16:00",
+						"timeText": "4pm",
+						"place": "Gym"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Return the signed permission slip for the field trip",
+						"date": {
+							"text": "by 10/8",
+							"day": 8,
+							"month": 10
+						}
+					}
+				]
+			}
+		}
+	]
+}

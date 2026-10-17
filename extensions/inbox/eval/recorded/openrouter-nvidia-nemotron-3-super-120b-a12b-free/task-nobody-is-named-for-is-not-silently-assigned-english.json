@@ -1,0 +1,29 @@
+{
+	"case": "Task nobody is named for is not silently assigned (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim club fee",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Pay the swim club term fee",
+						"date": {
+							"text": "Friday 16 October",
+							"day": 16,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Fee: 120, at the front desk"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,4 +1,4 @@
-import type { OutputMode } from '@famos/sdk';
+import type { LlmReasoning, OutputMode } from '@famos/sdk';
 import type { ProviderKind } from './schemas.ts';
 
 /**
@@ -7,24 +7,40 @@ import type { ProviderKind } from './schemas.ts';
  * and derails others (Gemini repeats itself inside an array under a JSON Schema, and rejects
  * schemas with item limits), so a model is only given the schema once it has shown to follow it.
  * Any other model gets `json`, which every OpenAI-compatible server we know of accepts.
+ *
+ * `reasoning` is how much a model thinks before a structured answer when the request does not
+ * say: models that always think at length (the free Nemotron ones) otherwise spend the whole
+ * output cap on it before the answer starts. Others keep the provider's default, which the
+ * evaluation measured as steadier for Gemini.
  */
 export const OUTPUT_DEFAULTS: readonly {
 	kind?: ProviderKind;
 	model: string;
 	mode: OutputMode;
+	reasoning?: LlmReasoning;
 }[] = [
 	{ kind: 'openrouter', model: 'openai/gpt-4.1', mode: 'schema' },
 	{ kind: 'openai-compatible', model: 'gpt-4.1', mode: 'schema' },
 	{ model: 'google/gemini', mode: 'json' },
 	{ model: 'gemini', mode: 'json' },
+	{ kind: 'openrouter', model: 'nvidia/nemotron-3-super', mode: 'schema', reasoning: 'off' },
+	{ kind: 'openrouter', model: 'nvidia/nemotron', mode: 'json', reasoning: 'off' },
 ];
 
-export function outputModeFor(kind: ProviderKind, model: string): OutputMode {
+const defaultsFor = (kind: ProviderKind, model: string) => {
 	const id = model.trim().toLowerCase();
-	return (
-		OUTPUT_DEFAULTS.find((d) => (d.kind === undefined || d.kind === kind) && id.startsWith(d.model))
-			?.mode ?? 'json'
+	return OUTPUT_DEFAULTS.find(
+		(d) => (d.kind === undefined || d.kind === kind) && id.startsWith(d.model),
 	);
+};
+
+export function outputModeFor(kind: ProviderKind, model: string): OutputMode {
+	return defaultsFor(kind, model)?.mode ?? 'json';
+}
+
+/** The reasoning level of a structured answer when the request leaves it out. */
+export function reasoningFor(kind: ProviderKind, model: string): LlmReasoning | undefined {
+	return defaultsFor(kind, model)?.reasoning;
 }
 
 /** The mode to ask in next when one fails; `text` asks for nothing, so nothing is below it. */

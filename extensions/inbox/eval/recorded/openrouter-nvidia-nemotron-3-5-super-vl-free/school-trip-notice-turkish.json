@@ -1,0 +1,75 @@
+{
+	"case": "School trip notice (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "4-B sınıf gezisi ve veli toplantısı",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Gaziantep Hayvanat Bahçesi eğitim gezisi",
+						"people": [
+							"Deniz"
+						],
+						"date": {
+							"text": "16 Ekim Cuma",
+							"day": 16,
+							"month": 10,
+							"weekday": 5
+						},
+						"time": "08:30",
+						"timeText": "08:30",
+						"endTime": "15:00",
+						"place": "Gaziantep Hayvanat Bahçesi",
+						"notes": "Beslenme çantası, su şişesi ve yağmurluk ile gelmeli"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Gezi ücreti ödemesi",
+						"people": [
+							"Deniz"
+						],
+						"date": {
+							"text": "9 Ekim Perşembe",
+							"day": 9,
+							"month": 10,
+							"weekday": 4
+						},
+						"notes": "Ücret: 150 TL, sınıf öğretmenine elden teslim edilecek"
+					},
+					{
+						"kind": "lists.task",
+						"title": "İmzalı veli izin formu getirme",
+						"people": [
+							"Deniz"
+						],
+						"date": {
+							"text": "9 Ekim Perşembe",
+							"day": 9,
+							"month": 10,
+							"weekday": 4
+						}
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Veli toplantısı",
+						"date": {
+							"text": "20 Ekim Salı",
+							"day": 20,
+							"month": 10,
+							"weekday": 2
+						},
+						"time": "18:00",
+						"timeText": "18:00"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,35 @@
+{
+	"case": "A chore done and new turns on it (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Bins out and new bin turns",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "the bins",
+						"forMe": true,
+						"date": {
+							"text": "this morning",
+							"inDays": 0
+						}
+					},
+					{
+						"kind": "chores.turns",
+						"target": "Take out the bins",
+						"people": [
+							"Ivy",
+							"Leo"
+						]
+					}
+				]
+			}
+		}
+	]
+}

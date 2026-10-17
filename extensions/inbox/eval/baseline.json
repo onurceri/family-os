@@ -1,22 +1,18 @@
 {
 	"models": {
-		"openrouter-google-gemini-2-5-flash": {
-			"label": "openrouter / google/gemini-2.5-flash",
+		"openrouter-nvidia-nemotron-3-super-120b-a12b-free": {
+			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 			"version": "inbox.understand/1",
-			"promptHash": "ff1a350d",
+			"promptHash": "4e5f4b61",
 			"date": "2026-10-17",
-			"cases": 43,
+			"cases": 44,
 			"passing": [
-				"School trip notice (Turkish)",
 				"Chat message with groceries, a vague date and a deadline (English)",
 				"Bare weekday (Turkish)",
 				"Exact date with year (Turkish)",
 				"Tomorrow (Turkish)",
-				"Weekly lessons with an end (Turkish)",
 				"Payment due \"on the 15th\" (Turkish)",
-				"Shopping list (Turkish)",
 				"A couple, no children",
-				"An adult child set it up for their parents",
 				"Nothing to do",
 				"Instructions inside the shared content are ignored",
 				"A question for the assistant (Turkish)",
@@ -44,22 +40,46 @@
 				"Message to the whole household stays for everyone (English)",
 				"Task notes say what the amount is (English)",
 				"A vet card for a listed pet (English)",
-				"A garage invoice for a listed car (English)",
-				"A receipt for an appliance with a warranty (English)",
+				"An appliance still to buy goes on the shopping list (English)",
 				"A recipe shared to keep (English)",
-				"Meals planned for the week (English)",
 				"A note for the family board (English)",
 				"A chore done and new turns on it (English)"
 			],
-			"failing": {},
-			"cost": 0.0494
+			"failing": {
+				"School trip notice (Turkish)": [
+					"lists.addTask: pay 150 TL by 8 or 9 Oct",
+					"lists.addTask: the fee (conflicting weekday) is \"check this\" on dueDate",
+					"lists.addTask: permission form by 8 or 9 Oct"
+				],
+				"Weekly lessons with an end (Turkish)": [
+					"calendar.createEvent: weekly on Wednesdays 17:00 until 31 Oct"
+				],
+				"Shopping list (Turkish)": [
+					"lists.addShoppingItems: four items with sections"
+				],
+				"An adult child set it up for their parents": [
+					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma",
+					"lists.addTask: pick up the medicine"
+				],
+				"A garage invoice for a listed car (English)": [
+					"vehicles.addLog: the service on 3 Oct at Northside Garage",
+					"vehicles.addLog: no amount of money in the notes"
+				],
+				"A receipt for an appliance with a warranty (English)": [
+					"home.addItem: the dishwasher bought on 4 Oct, warranty to 4 Oct 2028"
+				],
+				"Meals planned for the week (English)": [
+					"kitchen.addToMealPlan: fish pie for dinner on Fri 9 Oct"
+				]
+			},
+			"cost": 0
 		},
-		"openrouter-openai-gpt-4-1-mini": {
-			"label": "openrouter / openai/gpt-4.1-mini",
+		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
+			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 			"version": "inbox.understand/1",
-			"promptHash": "ff1a350d",
+			"promptHash": "4e5f4b61",
 			"date": "2026-10-17",
-			"cases": 43,
+			"cases": 44,
 			"passing": [
 				"School trip notice (Turkish)",
 				"Chat message with groceries, a vague date and a deadline (English)",
@@ -70,7 +90,6 @@
 				"Payment due \"on the 15th\" (Turkish)",
 				"Shopping list (Turkish)",
 				"A couple, no children",
-				"An adult child set it up for their parents",
 				"Nothing to do",
 				"Instructions inside the shared content are ignored",
 				"A question for the assistant (Turkish)",
@@ -100,13 +119,21 @@
 				"A vet card for a listed pet (English)",
 				"A garage invoice for a listed car (English)",
 				"A receipt for an appliance with a warranty (English)",
+				"An appliance still to buy goes on the shopping list (English)",
 				"A recipe shared to keep (English)",
 				"Meals planned for the week (English)",
-				"A note for the family board (English)",
-				"A chore done and new turns on it (English)"
+				"A note for the family board (English)"
 			],
-			"failing": {},
-			"cost": 0.0528
+			"failing": {
+				"An adult child set it up for their parents": [
+					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma",
+					"lists.addTask: pick up the medicine"
+				],
+				"A chore done and new turns on it (English)": [
+					"chores.markDone: the bins, by the sharer (Tom)"
+				]
+			},
+			"cost": 0
 		}
 	}
 }

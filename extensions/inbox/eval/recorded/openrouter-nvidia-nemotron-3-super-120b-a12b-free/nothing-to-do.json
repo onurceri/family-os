@@ -1,0 +1,17 @@
+{
+	"case": "Nothing to do",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Günaydın mesajı",
+				"intent": "nothing",
+				"mentions": []
+			}
+		}
+	]
+}

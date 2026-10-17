@@ -1,0 +1,30 @@
+{
+	"case": "Moves the event that is already there (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Regional gala moved",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Regional gala",
+						"date": {
+							"text": "Sat 14 Nov",
+							"day": 14,
+							"month": 11,
+							"weekday": 6
+						},
+						"time": "09:00",
+						"timeText": "09:00"
+					}
+				]
+			}
+		}
+	]
+}

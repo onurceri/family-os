@@ -1,0 +1,70 @@
+{
+	"case": "A school letter repeating an event the calendar has (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Year 7 class trip and parents' evening",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Year 7 class trip to Postojna Cave",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Thursday 29 October",
+							"day": 29,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "07:50",
+						"timeText": "7:50",
+						"place": "School",
+						"notes": "Bus leaves school at 7:50 and returns about 16:30. Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. The cost is 14 EUR, payable through the school e-office by 23 October."
+					},
+					{
+						"kind": "calendar.eventChange",
+						"target": "Parents' evening at school",
+						"date": {
+							"text": "20 October",
+							"day": 20,
+							"month": 10,
+							"weekday": 2
+						},
+						"time": "18:00",
+						"timeText": "18:00",
+						"place": "School hall"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send packed lunch, sturdy shoes and signed permission slip for Year 7 class trip",
+						"date": {
+							"text": "Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						}
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay 14 EUR for Year 7 class trip through school e-office",
+						"date": {
+							"text": "23 October",
+							"day": 23,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Cost is 14 EUR, payable through the school e-office by 23 October."
+					}
+				]
+			}
+		}
+	]
+}

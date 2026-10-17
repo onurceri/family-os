@@ -1,0 +1,17 @@
+{
+	"case": "A question for the assistant (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Nereye gidiyor",
+				"intent": "question",
+				"mentions": []
+			}
+		}
+	]
+}

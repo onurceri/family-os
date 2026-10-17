@@ -1,0 +1,30 @@
+{
+	"case": "Message to the whole household stays for everyone (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Family picnic",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Family picnic",
+						"date": {
+							"text": "Sunday 11 October",
+							"day": 11,
+							"month": 10,
+							"weekday": 7
+						},
+						"time": "12:00",
+						"timeText": "noon"
+					}
+				]
+			}
+		}
+	]
+}

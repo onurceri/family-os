@@ -1,0 +1,34 @@
+{
+	"case": "A receipt for an appliance with a warranty (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Bosch dishwasher purchase",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "home.item",
+						"title": "Dishwasher",
+						"lines": [
+							"Bosch",
+							"Serie 4 SMS4HVI33G"
+						],
+						"tags": [
+							"Bosch Serie 4"
+						],
+						"variant": "other",
+						"unsure": [
+							"tags",
+							"variant"
+						]
+					}
+				]
+			}
+		}
+	]
+}

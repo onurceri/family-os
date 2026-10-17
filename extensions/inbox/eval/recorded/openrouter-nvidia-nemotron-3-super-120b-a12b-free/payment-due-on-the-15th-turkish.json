@@ -1,0 +1,26 @@
+{
+	"case": "Payment due \"on the 15th\" (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Aidat ödeme tarihi",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Apartman aidatı öde",
+						"date": {
+							"text": "ayın 15'i",
+							"day": 15
+						}
+					}
+				]
+			}
+		}
+	]
+}

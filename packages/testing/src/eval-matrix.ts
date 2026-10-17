@@ -138,50 +138,33 @@ const OUTAGES: ReadonlySet<string> = new Set([
 
 let tags = 0;
 
-/** How often a call the provider could not serve (a rate limit, an outage) is made again. */
-export const OUTAGE_TRIES = 6;
 const OUTAGE_WAIT_MS = 15_000;
-const OUTAGE_WAIT_MAX_MS = 120_000;
-
-/**
- * Makes `call` again while the provider fails on its side (`unavailable`: a rate limit, a dropped
- * connection), waiting what it asked for or longer each time, so that free models' tight limits
- * end in an answer or, after `OUTAGE_TRIES`, in an outage, never in a failure of the model.
- */
-export async function throughOutages<T>(
-	call: () => Promise<T>,
-	note: (line: string) => void,
-	wait: (ms: number) => Promise<unknown> = sleep,
-	/** False once asking again would repeat what the call already did (tools it ran). */
-	mayRepeat: () => boolean = () => true,
-): Promise<T> {
-	for (let n = 1; ; n++) {
-		try {
-			return await call();
-		} catch (error) {
-			if (!isLlmError(error) || error.code !== 'unavailable' || n >= OUTAGE_TRIES || !mayRepeat())
-				throw error;
-			const ms = Math.min(
-				Math.max(error.retryAfterMs ?? 0, OUTAGE_WAIT_MS * 2 ** (n - 1)),
-				OUTAGE_WAIT_MAX_MS,
-			);
-			note(
-				`provider unavailable (${error.message.slice(0, 80)}); waiting ${Math.round(ms / 1000)}s`,
-			);
-			await wait(ms);
-		}
-	}
-}
+/** Kept under the time a job gets, since the wait happens inside the job that made the call. */
+export const OUTAGE_WAIT_MAX_MS = 90_000;
 
 /**
  * The model of one case, recording every call: its answer, and the tokens, cost, time and
- * finish reason the adapter wrote down for it (found again by a `jobId` of its own). A call the
- * provider could not serve is made again after a wait (`throughOutages`).
+ * finish reason the adapter wrote down for it (found again by a `jobId` of its own).
+ *
+ * A call the provider could not serve (`unavailable`: a rate limit, a dropped connection) still
+ * fails, as it would at home, so the job that made it tries again after its backoff; but first
+ * the real time passes that the provider asked for, or longer after each such failure in a row.
+ * Free models' tight limits then end in an answer or in an outage, never in a failure of the
+ * model.
  */
-export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise<unknown>) {
+export function observe(env: EnvLlm, raw = false, wait: (ms: number) => Promise<unknown> = sleep) {
 	const calls: CallRecord[] = [];
 	const notes: string[] = [];
-	const note = (line: string) => notes.push(line);
+	let inRow = 0;
+	const afterFailure = async (error: unknown) => {
+		if (!isLlmError(error) || error.code !== 'unavailable') return;
+		const ms = Math.min(
+			Math.max(error.retryAfterMs ?? 0, OUTAGE_WAIT_MS * 2 ** inRow++),
+			OUTAGE_WAIT_MAX_MS,
+		);
+		notes.push(`provider unavailable; waiting ${Math.round(ms / 1000)}s before the next try`);
+		await wait(ms);
+	};
 	const measured = async (jobId: string, answer: RecordedAnswer) => {
 		const rows = await env.calls(jobId);
 		calls.push({ ...sumCalls(rows), answer });
@@ -193,11 +176,8 @@ export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise
 		async generateObject(request) {
 			const jobId = `eval_${++tags}`;
 			try {
-				const result = await throughOutages(
-					() => env.llm.generateObject({ ...request, jobId }),
-					note,
-					wait,
-				);
+				const result = await env.llm.generateObject({ ...request, jobId });
+				inRow = 0;
 				if (raw) notes.push(`raw ${JSON.stringify(result.output)}`);
 				await measured(jobId, { kind: 'object', feature: request.feature, output: result.output });
 				return result;
@@ -211,6 +191,7 @@ export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise
 					error: isLlmError(error) ? error.code : 'error',
 					...(text !== undefined && { text }),
 				});
+				await afterFailure(error);
 				throw error;
 			}
 		},
@@ -225,12 +206,8 @@ export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise
 				},
 			}));
 			try {
-				const result = await throughOutages(
-					() => env.llm.chat({ ...request, tools, jobId }),
-					note,
-					wait,
-					() => toolCalls.length === 0,
-				);
+				const result = await env.llm.chat({ ...request, tools, jobId });
+				inRow = 0;
 				await measured(jobId, {
 					kind: 'chat',
 					feature: request.feature,
@@ -246,6 +223,7 @@ export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise
 					error: isLlmError(error) ? error.code : 'error',
 					toolCalls,
 				});
+				await afterFailure(error);
 				throw error;
 			}
 		},

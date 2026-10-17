@@ -38,7 +38,13 @@ import {
 	tool,
 } from 'ai';
 import { sql } from 'kysely';
-import { extractJson, NEXT_MODE, outputModeFor, schemaInstruction } from './output.ts';
+import {
+	extractJson,
+	NEXT_MODE,
+	outputModeFor,
+	reasoningFor,
+	schemaInstruction,
+} from './output.ts';
 import { type AiSettingsService, monthBounds, type ResolvedProvider } from './settings.ts';
 import { aiTables } from './tables.ts';
 
@@ -558,14 +564,15 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				return { result, output: parsed.data };
 			};
 
+			const reasoning = request.reasoning ?? reasoningFor(provider.kind, role.model);
 			/** One mode, asked again without the reasoning setting when a model refuses it. */
 			const inMode = async (mode: OutputMode) => {
 				try {
-					return await attempt(mode, request.reasoning);
+					return await attempt(mode, reasoning);
 				} catch (error) {
 					// Models without a thinking mode can refuse the setting; asking again without it
 					// still gets the answer.
-					if (request.reasoning && toLlmError(error).code === 'rejected') {
+					if (reasoning && toLlmError(error).code === 'rejected') {
 						logger.warn(
 							{ feature: request.feature, model: label },
 							'provider rejected the reasoning setting; asking again without it',

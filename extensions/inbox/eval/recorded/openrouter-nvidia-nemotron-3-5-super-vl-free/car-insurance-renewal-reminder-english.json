@@ -1,0 +1,17 @@
+{
+	"case": "Car insurance renewal reminder (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Car insurance renewal",
+				"intent": "nothing",
+				"mentions": []
+			}
+		}
+	]
+}

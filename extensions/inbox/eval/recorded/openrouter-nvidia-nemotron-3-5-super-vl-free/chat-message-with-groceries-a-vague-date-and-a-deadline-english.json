@@ -1,0 +1,62 @@
+{
+	"case": "Chat message with groceries, a vague date and a deadline (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Shopping and dentist reminder",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Milk",
+						"quantity": "2 liters",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Eggs",
+						"quantity": "a dozen",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Bananas",
+						"variant": "produce"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Dish soap",
+						"variant": "household"
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Dentist",
+						"people": [
+							"Deniz"
+						],
+						"date": {
+							"text": "next Thursday",
+							"weekday": 4,
+							"week": "next"
+						},
+						"time": "16:30",
+						"timeText": "4:30pm"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Renew the car insurance",
+						"date": {
+							"text": "before the end of the month",
+							"approximate": true
+						}
+					}
+				]
+			}
+		}
+	]
+}

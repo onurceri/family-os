@@ -1,0 +1,26 @@
+{
+	"case": "A note for the family board (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Water off Thursday",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "board.note",
+						"notes": "The water is off on Thursday from 9 to 12, so fill some bottles the night before.",
+						"endDate": {
+							"text": "Thursday",
+							"weekday": 4
+						}
+					}
+				]
+			}
+		}
+	]
+}

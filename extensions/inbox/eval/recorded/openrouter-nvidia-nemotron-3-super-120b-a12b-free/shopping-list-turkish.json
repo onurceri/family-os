@@ -1,0 +1,36 @@
+{
+	"case": "Shopping list (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Alışveriş listesi",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Domates",
+						"quantity": "1 kg"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Makarna",
+						"quantity": "2 paket"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Beyaz peynir"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Çamaşır deterjanı"
+					}
+				]
+			}
+		}
+	]
+}

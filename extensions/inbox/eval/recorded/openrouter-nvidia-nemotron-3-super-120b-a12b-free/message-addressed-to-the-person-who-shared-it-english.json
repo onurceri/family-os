@@ -1,0 +1,31 @@
+{
+	"case": "Message addressed to the person who shared it (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Dentist check-up",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Dentist check-up",
+						"forMe": true,
+						"date": {
+							"text": "Saturday 10 October",
+							"day": 10,
+							"month": 10,
+							"weekday": 6
+						},
+						"time": "09:00",
+						"timeText": "9am"
+					}
+				]
+			}
+		}
+	]
+}

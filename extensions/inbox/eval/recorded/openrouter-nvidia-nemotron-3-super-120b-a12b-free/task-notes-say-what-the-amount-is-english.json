@@ -1,0 +1,29 @@
+{
+	"case": "Task notes say what the amount is (English)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim course fee",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Pay the swim course fee",
+						"date": {
+							"text": "Friday 9 October",
+							"day": 9,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Fee: 45, to the school office"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,27 @@
+{
+	"case": "A question for the assistant (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/1",
+	"promptHash": "4e5f4b61",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"error": "timeout"
+		},
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"error": "unavailable"
+		},
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Next dentist appointment",
+				"intent": "question",
+				"mentions": []
+			}
+		}
+	]
+}
