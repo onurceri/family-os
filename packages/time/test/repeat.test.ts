@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstWeekday, lastDayOfMonth, repeatRule } from '../src/index.ts';
+import { describeRecurrence, firstWeekday, lastDayOfMonth, repeatRule } from '../src/index.ts';
 
 describe('lastDayOfMonth', () => {
 	it('knows the length of each month, leap years included', () => {
@@ -70,5 +70,30 @@ describe('repeatRule', () => {
 			start: '2026-10-07',
 			exact: false,
 		});
+	});
+});
+
+describe('describeRecurrence', () => {
+	const t = (key: string, options?: Record<string, unknown>) =>
+		key === 'repeat_weekly_on' ? `Every ${options?.day}` : key;
+	const weekly = (byDay: ('MO' | 'TH' | 'SA')[], interval = 1) =>
+		({ freq: 'weekly', interval, byDay }) as Parameters<typeof describeRecurrence>[0];
+
+	it('names the weekday once when it is the start date’s own', () => {
+		expect(describeRecurrence(weekly(['SA']), t, 'en', 1, '2026-10-17')).toBe('Every Saturday');
+		expect(describeRecurrence(weekly(['SA']), t, 'tr', 1, '2026-10-17')).toBe('Every Cumartesi');
+	});
+
+	it('lists the days otherwise', () => {
+		expect(describeRecurrence(weekly(['SA']), t, 'en', 1)).toBe('repeat_weekly · Sat');
+		expect(describeRecurrence(weekly(['SA']), t, 'en', 1, '2026-10-22')).toBe(
+			'repeat_weekly · Sat',
+		);
+		expect(describeRecurrence(weekly(['TH', 'SA']), t, 'en', 1, '2026-10-17')).toBe(
+			'repeat_weekly · Thu, Sat',
+		);
+		expect(describeRecurrence(weekly(['SA'], 2), t, 'en', 1, '2026-10-17')).toBe(
+			'repeat_weekly · Sat (×2)',
+		);
 	});
 });

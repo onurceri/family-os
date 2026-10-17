@@ -40,7 +40,7 @@ export const createEventPresenter: DraftPresenter<EventInput> = {
 			>[0];
 			fields.push({
 				label: t('repeat'),
-				value: describeRecurrence(recurrence, t, c.dateLocale, c.weekStart),
+				value: describeRecurrence(recurrence, t, c.dateLocale, c.weekStart, input.date),
 				path: 'recurrence',
 			});
 		}

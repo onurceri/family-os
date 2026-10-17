@@ -2,7 +2,7 @@ import { Temporal } from '@famos/time';
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { describe, expect, it } from 'vitest';
 import catalog from '../src/messages/en.json';
-import { emptyForm, validate } from '../src/web/form.ts';
+import { emptyForm, inputFrom, validate, weekdaysAfterDateChange } from '../src/web/form.ts';
 
 // Every reason a form gives is a shared one or a key of this extension's catalog.
 const shared = new Set<string>(Object.values(FIELD_REASON));
@@ -35,5 +35,37 @@ describe('event form reasons', () => {
 		expect(known(validate({ ...base(), startTime: '10:00', endTime: '10:00' })).endTime).toBe(
 			'calendar:error_end_same',
 		);
+	});
+});
+
+describe('weekly repeat days follow the date', () => {
+	const now = Temporal.ZonedDateTime.from('2026-10-17T10:00[Europe/Berlin]');
+
+	// 2026-10-17 is a Saturday, 2026-10-22 a Thursday.
+	it('starts on the weekday of the first date and moves with the date', () => {
+		const form = { ...emptyForm('2026-10-17', now), title: 'Call', repeat: 'weekly' as const };
+		expect(form.byDay).toEqual(['SA']);
+		form.date = '2026-10-22';
+		form.byDay = weekdaysAfterDateChange(form.byDay, form.date);
+		expect(form.byDay).toEqual(['TH']);
+		const input = inputFrom(form);
+		expect(input.recurrence).toMatchObject({ freq: 'weekly', byDay: ['TH'] });
+	});
+
+	it('follows a date changed twice', () => {
+		let byDay = ['SA'];
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-22');
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-26');
+		expect(byDay).toEqual(['MO']);
+	});
+
+	it('keeps chosen days that still include the new date, else follows the date', () => {
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-22')).toEqual(['TU', 'TH']);
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-23')).toEqual(['FR']);
+	});
+
+	it('leaves the days alone while the date is not complete', () => {
+		expect(weekdaysAfterDateChange(['SA'], '')).toEqual(['SA']);
+		expect(weekdaysAfterDateChange(['SA'], '2026-10-2')).toEqual(['SA']);
 	});
 });

@@ -53,6 +53,7 @@
 					(key: string, options?: Record<string, unknown>) => app.t(`calendar:${key}`, options),
 					app.dateLocale(),
 					app.weekStart(),
+					occurrence.startDate ?? undefined,
 				)
 			: null,
 	);

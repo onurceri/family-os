@@ -32,6 +32,7 @@
 	"repeat_none": "Does not repeat",
 	"repeat_daily": "Every day",
 	"repeat_weekly": "Every week",
+	"repeat_weekly_on": "Every {{day}}",
 	"repeat_monthly": "Every month",
 	"repeat_custom": "Custom rule",
 	"repeat_until": "until {{date}}",

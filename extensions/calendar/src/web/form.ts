@@ -53,6 +53,17 @@ export function reminderFor(allDay: boolean, current: string): string {
 const weekdayOf = (date: string): Weekday =>
 	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
 
+/**
+ * The weekly repeat days after the date changed. Days the person picked stay while they still
+ * include the new date's weekday; otherwise the repeat follows the date, so a weekly event
+ * never starts on a day other than the one chosen.
+ */
+export function weekdaysAfterDateChange(byDay: readonly string[], nextDate: string): string[] {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) return [...byDay];
+	const next = weekdayOf(nextDate);
+	return byDay.includes(next) ? [...byDay] : [next];
+}
+
 /** A sensible new event on `date`: the next full hour today, otherwise 09:00. */
 export function emptyForm(date: string, now: Temporal.ZonedDateTime): EventFormValue {
 	const isToday = now.toPlainDate().toString() === date;

@@ -32,6 +32,7 @@
 	"repeat_none": "Tekrarlanmaz",
 	"repeat_daily": "Her gün",
 	"repeat_weekly": "Her hafta",
+	"repeat_weekly_on": "Her {{day}}",
 	"repeat_monthly": "Her ay",
 	"repeat_custom": "Özel kural",
 	"repeat_until": "{{date}} tarihine kadar",

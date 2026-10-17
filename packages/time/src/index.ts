@@ -279,9 +279,12 @@ export function daysAround(today: string, before = 7, after = 14): string[] {
 }
 
 /** Localized short weekday names in RRULE order (MO … SU). */
-export function weekdayNames(locale: string): Record<Weekday, string> {
+export function weekdayNames(
+	locale: string,
+	style: 'short' | 'long' = 'short',
+): Record<Weekday, string> {
 	const monday = Date.parse('2026-01-05T12:00:00Z'); // a Monday
-	const fmt = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+	const fmt = new Intl.DateTimeFormat(locale, { weekday: style, timeZone: 'UTC' });
 	return Object.fromEntries(
 		WEEKDAYS.map((w, i) => [w, fmt.format(monday + i * 86_400_000)]),
 	) as Record<Weekday, string>;
@@ -522,23 +525,38 @@ export function formatClock(time: string, locale: string, hourCycle?: HourCycle)
 }
 
 type RecurrenceT = (
-	key: 'repeat_daily' | 'repeat_weekly' | 'repeat_monthly' | 'repeat_until',
+	key: 'repeat_daily' | 'repeat_weekly' | 'repeat_weekly_on' | 'repeat_monthly' | 'repeat_until',
 	options?: Record<string, unknown>,
 ) => string;
 
+/**
+ * How a repeat reads. With `startDate`, a plain weekly repeat on that date's own weekday reads
+ * "Every Saturday" instead of naming the day twice.
+ */
 export function describeRecurrence(
 	rec: Recurrence,
 	t: RecurrenceT,
 	locale: string,
 	weekStart = 1,
+	startDate?: string,
 ): string {
+	const ownDay =
+		rec.freq === 'weekly' &&
+		rec.interval === 1 &&
+		rec.byDay.length === 1 &&
+		startDate !== undefined &&
+		rec.byDay[0] === WEEKDAYS[Temporal.PlainDate.from(startDate).dayOfWeek - 1]
+			? rec.byDay[0]
+			: undefined;
 	let text =
 		rec.freq === 'daily'
 			? t('repeat_daily')
 			: rec.freq === 'monthly'
 				? t('repeat_monthly')
-				: t('repeat_weekly');
-	if (rec.freq === 'weekly') {
+				: ownDay
+					? t('repeat_weekly_on', { day: weekdayNames(locale, 'long')[ownDay] })
+					: t('repeat_weekly');
+	if (rec.freq === 'weekly' && !ownDay) {
 		const names = weekdayNames(locale);
 		const order = orderedWeekdays(weekStart);
 		const days = [...rec.byDay].sort((a, b) => order.indexOf(a) - order.indexOf(b));
