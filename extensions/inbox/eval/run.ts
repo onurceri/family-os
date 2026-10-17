@@ -41,6 +41,7 @@ function observed(): { llm: LlmPort; notes: string[] } {
 				const started = Date.now();
 				try {
 					const result = await llm.generateObject(request);
+					if (result.outputMode) notes.push(result.outputMode);
 					// FAMOS_EVAL_RAW=1 shows what the model answered, before the app checks or drops any of it.
 					if (process.env.FAMOS_EVAL_RAW) notes.push(`raw ${JSON.stringify(result.output)}`);
 					return result;

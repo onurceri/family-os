@@ -19,6 +19,7 @@ import {
 	type LlmTranscribeResult,
 	type Logger,
 	type ModelRole,
+	type OutputMode,
 } from '@famos/sdk';
 import {
 	APICallError,
@@ -35,6 +36,7 @@ import {
 	tool,
 } from 'ai';
 import { sql } from 'kysely';
+import { extractJson, NEXT_MODE, outputModeFor, schemaInstruction } from './output.ts';
 import { type AiSettingsService, monthBounds, type ResolvedProvider } from './settings.ts';
 import { aiTables } from './tables.ts';
 
@@ -217,6 +219,23 @@ function toLlmError(error: unknown): LlmError {
 	});
 }
 
+/**
+ * The mode to ask in after a failed one, or null to give up. A refused request steps down every
+ * time (a server that rejects a JSON Schema may still take a JSON object, and one that rejects
+ * both still answers in text). An unusable answer steps down only from `schema`: constrained
+ * decoding is what makes some models loop or leave fields out, and without it a retry in another
+ * mode would only repeat the same answer.
+ */
+function fallbackFrom(mode: OutputMode, failure: LlmError): OutputMode | null {
+	if (failure.code === 'rejected') return NEXT_MODE[mode];
+	if (
+		mode === 'schema' &&
+		(failure.code === 'invalid_output' || failure.code === 'output_too_long')
+	)
+		return NEXT_MODE[mode];
+	return null;
+}
+
 /** Chat messages as the AI SDK wants them. A tool result is preceded by the call it answers. */
 function toModelMessages(messages: LlmChatRequest['messages']): ModelMessage[] {
 	return messages.flatMap((m, i): ModelMessage[] => {
@@ -327,6 +346,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			finishReason?: string | null;
 			cost?: number | null;
 			errorCode?: string | null;
+			outputMode?: OutputMode | null;
 		}) => {
 			await aiTables(deps.db)
 				.insertInto('ai_usage')
@@ -347,6 +367,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					latency_ms: Math.max(0, deps.clock.now() - started),
 					error_code: fields.errorCode ?? null,
 					areas: JSON.stringify([...new Set(request.areas)]),
+					output_mode: fields.outputMode ?? null,
 				})
 				.execute();
 		};
@@ -402,22 +423,29 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			}
 			await checkLimits();
 
-			const attempt = async (reasoning: LlmReasoning | undefined) => {
+			// The schema as the provider would get it, built once: in `json` and `text` modes the
+			// model reads it in the system prompt instead.
+			const format = await Output.object({
+				schema: request.jsonSchema ? jsonSchema<T>(request.jsonSchema) : request.schema,
+			}).responseFormat;
+			const schemaShown = format?.type === 'json' ? format.schema : undefined;
+
+			const attempt = async (mode: OutputMode, reasoning: LlmReasoning | undefined) => {
+				const system =
+					mode === 'schema' || !schemaShown
+						? request.system
+						: [request.system, schemaInstruction(schemaShown)].filter(Boolean).join('\n\n');
 				const result = await generateText({
 					model: factory(provider, role.model, reasoning ? { reasoning } : undefined),
-					output: Output.object({
-						schema: request.jsonSchema
-							? jsonSchema<T>(request.jsonSchema, {
-									validate: (value) => {
-										const parsed = request.schema.safeParse(value);
-										return parsed.success
-											? { success: true, value: parsed.data }
-											: { success: false, error: parsed.error };
-									},
-								})
-							: request.schema,
-					}),
-					...(request.system && { system: request.system }),
+					// The answer is always taken as text and validated here, so a mode changes only what
+					// the provider is asked for.
+					output: {
+						...Output.text(),
+						responseFormat: Promise.resolve(
+							mode === 'schema' ? format : mode === 'json' ? { type: 'json' as const } : undefined,
+						),
+					},
+					...(system && { system }),
 					messages: [
 						{
 							role: 'user',
@@ -443,13 +471,38 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					maxRetries: 1,
 					abortSignal: AbortSignal.timeout(request.timeoutMs),
 				});
-				return result;
+				const usage = {
+					inputTokens: result.usage.inputTokens ?? null,
+					outputTokens: result.usage.outputTokens ?? null,
+					reasoningTokens: result.usage.outputTokenDetails?.reasoningTokens || null,
+					finishReason: result.finishReason ?? null,
+				};
+				const found = extractJson(result.text);
+				if (!found) {
+					// The answer was cut off by the output cap: a retry would be cut off the same way.
+					if (result.finishReason === 'length')
+						throw new LlmError('output_too_long', "The model's answer was longer than allowed", {
+							usage,
+						});
+					throw new LlmError('invalid_output', 'The model did not answer with JSON', { usage });
+				}
+				const parsed = request.schema.safeParse(found.value);
+				if (!parsed.success) {
+					// Paths only: the values come from family content.
+					const paths = [...new Set(parsed.error.issues.map((i) => i.path.join('.') || '(root)'))];
+					throw new LlmError(
+						'invalid_output',
+						`The model's answer did not match the expected structure at ${paths.slice(0, 5).join(', ')}`,
+						{ usage },
+					);
+				}
+				return { result, output: parsed.data };
 			};
 
-			try {
-				let result: Awaited<ReturnType<typeof attempt>>;
+			/** One mode, asked again without the reasoning setting when a model refuses it. */
+			const inMode = async (mode: OutputMode) => {
 				try {
-					result = await attempt(request.reasoning);
+					return await attempt(mode, request.reasoning);
 				} catch (error) {
 					// Models without a thinking mode can refuse the setting; asking again without it
 					// still gets the answer.
@@ -458,40 +511,53 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 							{ feature: request.feature, model: label },
 							'provider rejected the reasoning setting; asking again without it',
 						);
-						result = await attempt(undefined);
-					} else throw error;
+						return attempt(mode, undefined);
+					}
+					throw error;
 				}
-				const reported = (result.providerMetadata?.famos as { cost?: number } | undefined)?.cost;
-				const usage = {
-					inputTokens: result.usage.inputTokens ?? null,
-					outputTokens: result.usage.outputTokens ?? null,
-					reasoningTokens: result.usage.outputTokenDetails?.reasoningTokens || null,
-					cost: typeof reported === 'number' ? reported : provider.kind === 'ollama' ? 0 : null,
-				};
-				await record({
-					input: usage.inputTokens,
-					output: usage.outputTokens,
-					reasoning: usage.reasoningTokens,
-					finishReason: result.finishReason ?? null,
-					cost: usage.cost,
-				});
-				return { output: result.output as T, model: label, usage };
-			} catch (error) {
-				const failure = toLlmError(error);
-				await record(failureFields(failure));
-				logger.warn(
-					// The provider's error text describes the request, not family content.
-					{
-						feature: request.feature,
-						role: request.role,
-						model: label,
-						code: failure.code,
-						reason: failure.message.slice(0, 300),
-						...failure.usage,
-					},
-					'model call failed',
-				);
-				throw failure;
+			};
+
+			let mode = request.output ?? outputModeFor(provider.kind, role.model);
+			for (;;) {
+				try {
+					const { result, output } = await inMode(mode);
+					const reported = (result.providerMetadata?.famos as { cost?: number } | undefined)?.cost;
+					const usage = {
+						inputTokens: result.usage.inputTokens ?? null,
+						outputTokens: result.usage.outputTokens ?? null,
+						reasoningTokens: result.usage.outputTokenDetails?.reasoningTokens || null,
+						cost: typeof reported === 'number' ? reported : provider.kind === 'ollama' ? 0 : null,
+					};
+					await record({
+						input: usage.inputTokens,
+						output: usage.outputTokens,
+						reasoning: usage.reasoningTokens,
+						finishReason: result.finishReason ?? null,
+						cost: usage.cost,
+						outputMode: mode,
+					});
+					return { output, model: label, usage, outputMode: mode };
+				} catch (error) {
+					const failure = toLlmError(error);
+					await record({ ...failureFields(failure), outputMode: mode });
+					const next = request.output ? null : fallbackFrom(mode, failure);
+					logger.warn(
+						// The provider's error text describes the request, not family content.
+						{
+							feature: request.feature,
+							role: request.role,
+							model: label,
+							code: failure.code,
+							outputMode: mode,
+							reason: failure.message.slice(0, 300),
+							...failure.usage,
+							...(next && { next }),
+						},
+						next ? 'model call failed; asking again in another output mode' : 'model call failed',
+					);
+					if (!next) throw failure;
+					mode = next;
+				}
 			}
 		},
 		async chat(request: LlmChatRequest): Promise<LlmChatResult> {

@@ -1,5 +1,5 @@
 {
-	"sdk": "0.5.2",
+	"sdk": "0.5.3",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -25,6 +25,7 @@
 			"NotifyRequestSchema",
 			"NotifyTextSchema",
 			"NotifyWhenSchema",
+			"OUTPUT_MODES",
 			"RESERVED_NAMES",
 			"RESERVED_TABLE_PREFIXES",
 			"SDK_VERSION",

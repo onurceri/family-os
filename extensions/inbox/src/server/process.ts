@@ -179,34 +179,115 @@ export function tidySummary(raw: string): string | null {
 	return `${(space > SUMMARY_MAX / 2 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}…`;
 }
 
-function outputSchema(catalog: AiActionInfo[]) {
-	return z.object({
-		// Longer labels are cut on the server (`tidySummary`) instead of failing the item.
-		summary: z.string().max(1_000).describe(SUMMARY_DESCRIPTION),
-		kind: ExtractionKindSchema.default('actionable').describe(KIND_DESCRIPTION),
-		proposals: z
-			.array(
-				z.object({
-					action: z.enum(catalog.map((a) => a.id) as [string, ...string[]]),
-					input: z
-						.record(z.string(), z.unknown())
-						.describe("The action's input, following its JSON Schema"),
-					confidence: z
-						.number()
-						.min(0)
-						.max(1)
-						.describe('How sure you are that this proposal is right'),
-					uncertainFields: z
-						.array(z.string())
-						.default([])
-						.describe(
-							'Input fields you guessed or inferred rather than read, e.g. ["date", "memberIds"]',
-						),
-					dateText: z.string().max(200).optional(),
-				}),
-			)
-			.max(12),
-	});
+/** The most proposals one reading drafts; any further ones are reported as left out. */
+const MAX_PROPOSALS = 12;
+
+/** A JSON value the model wrote as a string (`"input": "{…}"`), read as what it holds. */
+const unquoted = (value: unknown) => {
+	if (typeof value !== 'string') return value;
+	try {
+		return JSON.parse(value) as unknown;
+	} catch {
+		return value;
+	}
+};
+
+/**
+ * One proposal as the model wrote it. Only `action` must be there: every other field has a safe
+ * value when it is missing or malformed, because the action validates the input itself when it
+ * is drafted, and one careless field must not cost the person the suggestion.
+ */
+const ProposalSchema = z.object({
+	action: z.string(),
+	input: z.preprocess(unquoted, z.record(z.string(), z.unknown())).catch({}),
+	// Never shown to the person: a proposal without it is kept.
+	confidence: z.number().min(0).max(1).catch(1),
+	uncertainFields: z.preprocess(unquoted, z.array(z.string())).catch([]),
+	dateText: z.string().max(200).optional().catch(undefined),
+});
+export type Proposal = z.infer<typeof ProposalSchema>;
+
+/** Proposal fields a model sometimes writes inside the input instead of beside it. */
+const PROPOSAL_FIELDS = ['confidence', 'uncertainFields', 'dateText'] as const;
+
+/** A proposal with the proposal fields it put in its input moved out to where they belong. */
+function withFieldsInPlace(raw: unknown): unknown {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
+	const proposal = { ...(raw as Record<string, unknown>) };
+	const input = unquoted(proposal.input);
+	if (!input || typeof input !== 'object' || Array.isArray(input)) return proposal;
+	const rest = { ...(input as Record<string, unknown>) };
+	for (const field of PROPOSAL_FIELDS) {
+		if (!(field in rest)) continue;
+		proposal[field] ??= rest[field];
+		delete rest[field];
+	}
+	return { ...proposal, input: rest };
+}
+
+/**
+ * The model's answer, read one proposal at a time: a proposal that cannot be read (no action) is
+ * left out and reported, and the others stand. Proposal fields written beside the proposals
+ * rather than in one belong to the proposal when there is only one; with several, a stray
+ * `dateText` goes to the one proposal with a date and no words for it.
+ */
+export function readAnswer(answer: {
+	summary: string;
+	kind: ExtractionKind;
+	proposals: unknown[];
+	confidence?: unknown;
+	uncertainFields?: unknown;
+	dateText?: unknown;
+}): {
+	summary: string;
+	kind: ExtractionKind;
+	proposals: Proposal[];
+	unreadable: { subject: string | null }[];
+} {
+	const placed = answer.proposals.map(withFieldsInPlace);
+	const [only] = placed;
+	if (placed.length === 1 && only && typeof only === 'object' && !Array.isArray(only)) {
+		const proposal = only as Record<string, unknown>;
+		for (const field of PROPOSAL_FIELDS) proposal[field] ??= answer[field];
+	}
+	const proposals: Proposal[] = [];
+	const unreadable: { subject: string | null }[] = [];
+	for (const raw of placed) {
+		const parsed = ProposalSchema.safeParse(raw);
+		if (parsed.success && proposals.length < MAX_PROPOSALS) proposals.push(parsed.data);
+		else
+			unreadable.push({
+				subject: subjectIn(
+					parsed.success ? parsed.data.input : unquoted((raw as { input?: unknown } | null)?.input),
+				),
+			});
+	}
+	const stray = typeof answer.dateText === 'string' ? answer.dateText.trim().slice(0, 200) : '';
+	const undated = proposals.filter((p) => datePaths(p.input).length > 0 && !p.dateText?.trim());
+	if (stray && undated.length === 1 && undated[0]) undated[0].dateText = stray;
+	return { summary: answer.summary, kind: answer.kind, proposals, unreadable };
+}
+
+/**
+ * Validates the model's answer loosely: the envelope always reads (a missing label is empty, a
+ * missing or unknown kind is `actionable`, a bare list is the proposals), and the proposals are
+ * read one by one (`readAnswer`). What the model sees is `outputJsonSchema`.
+ */
+function outputSchema() {
+	return z
+		.preprocess(
+			(value) => (Array.isArray(value) ? { proposals: value } : value),
+			z.object({
+				// Longer labels are cut on the server (`tidySummary`) instead of failing the item.
+				summary: z.string().catch(''),
+				kind: ExtractionKindSchema.catch('actionable'),
+				proposals: z.preprocess(unquoted, z.array(z.unknown())).catch([]),
+				confidence: z.unknown().optional(),
+				uncertainFields: z.unknown().optional(),
+				dateText: z.unknown().optional(),
+			}),
+		)
+		.transform(readAnswer);
 }
 
 /**
@@ -944,7 +1025,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 				// The inbox itself, and every area whose actions the model may propose.
 				// Areas that share records are always among the catalog's (see `readRecordContexts`).
 				areas: ['inbox', ...new Set(catalog.map((a) => a.id.split('.')[0] as string))],
-				schema: outputSchema(catalog),
+				schema: outputSchema(),
 				jsonSchema: outputJsonSchema(catalog),
 				system: systemPrompt({
 					catalog,
@@ -1021,6 +1102,8 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		summary = tidySummary(result.output.summary);
 		kind = result.output.kind;
 		model = result.model;
+		for (const { subject } of result.output.unreadable)
+			skips.push({ reason: 'incomplete', subject });
 		const known = new Set(catalog.map((a) => a.id));
 		for (const [i, proposal] of result.output.proposals.entries()) {
 			if (!known.has(proposal.action)) {
