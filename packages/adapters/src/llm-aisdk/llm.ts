@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
 	type AiAreaAccess,
@@ -32,6 +33,7 @@ import {
 	type ModelMessage,
 	NoObjectGeneratedError,
 	Output,
+	RetryError,
 	streamText,
 	tool,
 } from 'ai';
@@ -150,8 +152,31 @@ function statusToLlmError(status: number, body: string): LlmError {
 	return new LlmError('unavailable', `The provider is unavailable (HTTP ${status})`);
 }
 
+/** The longest a call waits for a rate limit to pass before it asks once more. */
+const RATE_WAIT_MAX_MS = 10_000;
+
+/**
+ * The wait a `retry-after` header asks for (seconds, or an HTTP date), in milliseconds; undefined
+ * when there is none or it cannot be read.
+ */
+export function retryAfterOf(
+	headers: Record<string, string> | undefined,
+	now: number,
+): number | undefined {
+	const value = Object.entries(headers ?? {})
+		.find(([name]) => name.toLowerCase() === 'retry-after')?.[1]
+		?.trim();
+	if (!value) return undefined;
+	if (/^\d+(\.\d+)?$/u.test(value)) return Math.round(Number(value) * 1000);
+	const at = Date.parse(value);
+	return Number.isNaN(at) ? undefined : Math.max(0, at - now);
+}
+
 function toLlmError(error: unknown): LlmError {
 	if (isLlmError(error)) return error;
+	// The AI SDK's own retry gave up: what failed is its last error (a 429 keeps its wait).
+	if (RetryError.isInstance(error) && error.lastError !== undefined)
+		return toLlmError(error.lastError);
 	if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
 		return new LlmError('timeout', 'The model did not answer in time', { cause: error });
 	}
@@ -207,6 +232,15 @@ function toLlmError(error: unknown): LlmError {
 					cause: error,
 				},
 			);
+		}
+		// Too many calls for now (free models have tight limits): worth asking again later, and
+		// it says nothing about the model.
+		if (status === 429) {
+			const retryAfterMs = retryAfterOf(error.responseHeaders, Date.now());
+			return new LlmError('unavailable', 'The provider is rate limited (HTTP 429)', {
+				cause: error,
+				...(retryAfterMs !== undefined && { retryAfterMs }),
+			});
 		}
 		return new LlmError(
 			'unavailable',
@@ -567,8 +601,14 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				} catch (error) {
 					const failure = toLlmError(error);
 					await record({ ...failureFields(failure), outputMode: mode });
-					if (failure.code === 'unavailable' && again) {
+					// A rate limit that asks for a long wait is left to the job's backoff.
+					if (
+						failure.code === 'unavailable' &&
+						again &&
+						(failure.retryAfterMs ?? 0) <= RATE_WAIT_MAX_MS
+					) {
 						again = false;
+						if (failure.retryAfterMs) await sleep(failure.retryAfterMs);
 						logger.warn(
 							{
 								feature: request.feature,

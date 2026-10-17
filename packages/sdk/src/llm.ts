@@ -315,14 +315,17 @@ export class LlmError extends Error {
 	readonly retryable: boolean;
 	/** Set on failures after the model had answered (cut off, unusable). */
 	readonly usage: LlmFailureUsage | undefined;
+	/** How long the provider asked to wait before the next call (a rate limit), when it said. */
+	readonly retryAfterMs: number | undefined;
 
 	constructor(
 		code: LlmErrorCode,
 		message: string,
-		options?: { cause?: unknown; usage?: LlmFailureUsage },
+		options?: { cause?: unknown; usage?: LlmFailureUsage; retryAfterMs?: number },
 	) {
 		super(message, options);
 		this.usage = options?.usage;
+		this.retryAfterMs = options?.retryAfterMs;
 		this.name = 'LlmError';
 		this.code = code;
 		this.retryable = RETRYABLE.has(code);

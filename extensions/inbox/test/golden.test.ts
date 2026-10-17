@@ -88,7 +88,11 @@ describe('the recordings', () => {
 });
 
 describe('recorded model answers, replayed', () => {
-	it.each(recordings.map((r) => [`${r.model} · ${r.recording.case}`, r] as const))(
+	// A case the provider broke off in the baseline's run holds no answer of the model to replay.
+	const replayable = recordings.filter(
+		(r) => !baseline.models[r.model]?.outages?.includes(r.recording.case),
+	);
+	it.each(replayable.map((r) => [`${r.model} · ${r.recording.case}`, r] as const))(
 		'%s',
 		async (_name, { model, recording }) => {
 			const c = CASES.find((one) => one.name === recording.case);

@@ -11,6 +11,7 @@ import {
 	compareToBaseline,
 	formatCell,
 	formatTable,
+	OUTAGE_TRIES,
 	observe,
 	runEval,
 	runPool,
@@ -94,6 +95,31 @@ describe('measuring a case', () => {
 		]);
 		expect(observed.calls[0]).toMatchObject({ inputTokens: 100, finishReason: 'stop' });
 		expect(observed.notes).toEqual(['call failed: invalid_output: not the structure']);
+	});
+
+	it('waits out a provider that cannot serve the call, and gives up after its tries', async () => {
+		const { env, fake } = fakeEnv('a');
+		const limited = new LlmError('unavailable', 'The provider is rate limited (HTTP 429)', {
+			retryAfterMs: 40_000,
+		});
+		fake.respond(limited, limited, { title: 'Milk' });
+		const waits: number[] = [];
+		const observed = observe(env, false, async (ms) => void waits.push(ms));
+		await expect(observed.llm.generateObject(request)).resolves.toMatchObject({
+			output: { title: 'Milk' },
+		});
+		// What the provider asked for, or the growing wait when that is longer.
+		expect(waits).toEqual([40_000, 40_000]);
+		expect(observed.calls.map((c) => c.answer)).toEqual([
+			{ kind: 'object', feature: 'test.read', output: { title: 'Milk' } },
+		]);
+
+		fake.respond(...Array.from({ length: OUTAGE_TRIES }, () => limited));
+		await expect(observed.llm.generateObject(request)).rejects.toMatchObject({
+			code: 'unavailable',
+		});
+		expect(waits).toHaveLength(2 + OUTAGE_TRIES - 1);
+		expect(waits.at(-1)).toBe(120_000);
 	});
 
 	it('keeps the tool calls of a chat', async () => {
@@ -336,13 +362,20 @@ describe('runEval', () => {
 			}),
 		);
 		const a = fakeEnv('a', call({ errorCode: 'unavailable', finishReason: null }));
-		a.fake.respond(new LlmError('unavailable', 'The provider is unavailable'), { title: 'Milk' });
+		a.fake.respond(
+			...Array.from(
+				{ length: OUTAGE_TRIES },
+				() => new LlmError('unavailable', 'The provider is unavailable'),
+			),
+			{ title: 'Milk' },
+		);
 		const lines: string[] = [];
 		await runEval({
 			title: 'Test eval',
 			cases: [{ name: 'one' }, { name: 'two' }],
 			models: [a.env],
 			dir,
+			wait: async () => undefined,
 			env: { FAMOS_EVAL_BASELINE: '1', FAMOS_EVAL_CONCURRENCY: '1' },
 			log: (line) => lines.push(line),
 			async run(_c, llm) {

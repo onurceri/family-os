@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { isLlmError, type LlmPort } from '@famos/sdk';
 import { type EnvCall, type EnvLlm, llmsFromEnv, slugOf } from './llm-from-env.ts';
 
@@ -18,6 +19,8 @@ import { type EnvCall, type EnvLlm, llmsFromEnv, slugOf } from './llm-from-env.t
  * - `FAMOS_EVAL_BASELINE=1`: writes `<eval folder>/baseline.json` for the models of a full run.
  * - `FAMOS_EVAL_RAW=1`: shows every answer, and the text of an answer the app refused.
  * - `FAMOS_EVAL_VERBOSE=1`: passed to the case runner, which shows more of passed cases.
+ * - `FAMOS_EVAL_ZERO_RETENTION=0`: lets the made-up cases reach providers that keep data (the
+ *   only ones serving free models); the app itself always asks for zero retention by default.
  */
 
 /** A model's answer as a fake model replays it. */
@@ -135,13 +138,50 @@ const OUTAGES: ReadonlySet<string> = new Set([
 
 let tags = 0;
 
+/** How often a call the provider could not serve (a rate limit, an outage) is made again. */
+export const OUTAGE_TRIES = 6;
+const OUTAGE_WAIT_MS = 15_000;
+const OUTAGE_WAIT_MAX_MS = 120_000;
+
+/**
+ * Makes `call` again while the provider fails on its side (`unavailable`: a rate limit, a dropped
+ * connection), waiting what it asked for or longer each time, so that free models' tight limits
+ * end in an answer or, after `OUTAGE_TRIES`, in an outage, never in a failure of the model.
+ */
+export async function throughOutages<T>(
+	call: () => Promise<T>,
+	note: (line: string) => void,
+	wait: (ms: number) => Promise<unknown> = sleep,
+	/** False once asking again would repeat what the call already did (tools it ran). */
+	mayRepeat: () => boolean = () => true,
+): Promise<T> {
+	for (let n = 1; ; n++) {
+		try {
+			return await call();
+		} catch (error) {
+			if (!isLlmError(error) || error.code !== 'unavailable' || n >= OUTAGE_TRIES || !mayRepeat())
+				throw error;
+			const ms = Math.min(
+				Math.max(error.retryAfterMs ?? 0, OUTAGE_WAIT_MS * 2 ** (n - 1)),
+				OUTAGE_WAIT_MAX_MS,
+			);
+			note(
+				`provider unavailable (${error.message.slice(0, 80)}); waiting ${Math.round(ms / 1000)}s`,
+			);
+			await wait(ms);
+		}
+	}
+}
+
 /**
  * The model of one case, recording every call: its answer, and the tokens, cost, time and
- * finish reason the adapter wrote down for it (found again by a `jobId` of its own).
+ * finish reason the adapter wrote down for it (found again by a `jobId` of its own). A call the
+ * provider could not serve is made again after a wait (`throughOutages`).
  */
-export function observe(env: EnvLlm, raw = false) {
+export function observe(env: EnvLlm, raw = false, wait?: (ms: number) => Promise<unknown>) {
 	const calls: CallRecord[] = [];
 	const notes: string[] = [];
+	const note = (line: string) => notes.push(line);
 	const measured = async (jobId: string, answer: RecordedAnswer) => {
 		const rows = await env.calls(jobId);
 		calls.push({ ...sumCalls(rows), answer });
@@ -153,7 +193,11 @@ export function observe(env: EnvLlm, raw = false) {
 		async generateObject(request) {
 			const jobId = `eval_${++tags}`;
 			try {
-				const result = await env.llm.generateObject({ ...request, jobId });
+				const result = await throughOutages(
+					() => env.llm.generateObject({ ...request, jobId }),
+					note,
+					wait,
+				);
 				if (raw) notes.push(`raw ${JSON.stringify(result.output)}`);
 				await measured(jobId, { kind: 'object', feature: request.feature, output: result.output });
 				return result;
@@ -181,7 +225,12 @@ export function observe(env: EnvLlm, raw = false) {
 				},
 			}));
 			try {
-				const result = await env.llm.chat({ ...request, tools, jobId });
+				const result = await throughOutages(
+					() => env.llm.chat({ ...request, tools, jobId }),
+					note,
+					wait,
+					() => toolCalls.length === 0,
+				);
 				await measured(jobId, {
 					kind: 'chat',
 					feature: request.feature,
@@ -463,6 +512,8 @@ export interface EvalOptions<C extends { name: string }> {
 	/** The models, instead of the ones the environment names. */
 	models?: readonly EnvLlm[];
 	log?(line: string): void;
+	/** How a wait for the provider is spent (tests pass one that returns at once). */
+	wait?(ms: number): Promise<unknown>;
 }
 
 /**
@@ -518,7 +569,7 @@ export async function runEval<C extends { name: string }>(
 		work,
 		concurrency,
 		async ({ c, model }) => {
-			const observed = observe(model, raw);
+			const observed = observe(model, raw, options.wait);
 			const verdict = await options.run(c, observed.llm).catch(
 				(error: unknown): CaseVerdict => ({
 					ok: false,
