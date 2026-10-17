@@ -88,9 +88,8 @@
 			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 			"version": null,
 			"date": "2026-10-17",
-			"cases": 20,
+			"cases": 22,
 			"passing": [
-				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 				"not there: anchovies on no list",
 				"one date: Sunday planning on 25 October only",
 				"one date: follow-up \"Only this Sunday\"",
@@ -100,7 +99,6 @@
 				"find: Lukas's Wednesday",
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
-				"duplicate: sandpaper is already on the Hardware store list",
 				"remove: the cheddar is on the list (without naming the list)",
 				"honesty: calendar off for the AI, asked to add an appointment",
 				"formatting: an overview of the week",
@@ -111,7 +109,20 @@
 				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
 			],
-			"failing": {},
+			"failing": {
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": [
+					"reply says /\\b(no|not|isn't|couldn't|can't|cannot|don't|didn't|doesn't)\\b/i"
+				],
+				"duplicate: sandpaper is already on the Hardware store list": [
+					"drafted lists.addShoppingItems: marked \"may already be there\", or reply says /already/i"
+				],
+				"answer weekday: the bins on Tuesday 13 October": [
+					"reply says /tuesday,? 13 october|october 13/i"
+				],
+				"span: nothing on this weekend, the next event is the Saturday after": [
+					"reply says /\\b(nothing|no events?|none|free)\\b/i and /date night/i and /17 october|october 17/i"
+				]
+			},
 			"cost": 0
 		},
 		"openrouter-xingchen-agi-xing4-0-29b-a4b-free": {
@@ -153,6 +164,43 @@
 			},
 			"outages": [
 				"span: nothing open for Ellie this weekend"
+			],
+			"cost": 0
+		},
+		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
+			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+			"version": null,
+			"date": "2026-10-17",
+			"cases": 22,
+			"passing": [
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+				"one date: Sunday planning on 25 October only",
+				"tick off: \"the bananas\" on a long list",
+				"tick off: milk already bought, oat milk open",
+				"find: swimming this week",
+				"duplicate: a present for Mila is already a task",
+				"duplicate: sandpaper is already on the Hardware store list",
+				"remove: the cheddar is on the list (without naming the list)",
+				"honesty: calendar off for the AI, asked to add an appointment",
+				"formatting: an overview of the week",
+				"Turkish: add milk and eggs",
+				"answer weekday: the bins on Tuesday 13 October",
+				"span: nothing on this weekend, the next event is the Saturday after",
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
+				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
+				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
+			],
+			"failing": {
+				"span: nothing open for Ellie this weekend": [
+					"says nothing falls this weekend, and marks the tasks it lists as outside it"
+				]
+			},
+			"outages": [
+				"not there: anchovies on no list",
+				"one date: follow-up \"Only this Sunday\"",
+				"find: Lukas's Wednesday",
+				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
+				"no area: the flat papers when Home is not installed"
 			],
 			"cost": 0
 		}
