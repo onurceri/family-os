@@ -168,6 +168,7 @@
 			short: member.shortName,
 			color: member.color,
 			status: statusOf(member.id),
+			...(data.notes[member.id] && { note: data.notes[member.id] }),
 			people: 1,
 			items: items.map((c) => ({ ...c, color: member.color })),
 			chores: choresOf(member.id),

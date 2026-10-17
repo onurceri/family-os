@@ -146,12 +146,21 @@
 {/snippet}
 
 {#snippet glance()}
-	<!-- Phones leave the family out: the stacked day below already says what each one does. -->
+	<!-- Phones leave the family's statuses out: the stacked day below already says what each one
+	     does. What it cannot say (where they are) stands in a strip, when there is something. -->
 	{#if data.members.length > 0 && wide.current && data.shows('family')}
 		<div class="blk" class:gone={gone('atmosphere')} style:--o="6">
 			<TodayBlock block={data.menuFor('family')}>
 				<TodaySection title={words.family}>
 					<FamilyList people={data.statuses} label={words.family} />
+				</TodaySection>
+			</TodayBlock>
+		</div>
+	{:else if data.members.length > 0 && data.hasNotes && data.shows('family')}
+		<div class="blk" class:gone={gone('atmosphere')} style:--o="6">
+			<TodayBlock block={data.menuFor('family')}>
+				<TodaySection title={words.family}>
+					<FamilyList people={data.statuses} label={words.family} variant="strip" />
 				</TodaySection>
 			</TodayBlock>
 		</div>

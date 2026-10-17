@@ -334,6 +334,7 @@
 										words={dayWords}
 										variant="row"
 										meta={choresMeta(m.id)}
+										note={data.notes[m.id]}
 										showName={named}
 									>
 										{#snippet trailing()}{@render choreRing(ring)}{/snippet}

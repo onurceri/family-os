@@ -5,6 +5,8 @@
 		displayName: string;
 		color: string;
 		status: string;
+		/** A word about them beside the name ("Home"), from an extension; never coloured. */
+		note?: string;
 		/** Things for no one in particular: a people icon, not a letter. */
 		anyone?: boolean;
 	}
@@ -14,9 +16,10 @@
 	import Avatar from './Avatar.svelte';
 
 	/**
-	 * The family with one honest status each: a ringed avatar, the name
-	 * and a one-line clause cut with an ellipsis, never wrapped. `list` stacks rows (the wall);
-	 * `strip` sets them side by side, centred (phones).
+	 * The family with one honest status each: a ringed avatar, the name (and a note beside it,
+	 * "Home") and a one-line clause cut with an ellipsis, never wrapped. `list` stacks rows (the
+	 * wall); `strip` sets them side by side, centred (phones), with the note under the name instead
+	 * of the clause.
 	 */
 	let {
 		people,
@@ -37,8 +40,16 @@
 				><Avatar name={p.displayName} color={p.color} size={32} anyone={p.anyone} /></span
 			>
 			<span class="t">
-				<b>{p.displayName}</b>
-				<small title={p.status}>{p.status}</small>
+				{#if variant === 'strip'}
+					<b>{p.displayName}</b>
+					{#if p.note}<small class="note" title={p.note}>{p.note}</small>{/if}
+				{:else}
+					<span class="nm"
+						><b>{p.displayName}</b>{#if p.note}<span class="note" title={p.note}>{p.note}</span
+							>{/if}</span
+					>
+					<small title={p.status}>{p.status}</small>
+				{/if}
 			</span>
 		</li>
 	{/each}
@@ -77,6 +88,26 @@
 		overflow: hidden;
 		font-size: 15px;
 		font-weight: 700;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.nm {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		min-width: 0;
+	}
+	/* The name gives way before the note: "Home" stays whole. */
+	.nm b {
+		min-width: 0;
+	}
+	.nm .note {
+		flex: none;
+		max-width: 60%;
+		overflow: hidden;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}

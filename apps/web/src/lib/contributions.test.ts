@@ -107,6 +107,25 @@ describe('what a viewer gets', () => {
 		expect(facetsOf(all.facets, 'photo', viewer(['garden.view']))).toEqual([]);
 	});
 
+	it('gives every word-about-people facet the viewer may see, in extension order', () => {
+		const note = (id: string, requires: string): TodayFacet => ({
+			kind: 'memberStatus',
+			id,
+			requires,
+			load: async () => [],
+		});
+		const facets = collect([
+			{ id: 'home', today: [note('home.presence', 'home.presence')] },
+			{ id: 'sport', today: [note('sport.practice', 'sport.view')] },
+		]).facets;
+		const ids = (held: string[], off: string[] = []) =>
+			facetsOf(facets, 'memberStatus', viewer(held, off)).map((f) => f.id);
+		expect(ids(['home.presence', 'sport.view'])).toEqual(['home.presence', 'sport.practice']);
+		expect(ids(['sport.view'])).toEqual(['sport.practice']);
+		expect(ids(['home.presence', 'sport.view'], ['home'])).toEqual(['sport.practice']);
+		expect(facetsOf(all.facets, 'memberStatus', viewer(['garden.view', 'post.view']))).toEqual([]);
+	});
+
 	it('has a day when any timeline it may read is on', () => {
 		expect(hasDay(all.timelines, viewer(['post.view']))).toBe(true);
 		expect(hasDay(all.timelines, viewer(['garden.photos']))).toBe(false);

@@ -422,7 +422,12 @@ export interface DayItem extends TimelineItem {
  * when an extension that is turned on provides it and the viewer holds its `requires`; with
  * several of one kind, the first (by extension) is used.
  */
-export type TodayFacet = MemberCountsFacet | PhotoFacet | WeatherFacet | SetupHintFacet;
+export type TodayFacet =
+	| MemberCountsFacet
+	| MemberStatusFacet
+	| PhotoFacet
+	| WeatherFacet
+	| SetupHintFacet;
 
 interface FacetBase {
 	/** Unique, namespaced: `<extension>.<name>`. */
@@ -458,6 +463,28 @@ export interface MemberCountsFacet extends FacetBase {
 	noneKey?: string;
 	leftKey: string;
 	load(app: TimelineApp): Promise<readonly MemberCount[]>;
+}
+
+/** A few words about one person right now, already in the reader's language ("Home", "At School"). */
+export interface MemberNote {
+	memberId: string;
+	/** Short: it stands beside a name. */
+	text: string;
+}
+
+/**
+ * A word about each person, beside their name wherever a style draws people (the family list,
+ * the day by person, the lanes): where they are, say. Only people the extension has something
+ * about are in `load`'s answer; the others show nothing. Notes of several such facets stand side
+ * by side. They have no tone: what is said about a person is never coloured. `block` is the
+ * extension's block that shows or hides them. `refreshMs`: how often to read again while the page
+ * is open, for what changes without an event of FamilyOS.
+ */
+export interface MemberStatusFacet extends FacetBase {
+	kind: 'memberStatus';
+	block?: string;
+	refreshMs?: number;
+	load(app: TimelineApp): Promise<readonly MemberNote[]>;
 }
 
 /** The photo of the day: where it loads from and the month it is from (`YYYY-MM`); null for none. */

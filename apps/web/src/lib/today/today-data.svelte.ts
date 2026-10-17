@@ -20,6 +20,8 @@ import {
 } from '@famos/ui/famos';
 import type {
 	DayItem,
+	MemberNote,
+	MemberStatusFacet,
 	SlotContribution,
 	TimelineContribution,
 	TimelineItem,
@@ -54,13 +56,14 @@ import {
 } from '#lib/today.js';
 import { type FacetWords, type TodayWords, todayWords } from '#lib/today-words.js';
 import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } from './blocks.js';
+import { mergeMemberNotes, notesRefreshMs } from './member-notes.js';
 
 /**
  * Everything Today shows, loaded and settled in one place. Every style's
  * composition (Broadsheet, Wall, Lanes) takes one `TodayData` and only arranges it: the day's
  * timeline and the look-ahead, the cards and what they report, the facets extensions provide
- * (counts per person, the photo of the day, the weather's hours, the first steps of a new
- * family), whose next thing the hero shows, and when the page is settled (composed once). It
+ * (counts per person, a word about each person, the photo of the day, the weather's hours, the
+ * first steps of a new family), whose next thing the hero shows, and when the page is settled (composed once). It
  * names no extension: everything comes from `contributions`. Create it while a component
  * initialises: it owns effects.
  *
@@ -71,7 +74,7 @@ import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } fr
  * Without the `requires` of any timeline contribution there is no day (no hero, no day by
  * person, no evening or quiet note).
  * With names off there is no per-person structure: the day is one column of everything, chores
- * one total, and no item carries its people. Nothing in it is a link.
+ * one total, no item carries its people and nothing is said about anyone. Nothing in it is a link.
  */
 
 export type Card = SlotContribution<'dashboard.card'>;
@@ -313,6 +316,15 @@ export class TodayData {
 		return href && this.app.isAppPath(href) ? href : undefined;
 	});
 	readonly #photoSource = $derived(this.#sample ? undefined : this.#facet('photo'));
+	/**
+	 * Every facet with a word about each person this viewer may see, in extension order (several
+	 * stand side by side). None with names off: there is nobody to say it of.
+	 */
+	readonly #noteSources = $derived<readonly MemberStatusFacet[]>(
+		this.#sample || !this.showNames
+			? []
+			: facetsOf(contributions.facets, 'memberStatus', this.#viewing),
+	);
 	/** The steps extensions add to the first steps of a new family, in `order`. */
 	readonly #setupHints = $derived(
 		this.#familyMode || this.#sample
@@ -465,6 +477,9 @@ export class TodayData {
 	choresLoaded = $state(false);
 	photo = $state<{ src: string; month: string } | null>(null);
 	photoLoaded = $state(false);
+	/** What each `memberStatus` facet said, by its id. */
+	notesBy = $state<Record<string, readonly MemberNote[]>>({});
+	notesLoaded = $state(false);
 
 	/* ───────────── a new family, and AI not connected ───────────── */
 
@@ -499,7 +514,7 @@ export class TodayData {
 			this.tomorrowItems = sample.tomorrowItems;
 			this.chores = sample.chores;
 			this.timelineLoaded = this.aheadLoaded = this.choresLoaded = true;
-			this.photoLoaded = this.setupLoaded = this.settled = true;
+			this.photoLoaded = this.notesLoaded = this.setupLoaded = this.settled = true;
 			return;
 		}
 
@@ -560,6 +575,26 @@ export class TodayData {
 			return onEvents(app, source?.invalidateOn, () => void this.#loadPhoto());
 		});
 
+		$effect(() => {
+			void this.#viewer;
+			const sources = this.#noteSources;
+			void app.offline();
+			untrack(() => void this.#loadNotes(sources));
+			// What it says changes outside FamilyOS too (someone comes home): read it again now and then.
+			const every = notesRefreshMs(sources);
+			const timer =
+				every === null ? undefined : setInterval(() => void this.#loadNotes(sources), every);
+			const off = onEvents(
+				app,
+				sources.flatMap((f) => f.invalidateOn ?? []),
+				() => void this.#loadNotes(sources),
+			);
+			return () => {
+				clearInterval(timer);
+				off();
+			};
+		});
+
 		if (familyMode) {
 			// A display has no first steps and no AI row: nobody there could act on them.
 			this.setupLoaded = true;
@@ -600,7 +635,8 @@ export class TodayData {
 				this.aheadLoaded &&
 				this.setupLoaded &&
 				this.choresLoaded &&
-				this.photoLoaded
+				this.photoLoaded &&
+				this.notesLoaded
 			)
 				this.settled = true;
 		});
@@ -666,6 +702,7 @@ export class TodayData {
 		void this.#loadAhead({ from: addDays(this.today, 1), to: addDays(this.today, 7) }, sources);
 		void this.#loadChores();
 		void this.#loadPhoto();
+		void this.#loadNotes(this.#noteSources);
 	}
 
 	async #loadChores() {
@@ -696,6 +733,20 @@ export class TodayData {
 		} finally {
 			this.photoLoaded = true;
 		}
+	}
+
+	async #loadNotes(sources: readonly MemberStatusFacet[]) {
+		const lists = await Promise.all(
+			sources.map((f) =>
+				f
+					.load(this.app)
+					.then((notes) => [f.id, notes] as const)
+					// Keep what is on screen.
+					.catch(() => [f.id, this.notesBy[f.id] ?? []] as const),
+			),
+		);
+		this.notesBy = Object.fromEntries(lists);
+		this.notesLoaded = true;
 	}
 
 	async #loadSetup() {
@@ -998,6 +1049,18 @@ export class TodayData {
 
 	/* ───────────── the family ───────────── */
 
+	/** A short word about each person who has one ("Home"), from the facets whose block shows. */
+	readonly notes = $derived<Readonly<Record<string, string>>>(
+		mergeMemberNotes(
+			this.#noteSources
+				.filter((f) => !f.block || this.shows(f.block))
+				.map((f) => this.notesBy[f.id] ?? []),
+			this.members.map((m) => m.id),
+		),
+	);
+	/** Whether anyone has a note. */
+	readonly hasNotes = $derived(Object.keys(this.notes).length > 0);
+
 	/** The day by person: today's (or tomorrow's in the evening) all-day and timed items. */
 	readonly days = $derived<MemberDays>(memberDays(this.dayItems, this.members));
 	readonly statuses = $derived<FamilyStatus[]>(
@@ -1010,6 +1073,7 @@ export class TodayData {
 				this.format,
 				this.words.status,
 			),
+			...(this.notes[m.id] && { note: this.notes[m.id] }),
 		})),
 	);
 	/**

@@ -187,6 +187,7 @@
 				<Avatar name={lane.name} color={lane.color || 'var(--ink-soft)'} size={24} />
 			{/if}
 			<b title={lane.name}>{lane.short ?? lane.name}</b>
+			{#if lane.note}<small class="note" title={lane.note}>{lane.note}</small>{/if}
 		</div>
 	{/each}
 
@@ -282,6 +283,16 @@
 		margin-bottom: 6px;
 		padding-bottom: 7px;
 		border-bottom: 3px solid var(--m);
+	}
+	.mh .note {
+		max-width: 100%;
+		overflow: hidden;
+		font-size: 10.5px;
+		font-weight: 600;
+		line-height: 1.1;
+		color: var(--ink-soft);
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.mh.bare {
 		align-content: end;

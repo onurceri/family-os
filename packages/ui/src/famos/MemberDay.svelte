@@ -25,7 +25,8 @@
 	 * their name and up to `max` cards, past cards receded, the next one outlined in `accent`,
 	 * then "+n more"; with nothing, the serif "Nothing planned." and a meta line. `stack` (phones):
 	 * the same with the rule at the side and two cards. `row` (Wall's "Who, next"): a ringed avatar,
-	 * the name and a meta line, the next thing large with what follows, and `trailing` (a ring).
+	 * the name and a meta line (after the person's note), the next thing large with what follows, and
+	 * `trailing` (a ring).
 	 * Member colour only as the rule and the avatar, never as a surface or text.
 	 */
 	let {
@@ -38,6 +39,7 @@
 		max,
 		nextId = null,
 		meta,
+		note,
 		showName = true,
 		flow = false,
 		trailing,
@@ -59,6 +61,11 @@
 		nextId?: string | null;
 		/** Under "Nothing planned." in a column, under the name in a row: "1 chore left". */
 		meta?: string;
+		/**
+		 * A row: a word about the person ("Home", from an extension), before the meta line, or under
+		 * the avatar when the name is left out. Never coloured.
+		 */
+		note?: string;
 		/** Rows on a phone drop the name (the avatar carries it); it stays for screen readers. */
 		showName?: boolean;
 		/** A column: the cards flow side by side (one column for everyone, on a display). */
@@ -99,21 +106,24 @@
 
 {#if variant === 'row'}
 	<div class="row" style:--member={member.color} data-testid="member-day">
-		<span class="ringed"
-			><Avatar
-				name={member.displayName}
-				color={member.color}
-				size={40}
-				anyone={member.anyone}
-			/></span
-		>
+		<span class="who">
+			<span class="ringed"
+				><Avatar
+					name={member.displayName}
+					color={member.color}
+					size={40}
+					anyone={member.anyone}
+				/></span
+			>
+			{#if note && !showName}<small class="note" title={note}>{note}</small>{/if}
+		</span>
 		<span class="name" class:sr-only={!showName}>
 			<b title={member.displayName}
 				>{#if heading === member.displayName}{heading}{:else}<span aria-hidden="true"
 						>{heading}</span
 					><span class="sr-only">{member.displayName}</span>{/if}</b
 			>
-			{#if meta}<small>{meta}</small>{/if}
+			{#if note || meta}<small>{[note, meta].filter(Boolean).join(' · ')}</small>{/if}
 		</span>
 		{#if first}
 			<span class="nx">
@@ -285,7 +295,28 @@
 		padding: 6px 0;
 	}
 	.row:has(.name.sr-only) {
-		grid-template-columns: 44px minmax(0, 1fr) auto;
+		grid-template-columns: minmax(44px, auto) minmax(0, 1fr) auto;
+	}
+	.who {
+		display: grid;
+		justify-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+	.who:has(.note) .ringed {
+		justify-self: center;
+		margin-inline-start: 0;
+	}
+	/* Under the avatar on a phone: short ("Home", "At School"), cut beyond that. */
+	.who .note {
+		max-width: 72px;
+		overflow: hidden;
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1.1;
+		color: var(--ink-soft);
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.ringed {
 		display: inline-flex;

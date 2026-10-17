@@ -154,7 +154,12 @@
 				<Avatar name={lane.name} color={lane.color || 'var(--ink-soft)'} size={32} />
 			{/if}
 			<span class="t"
-				><b title={lane.name}>{lane.short ?? lane.name}</b><small>{lane.status}</small></span
+				><span class="nm"
+					><b title={lane.name}>{lane.short ?? lane.name}</b>{#if lane.note}<span
+							class="note"
+							title={lane.note}>{lane.note}</span
+						>{/if}</span
+				><small>{lane.status}</small></span
 			>
 			{#if lane.chores}
 				<span class="chores">
@@ -269,6 +274,26 @@
 	.hd b {
 		overflow: hidden;
 		font-size: 13.5px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.hd .nm {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		min-width: 0;
+	}
+	.hd .nm b {
+		min-width: 0;
+	}
+	/* The name gives way before the note: "Home" stays whole. */
+	.hd .note {
+		flex: none;
+		max-width: 60%;
+		overflow: hidden;
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}

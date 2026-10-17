@@ -465,6 +465,8 @@ export interface LaneView {
 	color: string;
 	/** One clause under the name (the person's status, who is in "Others"). */
 	status: string;
+	/** A word about the person beside the name ("Home"), from an extension. */
+	note?: string;
 	/** How many people "Others" holds (1 for a person or the family). */
 	people: number;
 	items: LaneItem[];
