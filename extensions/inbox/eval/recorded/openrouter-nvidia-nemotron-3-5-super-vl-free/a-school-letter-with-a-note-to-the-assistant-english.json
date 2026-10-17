@@ -2,7 +2,7 @@
 	"case": "A school letter with a note to the assistant (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -20,7 +20,6 @@
 						"people": [
 							"Ivy"
 						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Thursday 15 October",
 							"day": 15,
@@ -36,11 +35,10 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay the Year 7 museum trip fee",
+						"title": "Pay the trip fee",
 						"people": [
 							"Ivy"
 						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Monday 12 October",
 							"day": 12,

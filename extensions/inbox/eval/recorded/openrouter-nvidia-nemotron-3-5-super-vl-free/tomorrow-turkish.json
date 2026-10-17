@@ -2,18 +2,18 @@
 	"case": "Tomorrow (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Su tesisatçısı ziyareti",
+				"label": "Plumber visit",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Su tesisatçısı",
+						"title": "Plumber",
 						"date": {
 							"text": "Yarın sabah",
 							"weekday": 3,

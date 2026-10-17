@@ -2,7 +2,7 @@
 	"case": "Bare weekday (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -24,7 +24,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Hediye almayı unutmayalım",
+						"title": "Elif'in doğum günü hediyesi al",
 						"forMe": true,
 						"quote": "Hediye almayı unutmayalım."
 					}

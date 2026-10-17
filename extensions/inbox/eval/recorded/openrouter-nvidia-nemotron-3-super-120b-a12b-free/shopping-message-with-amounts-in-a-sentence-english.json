@@ -2,7 +2,7 @@
 	"case": "Shopping message with amounts in a sentence (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -16,7 +16,7 @@
 						"title": "Milk",
 						"quantity": "2 litres",
 						"variant": "dairy",
-						"quote": "2 litres of milk"
+						"quote": "can you pick up 2 litres of milk"
 					},
 					{
 						"kind": "lists.shoppingItem",
@@ -28,14 +28,13 @@
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Eggs",
-						"quantity": "6 eggs",
-						"variant": "other",
+						"quantity": "6",
+						"variant": "dairy",
 						"quote": "6 eggs"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Nutella",
-						"variant": "other",
 						"quote": "a jar of Nutella"
 					}
 				]

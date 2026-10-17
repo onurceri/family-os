@@ -3,7 +3,7 @@
 		"openrouter-nvidia-nemotron-3-super-120b-a12b-free": {
 			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 			"version": "inbox.understand/2",
-			"promptHash": "ecc8049b",
+			"promptHash": "d78e697a",
 			"date": "2026-10-17",
 			"cases": 51,
 			"passing": [
@@ -14,6 +14,7 @@
 				"A vet appointment tomorrow is an event, not a treatment (Turkish)",
 				"Weekly lessons with an end (Turkish)",
 				"Payment due \"on the 15th\" (Turkish)",
+				"A couple, no children",
 				"Nothing to do",
 				"Instructions inside the shared content are ignored",
 				"A question for the assistant (Turkish)",
@@ -45,31 +46,27 @@
 				"What to bring for something else is not the notes of an appointment (English)",
 				"Task notes say what the amount is (English)",
 				"A school letter with a note to the assistant (English)",
+				"A school letter with a note to the assistant (Turkish)",
 				"An appliance still to buy goes on the shopping list (English)",
 				"A recipe shared to keep (English)",
-				"A note for the family board (English)",
-				"A chore done and new turns on it (English)"
+				"A note for the family board (English)"
 			],
 			"failing": {
 				"School trip notice (Turkish)": [
+					"calendar.createEvent: trip on 16 Oct 08:30 for Deniz",
 					"lists.addTask: permission form by 8 or 9 Oct"
 				],
 				"Shopping list (Turkish)": [
 					"lists.addShoppingItems: four items with sections"
 				],
-				"A couple, no children": [
-					"calendar.createEvent: dentist on 8 Oct 15:00 for Selin"
-				],
 				"An adult child set it up for their parents": [
 					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma"
-				],
-				"A school letter with a note to the assistant (Turkish)": [
-					"lists.addTask: the fee by 12 Oct"
 				],
 				"A vet card for a listed pet (English)": [
 					"pets.addTreatment: Luna's vaccination on 2 Oct"
 				],
 				"A garage invoice for a listed car (English)": [
+					"vehicles.addLog: the service on 3 Oct at Northside Garage",
 					"vehicles.addLog: no amount of money in the notes"
 				],
 				"A receipt for an appliance with a warranty (English)": [
@@ -77,6 +74,9 @@
 				],
 				"Meals planned for the week (English)": [
 					"kitchen.addToMealPlan: fish pie for dinner on Fri 9 Oct"
+				],
+				"A chore done and new turns on it (English)": [
+					"chores.markDone: the bins, by the sharer (Tom)"
 				]
 			},
 			"cost": 0
@@ -84,7 +84,7 @@
 		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
 			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 			"version": "inbox.understand/2",
-			"promptHash": "ecc8049b",
+			"promptHash": "d78e697a",
 			"date": "2026-10-17",
 			"cases": 51,
 			"passing": [
@@ -107,7 +107,6 @@
 				"US school email: MM/DD dates and 4pm",
 				"UK council and school notice: DD/MM dates and Year 5",
 				"European appointment letter: DD.MM. dates and 24-hour times",
-				"Shopping message with imperial units",
 				"Shopping message with amounts in a sentence (English)",
 				"Car insurance renewal reminder (English)",
 				"Car insurance renewed (English)",
@@ -115,7 +114,6 @@
 				"Ticks off the newest of many similar items (English)",
 				"Nothing to tick off when the item is not listed (English)",
 				"Completes a listed task (English)",
-				"Keeps the appointment of a pet that is not listed (English)",
 				"Moves the event that is already there (English)",
 				"A cancelled date of a weekly activity, in a messy message (English)",
 				"Something to buy that is already on the list (English)",
@@ -127,6 +125,7 @@
 				"Task nobody is named for is not silently assigned (English)",
 				"Message addressed to the person who shared it (English)",
 				"Message to the whole household stays for everyone (English)",
+				"What to bring for something else is not the notes of an appointment (English)",
 				"Task notes say what the amount is (English)",
 				"A school letter with a note to the assistant (English)",
 				"A school letter with a note to the assistant (Turkish)",
@@ -137,11 +136,12 @@
 				"A recipe shared to keep (English)",
 				"Meals planned for the week (English)",
 				"A note for the family board (English)",
-				"A chore done and new turns on it (English)"
+				"A chore done and new turns on it (English)",
+				"Keeps the appointment of a pet that is not listed (English)"
 			],
 			"failing": {
-				"What to bring for something else is not the notes of an appointment (English)": [
-					"the dentist has no notes about the football kit"
+				"Shopping message with imperial units": [
+					"1 proposal(s)"
 				]
 			},
 			"cost": 0

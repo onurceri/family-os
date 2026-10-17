@@ -2,7 +2,7 @@
 	"case": "Ticks off a listed shopping item (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -15,7 +15,7 @@
 						"kind": "lists.bought",
 						"target": "E27 light bulbs",
 						"place": "Hardware store",
-						"quote": "Got the E27 light bulbs already"
+						"quote": "Got the E27 light bulbs already, tick them off the Hardware store list"
 					}
 				]
 			}

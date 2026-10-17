@@ -2,7 +2,7 @@
 	"case": "European appointment letter: DD.MM. dates and 24-hour times",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,7 +26,8 @@
 						"notes": "Please bring your insurance card",
 						"quote": "your appointment at the dental practice of Dr. Braun is on Wednesday, 14.10.2026 at 14:30. Please bring your insurance card."
 					}
-				]
+				],
+				"addressed": []
 			}
 		}
 	]

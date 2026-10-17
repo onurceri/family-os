@@ -2,13 +2,13 @@
 	"case": "US school email: MM/DD dates and 4pm",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Picture day and field trip",
+				"label": "Picture day and permission slip",
 				"intent": "actionable",
 				"mentions": [
 					{

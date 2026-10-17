@@ -470,6 +470,21 @@ describe('resolveDay', () => {
 			],
 			// Found in use: "Yarın" quoted with no parts.
 			['tomorrow in the words only', { text: 'Yarın' }, { words }, '2026-10-15', undefined],
+			// Found in use: "Thu 15" read as a weekday alone became the coming Thursday, the 8th.
+			[
+				'a weekday with a day number its words write and the model left out',
+				{ text: 'Thu 22', weekday: 4 },
+				{ words },
+				'2026-10-22',
+				undefined,
+			],
+			[
+				'a number that is not that weekday is no day',
+				{ text: 'Thursday at 4', weekday: 4 },
+				{ words },
+				'2026-10-15',
+				'weekday_only',
+			],
 			// Found in use: "yarın" read with today's day number became today.
 			[
 				'tomorrow in the words wins over a day number they do not write',

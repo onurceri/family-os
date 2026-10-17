@@ -2,7 +2,7 @@
 	"case": "An adult child set it up for their parents",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,17 +22,19 @@
 							"text": "21 Ekim Çarşamba",
 							"day": 21,
 							"month": 10,
-							"year": 2026,
-							"weekday": 2
+							"weekday": 3
 						},
 						"time": "10:30",
 						"timeText": "10:30",
 						"place": "Şehir Hastanesi",
-						"quote": "Babamın kardiyoloji kontrolü 21 Ekim Çarşamba 10:30, Şehir Hastanesi."
+						"quote": "Babamın kardiyoloji kontrolü 21 Ekim Çarşamba 10:30, Şehir Hastanesi. Annem de onunla gidecek."
 					},
 					{
 						"kind": "lists.task",
-						"title": "Eczaneden ilaçları al",
+						"title": "Eczaneden ilaçlarını al",
+						"people": [
+							"Elif"
+						],
 						"forMe": true,
 						"quote": "Eczaneden ilaçlarını almayı unutmayalım."
 					}

@@ -2,7 +2,7 @@
 	"case": "Meals planned for the week (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -24,6 +24,14 @@
 						"kind": "kitchen.meal",
 						"title": "Fish pie",
 						"variant": "dinner",
+						"quote": "fish pie for dinner on Friday"
+					},
+					{
+						"kind": "kitchen.meal",
+						"date": {
+							"text": "Friday",
+							"weekday": 5
+						},
 						"quote": "fish pie for dinner on Friday"
 					}
 				]

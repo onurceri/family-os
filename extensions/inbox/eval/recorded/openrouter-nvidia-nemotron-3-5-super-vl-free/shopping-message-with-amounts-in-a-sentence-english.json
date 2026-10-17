@@ -2,7 +2,7 @@
 	"case": "Shopping message with amounts in a sentence (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Shopping on the way back",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
@@ -29,7 +28,7 @@
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Eggs",
-						"quantity": "6 eggs",
+						"quantity": "6",
 						"variant": "dairy",
 						"quote": "6 eggs"
 					},

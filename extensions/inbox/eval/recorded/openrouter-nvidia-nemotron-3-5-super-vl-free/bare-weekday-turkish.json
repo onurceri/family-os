@@ -2,7 +2,7 @@
 	"case": "Bare weekday (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
@@ -17,7 +17,6 @@
 						"people": [
 							"Deniz"
 						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Cuma günü",
 							"weekday": 5

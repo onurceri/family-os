@@ -349,6 +349,17 @@ export function resolveDay(
 				doubt('approximate');
 			}
 		}
+		// A weekday the model read, with one number standing alone in its words that the model
+		// left out ("Thu 15"): when that day of the month falls on the weekday, the two agree and
+		// name that date, as surely as a weekday and a day number would.
+		if (source === 'weekday' && ref.day === undefined && numbers.length === 1 && alone) {
+			const found = dayOfMonth(Number(alone), today, direction);
+			if (found && date !== null && found.dayOfWeek === date.dayOfWeek) {
+				date = found;
+				source = 'number';
+				why = undefined;
+			}
+		}
 		// Only the words, and they name one month and nothing finer ("until the end of October"):
 		// read as that month, approximate, as if the model had given the month.
 		const months = date === null ? namedMonths(text, options.words) : [];

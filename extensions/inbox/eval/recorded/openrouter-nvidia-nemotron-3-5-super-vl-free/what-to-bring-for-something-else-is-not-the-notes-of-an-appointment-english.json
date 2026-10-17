@@ -2,24 +2,29 @@
 	"case": "What to bring for something else is not the notes of an appointment (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dentist, football kit, groceries",
+				"label": "Dentist, football kit and groceries",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Dentist",
 						"date": {
-							"text": "thurs",
+							"text": "Thursday",
 							"weekday": 4
 						},
-						"notes": "bring the football kit",
-						"quote": "dentist thurs?? and bring the football kit"
+						"quote": "dentist thurs"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Bring the football kit",
+						"forMe": true,
+						"quote": "bring the football kit, pls remind"
 					},
 					{
 						"kind": "lists.shoppingItem",

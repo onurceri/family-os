@@ -2,18 +2,18 @@
 	"case": "A couple, no children",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "inbox.understand/2",
-	"promptHash": "ecc8049b",
+	"promptHash": "d78e697a",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Selin'in diş randevusu ve yemek",
+				"label": "Selin'in diş randevusu ve yemek planı",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Selin'in diş randevusu",
+						"title": "Diş randevusu",
 						"people": [
 							"Selin"
 						],
