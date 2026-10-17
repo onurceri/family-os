@@ -322,6 +322,15 @@ export function namedWeekdays(text: string, words: DateWords): number[] {
 }
 
 /**
+ * Month numbers (1 = January) named in the text ("by the end of October", "Ekim sonuna"), by
+ * their full or short names; a short name counts only as a whole word.
+ */
+export function namedMonths(text: string, words: DateWords): number[] {
+	const clean = withoutTimes(text, words);
+	return [...new Set(namesIn(clean, words.months, (name) => name.length <= 4).map((f) => f.value))];
+}
+
+/**
  * How many days from today the words of a text name ("tomorrow" 1, "bu akşam" 0), when they
  * name exactly one such distance; null when they name none or several.
  */

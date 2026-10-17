@@ -181,6 +181,29 @@ describe('calendar.event', () => {
 		expect(await draft(out[0])).toBe('drafted');
 	});
 
+	it('reads the month of an end the model gave only as words, marked for a look', async () => {
+		await settings({ timeZone: 'Europe/Istanbul', locale: 'tr' });
+		// As nemotron-3-super answered: the end quoted as words, with no month.
+		const out = await resolve(
+			'calendar.event',
+			[
+				{
+					title: 'Piyano dersi',
+					people: ['Deniz'],
+					date: { text: 'her çarşamba', weekday: 3 },
+					time: '17:00',
+					timeText: '17:00',
+					repeat: { every: 'week', weekdays: [3], until: { text: 'Ekim sonuna kadar' } },
+				},
+			],
+			{ text: "Deniz'in piyano dersi her çarşamba saat 17:00'de, Ekim sonuna kadar devam edecek." },
+		);
+		expect(proposal(out[0])).toMatchObject({
+			input: { recurrence: { freq: 'weekly', byDay: ['WE'], until: '2026-10-31' } },
+			uncertain: expect.arrayContaining(['recurrence']),
+		});
+	});
+
 	it('keeps an end day the model worked out from words without digits, marked for a look', async () => {
 		const out = await resolve('calendar.event', [
 			{

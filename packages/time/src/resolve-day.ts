@@ -3,6 +3,7 @@ import {
 	type DateOrder,
 	type DateWords,
 	namedDistance,
+	namedMonths,
 	namedWeekdays,
 	writtenDates,
 } from './date-words.ts';
@@ -333,6 +334,14 @@ export function resolveDay(
 				source = 'number';
 				doubt('approximate');
 			}
+		}
+		// Only the words, and they name one month and nothing finer ("until the end of October"):
+		// read as that month, approximate, as if the model had given the month.
+		const months = date === null ? namedMonths(text, options.words) : [];
+		if (date === null && months.length === 1) {
+			date = monthOnly(months[0] as number, undefined, today, direction);
+			source = 'month';
+			doubt('approximate');
 		}
 		if (date && named.length > 0 && !named.includes(date.dayOfWeek)) {
 			// A weekday the model misread: the one the words name is taken, still as a weekday.

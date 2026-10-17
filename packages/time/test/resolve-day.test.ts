@@ -44,6 +44,22 @@ describe('resolveDay', () => {
 		expect(resolveDay({ text: '3 or 4' }, { today: TODAY, words })).toBeNull();
 	});
 
+	it('reads a month the words alone name, as approximate', () => {
+		expect(resolveDay({ text: 'Ekim sonuna kadar' }, { today: TODAY, words })).toEqual({
+			date: TODAY,
+			certain: false,
+			why: 'approximate',
+		});
+		expect(
+			resolveDay(
+				{ text: 'until the end of December' },
+				{ today: TODAY, words, direction: 'future' },
+			),
+		).toEqual({ date: '2026-12-01', certain: false, why: 'approximate' });
+		// Two months say nothing about which one.
+		expect(resolveDay({ text: 'October or November' }, { today: TODAY, words })).toBeNull();
+	});
+
 	describe('counted days', () => {
 		table([
 			['today', { inDays: 0 }, {}, '2026-10-14', undefined],

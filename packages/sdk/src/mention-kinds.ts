@@ -219,13 +219,16 @@ export function endNamed(
 ): ResolvedDay | null {
 	const found = ctx.day(ref, 'future');
 	if (!ref) return found;
-	const spanOnly =
+	const noDay =
 		ref.day === undefined &&
 		ref.inDays === undefined &&
 		ref.weekday === undefined &&
 		!ref.numeric?.trim() &&
-		!/\p{N}/u.test(ref.text) &&
-		(ref.month !== undefined || ref.approximate === true);
+		!/\p{N}/u.test(ref.text);
+	// A month read from the words alone ("Ekim sonuna kadar" with no parts) is approximate too.
+	const monthInWords =
+		ref.month === undefined && found?.certain === false && found.why === 'approximate';
+	const spanOnly = noDay && (ref.month !== undefined || ref.approximate === true || monthInWords);
 	if (!spanOnly) return found;
 	const date = monthEnd(found?.date ?? ctx.today);
 	return ref.month !== undefined && ref.approximate !== true
