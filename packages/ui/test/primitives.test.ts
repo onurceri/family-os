@@ -551,7 +551,7 @@ describe('Fab', () => {
 });
 
 describe('RecordHeader', () => {
-	it('shows the name, the non-empty facts with separators, people and actions', () => {
+	it('shows the name, the non-empty facts each with its separator, people and actions', () => {
 		const el = render(RecordHeader, {
 			name: 'Clio',
 			facts: ['34 ABC 123', null, 'Petrol'],
@@ -560,11 +560,10 @@ describe('RecordHeader', () => {
 			actions: html('<button>Edit</button>'),
 		});
 		expect(q('h1', el).textContent).toBe('Clio');
-		expect(qa('.meta > span:not(.sep):not(.pp)', el).map((s) => s.textContent)).toEqual([
-			'34 ABC 123',
-			'Petrol',
-		]);
-		expect(qa('.sep', el)).toHaveLength(1);
+		// The dot is drawn before every fact and clipped at the start of a line, so a wrapped line
+		// never ends or begins with one: there is no separate separator element to strand.
+		expect(qa('.meta .fact', el).map((s) => s.textContent)).toEqual(['34 ABC 123', 'Petrol']);
+		expect(qa('.meta .sep', el)).toHaveLength(0);
 		expect(q('.pp', el)).toBeTruthy();
 		expect(q('.act button', el).textContent).toBe('Edit');
 	});

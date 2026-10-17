@@ -308,14 +308,21 @@
 							</span>
 							<span class="grid min-w-0 flex-1 gap-px">
 								<span class="truncate text-[15px] leading-[1.3] font-semibold">{o.title}</span>
-								<span class="text-ink-soft truncate text-[13px]">
-									<span class="sr-only">{statusLabel(o)}:</span>
-									<span class={stateTextClass(status)}
-										>{dueLabel(o, today, t, app.dateLocale())}</span
-									>
-									{#if everyLabel(o)}<span> · {everyLabel(o)}</span>{/if}
-									{#if assignee}<span> · {assignee.displayName}</span>{/if}
-									{#if o.notes}<span> · {o.notes}</span>{/if}
+								<span class="text-ink-soft block overflow-hidden text-[13px]">
+									<span class="meta">
+										<span class="fact"
+											><span class="sr-only">{statusLabel(o)}: </span><span
+												class={stateTextClass(status)}
+												>{dueLabel(o, today, t, app.dateLocale())}</span
+											></span
+										>
+										{#if everyLabel(o)}<span class="fact">{everyLabel(o)}</span>{/if}
+										{#if assignee || o.notes}
+											<span class="fact min-w-0 truncate"
+												>{[assignee?.displayName, o.notes].filter(Boolean).join(' · ')}</span
+											>
+										{/if}
+									</span>
 								</span>
 							</span>
 						</button>
@@ -384,3 +391,23 @@
 		</details>
 	{/if}
 </Section>
+
+<style>
+	/* The due date and the repeat interval wrap to a new line whole instead of being cut, and only
+	   the trailing person and notes are shortened. Each part carries the dot before it, and the row
+	   is shifted one dot to the start inside a clip, so a wrapped line never begins with a dot. */
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		margin-inline-start: -1em;
+	}
+	.fact {
+		max-width: 100%;
+	}
+	.fact::before {
+		content: '\00b7' / '';
+		display: inline-block;
+		width: 1em;
+		text-align: center;
+	}
+</style>

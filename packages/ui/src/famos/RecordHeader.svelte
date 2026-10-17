@@ -4,7 +4,7 @@
 	import AwaitingMark from './AwaitingMark.svelte';
 
 	/**
-	 * The head of a record page (design system v2 section 5.8): a 56 px disc (or photo), the name
+	 * The head of a record page: a 56 px disc (or photo), the name
 	 * at the style's record size (26/800), one meta line of facts separated by
 	 * dots with the members' avatars at the end, and `Edit` and a menu button at the right. Below
 	 * 28 rem of container the actions move under the name. With `recordId`, the meta line says
@@ -42,9 +42,13 @@
 		<h1 class="type-record">{name}</h1>
 		{#if shown.length > 0 || people || awaiting}
 			<p class="meta">
-				{#each shown as fact, i (i)}
-					{#if i > 0}<span class="sep" aria-hidden="true">&middot;</span>{/if}<span>{fact}</span>
-				{/each}
+				{#if shown.length > 0}
+					<span class="facts"
+						><span class="fl"
+							>{#each shown as fact, i (i)}<span class="fact">{fact}</span>{/each}</span
+						></span
+					>
+				{/if}
 				{#if people}<span class="pp">{@render people()}</span>{/if}
 				{#if recordId}<AwaitingMark id={recordId} />{/if}
 			</p>
@@ -101,7 +105,25 @@
 		font-size: 14px;
 		color: var(--ink-soft);
 	}
-	.sep {
+	/* Each fact carries the dot before it, and the row of facts is shifted one dot to the start
+	   and clipped there: a dot that would begin a wrapped line falls outside the clip, so no line
+	   ever starts or ends with a lone separator. */
+	.facts {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+	}
+	.fl {
+		display: flex;
+		flex-wrap: wrap;
+		row-gap: 4px;
+		margin-inline-start: -1.25em;
+	}
+	.fact::before {
+		content: '\00b7' / '';
+		display: inline-block;
+		width: 1.25em;
+		text-align: center;
 		opacity: 0.5;
 	}
 	.pp {
