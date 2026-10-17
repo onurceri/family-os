@@ -328,19 +328,26 @@ export function scopedHttp(http: ExternalHttp, manifest: ExtensionManifest): Ext
 			`Extension "${manifest.id}" may not reach ${what}: declare it in famos.network of its package.json`,
 		);
 	};
+	/** The same rule for every method: a POST reaches no more than a GET would. */
+	const check = (request: { url: string; allowLocal?: boolean }) => {
+		if (request.allowLocal && network.local !== true) refuse('the home network');
+		if (network.userUrls === true) return;
+		let host: string;
+		try {
+			host = new URL(request.url.trim().replace(/^webcals?:/i, 'https:')).hostname;
+		} catch {
+			return refuse('an address that is not a URL');
+		}
+		if (!hosts.has(host.toLowerCase())) refuse(`"${host}"`);
+	};
 	return {
 		async get(request) {
-			if (request.allowLocal && network.local !== true) refuse('the home network');
-			if (network.userUrls !== true) {
-				let host: string;
-				try {
-					host = new URL(request.url.trim().replace(/^webcals?:/i, 'https:')).hostname;
-				} catch {
-					return refuse('an address that is not a URL');
-				}
-				if (!hosts.has(host.toLowerCase())) refuse(`"${host}"`);
-			}
+			check(request);
 			return http.get(request);
+		},
+		async post(request) {
+			check(request);
+			return http.post(request);
 		},
 	};
 }

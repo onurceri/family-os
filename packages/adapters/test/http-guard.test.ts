@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -352,5 +353,138 @@ describe('headers and plain http (a service on the home network)', () => {
 		expect(await code(http.get({ url: 'http://user:pw@nas.lan/x', allowLocal: true }))).toBe(
 			'bad_url',
 		);
+	});
+});
+
+describe('guarded post', () => {
+	const resolve = dns({
+		'ha.example.org': ['93.184.216.34'],
+		'ha.lan': ['192.168.1.20'],
+		'sneaky.example.org': ['93.184.216.34', '10.0.0.7'],
+	});
+	const body = (request: TransportRequest | undefined) =>
+		new TextDecoder().decode(request?.body ?? new Uint8Array());
+
+	it('sends the body as JSON to the checked address and returns the answer', async () => {
+		const { transport, requests } = scripted({ status: 200, text: '[]' });
+		const http = createGuardedHttp({ resolve, transport });
+		const result = await http.post({
+			url: 'https://ha.example.org/api/services/light/turn_on',
+			json: { entity_id: 'light.kitchen' },
+			headers: { authorization: 'Bearer t' },
+		});
+		expect(result).toEqual({ status: 200, text: '[]' });
+		expect(requests[0]).toMatchObject({ method: 'POST', address: '93.184.216.34' });
+		expect(requests[0]?.headers).toMatchObject({
+			'content-type': 'application/json',
+			'content-length': '29',
+			authorization: 'Bearer t',
+		});
+		expect(body(requests[0])).toBe('{"entity_id":"light.kitchen"}');
+	});
+
+	it('refuses blocked addresses, and reaches the home network only with allowLocal', async () => {
+		const { transport, requests } = scripted({ status: 200 });
+		const http = createGuardedHttp({ resolve, transport });
+		for (const url of [
+			'https://sneaky.example.org/x',
+			'https://169.254.169.254/x',
+			'https://ha.lan/x',
+			'https://127.0.0.1/x',
+		])
+			expect(await code(http.post({ url, json: {} }))).toBe('blocked_address');
+		expect(await code(http.post({ url: 'http://ha.lan:8123/x', json: {} }))).toBe('bad_url');
+		expect(await code(http.post({ url: 'https://0.0.0.0/x', json: {}, allowLocal: true }))).toBe(
+			'blocked_address',
+		);
+		// Plain http never leaves the home network, even when it is allowed.
+		expect(
+			await code(http.post({ url: 'http://ha.example.org/x', json: {}, allowLocal: true })),
+		).toBe('blocked_address');
+		expect(requests).toHaveLength(0);
+		expect(await http.post({ url: 'http://ha.lan:8123/x', json: {}, allowLocal: true })).toEqual({
+			status: 200,
+			text: '',
+		});
+		expect(requests[0]?.address).toBe('192.168.1.20');
+	});
+
+	it('never follows a redirect, not even on the same host', async () => {
+		const { transport, requests } = scripted(
+			{ status: 307, headers: { location: '/api/again' } },
+			{ status: 200 },
+		);
+		const http = createGuardedHttp({ resolve, transport });
+		expect(await code(http.post({ url: 'https://ha.example.org/api', json: {} }))).toBe(
+			'redirect_refused',
+		);
+		expect(requests).toHaveLength(1);
+	});
+
+	it('refuses a body over 64 KB before sending anything', async () => {
+		const { transport, requests } = scripted();
+		const http = createGuardedHttp({ resolve, transport });
+		expect(
+			await code(http.post({ url: 'https://ha.example.org/x', json: { a: 'x'.repeat(70_000) } })),
+		).toBe('too_large');
+		await expect(http.post({ url: 'https://ha.example.org/x', json: undefined })).rejects.toThrow(
+			TypeError,
+		);
+		expect(requests).toHaveLength(0);
+	});
+
+	it('caps the answer, reports other statuses and a timeout', async () => {
+		const big = createGuardedHttp({
+			resolve,
+			transport: scripted({ text: 'x'.repeat(200) }).transport,
+		});
+		expect(await code(big.post({ url: 'https://ha.example.org/x', json: {}, maxBytes: 100 }))).toBe(
+			'too_large',
+		);
+		const refused = createGuardedHttp({ resolve, transport: scripted({ status: 400 }).transport });
+		expect(await code(refused.post({ url: 'https://ha.example.org/x', json: {} }))).toBe(
+			'http_400',
+		);
+		const hang: Transport = ({ signal }) =>
+			new Promise((_, reject) =>
+				signal.addEventListener('abort', () => reject(signal.reason ?? new Error('aborted'))),
+			);
+		const slow = createGuardedHttp({ resolve, transport: hang });
+		expect(
+			await code(slow.post({ url: 'https://ha.example.org/x', json: {}, timeoutMs: 30 })),
+		).toBe('timeout');
+	});
+});
+
+describe('node transport, post', () => {
+	it('sends the body and its length to a service on the home network', async () => {
+		const seen: { method?: string; type?: string; body: string }[] = [];
+		const server = createHttpServer((req, res) => {
+			let body = '';
+			req.on('data', (chunk: Buffer) => {
+				body += chunk.toString('utf8');
+			});
+			req.on('end', () => {
+				seen.push({ method: req.method, type: req.headers['content-type'], body });
+				res.setHeader('content-type', 'application/json');
+				res.end('[]');
+			});
+		});
+		await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+		const { port } = server.address() as AddressInfo;
+		try {
+			const http = createGuardedHttp({ transport: createNodeTransport() });
+			const result = await http.post({
+				url: `http://127.0.0.1:${port}/api/services/light/turn_on`,
+				json: { entity_id: 'light.kitchen' },
+				allowLocal: true,
+			});
+			expect(result).toEqual({ status: 200, text: '[]' });
+			expect(seen).toEqual([
+				{ method: 'POST', type: 'application/json', body: '{"entity_id":"light.kitchen"}' },
+			]);
+		} finally {
+			server.close();
+		}
 	});
 });

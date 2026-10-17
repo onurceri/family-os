@@ -224,14 +224,43 @@ export type ExternalHttpResponse =
 			lastModified: string | null;
 	  };
 
+/** The most a POST may send: a request body is a small JSON document, never a file. */
+export const EXTERNAL_HTTP_MAX_POST_BYTES = 64 * 1024;
+
+/** A POST: the request of a GET without validators, and a JSON body. */
+export interface ExternalHttpPostRequest extends Omit<ExternalHttpRequest, 'conditional'> {
+	/**
+	 * The body, serialized by the port and sent as `application/json`. At most
+	 * `EXTERNAL_HTTP_MAX_POST_BYTES` once serialized; a larger one is refused (`too_large`)
+	 * before anything is sent.
+	 */
+	json: unknown;
+}
+
+export interface ExternalHttpPostResponse {
+	/** A 2xx status: anything else throws `http_<status>`. */
+	status: number;
+	/** Decoded body (often empty). */
+	text: string;
+}
+
 /**
- * Guarded outbound GET for extensions. The implementation resolves the host itself and
+ * Guarded outbound HTTP for extensions. The implementation resolves the host itself and
  * refuses private, loopback, link-local, unique-local, multicast and reserved addresses (unless
- * `allowLocal`), follows redirects only within the same host, and enforces a size cap and a
- * timeout. Network I/O: never call it inside a transaction. Jobs are the normal place; a route may
- * use it only for a bounded, cached read-through that a person is waiting for (the ambient
- * extension's weather proxy). Throws `ExternalHttpError`.
+ * `allowLocal`), and enforces a size cap and a timeout. Network I/O: never call it inside a
+ * transaction. Throws `ExternalHttpError`.
  */
 export interface ExternalHttp {
+	/**
+	 * A GET. It follows redirects only within the same host. Jobs are the normal place; a route
+	 * may use it only for a bounded, cached read-through that a person is waiting for (the ambient
+	 * extension's weather proxy).
+	 */
 	get(request: ExternalHttpRequest): Promise<ExternalHttpResponse>;
+	/**
+	 * A POST with a JSON body, through the same guard. A POST changes something outside, so it is
+	 * sent from job handlers only, never from a route or an action's `run`; it is never re-sent
+	 * to a redirect's target (any 3xx is `redirect_refused`).
+	 */
+	post(request: ExternalHttpPostRequest): Promise<ExternalHttpPostResponse>;
 }

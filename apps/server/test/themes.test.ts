@@ -66,6 +66,7 @@ async function boot() {
 		async get() {
 			return { status: 200, text: fakeHttp.body, etag: null, lastModified: null };
 		},
+		post: () => Promise.reject(new Error('Nothing is posted here')),
 	};
 	runtime = openRuntime(config, {
 		extensions,

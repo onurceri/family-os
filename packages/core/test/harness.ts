@@ -105,6 +105,9 @@ export async function createTestKernel(
 			get: async () => {
 				throw new ExternalHttpError('unreachable', 'No network in core tests');
 			},
+			post: async () => {
+				throw new ExternalHttpError('unreachable', 'No network in core tests');
+			},
 		},
 		identity,
 		llm: {

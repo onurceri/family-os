@@ -1,5 +1,5 @@
 {
-	"sdk": "0.7.0",
+	"sdk": "0.7.1",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -13,6 +13,7 @@
 			"CAPABILITY_LEVELS",
 			"DayRefSchema",
 			"ERROR_HTTP_STATUS",
+			"EXTERNAL_HTTP_MAX_POST_BYTES",
 			"ExtensionManifestSchema",
 			"ExternalHttpError",
 			"FamosError",

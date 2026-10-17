@@ -25,6 +25,8 @@ import {
 	type ExtensionDefinition,
 	type ExternalHttp,
 	ExternalHttpError,
+	type ExternalHttpPostRequest,
+	type ExternalHttpPostResponse,
 	type ExternalHttpRequest,
 	type ExternalHttpResponse,
 	type IdentityAdmin,
@@ -374,6 +376,19 @@ export interface FakeHttp extends ExternalHttp {
 	): void;
 	/** Forgets what a URL answers: it becomes unreachable. */
 	remove(url: string): void;
+	/** Every POST, in order, with its headers but never an `authorization` one. */
+	readonly posted: { url: string; json: unknown; headers: Record<string, string> }[];
+	/**
+	 * What a URL answers to a POST (`200` and an empty body by default). A function may answer per
+	 * request; an Error is thrown (use `ExternalHttpError`). Unknown URLs are unreachable.
+	 */
+	servePost(
+		url: string,
+		response:
+			| { status?: number; text?: string }
+			| ExternalHttpError
+			| ((request: ExternalHttpPostRequest) => ExternalHttpPostResponse | ExternalHttpError),
+	): void;
 }
 
 const keyOf = (url: string) => url.trim().replace(/^webcals?:/i, 'https:');
@@ -382,8 +397,26 @@ const keyOf = (url: string) => url.trim().replace(/^webcals?:/i, 'https:');
 export function createFakeHttp(): FakeHttp {
 	const requests: ExternalHttpRequest[] = [];
 	const routes = new Map<string, Parameters<FakeHttp['serve']>[1]>();
+	const postRoutes = new Map<string, Parameters<FakeHttp['servePost']>[1]>();
+	const posted: FakeHttp['posted'][number][] = [];
 	return {
 		requests,
+		posted,
+		servePost: (url, response) => void postRoutes.set(keyOf(url), response),
+		async post(request) {
+			const headers = Object.fromEntries(
+				Object.entries(request.headers ?? {}).filter(
+					([name]) => name.toLowerCase() !== 'authorization',
+				),
+			);
+			// What the real port would send: the body as JSON, so a test sees exactly that.
+			posted.push({ url: request.url, json: JSON.parse(JSON.stringify(request.json)), headers });
+			const route = postRoutes.get(keyOf(request.url));
+			if (!route) throw new ExternalHttpError('unreachable', 'No fake response');
+			const answer = typeof route === 'function' ? route(request) : route;
+			if (answer instanceof Error) throw answer;
+			return { status: answer.status ?? 200, text: answer.text ?? '' };
+		},
 		serve: (url, response) => void routes.set(keyOf(url), response),
 		remove: (url) => void routes.delete(keyOf(url)),
 		async get(request) {

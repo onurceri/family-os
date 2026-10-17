@@ -4,8 +4,11 @@ import { request as httpsRequest } from 'node:https';
 import { BlockList, type BlockList as BlockListType, isIP } from 'node:net';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import {
+	EXTERNAL_HTTP_MAX_POST_BYTES,
 	type ExternalHttp,
 	ExternalHttpError,
+	type ExternalHttpPostRequest,
+	type ExternalHttpPostResponse,
 	type ExternalHttpRequest,
 	type ExternalHttpResponse,
 	isExternalHttpError,
@@ -83,10 +86,12 @@ export type Resolver = (host: string) => Promise<string[]>;
 
 export interface TransportRequest {
 	url: URL;
-	method: 'GET';
+	method: 'GET' | 'POST';
 	/** The already checked address to connect to. */
 	address: string;
 	headers: Record<string, string>;
+	/** A POST's body, already serialized. */
+	body?: Uint8Array;
 	signal: AbortSignal;
 }
 
@@ -104,7 +109,7 @@ export const defaultResolver: Resolver = async (host) =>
 
 /** HTTPS over `node:https` (plain `node:http` for `http:` addresses), connected to a given address. `rejectUnauthorized: false` is for tests. */
 export function createNodeTransport(options: { rejectUnauthorized?: boolean } = {}): Transport {
-	return ({ url, method, address, headers, signal }) =>
+	return ({ url, method, address, headers, body: payload, signal }) =>
 		new Promise((resolve, reject) => {
 			const request = url.protocol === 'http:' ? httpRequest : httpsRequest;
 			const req = request(
@@ -137,7 +142,7 @@ export function createNodeTransport(options: { rejectUnauthorized?: boolean } = 
 				},
 			);
 			req.on('error', reject);
-			req.end();
+			req.end(payload);
 		});
 }
 
@@ -202,20 +207,48 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 		return addresses[0] as string;
 	}
 
+	/** The checked URL, the headers every request sends and the deadline of one request. */
+	function prepare(request: ExternalHttpRequest | ExternalHttpPostRequest, accept: string) {
+		const allowLocal = request.allowLocal === true;
+		const url = normalizeUrl(request.url, allowLocal);
+		if (!url) throw new ExternalHttpError('bad_url', 'Only https: and webcal: addresses');
+		const headers: Record<string, string> = {
+			'user-agent': 'FamilyOS',
+			accept,
+			'accept-encoding': 'gzip, deflate, br',
+		};
+		for (const [name, value] of Object.entries(request.headers ?? {}))
+			if (name.toLowerCase() !== 'host') headers[name.toLowerCase()] = value;
+		return {
+			url,
+			allowLocal,
+			headers,
+			maxBytes: request.maxBytes ?? DEFAULT_MAX_BYTES,
+			signal: AbortSignal.timeout(request.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+		};
+	}
+
+	/** An error of the transport, in the port's words. */
+	function failure(error: unknown, signal: AbortSignal): ExternalHttpError {
+		if (isExternalHttpError(error)) return error;
+		if (isAbort(error) || signal.aborted) return new ExternalHttpError('timeout', 'Timed out');
+		return new ExternalHttpError('unreachable', 'The request failed');
+	}
+
+	async function readBody(response: TransportResponse, maxBytes: number): Promise<string> {
+		const declared = Number(response.headers['content-length']);
+		if (!response.headers['content-encoding'] && declared > maxBytes) {
+			await discard(response.body);
+			throw new ExternalHttpError('too_large', 'The response is too large');
+		}
+		return new TextDecoder('utf-8').decode(await readCapped(response.body, maxBytes));
+	}
+
 	return {
 		async get(request: ExternalHttpRequest): Promise<ExternalHttpResponse> {
-			const allowLocal = request.allowLocal === true;
-			let url = normalizeUrl(request.url, allowLocal);
-			if (!url) throw new ExternalHttpError('bad_url', 'Only https: and webcal: addresses');
-			const maxBytes = request.maxBytes ?? DEFAULT_MAX_BYTES;
-			const signal = AbortSignal.timeout(request.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-			const headers: Record<string, string> = {
-				'user-agent': 'FamilyOS',
-				accept: 'text/calendar, text/plain;q=0.8, */*;q=0.5',
-				'accept-encoding': 'gzip, deflate, br',
-			};
-			for (const [name, value] of Object.entries(request.headers ?? {}))
-				if (name.toLowerCase() !== 'host') headers[name.toLowerCase()] = value;
+			const prepared = prepare(request, 'text/calendar, text/plain;q=0.8, */*;q=0.5');
+			const { allowLocal, headers, maxBytes, signal } = prepared;
+			let { url } = prepared;
 			if (request.conditional?.etag) headers['if-none-match'] = request.conditional.etag;
 			if (request.conditional?.lastModified)
 				headers['if-modified-since'] = request.conditional.lastModified;
@@ -247,18 +280,45 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 						await discard(response.body);
 						throw new ExternalHttpError(`http_${status}`);
 					}
-					const declared = Number(response.headers['content-length']);
-					if (!response.headers['content-encoding'] && declared > maxBytes)
-						throw new ExternalHttpError('too_large', 'The response is too large');
-					const body = await readCapped(response.body, maxBytes);
+					const text = await readBody(response, maxBytes);
 					const contentType = response.headers['content-type'] ?? null;
-					const text = new TextDecoder('utf-8').decode(body);
 					return { status: 200, text, contentType, etag, lastModified };
 				}
 			} catch (error) {
-				if (isExternalHttpError(error)) throw error;
-				if (isAbort(error) || signal.aborted) throw new ExternalHttpError('timeout', 'Timed out');
-				throw new ExternalHttpError('unreachable', 'The request failed');
+				throw failure(error, signal);
+			}
+		},
+
+		async post(request: ExternalHttpPostRequest): Promise<ExternalHttpPostResponse> {
+			const { url, allowLocal, headers, maxBytes, signal } = prepare(
+				request,
+				'application/json, text/plain;q=0.8, */*;q=0.5',
+			);
+			// A body that is not JSON (undefined, a function, a BigInt) is the caller's mistake.
+			const serialized: string | undefined = JSON.stringify(request.json);
+			if (serialized === undefined) throw new TypeError('The body cannot be sent as JSON');
+			const body = new TextEncoder().encode(serialized);
+			if (body.byteLength > EXTERNAL_HTTP_MAX_POST_BYTES)
+				throw new ExternalHttpError('too_large', 'The request body is too large');
+			headers['content-type'] = 'application/json';
+			headers['content-length'] = String(body.byteLength);
+
+			try {
+				const address = await pick(url.hostname, allowLocal, url.protocol === 'http:');
+				const response = await transport({ url, method: 'POST', address, headers, body, signal });
+				const { status } = response;
+				// Never sent again, to this host or another: the change may already have happened.
+				if (status >= 300 && status < 400) {
+					await discard(response.body);
+					throw new ExternalHttpError('redirect_refused', 'A POST is not redirected');
+				}
+				if (status < 200 || status >= 300) {
+					await discard(response.body);
+					throw new ExternalHttpError(`http_${status}`);
+				}
+				return { status, text: await readBody(response, maxBytes) };
+			} catch (error) {
+				throw failure(error, signal);
 			}
 		},
 	};
