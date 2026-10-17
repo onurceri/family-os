@@ -8,6 +8,7 @@
 		Page,
 		Segmented,
 		SidePanel,
+		ViewOnly,
 	} from '@famos/ui/famos';
 	import { ChevronRight } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
@@ -161,9 +162,20 @@
 		}
 	}
 
-	// Quick add: one line. Without the edit capability it is assigned to me, so it needs no approval.
+	// What the viewer may do. A control they may not use is not drawn. Whether a task is theirs to
+	// change, or to delete, is decided by the server for the task at hand.
+	const mayAdd = $derived(app.access('lists.addTask') !== 'no');
+	const mayTick = $derived(app.access('lists.completeTask') !== 'no');
+	const mayOpen = $derived(app.access('lists.updateTask') !== 'no');
+
+	// Quick add: one line. Whoever may not add a task for anyone is given it for themselves, so it
+	// needs no approval; the title does not decide that, so any will do to ask.
 	let quick = $state('');
-	const defaultAssignee = $derived(me && !app.can('lists.tasks.edit') ? me.id : null);
+	const defaultAssignee = $derived(
+		me && app.accessFor('lists.addTask', { title: 'Task', assigneeId: null }) !== 'apply'
+			? me.id
+			: null,
+	);
 
 	// False when it failed, so the composer gives the typing back.
 	async function quickAdd(title: string): Promise<boolean> {
@@ -181,12 +193,20 @@
 	let form = $state<TaskFormValue | null>(null);
 	let formEl = $state<HTMLFormElement | null>(null);
 
-	// A new task of one's own is added at once; anything else may go to someone for approval.
-	const approvalNote = $derived(
-		app.needsApproval('lists.tasks.edit') &&
-			!(editingId === 'new' && form?.assignee[0] === app.me()?.id)
-			? app.t('app:draft_approval_note')
-			: undefined,
+	// What saving the open form would do, asked of the server with what is typed: a task of one's
+	// own is saved at once, anything else may go to someone for approval. The title never decides
+	// it, so an empty one is asked as a placeholder.
+	const approval = $derived.by(() => {
+		if (!form || !editingId) return undefined;
+		const task = { ...taskInputFrom(form), title: form.title.trim() || 'Task' };
+		return editingId === 'new'
+			? app.approval('lists.addTask', task)
+			: app.approval('lists.updateTask', { id: editingId, task });
+	});
+	const mayDelete = $derived(
+		editingId !== null &&
+			editingId !== 'new' &&
+			app.accessFor('lists.deleteTask', { id: editingId }) !== 'no',
 	);
 	let showErrors = $state(false);
 	let saveError = $state(false);
@@ -266,8 +286,9 @@
 					done={isDone(task)}
 					busy={task.id in pending}
 					waiting={queued.has(task.id)}
+					{mayTick}
 					ontoggle={() => toggle(task)}
-					onopen={receded ? undefined : () => openEdit(task)}
+					onopen={receded || !mayOpen ? undefined : () => openEdit(task)}
 				/>
 			</li>
 		{/each}
@@ -294,6 +315,10 @@
 	<ConfirmButton label={t('delete')} confirmLabel={t('delete_confirm')} onconfirm={remove} />
 {/snippet}
 
+{#snippet viewOnly()}
+	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+{/snippet}
+
 {#snippet filter()}
 	<Segmented
 		size="sm"
@@ -312,21 +337,23 @@
 		<ListsHeader
 			page="tasks"
 			count={openCount ? t('today_open', { count: openCount }) : ''}
-			actions={tasks.length ? filter : undefined}
+			actions={tasks.length ? filter : mayAdd || mayTick ? undefined : viewOnly}
 		/>
 
 		<div class="grid gap-7">
-			<Composer
-				bind:value={quick}
-				size="lg"
-				limit={TASK_TITLE_MAX}
-				tooLong={(counter) => t('too_long', { counter })}
-				label={t('add_task')}
-				placeholder={t('add_task_placeholder')}
-				moreLabel={t('add_task_details')}
-				onsubmit={quickAdd}
-				onmore={openNew}
-			/>
+			{#if mayAdd}
+				<Composer
+					bind:value={quick}
+					size="lg"
+					limit={TASK_TITLE_MAX}
+					tooLong={(counter) => t('too_long', { counter })}
+					label={t('add_task')}
+					placeholder={t('add_task_placeholder')}
+					moreLabel={t('add_task_details')}
+					onsubmit={quickAdd}
+					onmore={openNew}
+				/>
+			{/if}
 
 			{#if loadError}
 				<p class="text-attention font-semibold">{t('error')}</p>
@@ -387,8 +414,8 @@
 	saveLabel={editingId === 'new' ? t('add') : t('save')}
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
-	note={approvalNote}
-	danger={editingId && editingId !== 'new' ? deleteButton : undefined}
+	{approval}
+	danger={mayDelete ? deleteButton : undefined}
 	{dirty}
 	discard={{
 		title: t('discard_title'),

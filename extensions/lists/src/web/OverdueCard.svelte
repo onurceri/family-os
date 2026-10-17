@@ -15,6 +15,7 @@
 	 */
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useLists();
+	const mayTick = $derived(app.access('lists.completeTask') !== 'no');
 	let now = $state(Date.now());
 	const clock = setInterval(() => (now = Date.now()), 60_000);
 	onDestroy(() => clearInterval(clock));
@@ -92,7 +93,8 @@
 		}
 	}
 	// A repeating task moves on by itself; only a one-off task can be put off by a day.
-	const canPostpone = (task: Task) => !task.recurrence && !task.rrule;
+	const canPostpone = (task: Task) =>
+		!task.recurrence && !task.rrule && app.access('lists.updateTask') !== 'no';
 </script>
 
 {#if size !== 'line'}
@@ -102,7 +104,7 @@
 			title={task.title}
 			meta={metaOf(task)}
 			metaTone="attention"
-			check={false}
+			check={mayTick ? false : undefined}
 			checkLabel={t('mark_done_task', { title: task.title })}
 			busy={task.id in busy}
 			oncheck={() => done(task)}
@@ -117,13 +119,15 @@
 						>{t('due_tomorrow')}</button
 					>
 				{/if}
-				<button
-					type="button"
-					onclick={() => done(task)}
-					disabled={task.id in busy}
-					class="bg-idle text-ink focus-visible:ring-ring min-h-11 rounded-lg px-4 text-sm font-bold focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-					>{t('completed')}</button
-				>
+				{#if mayTick}
+					<button
+						type="button"
+						onclick={() => done(task)}
+						disabled={task.id in busy}
+						class="bg-idle text-ink focus-visible:ring-ring min-h-11 rounded-lg px-4 text-sm font-bold focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+						>{t('completed')}</button
+					>
+				{/if}
 			{/snippet}
 		</TodayRow>
 	{/each}

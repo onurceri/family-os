@@ -16,6 +16,7 @@
 		done,
 		busy = false,
 		waiting = false,
+		mayTick = true,
 		ontoggle,
 		onopen,
 	}: {
@@ -25,6 +26,8 @@
 		busy?: boolean;
 		/** The change is kept on this device and not sent yet. */
 		waiting?: boolean;
+		/** Whether the viewer can complete tasks; if not the mark is a plain status. */
+		mayTick?: boolean;
 		ontoggle: () => void;
 		onopen?: () => void;
 	} = $props();
@@ -39,22 +42,35 @@
 </script>
 
 <div class="flex min-h-14 items-center gap-1 ps-1 pe-3 {done ? 'text-ink-soft' : 'text-ink'}">
-	<button
-		type="button"
-		onclick={ontoggle}
-		disabled={busy}
-		aria-pressed={done}
-		aria-label={t('mark_done_task', { title: task.title })}
-		class="group grid size-11 shrink-0 place-items-center rounded-full"
-	>
-		<span
-			class="grid size-[26px] place-items-center rounded-full border-2 transition-colors motion-reduce:transition-none {done
-				? 'bg-now text-on-color border-transparent'
-				: 'border-ink-soft/55 group-hover:border-now text-transparent'}"
+	{#if mayTick}
+		<button
+			type="button"
+			onclick={ontoggle}
+			disabled={busy}
+			aria-pressed={done}
+			aria-label={t('mark_done_task', { title: task.title })}
+			class="group grid size-11 shrink-0 place-items-center rounded-full"
 		>
-			<Check class="size-4" strokeWidth={3} />
+			<span
+				class="grid size-[26px] place-items-center rounded-full border-2 transition-colors motion-reduce:transition-none {done
+					? 'bg-now text-on-color border-transparent'
+					: 'border-ink-soft/55 group-hover:border-now text-transparent'}"
+			>
+				<Check class="size-4" strokeWidth={3} />
+			</span>
+		</button>
+	{:else}
+		<!-- A role that cannot complete tasks sees the state, not a circle that never works. -->
+		<span class="grid size-11 shrink-0 place-items-center" aria-hidden="true">
+			{#if done}
+				<span class="bg-now text-on-color grid size-[26px] place-items-center rounded-full">
+					<Check class="size-4" strokeWidth={3} />
+				</span>
+			{:else}
+				<span class="bg-ink-soft/55 size-2 rounded-full"></span>
+			{/if}
 		</span>
-	</button>
+	{/if}
 	<button
 		type="button"
 		onclick={onopen}

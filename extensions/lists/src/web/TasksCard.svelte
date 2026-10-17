@@ -14,6 +14,7 @@
 	 */
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useLists();
+	const mayTick = $derived(app.access('lists.completeTask') !== 'no');
 	let now = $state(Date.now());
 	const clock = setInterval(() => (now = Date.now()), 60_000);
 	onDestroy(() => clearInterval(clock));
@@ -97,7 +98,7 @@
 				title={task.title}
 				meta={metaOf(task)}
 				metaTone={urgency(task, today, app.weekStart()) === 'today' ? 'heat' : 'soft'}
-				check={false}
+				check={mayTick ? false : undefined}
 				checkLabel={t('mark_done_task', { title: task.title })}
 				busy={task.id in busy}
 				oncheck={() => done(task)}

@@ -19,6 +19,7 @@
 		type MenuItem,
 		Page,
 		SidePanel,
+		ViewOnly,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -63,6 +64,22 @@
 	 * on a wide page), with "Clear the cart".
 	 */
 	const { app, t } = useLists();
+
+	// What the viewer may do. A control they may not use is not drawn; adding and ticking are the
+	// page's own job, so without them the page says it is view only.
+	const mayAdd = $derived(app.access('lists.addShoppingItems') !== 'no');
+	const mayTick = $derived(app.access('lists.checkShoppingItem') !== 'no');
+	const mayEdit = $derived(app.access('lists.updateShoppingItem') !== 'no');
+	const mayClear = $derived(app.access('lists.clearBought') !== 'no');
+	const mayCreateList = $derived(app.access('lists.createShoppingList') !== 'no');
+	const mayRenameList = $derived(app.access('lists.renameShoppingList') !== 'no');
+	const mayArchiveList = $derived(app.access('lists.archiveShoppingList') !== 'no');
+	/** The item whose menu is open: whether it may be removed can turn on who added it. */
+	let menuFor = $state<string | null>(null);
+	const mayDelete = (id: string, exact: boolean) =>
+		(exact
+			? app.accessFor('lists.deleteShoppingItem', { id })
+			: app.access('lists.deleteShoppingItem')) !== 'no';
 
 	let lists = $state<ShoppingList[]>([]);
 	let selectedId = $state<string | null>(null);
@@ -331,14 +348,20 @@
 		}
 	}
 	const rowItems = (item: ShoppingItem): MenuItem[] => [
-		{ id: 'edit', label: t('edit_item'), icon: pencilIcon, onselect: () => edit(item) },
-		{
-			id: 'delete',
-			label: t('delete_item'),
-			icon: trashIcon,
-			danger: true,
-			onselect: () => void removeWithUndo(item),
-		},
+		...(mayEdit
+			? [{ id: 'edit', label: t('edit_item'), icon: pencilIcon, onselect: () => edit(item) }]
+			: []),
+		...(mayDelete(item.id, menuFor === item.id)
+			? [
+					{
+						id: 'delete',
+						label: t('delete_item'),
+						icon: trashIcon,
+						danger: true,
+						onselect: () => void removeWithUndo(item),
+					},
+				]
+			: []),
 	];
 	let showBought = $state(false);
 
@@ -356,13 +379,17 @@
 	const listItems = $derived<MenuItem[]>(
 		list
 			? [
-					{
-						id: 'rename',
-						label: t('rename_list'),
-						icon: pencilIcon,
-						onselect: () => (listForm = { mode: 'rename', name: listName(list) }),
-					},
-					...(lists.length > 1
+					...(mayRenameList
+						? [
+								{
+									id: 'rename',
+									label: t('rename_list'),
+									icon: pencilIcon,
+									onselect: () => (listForm = { mode: 'rename', name: listName(list) }),
+								},
+							]
+						: []),
+					...(lists.length > 1 && mayArchiveList
 						? [
 								{
 									id: 'remove',
@@ -425,14 +452,53 @@
 </script>
 
 {#snippet deleteItemButton()}
-	<ConfirmButton
-		label={t('delete')}
-		confirmLabel={t('delete_confirm')}
-		onconfirm={() => removeItem(editing?.id ?? '')}
-	/>
+	{#if editing && mayDelete(editing.id, true)}
+		<ConfirmButton
+			label={t('delete')}
+			confirmLabel={t('delete_confirm')}
+			onconfirm={() => removeItem(editing?.id ?? '')}
+		/>
+	{/if}
 {/snippet}
 {#snippet pencilIcon()}<Pencil class="size-4" />{/snippet}
 {#snippet trashIcon()}<Trash2 class="size-4" />{/snippet}
+
+{#snippet itemBody(item: ShoppingItem, done: boolean)}
+	{#if mayTick}
+		<span
+			class="grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors motion-reduce:transition-none {done
+				? 'bg-now text-on-color border-transparent'
+				: 'border-ink-soft/55 text-transparent'}"
+		>
+			<Check class="size-4" strokeWidth={3} />
+		</span>
+	{:else if done}
+		<span class="bg-now text-on-color grid size-7 shrink-0 place-items-center rounded-full">
+			<Check class="size-4" strokeWidth={3} />
+		</span>
+	{:else}
+		<span class="grid size-7 shrink-0 place-items-center" aria-hidden="true">
+			<span class="bg-ink-soft/55 size-2 rounded-full"></span>
+		</span>
+	{/if}
+	<span class="min-w-0 truncate text-base font-semibold {done ? 'line-through' : ''}"
+		>{item.title}</span
+	>
+	{#if isWaiting(item)}
+		<span class="text-ink-soft shrink-0 text-xs font-semibold" data-testid="waiting-mark"
+			>{t('waiting_to_send')}</span
+		>
+	{/if}
+	<AwaitingMark id={item.id} />
+	{#if item.quantity}
+		<span
+			class="{done
+				? 'bg-surface'
+				: 'bg-idle'} text-ink-soft ms-auto shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-semibold tabular-nums"
+			>{item.quantity}</span
+		>
+	{/if}
+{/snippet}
 
 {#snippet itemRow(item: ShoppingItem)}
 	{@const done = isDone(item)}
@@ -442,40 +508,28 @@
 			: 'text-ink'} {spotlight === item.id ? 'ring-ink ring-2 ring-inset' : ''}"
 		data-item-id={item.id}
 	>
-		<button
-			type="button"
-			onclick={() => toggle(item)}
-			aria-pressed={done}
-			class="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 py-2 ps-3 pe-2 text-start"
-		>
-			<span
-				class="grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors motion-reduce:transition-none {done
-					? 'bg-now text-on-color border-transparent'
-					: 'border-ink-soft/55 text-transparent'}"
+		{#if mayTick}
+			<button
+				type="button"
+				onclick={() => toggle(item)}
+				aria-pressed={done}
+				class="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 py-2 ps-3 pe-2 text-start"
 			>
-				<Check class="size-4" strokeWidth={3} />
-			</span>
-			<span class="min-w-0 truncate text-base font-semibold {done ? 'line-through' : ''}"
-				>{item.title}</span
-			>
-			{#if isWaiting(item)}
-				<span class="text-ink-soft shrink-0 text-xs font-semibold" data-testid="waiting-mark"
-					>{t('waiting_to_send')}</span
-				>
-			{/if}
-			<AwaitingMark id={item.id} />
-			{#if item.quantity}
-				<span
-					class="{done
-						? 'bg-surface'
-						: 'bg-idle'} text-ink-soft ms-auto shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-semibold tabular-nums"
-					>{item.quantity}</span
-				>
-			{/if}
-		</button>
-		{#if !done}
+				{@render itemBody(item, done)}
+			</button>
+		{:else}
+			<!-- A role that cannot tick sees the list, not check circles that never work. -->
+			<div class="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 py-2 ps-3 pe-2 text-start">
+				{@render itemBody(item, done)}
+			</div>
+		{/if}
+		{#if !done && (rowItems(item).length > 0 || menuFor === item.id)}
 			<span class="me-1 shrink-0">
 				<Menu
+					bind:open={
+						() => menuFor === item.id,
+						(open) => (menuFor = open ? item.id : menuFor === item.id ? null : menuFor)
+					}
 					items={rowItems(item)}
 					label={t('options_for', { title: item.title })}
 					title={item.title}
@@ -492,6 +546,10 @@
 	</div>
 {/snippet}
 
+{#snippet viewOnly()}
+	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+{/snippet}
+
 {#snippet listMenuTrigger(attrs: Record<string, unknown>)}
 	<IconButton label={t('list_options', { name: list ? listName(list) : '' })} {...attrs}>
 		<MoreHorizontal class="size-5" />
@@ -500,7 +558,11 @@
 
 <Page template="list">
 	<div class="@container" bind:clientWidth={width}>
-		<ListsHeader page="shopping" count={toGet ? t('to_get', { count: toGet }) : ''} />
+		<ListsHeader
+			page="shopping"
+			count={toGet ? t('to_get', { count: toGet }) : ''}
+			actions={mayAdd || mayTick ? undefined : viewOnly}
+		/>
 
 		<div class="grid gap-6">
 			<!-- The lists, or a list's name being typed in their place. -->
@@ -522,7 +584,11 @@
 						{@attach focusOnMount}
 					/>
 					<div class="flex items-center gap-1">
-						<Button type="submit">{form.mode === 'new' ? t('create') : t('save')}</Button>
+						<Button type="submit"
+							>{app.approval(
+								form.mode === 'new' ? 'lists.createShoppingList' : 'lists.renameShoppingList',
+							)?.saveLabel ?? (form.mode === 'new' ? t('create') : t('save'))}</Button
+						>
 						<Button type="button" variant="ghost" onclick={() => (listForm = null)}
 							>{t('cancel')}</Button
 						>
@@ -553,17 +619,19 @@
 							>{listName(list)}</span
 						>
 					{/if}
-					<Chip
-						variant="preset"
-						aria-label={t('new_list')}
-						title={t('new_list')}
-						class="shrink-0"
-						onclick={() => (listForm = { mode: 'new', name: '' })}
-					>
-						{#snippet lead()}<Plus />{/snippet}
-						<span class="sr-only">{t('new_list')}</span>
-					</Chip>
-					{#if list}
+					{#if mayCreateList}
+						<Chip
+							variant="preset"
+							aria-label={t('new_list')}
+							title={t('new_list')}
+							class="shrink-0"
+							onclick={() => (listForm = { mode: 'new', name: '' })}
+						>
+							{#snippet lead()}<Plus />{/snippet}
+							<span class="sr-only">{t('new_list')}</span>
+						</Chip>
+					{/if}
+					{#if list && listItems.length > 0}
 						<span class="shrink-0">
 							<Menu
 								items={listItems}
@@ -579,24 +647,26 @@
 			{/if}
 
 			<!-- The add field: on a phone fixed above the tab bar, within the thumb's reach. -->
-			<div
-				class="from-wall via-wall pointer-events-none fixed inset-x-0 bottom-[calc(var(--fab-bottom,0px)+env(safe-area-inset-bottom)+var(--preview-bar-height,0px))] z-20 bg-gradient-to-t from-60% to-transparent px-4 pt-5 pb-3 md:pointer-events-auto md:static md:z-auto md:bg-none md:p-0"
-				data-dock
-			>
-				<div class="pointer-events-auto">
-					<Composer
-						bind:value={quick}
-						size="lg"
-						label={t('add_item')}
-						placeholder={t('add_item_placeholder')}
-						disabled={!list}
-						limit={SHOPPING_TITLE_MAX}
-						tooLong={(counter) => t('too_long', { counter })}
-						measure={(text) => longestTitle(text, t('quantity_units').split(','))}
-						onsubmit={quickAdd}
-					/>
+			{#if mayAdd}
+				<div
+					class="from-wall via-wall pointer-events-none fixed inset-x-0 bottom-[calc(var(--fab-bottom,0px)+env(safe-area-inset-bottom)+var(--preview-bar-height,0px))] z-20 bg-gradient-to-t from-60% to-transparent px-4 pt-5 pb-3 md:pointer-events-auto md:static md:z-auto md:bg-none md:p-0"
+					data-dock
+				>
+					<div class="pointer-events-auto">
+						<Composer
+							bind:value={quick}
+							size="lg"
+							label={t('add_item')}
+							placeholder={t('add_item_placeholder')}
+							disabled={!list}
+							limit={SHOPPING_TITLE_MAX}
+							tooLong={(counter) => t('too_long', { counter })}
+							measure={(text) => longestTitle(text, t('quantity_units').split(','))}
+							onsubmit={quickAdd}
+						/>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<div
 				class="grid items-start gap-8 {twoColumns
@@ -700,7 +770,7 @@
 									<span class="font-semibold">· {bought.length}</span>
 								</button>
 							{/if}
-							{#if list}
+							{#if list && mayClear}
 								{@const listId = list.id}
 								<span class="ms-auto text-[13px]"
 									><ConfirmButton
