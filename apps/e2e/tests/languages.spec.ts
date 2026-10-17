@@ -39,7 +39,7 @@ test.describe(() => {
 		await expect(page.locator('html')).toHaveAttribute('lang', 'tr');
 		await page.getByLabel('Adın').fill(ADMIN.name);
 		await page.getByLabel('E-posta').fill(ADMIN.email);
-		await page.getByLabel('Şifre').fill(ADMIN.password);
+		await page.getByLabel('Parola').fill(ADMIN.password);
 		await page.getByRole('button', { name: 'Hesap oluştur' }).click();
 		await page.getByRole('button', { name: 'Atla' }).click();
 		await expect(page.getByTestId('day-sentence')).toContainText(
