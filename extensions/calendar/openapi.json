@@ -2298,6 +2298,102 @@
 															},
 															"description": "Only when `members` left a search by `text` empty: the matches in the range for other members"
 														},
+														"unmatched": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"id": {
+																		"type": [
+																			"string",
+																			"null"
+																		],
+																		"description": "The event, for changing or deleting it; null for subscribed calendars"
+																	},
+																	"occurrence": {
+																		"type": "string",
+																		"description": "Repeating events only: the key of this date, for changing or deleting only that one"
+																	},
+																	"title": {
+																		"type": "string"
+																	},
+																	"date": {
+																		"type": "string"
+																	},
+																	"weekday": {
+																		"type": "string",
+																		"description": "The weekday of `date`, in English: read it from here, never work it out"
+																	},
+																	"endDate": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	},
+																	"time": {
+																		"type": [
+																			"string",
+																			"null"
+																		],
+																		"description": "HH:MM-HH:MM local time; null for all-day events"
+																	},
+																	"memberIds": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		},
+																		"description": "Left out means the whole family"
+																	},
+																	"location": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	},
+																	"tags": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		}
+																	},
+																	"recurring": {
+																		"type": "boolean",
+																		"enum": [
+																			true
+																		],
+																		"description": "Only on repeating events"
+																	},
+																	"external": {
+																		"type": "boolean",
+																		"enum": [
+																			true
+																		],
+																		"description": "Only on events from a subscribed calendar"
+																	},
+																	"when": {
+																		"type": "string",
+																		"enum": [
+																			"past",
+																			"now",
+																			"upcoming"
+																		],
+																		"description": "Only for today and what is on now. past: already over; now: happening now (or today, all day); upcoming: still ahead. Other days are before or after today by their date"
+																	}
+																},
+																"required": [
+																	"id",
+																	"title",
+																	"date",
+																	"weekday",
+																	"endDate",
+																	"time",
+																	"memberIds",
+																	"location",
+																	"tags"
+																]
+															},
+															"description": "Only when a search by `text` found nothing but the range has other events: those events, so the answer can come from them (a \"pick-up\" may be a \"Swimming lesson\")"
+														},
 														"note": {
 															"type": "string"
 														},

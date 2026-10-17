@@ -134,6 +134,48 @@ describe('calendar', () => {
 		expect(found.output.events.map((e) => e.title)).toEqual(['Swim training', 'Swimming gala']);
 	});
 
+	it('shows the AI the other events of the range when its words match no title', async () => {
+		// "Do we need to pick up Leo on Thursday?" searched "pick up"; the event is "Swimming lesson".
+		const { actor } = await k.member('admin');
+		const add = (input: Record<string, unknown>) =>
+			k.runner.invoke('calendar.createEvent', input, actor);
+		await add({ title: 'Swimming lesson', date: '2026-10-22', startTime: '16:30' });
+		await add({ title: 'Dentist', date: '2026-10-23', startTime: '09:00' });
+		const ai = { kind: 'ai', mode: 'conversation', source: 'assistant' } as const;
+		type Found = {
+			events: unknown[];
+			unmatched?: { title: string; weekday: string; time: string | null; id: string | null }[];
+			note?: string;
+		};
+		const found = await k.runner.invoke<Found>(
+			'calendar.findEvents',
+			{ from: '2026-10-22', to: '2026-10-22', text: 'pick up' },
+			ai,
+		);
+		if (found.status !== 'applied') throw new Error('expected applied');
+		expect(found.output.events).toEqual([]);
+		expect(found.output.unmatched).toMatchObject([
+			{ title: 'Swimming lesson', weekday: 'Thursday', time: '16:30-17:30' },
+		]);
+		expect(found.output.note).toContain('"pick up"');
+
+		// A search that finds something, or a range with nothing, adds nothing.
+		const hit = await k.runner.invoke<Found>(
+			'calendar.findEvents',
+			{ from: '2026-10-22', to: '2026-10-23', text: 'dentist' },
+			ai,
+		);
+		if (hit.status !== 'applied') throw new Error('expected applied');
+		expect(hit.output.unmatched).toBeUndefined();
+		const empty = await k.runner.invoke<Found>(
+			'calendar.findEvents',
+			{ from: '2026-11-02', to: '2026-11-03', text: 'pick up' },
+			ai,
+		);
+		if (empty.status !== 'applied') throw new Error('expected applied');
+		expect(empty.output.unmatched).toBeUndefined();
+	});
+
 	it('tells the AI which events of the week are over, under way or ahead', async () => {
 		const { actor } = await k.member('admin');
 		const add = (input: Record<string, unknown>) =>

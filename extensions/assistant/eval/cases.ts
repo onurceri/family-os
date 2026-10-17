@@ -291,6 +291,46 @@ export const CASES: Case[] = [
 		checks: [says(/early shift/i, /work dinner/i), neverSays(/piano lesson/i)],
 	},
 
+	// A search by the person's words finds nothing, but the day holds the thing under other words.
+	{
+		name: 'find: "pick up Noah on Thursday" is the swimming lesson (known failure: "no event, no pick-up")',
+		events: CALENDAR,
+		asks: ['Do we need to pick Noah up anywhere on Thursday?'],
+		checks: [
+			says(/swimming/i, /17:00|5(?::00)? ?pm/i),
+			neverSays(/\b(no events?|nothing)\b.*\bthursday\b/is),
+		],
+	},
+
+	// An empty meal plan is not an empty evening: a dinner elsewhere is on the calendar.
+	{
+		name: "dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
+		events: [
+			{
+				title: "Dinner at Nona Marija's",
+				date: '2026-10-09',
+				startTime: '18:30',
+				endTime: '21:00',
+			},
+		],
+		asks: ['What is for dinner on Friday?'],
+		checks: [called('kitchen.mealPlan', 'looked at the meal plan'), says(/nona marija/i)],
+	},
+
+	// A reminder is only a suggestion until a person approves it.
+	{
+		name: 'reminder: "Remind me to pack the football kit" is suggested, not created',
+		as: 'Lukas',
+		asks: ['Remind me on Thursday to pack the football kit'],
+		checks: [
+			remindsOn('2026-10-08'),
+			neverSays(
+				/\b(?:I(?:'ve| have)?|we(?:'ve| have)?) (?:created|added|set|scheduled)\b/i,
+				/\b(?:has|have) been (?:created|added|scheduled)\b/i,
+			),
+		],
+	},
+
 	// Weekdays.
 	{
 		name: 'weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)',

@@ -416,6 +416,9 @@ importers:
       '@famos/ext-calendar':
         specifier: workspace:*
         version: link:../calendar
+      '@famos/ext-kitchen':
+        specifier: workspace:*
+        version: link:../kitchen
       '@famos/ext-lists':
         specifier: workspace:*
         version: link:../lists

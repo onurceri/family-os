@@ -5307,6 +5307,9 @@
 																	"recipeId"
 																]
 															}
+														},
+														"note": {
+															"type": "string"
 														}
 													},
 													"required": [

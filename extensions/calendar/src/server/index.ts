@@ -830,6 +830,12 @@ export const findEvents = defineAction({
 			.describe(
 				'Only when `members` left a search by `text` empty: the matches in the range for other members',
 			),
+		unmatched: z
+			.array(FoundEventSchema)
+			.optional()
+			.describe(
+				'Only when a search by `text` found nothing but the range has other events: those events, so the answer can come from them (a "pick-up" may be a "Swimming lesson")',
+			),
 		note: z.string().optional(),
 		nextMatch: z
 			.object({
@@ -882,7 +888,7 @@ export const findEvents = defineAction({
 				.executeTakeFirst();
 			if (!known) notes.push(`There is no family tag "${tag}"; use \`text\` to search by subject.`);
 		}
-		const between = async (a: string, b: string, byMembers = true) => {
+		const between = async (a: string, b: string, byMembers = true, bySearch = true) => {
 			const [own, external] = await Promise.all([
 				occurrencesBetween(uow.db, a, b, timeZone),
 				externalOccurrencesBetween(uow.db, a, b, timeZone),
@@ -897,7 +903,11 @@ export const findEvents = defineAction({
 				)
 				.filter((o) => !wanted || o.tags.some((t) => t.toLocaleLowerCase() === wanted))
 				.filter(
-					(o) => !needle || searchFinds(needle, o.title) || searchFinds(needle, o.location ?? ''),
+					(o) =>
+						!bySearch ||
+						!needle ||
+						searchFinds(needle, o.title) ||
+						searchFinds(needle, o.location ?? ''),
 				);
 		};
 		const all = await between(from, to);
@@ -919,6 +929,18 @@ export const findEvents = defineAction({
 				notes.push(
 					`${others} more ${others === 1 ? 'event matches' : 'events match'} in this range for other members only; leave \`members\` out to see them.`,
 				);
+		}
+		// A search by words that matched nothing does not mean the range is empty: the person's
+		// words ("pick up") need not be the title's ("Swimming lesson"). Say what else is there.
+		let unmatched: Found[] = [];
+		if (all.length === 0 && needle && forOthers.length === 0) {
+			const rest = await between(from, to, true, false);
+			if (rest.length > 0) {
+				unmatched = rest.slice(0, MAX_FOUND);
+				notes.push(
+					`No event's title or place matches "${text}", but ${rest.length === 1 ? 'this other event is' : `these ${rest.length} other events are`} in the range (see unmatched); the one asked about may be among them under other words.`,
+				);
+			}
 		}
 		let nextMatch:
 			| { id: string | null; occurrence?: string; title: string; date: string }
@@ -982,6 +1004,7 @@ export const findEvents = defineAction({
 			events: all.slice(0, MAX_FOUND).map(view),
 			truncated: all.length > MAX_FOUND,
 			...(forOthers.length > 0 && { forOthers: forOthers.map(view) }),
+			...(unmatched.length > 0 && { unmatched: unmatched.map(view) }),
 			...(nextMatch && { nextMatch }),
 			...(notes.length > 0 && { note: notes.join(' ') }),
 		};

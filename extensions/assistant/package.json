@@ -50,6 +50,7 @@
 	},
 	"devDependencies": {
 		"@famos/ext-calendar": "workspace:*",
+		"@famos/ext-kitchen": "workspace:*",
 		"@famos/ext-lists": "workspace:*",
 		"@famos/ext-records": "workspace:*",
 		"@famos/ext-vehicles": "workspace:*",

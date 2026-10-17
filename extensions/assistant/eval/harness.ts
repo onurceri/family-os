@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import calendar from '@famos/ext-calendar/server';
+import kitchen from '@famos/ext-kitchen/server';
 import lists from '@famos/ext-lists/server';
 import { isLlmError, type LlmPort, parseManifest } from '@famos/sdk';
 import { createTestKernel, repoTranslate } from '@famos/testing';
@@ -122,7 +123,7 @@ export const checksOf = (c: Case): Check[] => [...c.checks, ...ALWAYS];
 export async function runCase(c: Case, llm: LlmPort, raw = false): Promise<CaseResult> {
 	const model = observed(llm, raw);
 	const k = await createTestKernel({
-		extensions: [calendar, lists, assistant],
+		extensions: [calendar, kitchen, lists, assistant],
 		llm: model.llm,
 		translate: repoTranslate(),
 		...(c.notInstalled && { extensionPackages: notInstalledPackages(c.notInstalled) }),

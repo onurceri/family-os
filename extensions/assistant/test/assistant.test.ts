@@ -244,6 +244,7 @@ describe('a turn', () => {
 			onBehalfOf: can.member.id,
 		});
 		expect(k.llm.chatTrace[0]?.result).toContain('"status":"drafted"');
+		expect(k.llm.chatTrace[0]?.result).toContain('"added":false');
 		expect(k.llm.chatTrace[0]?.result).not.toContain(draftId);
 		// Nothing is on the list until a person approves.
 		const shopping = await k.runner.invoke<{ lists: { items: { title: string }[] }[] }>(

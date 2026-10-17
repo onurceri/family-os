@@ -2447,6 +2447,7 @@ export interface operations {
                                 title: string;
                                 recipeId: string | null;
                             }[];
+                            note?: string;
                         };
                     } | {
                         /** @enum {string} */

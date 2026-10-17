@@ -458,6 +458,19 @@ describe('AI', () => {
 		});
 	});
 
+	it('says plainly that nothing is planned, and for which days', async () => {
+		const empty = await applied(k, 'kitchen.mealPlan', { from: '2026-10-23', days: 1 }, AI);
+		expect(empty).toMatchObject({
+			meals: [],
+			note: 'Nothing is planned in the meal plan from 2026-10-23 to 2026-10-23.',
+		});
+		const r = await addRecipe();
+		await applied(k, 'kitchen.addToMealPlan', { date: '2026-10-06', recipeId: r.id }, admin.actor);
+		expect(
+			await applied(k, 'kitchen.mealPlan', { from: '2026-10-06', days: 1 }, AI),
+		).not.toHaveProperty('note');
+	});
+
 	it('closes the read tools when the area is off for the AI, but not for people', async () => {
 		await addRecipe();
 		await k.runner.invoke(

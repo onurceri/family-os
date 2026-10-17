@@ -566,6 +566,9 @@ export async function runAgentTool(call: {
 					actionId,
 					JSON.stringify({
 						status: 'drafted',
+						// Nothing exists yet: a suggestion, not the thing itself. Models that read
+						// "drafted" loosely say "created"; this field says it plainly.
+						added: false,
 						suggestion: table.add('draft', result.draftId),
 						...(result.mayExist && { mayExist: result.mayExist }),
 						// Ready words for the person, written to them: models that paraphrase a note still
