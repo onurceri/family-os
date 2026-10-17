@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { Textarea } from '@famos/ui/textarea';
-	import { Card, MemberChips, ScheduleFields } from '@famos/ui/famos';
+	import {
+		Card,
+		fieldAria,
+		FieldError,
+		type FieldErrors,
+		MemberChips,
+		ScheduleFields,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { presetsFor } from '../contract/index.js';
@@ -20,7 +27,7 @@
 	}: {
 		value: PetFormValue;
 		picks?: PresetPicks;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
 
@@ -36,7 +43,6 @@
 		leadDays: app.t('records:field_lead_days'),
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 	const field =
 		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
 	const suggested = $derived(presetsFor(value.species));
@@ -53,8 +59,9 @@
 			maxlength={80}
 			required
 			autocomplete="off"
-			aria-invalid={flag('name')}
+			{...fieldAria(errors.name, id('name'))}
 		/>
+		<FieldError for={id('name')} error={errors.name} />
 		<small class="text-ink-soft text-[13px]">{t('field_name_hint')}</small>
 	</div>
 
@@ -142,9 +149,11 @@
 									bind:value={pick.date}
 									required
 									aria-label={t('preset_due', { title: app.t(preset.titleKey) })}
-									aria-invalid={errors[`preset_${preset.id}`] ? 'true' : undefined}
+									id="preset-{preset.id}-due"
+									{...fieldAria(errors[`preset_${preset.id}`], `preset-${preset.id}-due`)}
 									class="max-w-56"
 								/>
+								<FieldError for="preset-{preset.id}-due" error={errors[`preset_${preset.id}`]} />
 								<ScheduleFields
 									bind:repeat={pick.repeat}
 									bind:interval={pick.interval}

@@ -1,5 +1,5 @@
 import { compareDates, formatDate, Temporal, WEEKDAYS, type Weekday } from '@famos/time';
-import type { RepeatPreset } from '@famos/ui/famos';
+import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	type Chore,
 	ChoreDetailsSchema,
@@ -74,15 +74,16 @@ export function toDetails(v: ChoreFormValue): Omit<CreateChoreInput, 'assigneeId
 	};
 }
 
-/** Field errors keyed by input path, from the contract's own schema. */
-export function validate(v: ChoreFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (v.repeat === 'custom' || (v.repeat === 'weekly' && v.byDay.length === 0))
-		errors.recurrence = true;
-	if (v.until && v.startDate && v.until < v.startDate) errors.until = true;
+/** Why each field is refused (a translation key per field), the schema's checks included. */
+export function validate(v: ChoreFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.title.trim()) errors.title = FIELD_REASON.title;
+	if (!v.startDate) errors.startDate = FIELD_REASON.date;
+	if (v.repeat === 'custom') errors.recurrence = FIELD_REASON.repeat;
+	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.recurrence = FIELD_REASON.repeatDays;
+	if (v.until && v.startDate && v.until < v.startDate) errors.until = FIELD_REASON.beforeStart;
 	const result = ChoreDetailsSchema.safeParse(toDetails(v));
-	if (!result.success)
-		for (const issue of result.error.issues) errors[String(issue.path[0] ?? 'form')] = true;
+	if (!result.success) issueErrors(errors, result.error.issues);
 	return errors;
 }
 

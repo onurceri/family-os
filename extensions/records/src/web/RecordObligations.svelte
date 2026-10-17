@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { Card, Chip, ConfirmButton, EmptyLine, Section, SidePanel } from '@famos/ui/famos';
+	import {
+		Card,
+		Chip,
+		ConfirmButton,
+		EmptyLine,
+		focusFirstInvalid,
+		Section,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Check, Clock, Plus, Repeat } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
@@ -145,7 +153,10 @@
 		event.preventDefault();
 		if (!form || !editingId) return;
 		showErrors = true;
-		if (Object.keys(validate(form)).length) return;
+		if (Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const fields = toFields(form);

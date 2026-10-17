@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scheduleOfPick } from '@famos/ext-records/contract';
-	import { SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
 	import { Car } from '@lucide/svelte';
 	import { VEHICLE_PRESETS, type PresetId, type Vehicle } from '../contract/index.js';
 	import { addVehicle, loadVehicles } from './data.js';
@@ -69,7 +69,8 @@
 		const found = validate(form);
 		for (const preset of VEHICLE_PRESETS) {
 			const pick = picks[preset.id];
-			if (pick.on && !/^\d{4}-\d{2}-\d{2}$/.test(pick.date)) found[`preset_${preset.id}`] = true;
+			if (pick.on && !/^\d{4}-\d{2}-\d{2}$/.test(pick.date))
+				found[`preset_${preset.id}`] = FIELD_REASON.date;
 		}
 		return found;
 	});
@@ -90,7 +91,10 @@
 		showErrors = true;
 		const found = validate(form);
 		const chosen = VEHICLE_PRESETS.filter((p) => picks[p.id].on);
-		if (Object.keys(found).length || chosen.some((p) => !picks[p.id].date)) return;
+		if (Object.keys(found).length || chosen.some((p) => !picks[p.id].date)) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const { outcome, id } = await addVehicle({

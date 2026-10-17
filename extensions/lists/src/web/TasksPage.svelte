@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { formatDate, todayIn } from '@famos/time';
-	import { Composer, ConfirmButton, EmptyArt, Page, Segmented, SidePanel } from '@famos/ui/famos';
+	import {
+		Composer,
+		ConfirmButton,
+		EmptyArt,
+		focusFirstInvalid,
+		Page,
+		Segmented,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { ChevronRight } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
 	import { TASK_TITLE_MAX, type Task } from '../contract/index.js';
@@ -210,7 +218,10 @@
 		event.preventDefault();
 		if (!form || !editingId) return;
 		showErrors = true;
-		if (Object.keys(validateTask(form)).length) return;
+		if (Object.keys(validateTask(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		saveError = false;
 		try {

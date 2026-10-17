@@ -6,7 +6,17 @@
 <script lang="ts">
 	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
-	import { Card, Row, SidePanel, Step, Steps } from '@famos/ui/famos';
+	import {
+		Card,
+		FIELD_REASON,
+		fieldAria,
+		FieldError,
+		focusFirstInvalid,
+		Row,
+		SidePanel,
+		Step,
+		Steps,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight, Monitor, Tablet } from '@lucide/svelte';
@@ -56,6 +66,9 @@
 	/** The name of what was added, for the last step. */
 	let added = $state('');
 	let screenForm = $state<HTMLFormElement>();
+	// The device name's reason shows from the first refused submit on, and goes once it is typed.
+	let triedName = $state(false);
+	const nameError = $derived(triedName && !name.trim() ? FIELD_REASON.name : undefined);
 	/** The checklist is filled once per opening, when the options are in. */
 	let capsFilled = $state(false);
 
@@ -74,6 +87,7 @@
 		error = null;
 		added = '';
 		capsFilled = false;
+		triedName = false;
 	});
 	// Everything a display can show is ticked at first; the admin unticks what it should not.
 	$effect(() => {
@@ -293,8 +307,14 @@
 						<p class="text-ink-soft text-sm">{t('devices_shared_trust_here')}</p>
 						<form
 							class="grid gap-3"
+							novalidate
 							onsubmit={(e) => {
 								e.preventDefault();
+								triedName = true;
+								if (!name.trim()) {
+									void focusFirstInvalid(e.currentTarget);
+									return;
+								}
 								void trust();
 							}}
 						>
@@ -306,14 +326,15 @@
 									required
 									maxlength={60}
 									placeholder={t('devices_name_placeholder')}
+									{...fieldAria(nameError, 'device-name')}
 								/>
+								<FieldError for="device-name" error={nameError} />
 							</div>
 							{#if error}<p class="text-attention text-sm font-semibold" role="alert">
 									{error}
 								</p>{/if}
 							<div>
-								<Button type="submit" variant="primary" disabled={busy || !name.trim()}
-									>{t('devices_trust')}</Button
+								<Button type="submit" variant="primary" disabled={busy}>{t('devices_trust')}</Button
 								>
 							</div>
 						</form>

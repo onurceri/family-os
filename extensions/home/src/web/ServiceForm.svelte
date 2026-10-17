@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FieldError, type FieldErrors, fieldAria } from '@famos/ui/famos';
 	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -11,7 +12,7 @@
 		value = $bindable(),
 		errors = {},
 		idPrefix = 'service',
-	}: { value: ServiceFormValue; errors?: Record<string, true>; idPrefix?: string } = $props();
+	}: { value: ServiceFormValue; errors?: FieldErrors; idPrefix?: string } = $props();
 	const { t } = useHome();
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
@@ -37,8 +38,9 @@
 				maxlength={80}
 				required
 				autocomplete="off"
-				aria-invalid={errors.provider ? 'true' : undefined}
+				{...fieldAria(errors.provider, id('provider'))}
 			/>
+			<FieldError for={id('provider')} error={errors.provider} />
 		</div>
 		<div class="grid gap-1.5">
 			<Label for={id('account')}>{t('field_account_number')} {@render optional()}</Label>
@@ -57,8 +59,9 @@
 				inputmode="numeric"
 				maxlength={2}
 				autocomplete="off"
-				aria-invalid={errors.dueDay ? 'true' : undefined}
+				{...fieldAria(errors.dueDay, id('due-day'))}
 			/>
+			<FieldError for={id('due-day')} error={errors.dueDay} />
 			<small class="text-ink-soft text-[13px]">{t('field_due_day_hint')}</small>
 		</div>
 	</div>

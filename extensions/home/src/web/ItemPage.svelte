@@ -3,6 +3,7 @@
 	import { Button } from '@famos/ui/button';
 	import {
 		Dialog,
+		focusFirstInvalid,
 		type MenuItem,
 		Page,
 		PageHeader,
@@ -98,7 +99,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!item || Object.keys(validateItem(form)).length) return;
+		if (!item || Object.keys(validateItem(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(

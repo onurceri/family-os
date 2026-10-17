@@ -4,6 +4,7 @@
 		ActionSheet,
 		Card,
 		ConfirmButton,
+		focusFirstInvalid,
 		IconButton,
 		Menu,
 		type MenuItem,
@@ -106,11 +107,11 @@
 	const chosen = $derived((recipe?.ingredients ?? []).filter((line) => picked[line]));
 	let shoppingLists = $state<{ id: string; name: string }[]>([]);
 	let listId = $state('');
-	// Read once, when the first recipe opens.
+	// Read when the first recipe opens, and again whenever an extension is switched on or off:
+	// Lists may be off or hidden from this person, and then the button is simply absent until
+	// Lists is back.
 	const recipeOpen = $derived(Boolean(recipeId));
-	$effect(() => {
-		if (!recipeOpen) return;
-		// Lists may be off or hidden from this person: then the button is simply absent.
+	function readShoppingLists() {
 		void loadShoppingLists().then(
 			(lists) => {
 				shoppingLists = lists;
@@ -119,6 +120,11 @@
 			},
 			() => (shoppingLists = []),
 		);
+	}
+	$effect(() => {
+		if (!recipeOpen) return;
+		readShoppingLists();
+		return app.onEvent('core.features.', () => readShoppingLists());
 	});
 	let shopping = $state(false);
 	// What the last add left out or found already there, shown under the ingredients.
@@ -142,6 +148,10 @@
 			shopping = false;
 		}
 	}
+	const allPicked = $derived(
+		(recipe?.ingredients.length ?? 0) > 0 &&
+			(recipe?.ingredients ?? []).every((line) => picked[line]),
+	);
 	const toggleAll = () => {
 		const all = recipe?.ingredients ?? [];
 		const next = !all.every((line) => picked[line]);
@@ -190,7 +200,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!recipe || Object.keys(validate(form)).length) return;
+		if (!recipe || Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(await updateRecipe(recipe.id, toFields(form)), t('saved'));
@@ -345,7 +358,9 @@
 			{#if recipe.ingredients.length}
 				<Section label={t('ingredients')} count={recipe.ingredients.length}>
 					{#snippet actions()}
-						<Button variant="ghost" size="sm" onclick={toggleAll}>{t('select_all')}</Button>
+						<Button variant="ghost" size="sm" onclick={toggleAll}
+							>{allPicked ? t('clear_all') : t('select_all')}</Button
+						>
 						{#if shoppingLists.length}
 							<Button
 								variant="ghost"

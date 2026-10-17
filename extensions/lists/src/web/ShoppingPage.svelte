@@ -9,6 +9,10 @@
 		ConfirmButton,
 		Dialog,
 		EmptyArt,
+		FIELD_REASON,
+		FieldError,
+		fieldErrorId,
+		focusFirstInvalid,
 		IconButton,
 		lengthState,
 		LimitCounter,
@@ -21,6 +25,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2 } from '@lucide/svelte';
+	import { tick } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { slide } from 'svelte/transition';
 	import {
@@ -46,6 +51,7 @@
 		restoreItem,
 		updateItem,
 	} from './data.js';
+	import type { AlreadyOnList } from './already-on-list.js';
 	import { movedToHiddenCart } from './format.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
@@ -219,18 +225,42 @@
 			return false;
 		}
 		try {
-			report(
-				await addItems(
-					app,
-					{ listId: list.id, items: parsed },
-					t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
-				),
+			const { outcome, already } = await addItems(
+				app,
+				{ listId: list.id, items: parsed },
+				t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 			);
+			report(outcome);
+			if (already.length) sayAlready(already);
 			return true;
 		} catch {
 			app.toast(t('error'));
 			return false;
 		}
+	}
+
+	// An add that found its items still on the list changes nothing to see, so it says so and
+	// points at the row that was there all along.
+	let spotlight = $state<string | null>(null);
+	let spotlightTimer: ReturnType<typeof setTimeout> | undefined;
+	function sayAlready(already: AlreadyOnList[]) {
+		const [first] = already;
+		if (!first) return;
+		app.toast(
+			already.length > 1
+				? t('already_on_list_many', { count: already.length })
+				: first.quantityChanged && first.quantity
+					? t('already_on_list_quantity', { title: first.title, quantity: first.quantity })
+					: t('already_on_list', { title: first.title }),
+		);
+		spotlight = first.id;
+		clearTimeout(spotlightTimer);
+		spotlightTimer = setTimeout(() => (spotlight = null), 2400);
+		void tick().then(() =>
+			document
+				.querySelector(`[data-item-id="${CSS.escape(first.id)}"]`)
+				?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+		);
 	}
 
 	// Item editor: a side panel, or a sheet on phones; opened from the row's menu.
@@ -256,9 +286,12 @@
 	}
 	async function saveEdit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!editing || !editing.title.trim()) return;
+		if (!editing) return;
 		showEditErrors = true;
-		if (itemTooLong(editing.title, editing.quantity)) return;
+		if (!editing.title.trim() || itemTooLong(editing.title, editing.quantity)) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		try {
 			report(
 				await updateItem(editing.id, {
@@ -408,7 +441,12 @@
 
 {#snippet itemRow(item: ShoppingItem)}
 	{@const done = isDone(item)}
-	<div class="flex min-h-[52px] items-center {done ? 'text-ink-soft' : 'text-ink'}">
+	<div
+		class="flex min-h-[52px] items-center rounded-[var(--r-ctl)] transition-shadow motion-reduce:transition-none {done
+			? 'text-ink-soft'
+			: 'text-ink'} {spotlight === item.id ? 'ring-ink ring-2 ring-inset' : ''}"
+		data-item-id={item.id}
+	>
 		<button
 			type="button"
 			onclick={() => toggle(item)}
@@ -745,10 +783,18 @@
 					id="item-title"
 					bind:value={editing.title}
 					required
-					aria-invalid={showEditErrors && lengthState(editing.title, SHOPPING_TITLE_MAX).over
+					aria-invalid={showEditErrors &&
+					(!editing.title.trim() || lengthState(editing.title, SHOPPING_TITLE_MAX).over)
 						? 'true'
 						: undefined}
+					aria-describedby={showEditErrors && !editing.title.trim()
+						? fieldErrorId('item-title')
+						: undefined}
 					autocomplete="off"
+				/>
+				<FieldError
+					for="item-title"
+					error={showEditErrors && !editing.title.trim() ? FIELD_REASON.name : undefined}
 				/>
 				<LimitCounter
 					text={editing.title}

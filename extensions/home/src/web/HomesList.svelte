@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
 	import { House } from '@lucide/svelte';
 	import { HOME_PRESETS, type Home, type HomePresetId } from '../contract/index.js';
 	import { addHome, loadHomes } from './data.js';
@@ -70,7 +70,8 @@
 		const found = validateHome(form);
 		for (const preset of HOME_PRESETS) {
 			const pick = picks[preset.id];
-			if (pick?.on && !/^\d{4}-\d{2}-\d{2}$/.test(pick.date)) found[`preset_${preset.id}`] = true;
+			if (pick?.on && !/^\d{4}-\d{2}-\d{2}$/.test(pick.date))
+				found[`preset_${preset.id}`] = FIELD_REASON.date;
 		}
 		return found;
 	});
@@ -90,7 +91,10 @@
 		event.preventDefault();
 		showErrors = true;
 		const chosen = HOME_PRESETS.filter((p) => picks[p.id]?.on);
-		if (Object.keys(validateHome(form)).length || chosen.some((p) => !picks[p.id]?.date)) return;
+		if (Object.keys(validateHome(form)).length || chosen.some((p) => !picks[p.id]?.date)) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const { outcome, id } = await addHome({

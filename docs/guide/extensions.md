@@ -41,7 +41,7 @@ A newer FamilyOS that brings a newer version of the extension uses that one. Ext
 
 FamilyOS publishes its extensions, and newer versions of them, in an index on the internet. FamilyOS looks there **only when you ask**: never by itself, in the background or when it starts.
 
-In **⋯** at the top of the Extensions page, choose **Look for more**. FamilyOS fetches the index and checks that FamilyOS signed it. **Found online** then lists what your FamilyOS does not have yet: extensions that did not come with it, and newer versions of the ones you have (**Version 1.1.0 is out**). An extension that came with FamilyOS but is not installed is listed once, under Found online, when the index has a newer version of it.
+In **⋯** at the top of the Extensions page, choose **Look for more**. FamilyOS fetches the index and checks that FamilyOS signed it. **Found online** appears right under the page title while it looks, and then lists what your FamilyOS does not have yet: extensions that did not come with it, and newer versions of the ones you have (**Version 1.1.0 is out**). An extension that came with FamilyOS but is not installed is listed once, under Found online, when the index has a newer version of it.
 
 Tap one to see what it is for, its version and how much it downloads, then press **Download**. FamilyOS downloads it, checks that it is exactly the file the index describes, and checks it like a file: the details then show what it reaches and **Who made it**, with **Install** (or **Update**). It starts working when FamilyOS restarts.
 
@@ -55,7 +55,8 @@ Other phones and tablets notice it when they reconnect: family displays reload b
 
 ## Switching off and uninstalling
 
-- **The switch** on an installed extension hides it and stops it for everyone at once, without a restart. Turn it back on and everything is as it was.
+- **The switch** on an installed extension hides it and stops it for everyone at once, without a restart. Only the switch itself does this: tapping the extension's name opens its details. The message that follows names it (**Lists is off for everyone**) and has **Undo**. Turn it back on and everything is as it was. Meanwhile its pages say **Lists is switched off for the family**, and who can switch it on again, instead of "This page does not exist".
+- **Uninstalling** removes it from everyone's menu after the restart; its pages then no longer exist.
 - **Uninstall** (in the **⋯** menu) removes it when FamilyOS restarts. **Its data is kept**: install it again and you find everything as it was. While it waits for the restart, **Keep it** in the same menu takes the uninstall back. An extension that another installed one needs cannot be uninstalled before that one.
 
 ## When an extension is left out

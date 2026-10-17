@@ -1,4 +1,5 @@
 import { freshPick, type PresetPickState } from '@famos/ext-records/contract';
+import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import {
 	FUELS,
 	type Fuel,
@@ -60,10 +61,10 @@ export function toValues(v: VehicleFormValue): VehicleValues {
 	};
 }
 
-export function validate(v: VehicleFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (!v.name.trim()) errors.name = true;
-	if (v.year.trim() && !/^\d{4}$/.test(v.year.trim())) errors.year = true;
+export function validate(v: VehicleFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.name.trim()) errors.name = FIELD_REASON.name;
+	if (v.year.trim() && !/^\d{4}$/.test(v.year.trim())) errors.year = 'vehicles:error_year';
 	return errors;
 }
 

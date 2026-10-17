@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { Textarea } from '@famos/ui/textarea';
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
-	import { Chip, LimitCounter, MemberChips, Segmented } from '@famos/ui/famos';
+	import {
+		Chip,
+		fieldAria,
+		FieldError,
+		type FieldErrors,
+		fieldErrorId,
+		LimitCounter,
+		MemberChips,
+		Segmented,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { TASK_TITLE_MAX } from '../contract/index.js';
@@ -19,7 +28,7 @@
 		idPrefix = 'task',
 	}: {
 		value: TaskFormValue;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		uncertain?: readonly string[];
 		idPrefix?: string;
 	} = $props();
@@ -46,7 +55,6 @@
 		value.byDay = days.map((d) => d.code).filter((c) => next.includes(c));
 	}
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 </script>
 
 {#snippet check(path: string)}
@@ -63,10 +71,13 @@
 			id={id('title')}
 			bind:value={value.title}
 			required
-			aria-invalid={flag('title')}
-			aria-describedby={id('title-limit')}
+			aria-invalid={errors.title ? 'true' : undefined}
+			aria-describedby={[errors.title && fieldErrorId(id('title')), id('title-limit')]
+				.filter(Boolean)
+				.join(' ')}
 			autocomplete="off"
 		/>
+		<FieldError for={id('title')} error={errors.title} />
 		<LimitCounter
 			id={id('title-limit')}
 			text={value.title}
@@ -89,8 +100,9 @@
 				id={id('due-date')}
 				type="date"
 				bind:value={value.dueDate}
-				aria-invalid={flag('dueDate')}
+				{...fieldAria(errors.dueDate, id('due-date'))}
 			/>
+			<FieldError for={id('due-date')} error={errors.dueDate} />
 		</div>
 		<div class="grid gap-1.5">
 			<Label for={id('due-time')}>{t('field_due_time')}{@render check('dueTime')}</Label>
@@ -99,8 +111,9 @@
 				type="time"
 				bind:value={value.dueTime}
 				disabled={!value.dueDate}
-				aria-invalid={flag('dueTime')}
+				{...fieldAria(errors.dueTime, id('due-time'))}
 			/>
+			<FieldError for={id('due-time')} error={errors.dueTime} />
 		</div>
 	</div>
 
@@ -116,13 +129,22 @@
 			onchange={(v) => (value.repeat = v as TaskFormValue['repeat'])}
 		/>
 		{#if value.repeat === 'weekly'}
-			<div class="flex flex-wrap gap-1.5" role="group" aria-label={t('repeat_weekly')}>
+			<div
+				id={id('days')}
+				class="flex flex-wrap gap-1.5"
+				role="group"
+				aria-label={t('repeat_weekly')}
+				{...fieldAria(errors.recurrence, id('days'))}
+			>
 				{#each days as day (day.code)}
 					<Chip on={value.byDay.includes(day.code)} onclick={() => toggleDay(day.code)}
 						>{day.label}</Chip
 					>
 				{/each}
 			</div>
+			<FieldError for={id('days')} error={errors.recurrence} />
+		{:else}
+			<FieldError for={id('repeat')} error={errors.recurrence} />
 		{/if}
 		{#if value.repeat !== 'none' && value.repeat !== 'custom'}
 			<div class="grid max-w-56 gap-1.5">
@@ -132,14 +154,13 @@
 					type="date"
 					bind:value={value.until}
 					min={value.dueDate || undefined}
-					aria-invalid={errors.until ? 'true' : undefined}
+					{...fieldAria(errors.until, id('until'))}
 				/>
+				<FieldError for={id('until')} error={errors.until} />
 			</div>
 		{/if}
 		{#if value.repeat !== 'none' && !value.dueDate}
-			<small class="text-[13px] {errors.dueDate ? 'text-attention font-semibold' : 'text-ink-soft'}"
-				>{t('repeat_hint')}</small
-			>
+			<small class="text-ink-soft text-[13px]">{t('repeat_hint')}</small>
 		{/if}
 	</fieldset>
 

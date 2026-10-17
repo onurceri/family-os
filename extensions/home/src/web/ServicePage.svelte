@@ -2,6 +2,7 @@
 	import { Button } from '@famos/ui/button';
 	import {
 		Dialog,
+		focusFirstInvalid,
 		type MenuItem,
 		Page,
 		PageHeader,
@@ -100,7 +101,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!service || Object.keys(validateService(form)).length) return;
+		if (!service || Object.keys(validateService(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(await updateService(service.id, toServiceFields(form)), t('saved'));

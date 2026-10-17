@@ -3,10 +3,11 @@
 	import {
 		Avatar,
 		Dialog,
+		focusFirstInvalid,
+		type MenuItem,
 		PageHeader,
 		RecordHeader,
 		SidePanel,
-		type MenuItem,
 		wide,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
@@ -102,7 +103,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!vehicle || Object.keys(validate(form)).length) return;
+		if (!vehicle || Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(await updateVehicle(vehicle.id, toValues(form)), t('saved'));

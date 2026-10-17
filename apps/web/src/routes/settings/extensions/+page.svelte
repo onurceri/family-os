@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isApiError, unwrap } from '@famos/api-client';
+	import { tick } from 'svelte';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -205,7 +206,11 @@
 		return t('error_generic');
 	}
 
-	async function toggle(entry: Entry, enabled: boolean) {
+	/**
+	 * Turns an extension on or off for the whole family at once. The notice names it and offers
+	 * Undo, since one tap changes it for everyone; undoing says what it is now, without another Undo.
+	 */
+	async function toggle(entry: Entry, enabled: boolean, undoable = true) {
 		error = null;
 		try {
 			unwrap(
@@ -213,7 +218,15 @@
 					body: { extensionId: entry.id, enabled },
 				}),
 			);
-			toasts.show(enabled ? t('extensions_turned_on') : t('extensions_turned_off'));
+			const said = t(enabled ? 'extensions_turned_on' : 'extensions_turned_off', {
+				name: name(entry),
+			});
+			toasts.show(
+				said,
+				undoable
+					? { label: t('extensions_switch_undo'), run: () => void toggle(entry, !enabled, false) }
+					: undefined,
+			);
 			await Promise.all([load(), session.refresh()]);
 		} catch {
 			error = t('error_generic');
@@ -306,15 +319,25 @@
 		}
 	}
 
-	/** Asks the server to read the official index; what it finds shows below Available. */
+	/**
+	 * Once someone asks here, what the index gives shows right under the header, where they
+	 * asked, and takes focus; otherwise an earlier look stays at the end of the page.
+	 */
+	let lookedHere = $state(false);
+	let foundBox = $state<HTMLElement | null>(null);
+
+	/** Asks the server to read the official index; what it finds shows under the header. */
 	async function look() {
 		error = null;
+		lookedHere = true;
 		try {
 			unwrap(await api.POST('/api/v1/actions/core.findExtensions', { body: {} }));
 		} catch {
 			error = t('error_generic');
 		} finally {
 			await load();
+			await tick();
+			foundBox?.focus();
 		}
 	}
 
@@ -446,6 +469,59 @@
 {#snippet fileIcon()}<FileUp class="size-4" aria-hidden="true" />{/snippet}
 {#snippet lookIcon()}<Search class="size-4" aria-hidden="true" />{/snippet}
 
+{#snippet foundSection()}
+	<!-- What the index gave is announced when it arrives; focus lands here after a look. -->
+	{#if found?.search}
+		{@const search = found.search}
+		<div
+			bind:this={foundBox}
+			tabindex="-1"
+			aria-live="polite"
+			class="outline-none"
+			data-testid="found-online"
+		>
+			<Section
+				label={t('extensions_found')}
+				count={search.status === 'done' ? found.found.length : undefined}
+			>
+				{#if search.status === 'looking'}
+					<EmptyLine text={t('extensions_looking')}>
+						{#snippet icon()}<Search aria-hidden="true" />{/snippet}
+					</EmptyLine>
+				{:else if search.status === 'failed' && search.problem}
+					{@const said = searchProblem(search.problem)}
+					<Notice tone="alert">{t(said.key)}</Notice>
+				{:else if found.found.length > 0}
+					<Card rows data-testid="found-extensions">
+						{#each shown.found as { pkg, update } (pkg.id)}
+							{@const entry = foundEntry(pkg)}
+							<Row
+								title={name(entry)}
+								meta={update
+									? t('extensions_found_newer', { version: pkg.version })
+									: description(entry)}
+								onclick={() => {
+									foundError = null;
+									foundOpen = pkg;
+								}}
+								aria-label={name(entry)}
+							>
+								{#snippet trail()}
+									<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
+								{/snippet}
+							</Row>
+						{/each}
+					</Card>
+				{:else}
+					<EmptyLine text={t('extensions_found_none')}>
+						{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
+					</EmptyLine>
+				{/if}
+			</Section>
+		</div>
+	{/if}
+{/snippet}
+
 <Page template="settings">
 	<PageHeader title={t('extensions_title')} subtitle={t('extensions_intro')}>
 		{#snippet actions()}
@@ -480,6 +556,7 @@
 					{/if}
 				</Notice>
 			{/if}
+			{#if lookedHere}{@render foundSection()}{/if}
 
 			<Section label={t('extensions_installed')} count={grouped.installed.length}>
 				<Card rows data-testid="installed-extensions">
@@ -492,6 +569,7 @@
 								checked={entry.enabled}
 								disabled={!session.can('core.features.manage')}
 								onchange={(enabled) => toggle(entry, enabled)}
+								onopen={() => openPanel(entry)}
 								oneLine
 							>
 								{#snippet end()}<RowMenu name={name(entry)} items={menu(entry)} />{/snippet}
@@ -529,47 +607,7 @@
 				{/if}
 			</Section>
 
-			{#if found?.search}
-				{@const search = found.search}
-				<Section
-					label={t('extensions_found')}
-					count={search.status === 'done' ? found.found.length : undefined}
-				>
-					{#if search.status === 'looking'}
-						<EmptyLine text={t('extensions_looking')}>
-							{#snippet icon()}<Search aria-hidden="true" />{/snippet}
-						</EmptyLine>
-					{:else if search.status === 'failed' && search.problem}
-						{@const said = searchProblem(search.problem)}
-						<Notice tone="alert">{t(said.key)}</Notice>
-					{:else if found.found.length > 0}
-						<Card rows data-testid="found-extensions">
-							{#each shown.found as { pkg, update } (pkg.id)}
-								{@const entry = foundEntry(pkg)}
-								<Row
-									title={name(entry)}
-									meta={update
-										? t('extensions_found_newer', { version: pkg.version })
-										: description(entry)}
-									onclick={() => {
-										foundError = null;
-										foundOpen = pkg;
-									}}
-									aria-label={name(entry)}
-								>
-									{#snippet trail()}
-										<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
-									{/snippet}
-								</Row>
-							{/each}
-						</Card>
-					{:else}
-						<EmptyLine text={t('extensions_found_none')}>
-							{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
-						</EmptyLine>
-					{/if}
-				</Section>
-			{/if}
+			{#if !lookedHere}{@render foundSection()}{/if}
 
 			<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('extensions_data_kept')}</p>
 		</div>

@@ -1,5 +1,5 @@
 import { Temporal, WEEKDAYS, type Weekday } from '@famos/time';
-import type { RepeatPreset } from '@famos/ui/famos';
+import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	ALL_DAY_REMINDERS,
 	defaultReminder,
@@ -140,15 +140,24 @@ export function inputFrom(v: EventFormValue): EventInput {
 	return input;
 }
 
-/** Field errors keyed by the first path segment, from the contract's own schema. */
-export function validate(v: EventFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (v.repeat === 'custom') errors.repeat = true;
-	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.repeat = true;
-	if (v.until && v.until < v.date) errors.until = true;
+/**
+ * Why each field is refused (a translation key per field), the schema's checks included: what
+ * the form shows under the fields when Save is refused. Empty when the event can be saved.
+ */
+export function validate(v: EventFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.title.trim()) errors.title = FIELD_REASON.title;
+	if (!v.date) errors.date = FIELD_REASON.date;
+	if (!v.allDay && !v.startTime) errors.startTime = FIELD_REASON.time;
+	if (v.repeat === 'custom') errors.recurrence = FIELD_REASON.repeat;
+	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.recurrence = FIELD_REASON.repeatDays;
+	if (v.until && v.until < v.date) errors.until = FIELD_REASON.beforeStart;
 	const result = EventInputSchema.safeParse(inputFrom(v));
 	if (!result.success)
-		for (const issue of result.error.issues) errors[String(issue.path[0] ?? 'form')] = true;
+		issueErrors(errors, result.error.issues, {
+			endDate: FIELD_REASON.beforeStart,
+			endTime: 'calendar:error_end_same',
+		});
 	return errors;
 }
 

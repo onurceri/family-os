@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FieldError, type FieldErrors, fieldAria } from '@famos/ui/famos';
 	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -19,7 +20,7 @@
 	}: {
 		value: ItemFormValue;
 		picks?: PresetPicks;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
 	const { t } = useHome();
@@ -39,8 +40,9 @@
 			maxlength={80}
 			required
 			autocomplete="off"
-			aria-invalid={errors.name ? 'true' : undefined}
+			{...fieldAria(errors.name, id('name'))}
 		/>
+		<FieldError for={id('name')} error={errors.name} />
 		<small class="text-ink-soft text-[13px]">{t('item_name_hint')}</small>
 	</div>
 	<div class="grid grid-cols-2 gap-x-3 gap-y-[18px]">
@@ -70,9 +72,10 @@
 				id={id('warranty')}
 				type="date"
 				bind:value={value.warrantyUntil}
-				aria-invalid={errors.warrantyUntil ? 'true' : undefined}
+				{...fieldAria(errors.warrantyUntil, id('warranty'))}
 				class="max-w-52"
 			/>
+			<FieldError for={id('warranty')} error={errors.warrantyUntil} />
 			<small class="text-ink-soft text-[13px]">{t('field_warranty_hint')}</small>
 		</div>
 	</div>

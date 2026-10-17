@@ -28,6 +28,16 @@ export { EMPTY_ART_NAMES, type EmptyArtName } from './empty-art.js';
 export { default as Fab } from './Fab.svelte';
 export { default as Facts } from './Facts.svelte';
 export { default as FamilyList, type FamilyStatus } from './FamilyList.svelte';
+export { default as FieldError } from './FieldError.svelte';
+export {
+	FIELD_REASON,
+	type FieldErrors,
+	type FieldIssue,
+	fieldAria,
+	fieldErrorId,
+	focusFirstInvalid,
+	issueErrors,
+} from './field-errors.js';
 export { default as HelpTip } from './HelpTip.svelte';
 export {
 	DAY_FROM_HOUR,

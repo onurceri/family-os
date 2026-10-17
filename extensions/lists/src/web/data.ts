@@ -9,6 +9,7 @@ import type {
 	Task,
 	TaskInput,
 } from '../contract/index.js';
+import { type AddedItems, type AlreadyOnList, alreadyOnList } from './already-on-list.js';
 import { api } from './api.js';
 
 /** Lists API calls, all through the generated client. */
@@ -61,12 +62,21 @@ export const loadItems = async (listId: string): Promise<ShoppingItem[]> =>
 		await api.GET('/api/v1/lists/shopping/lists/{listId}/items', { params: { path: { listId } } }),
 	);
 
-export const addItems = async (
+/** Adds items; `already` names those that were on the list already (nothing new to see). */
+export async function addItems(
 	app: Runner,
 	input: AddShoppingItemsInput,
 	label: string,
-): Promise<Outcome> =>
-	outcomeOf(await app.runAction('lists.addShoppingItems', input, { offline: true, label }));
+): Promise<{ outcome: Outcome; already: AlreadyOnList[] }> {
+	const result = await app.runAction<AddedItems>('lists.addShoppingItems', input, {
+		offline: true,
+		label,
+	});
+	return {
+		outcome: outcomeOf(result),
+		already: !result.queued && result.status === 'applied' ? alreadyOnList(result.output) : [],
+	};
+}
 
 export const checkItem = async (
 	app: Runner,

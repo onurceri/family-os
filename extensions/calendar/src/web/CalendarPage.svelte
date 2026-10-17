@@ -5,6 +5,7 @@
 		Avatar,
 		ConfirmButton,
 		EmptyState,
+		focusFirstInvalid,
 		Page,
 		PageHeader,
 		SidePanel,
@@ -282,7 +283,10 @@
 		event.preventDefault();
 		if (!form || !editing) return;
 		showErrors = true;
-		if (Object.keys(validate(form)).length) return;
+		if (Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		saveError = false;
 		try {

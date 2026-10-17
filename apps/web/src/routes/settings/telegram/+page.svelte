@@ -5,6 +5,9 @@
 	import {
 		Card,
 		ConfirmButton,
+		fieldAria,
+		FieldError,
+		focusFirstInvalid,
 		Notice,
 		Page,
 		PageHeader,
@@ -27,6 +30,9 @@
 	let replacing = $state(false);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
+	// The token's reason shows from the first refused Connect on, and goes once it is pasted.
+	let tried = $state(false);
+	const tokenError = $derived(tried && !token.trim() ? 'app:telegram_token_required' : undefined);
 
 	$effect(() => {
 		if (session.status === 'ready' && !session.can('core.settings.manage'))
@@ -65,7 +71,13 @@
 
 	async function connect(event: SubmitEvent) {
 		event.preventDefault();
-		if (token.trim()) await save(token.trim());
+		tried = true;
+		if (!token.trim()) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
+		await save(token.trim());
+		tried = false;
 	}
 </script>
 
@@ -123,7 +135,7 @@
 						</ol>
 					</div>
 				</details>
-				<form onsubmit={connect} class="grid gap-4">
+				<form onsubmit={connect} class="grid gap-4" novalidate>
 					<Card rows>
 						<SettingRow
 							label={t('telegram_token_label')}
@@ -139,12 +151,14 @@
 									spellcheck={false}
 									required
 									maxlength={200}
+									{...fieldAria(tokenError, 'telegram-token')}
 								/>
+								<FieldError for="telegram-token" error={tokenError} />
 							{/snippet}
 						</SettingRow>
 					</Card>
 					<div>
-						<Button type="submit" disabled={busy || !token.trim()}>{t('telegram_connect')}</Button>
+						<Button type="submit" disabled={busy}>{t('telegram_connect')}</Button>
 					</div>
 				</form>
 			</Section>

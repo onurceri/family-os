@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
-	import { Chip, EmptyState, Fab, IconButton, ListDetail, Row, SidePanel } from '@famos/ui/famos';
+	import {
+		Chip,
+		EmptyState,
+		Fab,
+		focusFirstInvalid,
+		IconButton,
+		ListDetail,
+		Row,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { CalendarPlus, CookingPot, Plus, Search } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import type { RecipeSummary } from '../contract/index.js';
@@ -74,7 +83,10 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (Object.keys(validate(form)).length) return;
+		if (Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const { outcome, id } = await createRecipe(toFields(form));

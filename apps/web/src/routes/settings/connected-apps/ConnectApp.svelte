@@ -1,7 +1,17 @@
 <script lang="ts">
 	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
-	import { Notice, Segmented, SidePanel, Step, Steps } from '@famos/ui/famos';
+	import {
+		FIELD_REASON,
+		fieldAria,
+		FieldError,
+		focusFirstInvalid,
+		Notice,
+		Segmented,
+		SidePanel,
+		Step,
+		Steps,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, Copy } from '@lucide/svelte';
@@ -43,6 +53,9 @@
 	let copied = $state<'key' | 'settings' | null>(null);
 	let error = $state<string | null>(null);
 	let busy = $state(false);
+	// The name's reason shows from the first refused Create on, and goes once it is typed.
+	let tried = $state(false);
+	const nameError = $derived(tried && !name.trim() ? FIELD_REASON.name : undefined);
 
 	const address = mcpAddress(typeof location === 'undefined' ? '' : location.origin);
 	const settings = $derived(appSettings(kind, address, made?.secret ?? null));
@@ -58,6 +71,7 @@
 		kind = 'claude-desktop';
 		copied = null;
 		error = null;
+		tried = false;
 	});
 
 	async function turnOn() {
@@ -73,6 +87,11 @@
 
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
+		tried = true;
+		if (!name.trim()) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		error = null;
 		busy = true;
 		try {
@@ -139,7 +158,7 @@
 
 			<Step n={2} title={t('mcp_step_key')} summary={made?.name}>
 				<p class="text-ink-soft text-sm">{t('mcp_step_key_body')}</p>
-				<form class="grid gap-4" onsubmit={create}>
+				<form class="grid gap-4" onsubmit={create} novalidate>
 					<div class="grid gap-1.5">
 						<Label for="mcp-name">{t('mcp_name')}</Label>
 						<Input
@@ -148,8 +167,13 @@
 							required
 							maxlength={60}
 							placeholder={t('mcp_name_placeholder')}
+							aria-describedby={nameError ? 'mcp-name-error mcp-name-hint' : 'mcp-name-hint'}
+							aria-invalid={nameError ? 'true' : undefined}
 						/>
-						<small class="text-ink-soft text-[13px] leading-snug">{t('mcp_name_hint')}</small>
+						<FieldError for="mcp-name" error={nameError} />
+						<small id="mcp-name-hint" class="text-ink-soft text-[13px] leading-snug"
+							>{t('mcp_name_hint')}</small
+						>
 					</div>
 					<div class="grid gap-1.5">
 						<Label for="mcp-scope">{t('mcp_scope')}</Label>
@@ -169,9 +193,7 @@
 					</div>
 					{#if error}<p class="text-attention text-sm font-semibold" role="alert">{error}</p>{/if}
 					<div>
-						<Button type="submit" variant="primary" disabled={busy || !name.trim()}
-							>{t('mcp_create')}</Button
-						>
+						<Button type="submit" variant="primary" disabled={busy}>{t('mcp_create')}</Button>
 					</div>
 				</form>
 			</Step>

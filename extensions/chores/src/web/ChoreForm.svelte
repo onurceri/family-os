@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { Textarea } from '@famos/ui/textarea';
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
-	import { Avatar, MemberChips, RepeatPicker } from '@famos/ui/famos';
+	import {
+		Avatar,
+		fieldAria,
+		FieldError,
+		type FieldErrors,
+		MemberChips,
+		RepeatPicker,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { ArrowDown, ArrowUp } from '@lucide/svelte';
@@ -18,7 +25,7 @@
 		idPrefix = 'chore',
 	}: {
 		value: ChoreFormValue;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
 
@@ -36,7 +43,6 @@
 		until: t('field_until'),
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 	const ordered = $derived(
 		value.assigneeIds.flatMap((m) => {
 			const found = app.members().find((x) => x.id === m);
@@ -64,9 +70,10 @@
 				bind:value={value.title}
 				maxlength={120}
 				required
-				aria-invalid={flag('title')}
+				{...fieldAria(errors.title, id('title'))}
 				autocomplete="off"
 			/>
+			<FieldError for={id('title')} error={errors.title} />
 		</div>
 
 		<div class="grid gap-1.5">
@@ -76,9 +83,10 @@
 				type="date"
 				bind:value={value.startDate}
 				required
-				aria-invalid={flag('startDate')}
+				{...fieldAria(errors.startDate, id('start'))}
 				class="max-w-52"
 			/>
+			<FieldError for={id('start')} error={errors.startDate} />
 		</div>
 
 		<fieldset class="grid gap-2 @2xl:col-span-2">
@@ -91,7 +99,8 @@
 				labels={repeatLabels}
 				min={value.startDate || undefined}
 				{idPrefix}
-				invalidUntil={!!errors.until}
+				error={errors.recurrence}
+				untilError={errors.until}
 			/>
 		</fieldset>
 

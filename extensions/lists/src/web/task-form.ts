@@ -1,5 +1,5 @@
 import { Temporal, WEEKDAYS, type Weekday } from '@famos/time';
-import type { RepeatPreset } from '@famos/ui/famos';
+import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import { type Task, type TaskInput, TaskInputSchema } from '../contract/index.js';
 
 /** Editable task form state; plain strings so inputs can bind to them. */
@@ -75,14 +75,18 @@ export function taskInputFrom(v: TaskFormValue): TaskInput {
 	};
 }
 
-/** Field errors keyed by input path, from the contract's own schema. */
-export function validateTask(v: TaskFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (v.repeat === 'custom' || (v.repeat === 'weekly' && v.byDay.length === 0))
-		errors.recurrence = true;
-	if (v.until && v.dueDate && v.until < v.dueDate) errors.until = true;
+/**
+ * Why each field is refused (a translation key per field), the schema's checks included: what
+ * the form shows under the fields when Save is refused. Empty when the task can be saved.
+ */
+export function validateTask(v: TaskFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.title.trim()) errors.title = FIELD_REASON.title;
+	if (v.repeat === 'custom') errors.recurrence = FIELD_REASON.repeat;
+	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.recurrence = FIELD_REASON.repeatDays;
+	if (v.until && v.dueDate && v.until < v.dueDate) errors.until = FIELD_REASON.beforeStart;
 	const result = TaskInputSchema.safeParse(taskInputFrom(v));
 	if (!result.success)
-		for (const issue of result.error.issues) errors[String(issue.path[0] ?? 'form')] = true;
+		issueErrors(errors, result.error.issues, { dueDate: 'lists:error_repeat_date' });
 	return errors;
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Card, ScheduleFields } from '@famos/ui/famos';
+	import { Card, fieldAria, FieldError, type FieldErrors, ScheduleFields } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import type { ObligationPreset } from '@famos/ext-records/contract';
 	import type { PresetPicks } from './form.js';
@@ -16,7 +16,7 @@
 	}: {
 		presets: readonly ObligationPreset[];
 		picks: PresetPicks;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 	} = $props();
 	const { app, t } = useHome();
 	const labels = $derived({
@@ -62,9 +62,11 @@
 								bind:value={pick.date}
 								required
 								aria-label={t('preset_due', { title: app.t(preset.titleKey) })}
-								aria-invalid={errors[`preset_${preset.id}`] ? 'true' : undefined}
+								id="preset-{preset.id}-due"
+								{...fieldAria(errors[`preset_${preset.id}`], `preset-${preset.id}-due`)}
 								class="max-w-56"
 							/>
+							<FieldError for="preset-{preset.id}-due" error={errors[`preset_${preset.id}`]} />
 							<ScheduleFields
 								bind:repeat={pick.repeat}
 								bind:interval={pick.interval}

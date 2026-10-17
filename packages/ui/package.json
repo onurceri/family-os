@@ -36,6 +36,7 @@
 			"default": "./src/famos/index.ts"
 		},
 		"./timeline": "./src/famos/timeline.ts",
+		"./forms": "./src/famos/forms.ts",
 		"./app": "./src/app-context.ts"
 	},
 	"peerDependencies": {

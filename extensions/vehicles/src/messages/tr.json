@@ -28,6 +28,7 @@
 	"field_make": "Marka",
 	"field_model": "Model",
 	"field_year": "Yıl",
+	"error_year": "Yılı dört haneyle yaz",
 	"field_fuel": "Yakıt",
 	"field_vin": "Şasi numarası",
 	"field_members": "Kim kullanıyor",

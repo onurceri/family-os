@@ -1,6 +1,6 @@
+import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { DEFAULT_LEAD_DAYS, type Obligation, type ObligationPreset } from '../contract/index.js';
 import type { ObligationFields } from './data.js';
-
 import type { RepeatUnit } from './repeat.js';
 
 export type { RepeatUnit };
@@ -71,9 +71,9 @@ export function toFields(v: ObligationFormValue): ObligationFields {
 }
 
 /** Input paths that are wrong, for marking fields. */
-export function validate(v: ObligationFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (!v.title.trim()) errors.title = true;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(v.dueDate)) errors.dueDate = true;
+export function validate(v: ObligationFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.title.trim()) errors.title = FIELD_REASON.title;
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(v.dueDate)) errors.dueDate = FIELD_REASON.date;
 	return errors;
 }

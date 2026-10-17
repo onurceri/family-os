@@ -4,6 +4,7 @@ import {
 	type PresetPickState,
 	scheduleOfPick,
 } from '@famos/ext-records/contract';
+import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import type {
 	Home,
 	HomeFields,
@@ -40,8 +41,8 @@ export const toHomeFields = (v: HomeFormValue): HomeFields => ({
 	tenure: v.tenure,
 	notes: v.notes.trim() || null,
 });
-export const validateHome = (v: HomeFormValue): Record<string, true> =>
-	v.name.trim() ? {} : { name: true };
+export const validateHome = (v: HomeFormValue): FieldErrors =>
+	v.name.trim() ? {} : { name: FIELD_REASON.name };
 
 export interface ItemFormValue {
 	name: string;
@@ -83,11 +84,11 @@ export const toItemFields = (v: ItemFormValue): ItemFields => ({
 	warrantyUntil: v.warrantyUntil || null,
 	notes: v.notes.trim() || null,
 });
-export const validateItem = (v: ItemFormValue): Record<string, true> => {
-	const errors: Record<string, true> = {};
-	if (!v.name.trim()) errors.name = true;
+export const validateItem = (v: ItemFormValue): FieldErrors => {
+	const errors: FieldErrors = {};
+	if (!v.name.trim()) errors.name = FIELD_REASON.name;
 	if (v.purchasedOn && v.warrantyUntil && v.warrantyUntil < v.purchasedOn)
-		errors.warrantyUntil = true;
+		errors.warrantyUntil = 'home:error_warranty_before_purchase';
 	return errors;
 };
 
@@ -122,12 +123,12 @@ export const toServiceFields = (v: ServiceFormValue): ServiceFields => {
 		notes: v.notes.trim() || null,
 	};
 };
-export const validateService = (v: ServiceFormValue): Record<string, true> => {
-	const errors: Record<string, true> = {};
-	if (!v.provider.trim()) errors.provider = true;
+export const validateService = (v: ServiceFormValue): FieldErrors => {
+	const errors: FieldErrors = {};
+	if (!v.provider.trim()) errors.provider = 'home:error_provider';
 	if (v.dueDay.trim()) {
 		const day = Number(v.dueDay);
-		if (!Number.isInteger(day) || day < 1 || day > 31) errors.dueDay = true;
+		if (!Number.isInteger(day) || day < 1 || day > 31) errors.dueDay = 'home:error_due_day';
 	}
 	return errors;
 };

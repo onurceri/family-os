@@ -1,5 +1,5 @@
 {
-	"sdk": "0.5.1",
+	"sdk": "0.5.2",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -160,9 +160,11 @@
 			"EmptyArt",
 			"EmptyLine",
 			"EmptyState",
+			"FIELD_REASON",
 			"Fab",
 			"Facts",
 			"FamilyList",
+			"FieldError",
 			"HelpTip",
 			"HourlyStrip",
 			"IconButton",
@@ -217,7 +219,10 @@
 			"counterText",
 			"draftButtons",
 			"durationParts",
+			"fieldAria",
+			"fieldErrorId",
 			"firstName",
+			"focusFirstInvalid",
 			"forgetSharedReads",
 			"formatClock",
 			"formatDuration",
@@ -230,6 +235,7 @@
 			"isNightHour",
 			"isTimed",
 			"isWetHour",
+			"issueErrors",
 			"lengthState",
 			"memberDays",
 			"minuteParts",
@@ -255,6 +261,13 @@
 			"withShortNames"
 		],
 		"@famos/ui/timeline": ["groupOf", "hasEnded", "sortTimeline", "viewTimeline"],
+		"@famos/ui/forms": [
+			"FIELD_REASON",
+			"fieldAria",
+			"fieldErrorId",
+			"focusFirstInvalid",
+			"issueErrors"
+		],
 		"@famos/ui/app": ["findApp", "namespaced", "provideAppContext", "useApp"]
 	}
 }

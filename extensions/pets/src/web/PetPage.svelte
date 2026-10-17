@@ -4,10 +4,11 @@
 	import {
 		Avatar,
 		Dialog,
+		focusFirstInvalid,
+		type MenuItem,
 		PageHeader,
 		RecordHeader,
 		SidePanel,
-		type MenuItem,
 		wide,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
@@ -98,7 +99,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!pet || Object.keys(validate(form)).length) return;
+		if (!pet || Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(await updatePet(pet.id, toValues(form)), t('saved'));

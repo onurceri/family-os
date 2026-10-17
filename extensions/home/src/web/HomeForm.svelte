@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FieldError, type FieldErrors, fieldAria } from '@famos/ui/famos';
 	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -16,7 +17,7 @@
 	}: {
 		value: HomeFormValue;
 		picks?: PresetPicks;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
 	const { t } = useHome();
@@ -36,8 +37,9 @@
 			maxlength={80}
 			required
 			autocomplete="off"
-			aria-invalid={errors.name ? 'true' : undefined}
+			{...fieldAria(errors.name, id('name'))}
 		/>
+		<FieldError for={id('name')} error={errors.name} />
 		<small class="text-ink-soft text-[13px]">{t('home_name_hint')}</small>
 	</div>
 	<div class="grid gap-1.5">

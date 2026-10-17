@@ -1,4 +1,5 @@
 import { freshPick, type PresetPickState } from '@famos/ext-records/contract';
+import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import {
 	PET_PRESETS,
 	type Pet,
@@ -60,9 +61,9 @@ export const toValues = (v: PetFormValue): PetValues => ({
 	notes: v.notes.trim() || null,
 });
 
-export function validate(v: PetFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (!v.name.trim()) errors.name = true;
+export function validate(v: PetFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.name.trim()) errors.name = FIELD_REASON.name;
 	return errors;
 }
 

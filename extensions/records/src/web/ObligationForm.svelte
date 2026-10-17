@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Textarea } from '@famos/ui/textarea';
-	import { MemberChips } from '@famos/ui/famos';
+	import { fieldAria, FieldError, type FieldErrors, MemberChips } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { useRecords } from './i18n.js';
@@ -17,13 +17,12 @@
 		idPrefix = 'obligation',
 	}: {
 		value: ObligationFormValue;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
 
 	const { app, t } = useRecords();
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 	const field =
 		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
 </script>
@@ -37,8 +36,9 @@
 			maxlength={160}
 			required
 			autocomplete="off"
-			aria-invalid={flag('title')}
+			{...fieldAria(errors.title, id('title'))}
 		/>
+		<FieldError for={id('title')} error={errors.title} />
 	</div>
 
 	<div class="grid gap-[18px] @lg:grid-cols-2 @lg:gap-x-3">
@@ -49,8 +49,9 @@
 				type="date"
 				bind:value={value.dueDate}
 				required
-				aria-invalid={flag('dueDate')}
+				{...fieldAria(errors.dueDate, id('due'))}
 			/>
+			<FieldError for={id('due')} error={errors.dueDate} />
 		</div>
 
 		<div class="grid content-start gap-1.5">

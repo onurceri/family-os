@@ -7,7 +7,7 @@
 	"famos": {
 		"id": "chores",
 		"version": "0.1.0",
-		"sdk": "^0.5.1",
+		"sdk": "^0.5.2",
 		"capabilities": [
 			"chores.view",
 			"chores.use",

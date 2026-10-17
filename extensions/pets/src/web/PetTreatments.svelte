@@ -3,7 +3,18 @@
 	import type { Obligation, RecordDocument } from '@famos/ext-records/contract';
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { Card, ConfirmButton, EmptyLine, Row, Section, SidePanel } from '@famos/ui/famos';
+	import {
+		Card,
+		ConfirmButton,
+		EmptyLine,
+		FIELD_REASON,
+		fieldAria,
+		FieldError,
+		focusFirstInvalid,
+		Row,
+		Section,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, FileText, Plus, Syringe } from '@lucide/svelte';
@@ -101,7 +112,10 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(givenOn)) return;
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(givenOn)) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(
@@ -195,7 +209,11 @@
 					type="date"
 					bind:value={givenOn}
 					required
-					aria-invalid={showErrors && !givenOn ? 'true' : undefined}
+					{...fieldAria(showErrors && !givenOn ? FIELD_REASON.date : undefined, 'treatment-date')}
+				/>
+				<FieldError
+					for="treatment-date"
+					error={showErrors && !givenOn ? FIELD_REASON.date : undefined}
 				/>
 			</div>
 		</div>

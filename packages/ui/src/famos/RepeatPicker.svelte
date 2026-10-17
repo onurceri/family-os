@@ -1,5 +1,7 @@
 <script lang="ts" module>
-	export type RepeatPreset = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
+	import type { RepeatPreset } from './forms.js';
+
+	export type { RepeatPreset };
 	export interface RepeatLabels {
 		none: string;
 		daily: string;
@@ -13,11 +15,14 @@
 <script lang="ts">
 	import { Input } from '../components/input/index.js';
 	import { Label } from '../components/label/index.js';
+	import { fieldAria } from './field-errors.js';
+	import FieldError from './FieldError.svelte';
 
 	/**
 	 * Repeat presets (none / daily / weekly on chosen days / monthly) with an optional end date,
 	 * shared by every form that schedules something. `custom` marks a rule outside the presets:
-	 * it is shown but cannot be picked. Weekday codes are RRULE codes (`MO` … `SU`).
+	 * it is shown but cannot be picked. Weekday codes are RRULE codes (`MO` … `SU`). `error` and
+	 * `untilError` are reasons (translation keys) shown under the choice and the end date.
 	 */
 	let {
 		preset = $bindable(),
@@ -27,7 +32,8 @@
 		labels,
 		min,
 		idPrefix,
-		invalidUntil = false,
+		error,
+		untilError,
 	}: {
 		preset: RepeatPreset;
 		byDay: string[];
@@ -38,7 +44,8 @@
 		/** Earliest allowed end date (the start date). */
 		min?: string;
 		idPrefix: string;
-		invalidUntil?: boolean;
+		error?: string | undefined;
+		untilError?: string | undefined;
 	} = $props();
 
 	const presets = $derived([
@@ -60,7 +67,11 @@
 </script>
 
 <div class="grid gap-2">
-	<div class="flex flex-wrap gap-2">
+	<div
+		id="{idPrefix}-repeat"
+		class="flex flex-wrap gap-2"
+		{...fieldAria(preset === 'weekly' ? undefined : error, `${idPrefix}-repeat`)}
+	>
 		{#each presets as p (p.value)}
 			<button
 				type="button"
@@ -76,7 +87,13 @@
 		{/if}
 	</div>
 	{#if preset === 'weekly'}
-		<div class="flex flex-wrap gap-1" role="group" aria-label={labels.weekly}>
+		<div
+			id="{idPrefix}-days"
+			class="flex flex-wrap gap-1"
+			role="group"
+			aria-label={labels.weekly}
+			{...fieldAria(error, `${idPrefix}-days`)}
+		>
 			{#each days as day (day.code)}
 				<button
 					type="button"
@@ -88,6 +105,9 @@
 				</button>
 			{/each}
 		</div>
+		<FieldError for="{idPrefix}-days" {error} />
+	{:else}
+		<FieldError for="{idPrefix}-repeat" {error} />
 	{/if}
 	{#if preset !== 'none' && preset !== 'custom'}
 		<div class="grid max-w-56 gap-1.5">
@@ -97,8 +117,9 @@
 				type="date"
 				bind:value={until}
 				{min}
-				aria-invalid={invalidUntil ? 'true' : undefined}
+				{...fieldAria(untilError, `${idPrefix}-until`)}
 			/>
+			<FieldError for="{idPrefix}-until" error={untilError} />
 		</div>
 	{/if}
 </div>

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { Textarea } from '@famos/ui/textarea';
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
-	import { MemberChips, RepeatPicker } from '@famos/ui/famos';
+	import {
+		fieldAria,
+		FieldError,
+		type FieldErrors,
+		MemberChips,
+		RepeatPicker,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { onMount } from 'svelte';
@@ -28,7 +34,7 @@
 		idPrefix = 'event',
 	}: {
 		value: EventFormValue;
-		errors?: Record<string, true>;
+		errors?: FieldErrors;
 		uncertain?: readonly string[];
 		idPrefix?: string;
 	} = $props();
@@ -57,7 +63,6 @@
 	});
 
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 	const unsure = (path: string) => uncertain.includes(path);
 
 	const reminderLabel = (minutes: number) => t(reminderKey(value.allDay, minutes));
@@ -86,9 +91,10 @@
 				bind:value={value.title}
 				maxlength={120}
 				required
-				aria-invalid={flag('title')}
+				{...fieldAria(errors.title, id('title'))}
 				autocomplete="off"
 			/>
+			<FieldError for={id('title')} error={errors.title} />
 		</div>
 
 		<div class="grid gap-3">
@@ -109,8 +115,9 @@
 						type="date"
 						bind:value={value.date}
 						required
-						aria-invalid={flag('date')}
+						{...fieldAria(errors.date, id('date'))}
 					/>
+					<FieldError for={id('date')} error={errors.date} />
 				</div>
 				{#if value.allDay}
 					<div class="grid gap-1.5">
@@ -120,8 +127,9 @@
 							type="date"
 							bind:value={value.endDate}
 							min={value.date}
-							aria-invalid={flag('endDate')}
+							{...fieldAria(errors.endDate, id('end-date'))}
 						/>
+						<FieldError for={id('end-date')} error={errors.endDate} />
 					</div>
 				{:else}
 					<div class="grid gap-1.5">
@@ -132,8 +140,9 @@
 							value={value.startTime}
 							onchange={setStart}
 							required
-							aria-invalid={flag('startTime')}
+							{...fieldAria(errors.startTime, id('start'))}
 						/>
+						<FieldError for={id('start')} error={errors.startTime} />
 					</div>
 					<div class="grid gap-1.5">
 						<Label for={id('end')}>{t('field_end')}{@render check('endTime')}</Label>
@@ -141,8 +150,9 @@
 							id={id('end')}
 							type="time"
 							bind:value={value.endTime}
-							aria-invalid={flag('endTime')}
+							{...fieldAria(errors.endTime, id('end'))}
 						/>
+						<FieldError for={id('end')} error={errors.endTime} />
 						{#if endsNextDay(value.startTime, value.endTime)}
 							<small class="text-ink-soft text-xs">{t('ends_next_day')}</small>
 						{/if}
@@ -172,7 +182,8 @@
 				labels={repeatLabels}
 				min={value.date}
 				{idPrefix}
-				invalidUntil={!!errors.until}
+				error={errors.recurrence}
+				untilError={errors.until}
 			/>
 		</fieldset>
 
@@ -182,7 +193,7 @@
 				<select
 					id={id('reminder')}
 					bind:value={value.reminder}
-					aria-invalid={flag('reminder')}
+					{...fieldAria(errors.reminder, id('reminder'))}
 					class="border-input h-9 w-full rounded-md border bg-transparent px-2 text-base md:text-sm"
 				>
 					<option value="none">{t('reminder_none')}</option>
@@ -190,6 +201,7 @@
 						<option value={String(minutes)}>{reminderLabel(minutes)}</option>
 					{/each}
 				</select>
+				<FieldError for={id('reminder')} error={errors.reminder} />
 			</div>
 
 			<div class="grid gap-1.5">

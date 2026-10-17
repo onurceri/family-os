@@ -1,3 +1,4 @@
+import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import type { Recipe, RecipeFields } from '../contract/index.js';
 
 /** The recipe form as the inputs hold it: lists are one entry per line. */
@@ -57,10 +58,11 @@ export function toFields(v: RecipeFormValue): RecipeFields {
 	};
 }
 
-export function validate(v: RecipeFormValue): Record<string, true> {
-	const errors: Record<string, true> = {};
-	if (!v.title.trim()) errors.title = true;
-	if (v.sourceUrl.trim() && !/^https?:\/\/\S+$/i.test(v.sourceUrl.trim())) errors.sourceUrl = true;
+export function validate(v: RecipeFormValue): FieldErrors {
+	const errors: FieldErrors = {};
+	if (!v.title.trim()) errors.title = FIELD_REASON.title;
+	if (v.sourceUrl.trim() && !/^https?:\/\/\S+$/i.test(v.sourceUrl.trim()))
+		errors.sourceUrl = 'kitchen:error_source_url';
 	return errors;
 }
 

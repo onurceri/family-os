@@ -4,6 +4,9 @@
 		Card,
 		Dialog,
 		EmptyLine,
+		FIELD_REASON,
+		type FieldErrors,
+		focusFirstInvalid,
 		type MenuItem,
 		PageHeader,
 		RecordHeader,
@@ -150,7 +153,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!home || Object.keys(validateHome(form)).length) return;
+		if (!home || Object.keys(validateHome(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			report(await updateHome(home.id, toHomeFields(form)), t('saved'));
@@ -191,7 +197,7 @@
 	let addingItem = $state(false);
 	let itemForm = $state<ItemFormValue>(emptyItem());
 	let itemPicks = $state<PresetPicks>(freshPicks(ITEM_PRESETS));
-	let itemErrors = $state<Record<string, true>>({});
+	let itemErrors = $state<FieldErrors>({});
 	let itemBaseline = $state('');
 	let itemFormEl = $state<HTMLFormElement>();
 	const itemDirty = $derived(addingItem && JSON.stringify([itemForm, itemPicks]) !== itemBaseline);
@@ -207,10 +213,14 @@
 		const found = validateItem(itemForm);
 		const chosen = ITEM_PRESETS.filter((p) => itemPicks[p.id]?.on);
 		for (const p of chosen) {
-			if (!/^\d{4}-\d{2}-\d{2}$/.test(itemPicks[p.id]?.date ?? '')) found[`preset_${p.id}`] = true;
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(itemPicks[p.id]?.date ?? ''))
+				found[`preset_${p.id}`] = FIELD_REASON.date;
 		}
 		itemErrors = found;
-		if (!home || Object.keys(found).length) return;
+		if (!home || Object.keys(found).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const { outcome, id } = await addItem({
@@ -251,7 +261,10 @@
 	async function submitService(event: SubmitEvent) {
 		event.preventDefault();
 		serviceShowErrors = true;
-		if (!home || Object.keys(validateService(serviceForm)).length) return;
+		if (!home || Object.keys(validateService(serviceForm)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			const { outcome, id } = await addService({

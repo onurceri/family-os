@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FieldError, type FieldErrors, fieldAria } from '@famos/ui/famos';
 	import { Textarea } from '@famos/ui/textarea';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -10,11 +11,10 @@
 		value = $bindable(),
 		errors = {},
 		idPrefix = 'recipe',
-	}: { value: RecipeFormValue; errors?: Record<string, true>; idPrefix?: string } = $props();
+	}: { value: RecipeFormValue; errors?: FieldErrors; idPrefix?: string } = $props();
 
 	const { t } = useKitchen();
 	const id = (name: string) => `${idPrefix}-${name}`;
-	const flag = (path: string) => (errors[path] ? 'true' : undefined);
 	const area =
 		'border-input focus-visible:border-ring focus-visible:ring-ring/50 w-full rounded-md border bg-transparent px-2.5 py-2 text-base outline-none focus-visible:ring-3 md:text-sm';
 </script>
@@ -28,8 +28,9 @@
 			maxlength={160}
 			required
 			autocomplete="off"
-			aria-invalid={flag('title')}
+			{...fieldAria(errors.title, id('title'))}
 		/>
+		<FieldError for={id('title')} error={errors.title} />
 	</div>
 
 	<div class="grid gap-4 @lg:grid-cols-2">
@@ -78,8 +79,9 @@
 				type="url"
 				inputmode="url"
 				autocomplete="off"
-				aria-invalid={flag('sourceUrl')}
+				{...fieldAria(errors.sourceUrl, id('source'))}
 			/>
+			<FieldError for={id('source')} error={errors.sourceUrl} />
 		</div>
 		<div class="grid gap-1.5">
 			<Label for={id('tags')}>{t('field_tags')}</Label>

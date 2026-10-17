@@ -28,6 +28,7 @@
 	"field_make": "Make",
 	"field_model": "Model",
 	"field_year": "Year",
+	"error_year": "Enter the year with four digits",
 	"field_fuel": "Fuel",
 	"field_vin": "Chassis number (VIN)",
 	"field_members": "Who drives it",

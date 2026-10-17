@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { Card, SwitchRow } from '@famos/ui/famos';
+	import {
+		Card,
+		FIELD_REASON,
+		fieldAria,
+		FieldError,
+		focusFirstInvalid,
+		SwitchRow,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { t } from '#lib/i18n.svelte.js';
@@ -31,6 +38,10 @@
 		form?: HTMLFormElement | undefined;
 	} = $props();
 
+	// The name's reason shows from the first refused submit on, and goes once it is typed.
+	let tried = $state(false);
+	const nameError = $derived(tried && !name.trim() ? FIELD_REASON.name : undefined);
+
 	function toggle(id: string) {
 		capabilities = capabilities.includes(id)
 			? capabilities.filter((c) => c !== id)
@@ -41,8 +52,14 @@
 <form
 	class="grid gap-5"
 	bind:this={form}
+	novalidate
 	onsubmit={(event) => {
 		event.preventDefault();
+		tried = true;
+		if (!name.trim()) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		onsubmit();
 	}}
 >
@@ -54,7 +71,9 @@
 			required
 			maxlength={60}
 			placeholder={t('devices_display_name_placeholder')}
+			{...fieldAria(nameError, `${idPrefix}-name`)}
 		/>
+		<FieldError for="{idPrefix}-name" error={nameError} />
 	</div>
 	<fieldset class="grid gap-2">
 		<legend class="text-ink-soft mb-1 text-xs font-bold tracking-[0.06em] uppercase"

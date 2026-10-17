@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scheduleOfPick } from '@famos/ext-records/contract';
-	import { SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
 	import { PawPrint } from '@lucide/svelte';
 	import { type Pet, type PresetId, presetsFor } from '../contract/index.js';
 	import { addPet, loadPets } from './data.js';
@@ -71,7 +71,8 @@
 		if (!showErrors) return {};
 		const found = validate(form);
 		for (const preset of chosen) {
-			if (!/^\d{4}-\d{2}-\d{2}$/.test(picks[preset.id].date)) found[`preset_${preset.id}`] = true;
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(picks[preset.id].date))
+				found[`preset_${preset.id}`] = FIELD_REASON.date;
 		}
 		return found;
 	});
@@ -90,7 +91,10 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (Object.keys(errors).length || Object.keys(validate(form)).length) return;
+		if (Object.keys(errors).length || Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		if (chosen.some((p) => !picks[p.id].date)) return;
 		busy = true;
 		try {

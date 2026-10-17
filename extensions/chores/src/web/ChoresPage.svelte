@@ -5,6 +5,7 @@
 		ConfirmButton,
 		EmptyState,
 		Fab,
+		focusFirstInvalid,
 		ListDetail,
 		Section,
 		Segmented,
@@ -178,7 +179,10 @@
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (!editing || Object.keys(validate(form)).length) return;
+		if (!editing || Object.keys(validate(form)).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		saving = true;
 		try {
 			const details = toDetails(form);

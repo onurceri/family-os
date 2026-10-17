@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Page as PageFrame, trackWork } from '@famos/ui/famos';
+	import { Button } from '@famos/ui/button';
+	import { EmptyState, Page as PageFrame, trackWork } from '@famos/ui/famos';
 	import type { PageContribution, PageProps } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { ownerOf, pageFor } from '#lib/extensions.js';
+	import { contributions, ownerOf, pageFor } from '#lib/extensions.js';
 	import PageGate from '#lib/PageGate.svelte';
-	import { t } from '#lib/i18n.svelte.js';
+	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 
 	// Extension pages: matched by path (`/vehicles/:id` patterns too), loaded lazily.
@@ -13,8 +14,18 @@
 	const pathname = $derived(page.url.pathname);
 	const found = $derived(pageFor(pathname));
 	// A turned-off extension's pages are gone until it is turned on again.
-	const contribution = $derived(
-		found && !session.disabledExtensions.includes(ownerOf(found.page.id)) ? found : undefined,
+	const owner = $derived(found ? ownerOf(found.page.id) : undefined);
+	const switchedOff = $derived(owner !== undefined && session.disabledExtensions.includes(owner));
+	const contribution = $derived(found && !switchedOff ? found : undefined);
+	// The page of a switched-off extension says so, with its name, instead of "does not exist".
+	const offName = $derived.by(() => {
+		if (!switchedOff || !owner) return '';
+		const labelKey = contributions.extension(owner)?.labelKey;
+		return labelKey ? tDynamic(labelKey) : owner;
+	});
+	// Whoever may switch it on (and open the page where that is done) gets the way there.
+	const maySwitch = $derived(
+		session.can('core.features.manage') && session.can('core.extensions.manage'),
 	);
 
 	// The component of the matched page, loaded once and kept; the page and its params change
@@ -54,6 +65,19 @@
 			<PageGate><shown.Page params={shown.params} /></PageGate>
 		{/key}
 	{/if}
+{:else if switchedOff}
+	<PageGate>
+		<PageFrame template="list">
+			<EmptyState
+				title={t('feature_off_title', { name: offName })}
+				hint={maySwitch ? t('feature_off_hint_manage') : t('feature_off_hint')}
+			>
+				{#if maySwitch}
+					<Button variant="primary" href="/settings/extensions">{t('feature_off_open')}</Button>
+				{/if}
+			</EmptyState>
+		</PageFrame>
+	</PageGate>
 {:else}
 	<PageGate><PageFrame template="list" title={t('not_found')} /></PageGate>
 {/if}
