@@ -1,7 +1,13 @@
 import inbox from '@famos/ext-inbox/server';
 import records from '@famos/ext-records/server';
 import { systemActor } from '@famos/sdk';
-import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing';
+import {
+	createTestKernel,
+	mention,
+	repoTranslate,
+	type TestKernel,
+	understood,
+} from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import home from '../src/server/index.ts';
@@ -14,7 +20,11 @@ let washer: { id: string };
 
 beforeEach(async () => {
 	k = await createTestKernel({ extensions: [records, home, inbox], translate: repoTranslate() });
-	await k.runner.invoke('core.updateFamilySettings', { timeZone: TZ }, systemActor('test'));
+	await k.runner.invoke(
+		'core.updateFamilySettings',
+		{ timeZone: TZ, formatLocale: 'tr-TR' },
+		systemActor('test'),
+	);
 	k.clock.set(epochOf('2026-10-06', '10:00', TZ));
 	admin = await k.member('admin', 'Ayşe');
 	const add = async <T>(actionId: string, input: Record<string, unknown>) => {
@@ -50,41 +60,32 @@ const drafts = (): Promise<{ id: string; actionId: string; input: Record<string,
 const open = (recordId: string) =>
 	k.route('records.listObligations').call({ query: { recordId, status: 'open' } });
 
-describe('home records in the prompt and in proposals', () => {
-	it('lists homes and things by handle, never an id, a serial or an address', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
+describe('home records in the prompt and in mentions', () => {
+	it('lists homes and things by name, never an id, a handle, a serial or an address', async () => {
+		k.llm.respond(understood());
 		await share('Hello');
 		const system = k.llm.calls[0]?.system ?? '';
-		expect(system).toContain('- Our flat (home:1): rented');
+		expect(system).toContain('- Our flat (rented)');
 		expect(system).toContain(
-			'- Washing machine (home_item:1): Bosch WAX32, in Our flat, warranty until 2027-09-20',
+			'- Washing machine (Bosch WAX32, in Our flat, warranty until 2027-09-20)',
 		);
-		expect(system).toContain('Warranty ends (Washing machine) (obligation:1): due 2027-09-20');
+		expect(system).toContain('- Warranty ends (Washing machine) (due 2027-09-20');
 		expect(JSON.stringify(k.llm.calls)).not.toMatch(
-			/home_[0-9a-f]{8}-|home_item_[0-9a-f]{8}-|SN-SECRET|Moda Cd/,
+			/home_[0-9a-f]{8}-|home_item_[0-9a-f]{8}-|home:1|SN-SECRET|Moda Cd/,
 		);
 	});
 
 	it('turns a receipt into an addItem draft with the warranty date that, approved, creates the duty', async () => {
-		k.llm.respond({
-			summary: 'Fridge receipt',
-			proposals: [
-				{
-					action: 'home.addItem',
-					input: {
-						homeId: 'home:1',
-						homeName: 'Our flat',
-						name: 'Fridge',
-						brand: 'Samsung',
-						model: 'RB38',
-						purchasedOn: '2026-10-05',
-						warrantyUntil: '2028-10-05',
-					},
-					dateText: '05.10.2026',
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(
+			understood([
+				mention('home.item', {
+					title: 'Buzdolabı',
+					lines: ['Samsung', 'RB38'],
+					date: { text: '05.10.2026', numeric: '05.10.2026' },
+					amount: '24',
+				}),
+			]),
+		);
 		await share('Samsung RB38 buzdolabı, fatura tarihi 05.10.2026, 2 yıl garanti');
 		const [draft] = await drafts();
 		expect(draft?.actionId).toBe('home.addItem');
@@ -92,7 +93,7 @@ describe('home records in the prompt and in proposals', () => {
 
 		await k.runner.approveDraft(draft?.id ?? '', admin.actor);
 		const [fridge] = (await k.route('home.listItems').call({ query: {} })).filter(
-			(i: { name: string }) => i.name === 'Fridge',
+			(i: { name: string }) => i.name === 'Buzdolabı',
 		);
 		expect(fridge).toMatchObject({ homeId: flat.id, warrantyUntil: '2028-10-05' });
 		expect(await open(fridge.id)).toMatchObject([
@@ -101,21 +102,30 @@ describe('home records in the prompt and in proposals', () => {
 	});
 
 	it('turns "warranty extended" into an updateItem draft that moves the warranty duty', async () => {
-		k.llm.respond({
-			summary: 'Extended warranty',
-			proposals: [
-				{
-					action: 'home.updateItem',
-					input: { id: 'home_item:1', itemName: 'Washing machine', warrantyUntil: '2029-09-20' },
-					dateText: '20.09.2029',
-					confidence: 0.85,
-				},
-			],
-		});
-		await share('Uzatılmış garanti belgesi: 20.09.2029 tarihine kadar');
+		k.llm.respond(
+			understood([
+				mention('home.item', {
+					target: 'çamaşır makinesi',
+					endDate: { text: '20.09.2029', numeric: '20.09.2029' },
+				}),
+			]),
+		);
+		await share('Washing machine: uzatılmış garanti belgesi, 20.09.2029 tarihine kadar');
 		const [draft] = await drafts();
-		expect(draft?.input).toMatchObject({ id: washer.id, warrantyUntil: '2029-09-20' });
-		await k.runner.approveDraft(draft?.id ?? '', admin.actor);
+		expect(draft).toBeUndefined();
+
+		k.llm.respond(
+			understood([
+				mention('home.item', {
+					target: 'Washing machine',
+					endDate: { text: '20.09.2029', numeric: '20.09.2029' },
+				}),
+			]),
+		);
+		await share('Washing machine: uzatılmış garanti belgesi, 20.09.2029 tarihine kadar');
+		const [update] = await drafts();
+		expect(update?.input).toMatchObject({ id: washer.id, warrantyUntil: '2029-09-20' });
+		await k.runner.approveDraft(update?.id ?? '', admin.actor);
 		expect(await open(washer.id)).toMatchObject([{ dueDate: '2029-09-20' }]);
 		// Nothing else about the thing changed.
 		expect(await k.route('home.getItem').call({ params: { itemId: washer.id } })).toMatchObject({
@@ -124,19 +134,9 @@ describe('home records in the prompt and in proposals', () => {
 		});
 	});
 
-	it('drops a proposal for a home it never listed', async () => {
-		k.llm.respond({
-			summary: 'x',
-			proposals: [
-				{ action: 'home.addItem', input: { homeId: 'home:9', name: 'Oven' }, confidence: 1 },
-				{
-					action: 'home.addItem',
-					input: { homeId: 'home_00000000-0000-7000-8000-000000000042', name: 'Oven' },
-					confidence: 1,
-				},
-			],
-		});
-		await share('Oven receipt');
+	it('leaves out a thing for a home the household does not have', async () => {
+		k.llm.respond(understood([mention('home.item', { title: 'Oven', about: 'the beach house' })]));
+		await share('Oven receipt for the beach house');
 		expect(await drafts()).toHaveLength(0);
 	});
 
@@ -146,10 +146,10 @@ describe('home records in the prompt and in proposals', () => {
 			{ extensionId: 'home', access: 'off' },
 			admin.actor,
 		);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood());
 		await share('Hello');
 		const system = k.llm.calls[0]?.system ?? '';
-		expect(system).not.toMatch(/home\.addItem|home:1|home_item:1|Washing machine|Our flat/);
+		expect(system).not.toMatch(/home\.item|- Washing machine|- Our flat/);
 		expect(k.llm.calls[0]?.areas).not.toContain('home');
 	});
 });

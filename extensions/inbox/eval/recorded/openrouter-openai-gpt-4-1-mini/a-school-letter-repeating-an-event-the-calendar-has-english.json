@@ -1,0 +1,85 @@
+{
+	"case": "A school letter repeating an event the calendar has (English)",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Year 7 class trip and Parents' evening update",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Year 7 class trip to Postojna Cave",
+						"date": {
+							"text": "Thursday 29 October",
+							"day": 29,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "07:50",
+						"timeText": "7:50",
+						"endTime": "16:30",
+						"place": "Postojna Cave",
+						"notes": "Bus leaves school, bring packed lunch, sturdy shoes, signed permission slip"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send packed lunch for Year 7 trip",
+						"date": {
+							"text": "by Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						}
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send sturdy shoes for Year 7 trip",
+						"date": {
+							"text": "by Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						}
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send signed permission slip for Year 7 trip",
+						"date": {
+							"text": "by Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						}
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay Year 7 trip fee",
+						"date": {
+							"text": "by 23 October",
+							"day": 23,
+							"month": 10
+						},
+						"notes": "Fee: 14 EUR, through school e-office"
+					},
+					{
+						"kind": "calendar.eventChange",
+						"target": "Parents' evening",
+						"date": {
+							"text": "20 October",
+							"day": 20,
+							"month": 10,
+							"weekday": 2
+						},
+						"time": "18:00",
+						"timeText": "18:00",
+						"place": "School hall"
+					}
+				]
+			}
+		}
+	]
+}

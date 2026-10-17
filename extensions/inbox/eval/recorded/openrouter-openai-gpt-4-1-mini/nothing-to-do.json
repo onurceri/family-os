@@ -1,0 +1,16 @@
+{
+	"case": "Nothing to do",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Günaydın mesajı",
+				"intent": "nothing",
+				"mentions": []
+			}
+		}
+	]
+}

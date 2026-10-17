@@ -45,7 +45,7 @@ async function startModel() {
 		req.on('end', () => {
 			res.setHeader('content-type', 'application/json');
 			if (req.url?.endsWith('/models')) return res.end(JSON.stringify({ data: [{ id: 'fake' }] }));
-			const answer = answers.shift() ?? { summary: 'Nothing to do', proposals: [] };
+			const answer = answers.shift() ?? { label: 'Nothing to do', intent: 'nothing', mentions: [] };
 			res.end(
 				JSON.stringify({
 					id: 'fake',
@@ -299,14 +299,13 @@ describe('sharing from Telegram', () => {
 		await connect();
 		await link(55);
 		const answer = {
-			summary: 'Christmas Eve dinner',
-			proposals: [
+			label: 'Christmas Eve dinner',
+			intent: 'actionable',
+			mentions: [
 				{
-					action: 'calendar.createEvent',
-					input: event('Christmas Eve dinner'),
-					dateText: '24 December',
-					confidence: 0.9,
-					uncertainFields: [],
+					kind: 'calendar.event',
+					title: 'Christmas Eve dinner',
+					date: { text: '24 December', day: 24, month: 12 },
 				},
 			],
 		};
@@ -376,16 +375,17 @@ describe('sharing from Telegram', () => {
 		});
 		expect(made.body.status).toBe('applied');
 		const galaId = made.body.output.id as string;
-		// The real model output for the coach's message: a new event, not a change.
+		// A model's reading of the coach's message: a new event, not a change.
 		model.answers.push({
-			summary: 'Regional gala moved',
-			proposals: [
+			label: 'Regional gala moved',
+			intent: 'actionable',
+			mentions: [
 				{
-					action: 'calendar.createEvent',
-					input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
-					dateText: 'Sat 14 Nov',
-					confidence: 0.9,
-					uncertainFields: [],
+					kind: 'calendar.event',
+					title: 'Regional gala',
+					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					time: '09:00',
+					timeText: '09:00',
 				},
 			],
 		});

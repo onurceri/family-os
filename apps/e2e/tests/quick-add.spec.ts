@@ -1,4 +1,4 @@
-import { answer, proposal } from '../support/drafts.ts';
+import { answer, mention, on } from '../support/drafts.ts';
 import {
 	addCard,
 	api,
@@ -30,10 +30,7 @@ test('a model that cannot answer leaves a failed item with an explanation and a 
 
 	const date = nextWeek();
 	model.answer(
-		answer(
-			'A zoo trip',
-			proposal('calendar.createEvent', { title: 'Zoo trip', allDay: true, date }),
-		),
+		answer('A zoo trip', mention('calendar.event', { title: 'Zoo trip', date: on(date) })),
 	);
 	await shareText(page, `The zoo trip is on ${date}`);
 

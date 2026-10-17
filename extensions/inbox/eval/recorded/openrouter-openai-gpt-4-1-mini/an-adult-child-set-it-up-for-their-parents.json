@@ -1,0 +1,39 @@
+{
+	"case": "An adult child set it up for their parents",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Babamın kardiyoloji kontrolü",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Kardiyoloji kontrolü",
+						"people": [
+							"Ali",
+							"Fatma"
+						],
+						"date": {
+							"text": "21 Ekim Çarşamba",
+							"day": 21,
+							"month": 10,
+							"weekday": 3
+						},
+						"time": "10:30",
+						"timeText": "10:30",
+						"place": "Şehir Hastanesi"
+					},
+					{
+						"kind": "lists.task",
+						"title": "İlaçları eczaneden al",
+						"notes": "Babamın ilaçları"
+					}
+				]
+			}
+		}
+	]
+}

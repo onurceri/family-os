@@ -1,0 +1,48 @@
+{
+	"case": "UK council and school notice: DD/MM dates and Year 5",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Council notice and Parents' evening",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "green bin collection",
+						"date": {
+							"text": "09/10",
+							"day": 9,
+							"month": 10
+						},
+						"unsure": [
+							"date"
+						]
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Year 5 parents' evening",
+						"people": [
+							"Oliver"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "15/10",
+							"day": 15,
+							"month": 10
+						},
+						"time": "17:30",
+						"timeText": "5.30pm",
+						"notes": "Book a slot with the class teacher",
+						"unsure": [
+							"date"
+						]
+					}
+				]
+			}
+		}
+	]
+}

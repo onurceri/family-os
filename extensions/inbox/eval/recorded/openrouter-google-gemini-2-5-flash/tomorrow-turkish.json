@@ -1,0 +1,28 @@
+{
+	"case": "Tomorrow (Turkish)",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Su tesisatçısı ziyareti",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Su tesisatçısı",
+						"date": {
+							"text": "Yarın",
+							"inDays": 1
+						},
+						"time": "09:00",
+						"timeText": "9'da",
+						"notes": "Evde biri olmalı"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { answer, proposal } from './drafts.ts';
+import { answer, mention, on } from './drafts.ts';
 import type { FakeModel } from './fake-model.ts';
 import { api, FAMILY_TIME_ZONE, nextWeek, shareText } from './fixtures.ts';
 import { createMember } from './members.ts';
@@ -43,14 +43,13 @@ export async function seedSampleFamily(page: Page, model: FakeModel): Promise<Sa
 	model.answer(
 		answer(
 			'Class newsletter',
-			proposal(
-				'calendar.createEvent',
-				{ title: 'Parent meeting', date: nextWeek(), startTime: '17:00' },
-				{
-					uncertainFields: ['startTime'],
-				},
-			),
-			proposal('lists.addTask', { title: 'Sign the trip form', dueDate: day(2) }),
+			mention('calendar.event', {
+				title: 'Parent meeting',
+				date: on(nextWeek()),
+				time: '17:00',
+				unsure: ['time'],
+			}),
+			mention('lists.task', { title: 'Sign the trip form', date: on(day(2)) }),
 		),
 	);
 	await shareText(

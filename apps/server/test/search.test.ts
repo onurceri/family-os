@@ -210,7 +210,11 @@ describe('inbox', () => {
 	it('indexes what was shared for the person who shared it, and forgets a dismissed item', async () => {
 		await enable();
 		const other = await k.member('supervised', 'Elif');
-		k.llm.respond({ summary: 'The school asks for a signed trip permission slip', proposals: [] });
+		k.llm.respond({
+			label: 'The school asks for a signed trip permission slip',
+			intent: 'actionable',
+			mentions: [],
+		});
 		const item = await share({ text: 'Please sign the zoo permission slip' });
 		await k.worker.drain();
 		expect((await find('zoo permission slip')).map((h) => h.id)).toEqual([item.id]);

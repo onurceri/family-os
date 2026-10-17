@@ -1,10 +1,10 @@
 import lists from '@famos/ext-lists/server';
 import { systemActor } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, mention, type TestKernel, understood } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import inbox from '../src/server/index.ts';
-import { namesRecordBadly } from '../src/server/process.ts';
+import { namesRecordBadly } from '../src/server/understand/pipeline.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -59,42 +59,36 @@ const item = async () =>
 	)[0];
 
 describe('open shopping items and tasks in the prompt', () => {
-	it('lists them by handle with their list, and never an id', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
+	it('lists them by name with their list, and never a handle or an id', async () => {
+		k.llm.respond(understood([], { label: 'x' }));
 		await read();
 		const system = k.llm.calls[0]?.system ?? '';
 		expect(system).toContain('Shopping items still to buy:');
-		expect(system).toContain('- E27 light bulbs (shop_item:1): 4, list: Hardware store');
+		expect(system).toContain('- E27 light bulbs (4, list: Hardware store)');
 		expect(system).toContain('Open tasks:');
-		expect(system).toContain('- Pay the fee (task:1)');
-		expect(JSON.stringify(k.llm.calls)).not.toMatch(/shop_item_[0-9a-f]{8}|task_[0-9a-f]{8}/);
+		expect(system).toMatch(/- Pay the fee(\n|$)/);
+		expect(JSON.stringify(k.llm.calls)).not.toMatch(/shop_item|task:1|task_[0-9a-f]{8}/);
 	});
 
 	it('leaves a ticked-off item out', async () => {
 		await k.runner.invoke('lists.checkShoppingItem', { id: bulbs.id, done: true }, admin.actor);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read();
-		expect(k.llm.calls[0]?.system).not.toContain('E27 light bulbs (');
+		expect(k.llm.calls[0]?.system).not.toContain('- E27 light bulbs');
 	});
 });
 
 describe('ticking something off from a shared message', () => {
+	const bought = (target: string, place?: string) =>
+		understood([mention('lists.bought', { target, ...(place && { place }) })]);
+
 	it('turns "got the light bulbs already" into a draft that ticks the listed item', async () => {
-		k.llm.respond({
-			summary: 'Light bulbs bought',
-			proposals: [
-				{
-					action: 'lists.checkShoppingItem',
-					input: { id: 'shop_item:1', done: true, label: 'E27 light bulbs' },
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(bought('E27 light bulbs', 'Hardware store'));
 		await read();
 		const [draft] = await drafts();
 		expect(draft).toMatchObject({
 			actionId: 'lists.checkShoppingItem',
-			input: { id: bulbs.id, done: true },
+			input: { id: bulbs.id, done: true, label: 'E27 light bulbs' },
 		});
 		expect(await item()).toMatchObject({ proposals: 1, skipped: 0, skippedUnknown: 0 });
 
@@ -107,18 +101,8 @@ describe('ticking something off from a shared message', () => {
 	});
 
 	it('leaves out a tick-off for an item that is not listed, and says it pointed at nothing real', async () => {
-		// What the model did before it was shown the lists: it made up a handle.
-		k.llm.respond({
-			summary: 'Light bulbs bought',
-			proposals: [
-				{
-					action: 'lists.checkShoppingItem',
-					input: { id: 'shop_item:7', done: true, label: 'E27 light bulbs' },
-					confidence: 0.6,
-				},
-			],
-		});
-		await read();
+		k.llm.respond(bought('garden hose'));
+		await read('Got the garden hose already');
 		expect(await drafts()).toEqual([]);
 		expect(await item()).toMatchObject({ proposals: 0, skipped: 1, skippedUnknown: 1 });
 	});
@@ -133,53 +117,30 @@ describe('ticking something off from a shared message', () => {
 			admin.actor,
 		);
 		if (add.status !== 'applied') throw new Error('expected the add');
-		// Real model output: the text names the picture wire, the model ticked off the hooks.
-		k.llm.respond({
-			summary: 'Picture wire bought',
-			proposals: [
-				{
-					action: 'lists.checkShoppingItem',
-					input: { id: 'shop_item:2', done: true, label: 'Picture hooks' },
-					confidence: 0.9,
-				},
-			],
-		});
+		// The text names the picture wire; a model once ticked off the hooks.
+		k.llm.respond(bought('Picture hooks'));
 		await read('Got the picture wire already, tick it off the Hardware store list');
-		expect(k.llm.calls[0]?.system).toContain('Picture hooks (shop_item:2)');
+		expect(k.llm.calls[0]?.system).toContain('- Picture hooks');
 		expect(await drafts()).toEqual([]);
 		expect(await item()).toMatchObject({ proposals: 0, skipped: 1, skippedUnknown: 1 });
 	});
 
 	it('keeps a tick-off whose item the text names in other order and plural', async () => {
-		k.llm.respond({
-			summary: 'Light bulbs bought',
-			proposals: [
-				{
-					action: 'lists.checkShoppingItem',
-					input: { id: 'shop_item:1', done: true, label: 'E27 light bulbs' },
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(bought('light bulb E27'));
 		await read('Got the light bulb E27 already');
 		expect(await drafts()).toHaveLength(1);
 	});
 
 	it('tells an unlisted item from an incomplete suggestion', async () => {
-		k.llm.respond({
-			summary: 'Two things',
-			proposals: [
-				// Not on the lists: a made-up id of a kind the lists use.
-				{
-					action: 'lists.completeTask',
-					input: { id: 'task_01990000-0000-7000-8000-000000000009', label: 'Pay the fee' },
-					confidence: 0.6,
-				},
+		k.llm.respond(
+			understood([
+				// Not on the lists.
+				mention('lists.taskDone', { target: 'the library fine' }),
 				// Incomplete: no title.
-				{ action: 'lists.addTask', input: {}, confidence: 0.6 },
-			],
-		});
-		await read('The fee is paid');
+				mention('lists.task', { notes: 'The fee is paid' }),
+			]),
+		);
+		await read('The library fine is paid. The fee is paid');
 		expect(await item()).toMatchObject({ proposals: 0, skipped: 2, skippedUnknown: 1 });
 	});
 });

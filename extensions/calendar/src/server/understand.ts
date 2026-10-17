@@ -115,6 +115,98 @@ function tagsOf(words: readonly string[] | undefined, known: readonly { name: st
 	return out;
 }
 
+/**
+ * A new event from a mention: its day and time read, untimed as all day for a person to check,
+ * and refused when the calendar has it already that day (and time).
+ */
+async function newEvent(
+	ctx: MentionContext,
+	known: readonly { name: string }[],
+	index: number,
+	mention: Mention,
+): Promise<Resolution> {
+	const title = cut(mention.title ?? '', TITLE_MAX);
+	if (title === '') {
+		return refuse('incomplete', mention.target ?? null, [index]);
+	}
+	const uncertain = new Set(unsureFields(mention, EVENT_FIELDS));
+	const time = ctx.time(mention);
+	const day = mention.date ? ctx.day(mention.date, 'future', time?.time) : null;
+	let date = day?.date ?? null;
+	let doubt = day !== null && !day.certain;
+	let recurrence: unknown;
+	if (mention.repeat) {
+		const repeat = mention.repeat;
+		const weekdays =
+			repeat.every === 'week'
+				? (repeat.weekdays ?? (mention.date?.weekday ? [mention.date.weekday] : []))
+				: [];
+		date ??= weekdays.length > 0 ? firstOfWeekdays(ctx, weekdays, time?.time) : null;
+		// "Every Wednesday" names no week, but a series simply starts on the coming one.
+		if (day?.why === 'weekday_only' && weekdays.length > 0) doubt = false;
+		if (date !== null) {
+			const until = repeat.until ? endNamed(ctx, repeat.until) : null;
+			const rule = repeatRule({ ...repeat, weekdays }, date, until?.date);
+			if (!rule.exact || (repeat.until && !until?.certain)) uncertain.add('recurrence');
+			date = rule.start;
+			recurrence = rule.recurrence;
+		}
+	}
+	if (date === null) {
+		return refuse('incomplete', title, [index]);
+	}
+	if (doubt) uncertain.add('date');
+	const allDay = time === null;
+	// A day without a time is an all-day event whose time a person is asked to check.
+	if (allDay) {
+		uncertain.add('startTime');
+		uncertain.add('allDay');
+	} else if (!time.certain) uncertain.add('startTime');
+	const endTime = allDay ? null : clockOf(mention.endTime);
+	let endDate: string | null = null;
+	if (allDay && mention.endDate) {
+		const last = ctx.day(mention.endDate, 'future');
+		if (last && last.date > date) endDate = last.date;
+		if (!last?.certain || last.date < date) uncertain.add('endDate');
+	}
+	const people = peopleNamed(ctx, mention);
+	if (!people.certain) uncertain.add('memberIds');
+
+	// The same event already on the calendar that very day (and time): leave it out.
+	const sameDay = await occurrencesBetween(ctx.db, date, date, ctx.timeZone);
+	const there = sameDay.some((o) => {
+		if (!sameEvent(title, o.title)) return false;
+		const at = startOf(o, ctx.timeZone);
+		return at.date === date && (allDay || at.time === time?.time);
+	});
+	if (there) {
+		return refuse('already', title, [index]);
+	}
+	const tags = tagsOf(mention.tags, known);
+	const place = mention.place ? cut(mention.place, PLACE_MAX) : '';
+	const notes = mention.notes ? cut(mention.notes, NOTES_MAX) : '';
+	return {
+		propose: {
+			actionId: 'calendar.createEvent',
+			input: {
+				title,
+				...(time ? { startTime: time.time } : { allDay: true }),
+				date,
+				...(endDate && { endDate }),
+				...(endTime && endTime !== time?.time && { endTime }),
+				memberIds: people.ids,
+				...(place && { location: place }),
+				...(notes && { notes }),
+				...(recurrence !== undefined && { recurrence }),
+				...(tags.length > 0 && { tags }),
+			},
+			subject: title,
+			uncertain: [...uncertain],
+			from: [index],
+		},
+	};
+}
+
 export const event = defineMentionKind({
 	id: 'calendar.event',
 	describe:
@@ -203,95 +295,43 @@ export const event = defineMentionKind({
 			],
 			why: '"My" is the person who shared it; an event for everyone names nobody.',
 		},
+		{
+			text: "Class 3A's trip to the science museum is tomorrow. Children should be at school by 8:30 and will be back around 15:00.",
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Science museum trip',
+					people: ['Ivy'],
+					peopleGuessed: true,
+					date: { text: 'tomorrow', inDays: 1 },
+					time: '08:30',
+					timeText: '8:30',
+					endTime: '15:00',
+					place: 'Science museum',
+				},
+			],
+			why: "Nobody is named, but Ivy's description in the family list says class 3A, so she is chosen as a guess. It starts when they must be there and ends when they are back.",
+		},
+		{
+			text: 'My mum has her eye test on Monday 19 October at 11:00, and my brother is taking her',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Eye test',
+					people: ['Rosa', 'Leo'],
+					peopleGuessed: true,
+					date: { text: 'Monday 19 October', day: 19, month: 10, weekday: 1 },
+					time: '11:00',
+					timeText: '11:00',
+				},
+			],
+			why: 'The family list describes Rosa as the mother and Leo as the brother of the person who shared it: people are always given by their names from the list, never as "mum" or "brother".',
+		},
 	],
 	async resolve(ctx, mentions) {
 		const known = await events(ctx.db).selectFrom('calendar_tags').select('name').execute();
 		const out: Resolution[] = [];
-		for (const { index, mention } of mentions) {
-			const title = cut(mention.title ?? '', TITLE_MAX);
-			if (title === '') {
-				out.push(refuse('incomplete', mention.target ?? null, [index]));
-				continue;
-			}
-			const uncertain = new Set(unsureFields(mention, EVENT_FIELDS));
-			const time = ctx.time(mention);
-			const day = mention.date ? ctx.day(mention.date, 'future', time?.time) : null;
-			let date = day?.date ?? null;
-			let doubt = day !== null && !day.certain;
-			let recurrence: unknown;
-			if (mention.repeat) {
-				const repeat = mention.repeat;
-				const weekdays =
-					repeat.every === 'week'
-						? (repeat.weekdays ?? (mention.date?.weekday ? [mention.date.weekday] : []))
-						: [];
-				date ??= weekdays.length > 0 ? firstOfWeekdays(ctx, weekdays, time?.time) : null;
-				// "Every Wednesday" names no week, but a series simply starts on the coming one.
-				if (day?.why === 'weekday_only' && weekdays.length > 0) doubt = false;
-				if (date !== null) {
-					const until = repeat.until ? endNamed(ctx, repeat.until) : null;
-					const rule = repeatRule({ ...repeat, weekdays }, date, until?.date);
-					if (!rule.exact || (repeat.until && !until?.certain)) uncertain.add('recurrence');
-					date = rule.start;
-					recurrence = rule.recurrence;
-				}
-			}
-			if (date === null) {
-				out.push(refuse('incomplete', title, [index]));
-				continue;
-			}
-			if (doubt) uncertain.add('date');
-			const allDay = time === null;
-			// A day without a time is an all-day event whose time a person is asked to check.
-			if (allDay) {
-				uncertain.add('startTime');
-				uncertain.add('allDay');
-			} else if (!time.certain) uncertain.add('startTime');
-			const endTime = allDay ? null : clockOf(mention.endTime);
-			let endDate: string | null = null;
-			if (allDay && mention.endDate) {
-				const last = ctx.day(mention.endDate, 'future');
-				if (last && last.date > date) endDate = last.date;
-				if (!last?.certain || last.date < date) uncertain.add('endDate');
-			}
-			const people = peopleNamed(ctx, mention);
-			if (!people.certain) uncertain.add('memberIds');
-
-			// The same event already on the calendar that very day (and time): leave it out.
-			const sameDay = await occurrencesBetween(ctx.db, date, date, ctx.timeZone);
-			const there = sameDay.some((o) => {
-				if (!sameEvent(title, o.title)) return false;
-				const at = startOf(o, ctx.timeZone);
-				return at.date === date && (allDay || at.time === time?.time);
-			});
-			if (there) {
-				out.push(refuse('already', title, [index]));
-				continue;
-			}
-			const tags = tagsOf(mention.tags, known);
-			const place = mention.place ? cut(mention.place, PLACE_MAX) : '';
-			const notes = mention.notes ? cut(mention.notes, NOTES_MAX) : '';
-			out.push({
-				propose: {
-					actionId: 'calendar.createEvent',
-					input: {
-						title,
-						...(time ? { startTime: time.time } : { allDay: true }),
-						date,
-						...(endDate && { endDate }),
-						...(endTime && endTime !== time?.time && { endTime }),
-						memberIds: people.ids,
-						...(place && { location: place }),
-						...(notes && { notes }),
-						...(recurrence !== undefined && { recurrence }),
-						...(tags.length > 0 && { tags }),
-					},
-					subject: title,
-					uncertain: [...uncertain],
-					from: [index],
-				},
-			});
-		}
+		for (const { index, mention } of mentions) out.push(await newEvent(ctx, known, index, mention));
 		return out;
 	},
 });
@@ -342,6 +382,18 @@ const CHANGE_FIELDS = {
 	place: 'location',
 } as const;
 
+/** A change of an event the calendar lacks, read as that event at its new day and time. */
+const asNewEvent = (mention: Mention, words: string): Mention => ({
+	kind: 'calendar.event',
+	title: words,
+	...(mention.date && { date: mention.date }),
+	...(mention.time && { time: mention.time }),
+	...(mention.timeText && { timeText: mention.timeText }),
+	...(mention.endTime && { endTime: mention.endTime }),
+	...(mention.place && { place: mention.place }),
+	...(mention.unsure && { unsure: mention.unsure }),
+});
+
 export const eventChange = defineMentionKind({
 	id: 'calendar.eventChange',
 	describe:
@@ -353,7 +405,7 @@ export const eventChange = defineMentionKind({
 		endTime: 'The new end time, only when written',
 		place: 'The new place, only when it changes',
 	},
-	actions: ['calendar.changeEvent'],
+	actions: ['calendar.changeEvent', 'calendar.createEvent'],
 	knownFrom: [aiContextEvents.id],
 	limit: CHANGE_LIMIT,
 	examples: [
@@ -385,6 +437,7 @@ export const eventChange = defineMentionKind({
 	],
 	async resolve(ctx, mentions) {
 		const out: Resolution[] = [];
+		let known: { name: string }[] | undefined;
 		for (const { index, mention } of mentions) {
 			const words = targetWords(mention);
 			if (words === '') {
@@ -406,7 +459,14 @@ export const eventChange = defineMentionKind({
 			const reach = day && day.date > to ? addDays(day.date, SAME_EVENT_DAYS) : to;
 			const found = eventNamed(ctx, await eventsBetween(ctx, ctx.today, reach), words, null, index);
 			if ('refusal' in found) {
-				out.push(found.refusal);
+				// News that something the calendar does not have moved to a day ("the bin
+				// collection moves to 09/10") still says when it now is: that is a new event, which
+				// the person checks. Without a day there is nothing to add.
+				const unknown = 'refuse' in found.refusal && found.refusal.refuse.reason === 'unknown';
+				if (unknown && day) {
+					known ??= await events(ctx.db).selectFrom('calendar_tags').select('name').execute();
+					out.push(await newEvent(ctx, known, index, asNewEvent(mention, words)));
+				} else out.push(found.refusal);
 				continue;
 			}
 			const { dates, label } = found.event;

@@ -1,4 +1,4 @@
-import { answer, proposal } from '../support/drafts.ts';
+import { answer, mention, on } from '../support/drafts.ts';
 import {
 	addCard,
 	draftCard,
@@ -90,10 +90,7 @@ test('a wrong PIN is refused; a PIN session is a member session without admin se
 });
 
 const zooTrip = (date: string) =>
-	answer(
-		'Zoo trip',
-		proposal('calendar.createEvent', { title: 'Zoo trip', allDay: true, date }, { dateText: date }),
-	);
+	answer('Zoo trip', mention('calendar.event', { title: 'Zoo trip', date: on(date) }));
 
 test('a supervised member signs in with a PIN on a family device; changes wait for approval', async ({
 	page,

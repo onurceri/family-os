@@ -1,0 +1,16 @@
+{
+	"case": "Chatter with nothing to add",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Weather",
+				"intent": "nothing",
+				"mentions": []
+			}
+		}
+	]
+}

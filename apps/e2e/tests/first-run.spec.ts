@@ -1,3 +1,4 @@
+import { answer, mention, on } from '../support/drafts.ts';
 import {
 	ADMIN,
 	addCard,
@@ -62,18 +63,9 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 
 	// Share a school notice; the (fake) model proposes an event.
 	const date = nextWeek();
-	model.answer({
-		summary: 'Zoo trip next week',
-		proposals: [
-			{
-				action: 'calendar.createEvent',
-				input: { title: 'Zoo trip', allDay: true, date },
-				dateText: date,
-				confidence: 0.9,
-				uncertainFields: [],
-			},
-		],
-	});
+	model.answer(
+		answer('Zoo trip next week', mention('calendar.event', { title: 'Zoo trip', date: on(date) })),
+	);
 	await shareText(page, `Class 4-B goes to the zoo on ${date}.`);
 	const card = draftCard(page, 'Zoo trip');
 	await expect(card).toBeVisible();

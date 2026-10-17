@@ -1,0 +1,22 @@
+{
+	"case": "Nothing to tick off when the item is not listed (English)",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Light bulbs bought",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "E27 light bulbs",
+						"place": "Hardware store"
+					}
+				]
+			}
+		}
+	]
+}

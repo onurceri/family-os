@@ -1,0 +1,22 @@
+{
+	"case": "Ticks off a listed shopping item (English)",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "E27 light bulbs bought",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "E27 light bulbs",
+						"place": "Hardware store"
+					}
+				]
+			}
+		}
+	]
+}

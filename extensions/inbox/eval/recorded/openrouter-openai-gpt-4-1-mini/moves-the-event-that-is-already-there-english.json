@@ -1,0 +1,29 @@
+{
+	"case": "Moves the event that is already there (English)",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Regional gala time change",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Regional gala",
+						"date": {
+							"text": "Sat 14 Nov",
+							"day": 14,
+							"month": 11,
+							"weekday": 6
+						},
+						"time": "09:00",
+						"timeText": "09:00"
+					}
+				]
+			}
+		}
+	]
+}

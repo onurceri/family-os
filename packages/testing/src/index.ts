@@ -545,6 +545,6 @@ export {
 	parseEvalModels,
 	slugOf,
 } from './llm-from-env.ts';
-export { resolveMentions, SHARE_AI } from './mentions.ts';
+export { mention, resolveMentions, SHARE_AI, understood } from './mentions.ts';
 export { defineTestExtension } from './test-extension.ts';
 export { repoTranslate, repoVocabulary } from './translate.ts';

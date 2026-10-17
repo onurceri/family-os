@@ -1,0 +1,47 @@
+{
+	"case": "US school email: MM/DD dates and 4pm",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Picture day and field trip permission slip",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Picture day",
+						"people": [
+							"Elena"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Friday 10/9",
+							"day": 9,
+							"month": 10,
+							"weekday": 5
+						},
+						"time": "16:00",
+						"timeText": "4pm",
+						"place": "Gym"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Return signed permission slip for field trip",
+						"people": [
+							"Dana"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "by 10/8",
+							"day": 8,
+							"month": 10
+						}
+					}
+				]
+			}
+		}
+	]
+}

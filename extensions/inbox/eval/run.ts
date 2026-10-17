@@ -3,7 +3,7 @@ import lists from '@famos/ext-lists/server';
 import records from '@famos/ext-records/server';
 import { type LlmPort, systemActor } from '@famos/sdk';
 import { type CaseVerdict, createTestKernel, runEval } from '@famos/testing';
-import { epochOf } from '@famos/time';
+import { defaultHourCycle, defaultWeekStart, epochOf, formatLocaleForLanguage } from '@famos/time';
 import inbox from '../src/server/index.ts';
 import { PROMPT_VERSION } from '../src/server/process.ts';
 import { CASES, DEFAULT_FAMILY, type Draft, type Listed, type Members } from './cases.ts';
@@ -23,9 +23,17 @@ async function runCase(c: (typeof CASES)[number], llm: LlmPort): Promise<CaseVer
 		llm,
 	});
 	try {
+		const format = c.formatLocale ?? formatLocaleForLanguage(c.locale ?? 'en');
 		await k.runner.invoke(
 			'core.updateFamilySettings',
-			{ timeZone: c.timeZone ?? 'UTC', locale: c.locale ?? 'en' },
+			{
+				timeZone: c.timeZone ?? 'UTC',
+				locale: c.locale ?? 'en',
+				// As setup would: the region format and what follows from it.
+				formatLocale: format,
+				weekStart: defaultWeekStart(format),
+				hourCycle: defaultHourCycle(format),
+			},
 			systemActor('eval'),
 		);
 		k.clock.set(epochOf('2026-10-06', '10:00', c.timeZone ?? 'UTC'));

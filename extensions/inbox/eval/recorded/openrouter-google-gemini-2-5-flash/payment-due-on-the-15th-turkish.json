@@ -1,0 +1,26 @@
+{
+	"case": "Payment due \"on the 15th\" (Turkish)",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Apartman aidatı",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Apartman aidatı öde",
+						"date": {
+							"text": "ayın 15'i",
+							"day": 15
+						},
+						"notes": "Tutar: 1200 TL"
+					}
+				]
+			}
+		}
+	]
+}

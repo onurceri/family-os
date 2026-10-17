@@ -1,6 +1,6 @@
 import records from '@famos/ext-records/server';
 import { systemActor, type UploadedFile } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, type TestKernel, understood } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -151,7 +151,7 @@ describe('filing an item that is already in the Inbox', () => {
 	});
 
 	it('files an item the AI already read', async () => {
-		k.llm.respond({ summary: 'A policy.', proposals: [] });
+		k.llm.respond(understood([], { label: 'A policy.' }));
 		const item = await create({ text: 'See attached' }, [upload('policy.pdf', 'POLICY')]);
 		await k.worker.drain();
 		expect((await items())[0]?.status).toBe('extracted');

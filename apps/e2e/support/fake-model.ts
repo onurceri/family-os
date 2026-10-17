@@ -1,18 +1,14 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-/** What the Inbox expects from a model: a summary and proposals for registered actions. */
+/**
+ * What Quick add expects from a model: a label, what the item is, and the things it states as
+ * mentions of the kinds the installed extensions offer (names as names, days as words).
+ */
 export interface ModelAnswer {
-	summary: string;
-	/** What the model made of the item; actionable when left out. */
-	kind?: 'actionable' | 'nothing' | 'question';
-	proposals: {
-		action: string;
-		input: Record<string, unknown>;
-		dateText?: string;
-		confidence: number;
-		uncertainFields: string[];
-	}[];
+	label: string;
+	intent: 'actionable' | 'nothing' | 'question';
+	mentions: ({ kind: string } & Record<string, unknown>)[];
 }
 
 /** One round trip of the assistant's tool loop: call a tool, or answer in text. */
@@ -71,7 +67,7 @@ export async function startFakeModel() {
 				return void streamRound(res, rounds.shift() ?? { text: 'OK' });
 			}
 			prompts.push(JSON.stringify(body.messages ?? []));
-			const answer = queue.shift() ?? { summary: 'Nothing to do', proposals: [] };
+			const answer = queue.shift() ?? { label: 'Nothing to do', intent: 'nothing', mentions: [] };
 			res.end(
 				JSON.stringify({
 					id: 'fake',

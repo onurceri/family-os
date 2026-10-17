@@ -1,0 +1,16 @@
+{
+	"case": "Chatter with nothing to add",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Lovely weather",
+				"intent": "nothing",
+				"mentions": []
+			}
+		}
+	]
+}

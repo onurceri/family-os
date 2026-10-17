@@ -1,7 +1,7 @@
 import inbox from '@famos/ext-inbox/server';
 import records from '@famos/ext-records/server';
 import { systemActor } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, mention, type TestKernel, understood } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import vehicles from '../src/server/index.ts';
@@ -13,7 +13,11 @@ let clio: { id: string };
 
 beforeEach(async () => {
 	k = await createTestKernel({ extensions: [records, vehicles, inbox] });
-	await k.runner.invoke('core.updateFamilySettings', { timeZone: TZ }, systemActor('test'));
+	await k.runner.invoke(
+		'core.updateFamilySettings',
+		{ timeZone: TZ, formatLocale: 'tr-TR' },
+		systemActor('test'),
+	);
 	k.clock.set(epochOf('2026-10-06', '10:00', TZ));
 	admin = await k.member('admin', 'Ayşe');
 	const add = async (input: Record<string, unknown>) => {
@@ -57,16 +61,15 @@ const seenByModel = () =>
 	);
 
 describe('household records in the prompt', () => {
-	it('lists vehicles and open obligations by handle, and never an id', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
+	it('lists vehicles and open obligations by name, and never an id or a handle', async () => {
+		k.llm.respond(understood());
 		await read();
 		const system = k.llm.calls[0]?.system ?? '';
-		expect(system).toContain('Household records');
 		expect(system).toContain('Vehicles:');
-		expect(system).toContain('- Clio (vehicle:1): 34 ABC 123, petrol');
-		expect(system).toContain('- Golf (vehicle:2): 06 XYZ 99, diesel');
-		expect(system).toContain('- Car insurance (Clio) (obligation:1): due 2026-11-01, every year');
-		expect(seenByModel()).not.toMatch(/vehicle_[0-9a-f]{8}|obligation_[0-9a-f]{8}/);
+		expect(system).toContain('- Clio (34 ABC 123, petrol)');
+		expect(system).toContain('- Golf (06 XYZ 99, diesel)');
+		expect(system).toContain('- Car insurance (Clio) (due 2026-11-01, every year)');
+		expect(seenByModel()).not.toMatch(/vehicle_[0-9a-f]{8}|obligation_[0-9a-f]{8}|vehicle:1/);
 		expect(k.llm.calls[0]?.areas).toEqual(expect.arrayContaining(['inbox', 'vehicles', 'records']));
 	});
 
@@ -76,44 +79,35 @@ describe('household records in the prompt', () => {
 			{ extensionId: 'vehicles', access: 'off' },
 			admin.actor,
 		);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood());
 		await read();
 		const system = k.llm.calls[0]?.system ?? '';
 		expect(system).not.toContain('Vehicles:');
-		expect(system).not.toContain('Clio (');
-		expect(system).not.toContain('vehicles.addLog');
-		expect(system).not.toContain('(vehicle:');
+		expect(system).not.toContain('- Clio');
+		expect(system).not.toContain('vehicles.log');
 		// Records is still open, but a vehicle's duties belong to the vehicles area: names, dates
 		// and all stay out of the prompt while it is locked.
-		expect(system).not.toMatch(/34 ABC|2026-11-01|\(obligation:\d\)|\(vehicle:\d\)/);
-		expect(system).not.toContain('Household records');
-		expect(system).toContain('records.addObligation');
+		expect(system).not.toMatch(/34 ABC|2026-11-01|Car insurance \(Clio\)/);
+		expect(system).toContain('### records.duty');
 		expect(k.llm.calls[0]?.areas).not.toContain('vehicles');
 	});
 });
 
-describe('proposals that name a record', () => {
-	it('turns "car insurance renewed until 2027-03-12" into a draft that moves the due date', async () => {
-		k.llm.respond({
-			summary: 'Car insurance renewed',
-			proposals: [
-				{
-					action: 'records.completeObligation',
-					input: {
-						id: 'obligation:1',
-						doneOn: '2026-10-06',
-						nextDueDate: '2027-03-12',
-						label: 'Car insurance (Clio)',
-					},
-					dateText: '12.03.2027',
-					confidence: 0.9,
-				},
-			],
-		});
+describe('mentions that name a record', () => {
+	it('turns "car insurance renewed until 12.03.2027" into a draft that moves the due date', async () => {
+		k.llm.respond(
+			understood([
+				mention('records.dutyDone', {
+					target: 'car insurance',
+					date: { text: 'renewed', inDays: 0 },
+					endDate: { text: '12.03.2027', numeric: '12.03.2027' },
+				}),
+			]),
+		);
 		await read();
 		const [draft] = await drafts();
 		expect(draft?.actionId).toBe('records.completeObligation');
-		expect(draft?.input).toMatchObject({ nextDueDate: '2027-03-12' });
+		expect(draft?.input).toMatchObject({ nextDueDate: '2027-03-12', doneOn: '2026-10-06' });
 		expect(String(draft?.input.id)).toMatch(/^obligation_/);
 
 		await k.runner.approveDraft(draft?.id ?? '', admin.actor);
@@ -125,19 +119,10 @@ describe('proposals that name a record', () => {
 		]);
 	});
 
-	it('skips a completion the app refuses, and still reads the item', async () => {
-		// Real model output for a renewal notice: the duty marked done with no day it was done.
-		// Records refuses it; that used to fail the whole item instead of skipping one suggestion.
-		k.llm.respond({
-			summary: 'Car insurance renewal',
-			proposals: [
-				{
-					action: 'records.completeObligation',
-					input: { id: 'obligation:1', dueDate: '2026-11-01', label: 'Car insurance (Clio)' },
-					confidence: 0.8,
-				},
-			],
-		});
+	it('leaves out a renewal notice read as done, and still reads the item', async () => {
+		// A model once marked the duty done for a renewal notice, with no day it was done and no
+		// new date: nothing says it was done, so it is not.
+		k.llm.respond(understood([mention('records.dutyDone', { target: 'car insurance' })]));
 		await read('Your car insurance is due for renewal on 1 November. Renew before then.');
 		expect(await drafts()).toHaveLength(0);
 		const [item] = (await k.route('inbox.listItems').call({
@@ -147,19 +132,18 @@ describe('proposals that name a record', () => {
 		expect(item).toMatchObject({ status: 'extracted', proposals: 0, skipped: 1 });
 	});
 
-	it('maps the vehicle of a service entry too', async () => {
-		k.llm.respond({
-			summary: 'Servis faturası',
-			proposals: [
-				{
-					action: 'vehicles.addLog',
-					input: { vehicleId: 'vehicle:1', doneOn: '2026-10-01', notes: 'Yağ değişimi' },
-					dateText: '1 Ekim',
-					confidence: 0.9,
-				},
-			],
-		});
-		await read('Servis faturası 1 Ekim 2026, yağ değişimi');
+	it('finds the vehicle of a service entry too', async () => {
+		k.llm.respond(
+			understood([
+				mention('vehicles.log', {
+					about: 'Clio',
+					title: 'Yağ değişimi',
+					variant: 'service',
+					date: { text: '1 Ekim 2026', day: 1, month: 10, year: 2026 },
+				}),
+			]),
+		);
+		await read('Clio servis faturası 1 Ekim 2026, yağ değişimi');
 		const [draft] = await drafts();
 		expect(draft?.input).toMatchObject({ vehicleId: clio.id, doneOn: '2026-10-01' });
 	});

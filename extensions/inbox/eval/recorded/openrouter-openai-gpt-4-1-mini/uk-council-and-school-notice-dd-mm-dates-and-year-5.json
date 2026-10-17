@@ -1,0 +1,38 @@
+{
+	"case": "UK council and school notice: DD/MM dates and Year 5",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Bin collection change and parents' evening",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Green bin collection",
+						"date": {
+							"text": "09/10",
+							"day": 9,
+							"month": 10
+						}
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Year 5 parents' evening",
+						"date": {
+							"text": "15/10",
+							"day": 15,
+							"month": 10
+						},
+						"time": "17:30",
+						"timeText": "5.30pm",
+						"notes": "Please book a slot with the class teacher"
+					}
+				]
+			}
+		}
+	]
+}

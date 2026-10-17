@@ -1,3 +1,4 @@
+import { answer, mention, on } from '../support/drafts.ts';
 import {
 	addCard,
 	draftCard,
@@ -42,29 +43,23 @@ test('a vehicle with its insurance: a shared renewal moves the due date, and pap
 	const vehicleUrl = page.url();
 	expect(vehicleUrl).toMatch(/\/vehicles\/vehicle_/);
 
-	// Sharing the renewal: the model sees the vehicle and its insurance by handle, never by id.
-	model.answer({
-		summary: 'Comprehensive insurance renewed',
-		proposals: [
-			{
-				action: 'records.completeObligation',
-				input: {
-					id: 'obligation:1',
-					doneOn: today(),
-					nextDueDate: renewedUntil,
-					label: 'Comprehensive insurance (Clio)',
-				},
-				dateText: renewedUntil,
-				confidence: 0.9,
-				uncertainFields: [],
-			},
-		],
-	});
+	// Sharing the renewal: the model sees the vehicle and its insurance by name, never by id.
+	model.answer(
+		answer(
+			'Comprehensive insurance renewed',
+			mention('records.dutyDone', {
+				target: 'Comprehensive insurance',
+				about: 'Clio',
+				date: on(today()),
+				endDate: on(renewedUntil),
+			}),
+		),
+	);
 	await shareText(page, `Your insurance for 34 ABC 123 is renewed until ${renewedUntil}.`);
 	await expect.poll(() => model.prompts.length).toBe(1);
-	expect(model.prompts[0]).toContain('Clio (vehicle:1)');
-	expect(model.prompts[0]).toContain('Comprehensive insurance (Clio) (obligation:1)');
-	expect(model.prompts[0]).not.toMatch(/vehicle_[0-9a-f]{8}-/);
+	expect(model.prompts[0]).toContain('- Clio (');
+	expect(model.prompts[0]).toContain('- Comprehensive insurance (Clio) (');
+	expect(model.prompts[0]).not.toMatch(/vehicle_[0-9a-f]{8}-|vehicle:1/);
 
 	const card = draftCard(page, 'Comprehensive insurance (Clio): Mark as done');
 	await addCard(card);

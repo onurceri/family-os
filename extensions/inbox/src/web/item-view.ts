@@ -125,7 +125,13 @@ export interface SkipLine {
 }
 
 /** The order the reasons are told in: what the person can act on first. */
-const SKIP_ORDER: readonly SkipReason[] = ['already', 'unknown', 'not_allowed', 'incomplete'];
+const SKIP_ORDER: readonly SkipReason[] = [
+	'already',
+	'unknown',
+	'ambiguous',
+	'not_allowed',
+	'incomplete',
+];
 
 /**
  * The proposals left out, one line per reason, naming them when each one's subject is known (the

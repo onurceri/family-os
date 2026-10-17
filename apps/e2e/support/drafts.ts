@@ -1,35 +1,23 @@
 import type { ModelAnswer } from './fake-model.ts';
 
-type Proposal = ModelAnswer['proposals'][number];
+type Mention = ModelAnswer['mentions'][number];
 
-/** One proposal for a registered action, as the fake model's extraction answer carries it. */
-export function proposal(
-	actionId: string,
-	input: Record<string, unknown>,
-	opts: { dateText?: string; confidence?: number; uncertainFields?: string[] } = {},
-): Proposal {
-	// A proposal with a date must quote the words that give the day (dateText); the date itself is
-	// the simplest quote.
-	const dateText =
-		opts.dateText ??
-		Object.values(input).find(
-			(v): v is string => typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v),
-		);
-	return {
-		action: actionId,
-		input,
-		...(dateText !== undefined && { dateText }),
-		confidence: opts.confidence ?? 0.9,
-		uncertainFields: opts.uncertainFields ?? [],
-	};
+/** One thing the fake model read from a shared item: a kind and its slots. */
+export function mention(kind: string, slots: Omit<Mention, 'kind'> = {}): Mention {
+	return { kind, ...slots };
 }
 
-/** What `model.answer(...)` expects: a summary and the proposals made from the shared item. */
-export function answer(summary: string, ...proposals: Proposal[]): ModelAnswer {
-	return { summary, proposals };
+/** A day as the model quotes it: an ISO date written in the message, read as written. */
+export function on(date: string): { text: string; numeric: string } {
+	return { text: date, numeric: date };
 }
 
-/** The model found a question for the assistant: a label and no proposals. */
-export function questionAnswer(summary: string): ModelAnswer {
-	return { summary, kind: 'question', proposals: [] };
+/** What `model.answer(...)` expects: a label and the mentions read from the shared item. */
+export function answer(label: string, ...mentions: Mention[]): ModelAnswer {
+	return { label, intent: mentions.length > 0 ? 'actionable' : 'nothing', mentions };
+}
+
+/** The model found a question for the assistant: a label and no mentions. */
+export function questionAnswer(label: string): ModelAnswer {
+	return { label, intent: 'question', mentions: [] };
 }

@@ -1,0 +1,45 @@
+{
+	"case": "A couple, no children",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Selin'in diş randevusu ve akşam yemeği",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Diş randevusu",
+						"people": [
+							"Selin"
+						],
+						"date": {
+							"text": "8 Ekim Perşembe",
+							"day": 8,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "15:00",
+						"timeText": "15:00"
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Annemleri yemeğe götürüyorum",
+						"forMe": true,
+						"date": {
+							"text": "9 Ekim Cuma",
+							"day": 9,
+							"month": 10,
+							"weekday": 5
+						},
+						"time": "19:30",
+						"timeText": "akşam 19:30"
+					}
+				]
+			}
+		}
+	]
+}

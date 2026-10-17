@@ -1,0 +1,34 @@
+{
+	"case": "A cancelled date of a weekly activity, in a messy message (English)",
+	"model": "openrouter / openai/gpt-4.1-mini",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Football cancelled and shopping",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Football training",
+						"date": {
+							"text": "thursday",
+							"weekday": 4
+						}
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Ball"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Ice cream",
+						"variant": "frozen"
+					}
+				]
+			}
+		}
+	]
+}

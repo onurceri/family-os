@@ -4,9 +4,11 @@ import { z } from 'zod';
 import {
 	createTestKernel,
 	defineTestExtension,
+	mention,
 	resolveMentions,
 	SHARE_AI,
 	type TestKernel,
+	understood,
 } from '../src/index.ts';
 
 // A reminder kind whose resolver reads the day and the people, as an extension's would.
@@ -118,4 +120,16 @@ it('resolves mentions as the AI and checks days against the words of the install
 		},
 	);
 	expect(drafted.status).toBe('drafted');
+});
+
+it('writes a model answer of mentions for the fake model', () => {
+	expect(understood()).toEqual({ label: 'Shared item', intent: 'nothing', mentions: [] });
+	expect(
+		understood([mention('reminders.reminder', { title: 'Water the plants' })], { label: 'Plants' }),
+	).toEqual({
+		label: 'Plants',
+		intent: 'actionable',
+		mentions: [{ kind: 'reminders.reminder', title: 'Water the plants' }],
+	});
+	expect(understood([], { intent: 'question' }).intent).toBe('question');
 });

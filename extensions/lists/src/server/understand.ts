@@ -318,12 +318,12 @@ export const task = defineMentionKind({
 			],
 		},
 		{
-			text: 'Swim club: the autumn term fee is due by Friday. Please pay at the front desk.',
+			text: 'Swim club: the autumn term fee is due on the 15th. Please pay at the front desk.',
 			mentions: [
 				{
 					kind: 'lists.task',
 					title: 'Pay the swim club term fee',
-					date: { text: 'Friday', weekday: 5 },
+					date: { text: 'on the 15th', day: 15 },
 					notes: 'Pay at the front desk',
 				},
 			],

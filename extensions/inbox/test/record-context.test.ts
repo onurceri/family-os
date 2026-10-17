@@ -1,6 +1,20 @@
 import { randomUUID } from 'node:crypto';
-import { AiContextSchema, defineAction, defineCapability, systemActor } from '@famos/sdk';
-import { createTestKernel, defineTestExtension, type TestKernel } from '@famos/testing';
+import {
+	AiContextSchema,
+	defineAction,
+	defineCapability,
+	defineMentionKind,
+	type MentionRefusal,
+	type Resolution,
+	systemActor,
+} from '@famos/sdk';
+import {
+	createTestKernel,
+	defineTestExtension,
+	mention,
+	type TestKernel,
+	understood,
+} from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -8,9 +22,9 @@ import inbox from '../src/server/index.ts';
 
 /**
  * How Quick add shares an area's records with the model, judged on a made-up area: what any
- * extension's `ai.context` gives is listed by handle, an area that is locked, local-only or
- * switched off tells the model nothing, a long area is cut, and handles in proposals are mapped
- * back to ids (the record's kind, name and page filled in) while invented ones are dropped.
+ * extension's `ai.context` gives is listed by name, an area that is locked, local-only or
+ * switched off tells the model nothing, a long area is cut, and the kinds' resolvers find the
+ * records the model names among those listed, so no id ever passes through the model.
  */
 const TZ = 'Europe/Istanbul';
 let plants: { id: string; label: string; details?: string; url?: string }[] = [];
@@ -34,10 +48,78 @@ const contextAction = defineAction({
 		return { kind: 'plant', label: 'Plants', items: plants };
 	},
 });
+/** A plant the `about` words name among the listed records, or the refusal why not. */
+const plantOf = (
+	ctx: Parameters<Parameters<typeof defineMentionKind>[0]['resolve']>[0],
+	about: string | undefined,
+	index: number,
+) => {
+	const found = ctx.record(about, ['plant']);
+	if ('found' in found) return found.found;
+	const reason = 'ambiguous' in found ? 'ambiguous' : 'unknown';
+	return { refuse: { reason, subject: about ?? null, from: [index] } } as {
+		refuse: MentionRefusal;
+	};
+};
+const noteKind = defineMentionKind({
+	id: 'garden.note',
+	describe: 'Something to remember about a plant.',
+	slots: { about: 'The plant', title: 'What to remember' },
+	actions: ['garden.addNote'],
+	knownFrom: [contextAction.id],
+	examples: [
+		{
+			text: 'The olive tree must come inside before frost',
+			mentions: [{ kind: 'garden.note', about: 'Olive tree', title: 'Bring inside before frost' }],
+		},
+	],
+	async resolve(ctx, mentions) {
+		return mentions.map(({ index, mention: m }): Resolution => {
+			const plant = plantOf(ctx, m.about, index);
+			if ('refuse' in plant) return plant;
+			return {
+				propose: {
+					actionId: 'garden.addNote',
+					input: {
+						recordId: plant.id,
+						recordKind: plant.kind,
+						recordName: plant.label,
+						...(plant.url && { recordUrl: plant.url }),
+						title: m.title ?? '',
+					},
+					subject: m.title ?? null,
+					from: [index],
+				},
+			};
+		});
+	},
+});
+const wateredKind = defineMentionKind({
+	id: 'garden.watered',
+	describe: 'News that a plant was watered.',
+	slots: { about: 'The plant' },
+	actions: ['garden.water'],
+	knownFrom: [contextAction.id],
+	examples: [{ text: 'Watered the fern', mentions: [{ kind: 'garden.watered', about: 'Fern' }] }],
+	async resolve(ctx, mentions) {
+		return mentions.map(({ index, mention: m }): Resolution => {
+			const plant = plantOf(ctx, m.about, index);
+			if ('refuse' in plant) return plant;
+			return {
+				propose: {
+					actionId: 'garden.water',
+					input: { plantId: plant.id, on: ctx.today },
+					subject: m.about ?? null,
+					from: [index],
+				},
+			};
+		});
+	},
+});
 const garden = defineTestExtension({
 	id: 'garden',
 	capabilities: [gardenView, gardenEdit],
-	ai: { context: contextAction.id },
+	ai: { context: contextAction.id, kinds: [noteKind, wateredKind] },
 	actions: [
 		contextAction,
 		defineAction({
@@ -111,45 +193,44 @@ const setArea = (access: 'off' | 'local' | 'any') =>
 	k.runner.invoke('core.setAiAreaAccess', { extensionId: 'garden', access }, admin.actor);
 
 describe('an area’s records in the prompt', () => {
-	it('lists them by handle with their details, and never an id', async () => {
-		k.llm.respond({ summary: 'x', proposals: [] });
+	it('lists them by name with their details, and never an id or a handle', async () => {
+		k.llm.respond(understood([], { label: 'x' }));
 		await read();
 		const system = k.llm.calls[0]?.system ?? '';
-		expect(system).toContain('Household records');
-		expect(system).toContain('Plants:');
-		expect(system).toContain('- Fern (plant:1): north window');
-		expect(system).toContain('- Olive tree (plant:2): balcony');
+		expect(system).toContain('## Known names');
+		expect(system).toContain('Plants:\n- Fern (north window)\n- Olive tree (balcony)');
+		expect(system).toMatch(/### garden\.note\n[\s\S]*Known names: Plants/);
 		const seen = JSON.stringify(
 			k.llm.calls.map(({ system, prompt, jsonSchema }) => ({ system, prompt, jsonSchema })),
 		);
-		expect(seen).not.toMatch(/plant_[0-9a-f]{8}/);
+		expect(seen).not.toMatch(/plant_[0-9a-f]{8}|plant:\d/);
 		expect(k.llm.calls[0]?.areas).toEqual(expect.arrayContaining(['inbox', 'garden']));
 	});
 
-	it('leaves a locked area out: no records, no actions, no area, until it is opened again', async () => {
+	it('leaves a locked area out: no records, no kinds, no area, until it is opened again', async () => {
 		await setArea('off');
-		k.llm.respond({ summary: 'x', proposals: [] });
 		await read();
-		// Nothing is left to propose, so the model is not asked at all.
+		// Nothing is left to read, so the model is not asked at all.
 		expect(k.llm.calls).toHaveLength(0);
 		expect(await lastItem()).toMatchObject({ proposals: 0 });
 
 		await setArea('any');
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read('Again');
-		expect(k.llm.calls[0]?.system).toContain('Fern (plant:1)');
-		expect(k.llm.calls[0]?.system).toContain('garden.addNote');
+		expect(k.llm.calls[0]?.system).toContain('- Fern (north window)');
+		expect(k.llm.calls[0]?.system).toContain('### garden.note');
 	});
 
 	it('leaves out a local-only area for a remote model, and shows it for a local one', async () => {
 		await setArea('local');
-		k.llm.respond({ summary: 'x', proposals: [] });
 		await read();
 		expect(k.llm.calls).toHaveLength(0);
 		k.llm.privacy.local = true;
-		k.llm.respond({ summary: 'x', proposals: [] });
-		await read('One more note');
-		expect(k.llm.calls[0]?.system).toContain('Fern (plant:1)');
+		k.llm.respond(understood([mention('garden.watered', { about: 'fern' })]));
+		await read('Watered the fern again');
+		expect(k.llm.calls[0]?.system).toContain('- Fern (north window)');
+		// The local model's mentions are resolved too.
+		expect((await drafts()).map((d) => d.actionId)).toEqual(['garden.water']);
 	});
 
 	it('shares nothing when the area is off for people too (feature switched off)', async () => {
@@ -158,48 +239,38 @@ describe('an area’s records in the prompt', () => {
 			{ extensionId: 'garden', enabled: false },
 			admin.actor,
 		);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read();
-		expect(JSON.stringify(k.llm.calls)).not.toContain('(plant:');
+		expect(JSON.stringify(k.llm.calls)).not.toContain('Fern');
 	});
 
 	it('gives at most 50 items per area', async () => {
 		for (let i = 0; i < 52; i++) plant(`Pot ${i + 1}`);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read('A note');
 		const system = k.llm.calls[0]?.system ?? '';
 		// Fern and Olive tree plus 48 of the 52 more.
-		expect(system).toContain('(plant:50)');
-		expect(system).not.toContain('(plant:51)');
+		expect(system).toMatch(/- Pot 48(\n|$)/);
+		expect(system).not.toContain('- Pot 49\n');
 	});
 
 	it('puts the items the text names first when an area is longer than fits', async () => {
 		for (let i = 0; i < 60; i++) plant(`Pot ${i + 1}`);
 		plant('Lemon tree');
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read('The lemon tree needs repotting.');
-		expect(k.llm.calls[0]?.system).toContain('Lemon tree (plant:');
+		expect(k.llm.calls[0]?.system).toContain('Plants:\n- Lemon tree');
 	});
 });
 
-describe('proposals that name a record', () => {
-	it('maps a handle to its id and fills the record’s kind, name and page', async () => {
-		k.llm.respond({
-			summary: 'Note',
-			proposals: [
-				{
-					action: 'garden.addNote',
-					input: {
-						recordId: 'plant:2',
-						recordKind: 'tree', // wrong on purpose: the area knows better
-						recordName: 'Whatever',
-						title: 'Bring inside before frost',
-					},
-					confidence: 0.8,
-				},
-			],
-		});
-		await read();
+describe('mentions that name a record', () => {
+	it('finds the record among those listed and fills its id, kind, name and page', async () => {
+		k.llm.respond(
+			understood([
+				mention('garden.note', { about: 'the olive tree', title: 'Bring inside before frost' }),
+			]),
+		);
+		await read('The olive tree must come inside before frost');
 		const [draft] = await drafts();
 		expect(draft?.input).toMatchObject({
 			recordId: olive,
@@ -210,54 +281,26 @@ describe('proposals that name a record', () => {
 		});
 	});
 
-	it('maps a handle in any other field too', async () => {
-		k.llm.respond({
-			summary: 'Watered',
-			proposals: [
-				{
-					action: 'garden.water',
-					input: { plantId: 'plant:1', on: '2026-10-06' },
-					confidence: 0.9,
-				},
-			],
-		});
-		await read();
-		const [draft] = await drafts();
-		expect(draft?.input).toMatchObject({ plantId: fern, on: '2026-10-06' });
+	it('refuses a record that is not listed, or one that is no longer there', async () => {
+		k.llm.respond(
+			understood([
+				mention('garden.watered', { about: 'cactus' }),
+				mention('garden.watered', { about: 'fern' }),
+			]),
+		);
+		await read('Watered the cactus and the fern');
+		expect((await drafts()).map((d) => d.input)).toEqual([{ plantId: fern, on: '2026-10-06' }]);
+		expect(await lastItem()).toMatchObject({ status: 'extracted', proposals: 1, skipped: 1 });
 	});
 
-	it('drops proposals for records it never listed', async () => {
-		const invented = `plant_${randomUUID()}`;
-		const note = { recordKind: 'plant', recordName: 'X', title: 'A' };
-		k.llm.respond({
-			summary: 'x',
-			proposals: [
-				{ action: 'garden.addNote', input: { ...note, recordId: 'plant:9' }, confidence: 1 },
-				{ action: 'garden.addNote', input: { ...note, recordId: invented }, confidence: 1 },
-				{
-					action: 'garden.water',
-					input: { plantId: invented, on: '2026-10-01' },
-					confidence: 1,
-				},
-			],
-		});
-		await read();
-		expect(await drafts()).toHaveLength(0);
-		expect(await lastItem()).toMatchObject({ status: 'extracted', proposals: 0, skipped: 3 });
-	});
-
-	it('skips a proposal the action refuses, and still reads the item', async () => {
-		k.llm.respond({
-			summary: 'Note',
-			proposals: [
-				{ action: 'garden.addNote', input: { recordId: 'plant:1', title: '' }, confidence: 0.8 },
-				{
-					action: 'garden.water',
-					input: { plantId: 'plant:1', on: '2026-10-06' },
-					confidence: 0.9,
-				},
-			],
-		});
+	it('skips a suggestion the action refuses, and still reads the item', async () => {
+		k.llm.respond(
+			understood([
+				// No title: the action refuses the input.
+				mention('garden.note', { about: 'fern' }),
+				mention('garden.watered', { about: 'fern' }),
+			]),
+		);
 		await read();
 		expect((await drafts()).map((d) => d.actionId)).toEqual(['garden.water']);
 		expect(await lastItem()).toMatchObject({ status: 'extracted', proposals: 1, skipped: 1 });

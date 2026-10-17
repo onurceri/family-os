@@ -1,0 +1,47 @@
+{
+	"case": "Shopping message with imperial units",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Pancake ingredients",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Flour",
+						"quantity": "2 lb",
+						"variant": "pantry"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Milk",
+						"quantity": "1 gallon",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Eggs",
+						"quantity": "a dozen",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Butter",
+						"quantity": "12 oz",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Pumpkin puree",
+						"quantity": "1 can",
+						"variant": "pantry"
+					}
+				]
+			}
+		}
+	]
+}

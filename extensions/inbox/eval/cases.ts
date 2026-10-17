@@ -46,6 +46,11 @@ export interface Case {
 	family?: Person[];
 	/** The family time zone (IANA); UTC by default. */
 	timeZone?: string;
+	/**
+	 * The family's region format (`en-GB`), which says how it writes all-numeric dates; by
+	 * default the language's most likely one.
+	 */
+	formatLocale?: string;
 	/** The family language; English by default. */
 	locale?: string;
 	/** Duties the household records already hold (the records area is on only when given). */
@@ -405,6 +410,7 @@ Ms. Carter`,
 	{
 		name: 'UK council and school notice: DD/MM dates and Year 5',
 		timeZone: 'Europe/London',
+		formatLocale: 'en-GB',
 		family: [
 			{ name: 'Priya', roleId: 'admin' },
 			{ name: 'Tom', roleId: 'member' },
@@ -433,6 +439,7 @@ Year 5 parents' evening is on 15/10 at 5.30pm. Please book a slot with the class
 	{
 		name: 'European appointment letter: DD.MM. dates and 24-hour times',
 		timeZone: 'Europe/Berlin',
+		formatLocale: 'de-DE',
 		family: [
 			{ name: 'Katrin', roleId: 'admin' },
 			{ name: 'Jonas', roleId: 'member' },

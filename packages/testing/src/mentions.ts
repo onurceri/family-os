@@ -1,6 +1,26 @@
 import type { Kernel } from '@famos/core';
 import type { Actor, IndexedMention, Mention, MentionEnv, Resolution } from '@famos/sdk';
 
+/** A mention of `kind`, as a model writes it in an answer. */
+export function mention(kind: string, fields: Omit<Partial<Mention>, 'kind'> = {}): Mention {
+	return { kind, ...fields };
+}
+
+/**
+ * A model's answer to Quick add, for `k.llm.respond(...)`: the label, the intent (actionable
+ * unless said) and the mentions.
+ */
+export function understood(
+	mentions: readonly Mention[] = [],
+	options: { label?: string; intent?: 'actionable' | 'question' | 'nothing' } = {},
+): { label: string; intent: string; mentions: Mention[] } {
+	return {
+		label: options.label ?? 'Shared item',
+		intent: options.intent ?? (mentions.length > 0 ? 'actionable' : 'nothing'),
+		mentions: [...mentions],
+	};
+}
+
 /** The AI as Quick add runs it: reading something shared, for nobody in particular. */
 export const SHARE_AI: Actor = { kind: 'ai', mode: 'share', source: 'inbox' };
 

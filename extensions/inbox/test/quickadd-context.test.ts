@@ -2,12 +2,12 @@ import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
 import records from '@famos/ext-records/server';
 import { systemActor } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, mention, type TestKernel, understood } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { InboxItem } from '../src/contract/index.ts';
 import inbox from '../src/server/index.ts';
-import { rankByMention, unnamedMemberFields } from '../src/server/process.ts';
+import { rankByMention } from '../src/server/process.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -29,7 +29,9 @@ const read = async (text: string) => {
 	});
 	await k.worker.drain();
 };
-const drafts = (): Promise<{ id: string; actionId: string; input: Record<string, unknown> }[]> =>
+const drafts = (): Promise<
+	{ id: string; actionId: string; input: Record<string, unknown>; uncertainFields: string[] }[]
+> =>
 	k.route('core.listDrafts').call({
 		query: { sourceKind: 'inbox', limit: 50 },
 		actor: admin.actor,
@@ -71,18 +73,10 @@ describe('what the model is shown of long lists', () => {
 		await add(['Avocado']);
 		await add(Array.from({ length: 39 }, (_, i) => `Pantry staple ${i + 1}`));
 		await add(Array.from({ length: 38 }, (_, i) => `Fridge staple ${i + 1}`));
-		k.llm.respond({
-			summary: 'Avocado bought',
-			proposals: [
-				{
-					action: 'lists.checkShoppingItem',
-					input: { id: 'shop_item:1', done: true, label: 'Avocado' },
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(understood([mention('lists.bought', { target: 'avocado' })]));
 		await read('Bought the avocado, tick it off');
-		expect(system()).toContain('- Avocado (shop_item:1)');
+		expect(system()).toMatch(/\n- Avocado( \(|\n)/);
+		expect(system()).not.toContain('shop_item');
 		const [draft] = await drafts();
 		expect(draft).toMatchObject({ actionId: 'lists.checkShoppingItem', input: { done: true } });
 		expect(await item()).toMatchObject([{ proposals: 1, skipped: 0 }]);
@@ -92,9 +86,9 @@ describe('what the model is shown of long lists', () => {
 		await k.runner.invoke('lists.addTask', { title: 'Renew the library card' }, admin.actor);
 		for (let i = 0; i < 60; i++)
 			await k.runner.invoke('lists.addTask', { title: `Chore number ${i + 1}` }, admin.actor);
-		k.llm.respond({ summary: 'x', proposals: [] });
+		k.llm.respond(understood([], { label: 'x' }));
 		await read('I renewed the library card');
-		expect(system()).toContain('- Renew the library card (task:1)');
+		expect(system()).toMatch(/\n- Renew the library card( \(|\n)/);
 	});
 });
 
@@ -113,26 +107,18 @@ describe('an unlisted record', () => {
 			},
 			admin.actor,
 		);
-		k.llm.respond({
-			summary: 'Vet check',
-			proposals: [
-				{
-					action: 'calendar.createEvent',
-					input: {
-						title: "Miso's annual check",
-						date: '2026-10-15',
-						startTime: '10:30',
-						location: 'Riverside Vet Clinic',
-					},
-					dateText: 'Thu 15',
-					confidence: 0.8,
-				},
-			],
-		});
-		await read("Miso's annual check Thu 15 10:30, Riverside Vet Clinic");
-		expect(system()).toContain(
-			'An event the item states is added even when the person, pet or thing it is for is not in the household records',
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: "Miso's annual check",
+					date: { text: 'Thu 15', day: 15, weekday: 4 },
+					time: '10:30',
+					timeText: '10:30',
+					place: 'Riverside Vet Clinic',
+				}),
+			]),
 		);
+		await read("Miso's annual check Thu 15 10:30, Riverside Vet Clinic");
 		const [draft] = await drafts();
 		expect(draft).toMatchObject({
 			actionId: 'calendar.createEvent',
@@ -159,17 +145,16 @@ describe('an event that moved', () => {
 
 	it('marks a new event for the same title a week later as already there', async () => {
 		// Real model output: it never saw the event, so the move became a second one.
-		k.llm.respond({
-			summary: 'Regional Gala',
-			proposals: [
-				{
-					action: 'calendar.createEvent',
-					input: { title: 'Regional Gala', date: '2026-11-14', startTime: '09:00' },
-					dateText: 'Sat 14 Nov',
-					confidence: 0.8,
-				},
-			],
-		});
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: 'Regional gala',
+					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					time: '09:00',
+					timeText: '09:00',
+				}),
+			]),
+		);
 		await read('Regional gala moved to Sat 14 Nov 09:00');
 		const listed = (await k.route('core.listDrafts').call({
 			query: { status: 'pending', limit: 10 },
@@ -180,17 +165,16 @@ describe('an event that moved', () => {
 
 	it('marks the real output, a new "Regional gala" a week later, as already there', async () => {
 		// The model's answer to the swim coach's message, written in the message's own case.
-		k.llm.respond({
-			summary: 'Regional gala moved',
-			proposals: [
-				{
-					action: 'calendar.createEvent',
-					input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
-					dateText: 'Sat 14 Nov',
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: 'Regional gala',
+					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					time: '09:00',
+					timeText: '09:00',
+				}),
+			]),
+		);
 		await read('Regional gala moved to Sat 14 Nov 09:00');
 		const listed = (await k.route('core.listDrafts').call({
 			query: { status: 'pending', limit: 10 },
@@ -199,19 +183,37 @@ describe('an event that moved', () => {
 		expect(listed.find((d) => d.actionId === 'calendar.createEvent')?.mayExist).toBe(true);
 	});
 
+	it('moves the event that is there when the model reads the news as a move', async () => {
+		k.llm.respond(
+			understood([
+				mention('calendar.eventChange', {
+					target: 'Regional gala',
+					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					time: '09:00',
+					timeText: '09:00',
+				}),
+			]),
+		);
+		await read('Regional gala moved to Sat 14 Nov 09:00');
+		const [draft] = await drafts();
+		expect(draft).toMatchObject({
+			actionId: 'calendar.changeEvent',
+			input: { date: '2026-11-14', startTime: '09:00', label: 'Regional Gala' },
+		});
+	});
+
 	it('offers to move the event that is there, and moves it instead of adding a second', async () => {
 		// The same real output: the card offers the move, and choosing it moves the gala.
-		k.llm.respond({
-			summary: 'Regional gala moved',
-			proposals: [
-				{
-					action: 'calendar.createEvent',
-					input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
-					dateText: 'Sat 14 Nov',
-					confidence: 0.9,
-				},
-			],
-		});
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: 'Regional gala',
+					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					time: '09:00',
+					timeText: '09:00',
+				}),
+			]),
+		);
 		await read('Regional gala moved to Sat 14 Nov 09:00');
 		const [draft] = (await k.route('core.listDrafts').call({
 			query: { sourceKind: 'inbox', limit: 50 },
@@ -249,39 +251,39 @@ describe('an event that moved', () => {
 });
 
 describe('the person who shared the item', () => {
-	const members = [
-		{ id: 'member_noah', displayName: 'Noah' },
-		{ id: 'member_ellie', displayName: 'Ellie' },
-	];
-
-	it('is not marked "check this" on an item that says "me"', () => {
-		const input = { memberIds: ['member_noah'] };
-		expect(unnamedMemberFields(input, members, 'dentist for me on Thu', 'en')).toEqual([
-			'memberIds',
-		]);
-		expect(
-			unnamedMemberFields(input, members, 'dentist for me on Thu', 'en', 'member_noah'),
-		).toEqual([]);
+	it('is who a message about "me" is for, marked for a look when it names nobody', async () => {
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: 'Dentist',
+					forMe: true,
+					date: { text: 'Thursday 8 October', day: 8, month: 10, weekday: 4 },
+					time: '16:00',
+				}),
+			]),
+		);
+		await read('dentist for me on Thursday 8 October at 16:00');
+		const [draft] = await drafts();
+		expect(draft?.input.memberIds).toEqual([admin.member.id]);
+		// Nobody is named: the model may have given it to the sharer because nobody else was.
+		expect(draft?.uncertainFields).toContain('memberIds');
 	});
 
-	it('still marks someone else the item never names', () => {
-		expect(
-			unnamedMemberFields(
-				{ memberIds: ['member_ellie'] },
-				members,
-				'dentist for me on Thu',
-				'en',
-				'member_noah',
-			),
-		).toEqual(['memberIds']);
-		expect(
-			unnamedMemberFields(
-				{ memberIds: ['member_noah', 'member_ellie'] },
-				members,
-				'dentist for me on Thu',
-				'en',
-				'member_noah',
-			),
-		).toEqual(['memberIds']);
+	it('still marks someone else the item never names', async () => {
+		const ellie = await k.member('member', 'Ellie');
+		k.llm.respond(
+			understood([
+				mention('calendar.event', {
+					title: 'Dentist',
+					people: ['Ellie'],
+					date: { text: 'Thursday 8 October', day: 8, month: 10 },
+					time: '16:00',
+				}),
+			]),
+		);
+		await read('dentist on Thursday 8 October at 16:00');
+		const [draft] = await drafts();
+		expect(draft?.input.memberIds).toEqual([ellie.member.id]);
+		expect(draft?.uncertainFields).toContain('memberIds');
 	});
 });

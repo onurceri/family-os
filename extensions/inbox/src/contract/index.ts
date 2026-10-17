@@ -99,7 +99,13 @@ export type ExtractionKind = z.infer<typeof ExtractionKindSchema>;
  * the task already done), it pointed at something the household does not have, it was missing
  * something it needs, or the person it was made for may not do it.
  */
-export const SKIP_REASONS = ['already', 'unknown', 'incomplete', 'not_allowed'] as const;
+export const SKIP_REASONS = [
+	'already',
+	'unknown',
+	'ambiguous',
+	'incomplete',
+	'not_allowed',
+] as const;
 export const SkipReasonSchema = z.enum(SKIP_REASONS);
 export type SkipReason = z.infer<typeof SkipReasonSchema>;
 

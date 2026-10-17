@@ -2,7 +2,7 @@
 	"models": {
 		"openrouter-google-gemini-2-5-flash": {
 			"label": "openrouter / google/gemini-2.5-flash",
-			"version": "inbox.extract/23",
+			"version": "inbox.understand/1",
 			"date": "2026-10-17",
 			"cases": 36,
 			"passing": [
@@ -12,58 +12,6 @@
 				"Exact date with year (Turkish)",
 				"Tomorrow (Turkish)",
 				"Weekly lessons with an end (Turkish)",
-				"Payment due \"on the 15th\" (Turkish)",
-				"Shopping list (Turkish)",
-				"A couple, no children",
-				"An adult child set it up for their parents",
-				"Nothing to do",
-				"Instructions inside the shared content are ignored",
-				"A question for the assistant (Turkish)",
-				"A question for the assistant (English)",
-				"Chatter with nothing to add",
-				"US school email: MM/DD dates and 4pm",
-				"European appointment letter: DD.MM. dates and 24-hour times",
-				"Shopping message with imperial units",
-				"Shopping message with amounts in a sentence (English)",
-				"Car insurance renewal reminder (English)",
-				"Car insurance renewed (English)",
-				"Ticks off a listed shopping item (English)",
-				"Ticks off the newest of many similar items (English)",
-				"Nothing to tick off when the item is not listed (English)",
-				"Completes a listed task (English)",
-				"Keeps the appointment of a pet that is not listed (English)",
-				"A cancelled date of a weekly activity, in a messy message (English)",
-				"Something to buy that is already on the list (English)",
-				"A school letter repeating an event the calendar has (English)",
-				"Event with a day but no time (English)",
-				"Task nobody is named for is not silently assigned (English)",
-				"Message addressed to the person who shared it (English)",
-				"Message to the whole household stays for everyone (English)",
-				"Task notes say what the amount is (English)"
-			],
-			"failing": {
-				"UK council and school notice: DD/MM dates and Year 5": [
-					"the item was read (normalized)",
-					"the bin collection is on 9 Oct (not 10 Sept)",
-					"calendar.createEvent: parents’ evening on 15 Oct 17:30"
-				],
-				"Moves the event that is already there (English)": [
-					"calendar.changeEvent to 14 Nov 09:00, or a new event marked as maybe already there"
-				]
-			},
-			"cost": 0.1141
-		},
-		"openrouter-openai-gpt-4-1-mini": {
-			"label": "openrouter / openai/gpt-4.1-mini",
-			"version": "inbox.extract/23",
-			"date": "2026-10-17",
-			"cases": 36,
-			"passing": [
-				"School trip notice (Turkish)",
-				"Chat message with groceries, a vague date and a deadline (English)",
-				"Bare weekday (Turkish)",
-				"Exact date with year (Turkish)",
-				"Tomorrow (Turkish)",
 				"Payment due \"on the 15th\" (Turkish)",
 				"Shopping list (Turkish)",
 				"A couple, no children",
@@ -90,19 +38,59 @@
 				"Something to buy that is already on the list (English)",
 				"A school letter repeating an event the calendar has (English)",
 				"Event with a day but no time (English)",
+				"Task nobody is named for is not silently assigned (English)",
 				"Message addressed to the person who shared it (English)",
 				"Message to the whole household stays for everyone (English)",
 				"Task notes say what the amount is (English)"
 			],
-			"failing": {
-				"Weekly lessons with an end (Turkish)": [
-					"calendar.createEvent: weekly on Wednesdays 17:00 until 31 Oct"
-				],
-				"Task nobody is named for is not silently assigned (English)": [
-					"lists.addTask: no assignee, or the assignee is \"check this\" on assigneeId"
-				]
-			},
-			"cost": 0.0841
+			"failing": {},
+			"cost": 0.0451
+		},
+		"openrouter-openai-gpt-4-1-mini": {
+			"label": "openrouter / openai/gpt-4.1-mini",
+			"version": "inbox.understand/1",
+			"date": "2026-10-17",
+			"cases": 36,
+			"passing": [
+				"School trip notice (Turkish)",
+				"Chat message with groceries, a vague date and a deadline (English)",
+				"Bare weekday (Turkish)",
+				"Exact date with year (Turkish)",
+				"Tomorrow (Turkish)",
+				"Weekly lessons with an end (Turkish)",
+				"Payment due \"on the 15th\" (Turkish)",
+				"Shopping list (Turkish)",
+				"A couple, no children",
+				"An adult child set it up for their parents",
+				"Nothing to do",
+				"Instructions inside the shared content are ignored",
+				"A question for the assistant (Turkish)",
+				"A question for the assistant (English)",
+				"Chatter with nothing to add",
+				"US school email: MM/DD dates and 4pm",
+				"UK council and school notice: DD/MM dates and Year 5",
+				"European appointment letter: DD.MM. dates and 24-hour times",
+				"Shopping message with imperial units",
+				"Shopping message with amounts in a sentence (English)",
+				"Car insurance renewal reminder (English)",
+				"Car insurance renewed (English)",
+				"Ticks off a listed shopping item (English)",
+				"Ticks off the newest of many similar items (English)",
+				"Nothing to tick off when the item is not listed (English)",
+				"Completes a listed task (English)",
+				"Keeps the appointment of a pet that is not listed (English)",
+				"Moves the event that is already there (English)",
+				"A cancelled date of a weekly activity, in a messy message (English)",
+				"Something to buy that is already on the list (English)",
+				"A school letter repeating an event the calendar has (English)",
+				"Event with a day but no time (English)",
+				"Task nobody is named for is not silently assigned (English)",
+				"Message addressed to the person who shared it (English)",
+				"Message to the whole household stays for everyone (English)",
+				"Task notes say what the amount is (English)"
+			],
+			"failing": {},
+			"cost": 0.0211
 		}
 	}
 }

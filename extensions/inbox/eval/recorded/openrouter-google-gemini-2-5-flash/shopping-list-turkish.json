@@ -1,0 +1,39 @@
+{
+	"case": "Shopping list (Turkish)",
+	"model": "openrouter / google/gemini-2.5-flash",
+	"version": "inbox.understand/1",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Alışveriş listesi",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Domates",
+						"quantity": "1 kg",
+						"variant": "produce"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Makarna",
+						"quantity": "2 paket",
+						"variant": "pantry"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Beyaz peynir",
+						"variant": "dairy"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Çamaşır deterjanı",
+						"variant": "household"
+					}
+				]
+			}
+		}
+	]
+}

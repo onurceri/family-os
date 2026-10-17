@@ -69,7 +69,7 @@ Only areas that are turned on in **Settings → Family → Extensions** appear, 
 Under **Settings → AI → What the AI may read → What the AI sees**:
 
 - **Send photos and documents.** When off, only text is read. A share that is only a photo then shows a note saying so.
-- **Send names and descriptions.** When off, the AI sees no names and assigns nobody; you can add people when you edit a suggestion.
+- **Send names and descriptions.** When off, the AI is told nobody's name or description. Names your message itself writes ("Ivy has the dentist") are still matched to the people in your family by FamilyOS, on your server, after the AI has answered; for anyone else, add people when you edit a suggestion.
 - **Send voice notes.** When off, voice notes are kept but never sent to the speech-to-text model. Audio is sent as it was recorded, so unlike photos it cannot be stripped of anything. With OpenRouter, voice notes cannot be limited to providers that keep no data, so the next switch does not apply to them; use OpenAI, Groq or your own server if that matters.
 - **Only providers that keep no data** (OpenRouter, on by default). Requests go only to providers that do not store prompts or train on them. Some models have no such provider; you then see "No provider of this model keeps zero data" and can pick another model or turn this off.
 
