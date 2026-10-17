@@ -1,5 +1,11 @@
 import { Temporal } from 'temporal-polyfill';
-import { type DateOrder, type DateWords, namedWeekdays, writtenDates } from './date-words.ts';
+import {
+	type DateOrder,
+	type DateWords,
+	namedDistance,
+	namedWeekdays,
+	writtenDates,
+} from './date-words.ts';
 
 /**
  * Which day some words name, in parts that hold no language: a model reads "next Thursday" or
@@ -302,7 +308,32 @@ export function resolveDay(
 				doubt('mismatch');
 			}
 		}
+		// Only the words, without the parts: a day they name by its distance ("tomorrow") is
+		// that day, as certain as if the model had counted it.
+		const distance = date === null ? namedDistance(text, options.words) : null;
+		if (distance !== null) {
+			date = today.add({ days: distance });
+			source = 'count';
+		}
 		const named = namedWeekdays(text, options.words);
+		// Only the words, without the parts: a weekday they name is read as a weekday alone.
+		if (date === null && named.length === 1) {
+			date = weekdayDate(named[0] as number, ref.week, today, options, direction);
+			source = 'weekday';
+			doubt('weekday_only');
+		}
+		// Only the words, and they hold one number standing alone ("on the 15th", "ayın 15'i"):
+		// most often the day of the month, read as one for a person to check.
+		const numbers = text.match(/(?<![\p{N}.:/-])\p{N}{1,2}(?![\p{N}.:/-])/gu) ?? [];
+		const [alone] = numbers;
+		if (date === null && numbers.length === 1 && alone) {
+			const found = dayOfMonth(Number(alone), today, direction);
+			if (found) {
+				date = found;
+				source = 'number';
+				doubt('approximate');
+			}
+		}
 		if (date && named.length > 0 && !named.includes(date.dayOfWeek)) {
 			// A weekday the model misread: the one the words name is taken, still as a weekday.
 			if (source === 'weekday' && named.length === 1)

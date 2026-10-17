@@ -13,6 +13,11 @@ export type DateOrder = 'DMY' | 'MDY' | 'YMD';
 export interface DateWords {
 	/** Words that name exactly one day ("today", "tomorrow", "this evening"). */
 	exactDay: readonly string[];
+	/**
+	 * Words that name a day by its distance from today: `-1` yesterday, `0` today (and "this
+	 * evening"), `1` tomorrow.
+	 */
+	daysFromToday: readonly { days: number; words: readonly string[] }[];
 	/** Names of the weekdays, Monday first (index 0 = Monday). */
 	weekdays: readonly (readonly string[])[];
 	/** Short names of the weekdays ("wed"), Monday first; only whole words match. */
@@ -31,6 +36,11 @@ const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 export function dateWords(vocabulary: (key: string) => readonly string[]): DateWords {
 	return {
 		exactDay: vocabulary('app:words_exact_day'),
+		daysFromToday: [
+			{ days: -1, words: vocabulary('app:words_yesterday') },
+			{ days: 0, words: vocabulary('app:words_today') },
+			{ days: 1, words: vocabulary('app:words_tomorrow') },
+		],
 		weekdays: range(7).map((n) => vocabulary(`app:words_weekday_${n}`)),
 		weekdaysShort: range(7).map((n) => vocabulary(`app:words_weekday_short_${n}`)),
 		months: range(12).map((n) => vocabulary(`app:words_month_${n}`)),
@@ -309,6 +319,19 @@ export function namedWeekdays(text: string, words: DateWords): number[] {
 			...namesIn(clean, words.weekdaysShort, () => true).map((f) => f.value),
 		]),
 	];
+}
+
+/**
+ * How many days from today the words of a text name ("tomorrow" 1, "bu akşam" 0), when they
+ * name exactly one such distance; null when they name none or several.
+ */
+export function namedDistance(text: string, words: DateWords): number | null {
+	const found = words.daysFromToday.filter(
+		(group) =>
+			group.words.length > 0 &&
+			new RegExp(`(?<!\\p{L})(${anyOf(group.words)})(?!\\p{L})`, 'iu').test(text),
+	);
+	return found.length === 1 ? (found[0]?.days ?? null) : null;
 }
 
 /** A weekday a person named with no date ("on Thursday"). */

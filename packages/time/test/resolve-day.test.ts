@@ -40,6 +40,8 @@ describe('resolveDay', () => {
 		expect(resolveDay(undefined, { today: TODAY })).toBeNull();
 		expect(resolveDay({ text: 'soon' }, { today: TODAY })).toBeNull();
 		expect(resolveDay({ text: 'soon', numeric: 'abc' }, { today: TODAY, words })).toBeNull();
+		// Two numbers alone say nothing about which day.
+		expect(resolveDay({ text: '3 or 4' }, { today: TODAY, words })).toBeNull();
 	});
 
 	describe('counted days', () => {
@@ -373,6 +375,25 @@ describe('resolveDay', () => {
 				undefined,
 			],
 			['words with no parts', { text: '20 Ekim' }, { words }, '2026-10-20', undefined],
+			// Found in use: a model quoted "next Thursday" and gave no parts.
+			[
+				'a weekday in the words only, with no parts',
+				{ text: 'next Thursday' },
+				{ words },
+				'2026-10-15',
+				'weekday_only',
+			],
+			// Found in use: "Yarın" quoted with no parts.
+			['tomorrow in the words only', { text: 'Yarın' }, { words }, '2026-10-15', undefined],
+			['yesterday in the words only', { text: 'yesterday' }, { words }, '2026-10-13', undefined],
+			// Found in use: "ayın 15'i" quoted with no parts.
+			[
+				'one number alone in the words: the day of the month, to check',
+				{ text: "ayın 15'i" },
+				{ words },
+				'2026-10-15',
+				'approximate',
+			],
 			[
 				'a weekday in another language',
 				{ text: 'Perşembe', weekday: 4 },
