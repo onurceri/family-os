@@ -28,6 +28,7 @@ const call = (fields: Partial<EnvCall> = {}): EnvCall => ({
 	latencyMs: 500,
 	finishReason: 'stop',
 	errorCode: null,
+	outputMode: null,
 	...fields,
 });
 
@@ -132,7 +133,18 @@ describe('measuring a case', () => {
 			latencyMs: 1000,
 			finishReason: 'stop',
 			errorCode: null,
+			outputMode: null,
 		});
+	});
+
+	it('keeps the output modes a call was tried in, in order', () => {
+		expect(
+			sumCalls([
+				call({ finishReason: 'length', errorCode: 'output_too_long', outputMode: 'schema' }),
+				call({ outputMode: 'json' }),
+				call({ outputMode: 'json' }),
+			]).outputMode,
+		).toBe('schema>json');
 	});
 });
 
@@ -156,6 +168,10 @@ describe('the report', () => {
 		]);
 		expect(formatCell(failed)).toBe('✗ 2.4k/20 $0.0010 0.5s length+output_too_long');
 		expect(formatCell(cellOf('one', 'a', null, []))).toBe('- skipped');
+		const fellBack = cellOf('one', 'a', verdict(true), [
+			{ ...call({ outputMode: 'schema>json' }), answer },
+		]);
+		expect(formatCell(fellBack)).toBe('✓ 100/20 $0.0010 0.5s stop schema>json');
 	});
 
 	it('puts cases in rows and models in columns, with totals under them', () => {

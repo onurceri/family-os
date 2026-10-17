@@ -7,11 +7,13 @@ import { z } from 'zod';
 import {
 	type AiSettingsService,
 	aiMigrations,
+	aiTables,
 	createAiSdkLlm,
 	createAiSettings,
 	createSecretBox,
 	monthBounds,
 } from '../src/llm-aisdk/index.ts';
+import { extractJson, outputModeFor } from '../src/llm-aisdk/output.ts';
 import { silentLogger, uuidv7Ids } from '../src/runtime/index.ts';
 
 // A stand-in OpenAI-compatible server: behaviour is chosen by the requested model id.
@@ -102,12 +104,31 @@ const server = http.createServer((req, res) => {
 			return res
 				.writeHead(400)
 				.end(JSON.stringify({ error: { message: 'Unsupported parameter: reasoning_effort' } }));
-		const content =
-			model === 'rambling'
-				? 'not json at all'
-				: model === 'cut-off'
-					? '{"title": "Zoo tr'
-					: JSON.stringify({ title: 'Zoo trip', date: '2026-10-17' });
+		const format = (body.response_format as { type?: string } | undefined)?.type;
+		// A server that takes no response format at all.
+		if (model === 'plain-server' && format)
+			return res
+				.writeHead(400)
+				.end(JSON.stringify({ error: { message: 'response_format is not supported' } }));
+		// A model whose provider cannot compile the JSON Schema.
+		if (model === 'openai/gpt-4.1-strict' && format === 'json_schema')
+			return res
+				.writeHead(400)
+				.end(JSON.stringify({ error: { message: 'Invalid schema for response_format' } }));
+		// Under a JSON Schema this model repeats one tag until the output cap ends it, as Gemini
+		// does with the Inbox schema; asked for plain JSON it answers well.
+		const loops = model === 'openai/gpt-4.1-loops' && format === 'json_schema';
+		const content = loops
+			? `{"title":"Zoo trip","tags":["school"${',"Zoo trip with the school"'.repeat(40)}`
+			: model === 'plain-server'
+				? 'Here it is:\n```json\n{"title": "Zoo trip", "date": "2026-10-17"}\n```'
+				: model === 'talkative'
+					? '<think>The {date} is Friday.</think>Sure! {"title": "Zoo trip {school}", "date": "2026-10-17"} Anything else?'
+					: model === 'rambling' || model === 'priced-rambling'
+						? 'not json at all'
+						: model === 'cut-off'
+							? '{"title": "Zoo tr'
+							: JSON.stringify({ title: 'Zoo trip', date: '2026-10-17' });
 		res.end(
 			JSON.stringify({
 				id: 'c1',
@@ -117,7 +138,7 @@ const server = http.createServer((req, res) => {
 				choices: [
 					{
 						index: 0,
-						finish_reason: model === 'cut-off' ? 'length' : 'stop',
+						finish_reason: model === 'cut-off' || loops ? 'length' : 'stop',
 						message: { role: 'assistant', content },
 					},
 				],
@@ -126,7 +147,7 @@ const server = http.createServer((req, res) => {
 					completion_tokens: 30,
 					total_tokens: 150,
 					...(model === 'cut-off' && { completion_tokens_details: { reasoning_tokens: 25 } }),
-					...(model === 'priced' && { cost: 0.00042 }),
+					...((model === 'priced' || model === 'priced-rambling') && { cost: 0.00042 }),
 				},
 			}),
 		);
@@ -251,6 +272,12 @@ beforeEach(async () => {
 });
 
 const Trip = z.object({ title: z.string(), date: z.string() });
+const systemOf = (call: Seen | undefined) =>
+	String(
+		((call?.body.messages ?? []) as { role: string; content: unknown }[]).find(
+			(m) => m.role === 'system',
+		)?.content ?? '',
+	);
 const ask = (role: 'fast' | 'vision' | 'smart' = 'smart', timeoutMs = CALL_TIMEOUT_MS) =>
 	llm.generateObject({
 		role,
@@ -467,17 +494,20 @@ describe('AI SDK LlmPort', () => {
 			output: { title: 'Zoo trip', date: '2026-10-17' },
 			model: 'Router / priced',
 			usage: { inputTokens: 120, outputTokens: 30, reasoningTokens: null, cost: 0.00042 },
+			outputMode: 'json',
 		});
-		// OpenRouter is asked to report cost; the schema goes out as a JSON schema.
+		// OpenRouter is asked to report cost; a model not known to follow a JSON Schema is asked
+		// for a JSON object, and reads the schema in the system prompt.
 		expect(seen[0]).toMatchObject({
 			auth: 'Bearer good-key',
 			body: {
 				usage: { include: true },
 				// Zero data retention by default.
 				provider: { zdr: true, data_collection: 'deny' },
-				response_format: { type: 'json_schema', json_schema: { strict: false } },
+				response_format: { type: 'json_object' },
 			},
 		});
+		expect(systemOf(seen[0])).toContain('"title"');
 		const usage = await settings.usage();
 		expect(usage).toMatchObject({
 			month: '2026-10',
@@ -557,8 +587,8 @@ describe('AI SDK LlmPort', () => {
 			files: [{ data: new Uint8Array([137, 80, 78, 71]), mediaType: 'image/png' }],
 			timeoutMs: CALL_TIMEOUT_MS,
 		});
-		const messages = (seen[0]?.body.messages ?? []) as { content: unknown[] }[];
-		const content = messages[0]?.content;
+		const messages = (seen[0]?.body.messages ?? []) as { role: string; content: unknown[] }[];
+		const content = messages.find((m) => m.role === 'user')?.content;
 		expect(content?.[1]).toMatchObject({
 			type: 'image_url',
 			image_url: { url: expect.stringMatching(/^data:image\/png;base64,/) },
@@ -614,6 +644,7 @@ describe('AI SDK LlmPort', () => {
 			outputTokens: 30,
 			reasoningTokens: 25,
 			finishReason: 'length',
+			cost: null,
 		});
 		const [entry] = (await settings.activity()).entries;
 		expect(entry).toMatchObject({
@@ -673,6 +704,177 @@ describe('AI SDK LlmPort', () => {
 			expect(seen[0]?.body.reasoning_effort).toBe('low');
 			expect(seen[1]?.body).not.toHaveProperty('reasoning_effort');
 		});
+	});
+
+	describe('output modes', () => {
+		const modes = async () =>
+			(
+				await aiTables(db)
+					.selectFrom('ai_usage')
+					.select(['output_mode', 'error_code'])
+					.orderBy('id')
+					.execute()
+			).map((r) => `${r.output_mode}:${r.error_code ?? 'ok'}`);
+
+		it('picks the mode by provider and model', () => {
+			expect(outputModeFor('openrouter', 'openai/gpt-4.1-mini')).toBe('schema');
+			expect(outputModeFor('openai-compatible', 'gpt-4.1')).toBe('schema');
+			expect(outputModeFor('openrouter', 'google/gemini-2.5-flash')).toBe('json');
+			// The prefix belongs to its provider: another server may host something else by the name.
+			expect(outputModeFor('ollama', 'gpt-4.1')).toBe('json');
+			expect(outputModeFor('ollama', 'qwen3:8b')).toBe('json');
+		});
+
+		it('gives a model that follows a JSON Schema the schema, and records the mode', async () => {
+			await useModel('openai/gpt-4.1-mini');
+			await expect(ask()).resolves.toMatchObject({ outputMode: 'schema' });
+			expect(seen[0]?.body.response_format).toMatchObject({
+				type: 'json_schema',
+				json_schema: { strict: false },
+			});
+			expect(systemOf(seen[0])).toBe('');
+			expect(await modes()).toEqual(['schema:ok']);
+		});
+
+		it('asks again for plain JSON when a model loops under the schema until the cap', async () => {
+			await useModel('openai/gpt-4.1-loops');
+			const result = await ask();
+			expect(result).toMatchObject({
+				output: { title: 'Zoo trip', date: '2026-10-17' },
+				outputMode: 'json',
+			});
+			expect(seen.map((c) => (c.body.response_format as { type: string }).type)).toEqual([
+				'json_schema',
+				'json_object',
+			]);
+			// Both calls are counted, the failed one with why it failed.
+			expect(await modes()).toEqual(['schema:output_too_long', 'json:ok']);
+		});
+
+		it('steps down when the provider refuses a mode, down to plain text', async () => {
+			await useModel('openai/gpt-4.1-strict');
+			await expect(ask()).resolves.toMatchObject({ outputMode: 'json' });
+			expect(await modes()).toEqual(['schema:rejected', 'json:ok']);
+
+			seen.length = 0;
+			await useModel('plain-server', 'openai-compatible');
+			await expect(ask()).resolves.toMatchObject({
+				output: { title: 'Zoo trip', date: '2026-10-17' },
+				outputMode: 'text',
+			});
+			expect(seen[1]?.body).not.toHaveProperty('response_format');
+			expect(systemOf(seen[1])).toContain('JSON Schema');
+		});
+
+		it('keeps a forced mode, without falling back', async () => {
+			await useModel('openai/gpt-4.1-loops');
+			await expect(
+				llm.generateObject({
+					role: 'smart',
+					feature: 'test.extract',
+					areas: ['test'],
+					schema: Trip,
+					prompt: 'School trip Friday',
+					timeoutMs: CALL_TIMEOUT_MS,
+					output: 'schema',
+				}),
+			).rejects.toMatchObject({ code: 'output_too_long' });
+			expect(seen).toHaveLength(1);
+		});
+
+		it('takes the JSON out of an answer with text around it', async () => {
+			await useModel('talkative');
+			await expect(ask()).resolves.toMatchObject({
+				output: { title: 'Zoo trip {school}', date: '2026-10-17' },
+			});
+		});
+
+		it('validates with the schema it was given, so a tolerant schema repairs the answer', async () => {
+			await useModel('priced');
+			const result = await llm.generateObject({
+				role: 'smart',
+				feature: 'test.extract',
+				areas: ['test'],
+				schema: Trip.extend({ confidence: z.number().catch(1) }),
+				prompt: 'School trip Friday',
+				timeoutMs: CALL_TIMEOUT_MS,
+			});
+			expect(result.output).toEqual({ title: 'Zoo trip', date: '2026-10-17', confidence: 1 });
+			await expect(
+				llm.generateObject({
+					role: 'smart',
+					feature: 'test.extract',
+					areas: ['test'],
+					schema: Trip.extend({ confidence: z.number() }),
+					prompt: 'School trip Friday',
+					timeoutMs: CALL_TIMEOUT_MS,
+				}),
+			).rejects.toMatchObject({
+				code: 'invalid_output',
+				message: expect.stringContaining('confidence'),
+			});
+		});
+
+		it('records what an unusable answer cost, and keeps its text on the error', async () => {
+			await useModel('priced-rambling');
+			const error = await ask().catch((e: unknown) => e);
+			expect(error).toMatchObject({
+				code: 'invalid_output',
+				usage: { cost: 0.00042 },
+				cause: { text: 'not json at all' },
+			});
+			expect((await settings.usage()).total).toMatchObject({ calls: 1, errors: 1, cost: 0.00042 });
+		});
+
+		it('finds the JSON in an answer', () => {
+			expect(extractJson('{"a":1}')).toEqual({ value: { a: 1 } });
+			expect(extractJson('```json\n{"a":1}\n```')).toEqual({ value: { a: 1 } });
+			expect(extractJson('Sure:\n```\n{"a":1}\n```\nDone')).toEqual({ value: { a: 1 } });
+			expect(extractJson('<think>maybe {x}</think>\n{"a":"}{"}')).toEqual({ value: { a: '}{' } });
+			expect(extractJson('I read {not json} and then {"a":[1,2]} end')).toEqual({
+				value: { a: [1, 2] },
+			});
+			expect(extractJson('{"a":"say \\"hi\\" {"}')).toEqual({ value: { a: 'say "hi" {' } });
+			// A complete answer followed by endless blank lines still counts.
+			expect(extractJson(`{"a":1}${'\n'.repeat(50)}`)).toEqual({ value: { a: 1 } });
+			// Cut off: a fragment inside is never taken for the whole answer.
+			expect(extractJson('{"summary":"x","proposals":[{"action":"a","input":{"b":1}},{"act')).toBe(
+				null,
+			);
+			expect(extractJson('no json here')).toBe(null);
+			expect(extractJson('')).toBe(null);
+		});
+	});
+
+	it('records the output mode on usage kept from before it existed', async () => {
+		({ db } = openDatabase({ path: ':memory:' }));
+		const { '0003_usage_output_mode': added, ...previous } = aiMigrations;
+		expect(added).toBeDefined();
+		await runMigrations(db, [{ scope: 'ai', migrations: previous }]);
+		await aiTables(db)
+			.insertInto('ai_usage')
+			.values({
+				id: 'ai_call_old',
+				at: NOW,
+				role: 'smart',
+				provider_id: null,
+				model: 'Old / m',
+				feature: 'test.extract',
+				member_id: null,
+				job_id: null,
+				input_tokens: null,
+				output_tokens: null,
+				reasoning_tokens: null,
+				finish_reason: null,
+				cost_micros: null,
+				latency_ms: 5,
+				error_code: null,
+				areas: null,
+			})
+			.execute();
+		await runMigrations(db, [{ scope: 'ai', migrations: aiMigrations }]);
+		const rows = await aiTables(db).selectFrom('ai_usage').select(['id', 'output_mode']).execute();
+		expect(rows).toEqual([{ id: 'ai_call_old', output_mode: null }]);
 	});
 
 	it('stops at the monthly limits', async () => {

@@ -61,6 +61,8 @@ export interface Cell {
 	latencyMs: number;
 	finishReasons: string[];
 	errors: string[];
+	/** The output modes of the case's structured calls; `schema>json` when one fell back. */
+	outputModes: string[];
 }
 
 export interface ModelTotals {
@@ -204,7 +206,7 @@ function refusedText(error: unknown): string | undefined {
 	return typeof text === 'string' ? text : undefined;
 }
 
-/** Calls of one request (a retry is a second row) as one. */
+/** Calls of one request (a retry or a fallback is a second row) as one. */
 export function sumCalls(rows: readonly Omit<EnvCall, 'feature'>[]): Omit<EnvCall, 'feature'> {
 	const sum = (pick: (r: Omit<EnvCall, 'feature'>) => number | null) =>
 		rows.some((r) => pick(r) !== null) ? rows.reduce((n, r) => n + (pick(r) ?? 0), 0) : null;
@@ -217,6 +219,12 @@ export function sumCalls(rows: readonly Omit<EnvCall, 'feature'>[]): Omit<EnvCal
 		latencyMs: rows.reduce((n, r) => n + r.latencyMs, 0),
 		finishReason: last?.finishReason ?? null,
 		errorCode: last?.errorCode ?? null,
+		// The modes in the order they were tried; a retry in the same mode is not a new step.
+		outputMode:
+			rows
+				.map((r) => r.outputMode)
+				.filter((m, i, all): m is string => m !== null && m !== all[i - 1])
+				.join('>') || null,
 	};
 }
 
@@ -229,9 +237,11 @@ export function cellOf(
 ): Cell {
 	const reasons = new Set<string>();
 	const errors = new Set<string>();
+	const modes = new Set<string>();
 	for (const c of calls) {
 		if (c.finishReason) reasons.add(c.finishReason);
 		if (c.errorCode) errors.add(c.errorCode);
+		if (c.outputMode) modes.add(c.outputMode);
 	}
 	return {
 		case: name,
@@ -247,6 +257,7 @@ export function cellOf(
 		latencyMs: calls.reduce((n, c) => n + c.latencyMs, 0),
 		finishReasons: [...reasons],
 		errors: [...errors],
+		outputModes: [...modes],
 	};
 }
 
@@ -296,13 +307,14 @@ const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 const usd = (n: number) => `$${n.toFixed(4)}`;
 
 /**
- * One cell of the table: verdict, tokens in/out, cost, time and how the model stopped (a dash
- * when the adapter did not record it, as for chats).
+ * One cell of the table: verdict, tokens in/out, cost, time, how the model stopped (a dash when
+ * the adapter did not record it, as for chats) and the output modes of its structured calls.
  */
 export function formatCell(cell: Cell): string {
 	if (cell.status === 'skipped') return '- skipped';
 	const stop = [...cell.finishReasons, ...cell.errors].join('+') || '-';
-	return `${cell.status === 'passed' ? '✓' : '✗'} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}`;
+	const modes = cell.outputModes.length ? ` ${cell.outputModes.join(',')}` : '';
+	return `${cell.status === 'passed' ? '✓' : '✗'} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}${modes}`;
 }
 
 /** The table: one row per case and one column per model, then the totals of each model. */

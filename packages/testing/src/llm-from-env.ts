@@ -33,6 +33,8 @@ export interface EnvCall {
 	/** Why the model stopped (`stop`, `length` …); null when it did not answer. */
 	finishReason: string | null;
 	errorCode: string | null;
+	/** How a structured answer was asked for (`schema`, `json`, `text`); null for other calls. */
+	outputMode: string | null;
 }
 
 export interface EnvLlm {
@@ -152,6 +154,7 @@ async function envLlm(spec: EvalModelSpec, apiKey: string | undefined): Promise<
 				latencyMs: r.latency_ms,
 				finishReason: r.finish_reason,
 				errorCode: r.error_code,
+				outputMode: r.output_mode,
 			}));
 		},
 	};

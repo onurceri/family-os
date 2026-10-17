@@ -22,6 +22,15 @@ export interface LlmFile {
 	mediaType: string;
 }
 
+/**
+ * How a model is asked for structured output. `schema` hands the provider the JSON Schema to
+ * constrain decoding with; `json` asks for any JSON object and describes the schema in the
+ * prompt; `text` asks for nothing and takes the JSON out of the answer, for servers that refuse
+ * both. Every mode validates the answer against the request's `schema` itself.
+ */
+export const OUTPUT_MODES = ['schema', 'json', 'text'] as const;
+export type OutputMode = (typeof OUTPUT_MODES)[number];
+
 export interface LlmObjectRequest<T> {
 	role: ModelRole;
 	/** What the call is for, recorded in usage, e.g. `inbox.extract`. */
@@ -32,7 +41,10 @@ export interface LlmObjectRequest<T> {
 	 * and the role's provider is not local.
 	 */
 	areas: readonly string[];
-	/** The structured output; the result is validated against it. */
+	/**
+	 * The structured output; the result is validated against it in every output mode. Make it
+	 * tolerant (defaults, `.catch`) where one bad field should not throw the whole answer away.
+	 */
 	schema: z.ZodType<T>;
 	/**
 	 * The JSON Schema shown to the model, when it should be more detailed than `schema`. Use it
@@ -63,6 +75,12 @@ export interface LlmObjectRequest<T> {
 	 * refuses the setting is asked again without it.
 	 */
 	reasoning?: LlmReasoning;
+	/**
+	 * Forces one output mode, with no fallback (an evaluation comparing modes). Left out, the
+	 * adapter picks the mode that works best for the provider and model, and steps down to the
+	 * next one when the provider refuses it or its answer cannot be used.
+	 */
+	output?: OutputMode;
 	/** Recorded in usage. */
 	memberId?: string | null;
 	jobId?: string | null;
@@ -199,6 +217,8 @@ export interface LlmObjectResult<T> {
 	output: T;
 	/** `provider name / model`, for display and debugging. */
 	model: string;
+	/** The output mode that gave the answer, when the port knows it. */
+	outputMode?: OutputMode;
 	usage: LlmUsage;
 }
 
@@ -281,6 +301,8 @@ export interface LlmFailureUsage {
 	reasoningTokens: number | null;
 	/** Why the model stopped (`length`, `stop` …). */
 	finishReason: string | null;
+	/** USD, when the provider reported it for an answer that could not be used. */
+	cost?: number | null;
 }
 
 const RETRYABLE: ReadonlySet<LlmErrorCode> = new Set(['timeout', 'unavailable', 'invalid_output']);

@@ -41,6 +41,8 @@ export type AiTables = {
 		error_code: string | null;
 		/** JSON array of the areas (extension ids) that contributed data. */
 		areas: string | null;
+		/** How a structured answer was asked for (`schema`, `json`, `text`); null for other calls. */
+		output_mode: string | null;
 	};
 };
 
@@ -92,6 +94,11 @@ export const aiMigrations: Migrations = {
 		async up(db) {
 			await db.schema.alterTable('ai_usage').addColumn('reasoning_tokens', 'integer').execute();
 			await db.schema.alterTable('ai_usage').addColumn('finish_reason', 'text').execute();
+		},
+	},
+	'0003_usage_output_mode': {
+		async up(db) {
+			await db.schema.alterTable('ai_usage').addColumn('output_mode', 'text').execute();
 		},
 	},
 };
