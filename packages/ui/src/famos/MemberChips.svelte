@@ -3,8 +3,10 @@
 	import Avatar from './Avatar.svelte';
 
 	/**
-	 * Pick family members as avatar chips. `multiple` toggles any number; otherwise one member or,
-	 * when `noneLabel` is set, nobody (shown as a first chip, e.g. "Anyone").
+	 * Pick family members as avatar chips. `multiple` toggles any number; otherwise one member.
+	 * `noneLabel` makes picking nobody a choice of its own, a first chip that is pressed while
+	 * nobody is picked: "Anyone" for one member, "Whole family" for any number, where picking it
+	 * clears the people and picking a person releases it.
 	 */
 	let {
 		members,
@@ -31,7 +33,7 @@
 </script>
 
 <div class="flex flex-wrap gap-2">
-	{#if noneLabel && !multiple}
+	{#if noneLabel}
 		<button
 			type="button"
 			aria-pressed={selected.length === 0}

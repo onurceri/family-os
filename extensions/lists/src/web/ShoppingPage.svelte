@@ -2,7 +2,6 @@
 	import { isApiError } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
-		ActionSheet,
 		AwaitingMark,
 		Chip,
 		Composer,
@@ -20,7 +19,6 @@
 		type MenuItem,
 		Page,
 		SidePanel,
-		wide,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -342,8 +340,6 @@
 			onselect: () => void removeWithUndo(item),
 		},
 	];
-	let sheetFor = $state<ShoppingItem | null>(null);
-	let sheetOpen = $state(false);
 	let showBought = $state(false);
 
 	// From 40 rem of width the cart is a column beside the list, open; narrower it is folded under
@@ -356,7 +352,6 @@
 	// place of the chips; removing asks first.
 	let listForm = $state<{ mode: 'new' | 'rename'; name: string } | null>(null);
 	let confirmRemove = $state(false);
-	let listSheetOpen = $state(false);
 	const listName = (l: ShoppingList) => l.name || t('default_list');
 	const listItems = $derived<MenuItem[]>(
 		list
@@ -480,25 +475,18 @@
 		</button>
 		{#if !done}
 			<span class="me-1 shrink-0">
-				{#if wide.current}
-					<Menu items={rowItems(item)} label={t('options_for', { title: item.title })}>
-						{#snippet trigger({ attrs })}
-							<IconButton label={t('options_for', { title: item.title })} {...attrs}>
-								<MoreHorizontal class="size-5" />
-							</IconButton>
-						{/snippet}
-					</Menu>
-				{:else}
-					<IconButton
-						label={t('options_for', { title: item.title })}
-						onclick={() => {
-							sheetFor = item;
-							sheetOpen = true;
-						}}
-					>
-						<MoreHorizontal class="size-5" />
-					</IconButton>
-				{/if}
+				<Menu
+					items={rowItems(item)}
+					label={t('options_for', { title: item.title })}
+					title={item.title}
+					cancelLabel={t('cancel')}
+				>
+					{#snippet trigger({ attrs })}
+						<IconButton label={t('options_for', { title: item.title })} {...attrs}>
+							<MoreHorizontal class="size-5" />
+						</IconButton>
+					{/snippet}
+				</Menu>
 			</span>
 		{/if}
 	</div>
@@ -546,17 +534,25 @@
 					role="group"
 					aria-label={t('lists_label')}
 				>
-					{#each lists as l (l.id)}
-						<Chip
-							on={l.id === list?.id}
-							count={l.openCount || undefined}
-							onclick={() => (selectedId = l.id)}
-							title={listName(l)}
-							class="max-w-56 shrink-0"
+					<!-- Chips only when there is a list to switch to: a single pressed chip with a count
+					     reads like a filter, so one list is just its name. -->
+					{#if lists.length > 1}
+						{#each lists as l (l.id)}
+							<Chip
+								on={l.id === list?.id}
+								count={l.openCount || undefined}
+								onclick={() => (selectedId = l.id)}
+								title={listName(l)}
+								class="max-w-56 shrink-0"
+							>
+								<span class="truncate">{listName(l)}</span>
+							</Chip>
+						{/each}
+					{:else if list}
+						<span class="text-ink max-w-56 shrink-0 truncate px-1 text-base font-semibold"
+							>{listName(list)}</span
 						>
-							<span class="truncate">{listName(l)}</span>
-						</Chip>
-					{/each}
+					{/if}
 					<Chip
 						variant="preset"
 						aria-label={t('new_list')}
@@ -569,13 +565,14 @@
 					</Chip>
 					{#if list}
 						<span class="shrink-0">
-							{#if wide.current}
-								<Menu items={listItems} label={t('list_options', { name: listName(list) })}>
-									{#snippet trigger({ attrs })}{@render listMenuTrigger(attrs)}{/snippet}
-								</Menu>
-							{:else}
-								{@render listMenuTrigger({ onclick: () => (listSheetOpen = true) })}
-							{/if}
+							<Menu
+								items={listItems}
+								label={t('list_options', { name: listName(list) })}
+								title={listName(list)}
+								cancelLabel={t('cancel')}
+							>
+								{#snippet trigger({ attrs })}{@render listMenuTrigger(attrs)}{/snippet}
+							</Menu>
 						</span>
 					{/if}
 				</div>
@@ -731,20 +728,6 @@
 		</div>
 	</div>
 </Page>
-
-<ActionSheet
-	bind:open={sheetOpen}
-	title={sheetFor?.title ?? ''}
-	items={sheetFor ? rowItems(sheetFor) : []}
-	cancelLabel={t('cancel')}
-/>
-
-<ActionSheet
-	bind:open={listSheetOpen}
-	title={list ? listName(list) : ''}
-	items={listItems}
-	cancelLabel={t('cancel')}
-/>
 
 <Dialog
 	open={confirmRemove && list !== null}
