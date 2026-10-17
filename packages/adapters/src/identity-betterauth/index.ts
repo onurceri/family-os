@@ -398,9 +398,7 @@ function createAddressLimit(now: () => number = Date.now) {
 		fail(address: string) {
 			const current = windows.get(address);
 			const entry =
-				current && current.ends > now()
-					? current
-					: { count: 0, ends: now() + ADDRESS_WINDOW_MS };
+				current && current.ends > now() ? current : { count: 0, ends: now() + ADDRESS_WINDOW_MS };
 			entry.count += 1;
 			windows.set(address, entry);
 		},

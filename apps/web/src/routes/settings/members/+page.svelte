@@ -191,7 +191,10 @@
 					// already used), it stays open on them with the message, and Save tries again.
 					await load();
 					panel = { memberId: created.output.id };
-					if (await saveSignIn(created.output.id, roleId)) toasts.show(t('members_login_saved'));
+					const withSignIn = await saveSignIn(created.output.id, roleId);
+					toasts.show(
+						t(withSignIn ? 'members_added_with_signin' : 'members_added', { name: name.trim() }),
+					);
 				}
 			} else {
 				unwrap(
@@ -205,7 +208,11 @@
 					}),
 				);
 				// The sign-in is only changed when something was typed for it.
-				if (await saveSignIn(editing.id, roleId)) toasts.show(t('members_login_saved'));
+				toasts.show(
+					(await saveSignIn(editing.id, roleId))
+						? t('members_login_saved')
+						: t('members_saved', { name: name.trim() }),
+				);
 			}
 			panel = null;
 			await load();

@@ -5,6 +5,7 @@
 	import {
 		Card,
 		ConfirmButton,
+		Dialog,
 		EmptyState,
 		Notice,
 		Page,
@@ -17,6 +18,7 @@
 	import { api } from '#lib/api.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 	import { appSettings, mcpAddress } from './app-settings.js';
 	import ConnectApp from './ConnectApp.svelte';
 
@@ -34,6 +36,9 @@
 	let everyone = $state<Token[]>([]);
 	let error = $state<string | null>(null);
 	let connecting = $state(false);
+	/** Turning AI apps on asks first; the switch stays where it was until the answer. */
+	let confirmingOn = $state(false);
+	let switchKey = $state(0);
 
 	const isAdmin = $derived(session.can('core.ai.manage'));
 	/** Keys are made only where they can work: when AI apps may connect, or by an admin who can
@@ -82,6 +87,27 @@
 		}
 	}
 
+	/** One switch for the whole family, so the notice says what it is now and offers Undo. */
+	async function switchTo(on: boolean, undoable = true) {
+		error = null;
+		if (!(await setEnabled(on))) {
+			switchKey += 1;
+			return;
+		}
+		toasts.show(
+			t(on ? 'mcp_turned_on' : 'mcp_turned_off'),
+			undoable ? { label: t('mcp_switch_undo'), run: () => void switchTo(!on, false) } : undefined,
+		);
+	}
+
+	function onSwitch(on: boolean) {
+		if (on) {
+			confirmingOn = true;
+			// Put the switch back until the answer.
+			switchKey += 1;
+		} else void switchTo(false);
+	}
+
 	async function revoke(id: string) {
 		error = null;
 		try {
@@ -110,13 +136,15 @@
 		{#if isAdmin}
 			<Section label={t('mcp_switch_title')}>
 				<Card rows>
-					<SwitchRow
-						id="mcp-enabled"
-						label={t('mcp_switch')}
-						hint={t('mcp_switch_hint')}
-						checked={enabled === true}
-						onchange={setEnabled}
-					/>
+					{#key switchKey}
+						<SwitchRow
+							id="mcp-enabled"
+							label={t('mcp_switch')}
+							hint={enabled ? t('mcp_switch_hint_on') : t('mcp_switch_hint')}
+							checked={enabled === true}
+							onchange={onSwitch}
+						/>
+					{/key}
 				</Card>
 			</Section>
 		{/if}
@@ -220,4 +248,24 @@
 		onclose={() => (connecting = false)}
 		onchanged={load}
 	/>
+
+	<Dialog
+		open={confirmingOn}
+		title={t('mcp_confirm_title')}
+		description={t('mcp_confirm_body')}
+		onclose={() => (confirmingOn = false)}
+	>
+		{#snippet actions()}
+			<Button variant="ghost" data-autofocus onclick={() => (confirmingOn = false)}
+				>{t('cancel')}</Button
+			>
+			<Button
+				variant="primary"
+				onclick={() => {
+					confirmingOn = false;
+					void switchTo(true);
+				}}>{t('mcp_turn_on')}</Button
+			>
+		{/snippet}
+	</Dialog>
 </Page>

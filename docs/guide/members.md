@@ -14,7 +14,7 @@ Open **Settings → Family → Members** press **Add a member** and fill in the 
 
 - **Sign-in**: how this person signs in. Give an **Email** and a **Password** (at least 10 characters), a **PIN** (4 to 6 digits), or both. A teenager with their own phone gets an email and password; a young child on the kitchen tablet gets a PIN. Leave them empty to add a sign-in later.
 
-Press **Save**. The page shows "Sign-in saved." when a sign-in was given. Each row says how that person really signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", or "No sign-in yet".
+Press **Save**. The page says the person was added (and that they can sign in, when you gave a sign-in). When you only change a sign-in later, it says "Sign-in saved.". Each row says how that person really signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", or "No sign-in yet".
 
 **Edit** (on a row) changes a person's name (up to 60 characters), role and **About** text, and their sign-in: the panel says what they have now, and fields you leave empty keep it. Setting a new PIN or password signs that person out on every device, so they sign in again with the new one. An admin who changes their own password stays signed in. If another member already uses that email, the page says so (a new person is then kept, and you can try another email). At least one admin must stay: the last admin cannot be given another role, and the page says "There must always be one admin."
 

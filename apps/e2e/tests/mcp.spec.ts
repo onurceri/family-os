@@ -26,6 +26,12 @@ test('a member connects an AI app with an app key and the app uses it; the call 
 	await expect(page.getByTestId('mcp-off')).toBeVisible();
 	// The switch is a visually hidden checkbox; its label is the target people tap.
 	await page.getByText('Allow AI apps to connect', { exact: true }).click();
+	// Turning it on asks first; the switch waits for the answer.
+	await expect(page.getByRole('switch', { name: /^Allow AI apps/ })).not.toBeChecked();
+	await page
+		.getByRole('dialog', { name: 'Allow AI apps to connect?' })
+		.getByRole('button', { name: 'Turn on' })
+		.click();
 	await expect(page.getByRole('switch', { name: /^Allow AI apps/ })).toBeChecked();
 	await expect(page.getByTestId('mcp-off')).toHaveCount(0);
 
