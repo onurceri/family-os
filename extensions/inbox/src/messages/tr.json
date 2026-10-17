@@ -129,7 +129,7 @@
 	"original": "Aslı",
 	"show_original": "Aslını göster",
 	"hide_original": "Aslını gizle",
-	"from": "{{name}} kişisinden",
+	"from": "Gönderen: {{name}}",
 	"pick_suggestion": "Dahil et: {{name}}",
 	"add_selected": "Seçilenleri ekle ({{n}})",
 	"apply_selected": "Seçilenleri uygula ({{n}})",
