@@ -35,6 +35,11 @@ export const aiAreasChanged = defineEvent(
 );
 
 export const deviceChanged = defineEvent('core.device.changed', z.object({ deviceId: z.string() }));
+/** A display told what its screen had no room for (Settings → Devices shows it). */
+export const displayFitChanged = defineEvent(
+	'core.displayFit.changed',
+	z.object({ deviceId: z.string() }),
+);
 
 /** A notification was created for a member (ids only): open tabs refresh their list and badge. */
 export const notificationCreated = defineEvent(
@@ -53,6 +58,7 @@ export const coreEvents = [
 	memberChanged,
 	roleChanged,
 	deviceChanged,
+	displayFitChanged,
 	featuresChanged,
 	aiAreasChanged,
 	notificationCreated,

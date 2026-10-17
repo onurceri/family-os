@@ -9,7 +9,7 @@ import {
 } from '@famos/sdk';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
-import { deviceChanged } from './core-events.ts';
+import { deviceChanged, displayFitChanged } from './core-events.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { type Features, ownerOf } from './features.ts';
 import type { CoreTables, DeviceRow } from './tables.ts';
@@ -60,6 +60,14 @@ export interface DeviceService {
 	updateDisplay(actor: Actor, deviceId: string, patch: Partial<DisplayGrant>): Promise<DeviceRow>;
 	/** The view capabilities an admin can give a display (extensions that are on). */
 	grantableCapabilities(): CapabilityDefinition[];
+	/**
+	 * A display tells what its screen had no room for (widget ids, groups of blocks), so its admin
+	 * is not left guessing. Kept in memory only: the display tells it again after every fit and
+	 * every few minutes, so a restart forgets it for that long at most.
+	 */
+	reportFit(deviceId: string, leftOut: readonly string[]): Promise<void>;
+	/** What a display last said its screen had no room for (empty when it said nothing yet). */
+	leftOut(deviceId: string): string[];
 }
 
 export interface DisplayGrant {
@@ -162,6 +170,8 @@ export function createDeviceService(deps: {
 }): DeviceService {
 	/** Last poll per device code, to answer `slow_down` (in memory: a restart only forgets it). */
 	const lastPoll = new Map<string, number>();
+	/** What each display last said it had no room for. */
+	const fits = new Map<string, string[]>();
 	const pairings = () => deps.db.withTables<CoreTables>();
 	const grantable = (): CapabilityDefinition[] =>
 		deps
@@ -204,6 +214,7 @@ export function createDeviceService(deps: {
 			.returningAll()
 			.executeTakeFirst();
 		if (!result) throw new FamosError('not_found', 'Device not found');
+		fits.delete(deviceId);
 		await deps.identity.endDeviceSessions(deviceId);
 		await deps.bus.publish(deviceChanged.name, { deviceId });
 		return result;
@@ -477,5 +488,16 @@ export function createDeviceService(deps: {
 		},
 
 		grantableCapabilities: grantable,
+
+		async reportFit(deviceId, leftOut) {
+			const next = [...new Set(leftOut)].sort();
+			const before = fits.get(deviceId) ?? [];
+			if (next.length === 0) fits.delete(deviceId);
+			else fits.set(deviceId, next);
+			if (next.join() !== before.join())
+				await deps.bus.publish(displayFitChanged.name, { deviceId });
+		},
+
+		leftOut: (deviceId) => [...(fits.get(deviceId) ?? [])],
 	};
 }

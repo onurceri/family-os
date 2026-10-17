@@ -27,7 +27,7 @@
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
 	import AddDevice, { type AddStart } from './AddDevice.svelte';
 	import DisplayForm from './DisplayForm.svelte';
-	import { displayOptions } from './display-options.js';
+	import { displayOptions, leftOutNames } from './display-options.js';
 
 	/**
 	 * Devices: this device in one sentence and one button; one list of the
@@ -42,7 +42,7 @@
 		kind: 'family' | 'kiosk';
 		createdAt: number;
 		lastSeenAt: number;
-		display: { capabilities: string[]; showNames: boolean } | null;
+		display: { capabilities: string[]; showNames: boolean; leftOut: string[] } | null;
 	};
 	type Option = { id: string; label: string };
 
@@ -103,6 +103,19 @@
 	const kindLabel = (d: Device) =>
 		d.kind === 'kiosk' ? t('devices_kind_screen') : t('devices_trusted_badge');
 
+	/** What a display said its screen had no room for, in words; null when everything fits. */
+	const leftOutLine = (d: Device | undefined): string | null => {
+		const parts = leftOutNames(d?.display?.leftOut ?? [], contributions.slots).map((name) =>
+			'key' in name ? t(name.key) : name.labelKey ? tDynamic(name.labelKey) : name.id,
+		);
+		if (parts.length === 0) return null;
+		const list =
+			parts.length === 1
+				? (parts[0] as string)
+				: t('today_names_and', { list: parts.slice(0, -1).join(', '), last: parts.at(-1) });
+		return t('devices_left_out', { parts: list });
+	};
+
 	async function load() {
 		const [list, mine] = await Promise.all([
 			api.GET('/api/v1/core/devices'),
@@ -121,7 +134,12 @@
 	$effect(() => {
 		if (!session.can('core.devices.manage')) return;
 		void load();
-		return onEvent('core.device.', () => void load());
+		const offDevice = onEvent('core.device.', () => void load());
+		const offFit = onEvent('core.displayFit.', () => void load());
+		return () => {
+			offDevice();
+			offFit();
+		};
 	});
 
 	function openDevice(device: Device) {
@@ -291,6 +309,10 @@
 		{discard}
 	>
 		{#if opened?.kind === 'kiosk'}
+			{@const leftOut = leftOutLine(opened)}
+			{#if leftOut}
+				<p class="text-ink-soft mb-4 text-sm" data-testid="display-left-out">{leftOut}</p>
+			{/if}
 			<DisplayForm
 				idPrefix="edit"
 				options={allOptions.filter((o) => shown.has(o.id) || editCaps.includes(o.id))}

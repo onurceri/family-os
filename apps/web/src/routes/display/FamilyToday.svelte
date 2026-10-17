@@ -5,25 +5,31 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { compositionFor } from '#lib/today/compositions.js';
 	import type { DisplayFit, FitDrop } from '#lib/today/display-fit.js';
+	import {
+		baseZoom,
+		chooseFit,
+		describeFit,
+		type FitPlan,
+		leftOut,
+		widgetRows,
+	} from '#lib/today/fit-plan.js';
 	import { TodayData } from '#lib/today/today-data.svelte.js';
 
 	/**
 	 * The display's Today: the composition of the display's style in family mode, read
 	 * as the display (its view capabilities, through routes a display may call). `status` (the
 	 * display's pills) goes in the composition's head; `foot` (the `display.widget` band) where
-	 * the composition has room for it, after the day. Made again when "show names" changes, so nothing loaded with names stays on a
-	 * display without them.
+	 * the composition has room for it. Made again when "show names" changes, so nothing loaded
+	 * with names stays on a display without them.
 	 *
 	 * A wall display is never scrolled, so the whole page fits one screen, at any size. Once the
 	 * composition has settled (and the widgets have stopped growing) it is measured, still hidden,
-	 * against plans tried in order of priority until one fits: first fewer things per person
-	 * (`tight`), then the widget band whole or a single widget, then blocks left out (the photo,
-	 * the atmosphere, the extras, the chores), and only last a little less zoom, never below a
-	 * person's own Today. Each plan is tried as it is, then with the style's smaller blocks moved
-	 * to where there is room (`shift`). Once one fits, things per person that the space now allows
-	 * come back. The head, the next thing and the day always stay. Every plan is applied and
-	 * measured in the same task (`flushSync`), so nothing in between is ever painted; it is
-	 * measured again whenever the page changes size (live updates, a rotated tablet).
+	 * against plans tried in order of priority until one fits (`fit-plan.ts`): what the display was
+	 * given (its widgets, everyone's status with who is home) goes last, after the decoration,
+	 * shorter widgets, the extras and a little less zoom. Once one fits, what the space now allows
+	 * comes back. Every plan is applied and measured in the same task (`flushSync`), so nothing in
+	 * between is ever painted; it is measured again whenever the page changes size (live updates,
+	 * a rotated tablet). What it still had no room for is told through `onfit`.
 	 */
 	let {
 		style,
@@ -33,6 +39,7 @@
 		reloadKey,
 		status,
 		foot,
+		onfit,
 	}: {
 		style: StyleId;
 		showNames: boolean;
@@ -42,8 +49,13 @@
 		/** Bumped now and then: everything is read again (a live update may have been missed). */
 		reloadKey: number;
 		status?: Snippet;
-		/** The widget band; `shown(i)` says whether its i-th widget is in the plan that fits. */
-		foot?: Snippet<[shown: (index: number) => boolean]>;
+		/**
+		 * The widget band; `shown(i)` says whether its i-th widget is in the plan that fits, `rows()`
+		 * the most rows each widget may show (none: its own limit).
+		 */
+		foot?: Snippet<[shown: (index: number) => boolean, rows: () => number | undefined]>;
+		/** After each fit: what the screen had no room for (widget ids and groups of blocks). */
+		onfit?: (leftOut: string[]) => void;
 	} = $props();
 
 	// `showNames` is fixed for this component's life: the page keys it.
@@ -65,58 +77,18 @@
 
 	/* ───────────── fitting one screen ───────────── */
 
-	/** The widgets in the plan: all of them, one (its index) or none. */
-	type Widgets = 'all' | 'none' | number;
-	interface Plan {
-		tight: number;
-		drop: readonly FitDrop[];
-		widgets: Widgets;
-		zoom: number;
-		shift: boolean;
-	}
-
 	/** No change in size for this long and the widgets have loaded; never longer than the cap. */
 	const QUIET_MS = 200;
 	const QUIET_CAP_MS = 1500;
-	/** The last resort takes the zoom down in small steps, to a person's own Today (1). */
-	const ZOOM_STEP = 0.0625;
-	const DROPS: readonly (readonly FitDrop[])[] = [
-		['photo'],
-		['photo', 'atmosphere'],
-		['photo', 'atmosphere', 'extras'],
-		['photo', 'atmosphere', 'extras', 'chores'],
-	];
-
-	/** One type step larger than on a person's screen from 1024 px, a TV-sized screen one more. */
-	const baseZoom = (width: number) => (width >= 1800 ? 1.5 : width >= 1024 ? 1.125 : 1);
-
-	/**
-	 * The plans, in the order they are tried: each gives up a little more than the one before, and
-	 * each is tried as it is, then with the style's smaller blocks moved where there is room.
-	 */
-	function plans(widgets: readonly number[], zoom: number): Plan[] {
-		const out: Omit<Plan, 'shift'>[] = [];
-		for (const tight of [0, 1, 2]) out.push({ tight, drop: [], widgets: 'all', zoom });
-		for (const i of widgets) out.push({ tight: 2, drop: [], widgets: i, zoom });
-		out.push({ tight: 2, drop: [], widgets: 'none', zoom });
-		for (const drop of DROPS) out.push({ tight: 2, drop, widgets: 'none', zoom });
-		const all = DROPS.at(-1) ?? [];
-		out.push({ tight: 3, drop: all, widgets: 'none', zoom });
-		for (let z = zoom - ZOOM_STEP; z >= 1 - 1e-6; z -= ZOOM_STEP)
-			out.push({ tight: 3, drop: all, widgets: 'none', zoom: z });
-		return out.flatMap((plan) => [
-			{ ...plan, shift: false },
-			{ ...plan, shift: true },
-		]);
-	}
 
 	let root = $state<HTMLDivElement>();
 	let band = $state<HTMLDivElement>();
 	let composed = $state(false);
 	let hold = $state(true);
 	let tight = $state(0);
+	let rows = $state(0);
 	const drop = new SvelteSet<FitDrop>();
-	let widgets = $state<Widgets>('all');
+	let hide = $state<readonly number[]>([]);
 	let zoom = $state(baseZoom(typeof window === 'undefined' ? 0 : window.innerWidth));
 	let shift = $state(false);
 	/** The plan that fits, as `data-fit` (for tests and for reading a screenshot). */
@@ -137,13 +109,15 @@
 			composed = true;
 		},
 	};
-	const shown = (index: number) => widgets === 'all' || widgets === index;
+	const shown = (index: number) => !hide.includes(index);
+	const maxRows = () => widgetRows(rows);
 
-	function apply(plan: Plan) {
+	function apply(plan: FitPlan) {
 		tight = plan.tight;
+		rows = plan.rows;
 		for (const d of [...drop]) if (!plan.drop.includes(d)) drop.delete(d);
 		for (const d of plan.drop) drop.add(d);
-		widgets = plan.widgets;
+		hide = plan.hide;
 		zoom = plan.zoom;
 		shift = plan.shift;
 		flushSync();
@@ -160,36 +134,38 @@
 		);
 	}
 
-	/** Tries the plans in order and keeps the first that fits (else the last, the tightest). */
+	/** The groups of blocks (`data-drop`) that show something when nothing is left out. */
+	function presentGroups(el: HTMLElement): Set<FitDrop> {
+		return new Set(
+			[...el.querySelectorAll<HTMLElement>('[data-drop]')]
+				.filter((block) => block.getClientRects().length > 0)
+				.map((block) => block.dataset.drop as FitDrop),
+		);
+	}
+
+	/** Tries the plans in order, keeps the first that fits and takes back what still fits. */
 	function fitScreen() {
 		const el = root;
 		if (!el) return;
+		const tiles = [...(band?.querySelectorAll<HTMLElement>(':scope > .widget') ?? [])];
 		// The widgets that show anything (one with nothing to say is an empty box).
-		const present = [...(band?.querySelectorAll(':scope > .widget') ?? [])].flatMap((widget, i) =>
-			widget.childElementCount > 0 ? [i] : [],
-		);
-		const all = plans(present, baseZoom(window.innerWidth));
-		let pick = all.at(-1);
-		for (const plan of all) {
+		const present = tiles.flatMap((widget, i) => (widget.childElementCount > 0 ? [i] : []));
+		const start = baseZoom(window.innerWidth);
+		apply({ tight: 0, rows: 0, drop: [], hide: [], zoom: start, shift: false });
+		const groups = presentGroups(el);
+		const pick = chooseFit(present, start, (plan) => {
 			apply(plan);
-			if (fits(el)) {
-				pick = plan;
-				break;
-			}
-		}
-		// Giving up blocks may have made room again for things per person: take back what fits.
-		for (let t = 0; pick && t < pick.tight; t++) {
-			const relaxed = { ...pick, tight: t };
-			apply(relaxed);
-			if (fits(el)) {
-				pick = relaxed;
-				break;
-			}
-		}
-		if (pick) {
-			apply(pick);
-			chosen = `${pick.tight}|${pick.drop.join(',')}|${pick.widgets}|${pick.zoom}${pick.shift ? '|shift' : ''}`;
-		}
+			return fits(el);
+		});
+		apply(pick);
+		chosen = describeFit(pick);
+		onfit?.(
+			leftOut(
+				pick,
+				tiles.map((tile) => tile.dataset.widget ?? ''),
+				groups,
+			),
+		);
 	}
 
 	// Measured once the composition has settled and the page stops changing size (the widgets
@@ -249,30 +225,29 @@
 </div>
 
 {#snippet widgetBand()}
-	<div
-		class="foot"
-		class:pending={hold}
-		class:none={widgets === 'none'}
-		bind:this={band}
-		data-testid="display-foot"
-	>
-		{@render foot?.(shown)}
+	<div class="foot" class:pending={hold} bind:this={band} data-testid="display-foot">
+		{@render foot?.(shown, maxRows)}
 	</div>
 {/snippet}
 
 <style>
 	/* The band of `display.widget` tiles, where the composition puts it (in its order, the whole
-	   width of its grid). */
+	   width of its grid), in columns of at least 18rem that the tiles fill top to bottom, so a
+	   short tile sits under another instead of leaving a gap beside a tall one. A composition may
+	   set `--band-display: contents` to lay the tiles out in a grid of its own. */
 	.foot {
 		order: var(--o, 0);
 		grid-column: 1 / -1;
 		min-width: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-		align-items: start;
-		gap: 20px;
+		display: var(--band-display, block);
+		columns: 18rem;
+		column-gap: 20px;
+		margin-bottom: -20px;
 	}
-	.foot.none,
+	.foot > :global(.widget) {
+		break-inside: avoid;
+		margin-bottom: 20px;
+	}
 	.foot:not(:has(> :not(:global(.gone)):not(:empty))) {
 		display: none;
 	}

@@ -47,6 +47,7 @@ export default defineWebExtension({
 		{
 			slot: 'display.widget',
 			id: 'board.notes',
+			labelKey: 'board:today_block',
 			order: 15,
 			requires: 'board.view',
 			component: () => import('./DisplayBoard.svelte'),

@@ -47,9 +47,11 @@
 	 * names off the day is one column of everything.
 	 *
 	 * A display fits one screen (`fit`): fewer cards per person first (the ones that have ended
-	 * leave first), then the atmosphere (the photo, the weather's hours, everyone's status), the
-	 * extras (shopping, the kitchen, the next days) and the chores. On a tablet held upright (640
-	 * to 1023 px) a display keeps the columns per person and pairs the smaller blocks.
+	 * leave first), then the photo and the weather's hours, the extras (shopping, the kitchen, the
+	 * next days) and the chores, and only last everyone's status (who is home). Its widgets sit
+	 * under the day; from 1280 px, when the day's column runs out of room (`shift`), under the
+	 * family's column instead. On a tablet held upright (640 to 1023 px) a display keeps the
+	 * columns per person and pairs the smaller blocks.
 	 */
 	let { data, status, fit, band }: CompositionProps = $props();
 
@@ -149,7 +151,7 @@
 	<!-- Phones leave the family's statuses out: the stacked day below already says what each one
 	     does. What it cannot say (where they are) stands in a strip, when there is something. -->
 	{#if data.members.length > 0 && wide.current && data.shows('family')}
-		<div class="blk" class:gone={gone('atmosphere')} style:--o="6">
+		<div class="blk" class:gone={gone('family')} data-drop="family" style:--o="6">
 			<TodayBlock block={data.menuFor('family')}>
 				<TodaySection title={words.family}>
 					<FamilyList people={data.statuses} label={words.family} />
@@ -157,7 +159,7 @@
 			</TodayBlock>
 		</div>
 	{:else if data.members.length > 0 && data.hasNotes && data.shows('family')}
-		<div class="blk" class:gone={gone('atmosphere')} style:--o="6">
+		<div class="blk" class:gone={gone('family')} data-drop="family" style:--o="6">
 			<TodayBlock block={data.menuFor('family')}>
 				<TodaySection title={words.family}>
 					<FamilyList people={data.statuses} label={words.family} variant="strip" />
@@ -167,7 +169,7 @@
 	{/if}
 
 	{#if data.rings.length > 0}
-		<div class="blk chores" class:gone={gone('chores')} style:--o="8">
+		<div class="blk chores" class:gone={gone('chores')} data-drop="chores" style:--o="8">
 			<TodayBlock block={data.menuFor(data.countsBlock)}>
 				<TodaySection title={words.choresToday} href={data.countsHref} more={words.chores}>
 					<ChoreRings
@@ -184,6 +186,7 @@
 <div
 	class="bs"
 	class:fm={data.familyMode}
+	class:shift={fit?.shift}
 	class:pending={!shown}
 	aria-busy={!shown}
 	data-testid="today-body"
@@ -231,7 +234,7 @@
 		</div>
 
 		{#if data.photoOfTheDay}
-			<div class="blk photo" class:gone={gone('photo')} style:--o="15">
+			<div class="blk photo" class:gone={gone('photo')} data-drop="photo" style:--o="15">
 				<PhotoTile
 					src={data.photoOfTheDay.src}
 					label={data.photoOfTheDay.label}
@@ -384,7 +387,7 @@
 		{/each}
 
 		{#if data.showNext}
-			<div class="blk" class:gone={gone('extras')} style:--o="11">
+			<div class="blk" class:gone={gone('extras')} data-drop="extras" style:--o="11">
 				<TodayBlock block={data.menuFor('nextDays')}>
 					<TodaySection title={t('home_next_title')} href={data.dayHref} more={t('home_next_link')}>
 						{@render nextDaysList()}
@@ -396,6 +399,7 @@
 		<section
 			class="blk {data.aheadTotal === 0 ? 'hidden' : ''}"
 			class:gone={gone('extras')}
+			data-drop="extras"
 			style:--o="12"
 			aria-labelledby="ahead-title"
 		>
@@ -416,10 +420,6 @@
 
 		{#if data.doneLine}
 			<div class="blk" style:--o="14"><QuietLine text={data.doneLine} testid="done-line" /></div>
-		{/if}
-		{#if band}
-			<!-- A display's widgets: the band is the grid item itself (gone when it has nothing). -->
-			<div class="widgets" style:--o="19">{@render band()}</div>
 		{/if}
 	</div>
 
@@ -466,7 +466,7 @@
 		{#if !threeCols}{@render glance()}{/if}
 
 		{#each data.glanceCards as c (c.id)}
-			<div class="blk empty:hidden" class:gone={gone('extras')} style:--o="8">
+			<div class="blk empty:hidden" class:gone={gone('extras')} data-drop="extras" style:--o="8">
 				<TodayBlock block={data.menuForCard(c)}>
 					<Slot
 						name="dashboard.card"
@@ -488,7 +488,7 @@
 		{/if}
 
 		{#if data.meals.length > 0}
-			<div class="blk" class:gone={gone('extras')} style:--o="13">
+			<div class="blk" class:gone={gone('extras')} data-drop="extras" style:--o="13">
 				<TodayBlock block={data.menuFor(data.mealsBlock?.id ?? '')}>
 					<TodaySection title={words.kitchen}>
 						<ul class="meals">
@@ -529,6 +529,11 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if band}
+		<!-- A display's widgets: after the day, or from 1280 px under the column with room. -->
+		<div class="widgets" style:--o="19">{@render band()}</div>
+	{/if}
 </div>
 
 <style>
@@ -1049,6 +1054,42 @@
 			)
 			> .atm {
 			grid-column: 1;
+		}
+	}
+
+	/* A display from 1280 px: its widgets on a second row under one column, which the other
+	   columns span: under the day, or (`shift`) under the family's column, where a display has
+	   only a few small blocks. Counted from the end, so it holds whichever columns show. */
+	@media (min-width: 1280px) {
+		.bs.fm {
+			grid-template-rows: auto 1fr;
+			row-gap: 0;
+		}
+		.fm > .col {
+			grid-row: 1 / span 2;
+		}
+		.fm > .widgets {
+			display: grid;
+			grid-row: 2;
+			grid-column: -3 / -2;
+			min-width: 0;
+		}
+		.fm > .widgets:has(:global(.widget:not(.gone):not(:empty))) {
+			padding-top: 26px;
+		}
+		.bs.fm:not(.shift) > .plan,
+		.bs.fm.shift > .fam {
+			grid-row: 1;
+		}
+		.fm.shift > .widgets {
+			grid-column: -2 / -1;
+		}
+		/* Without the family's column the day is the last one: the widgets stay under it. */
+		.bs.fm:not(:has(> .fam > :not(.hidden, .gone, :empty))) > .plan {
+			grid-row: 1;
+		}
+		.bs.fm:not(:has(> .fam > :not(.hidden, .gone, :empty))) > .widgets {
+			grid-column: -2 / -1;
 		}
 	}
 </style>

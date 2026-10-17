@@ -1,26 +1,22 @@
 import { isTimed } from '@famos/ui/famos';
 import type { TimelineItem } from '@famos/ui/slots';
 import type { Snippet } from 'svelte';
+import type { FitDrop } from './fit-plan.js';
 import type { TodayData } from './today-data.svelte.js';
 
-/**
- * What a family display may leave out to fit one screen, lowest priority first: the `photo`,
- * the rest of the `atmosphere` (the weather's hours, the list of everyone's status), the
- * `extras` (shopping, the kitchen, the next days and what is ahead), then the `chores`. The
- * head, the next thing and the day are never left out.
- */
-export type FitDrop = 'photo' | 'atmosphere' | 'extras' | 'chores';
+export type { FitDrop };
 
 /**
  * How a composition fits a family display's one screen (the display measures and chooses; see
- * `FamilyToday`). Each style reads it in its own way: fewer things per person first (`tight`),
- * then blocks left out (`drop`). Never set on a person's Today.
+ * `FamilyToday`, the plans `fit-plan.ts`). Each style reads it in its own way: fewer things per
+ * person (`tight`), blocks left out (`drop`), its widgets and smaller blocks moved to where there
+ * is room (`shift`). Never set on a person's Today.
  */
 export interface DisplayFit {
 	/** 0: the style's own limits; 1 to 3: fewer things per person (a column, a lane, a list). */
 	readonly tight: number;
 	readonly drop: ReadonlySet<FitDrop>;
-	/** The style may move its smaller blocks to the column with room (tried before giving up any). */
+	/** The style moves its widget band and smaller blocks to the column with room. */
 	readonly shift: boolean;
 	/** The display is still measuring: the composition stays hidden although it has settled. */
 	readonly hold: boolean;

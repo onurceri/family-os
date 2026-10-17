@@ -394,11 +394,23 @@ export const DeviceSchema = z.object({
 	kind: z.enum(['family', 'kiosk']),
 	createdAt: z.number(),
 	lastSeenAt: z.number(),
-	/** Displays only: what the display may show. */
-	display: z.object({ capabilities: z.array(z.string()), showNames: z.boolean() }).nullable(),
+	/**
+	 * Displays only: what the display may show, and what its screen last had no room for (widget
+	 * ids, and `family`, `chores`, `extras`, `photo` for groups of Today's blocks).
+	 */
+	display: z
+		.object({
+			capabilities: z.array(z.string()),
+			showNames: z.boolean(),
+			leftOut: z.array(z.string()),
+		})
+		.nullable(),
 });
 
-export const toDevice = (row: DeviceRow): z.infer<typeof DeviceSchema> => ({
+export const toDevice = (
+	row: DeviceRow,
+	leftOut: readonly string[] = [],
+): z.infer<typeof DeviceSchema> => ({
 	id: row.id,
 	name: row.name,
 	kind: row.kind,
@@ -409,6 +421,7 @@ export const toDevice = (row: DeviceRow): z.infer<typeof DeviceSchema> => ({
 			? {
 					capabilities: JSON.parse(row.display_capabilities) as string[],
 					showNames: row.display_show_names === 1,
+					leftOut: [...leftOut],
 				}
 			: null,
 });
@@ -1075,7 +1088,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		requires: CORE_CAPABILITIES.devicesManage.id,
 		response: z.array(DeviceSchema),
 		async handle() {
-			return (await deps.devices().list()).map(toDevice);
+			const devices = deps.devices();
+			return (await devices.list()).map((row) => toDevice(row, devices.leftOut(row.id)));
 		},
 	});
 

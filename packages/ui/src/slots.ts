@@ -103,8 +103,10 @@ export interface SlotProps extends FamosExtensionSlots {
 	 * what the display's Today does not show (Today in family mode already has the day, chores,
 	 * the weather, the photo and the cards with a glance). Read-only: no links, no buttons. It runs
 	 * as the display, so it may only call routes of view capabilities the display was granted.
+	 * `rows`: the most rows (or papers) the screen has room for, the rest as "+n"; without it the
+	 * widget's own limit. A display shortens its widgets before it leaves one out.
 	 */
-	'display.widget': Record<string, never>;
+	'display.widget': { rows?: number };
 	/**
 	 * A compact status pill beside the clock of a family display ("2 suggestions waiting").
 	 * Build it with `DisplayPill` from `@famos/ui/famos`; render nothing when there is nothing to
@@ -159,9 +161,11 @@ interface SlotContributionOf<S extends SlotName> {
 	 */
 	size?: 'hero' | 'wide' | 'compact';
 	/**
-	 * `dashboard.card` only: the card's name in "What Today shows" (`<extension>:<key>`), where
-	 * each person can hide it; without it the list uses the extension's name. `hintKey`: one line
-	 * on what it shows. Cards of the `needs` band are part of Needs you and are not listed.
+	 * `dashboard.card`: the card's name in "What Today shows" (`<extension>:<key>`), where each
+	 * person can hide it; without it the list uses the extension's name. `hintKey`: one line on
+	 * what it shows. Cards of the `needs` band are part of Needs you and are not listed.
+	 * `display.widget`: the widget's name where Settings → Devices says a display had no room for
+	 * it.
 	 */
 	labelKey?: string;
 	hintKey?: string;

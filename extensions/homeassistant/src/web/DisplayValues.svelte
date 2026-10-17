@@ -11,6 +11,7 @@
 	 * value, in larger type. Never a switch or a button: a display switches nothing. Nothing at all
 	 * when there is nothing to show.
 	 */
+	let { rows }: { rows?: number } = $props();
 	const { app, t } = useHomeAssistant();
 
 	let values = $state<Values | null>(null);
@@ -22,6 +23,8 @@
 		}
 	}
 	const shown = $derived(values?.status === 'ok' ? values.items : []);
+	/** Every item the family chose, unless the display has room for fewer. */
+	const max = $derived(Math.max(1, rows ?? shown.length));
 
 	$effect(() => {
 		void load();
@@ -38,7 +41,7 @@
 	<DisplaySection title={t('display_title')}>
 		{#snippet icon()}<House class="text-now" />{/snippet}
 		<div class="grid gap-2">
-			{#each shown as item (item.id)}
+			{#each shown.slice(0, max) as item (item.id)}
 				{@const said = sayValue(app, t, item.value)}
 				<DisplayRow variant="lit" title={item.label}>
 					{#snippet trail()}
@@ -47,5 +50,6 @@
 				</DisplayRow>
 			{/each}
 		</div>
+		{#if shown.length > max}<p class="text-ink-soft px-1 text-[13px]">+{shown.length - max}</p>{/if}
 	</DisplaySection>
 {/if}

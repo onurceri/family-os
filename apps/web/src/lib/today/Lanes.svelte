@@ -56,7 +56,9 @@
 	 *
 	 * A display fits one screen (`fit`): the lanes give up rows first (overlapping blocks share
 	 * one), then the atmosphere (the photo, the weather's hours), the extras (shopping, the
-	 * kitchen, the next days). A display folds the chores into the lane heads, beside each one's
+	 * kitchen, the next days). Its widgets run across the page under the chart, or (`shift`) down a
+	 * column of their own beside it; who is home stands in each lane's head, which is never left
+	 * out. A display folds the chores into the lane heads, beside each one's
 	 * status, instead of a block of bars (with names off, the family's total in its one lane). On a tablet held upright
 	 * (640 to 1023 px) a display keeps the chart across the page.
 	 */
@@ -301,6 +303,7 @@
 <div
 	class="ln"
 	class:fm={data.familyMode}
+	class:shift={fit?.shift}
 	class:pending={!shown}
 	aria-busy={!shown}
 	data-testid="today-body"
@@ -506,7 +509,7 @@
 		{/if}
 
 		{#each data.glanceCards as c (c.id)}
-			<div class="blk empty:hidden" class:gone={gone('extras')} style:--o="8">
+			<div class="blk empty:hidden" class:gone={gone('extras')} data-drop="extras" style:--o="8">
 				<TodayBlock block={data.menuForCard(c)}
 					><Slot
 						name="dashboard.card"
@@ -519,7 +522,7 @@
 
 		<!-- The photo of the day: on a display (family mode), beside the numbers. -->
 		{#if data.familyMode && data.photoOfTheDay}
-			<div class="blk" class:gone={gone('photo')} style:--o="8">
+			<div class="blk" class:gone={gone('photo')} data-drop="photo" style:--o="8">
 				<PhotoTile src={data.photoOfTheDay.src} label={data.photoOfTheDay.label} height={150} />
 			</div>
 		{/if}
@@ -537,7 +540,7 @@
 		{/each}
 
 		{#if data.showNext}
-			<div class="blk" class:gone={gone('extras')} style:--o="9">
+			<div class="blk" class:gone={gone('extras')} data-drop="extras" style:--o="9">
 				<TodayBlock block={data.menuFor('nextDays')}>
 					<TodaySection title={t('home_next_title')} href={data.dayHref} more={t('home_next_link')}>
 						{@render nextDaysList()}
@@ -549,6 +552,7 @@
 		<section
 			class="blk {data.aheadTotal === 0 ? 'hidden' : ''}"
 			class:gone={gone('extras')}
+			data-drop="extras"
 			style:--o="10"
 			aria-labelledby="ahead-title"
 		>
@@ -614,7 +618,7 @@
 		{/if}
 	</div>
 	{#if band}
-		<!-- A display's widgets: the band is the grid item itself (gone when it has nothing). -->
+		<!-- A display's widgets: under the chart, across the page (gone when it has nothing). -->
 		<div class="widgets" style:--o="19">{@render band()}</div>
 	{/if}
 </div>
@@ -978,7 +982,7 @@
 	   of the head's row; everything else takes the whole width. */
 	@media (min-width: 1024px) {
 		.ln.fm {
-			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-columns: minmax(min-content, 1fr) auto;
 			column-gap: 32px;
 		}
 		.fm > * {
@@ -987,6 +991,16 @@
 		.fm > .top {
 			grid-column: 1;
 			grid-row: 1;
+		}
+		/* The clock and the weather keep a readable width (the head's column is never narrower than
+		   they are): a head row too full for them runs past the screen, so the display gives up
+		   something else instead of squeezing them. */
+		.fm > .top:has(> .weather:not(:empty)) {
+			grid-template-columns: auto minmax(16rem, 1fr);
+		}
+		.fm > .top > .head,
+		.fm > .band {
+			min-width: min-content;
 		}
 		.fm > .band {
 			grid-column: 2;
@@ -998,6 +1012,18 @@
 		}
 		.fm .band > * {
 			grid-column: auto;
+		}
+		/* When there is no room under the chart (`shift`), the widgets take a column of their own
+		   at the end, from the head down beside the chart. */
+		.ln.fm.shift {
+			grid-template-columns: minmax(min-content, 1fr) auto 18.75rem;
+		}
+		.fm.shift > :not(.top, .band) {
+			grid-column: 1 / 3;
+		}
+		.fm.shift > .widgets > :global(.foot) {
+			grid-column: 3;
+			grid-row: 1 / span 3;
 		}
 	}
 

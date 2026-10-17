@@ -9,8 +9,11 @@
 	import { dueLabel, stillMatters } from './status.js';
 
 	/** Family display widget: duties due soon or overdue. Read-only, hidden when empty. */
+	let { rows }: { rows?: number } = $props();
 	const { app, t } = useRecords();
 	const MAX = 2;
+	/** Fewer when the display has less room. */
+	const max = $derived(Math.max(1, Math.min(MAX, rows ?? MAX)));
 	let now = $state(Date.now());
 	const clock = setInterval(() => (now = Date.now()), 60_000);
 	onDestroy(() => clearInterval(clock));
@@ -34,13 +37,13 @@
 {#if items.length > 0}
 	<DisplaySection title={t('coming_up')} count={String(items.length)}>
 		{#snippet icon()}<CalendarClock class="text-now" />{/snippet}
-		{#each items.slice(0, MAX) as o (o.id)}
+		{#each items.slice(0, max) as o (o.id)}
 			<DisplayRow
 				variant="lit"
 				title={o.title}
 				subtitle="{o.recordName} · {dueLabel(o, today, t, app.dateLocale())}"
 			/>
 		{/each}
-		{#if items.length > MAX}<p class="text-ink-soft px-1 text-[13px]">+{items.length - MAX}</p>{/if}
+		{#if items.length > max}<p class="text-ink-soft px-1 text-[13px]">+{items.length - max}</p>{/if}
 	</DisplaySection>
 {/if}

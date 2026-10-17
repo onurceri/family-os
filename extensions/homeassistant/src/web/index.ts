@@ -58,6 +58,7 @@ export default defineWebExtension({
 		{
 			slot: 'display.widget',
 			id: 'homeassistant.values',
+			labelKey: 'homeassistant:today_block',
 			order: 25,
 			requires: 'homeassistant.view',
 			component: () => import('./DisplayValues.svelte'),

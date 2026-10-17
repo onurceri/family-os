@@ -11,8 +11,11 @@
 	/**
 	 * Family display widget: the open tasks, those due today or overdue first. Read-only.
 	 */
+	let { rows }: { rows?: number } = $props();
 	const { app, t } = useLists();
 	const MAX = 7;
+	/** Fewer when the display has less room. */
+	const max = $derived(Math.min(MAX, rows ?? MAX));
 	let now = $state(Date.now());
 	const clock = setInterval(() => (now = Date.now()), 60_000);
 	onDestroy(() => clearInterval(clock));
@@ -68,7 +71,7 @@
 	{#if open.length === 0}
 		<DisplayRow variant="empty" title={t('display_no_tasks')} />
 	{:else}
-		{#each ordered.slice(0, MAX) as { task, lit } (task.id)}
+		{#each ordered.slice(0, max) as { task, lit } (task.id)}
 			<DisplayRow variant={lit ? 'lit' : 'idle'} title={task.title} subtitle={subtitle(task)}>
 				{#snippet lead()}
 					{@const member = assignee(task)}
@@ -91,8 +94,8 @@
 				{/snippet}
 			</DisplayRow>
 		{/each}
-		{#if ordered.length > MAX}<p class="text-ink-soft px-1 text-[13px]">
-				+{ordered.length - MAX}
+		{#if ordered.length > max}<p class="text-ink-soft px-1 text-[13px]">
+				+{ordered.length - max}
 			</p>{/if}
 	{/if}
 </DisplaySection>

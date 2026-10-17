@@ -46,8 +46,8 @@
 	 * names off there are no rows per person: the rest of the day is one list (what is still to
 	 * come, the hero's item aside) and the chores' total joins the tiles.
 	 *
-	 * A display fits one screen (`fit`) with its two columns: the left one holds the atmosphere,
-	 * the right one the day. It gives up the list's length first (names off), then the
+	 * A display fits one screen (`fit`) with its two columns: the left one holds the atmosphere
+	 * and the widgets, the right one the day (who is home on each person's row, never left out). It gives up the list's length first (names off), then the
 	 * atmosphere (the photo, the weather's bars), the extras (shopping, the kitchen, the next
 	 * days) and the chores' total; with names on the chores stay as each row's ring. On a tablet
 	 * held upright (640 to 1023 px) a display pairs the head with the weather and keeps the names.
@@ -208,7 +208,7 @@
 		{/each}
 
 		{#if data.photoOfTheDay}
-			<div class="blk photo" class:gone={gone('photo')} style:--o="12">
+			<div class="blk photo" class:gone={gone('photo')} data-drop="photo" style:--o="12">
 				<PhotoTile
 					src={data.photoOfTheDay.src}
 					label={data.photoOfTheDay.label}
@@ -220,6 +220,10 @@
 		<!-- 1024–1279 px and phones keep search on More; a display has none. -->
 		{#if !data.familyMode}
 			<div class="blk search"><SearchBox floating /></div>
+		{/if}
+		{#if band}
+			<!-- A display's widgets: under the weather, where the clock's column has room. -->
+			<div class="widgets" style:--o="19">{@render band()}</div>
 		{/if}
 	</div>
 
@@ -394,7 +398,7 @@
 		<div class="blk tiles" style:--o="10" data-testid="wall-tiles">
 			<!-- Names off (a display): the chores' total, as there are no rows to carry rings. -->
 			{#if !data.showNames && data.rings.length > 0}
-				<div class="tile" class:gone={gone('chores')}>
+				<div class="tile" class:gone={gone('chores')} data-drop="chores">
 					<TodayBlock block={data.menuFor(data.countsBlock)}>
 						<TodaySection title={words.choresToday}>
 							<ChoreRings
@@ -408,7 +412,7 @@
 			{/if}
 
 			{#each data.glanceCards as c (c.id)}
-				<div class="tile empty:hidden" class:gone={gone('extras')}>
+				<div class="tile empty:hidden" class:gone={gone('extras')} data-drop="extras">
 					<TodayBlock block={data.menuForCard(c)}
 						><Slot
 							name="dashboard.card"
@@ -420,7 +424,7 @@
 			{/each}
 
 			{#if data.showNext}
-				<div class="tile" class:gone={gone('extras')}>
+				<div class="tile" class:gone={gone('extras')} data-drop="extras">
 					<TodayBlock block={data.menuFor('nextDays')}>
 						<TodaySection
 							title={t('home_next_title')}
@@ -458,6 +462,7 @@
 			<section
 				class="tile {data.aheadTotal === 0 ? 'hidden' : ''}"
 				class:gone={gone('extras')}
+				data-drop="extras"
 				aria-labelledby="ahead-title"
 			>
 				<TodayBlock block={aheadMenu}>
@@ -480,7 +485,7 @@
 			</section>
 
 			{#if data.meals.length > 0}
-				<div class="tile" class:gone={gone('extras')}>
+				<div class="tile" class:gone={gone('extras')} data-drop="extras">
 					<TodayBlock block={data.menuFor(data.mealsBlock?.id ?? '')}>
 						<TodaySection title={words.kitchen}>
 							<ul class="meals">
@@ -528,10 +533,6 @@
 					>
 				{/each}
 			</div>
-		{/if}
-		{#if band}
-			<!-- A display's widgets: the band is the grid item itself (gone when it has nothing). -->
-			<div class="widgets" style:--o="19">{@render band()}</div>
 		{/if}
 	</div>
 </div>
@@ -950,10 +951,10 @@
 		}
 	}
 
-	/* A display from 1024 px: always two columns, the left one narrower below 1280 px. When the
-	   day's column runs out of room (`shift`), the tiles move to the atmosphere's column: the head
-	   beside the next thing; under them "Who, next" on the right, and the weather, the tiles and
-	   the photo on the left beside it. */
+	/* A display from 1024 px: always two columns, the left one narrower below 1280 px, the
+	   widgets under the weather. When that runs out of room (`shift`), the tiles move to the
+	   atmosphere's column: the head beside the next thing; under them "Who, next" and the widgets
+	   on the right, and the weather, the tiles and the photo on the left beside them. */
 	@media (min-width: 1024px) {
 		.wall.fm {
 			grid-template-columns: 18rem minmax(0, 1fr);
@@ -987,7 +988,7 @@
 		.fm.shift .atm > .head {
 			grid-area: 1 / 1;
 		}
-		.fm.shift .plan > .hero {
+		.fm.shift .plan > :is(.hero, .note, .none-for-me) {
 			grid-area: 1 / 2;
 		}
 		.fm.shift .atm > .weather {
@@ -1002,6 +1003,13 @@
 		}
 		.fm.shift .plan > .who-blk {
 			grid-area: 2 / 2 / span 3;
+		}
+		/* With widgets, they take the room the tiles left on the right, under "Who, next". */
+		.wall.fm.shift:has(.atm > .widgets :global(.widget:not(.gone):not(:empty))) .plan > .who-blk {
+			grid-area: 2 / 2;
+		}
+		.fm.shift .atm > .widgets > :global(.foot) {
+			grid-area: 3 / 2 / span 2;
 		}
 	}
 	@media (min-width: 1280px) {

@@ -83,6 +83,7 @@ export default defineWebExtension({
 		{
 			slot: 'display.widget',
 			id: 'lists.tasks',
+			labelKey: 'lists:today_block_tasks',
 			order: 20,
 			requires: 'lists.view',
 			component: () => import('./DisplayTasks.svelte'),

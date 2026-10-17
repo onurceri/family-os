@@ -38,3 +38,32 @@ export function initialGrant(
 ): string[] {
 	return options.map((o) => o.id).filter((id) => !optIn.has(id));
 }
+
+/** The words of each group of Today's blocks a display may have no room for. */
+const LEFT_OUT_GROUPS = {
+	family: 'devices_left_out_family',
+	chores: 'devices_left_out_chores',
+	extras: 'devices_left_out_extras',
+	photo: 'devices_left_out_photo',
+} as const;
+
+/** A part a display had no room for: a group (by its words) or a widget (by its own name). */
+export type LeftOutName =
+	| { key: (typeof LEFT_OUT_GROUPS)[keyof typeof LEFT_OUT_GROUPS] }
+	| { id: string; labelKey?: string };
+
+/**
+ * How to name what a display said it had no room for: a group of Today's blocks by its words, a
+ * widget by its contribution's `labelKey` (a widget no longer installed by its id).
+ */
+export function leftOutNames(
+	leftOut: readonly string[],
+	contributions: readonly (DisplayContribution & { id: string; labelKey?: string })[],
+): LeftOutName[] {
+	return leftOut.map((part) => {
+		if (Object.hasOwn(LEFT_OUT_GROUPS, part))
+			return { key: LEFT_OUT_GROUPS[part as keyof typeof LEFT_OUT_GROUPS] };
+		const widget = contributions.find((c) => c.slot === 'display.widget' && c.id === part);
+		return widget?.labelKey ? { id: part, labelKey: widget.labelKey } : { id: part };
+	});
+}

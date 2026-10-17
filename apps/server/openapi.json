@@ -371,11 +371,18 @@
 												},
 												"showNames": {
 													"type": "boolean"
+												},
+												"leftOut": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
 												}
 											},
 											"required": [
 												"capabilities",
-												"showNames"
+												"showNames",
+												"leftOut"
 											]
 										}
 									},
@@ -2248,11 +2255,18 @@
 												},
 												"showNames": {
 													"type": "boolean"
+												},
+												"leftOut": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
 												}
 											},
 											"required": [
 												"capabilities",
-												"showNames"
+												"showNames",
+												"leftOut"
 											]
 										}
 									},
@@ -2698,6 +2712,261 @@
 												"capability": {
 													"type": "string"
 												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/core/displays/me/fit": {
+			"post": {
+				"operationId": "core.reportDisplayFit",
+				"summary": "The display tells what its screen had no room for",
+				"tags": [
+					"core"
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"leftOut": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"minLength": 1,
+											"maxLength": 100
+										},
+										"maxItems": 40
+									}
+								},
+								"required": [
+									"leftOut"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"204": {
+						"description": "Noted"
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
 											},
 											"required": [
 												"code",
@@ -19234,11 +19503,18 @@
 													},
 													"showNames": {
 														"type": "boolean"
+													},
+													"leftOut": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														}
 													}
 												},
 												"required": [
 													"capabilities",
-													"showNames"
+													"showNames",
+													"leftOut"
 												]
 											}
 										},
@@ -19830,11 +20106,18 @@
 												},
 												"showNames": {
 													"type": "boolean"
+												},
+												"leftOut": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													}
 												}
 											},
 											"required": [
 												"capabilities",
-												"showNames"
+												"showNames",
+												"leftOut"
 											]
 										}
 									},

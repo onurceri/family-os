@@ -47,6 +47,7 @@ export default defineWebExtension({
 		{
 			slot: 'display.widget',
 			id: 'records.comingUp',
+			labelKey: 'records:today_block',
 			order: 40,
 			requires: 'records.view',
 			component: () => import('./DisplayComingUp.svelte'),

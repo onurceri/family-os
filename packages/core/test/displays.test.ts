@@ -340,6 +340,27 @@ describe('what a display can do', () => {
 		expect(listed?.name).toBe('Kitchen');
 	});
 
+	it('keeps what its screen had no room for, says so only when it changes, forgets it when revoked', async () => {
+		const { admin, device } = await pair();
+		const heard: string[] = [];
+		k.bus.onAny((name) => void heard.push(name));
+		expect(k.devices.leftOut(device.id)).toEqual([]);
+
+		await k.devices.reportFit(device.id, ['peek.widget', 'family', 'family']);
+		expect(k.devices.leftOut(device.id)).toEqual(['family', 'peek.widget']);
+		// The same again (in another order) is no news.
+		await k.devices.reportFit(device.id, ['family', 'peek.widget']);
+		expect(heard.filter((n) => n === 'core.displayFit.changed')).toHaveLength(1);
+
+		await k.devices.reportFit(device.id, []);
+		expect(k.devices.leftOut(device.id)).toEqual([]);
+		expect(heard.filter((n) => n === 'core.displayFit.changed')).toHaveLength(2);
+
+		await k.devices.reportFit(device.id, ['chores']);
+		await k.devices.revoke(admin, device.id);
+		expect(k.devices.leftOut(device.id)).toEqual([]);
+	});
+
 	it('stops at once when revoked', async () => {
 		const { admin, device, token } = await pair();
 		expect(displayActor(await k.devices.verify(token))).not.toBeNull();

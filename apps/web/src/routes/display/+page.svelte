@@ -218,6 +218,25 @@
 			.toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0)) as SlotContribution<S>[];
 	}
 	const widgets = $derived(visible('display.widget'));
+
+	/**
+	 * What the screen had no room for, told to the server so Settings → Devices can say it. Sent
+	 * when it changes, and again with every refresh (the server keeps it in memory only).
+	 */
+	let reported: string | null = null;
+	$effect(() => {
+		void refreshKey;
+		reported = null;
+	});
+	function reportFit(leftOut: string[]) {
+		const said = JSON.stringify(leftOut);
+		if (said === reported) return;
+		reported = said;
+		void api.POST('/api/v1/core/displays/me/fit', { body: { leftOut } }).catch(() => {
+			// Not said this time; the next fit or refresh says it again.
+			reported = null;
+		});
+	}
 	const statuses = $derived(visible('display.status'));
 	/** Nothing granted that the display could show: it says where to choose. */
 	const empty = $derived(
@@ -265,7 +284,7 @@
 	{/key}
 {/snippet}
 
-{#snippet foot(shown: (index: number) => boolean)}
+{#snippet foot(shown: (index: number) => boolean, rows: () => number | undefined)}
 	{#if empty}
 		<p class="bg-idle text-ink-soft rounded-lg px-4 py-3 text-lg">{t('display_empty')}</p>
 	{/if}
@@ -274,7 +293,7 @@
 			<!-- Every widget stays mounted; one the screen has no room for is only not shown. -->
 			<div class="widget" class:gone={!shown(i)} data-widget={widget.id}>
 				{#await trackWork(widget.component()) then mod}
-					<mod.default />
+					<mod.default rows={rows()} />
 				{/await}
 			</div>
 		{/each}
@@ -317,6 +336,7 @@
 						reloadKey={refreshKey}
 						{status}
 						{foot}
+						onfit={reportFit}
 					/>
 				{/key}
 			{/if}

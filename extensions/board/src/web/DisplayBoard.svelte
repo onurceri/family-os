@@ -11,9 +11,12 @@
 	 * Family display widget: the notes on the board, pinned first, then the newest, in
 	 * larger type. Read-only: nothing to touch, and a display never marks a note seen.
 	 */
+	let { rows }: { rows?: number } = $props();
 	const { app, t } = useBoard();
 	// Two papers: a display's column is short, and a third one was cut off at the bottom.
 	const MAX = 2;
+	/** A paper is about as tall as three rows: one paper when the display has room for fewer than six. */
+	const max = $derived(rows === undefined || rows >= 6 ? MAX : 1);
 	let now = $state(Date.now());
 	const clock = setInterval(() => (now = Date.now()), 60_000);
 	onDestroy(() => clearInterval(clock));
@@ -44,10 +47,10 @@
 		<DisplayRow variant="empty" title={t('display_empty')} />
 	{:else}
 		<ul class="grid gap-4 pt-1">
-			{#each notes.slice(0, MAX) as note (note.id)}
+			{#each notes.slice(0, max) as note (note.id)}
 				<li><NoteCard {note} {now} variant="display" /></li>
 			{/each}
 		</ul>
-		{#if notes.length > MAX}<p class="text-ink-soft px-1 text-[13px]">+{notes.length - MAX}</p>{/if}
+		{#if notes.length > max}<p class="text-ink-soft px-1 text-[13px]">+{notes.length - max}</p>{/if}
 	{/if}
 </DisplaySection>
