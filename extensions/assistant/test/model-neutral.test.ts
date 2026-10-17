@@ -1,11 +1,14 @@
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
-import { systemActor } from '@famos/sdk';
+import { createHandleTable, idSchema, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
+import en from '../src/messages/en.json' with { type: 'json' };
+import tr from '../src/messages/tr.json' with { type: 'json' };
 import assistant from '../src/server/index.ts';
-import { namedBy, saidBy } from '../src/server/tools.ts';
+import { namedBy, saidBy, withoutUnnamedPeople } from '../src/server/tools.ts';
 
 /*
  * What gpt-4.1-mini sent as tool calls, word for word, in the assistant eval: it fills every
@@ -44,10 +47,10 @@ beforeEach(async () => {
 });
 afterEach(() => k.close());
 
-async function ask(text: string, who = sofia) {
+async function ask(text: string, who = sofia, threadId?: string) {
 	const result = await k.runner.invoke<{ threadId: string; replyId: string }>(
 		'assistant.sendMessage',
-		{ text },
+		{ text, ...(threadId && { threadId }) },
 		who.actor,
 	);
 	if (result.status !== 'applied') throw new Error('expected the message to be stored');
@@ -57,7 +60,8 @@ async function ask(text: string, who = sofia) {
 		.call({ params: { threadId: result.output.threadId }, actor: who.actor })) as {
 		messages: { id: string; status: string; content: string; errorCode: string | null }[];
 	};
-	return detail.messages.find((m) => m.id === result.output.replyId);
+	const reply = detail.messages.find((m) => m.id === result.output.replyId);
+	return reply && { ...reply, threadId: result.output.threadId };
 }
 const drafts = () =>
 	k.route('core.listDrafts').call({ query: { limit: 50 }, actor: sofia.actor }) as Promise<
@@ -187,6 +191,34 @@ describe('the words for the thing to change', () => {
 		expect(await drafts()).toEqual([]);
 	});
 
+	it('may be the assistant’s own when the person confirms its question', async () => {
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Dentist checkup', date: '2026-10-08', startTime: '09:30' },
+			systemActor('test'),
+		);
+		k.llm.respondChat(
+			[
+				{ tool: 'calendar_findEvents', input: { text: 'Dental cleaning' } },
+				{ tool: 'calendar_findEvents', input: { from: '2026-10-05', to: '2026-10-11' } },
+				{ text: 'There is no Dental cleaning. Did you mean the Dentist checkup on Thursday?' },
+			],
+			[
+				{
+					tool: 'calendar_changeEvent',
+					input: { id: 'cal_event:1', startTime: '10:00', label: 'Dentist checkup' },
+				},
+				{ text: 'Suggested.' },
+			],
+		);
+		const first = await ask('Change Dental cleaning to 10:00');
+		k.clock.advance(60_000);
+		await ask('yes', sofia, first?.threadId);
+		expect(await drafts()).toMatchObject([
+			{ actionId: 'calendar.changeEvent', input: { startTime: '10:00' } },
+		]);
+	});
+
 	it('counts whole words, with a plural s aside', () => {
 		expect(namedBy('the bananas', 'Tick off the banana', 'en')).toBe(true);
 		expect(namedBy('Sunday planning', 'Move Sunday planning to 18:00', 'en')).toBe(true);
@@ -252,10 +284,78 @@ describe('people on a change', () => {
 		expect((await changes())[0]?.input).not.toHaveProperty('memberIds');
 	});
 
+	it('clears the people when the message says it is for everyone', async () => {
+		await sundayPlanning();
+		k.llm.respondChat([find, move([]), { text: 'Suggested.' }]);
+		await ask('Move Sunday planning to 18:00 and make it for the whole family');
+		expect((await changes())[0]?.input.memberIds).toEqual([]);
+	});
+
+	it('never takes only the asker for "everyone"', async () => {
+		await sundayPlanning();
+		k.llm.respondChat([find, move(['Sofia']), { text: 'Suggested.' }]);
+		await ask('Move Sunday planning to 18:00 for everyone');
+		expect((await changes())[0]?.input).not.toHaveProperty('memberIds');
+	});
+
 	it('takes the people the message names, and the asker who says "me"', async () => {
 		await sundayPlanning();
 		k.llm.respondChat([find, move(['Ellie', 'Sofia']), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00, for Ellie and me');
 		expect((await changes())[0]?.input.memberIds).toEqual([ellie.member.id, sofia.member.id]);
+	});
+});
+
+describe('people of a chore’s turns, in both languages', () => {
+	const id = (prefix: string, n: number) =>
+		`${prefix}_01990000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+	// The shape of chores.setAssignees: the chore and the people in turn order.
+	const schema = z.toJSONSchema(
+		z.object({ id: idSchema('chore'), memberIds: z.array(idSchema('member')) }),
+		{ io: 'input' },
+	) as Record<string, unknown>;
+	const ayse = id('member', 1);
+	const deniz = id('member', 2);
+	const people = [
+		{ id: ayse, displayName: 'Ayşe' },
+		{ id: deniz, displayName: 'Deniz' },
+	];
+	const table = createHandleTable();
+	table.add('member', ayse);
+	table.add('member', deniz);
+	const words = (value: string) => value.split(',').map((w) => w.trim());
+	const env = (text: string) => ({
+		table,
+		people,
+		locale: 'tr',
+		asked: {
+			text,
+			memberId: ayse,
+			self: [...words(en.words_self), ...words(tr.words_self)],
+			everyone: [...words(en.words_everyone), ...words(tr.words_everyone)],
+		},
+	});
+	const turns = (memberIds: string[], text: string) =>
+		withoutUnnamedPeople({ id: 'chore:1', memberIds }, schema, env(text)) as Record<
+			string,
+			unknown
+		>;
+
+	it('takes everyone, or the people named', () => {
+		expect(turns([], 'Bulaşığı herkes yapabilsin')).toMatchObject({ memberIds: [] });
+		expect(turns([], 'Let everyone do the dishes')).toMatchObject({ memberIds: [] });
+		expect(turns(['member:1', 'member:2'], 'Bulaşık sırası tüm aileye')).toMatchObject({
+			memberIds: ['member:1', 'member:2'],
+		});
+		expect(turns(['Deniz', 'Ayşe'], 'Bulaşığı Deniz ve ben sırayla yapalım')).toMatchObject({
+			memberIds: ['Deniz', 'Ayşe'],
+		});
+	});
+
+	it('leaves the turns as they are when nobody is named', () => {
+		expect(turns(['member:1'], 'Bulaşık sırasını düzenle')).not.toHaveProperty('memberIds');
+		expect(turns([], 'Sort out the dishes')).not.toHaveProperty('memberIds');
+		// "Everyone" never lets only some of them in.
+		expect(turns(['member:1'], 'herkes için')).not.toHaveProperty('memberIds');
 	});
 });

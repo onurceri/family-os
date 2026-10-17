@@ -101,7 +101,19 @@ export interface ToolEnv {
 	 * change to an existing record takes people only when the message names them (see
 	 * `withoutUnnamedPeople`).
 	 */
-	asked?: { text: string; memberId: string; self: readonly string[] };
+	asked?: {
+		text: string;
+		memberId: string;
+		self: readonly string[];
+		/** Words for everyone in the family ("everyone", "the whole family"), from the catalog. */
+		everyone?: readonly string[];
+	};
+	/**
+	 * What the person and the assistant said in this conversation (not tool results, which the
+	 * person never saw), for the words a change names its thing by: a person who confirms the
+	 * assistant's "did you mean the Dentist checkup?" names it with the assistant's words.
+	 */
+	heard?: string;
 	/** A catalog key in the asker's language (the names of suggestions). */
 	translate: (key: string) => string;
 	/** Told about each failed call (for the log). */
@@ -133,7 +145,8 @@ function callKey(actionId: string, input: unknown): string {
  * A change to an existing record (its input has an `id`) without the person fields whose people
  * the person's latest message does not name: a model that puts the asker into every person field
  * would otherwise replace who an event or a task is for. A person is named by a whole word of
- * their name, or, for the asker, by a word of their own for themselves ("me", from the catalog).
+ * their name, or, for the asker, by a word of their own for themselves ("me", from the catalog);
+ * a word for everyone ("the whole family", from the catalog) takes an empty list or every member.
  * A field left out is not changed. Everything else is kept as the model sent it.
  */
 export function withoutUnnamedPeople(
@@ -149,8 +162,15 @@ export function withoutUnnamedPeople(
 			.toLocaleLowerCase(locale)
 			.split(/[^\p{L}\p{N}]+/u)
 			.filter((word) => word !== '');
-	const said = new Set(words(env.asked.text));
+	const spoken = words(env.asked.text);
+	const said = new Set(spoken);
 	const self = env.asked.self.some((word) => said.has(word.toLocaleLowerCase(locale)));
+	// "Everyone" may be several words ("the whole family"): they must come in that order.
+	const line = ` ${spoken.join(' ')} `;
+	const everyone = (env.asked.everyone ?? []).some((phrase) => {
+		const parts = words(phrase);
+		return parts.length > 0 && line.includes(` ${parts.join(' ')} `);
+	});
 	const book = { table: env.table, ...(env.people && { people: env.people }), locale };
 	const named = (value: unknown) => {
 		if (typeof value !== 'string') return false;
@@ -167,6 +187,11 @@ export function withoutUnnamedPeople(
 		if (!(field in out) || out[field] === null) continue;
 		const value = out[field];
 		const values = Array.isArray(value) ? value : [value];
+		// "For everyone" takes an empty list (the whole family, anyone) or one of every member;
+		// never a few of them, which is the asker put in again.
+		const ids = new Set(values.map((v) => referenceId('member', String(v), book)));
+		const all = (env.people ?? []).every((p) => ids.has(p.id));
+		if (everyone && (values.length === 0 || all)) continue;
 		// An empty list names nobody either: it would make the record the whole family's.
 		if (values.length === 0 || !values.every(named)) delete out[field];
 	}
@@ -268,16 +293,17 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 				),
 			);
 		}
-		// The words for the thing to change are the person's: a model that writes the title it found
-		// instead ("Dentist checkup" for "Dental cleaning") would pass the runner's check of
-		// the words against that title.
+		// The words for the thing to change come from the conversation (the person's, or the
+		// assistant's question they answered), never from a tool result alone: a model that writes
+		// the title it found instead ("Dentist checkup" for "Dental cleaning") would pass the
+		// runner's check of the words against that title.
 		const target = raw as { id?: unknown; label?: unknown } | null;
 		if (
 			kind === 'draft' &&
-			env.said !== undefined &&
+			(env.heard ?? env.said) !== undefined &&
 			typeof target?.id === 'string' &&
 			typeof target.label === 'string' &&
-			!namedBy(target.label, env.said, env.locale ?? 'en')
+			!namedBy(target.label, env.heard ?? env.said ?? '', env.locale ?? 'en')
 		) {
 			env.onFailure?.({ actionId, code: 'label_not_said', inputKeys: ['label'] });
 			if (env.loop) env.loop.failuresInARow++;

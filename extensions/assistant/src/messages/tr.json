@@ -68,6 +68,7 @@
 	"today_block_hint": "Altta, soru sormak için bir bağlantı.",
 	"someone": "biri",
 	"words_self": "ben, beni, bana, bende, benim, benimle, kendim, kendime",
+	"words_everyone": "herkes, herkese, herkesin, hepimiz, hepimize, bütün aile, tüm aile, ailece, bütün aileye, tüm aileye, kim olursa",
 	"proposed": "Önerildi, henüz eklenmedi: {{what}}",
 	"proposed_automatic": "Otomatik eklendi: {{what}}"
 }

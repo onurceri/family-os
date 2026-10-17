@@ -47,7 +47,7 @@ For each suggestion, the app also keeps a fixed line written from the suggestion
 
 When it suggests an event, the assistant uses the calendar tags your family already has, and adds no new tag unless you name one. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
 
-A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation. When it changes something that is already there, it changes who it is for only when your message names them ("move it to 18:00 for Noah", or "me"); otherwise the people stay as they are.
+A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation. When it changes something that is already there, it changes who it is for only when your message names them ("move it to 18:00 for Noah", "me", or "for the whole family"); otherwise the people stay as they are.
 
 ## What it remembers
 

@@ -352,11 +352,14 @@ export const turnJob = defineJob({
 						text: asked,
 						memberId: member.id,
 						self: ctx.vocabulary('assistant:words_self'),
+						everyone: ctx.vocabulary('assistant:words_everyone'),
 					},
 					said: [
 						...kept.filter((m) => m.role === 'user').map((m) => m.content),
 						...family.map((m) => m.displayName),
 					].join('\n'),
+					// What the person read too: a "yes" to "did you mean …?" names the thing that way.
+					heard: kept.map((m) => m.content).join('\n'),
 				}),
 				maxSteps: MAX_STEPS,
 				// The same question should get the same lookups and suggestions: at the provider's
