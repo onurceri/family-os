@@ -92,7 +92,8 @@ export interface ExtensionContext {
 	readonly secrets: SecretBox;
 	/**
 	 * Guarded outbound HTTP (see `ExternalHttp`), limited to the manifest's `network`; use it
-	 * from job handlers only.
+	 * from job handlers, or from a route as a bounded read-through (short timeout, size cap,
+	 * cached answer, failure as `unavailable`). Slow, repeated or data-changing calls go through a job.
 	 */
 	readonly http: ExternalHttp;
 	readonly events: EventBus;
