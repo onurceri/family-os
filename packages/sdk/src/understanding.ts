@@ -614,3 +614,112 @@ export function findTarget<T extends { label: string }>(
 	if (candidates.some((c) => c !== chosen && shareOf(c) > share)) return { none: true };
 	return { found: chosen };
 }
+
+/*
+ * Kinds: what an extension lets the model read for it. Each kind says in English what it is,
+ * which slots it uses and how a careful reader fills them (examples), and brings a resolver that
+ * turns the mentions read into suggestions of actions, or into refusals with a reason.
+ */
+
+/** A household record the reading listed (read as the AI actor), for `MentionContext.record`. */
+export interface MentionRecord {
+	/** What it is, as its AI context names it (`vehicle`, `pet`). */
+	kind: string;
+	id: string;
+	label: string;
+	/** A path inside the app that opens it. */
+	url?: string;
+}
+
+/** What the caller knows about one reading, besides the mentions. */
+export interface MentionEnv {
+	/** The shared text, or null when files were read (then targets are checked against `target` only). */
+	text: string | null;
+	/** The member who shared it, when known. */
+	sharer: string | null;
+	/** The household records listed for this reading, already read as the AI actor. */
+	records: readonly MentionRecord[];
+}
+
+/** A day a resolver read, and whether it is certain (`resolveDay` of `@famos/time`). */
+export interface ResolvedDay {
+	/** `YYYY-MM-DD`. */
+	date: string;
+	certain: boolean;
+	why?: 'mismatch' | 'approximate' | 'guessed_year' | 'weekday_only' | 'relative';
+}
+
+/** A clock time a resolver read. */
+export interface ResolvedTime {
+	/** `HH:MM`, 24-hour. */
+	time: string;
+	/** False when the words do not settle it (a bare hour on a 12-hour clock). */
+	certain: boolean;
+}
+
+/** A mention handed to a resolver, with its place in the answer. */
+export interface IndexedMention {
+	index: number;
+	mention: Mention;
+}
+
+/** A suggestion a resolver makes of one or more mentions. */
+export interface MentionProposal {
+	/** One of the kind's `actions`. */
+	actionId: string;
+	/** The action's input; the action runner validates it. */
+	input: unknown;
+	/**
+	 * The words of the message it rests on (a new thing's title, the target words as written),
+	 * for the suggestion's lines and to check that the message says it; null when none.
+	 */
+	subject: string | null;
+	/**
+	 * The real title of the existing thing it changes, ticks or cancels, as the extension's own
+	 * tables hold it; absent when it makes something new.
+	 */
+	targetTitle?: string;
+	/** Input fields (dot paths) that rest on a guess, shown as "check this". */
+	uncertain?: readonly string[];
+	/** The mentions it comes from. */
+	from: readonly number[];
+}
+
+/** Mentions that did not become a suggestion, and why. */
+export interface MentionRefusal {
+	reason: RefusalReason;
+	/** The words naming what it was about, for the line that says it was left out. */
+	subject: string | null;
+	from: readonly number[];
+}
+
+/**
+ * What a resolver made of mentions. Each mention backs exactly one resolution, and one
+ * resolution may merge several (shopping items into one list change), so a reading never yields
+ * more suggestions than mentions: text that tries to multiply suggestions cannot.
+ */
+export type Resolution = { propose: MentionProposal } | { refuse: MentionRefusal };
+
+/** An example of a kind: a message and what a careful reader extracts from it. */
+export interface MentionExample {
+	/** A short message in English, with neutral names and places and days in words. */
+	text: string;
+	/** The mentions to read, of this extension's kinds; none when there is nothing to read. */
+	mentions: readonly Mention[];
+	/** One line on why, shown to the model ("news that it is cancelled changes it"). */
+	why?: string;
+}
+
+/** A kind as the AI pipeline sees it: everything but its resolver and actions. */
+export interface AiKindInfo {
+	id: string;
+	/** The extension that owns it. */
+	extension: string;
+	describe: string;
+	slots: Partial<Record<Slot, string>>;
+	variants?: readonly string[];
+	knownFrom?: readonly string[];
+	examples: readonly MentionExample[];
+	/** At most this many of its mentions are resolved from one reading. */
+	limit: number;
+}

@@ -12,6 +12,7 @@ import type {
 	Logger,
 	SecretBox,
 } from './ports.ts';
+import type { AiKindInfo, IndexedMention, MentionEnv, Resolution } from './understanding.ts';
 
 /** Household-wide settings every extension may read. */
 export interface FamilySettings {
@@ -278,4 +279,25 @@ export interface ActionInvoker {
 	 * Runs no change. For the AI pipeline, to check a proposal against what the person wrote.
 	 */
 	targetTitle(actionId: string, input: unknown): Promise<string | null>;
+	/**
+	 * The mention kinds the AI may read in this reading: those of extensions that are on, whose
+	 * area is open to the AI (local-only areas only with `local: true`), and whose actions are all
+	 * in `aiCatalog` with the same options.
+	 */
+	aiKinds(options?: { local?: boolean; actor?: Actor }): AiKindInfo[];
+	/**
+	 * Runs a kind's resolver in its extension's read-only context, for an AI actor only, and only
+	 * while the kind is offered to that actor (`aiKinds`, local when `actor.local`); otherwise
+	 * `forbidden`. The mentions must all be of the kind, with distinct indexes, at most
+	 * `MENTION_LIMIT`. What comes back is held to them: every mention in exactly one resolution,
+	 * mentions beyond the kind's `limit` and any a resolver leaves out or claims twice refused as
+	 * `incomplete`, and a suggestion of an action the kind does not name refused too. Sorted by
+	 * the first mention each comes from. A resolver that fails refuses all its mentions.
+	 */
+	resolveMentions(
+		kindId: string,
+		mentions: readonly IndexedMention[],
+		env: MentionEnv,
+		actor: Actor,
+	): Promise<Resolution[]>;
 }

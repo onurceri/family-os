@@ -1,0 +1,199 @@
+import type { DuplicateContext } from './actions.ts';
+import {
+	type DayRef,
+	type IndexedMention,
+	MENTION_LIMIT,
+	type Mention,
+	type MentionExample,
+	type MentionRecord,
+	MentionSchema,
+	type PeopleResult,
+	type Resolution,
+	type ResolvedDay,
+	type ResolvedTime,
+	SLOTS,
+	type Slot,
+	type TargetResult,
+} from './understanding.ts';
+
+/*
+ * The definition side of mention kinds: what an extension declares and what its resolver may
+ * read. The shapes the AI pipeline passes around live in `understanding.ts`.
+ */
+
+/**
+ * What a resolver may read, besides its own tables: the family's region formats, this reading,
+ * and helpers bound to both. `db` reaches the extension's own tables and only reads: a resolver
+ * writes nothing, and what it proposes is still validated and authorized by the action runner.
+ */
+export interface MentionContext extends DuplicateContext {
+	/** Today in the family time zone, `YYYY-MM-DD`. */
+	readonly today: string;
+	/** Epoch milliseconds. */
+	readonly now: number;
+	readonly timeZone: string;
+	/** 1 = Monday … 7 = Sunday. */
+	readonly weekStart: number;
+	/** Order of the family's all-numeric dates. */
+	readonly dateOrder: 'DMY' | 'MDY' | 'YMD';
+	readonly hourCycle: 'h12' | 'h23';
+	/** The family language, for titles and lower-casing. */
+	readonly locale: string;
+	/** The region format (`en-GB`). */
+	readonly formatLocale: string;
+	/** The shared text, or null when files were read. */
+	readonly text: string | null;
+	/** The member who shared it, when known. */
+	readonly sharer: string | null;
+	/** The active members. */
+	readonly members: readonly { id: string; displayName: string }[];
+	/** The household records listed for this reading. */
+	readonly records: readonly MentionRecord[];
+	/** The words a key lists in every installed language (see `ExtensionContext.vocabulary`). */
+	vocabulary(key: string): readonly string[];
+	/**
+	 * The date a day reference names: in `direction` when no year or month says (`future` for
+	 * plans, `past` for things done; default `future`); with `time`, today's own weekday is today
+	 * only while that time is still ahead. The quoted words are checked against the parts with
+	 * the date words of every installed language. Null when nothing names a day.
+	 */
+	day(
+		ref: DayRef | undefined,
+		direction?: 'future' | 'past' | 'nearest',
+		time?: string,
+	): ResolvedDay | null;
+	/** The time a mention names: a clock time its words (`timeText`) write wins over `time`. */
+	time(mention: Pick<Mention, 'time' | 'timeText'>): ResolvedTime | null;
+	/** The members a mention names (`resolvePeople`, with this reading's text and sharer). */
+	people(mention: Pick<Mention, 'people' | 'forMe' | 'peopleGuessed'>): PeopleResult;
+	/** Which candidate `target` words name (`findTarget`, checked against this reading's text). */
+	target<T extends { label: string }>(
+		words: string | undefined,
+		candidates: readonly T[],
+	): TargetResult<T>;
+	/** Which listed household record `about` words name, among `kinds` when given. */
+	record(words: string | undefined, kinds?: readonly string[]): TargetResult<MentionRecord>;
+}
+
+export interface MentionKindDefinition {
+	/** `<extension>.<kind>`, e.g. `calendar.eventCancel`. */
+	id: string;
+	/** For the model, in English: what it is and when to choose it (and when not). */
+	describe: string;
+	/** The slots this kind uses, each with a short English description for the model. */
+	slots: Partial<Record<Slot, string>>;
+	/** The allowed `variant` values, exactly when the kind uses `variant`. */
+	variants?: readonly string[];
+	/**
+	 * The AI-proposable actions the resolver may suggest: this extension's own, or ones its
+	 * manifest `calls`. The kind is offered only while all of them are offered to the AI for the
+	 * reading (areas, local-only, features, and the person the AI works for).
+	 */
+	actions: readonly string[];
+	/** This extension's `ai.context` actions whose item labels are shown as known names. */
+	knownFrom?: readonly string[];
+	/** Examples, edge cases included; the first few are shown to the model. */
+	examples: readonly MentionExample[];
+	/**
+	 * At most this many mentions of the kind are resolved from one reading (default and at most
+	 * `MENTION_LIMIT`); later ones are refused as `incomplete`. For things a message holds one or
+	 * two of (a cancellation), so a runaway answer cannot become a pile of suggestions.
+	 */
+	limit?: number;
+	/**
+	 * Turns mentions of this kind, in answer order, into suggestions and refusals. Each mention
+	 * goes into exactly one resolution's `from`; one left out is refused as `incomplete`. It only
+	 * reads, and may be called again with the same mentions.
+	 */
+	resolve(ctx: MentionContext, mentions: readonly IndexedMention[]): Promise<readonly Resolution[]>;
+}
+
+export function defineMentionKind(definition: MentionKindDefinition): MentionKindDefinition {
+	return definition;
+}
+
+/** The slot of a mention field; the bookkeeping fields (`kind`, `unsure`) have none. */
+function slotOfField(field: string): Slot | null {
+	if (field === 'kind' || field === 'unsure') return null;
+	if (field === 'forMe' || field === 'peopleGuessed') return 'people';
+	if (field === 'timeText') return 'time';
+	return field as Slot;
+}
+
+const StrictMentionSchema = MentionSchema.strict();
+
+/**
+ * What is wrong with a kind, on its own and against its extension's other kinds: its id, slots,
+ * variants, limit and examples (each must read as a mention of one of the extension's kinds and
+ * fill only slots that kind uses). Empty when nothing is. Its actions and `knownFrom` need the
+ * other extensions, so the registry checks them.
+ */
+export function mentionKindProblems(
+	extensionId: string,
+	kind: MentionKindDefinition,
+	kinds: readonly MentionKindDefinition[],
+): string[] {
+	const problems: string[] = [];
+	const where = `Mention kind "${kind.id}"`;
+	const name = kind.id.startsWith(`${extensionId}.`) ? kind.id.slice(extensionId.length + 1) : '';
+	if (!/^[a-z][A-Za-z0-9]*$/u.test(name))
+		problems.push(`${where} must be namespaced as "${extensionId}.<name>"`);
+	if (kind.describe.trim() === '') problems.push(`${where} has no description`);
+	const slots = Object.entries(kind.slots) as [string, string | undefined][];
+	if (slots.length === 0) problems.push(`${where} uses no slot`);
+	for (const [slot, text] of slots) {
+		if (!(SLOTS as readonly string[]).includes(slot))
+			problems.push(`${where} names unknown slot "${slot}"`);
+		else if (!text?.trim()) problems.push(`${where} does not describe slot "${slot}"`);
+	}
+	if ((kind.slots.variant !== undefined) !== (kind.variants !== undefined))
+		problems.push(`${where} must list variants exactly when it uses the variant slot`);
+	if (kind.variants) {
+		const empty = kind.variants.length === 0 || kind.variants.some((v) => v.trim() === '');
+		if (empty || new Set(kind.variants).size !== kind.variants.length)
+			problems.push(`${where} lists no, empty or repeated variants`);
+	}
+	if (kind.actions.length === 0) problems.push(`${where} names no action`);
+	if (new Set(kind.actions).size !== kind.actions.length)
+		problems.push(`${where} names an action twice`);
+	if (
+		kind.limit !== undefined &&
+		(!Number.isInteger(kind.limit) || kind.limit < 1 || kind.limit > MENTION_LIMIT)
+	)
+		problems.push(`${where} has a limit outside 1 to ${MENTION_LIMIT}`);
+	if (kind.examples.length === 0) problems.push(`${where} has no example`);
+	const byId = new Map(kinds.map((k) => [k.id, k]));
+	kind.examples.forEach((example, i) => {
+		const at = `${where}, example ${i + 1},`;
+		if (example.text.trim() === '') problems.push(`${at} has no text`);
+		for (const raw of example.mentions) {
+			const parsed = StrictMentionSchema.safeParse(raw);
+			if (!parsed.success) {
+				const issue = parsed.error.issues[0];
+				problems.push(
+					`${at} does not read as a mention: ${issue?.path.join('.') || '(mention)'}: ${issue?.message}`,
+				);
+				continue;
+			}
+			const mention = parsed.data;
+			const owner = byId.get(mention.kind);
+			if (!owner) {
+				problems.push(`${at} names kind "${mention.kind}", which "${extensionId}" lacks`);
+				continue;
+			}
+			for (const field of Object.keys(mention)) {
+				const slot = slotOfField(field);
+				if (slot !== null && owner.slots[slot] === undefined)
+					problems.push(`${at} fills "${field}", which kind "${owner.id}" does not use`);
+			}
+			for (const slot of mention.unsure ?? []) {
+				const of = slotOfField(slot);
+				if (of === null || owner.slots[of] === undefined)
+					problems.push(`${at} is unsure of "${slot}", which kind "${owner.id}" does not use`);
+			}
+			if (mention.variant !== undefined && !owner.variants?.includes(mention.variant))
+				problems.push(`${at} has variant "${mention.variant}", which kind "${owner.id}" lacks`);
+		}
+	});
+	return problems;
+}

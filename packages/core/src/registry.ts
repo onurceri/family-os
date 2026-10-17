@@ -12,6 +12,7 @@ import type {
 } from '@famos/sdk';
 import {
 	assertRestrictiveDefaults,
+	mentionKindProblems,
 	reservedClash,
 	SDK_VERSION,
 	satisfiesCaret,
@@ -201,6 +202,47 @@ function checkManifests(
 	}
 }
 
+/**
+ * An extension's mention kinds: well formed (`mentionKindProblems`), each id once, suggesting only
+ * AI-proposable actions it owns or lists in `calls`, and showing names only from its own AI
+ * context actions.
+ */
+function checkMentionKinds(
+	ext: ExtensionDefinition,
+	actions: ReadonlyMap<string, AnyActionDefinition>,
+): void {
+	const kinds = ext.ai?.kinds ?? [];
+	const contexts = new Set([ext.ai?.context ?? []].flat());
+	const seen = new Set<string>();
+	for (const kind of kinds) {
+		const where = `Mention kind "${kind.id}"`;
+		if (seen.has(kind.id)) refuse(ext.id, `Duplicate mention kind "${kind.id}"`);
+		seen.add(kind.id);
+		const [problem] = mentionKindProblems(ext.id, kind, kinds);
+		if (problem) refuse(ext.id, problem);
+		for (const id of kind.actions) {
+			const own = id.startsWith(`${ext.id}.`);
+			if (!own && !ext.manifest.calls.includes(id))
+				refuse(
+					ext.id,
+					`${where} names "${id}", which is neither its own nor in its manifest's calls`,
+				);
+			const action = actions.get(id);
+			if (own && (!action || !ext.actions.includes(action)))
+				refuse(ext.id, `${where} names action "${id}", which "${ext.id}" lacks`);
+			// A foreign action is checked once its extension is there; `calls` says it must exist.
+			if (action && (action.readOnly || !action.ai))
+				refuse(ext.id, `${where} names "${id}", which the AI cannot propose`);
+		}
+		for (const id of kind.knownFrom ?? [])
+			if (!contexts.has(id))
+				refuse(
+					ext.id,
+					`${where} shows names from "${id}", which is not one of its AI context actions`,
+				);
+	}
+}
+
 /** Collects all contributions and rejects duplicates across extensions. */
 export function buildRegistry(
 	extensions: readonly ExtensionDefinition[],
@@ -305,6 +347,7 @@ export function buildRegistry(
 			if (!action.readOnly) refuse(ext.id, `AI context action "${id}" must be read-only`);
 		}
 	}
+	for (const ext of ordered) checkMentionKinds(ext, actions);
 	for (const ext of ordered) {
 		for (const [kind, def] of Object.entries(ext.ai?.index?.kinds ?? {})) {
 			known(def.capability, `Search kind "${kind}"`, ext.id);

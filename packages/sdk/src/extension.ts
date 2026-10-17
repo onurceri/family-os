@@ -5,6 +5,7 @@ import type { ConversationProvider } from './conversation.ts';
 import type { EventDefinition } from './events.ts';
 import type { AnyJobDefinition } from './jobs.ts';
 import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
+import type { MentionKindDefinition } from './mention-kinds.ts';
 import type { ExtensionMessages } from './messages.ts';
 import type { NotificationKindDefinition } from './notifications.ts';
 import type { DbExecutor } from './ports.ts';
@@ -65,6 +66,11 @@ export interface AiExtensionHints {
 	context?: string | readonly string[];
 	/** What family search may index of this extension. */
 	index?: AiIndex;
+	/**
+	 * What the model may read for this extension from shared messages, and how it is turned into
+	 * suggestions (`defineMentionKind`). Ids are `<extension id>.<kind>`.
+	 */
+	kinds?: readonly MentionKindDefinition[];
 }
 
 /** One entity as search reads it: plain text, which core cuts into chunks and embeds. */
@@ -171,5 +177,6 @@ export function defineExtension(definition: {
 	if (ext.shareTarget) owned('Share target capability', ext.shareTarget.requires);
 	if (ext.conversation) owned('Conversation capability', ext.conversation.requires);
 	for (const kind of Object.keys(ext.ai?.index?.kinds ?? {})) owned('AI index kind', kind);
+	for (const kind of ext.ai?.kinds ?? []) owned('Mention kind', kind.id);
 	return ext;
 }

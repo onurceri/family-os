@@ -45,6 +45,7 @@ import { familyReader } from './family.ts';
 import { createFeatures, type Features, ownerOf } from './features.ts';
 import { createHostDoors, type HostDoors } from './host-doors.ts';
 import { anyLanguage, type LanguagePort } from './languages.ts';
+import { createMentionKinds } from './mention-kinds.ts';
 import {
 	createNotifications,
 	defaultTranslate,
@@ -58,7 +59,14 @@ import {
 	isExtensionRefusedError,
 	type Registry,
 } from './registry.ts';
-import { createSchemaNames, hostFiles, scopedFiles, scopedHttp, scopePlugin } from './scope.ts';
+import {
+	createSchemaNames,
+	hostFiles,
+	readOnlyPlugin,
+	scopedFiles,
+	scopedHttp,
+	scopePlugin,
+} from './scope.ts';
 import { createSearch, SEARCH_ACTION, SYNC_JOB } from './search.ts';
 import { createThemes, defaultThemes, type ThemePort, type Themes } from './themes.ts';
 import { createWorker, type Worker, type WorkerOptions } from './worker.ts';
@@ -397,6 +405,27 @@ export function createKernel(options: KernelOptions): Kernel {
 				return !catalogOptions?.actor || mayUseAsAi(access, a, catalogOptions.actor);
 			})
 			.map(([, info]) => info);
+	const readOnly = new Map<string, KyselyPlugin>();
+	const mentionKinds = createMentionKinds({
+		registry,
+		isOn: (id) => features.isOn(id),
+		areaAccess: (id) => aiAreas.access(id),
+		aiCatalog: (catalogOptions) => offered(aiDraftActions, catalogOptions),
+		// The extension's own tables, and only reads of them.
+		readDb(id) {
+			let plugin = readOnly.get(id);
+			if (!plugin) {
+				plugin = readOnlyPlugin(id);
+				readOnly.set(id, plugin);
+			}
+			return views.db(id, options.db).withPlugin(plugin);
+		},
+		family: familyReader(options.db),
+		translate: options.translate ?? defaultTranslate,
+		vocabulary: options.vocabulary ?? noVocabulary,
+		clock: options.clock,
+		logger: options.logger,
+	});
 	/** The actions as `caller` reaches them (the host when it is undefined). */
 	const invokerFor = (caller: string | undefined): ActionInvoker => ({
 		invoke: (id, input, actor, invokeOptions) =>
@@ -436,6 +465,9 @@ export function createKernel(options: KernelOptions): Kernel {
 				parsed.data,
 			);
 		},
+		aiKinds: (kindOptions) => mentionKinds.aiKinds(kindOptions),
+		resolveMentions: (kindId, mentions, env, actor) =>
+			mentionKinds.resolveMentions(kindId, mentions, env, actor),
 	});
 	const ctx: ExtensionContext = {
 		db: options.db,

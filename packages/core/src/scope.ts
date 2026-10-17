@@ -209,6 +209,34 @@ export function scopePlugin(id: string, prefix: string, names: SchemaNames): Kys
 	};
 }
 
+/** Statements raw SQL may not hold when only reading is allowed. */
+const WRITING_WORDS =
+	/\b(insert|update|delete|replace|upsert|create|drop|alter|attach|detach|pragma|vacuum|reindex|savepoint|release|begin|commit|rollback)\b/iu;
+
+/**
+ * A Kysely plugin that lets only reads through: a select, or raw SQL that starts with `select`
+ * and names no writing statement. Anything else throws `forbidden` before it runs. For code that
+ * must look and never change (resolvers of what a model read).
+ */
+export function readOnlyPlugin(id: string): KyselyPlugin {
+	const refuseWrite = (what: string) => {
+		throw new FamosError('forbidden', `Extension "${id}" may only read here, not run ${what}`);
+	};
+	return {
+		transformQuery({ node }) {
+			if (node.kind === 'SelectQueryNode') return node;
+			if (node.kind === 'RawNode') {
+				const fragments = (node as unknown as { sqlFragments: readonly string[] }).sqlFragments;
+				const text = fragments.join(' ');
+				if (/^\s*select\b/iu.test(text) && !WRITING_WORDS.test(text)) return node;
+				refuseWrite('this raw SQL');
+			}
+			return refuseWrite(node.kind);
+		},
+		transformResult: async ({ result }) => result,
+	};
+}
+
 /** Whether a file key belongs to an extension: it lies under `<id>/`. */
 const ownsKey = (extensionId: string, key: string) => key.startsWith(`${extensionId}/`);
 
