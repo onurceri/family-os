@@ -50,15 +50,15 @@ When looking does not work, the page says why: FamilyOS **has not published its 
 
 ## Restarting
 
-While something waits to be installed or uninstalled, the page says so and offers **Restart now**. FamilyOS finishes what it is doing, starts again and the page opens again by itself, usually within a few seconds. Nothing is lost.
+While something waits to be installed or uninstalled, every admin sees it on the row ("Mara asked to uninstall at … · waiting for a restart") and the page offers **Restart now**, which first lists what will change and who asked for each. FamilyOS finishes what it is doing, starts again and the page opens again by itself, usually within a few seconds. Nothing is lost.
 
 Other phones and tablets notice it when they reconnect: family displays reload by themselves, and people see **FamilyOS changed** with **Reload**, so nothing they are typing is lost. FamilyOS restarts by itself only with the Docker setup from [Install](install.md) (or another one that starts it again when it stops); otherwise start it again by hand.
 
 ## Switching off and uninstalling
 
 - **The switch** on an installed extension hides it and stops it for everyone at once, without a restart. Only the switch itself does this: tapping the extension's name opens its details. The message that follows names it (**Lists is off for everyone**) and has **Undo**. Turn it back on and everything is as it was. Meanwhile its pages say **Lists is switched off for the family**, and who can switch it on again, instead of "This page does not exist".
-- **Uninstalling** removes it from everyone's menu after the restart; its pages then no longer exist.
-- **Uninstall** (in the **⋯** menu) removes it when FamilyOS restarts. **Its data is kept**, and so is the extension itself: after the restart it is listed under **Available** at the top of the page, and installing it again from there needs no internet. You then find everything as it was. While it waits for the restart, **Keep it** in the same menu takes the uninstall back. An extension that another installed one needs cannot be uninstalled before that one.
+- **Uninstalling** removes it from everyone's menu after the restart; its pages then no longer exist: whoever opens one is told the extension is not installed, and admins get the way to Extensions.
+- **Uninstall** (in the **⋯** menu) removes it when FamilyOS restarts. **Its data is kept**, and so is the extension itself: after the restart it is listed under **Available** at the top of the page, and installing it again from there needs no internet. You then find everything as it was. While it waits for the restart, **Keep it** on the row (and **Undo** in the notice that appears) takes the uninstall back; a waiting install can be taken back with **Cancel install**. An extension that another installed one needs cannot be uninstalled before that one.
 
 ## When an extension is left out
 

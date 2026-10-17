@@ -47,6 +47,42 @@ export function sections(
 	};
 }
 
+/** What waits for a restart, as the sentence that says who asked for it. */
+export type Pending = 'install' | 'uninstall' | 'update';
+
+/** The change an entry waits to apply at the next restart, or null when nothing waits. */
+export function pendingOf(entry: Entry): Pending | null {
+	if (entry.status === 'pending_install') return 'install';
+	if (entry.status === 'pending_uninstall') return 'uninstall';
+	return entry.nextVersion ? 'update' : null;
+}
+
+const ASKED = {
+	install: 'extensions_asked_install',
+	uninstall: 'extensions_asked_uninstall',
+	update: 'extensions_asked_update',
+} as const;
+
+/**
+ * "Mara asked to uninstall at 22:16 · waiting for a restart": who asked for a waiting change and
+ * when, or null when the server did not record it (a change from before it did). `who` gives a
+ * member's name (null for someone who is no longer in the family) and `when` writes the time.
+ */
+export function askedOf(
+	entry: Entry,
+	who: (memberId: string) => string | null,
+	when: (at: number) => string,
+	someone: string,
+): Said<(typeof ASKED)[Pending]> | null {
+	const pending = pendingOf(entry);
+	if (!pending || !entry.changedBy) return null;
+	const { memberId, at } = entry.changedBy;
+	return {
+		key: ASKED[pending],
+		values: { who: (memberId ? who(memberId) : null) ?? someone, when: when(at) },
+	};
+}
+
 /** What the family must know before installing: what installs with it is first among them. */
 export interface Reach {
 	/** Hosts on the internet it connects to by itself. */
@@ -138,6 +174,7 @@ export function stagedEntry(staged: Staged): Entry {
 		reaches: staged.reaches,
 		labels: staged.labels,
 		nextVersion: null,
+		changedBy: null,
 	};
 }
 
@@ -287,6 +324,7 @@ export function foundEntry(pkg: FoundPackage): Entry {
 		reaches: { hosts: [], userUrls: false, local: false, calls: [], capabilities: [] },
 		labels: pkg.labels,
 		nextVersion: null,
+		changedBy: null,
 	};
 }
 

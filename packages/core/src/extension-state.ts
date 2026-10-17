@@ -12,6 +12,8 @@ import { readJson, writeJson } from './settings-json.ts';
  * - `failed`: packages whose migrations or start failed; that version is not loaded again, so a
  *   broken package cannot make the server restart over and over;
  * - `restartRequestedAt`: when someone last asked the server to restart;
+ * - `changes`: who asked for each install or uninstall still waiting for a restart, and when
+ *   (cleared at every start, when nothing waits any more);
  * - `loaded`: what the last start ran, which is still running until the next start (absent in
  *   state written before it was recorded).
  */
@@ -67,6 +69,7 @@ export const ExtensionStateSchema = z.object({
 		}),
 	),
 	restartRequestedAt: z.number().nullable(),
+	changes: z.record(z.string(), z.object({ by: z.string().nullable(), at: z.number() })).optional(),
 	loaded: z.array(z.string()).optional(),
 });
 export type ExtensionState = z.infer<typeof ExtensionStateSchema>;

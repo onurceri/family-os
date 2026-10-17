@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	askedOf,
 	descriptionOf,
 	downloadProblem,
 	type Entry,
@@ -7,6 +8,7 @@ import {
 	foundEntry,
 	nameOf,
 	neededBy,
+	pendingOf,
 	problemOf,
 	reachOf,
 	restartNeeded,
@@ -34,6 +36,7 @@ function entry(id: string, more: Partial<Entry> = {}): Entry {
 		nextVersion: null,
 		reasonCode: null,
 		reasonParams: {},
+		changedBy: null,
 		...more,
 	};
 }
@@ -333,5 +336,46 @@ describe('what the official index found', () => {
 			detail: { key: 'extensions_file_untrusted_key', values: { keyId: '0123456789abcdef' } },
 		});
 		expect(downloadProblem(problem('failed')).headline.key).toBe('extensions_download_failed');
+	});
+});
+
+describe('a change that waits for a restart', () => {
+	const who = (id: string) => (id === 'member_mara' ? 'Mara' : null);
+	const when = (at: number) => `at ${at}`;
+
+	it('says what waits', () => {
+		expect(pendingOf(entry('a', { status: 'pending_uninstall' }))).toBe('uninstall');
+		expect(pendingOf(entry('a', { status: 'pending_install' }))).toBe('install');
+		expect(pendingOf(entry('a', { nextVersion: '0.2.0' }))).toBe('update');
+		expect(pendingOf(entry('a'))).toBeNull();
+	});
+
+	it('names who asked and when, for every reader', () => {
+		const pending = entry('a', {
+			status: 'pending_uninstall',
+			changedBy: { memberId: 'member_mara', at: 7 },
+		});
+		expect(askedOf(pending, who, when, 'Someone')).toEqual({
+			key: 'extensions_asked_uninstall',
+			values: { who: 'Mara', when: 'at 7' },
+		});
+	});
+
+	it('says someone when the person is unknown or the server itself asked', () => {
+		const gone = entry('a', {
+			status: 'pending_install',
+			changedBy: { memberId: 'member_left', at: 7 },
+		});
+		expect(askedOf(gone, who, when, 'Someone')?.values?.who).toBe('Someone');
+		const cli = entry('a', { nextVersion: '0.2.0', changedBy: { memberId: null, at: 7 } });
+		expect(askedOf(cli, who, when, 'Someone')).toMatchObject({
+			key: 'extensions_asked_update',
+			values: { who: 'Someone' },
+		});
+	});
+
+	it('says nothing when nothing waits or nobody was recorded', () => {
+		expect(askedOf(entry('a'), who, when, 'Someone')).toBeNull();
+		expect(askedOf(entry('a', { status: 'pending_install' }), who, when, 'Someone')).toBeNull();
 	});
 });

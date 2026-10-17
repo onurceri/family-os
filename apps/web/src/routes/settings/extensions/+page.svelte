@@ -29,6 +29,8 @@
 	import { api } from '#lib/api.js';
 	import { contributions } from '#lib/extensions.js';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
+	import { family } from '#lib/family.svelte.js';
+	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { readBoot } from '#lib/restart.js';
 	import RowMenu from '#lib/RowMenu.svelte';
@@ -42,10 +44,12 @@
 		type FileProblem,
 		type Found,
 		type FoundPackage,
+		askedOf,
 		fileProblem,
 		foundEntry,
 		nameOf,
 		neededBy,
+		pendingOf,
 		type Staged,
 		searchProblem,
 		sections,
@@ -73,6 +77,8 @@
 	let panelError = $state<string | null>(null);
 	let uninstalling = $state<Entry | null>(null);
 	let restarting = $state<{ before: string | null } | null>(null);
+	/** The restart question, which lists what changes and who asked for each. */
+	let confirmingRestart = $state(false);
 	/** A package from a file the server checked, shown in the panel until it is installed. */
 	let staged = $state<Staged | null>(null);
 	let fileError = $state<{ text: string; detail?: string } | null>(null);
@@ -233,6 +239,7 @@
 	async function install(
 		entry: Entry,
 		toast = t('extensions_installed_toast', { name: name(entry) }),
+		undoable = false,
 	) {
 		busy = true;
 		panelError = null;
@@ -244,7 +251,12 @@
 				}),
 			);
 			if (opened) closePanel();
-			toasts.show(toast);
+			toasts.show(
+				toast,
+				undoable
+					? { label: t('extensions_switch_undo'), run: () => void uninstall(entry, false) }
+					: undefined,
+			);
 		} catch (failure) {
 			if (opened) panelError = explain(failure);
 			else error = explain(failure);
@@ -366,7 +378,8 @@
 		},
 	]);
 
-	async function uninstall(entry: Entry) {
+	/** Asks for the uninstall; Undo in the notice (and Keep on the row) takes it back. */
+	async function uninstall(entry: Entry, undoable = true) {
 		uninstalling = null;
 		error = null;
 		try {
@@ -375,7 +388,17 @@
 					body: { extensionId: entry.id },
 				}),
 			);
-			toasts.show(t('extensions_uninstalled_toast', { name: name(entry) }));
+			toasts.show(
+				t(undoable ? 'extensions_uninstalled_toast' : 'extensions_install_cancelled_toast', {
+					name: name(entry),
+				}),
+				undoable
+					? {
+							label: t('extensions_switch_undo'),
+							run: () => void install(entry, t('extensions_kept_toast', { name: name(entry) })),
+						}
+					: undefined,
+			);
 		} catch (failure) {
 			error = explain(failure);
 		} finally {
@@ -384,6 +407,7 @@
 	}
 
 	async function restart() {
+		confirmingRestart = false;
 		error = null;
 		const before = await readBoot();
 		try {
@@ -432,8 +456,26 @@
 		return items;
 	}
 
+	/** Who asked for a change that waits for a restart, and when, in words; null when unknown. */
+	function askedLine(entry: Entry): string | null {
+		const said = askedOf(
+			entry,
+			(memberId) => family.members.find((m) => m.id === memberId)?.displayName ?? null,
+			(at) =>
+				dateTimeFormat({
+					dateStyle: 'medium',
+					timeStyle: 'short',
+					timeZone: family.timeZone,
+				}).format(at),
+			t('extensions_someone'),
+		);
+		return said ? t(said.key, said.values) : null;
+	}
+
 	/** The row's second line: its state while it waits or is left out, else what it is for. */
 	function meta(entry: Entry): string {
+		const asked = askedLine(entry);
+		if (asked) return asked;
 		if (entry.nextVersion) return t('extensions_status_updates', { version: entry.nextVersion });
 		switch (entry.status) {
 			case 'pending_install':
@@ -542,7 +584,10 @@
 	<PageHeader title={t('extensions_title')} subtitle={t('extensions_intro')}>
 		{#snippet actions()}
 			{#if list?.restartNeeded}
-				<Button variant="primary" onclick={restart} data-testid="restart-now"
+				<Button
+					variant="primary"
+					onclick={() => (confirmingRestart = true)}
+					data-testid="restart-now"
 					><RotateCcw aria-hidden="true" />{t('extensions_restart')}</Button
 				>
 			{/if}
@@ -596,7 +641,29 @@
 						{:else}
 							<Row wrap title={name(entry)} meta={meta(entry)} data-testid="extension-{entry.id}">
 								<!-- The second line says its state (waiting, or left out and why); said once. -->
-								{#snippet trail()}<RowMenu name={name(entry)} items={menu(entry)} />{/snippet}
+								{#snippet trail()}
+									{@const waiting = pendingOf(entry)}
+									<!-- A change that waits for a restart can be taken back right here. -->
+									{#if waiting === 'uninstall'}
+										<Button
+											variant="ghost"
+											size="sm"
+											data-testid="keep-{entry.id}"
+											onclick={() =>
+												void install(entry, t('extensions_kept_toast', { name: name(entry) }))}
+											>{t('extensions_keep')}</Button
+										>
+									{:else if waiting === 'install'}
+										<Button
+											variant="ghost"
+											size="sm"
+											data-testid="cancel-install-{entry.id}"
+											onclick={() => void uninstall(entry, false)}
+											>{t('extensions_cancel_install')}</Button
+										>
+									{/if}
+									<RowMenu name={name(entry)} items={menu(entry)} />
+								{/snippet}
 							</Row>
 						{/if}
 					{/each}
@@ -617,7 +684,8 @@
 		{busy}
 		{staged}
 		error={panelError}
-		oninstall={(entry) => (staged ? void installStaged(staged) : void install(entry))}
+		oninstall={(entry) =>
+			staged ? void installStaged(staged) : void install(entry, undefined, true)}
 		onclose={() => {
 			if (staged) {
 				staged = null;
@@ -660,5 +728,29 @@
 		{/snippet}
 	</Dialog>
 </Page>
+
+<Dialog
+	open={confirmingRestart}
+	title={t('extensions_restart_title')}
+	description={t('extensions_restart_hint')}
+	onclose={() => (confirmingRestart = false)}
+>
+	<ul class="grid gap-2 text-[14px]" data-testid="restart-changes">
+		{#each entries.filter((e) => pendingOf(e)) as entry (entry.id)}
+			<li>
+				<span class="font-medium">{name(entry)}</span>
+				<span class="text-ink-soft block text-[13px]">{askedLine(entry) ?? meta(entry)}</span>
+			</li>
+		{/each}
+	</ul>
+	{#snippet actions()}
+		<Button variant="ghost" data-autofocus onclick={() => (confirmingRestart = false)}
+			>{t('cancel')}</Button
+		>
+		<Button variant="primary" onclick={restart} data-testid="restart-confirm"
+			>{t('extensions_restart')}</Button
+		>
+	{/snippet}
+</Dialog>
 
 {#if restarting}<Restarting before={restarting.before} />{/if}

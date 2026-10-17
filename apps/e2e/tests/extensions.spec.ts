@@ -17,10 +17,9 @@ test('an admin installs Pets from Settings, restarts, and finds it in the naviga
 	await page.getByRole('button', { name: 'Install', exact: true }).click();
 
 	// It waits for a restart, which is now the page's one action.
-	await expect(page.getByTestId('installed-extensions')).toContainText(
-		'Installs when FamilyOS restarts',
-	);
+	await expect(page.getByTestId('installed-extensions')).toContainText('asked to install');
 	await page.getByTestId('restart-now').click();
+	await page.getByTestId('restart-confirm').click();
 	await expect(page.getByTestId('restarting')).toBeVisible();
 
 	// The page reloads by itself once the server is back, running Pets.

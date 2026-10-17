@@ -14628,6 +14628,10 @@ export interface operations {
                                 };
                             };
                             nextVersion: string | null;
+                            changedBy: {
+                                memberId: string | null;
+                                at: number;
+                            } | null;
                         }[];
                         restartNeeded: boolean;
                         restartRequestedAt: number | null;

@@ -236,6 +236,8 @@ export async function recordStart(
 		installed: [...new Set([...state.installed, ...selection.installed])],
 		known,
 		failed: state.failed.filter((f) => runningVersion.get(f.id) === undefined),
+		// A start applies every waiting change: nobody's request is pending any more.
+		changes: {},
 		loaded: running.flatMap((ext) => (ext.id === 'core' ? [] : [ext.id])).sort(),
 	};
 	await writeExtensionState(db, next, now);

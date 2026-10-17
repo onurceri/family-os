@@ -22,6 +22,8 @@ import {
 } from '@lucide/svelte';
 import type { Component } from 'svelte';
 import { contributions, enabledOnly } from './extensions';
+import { getLocale, tDynamic } from './i18n.svelte';
+import { orderedBy } from './nav-order';
 
 /**
  * Navigation model:
@@ -268,8 +270,6 @@ export const appPageFor = (path: string): NavItem | undefined => settingsOwner(A
 type Can = (capability: string) => boolean;
 const allowed = (item: { requires?: string | undefined }, can: Can) =>
 	!item.requires || can(item.requires);
-const byOrder = (a: Pick<NavContribution, 'order'>, b: Pick<NavContribution, 'order'>) =>
-	(a.order ?? 0) - (b.order ?? 0);
 
 export interface NavModel {
 	/** Rail: every primary page. */
@@ -289,6 +289,7 @@ export function buildNav(
 	/** Turned-off extensions, whose pages disappear from navigation. */
 	disabled: readonly string[] = [],
 	entries: readonly NavContribution[] = contributions.nav,
+	byOrder = orderedBy(tDynamic, getLocale()),
 ): NavModel {
 	const visible = enabledOnly(entries, disabled)
 		.filter((c) => allowed(c, can))

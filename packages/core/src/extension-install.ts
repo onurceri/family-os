@@ -93,6 +93,11 @@ export const ExtensionEntrySchema = z.object({
 	 * was installed from a file); null otherwise.
 	 */
 	nextVersion: z.string().nullable(),
+	/**
+	 * Who asked for the change that waits for a restart, and when (the member's id; null when the
+	 * server's own command line did); null while nothing waits.
+	 */
+	changedBy: z.object({ memberId: z.string().nullable(), at: z.number() }).nullable(),
 });
 export type ExtensionEntry = z.infer<typeof ExtensionEntrySchema>;
 
@@ -182,6 +187,29 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		packages: ReadonlyMap<string, ExtensionPackage>,
 	): ExtensionManifest | undefined => loadedManifests().get(id) ?? packages.get(id)?.manifest;
 
+	/** Who asks and when, as a change waiting for a restart is remembered. */
+	const askedBy = (uow: { actor: Actor; clock: { now(): number } }) => ({
+		by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+		at: uow.clock.now(),
+	});
+
+	/** Keeps who asked only for what still waits: keeping an extension again cancels its change. */
+	function onlyWaiting(state: ExtensionState): ExtensionState['changes'] {
+		const waiting = new Set(
+			entries(state)
+				.filter(
+					(e) =>
+						e.status === 'pending_install' ||
+						e.status === 'pending_uninstall' ||
+						e.nextVersion !== null,
+				)
+				.map((e) => e.id),
+		);
+		return Object.fromEntries(
+			Object.entries(state.changes ?? {}).filter(([id]) => waiting.has(id)),
+		);
+	}
+
 	function entries(state: ExtensionState): ExtensionEntry[] {
 		const loaded = loadedManifests();
 		const packages = packagesById();
@@ -198,6 +226,8 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 			const manifest = running ?? pkg?.manifest;
 			const fail = failed.get(id);
 			const refusal = refused.get(id);
+			const nextVersion =
+				running && pkg && installed.has(id) && pkg.version !== running.version ? pkg.version : null;
 			const status = loaded.has(id)
 				? installed.has(id)
 					? 'loaded'
@@ -237,9 +267,13 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 				optional: manifest?.optional ?? [],
 				reaches: reachesOf(manifest),
 				labels: pkg?.labels ?? {},
-				nextVersion:
-					running && pkg && installed.has(id) && pkg.version !== running.version
-						? pkg.version
+				nextVersion,
+				changedBy:
+					(status === 'pending_install' ||
+						status === 'pending_uninstall' ||
+						nextVersion !== null) &&
+					state.changes?.[id]
+						? { memberId: state.changes[id].by, at: state.changes[id].at }
 						: null,
 			};
 		});
@@ -385,7 +419,12 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 				installed: [...installed, ...adding],
 				// Installing again is how a person asks to try a failed package once more.
 				failed: state.failed.filter((f) => !failedAgain.has(f.id)),
+				changes: {
+					...state.changes,
+					...Object.fromEntries(adding.map((id) => [id, askedBy(uow)])),
+				},
 			};
+			next.changes = onlyWaiting(next);
 			await writeExtensionState(uow.db, next, uow.clock.now());
 			uow.emit(extensionsChanged, { extensionId: rootId });
 			return { changed: adding, restartNeeded: needsRestart(entries(next)) };
@@ -421,7 +460,9 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 			const next: ExtensionState = {
 				...state,
 				installed: state.installed.filter((other) => other !== id),
+				changes: { ...state.changes, [id]: askedBy(uow) },
 			};
+			next.changes = onlyWaiting(next);
 			await writeExtensionState(uow.db, next, uow.clock.now());
 			uow.emit(extensionsChanged, { extensionId: id });
 			return { changed: [id], restartNeeded: needsRestart(entries(next)) };

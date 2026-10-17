@@ -299,6 +299,40 @@ describe('installing and uninstalling', () => {
 		);
 	});
 
+	it('remembers who asked for each change that waits for a restart, and when', async () => {
+		const k = await kernel({ extensions: [notes, records, pets], extensionPackages: port() });
+		const mara = await k.member('admin');
+		const tom = await k.member('admin');
+		const asked = k.clock.now();
+		await k.runner.invoke('core.uninstallExtension', { extensionId: 'pets' }, mara.actor);
+		k.clock.advance(1_000);
+		const list = async (actor: Actor) =>
+			(await k.route('core.listExtensions').call({ actor })).extensions as {
+				id: string;
+				changedBy: { memberId: string | null; at: number } | null;
+			}[];
+		// Every admin sees it, not only the one who asked.
+		for (const actor of [mara.actor, tom.actor])
+			expect((await list(actor)).find((e) => e.id === 'pets')?.changedBy).toEqual({
+				memberId: mara.member.id,
+				at: asked,
+			});
+		expect((await list(tom.actor)).find((e) => e.id === 'records')?.changedBy).toBeNull();
+		// The other admin keeping it takes the request back: nobody is shown as having asked.
+		await k.runner.invoke('core.installExtension', { extensionId: 'pets' }, tom.actor);
+		expect((await list(mara.actor)).find((e) => e.id === 'pets')).toMatchObject({
+			status: 'loaded',
+			changedBy: null,
+		});
+		expect((await readExtensionState(k.ctx.db))?.changes).toEqual({});
+		// A change asked on the command line has no member behind it.
+		await k.runner.invoke('core.uninstallExtension', { extensionId: 'pets' }, systemActor('cli'));
+		expect((await list(mara.actor)).find((e) => e.id === 'pets')?.changedBy).toEqual({
+			memberId: null,
+			at: k.clock.now(),
+		});
+	});
+
 	it('clears a recorded failure when the family installs the package again', async () => {
 		const k = await kernel({ extensions: [notes], extensionPackages: port() });
 		await writeExtensionState(

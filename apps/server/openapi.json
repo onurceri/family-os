@@ -27691,6 +27691,27 @@
 															"string",
 															"null"
 														]
+													},
+													"changedBy": {
+														"type": [
+															"object",
+															"null"
+														],
+														"properties": {
+															"memberId": {
+																"type": [
+																	"string",
+																	"null"
+																]
+															},
+															"at": {
+																"type": "number"
+															}
+														},
+														"required": [
+															"memberId",
+															"at"
+														]
 													}
 												},
 												"required": [
@@ -27706,7 +27727,8 @@
 													"optional",
 													"reaches",
 													"labels",
-													"nextVersion"
+													"nextVersion",
+													"changedBy"
 												]
 											}
 										},
