@@ -33,7 +33,7 @@ export function mountSpa(app: Hono<any>, webDir: string, loaded: LoadedWeb): voi
 	const shared = readSharedModules(webDir, loaded);
 	let shell: { html: string; csp: string } | undefined;
 	app.get('*', async (c, next) => {
-		if (c.req.path.startsWith('/api/') || c.req.path === '/health') return next();
+		if (isNotShell(c.req.path)) return next();
 		if (!shell) {
 			const raw = await readFile(join(webDir, 'index.html'), 'utf8');
 			const html = injectShell(raw, loaded, shared);
@@ -43,6 +43,14 @@ export function mountSpa(app: Hono<any>, webDir: string, loaded: LoadedWeb): voi
 		return c.html(shell.html);
 	});
 }
+
+/**
+ * Paths the shell must not answer. The API and health check have their own answers. OAuth and MCP
+ * clients probe `/.well-known/*` for server metadata and parse the reply as JSON, so an unknown
+ * one needs the app's JSON "not found", not the app page with a 200.
+ */
+const isNotShell = (path: string) =>
+	path.startsWith('/api/') || path === '/health' || path.startsWith('/.well-known/');
 
 const isShellPath = (path: string) => path === '/' || path === '/index.html';
 

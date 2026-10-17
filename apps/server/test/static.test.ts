@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { Hono } from 'hono';
 import { afterAll, describe, expect, it } from 'vitest';
 import { describeLoaded, readWebPackage, type WebPackage } from '../src/extensions/web.ts';
+import { errorBody } from '../src/http/errors.ts';
 import {
 	contentSecurityPolicy,
 	injectShell,
@@ -139,6 +140,7 @@ describe('serving the shell and the packages', () => {
 	writeFileSync(join(webDir, 'index.html'), SHELL);
 	writeFileSync(join(webDir, SHARED_MODULES_FILE), JSON.stringify(SHARED));
 	const app = new Hono();
+	app.notFound((c) => c.json(errorBody('not_found', 'Not found'), 404));
 	mountSpa(app, webDir, loaded);
 
 	it.each(['/', '/index.html', '/calendar'])(
@@ -152,6 +154,18 @@ describe('serving the shell and the packages', () => {
 			expect(res.headers.get('content-security-policy')).toBe(contentSecurityPolicy(html));
 		},
 	);
+
+	it.each([
+		'/.well-known/oauth-authorization-server',
+		'/.well-known/oauth-protected-resource',
+		'/.well-known/anything',
+	])('answers a probe for %s with a JSON not found, not the shell', async (path) => {
+		const res = await app.request(path);
+		expect(res.status).toBe(404);
+		expect(res.headers.get('content-type')).toContain('application/json');
+		expect(res.headers.get('content-security-policy')).toBeNull();
+		expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+	});
 
 	it('serves a listed file of a package for good', async () => {
 		const res = await app.request(`/extensions/garden/${garden.digest}/web/index.js`);
