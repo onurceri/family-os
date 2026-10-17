@@ -1,11 +1,11 @@
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import { defineAction, defineRoute, FamosError, storedAsWhole, type UnitOfWork } from '@famos/sdk';
 import { compareDates, type Recurrence, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	CHORES_EDIT,
 	type Chore,
 	ChoreDetailSchema,
-	type ChoreDetailsSchema,
+	ChoreDetailsSchema,
 	ChoreIdSchema,
 	ChoreSchema,
 	type Completion,
@@ -143,6 +143,8 @@ export const updateChore = defineAction({
 	title: 'Change a chore',
 	draftTitle: 'chores:draft_title_update_chore',
 	input: UpdateChoreSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(ChoreDetailsSchema, 'chore'),
 	output: ChoreSchema,
 	approval: { unless: choresEdit.id },
 	async run(uow, { id, chore }) {

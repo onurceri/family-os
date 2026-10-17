@@ -1,9 +1,9 @@
-import { defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import { defineAction, defineRoute, FamosError, storedAsWhole, type UnitOfWork } from '@famos/sdk';
 import { z } from 'zod';
 import {
 	AddServiceSchema,
 	HomeIdSchema,
-	type ServiceFieldsSchema,
+	ServiceFieldsSchema,
 	ServiceIdSchema,
 	ServiceSchema,
 	serviceUrl,
@@ -79,6 +79,8 @@ export const updateService = defineAction({
 	title: 'Change a utility or subscription',
 	draftTitle: 'home:draft_title_update_service',
 	input: UpdateServiceSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(ServiceFieldsSchema, 'service'),
 	output: ServiceSchema,
 	approval: { unless: homeEdit.id },
 	async run(uow, { id, service }) {

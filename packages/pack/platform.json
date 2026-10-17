@@ -1,5 +1,5 @@
 {
-	"sdk": "0.6.4",
+	"sdk": "0.6.5",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -83,6 +83,7 @@
 			"satisfiesCaret",
 			"searchFinds",
 			"significantWords",
+			"storedAsWhole",
 			"subjectOf",
 			"systemActor",
 			"tablePrefixOf",

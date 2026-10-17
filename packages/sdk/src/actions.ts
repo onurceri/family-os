@@ -172,6 +172,13 @@ export interface ActionDefinition<
 	 */
 	readonly draftDate?: (input: z.infer<In>) => string | undefined;
 	/**
+	 * How a draft input stored under an earlier version of `input` reads now. The runner applies it
+	 * to every stored draft input (and saved edit) before validating it, so a suggestion waiting
+	 * from before a stricter input still approves with the meaning it had; a new call never goes
+	 * through it. It returns the upgraded input, or the input unchanged when there is nothing to do.
+	 */
+	readonly storedInput?: (input: unknown) => unknown;
+	/**
 	 * Work that must happen outside the transaction, before `run` (a unit of work holds the one
 	 * database connection, so nothing slow or networked may happen inside it). Runs after the
 	 * permission checks and input validation; its result is the third argument of `run`. It is
@@ -268,6 +275,7 @@ export function defineAction<
 	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
+	storedInput?: (input: unknown) => unknown;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;
 }): ActionDefinition<Id, In, Out> {

@@ -3,6 +3,7 @@ import {
 	defineAction,
 	defineRoute,
 	FamosError,
+	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { addDays, dateLocale, formatDate, IsoDateSchema, todayIn } from '@famos/time';
@@ -10,6 +11,7 @@ import { z } from 'zod';
 import {
 	AddToMealPlanSchema,
 	MEAL_SLOTS,
+	MealEntryFieldsSchema,
 	MealEntrySchema,
 	MealIdSchema,
 	ReviewLabelSchema,
@@ -111,6 +113,8 @@ export const updateMealPlanEntry = defineAction({
 	title: 'Change a planned meal',
 	draftTitle: 'kitchen:draft_title_update_meal_plan_entry',
 	input: UpdateMealEntrySchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(MealEntryFieldsSchema, 'entry'),
 	output: MealEntrySchema,
 	approval: { unless: kitchenEdit.id },
 	async run(uow, { id, entry }) {

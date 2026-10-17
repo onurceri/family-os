@@ -51,6 +51,7 @@ import {
 } from './idempotency.ts';
 import type { Notifier } from './notifications.ts';
 import type { Registry } from './registry.ts';
+import { readStoredInput } from './stored-input.ts';
 import type { CoreTables, DraftRow } from './tables.ts';
 
 export type { DraftMeta };
@@ -773,7 +774,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const approverId = assertApprover(approver, def, draft);
 		const input = parseOrThrow(
 			def.input,
-			editedInput ?? JSON.parse(draft.input),
+			editedInput ?? readStoredInput(def, draft.input),
 			`input for ${def.id}`,
 		);
 		// A suggestion about a day that has passed never runs (unless an edit moved it on).
@@ -991,7 +992,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (draft.status !== 'pending') return false;
 		const def = registry.actions.get(draft.action_id);
 		if (!def) return false;
-		const input = def.input.safeParse(JSON.parse(draft.input));
+		const input = def.input.safeParse(readStoredInput(def, draft.input));
 		if (!input.success) return false;
 		return seemsToExist(def, input.data, { draftId: draft.id });
 	}
@@ -1042,7 +1043,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (draft.status !== 'pending') return null;
 		const def = registry.actions.get(draft.action_id);
 		if (!def?.instead) return null;
-		const input = def.input.safeParse(JSON.parse(draft.input));
+		const input = def.input.safeParse(readStoredInput(def, draft.input));
 		if (!input.success) return null;
 		return alternativeOf(def, input.data, { draftId: draft.id });
 	}
@@ -1052,7 +1053,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const def = registry.actions.get(draft.action_id);
 		if (!def?.currentValues || !deps.features.isOn(ownerOf(def.id))) return null;
 		// The reviewer reads the draft as it would be approved: with a saved edit when there is one.
-		const input = def.input.safeParse(JSON.parse(draft.edited_input ?? draft.input));
+		const input = def.input.safeParse(readStoredInput(def, draft.edited_input ?? draft.input));
 		if (!input.success) return null;
 		try {
 			return await def.currentValues(readContext(def), input.data);
@@ -1085,7 +1086,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (!def || (!def.targetTitle && !def.subject) || !deps.features.isOn(ownerOf(def.id)))
 			return null;
 		try {
-			const input = def.input.safeParse(JSON.parse(raw));
+			const input = def.input.safeParse(readStoredInput(def, raw));
 			if (!input.success) return null;
 			const name = def.targetTitle
 				? await def.targetTitle(readContext(def), input.data)

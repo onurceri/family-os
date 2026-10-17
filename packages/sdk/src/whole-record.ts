@@ -42,3 +42,30 @@ export function wholeRecord<S extends z.ZodRawShape>(
 	const checks = (fields.def.checks ?? []) as z.core.$ZodCheck<Record<string, unknown>>[];
 	return (checks.length ? whole.check(...checks) : whole) as unknown as z.ZodObject<WholeShape<S>>;
 }
+
+/**
+ * The `storedInput` of an action whose input became {@link wholeRecord}: a draft stored before
+ * read a field it left out as empty (or as its default), so that is what the upgrade fills in.
+ * `key` names the property that holds the record (`task` in `{ id, task }`); without it the
+ * input is the record itself. Anything that is not an object is left for the schema to refuse.
+ */
+export function storedAsWhole<S extends z.ZodRawShape>(
+	fields: z.ZodObject<S>,
+	key?: string,
+): (input: unknown) => unknown {
+	const fill = (record: unknown): unknown => {
+		if (!isPlainObject(record)) return record;
+		const filled: Record<string, unknown> = { ...record };
+		for (const [name, field] of Object.entries(fields.shape) as [string, z.ZodType][]) {
+			if (filled[name] !== undefined) continue;
+			if (field instanceof z.ZodOptional) filled[name] = null;
+			else if (field instanceof z.ZodDefault) filled[name] = field.parse(undefined);
+		}
+		return filled;
+	};
+	if (key === undefined) return fill;
+	return (input) => (isPlainObject(input) ? { ...input, [key]: fill(input[key]) } : input);
+}
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);

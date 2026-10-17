@@ -7,6 +7,7 @@ import {
 	defineRoute,
 	FamosError,
 	labelNamesTitle,
+	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { formatDate, IsoDateSchema, IsoTimeSchema, nextDate, todayIn, toRRule } from '@famos/time';
@@ -187,6 +188,8 @@ export const updateTask = defineAction({
 		'Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.',
 	draftTitle: 'lists:draft_title_update_task',
 	input: z.object({ id: TaskIdSchema, task: TaskReplaceSchema }),
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(TaskInputSchema, 'task'),
 	output: TaskSchema,
 	approval: {
 		unless: tasksEdit.id,

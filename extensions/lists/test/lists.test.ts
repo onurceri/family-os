@@ -327,6 +327,44 @@ describe('tasks', () => {
 		expect((await tasks()).find((t) => t.id === made.id)).toMatchObject(whole);
 	});
 
+	it('approves a change stored before a replace needed every field, as it read then', async () => {
+		const { actor } = await k.member('admin');
+		const ivy = await k.member('supervised', 'Ivy');
+		const made = await applied<Task>(
+			k.runner.invoke('lists.addTask', { title: 'Worksheet', notes: 'Page 4' }, actor),
+		);
+		const whole = {
+			title: 'Worksheet',
+			assigneeId: null,
+			dueDate: null,
+			dueTime: null,
+			recurrence: null,
+			notes: 'Page 4',
+		};
+		const drafted = await k.runner.invoke(
+			'lists.updateTask',
+			{ id: made.id, task: whole },
+			ivy.actor,
+		);
+		if (drafted.status !== 'drafted') throw new Error('expected a draft');
+		// The partial body Ivy's draft held: what it left out meant empty.
+		await k.ctx.db
+			.withTables<{ core_drafts: { id: string; input: string } }>()
+			.updateTable('core_drafts')
+			.set({
+				input: JSON.stringify({ id: made.id, task: { title: 'Worksheet', dueDate: '2026-10-20' } }),
+			})
+			.where('id', '=', drafted.draftId)
+			.execute();
+		await k
+			.route('core.approveDraft')
+			.call({ actor, params: { draftId: drafted.draftId }, body: {} });
+		expect((await tasks()).find((t) => t.id === made.id)).toMatchObject({
+			dueDate: '2026-10-20',
+			notes: null,
+		});
+	});
+
 	it('lists dated tasks first, by date and time', async () => {
 		const { actor } = await k.member('admin');
 		for (const input of [

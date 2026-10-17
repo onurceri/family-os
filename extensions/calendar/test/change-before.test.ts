@@ -207,4 +207,55 @@ describe('an edit saved from the event form that needs approval', () => {
 		const draftId = await propose('calendar.updateEvent', { id, event }, leo.actor);
 		expect((await listed(draftId)).before).toEqual({});
 	});
+
+	it('approves an edit stored before the form sent every field, as the old code read it', async () => {
+		const id = await add({ ...piano, notes: 'Bring the music book' });
+		const leo = await k.member('supervised', 'Leo');
+		const draftId = await propose(
+			'calendar.updateEvent',
+			{ id, event: wholeEvent(piano) },
+			leo.actor,
+		);
+		// What the form saved then: the empty fields and the default reminder were left out.
+		const old = {
+			id,
+			event: {
+				title: "Ivy's piano lesson",
+				allDay: false,
+				date: '2026-10-17',
+				startTime: '16:30',
+				endTime: '17:30',
+				memberIds: [],
+			},
+		};
+		await k.ctx.db
+			.withTables<{ core_drafts: { id: string; input: string } }>()
+			.updateTable('core_drafts')
+			.set({ input: JSON.stringify(old) })
+			.where('id', '=', draftId)
+			.execute();
+		const shown = (await k.route('core.listDrafts').call({
+			actor: admin.actor,
+			query: { limit: 20 },
+		})) as { id: string; input: { event: Record<string, unknown> } }[];
+		expect(shown.find((d) => d.id === draftId)?.input.event).toMatchObject({
+			location: null,
+			notes: null,
+			tags: null,
+			reminder: 30,
+		});
+		await k.route('core.approveDraft').call({
+			actor: admin.actor,
+			params: { draftId },
+			body: {},
+		});
+		expect(await k.route('calendar.getEvent').call({ params: { eventId: id } })).toMatchObject({
+			startTime: '16:30',
+			endTime: '17:30',
+			location: null,
+			notes: null,
+			tags: [],
+			reminder: 30,
+		});
+	});
 });

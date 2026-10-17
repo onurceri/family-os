@@ -1,12 +1,12 @@
 import { type AddObligationInput, scheduleOf } from '@famos/ext-records/contract';
-import { defineAction, defineRoute, FamosError } from '@famos/sdk';
+import { defineAction, defineRoute, FamosError, storedAsWhole } from '@famos/sdk';
 import { z } from 'zod';
 import {
 	AddHomeSchema,
 	HOME_AUDIENCE,
 	HOME_KIND,
 	HOME_PRESETS,
-	type HomeFieldsSchema,
+	HomeFieldsSchema,
 	HomeIdSchema,
 	HomeSchema,
 	homeUrl,
@@ -78,6 +78,8 @@ export const updateHome = defineAction({
 	title: 'Change a home',
 	draftTitle: 'home:draft_title_update_home',
 	input: UpdateHomeSchema,
+	// Waiting from when a field left out meant empty (or its default): read that way.
+	storedInput: storedAsWhole(HomeFieldsSchema, 'home'),
 	output: HomeSchema,
 	approval: { unless: homeEdit.id },
 	async run(uow, { id, home }) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { wholeRecord } from '../src/whole-record.ts';
+import { storedAsWhole, wholeRecord } from '../src/whole-record.ts';
 
 const Fields = z
 	.object({
@@ -42,5 +42,27 @@ describe('wholeRecord', () => {
 			'due',
 			'time',
 		]);
+	});
+});
+
+describe('storedAsWhole', () => {
+	it('reads a body stored before as the old code did: left out is empty, or its default', () => {
+		const upgrade = storedAsWhole(Fields, 'task');
+		const upgraded = upgrade({ id: 'x', task: { title: 'Walk', due: '2026-10-20' } });
+		expect(upgraded).toEqual({
+			id: 'x',
+			task: { title: 'Walk', notes: null, place: null, kind: 'a', due: '2026-10-20', time: null },
+		});
+		expect(Whole.safeParse((upgraded as { task: unknown }).task).success).toBe(true);
+	});
+
+	it('keeps what was sent, and leaves anything that is not a record for the schema', () => {
+		const upgrade = storedAsWhole(Fields);
+		expect(upgrade({ title: 'Walk', kind: 'b', notes: 'n' })).toMatchObject({
+			kind: 'b',
+			notes: 'n',
+		});
+		expect(upgrade('nonsense')).toBe('nonsense');
+		expect(storedAsWhole(Fields, 'task')({ id: 'x' })).toEqual({ id: 'x', task: undefined });
 	});
 });
