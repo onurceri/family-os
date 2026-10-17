@@ -12,7 +12,7 @@ For whoever runs FamilyOS at home. Start with the first page; the others can wai
 8. [Telegram](telegram.md): share to Quick add and approve from Telegram.
 9. [Email](email.md): school notices and other mail in Quick add, from a dedicated mailbox.
 10. [Calendars](calendars.md): the calendar on your phone, school and Google calendars, reminders.
-11. [Home Assistant](home-assistant.md): show the family calendar in Home Assistant, and show sensors from Home Assistant on Today.
+11. [Home Assistant](home-assistant.md): show the family calendar in Home Assistant, show sensors from Home Assistant on Today, and switch the things you choose.
 12. [Family displays](displays.md): a wall tablet with today's plans, photos and weather.
 13. [What needs doing and Papers](records.md): duties that come back, reminders, filing papers, archiving.
 14. [Vehicles](vehicles.md): insurance and inspection dates, papers and a service log.

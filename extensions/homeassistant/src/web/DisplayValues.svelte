@@ -8,7 +8,8 @@
 
 	/**
 	 * Family display widget: the sensors the family chose to show from Home Assistant, label and
-	 * value, in larger type. Read-only, and nothing at all when there is nothing to show.
+	 * value, in larger type. Never a switch or a button: a display switches nothing. Nothing at all
+	 * when there is nothing to show.
 	 */
 	const { app, t } = useHomeAssistant();
 

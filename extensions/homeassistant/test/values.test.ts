@@ -72,6 +72,8 @@ describe('values', () => {
 				name: 'Outside Temperature',
 				value: { kind: 'number', value: 15.6, unit: '°C' },
 				changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
+				control: false,
+				confirm: true,
 			},
 			{
 				id: expect.stringMatching(/^ha_item_/),
@@ -80,6 +82,8 @@ describe('values', () => {
 				name: 'Front door',
 				value: { kind: 'binary', on: true, deviceClass: 'door' },
 				changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
+				control: false,
+				confirm: true,
 			},
 		]);
 		const shown = JSON.stringify(result);

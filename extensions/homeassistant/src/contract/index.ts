@@ -72,8 +72,8 @@ export const MAX_ITEMS = 12;
 
 /**
  * Any Home Assistant entity can be read, except where people are: persons, device trackers and
- * zones. Presence and location are not shown from here. FamilyOS only reads; showing a light or a
- * lock never lets anyone switch it.
+ * zones. Presence and location are not shown from here. Showing a light or a lock does not let
+ * anyone switch it: that is a choice of its own per item (`control`).
  */
 export const ENTITY_ID_PATTERN = /^(?!person\.|device_tracker\.|zone\.)[a-z_]+\.[a-z0-9_]+$/;
 export const EntityIdSchema = z.string().max(200).regex(ENTITY_ID_PATTERN);
@@ -82,12 +82,73 @@ export const LabelSchema = z.string().trim().min(1).max(40);
 
 export const ItemIdSchema = z.string().min(1).max(100);
 
+/**
+ * What FamilyOS may ask Home Assistant to do, per domain: the only services it ever calls. The
+ * address of a call is built from this table alone, never from what a request says, so nothing
+ * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans and helpers are
+ * on or off; covers open, close and stop; locks lock and unlock; scenes and scripts run.
+ */
+export const CONTROLS = {
+	light: ['turn_on', 'turn_off'],
+	switch: ['turn_on', 'turn_off'],
+	fan: ['turn_on', 'turn_off'],
+	input_boolean: ['turn_on', 'turn_off'],
+	cover: ['open_cover', 'close_cover', 'stop_cover'],
+	lock: ['lock', 'unlock'],
+	scene: ['turn_on'],
+	script: ['turn_on'],
+} as const;
+export type ControlDomain = keyof typeof CONTROLS;
+export type Operation = (typeof CONTROLS)[ControlDomain][number];
+export const OPERATIONS = [
+	'turn_on',
+	'turn_off',
+	'open_cover',
+	'close_cover',
+	'stop_cover',
+	'lock',
+	'unlock',
+] as const satisfies readonly Operation[];
+export const OperationSchema = z.enum(OPERATIONS);
+
+const domainOf = (entityId: string) => entityId.slice(0, entityId.indexOf('.'));
+
+/** The domain of an entity FamilyOS can switch, or null. */
+export function controlDomain(entityId: string): ControlDomain | null {
+	const domain = domainOf(entityId);
+	return Object.hasOwn(CONTROLS, domain) ? (domain as ControlDomain) : null;
+}
+
+/** What may be done to an entity, from the table; nothing for one FamilyOS cannot switch. */
+export function operationsOf(entityId: string): readonly Operation[] {
+	const domain = controlDomain(entityId);
+	return domain ? CONTROLS[domain] : [];
+}
+
+/**
+ * The service to call for an operation on an entity, as the table spells it, or null when the
+ * table does not offer it for that entity's domain.
+ */
+export function serviceFor(
+	entityId: string,
+	operation: string,
+): { domain: ControlDomain; service: Operation } | null {
+	const domain = controlDomain(entityId);
+	if (!domain) return null;
+	const service = CONTROLS[domain].find((known) => known === operation);
+	return service ? { domain, service } : null;
+}
+
 /** One thing the family chose to show, with its own short name. */
 export const ItemSchema = z.object({
 	id: ItemIdSchema,
 	entityId: EntityIdSchema,
 	label: LabelSchema,
 	position: z.number().int().min(0),
+	/** The family allowed switching it from FamilyOS (for those who may switch). */
+	control: z.boolean(),
+	/** Ask before switching it. */
+	confirm: z.boolean(),
 });
 export type Item = z.infer<typeof ItemSchema>;
 
@@ -100,6 +161,17 @@ export const MoveItemInputSchema = z.object({
 	id: ItemIdSchema,
 	position: z.number().int().min(0).max(MAX_ITEMS),
 });
+export const SetItemControlInputSchema = z.object({
+	id: ItemIdSchema,
+	control: z.boolean(),
+	confirm: z.boolean(),
+});
+export const SwitchInputSchema = z.object({ id: ItemIdSchema, operation: OperationSchema });
+
+/** A switch could not be done; only the person who asked for it hears of it. */
+export const switchFailedPayload = z.object({ id: ItemIdSchema });
+/** Something was switched: the values are worth reading again. */
+export const valuesChangedPayload = z.object({ id: ItemIdSchema });
 
 /** The domains whose state words FamilyOS knows how to say. */
 export const STATE_DOMAINS = ['lock', 'cover', 'climate'] as const;
@@ -136,6 +208,8 @@ export const ValuesSchema = z.object({
 			name: z.string().nullable(),
 			value: ValueSchema,
 			changedAt: z.number().int().nullable(),
+			control: z.boolean(),
+			confirm: z.boolean(),
 		}),
 	),
 	status: z.enum(VALUES_STATUSES),

@@ -4,6 +4,7 @@ import type {
 	Entities,
 	Item,
 	MySharing,
+	Operation,
 	PersonLink,
 	Persons,
 	PresenceList,
@@ -79,4 +80,17 @@ export async function setMySharing(input: {
 	onDisplays: boolean;
 }): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/homeassistant.setMySharing', { body: input }));
+}
+
+export async function setItemControl(input: {
+	id: string;
+	control: boolean;
+	confirm: boolean;
+}): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.setItemControl', { body: input }));
+}
+
+/** Asks for a switch; Home Assistant is called right after, and the next read shows it. */
+export async function switchItem(id: string, operation: Operation): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.switch', { body: { id, operation } }));
 }

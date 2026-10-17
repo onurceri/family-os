@@ -7,10 +7,11 @@
 	"famos": {
 		"id": "homeassistant",
 		"version": "0.1.0",
-		"sdk": "^0.7.0",
+		"sdk": "^0.7.1",
 		"capabilities": [
 			"homeassistant.view",
 			"homeassistant.presence",
+			"homeassistant.control",
 			"homeassistant.manage"
 		],
 		"network": {

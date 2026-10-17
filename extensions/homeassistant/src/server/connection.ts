@@ -2,6 +2,7 @@ import {
 	defineAction,
 	defineJob,
 	defineRoute,
+	type ExtensionContext,
 	type ExternalHttp,
 	FamosError,
 	type UnitOfWork,
@@ -20,9 +21,9 @@ import { CONNECTION_ID, type HomeAssistantTables, tables } from './store.ts';
 
 /**
  * The connection to the family's Home Assistant. An admin enters the address and a long-lived
- * access token; the token is sealed and opened only to read from Home Assistant. FamilyOS only ever reads from
- * Home Assistant (GET `/api/`, `/api/config`, `/api/states`): a token cannot be
- * limited there, so no request that changes anything is ever sent.
+ * access token; the token is sealed. FamilyOS reads with it (GET `/api/`, `/api/config`,
+ * `/api/states`), and switches with it only what the family allowed, through the services of
+ * `CONTROLS`: a token cannot be limited in Home Assistant, so FamilyOS sends nothing else.
  */
 
 type Row = HomeAssistantTables['homeassistant_connection'];
@@ -129,6 +130,20 @@ export const checkJob = defineJob({
 		if (Number(done.numUpdatedRows) > 0) await ctx.events.emit(connectionChanged, {});
 	},
 });
+
+/**
+ * Home Assistant refused the token while FamilyOS used it: the connection says so, as a check
+ * would. Only when the connection is still the one the token came from (`stamp`).
+ */
+export async function recordTokenRefused(ctx: ExtensionContext, stamp: number): Promise<void> {
+	const done = await tables(ctx.db)
+		.updateTable('homeassistant_connection')
+		.set({ status: 'token_refused', checked_at: ctx.clock.now() })
+		.where('id', '=', CONNECTION_ID)
+		.where('updated_at', '=', stamp)
+		.executeTakeFirst();
+	if (Number(done.numUpdatedRows) > 0) await ctx.events.emit(connectionChanged, {});
+}
 
 export const connect = defineAction({
 	id: 'homeassistant.connect',

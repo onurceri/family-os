@@ -9,7 +9,7 @@ export type HomeAssistantTables = {
 		id: string;
 		/** Normalized address, without a trailing slash or `/api`. Not a secret. */
 		base_url: string;
-		/** The long-lived access token, sealed. Opened only to read from Home Assistant. */
+		/** The long-lived access token, sealed: opened to read, and to switch what the family allowed. */
 		sealed_token: string;
 		status: ConnectionStatus;
 		checked_at: number | null;
@@ -24,11 +24,15 @@ export type HomeAssistantTables = {
 	/** What the family chose to show; the entity is read live and never stored. */
 	homeassistant_items: {
 		id: string;
-		/** A `sensor.` or `binary_sensor.` entity, once. */
+		/** An entity (never a person, a tracker or a zone), once. */
 		entity_id: string;
 		label: string;
 		/** 0, 1, 2 … in the order shown. */
 		position: number;
+		/** 1: the family allowed switching it from FamilyOS. Off until someone turns it on. */
+		control: number;
+		/** 1: ask before switching it. On until someone turns it off. */
+		confirm: number;
 		created_at: number;
 		updated_at: number;
 	};
@@ -98,6 +102,18 @@ export const migrations: Migrations = {
 				.addColumn('created_at', 'integer', (c) => c.notNull())
 				.addColumn('updated_at', 'integer', (c) => c.notNull())
 				.modifyEnd(sql`strict`)
+				.execute();
+		},
+	},
+	'0004_control': {
+		async up(db) {
+			await db.schema
+				.alterTable('homeassistant_items')
+				.addColumn('control', 'integer', (c) => c.notNull().defaultTo(0))
+				.execute();
+			await db.schema
+				.alterTable('homeassistant_items')
+				.addColumn('confirm', 'integer', (c) => c.notNull().defaultTo(1))
 				.execute();
 		},
 	},

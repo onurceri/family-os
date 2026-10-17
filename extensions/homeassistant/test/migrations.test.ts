@@ -4,7 +4,7 @@ import { expect, it } from 'vitest';
 import { migrations } from '../src/server/store.ts';
 
 /** What the release before who-is-home had. */
-const { '0003_people': _people, ...before } = migrations;
+const { '0003_people': _people, '0004_control': _control, ...before } = migrations;
 
 it('adds the people to a home connected before, keeping what it shows', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
@@ -32,4 +32,18 @@ it('adds the people to a home connected before, keeping what it shows', async ()
 		sql`insert into homeassistant_people (member_id, person_entity, created_at, updated_at)
 			values ('member_2', 'person.alex', 1, 1)`.execute(db),
 	).rejects.toThrow();
+});
+
+it('keeps what a home showed before switching existed, switchable by nobody and asking first', async () => {
+	const { '0004_control': _control, ...previous } = migrations;
+	const { db } = openDatabase({ path: ':memory:' });
+	await runMigrations(db, [{ scope: 'homeassistant', migrations: previous }]);
+	await sql`insert into homeassistant_items (id, entity_id, label, position, created_at, updated_at)
+		values ('ha_item_1', 'lock.front_door', 'Front door', 0, 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'homeassistant', migrations }]);
+
+	const items = await sql<{ label: string; control: number; confirm: number }>`
+		select label, control, confirm from homeassistant_items`.execute(db);
+	expect(items.rows).toEqual([{ label: 'Front door', control: 0, confirm: 1 }]);
 });

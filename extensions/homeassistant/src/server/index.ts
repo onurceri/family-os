@@ -4,14 +4,17 @@ import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import {
 	connectionChanged,
+	homeassistantControl,
 	homeassistantManage,
 	homeassistantPresence,
 	homeassistantView,
 	itemsChanged,
 	peopleChanged,
+	switchFailed,
+	valuesChanged,
 } from './capabilities.ts';
 import { check, checkJob, connect, disconnect, getConnection } from './connection.ts';
-import { addItem, listItems, moveItem, removeItem, renameItem } from './items.ts';
+import { addItem, listItems, moveItem, removeItem, renameItem, setItemControl } from './items.ts';
 import {
 	getMySharing,
 	getPresence,
@@ -21,12 +24,15 @@ import {
 	unlinkPerson,
 } from './people.ts';
 import { migrations } from './store.ts';
+import { switchItem, switchJob } from './switch.ts';
 import { getEntities, getPersons, getValues } from './values.ts';
 
 /**
- * Home Assistant extension: the family's smart home, read-only. It connects with an address and a
- * long-lived access token (sealed, opened only to read) and never sends a request that
- * changes anything in Home Assistant. Who is home is shown only as each person chooses.
+ * Home Assistant extension: the family's smart home, shown in FamilyOS. It connects with an
+ * address and a long-lived access token (sealed) and reads what the family chose to show. It
+ * switches only the items the family allowed, for the people allowed to, and only through the
+ * services of `CONTROLS`; displays and the AI never switch anything. Who is home is shown only as
+ * each person chooses.
  */
 export default defineExtension({
 	manifest: pkg.famos,
@@ -40,11 +46,13 @@ export default defineExtension({
 		renameItem,
 		removeItem,
 		moveItem,
+		setItemControl,
+		switchItem,
 		linkPerson,
 		unlinkPerson,
 		setMySharing,
 	],
-	jobs: [checkJob],
+	jobs: [checkJob, switchJob],
 	routes: [
 		getConnection,
 		listItems,
@@ -55,6 +63,11 @@ export default defineExtension({
 		getMySharing,
 		getPresence,
 	],
-	events: [connectionChanged, itemsChanged, peopleChanged],
-	capabilities: [homeassistantView, homeassistantPresence, homeassistantManage],
+	events: [connectionChanged, itemsChanged, peopleChanged, valuesChanged, switchFailed],
+	capabilities: [
+		homeassistantView,
+		homeassistantPresence,
+		homeassistantControl,
+		homeassistantManage,
+	],
 });

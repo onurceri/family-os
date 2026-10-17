@@ -7,24 +7,33 @@ import {
 	ItemSchema,
 	MAX_ITEMS,
 	MoveItemInputSchema,
+	operationsOf,
 	RemoveItemInputSchema,
 	RenameItemInputSchema,
+	SetItemControlInputSchema,
 } from '../contract/index.ts';
 import { homeassistantManage, itemsChanged } from './capabilities.ts';
 import { type HomeAssistantTables, tables } from './store.ts';
 
 /**
- * What the family shows from Home Assistant: a few sensors, each with a short name of its own.
- * Disconnecting keeps them, so a reconnect to the same Home Assistant finds them again.
+ * What the family shows from Home Assistant: a few sensors, each with a short name of its own,
+ * and for each the family's choice whether it may be switched from FamilyOS. Disconnecting keeps
+ * them, so a reconnect to the same Home Assistant finds them again.
  */
 
 type Row = HomeAssistantTables['homeassistant_items'];
+
+/** Only a thing the table can switch can be switched, whatever an old row says. */
+export const mayControl = (row: Row): boolean =>
+	row.control === 1 && operationsOf(row.entity_id).length > 0;
 
 export const toItem = (row: Row): Item => ({
 	id: row.id,
 	entityId: row.entity_id as Item['entityId'],
 	label: row.label,
 	position: row.position,
+	control: mayControl(row),
+	confirm: row.confirm === 1,
 });
 
 export const loadItems = (db: UnitOfWork['db']) =>
@@ -44,7 +53,7 @@ async function renumber(uow: UnitOfWork, ids: readonly string[]): Promise<void> 
 	}
 }
 
-async function find(uow: UnitOfWork, id: string): Promise<Row> {
+export async function findItem(uow: UnitOfWork, id: string): Promise<Row> {
 	const row = await tables(uow.db)
 		.selectFrom('homeassistant_items')
 		.selectAll()
@@ -73,6 +82,9 @@ export const addItem = defineAction({
 			entity_id: input.entityId,
 			label: input.label,
 			position: rows.length === 0 ? 0 : Math.max(...rows.map((r) => r.position)) + 1,
+			// Shown only: switching it is a choice of its own, and then it asks first until told not to.
+			control: 0,
+			confirm: 1,
 			created_at: now,
 			updated_at: now,
 		};
@@ -90,11 +102,40 @@ export const renameItem = defineAction({
 	requires: homeassistantManage.id,
 	approval: 'never',
 	async run(uow, input) {
-		const row = await find(uow, input.id);
+		const row = await findItem(uow, input.id);
 		const updated = { ...row, label: input.label, updated_at: uow.clock.now() };
 		await tables(uow.db)
 			.updateTable('homeassistant_items')
 			.set({ label: updated.label, updated_at: updated.updated_at })
+			.where('id', '=', row.id)
+			.execute();
+		uow.emit(itemsChanged, {});
+		return toItem(updated);
+	},
+});
+
+export const setItemControl = defineAction({
+	id: 'homeassistant.setItemControl',
+	title: 'Choose whether a Home Assistant item can be switched from FamilyOS',
+	input: SetItemControlInputSchema,
+	output: ItemSchema,
+	requires: homeassistantManage.id,
+	approval: 'never',
+	// What FamilyOS may switch in the home is a person's decision, never a suggestion.
+	refuseProposal: async () => 'Only a person can choose what may be switched from FamilyOS.',
+	async run(uow, input) {
+		const row = await findItem(uow, input.id);
+		if (input.control && operationsOf(row.entity_id).length === 0)
+			throw new FamosError('bad_request', 'FamilyOS cannot switch this kind of thing');
+		const updated = {
+			...row,
+			control: input.control ? 1 : 0,
+			confirm: input.confirm ? 1 : 0,
+			updated_at: uow.clock.now(),
+		};
+		await tables(uow.db)
+			.updateTable('homeassistant_items')
+			.set({ control: updated.control, confirm: updated.confirm, updated_at: updated.updated_at })
 			.where('id', '=', row.id)
 			.execute();
 		uow.emit(itemsChanged, {});
@@ -110,7 +151,7 @@ export const removeItem = defineAction({
 	requires: homeassistantManage.id,
 	approval: 'never',
 	async run(uow, input) {
-		const row = await find(uow, input.id);
+		const row = await findItem(uow, input.id);
 		await tables(uow.db).deleteFrom('homeassistant_items').where('id', '=', row.id).execute();
 		await renumber(
 			uow,
@@ -129,7 +170,7 @@ export const moveItem = defineAction({
 	requires: homeassistantManage.id,
 	approval: 'never',
 	async run(uow, input) {
-		const row = await find(uow, input.id);
+		const row = await findItem(uow, input.id);
 		const ids = (await loadItems(uow.db)).map((r) => r.id).filter((id) => id !== row.id);
 		ids.splice(Math.min(input.position, ids.length), 0, row.id);
 		await renumber(uow, ids);

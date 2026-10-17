@@ -9,6 +9,7 @@
 		Row,
 		Section,
 		SidePanel,
+		SwitchRow,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -20,8 +21,10 @@
 		type Item,
 		LabelSchema,
 		MAX_ITEMS,
+		operationsOf,
 		type Values,
 	} from '../contract/index.js';
+	import Controls from './Controls.svelte';
 	import {
 		addItem,
 		findEntities,
@@ -30,14 +33,16 @@
 		moveItem,
 		removeItem,
 		renameItem,
+		setItemControl,
 	} from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import { sayValue } from './say.js';
+	import { createSwitcher } from './switching.svelte.js';
 
 	/**
-	 * Settings, Home Assistant, "What to show": the sensors the family shows on Today and on family
-	 * displays, each with a short name of its own. Tap a row to rename, move or remove it; Add
-	 * searches what Home Assistant has (sensors and binary sensors only).
+	 * Settings, Home Assistant, "What to show": the things the family shows on Today and on family
+	 * displays, each with a short name of its own. Tap a row to rename, move or remove it, or to
+	 * choose whether it can be switched from FamilyOS; Add searches what Home Assistant has.
 	 */
 	let {
 		full = $bindable(false),
@@ -50,19 +55,30 @@
 	let items = $state<Item[]>([]);
 	let values = $state<Values | null>(null);
 
-	async function load() {
+	async function load(): Promise<Values | null> {
 		try {
 			[items, values] = await Promise.all([loadItems(), loadValues()]);
 		} catch {
 			// Keep what is shown; an event or the next visit loads it again.
 		}
+		return values;
 	}
+	const maySwitch = $derived(app.can('homeassistant.control'));
+	const switcher = createSwitcher({
+		app,
+		t,
+		reload: load,
+		shown: () => values?.items ?? [],
+	});
 	let off: (() => void) | undefined;
 	onMount(() => {
 		void load();
 		off = app.onEvent('homeassistant.', () => void load());
 	});
-	onDestroy(() => off?.());
+	onDestroy(() => {
+		off?.();
+		switcher.stop();
+	});
 
 	$effect(() => {
 		full = items.length >= MAX_ITEMS;
@@ -72,7 +88,9 @@
 	/** The entity's own name and its value now, as the row's second line. */
 	function meta(item: Item): string {
 		const found = live(item.id);
-		const value = sayValue(app, t, found?.value ?? { kind: 'unavailable' }).text;
+		const value = switcher.busy(item.id)
+			? t('switching')
+			: sayValue(app, t, found?.value ?? { kind: 'unavailable' }).text;
 		return found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
 	}
 
@@ -160,15 +178,27 @@
 	// Editing
 	let editing = $state<Item | null>(null);
 	let editLabel = $state('');
+	let editControl = $state(false);
+	let editConfirm = $state(true);
 	let editForm = $state<HTMLFormElement>();
 	const editError = $derived(
 		LabelSchema.safeParse(editLabel).success ? undefined : 'homeassistant:show_label_error',
 	);
 	const index = $derived(editing ? items.findIndex((i) => i.id === editing?.id) : -1);
+	/** Only what FamilyOS can switch offers the choice. */
+	const switchable = $derived(editing ? operationsOf(editing.entityId).length > 0 : false);
+	const editDirty = $derived(
+		editing !== null &&
+			(editLabel !== editing.label ||
+				editControl !== editing.control ||
+				editConfirm !== editing.confirm),
+	);
 
 	function open(item: Item) {
 		editing = item;
 		editLabel = item.label;
+		editControl = item.control;
+		editConfirm = item.confirm;
 		failed = null;
 		showErrors = false;
 	}
@@ -182,6 +212,8 @@
 		try {
 			if (editLabel.trim() !== editing.label)
 				await renameItem({ id: editing.id, label: editLabel.trim() });
+			if (editControl !== editing.control || editConfirm !== editing.confirm)
+				await setItemControl({ id: editing.id, control: editControl, confirm: editConfirm });
 			app.toast(t('show_saved'));
 			editing = null;
 			await load();
@@ -230,7 +262,22 @@
 	{:else}
 		<Card rows>
 			{#each items as item (item.id)}
-				<Row title={item.label} meta={meta(item)} onclick={() => open(item)} />
+				{@const shown = live(item.id)}
+				{#if maySwitch && item.control && shown}
+					<!-- The text opens the item; only the switch or the buttons act. -->
+					<div class="flex items-center gap-2 pe-3">
+						<div class="min-w-0 flex-1">
+							<Row title={item.label} meta={meta(item)} onclick={() => open(item)} />
+						</div>
+						<Controls
+							item={shown}
+							busy={switcher.busy(item.id)}
+							onswitch={(op) => void switcher.run(shown, op)}
+						/>
+					</div>
+				{:else}
+					<Row title={item.label} meta={meta(item)} onclick={() => open(item)} />
+				{/if}
 			{/each}
 		</Card>
 	{/if}
@@ -344,7 +391,7 @@
 	saveDisabled={busy}
 	onsave={() => editForm?.requestSubmit()}
 	onclose={() => (editing = null)}
-	dirty={editing !== null && editLabel !== editing.label}
+	dirty={editDirty}
 	{discard}
 >
 	{#snippet danger()}
@@ -373,6 +420,24 @@
 				<FieldError for="ha-edit-label" error={showErrors ? editError : undefined} />
 				<p class="text-ink-soft text-[13px]">{editing.entityId}</p>
 			</div>
+			{#if switchable}
+				<div class="grid gap-1.5">
+					<Card rows>
+						<SwitchRow id="ha-edit-control" label={t('control_label')} bind:checked={editControl} />
+						{#if editControl}
+							<SwitchRow
+								id="ha-edit-confirm"
+								label={t('confirm_label')}
+								hint={t('confirm_hint')}
+								bind:checked={editConfirm}
+							/>
+						{/if}
+					</Card>
+					<p class="text-ink-soft text-[13px]">
+						{t('control_hint', { capability: t('cap_control') })}
+					</p>
+				</div>
+			{/if}
 			<div class="flex flex-wrap gap-2">
 				<Button variant="outline" type="button" disabled={index <= 0} onclick={() => move(-1)}
 					><ArrowUp class="size-4" aria-hidden="true" />{t('show_move_up')}</Button

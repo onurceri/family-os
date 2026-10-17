@@ -17,17 +17,22 @@ import {
 } from '../contract/index.ts';
 import { homeassistantManage, homeassistantView } from './capabilities.ts';
 import { load } from './connection.ts';
-import { loadItems } from './items.ts';
+import { loadItems, mayControl } from './items.ts';
 import { pickPerson } from './presence.ts';
 import { type PickedState, pickState, toValue } from './state.ts';
 
 /**
  * Home Assistant's values, read live and kept for a minute, so many Today pages and displays
- * cause one round of requests a minute. Only ever GET requests, and only the six picked fields of
- * an entity are kept (see `pickState`). Nothing is stored: a stale value is never shown as current.
+ * cause one round of requests a minute. Only the six picked fields of an entity are kept (see
+ * `pickState`). Nothing is stored: a stale value is never shown as current. Just after a switch
+ * they are kept only briefly, so the person who switched sees the new state as it arrives.
  */
 
 export const CACHE_MS = 60_000;
+/** How long values are kept while a switch settles (a lock unlocking, a cover moving). */
+export const SETTLING_CACHE_MS = 1_500;
+/** How long after a switch values are kept only briefly. */
+export const SETTLING_MS = 15_000;
 export const ENTITY_TIMEOUT_MS = 5_000;
 export const ENTITY_MAX_BYTES = 64 * 1024;
 export const AT_ONCE = 4;
@@ -53,6 +58,10 @@ interface Memory {
 	presence: Map<string, Cached<PresenceList>>;
 	/** Rounds in flight, so concurrent callers share one. */
 	inflight: Map<string, Promise<unknown>>;
+	/** Until when values are kept only briefly, after a switch. */
+	settlingUntil: number;
+	/** Moves on every switch, so a read begun before one is never kept. */
+	switches: number;
 }
 
 interface Listed {
@@ -63,13 +72,33 @@ interface Listed {
 
 const memories = new WeakMap<object, Memory>();
 
+/**
+ * The memory of the extension's context. A job's context is a copy of the routes' one that shares
+ * its ports, so the memory belongs to the extension's own database view: a switch job then drops
+ * what the values route keeps.
+ */
 export function memoryOf(ctx: ExtensionContext): Memory {
-	let memory = memories.get(ctx);
+	let memory = memories.get(ctx.db);
 	if (!memory) {
-		memory = { values: null, entities: null, presence: new Map(), inflight: new Map() };
-		memories.set(ctx, memory);
+		memory = {
+			values: null,
+			entities: null,
+			presence: new Map(),
+			inflight: new Map(),
+			settlingUntil: 0,
+			switches: 0,
+		};
+		memories.set(ctx.db, memory);
 	}
 	return memory;
+}
+
+/** After a switch: the next read is live, and reads stay nearly live while the change settles. */
+export function forgetValues(ctx: ExtensionContext): void {
+	const memory = memoryOf(ctx);
+	memory.values = null;
+	memory.settlingUntil = ctx.clock.now() + SETTLING_MS;
+	memory.switches++;
 }
 
 export function once<T>(memory: Memory, key: string, work: () => Promise<T>): Promise<T> {
@@ -173,6 +202,8 @@ async function readValues(ctx: ExtensionContext): Promise<Values> {
 				name: picked?.name ?? null,
 				value: picked ? toValue(picked) : UNAVAILABLE,
 				changedAt: picked?.changedAt ?? null,
+				control: mayControl(row),
+				confirm: row.confirm === 1,
 			};
 		}),
 	};
@@ -204,9 +235,12 @@ export const getValues = defineRoute({
 		]);
 		const now = ctx.clock.now();
 		const hit = memory.values;
-		if (hit && hit.key === key && now - hit.at >= 0 && now - hit.at < CACHE_MS) return hit.value;
-		const value = await once(memory, `values:${key}`, () => readValues(ctx));
-		memory.values = { key, at: ctx.clock.now(), value };
+		const keep = now < memory.settlingUntil ? SETTLING_CACHE_MS : CACHE_MS;
+		if (hit && hit.key === key && now - hit.at >= 0 && now - hit.at < keep) return hit.value;
+		// A round that began before a switch is not joined, nor kept: it may hold the old state.
+		const generation = memory.switches;
+		const value = await once(memory, `values:${generation}:${key}`, () => readValues(ctx));
+		if (memory.switches === generation) memory.values = { key, at: ctx.clock.now(), value };
 		return value;
 	},
 });
