@@ -2236,7 +2236,7 @@
 																"title",
 																"date"
 															],
-															"description": "Only when nothing matched in the range: the next match after it"
+															"description": "Only when nothing is in the range: the next event after it (of the same search)"
 														}
 													},
 													"required": [

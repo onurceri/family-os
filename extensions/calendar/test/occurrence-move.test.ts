@@ -235,6 +235,7 @@ describe('finding an event by its text', () => {
 			events: { title: string; date: string }[];
 			forOthers?: { title: string }[];
 			note?: string;
+			nextMatch?: { title: string; date: string };
 		}>('calendar.findEvents', input, { kind: 'ai', mode: 'conversation', source: 'assistant' });
 
 	it('searches from today for two months when only text is given', async () => {
@@ -331,10 +332,26 @@ describe('finding an event by its text', () => {
 		const found = await find({ from: '2026-10-12', to: '2026-10-17', text: 'dentist' });
 		if (found.status !== 'applied') throw new Error('expected applied');
 		expect(found.output.events).toEqual([]);
-		expect(found.output.note).toContain('The next match is "Dentist checkup" on 2026-12-03');
+		expect(found.output.note).toContain(
+			'The next match after it is "Dentist checkup" on 2026-12-03',
+		);
 		const none = await find({ from: '2026-10-12', to: '2026-10-17', text: 'sailing' });
 		if (none.status !== 'applied') throw new Error('expected applied');
 		expect(none.output.note).toBeUndefined();
+	});
+
+	it('names the next event when a range has nothing at all', async () => {
+		// "Nothing this weekend" is half an answer when Date night is the Saturday after.
+		await create({ title: 'Date night', date: '2026-10-24', startTime: '19:00' });
+		const weekend = await find({ from: '2026-10-17', to: '2026-10-18' });
+		if (weekend.status !== 'applied') throw new Error('expected applied');
+		expect(weekend.output.events).toEqual([]);
+		expect(weekend.output.nextMatch).toMatchObject({ title: 'Date night', date: '2026-10-24' });
+		expect(weekend.output.note).toContain('The next event after it is "Date night" on 2026-10-24');
+		// A range with something in it says nothing about what comes after.
+		const week = await find({ from: '2026-10-19', to: '2026-10-25' });
+		if (week.status !== 'applied') throw new Error('expected applied');
+		expect(week.output.nextMatch).toBeUndefined();
 	});
 });
 

@@ -498,6 +498,16 @@ export const upcoming = defineAction({
 				assigneeId: z.string().nullable(),
 			}),
 		),
+		nextAfter: z
+			.object({
+				id: z.string(),
+				title: z.string(),
+				record: z.string(),
+				recordId: z.string(),
+				dueDate: z.string(),
+			})
+			.optional()
+			.describe('Only when nothing is due in the days asked about: the first duty due after them'),
 	}),
 	readOnly: true,
 	requires: recordsView.id,
@@ -508,25 +518,46 @@ export const upcoming = defineAction({
 	async run(uow, { days }) {
 		const { timeZone } = await uow.family.settings();
 		const today = todayIn(timeZone, uow.clock.now());
+		const until = addDays(today, days);
 		const rows = await openUntil(tables(uow.db), today)
-			.where('due_date', '<=', addDays(today, days))
+			.where('due_date', '<=', until)
 			.orderBy('due_date')
 			.orderBy('created_at')
 			.limit(200)
 			.execute();
+		const obligations = rows
+			.filter((r) => aiMayRead(uow, r.audience))
+			.slice(0, MAX_CONTEXT)
+			.map((r) => ({
+				id: r.id,
+				title: r.title,
+				record: r.record_name,
+				recordId: r.record_id,
+				dueDate: r.due_date,
+				overdue: r.lapses === 0 && compareDates(r.due_date, today) < 0,
+				assigneeId: r.assignee_id,
+			}));
+		if (obligations.length > 0) return { obligations };
+		// Nothing in the window is half an answer when the car's inspection is due a fortnight after
+		// it: the first one later is given, so the answer can say when it is.
+		const later = await openUntil(tables(uow.db), today)
+			.where('due_date', '>', until)
+			.orderBy('due_date')
+			.orderBy('created_at')
+			.limit(200)
+			.execute();
+		const next = later.find((r) => aiMayRead(uow, r.audience));
 		return {
-			obligations: rows
-				.filter((r) => aiMayRead(uow, r.audience))
-				.slice(0, MAX_CONTEXT)
-				.map((r) => ({
-					id: r.id,
-					title: r.title,
-					record: r.record_name,
-					recordId: r.record_id,
-					dueDate: r.due_date,
-					overdue: r.lapses === 0 && compareDates(r.due_date, today) < 0,
-					assigneeId: r.assignee_id,
-				})),
+			obligations,
+			...(next && {
+				nextAfter: {
+					id: next.id,
+					title: next.title,
+					record: next.record_name,
+					recordId: next.record_id,
+					dueDate: next.due_date,
+				},
+			}),
 		};
 	},
 });

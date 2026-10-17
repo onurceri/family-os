@@ -617,3 +617,34 @@ describe('an AI proposing that a duty is done', () => {
 		expect((await history(o.id)).length).toBe(1);
 	});
 });
+
+describe('nothing due in the days asked about', () => {
+	type Upcoming = {
+		obligations: { title: string }[];
+		nextAfter?: { title: string; record: string; dueDate: string };
+	};
+	const upcoming = (days: number) =>
+		applied<Upcoming>(k, 'records.upcoming', { days }, admin.actor);
+
+	it('names the first duty after them', async () => {
+		// "No car inspections due in the next 30 days" left out that it is due on 2 December.
+		await add({ title: 'Vehicle inspection', dueDate: '2026-12-02' });
+		await add({ title: 'Car insurance', dueDate: '2027-03-01' });
+		expect(await upcoming(30)).toEqual({
+			obligations: [],
+			nextAfter: expect.objectContaining({
+				title: 'Vehicle inspection',
+				record: 'Golf',
+				dueDate: '2026-12-02',
+			}),
+		});
+		// When something is due in them, that is the answer.
+		const sooner = await upcoming(60);
+		expect(sooner.obligations.map((o) => o.title)).toEqual(['Vehicle inspection']);
+		expect(sooner.nextAfter).toBeUndefined();
+	});
+
+	it('says nothing more when nothing is due at all', async () => {
+		expect(await upcoming(30)).toEqual({ obligations: [] });
+	});
+});

@@ -1204,6 +1204,14 @@ export interface operations {
                                 overdue: boolean;
                                 assigneeId: string | null;
                             }[];
+                            /** @description Only when nothing is due in the days asked about: the first duty due after them */
+                            nextAfter?: {
+                                id: string;
+                                title: string;
+                                record: string;
+                                recordId: string;
+                                dueDate: string;
+                            };
                         };
                     } | {
                         /** @enum {string} */

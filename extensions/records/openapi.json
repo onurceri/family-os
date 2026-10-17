@@ -2109,6 +2109,34 @@
 																	"assigneeId"
 																]
 															}
+														},
+														"nextAfter": {
+															"type": "object",
+															"properties": {
+																"id": {
+																	"type": "string"
+																},
+																"title": {
+																	"type": "string"
+																},
+																"record": {
+																	"type": "string"
+																},
+																"recordId": {
+																	"type": "string"
+																},
+																"dueDate": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"id",
+																"title",
+																"record",
+																"recordId",
+																"dueDate"
+															],
+															"description": "Only when nothing is due in the days asked about: the first duty due after them"
 														}
 													},
 													"required": [
