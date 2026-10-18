@@ -495,7 +495,7 @@
 	"nav_waiting": "bekliyor",
 	"draft_undone": "Geri alındı",
 	"draft_expired": "Günü geçti",
-	"draft_gone": "Artık eklenemez: artık yok",
+	"draft_gone": "Artık yapılamaz: artık yok",
 	"draft_withdrawn": "Geri çekildi",
 	"draft_withdraw": "Geri çek",
 	"draft_suggest_again": "Yeniden öner",

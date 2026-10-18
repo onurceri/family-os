@@ -134,7 +134,7 @@
 	"chip_approved": "Approved",
 	"chip_undone": "Taken back",
 	"chip_expired": "Day passed",
-	"chip_gone": "Can no longer be added",
+	"chip_gone": "Can no longer be done",
 	"chip_reading": "Reading…",
 	"chip_failed": "Could not read",
 	"chip_held": "Kept unread",
