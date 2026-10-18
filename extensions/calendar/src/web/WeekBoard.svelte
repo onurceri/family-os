@@ -5,6 +5,7 @@
 	import type { Occurrence } from '../contract/index.js';
 	import { onDay } from './data.js';
 	import EventChip from './EventChip.svelte';
+	import { isWaiting } from './waiting.js';
 	import { useCalendar } from './i18n.js';
 	import {
 		blockHeight,
@@ -149,6 +150,8 @@
 					const start = chip.occurrence.start;
 					if (start === null || start <= now || chip.occurrence.allDay) continue;
 					if (isLongBlock(start, chip.occurrence.end as number)) continue;
+					// Something nobody approved yet is not what comes next.
+					if (isWaiting(chip.occurrence)) continue;
 					if (!best || start < best.start) best = { id, start };
 				}
 		return best?.id ?? null;
