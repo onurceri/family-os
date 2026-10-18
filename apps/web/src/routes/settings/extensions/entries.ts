@@ -101,19 +101,25 @@ export interface Reach {
 	worksWith: string[];
 }
 
-export function reachOf(entry: Entry, list: readonly Entry[]): Reach {
+/** What installing `id` also installs: what it needs, not yet installed (the whole chain). */
+function alongsideOf(id: string, dependsOn: readonly string[], list: readonly Entry[]): string[] {
 	const byId = new Map(list.map((e) => [e.id, e] as const));
 	const alongside: string[] = [];
-	// From the entry's own needs: a package from a file is not in the list.
+	// From the package's own needs: a package from a file or the index is not in the list.
 	const visit = (deps: readonly string[]) => {
 		for (const dep of deps) {
-			if (alongside.includes(dep) || dep === entry.id) continue;
+			if (alongside.includes(dep) || dep === id) continue;
 			if (byId.get(dep)?.status !== 'available') continue;
 			alongside.push(dep);
 			visit(byId.get(dep)?.dependsOn ?? []);
 		}
 	};
-	visit(entry.dependsOn);
+	visit(dependsOn);
+	return alongside;
+}
+
+export function reachOf(entry: Entry, list: readonly Entry[]): Reach {
+	const alongside = alongsideOf(entry.id, entry.dependsOn, list);
 	const callees = entry.reaches.calls.map((action) => action.slice(0, action.indexOf('.')));
 	const worksWith = [...new Set([...entry.optional, ...callees])].filter(
 		(id) => id !== 'core' && id !== entry.id && !entry.dependsOn.includes(id),
@@ -306,8 +312,29 @@ export type FoundPackage = Found['found'][number];
 export type FindProblem = NonNullable<NonNullable<Found['search']>['problem']>;
 
 /**
- * A found package as a row of the list, for its name and description: what it reaches is known
- * only once it is downloaded and checked (then it is a staged package).
+ * What a found package reaches, as the signed index states it, so the family sees it before
+ * downloading. Null for an entry of an older index that does not say (the check after the
+ * download then shows it).
+ */
+export function reachOfFound(pkg: FoundPackage, list: readonly Entry[]): Reach | null {
+	if (!pkg.reach) return null;
+	return {
+		hosts: pkg.reach.network.hosts,
+		userUrls: pkg.reach.network.userUrls,
+		local: pkg.reach.network.local,
+		capabilities: pkg.reach.capabilities,
+		needs: pkg.reach.dependsOn,
+		alongside: alongsideOf(pkg.id, pkg.reach.dependsOn, list),
+		worksWith: [],
+	};
+}
+
+/** Whether the extension's data is kept somewhere: everything but one not installed yet. */
+export const keepsData = (entry: Entry) => entry.status !== 'available';
+
+/**
+ * A found package as a row of the list, for its name and description (what it reaches is read
+ * with `reachOfFound`).
  */
 export function foundEntry(pkg: FoundPackage): Entry {
 	return {
@@ -376,6 +403,7 @@ export interface DownloadProblem {
 		| 'extensions_download_unreachable'
 		| 'extensions_download_missing'
 		| 'extensions_download_mismatch'
+		| 'extensions_download_reach_changed'
 		| 'extensions_download_gone'
 		| 'extensions_download_failed'
 	>;
@@ -394,6 +422,8 @@ export function downloadProblem(problem: FindProblem): DownloadProblem {
 			return { headline: { key: 'extensions_download_missing' } };
 		case 'mismatch':
 			return { headline: { key: 'extensions_download_mismatch' } };
+		case 'reach_changed':
+			return { headline: { key: 'extensions_download_reach_changed' } };
 		case 'gone':
 			return { headline: { key: 'extensions_download_gone' } };
 		case 'older':

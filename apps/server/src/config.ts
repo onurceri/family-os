@@ -66,6 +66,8 @@ export interface Config {
 	port: number;
 	host: string;
 	baseURL: string;
+	/** `FAMOS_BASE_URL` as the admin set it; unset when the base URL is only the local default. */
+	publicURL?: string;
 	trustedOrigins: string[];
 	trustedProxies: string[];
 	secret: string;
@@ -110,6 +112,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 		port: e.PORT,
 		host: e.HOST,
 		baseURL,
+		...(e.FAMOS_BASE_URL && { publicURL: baseURL }),
 		trustedOrigins: [
 			baseURL,
 			...(e.FAMOS_TRUSTED_ORIGINS?.split(',')

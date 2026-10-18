@@ -2,12 +2,13 @@
 	import { todayIn } from '@famos/time';
 	import { skySoftInk, WeatherSky } from '@famos/ui/famos';
 	import { onDestroy } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import { DEFAULT_TIMING, type PhotoList, type Weather } from '../contract/index.js';
 	import { type AgendaEvent, nextEvents } from './agenda.js';
 	import { api } from './api.js';
-	import { loadPhotos, loadWeather, photoUrl } from './data.js';
+	import { loadPhotos, loadWeather } from './data.js';
+	import { shouldCover } from './idle.js';
 	import { useAmbient } from './i18n.js';
+	import Slideshow from './Slideshow.svelte';
 	import { describeWeather } from './weather.js';
 
 	/**
@@ -15,13 +16,21 @@
 	 * pointer, key) it covers the widgets with a photo slideshow (photos the family uploaded),
 	 * the clock, the next event and the weather. Without photos it is a calm clock and agenda.
 	 * Any interaction takes it away again. It only runs on a display that may see photos or weather.
+	 * A screen that has pages shows the photos as a page of the turn instead (`idle` is false), so
+	 * the cover never hides the pages it was given.
 	 */
 	const { app, t } = useAmbient();
 	const {
 		time,
 		date,
 		onactive,
-	}: { time: string; date: string; onactive?: (active: boolean) => void } = $props();
+		idle = true,
+	}: {
+		time: string;
+		date: string;
+		onactive?: (active: boolean) => void;
+		idle?: boolean;
+	} = $props();
 
 	const canPhotos = $derived(app.can('ambient.photos'));
 	const canWeather = $derived(app.can('ambient.weather'));
@@ -43,10 +52,6 @@
 		told = covering;
 		onactive?.(covering);
 	});
-
-	const reducedMotion = () =>
-		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const fadeMs = $derived(reducedMotion() ? 0 : 1500);
 
 	async function loadContent() {
 		try {
@@ -73,6 +78,11 @@
 		};
 	});
 
+	// Pages were added to the screen: the cover goes down and stays down.
+	$effect(() => {
+		if (!idle) active = false;
+	});
+
 	// Activity: any interaction ends ambient mode; silence starts it.
 	$effect(() => {
 		if (!enabled) return;
@@ -83,7 +93,16 @@
 		const events = ['pointerdown', 'keydown', 'touchstart'] as const;
 		for (const name of events) window.addEventListener(name, touch, { passive: true });
 		const ticker = setInterval(() => {
-			if (!active && Date.now() - lastActivity >= timing.idleMinutes * 60_000) active = true;
+			if (
+				shouldCover({
+					idle,
+					covering: active,
+					lastActivity,
+					now: Date.now(),
+					idleMinutes: timing.idleMinutes,
+				})
+			)
+				active = true;
 		}, 1000);
 		return () => {
 			for (const name of events) window.removeEventListener(name, touch);
@@ -142,50 +161,6 @@
 	/* ───────────── Slideshow ───────────── */
 
 	let shown = $state<string | null>(null);
-	let position = 0;
-	let failures = 0;
-
-	function load(url: string): Promise<boolean> {
-		return new Promise((resolve) => {
-			const image = new Image();
-			image.onload = () => resolve(true);
-			image.onerror = () => resolve(false);
-			image.src = url;
-		});
-	}
-
-	$effect(() => {
-		const ids = photos?.ids ?? [];
-		if (!active || ids.length === 0) {
-			shown = null;
-			return;
-		}
-		let cancelled = false;
-		failures = 0;
-
-		/** Shows the next photo that loads; the one after it is fetched in advance. */
-		async function advance() {
-			while (!cancelled && failures < ids.length) {
-				const url = photoUrl(ids[position % ids.length] as string);
-				position++;
-				if (await load(url)) {
-					if (cancelled) return;
-					shown = url;
-					failures = 0;
-					// Preload the next one so the crossfade never waits for the network.
-					void load(photoUrl(ids[position % ids.length] as string));
-					return;
-				}
-				failures++;
-			}
-		}
-		void advance();
-		const slide = setInterval(() => void advance(), timing.slideSeconds * 1000);
-		return () => {
-			cancelled = true;
-			clearInterval(slide);
-		};
-	});
 
 	onDestroy(() => {
 		active = false;
@@ -242,15 +217,8 @@
 				<WeatherSky code={forecast.weatherCode} isDay={forecast.isDay} size="screen" />
 			</div>
 		{/if}
+		<Slideshow ids={photos?.ids ?? []} seconds={timing.slideSeconds} running={active} bind:shown />
 		{#if hasPhoto}
-			{#key shown}
-				<img
-					src={shown}
-					alt=""
-					class="absolute inset-0 size-full object-cover"
-					transition:fade={{ duration: fadeMs }}
-				/>
-			{/key}
 			<!-- The scrim keeps white text readable on any photo, in light and dark themes. -->
 			<div class="from-scrim absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t to-transparent"></div>
 		{/if}

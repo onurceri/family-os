@@ -44,6 +44,25 @@ export function initialGrant(
 	return options.map((o) => o.id).filter((id) => !optIn.has(id));
 }
 
+/**
+ * The permissions that only mean something with names shown: a word about each person (who is
+ * home) is read only when the display shows names, so ticking one without names shows nothing.
+ */
+export function needingNames(facets: readonly { kind: string; requires?: string }[]): Set<string> {
+	return new Set(
+		facets.flatMap((f) => (f.kind === 'memberStatus' && f.requires ? [f.requires] : [])),
+	);
+}
+
+/** The ticked permissions that are wasted while names are off, in the order ticked. */
+export function wastedWithoutNames(
+	ticked: readonly string[],
+	needing: ReadonlySet<string>,
+	showNames: boolean,
+): string[] {
+	return showNames ? [] : ticked.filter((id) => needing.has(id));
+}
+
 /** The words of each group of Today's blocks a display may have no room for. */
 const LEFT_OUT_GROUPS = {
 	family: 'devices_left_out_family',

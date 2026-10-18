@@ -26,6 +26,7 @@
 	import QrCode from '#lib/QrCode.svelte';
 	import DisplayForm from './DisplayForm.svelte';
 	import { initialGrant } from './display-options.js';
+	import { screenAddress } from './screen-address.js';
 
 	/**
 	 * "Add a device" (guided steps): first what is being added, then numbered steps. A
@@ -85,7 +86,13 @@
 	let capsFilled = $state(false);
 
 	const origin = typeof location === 'undefined' ? '' : location.origin;
-	const displayAddress = `${origin}/display`;
+	/** The address the server was told the family uses at home (`FAMOS_BASE_URL`), once asked. */
+	let familyAddress = $state<string | null>(null);
+	const reach = $derived(screenAddress(origin, familyAddress));
+	// A loopback address is no use on another device: the family address replaces it, or nothing does.
+	const displayAddress = $derived(`${reach.url ?? origin}/display`);
+	/** What the waiting texts name: the page's path when no address can be given. */
+	const spokenAddress = $derived(reach.url ? displayAddress : '/display');
 
 	// Each opening starts fresh, where the page asks.
 	$effect(() => {
@@ -101,6 +108,12 @@
 		pairingId = null;
 		capsFilled = false;
 		triedName = false;
+	});
+	$effect(() => {
+		if (!open || !reach.loopback) return;
+		void api.GET('/api/v1/core/devices/address').then((res) => {
+			familyAddress = res.data?.url ?? null;
+		});
 	});
 	// What makes up the day is ticked at first, and the admin unticks what it should not; the rest
 	// (a status pill) is theirs to add.
@@ -218,6 +231,14 @@
 	});
 </script>
 
+{#snippet loopbackNote()}
+	{#if reach.loopback}
+		<p class="text-attention text-sm font-semibold" data-testid="loopback-note">
+			{t('devices_loopback_note')}
+		</p>
+	{/if}
+{/snippet}
+
 <SidePanel
 	{open}
 	{title}
@@ -263,15 +284,24 @@
 				label={t('devices_add_screen')}
 				doneLabel={t('steps_done')}
 			>
-				<Step n={1} title={t('devices_screen_step_open')} summary={displayAddress}>
+				<Step
+					n={1}
+					title={t('devices_screen_step_open')}
+					summary={reach.url ? displayAddress : undefined}
+				>
 					<p class="text-ink-soft text-sm">{t('devices_screen_open_body')}</p>
-					<p class="text-info text-lg font-bold break-all" data-testid="display-address">
-						{displayAddress}
-					</p>
-					<div class="flex items-center gap-4">
-						<QrCode text={displayAddress} label={t('devices_screen_qr')} class="w-28 shrink-0" />
-						<p class="text-ink-soft text-[13px]">{t('devices_screen_qr_hint')}</p>
-					</div>
+					{#if reach.url}
+						<p class="text-info text-lg font-bold break-all" data-testid="display-address">
+							{displayAddress}
+						</p>
+					{/if}
+					{@render loopbackNote()}
+					{#if reach.url}
+						<div class="flex items-center gap-4">
+							<QrCode text={displayAddress} label={t('devices_screen_qr')} class="w-28 shrink-0" />
+							<p class="text-ink-soft text-[13px]">{t('devices_screen_qr_hint')}</p>
+						</div>
+					{/if}
 					<div class="flex flex-wrap gap-2">
 						<Button variant="primary" onclick={() => (step = 2)}>{t('devices_next')}</Button>
 						<Button variant="ghost" onclick={back}>{t('devices_back')}</Button>
@@ -341,12 +371,12 @@
 						{:else if pairing === 'expired'}
 							<p>{t('devices_display_expired', { name: added })}</p>
 						{:else}
-							<p>{t('devices_display_waiting', { name: added, address: displayAddress })}</p>
+							<p>{t('devices_display_waiting', { name: added, address: spokenAddress })}</p>
 							{#if waitedLong && !answering}
 								<p class="text-attention text-sm font-semibold">
 									{t('devices_display_not_answering', {
 										code: code.trim().toUpperCase(),
-										address: displayAddress,
+										address: spokenAddress,
 									})}
 								</p>
 							{/if}
@@ -372,9 +402,12 @@
 				label={t('devices_add_shared')}
 				doneLabel={t('steps_done')}
 			>
-				<Step n={1} title={t('devices_shared_step_open')} summary={origin}>
+				<Step n={1} title={t('devices_shared_step_open')} summary={reach.url ?? undefined}>
 					<p class="text-ink-soft text-sm">{t('devices_shared_open_body')}</p>
-					<p class="text-info text-lg font-bold break-all">{origin}</p>
+					{#if reach.url}
+						<p class="text-info text-lg font-bold break-all">{reach.url}</p>
+					{/if}
+					{@render loopbackNote()}
 					<div class="flex flex-wrap gap-2">
 						<Button variant="primary" onclick={() => (step = 2)}>{t('devices_next')}</Button>
 						<Button variant="ghost" onclick={back}>{t('devices_back')}</Button>

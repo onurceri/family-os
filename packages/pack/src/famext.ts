@@ -121,6 +121,40 @@ export interface IndexEntry {
 	sha256: string;
 	size: number;
 	labels: Record<string, { name: string; description: string }>;
+	/**
+	 * What the package reaches, from its manifest, so a family sees it before downloading. The
+	 * server checks the downloaded manifest against it. Left out by an older index.
+	 */
+	reach?: IndexReach;
+}
+
+/** What a package reaches beyond its own data, as the index states it. */
+export interface IndexReach {
+	network: { hosts: string[]; userUrls: boolean; local: boolean };
+	/** How many capabilities it adds. */
+	capabilities: number;
+	/** The extensions it needs. */
+	dependsOn: string[];
+}
+
+/** The reach a manifest (as written in package.json, defaults not filled in) declares. */
+export function reachOfManifest(manifest: Record<string, unknown>): IndexReach {
+	const network = (manifest.network ?? {}) as {
+		hosts?: unknown;
+		userUrls?: unknown;
+		local?: unknown;
+	};
+	const strings = (value: unknown) =>
+		Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+	return {
+		network: {
+			hosts: strings(network.hosts).sort(),
+			userUrls: network.userUrls === true,
+			local: network.local === true,
+		},
+		capabilities: strings(manifest.capabilities).length,
+		dependsOn: strings(manifest.dependsOn).sort(),
+	};
 }
 
 /** `index.json`: every published package, by id, newest version first. */
@@ -135,6 +169,7 @@ export async function readPackedDescription(file: string): Promise<{
 	version: string;
 	sdk: string;
 	labels: IndexEntry['labels'];
+	reach: IndexReach;
 }> {
 	const chunks: Buffer[] = [];
 	await tar.t({
@@ -146,13 +181,19 @@ export async function readPackedDescription(file: string): Promise<{
 	});
 	if (chunks.length === 0) throw new Error(`${file} holds no ${PACKAGE_FILE}`);
 	const description = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
-		manifest?: { id?: unknown; version?: unknown; sdk?: unknown };
+		manifest?: Record<string, unknown> & { id?: unknown; version?: unknown; sdk?: unknown };
 		labels?: IndexEntry['labels'];
 	};
 	const { id, version, sdk } = description.manifest ?? {};
 	if (typeof id !== 'string' || typeof version !== 'string' || typeof sdk !== 'string')
 		throw new Error(`${file} has no manifest id, version and sdk`);
-	return { id, version, sdk, labels: description.labels ?? {} };
+	return {
+		id,
+		version,
+		sdk,
+		labels: description.labels ?? {},
+		reach: reachOfManifest(description.manifest ?? {}),
+	};
 }
 
 /** Signs a file's exact bytes into `<file>.sig` (`{ keyId, sig }`): how the index is signed. */
@@ -230,6 +271,7 @@ export async function writeIndex(
 				sha256: createHash('sha256').update(bytes).digest('hex'),
 				size: bytes.byteLength,
 				labels: description.labels,
+				reach: description.reach,
 			});
 		}
 	}

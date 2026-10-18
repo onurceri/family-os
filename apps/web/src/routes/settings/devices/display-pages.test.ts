@@ -5,6 +5,7 @@ import {
 	movePage,
 	pagesChanged,
 	rotationToSave,
+	takesOverWhenIdle,
 	withCurrent,
 } from './display-pages.js';
 
@@ -61,6 +62,20 @@ describe('withCurrent', () => {
 		expect(withCurrent([30, 60, 120], 90)).toEqual([30, 60, 90, 120]);
 		expect(withCurrent([30, 60, 120], 60)).toEqual([30, 60, 120]);
 		expect(withCurrent([30, 60, 120], 3600)).toEqual([30, 60, 120, 3600]);
+	});
+});
+
+describe('takesOverWhenIdle', () => {
+	const slots = [
+		{ slot: 'display.ambient', requires: 'ambient.photos' },
+		{ slot: 'display.page', requires: 'calendar.view' },
+	];
+	it('is true when a permission that ambient mode needs is ticked', () => {
+		expect(takesOverWhenIdle(slots, ['ambient.photos', 'calendar.view'])).toBe(true);
+	});
+	it('is false without that permission, and for a page permission', () => {
+		expect(takesOverWhenIdle(slots, ['calendar.view'])).toBe(false);
+		expect(takesOverWhenIdle([], ['ambient.photos'])).toBe(false);
 	});
 });
 

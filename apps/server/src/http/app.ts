@@ -69,6 +69,8 @@ export interface HttpAppDeps {
 	identity: Pick<Identity, 'handler' | 'resolveMember'>;
 	logger: Logger;
 	trustedOrigins: string[];
+	/** The address the admin configured for the family (`FAMOS_BASE_URL`), when there is one. */
+	publicUrl?: string;
 	appVersion: string;
 	/** Whether cookies get the Secure flag (true when served over HTTPS). */
 	secureCookies: boolean;
@@ -594,7 +596,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	app.use('/api/v1/*', deviceMiddleware(deps.kernel.devices, deps.secureCookies));
 
 	mountExtensionRoutes(app, deps.extensions ?? loadedWeb(deps.kernel));
-	mountDeviceRoutes(app, deps.kernel, deps.secureCookies, clientIp);
+	mountDeviceRoutes(app, deps.kernel, deps.secureCookies, clientIp, deps.publicUrl);
 	mountAiRoutes(app, deps.ai, deps.kernel.access, deps.kernel.ctx.family, () =>
 		deps.kernel.reconcileSearch(),
 	);

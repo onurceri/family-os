@@ -51,7 +51,8 @@ test('a wall display pairs with a code, shows Today in family mode, follows live
 	const sheet = page.getByTestId('add-device');
 	await expect(sheet.getByText('What are you adding?')).toBeVisible();
 	await sheet.getByRole('button', { name: /A screen for the wall or a TV/ }).click();
-	await expect(sheet.getByTestId('display-address')).toContainText('/display');
+	// The e2e server runs on localhost: no address a screen could use, and the note says so.
+	await expect(sheet.getByTestId('loopback-note')).toContainText('only on this computer');
 	await sheet.getByRole('button', { name: 'Next' }).click();
 	await sheet.getByLabel('Code on the screen').fill(code);
 	await sheet.getByRole('button', { name: 'Next' }).click();

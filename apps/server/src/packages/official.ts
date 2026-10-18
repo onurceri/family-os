@@ -1,6 +1,6 @@
 import { createHash, verify } from 'node:crypto';
-import type { IndexedPackage } from '@famos/core';
-import { FamosError, isFamosError } from '@famos/sdk';
+import type { IndexedPackage, IndexReach } from '@famos/core';
+import { type ExtensionManifest, FamosError, isFamosError } from '@famos/sdk';
 import { z } from 'zod';
 import { ARCHIVE_LIMITS } from './archive.ts';
 import { publicKeyOf, type TrustRoot } from './trust.ts';
@@ -45,6 +45,17 @@ const EntrySchema = z.object({
 		z.string().max(35),
 		z.object({ name: z.string().max(200), description: z.string().max(2000) }),
 	),
+	reach: z
+		.object({
+			network: z.object({
+				hosts: z.array(z.string().max(253)).max(50),
+				userUrls: z.boolean(),
+				local: z.boolean(),
+			}),
+			capabilities: z.number().int().min(0).max(1000),
+			dependsOn: z.array(z.string().max(64)).max(50),
+		})
+		.optional(),
 });
 
 /** Fields this server does not know are left out, so a later index still reads here. */
@@ -54,7 +65,7 @@ const IndexSchema = z.object({
 });
 
 const problem = (
-	reason: 'unreachable' | 'missing' | 'unsigned' | 'invalid' | 'mismatch',
+	reason: 'unreachable' | 'missing' | 'unsigned' | 'invalid' | 'mismatch' | 'reach_changed',
 	message: string,
 ) => new FamosError('bad_request', message, { reason });
 
@@ -172,6 +183,32 @@ export async function fetchIndex(official: OfficialIndex): Promise<IndexedPackag
 		if (at.protocol !== 'https:' || at.origin !== url.origin) return [];
 		return [{ ...entry, url: at.href }];
 	});
+}
+
+/** What a parsed manifest reaches, in the shape the index states it. */
+export function reachOfParsed(manifest: ExtensionManifest): IndexReach {
+	return {
+		network: {
+			hosts: [...(manifest.network?.hosts ?? [])].sort(),
+			userUrls: manifest.network?.userUrls ?? false,
+			local: manifest.network?.local ?? false,
+		},
+		capabilities: manifest.capabilities.length,
+		dependsOn: [...manifest.dependsOn].sort(),
+	};
+}
+
+/**
+ * Refuses a package whose own manifest reaches more, or anything else, than the signed index
+ * said before it was downloaded: the family decided on what the index stated.
+ */
+export function assertSameReach(entry: IndexedPackage, manifest: ExtensionManifest): void {
+	if (!entry.reach) return;
+	if (JSON.stringify(entry.reach) !== JSON.stringify(reachOfParsed(manifest)))
+		throw problem(
+			'reach_changed',
+			`${entry.id} ${entry.version} reaches something other than the index says`,
+		);
 }
 
 /**

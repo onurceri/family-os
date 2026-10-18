@@ -3,17 +3,21 @@
 	import { BadgeCheck, Download } from '@lucide/svelte';
 	import { numberFormat } from '#lib/format.svelte.js';
 	import { t } from '#lib/i18n.svelte.js';
-	import type { FoundPackage } from './entries.js';
+	import { type Entry, type FoundPackage, reachOfFound } from './entries.js';
+	import ReachRows from './ReachRows.svelte';
 
 	/**
 	 * A package the official index lists: what it is for, its version and its size, and Download
-	 * as the panel's one action. What it reaches is shown once the server has downloaded and
-	 * checked it, when the panel of a file to install takes over.
+	 * as the panel's one action. What it reaches comes from the signed index and is shown before
+	 * the download; the server checks the downloaded package says the same, and the panel of a
+	 * file to install then takes over.
 	 */
 	let {
 		pkg,
 		update,
+		list,
 		name,
+		names,
 		description,
 		downloading,
 		problem,
@@ -23,7 +27,10 @@
 		pkg: FoundPackage | null;
 		/** It updates an installed extension (else it is new here). */
 		update: boolean;
+		/** The extensions the server lists, for what installs along with it. */
+		list: readonly Entry[];
 		name: string;
+		names: (ids: readonly string[]) => string;
 		description: string;
 		downloading: boolean;
 		/** Why the last download failed, in the page's words. */
@@ -31,6 +38,10 @@
 		ondownload: (pkg: FoundPackage) => void;
 		onclose: () => void;
 	} = $props();
+
+	const reach = $derived(pkg ? reachOfFound(pkg, list) : null);
+	/** What it needs that is already there (what is not comes along, said by its rows). */
+	const needs = $derived(reach ? reach.needs.filter((id) => !reach.alongside.includes(id)) : []);
 
 	const megabytes = (bytes: number) =>
 		numberFormat({ style: 'unit', unit: 'megabyte', maximumFractionDigits: 1 }).format(
@@ -43,7 +54,7 @@
 	title={name}
 	closeLabel={t('side_panel_close')}
 	cancelLabel={t('cancel')}
-	saveLabel={t('extensions_download')}
+	saveLabel={reach ? t('extensions_download_check') : t('extensions_download')}
 	onsave={() => pkg && ondownload(pkg)}
 	saveDisabled={downloading}
 	{onclose}
@@ -64,7 +75,9 @@
 					<Row
 						wrap
 						title={t('extensions_found_official')}
-						meta={t('extensions_found_official_hint')}
+						meta={reach
+							? t('extensions_found_official_reach_hint')
+							: t('extensions_found_official_hint')}
 					>
 						{#snippet lead()}<BadgeCheck class="size-5" aria-hidden="true" />{/snippet}
 					</Row>
@@ -77,6 +90,10 @@
 					</Row>
 				</Card>
 			</Section>
+
+			{#if reach}
+				<ReachRows {reach} {needs} {names} showAlongside />
+			{/if}
 
 			{#if downloading}
 				<Notice>{t('extensions_downloading')}</Notice>

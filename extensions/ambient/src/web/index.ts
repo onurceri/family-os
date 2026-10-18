@@ -65,6 +65,14 @@ export default defineWebExtension({
 			requires: 'ambient.photos',
 			component: () => import('./Ambient.svelte'),
 		},
+		{
+			// The photos as a screen of their own between Today's turns on a family display.
+			slot: 'display.page',
+			id: 'ambient.photos',
+			labelKey: 'ambient:display_photos',
+			requires: 'ambient.photos',
+			component: () => import('./PhotosPage.svelte'),
+		},
 	],
 	today: [photoFacet, weatherFacet, placeStep],
 });

@@ -139,6 +139,7 @@ async function serveCommand() {
 			identity: runtime.identity,
 			logger,
 			trustedOrigins: config.trustedOrigins,
+			...(config.publicURL && { publicUrl: config.publicURL }),
 			appVersion: APP_VERSION,
 			secureCookies: config.baseURL.startsWith('https://'),
 			trustedProxies: config.trustedProxies,

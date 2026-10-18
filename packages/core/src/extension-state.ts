@@ -146,6 +146,15 @@ export interface StagedPackage extends Omit<ExtensionPackage, 'always'> {
  * where it is (an absolute https address on the index's own host) and the size and SHA-256 its
  * file must have.
  */
+export const IndexReachSchema = z.object({
+	network: z.object({ hosts: z.array(z.string()), userUrls: z.boolean(), local: z.boolean() }),
+	/** How many capabilities it adds. */
+	capabilities: z.number().int().min(0),
+	/** The extensions it needs. */
+	dependsOn: z.array(z.string()),
+});
+export type IndexReach = z.infer<typeof IndexReachSchema>;
+
 export const IndexedPackageSchema = z.object({
 	id: z.string(),
 	version: z.string(),
@@ -155,6 +164,8 @@ export const IndexedPackageSchema = z.object({
 	sha256: z.string(),
 	size: z.number(),
 	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
+	/** What it reaches, as the signed index states it; left out by an older index. */
+	reach: IndexReachSchema.optional(),
 });
 export type IndexedPackage = z.infer<typeof IndexedPackageSchema>;
 

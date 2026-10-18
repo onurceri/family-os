@@ -67,6 +67,7 @@ export function mountDeviceRoutes(
 	kernel: Kernel,
 	secure: boolean,
 	clientIp: (c: Context) => string,
+	publicUrl?: string,
 ): void {
 	const devices = kernel.devices;
 	const trust = createRoute({
@@ -123,7 +124,7 @@ export function mountDeviceRoutes(
 		return c.json({ ok: true as const }, 200);
 	});
 
-	mountDisplayRoutes(app, kernel, secure, clientIp);
+	mountDisplayRoutes(app, kernel, secure, clientIp, publicUrl);
 }
 
 const PairStartSchema = z.object({
@@ -169,6 +170,7 @@ function mountDisplayRoutes(
 	kernel: Kernel,
 	secure: boolean,
 	clientIp: (c: Context) => string,
+	publicUrl?: string,
 ) {
 	const devices = kernel.devices;
 	// Starting a pairing is public: cap it per address so nobody can fill the table with codes.
@@ -270,6 +272,33 @@ function mountDisplayRoutes(
 		if (!actor || actor.kind === 'display')
 			throw new FamosError('unauthenticated', 'Sign in required');
 		return c.json(await devices.pairingStatus(actor, c.req.valid('param').pairingId), 200);
+	});
+
+	const address = createRoute({
+		method: 'get',
+		path: '/api/v1/core/devices/address',
+		operationId: 'core.getFamilyAddress',
+		summary: 'The address the family reaches FamilyOS at, when the admin has set one',
+		tags: ['core'],
+		responses: {
+			200: {
+				description: 'The configured address, or null',
+				...json(z.object({ url: z.string().nullable() })),
+			},
+			...errorResponses,
+		},
+		security: [{ session: [] }],
+	});
+	app.openapi(address, async (c) => {
+		const actor = c.get('actor');
+		if (!actor || actor.kind === 'display')
+			throw new FamosError('unauthenticated', 'Sign in required');
+		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
+			throw new FamosError('forbidden', 'Your role does not allow this', {
+				reason: 'capability',
+				capability: CORE_CAPABILITIES.devicesManage.id,
+			});
+		return c.json({ url: publicUrl ?? null }, 200);
 	});
 
 	const grantable = createRoute({

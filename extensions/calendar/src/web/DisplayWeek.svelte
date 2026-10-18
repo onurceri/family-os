@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { todayIn, weekOf } from '@famos/time';
+	import { todayIn } from '@famos/time';
 	import type { SlotProps } from '@famos/ui/slots';
 	import { onDestroy } from 'svelte';
 	import type { Occurrence } from '../contract/index.js';
 	import { loadRange } from './data.js';
+	import { nextDays } from './display-days.js';
 	import { useCalendar } from './i18n.js';
 	import WeekBoard from './WeekBoard.svelte';
 
 	/**
-	 * Family display page: this week on the hour grid, read-only. The board fits the box without
+	 * Family display page: the next seven days on the hour grid, read-only. The board fits the box without
 	 * scrolling (a crowded stretch says "+N more" in its column). Nothing on it can be pressed.
 	 * It reads again each time it comes round, when the calendar changes, and every five minutes.
 	 */
@@ -19,12 +20,12 @@
 	const clock = setInterval(() => (now = Date.now()), 30_000);
 	onDestroy(() => clearInterval(clock));
 	const today = $derived(todayIn(app.timeZone(), now));
-	const week = $derived(weekOf(today, app.weekStart()));
+	const week = $derived(nextDays(today));
 	const first = $derived(week[0] as string);
 	const last = $derived(week[6] as string);
 
 	let items = $state<Occurrence[]>([]);
-	/** The range the items were read for, so the board never shows another week's. */
+	/** The range the items were read for, so the board never shows another range's. */
 	let loaded = $state('');
 	let failed = $state(false);
 	async function load() {
@@ -40,7 +41,7 @@
 
 	$effect(() => {
 		if (!shown) return;
-		// A new week (midnight) is read as well.
+		// A new day (midnight) is read as well.
 		void [first, last];
 		void load();
 		const refresh = setInterval(() => void load(), 5 * 60_000);

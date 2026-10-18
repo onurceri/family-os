@@ -506,7 +506,12 @@
 		<!-- Ambient mode: contributed by an extension, covers Today after a while idle. -->
 		{#each ambient as layer (layer.id)}
 			{#await trackWork(layer.component()) then mod}
-				<mod.default {time} {date} onactive={(active: boolean) => onAmbient(layer.id, active)} />
+				<mod.default
+					{time}
+					{date}
+					idle={pages.length === 0}
+					onactive={(active: boolean) => onAmbient(layer.id, active)}
+				/>
 			{/await}
 		{/each}
 	</main>

@@ -15,6 +15,7 @@ import {
 	type ExtensionPackagesPort,
 	type IndexedPackage,
 	IndexedPackageSchema,
+	IndexReachSchema,
 	ProblemParamsSchema,
 	type StagedPackage,
 } from './extension-state.ts';
@@ -33,7 +34,8 @@ export const DOWNLOAD_JOB = 'core.fetchExtensionPackage';
  *   index: 404 or 410), `unsigned` (the index's signature is missing, by an unknown key or wrong),
  *   `invalid` (not an index this server reads);
  * - downloading: `unreachable`, `missing` (the index lists a file its host does not have),
- *   `mismatch` (size or SHA-256 differ from the index), `gone` (the
+ *   `mismatch` (size or SHA-256 differ from the index), `reach_changed` (the package reaches
+ *   something other than the index said), `gone` (the
  *   index no longer lists it), or what an uploaded file would be refused for (`too_large`,
  *   `unsigned`, `incompatible`, `invalid` with a `code`; `older` with `version`);
  * - `failed`: anything else (the server's log says why).
@@ -104,6 +106,8 @@ export const FoundExtensionSchema = z.object({
 	current: z.string().nullable(),
 	size: z.number(),
 	labels: z.record(z.string(), z.object({ name: z.string(), description: z.string() })),
+	/** What it reaches, from the signed index, so the family sees it before downloading. */
+	reach: IndexReachSchema.optional(),
 });
 export type FoundExtension = z.infer<typeof FoundExtensionSchema>;
 
@@ -139,6 +143,7 @@ export function newerThanHere(
 			current: here.get(pkg.id) ?? null,
 			size: pkg.size,
 			labels: pkg.labels,
+			...(pkg.reach && { reach: pkg.reach }),
 		}));
 }
 

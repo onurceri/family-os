@@ -102,7 +102,12 @@ describe('the published index', () => {
 	const key = generateSigningKey();
 
 	/** A packed package of `id` at `version`, named as a release names it. */
-	async function packed(id: string, version: string, license = 'license\n'): Promise<string> {
+	async function packed(
+		id: string,
+		version: string,
+		license = 'license\n',
+		extra: Record<string, unknown> = {},
+	): Promise<string> {
 		const dir = mkdtempSync(join(scratch, `${id}-`));
 		mkdirSync(join(dir, 'server'));
 		writeFileSync(join(dir, 'server/index.mjs'), 'export default {};\n');
@@ -110,7 +115,7 @@ describe('the published index', () => {
 		const files = await hashFiles(dir);
 		const description = {
 			format: 1,
-			manifest: { id, version, sdk: '^0.5.0' },
+			manifest: { id, version, sdk: '^0.5.0', ...extra },
 			labels: { en: { name: id, description: `The ${id}` } },
 			files,
 		};
@@ -144,9 +149,34 @@ describe('the published index', () => {
 			sha256: createHash('sha256').update(bytes).digest('hex'),
 			size: bytes.byteLength,
 			labels: { en: { name: 'garden', description: 'The garden' } },
+			reach: {
+				network: { hosts: [], userUrls: false, local: false },
+				capabilities: 0,
+				dependsOn: [],
+			},
 		});
 		expect(JSON.parse(readFileSync(join(site, INDEX_FILE), 'utf8'))).toEqual(index);
 		expect(await readPackedDescription(first)).toMatchObject({ id: 'garden', version: '1.0.0' });
+	});
+
+	it('states what a package reaches, from its manifest', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		const file = await packed('weather', '1.0.0', 'license\n', {
+			network: { hosts: ['b.example.org', 'a.example.org'], userUrls: true },
+			capabilities: ['weather.view', 'weather.manage'],
+			dependsOn: ['ambient', 'calendar'],
+			optional: ['lists'],
+		});
+		const { index } = await writeIndex(site, { add: [file] });
+		expect(index.extensions[0]?.reach).toEqual({
+			network: { hosts: ['a.example.org', 'b.example.org'], userUrls: true, local: false },
+			capabilities: 2,
+			dependsOn: ['ambient', 'calendar'],
+		});
+		// Signed with the rest of the index: the file holds it.
+		expect(JSON.parse(readFileSync(join(site, INDEX_FILE), 'utf8')).extensions[0].reach).toEqual(
+			index.extensions[0]?.reach,
+		);
 	});
 
 	it('never publishes one version with other bytes, or under another name', async () => {

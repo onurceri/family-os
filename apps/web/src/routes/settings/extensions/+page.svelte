@@ -105,6 +105,13 @@
 	};
 	const name = (entry: Entry) => nameOf(entry, texts(entry));
 	const description = (entry: Entry) => descriptionOf(entry, texts(entry));
+	const names = (ids: readonly string[]) =>
+		ids
+			.map((id) => {
+				const other = entries.find((e) => e.id === id);
+				return other ? name(other) : id;
+			})
+			.join(', ');
 	const grouped = $derived(sections(entries, name));
 	const shown = $derived(withFound(grouped, found?.found ?? []));
 
@@ -697,7 +704,9 @@
 	<FoundPanel
 		pkg={staged ? null : foundOpen}
 		update={shown.found.some(({ pkg, update }) => update && pkg.id === foundOpen?.id)}
+		list={entries}
 		name={foundOpen ? name(foundEntry(foundOpen)) : ''}
+		{names}
 		description={foundOpen ? description(foundEntry(foundOpen)) : ''}
 		{downloading}
 		problem={downloadFailure ?? (foundError ? { text: foundError } : null)}

@@ -11,7 +11,12 @@ import {
 } from '@famos/core';
 import { schemaState } from '@famos/db';
 import { type DbExecutor, type ExtensionDefinition, FamosError, tablePrefixOf } from '@famos/sdk';
-import { downloadPackage, fetchIndex, type OfficialIndex } from '../packages/official.ts';
+import {
+	assertSameReach,
+	downloadPackage,
+	fetchIndex,
+	type OfficialIndex,
+} from '../packages/official.ts';
 import { compareVersions, type ExtensionStore } from '../packages/store.ts';
 import { type Available, type LoadReport, summary } from './load.ts';
 import { chooseInstalled, migrationProblem } from './state.ts';
@@ -206,7 +211,11 @@ function packagesPort(
 		...(store &&
 			official && {
 				findPackages: () => fetchIndex(official),
-				download: async (entry) => stage(await downloadPackage(entry, official)),
+				download: async (entry) => {
+					const staged = await stage(await downloadPackage(entry, official));
+					assertSameReach(entry, staged.manifest);
+					return staged;
+				},
 			}),
 	};
 }

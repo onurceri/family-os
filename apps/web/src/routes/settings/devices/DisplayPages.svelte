@@ -12,6 +12,7 @@
 		listedPages,
 		movePage,
 		PAGE_SECONDS,
+		takesOverWhenIdle,
 		TODAY_SECONDS,
 		withCurrent,
 	} from './display-pages.js';
@@ -44,6 +45,15 @@
 			session.disabledExtensions,
 		),
 	);
+	const ambientPage = $derived(
+		takesOverWhenIdle(
+			enabledOnly(
+				contributions.slots.filter((c) => c.slot === 'display.ambient'),
+				session.disabledExtensions,
+			),
+			ticked,
+		),
+	);
 	const listed = $derived(listedPages(offered, ticked, pages, []));
 	const addable = $derived(addablePages(offered, ticked, pages, []));
 	const nameOf = (c: { id: string; labelKey?: string }) =>
@@ -65,6 +75,11 @@
 	<div class="grid gap-3" data-testid="display-pages">
 		<Section label={t('devices_pages')}>
 			<p class="text-ink-soft text-[13px]">{t('devices_pages_hint')}</p>
+			{#if ambientPage}
+				<p class="text-ink-soft text-[13px]" data-testid="pages-ambient-note">
+					{t('devices_pages_ambient_hint')}
+				</p>
+			{/if}
 			{#if listed.length > 0}
 				<Card rows>
 					{#each listed as page, i (page.id)}

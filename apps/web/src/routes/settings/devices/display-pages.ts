@@ -27,6 +27,20 @@ export const PAGE_SECONDS = [10, 20, 30, 45, 60, 120, 300] as const;
 export const BACK_SECONDS = [30, 60, 120, 300, 600] as const;
 
 /**
+ * Whether the screen has something that takes it over when nobody touches it (ambient mode, a
+ * contribution of `display.ambient` whose permission is ticked): with pages, that content comes
+ * as a page instead, which the panel says.
+ */
+export function takesOverWhenIdle(
+	contributions: readonly { slot: string; requires?: string }[],
+	ticked: readonly string[],
+): boolean {
+	return contributions.some(
+		(c) => c.slot === 'display.ambient' && c.requires !== undefined && ticked.includes(c.requires),
+	);
+}
+
+/**
  * The pages that can be added: those the extension offers (and has turned on) whose capability
  * is ticked in the form above, and that are not in the list yet.
  */

@@ -62,9 +62,10 @@ By default a display shows **no names or colors** of family members. Then the da
 
 A screen can show more than Today. Tap the screen in the list of devices and look under **Pages**: **Add a page** lists the pages this screen may show, and the screen shows them in turn between Today's turns. Today always comes first and always comes back, so with no pages chosen the screen shows only Today, as before. A page is a full screen of one thing. The pages are:
 
-- **This week** (needs *See the calendar*): the week on an hour grid, today marked. A crowded stretch of the day says how many more events it holds.
+- **The next 7 days** (needs *See the calendar*): today and the six days after it on an hour grid, today marked, so what is coming shows even on the last day of the week. A crowded stretch of the day says how many more events it holds.
 - **Shopping** (needs *See tasks and shopping lists*): what is still to buy. One list fills the screen in columns (one, two or three, by the width of the screen); with several lists, each is a column with its name above, up to three, and a line says how many more lists there are. Ticked items are not shown.
 - **Board** (needs *See the notes on the board*): the pinned notes first, then the newest, as papers filling the screen.
+- **Photos** (needs *Show family photos on a display*): the family's photos one after the other with the clock and the date over them. Without photos it is a calm clock.
 - **Around the house** (needs *See what the family chose to show from Home Assistant*): the values you chose to show from Home Assistant, see [Home Assistant](home-assistant.md).
 
 Each page has its name and the time at the top, and does not scroll: when it has more than fits, it says how many more.
@@ -81,13 +82,13 @@ Once a page is added, three choices appear:
 
 On the screen, small dots at the bottom show where it is: one for Today and one for each page, the current one darker. A touch anywhere holds the screen where it is, so nobody is surprised while reading; after the time you chose without another touch, it goes back to Today and the turns start again. Swipe sideways to go to the next or the previous screen, or tap a dot to go straight to it. Nothing on a page can be pressed.
 
-When nobody has touched the screen for a while, **ambient mode** (the photos) takes over as before. The dots go away, and when a touch ends it, the screen starts again from Today.
+A screen that has pages is not taken over by **ambient mode** when nobody touches it: the photos come as the **Photos** page instead, and the pages and Today keep turning. A screen with no pages works as before: after a while without a touch, ambient mode (the photos) takes over, and a touch brings Today back.
 
 ## Photos and weather
 
 Photos, the weather and the slideshow have their own page: **Settings → Family → Photos and weather** (admins; **Devices** links to it).
 
-When nobody has touched a screen for a while it goes into **ambient mode**: a photo slideshow, the clock, the weather and the next event today. A touch brings Today back (and, if the screen has [pages](#pages), the turns start again from Today).
+When nobody has touched a screen for a while it goes into **ambient mode**: a photo slideshow, the clock, the weather and the next event today. A touch brings Today back. On a screen that has [pages](#pages) this does not happen: the photos are one of its pages (add **Photos** under **Pages**), and the turns go on by themselves.
 
 **Photos.** The slideshow shows pictures you add yourself:
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { displayOptions, initialGrant, leftOutNames } from './display-options.js';
+import {
+	displayOptions,
+	initialGrant,
+	leftOutNames,
+	needingNames,
+	wastedWithoutNames,
+} from './display-options.js';
 
 describe('displayOptions', () => {
 	const contributions = [
@@ -58,5 +64,25 @@ describe('leftOutNames', () => {
 			{ id: 'gone.widget' },
 		]);
 		expect(leftOutNames([], contributions)).toEqual([]);
+	});
+});
+
+describe('needing names', () => {
+	const facets = [
+		{ kind: 'memberStatus', requires: 'homeassistant.presence' },
+		{ kind: 'photo', requires: 'ambient.photos' },
+		{ kind: 'memberStatus' },
+	];
+
+	it('lists the permissions of facets that say a word about each person', () => {
+		expect([...needingNames(facets)]).toEqual(['homeassistant.presence']);
+	});
+
+	it('flags a ticked one only while names are off', () => {
+		const needing = needingNames(facets);
+		const ticked = ['calendar.view', 'homeassistant.presence'];
+		expect(wastedWithoutNames(ticked, needing, false)).toEqual(['homeassistant.presence']);
+		expect(wastedWithoutNames(ticked, needing, true)).toEqual([]);
+		expect(wastedWithoutNames(['calendar.view'], needing, false)).toEqual([]);
 	});
 });

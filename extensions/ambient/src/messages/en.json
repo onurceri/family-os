@@ -47,6 +47,8 @@
 	"weather_rain_chance": "{{percent}}% chance of rain",
 	"weather_attribution": "Weather data by Open-Meteo.com",
 	"weather_unavailable": "The weather is not available right now.",
+	"display_photos": "Photos",
+	"photos_page_none": "No photos yet.",
 	"ambient_next_event": "Next today",
 	"ambient_nothing": "Nothing else planned today",
 	"wmo_clear": "Clear",

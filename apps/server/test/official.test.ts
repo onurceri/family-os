@@ -6,13 +6,14 @@ import { silentLogger } from '@famos/adapters/runtime';
 import type { IndexedPackage } from '@famos/core';
 import { openDatabase } from '@famos/db';
 import { signFile, writeIndex } from '@famos/pack/famext';
-import { systemActor } from '@famos/sdk';
+import { parseManifest, SDK_VERSION, systemActor } from '@famos/sdk';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { loadInstalled, recordStart } from '../src/extensions/installed.ts';
 import type { Available } from '../src/extensions/load.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import {
+	assertSameReach,
 	downloadPackage,
 	type Fetch,
 	fetchIndex,
@@ -38,7 +39,11 @@ const INDEX_URL = `${HOST}/extensions/index.json`;
  */
 async function publish(
 	packages: { id: string; version: string; sdk?: string }[],
-	options: { signWith?: string } = {},
+	options: {
+		signWith?: string;
+		/** Changes what the index says before it is signed. */
+		edit?: (index: { extensions: Record<string, unknown>[] }) => void;
+	} = {},
 ) {
 	const dir = fresh('pages');
 	const add: string[] = [];
@@ -54,6 +59,12 @@ async function publish(
 		add.push(file);
 	}
 	await writeIndex(dir, { add });
+	if (options.edit) {
+		const path = join(dir, 'index.json');
+		const index = JSON.parse(readFileSync(path, 'utf8'));
+		options.edit(index);
+		writeFileSync(path, JSON.stringify(index));
+	}
 	await signFile(
 		join(dir, 'index.json'),
 		createPrivateKey(options.signWith ?? TEST_KEY.privateKey),
@@ -207,6 +218,74 @@ describe('the official index', () => {
 		writeFileSync(index, JSON.stringify(parsed));
 		await signFile(index, createPrivateKey(TEST_KEY.privateKey));
 		expect((await fetchIndex(official(site.fetch))).map((p) => p.version)).toEqual(['1.0.0']);
+	});
+});
+
+describe('what the index says a package reaches', () => {
+	const manifest = (more: Record<string, unknown> = {}) =>
+		parseManifest({ id: 'garden', version: '1.0.0', sdk: `^${SDK_VERSION}`, ...more });
+
+	it('is read with the entry, and an entry without it is read as before', async () => {
+		const site = await publish([{ id: 'garden', version: '1.0.0' }]);
+		const [entry] = await fetchIndex(official(site.fetch));
+		expect(entry?.reach).toEqual({
+			network: { hosts: [], userUrls: false, local: false },
+			capabilities: 0,
+			dependsOn: [],
+		});
+		const older = await publish([{ id: 'garden', version: '1.0.0' }], {
+			edit: (index) => {
+				for (const e of index.extensions) delete e.reach;
+			},
+		});
+		const [plain] = await fetchIndex(official(older.fetch));
+		expect(plain?.reach).toBeUndefined();
+	});
+
+	it('is refused when it is not the shape of a reach', async () => {
+		const site = await publish([{ id: 'garden', version: '1.0.0' }], {
+			edit: (index) => {
+				for (const e of index.extensions) e.reach = { capabilities: 'many' };
+			},
+		});
+		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+			details: { reason: 'invalid' },
+		});
+	});
+
+	it('is checked against the downloaded manifest', () => {
+		const entry = (reach?: IndexedPackage['reach']): IndexedPackage => ({
+			id: 'garden',
+			version: '1.0.0',
+			sdk: `^${SDK_VERSION}`,
+			url: `${HOST}/extensions/garden/garden-1.0.0.famext`,
+			sha256: '0'.repeat(64),
+			size: 1,
+			labels: {},
+			...(reach && { reach }),
+		});
+		const stated = {
+			network: { hosts: ['a.example.org', 'b.example.org'], userUrls: true, local: false },
+			capabilities: 1,
+			dependsOn: ['records'],
+		};
+		const same = manifest({
+			network: { hosts: ['b.example.org', 'a.example.org'], userUrls: true },
+			capabilities: ['garden.view'],
+			dependsOn: ['records'],
+		});
+		expect(() => assertSameReach(entry(stated), same)).not.toThrow();
+		// An older index says nothing, so there is nothing to compare.
+		expect(() => assertSameReach(entry(), manifest())).not.toThrow();
+		for (const other of [
+			manifest({ ...same, network: { hosts: ['a.example.org'], userUrls: true } }),
+			manifest({ ...same, network: { ...same.network, local: true } }),
+			manifest({ ...same, capabilities: ['garden.view', 'garden.edit'] }),
+			manifest({ ...same, dependsOn: ['records', 'calendar'] }),
+		])
+			expect(() => assertSameReach(entry(stated), other)).toThrow(
+				expect.objectContaining({ details: { reason: 'reach_changed' } }),
+			);
 	});
 });
 
@@ -393,6 +472,65 @@ describe('Look for more, end to end', () => {
 		expect(
 			next.runtime.kernel.registry.extensions.map((e) => `${e.id}@${e.manifest.version}`),
 		).toContain('garden@1.1.0');
+	});
+
+	it('refuses a download that reaches more than the signed index said, and shows the reach first', async () => {
+		// The index states more than the package holds (the package has no capabilities).
+		const tampered = await publish([{ id: 'garden', version: '1.0.0' }], {
+			edit: (index) => {
+				for (const e of index.extensions)
+					e.reach = {
+						network: { hosts: [], userUrls: false, local: false },
+						capabilities: 3,
+						dependsOn: [],
+					};
+			},
+		});
+		const { runtime, app, config } = await start(fresh('data'), tampered.fetch);
+		const json = { 'content-type': 'application/json' };
+		const request = (method: string, path: string, body?: unknown, cookie = '') =>
+			app.request(`${BASE}${path}`, {
+				method,
+				headers: { origin: BASE, ...json, ...(cookie && { cookie }) },
+				...(body !== undefined && { body: JSON.stringify(body) }),
+			});
+		await request('POST', '/api/v1/core/setup', {
+			displayName: 'P',
+			email: 'p@example.com',
+			password: 'correct horse battery',
+			locale: 'en',
+			setupCode: config.setupCode,
+		});
+		const signIn = await request('POST', '/api/auth/sign-in/email', {
+			email: 'p@example.com',
+			password: 'correct horse battery',
+		});
+		const cookie = signIn.headers
+			.getSetCookie()
+			.map((c) => c.split(';')[0])
+			.join('; ');
+		await request('POST', '/api/v1/actions/core.findExtensions', {}, cookie);
+		await runtime.kernel.worker.drain();
+		const listed = (await (
+			await request('GET', '/api/v1/core/extensions/found', undefined, cookie)
+		).json()) as { found: { reach?: { capabilities: number } }[] };
+		// Before any download the reach is on the entry.
+		expect(listed.found[0]?.reach?.capabilities).toBe(3);
+
+		await request(
+			'POST',
+			'/api/v1/actions/core.downloadExtension',
+			{ extensionId: 'garden', version: '1.0.0' },
+			cookie,
+		);
+		await runtime.kernel.worker.drain();
+		const after = (await (
+			await request('GET', '/api/v1/core/extensions/found', undefined, cookie)
+		).json()) as { download: { status: string; problem: { reason: string } | null } | null };
+		expect(after.download).toMatchObject({
+			status: 'failed',
+			problem: { reason: 'reach_changed' },
+		});
 	});
 
 	it('looks nowhere but the index it was given', async () => {

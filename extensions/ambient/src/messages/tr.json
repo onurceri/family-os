@@ -47,6 +47,8 @@
 	"weather_rain_chance": "Yağmur ihtimali %{{percent}}",
 	"weather_attribution": "Hava durumu verisi: Open-Meteo.com",
 	"weather_unavailable": "Hava durumu şu an alınamıyor.",
+	"display_photos": "Fotoğraflar",
+	"photos_page_none": "Henüz fotoğraf yok.",
 	"ambient_next_event": "Bugün sıradaki",
 	"ambient_nothing": "Bugün başka plan yok",
 	"wmo_clear": "Açık",

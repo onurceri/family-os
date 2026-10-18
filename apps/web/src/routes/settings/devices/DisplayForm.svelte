@@ -9,7 +9,9 @@
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
+	import { contributions } from '#lib/extensions.js';
 	import { t } from '#lib/i18n.svelte.js';
+	import { needingNames, wastedWithoutNames } from './display-options.js';
 
 	/**
 	 * What a display is told at pairing, and can be changed later: its name, what it may
@@ -41,6 +43,10 @@
 	// The name's reason shows from the first refused submit on, and goes once it is typed.
 	let tried = $state(false);
 	const nameError = $derived(tried && !name.trim() ? FIELD_REASON.name : undefined);
+
+	// Who is home is read only when names are shown: say so while it is ticked without them.
+	const needing = needingNames(contributions.facets);
+	const namesMissing = $derived(wastedWithoutNames(capabilities, needing, showNames).length > 0);
 
 	function toggle(id: string) {
 		capabilities = capabilities.includes(id)
@@ -98,6 +104,11 @@
 				bind:checked={showNames}
 			/>
 		</Card>
+		{#if namesMissing}
+			<p class="text-attention text-sm font-semibold" data-testid="names-needed">
+				{t('devices_display_names_needed')}
+			</p>
+		{/if}
 	</fieldset>
 	{#if error}<p class="text-attention text-sm font-semibold" role="alert">{error}</p>{/if}
 </form>

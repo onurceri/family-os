@@ -42,6 +42,7 @@ async function boot(extraExtensions: readonly ExtensionDefinition[] = []) {
 		identity: runtime.identity,
 		logger: silentLogger,
 		trustedOrigins: [BASE],
+		publicUrl: 'https://famos.example',
 		appVersion: APP_VERSION,
 		secureCookies: false,
 		// In-process requests come from 127.0.0.1; each test call rotates X-Forwarded-For.
@@ -1274,6 +1275,15 @@ describe('family displays', () => {
 		expect(
 			(await call('GET', '/api/v1/core/displays/capabilities', undefined, kidSession)).status,
 		).toBe(403);
+		expect((await call('GET', '/api/v1/core/devices/address', undefined, kidSession)).status).toBe(
+			403,
+		);
+		expect(
+			(await call('GET', '/api/v1/core/devices/address', undefined, displayCookie)).status,
+		).toBe(401);
+		expect((await call('GET', '/api/v1/core/devices/address', undefined, cookie)).body).toEqual({
+			url: 'https://famos.example',
+		});
 		const caps = await call('GET', '/api/v1/core/displays/capabilities', undefined, cookie);
 		expect(caps.body.map((c: { id: string }) => c.id)).toEqual(
 			expect.arrayContaining(['calendar.view', 'lists.view', 'core.drafts.waiting']),

@@ -123,6 +123,12 @@ export interface SlotProps extends FamosExtensionSlots {
 		date: string;
 		/** Called with `true` when ambient mode starts covering the display and `false` when it ends. */
 		onactive?: (active: boolean) => void;
+		/**
+		 * Whether ambient mode may take the display over when nobody touches it. The display passes
+		 * false while it has pages in its rotation, since they would be hidden behind the cover (an
+		 * extension offers what ambient mode shows as a `display.page` instead). Left out, true.
+		 */
+		idle?: boolean;
 	};
 	/**
 	 * A full-screen page a family display can show between Today's turns, chosen per display in

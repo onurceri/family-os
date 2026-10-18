@@ -6,11 +6,13 @@ import {
 	type Entry,
 	fileProblem,
 	foundEntry,
+	keepsData,
 	nameOf,
 	neededBy,
 	pendingOf,
 	problemOf,
 	reachOf,
+	reachOfFound,
 	restartNeeded,
 	type Staged,
 	searchProblem,
@@ -307,6 +309,46 @@ describe('what the official index found', () => {
 			['home', false],
 			['pets', true],
 		]);
+	});
+
+	it('reads what a found package reaches from the index, and what installs with it', () => {
+		const records = entry('records', { status: 'available' });
+		const pkg = {
+			id: 'pets',
+			version: '1.0.0',
+			current: null,
+			size: 1,
+			labels: {},
+			reach: {
+				network: { hosts: ['api.example.org'], userUrls: false, local: true },
+				capabilities: 4,
+				dependsOn: ['records'],
+			},
+		};
+		expect(reachOfFound(pkg, [records])).toEqual({
+			hosts: ['api.example.org'],
+			userUrls: false,
+			local: true,
+			capabilities: 4,
+			needs: ['records'],
+			alongside: ['records'],
+			worksWith: [],
+		});
+		// An entry of an older index does not say: the check after the download does.
+		const { reach: _, ...old } = pkg;
+		expect(reachOfFound(old, [])).toBeNull();
+	});
+
+	it('says a downloaded package reached further than the index said', () => {
+		expect(downloadProblem(problem('reach_changed')).headline.key).toBe(
+			'extensions_download_reach_changed',
+		);
+	});
+
+	it('says what happens to the data of an extension that is there', () => {
+		expect(keepsData(entry('pets'))).toBe(true);
+		expect(keepsData(entry('pets', { status: 'pending_uninstall' }))).toBe(true);
+		expect(keepsData(entry('pets', { status: 'available' }))).toBe(false);
 	});
 
 	it('says why looking failed', () => {
