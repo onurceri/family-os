@@ -98,6 +98,7 @@
 				{days}
 				labels={repeatLabels}
 				min={value.startDate || undefined}
+				startDate={value.startDate}
 				{idPrefix}
 				error={errors.recurrence}
 				untilError={errors.until}

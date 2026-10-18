@@ -83,7 +83,7 @@
 	async function tomorrow(task: Task) {
 		busy[task.id] = true;
 		try {
-			const form = taskFormFrom(task, today);
+			const form = taskFormFrom(task);
 			await saveTask(taskInputFrom({ ...form, dueDate: addDays(today, 1) }), task.id);
 			await load();
 		} catch {

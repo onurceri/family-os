@@ -13,6 +13,8 @@
 </script>
 
 <script lang="ts">
+	import { weekdaysAfterDateChange } from '@famos/time';
+	import { untrack } from 'svelte';
 	import { Input } from '../components/input/index.js';
 	import { Label } from '../components/label/index.js';
 	import { fieldAria } from './field-errors.js';
@@ -31,6 +33,7 @@
 		days,
 		labels,
 		min,
+		startDate,
 		idPrefix,
 		error,
 		untilError,
@@ -43,6 +46,11 @@
 		labels: RepeatLabels;
 		/** Earliest allowed end date (the start date). */
 		min?: string;
+		/**
+		 * The date the series starts on. When it changes, the weekly days follow it (see
+		 * `weekdaysAfterDateChange`), so the first turn is always on the date shown.
+		 */
+		startDate?: string | undefined;
 		idPrefix: string;
 		error?: string | undefined;
 		untilError?: string | undefined;
@@ -54,6 +62,19 @@
 		{ value: 'weekly', label: labels.weekly },
 		{ value: 'monthly', label: labels.monthly },
 	] as const);
+
+	let seenDate = untrack(() => startDate ?? '');
+	$effect(() => {
+		const next = startDate ?? '';
+		if (next === seenDate) return;
+		const previous = seenDate;
+		seenDate = next;
+		untrack(() => {
+			const moved = weekdaysAfterDateChange(byDay, previous, next);
+			if (moved.length === byDay.length && moved.every((d, i) => d === byDay[i])) return;
+			byDay = days.map((d) => d.code).filter((c) => moved.includes(c));
+		});
+	});
 
 	function toggleDay(code: string) {
 		const next = byDay.includes(code) ? byDay.filter((d) => d !== code) : [...byDay, code];

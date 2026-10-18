@@ -1,7 +1,8 @@
+import { weekdaysAfterDateChange } from '@famos/time';
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { describe, expect, it } from 'vitest';
 import catalog from '../src/messages/en.json';
-import { doneToast, emptyChore, validate } from '../src/web/form.ts';
+import { doneToast, emptyChore, toDetails, validate } from '../src/web/form.ts';
 
 // Every reason a form gives is a shared one or a key of this extension's catalog.
 const shared = new Set<string>(Object.values(FIELD_REASON));
@@ -47,5 +48,28 @@ describe('the toast after a tick', () => {
 		expect(doneToast('Water the plants', '2026-10-18', today, t, 'en-GB')).toBe(
 			'Water the plants done for Sunday',
 		);
+	});
+});
+
+describe('the weekly days follow the start date', () => {
+	// 2026-10-18 is a Sunday, 2026-10-20 a Tuesday, 2026-10-22 a Thursday.
+	const weekly = () => ({ ...emptyChore('2026-10-18'), title: 'Bins', repeat: 'weekly' as const });
+	const moveTo = (form: ReturnType<typeof weekly>, date: string) => ({
+		...form,
+		byDay: weekdaysAfterDateChange(form.byDay, form.startDate, date),
+		startDate: date,
+	});
+
+	it('gives a new chore the weekday of the new date', () => {
+		const form = weekly();
+		expect(form.byDay).toEqual(['SU']);
+		const moved = moveTo(form, '2026-10-20');
+		expect(toDetails(moved).recurrence).toMatchObject({ freq: 'weekly', byDay: ['TU'] });
+	});
+
+	it('keeps the days that were chosen and adds the new date', () => {
+		const chosen = { ...weekly(), byDay: ['TU', 'TH'] };
+		expect(moveTo(chosen, '2026-10-22').byDay).toEqual(['TU', 'TH']);
+		expect(moveTo(chosen, '2026-10-23').byDay).toEqual(['TU', 'TH', 'FR']);
 	});
 });

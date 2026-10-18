@@ -228,13 +228,13 @@
 	}
 
 	function openNew(text: string) {
-		openEditor({ ...emptyTask(defaultAssignee, today), title: text.trim() }, 'new');
+		openEditor({ ...emptyTask(defaultAssignee), title: text.trim() }, 'new');
 		quick = '';
 	}
 
 	async function openEdit(task: Task) {
 		try {
-			openEditor(taskFormFrom(await loadTask(task.id), today), task.id);
+			openEditor(taskFormFrom(await loadTask(task.id)), task.id);
 		} catch {
 			app.toast(t('error'));
 		}

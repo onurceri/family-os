@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { describeRecurrence, firstWeekday, lastDayOfMonth, repeatRule } from '../src/index.ts';
+import {
+	describeRecurrence,
+	firstWeekday,
+	lastDayOfMonth,
+	repeatRule,
+	weekdayOf,
+	weekdaysAfterDateChange,
+} from '../src/index.ts';
 
 describe('lastDayOfMonth', () => {
 	it('knows the length of each month, leap years included', () => {
@@ -95,5 +102,42 @@ describe('describeRecurrence', () => {
 		expect(describeRecurrence(weekly(['SA'], 2), t, 'en', 1, '2026-10-17')).toBe(
 			'repeat_weekly · Sat (×2)',
 		);
+	});
+});
+
+describe('weekdayOf', () => {
+	it('names the weekday of a date', () => {
+		expect(weekdayOf('2026-10-18')).toBe('SU');
+		expect(weekdayOf('2026-10-20')).toBe('TU');
+	});
+});
+
+describe('weekdaysAfterDateChange', () => {
+	// 2026-10-18 is a Sunday, 2026-10-20 a Tuesday, 2026-10-22 a Thursday.
+	it('moves a repeat that only held the old date weekday', () => {
+		expect(weekdaysAfterDateChange(['SU'], '2026-10-18', '2026-10-20')).toEqual(['TU']);
+		expect(weekdaysAfterDateChange([], '', '2026-10-20')).toEqual(['TU']);
+	});
+
+	it('follows a date changed twice', () => {
+		let byDay = ['SU'];
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-18', '2026-10-22');
+		byDay = weekdaysAfterDateChange(byDay, '2026-10-22', '2026-10-26');
+		expect(byDay).toEqual(['MO']);
+	});
+
+	it('never drops chosen days: the new date weekday is added', () => {
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-22')).toEqual(['TU', 'TH']);
+		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-23')).toEqual([
+			'TU',
+			'TH',
+			'FR',
+		]);
+		expect(weekdaysAfterDateChange(['MO'], '2026-10-17', '2026-10-22')).toEqual(['MO', 'TH']);
+	});
+
+	it('leaves the days alone while the date is not complete', () => {
+		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '')).toEqual(['SA']);
+		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '2026-10-2')).toEqual(['SA']);
 	});
 });

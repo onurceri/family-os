@@ -1,4 +1,4 @@
-import { Temporal, WEEKDAYS, type Weekday } from '@famos/time';
+import { type Weekday, weekdayOf } from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import { type Task, type TaskInput, TaskInputSchema, type TaskReplace } from '../contract/index.js';
 
@@ -16,10 +16,7 @@ export interface TaskFormValue {
 	until: string;
 }
 
-const weekdayOf = (date: string): Weekday =>
-	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
-
-export function emptyTask(assignee: string | null, today: string): TaskFormValue {
+export function emptyTask(assignee: string | null): TaskFormValue {
 	return {
 		title: '',
 		assignee: assignee ? [assignee] : [],
@@ -27,13 +24,14 @@ export function emptyTask(assignee: string | null, today: string): TaskFormValue
 		dueTime: '',
 		notes: '',
 		repeat: 'none',
-		byDay: [weekdayOf(today)],
+		// No date yet: the days stay empty and take the weekday of the date once it is set.
+		byDay: [],
 		interval: 1,
 		until: '',
 	};
 }
 
-export function taskFormFrom(source: TaskInput | Task, today: string): TaskFormValue {
+export function taskFormFrom(source: TaskInput | Task): TaskFormValue {
 	const recurrence = source.recurrence ?? null;
 	const custom = 'rrule' in source && source.rrule !== null;
 	return {
@@ -44,7 +42,11 @@ export function taskFormFrom(source: TaskInput | Task, today: string): TaskFormV
 		notes: source.notes ?? '',
 		repeat: custom ? 'custom' : (recurrence?.freq ?? 'none'),
 		byDay:
-			recurrence?.freq === 'weekly' ? [...recurrence.byDay] : [weekdayOf(source.dueDate ?? today)],
+			recurrence?.freq === 'weekly'
+				? [...recurrence.byDay]
+				: source.dueDate
+					? [weekdayOf(source.dueDate)]
+					: [],
 		interval: recurrence?.interval ?? 1,
 		until: recurrence?.until ?? '',
 	};

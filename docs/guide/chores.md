@@ -9,7 +9,7 @@ Chores are for shared, rotating housework. A one-person to-do with a deadline ("
 Choose **Add chore** and fill in:
 
 - **Chore** and optional **Notes**.
-- **First day it is due**, and how often it **Repeats**: *Once*, *Every day*, *Every week* (on the days you pick) or *Every month*, with an optional **Until** date. A chore due on the 31st falls on the last day of shorter months.
+- **First day it is due**, and how often it **Repeats**: *Once*, *Every day*, *Every week* (on the days you pick; the day of the first date is chosen for you and follows it when you change the date) or *Every month*, with an optional **Until** date. A chore due on the 31st falls on the last day of shorter months.
 - **Who takes turns**: tap the people; with more than one, the order list appears and you move people up or down. The first one is up first. Leave it empty and anyone can do it.
 - **How the turn moves on**, when more than one person is listed (*Take turns* is chosen at first; with one person it is always that person):
   - *Always the same person*: the first person in the list.

@@ -19,7 +19,6 @@
 		reminderKey,
 		reminderOptions,
 		shiftEnd,
-		weekdaysAfterDateChange,
 	} from './form.js';
 	import { useCalendar } from './i18n.js';
 	import TagInput from './TagInput.svelte';
@@ -68,12 +67,6 @@
 
 	const reminderLabel = (minutes: number) => t(reminderKey(value.allDay, minutes));
 
-	function setDate(event: Event) {
-		const next = (event.currentTarget as HTMLInputElement).value;
-		value.byDay = weekdaysAfterDateChange(value.byDay, value.date, next);
-		value.date = next;
-	}
-
 	function setStart(event: Event) {
 		const next = (event.currentTarget as HTMLInputElement).value;
 		value.endTime = shiftEnd(value.startTime, next, value.endTime);
@@ -120,8 +113,7 @@
 					<Input
 						id={id('date')}
 						type="date"
-						value={value.date}
-						oninput={setDate}
+						bind:value={value.date}
 						required
 						{...fieldAria(errors.date, id('date'))}
 					/>
@@ -192,6 +184,7 @@
 				{days}
 				labels={repeatLabels}
 				min={value.date}
+				startDate={value.date}
 				{idPrefix}
 				error={errors.recurrence}
 				untilError={errors.until}

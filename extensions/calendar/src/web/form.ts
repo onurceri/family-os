@@ -1,4 +1,4 @@
-import { Temporal, WEEKDAYS, type Weekday } from '@famos/time';
+import { Temporal, type Weekday, weekdayOf } from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	ALL_DAY_REMINDERS,
@@ -49,31 +49,6 @@ export function reminderFor(allDay: boolean, current: string): string {
 		? current
 		: String(defaultReminder(allDay));
 }
-
-const weekdayOf = (date: string): Weekday =>
-	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
-
-/**
- * The weekly repeat days after the date moved from `previousDate` to `nextDate`. A repeat that
- * only held the old date's weekday follows the date. Days the person chose themselves are never
- * dropped: the new date's weekday is added to them, so a weekly event always includes the day it
- * starts on.
- */
-export function weekdaysAfterDateChange(
-	byDay: readonly string[],
-	previousDate: string,
-	nextDate: string,
-): string[] {
-	if (!DATE.test(nextDate)) return [...byDay];
-	const next = weekdayOf(nextDate);
-	if (byDay.includes(next)) return [...byDay];
-	const followsDate =
-		byDay.length === 0 ||
-		(byDay.length === 1 && DATE.test(previousDate) && byDay[0] === weekdayOf(previousDate));
-	return followsDate ? [next] : [...byDay, next];
-}
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** A sensible new event on `date`: the next full hour today, otherwise 09:00. */
 export function emptyForm(date: string, now: Temporal.ZonedDateTime): EventFormValue {

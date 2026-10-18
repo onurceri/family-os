@@ -157,6 +157,8 @@
 			"weekOf",
 			"weekdayMismatches",
 			"weekdayNames",
+			"weekdayOf",
+			"weekdaysAfterDateChange",
 			"zoned"
 		],
 		"@famos/api-client": ["createApiClient", "isApiError", "unwrap"],

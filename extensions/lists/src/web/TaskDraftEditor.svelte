@@ -9,7 +9,7 @@
 	/** Edits a proposed task inside the Inbox draft card. */
 	let { input, context, uncertain, onchange }: DraftEditorProps<TaskInput> = $props();
 	// The draft card owns the input from here on; the form is seeded once.
-	let value = $state(untrack(() => taskFormFrom(input, todayIn(context.timeZone, Date.now()))));
+	let value = $state(untrack(() => taskFormFrom(input)));
 	$effect(() => onchange(taskInputFrom(value)));
 </script>
 

@@ -78,6 +78,32 @@ export function compareDates(a: string, b: string): number {
 export const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The weekday code (`MO` … `SU`) of an ISO date. */
+export const weekdayOf = (date: string): Weekday =>
+	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
+
+/**
+ * The weekly repeat days after the date moved from `previousDate` to `nextDate`. A repeat that
+ * is empty, or only held the old date's weekday, follows the date. Days the person chose
+ * themselves are never dropped: the new date's weekday is added to them, so a weekly series
+ * always includes the day it starts on. An incomplete date changes nothing.
+ */
+export function weekdaysAfterDateChange(
+	byDay: readonly string[],
+	previousDate: string,
+	nextDate: string,
+): string[] {
+	if (!ISO_DATE.test(nextDate)) return [...byDay];
+	const next = weekdayOf(nextDate);
+	if (byDay.includes(next)) return [...byDay];
+	const followsDate =
+		byDay.length === 0 ||
+		(byDay.length === 1 && ISO_DATE.test(previousDate) && byDay[0] === weekdayOf(previousDate));
+	return followsDate ? [next] : [...byDay, next];
+}
+
 /**
  * The recurrence presets the UI offers. Stored as RRULE text, so anything CalDAV can express
  * still round-trips; `fromRRule` returns null for rules outside these presets.
@@ -631,7 +657,7 @@ export function lastDayOfMonth(date: string): string {
 }
 
 /** 1 = Monday … 7 = Sunday, of a `YYYY-MM-DD` date. */
-const weekdayOf = (date: string) => Temporal.PlainDate.from(date).dayOfWeek;
+const isoDayOf = (date: string) => Temporal.PlainDate.from(date).dayOfWeek;
 
 /**
  * The first date on or after `from` that a weekly repeat on these weekdays holds: a series
@@ -640,7 +666,7 @@ const weekdayOf = (date: string) => Temporal.PlainDate.from(date).dayOfWeek;
 export function firstWeekday(from: string, weekdays: readonly number[]): string {
 	for (let i = 0; i < 7; i++) {
 		const date = addDays(from, i);
-		if (weekdays.includes(weekdayOf(date))) return date;
+		if (weekdays.includes(isoDayOf(date))) return date;
 	}
 	return from;
 }
@@ -677,7 +703,7 @@ export function repeatRule(
 		recurrence = { freq: 'daily', interval: bounded(MAX_INTERVAL.daily, given) };
 	} else if (parts.every === 'week') {
 		const days = [...new Set(parts.weekdays ?? [])].filter((d) => d >= 1 && d <= 7);
-		const weekdays = days.length > 0 ? days.toSorted((a, b) => a - b) : [weekdayOf(start)];
+		const weekdays = days.length > 0 ? days.toSorted((a, b) => a - b) : [isoDayOf(start)];
 		first = firstWeekday(start, weekdays);
 		recurrence = {
 			freq: 'weekly',

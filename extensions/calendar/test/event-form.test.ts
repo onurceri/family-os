@@ -1,8 +1,8 @@
-import { Temporal } from '@famos/time';
+import { Temporal, weekdaysAfterDateChange } from '@famos/time';
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { describe, expect, it } from 'vitest';
 import catalog from '../src/messages/en.json';
-import { emptyForm, inputFrom, validate, weekdaysAfterDateChange } from '../src/web/form.ts';
+import { emptyForm, inputFrom, validate } from '../src/web/form.ts';
 
 // Every reason a form gives is a shared one or a key of this extension's catalog.
 const shared = new Set<string>(Object.values(FIELD_REASON));
@@ -52,26 +52,15 @@ describe('weekly repeat days follow the date', () => {
 		expect(input.recurrence).toMatchObject({ freq: 'weekly', byDay: ['TH'] });
 	});
 
-	it('follows a date changed twice', () => {
-		let byDay = ['SA'];
-		byDay = weekdaysAfterDateChange(byDay, '2026-10-17', '2026-10-22');
-		byDay = weekdaysAfterDateChange(byDay, '2026-10-22', '2026-10-26');
-		expect(byDay).toEqual(['MO']);
-	});
-
-	it('never drops days the person chose: the weekday of the new date is added', () => {
-		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-22')).toEqual(['TU', 'TH']);
-		expect(weekdaysAfterDateChange(['TU', 'TH'], '2026-10-20', '2026-10-23')).toEqual([
-			'TU',
-			'TH',
-			'FR',
-		]);
-		// One chosen day that is not the old date's weekday is the person's choice too.
-		expect(weekdaysAfterDateChange(['MO'], '2026-10-17', '2026-10-22')).toEqual(['MO', 'TH']);
-	});
-
-	it('leaves the days alone while the date is not complete', () => {
-		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '')).toEqual(['SA']);
-		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '2026-10-2')).toEqual(['SA']);
+	it('keeps days the person chose when the date changes', () => {
+		const form = {
+			...emptyForm('2026-10-17', now),
+			repeat: 'weekly' as const,
+			byDay: ['MO', 'WE'],
+		};
+		form.byDay = weekdaysAfterDateChange(form.byDay, form.date, '2026-10-22');
+		expect(inputFrom({ ...form, title: 'Call' }).recurrence).toMatchObject({
+			byDay: ['MO', 'WE', 'TH'],
+		});
 	});
 });

@@ -1,4 +1,4 @@
-import { compareDates, formatDate, Temporal, WEEKDAYS, type Weekday } from '@famos/time';
+import { compareDates, formatDate, type Weekday, weekdayOf } from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	type Chore,
@@ -21,9 +21,6 @@ export interface ChoreFormValue {
 	assigneeIds: string[];
 	rotation: Rotation;
 }
-
-const weekdayOf = (date: string): Weekday =>
-	WEEKDAYS[Temporal.PlainDate.from(date).dayOfWeek - 1] as Weekday;
 
 export const emptyChore = (today: string): ChoreFormValue => ({
 	title: '',

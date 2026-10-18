@@ -2,14 +2,13 @@
 	import { Textarea } from '@famos/ui/textarea';
 	import { orderedWeekdays, weekdayNames } from '@famos/time';
 	import {
-		Chip,
 		fieldAria,
 		FieldError,
 		type FieldErrors,
 		fieldErrorId,
 		LimitCounter,
 		MemberChips,
-		Segmented,
+		RepeatPicker,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -38,22 +37,14 @@
 		const names = weekdayNames(app.dateLocale());
 		return orderedWeekdays(app.weekStart()).map((code) => ({ code, label: names[code] }));
 	});
-	// A rule outside the presets (a custom RRULE) is shown but cannot be picked.
-	const repeatOptions = $derived([
-		{ value: 'none', label: t('repeat_short_none') },
-		{ value: 'daily', label: t('repeat_short_daily') },
-		{ value: 'weekly', label: t('repeat_short_weekly') },
-		{ value: 'monthly', label: t('repeat_short_monthly') },
-		...(value.repeat === 'custom'
-			? [{ value: 'custom', label: t('repeat_custom'), disabled: true }]
-			: []),
-	]);
-	function toggleDay(code: string) {
-		const next = value.byDay.includes(code)
-			? value.byDay.filter((d) => d !== code)
-			: [...value.byDay, code];
-		value.byDay = days.map((d) => d.code).filter((c) => next.includes(c));
-	}
+	const repeatLabels = $derived({
+		none: t('repeat_short_none'),
+		daily: t('repeat_short_daily'),
+		weekly: t('repeat_short_weekly'),
+		monthly: t('repeat_short_monthly'),
+		custom: t('repeat_custom'),
+		until: t('field_until'),
+	});
 	const id = (name: string) => `${idPrefix}-${name}`;
 </script>
 
@@ -121,44 +112,18 @@
 		<legend class="mb-1.5 text-sm font-medium"
 			>{t('field_repeat')}{@render check('recurrence')}</legend
 		>
-		<Segmented
-			grow
-			label={t('field_repeat')}
-			options={repeatOptions}
-			value={value.repeat}
-			onchange={(v) => (value.repeat = v as TaskFormValue['repeat'])}
+		<RepeatPicker
+			bind:preset={value.repeat}
+			bind:byDay={value.byDay}
+			bind:until={value.until}
+			{days}
+			labels={repeatLabels}
+			min={value.dueDate || undefined}
+			startDate={value.dueDate}
+			{idPrefix}
+			error={errors.recurrence}
+			untilError={errors.until}
 		/>
-		{#if value.repeat === 'weekly'}
-			<div
-				id={id('days')}
-				class="flex flex-wrap gap-1.5"
-				role="group"
-				aria-label={t('repeat_weekly')}
-				{...fieldAria(errors.recurrence, id('days'))}
-			>
-				{#each days as day (day.code)}
-					<Chip on={value.byDay.includes(day.code)} onclick={() => toggleDay(day.code)}
-						>{day.label}</Chip
-					>
-				{/each}
-			</div>
-			<FieldError for={id('days')} error={errors.recurrence} />
-		{:else}
-			<FieldError for={id('repeat')} error={errors.recurrence} />
-		{/if}
-		{#if value.repeat !== 'none' && value.repeat !== 'custom'}
-			<div class="grid max-w-56 gap-1.5">
-				<Label for={id('until')}>{t('field_until')}</Label>
-				<Input
-					id={id('until')}
-					type="date"
-					bind:value={value.until}
-					min={value.dueDate || undefined}
-					{...fieldAria(errors.until, id('until'))}
-				/>
-				<FieldError for={id('until')} error={errors.until} />
-			</div>
-		{/if}
 		{#if value.repeat !== 'none' && !value.dueDate}
 			<small class="text-ink-soft text-[13px]">{t('repeat_hint')}</small>
 		{/if}
