@@ -36,6 +36,7 @@
 		// The layout guard sends a ready session on /setup to the start page.
 		else void session.refresh();
 	}
+	let familyName = $state('');
 	let displayName = $state('');
 	let email = $state('');
 	let password = $state('');
@@ -112,6 +113,7 @@
 				await api.POST('/api/v1/core/setup', {
 					body: {
 						displayName,
+						...(familyName.trim() && { familyName: familyName.trim() }),
 						email,
 						password,
 						locale: getLocale(),
@@ -229,6 +231,11 @@
 					<p class="text-ink-soft text-xs">{t('setup_code_hint')}</p>
 				</div>
 			{/if}
+			<div class="grid gap-2">
+				<Label for="family-name">{t('setup_family_name')}</Label>
+				<Input id="family-name" bind:value={familyName} maxlength={60} autocomplete="off" />
+				<p class="text-ink-soft text-xs">{t('setup_family_name_hint')}</p>
+			</div>
 			<div class="grid gap-2">
 				<Label for="name">{t('setup_name')}</Label>
 				<Input id="name" bind:value={displayName} required maxlength={60} autocomplete="name" />

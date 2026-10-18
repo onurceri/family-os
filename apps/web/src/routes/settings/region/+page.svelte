@@ -9,6 +9,7 @@
 		isFormatLocale,
 	} from '@famos/time';
 	import { Button } from '@famos/ui/button';
+	import { Input } from '@famos/ui/input';
 	import { Card, Combobox, Notice, Page, PageHeader, Segmented, SettingRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
 	import { browserFormatLocale, browserLocales, family } from '#lib/family.svelte.js';
@@ -30,6 +31,23 @@
 	let temperatureUnit = $state<'celsius' | 'fahrenheit'>(family.temperatureUnit);
 	let timeZone = $state(family.timeZone);
 	let error = $state<string | null>(null);
+	let familyName = $state(session.familyName ?? '');
+
+	async function saveName() {
+		error = null;
+		try {
+			const result = unwrap(
+				await api.POST('/api/v1/actions/core.setFamilyName', { body: { name: familyName } }),
+			);
+			if (result.status === 'applied') {
+				familyName = result.output.name ?? '';
+				session.familyName = result.output.name;
+			}
+			toasts.show(t('family_name_saved'));
+		} catch {
+			error = t('error_generic');
+		}
+	}
 
 	const allZones = timeZoneOptions();
 	const zoneValid = $derived(allZones.some((z) => z.value === timeZone));
@@ -154,6 +172,18 @@
 
 		<div class="grid gap-3">
 			<Card rows>
+				<SettingRow label={t('family_name')} for="family-name" hint={t('family_name_hint')}>
+					{#snippet control()}
+						<Input
+							id="family-name"
+							bind:value={familyName}
+							maxlength={60}
+							autocomplete="off"
+							onchange={() => void saveName()}
+						/>
+					{/snippet}
+				</SettingRow>
+
 				<SettingRow
 					label={t('languages_family_default')}
 					for="family-language"

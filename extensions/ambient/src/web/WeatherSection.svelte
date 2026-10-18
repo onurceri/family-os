@@ -3,6 +3,7 @@
 	import { MapPin } from '@lucide/svelte';
 	import type { AmbientSettings, Place } from '../contract/index.js';
 	import { saveWeather } from './data.js';
+	import { placeChoice } from './place-rule.js';
 	import { useAmbient } from './i18n.js';
 	import PlacePicker from './PlacePicker.svelte';
 
@@ -20,7 +21,7 @@
 	let busy = $state(false);
 	let message = $state<string | null>(null);
 
-	async function save(next: { enabled: boolean; place: Place | null }) {
+	async function save(next: { enabled: boolean; place: Place | null }, toast = t('weather_saved')) {
 		message = null;
 		if (next.enabled && !next.place) {
 			enabled = false;
@@ -30,7 +31,7 @@
 		busy = true;
 		try {
 			onsaved(await saveWeather(next));
-			app.toast(t('weather_saved'));
+			app.toast(toast);
 			return true;
 		} catch {
 			enabled = settings.weather.enabled;
@@ -43,8 +44,12 @@
 
 	async function savePlace() {
 		if (!draft) return;
-		if (await save({ enabled: true, place: draft })) {
-			enabled = true;
+		const choice = placeChoice(settings.weather, draft);
+		const toast = choice.firstPlace
+			? t('weather_on_for', { name: draft.name })
+			: t('weather_place_saved');
+		if (await save({ enabled: choice.enabled, place: choice.place }, toast)) {
+			enabled = choice.enabled;
 			picking = false;
 		}
 	}

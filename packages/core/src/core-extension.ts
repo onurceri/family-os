@@ -46,6 +46,7 @@ import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts'
 import { waitingUnit } from './draft-notices.ts';
 import type { createExtensionInstall } from './extension-install.ts';
 import {
+	FamilyNameSchema,
 	FamilySettingsSchema,
 	LanguageCodeSchema,
 	readFamilySettings,
@@ -691,7 +692,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	const updateFamilySettings = defineAction({
 		id: 'core.updateFamilySettings',
 		title: 'Change family settings (time zone, language, region formats)',
-		input: FamilySettingsSchema.partial(),
+		input: FamilySettingsSchema.omit({ name: true }).partial(),
 		output: FamilySettingsSchema,
 		requires: CORE_CAPABILITIES.settingsManage.id,
 		approval: 'never',
@@ -702,6 +703,26 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			// Other open screens (language, region formats, time zone) refresh without a reload.
 			uow.emit(familySettingsChanged, {});
 			return next;
+		},
+	});
+
+	const setFamilyName = defineAction({
+		id: 'core.setFamilyName',
+		title: 'Set or clear the family name',
+		input: z.object({ name: z.string().trim().max(60) }),
+		output: z.object({ name: z.string().nullable() }),
+		requires: CORE_CAPABILITIES.settingsManage.id,
+		approval: 'never',
+		async run(uow, input) {
+			const { name: _old, ...rest } = await readFamilySettings(uow.db);
+			const name = input.name === '' ? null : input.name;
+			await writeFamilySettings(
+				uow.db,
+				{ ...rest, ...(name !== null && { name }) },
+				uow.clock.now(),
+			);
+			uow.emit(familySettingsChanged, {});
+			return { name };
 		},
 	});
 
@@ -856,6 +877,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			/** Setup asks for the one-time code printed in the server log. */
 			needsCode: z.boolean(),
 			appVersion: z.string(),
+			/** What the family is called, for the sign-in page; null before it chose a name. */
+			familyName: z.string().nullable(),
 		}),
 		async handle(ctx) {
 			const any = await members(ctx.db)
@@ -867,6 +890,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				needsSetup: any === undefined,
 				needsCode: deps.setupCode !== undefined,
 				appVersion: deps.appVersion,
+				familyName: any === undefined ? null : ((await readFamilySettings(ctx.db)).name ?? null),
 			};
 		},
 	});
@@ -891,6 +915,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				hourCycle: true,
 				temperatureUnit: true,
 			}).partial().shape,
+			familyName: FamilyNameSchema.optional(),
 			/** The code from the server log or `data/setup-code`, so a fresh instance cannot be claimed. */
 			setupCode: z.string().max(100).optional(),
 		}),
@@ -907,6 +932,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					.executeTakeFirst();
 				if (any) throw new FamosError('conflict', 'Setup has already been completed');
 				const settings = {
+					...(body.familyName && { name: body.familyName }),
 					timeZone: body.timeZone ?? 'UTC',
 					locale: body.locale,
 					...regionFormats(body.formatLocale ?? formatLocaleForLanguage(body.locale)),
@@ -1691,6 +1717,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			setFeatureEnabled,
 			setAiAreaAccess,
 			updateFamilySettings,
+			setFamilyName,
 			...languages.actions,
 			...deps.themes.actions,
 			createRole,

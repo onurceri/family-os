@@ -2,7 +2,7 @@
 
 The pages you will use every day: Today, Quick add, the calendar, tasks and shopping lists, the board and the meal plan.
 
-On a phone the bottom bar has **Today**, **Quick add**, **Calendar**, **Lists** and **More**. Everything else is under **More**: the Household pages and your settings. On a wide screen the same pages are in a bar on the side (Household can be folded away), with **More** at its foot.
+On a phone the bottom bar has **Today**, **Quick add**, **Calendar**, **Lists** and **More**. Everything else is under **More**: the Household pages and your settings. On a wide screen the same pages are in a bar on the side (Household can be folded away), with **More** at its foot. Inside Household the pages are listed alphabetically, in your language, on the side bar and under **More**.
 
 ## Today
 

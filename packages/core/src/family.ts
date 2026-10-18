@@ -24,7 +24,11 @@ export const LanguageCodeSchema = z
 	.refine(isFormatLocale, 'Not a valid BCP 47 language code')
 	.transform((tag) => canonicalLocale(tag));
 
+/** The family's name as people say it ("The Novaks"); optional, shown where the family is greeted. */
+export const FamilyNameSchema = z.string().trim().min(1).max(60);
+
 export const FamilySettingsSchema = z.object({
+	name: FamilyNameSchema.optional(),
 	timeZone: TimeZoneSchema,
 	locale: LanguageCodeSchema,
 	formatLocale: z

@@ -13,11 +13,11 @@ docker compose logs famos
 The log prints an address ending in `/setup?code=…`. Open it in a browser.
 
 1. Pick the language (**Choose your language**) and press **Continue**. It is preselected from your browser. It becomes the family's language, and everyone can choose their own later (see [Languages](languages.md)).
-2. Enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
+2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
 3. Check **Time and region**. The time zone, the region format (date order, numbers, first day of the week), the 12- or 24-hour clock and Celsius or Fahrenheit are guessed from this browser. Correct them if they are wrong, for example on a laptop set up abroad or in a browser in another language: the time zone decides what "today" is and when reminders go off. Choosing another region format also picks its clock and temperature, which you can still change.
 4. Tick **This device is shared at home (people with a PIN can sign in here)** if you are on the family tablet (see [Family members, roles and devices](members.md)).
 5. Press **Create account**. That account is an **admin**.
-6. Optionally, **Where do you live?**: search for your city to show the weather on Today and on displays, or press **Skip**. Only the name you search for is sent to Open-Meteo.com. You can change it later under **Settings → Family → Photos and weather**.
+6. Optionally, **Where do you live?**: search for your city to show the weather on Today and on displays, or press **Skip**; the same step can also be done later from Today's checklist. Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. You can change it later under **Settings → Family → Photos and weather**; changing the place later leaves the weather switch as it is. If you reload the page after creating the account, the step is not shown again.
 
 You can change the time zone and the formats later under **Settings → Family → Language & region** (see [Region and formats](region.md)). **Settings** itself opens **Profile & sign-in** on a wide screen and **More** on a phone, for everyone.
 

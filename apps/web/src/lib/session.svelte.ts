@@ -20,6 +20,8 @@ class Session {
 	appVersion = $state('');
 	/** First-run setup asks for the one-time code from the server log. */
 	setupNeedsCode = $state(false);
+	/** What the family is called (before sign-in too), or null. */
+	familyName = $state<string | null>(null);
 
 	/** Whether the signed-in member's role grants a capability. The API decides; this only shapes the UI. */
 	can(capability: string): boolean {
@@ -37,6 +39,7 @@ class Session {
 			if (!setup.data) throw new Error('setup status unavailable');
 			this.appVersion = setup.data.appVersion;
 			this.setupNeedsCode = setup.data.needsCode;
+			this.familyName = setup.data.familyName;
 			if (setup.data.needsSetup) {
 				this.me = null;
 				this.status = 'setup';

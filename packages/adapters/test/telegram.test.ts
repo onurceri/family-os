@@ -136,6 +136,19 @@ describe('connecting a bot', () => {
 });
 
 describe('linking', () => {
+	it('names the family in the greeting when it has a name', async () => {
+		const tg = make();
+		tg.setHandlers({ ...handlers(), familyName: async () => 'The Novaks' });
+		await tg.setToken(fake.token);
+		const code = await tg.createLinkCode('mem_1');
+		tg.start();
+		fake.say(55, `/start ${code.code}`);
+		await until(() => fake.sent().length === 1);
+		expect(fake.sent()[0]?.text).toBe(
+			'telegram_linked_family {"name":"Mom","family":"The Novaks"}',
+		);
+	});
+
 	it('links with a valid code, once', async () => {
 		const tg = make();
 		await tg.setToken(fake.token);

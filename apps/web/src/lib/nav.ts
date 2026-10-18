@@ -23,7 +23,7 @@ import {
 import type { Component } from 'svelte';
 import { contributions, enabledOnly } from './extensions';
 import { getLocale, tDynamic } from './i18n.svelte';
-import { orderedBy } from './nav-order';
+import { byName, groupedByName, orderedBy } from './nav-order';
 
 /**
  * Navigation model:
@@ -290,6 +290,7 @@ export function buildNav(
 	disabled: readonly string[] = [],
 	entries: readonly NavContribution[] = contributions.nav,
 	byOrder = orderedBy(tDynamic, getLocale()),
+	name = byName(tDynamic, getLocale()),
 ): NavModel {
 	const visible = enabledOnly(entries, disabled)
 		.filter((c) => allowed(c, can))
@@ -303,14 +304,7 @@ export function buildNav(
 		.slice(PHONE_PRIMARY_SLOTS)
 		.map((c) => ({ ...c, group: c.group ?? 'pages' }));
 	const more = [...overflow, ...visible.filter((c) => c.placement === 'more').toSorted(byOrder)];
-	const groupBy = (items: NavItem[]) => {
-		const groups = new Map<string, NavItem[]>();
-		for (const item of items) {
-			const group = item.group ?? 'pages';
-			groups.set(group, [...(groups.get(group) ?? []), item]);
-		}
-		return [...groups].map(([group, items]) => ({ group, items }));
-	};
+	const groupBy = (items: NavItem[]) => groupedByName(items, name);
 	// The app's own settings and the pages extensions add, in one order (the app's first on a tie).
 	const settingsItems = [
 		...APP_SETTINGS.filter((i) => allowed(i, can)),

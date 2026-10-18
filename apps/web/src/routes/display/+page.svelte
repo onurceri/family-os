@@ -35,6 +35,7 @@
 	 */
 	type Me = {
 		name: string;
+		familyName: string | null;
 		capabilities: string[];
 		showNames: boolean;
 		timeZone: string;
@@ -471,7 +472,10 @@
 				>
 					<header class="phead">
 						<h1 class="type-page truncate">{pageName(page)}</h1>
-						<time class="type-figure">{time}</time>
+						<span class="flex items-baseline gap-3">
+							{#if me?.familyName}<span class="text-ink-soft text-sm">{me.familyName}</span>{/if}
+							<time class="type-figure">{time}</time>
+						</span>
 					</header>
 					<div class="pbody">
 						{#await trackWork(page.component()) then mod}
@@ -497,6 +501,15 @@
 					</button>
 				{/each}
 			</nav>
+		{/if}
+
+		{#if me?.familyName && onToday}
+			<p
+				class="text-ink-soft absolute start-4 top-1 text-[11px] opacity-70"
+				data-testid="display-family-name"
+			>
+				{me.familyName}
+			</p>
 		{/if}
 
 		<p class="text-ink-soft absolute end-3 bottom-1.5 text-[11px] opacity-60">

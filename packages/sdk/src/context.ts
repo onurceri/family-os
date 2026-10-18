@@ -16,6 +16,8 @@ import type { AiKindInfo, IndexedMention, MentionEnv, SettledResolution } from '
 
 /** Household-wide settings every extension may read. */
 export interface FamilySettings {
+	/** What the family is called ("The Novaks"), when it chose a name. */
+	name?: string;
 	/** IANA time zone used for "today" and recurrence, e.g. `Europe/Istanbul`. */
 	timeZone: string;
 	/** Default language (a BCP 47 code with a language pack, `en` always) for family-wide content. */

@@ -35,6 +35,10 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			return row?.display_name ?? null;
 		},
 
+		async familyName() {
+			return (await kernel.ctx.family.settings()).name ?? null;
+		},
+
 		async translate(memberId, key, params) {
 			const locale = await languageOf(memberId);
 			return translate(locale, key.includes(':') ? key : `app:${key}`, params);

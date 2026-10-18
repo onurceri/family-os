@@ -209,3 +209,32 @@ describe('family settings', () => {
 		});
 	});
 });
+
+describe('family name', () => {
+	it('is optional, trimmed, and cleared by an empty name', async () => {
+		const { actor: admin } = await k.member('admin');
+		expect((await k.ctx.family.settings()).name).toBeUndefined();
+		const set = (name: string) => k.runner.invoke('core.setFamilyName', { name }, admin);
+		expect(await set('  The Novaks ')).toMatchObject({
+			status: 'applied',
+			output: { name: 'The Novaks' },
+		});
+		expect((await k.ctx.family.settings()).name).toBe('The Novaks');
+		// The other settings are kept when the name changes, and the name when they change.
+		await k.runner.invoke('core.updateFamilySettings', { timeZone: 'Europe/Berlin' }, admin);
+		expect(await k.ctx.family.settings()).toMatchObject({
+			name: 'The Novaks',
+			timeZone: 'Europe/Berlin',
+		});
+		expect(await set('')).toMatchObject({ output: { name: null } });
+		expect((await k.ctx.family.settings()).name).toBeUndefined();
+		await expect(set('x'.repeat(61))).rejects.toMatchObject({ code: 'bad_request' });
+	});
+
+	it('is changed only by someone who manages settings', async () => {
+		const { actor: member } = await k.member('member');
+		await expect(
+			k.runner.invoke('core.setFamilyName', { name: 'Ours' }, member),
+		).rejects.toMatchObject({ code: 'forbidden' });
+	});
+});

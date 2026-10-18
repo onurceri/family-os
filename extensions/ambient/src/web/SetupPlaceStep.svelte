@@ -46,4 +46,5 @@
 	<Button type="button" variant="ghost" disabled={busy} onclick={done}
 		>{t('setup_place_skip')}</Button
 	>
+	<p class="text-ink-soft text-sm">{t('setup_place_later')}</p>
 </div>

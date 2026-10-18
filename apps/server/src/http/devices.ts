@@ -375,6 +375,8 @@ function mountDisplayRoutes(
 				...json(
 					z.object({
 						name: z.string(),
+						/** What the family is called, when it chose a name. */
+						familyName: z.string().nullable(),
 						capabilities: z.array(z.string()),
 						showNames: z.boolean(),
 						timeZone: z.string(),
@@ -415,6 +417,7 @@ function mountDisplayRoutes(
 		return c.json(
 			{
 				name: row.name,
+				familyName: family.name ?? null,
 				// Only what works right now (an extension turned off drops out).
 				capabilities: held.filter(
 					(id) => kernel.access.capability(id) && kernel.access.can(actor, id),

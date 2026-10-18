@@ -64,6 +64,8 @@ export interface TelegramHandlers {
 	): string | Promise<string>;
 	/** The member's display name, or null when they are archived or unknown. */
 	memberName(memberId: string): Promise<string | null>;
+	/** What the family is called, when it chose a name; the link greeting names it. */
+	familyName?(): Promise<string | null>;
 }
 
 /** A pending draft as the chat shows it: approve and reject, and maybe a change instead. */
@@ -401,7 +403,9 @@ export function createTelegram(deps: TelegramDeps) {
 			});
 		log.info({ memberId }, 'telegram account linked');
 		linkChanged(memberId);
-		await reply(s, chatId, memberId, 'telegram_linked', { name });
+		const family = (await need().familyName?.()) ?? null;
+		if (family) await reply(s, chatId, memberId, 'telegram_linked_family', { name, family });
+		else await reply(s, chatId, memberId, 'telegram_linked', { name });
 	}
 
 	async function onMessage(s: Session, msg: Message) {

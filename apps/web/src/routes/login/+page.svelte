@@ -115,6 +115,11 @@
 		</div>
 	{/if}
 	{#if mode === 'profiles'}
+		{#if session.familyName}
+			<p class="text-ink-soft text-center text-lg font-semibold" data-testid="family-name">
+				{session.familyName}
+			</p>
+		{/if}
 		<h1 class="text-center text-2xl font-extrabold tracking-tight">{t('login_title')}</h1>
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 			{#each profiles as profile (profile.id)}
