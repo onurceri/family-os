@@ -1312,5 +1312,19 @@
 	"refused_sign_in": "Sign in first.",
 	"refused_ai": "The assistant cannot do this for you.",
 	"refused_critical": "Only a person can do this, not the assistant.",
-	"refused_area": "The assistant is kept out of this part of the app."
+	"refused_area": "The assistant is kept out of this part of the app.",
+	"display_page_today": "Today",
+	"display_pages_label": "Pages of this screen",
+	"devices_pages": "Pages",
+	"devices_pages_hint": "Today always comes first. The pages you add come in turn between Today's, and a touch on the screen holds the page.",
+	"devices_pages_add": "Add a page",
+	"devices_pages_up": "Move {{name}} up",
+	"devices_pages_down": "Move {{name}} down",
+	"devices_pages_remove": "Remove {{name}}",
+	"devices_pages_today_for": "Today stays for",
+	"devices_pages_each_for": "Each page stays for",
+	"devices_pages_back_in": "After a touch, back to Today in",
+	"devices_pages_seconds": "{{n}} sec",
+	"devices_pages_minutes": "{{n}} min",
+	"devices_pages_error": "The screen was saved, but its pages were not. Please try again."
 }

@@ -3,6 +3,7 @@ import {
 	DeviceSchema,
 	type DeviceService,
 	type Kernel,
+	RotationSchema,
 	STYLE_IDS,
 	toDevice,
 } from '@famos/core';
@@ -361,6 +362,8 @@ function mountDisplayRoutes(
 						style: z.enum(STYLE_IDS),
 						/** The blocks this display's Today hides: its own choice, else the family's. */
 						hidden: z.array(z.string()),
+						/** The pages this display shows between Today's turns; null shows only Today. */
+						rotation: RotationSchema.nullable(),
 					}),
 				),
 			},
@@ -398,6 +401,7 @@ function mountDisplayRoutes(
 				theme: look.theme,
 				style: look.style,
 				hidden: look.hidden,
+				rotation: await kernel.themes.rotationOf(kernel.ctx.db, actor.deviceId),
 			},
 			200,
 		);

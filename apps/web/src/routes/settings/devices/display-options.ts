@@ -10,7 +10,12 @@ export interface DisplayContribution {
 }
 
 /** The slots a display renders, and so the permissions they need are worth offering. */
-const DISPLAY_SLOTS = new Set(['display.widget', 'display.status', 'display.ambient']);
+const DISPLAY_SLOTS = new Set([
+	'display.widget',
+	'display.status',
+	'display.ambient',
+	'display.page',
+]);
 
 /**
  * The permissions a display can use (`offered`), and those a new screen starts without

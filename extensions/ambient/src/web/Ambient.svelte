@@ -17,7 +17,11 @@
 	 * Any interaction takes it away again. It only runs on a display that may see photos or weather.
 	 */
 	const { app, t } = useAmbient();
-	const { time, date }: { time: string; date: string } = $props();
+	const {
+		time,
+		date,
+		onactive,
+	}: { time: string; date: string; onactive?: (active: boolean) => void } = $props();
 
 	const canPhotos = $derived(app.can('ambient.photos'));
 	const canWeather = $derived(app.can('ambient.weather'));
@@ -29,6 +33,16 @@
 
 	let active = $state(false);
 	let lastActivity = Date.now();
+
+	// The screen is told when the cover goes up and when it comes down (it holds its own rotation
+	// of pages meanwhile and starts again from Today).
+	let told = false;
+	$effect(() => {
+		const covering = enabled && active;
+		if (covering === told) return;
+		told = covering;
+		onactive?.(covering);
+	});
 
 	const reducedMotion = () =>
 		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

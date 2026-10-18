@@ -53,6 +53,28 @@ const hiddenOf = (value: unknown): string[] | null =>
 		? [...new Set(value.filter((id): id is string => TodayBlockIdSchema.safeParse(id).success))]
 		: null;
 
+/**
+ * What a family display shows between Today's turns: pages other extensions offer (their
+ * `display.page` contributions, which only the web app knows, so the ids are not checked here;
+ * the display skips one it cannot show). Today always comes first and comes back after
+ * `backSeconds` without a touch.
+ */
+export const PAGE_ID = /^[a-z][a-z0-9-]*\.[a-zA-Z0-9.-]+$/;
+export const MAX_DISPLAY_PAGES = 8;
+export const RotationSchema = z.object({
+	pages: z
+		.array(z.string().max(100).regex(PAGE_ID))
+		.max(MAX_DISPLAY_PAGES)
+		.refine((ids) => new Set(ids).size === ids.length, 'A page can be added once'),
+	/** How long Today stays before the first page. */
+	todaySeconds: z.number().int().min(30).max(3600).default(120),
+	/** How long each page stays. */
+	pageSeconds: z.number().int().min(10).max(600).default(30),
+	/** After a touch, how long the screen holds before it goes back to Today. */
+	backSeconds: z.number().int().min(30).max(3600).default(120),
+});
+export type Rotation = z.infer<typeof RotationSchema>;
+
 const PreviewSchema = z.object({
 	day: z.record(z.string(), z.string()),
 	night: z.record(z.string(), z.string()),
@@ -136,6 +158,8 @@ const CHOICES_KEY = 'themes.choices';
 const STYLE_CHOICES_KEY = 'styles.choices';
 /** The blocks hidden from Today, of the same shape: the family's, each person's, each display's. */
 const TODAY_CHOICES_KEY = 'today.hidden';
+/** The pages each display shows between Today's turns: `{ displays: { <device id>: Rotation } }`. */
+const PAGES_KEY = 'displays.pages';
 const FETCH_KEY = 'themes.fetch';
 export const FETCH_THEME_JOB = 'core.fetchThemePack';
 
@@ -270,6 +294,28 @@ export function createThemes(deps: ThemesDeps) {
 		if (actor?.kind === 'display') own = hiddenOf(choices.displays[actor.deviceId]);
 		else if (actor?.kind === 'member') own = myHidden = hiddenOf(choices.members[actor.memberId]);
 		return { hidden: own ?? familyHidden, familyHidden, myHidden };
+	}
+
+	/** The rotations of displays that are still paired; one that is revoked or not a screen is dropped. */
+	async function readRotations(db: DbExecutor): Promise<Record<string, Rotation>> {
+		const stored = await readJson<{ displays?: Record<string, unknown> }>(db, PAGES_KEY, {});
+		const active = new Set(
+			(
+				await db
+					.withTables<CoreTables>()
+					.selectFrom('core_devices')
+					.select('id')
+					.where('kind', '=', 'kiosk')
+					.where('revoked_at', 'is', null)
+					.execute()
+			).map((row) => row.id),
+		);
+		const out: Record<string, Rotation> = {};
+		for (const [deviceId, value] of Object.entries(stored.displays ?? {})) {
+			const parsed = RotationSchema.safeParse(value);
+			if (active.has(deviceId) && parsed.success) out[deviceId] = parsed.data;
+		}
+		return out;
 	}
 
 	/** What a caller sees: a display its own theme, a member theirs, everyone else the family's. */
@@ -430,6 +476,18 @@ export function createThemes(deps: ThemesDeps) {
 				if (hidden) out[deviceId] = hidden;
 			}
 			return out;
+		},
+	});
+
+	const displayPages = defineRoute({
+		method: 'get',
+		path: '/displays/pages',
+		operationId: 'core.listDisplayPages',
+		summary: "The pages each display shows between Today's turns (display id → rotation)",
+		requires: CORE_CAPABILITIES.devicesManage.id,
+		response: z.object({ displays: z.record(z.string(), RotationSchema) }),
+		async handle(ctx) {
+			return { displays: await readRotations(ctx.db) };
 		},
 	});
 
@@ -768,6 +826,32 @@ export function createThemes(deps: ThemesDeps) {
 		},
 	});
 
+	const setDisplayPages = defineAction({
+		id: 'core.setDisplayPages',
+		title: 'Choose the pages a display shows between the turns of Today',
+		input: z.object({ deviceId: z.string().max(80), rotation: RotationSchema.nullable() }),
+		output: z.object({ deviceId: z.string(), rotation: RotationSchema.nullable() }),
+		requires: CORE_CAPABILITIES.devicesManage.id,
+		approval: 'never',
+		async run(uow, input) {
+			const device = await uow.db
+				.withTables<CoreTables>()
+				.selectFrom('core_devices')
+				.select(['kind', 'revoked_at'])
+				.where('id', '=', input.deviceId)
+				.executeTakeFirst();
+			if (device?.kind !== 'kiosk' || device.revoked_at !== null)
+				throw new FamosError('not_found', 'No such display');
+			// Entries of displays that were removed since are dropped with this write.
+			const displays = await readRotations(uow.db);
+			if (input.rotation) displays[input.deviceId] = input.rotation;
+			else delete displays[input.deviceId];
+			await writeJson(uow.db, PAGES_KEY, { displays }, uow.clock.now());
+			uow.emit(themesChanged, { id: null });
+			return { deviceId: input.deviceId, rotation: input.rotation };
+		},
+	});
+
 	return {
 		actions: [
 			install,
@@ -782,6 +866,7 @@ export function createThemes(deps: ThemesDeps) {
 			setFamilyTodayBlocks,
 			setMyTodayBlocks,
 			setDisplayTodayBlocks,
+			setDisplayPages,
 		],
 		routes: [
 			list,
@@ -790,6 +875,7 @@ export function createThemes(deps: ThemesDeps) {
 			displayChoices,
 			displayStyles,
 			displayHidden,
+			displayPages,
 			stylesheet,
 			font,
 		],
@@ -800,6 +886,10 @@ export function createThemes(deps: ThemesDeps) {
 		 * member's, the family's).
 		 */
 		effective,
+		/** The pages a paired display shows between Today's turns; null shows only Today. */
+		async rotationOf(db: DbExecutor, deviceId: string): Promise<Rotation | null> {
+			return (await readRotations(db))[deviceId] ?? null;
+		},
 	};
 }
 

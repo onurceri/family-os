@@ -930,6 +930,46 @@ describe('family displays', () => {
 		).toBe(401);
 	});
 
+	it("tells a display the pages it shows between Today's turns; it cannot choose them", async () => {
+		const { cookie } = await setupAndSignIn();
+		const { displayCookie, deviceId } = await pairDisplay(cookie);
+		const rotation = async () =>
+			(await call('GET', '/api/v1/core/displays/me', undefined, displayCookie)).body.rotation;
+		expect(await rotation()).toBeNull();
+		const chosen = {
+			pages: ['homeassistant.values'],
+			todaySeconds: 60,
+			pageSeconds: 20,
+			backSeconds: 90,
+		};
+		const set = await call(
+			'POST',
+			'/api/v1/actions/core.setDisplayPages',
+			{ deviceId, rotation: chosen },
+			cookie,
+		);
+		expect(set.status).toBe(200);
+		expect(await rotation()).toEqual(chosen);
+		expect((await call('GET', '/api/v1/core/displays/pages', undefined, cookie)).body).toEqual({
+			displays: { [deviceId]: chosen },
+		});
+		// The list is for people who manage devices; a display runs no actions.
+		expect(
+			(await call('GET', '/api/v1/core/displays/pages', undefined, displayCookie)).status,
+		).toBe(403);
+		expect(
+			(
+				await call(
+					'POST',
+					'/api/v1/actions/core.setDisplayPages',
+					{ deviceId, rotation: null },
+					displayCookie,
+				)
+			).status,
+		).toBe(401);
+		expect(await rotation()).toEqual(chosen);
+	});
+
 	it('tells the admin what a display had no room for; only the display itself may say it', async () => {
 		const { cookie } = await setupAndSignIn();
 		const { displayCookie, deviceId } = await pairDisplay(cookie);

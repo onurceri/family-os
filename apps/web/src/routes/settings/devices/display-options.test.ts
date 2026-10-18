@@ -6,16 +6,18 @@ describe('displayOptions', () => {
 		{ slot: 'display.widget', requires: 'weather.view' },
 		{ slot: 'display.status', requires: 'core.drafts.waiting' },
 		{ slot: 'display.ambient', requires: 'photos.view' },
+		{ slot: 'display.page', requires: 'homeassistant.view' },
 		{ slot: 'dashboard.card', requires: 'vehicles.view' },
 		{ slot: 'display.widget' },
 	];
 
-	it('offers what the day, a widget, a status pill or ambient mode needs, nothing else', () => {
+	it('offers what the day, a widget, a page, a status pill or ambient mode needs, nothing else', () => {
 		const { offered } = displayOptions(['calendar.view', 'chores.view'], contributions);
 		expect([...offered].sort()).toEqual([
 			'calendar.view',
 			'chores.view',
 			'core.drafts.waiting',
+			'homeassistant.view',
 			'photos.view',
 			'weather.view',
 		]);

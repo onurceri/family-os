@@ -1312,5 +1312,19 @@
 	"refused_sign_in": "Önce giriş yap.",
 	"refused_ai": "Asistan bunu senin için yapamaz.",
 	"refused_critical": "Bunu yalnızca bir kişi yapabilir, asistan yapamaz.",
-	"refused_area": "Asistan uygulamanın bu bölümüne girmez."
+	"refused_area": "Asistan uygulamanın bu bölümüne girmez.",
+	"display_page_today": "Bugün",
+	"display_pages_label": "Bu ekranın sayfaları",
+	"devices_pages": "Sayfalar",
+	"devices_pages_hint": "Bugün her zaman ilk sıradadır. Eklediğin sayfalar Bugün'ün turları arasında sırayla gelir; ekrana dokunmak sayfayı tutar.",
+	"devices_pages_add": "Sayfa ekle",
+	"devices_pages_up": "{{name}} sayfasını yukarı taşı",
+	"devices_pages_down": "{{name}} sayfasını aşağı taşı",
+	"devices_pages_remove": "{{name}} sayfasını kaldır",
+	"devices_pages_today_for": "Bugün şu kadar kalır",
+	"devices_pages_each_for": "Her sayfa şu kadar kalır",
+	"devices_pages_back_in": "Dokunduktan sonra Bugün'e dönüş",
+	"devices_pages_seconds": "{{n}} sn",
+	"devices_pages_minutes": "{{n}} dk",
+	"devices_pages_error": "Ekran kaydedildi ama sayfaları kaydedilemedi. Lütfen tekrar dene."
 }

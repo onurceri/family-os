@@ -2597,6 +2597,44 @@
 											"items": {
 												"type": "string"
 											}
+										},
+										"rotation": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"pages": {
+													"type": "array",
+													"items": {
+														"type": "string",
+														"maxLength": 100,
+														"pattern": "^[a-z][a-z0-9-]*\\.[a-zA-Z0-9.-]+$"
+													},
+													"maxItems": 8
+												},
+												"todaySeconds": {
+													"type": "integer",
+													"minimum": 30,
+													"maximum": 3600,
+													"default": 120
+												},
+												"pageSeconds": {
+													"type": "integer",
+													"minimum": 10,
+													"maximum": 600,
+													"default": 30
+												},
+												"backSeconds": {
+													"type": "integer",
+													"minimum": 30,
+													"maximum": 3600,
+													"default": 120
+												}
+											},
+											"required": [
+												"pages"
+											]
 										}
 									},
 									"required": [
@@ -2612,7 +2650,8 @@
 										"disabledExtensions",
 										"theme",
 										"style",
-										"hidden"
+										"hidden",
+										"rotation"
 									]
 								}
 							}
@@ -27008,6 +27047,307 @@
 				}
 			}
 		},
+		"/api/v1/core/displays/pages": {
+			"get": {
+				"operationId": "core.listDisplayPages",
+				"summary": "The pages each display shows between Today's turns (display id → rotation)",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The pages each display shows between Today's turns (display id → rotation)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"displays": {
+											"type": "object",
+											"additionalProperties": {
+												"type": "object",
+												"properties": {
+													"pages": {
+														"type": "array",
+														"items": {
+															"type": "string",
+															"maxLength": 100,
+															"pattern": "^[a-z][a-z0-9-]*\\.[a-zA-Z0-9.-]+$"
+														},
+														"maxItems": 8
+													},
+													"todaySeconds": {
+														"type": "integer",
+														"minimum": 30,
+														"maximum": 3600,
+														"default": 120
+													},
+													"pageSeconds": {
+														"type": "integer",
+														"minimum": 10,
+														"maximum": 600,
+														"default": 30
+													},
+													"backSeconds": {
+														"type": "integer",
+														"minimum": 30,
+														"maximum": 3600,
+														"default": 120
+													}
+												},
+												"required": [
+													"pages"
+												]
+											}
+										}
+									},
+									"required": [
+										"displays"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/api/v1/core/themes/{id}/stylesheet.css": {
 			"get": {
 				"operationId": "core.getThemeStylesheet",
@@ -40339,6 +40679,420 @@
 													"required": [
 														"deviceId",
 														"hidden"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/core.setDisplayPages": {
+			"post": {
+				"operationId": "core.setDisplayPages",
+				"summary": "Choose the pages a display shows between the turns of Today",
+				"tags": [
+					"actions",
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"deviceId": {
+										"type": "string",
+										"maxLength": 80
+									},
+									"rotation": {
+										"type": [
+											"object",
+											"null"
+										],
+										"properties": {
+											"pages": {
+												"type": "array",
+												"items": {
+													"type": "string",
+													"maxLength": 100,
+													"pattern": "^[a-z][a-z0-9-]*\\.[a-zA-Z0-9.-]+$"
+												},
+												"maxItems": 8
+											},
+											"todaySeconds": {
+												"type": "integer",
+												"minimum": 30,
+												"maximum": 3600,
+												"default": 120
+											},
+											"pageSeconds": {
+												"type": "integer",
+												"minimum": 10,
+												"maximum": 600,
+												"default": 30
+											},
+											"backSeconds": {
+												"type": "integer",
+												"minimum": 30,
+												"maximum": 3600,
+												"default": 120
+											}
+										},
+										"required": [
+											"pages"
+										]
+									}
+								},
+								"required": [
+									"deviceId",
+									"rotation"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"deviceId": {
+															"type": "string"
+														},
+														"rotation": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"pages": {
+																	"type": "array",
+																	"items": {
+																		"type": "string",
+																		"maxLength": 100,
+																		"pattern": "^[a-z][a-z0-9-]*\\.[a-zA-Z0-9.-]+$"
+																	},
+																	"maxItems": 8
+																},
+																"todaySeconds": {
+																	"type": "integer",
+																	"minimum": 30,
+																	"maximum": 3600,
+																	"default": 120
+																},
+																"pageSeconds": {
+																	"type": "integer",
+																	"minimum": 10,
+																	"maximum": 600,
+																	"default": 30
+																},
+																"backSeconds": {
+																	"type": "integer",
+																	"minimum": 30,
+																	"maximum": 3600,
+																	"default": 120
+																}
+															},
+															"required": [
+																"pages"
+															]
+														}
+													},
+													"required": [
+														"deviceId",
+														"rotation"
 													]
 												}
 											},

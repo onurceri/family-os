@@ -1240,6 +1240,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/core/displays/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pages each display shows between Today's turns (display id → rotation) */
+        get: operations["core.listDisplayPages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/core/themes/{id}/stylesheet.css": {
         parameters: {
             query?: never;
@@ -1883,6 +1900,23 @@ export interface paths {
         put?: never;
         /** Choose what a display's Today shows */
         post: operations["core.setDisplayTodayBlocks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/actions/core.setDisplayPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Choose the pages a display shows between the turns of Today */
+        post: operations["core.setDisplayPages"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3355,6 +3389,15 @@ export interface operations {
                         /** @enum {string} */
                         style: "broadsheet" | "lanes" | "wall";
                         hidden: string[];
+                        rotation: {
+                            pages: string[];
+                            /** @default 120 */
+                            todaySeconds: number;
+                            /** @default 30 */
+                            pageSeconds: number;
+                            /** @default 120 */
+                            backSeconds: number;
+                        } | null;
                     };
                 };
             };
@@ -14069,6 +14112,146 @@ export interface operations {
             };
         };
     };
+    "core.listDisplayPages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The pages each display shows between Today's turns (display id → rotation) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        displays: {
+                            [key: string]: {
+                                pages: string[];
+                                /** @default 120 */
+                                todaySeconds: number;
+                                /** @default 30 */
+                                pageSeconds: number;
+                                /** @default 120 */
+                                backSeconds: number;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
     "core.getThemeStylesheet": {
         parameters: {
             query?: never;
@@ -19698,6 +19881,171 @@ export interface operations {
                         output: {
                             deviceId: string;
                             hidden: string[] | null;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "core.setDisplayPages": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    deviceId: string;
+                    rotation: {
+                        pages: string[];
+                        /** @default 120 */
+                        todaySeconds?: number;
+                        /** @default 30 */
+                        pageSeconds?: number;
+                        /** @default 120 */
+                        backSeconds?: number;
+                    } | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            deviceId: string;
+                            rotation: {
+                                pages: string[];
+                                /** @default 120 */
+                                todaySeconds: number;
+                                /** @default 30 */
+                                pageSeconds: number;
+                                /** @default 120 */
+                                backSeconds: number;
+                            } | null;
                         };
                     } | {
                         /** @enum {string} */

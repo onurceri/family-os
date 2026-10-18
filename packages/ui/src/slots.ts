@@ -118,7 +118,21 @@ export interface SlotProps extends FamosExtensionSlots {
 	 * contribution decides itself when to show (it sees `useApp().can(…)`), and takes itself away
 	 * on any interaction. `time` and `date` are the display's formatted clock.
 	 */
-	'display.ambient': { time: string; date: string };
+	'display.ambient': {
+		time: string;
+		date: string;
+		/** Called with `true` when ambient mode starts covering the display and `false` when it ends. */
+		onactive?: (active: boolean) => void;
+	};
+	/**
+	 * A full-screen page a family display can show between Today's turns, chosen per display in
+	 * Settings → Devices. Read-only (no links, no buttons): it runs as the display, so it may only
+	 * call routes of view capabilities the display was granted. It must fit its box without
+	 * scrolling and say "N more" when it has more than fits. It is mounted the first time it is
+	 * shown and stays mounted; `shown` is true while it is on screen, so it can read again when it
+	 * comes round. `labelKey` is the page's name in Settings and in the page's head on the screen.
+	 */
+	'display.page': { shown: boolean };
 	/**
 	 * An optional step of first-run setup, shown after the founder's account exists and they are
 	 * signed in (they hold every capability). It must never block setup: it offers Skip and calls
@@ -165,7 +179,7 @@ interface SlotContributionOf<S extends SlotName> {
 	 * person can hide it; without it the list uses the extension's name. `hintKey`: one line on
 	 * what it shows. Cards of the `needs` band are part of Needs you and are not listed.
 	 * `display.widget`: the widget's name where Settings → Devices says a display had no room for
-	 * it.
+	 * it. `display.page`: the page's name in a screen's list of pages and in the page's head.
 	 */
 	labelKey?: string;
 	hintKey?: string;
@@ -173,7 +187,12 @@ interface SlotContributionOf<S extends SlotName> {
 }
 
 /** The slots a family display reads: what it may show depends on what it was granted. */
-type DisplayRead = 'today.atmosphere' | 'display.widget' | 'display.status' | 'display.ambient';
+type DisplayRead =
+	| 'today.atmosphere'
+	| 'display.widget'
+	| 'display.status'
+	| 'display.ambient'
+	| 'display.page';
 
 /**
  * `requires`: the capability needed to show the contribution. A display shows a contribution only

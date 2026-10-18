@@ -28,6 +28,14 @@
 	import AddDevice, { type AddStart } from './AddDevice.svelte';
 	import DisplayForm from './DisplayForm.svelte';
 	import { displayOptions, leftOutNames } from './display-options.js';
+	import DisplayPages from './DisplayPages.svelte';
+	import {
+		DEFAULT_DURATIONS,
+		listedPages,
+		type PagesChoice,
+		pagesChanged,
+		rotationToSave,
+	} from './display-pages.js';
 
 	/**
 	 * Devices: this device in one sentence and one button; one list of the
@@ -45,9 +53,12 @@
 		display: { capabilities: string[]; showNames: boolean; leftOut: string[] } | null;
 	};
 	type Option = { id: string; label: string };
+	type Rotation = Omit<PagesChoice, 'pages'> & { pages: string[] };
 
 	let devices = $state<Device[]>([]);
 	let current = $state<{ id: string; name: string } | null>(null);
+	/** The pages each screen shows between Today's turns (screen id → pages and durations). */
+	let rotations = $state<Record<string, Rotation>>({});
 	let loaded = $state(false);
 	let error = $state<string | null>(null);
 
@@ -84,16 +95,38 @@
 	let editName = $state('');
 	let editCaps = $state<string[]>([]);
 	let editNames = $state(false);
+	let editPages = $state<string[]>([]);
+	let editTodaySeconds = $state<number>(DEFAULT_DURATIONS.todaySeconds);
+	let editPageSeconds = $state<number>(DEFAULT_DURATIONS.pageSeconds);
+	let editBackSeconds = $state<number>(DEFAULT_DURATIONS.backSeconds);
 	let editError = $state<string | null>(null);
 	let editForm = $state<HTMLFormElement>();
 
 	const opened = $derived(devices.find((d) => d.id === openId));
 	const thisTrusted = $derived(current !== null);
+	/** The pages a screen has as the panel lists them: the ones that still exist and are allowed. */
+	const savedPages = (device: Device): PagesChoice => {
+		const rotation = rotations[device.id];
+		const pages = listedPages(
+			contributions.slots,
+			device.display?.capabilities ?? [],
+			rotation?.pages ?? [],
+			session.disabledExtensions,
+		).map((c) => c.id);
+		return { ...DEFAULT_DURATIONS, ...rotation, pages };
+	};
+	const editChoice = $derived<PagesChoice>({
+		pages: editPages,
+		todaySeconds: editTodaySeconds,
+		pageSeconds: editPageSeconds,
+		backSeconds: editBackSeconds,
+	});
 	const editDirty = $derived(
 		opened?.kind === 'kiosk' &&
 			(editName !== opened.name ||
 				editNames !== (opened.display?.showNames ?? false) ||
-				[...editCaps].sort().join() !== [...(opened.display?.capabilities ?? [])].sort().join()),
+				[...editCaps].sort().join() !== [...(opened.display?.capabilities ?? [])].sort().join() ||
+				pagesChanged(editChoice, savedPages(opened))),
 	);
 
 	const when = (ms: number) =>
@@ -117,11 +150,13 @@
 	};
 
 	async function load() {
-		const [list, mine] = await Promise.all([
+		const [list, mine, pages] = await Promise.all([
 			api.GET('/api/v1/core/devices'),
 			api.GET('/api/v1/core/devices/current'),
+			api.GET('/api/v1/core/displays/pages'),
 		]);
 		devices = list.data ?? [];
+		rotations = pages.data?.displays ?? {};
 		current = mine.data?.device ?? null;
 		if (!optionsLoaded) {
 			const caps = await api.GET('/api/v1/core/displays/capabilities');
@@ -147,24 +182,42 @@
 		editName = device.name;
 		editCaps = [...(device.display?.capabilities ?? [])];
 		editNames = device.display?.showNames ?? false;
+		const pages = savedPages(device);
+		editPages = pages.pages;
+		editTodaySeconds = pages.todaySeconds;
+		editPageSeconds = pages.pageSeconds;
+		editBackSeconds = pages.backSeconds;
 		editError = null;
 	}
 
 	async function saveDisplay() {
 		if (!openId) return;
 		editError = null;
+		const deviceId = openId;
 		try {
 			unwrap(
 				await api.PATCH('/api/v1/core/displays/{deviceId}', {
-					params: { path: { deviceId: openId } },
+					params: { path: { deviceId } },
 					body: { name: editName, capabilities: editCaps, showNames: editNames },
 				}),
 			);
-			openId = null;
-			await load();
 		} catch {
 			editError = t('error_generic');
+			return;
 		}
+		// The screen is saved; the pages are the second half of the same Save.
+		try {
+			const rotation = rotationToSave(editChoice);
+			unwrap(
+				await api.POST('/api/v1/actions/core.setDisplayPages', { body: { deviceId, rotation } }),
+			);
+		} catch {
+			await load();
+			editError = t('devices_pages_error');
+			return;
+		}
+		openId = null;
+		await load();
 	}
 
 	async function forget() {
@@ -323,6 +376,16 @@
 				error={editError}
 				onsubmit={saveDisplay}
 			/>
+			<div class="mt-5">
+				<DisplayPages
+					idPrefix="edit"
+					ticked={editCaps}
+					bind:pages={editPages}
+					bind:todaySeconds={editTodaySeconds}
+					bind:pageSeconds={editPageSeconds}
+					bind:backSeconds={editBackSeconds}
+				/>
+			</div>
 		{:else if opened}
 			<div class="grid gap-3 text-sm">
 				<p>{t('devices_family_about')}</p>

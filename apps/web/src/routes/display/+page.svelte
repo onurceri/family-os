@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { dateLocale, formatTime } from '@famos/time';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { provideAppContext } from '@famos/ui/app';
 	import { trackWork } from '@famos/ui/famos';
 	import type { SlotContribution } from '@famos/ui/slots';
@@ -10,6 +11,15 @@
 	import { getLocale, loadLanguages, setLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { connectRealtime, onEvent } from '#lib/realtime.js';
 	import { onExtensionsChanged } from '#lib/server-changes.js';
+	import {
+		goTo,
+		type RotationConfig,
+		type RotationState,
+		startRotation,
+		step,
+		tick,
+		touch,
+	} from '#lib/display/rotation.js';
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
 	import FamilyToday from './FamilyToday.svelte';
 	import PairScreen from './PairScreen.svelte';
@@ -19,7 +29,8 @@
 	 * a pairing code; a paired one shows Today in family mode, in the display's style: no person,
 	 * nothing to act on, only what an admin allowed at pairing. The display's status pills sit in
 	 * the head, the `display.widget` tiles in a band at the foot, and ambient mode covers it all
-	 * after a while idle. It depends on nothing a signed-in member has (`/core/me`, family
+	 * after a while idle. A display that was given pages shows them in turn between Today's turns
+	 * (`rotation.ts`), with dots at the foot; a touch holds the screen. It depends on nothing a signed-in member has (`/core/me`, family
 	 * settings).
 	 */
 	type Me = {
@@ -36,6 +47,8 @@
 		theme: string | null;
 		/** The blocks this display's Today hides. */
 		hidden: string[];
+		/** The pages this display shows between Today's turns; null shows only Today. */
+		rotation: (RotationConfig & { pages: string[] }) | null;
 	};
 	type Member = { id: string; displayName: string; color: string };
 
@@ -187,7 +200,10 @@
 		const offLanguages = onEvent('core.languages.', () =>
 			loadLanguages().then(() => setLocale(getLocale(), { force: true })),
 		);
-		const clock = setInterval(() => (now = new Date()), 1000);
+		const clock = setInterval(() => {
+			now = new Date();
+			advance(now.getTime());
+		}, 1000);
 		// Revoking or changing this display shows up within a minute even if an event was missed;
 		// Today and the widgets read again every five minutes as a safety net for missed events.
 		let ticks = 0;
@@ -210,7 +226,7 @@
 	});
 
 	/** The contributions of a display slot this display may show, in `order`. */
-	function visible<S extends 'display.widget' | 'display.status'>(slot: S) {
+	function visible<S extends 'display.widget' | 'display.status' | 'display.page'>(slot: S) {
 		const held = me?.capabilities ?? [];
 		return enabledOnly(
 			contributions.slots.filter((c) => c.slot === slot),
@@ -230,7 +246,16 @@
 		void refreshKey;
 		reported = null;
 	});
+	/** The latest fit of Today, told when Today is on screen (not while a page is). */
+	let latestFit: string[] | null = null;
 	function reportFit(leftOut: string[]) {
+		latestFit = leftOut;
+		if (onToday) sendFit(leftOut);
+	}
+	$effect(() => {
+		if (onToday && latestFit) sendFit(latestFit);
+	});
+	function sendFit(leftOut: string[]) {
 		const said = JSON.stringify(leftOut);
 		if (said === reported) return;
 		reported = said;
@@ -242,6 +267,78 @@
 			});
 	}
 	const statuses = $derived(visible('display.status'));
+
+	/* ───────────── pages between Today's turns ───────────── */
+
+	/** The pages to show, in the order chosen; an id this display cannot show is skipped. */
+	const pages = $derived.by(() => {
+		const available = visible('display.page');
+		return (me?.rotation?.pages ?? []).flatMap((id) => available.find((c) => c.id === id) ?? []);
+	});
+	const rotationConfig = $derived<RotationConfig>({
+		todaySeconds: me?.rotation?.todaySeconds ?? 120,
+		pageSeconds: me?.rotation?.pageSeconds ?? 30,
+		backSeconds: me?.rotation?.backSeconds ?? 120,
+	});
+	let rotation = $state<RotationState>(startRotation(Date.now()));
+	/** The ambient layers that cover the screen now: the rotation holds, on Today, while any does. */
+	const covering = new SvelteSet<string>();
+	const held = $derived(covering.size > 0);
+	/** 0 is Today; a screen whose page is gone is Today too. */
+	const shownIndex = $derived(rotation.index <= pages.length ? rotation.index : 0);
+	const onToday = $derived(shownIndex === 0);
+	/** Pages are mounted the first time they are shown and stay mounted. */
+	const mounted = new SvelteSet<string>();
+	$effect(() => {
+		const page = pages[shownIndex - 1];
+		if (page) mounted.add(page.id);
+	});
+
+	function advance(at: number) {
+		if (held) return;
+		rotation = tick(rotation, at, rotationConfig, pages.length);
+	}
+	function onAmbient(id: string, active: boolean) {
+		if (active) covering.add(id);
+		else covering.delete(id);
+		// Under ambient mode, and when it ends, the rotation starts again from Today.
+		rotation = startRotation(Date.now());
+	}
+	/** A touch anywhere holds the screen, so a page is not taken away while it is read. */
+	function holdOnTouch() {
+		if (pages.length === 0 || held) return;
+		rotation = touch(rotation, Date.now(), rotationConfig);
+	}
+
+	const SWIPE_PX = 60;
+	let swipeFrom: { x: number; y: number } | null = null;
+	function swipeStart(event: PointerEvent) {
+		swipeFrom = pages.length > 0 && !held ? { x: event.clientX, y: event.clientY } : null;
+	}
+	function swipeEnd(event: PointerEvent) {
+		const from = swipeFrom;
+		swipeFrom = null;
+		if (!from || pages.length === 0 || held) return;
+		const dx = event.clientX - from.x;
+		const dy = event.clientY - from.y;
+		if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy)) return;
+		// Dragging towards where the text starts brings the next screen.
+		const forward = dx < 0 === (getComputedStyle(document.documentElement).direction !== 'rtl');
+		rotation = step(
+			{ ...rotation, index: shownIndex },
+			forward ? 1 : -1,
+			Date.now(),
+			rotationConfig,
+			pages.length,
+		);
+	}
+	const pageName = (page: { id: string; labelKey?: string }) =>
+		page.labelKey ? tDynamic(page.labelKey) : page.id;
+	/** One dot per screen, Today first. */
+	const dots = $derived([
+		{ id: 'today', name: t('display_page_today') },
+		...pages.map((page) => ({ id: page.id, name: pageName(page) })),
+	]);
 	/** Nothing granted that the display could show: it says where to choose. */
 	const empty = $derived(
 		widgets.length === 0 &&
@@ -327,9 +424,23 @@
 	{/key}
 {:else}
 	<!-- A wall display is never scrolled: Today fits the screen (FamilyToday), nothing runs past it. -->
-	<main class="bg-wall text-ink relative h-dvh overflow-hidden">
+	<main
+		class="bg-wall text-ink relative h-dvh overflow-hidden"
+		class:rotating={pages.length > 0}
+		onpointerdown={(event) => {
+			holdOnTouch();
+			swipeStart(event);
+		}}
+		onpointerup={swipeEnd}
+		onpointercancel={() => (swipeFrom = null)}
+	>
 		<!-- Today in family mode, one type step larger than on a person's screen (FamilyToday). -->
-		<div class="family">
+		<div
+			class="family"
+			class:layer={pages.length > 0}
+			class:off={pages.length > 0 && !onToday}
+			inert={pages.length > 0 && !onToday}
+		>
 			{#if me && membersLoaded}
 				{#key me.showNames}
 					<FamilyToday
@@ -346,6 +457,48 @@
 			{/if}
 		</div>
 
+		<!-- Pages: full-screen layers over the same box, only the current one visible. -->
+		{#each pages as page, i (page.id)}
+			{#if mounted.has(page.id)}
+				{@const current = shownIndex === i + 1}
+				<section
+					class="family layer page"
+					class:off={!current}
+					inert={!current}
+					aria-hidden={!current}
+					data-page={page.id}
+					data-testid="display-page"
+				>
+					<header class="phead">
+						<h1 class="type-page truncate">{pageName(page)}</h1>
+						<time class="type-figure">{time}</time>
+					</header>
+					<div class="pbody">
+						{#await trackWork(page.component()) then mod}
+							<mod.default shown={current} />
+						{/await}
+					</div>
+				</section>
+			{/if}
+		{/each}
+
+		{#if pages.length > 0 && !held}
+			<!-- Where the screen is in its turn; a tap on a dot goes there. -->
+			<nav class="dots" aria-label={t('display_pages_label')} data-testid="display-dots">
+				{#each dots as dot, i (dot.id)}
+					<button
+						type="button"
+						class="pagedot"
+						aria-label={dot.name}
+						aria-current={shownIndex === i ? 'true' : undefined}
+						onclick={() => (rotation = goTo(i, Date.now(), rotationConfig))}
+					>
+						<span class="bg-ink {shownIndex === i ? '' : 'opacity-30'}"></span>
+					</button>
+				{/each}
+			</nav>
+		{/if}
+
 		<p class="text-ink-soft absolute end-3 bottom-1.5 text-[11px] opacity-60">
 			{me?.name}{unreachable ? ` · ${t('display_unreachable')}` : ''}
 		</p>
@@ -353,7 +506,7 @@
 		<!-- Ambient mode: contributed by an extension, covers Today after a while idle. -->
 		{#each ambient as layer (layer.id)}
 			{#await trackWork(layer.component()) then mod}
-				<mod.default {time} {date} />
+				<mod.default {time} {date} onactive={(active: boolean) => onAmbient(layer.id, active)} />
 			{/await}
 		{/each}
 	</main>
@@ -368,6 +521,79 @@
 		.family {
 			padding: 28px 40px 28px;
 		}
+	}
+	/* With pages, Today and each page are layers of one box and only one is visible; switching is a
+	   short cross-fade. The bottom keeps room for the dots. */
+	.layer {
+		position: absolute;
+		inset: 0;
+		transition: opacity 300ms ease;
+	}
+	.layer.off {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition:
+			opacity 300ms ease,
+			visibility 0s linear 300ms;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.layer,
+		.layer.off {
+			transition: none;
+		}
+	}
+	.rotating .family {
+		padding-bottom: 40px;
+	}
+	.page {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+	.phead {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 24px;
+	}
+	.phead h1 {
+		min-width: 0;
+	}
+	.phead time {
+		white-space: nowrap;
+	}
+	.pbody {
+		flex: 1;
+		min-height: 0;
+		position: relative;
+		overflow: hidden;
+	}
+	.dots {
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		z-index: 30;
+		display: flex;
+		justify-content: center;
+		pointer-events: none;
+	}
+	.pagedot {
+		pointer-events: auto;
+		display: grid;
+		place-items: center;
+		/* 8 px dots 12 px apart, each a 44 px touch target (the targets overlap their margins). */
+		width: 44px;
+		height: 44px;
+		margin-inline: -12px;
+		border: 0;
+		background: none;
+		padding: 0;
+	}
+	.pagedot > span {
+		width: 8px;
+		height: 8px;
+		border-radius: 9999px;
 	}
 	.widget {
 		min-width: 0;
