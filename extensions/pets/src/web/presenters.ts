@@ -1,4 +1,4 @@
-import { type DraftPresenter, draftDate } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate, removalPresenter } from '@famos/ui/slots';
 import { PawPrint, Syringe } from '@lucide/svelte';
 import type { AddPetInput, AddTreatmentInput } from '../contract/index.js';
 
@@ -47,3 +47,19 @@ export const addTreatmentPresenter: DraftPresenter<AddTreatmentInput & { label?:
 	],
 	approveLabel: (c) => c.t('pets:draft_approve_treatment'),
 };
+
+/** A suggestion to remove a treatment: its mark on the row says it would be removed. */
+export const removeTreatmentPresenter = removalPresenter({
+	actionId: 'pets.removeTreatment',
+	kindKey: 'pets:kind_treatment',
+	titleKey: 'pets:draft_title_remove_treatment',
+	icon: Syringe,
+});
+
+/** A suggestion to archive a pet: its page says it would be removed. */
+export const archivePetPresenter = removalPresenter({
+	actionId: 'pets.archivePet',
+	kindKey: 'pets:kind_pet',
+	titleKey: 'pets:draft_title_archive_pet',
+	icon: PawPrint,
+});

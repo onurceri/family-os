@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, removalPresenter } from '@famos/ui/slots';
 import { CalendarDays, CookingPot } from '@lucide/svelte';
 import type { AddToMealPlanInput, CreateRecipeInput } from '../contract/index.js';
 import { loadRecipe } from './data.js';
@@ -77,9 +77,18 @@ export const addToMealPlanPresenter: DraftPresenter<AddToMealPlanInput> = {
 /** A proposal to take a planned meal off the plan; its label names the meal and its day. */
 export const removeMealPlanEntryPresenter: DraftPresenter<{ id: string; label?: string }> = {
 	actionId: 'kitchen.removeMealPlanEntry',
+	removes: true,
 	kind: (c) => c.t('kitchen:kind_meal'),
 	icon: CalendarDays,
 	title: (input, c) => input.label || c.t('kitchen:draft_a_meal'),
 	fields: () => [],
 	approveLabel: (c) => c.t('kitchen:draft_approve_remove_meal'),
 };
+
+/** A suggestion to archive a recipe: its page says it would be removed. */
+export const archiveRecipePresenter = removalPresenter({
+	actionId: 'kitchen.archiveRecipe',
+	kindKey: 'kitchen:kind_recipe',
+	titleKey: 'kitchen:draft_title_archive_recipe',
+	icon: CookingPot,
+});

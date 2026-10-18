@@ -8,7 +8,13 @@ import {
 	unavailableLine,
 } from '../src/draft-title.js';
 import { DraftCard, draftButtons } from '../src/famos/index.js';
-import { awaitingText, changed, changedValue, insteadOffer } from '../src/slots.js';
+import {
+	awaitingText,
+	changed,
+	changedValue,
+	insteadOffer,
+	removalPresenter,
+} from '../src/slots.js';
 import { cleanup, click, qa, render } from './helpers.js';
 
 afterEach(cleanup);
@@ -502,13 +508,19 @@ describe('awaitingText', () => {
 				? `Waiting for approval · ${String(o?.change)}`
 				: key === 'app:draft_waiting_change_by'
 					? `Suggested by ${String(o?.name)} · ${String(o?.change)}`
-					: key === 'app:draft_waiting_by'
-						? `Suggested by ${String(o?.name)}`
-						: key === 'app:draft_waiting_field'
-							? `${String(o?.label)}: ${String(o?.value)}`
-							: key === 'app:draft_waiting'
-								? 'Waiting for approval'
-								: key,
+					: key === 'app:draft_waiting_remove'
+						? 'Waiting for approval to remove'
+						: key === 'app:draft_waiting_remove_by'
+							? `Suggested by ${String(o?.name)}: remove`
+							: key === 'pets:draft_title_remove_treatment'
+								? 'Remove a treatment'
+								: key === 'app:draft_waiting_by'
+									? `Suggested by ${String(o?.name)}`
+									: key === 'app:draft_waiting_field'
+										? `${String(o?.label)}: ${String(o?.value)}`
+										: key === 'app:draft_waiting'
+											? 'Waiting for approval'
+											: key,
 		members: [],
 		formatLocale: 'en-GB',
 		dateLocale: 'en-GB',
@@ -558,5 +570,32 @@ describe('awaitingText', () => {
 		expect(
 			awaitingText({ input: {}, before: null, presenter: undefined, context, by: 'Leo' }),
 		).toBe('Suggested by Leo');
+	});
+
+	it('says a removal is one, to the person who asked and to the one who decides', () => {
+		const removal = { ...presenter(() => [{ label: 'When', value: 'Tue 20 Oct' }]), removes: true };
+		expect(awaitingText({ input: {}, before: null, presenter: removal, context })).toBe(
+			'Waiting for approval to remove',
+		);
+		expect(awaitingText({ input: {}, before: null, presenter: removal, context, by: 'Leo' })).toBe(
+			'Suggested by Leo: remove',
+		);
+	});
+
+	it('gives an action that only removes a presenter that says so, with the card as before', () => {
+		const p = removalPresenter({
+			actionId: 'pets.removeTreatment',
+			kindKey: 'pets:kind_treatment',
+			titleKey: 'pets:draft_title_remove_treatment',
+		});
+		expect(p.removes).toBe(true);
+		expect(p.title({ id: 'pet_treatment_1', label: 'Rabies' }, context)).toBe(
+			'Remove a treatment · Rabies',
+		);
+		expect(p.title({ id: 'pet_treatment_1' }, context)).toBe('Remove a treatment');
+		expect(p.fields({ id: 'pet_treatment_1' }, context)).toEqual([]);
+		expect(awaitingText({ input: { id: 'x' }, before: null, presenter: p, context })).toBe(
+			'Waiting for approval to remove',
+		);
 	});
 });

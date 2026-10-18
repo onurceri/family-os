@@ -307,13 +307,7 @@
 		<Card rows role="list">
 			{#each waitingNew as change, i (change.draftId ?? i)}
 				<div role="listitem">
-					<AwaitingRow {change}>
-						{#snippet lead()}
-							<span class="bg-idle grid size-9 place-items-center rounded-full"
-								><Wrench class="size-[18px]" aria-hidden="true" /></span
-							>
-						{/snippet}
-					</AwaitingRow>
+					<AwaitingRow {change} />
 				</div>
 			{/each}
 			{#each logs as log (log.id)}

@@ -2,7 +2,12 @@ import { defineWebExtension } from '@famos/ui/slots';
 import { PawPrint } from '@lucide/svelte';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
-import { addPetPresenter, addTreatmentPresenter } from './presenters.js';
+import {
+	addPetPresenter,
+	addTreatmentPresenter,
+	archivePetPresenter,
+	removeTreatmentPresenter,
+} from './presenters.js';
 
 /**
  * Pets UI: the Pets page and one page per pet (`/pets/:id`), which renders the `record.section`
@@ -50,5 +55,5 @@ export default defineWebExtension({
 			component: () => import('./FileTargetPets.svelte'),
 		},
 	],
-	drafts: [addPetPresenter, addTreatmentPresenter],
+	drafts: [addPetPresenter, addTreatmentPresenter, removeTreatmentPresenter, archivePetPresenter],
 });

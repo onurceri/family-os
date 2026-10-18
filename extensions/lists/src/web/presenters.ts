@@ -173,6 +173,7 @@ export const checkShoppingItemPresenter: DraftPresenter<{
 /** A proposal to delete a task. */
 export const deleteTaskPresenter: DraftPresenter<{ id: string; label?: string }> = {
 	actionId: 'lists.deleteTask',
+	removes: true,
 	kind: (c) => c.t('lists:kind_task_remove'),
 	icon: ListChecks,
 	title: (input, c) => input.label || c.t('lists:draft_a_task'),
@@ -183,6 +184,7 @@ export const deleteTaskPresenter: DraftPresenter<{ id: string; label?: string }>
 /** A proposal to remove a shopping item that is no longer needed. */
 export const deleteShoppingItemPresenter: DraftPresenter<{ id: string; label?: string }> = {
 	actionId: 'lists.deleteShoppingItem',
+	removes: true,
 	kind: (c) => c.t('lists:kind_shopping_remove'),
 	icon: ShoppingCart,
 	title: (input, c) => input.label || c.t('lists:draft_an_item'),

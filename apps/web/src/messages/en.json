@@ -489,6 +489,8 @@
 	"draft_waiting_field": "{{label}}: {{value}}",
 	"draft_waiting_by": "Suggested by {{name}}",
 	"draft_waiting_change_by": "Suggested by {{name}} · {{change}}",
+	"draft_waiting_remove": "Waiting for approval to remove",
+	"draft_waiting_remove_by": "Suggested by {{name}}: remove",
 	"draft_failed": "Adding it did not work. Check the details and try again.",
 	"nav_waiting": "waiting",
 	"draft_undone": "Taken back",

@@ -1,4 +1,4 @@
-import { type DraftPresenter, draftDate } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate, removalPresenter } from '@famos/ui/slots';
 import { Car, Wrench } from '@lucide/svelte';
 import type { AddLogInput, AddVehicleInput } from '../contract/index.js';
 
@@ -37,3 +37,19 @@ export const addLogPresenter: DraftPresenter<AddLogInput & { label?: string }> =
 	],
 	approveLabel: (c) => c.t('vehicles:draft_approve_log'),
 };
+
+/** A suggestion to remove a service or repair entry: its row's mark says it would be removed. */
+export const removeLogPresenter = removalPresenter({
+	actionId: 'vehicles.removeLog',
+	kindKey: 'vehicles:kind_log',
+	titleKey: 'vehicles:draft_title_remove_log',
+	icon: Wrench,
+});
+
+/** A suggestion to archive a vehicle: its page says it would be removed. */
+export const archiveVehiclePresenter = removalPresenter({
+	actionId: 'vehicles.archiveVehicle',
+	kindKey: 'vehicles:kind_vehicle',
+	titleKey: 'vehicles:draft_title_archive_vehicle',
+	icon: Car,
+});

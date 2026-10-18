@@ -2,7 +2,12 @@ import { defineWebExtension } from '@famos/ui/slots';
 import { SquareCheckBig } from '@lucide/svelte';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
-import { createChorePresenter, markDonePresenter, setAssigneesPresenter } from './presenters.js';
+import {
+	archiveChorePresenter,
+	createChorePresenter,
+	markDonePresenter,
+	setAssigneesPresenter,
+} from './presenters.js';
 import { choresBlock, choresToday } from './today.js';
 
 /**
@@ -56,5 +61,5 @@ export default defineWebExtension({
 	],
 	blocks: [choresBlock],
 	today: [choresToday],
-	drafts: [createChorePresenter, setAssigneesPresenter, markDonePresenter],
+	drafts: [createChorePresenter, setAssigneesPresenter, markDonePresenter, archiveChorePresenter],
 });

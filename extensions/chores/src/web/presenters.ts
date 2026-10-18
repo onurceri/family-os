@@ -1,4 +1,4 @@
-import { changed, type DraftPresenter, draftDate } from '@famos/ui/slots';
+import { changed, type DraftPresenter, draftDate, removalPresenter } from '@famos/ui/slots';
 import { SquareCheckBig, Users } from '@lucide/svelte';
 import type { CreateChoreInput } from '../contract/index.js';
 
@@ -102,3 +102,11 @@ export const markDonePresenter: DraftPresenter<{
 	],
 	approveLabel: (c) => c.t('chores:draft_approve_done'),
 };
+
+/** A suggestion to archive a chore: its row's mark says it would be removed from the list. */
+export const archiveChorePresenter = removalPresenter({
+	actionId: 'chores.archiveChore',
+	kindKey: 'chores:kind_chore',
+	titleKey: 'chores:draft_title_archive_chore',
+	icon: SquareCheckBig,
+});

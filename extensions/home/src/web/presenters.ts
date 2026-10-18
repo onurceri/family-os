@@ -1,4 +1,4 @@
-import { type DraftPresenter, draftDate } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate, removalPresenter } from '@famos/ui/slots';
 import { House, Refrigerator } from '@lucide/svelte';
 import type { AddHomeInput, AddItemInput, UpdateItemInput } from '../contract/index.js';
 
@@ -91,3 +91,27 @@ export const updateItemPresenter: DraftPresenter<UpdateItemInput & { label?: str
 	],
 	approveLabel: (c) => c.t('home:draft_approve_update'),
 };
+
+/** A suggestion to archive a home: its page says it would be removed. */
+export const archiveHomePresenter = removalPresenter({
+	actionId: 'home.archiveHome',
+	kindKey: 'home:kind_home',
+	titleKey: 'home:draft_title_archive_home',
+	icon: House,
+});
+
+/** A suggestion to archive a thing: its page says it would be removed. */
+export const archiveItemPresenter = removalPresenter({
+	actionId: 'home.archiveItem',
+	kindKey: 'home:kind_item',
+	titleKey: 'home:draft_title_archive_item',
+	icon: Refrigerator,
+});
+
+/** A suggestion to archive a service: its page says it would be removed. */
+export const archiveServicePresenter = removalPresenter({
+	actionId: 'home.archiveService',
+	kindKey: 'home:kind_home',
+	titleKey: 'home:draft_title_archive_service',
+	icon: House,
+});

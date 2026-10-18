@@ -4,6 +4,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import {
 	addToMealPlanPresenter,
+	archiveRecipePresenter,
 	createRecipePresenter,
 	removeMealPlanEntryPresenter,
 } from './presenters.js';
@@ -64,5 +65,10 @@ export default defineWebExtension({
 			order: 100,
 		},
 	],
-	drafts: [createRecipePresenter, addToMealPlanPresenter, removeMealPlanEntryPresenter],
+	drafts: [
+		createRecipePresenter,
+		addToMealPlanPresenter,
+		removeMealPlanEntryPresenter,
+		archiveRecipePresenter,
+	],
 });

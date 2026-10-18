@@ -2,7 +2,12 @@ import { defineWebExtension } from '@famos/ui/slots';
 import { Car } from '@lucide/svelte';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
-import { addLogPresenter, addVehiclePresenter } from './presenters.js';
+import {
+	addLogPresenter,
+	addVehiclePresenter,
+	archiveVehiclePresenter,
+	removeLogPresenter,
+} from './presenters.js';
 
 /**
  * Vehicles UI: the Vehicles page and one page per vehicle (`/vehicles/:id`), which renders the
@@ -50,5 +55,5 @@ export default defineWebExtension({
 			component: () => import('./FileTargetVehicles.svelte'),
 		},
 	],
-	drafts: [addVehiclePresenter, addLogPresenter],
+	drafts: [addVehiclePresenter, addLogPresenter, removeLogPresenter, archiveVehiclePresenter],
 });

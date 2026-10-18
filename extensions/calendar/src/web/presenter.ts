@@ -103,4 +103,5 @@ export const deleteEventPresenter: DraftPresenter<{
 	title: (input, c) => input.label || c.t('calendar:draft_an_event'),
 	fields: (input, c, before) => deleteEventFields(input, c, before ?? null),
 	approveLabel: (c) => c.t('calendar:draft_approve_remove'),
+	removes: true,
 };

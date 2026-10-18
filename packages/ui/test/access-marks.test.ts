@@ -203,8 +203,10 @@ describe('what waits for approval', () => {
 	it('draws a new entry as a quiet row that opens nothing', () => {
 		render(WithApp, { app: fakeApp(), component: AwaitingRow, props: { change: newTreatment } });
 		const row = q('[data-testid=awaiting-row]');
+		// Quiet: soft ink, an hourglass in place of the icon, and nothing to tap.
 		expect(row.tagName).toBe('DIV');
-		expect(row.classList.contains('idle')).toBe(true);
+		expect(row.querySelector('a, button')).toBeNull();
+		expect(row.querySelector('svg')).toBeTruthy();
 		expect(row.textContent).toContain('Rabies');
 		expect(row.textContent).toContain('Suggested by Leo');
 		cleanup();

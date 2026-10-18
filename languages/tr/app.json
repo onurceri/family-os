@@ -489,6 +489,8 @@
 	"draft_waiting_field": "{{label}}: {{value}}",
 	"draft_waiting_by": "{{name}} önerdi",
 	"draft_waiting_change_by": "{{name}} önerdi · {{change}}",
+	"draft_waiting_remove": "Kaldırmak için onay bekliyor",
+	"draft_waiting_remove_by": "{{name}} önerdi: kaldır",
 	"draft_failed": "Eklenemedi. Ayrıntıları kontrol edip tekrar dene.",
 	"nav_waiting": "bekliyor",
 	"draft_undone": "Geri alındı",

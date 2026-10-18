@@ -393,13 +393,7 @@
 				<Card rows role="list">
 					{#each waitingItems as change, n (change.draftId ?? n)}
 						<div role="listitem">
-							<AwaitingRow {change}>
-								{#snippet lead()}
-									<span class="bg-idle grid size-9 place-items-center rounded-full"
-										><Refrigerator class="size-[18px]" aria-hidden="true" /></span
-									>
-								{/snippet}
-							</AwaitingRow>
+							<AwaitingRow {change} />
 						</div>
 					{/each}
 					{#each items as i (i.id)}
@@ -440,13 +434,7 @@
 				<Card rows role="list">
 					{#each waitingServices as change, n (change.draftId ?? n)}
 						<div role="listitem">
-							<AwaitingRow {change} title={providerOf(change.input)}>
-								{#snippet lead()}
-									<span class="bg-idle grid size-9 place-items-center rounded-full"
-										><Zap class="size-[18px]" aria-hidden="true" /></span
-									>
-								{/snippet}
-							</AwaitingRow>
+							<AwaitingRow {change} title={providerOf(change.input)} />
 						</div>
 					{/each}
 					{#each services as s (s.id)}

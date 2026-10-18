@@ -2,7 +2,14 @@ import { defineWebExtension } from '@famos/ui/slots';
 import { House } from '@lucide/svelte';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
-import { addHomePresenter, addItemPresenter, updateItemPresenter } from './presenters.js';
+import {
+	addHomePresenter,
+	addItemPresenter,
+	archiveHomePresenter,
+	archiveItemPresenter,
+	archiveServicePresenter,
+	updateItemPresenter,
+} from './presenters.js';
 
 /**
  * Home UI: the Home page (homes), one page per home (`/home/:id`), per thing
@@ -63,5 +70,12 @@ export default defineWebExtension({
 			component: () => import('./FileTargetHome.svelte'),
 		},
 	],
-	drafts: [addHomePresenter, addItemPresenter, updateItemPresenter],
+	drafts: [
+		addHomePresenter,
+		addItemPresenter,
+		updateItemPresenter,
+		archiveHomePresenter,
+		archiveItemPresenter,
+		archiveServicePresenter,
+	],
 });

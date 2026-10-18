@@ -393,6 +393,11 @@ export interface DraftPresenter<I = unknown> {
 	appliedLabel?(context: PresenterContext): string;
 	editor?: () => Promise<{ default: Component<DraftEditorProps<I>> }>;
 	/**
+	 * The action takes the thing away (a delete, a removal): while it waits, the thing's mark says
+	 * so ("Waiting for approval to remove") instead of listing what it would become.
+	 */
+	removes?: boolean;
+	/**
 	 * When a draft of another action offers to become a draft of this one (a new event that is
 	 * one already on the calendar): what is there already (`at` is when it is) and the button that
 	 * chooses it, e.g. "Already on the calendar: Regional Gala · Sat 7 Nov 18:00" and "Move it to
@@ -747,11 +752,38 @@ export function insteadOffer(draft: {
 }
 
 /**
+ * The presenter of an action that removes or archives one thing and has nothing else to show: its
+ * card reads as before ("Remove a treatment · Rabies", from the action's `draftTitle` key and the
+ * name stored with the draft), and while it waits the thing's mark says it would be removed.
+ */
+export function removalPresenter(options: {
+	actionId: string;
+	/** The card's kind, already a namespaced key (`pets:kind_treatment`). */
+	kindKey: string;
+	/** The action's `draftTitle` key (`pets:draft_title_remove_treatment`). */
+	titleKey: string;
+	icon?: Component;
+}): DraftPresenter<{ id: string; label?: string }> {
+	return {
+		actionId: options.actionId,
+		kind: (c) => c.t(options.kindKey),
+		...(options.icon ? { icon: options.icon } : {}),
+		title: (input, c) => {
+			const name = c.t(options.titleKey);
+			const label = input.label?.trim();
+			return label ? `${name} · ${label}` : name;
+		},
+		fields: () => [],
+		removes: true,
+	};
+}
+
+/**
  * What a mark beside a thing says while a change to it waits for approval: "Waiting for approval"
  * (to the person who asked) or "Suggested by Leo" (to one who may decide it, `by`), followed by
  * what the change makes of it, from the presenter of its action ("Due: Tue 20 Oct"). Each row gives
  * its new value alone (`DraftField.to`): the thing on screen already shows what it holds now.
- * Without a presenter, or rows, the plain words.
+ * Without a presenter, or rows, the plain words; a removal says only that it would remove it.
  */
 export function awaitingText(change: {
 	input: unknown;
@@ -762,6 +794,10 @@ export function awaitingText(change: {
 	by?: string;
 }): string {
 	const { context, presenter, by } = change;
+	if (presenter?.removes)
+		return by
+			? context.t('app:draft_waiting_remove_by', { name: by })
+			: context.t('app:draft_waiting_remove');
 	const waiting = by
 		? context.t('app:draft_waiting_by', { name: by })
 		: context.t('app:draft_waiting');
