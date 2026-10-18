@@ -9,6 +9,7 @@
 	"previous_week": "Previous week",
 	"next_week": "Next week",
 	"next_event": "Next",
+	"waiting_event": "Waiting for approval: {{title}}",
 	"nothing": "Nothing planned for this day.",
 	"nothing_hint": "Add what is coming up, and the whole family sees it.",
 	"field_title": "Title",

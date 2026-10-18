@@ -1,5 +1,4 @@
 import { unwrap } from '@famos/api-client';
-import { dayBounds } from '@famos/time';
 import { sharedRead } from '@famos/ui/famos';
 import type {
 	EventDetail,
@@ -43,12 +42,7 @@ export async function deleteEvent(id: string, occurrence?: string): Promise<Outc
 	return unwrap(await api.POST('/api/v1/actions/calendar.deleteEvent', { body })).status;
 }
 
-/** Whether an occurrence covers a local date (multi-day and past-midnight events included). */
-export function onDay(o: Occurrence, date: string, timeZone: string): boolean {
-	if (o.allDay) return (o.startDate as string) <= date && date <= (o.endDate as string);
-	const { start, end } = dayBounds(date, timeZone);
-	return (o.start as number) < end && (o.end as number) > start;
-}
+export { onDay } from './board.js';
 
 /* ───────────── Feeds out and subscriptions in ───────────── */
 

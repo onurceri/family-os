@@ -1,4 +1,4 @@
-import { addDays, Temporal, weekOf } from '@famos/time';
+import { addDays, dayBounds, Temporal, weekOf } from '@famos/time';
 import type { Occurrence } from '../contract/index.js';
 
 /** Helpers of the wide calendar board (week columns and month grid). Dates are `YYYY-MM-DD`. */
@@ -76,4 +76,11 @@ export function filterBoard(
 		if (members.length === 0 || o.memberIds.length === 0) return true;
 		return o.memberIds.some((id) => members.includes(id));
 	});
+}
+
+/** Whether an occurrence covers a local date (multi-day and past-midnight events included). */
+export function onDay(o: Occurrence, date: string, timeZone: string): boolean {
+	if (o.allDay) return (o.startDate as string) <= date && date <= (o.endDate as string);
+	const { start, end } = dayBounds(date, timeZone);
+	return (o.start as number) < end && (o.end as number) > start;
 }

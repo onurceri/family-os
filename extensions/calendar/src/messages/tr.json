@@ -9,6 +9,7 @@
 	"previous_week": "Önceki hafta",
 	"next_week": "Sonraki hafta",
 	"next_event": "Sıradaki",
+	"waiting_event": "Onay bekliyor: {{title}}",
 	"nothing": "Bu gün için plan yok.",
 	"nothing_hint": "Yaklaşan bir şeyi ekle, bütün aile görsün.",
 	"field_title": "Başlık",

@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { describeRecurrence } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { AwaitingMark, ConfirmButton, editLabel } from '@famos/ui/famos';
+	import { AwaitingMark, awaitingRowText, ConfirmButton, editLabel } from '@famos/ui/famos';
 	import type { EventDetail, Occurrence, Tag } from '../contract/index.js';
 	import { describeWhen } from './format.js';
 	import { reminderKey } from './form.js';
 	import { useCalendar } from './i18n.js';
 	import TagChip from './TagChip.svelte';
 	import { colorOf } from './tags.js';
+	import { isWaiting } from './waiting.js';
 
 	/** A family event's details in the side panel: when, who, where, reminder, tags, notes. */
 	let {
@@ -80,7 +81,14 @@
 </script>
 
 <div class="grid gap-5">
-	<AwaitingMark id={event.id} />
+	{#if isWaiting(occurrence)}
+		<!-- A new event nobody has approved yet: read-only, decided in Quick add. -->
+		<p class="text-ink-soft text-xs font-semibold" data-testid="approval-mark">
+			{awaitingRowText(app, occurrence.waiting).meta}
+		</p>
+	{:else}
+		<AwaitingMark id={event.id} />
+	{/if}
 	<dl class="grid gap-3 text-sm">
 		{#each rows as row (row.label)}
 			<div class="grid gap-0.5">

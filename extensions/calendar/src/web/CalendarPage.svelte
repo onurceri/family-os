@@ -4,6 +4,7 @@
 	import {
 		Avatar,
 		awaitingMarkText,
+		awaitingRowText,
 		ConfirmButton,
 		EmptyState,
 		focusFirstInvalid,
@@ -54,6 +55,7 @@
 	import TagChip from './TagChip.svelte';
 	import { toTimelineItem } from './timeline.js';
 	import { filterByTags, loadTagFilter, pruneSelection, saveTagFilter } from './tags.js';
+	import { isWaiting, NEW_EVENT_ACTION, waitingDetail, waitingOccurrences } from './waiting.js';
 
 	const { app, t } = useCalendar();
 	const tz = $derived(app.timeZone());
@@ -92,7 +94,10 @@
 	// Tag filter: remembered on this device. No selection shows everything.
 	let tags = $state<Tag[]>([]);
 	let tagFilter = $state<string[]>(loadTagFilter());
-	const visible = $derived(filterByTags(occurrences, tagFilter));
+	// New events that wait for approval (the signed-in member's own, and those they may decide)
+	// are drawn as ghosts among the saved ones, on the day they would be.
+	const waitingNew = $derived(waitingOccurrences(app.awaitedNew([NEW_EVENT_ACTION]), tz));
+	const visible = $derived(filterByTags([...occurrences, ...waitingNew], tagFilter));
 
 	function toggleTag(name: string) {
 		tagFilter = tagFilter.includes(name)
@@ -217,6 +222,7 @@
 	}
 
 	async function openEdit(occurrence: Occurrence) {
+		if (isWaiting(occurrence)) return void openOnBoard(occurrence);
 		if (!occurrence.editable) {
 			close();
 			viewing = occurrence;
@@ -250,6 +256,11 @@
 	/** Wide board: an event opens in the panel, as details first and the form on Edit. */
 	async function openOnBoard(occurrence: Occurrence) {
 		close();
+		// A suggestion that waits is read as it was asked for; it is decided in Quick add.
+		if (isWaiting(occurrence)) {
+			detail = { occurrence, event: waitingDetail(occurrence) };
+			return;
+		}
 		if (!occurrence.editable) {
 			viewing = occurrence;
 			return;
@@ -392,10 +403,13 @@
 	const agenda = $derived(
 		dayItems.map((o): TimelineItem => {
 			const item = toTimelineItem(o, day, app);
-			const change = app.awaitedChange(o.eventId);
-			const subtitle = change
-				? [awaitingMarkText(app, change), item.subtitle].filter(Boolean).join(' · ')
-				: item.subtitle;
+			const mark = isWaiting(o)
+				? awaitingRowText(app, o.waiting).meta
+				: (() => {
+						const change = app.awaitedChange(o.eventId);
+						return change ? awaitingMarkText(app, change) : null;
+					})();
+			const subtitle = mark ? [mark, item.subtitle].filter(Boolean).join(' · ') : item.subtitle;
 			return { ...item, ...(subtitle && { subtitle }), onselect: () => void openEdit(o) };
 		}),
 	);
@@ -847,8 +861,8 @@
 				{tags}
 				onedit={editDetail}
 				ondelete={remove}
-				{mayEdit}
-				{mayDelete}
+				mayEdit={mayEdit && !isWaiting(detail.occurrence)}
+				mayDelete={mayDelete && !isWaiting(detail.occurrence)}
 			/>
 		{:else}
 			{@render eventForm()}
