@@ -32,11 +32,12 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 		page.getByRole('group', { name: 'Shopping lists' }).getByText('Groceries', { exact: true }),
 	).toBeVisible();
 
-	// One line, several items; Enter adds and a leading amount becomes the quantity.
+	// One line, several items; Enter adds, a leading amount becomes the quantity and what follows it
+	// starts with a capital.
 	const composer = page.getByRole('textbox', { name: 'Add an item' });
 	await composer.fill('2 kg tomatoes, bread, milk');
 	await composer.press('Enter');
-	const tomatoes = page.getByRole('button', { name: /^tomatoes/ });
+	const tomatoes = page.getByRole('button', { name: /^Tomatoes/ });
 	await expect(tomatoes).toBeVisible();
 	await expect(tomatoes).toContainText('2 kg');
 	await expect(page.getByRole('button', { name: /^bread/ })).toBeVisible();
@@ -44,7 +45,7 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	await expect(composer).toHaveValue('');
 	expect((await shoppingItems(page)).map((i) => [i.title, i.quantity])).toEqual(
 		expect.arrayContaining([
-			['tomatoes', '2 kg'],
+			['Tomatoes', '2 kg'],
 			['bread', null],
 			['milk', null],
 		]),
@@ -63,13 +64,13 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	);
 
 	// Tick two items: they move to "In the cart" (folded) and stay ticked.
-	await page.getByRole('button', { name: /^tomatoes/ }).click();
+	await page.getByRole('button', { name: /^Tomatoes/ }).click();
 	await page.getByRole('button', { name: /^milk/ }).click();
 	const bought = page.getByRole('region', { name: 'In the cart' });
 	await expect(bought.getByRole('button', { name: /^In the cart/ })).toContainText('2');
-	await expect(bought.getByRole('button', { name: /^tomatoes/ })).toHaveCount(0);
+	await expect(bought.getByRole('button', { name: /^Tomatoes/ })).toHaveCount(0);
 	await bought.getByRole('button', { name: /^In the cart/ }).click();
-	await expect(bought.getByRole('button', { name: /^tomatoes/ })).toHaveAttribute(
+	await expect(bought.getByRole('button', { name: /^Tomatoes/ })).toHaveAttribute(
 		'aria-pressed',
 		'true',
 	);
@@ -92,7 +93,7 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	expect(await shoppingItems(page)).toHaveLength(3);
 	await bought.getByRole('button', { name: 'Tap again to clear' }).click();
 	await expect(page.getByRole('region', { name: 'In the cart' })).toHaveCount(0);
-	await expect(page.getByRole('button', { name: /^tomatoes/ })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /^Tomatoes/ })).toHaveCount(0);
 	expect((await shoppingItems(page)).map((i) => i.title).sort()).toEqual([
 		'milk',
 		'sourdough bread',
