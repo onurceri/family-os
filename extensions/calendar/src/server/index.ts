@@ -240,10 +240,9 @@ export const createEvent = defineAction({
 	output: EventDetailSchema,
 	approval: { unless: calendarEdit.id },
 	undo: (event) => ({ actionId: 'calendar.deleteEvent', input: { id: event.id } }),
-	alreadyThere: async (ctx, input) =>
-		eventExists(ctx.db, input, (await ctx.family.settings()).timeZone),
+	alreadyThere: async (ctx, input) => eventExists(ctx.db, input, await ctx.family.settings()),
 	// A message that an event moved arrives as a new event: the reviewer may move the one there.
-	instead: async (ctx, input) => movedEvent(ctx.db, input, (await ctx.family.settings()).timeZone),
+	instead: async (ctx, input) => movedEvent(ctx.db, input, await ctx.family.settings()),
 	// Over once its last day has passed; a repeating event still comes again, so it never expires.
 	draftDate: (input) => (input.recurrence ? undefined : (input.endDate ?? input.date)),
 	ai: {

@@ -3,6 +3,7 @@ import {
 	type Actor,
 	type AnyActionDefinition,
 	type Clock,
+	compareThing,
 	type DbExecutor,
 	type DraftAlternative,
 	type DraftMeta,
@@ -12,13 +13,15 @@ import {
 	isFamosError,
 	type JobQueue,
 	type Logger,
-	labelNamesTitle,
 	type MemberId,
 	type NotifyRequest,
+	namesThing,
 	type ProposalRefusal,
 	type ProposalRefusalDetails,
 	type SecretBox,
 	subjectOf,
+	targetOf,
+	UNSURE_TARGET,
 	type UndoStep,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -230,7 +233,8 @@ const QUOTE_MAX = 300;
 /**
  * The `details` of a refused AI proposal, so a caller can tell the person why it was left out
  * without reading the English message: what it asked for is already so (`settled`), it named
- * something other than what it pointed at (`other_target`), or it named nothing (`no_label`).
+ * something other than what it pointed at (`other_target`) or only partly named it
+ * (`unsure_target`), or it named nothing (`no_label`).
  * `subject` is what it was about, in the stored title or the model's words, when known.
  */
 const refusal = (refused: ProposalRefusal, subject?: string | null): ProposalRefusalDetails => ({
@@ -521,7 +525,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (before.outcome === 'refuse' && !before.depends) throw refusalError(before);
 		const parsed = parseOrThrow(def.input, rawInput, `input for ${actionId}`);
 		const input = def.resolveNames ? await def.resolveNames(readContext(def), parsed) : parsed;
-		const checkedTitle = await checkTarget(def, input, actor);
+		const { title: checkedTitle, unsure: targetUnsure } = await checkTarget(def, input, actor);
 		const settled = await settledReason(def, actor, input);
 		const decision = await decideInput(def, actor, input, settled);
 		if (decision.outcome === 'refuse') {
@@ -561,6 +565,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			: await namedSubject(def, input);
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		const subject = subjectOf(JSON.stringify(stored));
+		// A target the AI named only in another form of its words is shown as "check this".
+		const uncertainFields = [
+			...new Set([...(meta.uncertainFields ?? []), ...(targetUnsure ? [UNSURE_TARGET] : [])]),
+		];
 		// Personal drafts (memory, questions to a person) go to the member the assistant works for.
 		const personalTo =
 			actor.kind === 'ai' && def.ai?.addressToMember && actor.onBehalfOf ? actor.onBehalfOf : null;
@@ -619,9 +627,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					model: meta.model ?? null,
 					prompt_version: meta.promptVersion ?? null,
 					confidence: meta.confidence ?? null,
-					uncertain_fields: meta.uncertainFields?.length
-						? JSON.stringify(meta.uncertainFields)
-						: null,
+					uncertain_fields: uncertainFields.length ? JSON.stringify(uncertainFields) : null,
 					quote: meta.quote?.trim() ? meta.quote.trim().slice(0, QUOTE_MAX) : null,
 					dedupe_key: meta.dedupeKey ?? null,
 					decided_by: null,
@@ -1033,11 +1039,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		def: AnyActionDefinition,
 		input: unknown,
 		actor: Actor,
-	): Promise<string | null | undefined> {
+	): Promise<{ title: string | null | undefined; unsure: boolean }> {
 		// People see what they pick: nothing to check, and no query unless a draft needs the name.
-		if (actor.kind !== 'ai') return undefined;
+		if (actor.kind !== 'ai') return { title: undefined, unsure: false };
 		const ctx = readContext(def);
 		let title: string | null = null;
+		let unsure = false;
 		if (def.targetTitle) {
 			const label = (input as { label?: unknown } | null)?.label;
 			const said = typeof label === 'string' ? label.trim() : '';
@@ -1048,14 +1055,29 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					refusal('no_label'),
 				);
 			title = await def.targetTitle(ctx, input);
-			if (title !== null && !labelNamesTitle(said, title))
-				throw new FamosError(
-					'conflict',
-					`That is '${title}', not '${said}'.${CLOSED_MATTER}`,
-					refusal('other_target', said),
-				);
+			if (title !== null) {
+				const { locale } = await ctx.family.settings();
+				const match = compareThing(said, title, { language: locale });
+				const { band } = match;
+				// The words in another form ("biology tests" for "Biology test") are a guess the
+				// draft marks for a person to check; words that only partly name it are a question
+				// for the person, never a change made on a guess.
+				unsure = targetOf({ ...match, candidates: [title] }) === 'marked';
+				if (band === 'weak' && !unsure)
+					throw new FamosError(
+						'conflict',
+						`'${said}' may be '${title}', but does not surely name it. Ask the person which one they mean.`,
+						refusal('unsure_target', said),
+					);
+				if (band === 'none')
+					throw new FamosError(
+						'conflict',
+						`That is '${title}', not '${said}'.${CLOSED_MATTER}`,
+						refusal('other_target', said),
+					);
+			}
 		}
-		return title;
+		return { title, unsure };
 	}
 
 	/** Whether what an input proposes seems to exist already; only a hint, it never throws. */
@@ -1106,8 +1128,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// The draft's own words must name what it would change, as an AI's label must: an
 			// alternative is never the closest thing, whatever the action offering it found.
 			const said = subjectOf(JSON.stringify(input));
-			if (next.targetTitle && (title === null || !said || !labelNamesTitle(said, title)))
-				return null;
+			if (next.targetTitle) {
+				const { locale } = await ctx.family.settings();
+				if (title === null || !said || !namesThing(said, title, { language: locale })) return null;
+			}
 			if (next.refuseProposal && (await next.refuseProposal(ctx, resolved)) !== null) return null;
 			// Stored like every draft of that action: with the real title of what it changes.
 			const stored = title ? { ...(resolved as object), label: title.slice(0, 200) } : resolved;

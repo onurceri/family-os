@@ -77,11 +77,49 @@ describe('the words an AI uses for a thing must name it', () => {
 		).rejects.toMatchObject({ message: expect.stringContaining('Say which one you mean') });
 	});
 
-	it('accepts words that are all in the title, in any case, spacing or plural', async () => {
-		for (const label of ['  biology   TEST ', 'Biology', 'biology tests', 'Biology test (1 Mar)']) {
+	it('accepts words that are all in the title, in any case or spacing', async () => {
+		for (const label of ['  biology   TEST ', 'Biology', 'Biology test (1 Mar)']) {
 			const result = await k.runner.invoke('calendar.deleteEvent', { id: eventId, label }, AI);
 			expect(result.status).toBe('drafted');
 		}
+	});
+
+	it('drafts words in another form, with the target marked for a person to check', async () => {
+		// No plural rule of any language: "tests" is only another form of "test", so the draft
+		// goes ahead and its card says "check this".
+		const result = await k.runner.invoke(
+			'calendar.deleteEvent',
+			{ id: eventId, label: 'biology tests' },
+			AI,
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		const row = await k.ctx.db
+			.withTables<{ core_drafts: { id: string; uncertain_fields: string | null } }>()
+			.selectFrom('core_drafts')
+			.select('uncertain_fields')
+			.where('id', '=', result.draftId)
+			.executeTakeFirstOrThrow();
+		expect(JSON.parse(row.uncertain_fields ?? '[]')).toContain('id');
+	});
+
+	it('asks which one is meant when the words only partly name it', async () => {
+		const retake = await k.runner.invoke<{ id: string }>(
+			'calendar.createEvent',
+			{ title: 'Biology test retake', date: '2099-03-08', startTime: '09:00' },
+			admin.actor,
+		);
+		if (retake.status !== 'applied') throw new Error('expected applied');
+		await expect(
+			k.runner.invoke(
+				'calendar.deleteEvent',
+				{ id: retake.output.id, label: 'biology retake exam' },
+				AI,
+			),
+		).rejects.toMatchObject({
+			code: 'conflict',
+			details: { refused: 'unsure_target', subject: 'biology retake exam' },
+			message: expect.stringContaining('Ask the person which one they mean'),
+		});
 	});
 
 	it('stores the real title as the label of every draft, whoever proposed it', async () => {

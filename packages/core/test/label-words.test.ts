@@ -1,4 +1,4 @@
-import { labelNamesTitle, namedShares, searchFinds, significantWords } from '@famos/sdk';
+import { compareThing, namedShares, namesThing, searchFinds, significantWords } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 
 describe('namedShares', () => {
@@ -48,55 +48,62 @@ describe('significantWords', () => {
 	});
 });
 
-describe('labelNamesTitle', () => {
+describe('namesThing', () => {
 	it('needs every significant word of the label as a whole word of the title', () => {
-		expect(labelNamesTitle('Dental cleaning', 'Dentist checkup')).toBe(false);
-		expect(labelNamesTitle('Delft board meeting', 'Delft project call')).toBe(false);
-		expect(labelNamesTitle('anchovies', 'Olive oil')).toBe(false);
-		expect(labelNamesTitle('Milk', 'Oat milk')).toBe(true);
-		expect(labelNamesTitle('Oat milk', 'Oat milk')).toBe(true);
+		expect(namesThing('Dental cleaning', 'Dentist checkup')).toBe(false);
+		expect(namesThing('Delft board meeting', 'Delft project call')).toBe(false);
+		expect(namesThing('anchovies', 'Olive oil')).toBe(false);
+		expect(namesThing('Milk', 'Oat milk')).toBe(true);
+		expect(namesThing('Oat milk', 'Oat milk')).toBe(true);
 		// Not a part of a word.
-		expect(labelNamesTitle('dent', 'Dentist checkup')).toBe(false);
+		expect(namesThing('dent', 'Dentist checkup')).toBe(false);
 	});
 
 	it('also accepts a label that holds the whole title, like a leading article', () => {
-		expect(labelNamesTitle('the bread', 'Bread')).toBe(true);
-		expect(labelNamesTitle('milk', 'Oat milk')).toBe(true);
-		expect(labelNamesTitle('Dentist checkup tomorrow', 'Dentist checkup')).toBe(true);
-		expect(labelNamesTitle('the Delft board meeting', 'Delft project call')).toBe(false);
-		expect(labelNamesTitle('4', '4')).toBe(true);
+		expect(namesThing('the bread', 'Bread')).toBe(true);
+		expect(namesThing('milk', 'Oat milk')).toBe(true);
+		expect(namesThing('Dentist checkup tomorrow', 'Dentist checkup')).toBe(true);
+		expect(namesThing('the Delft board meeting', 'Delft project call')).toBe(false);
+		expect(namesThing('4', '4')).toBe(true);
 	});
 
-	it('ignores case, spacing, brackets and a trailing plural s', () => {
-		expect(labelNamesTitle('  DENTIST   checkups (14 Oct) ', 'Dentist checkup')).toBe(true);
-		expect(labelNamesTitle('Dentist checkup', 'Dentist checkups')).toBe(true);
+	it('ignores case, spacing and brackets', () => {
+		expect(namesThing('  DENTIST   checkup (14 Oct) ', 'Dentist checkup')).toBe(true);
+	});
+
+	it('has no plural rule of any language: another form is only a guess', () => {
+		expect(namesThing('Dentist checkup', 'Dentist checkups')).toBe(false);
+		expect(compareThing('Dentist checkup', 'Dentist checkups')).toEqual({
+			band: 'weak',
+			reason: 'forms',
+		});
 	});
 
 	it('refuses a label without a significant word unless it is the title', () => {
-		expect(labelNamesTitle('4', 'Oat milk')).toBe(false);
-		expect(labelNamesTitle('4', '4')).toBe(true);
-		expect(labelNamesTitle('  ', 'Oat milk')).toBe(false);
+		expect(namesThing('4', 'Oat milk')).toBe(false);
+		expect(namesThing('4', '4')).toBe(true);
+		expect(namesThing('  ', 'Oat milk')).toBe(false);
 	});
 });
 
-describe('codes and numbers in labelNamesTitle', () => {
+describe('codes and numbers in namesThing', () => {
 	it('tells classes and amounts apart', () => {
-		expect(labelNamesTitle('8.B trip to bled on thu 29.10', 'Class 1B trip to Bled')).toBe(false);
-		expect(labelNamesTitle('Class 3B trip to Bled', 'Class 1B trip to Bled')).toBe(false);
-		expect(labelNamesTitle('Pay 18 EUR', 'Pay 10 EUR for the bus')).toBe(false);
+		expect(namesThing('8.B trip to bled on thu 29.10', 'Class 1B trip to Bled')).toBe(false);
+		expect(namesThing('Class 3B trip to Bled', 'Class 1B trip to Bled')).toBe(false);
+		expect(namesThing('Pay 18 EUR', 'Pay 10 EUR for the bus')).toBe(false);
 	});
 
 	it('still matches the same code, and a side without codes', () => {
-		expect(labelNamesTitle('1B trip to Bled', 'Class 1B trip to Bled')).toBe(true);
-		expect(labelNamesTitle('Class 8.B trip', 'Class 8b trip to Bled')).toBe(true);
-		expect(labelNamesTitle('Class trip to Bled', 'Class 1B trip to Bled')).toBe(true);
-		expect(labelNamesTitle('Pay 10 EUR', 'Pay 10 EUR for the bus')).toBe(true);
+		expect(namesThing('1B trip to Bled', 'Class 1B trip to Bled')).toBe(true);
+		expect(namesThing('Class 8.B trip', 'Class 8b trip to Bled')).toBe(true);
+		expect(namesThing('Class trip to Bled', 'Class 1B trip to Bled')).toBe(true);
+		expect(namesThing('Pay 10 EUR', 'Pay 10 EUR for the bus')).toBe(true);
 	});
 
 	it('reads dotted and dashed codes, and ignores bracketed dates', () => {
-		expect(labelNamesTitle('Match u-13 (Sat 24.10)', 'Match U13')).toBe(true);
-		expect(labelNamesTitle('Match u-13', 'Match U15')).toBe(false);
-		expect(labelNamesTitle('Yüzme 3.A sınıfı', 'Yüzme 3a sınıfı gezisi')).toBe(true);
+		expect(namesThing('Match u-13 (Sat 24.10)', 'Match U13')).toBe(true);
+		expect(namesThing('Match u-13', 'Match U15')).toBe(false);
+		expect(namesThing('Yüzme 3.A sınıfı', 'Yüzme 3a sınıfı gezisi')).toBe(true);
 	});
 });
 
@@ -121,8 +128,8 @@ describe('searchFinds', () => {
 	});
 
 	it('does not loosen the check of which item a change names', () => {
-		expect(labelNamesTitle('swimming', 'Swim training')).toBe(false);
-		expect(labelNamesTitle('Swim', 'Swimming gala')).toBe(false);
+		expect(namesThing('swimming', 'Swim training')).toBe(false);
+		expect(namesThing('Swim', 'Swimming gala')).toBe(false);
 		expect(namedShares('swimming', ['Swim training'])).toEqual([0]);
 	});
 });

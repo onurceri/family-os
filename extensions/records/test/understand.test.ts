@@ -137,7 +137,11 @@ describe('news that a duty was done', () => {
 			records,
 		});
 		expect(either).toEqual({
-			refuse: { reason: 'ambiguous', subject: 'Car insurance', from: [0] },
+			refuse: {
+				reason: 'ambiguous',
+				subject: 'Car insurance (Car insurance Family car, Car insurance Van)',
+				from: [0],
+			},
 		});
 	});
 

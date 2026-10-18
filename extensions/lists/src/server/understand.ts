@@ -6,6 +6,7 @@ import {
 	peopleNamed,
 	type Resolution,
 	unsureFields,
+	whichOne,
 } from '@famos/sdk';
 import { firstWeekday, repeatRule } from '@famos/time';
 import {
@@ -299,7 +300,7 @@ export const bought = defineMentionKind({
 				continue;
 			}
 			if ('ambiguous' in found) {
-				out.push(refuse('ambiguous', words, [index]));
+				out.push(refuse('ambiguous', whichOne(words, found.ambiguous), [index]));
 				continue;
 			}
 			// Ticked off in the last days: the news is already on the list.
@@ -544,7 +545,7 @@ export const taskDone = defineMentionKind({
 				continue;
 			}
 			if ('ambiguous' in found) {
-				out.push(refuse('ambiguous', words, [index]));
+				out.push(refuse('ambiguous', whichOne(words, found.ambiguous), [index]));
 				continue;
 			}
 			out.push(refuse('found' in ctx.target(words, done) ? 'already' : 'unknown', words, [index]));

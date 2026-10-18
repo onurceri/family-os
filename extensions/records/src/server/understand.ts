@@ -1,11 +1,12 @@
 import {
 	defineMentionKind,
 	type IndexedMention,
-	labelNamesTitle,
 	type Mention,
 	type MentionContext,
 	type MentionRecord,
+	namesThing,
 	type Resolution,
+	whichOne,
 } from '@famos/sdk';
 import { compareDates } from '@famos/time';
 import {
@@ -67,7 +68,8 @@ async function resolveDuty(ctx: MentionContext, { index, mention }: IndexedMenti
 		.where('archived_at', 'is', null)
 		.execute();
 	// A notice about a duty that is already kept (a renewal reminder) asks for nothing new.
-	if (open.some((row) => labelNamesTitle(title, row.title))) return refuse('already', title, index);
+	if (open.some((row) => namesThing(title, row.title, { language: ctx.locale })))
+		return refuse('already', title, index);
 	const lapses = mention.variant === 'ends';
 	const every = lapses ? undefined : everyOf(mention.repeat);
 	const people = ctx.people(mention);
@@ -139,7 +141,7 @@ async function resolveDone(
 	}
 	const found = ctx.target(words, candidates);
 	if ('none' in found) return refuse('unknown', words, index);
-	if ('ambiguous' in found) return refuse('ambiguous', words, index);
+	if ('ambiguous' in found) return refuse('ambiguous', whichOne(words, found.ambiguous), index);
 	const duty = found.found;
 	const done = ctx.day(mention.date, 'past');
 	const next = ctx.day(mention.endDate, 'future');

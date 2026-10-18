@@ -504,8 +504,16 @@ describe('findTarget', () => {
 
 	it('finds a label the words name', () => {
 		expect(findTarget('the bread', list)).toEqual({ found: item('Bread') });
-		expect(findTarget('I paid the swim course fee', list)).toEqual({
+		expect(findTarget('the swim course fee', list)).toEqual({
 			found: item('Pay the swim course fee'),
+		});
+	});
+
+	it('asks rather than finds when most of a label is named but not all of it', () => {
+		// "paid" is not "pay": a partial match is a question for the person, never a change.
+		expect(findTarget('I paid the swim course fee', list)).toEqual({
+			ambiguous: [item('Pay the swim course fee')],
+			unsure: true,
 		});
 	});
 

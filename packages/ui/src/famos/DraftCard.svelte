@@ -144,6 +144,14 @@
 	$effect(() => oneditchange?.(editing));
 	const unsure = (f: DraftField) =>
 		[...(f.path ? [f.path] : []), ...(f.paths ?? [])].some((p) => uncertain.includes(p));
+	/**
+	 * Which thing it changes is a guess (its `id` is uncertain) and no field shows it: the title,
+	 * which names that thing, is marked instead, so the guess is never silent.
+	 */
+	const titleUnsure = $derived(
+		uncertain.includes('id') &&
+			!fields.some((f) => f.path === 'id' || (f.paths ?? []).includes('id')),
+	);
 	const picking = $derived(
 		Boolean(selectable) && canDecide && (status === 'pending' || status === 'failed'),
 	);
@@ -257,7 +265,15 @@
 					{#if icon}{@const Icon = icon}<Icon class="size-4" aria-hidden="true" />{/if}
 					<span>{kind}</span>
 				</div>
-				<h3 class="text-lg leading-snug font-extrabold text-balance">{title}</h3>
+				<h3 class="text-lg leading-snug font-extrabold text-balance">
+					<span
+						class={titleUnsure && status === 'pending'
+							? 'decoration-attention underline decoration-dashed underline-offset-4'
+							: ''}>{title}</span
+					>{#if titleUnsure && status === 'pending'}<span
+							class="text-attention ml-1 text-xs font-medium">· {labels.checkThis}</span
+						>{/if}
+				</h3>
 				{#if source}<p class="text-ink-soft -mt-2 text-xs">{source}</p>{/if}
 				{#if askedBy}<p class="text-ink-soft -mt-2 text-xs font-semibold">{askedBy}</p>{/if}
 			</div>

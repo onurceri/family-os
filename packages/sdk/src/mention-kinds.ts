@@ -68,7 +68,11 @@ export interface MentionContext extends DuplicateContext {
 	time(mention: Pick<Mention, 'time' | 'timeText'>): ResolvedTime | null;
 	/** The members a mention names (`resolvePeople`, with this reading's text and sharer). */
 	people(mention: Pick<Mention, 'people' | 'forMe' | 'peopleGuessed'>): PeopleResult;
-	/** Which candidate `target` words name (`findTarget`, checked against this reading's text). */
+	/**
+	 * Which candidate `target` words name (`findTarget` on `matchThing`, in the family language,
+	 * checked against this reading's text). Only a sure match is `found`; a partial one or a tie is
+	 * `ambiguous`, to be refused with `whichOne` so the person is asked.
+	 */
 	target<T extends { label: string }>(
 		words: string | undefined,
 		candidates: readonly T[],

@@ -512,13 +512,64 @@ describe('calendar.eventChange', () => {
 		);
 		expect(out).toEqual([
 			{ refuse: { reason: 'unknown', subject: 'piano recital', from: [0] } },
-			{ refuse: { reason: 'ambiguous', subject: 'football', from: [1] } },
+			{
+				refuse: {
+					reason: 'ambiguous',
+					subject: 'football (Football training, Football match)',
+					from: [1],
+				},
+			},
 			{ refuse: { reason: 'incomplete', subject: 'Football match', from: [2] } },
 		]);
 	});
 });
 
 describe('calendar.eventCancel', () => {
+	it('never cancels another class’s trip because most of its words are the same', async () => {
+		// Before one matcher decided it, "Class 3B trip" named all the words of "Class 1B trip"
+		// that counted, and the 1B trip was offered for cancelling.
+		await addEvent({ title: 'Class 1B trip', date: '2026-10-09', allDay: true });
+		const out = await resolve('calendar.eventCancel', [{ target: 'Class 3B trip' }], {
+			text: 'The Class 3B trip is cancelled',
+		});
+		expect(out).toEqual([{ refuse: { reason: 'unknown', subject: 'Class 3B trip', from: [0] } }]);
+	});
+
+	it('cancels the one event the words name in another form, marked for a person to check', async () => {
+		const lesson = await addEvent({ title: 'Swim lesson', date: '2026-10-08', startTime: '16:00' });
+		const out = await resolve(
+			'calendar.eventCancel',
+			[{ target: 'swim lessons', date: { text: 'thursday', weekday: 4 } }],
+			{ text: 'No swim lessons on thursday' },
+		);
+		expect(proposal(out[0])).toMatchObject({
+			actionId: 'calendar.deleteEvent',
+			input: { id: lesson.id },
+			targetTitle: 'Swim lesson',
+			uncertain: expect.arrayContaining(['id']),
+		});
+		expect(await draft(out[0])).toBe('drafted');
+	});
+
+	it('asks which one when the words in another form fit two events, and lets no day choose', async () => {
+		await addEvent({ title: 'Swim lesson Ivy', date: '2026-10-08', startTime: '16:00' });
+		await addEvent({ title: 'Swim lesson Tom', date: '2026-10-09', startTime: '16:00' });
+		const out = await resolve(
+			'calendar.eventCancel',
+			[{ target: 'swim lessons', date: { text: 'thursday', weekday: 4 } }],
+			{ text: 'No swim lessons on thursday' },
+		);
+		expect(out).toEqual([
+			{
+				refuse: {
+					reason: 'ambiguous',
+					subject: 'swim lessons (Swim lesson Ivy, Swim lesson Tom)',
+					from: [0],
+				},
+			},
+		]);
+	});
+
 	it('replays "football thursday was cancelled": only that date of the training goes', async () => {
 		const training = await footballTraining();
 		const out = await resolve(

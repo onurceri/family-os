@@ -6,7 +6,7 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
-	labelNamesTitle,
+	namesThing,
 	searchFinds,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -719,7 +719,7 @@ export const shoppingList = defineAction({
 				`There is no list called '${list}'. The lists are: ${lists.map((l) => l.name || DEFAULT_LIST_LABEL).join(', ')}. Use one of these names, or leave the list out for all lists.`,
 			);
 		const matches = (r: ItemRow) =>
-			!text || labelNamesTitle(text, r.title) || searchFinds(text, r.title);
+			!text || namesThing(text, r.title, { language: locale }) || searchFinds(text, r.title);
 		const boughtSince = uow.clock.now() - BOUGHT_VISIBLE_MS;
 		const first = await collect(chosen);
 		// An item looked for on a named list that is on another one instead is shown there: "the

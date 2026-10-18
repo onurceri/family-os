@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { labelNamesTitle, namedShares } from './label-words.ts';
+import { type MatchOptions, matchThing, targetOf } from './match-thing.ts';
 
 /**
  * What a model reads from a message, in a small flat shape that is the same whatever extensions
@@ -146,7 +146,8 @@ export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 
 /**
  * Why an action refused an AI's call, in the one list above: a person may not (`forbidden`), it
- * is already so (the runner's `settled`), what it names is not there (the runner's `other_target`,
+ * is already so (the runner's `settled`), it is not sure which thing is meant (the runner's
+ * `unsure_target`), what it names is not there (the runner's `other_target`,
  * `not_found`, or an input that fails on the field naming the record), else incomplete.
  */
 export function refusalOf(error: { code: string; details?: unknown }): RefusalReason {
@@ -156,6 +157,7 @@ export function refusalOf(error: { code: string; details?: unknown }): RefusalRe
 		const refused = (error.details as { refused?: unknown } | null | undefined)?.refused;
 		if (refused === 'settled') return 'already';
 		if (refused === 'other_target') return 'unknown';
+		if (refused === 'unsure_target') return 'ambiguous';
 	}
 	if (error.code === 'bad_request') {
 		const tree = error.details as { properties?: Record<string, unknown> } | null | undefined;
@@ -588,77 +590,63 @@ export function resolvePeople(
 	return { ids, certain, unmatched };
 }
 
-/** Which of some candidates the words name. */
-export type TargetResult<T> = { found: T } | { none: true } | { ambiguous: readonly T[] };
-
-/** A partly named candidate counts only when more than this share of its words is named. */
-const MIN_SHARE = 0.5;
-
-const plain = (text: string) => text.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
-
-/** The one candidate scoring highest, when it scores more than `floor` and nothing ties it. */
-function bestOf<T>(candidates: readonly T[], scores: readonly number[], floor: number): T | null {
-	const best = Math.max(...scores);
-	if (!(best > floor)) return null;
-	const top = candidates.filter((_, i) => scores[i] === best);
-	return top.length === 1 ? (top[0] as T) : null;
-}
+/**
+ * Which of some candidates the words name: the one surely named, nothing, or things it may be
+ * that a person must choose between (`ambiguous`). `unsure` marks those that are only partly
+ * named (most of the words, or the words in other forms), rather than several that fit as well:
+ * nothing may pick one of them for the person, not even the day.
+ */
+export type TargetResult<T> =
+	| { found: T; unsure?: true }
+	| { none: true }
+	| { ambiguous: readonly T[]; unsure?: true };
 
 /**
  * Which existing thing a mention's `target` words name, among the candidates an extension reads
- * from its own tables:
- * 1. a label equal to the words (spaces and case aside);
- * 2. else labels the words name by `labelNamesTitle` ("the bread" and "Bread", "Milk" and
- *    "Oat milk"), the one that fits the words best when several do;
- * 3. else the one label whose words they name most by `namedShares`, when more than half of it.
- * Several equal fits are `ambiguous`; none is `none`. With `text` (the shared message), the
- * choice must also be the one the message names: when the message names none of it, or names
- * another candidate more, it is `none`, because the words point at something else; among
- * ambiguous fits, the one the message names most is taken.
+ * from its own tables, by `matchThing`: an `exact` or `strong` match is `found`; the one thing
+ * named by other forms of the same words is `found` with `unsure` (the proposal marks its target
+ * for a person to check: `UNSURE_TARGET`); any other `weak` match is `ambiguous` (several equally
+ * good, or a partial match only the person can confirm); nothing is `none`. With `text` (the
+ * shared message), the choice must also be the thing the message names most.
  */
 export function findTarget<T extends { label: string }>(
 	words: string | undefined,
 	candidates: readonly T[],
-	options: { text?: string | null } = {},
+	options: MatchOptions = {},
 ): TargetResult<T> {
-	const wanted = words?.trim() ?? '';
-	if (wanted === '' || candidates.length === 0) return { none: true };
-	const labels = candidates.map((c) => c.label);
-	const shares = namedShares(wanted, labels);
+	const match = matchThing(words, candidates, options);
+	if (match.band === 'none' || !match.candidate) return { none: true };
+	const acted = targetOf(match);
+	if (acted === 'sure') return { found: match.candidate };
+	if (acted === 'marked') return { found: match.candidate, unsure: true };
+	// Several equally good names may still be told apart (by the day); guesses never are.
+	return match.reason === 'several' && match.each !== 'weak'
+		? { ambiguous: match.candidates }
+		: { ambiguous: match.candidates, unsure: true };
+}
 
-	let fits: readonly T[] = candidates.filter((c) => plain(c.label) === plain(wanted));
-	if (fits.length === 0) {
-		const named = candidates.filter((c) => labelNamesTitle(wanted, c.label));
-		// How much of the label the words name, then how much of the words the label holds:
-		// "the oat milk" names all of "Milk" and of "Oat milk", but "Oat milk" holds more of it.
-		const score = (c: T) =>
-			(shares[candidates.indexOf(c)] ?? 0) + (namedShares(c.label, [wanted])[0] ?? 0);
-		const most = bestOf(named, named.map(score), Number.NEGATIVE_INFINITY);
-		fits = most ? [most] : named;
-	}
-	if (fits.length === 0) {
-		const most = bestOf(candidates, shares, MIN_SHARE);
-		if (most) fits = [most];
-		else {
-			const best = Math.max(...shares);
-			fits = best > MIN_SHARE ? candidates.filter((_, i) => shares[i] === best) : [];
-		}
-	}
-	if (fits.length === 0) return { none: true };
+/**
+ * The input field a proposal lists as uncertain when the thing it changes is a guess: the `id`
+ * of what it changes, ticks or cancels. A card shows it as "check this" on what it names.
+ */
+export const UNSURE_TARGET = 'id';
 
-	const text = options.text?.trim();
-	if (!text) return fits.length === 1 ? { found: fits[0] as T } : { ambiguous: fits };
-	const inText = namedShares(text, labels);
-	const shareOf = (c: T) => inText[candidates.indexOf(c)] ?? 0;
-	let chosen: T | null = fits.length === 1 ? (fits[0] as T) : null;
-	if (chosen === null) {
-		chosen = bestOf(fits, fits.map(shareOf), 0);
-		if (chosen === null) return { ambiguous: fits };
-	}
-	const share = shareOf(chosen);
-	if (share === 0) return { none: true };
-	if (candidates.some((c) => c !== chosen && shareOf(c) > share)) return { none: true };
-	return { found: chosen };
+/** At most this many things are named in a "which one?" line. */
+const WHICH_MAX = 3;
+
+/**
+ * The subject of a refusal that asks which one is meant: the person's words, then the things they
+ * may mean, by their own names ("football (Football training, Football match)"). Names that only
+ * say the words again are left out: two things called "Fish" are told as "Fish".
+ */
+export function whichOne(words: string, candidates: readonly { label: string }[]): string {
+	const said = words.trim().toLocaleLowerCase();
+	const names = [...new Set(candidates.map((c) => c.label.trim()).filter(Boolean))].filter(
+		(name) => name.toLocaleLowerCase() !== said,
+	);
+	if (names.length === 0) return words;
+	const shown = names.slice(0, WHICH_MAX).join(', ');
+	return `${words} (${names.length > WHICH_MAX ? `${shown}, …` : shown})`;
 }
 
 /*

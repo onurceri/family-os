@@ -28,7 +28,7 @@ export type RecordPick<T> =
  * The text naming one record while the words name another is `ambiguous`.
  */
 export function pickRecord<T extends { label: string }>(
-	ctx: Pick<MentionContext, 'target' | 'text'>,
+	ctx: Pick<MentionContext, 'target' | 'text' | 'locale'>,
 	about: string | undefined,
 	candidates: readonly T[],
 ): RecordPick<T> {
@@ -38,6 +38,7 @@ export function pickRecord<T extends { label: string }>(
 		? namedShares(
 				text,
 				candidates.map((c) => c.label),
+				{ language: ctx.locale },
 			)
 		: [];
 	const named = shares.some((share) => share > 0);
@@ -50,14 +51,14 @@ export function pickRecord<T extends { label: string }>(
 		return top.length === 1 && chosen ? { found: chosen, certain: true } : { refuse: 'ambiguous' };
 	}
 	const said = ctx.target(about, candidates);
-	if ('found' in said) return { found: said.found, certain: true };
+	if ('found' in said) return { found: said.found, certain: !said.unsure };
 	if ('ambiguous' in said) return { refuse: 'ambiguous' };
 	if (text && named) {
 		// The words do not name what the text names: one of them points elsewhere.
-		const alone = findTarget(about, candidates);
+		const alone = findTarget(about, candidates, { language: ctx.locale });
 		return 'none' in alone ? { refuse: 'unknown' } : { refuse: 'ambiguous' };
 	}
-	const alone = findTarget(about, candidates);
+	const alone = findTarget(about, candidates, { language: ctx.locale });
 	if ('found' in alone) return { found: alone.found, certain: false };
 	return 'ambiguous' in alone ? { refuse: 'ambiguous' } : { refuse: 'unknown' };
 }

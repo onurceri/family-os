@@ -263,7 +263,15 @@ describe('lists.bought', () => {
 		const out = await resolve('lists.bought', [{ target: 'picture' }], {
 			text: 'got the picture stuff',
 		});
-		expect(out).toEqual([{ refuse: { reason: 'ambiguous', subject: 'picture', from: [0] } }]);
+		expect(out).toEqual([
+			{
+				refuse: {
+					reason: 'ambiguous',
+					subject: 'picture (Picture hooks, Picture wire)',
+					from: [0],
+				},
+			},
+		]);
 	});
 
 	it('ticks an item once when the message names it twice', async () => {

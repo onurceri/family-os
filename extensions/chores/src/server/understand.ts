@@ -4,6 +4,7 @@ import {
 	type Mention,
 	type MentionContext,
 	type Resolution,
+	whichOne,
 } from '@famos/sdk';
 import { type Recurrence, Temporal, WEEKDAYS } from '@famos/time';
 import { tables } from './store.ts';
@@ -116,7 +117,7 @@ function resolveDone(
 		const finished = chores.filter((c) => c.next_due === null);
 		return refuse('found' in ctx.target(words, finished) ? 'already' : 'unknown', words, index);
 	}
-	if ('ambiguous' in found) return refuse('ambiguous', words, index);
+	if ('ambiguous' in found) return refuse('ambiguous', whichOne(words, found.ambiguous), index);
 	const chore = found.found;
 	const people = ctx.people(mention);
 	const [doneBy] = people.ids;
@@ -144,7 +145,7 @@ function resolveTurns(
 	if (people.ids.length === 0) return refuse('incomplete', words, index);
 	const found = ctx.target(words, chores);
 	if ('none' in found) return refuse('unknown', words, index);
-	if ('ambiguous' in found) return refuse('ambiguous', words, index);
+	if ('ambiguous' in found) return refuse('ambiguous', whichOne(words, found.ambiguous), index);
 	const chore = found.found;
 	if (people.ids.join() === chore.memberIds.join()) return refuse('already', words, index);
 	return {

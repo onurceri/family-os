@@ -1,4 +1,4 @@
-import { type DbExecutor, type DraftAlternative, labelNamesTitle, namedShares } from '@famos/sdk';
+import { type DbExecutor, type DraftAlternative, matchThing, namesThing } from '@famos/sdk';
 import { addDays, zoned } from '@famos/time';
 import type { EventInput, Occurrence } from '../contract/index.ts';
 import { occurrencesBetween, SAME_EVENT_DAYS } from './store.ts';
@@ -18,24 +18,27 @@ const daysBetween = (a: string, b: string) => Math.abs(Date.parse(a) - Date.pars
  * The change that moves that event (or, for a repeating event, the one date of it nearest the new
  * day) to what the new event says, or null.
  *
- * Only an event whose title and the new title name each other word for word (`labelNamesTitle`)
- * counts, within a month either side. When several events do, the one the new title names most
- * (`namedShares`) is meant; a tie names none of them. A new event that is already there at that
+ * Only an event the new title surely names (`matchThing`, `exact` or `strong`: the words of one
+ * title are all words of the other, and no code or number differs) counts, within a month either
+ * side. When several events do, the one the new title names most is meant; a tie, or a title
+ * that only partly names an event, names none of them. A new event that is already there at that
  * very time, or a new repeating event, is not a move.
  */
 export async function movedEvent(
 	db: DbExecutor,
 	input: EventInput,
-	timeZone: string,
+	settings: { timeZone: string; locale: string },
 ): Promise<DraftAlternative | null> {
 	if (input.recurrence) return null;
+	const { timeZone } = settings;
+	const words = { language: settings.locale };
 	const near = await occurrencesBetween(
 		db,
 		addDays(input.date, -SAME_EVENT_DAYS),
 		addDays(input.date, SAME_EVENT_DAYS),
 		timeZone,
 	);
-	const named = near.filter((o) => labelNamesTitle(input.title, o.title));
+	const named = near.filter((o) => namesThing(input.title, o.title, words));
 	if (named.length === 0) return null;
 	const allDay = input.allDay ?? false;
 	const already = named.some((o) => {
@@ -44,15 +47,13 @@ export async function movedEvent(
 	});
 	if (already) return null;
 
-	const ids = [...new Set(named.map((o) => o.eventId))];
-	const titles = ids.map((id) => named.find((o) => o.eventId === id)?.title ?? '');
-	const shares = namedShares(input.title, titles);
-	const best = Math.max(...shares);
-	const top = ids.filter((_, i) => shares[i] === best);
-	if (top.length !== 1) return null;
+	const events = new Map(named.map((o) => [o.eventId, { id: o.eventId, label: o.title }]));
+	const match = matchThing(input.title, [...events.values()], words);
+	if (match.band !== 'exact' && match.band !== 'strong') return null;
+	const chosen = match.candidate?.id;
 
 	const nearest = named
-		.filter((o) => o.eventId === top[0])
+		.filter((o) => o.eventId === chosen)
 		.map((o) => ({ o, at: startOf(o, timeZone) }))
 		.sort(
 			(a, b) =>

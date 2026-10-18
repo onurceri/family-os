@@ -5,6 +5,7 @@ import {
 	type Mention,
 	type MentionContext,
 	type Resolution,
+	whichOne,
 } from '@famos/sdk';
 import { Temporal } from '@famos/time';
 import { aiContext, aiContextItems } from './context.ts';
@@ -63,7 +64,9 @@ function resolveChange(
 	const found = ctx.target(words, things);
 	if ('none' in found) return { refuse: { reason: 'unknown', subject: words, from: [index] } };
 	if ('ambiguous' in found)
-		return { refuse: { reason: 'ambiguous', subject: words, from: [index] } };
+		return {
+			refuse: { reason: 'ambiguous', subject: whichOne(words, found.ambiguous), from: [index] },
+		};
 	const thing = found.found;
 	const bought = ctx.day(mention.date, 'past');
 	const warranty = warrantyOf(

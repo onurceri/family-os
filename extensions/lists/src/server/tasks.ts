@@ -6,7 +6,7 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
-	labelNamesTitle,
+	namesThing,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -150,7 +150,8 @@ export const addTask = defineAction({
 		return rows.some(
 			(row) =>
 				(row.due_date === due && titleKey(row.title, locale) === key) ||
-				((row.done_at === null || row.due_date === due) && labelNamesTitle(input.title, row.title)),
+				((row.done_at === null || row.due_date === due) &&
+					namesThing(input.title, row.title, { language: locale })),
 		);
 	},
 	ai: {

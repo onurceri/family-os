@@ -43,7 +43,9 @@ const read = async (text = TEXT) => {
 	});
 	await k.worker.drain();
 };
-const drafts = (): Promise<{ id: string; actionId: string; input: Record<string, unknown> }[]> =>
+const drafts = (): Promise<
+	{ id: string; actionId: string; input: Record<string, unknown>; uncertainFields: string[] }[]
+> =>
 	k.route('core.listDrafts').call({
 		query: { sourceKind: 'inbox', limit: 50 },
 		actor: admin.actor,
@@ -124,10 +126,23 @@ describe('ticking something off from a shared message', () => {
 		expect(await item()).toMatchObject({ proposals: 0, skipped: 1, skippedUnknown: 1 });
 	});
 
-	it('keeps a tick-off whose item the text names in other order and plural', async () => {
+	it('keeps a tick-off whose item the text names in other order', async () => {
+		k.llm.respond(bought('light bulbs E27'));
+		await read('Got the light bulbs E27 already');
+		expect(await drafts()).toHaveLength(1);
+	});
+
+	it('ticks the item the words name in another form, marked for a person to check', async () => {
+		// No plural rule of any language: "bulb" for "bulbs" is a guess the card shows.
 		k.llm.respond(bought('light bulb E27'));
 		await read('Got the light bulb E27 already');
-		expect(await drafts()).toHaveLength(1);
+		const [tick, ...rest] = await drafts();
+		expect(rest).toHaveLength(0);
+		expect(tick).toMatchObject({
+			actionId: 'lists.checkShoppingItem',
+			input: { label: 'E27 light bulbs' },
+			uncertainFields: expect.arrayContaining(['id']),
+		});
 	});
 
 	it('tells an unlisted item from an incomplete suggestion', async () => {

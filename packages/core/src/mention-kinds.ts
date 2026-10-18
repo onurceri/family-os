@@ -21,6 +21,7 @@ import {
 	type Resolution,
 	resolvePeople,
 	type SettledResolution,
+	type TargetResult,
 } from '@famos/sdk';
 import { clockTimes, dateWords, numericDateOrder, resolveDay, todayIn, zoned } from '@famos/time';
 import type { Registry } from './registry.ts';
@@ -174,7 +175,11 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 		});
 	};
 
-	const contextFor = async (extension: string, env: MentionEnv): Promise<MentionContext> => {
+	const contextFor = async (
+		extension: string,
+		env: MentionEnv,
+		guessed: Set<string>,
+	): Promise<MentionContext> => {
 		const settings = await deps.family.settings();
 		const members = (await deps.family.members()).map((m) => ({
 			id: m.id,
@@ -188,6 +193,12 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 		// Read for each reading: a language pack installed since brings its words.
 		const dates = dateWords(deps.vocabulary);
 		const text = env.text;
+		/** Remembers a target found only by other forms of its words, to mark it on the proposal. */
+		const noted = <T>(result: TargetResult<T>): TargetResult<T> => {
+			const id = 'found' in result && result.unsure ? (result.found as { id?: unknown }).id : null;
+			if (typeof id === 'string') guessed.add(id);
+			return result;
+		};
 		return {
 			db: deps.readDb(extension),
 			family: deps.family,
@@ -248,15 +259,37 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 					text,
 					locale: settings.locale,
 				}),
-			target: (targetWords, candidates) => findTarget(targetWords, candidates, { text }),
+			target: (targetWords, candidates) =>
+				noted(findTarget(targetWords, candidates, { text, language: settings.locale })),
 			record: (aboutWords, kinds) =>
-				findTarget<MentionRecord>(
-					aboutWords,
-					kinds ? env.records.filter((r) => kinds.includes(r.kind)) : env.records,
-					{ text },
+				noted(
+					findTarget<MentionRecord>(
+						aboutWords,
+						kinds ? env.records.filter((r) => kinds.includes(r.kind)) : env.records,
+						{ text, language: settings.locale },
+					),
 				),
 		};
 	};
+
+	/**
+	 * Every proposal that changes a target the words named only in another form lists the field
+	 * holding it as uncertain, whatever the resolver said: the card shows it as "check this", so a
+	 * guess about which thing is meant is never silent.
+	 */
+	const markGuesses = (resolutions: Resolution[], guessed: ReadonlySet<string>): Resolution[] =>
+		guessed.size === 0
+			? resolutions
+			: resolutions.map((r) => {
+					if (!('propose' in r) || typeof r.propose.input !== 'object' || !r.propose.input)
+						return r;
+					const fields = Object.entries(r.propose.input as Record<string, unknown>)
+						.filter(([, value]) => typeof value === 'string' && guessed.has(value))
+						.map(([key]) => key);
+					if (fields.length === 0) return r;
+					const uncertain = [...new Set([...(r.propose.uncertain ?? []), ...fields])];
+					return { propose: { ...r.propose, uncertain } };
+				});
 
 	/** A kind's resolver on some of its mentions, its answer held to them. */
 	const run = async (
@@ -266,16 +299,17 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 	): Promise<Resolution[]> => {
 		const { kind, extension } = owned;
 		let returned: readonly unknown[] = [];
+		const guessed = new Set<string>();
 		if (given.length > 0) {
 			try {
-				const out: unknown = await kind.resolve(await contextFor(extension, env), given);
+				const out: unknown = await kind.resolve(await contextFor(extension, env, guessed), given);
 				if (Array.isArray(out)) returned = out;
 				else deps.logger.warn({ kind: kind.id }, 'a resolver returned no list');
 			} catch (error) {
 				deps.logger.error({ err: error, kind: kind.id }, 'a resolver failed');
 			}
 		}
-		return settleResolutions(kind, given, returned, deps.logger);
+		return markGuesses(settleResolutions(kind, given, returned, deps.logger), guessed);
 	};
 
 	return {

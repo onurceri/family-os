@@ -77,6 +77,26 @@ describe('DraftCard', () => {
 		}
 	});
 
+	it('marks the title when which thing it changes is a guess and no field shows it', () => {
+		const guessed = (fields: { label: string; value: string; path?: string }[]) =>
+			render(DraftCard, {
+				kind: 'Event',
+				title: 'Swim lesson',
+				fields,
+				uncertain: ['id'],
+				status: 'pending',
+				labels,
+				onapprove: vi.fn(),
+				onreject: vi.fn(),
+			});
+		expect(guessed([]).querySelector('h3')?.textContent).toContain('Check this');
+		cleanup();
+		// A field that shows the target carries the mark itself, once.
+		const shown = guessed([{ label: 'Change', value: 'Mark done', path: 'id' }]);
+		expect(shown.querySelector('h3')?.textContent).not.toContain('Check this');
+		expect(shown.querySelector('dl')?.textContent).toContain('Check this');
+	});
+
 	it('lets the person behind a waiting suggestion withdraw it, and only them', () => {
 		const onwithdraw = vi.fn();
 		const waiting = (withdraw: boolean) =>

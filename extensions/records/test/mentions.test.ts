@@ -6,8 +6,9 @@ const CLIO = { id: 'v1', label: 'Clio' };
 const GOLF = { id: 'v2', label: 'Golf' };
 const reading = (text: string | null) => ({
 	text,
+	locale: 'en',
 	target: <T extends { label: string }>(words: string | undefined, candidates: readonly T[]) =>
-		findTarget(words, candidates, { text }),
+		findTarget(words, candidates, { text, language: 'en' }),
 });
 
 describe('which record a mention is about', () => {

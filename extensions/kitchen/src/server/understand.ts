@@ -3,6 +3,7 @@ import {
 	type IndexedMention,
 	type MentionContext,
 	type Resolution,
+	whichOne,
 } from '@famos/sdk';
 import { addDays } from '@famos/time';
 import { isHttpUrl, MEAL_SLOTS, type MealSlot } from '../contract/index.ts';
@@ -142,7 +143,7 @@ async function resolveMealOff(ctx: MentionContext, { index, mention }: IndexedMe
 	}));
 	const found = ctx.target(words, meals);
 	if ('none' in found) return refuse('unknown', words, index);
-	if ('ambiguous' in found) return refuse('ambiguous', words, index);
+	if ('ambiguous' in found) return refuse('ambiguous', whichOne(words, found.ambiguous), index);
 	return {
 		propose: {
 			actionId: 'kitchen.removeMealPlanEntry',

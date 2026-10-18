@@ -1,13 +1,14 @@
 import {
 	defineMentionKind,
 	endNamed,
-	labelNamesTitle,
 	type Mention,
 	type MentionContext,
+	namesThing,
 	peopleNamed,
 	type Resolution,
 	type ResolvedDay,
 	unsureFields,
+	whichOne,
 } from '@famos/sdk';
 import { addDays, dateLocale, formatDate, repeatRule, zoned } from '@famos/time';
 import { MAX_TAG_LENGTH, type Occurrence, tagKey } from '../contract/index.ts';
@@ -55,7 +56,8 @@ const refuse = (
 const daysApart = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86_400_000;
 
 /** Whether two titles name one event (`eventExists`'s test). */
-const sameEvent = (a: string, b: string) => sameTitle(a, b) || labelNamesTitle(a, b);
+const sameEvent = (ctx: MentionContext, a: string, b: string) =>
+	sameTitle(a, b) || namesThing(a, b, { language: ctx.locale });
 
 /** The family's own events with a date in the range, each with its dates in order. */
 async function eventsBetween(ctx: MentionContext, from: string, to: string) {
@@ -180,7 +182,7 @@ async function newEvent(
 	// The same event already on the calendar that very day (and time): leave it out.
 	const sameDay = await occurrencesBetween(ctx.db, date, date, ctx.timeZone);
 	const there = sameDay.some((o) => {
-		if (!sameEvent(title, o.title)) return false;
+		if (!sameEvent(ctx, title, o.title)) return false;
 		const at = startOf(o, ctx.timeZone);
 		return at.date === date && (allDay || at.time === time?.time);
 	});
@@ -243,7 +245,8 @@ async function sameEventNear(
 		ctx.timeZone,
 	);
 	const same = near.filter((o) => {
-		if (o.recurring || o.source !== null || !o.editable || !sameEvent(title, o.title)) return false;
+		if (o.recurring || o.source !== null || !o.editable || !sameEvent(ctx, title, o.title))
+			return false;
 		const at = startOf(o, ctx.timeZone);
 		return at.date !== date && (time === null || o.allDay || at.time === time.time);
 	});
@@ -436,13 +439,15 @@ function eventNamed(
 ): Found {
 	const found = ctx.target(words, coming);
 	if ('found' in found) return { event: found.found };
-	if ('ambiguous' in found && day) {
+	if ('none' in found) return { refusal: refuse('unknown', words, [index]) };
+	// The day decides only between events the words name equally well, never for a guess.
+	if (day && !found.unsure) {
 		const onDay = found.ambiguous.filter((e) =>
 			e.dates.some((o) => within(startOf(o, ctx.timeZone).date, day)),
 		);
 		if (onDay.length === 1) return { event: onDay[0] as (typeof coming)[number] };
 	}
-	return { refusal: refuse('ambiguous' in found ? 'ambiguous' : 'unknown', words, [index]) };
+	return { refusal: refuse('ambiguous', whichOne(words, found.ambiguous), [index]) };
 }
 
 /** The date of an event nearest to a day (the earlier one on a tie). */
