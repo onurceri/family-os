@@ -88,6 +88,14 @@ export default defineWebExtension({
 			requires: 'lists.view',
 			component: () => import('./DisplayTasks.svelte'),
 		},
+		{
+			// What is still to buy, on a screen of its own between Today's turns on a family display.
+			slot: 'display.page',
+			id: 'lists.shopping',
+			labelKey: 'lists:shopping',
+			requires: 'lists.view',
+			component: () => import('./DisplayShopping.svelte'),
+		},
 	],
 	timeline: [tasksTimeline],
 	drafts: [
