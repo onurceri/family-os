@@ -3,6 +3,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { recordsEdit, recordsView } from './capabilities.ts';
+import { dueBetween, recordsDigest } from './digest.ts';
 import {
 	attachDocument,
 	detachDocument,
@@ -44,6 +45,8 @@ export default defineExtension({
 	actions: [
 		aiContext,
 		upcoming,
+		recordsDigest,
+		dueBetween,
 		addObligation,
 		updateObligation,
 		completeObligation,

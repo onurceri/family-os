@@ -21,6 +21,7 @@
 		"calls": [
 			"records.addObligation",
 			"records.archiveForRecord",
+			"records.dueBetween",
 			"records.renameRecord"
 		]
 	},

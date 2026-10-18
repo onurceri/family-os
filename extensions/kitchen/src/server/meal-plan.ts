@@ -1,7 +1,11 @@
 import {
+	type DigestItem,
 	type DuplicateContext,
 	defineAction,
+	defineDigest,
 	defineRoute,
+	digestNotes,
+	digestOf,
 	FamosError,
 	storedAsWhole,
 	type UnitOfWork,
@@ -11,6 +15,7 @@ import { z } from 'zod';
 import {
 	AddToMealPlanSchema,
 	MEAL_SLOTS,
+	type MealEntry,
 	MealEntryFieldsSchema,
 	MealEntrySchema,
 	MealIdSchema,
@@ -265,5 +270,45 @@ export const aiMealPlan = defineAction({
 				note: `Nothing is planned in the meal plan from ${start} to ${addDays(start, days - 1)}. A meal out or at someone else's home would be on the calendar.`,
 			}),
 		};
+	},
+});
+
+/** How far past the span the meals digest looks for the next meal planned. */
+const NEXT_MEAL_DAYS = 366;
+
+const mealItem = (meal: MealEntry): DigestItem => {
+	const notes = digestNotes(meal.note);
+	return {
+		handle: meal.id,
+		kind: 'meal',
+		title: meal.title,
+		date: meal.date,
+		people: [],
+		...(notes && { notes }),
+		extra: { slot: meal.slot, ...(meal.recipeId && { recipe: meal.recipeId }) },
+	};
+};
+
+/**
+ * The meals planned in a span, in day and slot order. Meals are the family's, so the people asked
+ * about never leave one out. A day with nothing planned has nothing here: a dinner elsewhere is an
+ * event, which the calendar's digest carries.
+ */
+export const mealsDigest = defineDigest({
+	id: 'kitchen.digest',
+	topic: 'meals',
+	title: 'Meals planned in some days, for an answer',
+	description:
+		'The meals planned between two days: the day, the slot (breakfast, lunch, dinner or other), the dish and its note.',
+	requires: kitchenView.id,
+	async run(uow, input) {
+		const meals = await mealsBetween(uow.db, input.from, input.to);
+		return digestOf(meals.map(mealItem), input, {
+			async next() {
+				const after = addDays(input.to, 1);
+				const [first] = await mealsBetween(uow.db, after, addDays(after, NEXT_MEAL_DAYS));
+				return first ? mealItem(first) : null;
+			},
+		});
 	},
 });

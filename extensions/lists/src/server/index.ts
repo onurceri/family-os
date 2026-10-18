@@ -3,6 +3,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { aiContext, aiContextTasks } from './context.ts';
+import { shoppingDigest, tasksDigest } from './digest.ts';
 import { remindJob, taskDueKind } from './reminders.ts';
 import {
 	addShoppingItems,
@@ -52,6 +53,8 @@ export default defineExtension({
 	actions: [
 		openTasks,
 		shoppingList,
+		tasksDigest,
+		shoppingDigest,
 		aiContext,
 		aiContextTasks,
 		addTask,

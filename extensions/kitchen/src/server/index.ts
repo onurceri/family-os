@@ -7,6 +7,7 @@ import {
 	addToMealPlan,
 	aiMealPlan,
 	getMealPlan,
+	mealsDigest,
 	removeMealPlanEntry,
 	updateMealPlanEntry,
 } from './meal-plan.ts';
@@ -47,6 +48,7 @@ export default defineExtension({
 		addIngredientsToShopping,
 		aiListRecipes,
 		aiMealPlan,
+		mealsDigest,
 	],
 	routes: [searchRecipesRoute, getRecipe, getRecipePhoto, uploadRecipePhoto, getMealPlan],
 	events: [kitchenChanged],

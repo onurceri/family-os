@@ -1,8 +1,12 @@
 import {
 	type Actor,
+	type DigestItem,
 	defineAction,
+	defineDigest,
 	defineJob,
 	defineRoute,
+	digestNotes,
+	digestOf,
 	type ExtensionContext,
 	FamosError,
 	FileResponseSchema,
@@ -539,6 +543,58 @@ export const aiListNotes = defineAction({
 				author: r.created_by,
 			})),
 		};
+	},
+});
+
+/** How much of a note's text titles its digest item; the rest is its notes. */
+const DIGEST_TITLE_MAX = 200;
+
+/**
+ * The notes that are on the board on some day of a span, in board order (pinned first). A note
+ * is for everyone, so the people asked about never leave one out. Each stands on the first day
+ * of the span it is up, and says the last day it stays up.
+ */
+export const boardDigest = defineDigest({
+	id: 'board.digest',
+	topic: 'board',
+	title: 'Notes on the family board in some days, for an answer',
+	description:
+		'The notes on the family board on the days asked about, pinned first: what the family told each other, who wrote it, when it went up and the last day it stays.',
+	requires: boardView.id,
+	async run(uow, input) {
+		const { timeZone } = await uow.family.settings();
+		const start = dayBounds(input.from, timeZone).start;
+		const end = dayBounds(input.to, timeZone).end;
+		const rows = await tables(uow.db)
+			.selectFrom('board_notes')
+			.selectAll()
+			.where('created_at', '<', end)
+			.where((eb) => eb.or([eb('ends_at', 'is', null), eb('ends_at', '>', start)]))
+			.orderBy('pinned', 'desc')
+			.orderBy(sql`position is null`)
+			.orderBy('position')
+			.orderBy('created_at', 'desc')
+			.orderBy('id', 'desc')
+			.execute();
+		const items = rows.map((row): DigestItem => {
+			const posted = zoned(row.created_at, timeZone).toPlainDate().toString();
+			const lastDay = endsOnOf(row.ends_at, timeZone);
+			const text = row.text.trim();
+			const long = text.length > DIGEST_TITLE_MAX;
+			const notes = long ? digestNotes(text) : undefined;
+			return {
+				handle: row.id,
+				kind: 'note',
+				title: long ? `${text.slice(0, DIGEST_TITLE_MAX - 1).trimEnd()}…` : text,
+				date: compareDates(posted, input.from) < 0 ? input.from : posted,
+				...(lastDay && { end: { date: lastDay } }),
+				people: [],
+				...(notes && { notes }),
+				...(row.pinned === 1 && { status: 'pinned' as const }),
+				extra: { posted, ...(row.created_by && { author: row.created_by }) },
+			};
+		});
+		return digestOf(items, input);
 	},
 });
 

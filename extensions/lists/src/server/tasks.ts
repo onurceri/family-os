@@ -5,6 +5,7 @@ import {
 	defineCapability,
 	defineEvent,
 	defineRoute,
+	digestNotes,
 	FamosError,
 	namesThing,
 	storedAsWhole,
@@ -531,6 +532,10 @@ export const openTasks = defineAction({
 					.describe('The weekday of `dueDate`, in English: read it from here, never work it out'),
 				dueTime: z.string().nullable(),
 				repeats: z.boolean(),
+				notes: z
+					.string()
+					.optional()
+					.describe("What the task's notes say; left out when it has none"),
 			}),
 		),
 		truncated: z.boolean(),
@@ -582,6 +587,8 @@ export const openTasks = defineAction({
 				...(r.due_date && { dueWeekday: formatDate(r.due_date, 'en', { weekday: 'long' }) }),
 				dueTime: r.due_time,
 				repeats: r.rrule !== null,
+				// Without them a model says a task "has no notes".
+				...(digestNotes(r.notes) && { notes: digestNotes(r.notes) }),
 			})),
 			truncated: rows.length > MAX_TASKS,
 		};

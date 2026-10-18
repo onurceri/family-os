@@ -434,7 +434,7 @@ const MAX_CONTEXT = 50;
  * Open obligations that still matter on `today`: every duty, late or not, but a date that only
  * passes (a warranty ends) no longer once its day is over.
  */
-const openUntil = (db: ReturnType<typeof tables>, today: string) =>
+export const openUntil = (db: ReturnType<typeof tables>, today: string) =>
 	db
 		.selectFrom('records_obligations')
 		.selectAll()
@@ -447,7 +447,7 @@ const openUntil = (db: ReturnType<typeof tables>, today: string) =>
  * capabilities are gone for it, so its duties, names and dates never reach a prompt.
  * Unknown audience: records.view.
  */
-const aiMayRead = (uow: UnitOfWork, audience: string) => {
+export const aiMayRead = (uow: UnitOfWork, audience: string) => {
 	if (uow.actor.kind !== 'ai') return true;
 	try {
 		return uow.can(audience);

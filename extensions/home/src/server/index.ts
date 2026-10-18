@@ -4,6 +4,7 @@ import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { homeEdit, homeView } from './capabilities.ts';
 import { aiContext, aiContextItems } from './context.ts';
+import { homeDigest } from './digest.ts';
 import { addHome, archiveHome, getHome, listHomes, updateHome } from './homes.ts';
 import { addItem, archiveItem, getItem, listItems, updateItem } from './items.ts';
 import { searchIndex } from './search.ts';
@@ -36,6 +37,7 @@ export default defineExtension({
 		archiveService,
 		aiContext,
 		aiContextItems,
+		homeDigest,
 	],
 	routes: [listHomes, getHome, listItems, getItem, listServices, getService],
 	events: [homeChanged],

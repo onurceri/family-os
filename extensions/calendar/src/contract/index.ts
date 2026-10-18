@@ -199,7 +199,7 @@ export const OccurrenceSchema = z.object({
 	memberIds: z.array(z.string()),
 	location: z.string().nullable(),
 	recurring: z.boolean(),
-	/** Only external events carry their notes here; family events open in the editor. */
+	/** External events carry their notes; a family event's notes come only to the AI's reads. */
 	notes: z.string().nullable(),
 	/** Null for the family's own events. */
 	source: OccurrenceSourceSchema.nullable(),

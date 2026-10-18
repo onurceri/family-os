@@ -4884,6 +4884,550 @@
 				}
 			}
 		},
+		"/api/v1/actions/chores.digest": {
+			"post": {
+				"operationId": "chores.digest",
+				"summary": "Chore turns in some days, for an answer",
+				"tags": [
+					"actions",
+					"chores"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"from": {
+										"type": "string",
+										"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+									},
+									"to": {
+										"type": "string",
+										"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+									},
+									"memberIds": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"maxItems": 20
+									},
+									"about": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"minLength": 1,
+											"maxLength": 80
+										},
+										"maxItems": 10
+									}
+								},
+								"required": [
+									"from",
+									"to"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"items": {
+															"type": "array",
+															"items": {
+																"type": "object",
+																"properties": {
+																	"handle": {
+																		"type": [
+																			"string",
+																			"null"
+																		]
+																	},
+																	"kind": {
+																		"type": "string",
+																		"enum": [
+																			"event",
+																			"task",
+																			"shopping_list",
+																			"chore",
+																			"meal",
+																			"duty",
+																			"note",
+																			"suggestion"
+																		]
+																	},
+																	"title": {
+																		"type": "string",
+																		"minLength": 1,
+																		"maxLength": 300
+																	},
+																	"date": {
+																		"type": "string",
+																		"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																	},
+																	"time": {
+																		"type": "string",
+																		"pattern": "^\\d{2}:\\d{2}$"
+																	},
+																	"end": {
+																		"type": "object",
+																		"properties": {
+																			"date": {
+																				"type": "string",
+																				"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																			},
+																			"time": {
+																				"type": "string",
+																				"pattern": "^\\d{2}:\\d{2}$"
+																			}
+																		}
+																	},
+																	"allDay": {
+																		"type": "boolean"
+																	},
+																	"people": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		}
+																	},
+																	"notes": {
+																		"type": "string",
+																		"maxLength": 301
+																	},
+																	"status": {
+																		"type": "string",
+																		"enum": [
+																			"past",
+																			"now",
+																			"upcoming",
+																			"overdue",
+																			"pinned",
+																			"waiting",
+																			"failed"
+																		]
+																	},
+																	"extra": {
+																		"type": "object",
+																		"additionalProperties": {
+																			"type": "string",
+																			"maxLength": 300
+																		}
+																	}
+																},
+																"required": [
+																	"handle",
+																	"kind",
+																	"title",
+																	"date",
+																	"people"
+																]
+															}
+														},
+														"truncated": {
+															"type": "boolean"
+														},
+														"nextAfter": {
+															"type": "object",
+															"properties": {
+																"handle": {
+																	"type": [
+																		"string",
+																		"null"
+																	]
+																},
+																"kind": {
+																	"type": "string",
+																	"enum": [
+																		"event",
+																		"task",
+																		"shopping_list",
+																		"chore",
+																		"meal",
+																		"duty",
+																		"note",
+																		"suggestion"
+																	]
+																},
+																"title": {
+																	"type": "string",
+																	"minLength": 1,
+																	"maxLength": 300
+																},
+																"date": {
+																	"type": "string",
+																	"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																},
+																"time": {
+																	"type": "string",
+																	"pattern": "^\\d{2}:\\d{2}$"
+																},
+																"end": {
+																	"type": "object",
+																	"properties": {
+																		"date": {
+																			"type": "string",
+																			"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																		},
+																		"time": {
+																			"type": "string",
+																			"pattern": "^\\d{2}:\\d{2}$"
+																		}
+																	}
+																},
+																"allDay": {
+																	"type": "boolean"
+																},
+																"people": {
+																	"type": "array",
+																	"items": {
+																		"type": "string"
+																	}
+																},
+																"notes": {
+																	"type": "string",
+																	"maxLength": 301
+																},
+																"status": {
+																	"type": "string",
+																	"enum": [
+																		"past",
+																		"now",
+																		"upcoming",
+																		"overdue",
+																		"pinned",
+																		"waiting",
+																		"failed"
+																	]
+																},
+																"extra": {
+																	"type": "object",
+																	"additionalProperties": {
+																		"type": "string",
+																		"maxLength": 300
+																	}
+																}
+															},
+															"required": [
+																"handle",
+																"kind",
+																"title",
+																"date",
+																"people"
+															]
+														},
+														"hidden": {
+															"type": "integer",
+															"minimum": 1
+														}
+													},
+													"required": [
+														"items",
+														"truncated"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/api/v1/actions/chores.todayByMember": {
 			"post": {
 				"operationId": "chores.todayByMember",

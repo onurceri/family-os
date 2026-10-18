@@ -5,6 +5,7 @@ import tr from '../messages/tr.json' with { type: 'json' };
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
 import {
 	aiListNotes,
+	boardDigest,
 	cleanupJob,
 	deleteFileJob,
 	editNote,
@@ -32,7 +33,17 @@ export default defineExtension({
 	messages: { en, tr },
 	migrations,
 	ai: { kinds: [noteKind] },
-	actions: [postNote, editNote, removeNote, pinNote, moveNote, markSeen, setNotePhoto, aiListNotes],
+	actions: [
+		postNote,
+		editNote,
+		removeNote,
+		pinNote,
+		moveNote,
+		markSeen,
+		setNotePhoto,
+		aiListNotes,
+		boardDigest,
+	],
 	routes: [getNotes, getNotePhoto, uploadNotePhoto],
 	jobs: [deleteFileJob, cleanupJob],
 	events: [boardChanged],

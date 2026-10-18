@@ -3,6 +3,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { petsEdit, petsView } from './capabilities.ts';
+import { petsDigest } from './digest.ts';
 import {
 	addPet,
 	addTreatment,
@@ -28,7 +29,7 @@ export default defineExtension({
 	messages: { en, tr },
 	migrations,
 	ai: { context: aiContext.id, kinds: [treatmentKind] },
-	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext],
+	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext, petsDigest],
 	routes: [listPets, getPet, listTreatments],
 	events: [petChanged],
 	capabilities: [petsView, petsEdit],

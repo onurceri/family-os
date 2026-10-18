@@ -14,6 +14,7 @@ import {
 	undoDone,
 	updateChore,
 } from './chores.ts';
+import { choresDigest } from './digest.ts';
 import { choreDueKind, remindJob } from './reminders.ts';
 import { choresChanged } from './shared.ts';
 import { migrations } from './store.ts';
@@ -38,6 +39,7 @@ export default defineExtension({
 		markDone,
 		undoDone,
 		listChores,
+		choresDigest,
 		todayByMemberAction,
 	],
 	routes: [listAllChores, getChore, getTodayByMember],

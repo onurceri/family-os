@@ -451,12 +451,17 @@ export const sortOccurrences = (list: Occurrence[], timeZone: string): Occurrenc
 	return list.sort((a, b) => sortKey(a) - sortKey(b) || a.title.localeCompare(b.title));
 };
 
-/** Occurrences of the family's own events overlapping the inclusive local date range. */
+/**
+ * Occurrences of the family's own events overlapping the inclusive local date range. Their notes
+ * come only with `withNotes`: a calendar page opens the event to read them, an answer about the
+ * days needs them at once.
+ */
 export async function occurrencesBetween(
 	db: DbExecutor,
 	from: string,
 	to: string,
 	timeZone: string,
+	options: { withNotes?: boolean } = {},
 ): Promise<Occurrence[]> {
 	const rangeStart = dayBounds(from, timeZone).start;
 	const rangeEnd = dayBounds(to, timeZone).end;
@@ -488,7 +493,7 @@ export async function occurrencesBetween(
 			memberIds: JSON.parse(row.member_ids) as string[],
 			location: row.location,
 			recurring: row.rrule !== null,
-			notes: null,
+			notes: options.withNotes === true ? row.notes : null,
 			source: null,
 			editable: true,
 			tags: tagsOf(row.tags),

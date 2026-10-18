@@ -3,6 +3,7 @@ import {
 	defineAction,
 	defineExtension,
 	defineRoute,
+	digestNotes,
 	FamosError,
 	searchFinds,
 	storedAsWhole,
@@ -44,6 +45,7 @@ import {
 	tagChanged,
 } from './capabilities.ts';
 import { aiContextEvents } from './context.ts';
+import { calendarDigest } from './digest.ts';
 import { createFeed, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
 import { movedEvent } from './moved.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
@@ -749,6 +751,16 @@ const MAX_RANGE_DAYS = 62;
 
 const MAX_FOUND = 60;
 
+/**
+ * The most days (a week) a text search that found nothing lists the other events of: the thing
+ * asked about may be among them under other words.
+ */
+const UNMATCHED_MAX_DAYS = 7;
+
+/** How many days a range covers, both ends included. */
+const daysIn = (from: string, to: string) =>
+	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+
 /** How far past the searched range a search for the next match looks. */
 const NEXT_MATCH_DAYS = 366;
 
@@ -777,6 +789,10 @@ const FoundEventSchema = z.object({
 	time: z.string().nullable().describe('HH:MM-HH:MM local time; null for all-day events'),
 	memberIds: z.array(z.string()).describe('Left out means the whole family'),
 	location: z.string().nullable(),
+	notes: z
+		.string()
+		.optional()
+		.describe("What the event's notes say (what to bring, details); left out when it has none"),
 	tags: z.array(z.string()),
 	recurring: z.literal(true).optional().describe('Only on repeating events'),
 	external: z.literal(true).optional().describe('Only on events from a subscribed calendar'),
@@ -833,7 +849,7 @@ export const findEvents = defineAction({
 			.array(FoundEventSchema)
 			.optional()
 			.describe(
-				'Only when a search by `text` found nothing but the range has other events: those events, so the answer can come from them (a "pick-up" may be a "Swimming lesson")',
+				'Only when a search by `text` over at most 7 days found nothing but those days have other events: those events, so the answer can come from them (a "pick-up" may be a "Swimming lesson")',
 			),
 		note: z.string().optional(),
 		nextMatch: z
@@ -889,7 +905,7 @@ export const findEvents = defineAction({
 		}
 		const between = async (a: string, b: string, byMembers = true, bySearch = true) => {
 			const [own, external] = await Promise.all([
-				occurrencesBetween(uow.db, a, b, timeZone),
+				occurrencesBetween(uow.db, a, b, timeZone, { withNotes: true }),
 				externalOccurrencesBetween(uow.db, a, b, timeZone),
 			]);
 			return sortOccurrences([...own, ...external], timeZone)
@@ -930,14 +946,20 @@ export const findEvents = defineAction({
 				);
 		}
 		// A search by words that matched nothing does not mean the range is empty: the person's
-		// words ("pick up") need not be the title's ("Swimming lesson"). Say what else is there.
+		// words ("pick up") need not be the title's ("Swimming lesson"). Over a few days, say what
+		// else is there; over a longer range that would be the whole calendar and bury the answer,
+		// so the note asks for fewer days instead.
 		let unmatched: Found[] = [];
 		if (all.length === 0 && needle && forOthers.length === 0) {
 			const rest = await between(from, to, true, false);
-			if (rest.length > 0) {
+			if (rest.length > 0 && daysIn(from, to) <= UNMATCHED_MAX_DAYS) {
 				unmatched = rest.slice(0, MAX_FOUND);
 				notes.push(
 					`No event's title or place matches "${text}", but ${rest.length === 1 ? 'this other event is' : `these ${rest.length} other events are`} in the range (see unmatched); the one asked about may be among them under other words.`,
+				);
+			} else if (rest.length > 0) {
+				notes.push(
+					`No event's title or place matches "${text}". Search a shorter range (a day or a week) to see what else is on.`,
 				);
 			}
 		}
@@ -976,6 +998,7 @@ export const findEvents = defineAction({
 						.toPlainDate()
 						.toString();
 			const when = whenOf(o, now, today);
+			const notes = digestNotes(o.notes);
 			return {
 				id: o.source === null ? o.eventId : null,
 				...(o.recurring && { occurrence: o.key }),
@@ -990,6 +1013,8 @@ export const findEvents = defineAction({
 						: null,
 				memberIds: o.memberIds,
 				location: o.location,
+				// Without them a model says an event "has no notes" about what to bring.
+				...(notes && { notes }),
 				tags: o.tags,
 				// Flags only when set: most events are neither, and every field costs tokens.
 				...(o.recurring && { recurring: true as const }),
@@ -1059,6 +1084,7 @@ export default defineExtension({
 	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id], kinds: calendarKinds },
 	actions: [
 		findEvents,
+		calendarDigest,
 		createEvent,
 		updateEvent,
 		changeEvent,

@@ -243,6 +243,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/actions/kitchen.digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Meals planned in some days, for an answer */
+        post: operations["kitchen.digest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2448,6 +2465,197 @@ export interface operations {
                                 recipeId: string | null;
                             }[];
                             note?: string;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "kitchen.digest": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    from: string;
+                    to: string;
+                    memberIds?: string[];
+                    about?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            items: {
+                                handle: string | null;
+                                /** @enum {string} */
+                                kind: "event" | "task" | "shopping_list" | "chore" | "meal" | "duty" | "note" | "suggestion";
+                                title: string;
+                                date: string;
+                                time?: string;
+                                end?: {
+                                    date?: string;
+                                    time?: string;
+                                };
+                                allDay?: boolean;
+                                people: string[];
+                                notes?: string;
+                                /** @enum {string} */
+                                status?: "past" | "now" | "upcoming" | "overdue" | "pinned" | "waiting" | "failed";
+                                extra?: {
+                                    [key: string]: string;
+                                };
+                            }[];
+                            truncated: boolean;
+                            nextAfter?: {
+                                handle: string | null;
+                                /** @enum {string} */
+                                kind: "event" | "task" | "shopping_list" | "chore" | "meal" | "duty" | "note" | "suggestion";
+                                title: string;
+                                date: string;
+                                time?: string;
+                                end?: {
+                                    date?: string;
+                                    time?: string;
+                                };
+                                allDay?: boolean;
+                                people: string[];
+                                notes?: string;
+                                /** @enum {string} */
+                                status?: "past" | "now" | "upcoming" | "overdue" | "pinned" | "waiting" | "failed";
+                                extra?: {
+                                    [key: string]: string;
+                                };
+                            };
+                            hidden?: number;
                         };
                     } | {
                         /** @enum {string} */
