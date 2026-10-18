@@ -18,6 +18,7 @@ import {
 	itemTitle,
 	metaLine,
 	needsAction,
+	needsEntries,
 	pickedByDefault,
 	pickedDrafts,
 	requestChip,
@@ -252,11 +253,63 @@ describe('requests that are not from a capture', () => {
 		expect(requestGroups([request({ status: 'failed' })])).toHaveLength(1);
 	});
 
+	describe('what one share made', () => {
+		const share = (id: string, over: Partial<Draft> = {}) =>
+			request({
+				id,
+				sourceKind: 'inbox',
+				sourceId: 'inbox_item_1',
+				proposedBy: { kind: 'ai', mode: 'share', source: 'inbox', onBehalfOf: 'leo' },
+				...over,
+			});
+
+		it('counts once however many suggestions it made, and others as they are', () => {
+			expect(
+				decidableCount([
+					share('a'),
+					share('b'),
+					share('c'),
+					share('other item', { sourceId: 'inbox_item_2' }),
+					request({ id: 'asked' }),
+					// A share by one who cannot be asked is not theirs to decide.
+					share('not mine', { sourceId: 'inbox_item_3', canDecide: false }),
+				]),
+			).toBe(3);
+		});
+
+		it('is one line in Needs you that opens the share, or a plain row for a single one', () => {
+			const entries = needsEntries([
+				share('b', { createdAt: 2 }),
+				share('a', { createdAt: 1 }),
+				share('alone', { sourceId: 'inbox_item_2', createdAt: 3 }),
+				request({ id: 'asked', createdAt: 4 }),
+				share('decided', { sourceId: 'inbox_item_4', status: 'applied' }),
+			]);
+			expect(
+				entries.map((e) => [e.kind, e.kind === 'share' ? e.drafts.map((d) => d.id) : e.draft.id]),
+			).toEqual([
+				['share', ['a', 'b']],
+				['draft', 'alone'],
+				['draft', 'asked'],
+			]);
+			expect(entries[0]).toMatchObject({ sourceId: 'inbox_item_1' });
+			// The line count and the badge agree.
+			expect(entries).toHaveLength(
+				decidableCount([
+					share('a'),
+					share('b'),
+					share('alone', { sourceId: 'inbox_item_2' }),
+					request({ id: 'asked' }),
+				]),
+			);
+		});
+	});
+
 	it('counts what the person may decide, as the badge does', () => {
 		expect(
 			decidableCount([
-				request({}),
-				request({ status: 'failed' }),
+				request({ id: 'one' }),
+				request({ id: 'two', status: 'failed' }),
 				// Their own request, waiting for someone else.
 				request({ canDecide: false }),
 				request({ status: 'applied' }),

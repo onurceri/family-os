@@ -30,7 +30,21 @@
 	const canDecide = $derived(app.can('core.drafts.approve'));
 	const recent = $derived(feed.recentEntries);
 	const selectedId = $derived(app.query().get('capture'));
-	const selected = $derived(selectedId ? feed.capture(selectedId) : undefined);
+	// A capture that waits is decided in its group on the page; the panel is for the others.
+	const waitingIds = $derived(new Set(entries.map((e) => e.key)));
+	const selected = $derived(
+		selectedId && !waitingIds.has(selectedId) ? feed.capture(selectedId) : undefined,
+	);
+	// A link to a waiting group (from Today) brings the group into view once it is there.
+	let shownId = '';
+	$effect(() => {
+		if (!selectedId || !waitingIds.has(selectedId) || shownId === selectedId) return;
+		const group = document.getElementById(`capture-${selectedId}`);
+		if (!group) return;
+		shownId = selectedId;
+		group.scrollIntoView({ block: 'start', behavior: 'smooth' });
+		group.focus({ preventScroll: true });
+	});
 	const requestId = $derived(app.query().get('request'));
 	const request = $derived(requestId ? feed.decidedRequest(requestId) : undefined);
 

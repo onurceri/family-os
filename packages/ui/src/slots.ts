@@ -699,10 +699,12 @@ export function defineWebExtension(
 
 export {
 	askedBy,
+	type DraftUnavailable,
 	draftHeadline,
 	draftKicker,
 	namedInput,
 	proposedByMember,
+	unavailableLine,
 } from './draft-title.ts';
 
 /**

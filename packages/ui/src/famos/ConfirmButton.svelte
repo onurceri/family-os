@@ -14,6 +14,7 @@
 		size = 'sm',
 		disabled = false,
 		look,
+		name,
 	}: {
 		label: string;
 		confirmLabel: string;
@@ -26,6 +27,12 @@
 		 * second tap on an approval that may add a duplicate).
 		 */
 		look?: string;
+		/**
+		 * What the button is called for a screen reader while it waits for the first tap, when the
+		 * same label appears more than once on a page ("Dismiss the rest" in every group). Armed, it
+		 * says its confirmation.
+		 */
+		name?: string;
 	} = $props();
 
 	let armed = $state(false);
@@ -52,6 +59,7 @@
 	onclick={click}
 	onblur={() => (armed = false)}
 	aria-live="polite"
+	aria-label={name ? (armed ? confirmLabel : name) : undefined}
 	data-armed={armed}
 	class={look
 		? ['rounded-lg font-bold disabled:opacity-50', look]

@@ -120,6 +120,13 @@ export interface ActionRunnerDeps {
 	draftNotifyDelayMs?: number;
 }
 
+/** Why a waiting draft cannot be decided: see `ActionRunner.unavailable`. */
+export interface DraftUnavailable {
+	reason: 'not_installed' | 'turned_off';
+	/** The extension its action belongs to. */
+	extension: string;
+}
+
 export interface ActionRunner {
 	invoke<O = unknown>(
 		actionId: string,
@@ -156,6 +163,18 @@ export interface ActionRunner {
 	mayDecide(draft: DraftRow, actor: Actor): boolean;
 	/** Whether this actor is the member behind the draft (who proposed it, or who the AI proposed it for). */
 	isProposer(actor: Actor, draft: DraftRow): boolean;
+	/**
+	 * Why nobody can decide a waiting draft right now: the extension its action belongs to is not
+	 * installed, or is turned off. Null when its action runs. The draft is kept: a reinstall (or
+	 * switching the extension on) brings it back as an ordinary waiting suggestion.
+	 */
+	unavailable(draft: DraftRow): DraftUnavailable | null;
+	/**
+	 * Saves what a person changed on a waiting suggestion (`core.editDraft`), validated by its
+	 * action's input schema. Whoever may decide it, or is the member behind it, may. Approving then
+	 * applies the saved edit. Runs inside the caller's unit of work.
+	 */
+	editDraft(uow: UnitOfWork, draftId: string, input: unknown): Promise<DraftRow>;
 	/** Whether a pending draft's change seems to exist already (the action's `alreadyThere`). */
 	mayExist(draft: DraftRow): Promise<boolean | 'some'>;
 	/**
@@ -756,9 +775,15 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return approver.memberId;
 	}
 
+	function unavailable(draft: DraftRow): DraftUnavailable | null {
+		const extension = ownerOf(draft.action_id);
+		if (!registry.actions.has(draft.action_id)) return { reason: 'not_installed', extension };
+		return deps.features.isOn(extension) ? null : { reason: 'turned_off', extension };
+	}
+
 	function mayDecide(draft: DraftRow, actor: Actor): boolean {
 		const def = registry.actions.get(draft.action_id);
-		if (!def) return false;
+		if (!def || unavailable(draft)) return false;
 		try {
 			assertApprover(actor, def, draft);
 			return true;
@@ -778,6 +803,38 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	/** Whether this actor is the member behind the draft (they may take their own suggestion back). */
 	function isProposer(actor: Actor, draft: DraftRow): boolean {
 		return actor.kind === 'member' && proposerOf(draft) === actor.memberId;
+	}
+
+	async function editDraft(uow: UnitOfWork, draftId: string, input: unknown): Promise<DraftRow> {
+		const actor = uow.actor;
+		const draft = await getDraft(uow.db, draftId);
+		assertAddressee(actor, draft);
+		if (actor.kind !== 'member')
+			throw new FamosError('forbidden', 'Only a person edits a suggestion');
+		const waits = unavailable(draft) !== null;
+		const allowed =
+			isProposer(actor, draft) ||
+			mayDecide(draft, actor) ||
+			(waits && can(actor, 'core.drafts.approve'));
+		if (!allowed) throw refusalError({ reason: 'capability', capability: 'core.drafts.approve' });
+		if (draft.status !== 'pending')
+			throw new FamosError('conflict', `Draft is ${draft.status}; only a waiting one is edited`);
+		if (waits)
+			throw new FamosError(
+				'conflict',
+				'This suggestion waits until its extension is back, so it cannot be edited now',
+			);
+		const def = getAction(draft.action_id);
+		const parsed = parseOrThrow(def.input, input, `input for ${def.id}`);
+		await uow.db
+			.withTables<CoreTables>()
+			.updateTable('core_drafts')
+			.set({ edited_input: JSON.stringify(parsed), updated_at: uow.clock.now() })
+			.where('id', '=', draftId)
+			.where('status', '=', 'pending')
+			.execute();
+		uow.emit(draftUpdated, { draftId, status: 'pending' });
+		return getDraft(uow.db, draftId);
 	}
 
 	async function approveDraft(
@@ -804,7 +861,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const approverId = assertApprover(approver, def, draft);
 		const input = parseOrThrow(
 			def.input,
-			editedInput ?? readStoredInput(def, draft.input),
+			editedInput ?? readStoredInput(def, draft.edited_input ?? draft.input),
 			`input for ${def.id}`,
 		);
 		// A suggestion about a day that has passed never runs (unless an edit moved it on).
@@ -860,7 +917,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.set({
 						status: 'applied',
 						applied_at: clock.now(),
-						edited_input: editedInput === undefined ? null : JSON.stringify(input),
+						// A saved edit stays; an edit sent with the approval replaces it.
+						...(editedInput !== undefined && { edited_input: JSON.stringify(input) }),
 						result: JSON.stringify(output ?? null),
 						error: null,
 						updated_at: clock.now(),
@@ -1019,7 +1077,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (draft.status !== 'pending') return false;
 		const def = registry.actions.get(draft.action_id);
 		if (!def) return false;
-		const input = def.input.safeParse(readStoredInput(def, draft.input));
+		const input = def.input.safeParse(readStoredInput(def, draft.edited_input ?? draft.input));
 		if (!input.success) return false;
 		return seemsToExist(def, input.data, { draftId: draft.id });
 	}
@@ -1366,6 +1424,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		replaceDraft,
 		mayDecide,
 		isProposer,
+		unavailable,
+		editDraft,
 		passedCheck,
 		expirePassed,
 	};

@@ -525,5 +525,10 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		events: [extensionsChanged, restartRequested, ...finder.events],
 		/** What `core.listExtensions` answers. */
 		describe,
+		/** An extension's names by language, from its package or manifest; empty when unknown. */
+		namesOf(id: string): Record<string, string> {
+			const labels = packagesById().get(id)?.labels ?? {};
+			return Object.fromEntries(Object.entries(labels).map(([lang, l]) => [lang, l.name]));
+		},
 	};
 }

@@ -477,6 +477,8 @@
 	"draft_rejected": "Reddedildi",
 	"draft_retry": "Tekrar dene",
 	"draft_waiting": "Onay bekliyor",
+	"draft_not_installed": "{{name}} yüklü değil: bu öneri geri gelene kadar bekler.",
+	"draft_turned_off": "{{name}} kapalı: bu öneri geri açılana kadar bekler.",
 	"draft_waiting_change": "Onay bekliyor · {{change}}",
 	"draft_waiting_field": "{{label}}: {{value}}",
 	"draft_failed": "Eklenemedi. Ayrıntıları kontrol edip tekrar dene.",

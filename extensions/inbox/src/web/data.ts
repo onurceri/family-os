@@ -106,6 +106,19 @@ export const approveDraft = async (draftId: string, input?: unknown): Promise<Dr
 		}),
 	);
 
+/**
+ * Saves a person's change to a waiting suggestion on the server, so it survives a reload and is
+ * what anyone who approves it applies. Returns the saved input.
+ */
+export async function editDraft(draftId: string, input: unknown): Promise<unknown> {
+	const result = unwrap(
+		await api.POST('/api/v1/actions/core.editDraft', { body: { draftId, input } }),
+	);
+	// Saving needs no approval, so anything but "applied" means it was not saved.
+	if (result.status !== 'applied') throw new Error('The change was not saved');
+	return result.output.editedInput;
+}
+
 export const rejectDraft = async (draftId: string): Promise<Draft> =>
 	unwrap(await api.POST('/api/v1/core/drafts/{draftId}/reject', { params: { path: { draftId } } }));
 

@@ -76,6 +76,30 @@ describe('ConfirmButton', () => {
 	});
 });
 
+describe('ConfirmButton name', () => {
+	it('is told apart from its twins until armed, then says its confirmation', () => {
+		const el = render(ConfirmButton, {
+			label: 'Dismiss all',
+			confirmLabel: 'Tap again',
+			name: 'Dismiss all from Piano recital',
+			onconfirm: vi.fn(),
+		});
+		const b = q('button', el);
+		expect(b.getAttribute('aria-label')).toBe('Dismiss all from Piano recital');
+		click(b);
+		expect(b.getAttribute('aria-label')).toBe('Tap again');
+	});
+
+	it('has no label of its own when it is not given a name', () => {
+		const el = render(ConfirmButton, {
+			label: 'Delete',
+			confirmLabel: 'Sure?',
+			onconfirm: vi.fn(),
+		});
+		expect(q('button', el).hasAttribute('aria-label')).toBe(false);
+	});
+});
+
 describe('SettingRow', () => {
 	it('stacks by default and keeps a small control beside the label when inline', () => {
 		const control = html('<input />');

@@ -42,6 +42,7 @@
 				titleKey: draft.titleKey,
 				actionId: draft.actionId,
 				input: shown,
+				subject: draft.subject,
 				t: app.t,
 			}),
 	);

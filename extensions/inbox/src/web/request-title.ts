@@ -21,6 +21,7 @@ export function requestTitle(app: AppContext, draft: Draft): string {
 			titleKey: draft.titleKey,
 			actionId: draft.actionId,
 			input,
+			subject: draft.subject,
 			t: app.t,
 		})
 	);

@@ -43,6 +43,7 @@ import {
 import { DecisionSchema } from './decide.ts';
 import type { DeviceService } from './devices.ts';
 import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
+import { waitingUnit } from './draft-notices.ts';
 import type { createExtensionInstall } from './extension-install.ts';
 import {
 	FamilySettingsSchema,
@@ -231,6 +232,18 @@ export const DraftSchema = z.object({
 	canDecide: z.boolean(),
 	/** Undone only: it was suggested again (`core.suggestDraftAgain`), as another draft. */
 	suggestedAgain: z.boolean(),
+	/**
+	 * Waiting only: nobody can decide it now because the extension its action belongs to is not
+	 * installed or is turned off. `labels` are that extension's names by language when known (an
+	 * extension that is not installed has no texts loaded). Null otherwise.
+	 */
+	unavailable: z
+		.object({
+			reason: z.enum(['not_installed', 'turned_off']),
+			extension: z.string(),
+			labels: z.record(z.string(), z.string()),
+		})
+		.nullable(),
 });
 
 const toMember = (row: MemberRow): Member => ({
@@ -270,6 +283,7 @@ const toDraft = (
 	subject: string | null = null,
 	suggestedAgain = false,
 	read: (json: string) => unknown = JSON.parse,
+	unavailable: z.infer<typeof DraftSchema>['unavailable'] = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -309,6 +323,7 @@ const toDraft = (
 		row.replaced === null ? null : (JSON.parse(row.replaced) as { actionId: string }).actionId,
 	canDecide,
 	suggestedAgain,
+	unavailable,
 });
 
 const members = (db: DbExecutor) => db.withTables<CoreTables>();
@@ -452,7 +467,7 @@ export interface CoreExtensionDeps {
 	/** Installing and uninstalling extensions, and restarting the server. */
 	extensionInstall: Pick<
 		ReturnType<typeof createExtensionInstall>,
-		'actions' | 'routes' | 'events' | 'jobs'
+		'actions' | 'routes' | 'events' | 'jobs' | 'namesOf'
 	>;
 	/** The one-time code first-run setup requires, or undefined when none is required (tests). */
 	setupCode?: string;
@@ -1219,7 +1234,14 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const runner = deps.runner();
 			const rows = (
 				actor.kind === 'member'
-					? all.filter((row) => runner.mayDecide(row, actor) || runner.isProposer(actor, row))
+					? all.filter(
+							(row) =>
+								runner.mayDecide(row, actor) ||
+								runner.isProposer(actor, row) ||
+								// Whoever would have decided it sees why it waits.
+								(runner.unavailable(row) !== null &&
+									deps.access().can(actor, CORE_CAPABILITIES.draftsApprove.id)),
+						)
 					: all
 			).slice(0, query.limit);
 			const passed = await runner.passedCheck();
@@ -1258,7 +1280,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				actor.kind === 'member' ? rows.filter((row) => deps.runner().mayDecide(row, actor)) : rows;
 			// One about a day that has passed no longer waits (it expires).
 			const passed = await deps.runner().passedCheck();
-			return { count: decidable.filter((row) => !passed(row)).length };
+			// What a member shared is one thing to decide, however many suggestions it made.
+			return { count: new Set(decidable.filter((row) => !passed(row)).map(waitingUnit)).size };
 		},
 	});
 
@@ -1538,6 +1561,29 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	});
 
 	const DraftParams = z.object({ draftId: idSchema('draft') });
+
+	const editDraft = defineAction({
+		id: 'core.editDraft',
+		title: 'Save a change to a waiting suggestion',
+		input: z.object({ draftId: idSchema('draft'), input: z.unknown() }),
+		output: z.object({ draftId: z.string(), editedInput: z.unknown() }),
+		// The runner decides who may: whoever may decide the suggestion, or the member behind it.
+		requires: CORE_CAPABILITIES.draftsPropose.id,
+		approval: 'never',
+		async run(uow, { draftId, input }) {
+			const row = await deps.runner().editDraft(uow, draftId, input);
+			return {
+				draftId,
+				editedInput: row.edited_input === null ? null : JSON.parse(row.edited_input),
+			};
+		},
+	});
+	const unavailableOf = (row: DraftRow): z.infer<typeof DraftSchema>['unavailable'] => {
+		if (row.status !== 'pending' && row.status !== 'failed') return null;
+		const why = deps.runner().unavailable(row);
+		if (!why) return null;
+		return { ...why, labels: deps.extensionInstall.namesOf(why.extension) };
+	};
 	const view = async (row: DraftRow, reader: Actor) =>
 		toDraft(
 			row,
@@ -1550,6 +1596,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			await deps.runner().subject(row),
 			await deps.runner().suggestedAgain(row),
 			(json) => readStoredInput(deps.registry().actions.get(row.action_id), json),
+			unavailableOf(row),
 		);
 
 	const approve = defineRoute({
@@ -1633,6 +1680,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		migrations: coreMigrations,
 		actions: [
 			decidableSources,
+			editDraft,
 			mySuggestions,
 			today,
 			createMember,

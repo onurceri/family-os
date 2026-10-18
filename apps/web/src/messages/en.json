@@ -477,6 +477,8 @@
 	"draft_rejected": "Rejected",
 	"draft_retry": "Try again",
 	"draft_waiting": "Waiting for approval",
+	"draft_not_installed": "{{name}} is not installed: this suggestion waits until it is back.",
+	"draft_turned_off": "{{name}} is turned off: this suggestion waits until it is back.",
 	"draft_waiting_change": "Waiting for approval · {{change}}",
 	"draft_waiting_field": "{{label}}: {{value}}",
 	"draft_failed": "Adding it did not work. Check the details and try again.",

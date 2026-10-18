@@ -19,6 +19,22 @@ export function waitingDedupeKey(draft: {
 		: `draft:${draft.id}`;
 }
 
+/**
+ * What counts as one thing to decide: the suggestions made from one item a member shared with the
+ * AI to read are one (they are decided together, as a group); any other suggestion is its own.
+ */
+export function waitingUnit(draft: {
+	id: string;
+	source_kind: string | null;
+	source_id: string | null;
+	proposed_by: string;
+}): string {
+	const by = JSON.parse(draft.proposed_by) as { kind?: string; mode?: string };
+	return by.kind === 'ai' && by.mode === 'share' && draft.source_kind && draft.source_id
+		? `share:${draft.source_kind}:${draft.source_id}`
+		: `draft:${draft.id}`;
+}
+
 /** Whether a suggestion behind this notice key still waits for a decision. */
 export async function stillWaiting(db: DbExecutor, dedupeKey: string): Promise<boolean> {
 	const waiting = db

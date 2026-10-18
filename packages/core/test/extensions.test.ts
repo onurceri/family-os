@@ -537,7 +537,7 @@ describe('an uninstalled extension', () => {
 		],
 	});
 
-	it('keeps its drafts, which wait unseen by approvers and break nothing', async () => {
+	it('keeps its drafts, which wait and say why, and break nothing', async () => {
 		const dbPath = join(await mkdtemp(join(tmpdir(), 'famos-uninstall-')), 'famos.db');
 		const before = await createTestKernel({ dbPath, extensions: [things] });
 		const admin = (await before.member('admin')).actor;
@@ -556,10 +556,18 @@ describe('an uninstalled extension', () => {
 		await before.close();
 
 		const after = await kernel({ dbPath });
-		// Nobody can decide what nothing can apply: approvers do not see it and it is not counted…
-		await expect(
-			after.route('core.listDrafts').call({ actor: admin, query: { limit: 10 } }),
-		).resolves.toEqual([]);
+		// Nobody can decide what nothing can apply: it is not counted, and approvers see it says so…
+		const seen = (await after
+			.route('core.listDrafts')
+			.call({ actor: admin, query: { limit: 10 } })) as {
+			status: string;
+			canDecide: boolean;
+			unavailable: { reason: string } | null;
+		}[];
+		expect(seen.map((d) => [d.status, d.canDecide, d.unavailable?.reason])).toEqual([
+			['pending', false, 'not_installed'],
+			['pending', false, 'not_installed'],
+		]);
 		await expect(after.route('core.countWaitingDrafts').call({ actor: admin })).resolves.toEqual({
 			count: 0,
 		});

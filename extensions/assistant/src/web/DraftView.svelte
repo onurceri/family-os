@@ -8,6 +8,7 @@
 		insteadOffer,
 		type PresenterContext,
 		proposedByMember,
+		unavailableLine,
 	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import {
@@ -67,8 +68,9 @@
 	);
 	// A draft addressed to me (a memory, a question) is mine to decide, whatever my role.
 	const canDecide = $derived(
-		app.can('core.drafts.approve') ||
-			(draft.forMember !== null && draft.forMember === app.me()?.id),
+		!draft.unavailable &&
+			(app.can('core.drafts.approve') ||
+				(draft.forMember !== null && draft.forMember === app.me()?.id)),
 	);
 	const a = (key: string) => app.t(`app:${key}`);
 	const title = $derived(
@@ -78,6 +80,7 @@
 				titleKey: draft.titleKey,
 				actionId: draft.actionId,
 				input,
+				subject: draft.subject,
 				t: app.t,
 			}),
 	);
@@ -96,7 +99,9 @@
 			: (presenter?.appliedLabel?.(context) ?? a('draft_applied')),
 		rejected: a('draft_rejected'),
 		retry: a('draft_retry'),
-		waiting: a('draft_waiting'),
+		waiting: draft.unavailable
+			? unavailableLine(draft.unavailable, app.locale(), app.t)
+			: a('draft_waiting'),
 		undone: a('draft_undone'),
 		expired: a('draft_expired'),
 		gone: a('draft_gone'),

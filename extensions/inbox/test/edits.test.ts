@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { approvals, choicesAfterEdit, withEdit } from '../src/web/edits.ts';
+import { choicesAfterEdit } from '../src/web/edits.ts';
 import { pickedDrafts } from '../src/web/item-view.ts';
 
 describe('edits of suggestions in a group', () => {
@@ -12,36 +12,16 @@ describe('edits of suggestions in a group', () => {
 		];
 		expect(pickedDrafts(todo, new Map()).map((d) => d.id)).toEqual(['draft_1']);
 		const choices = choicesAfterEdit(new Map(), 'draft_2', { title: 'Class 1B trip to Bled' });
-		const edits = withEdit(new Map(), 'draft_2', { title: 'Class 1B trip to Bled' });
-		const picked = pickedDrafts(todo, choices);
-		expect(approvals(picked, edits)).toEqual([
-			{ id: 'draft_1' },
-			{ id: 'draft_2', input: { title: 'Class 1B trip to Bled' } },
-		]);
+		expect(pickedDrafts(todo, choices).map((d) => d.id)).toEqual(['draft_1', 'draft_2']);
 		// Taking the edit back leaves the ticks as they were.
 		expect(choicesAfterEdit(new Map(), 'draft_2', undefined).size).toBe(0);
 	});
 
-	it('approves each ticked suggestion with its edit, and the others as proposed', () => {
-		const edits = withEdit(new Map(), 'draft_2', { title: 'Milk 2 l' });
-		expect(approvals([{ id: 'draft_1' }, { id: 'draft_2' }], edits)).toEqual([
-			{ id: 'draft_1' },
-			{ id: 'draft_2', input: { title: 'Milk 2 l' } },
-		]);
-	});
-
-	it('leaves an unticked suggestion out, edited or not', () => {
-		const edits = withEdit(new Map(), 'draft_2', { title: 'Milk 2 l' });
-		expect(approvals([{ id: 'draft_1' }], edits)).toEqual([{ id: 'draft_1' }]);
-	});
-
-	it('takes an edit back, and does not change the map it was given', () => {
-		const first = withEdit(new Map(), 'draft_1', { title: 'A' });
-		const second = withEdit(first, 'draft_1', { title: 'B' });
-		expect(first.get('draft_1')).toEqual({ title: 'A' });
-		expect(second.get('draft_1')).toEqual({ title: 'B' });
-		expect(approvals([{ id: 'draft_1' }], withEdit(second, 'draft_1', undefined))).toEqual([
-			{ id: 'draft_1' },
-		]);
+	it('does not change the ticks it was given', () => {
+		const choices = new Map([['draft_1', false]]);
+		const next = choicesAfterEdit(choices, 'draft_2', { title: 'A' });
+		expect(choices.size).toBe(1);
+		expect(next.get('draft_2')).toBe(true);
+		expect(next.get('draft_1')).toBe(false);
 	});
 });

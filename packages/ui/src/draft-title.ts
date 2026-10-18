@@ -1,8 +1,8 @@
 /**
  * What a draft is called where its presenter does not title it (a remove or archive nobody wrote
- * a presenter for, a draft made by hand): its summary, else the action's own translated name
- * with the name of the thing it is about (the review label, else the subject the server read
- * from the record), else a generic word (never an action id).
+ * a presenter for, a draft made by hand): the name of the thing it is about (the review label,
+ * else the subject the server read from the record) with the action's own translated name, else
+ * its summary, else the action's name, else a generic word (never an action id).
  */
 export function draftHeadline(draft: {
 	summary: string | null;
@@ -12,16 +12,17 @@ export function draftHeadline(draft: {
 	subject?: string | null;
 	t: (key: string) => string;
 }): string {
-	if (draft.summary) return draft.summary;
 	const label =
 		typeof draft.input === 'object' && draft.input !== null && 'label' in draft.input
 			? draft.input.label
 			: undefined;
 	const named =
 		typeof label === 'string' && label.trim() ? label.trim() : draft.subject?.trim() || '';
-	if (!draft.titleKey) return named || draft.t('app:draft_kind_generic');
-	const name = draft.t(draft.titleKey);
-	return named ? `${name} · ${named}` : name;
+	// What it is about comes before the summary: inside a capture's group the summary is the
+	// group's own line, which every card of the group would repeat.
+	if (named) return draft.titleKey ? `${draft.t(draft.titleKey)} · ${named}` : named;
+	if (draft.summary) return draft.summary;
+	return draft.titleKey ? draft.t(draft.titleKey) : draft.t('app:draft_kind_generic');
 }
 
 /**
@@ -69,4 +70,33 @@ export function askedBy(
 	const who = by.kind === 'member' ? by.memberId : by.onBehalfOf;
 	if (!who || who === memberId) return undefined;
 	return members.find((m) => m.id === who)?.displayName;
+}
+
+/** Why a waiting draft cannot be decided now (`Draft.unavailable`). */
+export interface DraftUnavailable {
+	reason: 'not_installed' | 'turned_off';
+	extension: string;
+	/** The extension's names by language, when the server knows them. */
+	labels: Readonly<Record<string, string>>;
+}
+
+/**
+ * What every card of a suggestion that cannot be decided says: which extension is missing or off
+ * and that the suggestion waits until it is back. The name comes in the reader's language, else
+ * English, else the extension's id.
+ */
+export function unavailableLine(
+	unavailable: DraftUnavailable,
+	language: string,
+	t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+	const name =
+		unavailable.labels[language] ??
+		unavailable.labels.en ??
+		Object.values(unavailable.labels)[0] ??
+		unavailable.extension;
+	return t(
+		unavailable.reason === 'turned_off' ? 'app:draft_turned_off' : 'app:draft_not_installed',
+		{ name },
+	);
 }

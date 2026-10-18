@@ -9,11 +9,13 @@
 		namedInput,
 		type PresenterContext,
 		proposedByMember,
+		unavailableLine,
 	} from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import {
 		approveDraft,
 		type Draft,
+		editDraft,
 		rejectDraft,
 		replaceDraft,
 		suggestDraftAgain,
@@ -43,9 +45,9 @@
 		onpick?: (picked: boolean) => void;
 		oneditchange?: (editing: boolean) => void;
 		/**
-		 * In a group: called with the edited input when the person saves an edit. The card then
-		 * shows the edit and the group approves the suggestion with it; the card itself approves
-		 * nothing when it is saved.
+		 * In a group: called after the person's edit was saved on the server (`core.editDraft`),
+		 * with the saved input. The card itself approves nothing when it is saved: the group
+		 * approves what is stored.
 		 */
 		onedit?: (input: unknown) => void;
 		/**
@@ -77,9 +79,13 @@
 		hourCycle: app.hourCycle(),
 		timeZone: app.timeZone(),
 	});
-	// An edit saved in a group, until the group's approval sends it.
-	let kept = $state<unknown>(undefined);
-	const input = $derived((kept ?? draft.editedInput ?? draft.input) as Record<string, unknown>);
+	// An edit just saved, shown until the list has loaded the draft again with it.
+	let saved = $state<unknown>(undefined);
+	$effect(() => {
+		void given;
+		saved = undefined;
+	});
+	const input = $derived((saved ?? draft.editedInput ?? draft.input) as Record<string, unknown>);
 	// What the card shows names the thing it is about, even for a draft stored without its name.
 	const shown = $derived(namedInput(input, draft.subject) as Record<string, unknown>);
 	let edited = $state<unknown>(undefined);
@@ -102,8 +108,9 @@
 	);
 	// A draft addressed to me (a memory, a question) is mine to decide, whatever my role.
 	const canDecide = $derived(
-		app.can('core.drafts.approve') ||
-			(draft.forMember !== null && draft.forMember === app.me()?.id),
+		!draft.unavailable &&
+			(app.can('core.drafts.approve') ||
+				(draft.forMember !== null && draft.forMember === app.me()?.id)),
 	);
 	const a = (key: string) => app.t(`app:${key}`);
 	const title = $derived(
@@ -113,6 +120,7 @@
 				titleKey: draft.titleKey,
 				actionId: draft.actionId,
 				input: shown,
+				subject: draft.subject,
 				t: app.t,
 			}),
 	);
@@ -133,7 +141,9 @@
 			: (presenter?.appliedLabel?.(context) ?? a('draft_applied')),
 		rejected: a('draft_rejected'),
 		retry: a('draft_retry'),
-		waiting: a('draft_waiting'),
+		waiting: draft.unavailable
+			? unavailableLine(draft.unavailable, app.locale(), app.t)
+			: a('draft_waiting'),
 		undone: a('draft_undone'),
 		expired: a('draft_expired'),
 		gone: a('draft_gone'),
@@ -161,7 +171,7 @@
 		try {
 			swapped = await replaceDraft(draft.id);
 			edited = undefined;
-			kept = undefined;
+			saved = undefined;
 			onreplaced?.();
 		} catch {
 			app.toast(t('error'));
@@ -209,6 +219,18 @@
 			)
 				local = 'undone';
 			else failed = true;
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function saveEdit(next: unknown) {
+		busy = true;
+		try {
+			saved = await editDraft(draft.id, next);
+			onedit?.(saved);
+		} catch {
+			app.toast(t('error'));
 		} finally {
 			busy = false;
 		}
@@ -298,8 +320,7 @@
 		? () => {
 				if (!onedit) return void approve(edited);
 				if (edited === undefined) return;
-				kept = edited;
-				onedit(edited);
+				void saveEdit(edited);
 			}
 		: undefined}
 >

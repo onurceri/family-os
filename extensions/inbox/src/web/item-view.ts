@@ -266,11 +266,49 @@ export function requestGroups(drafts: readonly Draft[]): RequestGroup[] {
 }
 
 /**
- * How many of these suggestions wait for this person to decide: what the Quick add badge (the
- * server's count of waiting suggestions) counts too.
+ * What counts as one thing to decide, as the server counts it for the Quick add badge: the
+ * suggestions made from one item a member shared are one (they are decided together, as a
+ * group); any other suggestion is its own.
+ */
+export function waitingUnit(draft: Draft): string {
+	const by = draft.proposedBy as { kind?: string; mode?: string } | null;
+	return by?.kind === 'ai' && by.mode === 'share' && draft.sourceKind && draft.sourceId
+		? `share:${draft.sourceKind}:${draft.sourceId}`
+		: `draft:${draft.id}`;
+}
+
+/**
+ * How many things wait for this person to decide: what the Quick add badge (the server's count of
+ * waiting suggestions) counts too. A shared item counts once however many suggestions it made.
  */
 export const decidableCount = (drafts: readonly Draft[]): number =>
-	drafts.filter((d) => needsAction(d) && d.canDecide).length;
+	new Set(drafts.filter((d) => needsAction(d) && d.canDecide).map(waitingUnit)).size;
+
+/** One line of Today's Needs you: a single suggestion, or everything one share made. */
+export type NeedsEntry =
+	| { kind: 'draft'; key: string; draft: Draft }
+	| { kind: 'share'; key: string; sourceId: string; drafts: Draft[] };
+
+/**
+ * The suggestions the person may decide, as Today lists them, oldest first: a share that made
+ * several is one entry that opens its group in Quick add; everything else is one entry each, so
+ * a single suggestion keeps its inline buttons.
+ */
+export function needsEntries(drafts: readonly Draft[]): NeedsEntry[] {
+	const units = new Map<string, Draft[]>();
+	for (const draft of drafts
+		.filter((d) => needsAction(d) && d.canDecide)
+		.toSorted((a, b) => a.createdAt - b.createdAt)) {
+		const key = waitingUnit(draft);
+		units.set(key, [...(units.get(key) ?? []), draft]);
+	}
+	return [...units].map(([key, group]): NeedsEntry => {
+		const first = group[0] as Draft;
+		return group.length > 1 && first.sourceId
+			? { kind: 'share', key, sourceId: first.sourceId, drafts: group }
+			: { kind: 'draft', key, draft: first };
+	});
+}
 
 /** How long a decided request of the person's own stays under "Recent". */
 export const DECIDED_RECENT_MS = 7 * 24 * 60 * 60 * 1000;

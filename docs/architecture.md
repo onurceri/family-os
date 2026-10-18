@@ -527,7 +527,8 @@ Share / upload ─► POST /api/v1/inbox/items ─► files stored ─► inbox.
   worker: inbox.process ─► normalize (saved) ─► understand (LLM: mentions) ─► resolve (kinds' code)
           ─► actions.invoke(…, ai) per suggestion
           └► drafts (pending, sourceKind 'inbox') ─► WebSocket ─► Quick add UI
-Person approves / edits ─► approveDraft ─► [tx: calendar | lists + draft=applied]
+Person edits ─► core.editDraft ─► edited_input stored on the pending draft (any device, any approver)
+Person approves ─► approveDraft (applies edited_input when there is one) ─► [tx: calendar | lists + draft=applied]
           └► event (after commit) ─► WebSocket invalidation ─► all devices
 ```
 

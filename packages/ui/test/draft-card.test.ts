@@ -5,6 +5,7 @@ import {
 	draftKicker,
 	namedInput,
 	proposedByMember,
+	unavailableLine,
 } from '../src/draft-title.js';
 import { DraftCard, draftButtons } from '../src/famos/index.js';
 import { awaitingText, changed, changedValue, insteadOffer } from '../src/slots.js';
@@ -241,6 +242,49 @@ describe('draftHeadline', () => {
 			label: 'Piano',
 		});
 		expect(namedInput({ id: 'x' }, null)).toEqual({ id: 'x' });
+	});
+
+	it('titles a card by what it is about, not by the group line the capture gave', () => {
+		// Found in use: a board note in Ivy's piano group was titled with the group's own line.
+		const board = {
+			summary: 'Piano recital and practice',
+			titleKey: null,
+			actionId: 'board.postNote',
+			t,
+		};
+		expect(
+			draftHeadline({
+				...board,
+				input: { text: 'No phones in the hall' },
+				subject: 'No phones in the hall',
+			}),
+		).toBe('No phones in the hall');
+		expect(draftHeadline({ ...board, input: {}, subject: ' Bring water ' })).toBe('Bring water');
+		expect(draftHeadline({ ...board, input: { label: 'Water' }, subject: 'Bring water' })).toBe(
+			'Water',
+		);
+		// With nothing to name, the summary is all there is.
+		expect(draftHeadline({ ...board, input: {}, subject: null })).toBe(
+			'Piano recital and practice',
+		);
+	});
+
+	it('says which extension a waiting suggestion needs, in the reader’s language', () => {
+		const say = (key: string, options?: Record<string, unknown>) =>
+			`${key}:${String(options?.name)}`;
+		const pets = {
+			reason: 'not_installed' as const,
+			extension: 'pets',
+			labels: { en: 'Pets', tr: 'Evcil hayvanlar' },
+		};
+		expect(unavailableLine(pets, 'tr', say)).toBe('app:draft_not_installed:Evcil hayvanlar');
+		expect(unavailableLine(pets, 'de', say)).toBe('app:draft_not_installed:Pets');
+		expect(unavailableLine({ ...pets, reason: 'turned_off' }, 'en', say)).toBe(
+			'app:draft_turned_off:Pets',
+		);
+		expect(unavailableLine({ ...pets, labels: {} }, 'en', say)).toBe(
+			'app:draft_not_installed:pets',
+		);
 	});
 
 	it('knows whether the member is behind a draft', () => {

@@ -2,11 +2,14 @@
 	import type { SlotProps } from '@famos/ui/slots';
 	import { type Draft, loadWaitingDrafts } from './data.js';
 	import { useInbox } from './i18n.js';
+	import { decidableCount, needsEntries } from './item-view.js';
 	import NeedsDraftRow from './NeedsDraftRow.svelte';
+	import ShareNeedsRow from './ShareNeedsRow.svelte';
 
 	/**
 	 * Today, Needs you: the suggestions waiting for this person's decision, decided in place; the
-	 * same ones Quick add shows to decide and its badge counts. A person who may not approve (a
+	 * same ones Quick add shows to decide and its badge counts. What one shared item made is one
+	 * line that opens its group, however many suggestions it holds. A person who may not approve (a
 	 * supervised member) sees none of them as rows; they get one quiet line about their own.
 	 */
 	let { size, report }: SlotProps['dashboard.card'] = $props();
@@ -34,12 +37,13 @@
 	});
 
 	const canDecide = $derived(app.can('core.drafts.approve'));
-	const mine = $derived(pending.filter((d) => d.canDecide));
-	const shown = $derived(mine.slice(0, 5));
+	const entries = $derived(needsEntries(pending));
+	const count = $derived(decidableCount(pending));
+	const shown = $derived(entries.slice(0, 5));
 	// Reports only once loaded: the page waits for the first report.
 	$effect(() => {
 		if (!loaded) return;
-		if (canDecide) report({ count: mine.length, quietKey: '', urgent: mine.length });
+		if (canDecide) report({ count, quietKey: '', urgent: count });
 		else
 			report({
 				count: 0,
@@ -50,12 +54,16 @@
 </script>
 
 {#if canDecide && size !== 'line'}
-	{#each shown as draft (draft.id)}
-		<NeedsDraftRow {draft} />
+	{#each shown as entry (entry.key)}
+		{#if entry.kind === 'share'}
+			<ShareNeedsRow drafts={entry.drafts} sourceId={entry.sourceId} />
+		{:else}
+			<NeedsDraftRow draft={entry.draft} />
+		{/if}
 	{/each}
-	{#if mine.length > shown.length}
+	{#if entries.length > shown.length}
 		<a href="/add" class="text-ink-soft hover:text-ink block px-4 py-3 text-sm font-semibold"
-			>{t('see_all', { count: mine.length })}</a
+			>{t('see_all', { count })}</a
 		>
 	{/if}
 {/if}

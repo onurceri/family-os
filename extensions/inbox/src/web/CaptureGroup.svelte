@@ -7,7 +7,7 @@
 	import CaptureSource from './CaptureSource.svelte';
 	import CaptureStatus from './CaptureStatus.svelte';
 	import DraftView from './DraftView.svelte';
-	import { approvals, choicesAfterEdit, type Edits, withEdit } from './edits.js';
+	import { choicesAfterEdit } from './edits.js';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
 	import {
@@ -39,7 +39,11 @@
 	const mine = $derived(item.createdBy === app.me()?.id);
 	const author = $derived(app.members().find((m) => m.id === item.createdBy));
 	const canDecide = $derived(app.can('core.drafts.approve'));
-	const todo = $derived(drafts.filter((d) => d.status === 'pending' || d.status === 'failed'));
+	// What waits for a decision here. A suggestion of an extension that is not running is shown
+	// with why it waits, but cannot be ticked, approved or dismissed meanwhile.
+	const todo = $derived(
+		drafts.filter((d) => (d.status === 'pending' || d.status === 'failed') && !d.unavailable),
+	);
 
 	// What waits starts ticked, except what would add a second one; the person's ticks win.
 	let choices = $state<ReadonlyMap<string, boolean>>(new Map());
@@ -49,9 +53,6 @@
 	const setPicked = (id: string, on: boolean) => {
 		choices = new Map(choices).set(id, on);
 	};
-
-	// Edits saved on cards, approved together with their suggestion.
-	let edits = $state<Edits>(new Map());
 
 	let editing = $state<ReadonlySet<string>>(new Set());
 	const setEditing = (id: string, on: boolean) => {
@@ -75,9 +76,10 @@
 		let added = 0;
 		let failed = 0;
 		// One by one, in the order proposed: the same endpoint (and rules) as a single approval.
-		for (const { id, input } of approvals(picked, edits)) {
+		// An edit saved on a card is stored on the server and is what an approval applies.
+		for (const { id } of picked) {
 			try {
-				const result = await approveDraft(id, input);
+				const result = await approveDraft(id);
 				if (result.status === 'applied') {
 					added += 1;
 					if (result.undoable) undoable.push(result.id);
@@ -144,10 +146,12 @@
 </script>
 
 <article
-	class="grid gap-3"
+	class="grid gap-3 outline-none"
 	aria-label={captureLine(item)}
 	aria-busy={reading}
 	data-testid="capture-group"
+	id="capture-{item.id}"
+	tabindex="-1"
 >
 	<header class="grid gap-2">
 		<div class="flex items-start gap-3">
@@ -203,16 +207,17 @@
 						compact
 						quiet
 						picked={pickedIds.has(draft.id)}
-						onpick={open && canDecide ? (on) => setPicked(draft.id, on) : undefined}
+						onpick={open && canDecide && !draft.unavailable
+							? (on) => setPicked(draft.id, on)
+							: undefined}
 						oneditchange={(on) => setEditing(draft.id, on)}
-						onedit={open && canDecide
+						onedit={open && canDecide && !draft.unavailable
 							? (input) => {
-									edits = withEdit(edits, draft.id, input);
 									choices = choicesAfterEdit(choices, draft.id, input);
+									onchanged?.();
 								}
 							: undefined}
 						onreplaced={() => {
-							edits = withEdit(edits, draft.id, undefined);
 							// The person chose the change: it goes in with the others.
 							setPicked(draft.id, true);
 							onchanged?.();
@@ -232,10 +237,18 @@
 			<ConfirmButton
 				label={picked.length > 0 && rest.length > 0 ? t('dismiss_rest') : t('dismiss_all')}
 				confirmLabel={t('dismiss_rest_confirm')}
+				name={t(picked.length > 0 && rest.length > 0 ? 'dismiss_rest_from' : 'dismiss_all_from', {
+					group: captureLine(item),
+				})}
 				onconfirm={dismissRest}
 				disabled={gate.dismissDisabled}
 			/>
-			<Button size="lg" disabled={gate.addDisabled} onclick={addSelected}
+			<!-- Every group has this button: its name says which group it adds from. -->
+			<Button
+				size="lg"
+				disabled={gate.addDisabled}
+				onclick={addSelected}
+				aria-label={t(`${approveSelectedKey(picked)}_from`, { group: captureLine(item) })}
 				>{t(approveSelectedKey(picked), { n: picked.length })}</Button
 			>
 		</footer>

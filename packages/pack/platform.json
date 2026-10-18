@@ -176,7 +176,8 @@
 			"draftKicker",
 			"insteadOffer",
 			"namedInput",
-			"proposedByMember"
+			"proposedByMember",
+			"unavailableLine"
 		],
 		"@famos/ui/slot": ["default"],
 		"@famos/ui/button": ["Button", "Root", "buttonVariants"],
