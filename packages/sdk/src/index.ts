@@ -18,6 +18,7 @@ export * from './mention-kinds.ts';
 export * from './messages.ts';
 export * from './notifications.ts';
 export * from './ports.ts';
+export * from './question.ts';
 export * from './routes.ts';
 export * from './share.ts';
 export * from './understanding.ts';

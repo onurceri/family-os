@@ -29,6 +29,9 @@ describe('core.today', () => {
 				timeZone: 'Europe/Istanbul',
 				weekFirstDay: '2026-10-05',
 				weekLastDay: '2026-10-11',
+				thisWeek: { from: '2026-10-10', to: '2026-10-11' },
+				thisWeekNote: null,
+				nextWeek: { from: '2026-10-12', to: '2026-10-18' },
 				days: expect.arrayContaining(['Sat 2026-10-10 (today)', 'Sun 2026-10-11 (tomorrow)']),
 			},
 		});
@@ -74,6 +77,38 @@ describe('core.today', () => {
 		expect(result).toMatchObject({
 			output: { weekFirstDay: '2026-10-04', weekLastDay: '2026-10-10' },
 		});
+	});
+
+	it('says what "this week" means on the week’s last day, whichever day the week starts on', async () => {
+		// Saturday 2026-10-10 ends a week that starts on Sunday; Sunday 2026-10-11 ends a Monday week.
+		for (const [at, weekStart, thisWeek, nextWeek, noted] of [
+			['2026-10-10T12:00:00Z', 7, ['2026-10-10', '2026-10-16'], ['2026-10-11', '2026-10-17'], true],
+			['2026-10-11T12:00:00Z', 1, ['2026-10-11', '2026-10-17'], ['2026-10-12', '2026-10-18'], true],
+			[
+				'2026-10-11T12:00:00Z',
+				7,
+				['2026-10-11', '2026-10-17'],
+				['2026-10-18', '2026-10-24'],
+				false,
+			],
+		] as const) {
+			k.clock.advance(Date.parse(at) - k.clock.now());
+			await k.runner.invoke(
+				'core.updateFamilySettings',
+				{ timeZone: 'UTC', weekStart },
+				systemActor('test'),
+			);
+			const { actor } = await k.member('member');
+			const result = await k.runner.invoke<{
+				thisWeek: { from: string; to: string };
+				nextWeek: { from: string; to: string };
+				thisWeekNote: string | null;
+			}>('core.today', {}, actor);
+			if (result.status !== 'applied') throw new Error('expected an answer');
+			expect(result.output.thisWeek).toEqual({ from: thisWeek[0], to: thisWeek[1] });
+			expect(result.output.nextWeek).toEqual({ from: nextWeek[0], to: nextWeek[1] });
+			expect(result.output.thisWeekNote !== null).toBe(noted);
+		}
 	});
 
 	it('is offered to the assistant and MCP as a read tool', async () => {

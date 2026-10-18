@@ -22,6 +22,7 @@ import {
 	daysAround,
 	formatDate,
 	formatLocaleForLanguage,
+	resolveSpan,
 	todayIn,
 	weekOf,
 	zoned,
@@ -1313,6 +1314,18 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			timeZone: z.string(),
 			weekFirstDay: z.string().describe('The first day of this week, YYYY-MM-DD'),
 			weekLastDay: z.string().describe('The last day of this week, YYYY-MM-DD'),
+			thisWeek: z
+				.object({ from: z.string(), to: z.string() })
+				.describe(
+					'What "this week" means when someone asks: today to the week\u2019s last day, or the coming seven days when today is the last day. YYYY-MM-DD',
+				),
+			thisWeekNote: z
+				.string()
+				.nullable()
+				.describe('Set when "this week" was asked on the week\u2019s last day'),
+			nextWeek: z
+				.object({ from: z.string(), to: z.string() })
+				.describe('"Next week": the whole week after this one, YYYY-MM-DD'),
 			days: z
 				.array(z.string())
 				.describe(
@@ -1329,6 +1342,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const now = uow.clock.now();
 			const date = todayIn(timeZone, now);
 			const week = weekOf(date, weekStart);
+			const thisWeek = resolveSpan({ kind: 'week' }, date, weekStart);
+			const nextWeek = resolveSpan({ kind: 'next' }, date, weekStart);
 			return {
 				date,
 				weekday: formatDate(date, 'en', { weekday: 'long' }),
@@ -1336,6 +1351,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				timeZone,
 				weekFirstDay: week[0] as string,
 				weekLastDay: week[6] as string,
+				thisWeek: { from: thisWeek?.from ?? date, to: thisWeek?.to ?? (week[6] as string) },
+				thisWeekNote:
+					thisWeek?.label.key === 'coming_days'
+						? 'Asked on the week\u2019s last day, "this week" means the coming seven days.'
+						: null,
+				nextWeek: { from: nextWeek?.from ?? date, to: nextWeek?.to ?? date },
 				days: daysAround(date),
 			};
 		},

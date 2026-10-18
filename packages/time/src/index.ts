@@ -728,3 +728,11 @@ export {
 	type ResolveDayOptions,
 	resolveDay,
 } from './resolve-day.ts';
+export {
+	type ResolvedSpan,
+	type ResolveSpanOptions,
+	resolveSpan,
+	type SpanInput,
+	type SpanLabel,
+	type SpanLabelKey,
+} from './resolve-span.ts';

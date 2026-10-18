@@ -16362,6 +16362,18 @@ export interface operations {
                             weekFirstDay: string;
                             /** @description The last day of this week, YYYY-MM-DD */
                             weekLastDay: string;
+                            /** @description What "this week" means when someone asks: today to the week’s last day, or the coming seven days when today is the last day. YYYY-MM-DD */
+                            thisWeek: {
+                                from: string;
+                                to: string;
+                            };
+                            /** @description Set when "this week" was asked on the week’s last day */
+                            thisWeekNote: string | null;
+                            /** @description "Next week": the whole week after this one, YYYY-MM-DD */
+                            nextWeek: {
+                                from: string;
+                                to: string;
+                            };
                             /** @description The days from a week ago to two weeks ahead, each with its weekday ("Tue 2026-10-13 (today)"). Take weekdays from here; when a weekday and a date disagree, say so and ask. */
                             days: string[];
                         };
