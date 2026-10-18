@@ -495,7 +495,7 @@
 	"nav_waiting": "waiting",
 	"draft_undone": "Taken back",
 	"draft_expired": "Its day has passed",
-	"draft_gone": "It no longer exists",
+	"draft_gone": "Can no longer be added: it no longer exists",
 	"draft_withdrawn": "Withdrawn",
 	"draft_withdraw": "Withdraw",
 	"draft_suggest_again": "Suggest again",

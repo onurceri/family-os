@@ -182,7 +182,8 @@
 	const settled = $derived(
 		status === 'undone'
 			? (labels.undone ?? labels.rejected)
-			: status === 'expired'
+			: // A waiting draft whose subject is gone is closed like an expired one, but says why.
+				status === 'expired' && reason !== 'gone'
 				? (labels.expired ?? labels.rejected)
 				: reason === 'gone'
 					? (labels.gone ?? labels.rejected)

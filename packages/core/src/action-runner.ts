@@ -1,5 +1,6 @@
 import {
 	type ActionResult,
+	type ActionTarget,
 	type Actor,
 	type AnyActionDefinition,
 	type Clock,
@@ -206,6 +207,13 @@ export interface ActionRunner {
 	 * of work pass its `db` (the one connection is held by the transaction).
 	 */
 	passedCheck(db?: DbExecutor): Promise<(draft: PassedFacts) => boolean>;
+	/**
+	 * The waiting drafts among `drafts` whose target (`target` of their action) is gone: deleted,
+	 * archived or never there. They can never be applied, so lists and counts of what needs a
+	 * decision leave them out and show them as closed. One query per table, however many drafts.
+	 * Inside a unit of work pass its `db`.
+	 */
+	goneAmong(drafts: readonly DraftRow[], db?: DbExecutor): Promise<ReadonlySet<string>>;
 	/** Marks every waiting draft whose day has passed `expired`. Idempotent; returns how many. */
 	expirePassed(): Promise<number>;
 }
@@ -244,6 +252,9 @@ const refusal = (refused: ProposalRefusal, subject?: string | null): ProposalRef
 
 /** `core_drafts.error` of a draft closed because what it was about no longer exists. */
 export const GONE = 'gone';
+
+/** What a target's table must have: its id column. */
+type RowWithId = { id: string; [column: string]: unknown };
 
 /** `core_drafts.error` of a draft closed because what it asks for was already so. */
 export const SETTLED = 'settled';
@@ -1404,6 +1415,59 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			hasPassed(draftDateOf(registry.actions.get(draft.action_id), draft), today);
 	}
 
+	async function goneAmong(
+		drafts: readonly DraftRow[],
+		db: DbExecutor = deps.db,
+	): Promise<ReadonlySet<string>> {
+		// Drafts by the row they work on: one query per table and live column.
+		const groups = new Map<
+			string,
+			{ extension: string; table: string; liveColumn?: string; ids: Map<string, string[]> }
+		>();
+		for (const draft of drafts) {
+			if (!(WAITING_STATUSES as readonly string[]).includes(draft.status)) continue;
+			const def = registry.actions.get(draft.action_id);
+			// Not installed or turned off is its own state (`unavailable`), not a gone target.
+			if (!def?.target || unavailable(draft)) continue;
+			let target: ActionTarget | null = null;
+			try {
+				const input = def.input.safeParse(readStoredInput(def, draft.edited_input ?? draft.input));
+				if (input.success) target = def.target(input.data);
+			} catch {
+				// An input stored by another version may not fit today's shape: it is not judged.
+			}
+			if (!target) continue;
+			const extension = ownerOf(def.id);
+			const key = `${extension}:${target.table}:${target.liveColumn ?? ''}`;
+			const group = groups.get(key) ?? {
+				extension,
+				table: target.table,
+				...(target.liveColumn && { liveColumn: target.liveColumn }),
+				ids: new Map<string, string[]>(),
+			};
+			group.ids.set(target.id, [...(group.ids.get(target.id) ?? []), draft.id]);
+			groups.set(key, group);
+		}
+		const gone = new Set<string>();
+		for (const group of groups.values()) {
+			try {
+				const tables = deps.views.db(group.extension, db).withTables<Record<string, RowWithId>>();
+				let query = tables
+					.selectFrom(group.table)
+					.select('id')
+					.where('id', 'in', [...group.ids.keys()]);
+				if (group.liveColumn) query = query.where(group.liveColumn, 'is', null);
+				const live = new Set((await query.execute()).map((row) => row.id));
+				for (const [id, draftIds] of group.ids)
+					if (!live.has(id)) for (const draftId of draftIds) gone.add(draftId);
+			} catch (error) {
+				// A table that cannot be read judges nothing: the drafts stay as they are.
+				logger.warn({ err: error, table: group.table }, 'checking the targets of drafts failed');
+			}
+		}
+		return gone;
+	}
+
 	async function expirePassed(): Promise<number> {
 		const passed = await passedCheck();
 		const waiting = await coreDb()
@@ -1451,6 +1515,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		unavailable,
 		editDraft,
 		passedCheck,
+		goneAmong,
 		expirePassed,
 	};
 }

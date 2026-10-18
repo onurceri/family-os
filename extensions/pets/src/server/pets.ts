@@ -115,6 +115,7 @@ export const addPet = defineAction({
 
 export const updatePet = defineAction({
 	id: 'pets.updatePet',
+	target: ({ id }) => ({ table: 'pets_pets', id, liveColumn: 'archived_at' }),
 	title: 'Change a pet',
 	draftTitle: 'pets:draft_title_update_pet',
 	input: UpdatePetSchema,
@@ -139,6 +140,7 @@ export const updatePet = defineAction({
 /** Hides the pet and its obligations and papers (kept, no more reminders). */
 export const archivePet = defineAction({
 	id: 'pets.archivePet',
+	target: ({ id }) => ({ table: 'pets_pets', id, liveColumn: 'archived_at' }),
 	title: 'Archive a pet',
 	draftTitle: 'pets:draft_title_archive_pet',
 	input: z.object({ id: PetIdSchema }),
@@ -160,6 +162,7 @@ export const archivePet = defineAction({
 
 export const addTreatment = defineAction({
 	id: 'pets.addTreatment',
+	target: ({ petId }) => ({ table: 'pets_pets', id: petId, liveColumn: 'archived_at' }),
 	title: 'Add a treatment',
 	draftTitle: 'pets:draft_title_add_treatment',
 	description:
@@ -228,6 +231,7 @@ export const addTreatment = defineAction({
 
 export const removeTreatment = defineAction({
 	id: 'pets.removeTreatment',
+	target: ({ id }) => ({ table: 'pets_treatments', id }),
 	title: 'Remove a treatment',
 	draftTitle: 'pets:draft_title_remove_treatment',
 	input: z.object({ id: PetTreatmentIdSchema }),

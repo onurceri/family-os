@@ -36,6 +36,7 @@ export interface ItemChip {
 		| 'chip_rejected'
 		| 'chip_undone'
 		| 'chip_expired'
+		| 'chip_gone'
 		| 'chip_reading'
 		| 'chip_failed'
 		| 'chip_held'
@@ -98,7 +99,10 @@ export function itemChip(item: InboxItem, drafts: readonly Draft[]): ItemChip {
 			count: applied.length,
 		};
 	if (drafts.length && drafts.every((d) => d.status === 'expired'))
-		return { tone: 'idle', key: 'chip_expired' };
+		return {
+			tone: 'idle',
+			key: drafts.every((d) => d.reason === 'gone') ? 'chip_gone' : 'chip_expired',
+		};
 	// Approved and then taken back is not the same as turned down.
 	const decided = drafts.filter((d) => d.status !== 'expired');
 	if (decided.length && decided.every((d) => d.status === 'undone'))
@@ -342,6 +346,7 @@ export function decidedRequests(
 export function requestChip(draft: Draft): ItemChip {
 	if (draft.status === 'applied') return { tone: 'now', key: 'chip_approved' };
 	if (draft.status === 'undone') return { tone: 'idle', key: 'chip_undone' };
-	if (draft.status === 'expired') return { tone: 'idle', key: 'chip_expired' };
+	if (draft.status === 'expired')
+		return { tone: 'idle', key: draft.reason === 'gone' ? 'chip_gone' : 'chip_expired' };
 	return { tone: 'idle', key: 'chip_rejected' };
 }

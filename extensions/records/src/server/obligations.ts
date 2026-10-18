@@ -147,6 +147,7 @@ export const addObligation = defineAction({
 
 export const updateObligation = defineAction({
 	id: 'records.updateObligation',
+	target: ({ id }) => ({ table: 'records_obligations', id }),
 	title: 'Change an obligation',
 	draftTitle: 'records:draft_title_update_obligation',
 	input: UpdateObligationSchema,
@@ -189,6 +190,7 @@ export const updateObligation = defineAction({
 
 export const completeObligation = defineAction({
 	id: 'records.completeObligation',
+	target: ({ id }) => ({ table: 'records_obligations', id }),
 	title: 'Mark an obligation done',
 	draftTitle: 'records:draft_title_complete_obligation',
 	description:
@@ -327,6 +329,7 @@ export const undoCompletion = defineAction({
 
 export const removeObligation = defineAction({
 	id: 'records.removeObligation',
+	target: ({ id }) => ({ table: 'records_obligations', id }),
 	title: 'Remove an obligation',
 	draftTitle: 'records:draft_title_remove_obligation',
 	input: z.object({ id: ObligationIdSchema }),

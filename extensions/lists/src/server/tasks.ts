@@ -185,6 +185,7 @@ export const addTask = defineAction({
 
 export const updateTask = defineAction({
 	id: 'lists.updateTask',
+	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
 	title: 'Change a task',
 	description:
 		'Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.',
@@ -260,6 +261,7 @@ const TaskChangeSchema = z.object({
  */
 export const changeTask = defineAction({
 	id: 'lists.changeTask',
+	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
 	targetTitle: taskTitle,
 	title: 'Change some details of a task',
 	draftTitle: 'lists:draft_title_change_task',
@@ -346,6 +348,7 @@ export const changeTask = defineAction({
 
 export const completeTask = defineAction({
 	id: 'lists.completeTask',
+	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
 	targetTitle: taskTitle,
 	offline: true,
 	title: 'Mark a task done',
@@ -418,6 +421,7 @@ export const completeTask = defineAction({
 
 export const reopenTask = defineAction({
 	id: 'lists.reopenTask',
+	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
 	offline: true,
 	title: 'Undo the last completion of a task',
 	input: z.object({ id: TaskIdSchema }),
@@ -449,6 +453,7 @@ export const reopenTask = defineAction({
 
 export const deleteTask = defineAction({
 	id: 'lists.deleteTask',
+	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
 	targetTitle: taskTitle,
 	title: 'Delete a task',
 	draftTitle: 'lists:draft_title_delete_task',

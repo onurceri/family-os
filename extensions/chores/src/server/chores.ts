@@ -140,6 +140,7 @@ export const createChore = defineAction({
 
 export const updateChore = defineAction({
 	id: 'chores.updateChore',
+	target: ({ id }) => ({ table: 'chores_chores', id, liveColumn: 'archived_at' }),
 	title: 'Change a chore',
 	draftTitle: 'chores:draft_title_update_chore',
 	input: UpdateChoreSchema,
@@ -177,6 +178,7 @@ export const updateChore = defineAction({
 /** Hides the chore (its history stays) and stops its reminders. */
 export const archiveChore = defineAction({
 	id: 'chores.archiveChore',
+	target: ({ id }) => ({ table: 'chores_chores', id }),
 	title: 'Archive a chore',
 	draftTitle: 'chores:draft_title_archive_chore',
 	input: z.object({ id: ChoreIdSchema }),
@@ -203,6 +205,7 @@ export const archiveChore = defineAction({
 
 export const setAssignees = defineAction({
 	id: 'chores.setAssignees',
+	target: ({ id }) => ({ table: 'chores_chores', id, liveColumn: 'archived_at' }),
 	title: 'Choose who does a chore',
 	draftTitle: 'chores:draft_title_set_assignees',
 	description:

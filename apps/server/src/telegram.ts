@@ -92,6 +92,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			// One about a day that has passed is expired: no buttons for it.
 			const actor = await kernel.memberActor(memberId);
 			const passed = await kernel.runner.passedCheck();
+			const gone = await kernel.runner.goneAmong(rows);
 			const { formatLocale, hourCycle } = await kernel.ctx.family.settings();
 			// The reader's words for the day, the family's order and clock.
 			const locale = dateLocale(await languageOf(memberId), formatLocale, hourCycle);
@@ -106,7 +107,10 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			const t = (key: string, params?: Record<string, unknown>) =>
 				handlers.translate(memberId, key, params);
 			const shown = rows
-				.filter((r) => actor !== null && !passed(r) && kernel.runner.mayDecide(r, actor))
+				.filter(
+					(r) =>
+						actor !== null && !passed(r) && !gone.has(r.id) && kernel.runner.mayDecide(r, actor),
+				)
 				.slice(0, 5);
 			return Promise.all(
 				shown.map(async (r) => {

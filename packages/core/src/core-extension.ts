@@ -200,8 +200,8 @@ export const DraftSchema = z.object({
 	/** Applied and its action can take it back (Undo). */
 	undoable: z.boolean(),
 	/**
-	 * Why a rejected draft is closed when a person did not decide it on its merits: `gone` (what
-	 * it was about no longer exists), `settled` (what it asked for was already so) or `withdrawn`
+	 * Why a draft is closed when a person did not decide it on its merits: `gone` (what
+	 * it was about no longer exists; a waiting one is shown as expired with it), `settled` (what it asked for was already so) or `withdrawn`
 	 * (the person behind it took it back). Null otherwise.
 	 */
 	reason: z.enum(['gone', 'settled', 'withdrawn']).nullable(),
@@ -291,6 +291,7 @@ const toDraft = (
 	suggestedAgain = false,
 	read: (json: string) => unknown = JSON.parse,
 	unavailable: z.infer<typeof DraftSchema>['unavailable'] = null,
+	waitingGone = false,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -315,7 +316,7 @@ const toDraft = (
 	autoApproved: row.auto_approved === 1,
 	decidedBy: row.decided_by,
 	undoable,
-	reason: draftReason(row),
+	reason: waitingGone ? 'gone' : draftReason(row),
 	titleKey,
 	subject,
 	mayExist: mayExist === true,
@@ -1287,10 +1288,15 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					: all
 			).slice(0, query.limit);
 			const passed = await runner.passedCheck();
+			// What it is about is gone: it can never be applied, so it is closed like an expired one.
+			const gone = await runner.goneAmong(rows.filter((row) => !passed(row)));
 			const shown = rows
-				.map((row): DraftRow => (passed(row) ? { ...row, status: 'expired' } : row))
+				.map(
+					(row): DraftRow =>
+						passed(row) || gone.has(row.id) ? { ...row, status: 'expired' } : row,
+				)
 				.filter((row) => !query.status || row.status === query.status);
-			return Promise.all(shown.map((row) => view(row, actor)));
+			return Promise.all(shown.map((row) => view(row, actor, gone.has(row.id))));
 		},
 	});
 
@@ -1322,8 +1328,11 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				actor.kind === 'member' ? rows.filter((row) => deps.runner().mayDecide(row, actor)) : rows;
 			// One about a day that has passed no longer waits (it expires).
 			const passed = await deps.runner().passedCheck();
+			const open = decidable.filter((row) => !passed(row));
+			// One whose target is gone can never be applied: nothing to decide.
+			const gone = await deps.runner().goneAmong(open);
 			// What a member shared is one thing to decide, however many suggestions it made.
-			return { count: new Set(decidable.filter((row) => !passed(row)).map(waitingUnit)).size };
+			return { count: new Set(open.filter((row) => !gone.has(row.id)).map(waitingUnit)).size };
 		},
 	});
 
@@ -1355,8 +1364,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.execute();
 			const ids = new Set<string>();
 			const passed = await deps.runner().passedCheck(uow.db);
+			const gone = await deps.runner().goneAmong(rows, uow.db);
 			for (const row of rows) {
-				if (passed(row)) continue;
+				if (passed(row) || gone.has(row.id)) continue;
 				if (row.source_id && deps.runner().mayDecide(row, uow.actor)) ids.add(row.source_id);
 			}
 			return { sourceIds: [...ids] };
@@ -1573,9 +1583,13 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 								.execute()
 						).map((m) => [m.id, m.display_name]),
 			);
+			const goneIds = await deps.runner().goneAmong(
+				mine.filter((row) => !passed(row)),
+				uow.db,
+			);
 			const suggestions = await Promise.all(
 				mine.map(async (row) => {
-					const reason = draftReason(row);
+					const reason = goneIds.has(row.id) ? ('gone' as const) : draftReason(row);
 					return {
 						id: row.id,
 						label: suggestionLabel(
@@ -1585,7 +1599,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 							await scopeFor(row),
 						),
 						...(row.summary && { group: row.summary }),
-						status: SUGGESTION_STATUS[passed(row) ? 'expired' : row.status],
+						status: SUGGESTION_STATUS[passed(row) || goneIds.has(row.id) ? 'expired' : row.status],
 						...(reason !== null && { reason }),
 						suggestedAt: iso(row.created_at),
 						...(row.decided_at !== null && { decidedAt: iso(row.decided_at) }),
@@ -1660,8 +1674,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const today = todayIn(settings.timeZone, uow.clock.now());
 			const date = today < input.from ? input.from : today > input.to ? input.to : today;
 			const language = me?.locale ?? settings.locale;
+			const gone = await runner.goneAmong(rows, uow.db);
 			const waiting = rows.filter(
-				(row) => !passed(row) && (runner.mayDecide(row, person) || runner.isProposer(person, row)),
+				(row) =>
+					!passed(row) &&
+					!gone.has(row.id) &&
+					(runner.mayDecide(row, person) || runner.isProposer(person, row)),
 			);
 			const readable = waiting.filter(aiMayRead);
 			const items = await Promise.all(
@@ -1729,7 +1747,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		if (!why) return null;
 		return { ...why, labels: deps.extensionInstall.namesOf(why.extension) };
 	};
-	const view = async (row: DraftRow, reader: Actor) =>
+	const view = async (row: DraftRow, reader: Actor, waitingGone = false) =>
 		toDraft(
 			row,
 			deps.runner().undoStep(row) !== null,
@@ -1742,6 +1760,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			await deps.runner().suggestedAgain(row),
 			(json) => readStoredInput(deps.registry().actions.get(row.action_id), json),
 			unavailableOf(row),
+			waitingGone,
 		);
 
 	const approve = defineRoute({

@@ -80,6 +80,7 @@ export const attachDocument = defineAction({
 
 export const updateDocument = defineAction({
 	id: 'records.updateDocument',
+	target: ({ id }) => ({ table: 'records_documents', id, liveColumn: 'archived_at' }),
 	title: 'Change the label or expiry of a paper',
 	draftTitle: 'records:draft_title_update_document',
 	input: UpdateDocumentSchema,
@@ -110,6 +111,7 @@ export const updateDocument = defineAction({
 /** Takes the link away; the file itself stays with its Inbox item. */
 export const detachDocument = defineAction({
 	id: 'records.detachDocument',
+	target: ({ id }) => ({ table: 'records_documents', id }),
 	title: 'Detach a paper from a record',
 	draftTitle: 'records:draft_title_detach_document',
 	input: z.object({ id: RecordDocIdSchema }),

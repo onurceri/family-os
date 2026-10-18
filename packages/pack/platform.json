@@ -292,6 +292,7 @@
 			"WeatherIcon",
 			"WeatherSky",
 			"awaitingMarkText",
+			"awaitingRowText",
 			"beginWork",
 			"choresLeft",
 			"countdown",

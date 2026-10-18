@@ -97,6 +97,7 @@ export const createRecipe = defineAction({
 
 export const updateRecipe = defineAction({
 	id: 'kitchen.updateRecipe',
+	target: ({ id }) => ({ table: 'kitchen_recipes', id, liveColumn: 'archived_at' }),
 	title: 'Change a recipe',
 	draftTitle: 'kitchen:draft_title_update_recipe',
 	input: UpdateRecipeSchema,
@@ -117,6 +118,7 @@ export const updateRecipe = defineAction({
 /** Hides a recipe (kept, so meal plan entries that name it still read well). */
 export const archiveRecipe = defineAction({
 	id: 'kitchen.archiveRecipe',
+	target: ({ id }) => ({ table: 'kitchen_recipes', id, liveColumn: 'archived_at' }),
 	title: 'Archive a recipe',
 	draftTitle: 'kitchen:draft_title_archive_recipe',
 	input: z.object({ id: RecipeIdSchema }),
@@ -147,6 +149,7 @@ export const archiveRecipe = defineAction({
 /** Stores the photo the upload route already put in the file store. */
 export const setRecipePhoto = defineAction({
 	id: 'kitchen.setRecipePhoto',
+	target: ({ id }) => ({ table: 'kitchen_recipes', id, liveColumn: 'archived_at' }),
 	title: 'Set a recipe photo',
 	input: z.object({
 		id: RecipeIdSchema,

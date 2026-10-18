@@ -337,6 +337,7 @@ export const undoAddShoppingItems = defineAction({
 
 export const updateShoppingItem = defineAction({
 	id: 'lists.updateShoppingItem',
+	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
 	title: 'Change a shopping item',
 	requires: shoppingEdit.id,
 	input: z.object({
@@ -367,6 +368,7 @@ export const updateShoppingItem = defineAction({
 
 export const checkShoppingItem = defineAction({
 	id: 'lists.checkShoppingItem',
+	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
 	targetTitle: itemTitle,
 	offline: true,
 	title: 'Tick off (or untick) a shopping item',
@@ -424,6 +426,7 @@ export const checkShoppingItem = defineAction({
 
 export const deleteShoppingItem = defineAction({
 	id: 'lists.deleteShoppingItem',
+	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
 	targetTitle: itemTitle,
 	title: 'Remove a shopping item',
 	draftTitle: 'lists:draft_title_delete_shopping_item',

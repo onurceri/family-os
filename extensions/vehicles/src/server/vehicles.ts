@@ -118,6 +118,7 @@ export const addVehicle = defineAction({
 
 export const updateVehicle = defineAction({
 	id: 'vehicles.updateVehicle',
+	target: ({ id }) => ({ table: 'vehicles_vehicles', id, liveColumn: 'archived_at' }),
 	title: 'Change a vehicle',
 	draftTitle: 'vehicles:draft_title_update_vehicle',
 	input: UpdateVehicleSchema,
@@ -146,6 +147,7 @@ export const updateVehicle = defineAction({
 /** Hides the vehicle and its obligations and papers (kept, no more reminders). */
 export const archiveVehicle = defineAction({
 	id: 'vehicles.archiveVehicle',
+	target: ({ id }) => ({ table: 'vehicles_vehicles', id, liveColumn: 'archived_at' }),
 	title: 'Archive a vehicle',
 	draftTitle: 'vehicles:draft_title_archive_vehicle',
 	input: z.object({ id: VehicleIdSchema }),
@@ -167,6 +169,11 @@ export const archiveVehicle = defineAction({
 
 export const addLog = defineAction({
 	id: 'vehicles.addLog',
+	target: ({ vehicleId }) => ({
+		table: 'vehicles_vehicles',
+		id: vehicleId,
+		liveColumn: 'archived_at',
+	}),
 	title: 'Add a service or repair entry',
 	draftTitle: 'vehicles:draft_title_add_log',
 	input: AddLogSchema,
@@ -220,6 +227,7 @@ export const addLog = defineAction({
 
 export const removeLog = defineAction({
 	id: 'vehicles.removeLog',
+	target: ({ id }) => ({ table: 'vehicles_logs', id }),
 	title: 'Remove a service or repair entry',
 	draftTitle: 'vehicles:draft_title_remove_log',
 	input: z.object({ id: VehicleLogIdSchema }),

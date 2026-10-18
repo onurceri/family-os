@@ -60,6 +60,21 @@ describe('DraftCard', () => {
 		}
 	});
 
+	it('says that a waiting suggestion whose subject is gone can no longer be added', () => {
+		const el = render(DraftCard, {
+			kind: 'Event',
+			title: 'Piano lesson',
+			fields: [],
+			status: 'expired',
+			reason: 'gone',
+			labels,
+			onapprove: vi.fn(),
+			onreject: vi.fn(),
+		});
+		expect(el.querySelector('[role="status"]')?.textContent?.trim()).toBe('It no longer exists');
+		expect(qa('button', el)).toHaveLength(0);
+	});
+
 	it('says why a closed draft is closed', () => {
 		const closed = (reason: 'gone' | 'settled' | 'withdrawn' | null) =>
 			render(DraftCard, {

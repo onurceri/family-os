@@ -216,6 +216,7 @@ export const postNote = defineAction({
 
 export const editNote = defineAction({
 	id: 'board.editNote',
+	target: ({ id }) => ({ table: 'board_notes', id }),
 	title: 'Change a note on the family board',
 	input: EditNoteSchema,
 	output: z.object({ ok: z.literal(true) }),
@@ -238,6 +239,7 @@ export const editNote = defineAction({
 
 export const removeNote = defineAction({
 	id: 'board.removeNote',
+	target: ({ id }) => ({ table: 'board_notes', id }),
 	title: 'Take a note off the family board',
 	input: z.object({ id: NoteIdSchema }),
 	output: z.object({ removed: z.boolean() }),
@@ -262,6 +264,7 @@ export const removeNote = defineAction({
 
 export const pinNote = defineAction({
 	id: 'board.pinNote',
+	target: ({ id }) => ({ table: 'board_notes', id }),
 	title: 'Pin or unpin a note on the family board',
 	input: z.object({ id: NoteIdSchema, pinned: z.boolean() }),
 	output: z.object({ ok: z.literal(true) }),
@@ -285,6 +288,7 @@ export const pinNote = defineAction({
 
 export const moveNote = defineAction({
 	id: 'board.moveNote',
+	target: ({ id }) => ({ table: 'board_notes', id }),
 	title: 'Move a note on the family board',
 	input: MoveNoteSchema,
 	output: z.object({ moved: z.boolean() }),

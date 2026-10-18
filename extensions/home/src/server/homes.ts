@@ -75,6 +75,7 @@ export const addHome = defineAction({
 
 export const updateHome = defineAction({
 	id: 'home.updateHome',
+	target: ({ id }) => ({ table: 'home_homes', id, liveColumn: 'archived_at' }),
 	title: 'Change a home',
 	draftTitle: 'home:draft_title_update_home',
 	input: UpdateHomeSchema,
@@ -101,6 +102,7 @@ export const updateHome = defineAction({
  */
 export const archiveHome = defineAction({
 	id: 'home.archiveHome',
+	target: ({ id }) => ({ table: 'home_homes', id, liveColumn: 'archived_at' }),
 	title: 'Archive a home',
 	draftTitle: 'home:draft_title_archive_home',
 	input: z.object({ id: HomeIdSchema }),

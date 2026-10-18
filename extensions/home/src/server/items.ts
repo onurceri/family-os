@@ -114,6 +114,7 @@ async function keepLapsing(uow: UnitOfWork, obligationId: string, until: string)
 
 export const addItem = defineAction({
 	id: 'home.addItem',
+	target: ({ homeId }) => ({ table: 'home_homes', id: homeId, liveColumn: 'archived_at' }),
 	title: 'Add a thing to a home',
 	draftTitle: 'home:draft_title_add_item',
 	input: AddItemSchema,
@@ -200,6 +201,7 @@ export const addItem = defineAction({
 
 export const updateItem = defineAction({
 	id: 'home.updateItem',
+	target: ({ id }) => ({ table: 'home_items', id, liveColumn: 'archived_at' }),
 	title: 'Change a thing',
 	draftTitle: 'home:draft_title_update_item',
 	input: UpdateItemSchema,
@@ -269,6 +271,7 @@ export const updateItem = defineAction({
 /** Hides the thing and its obligations and papers (kept, no more reminders). */
 export const archiveItem = defineAction({
 	id: 'home.archiveItem',
+	target: ({ id }) => ({ table: 'home_items', id, liveColumn: 'archived_at' }),
 	title: 'Archive a thing',
 	draftTitle: 'home:draft_title_archive_item',
 	input: z.object({ id: ItemIdSchema }),

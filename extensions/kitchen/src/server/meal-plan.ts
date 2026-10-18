@@ -116,6 +116,7 @@ export const addToMealPlan = defineAction({
 
 export const updateMealPlanEntry = defineAction({
 	id: 'kitchen.updateMealPlanEntry',
+	target: ({ id }) => ({ table: 'kitchen_meal_plan', id }),
 	title: 'Change a planned meal',
 	draftTitle: 'kitchen:draft_title_update_meal_plan_entry',
 	input: UpdateMealEntrySchema,
@@ -167,6 +168,7 @@ const mealTitle = async (ctx: DuplicateContext, { id }: { id: string }) => {
 
 export const removeMealPlanEntry = defineAction({
 	id: 'kitchen.removeMealPlanEntry',
+	target: ({ id }) => ({ table: 'kitchen_meal_plan', id }),
 	title: 'Take a meal off the plan',
 	draftTitle: 'kitchen:draft_title_remove_meal_plan_entry',
 	targetTitle: mealTitle,

@@ -146,6 +146,15 @@ export interface ActionDefinition<
 		input: z.infer<In>,
 	) => Promise<Record<string, unknown> | null>;
 	/**
+	 * The row a change works on, for an input that names one by its id: its table (the
+	 * extension's own), the id, and a column that is set once the row is archived or deleted
+	 * (`archived_at`). A waiting draft whose row is no longer there, or no longer live, can never
+	 * be applied: it is shown as "can no longer be added" and leaves the list of what needs a
+	 * decision, instead of failing when somebody tries to approve it. Null when the input names no
+	 * row (a new thing). The runner reads all waiting drafts' rows in one query per table.
+	 */
+	readonly target?: (input: z.infer<In>) => ActionTarget | null;
+	/**
 	 * A reason an AI's proposal is pointless (the thing is already in the state it asks for), or
 	 * null. The runner refuses the proposal with that text, so the model tells the person instead
 	 * of filling the review list with changes that change nothing. Only asked of AI actors.
@@ -197,6 +206,15 @@ export interface ActionDefinition<
 export interface UndoStep {
 	actionId: string;
 	input: unknown;
+}
+
+/** The row a change works on (see `ActionDefinition.target`). */
+export interface ActionTarget {
+	/** The extension's own table. */
+	table: string;
+	id: string;
+	/** A column that is set once the row is archived or deleted (`archived_at`). */
+	liveColumn?: string;
 }
 
 /**
@@ -278,6 +296,7 @@ export function defineAction<
 		ctx: DuplicateContext,
 		input: z.infer<In>,
 	) => Promise<Record<string, unknown> | null>;
+	target?: (input: z.infer<In>) => ActionTarget | null;
 	refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
 	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;

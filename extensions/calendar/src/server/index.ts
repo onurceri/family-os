@@ -289,6 +289,7 @@ function storedEventReplace(input: unknown): unknown {
 
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
+	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
 	title: 'Change an event',
 	description:
 		'Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.',
@@ -338,6 +339,7 @@ export const updateEvent = defineAction({
 
 export const deleteEvent = defineAction({
 	id: 'calendar.deleteEvent',
+	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
 	title: 'Delete an event, or one occurrence of a repeating event',
 	draftTitle: 'calendar:draft_title_delete_event',
 	input: z.object({
@@ -529,6 +531,7 @@ function eventFieldsChanged(row: EventRow, next: ReturnType<typeof toRow>): stri
  */
 export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
+	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
 	title: 'Change some details of an event',
 	draftTitle: 'calendar:draft_title_change_event',
 	input: EventChangeSchema.extend({

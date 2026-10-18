@@ -39,6 +39,7 @@ const fieldsOf = (s: z.output<typeof ServiceFieldsSchema>) => ({
  */
 export const addService = defineAction({
 	id: 'home.addService',
+	target: ({ homeId }) => ({ table: 'home_homes', id: homeId, liveColumn: 'archived_at' }),
 	title: 'Add a utility or subscription',
 	draftTitle: 'home:draft_title_add_service',
 	input: AddServiceSchema,
@@ -76,6 +77,7 @@ export const addService = defineAction({
 
 export const updateService = defineAction({
 	id: 'home.updateService',
+	target: ({ id }) => ({ table: 'home_services', id, liveColumn: 'archived_at' }),
 	title: 'Change a utility or subscription',
 	draftTitle: 'home:draft_title_update_service',
 	input: UpdateServiceSchema,
@@ -104,6 +106,7 @@ export const updateService = defineAction({
 /** Hides the service and its obligations and papers (kept, no more reminders). */
 export const archiveService = defineAction({
 	id: 'home.archiveService',
+	target: ({ id }) => ({ table: 'home_services', id, liveColumn: 'archived_at' }),
 	title: 'Archive a utility or subscription',
 	draftTitle: 'home:draft_title_archive_service',
 	input: z.object({ id: ServiceIdSchema }),
