@@ -183,5 +183,8 @@
 	"ask_run": "{{name}} çalıştırılsın mı?",
 	"ask_hint": "Home Assistant bunu hemen yapar.",
 	"switching": "Uygulanıyor…",
-	"switch_failed": "{{name}} değiştirilemedi."
+	"switch_failed": "{{name}} değiştirilemedi.",
+	"page_empty": "Şu an Home Assistant'tan gösterilecek bir şey yok.",
+	"page_unavailable": "Home Assistant'a şu an ulaşılamıyor.",
+	"page_more": "{{n}} tane daha"
 }

@@ -183,5 +183,8 @@
 	"ask_run": "Run {{name}}?",
 	"ask_hint": "Home Assistant does it right away.",
 	"switching": "Switching…",
-	"switch_failed": "Could not switch {{name}}."
+	"switch_failed": "Could not switch {{name}}.",
+	"page_empty": "Nothing from Home Assistant to show right now.",
+	"page_unavailable": "Home Assistant cannot be reached right now.",
+	"page_more": "{{n}} more"
 }

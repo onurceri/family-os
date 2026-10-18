@@ -63,6 +63,14 @@ export default defineWebExtension({
 			requires: 'homeassistant.view',
 			component: () => import('./DisplayValues.svelte'),
 		},
+		{
+			// A page of its own on a family display, between Today's turns.
+			slot: 'display.page',
+			id: 'homeassistant.values',
+			labelKey: 'homeassistant:display_title',
+			requires: 'homeassistant.view',
+			component: () => import('./DisplayValuesPage.svelte'),
+		},
 	],
 	blocks: [presenceBlock],
 	today: [presenceToday],
