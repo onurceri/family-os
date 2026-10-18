@@ -100,11 +100,15 @@ export function createAccess(
 			// Background work may do everything; an unauthenticated request (public routes) nothing.
 			if (actor.kind === 'system') return actor.source !== ANONYMOUS;
 			// AI only reads; its changes are always drafts. An area that is off for the AI
-			// is closed to it entirely; `local` is enforced where the model is called (the adapter).
+			// is closed to it entirely, and a local-only one is open only to an actor whose model is
+			// local (the adapter checks the same again where the model is called).
 			// Acting for a member (the assistant), it also needs what that member holds: it never
 			// exceeds the person asking.
 			if (actor.kind === 'ai') {
-				if (definition.level !== 'view' || aiAccess(ownerOf(capability)) === 'off') return false;
+				const area = aiAccess(ownerOf(capability));
+				if (definition.level !== 'view' || area === 'off') return false;
+				// A local-only area's data may reach only a model on the family's own network.
+				if (area === 'local' && actor.local !== true) return false;
 				return actor.onBehalfOf === undefined || holds(actor.roleId, capability);
 			}
 			// A display holds only what was granted at pairing, and never above `view`.

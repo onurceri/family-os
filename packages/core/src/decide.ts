@@ -113,6 +113,16 @@ export function admission(def: AnyActionDefinition, actor: Actor, env: DecideEnv
 	if (actor.kind === 'ai' && env.aiArea?.(ownerOf(def.id)) === 'off') {
 		return { reason: 'area' };
 	}
+	// A digest gathers a topic's facts for a model to read: a local-only area gives them only to a
+	// model that runs on the family's own network.
+	if (
+		actor.kind === 'ai' &&
+		def.ai?.digest !== undefined &&
+		actor.local !== true &&
+		env.aiArea?.(ownerOf(def.id)) === 'local'
+	) {
+		return { reason: 'area' };
+	}
 	// An unauthenticated caller of a public route holds no capability: it can never run an action
 	// that requires one (or change data at all). Routes that need bookkeeping use their own named
 	// system actor.

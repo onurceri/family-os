@@ -12,6 +12,7 @@ import type {
 	Logger,
 	SecretBox,
 } from './ports.ts';
+import type { QuestionTopic } from './question.ts';
 import type { AiKindInfo, IndexedMention, MentionEnv, SettledResolution } from './understanding.ts';
 
 /** Household-wide settings every extension may read. */
@@ -252,6 +253,14 @@ export interface AiActionInfo {
 	inputSchema: Record<string, unknown>;
 }
 
+/** The digest of a topic (see `ActionInvoker.aiDigests`). */
+export interface AiDigestInfo {
+	topic: QuestionTopic;
+	actionId: string;
+	/** The extension that keeps it (its area). */
+	area: string;
+}
+
 export interface ActionInvoker {
 	/**
 	 * Runs an action through the action runner: validation → RBAC → approval policy →
@@ -286,6 +295,13 @@ export interface ActionInvoker {
 	 * caller invokes it as the AI actor, which refuses areas that are off for the AI.
 	 */
 	aiContextActions(): ReadonlyMap<string, readonly string[]>;
+	/**
+	 * The digest of each topic the AI may read (`defineDigest`), filtered like `aiReadTools`: of
+	 * extensions that are on, of areas open to the AI (local-only ones only with `local: true`),
+	 * and with an `actor`, only those that actor may run. In topic order. Digests are never in
+	 * `aiReadTools`: code asks them, the model does not choose them.
+	 */
+	aiDigests(options?: { local?: boolean; actor?: Actor }): AiDigestInfo[];
 	/**
 	 * The areas of FamilyOS the AI cannot look into here, so an agent can say so plainly ("Home is
 	 * not installed here") instead of reading an empty answer from another area as "there is

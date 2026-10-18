@@ -123,7 +123,7 @@ export function namedShares(
 }
 
 /** Whether two words are one word in different forms: one starts the other and is long enough to mean it. */
-function sameStem(a: string, b: string): boolean {
+export function sameStem(a: string, b: string): boolean {
 	if (a === b) return true;
 	const [short, long] = [...a].length <= [...b].length ? [a, b] : [b, a];
 	return [...short].length >= MIN_STEM && long.startsWith(short);

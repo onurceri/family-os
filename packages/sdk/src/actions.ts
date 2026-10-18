@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Actor } from './actor.ts';
 import type { ExtensionContext, UnitOfWork } from './context.ts';
+import type { QuestionTopic } from './question.ts';
 
 /** What a duplicate check may read. */
 export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family' | 'translate'>;
@@ -236,6 +237,11 @@ export interface ActionAiHints {
 	 * text is private, or whose approval acts as the member.
 	 */
 	addressToMember?: boolean;
+	/**
+	 * Set by `defineDigest`: this read is the topic's digest, which code asks for the facts of a
+	 * question (span and people in, typed items out). It is not offered as a tool of its own.
+	 */
+	digest?: QuestionTopic;
 }
 
 const ACTION_ID = /^[a-z][a-z0-9]*\.[a-z][a-zA-Z0-9]*$/;

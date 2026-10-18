@@ -4,12 +4,15 @@ import {
 	type AnyActionDefinition,
 	BUILT_IN_ROLES,
 	type DbExecutor,
+	type DigestItem,
 	type DraftAlternative,
 	defineAction,
+	defineDigest,
 	defineExtension,
 	defineJob,
 	defineNotificationKind,
 	defineRoute,
+	digestOf,
 	FamosError,
 	type IdentityAdmin,
 	idSchema,
@@ -42,7 +45,7 @@ import {
 } from './core-events.ts';
 import { DecisionSchema } from './decide.ts';
 import type { DeviceService } from './devices.ts';
-import { EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
+import { draftDateOf, EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
 import { waitingUnit } from './draft-notices.ts';
 import type { createExtensionInstall } from './extension-install.ts';
 import {
@@ -144,6 +147,9 @@ const DRAFT_STATUSES = [
 
 /** How many of the newest drafts `core.mySuggestions` looks through to find the member's own. */
 const MY_SUGGESTIONS_WINDOW = 300;
+
+/** How many waiting suggestions the suggestions digest names, newest first. */
+const SUGGESTIONS_DIGEST_LIMIT = 15;
 
 const SUGGESTION_STATUS = {
 	pending: 'waiting',
@@ -1422,6 +1428,30 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	});
 
 	/**
+	 * What a draft is about, by name. A draft stored before drafts carried the real title of what
+	 * they change names its target only by id: the action says what that is called now, read from
+	 * its own extension's tables through this transaction.
+	 */
+	const draftSubject = async (uow: UnitOfWork, row: DraftRow) => {
+		const raw = row.edited_input ?? row.input;
+		const named = subjectOf(raw);
+		const def = deps.registry().actions.get(row.action_id);
+		const look = def?.targetTitle ?? def?.subject;
+		if (named || !def || !look) return named;
+		try {
+			const input = def.input.safeParse(readStoredInput(def, raw));
+			const ctx = {
+				db: deps.extensionDb(ownerOf(def.id), uow.db),
+				family: uow.family,
+				translate: uow.translate,
+			};
+			return input.success ? ((await look(ctx, input.data)) ?? undefined)?.slice(0, 80) : undefined;
+		} catch {
+			return undefined;
+		}
+	};
+
+	/**
 	 * What became of suggestions, so an agent answers "was it approved?" instead of guessing. An
 	 * agent working in a conversation (the assistant in one thread, an MCP client with its app key)
 	 * sees only the suggestions made there: the person's other suggestions, from Quick add or
@@ -1505,23 +1535,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					return theirs && here(row, by);
 				})
 				.slice(0, limit);
-			// A draft stored before drafts carried the real title of what they change names its
-			// target only by id: the action says what that is called now.
-			const subjectFor = async (row: DraftRow) => {
-				const raw = row.edited_input ?? row.input;
-				const named = subjectOf(raw);
-				const def = actions.get(row.action_id);
-				const look = def?.targetTitle ?? def?.subject;
-				if (named || !def || !look) return named;
-				try {
-					const input = def.input.safeParse(readStoredInput(def, raw));
-					return input.success
-						? ((await look(ctxOf(def), input.data)) ?? undefined)?.slice(0, 80)
-						: undefined;
-				} catch {
-					return undefined;
-				}
-			};
+			const subjectFor = (row: DraftRow) => draftSubject(uow, row);
 			// A change to one date of a repeating event says so, in the words and the date format
 			// of the person it is for.
 			const { locale, formatLocale, hourCycle } = await uow.family.settings();
@@ -1582,6 +1596,101 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				}),
 			);
 			return { suggestions };
+		},
+	});
+
+	/**
+	 * The suggestions waiting for the person asking: those they may decide (Quick add's cards,
+	 * requests from others), wherever they were made, and their own that wait for someone else.
+	 * A suggestion waits now, whatever days are asked about, so the span and the people asked about
+	 * never leave one out; each stands on the span's first day it is asked about, and says the day
+	 * it is about when it is about one. One the AI may not read (its area is off for it, or local
+	 * only and the model is not) is counted as hidden, never shown.
+	 */
+	const suggestionsDigest = defineDigest({
+		id: 'core.suggestionsDigest',
+		topic: 'suggestions',
+		title: 'Suggestions waiting for the person asking, for an answer',
+		description:
+			'The suggestions that wait for the person asking to approve or reject (Quick add cards, requests from others), newest first, and their own suggestions that wait for someone else; who suggested each, and the day it is about.',
+		async run(uow, input) {
+			const actor = uow.actor;
+			const asker =
+				actor.kind === 'member'
+					? actor.memberId
+					: actor.kind === 'ai'
+						? actor.onBehalfOf
+						: undefined;
+			if (asker === undefined) return digestOf([], input);
+			const [settings, people] = await Promise.all([uow.family.settings(), uow.family.members()]);
+			const me = people.find((m) => m.id === asker);
+			const roleId =
+				actor.kind === 'member' ? actor.roleId : actor.kind === 'ai' ? actor.roleId : undefined;
+			const role =
+				roleId ??
+				(
+					await members(uow.db)
+						.selectFrom('core_members')
+						.select('role_id')
+						.where('id', '=', asker)
+						.executeTakeFirst()
+				)?.role_id;
+			if (role === undefined) return digestOf([], input);
+			const person: Actor = { kind: 'member', memberId: asker, roleId: role };
+			const rows = await uow.db
+				.withTables<CoreTables>()
+				.selectFrom('core_drafts')
+				.selectAll()
+				.where('status', 'in', [...WAITING_STATUSES])
+				.where((eb) => eb.or([eb('for_member', 'is', null), eb('for_member', '=', asker)]))
+				.orderBy('created_at', 'desc')
+				.orderBy('id', 'desc')
+				.limit(MY_SUGGESTIONS_WINDOW)
+				.execute();
+			const runner = deps.runner();
+			const passed = await runner.passedCheck(uow.db);
+			const actions = deps.registry().actions;
+			const areas = deps.aiAreas();
+			// What the AI may not look into stays out of what it reads, even counted as a title.
+			const aiMayRead = (row: DraftRow) => {
+				if (actor.kind !== 'ai') return true;
+				const area = areas.access(ownerOf(row.action_id));
+				return area === 'any' || (area === 'local' && actor.local === true);
+			};
+			const today = todayIn(settings.timeZone, uow.clock.now());
+			const date = today < input.from ? input.from : today > input.to ? input.to : today;
+			const language = me?.locale ?? settings.locale;
+			const waiting = rows.filter(
+				(row) => !passed(row) && (runner.mayDecide(row, person) || runner.isProposer(person, row)),
+			);
+			const readable = waiting.filter(aiMayRead);
+			const items = await Promise.all(
+				readable.map(async (row): Promise<DigestItem> => {
+					const def = actions.get(row.action_id);
+					const by = JSON.parse(row.proposed_by) as Actor;
+					const from = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : null;
+					const name = def?.draftTitle ? uow.translate(language, def.draftTitle) : def?.title;
+					const day = def ? draftDateOf(def, row) : undefined;
+					return {
+						handle: row.id,
+						kind: 'suggestion',
+						title: suggestionLabel(name, row, await draftSubject(uow, row)).slice(0, 300),
+						date,
+						people: from ? [from] : [],
+						status: row.status === 'failed' ? 'failed' : 'waiting',
+						extra: {
+							waitsFor: runner.mayDecide(row, person) ? 'asker' : 'others',
+							suggestedOn: zoned(row.created_at, settings.timeZone).toPlainDate().toString(),
+							...(day && { day }),
+							...(row.summary && { group: row.summary.slice(0, 300) }),
+						},
+					};
+				}),
+			);
+			return digestOf(items, input, {
+				limit: SUGGESTIONS_DIGEST_LIMIT,
+				hidden: waiting.length - readable.length,
+			});
 		},
 	});
 
@@ -1718,6 +1827,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			decidableSources,
 			editDraft,
 			mySuggestions,
+			suggestionsDigest,
 			today,
 			createMember,
 			updateMember,

@@ -216,7 +216,7 @@ describe('the AI acting on behalf of a member', () => {
 		expect(readIds(admin.ai)).toEqual(['stash.list']);
 		expect(
 			k.ctx.actions
-				.aiReadTools({ actor: admin.ai, local: true })
+				.aiReadTools({ actor: { ...admin.ai, local: true }, local: true })
 				.map((a) => a.id)
 				.filter((id) => !id.startsWith('core.'))
 				.sort(),

@@ -22,7 +22,7 @@ import type {
 	NotifyRequest,
 	SecretBox,
 } from '@famos/sdk';
-import { tablePrefixOf } from '@famos/sdk';
+import { QUESTION_TOPIC_IDS, type QuestionTopic, tablePrefixOf } from '@famos/sdk';
 import type { KyselyPlugin } from 'kysely';
 import { z } from 'zod';
 import { type Access, createAccess } from './access.ts';
@@ -376,7 +376,14 @@ export function createKernel(options: KernelOptions): Kernel {
 	});
 	const aiActions = [...registry.actions.values()].filter((a) => a.ai);
 	const aiDraftActions = aiActions.filter((a) => !a.readOnly).map((a) => [a, aiInfo(a)] as const);
-	const aiReadActions = aiActions.filter((a) => a.readOnly).map((a) => [a, aiInfo(a)] as const);
+	// A digest is asked by code for a question's facts; it is never a tool the model chooses.
+	const aiReadActions = aiActions
+		.filter((a) => a.readOnly && a.ai?.digest === undefined)
+		.map((a) => [a, aiInfo(a)] as const);
+	const digestActions = QUESTION_TOPIC_IDS.flatMap((topic) => {
+		const def = aiActions.find((a) => a.ai?.digest === topic);
+		return def ? [[def, aiInfo(def)] as const] : [];
+	});
 	const aiContexts = registry.extensions.flatMap((e) =>
 		e.ai?.context ? [[e.id, [e.ai.context].flat()] as const] : [],
 	);
@@ -441,6 +448,14 @@ export function createKernel(options: KernelOptions): Kernel {
 		aiReadTools: (catalogOptions) => offered(aiReadActions, catalogOptions),
 		aiContextActions: () =>
 			new Map(aiContexts.filter(([extensionId]) => features.isOn(extensionId))),
+		aiDigests: (digestOptions) => {
+			const open = new Set(offered(digestActions, digestOptions).map((info) => info.id));
+			return digestActions.flatMap(([def]) =>
+				open.has(def.id)
+					? [{ topic: def.ai?.digest as QuestionTopic, actionId: def.id, area: ownerOf(def.id) }]
+					: [],
+			);
+		},
 		aiMissingAreas: (areaOptions) =>
 			aiMissingAreas(
 				{

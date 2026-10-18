@@ -116,9 +116,11 @@ describe('AI areas', () => {
 		// Core's own capabilities stay available to the AI actor's level rule.
 		expect(k.access.can(AI, 'core.members.view')).toBe(true);
 
-		// `local` does not block here; the model adapter checks the provider.
+		// A local-only area is open only to an AI actor whose model is local; the model adapter
+		// checks the provider again.
 		await set(admin, { extensionId: 'diary', access: 'local' });
-		expect(k.access.can(AI, 'diary.view')).toBe(true);
+		expect(k.access.can(AI, 'diary.view')).toBe(false);
+		expect(k.access.can({ ...AI, local: true }, 'diary.view')).toBe(true);
 	});
 
 	it('checks AI actors like members when they read through actions', async () => {

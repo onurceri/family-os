@@ -8,11 +8,15 @@ import type {
 	ExtensionDefinition,
 	HostContract,
 	NotificationKindDefinition,
+	QuestionTopic,
 	ShareTarget,
 } from '@famos/sdk';
 import {
 	assertRestrictiveDefaults,
+	DigestInputSchema,
+	DigestOutputSchema,
 	mentionKindProblems,
+	QUESTION_TOPICS,
 	reservedClash,
 	SDK_VERSION,
 	satisfiesCaret,
@@ -310,6 +314,25 @@ export function buildRegistry(
 			kindOwner.set(kind.id, ext.id);
 		}
 	}
+	const digests = new Map<string, string>();
+	/**
+	 * A digest is the one read of its topic, kept by the area the topic belongs to, with the
+	 * digest's own input and output, so code can ask it without knowing the extension.
+	 */
+	const checkDigest = (action: AnyActionDefinition, topic: string, owner: string) => {
+		const where = `Digest "${action.id}"`;
+		if (!Object.hasOwn(QUESTION_TOPICS, topic))
+			refuse(owner, `${where} names unknown topic "${topic}"`);
+		const area = QUESTION_TOPICS[topic as QuestionTopic];
+		if (area !== owner) refuse(owner, `${where} is for "${topic}", which the "${area}" area keeps`);
+		if (!action.readOnly) refuse(owner, `${where} must be read-only`);
+		if (action.input !== DigestInputSchema || action.output !== DigestOutputSchema)
+			refuse(owner, `${where} must take and give the digest's own shapes (use defineDigest)`);
+		const first = digests.get(topic);
+		if (first !== undefined)
+			refuse(owner, `Topic "${topic}" has two digests: "${first}" and "${action.id}"`);
+		digests.set(topic, action.id);
+	};
 	const known = (id: string | undefined, where: string, owner: string) => {
 		if (id !== undefined && !capabilities.has(id))
 			refuse(owner, `${where} names unknown capability "${id}"`);
@@ -336,6 +359,8 @@ export function buildRegistry(
 		if (action.ai && action.external) {
 			refuse(owner, `Action "${action.id}" is external and cannot have AI hints`);
 		}
+		const topic = action.ai?.digest;
+		if (topic !== undefined) checkDigest(action, topic, owner);
 	}
 	// Auto-approval only for ordinary, internal, non-sensitive data changes.
 	for (const ext of ordered) {
