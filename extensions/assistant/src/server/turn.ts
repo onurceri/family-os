@@ -20,9 +20,9 @@ import {
 	SUMMARIZE_JOB,
 	TURN_JOB,
 } from '../contract/index.ts';
-import { answerWithRealWeekdays, answerWithWordDates } from './answer-dates.ts';
+import { answerWithRealWeekdays, answerWithWordDates, dayInWords } from './answer-dates.ts';
 import { formatWeekday } from './format.ts';
-import { spokenText } from './messages.ts';
+import { cardOf, spokenText } from './messages.ts';
 import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
 import { answerQuestion } from './question.ts';
 import {
@@ -32,6 +32,7 @@ import {
 	withoutToolMarkup,
 } from './scrub.ts';
 import { tables } from './store.ts';
+import { scopeTools, scopeTopics } from './tool-scope.ts';
 import {
 	type AssistantTool,
 	areaOf,
@@ -109,10 +110,16 @@ const parseHandles = (json: string | null): RememberedHandles => {
 export function proposalLines(
 	proposals: readonly Proposal[],
 	translate: (key: string, params?: Record<string, unknown>) => string,
+	/** A day in words, in the reader's date format ("Thursday, 22 October"). */
+	dayInWords: (date: string) => string,
 ): string[] {
 	return proposals.map((p) => {
 		const title = p.titleKey ? translate(p.titleKey) : p.title;
-		const what = p.subject ? `${title}: ${p.subject}` : title;
+		const named = p.subject ? `${title}: ${p.subject}` : title;
+		// The day it is about stays in the line: "Add a task: Pack my kit for Thursday, 22 October".
+		const what = p.date
+			? translate('assistant:proposed_for', { what: named, date: dayInWords(p.date) })
+			: named;
 		return translate(p.automatic ? 'assistant:proposed_automatic' : 'assistant:proposed', {
 			what,
 		});
@@ -260,7 +267,6 @@ export const turnJob = defineJob({
 				info,
 			})),
 		];
-		const tools = offered;
 
 		// The member's own notes go into their own threads only, and only where the family lets
 		// people's details reach the model (core is not an area; the privacy switch governs it).
@@ -384,6 +390,16 @@ export const turnJob = defineJob({
 			}
 		}
 
+		// A change or a thing to remember gets the tools of what it is about, plus those of what the
+		// answer just before it was about ("yes, move it" after a card on the calendar); anything
+		// else keeps every tool.
+		const lastCard = cardOf(history.find((m) => m.role === 'assistant') ?? { card: null });
+		const tools = scopeTools(
+			offered,
+			question?.intent ?? 'other',
+			scopeTopics(question?.topics ?? [], lastCard?.sections.map((s) => s.topic) ?? []),
+		);
+
 		const vocabularies = await readVocabularies(
 			ctx,
 			actor,
@@ -489,8 +505,11 @@ export const turnJob = defineJob({
 			// Whatever the model wrote, the person is told what was really suggested, from the
 			// suggestions themselves. The lines are kept beside the answer, not in it: the app shows
 			// the suggestions as cards, and a chat outside it gets the lines under the words.
-			const suggested = proposalLines(proposals, (key, params) =>
-				ctx.translate(locale, key, params),
+			const readerDates = dateLocale(locale, settings.formatLocale, settings.hourCycle);
+			const suggested = proposalLines(
+				proposals,
+				(key, params) => ctx.translate(locale, key, params),
+				(date) => dayInWords(date, today, readerDates),
 			);
 			// A model can end the loop with no words (the last step is kept for an answer, but it may
 			// say nothing). If the turn made suggestions, the lines naming them are the answer (asking
@@ -518,7 +537,7 @@ export const turnJob = defineJob({
 				{
 					today,
 					asked,
-					dateLocale: dateLocale(locale, settings.formatLocale, settings.hourCycle),
+					dateLocale: readerDates,
 					weekdays: [...words.weekdays.flat(), ...words.weekdaysShort.flat()],
 				},
 			);

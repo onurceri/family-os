@@ -69,7 +69,7 @@ describe('the tools offered to the model', () => {
 			roleId: 'admin',
 		}) as const;
 
-	it('are all of them, so a change is never cut for want of an area word', async () => {
+	it('are all of them for a message that is neither a question nor a change', async () => {
 		const every = [
 			...k.ctx.actions.aiReadTools({ local: false, actor: asAssistant() }),
 			...k.ctx.actions.aiCatalog({ local: false, actor: asAssistant() }),
@@ -167,7 +167,7 @@ describe('finding events', () => {
 		expect(result).toContain('"events":[]');
 		expect(result).toMatch(/"nextMatch":\{"id":"cal_event:\d+"/);
 		expect(k.llm.chatCalls[0]?.system).toContain(
-			'Never filter by person when the person names an activity',
+			'never when the person names an activity or a title',
 		);
 	});
 
@@ -201,7 +201,7 @@ describe('what the model reads after a suggestion', () => {
 				.replace(/\n<\/tool_result>$/, ''),
 		).say as string;
 		expect(say).toBe(
-			'Suggested, not added yet: Add a task: Pay the swim club fee. It appears once someone in the household approves it.',
+			'Suggested, not added yet: Add a task: Pay the swim club fee for 2026-10-20. It appears once someone in the household approves it.',
 		);
 		expect(say).not.toContain('Adds a to-do');
 	});
@@ -337,9 +337,6 @@ describe('an overview the person asks for', () => {
 		]);
 		await ask("Give me an overview of this week: what's on, the open tasks and the shopping list.");
 		const request = k.llm.chatCalls[0];
-		expect(request?.system).toContain(
-			'"Give me", "show me" and "tell me" only say who gets the answer, never whose things',
-		);
 		const field = (tool: string, name: string) => {
 			const schema = request?.tools?.find((t) => t.name === tool)?.inputSchema as
 				| { properties?: Record<string, { description?: string }> }

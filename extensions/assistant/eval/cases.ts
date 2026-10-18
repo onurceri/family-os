@@ -305,6 +305,21 @@ export const CASES: Case[] = [
 		checks: [movesOne('Sunday planning', '2026-10-11', '18:00'), noSeriesChange],
 	},
 
+	// A change after a question: the record the card showed is the one "it" means.
+	{
+		name: 'follow-up: "move it" after a question moves the record the card showed',
+		events: CALENDAR,
+		asks: ['When is the dentist on Thursday?', 'Yes, move it to 10:00 please.'],
+		checks: [
+			drafted(
+				CHANGE,
+				'Dentist checkup to 10:00',
+				(i, o) => on('Dentist checkup')(i, o) && i.startTime === '10:00',
+			),
+			noDraft('that adds a second dentist event', (d) => d.actionId === 'calendar.createEvent'),
+		],
+	},
+
 	// Ticking off.
 	{
 		name: 'tick off: "the bananas" on a long list',
@@ -397,6 +412,14 @@ export const CASES: Case[] = [
 				/\b(?:has|have) been (?:created|added|scheduled)\b/i,
 			),
 		],
+	},
+
+	// The suggestion's words keep its day.
+	{
+		name: 'reminder: the suggestion says the day it is for',
+		as: 'Lukas',
+		asks: ['Add a task: Pack my football kit on Thursday'],
+		checks: [remindsOn('2026-10-08'), says(/Thursday,? (?:8 October|October 8)/i)],
 	},
 
 	// Weekdays.

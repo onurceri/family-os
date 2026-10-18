@@ -72,6 +72,7 @@
 	"words_self": "me, my, mine, myself, i",
 	"words_everyone": "everyone, everybody, the whole family, all of us, anyone, anybody",
 	"proposed": "Suggested, not added yet: {{what}}",
+	"proposed_for": "{{what}} for {{date}}",
 	"proposed_automatic": "Added automatically: {{what}}",
 	"topic_calendar": "Calendar",
 	"topic_tasks": "Tasks",

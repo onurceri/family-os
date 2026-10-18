@@ -129,6 +129,8 @@ export const addTask = defineAction({
 	autoApprove: { label: 'lists:auto_approve_tasks', capabilities: [tasksEdit.id] },
 	input: TaskInputSchema,
 	output: TaskSchema,
+	// A task that is late is still worth doing, so the suggestion never expires; it says its day.
+	saidDate: (input) => input.dueDate ?? undefined,
 	// Anyone who may propose can add a task for themselves directly; tasks for others need the capability.
 	approval: {
 		unless: tasksEdit.id,
@@ -194,6 +196,7 @@ export const updateTask = defineAction({
 	// Waiting from when a field left out meant empty (or its default): read that way.
 	storedInput: storedAsWhole(TaskInputSchema, 'task'),
 	output: TaskSchema,
+	saidDate: ({ task }) => task.dueDate ?? undefined,
 	approval: {
 		unless: tasksEdit.id,
 		owner: (ctx, { id, task }) => ownTaskOf(ctx, id, task.assigneeId ?? null),

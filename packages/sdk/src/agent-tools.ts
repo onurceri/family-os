@@ -449,6 +449,8 @@ export interface AgentToolOutcome {
 	automatic?: boolean;
 	/** What the stored suggestion is about, from the runner (see `ActionResult`). */
 	subject?: string;
+	/** Set with `draftId` when the suggestion is about a day (`YYYY-MM-DD`). */
+	date?: string;
 }
 
 /**
@@ -544,7 +546,9 @@ export async function runAgentTool(call: {
 		);
 		if (result.status === 'drafted') {
 			if (target) call.targets?.set(target.id, target.said);
-			const what = result.subject ? `${call.draftTitle}: ${result.subject}` : call.draftTitle;
+			const named = result.subject ? `${call.draftTitle}: ${result.subject}` : call.draftTitle;
+			// The day it is about stays in the words, so "for Thursday" is not lost on the way.
+			const what = result.date ? `${named} for ${result.date}` : named;
 			const when = (at: { date: string; time?: string }) =>
 				at.time ? `${at.date} ${at.time}` : at.date;
 			const there = result.instead;
@@ -576,6 +580,7 @@ export async function runAgentTool(call: {
 				draftId: result.draftId,
 				...(result.autoApproval && { automatic: true }),
 				...(result.subject && { subject: result.subject }),
+				...(result.date && { date: result.date }),
 				text: asData(
 					actionId,
 					JSON.stringify({

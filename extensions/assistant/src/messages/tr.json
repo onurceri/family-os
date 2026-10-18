@@ -72,6 +72,7 @@
 	"words_self": "ben, beni, bana, bende, benim, benimle, kendim, kendime",
 	"words_everyone": "herkes, herkese, herkesin, hepimiz, hepimize, bütün aile, tüm aile, ailece, bütün aileye, tüm aileye, kim olursa",
 	"proposed": "Önerildi, henüz eklenmedi: {{what}}",
+	"proposed_for": "{{what}}, {{date}} için",
 	"proposed_automatic": "Otomatik eklendi: {{what}}",
 	"topic_calendar": "Takvim",
 	"topic_tasks": "Görevler",

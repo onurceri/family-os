@@ -168,3 +168,43 @@ describe('suggestions about a day that has passed', () => {
 		expect(runs).toBe(1);
 	});
 });
+
+describe('the day a suggestion is about, for the words that tell of it', () => {
+	const late = defineAction({
+		id: 'plans.addTodo',
+		title: 'Add a to-do',
+		input: z.object({ title: z.string(), due: z.string().optional() }),
+		output: z.object({ ok: z.literal(true) }),
+		approval: { unless: planEdit.id },
+		// A to-do that is late is still worth doing: no expiry, but its day is said.
+		saidDate: (input) => input.due,
+		async run() {
+			return { ok: true as const };
+		},
+	});
+
+	it('comes back with a drafted result: the action draftDate, or its saidDate', async () => {
+		const both = defineTestExtension({
+			id: 'plans',
+			actions: [addPlan, late],
+			capabilities: [planEdit],
+		});
+		await k.close();
+		k = await createTestKernel({ extensions: [both] });
+		const draft = { sourceKind: 'inbox', sourceId: 'item_a' };
+		const invoke = (id: string, input: Record<string, unknown>) =>
+			k.runner.invoke(id, input, AI, { draft });
+		expect(await invoke('plans.addPlan', { title: 'Dinner', day: '2026-10-22' })).toMatchObject({
+			status: 'drafted',
+			date: '2026-10-22',
+		});
+		expect(await invoke('plans.addTodo', { title: 'Pack', due: '2025-12-01' })).toMatchObject({
+			status: 'drafted',
+			date: '2025-12-01',
+		});
+		expect(await invoke('plans.addTodo', { title: 'Call' })).not.toHaveProperty('date');
+		expect(await invoke('plans.addPlan', { title: 'Lunch', day: 'Saturday' })).not.toHaveProperty(
+			'date',
+		);
+	});
+});

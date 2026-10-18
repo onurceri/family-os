@@ -47,7 +47,7 @@ import {
 	needsOwner,
 	refusalError,
 } from './decide.ts';
-import { draftDateOf, hasPassed, WAITING_STATUSES } from './draft-expiry.ts';
+import { dayOfSuggestion, draftDateOf, hasPassed, WAITING_STATUSES } from './draft-expiry.ts';
 import { DECIDED_KIND, settleWaitingNotices, waitingDedupeKey } from './draft-notices.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { familyReader } from './family.ts';
@@ -575,6 +575,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			: await namedSubject(def, input);
 		const stored = targetName ? { ...(input as object), label: targetName.slice(0, 200) } : input;
 		const subject = subjectOf(JSON.stringify(stored));
+		const date = dayOfSuggestion(def, input);
 		// A target the AI named only in another form of its words is shown as "check this".
 		const uncertainFields = [
 			...new Set([...(meta.uncertainFields ?? []), ...(targetUnsure ? [UNSURE_TARGET] : [])]),
@@ -596,7 +597,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.executeTakeFirst();
 				if (existing) {
 					draftId = existing.id as typeof draftId;
-					await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
+					await remember(uow, {
+						status: 'drafted',
+						draftId,
+						...(subject ? { subject } : {}),
+						...(date ? { date } : {}),
+					});
 					return;
 				}
 			}
@@ -663,7 +669,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			});
 			// A draft addressed to one member needs no announcement: they are looking at it.
 			if (addressedTo) {
-				await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
+				await remember(uow, {
+					status: 'drafted',
+					draftId,
+					...(subject ? { subject } : {}),
+					...(date ? { date } : {}),
+				});
 				return;
 			}
 			if (auto && facts.proposerMemberId !== null) {
@@ -674,7 +685,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					{ dedupeKey: `${AUTO_APPROVE_JOB}:${draftId}` },
 				);
 				autoApproved = true;
-				await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
+				await remember(uow, {
+					status: 'drafted',
+					draftId,
+					...(subject ? { subject } : {}),
+					...(date ? { date } : {}),
+				});
 				return;
 			}
 			// Tell whoever may approve, and who asked; several drafts from one shared item collapse
@@ -698,7 +714,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					who,
 				),
 			);
-			await remember(uow, { status: 'drafted', draftId, ...(subject ? { subject } : {}) });
+			await remember(uow, {
+				status: 'drafted',
+				draftId,
+				...(subject ? { subject } : {}),
+				...(date ? { date } : {}),
+			});
 		});
 		// The proposer is told too, so an AI can warn the person before they look at the card.
 		const exists = await seemsToExist(def, input, { actionId });
@@ -721,6 +742,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			...(autoApproved ? { autoApproval: true as const } : {}),
 			...(byOthers ? { decidedByOthers: true as const } : {}),
 			...(subject ? { subject } : {}),
+			...(date ? { date } : {}),
 		};
 	}
 

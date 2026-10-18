@@ -81,6 +81,16 @@ const ISO_IN_TEXT = /(?<![\d\p{L}])(\d{4})[-‐‑](\d{2})[-‐‑](\d{2})(?![\d
 
 const escapeRegex = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** A day in words in the reader's date locale; the year only when it is not this year. */
+export function dayInWords(date: string, today: string, dateLocale: string): string {
+	return formatDate(date, dateLocale, {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		...(date.slice(0, 4) !== today.slice(0, 4) && { year: 'numeric' }),
+	});
+}
+
 /**
  * The answer with each ISO date ("2026-10-20") written as words in the reader's date locale
  * ("Tuesday, 20 October"; the year only when it is not this year): models copy dates from tool
@@ -117,12 +127,7 @@ export function answerWithWordDates(
 		const weekday = before?.exec(head);
 		if (weekday) head = head.slice(0, weekday.index);
 		out += head;
-		out += formatDate(date, options.dateLocale, {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long',
-			...(date.slice(0, 4) !== options.today.slice(0, 4) && { year: 'numeric' }),
-		});
+		out += dayInWords(date, options.today, options.dateLocale);
 		last = match.index + match[0].length;
 	}
 	return out + text.slice(last);

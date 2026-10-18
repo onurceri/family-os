@@ -149,12 +149,15 @@ describe('the answer never says something else than what was suggested', () => {
 						automatic: false,
 					},
 					{ title: 'Remove an item', automatic: true },
+					{ title: 'Add a task', subject: 'Pack my kit', date: '2026-10-22', automatic: false },
 				],
 				translate,
+				(date) => `day ${date}`,
 			),
 		).toEqual([
 			'assistant:proposed|{"what":"lists:draft_title_add_task|{}: Call"}',
 			'assistant:proposed_automatic|{"what":"Remove an item"}',
+			'assistant:proposed|{"what":"assistant:proposed_for|{\\"what\\":\\"Add a task: Pack my kit\\",\\"date\\":\\"day 2026-10-22\\"}"}',
 		]);
 	});
 });

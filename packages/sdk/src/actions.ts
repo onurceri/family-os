@@ -183,6 +183,12 @@ export interface ActionDefinition<
 	 */
 	readonly draftDate?: (input: z.infer<In>) => string | undefined;
 	/**
+	 * The day a suggestion of this action is about (`YYYY-MM-DD`), said with it ("Add a task:
+	 * Pack my kit, for Thursday") although the suggestion never expires on it, as a late task is
+	 * still worth doing. An action whose `draftDate` is the day it is about needs no `saidDate`.
+	 */
+	readonly saidDate?: (input: z.infer<In>) => string | undefined;
+	/**
 	 * How a draft input stored under an earlier version of `input` reads now. The runner applies it
 	 * to every stored draft input (and saved edit) before validating it, so a suggestion waiting
 	 * from before a stricter input still approves with the meaning it had; a new call never goes
@@ -301,6 +307,12 @@ export function defineAction<
 	resolveNames?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<z.infer<In>>;
 	settled?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<boolean>;
 	draftDate?: (input: z.infer<In>) => string | undefined;
+	/**
+	 * The day a suggestion of this action is about (`YYYY-MM-DD`), said with it ("Add a task:
+	 * Pack my kit, for Thursday") although the suggestion never expires on it, as a late task is
+	 * still worth doing. An action whose `draftDate` is the day it is about needs no `saidDate`.
+	 */
+	saidDate?: (input: z.infer<In>) => string | undefined;
 	storedInput?: (input: unknown) => unknown;
 	prepare?: (input: z.infer<In>, actor: Actor) => Promise<Prepared>;
 	run(uow: UnitOfWork, input: z.infer<In>, prepared: Prepared): Promise<z.infer<Out>>;

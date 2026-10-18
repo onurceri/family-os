@@ -66,6 +66,8 @@ export interface Proposal {
 	titleKey?: string;
 	/** What it is about: the real name of the item, the titles of the items. */
 	subject?: string;
+	/** The day it is about (`YYYY-MM-DD`), when it is about one. */
+	date?: string;
 	/** Approved by the household's own setting rather than by a person. */
 	automatic: boolean;
 }
@@ -348,6 +350,7 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 				title: info.title,
 				...(info.draftTitle && { titleKey: info.draftTitle }),
 				...(subject && { subject }),
+				...(outcome.date && { date: outcome.date }),
 				automatic: outcome.automatic === true,
 			});
 		}

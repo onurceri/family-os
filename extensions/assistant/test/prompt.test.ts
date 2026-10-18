@@ -74,7 +74,8 @@ describe('where now is', () => {
 	it('tells the model that past events are never coming up', () => {
 		const prompt = systemPrompt({ ...input, locale: 'en' });
 		expect(prompt).toContain('Now it is Thursday, 2026-10-08, 14:05');
-		expect(prompt).toContain('Look it up from today, not from the start of the week');
-		expect(prompt).toContain('never present it as coming up');
+		// Questions are answered from the facts themselves; their rules are not in this prompt.
+		expect(prompt).not.toContain('never present it as coming up');
+		expect(prompt).not.toContain('only what is dated in it belongs to it');
 	});
 });

@@ -188,6 +188,8 @@ export type ActionResult<O> =
 	 * the person the AI works for cannot decide it, so other members who can approve do.
 	 * `subject`: what the stored suggestion is about, in its stored words (the real title of an
 	 * existing item, not the proposer's name for it); absent when it names nothing.
+	 * `date`: the day the suggestion is about (`saidDate`, else `draftDate`), for the words that tell
+	 * the person about it.
 	 * `mayExist`: the action's `alreadyThere` thinks what was proposed is on record already.
 	 * `instead`: the thing already there that the person may change instead when they decide
 	 * (its real name, when it is, and the day it would move to), so an agent can tell them.
@@ -198,6 +200,7 @@ export type ActionResult<O> =
 			autoApproval?: true;
 			decidedByOthers?: true;
 			subject?: string;
+			date?: string;
 			mayExist?: boolean | 'some';
 			instead?: {
 				name: string;

@@ -30,6 +30,19 @@ export function draftDateOf(
 	}
 }
 
+/**
+ * The day a suggestion is about, for the words that tell the person about it: the action's
+ * `saidDate`, else its `draftDate`. Undefined when it names none or the input does not fit.
+ */
+export function dayOfSuggestion(def: AnyActionDefinition, input: unknown): string | undefined {
+	try {
+		const day = (def.saidDate ?? def.draftDate)?.(input as never);
+		return day !== undefined && isValidDate(day) ? day : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 export const EXPIRE_JOB = 'core.expireDrafts';
 
 /** How long after midnight (family time) the daily expiry runs. */

@@ -65,7 +65,7 @@ describe('people in answers', () => {
 		expect(prompt).toContain('In your answers never write a handle');
 	});
 
-	it('keeps "my" to the asker and other members to a short aside', () => {
+	it('keeps "my" to the asker and looks up someone\'s things only when asked for them', () => {
 		const prompt = systemPrompt({
 			today: '2026-10-08',
 			weekday: 'Thursday',
@@ -82,7 +82,7 @@ describe('people in answers', () => {
 			records: [],
 		});
 		expect(prompt).toContain('mean the person asking (Lukas)');
-		expect(prompt).toContain('Also in the family that day');
+		expect(prompt).toContain('only to look up someone');
 	});
 
 	it("replaces a handle in the answer with the member's name, stored and streamed", async () => {
