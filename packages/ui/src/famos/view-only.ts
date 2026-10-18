@@ -25,3 +25,19 @@ export function viewOnlyLine(
 		? t('app:view_only_why', { who: joinNames(others, t) })
 		: t('app:view_only_why_unnamed');
 }
+
+/**
+ * Where the line opens: under the pill, its end at the pill's end when that fits, never closer
+ * than `gutter` to either side of the window (a pill in the middle of a phone's head).
+ */
+export function bubblePlace(
+	anchor: { left: number; right: number; bottom: number },
+	width: number,
+	viewport: number,
+	rtl = false,
+	gutter = 16,
+): { left: number; top: number } {
+	const preferred = rtl ? anchor.left : anchor.right - width;
+	const left = Math.max(gutter, Math.min(preferred, viewport - gutter - width));
+	return { left, top: anchor.bottom + 8 };
+}

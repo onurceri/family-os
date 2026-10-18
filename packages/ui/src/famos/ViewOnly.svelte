@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { findApp } from '../app-context.js';
 	import Pill from './Pill.svelte';
-	import { viewOnlyLine } from './view-only.js';
+	import { bubblePlace, viewOnlyLine } from './view-only.js';
 
 	/**
 	 * The quiet mark in a page's head when the page's main action is not for this viewer: the page
@@ -16,9 +16,26 @@
 	const shown = $derived(label ?? app?.t('app:view_only') ?? '');
 	// The names are read only once someone asks why.
 	const line = $derived(open && app ? viewOnlyLine(app.roleManagers(), app.me()?.id, app.t) : '');
+
+	// The line is placed against the window, so a pill anywhere in a head keeps it on screen.
+	let button = $state<HTMLButtonElement>();
+	let place = $state<{ left: number; top: number; width: number } | null>(null);
+	function measure() {
+		if (!open || !button) return;
+		const viewport = document.documentElement.clientWidth;
+		const width = Math.min(288, viewport - 32);
+		const rtl = getComputedStyle(button).direction === 'rtl';
+		place = { ...bubblePlace(button.getBoundingClientRect(), width, viewport, rtl), width };
+	}
+	$effect(() => {
+		if (open) measure();
+		else place = null;
+	});
 </script>
 
 <svelte:window
+	onresize={measure}
+	onscrollcapture={measure}
 	onkeydown={(e) => {
 		if (e.key === 'Escape') open = false;
 	}}
@@ -32,6 +49,7 @@
 		type="button"
 		aria-expanded={open}
 		aria-controls={id}
+		bind:this={button}
 		onclick={() => (open = !open)}
 		class="focus-visible:ring-ring rounded-full outline-none focus-visible:ring-2"
 		><Pill>{shown}</Pill></button
@@ -40,8 +58,11 @@
 		{id}
 		aria-live="polite"
 		data-testid="view-only-why"
+		style:left={place ? `${place.left}px` : undefined}
+		style:top={place ? `${place.top}px` : undefined}
+		style:width={place ? `${place.width}px` : undefined}
 		class={open
-			? 'bg-surface text-ink shadow-lit absolute end-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border p-3 text-sm leading-relaxed font-normal'
+			? 'bg-surface text-ink shadow-lit fixed z-40 rounded-xl border p-3 text-sm leading-relaxed font-normal'
 			: 'sr-only'}>{line}</span
 	>
 </span>

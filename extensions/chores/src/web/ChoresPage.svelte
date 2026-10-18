@@ -269,7 +269,7 @@
 				rows={[
 					{ label: t('field_title'), value: chore.title },
 					{
-						label: t('draft_first_due'),
+						label: t('next_due'),
 						value: dueLabel(chore.nextDue, today, t, app.dateLocale()),
 					},
 					{

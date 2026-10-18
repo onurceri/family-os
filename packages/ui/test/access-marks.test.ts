@@ -1,16 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ActionAccess, AppContext, AwaitedChange } from '../src/app-context.js';
+import { awaitingRowText } from '../src/famos/awaiting.js';
 import {
 	AwaitingRow,
 	awaitingMarkText,
-	awaitingRowText,
 	DetailRows,
 	editLabel,
-	joinNames,
 	readFirst,
 	ViewOnly,
-	viewOnlyLine,
 } from '../src/famos/index.js';
+import { bubblePlace, joinNames, viewOnlyLine } from '../src/famos/view-only.js';
 import type { AnyDraftPresenter } from '../src/slots.js';
 import WithApp from './fixtures/WithApp.svelte';
 import { cleanup, click, html, key, q, render } from './helpers.js';
@@ -88,6 +87,19 @@ describe('the "View only" pill', () => {
 			'Someone who manages',
 		);
 		expect(viewOnlyLine(undefined, 'leo', t)).toContain('Someone who manages');
+	});
+
+	it('opens under the pill, kept 16 px inside the window', () => {
+		const pill = { left: 300, right: 380, bottom: 60 };
+		expect(bubblePlace(pill, 200, 1440)).toEqual({ left: 180, top: 68 });
+		// A pill in the middle of a phone's head: the line moves right to stay on screen.
+		expect(bubblePlace({ left: 110, right: 180, bottom: 120 }, 288, 400)).toEqual({
+			left: 16,
+			top: 128,
+		});
+		expect(bubblePlace({ left: 350, right: 390, bottom: 0 }, 288, 400).left).toBe(96);
+		// Right to left: its start at the pill's start.
+		expect(bubblePlace({ left: 20, right: 90, bottom: 0 }, 200, 400, true).left).toBe(20);
 	});
 
 	it('says why on a tap (not on hover), announced, and closes with Escape', () => {

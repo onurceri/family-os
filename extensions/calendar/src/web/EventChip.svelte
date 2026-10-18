@@ -95,7 +95,7 @@
 	);
 	// Whether the title is wider than one line of the block: then the second line is the title's,
 	// not the time's. The block is as wide as its button; the title has what is left of its border
-	// and its padding (3 px edge side 10 px, other side 6 px).
+	// and its padding (3 px edge side 10 px, other side 6 px, or 16 beside the hourglass).
 	let button = $state<HTMLElement>();
 	let titleEl = $state<HTMLElement>();
 	let width = $state(0);
@@ -103,7 +103,7 @@
 		if (!button || !titleEl || !width || !fitsTitle) return false;
 		const style = getComputedStyle(titleEl);
 		const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-		return fitsTitle(occurrence.title, font, width - 2 * BLOCK.border - 16);
+		return fitsTitle(occurrence.title, font, width - 2 * BLOCK.border - (awaiting ? 26 : 16));
 	});
 	const fit = $derived.by(() => {
 		if (!place) return blockFit(0, 0);
@@ -137,7 +137,9 @@
 		style:outline={next ? '2px solid var(--accent)' : undefined}
 		style:outline-offset={next ? '-2px' : undefined}
 		style:z-index={next ? 1 : undefined}
-		class="focus-visible:ring-ring absolute grid content-start overflow-hidden rounded-lg ps-2.5 pe-1.5 text-start outline-none focus-visible:z-10 focus-visible:ring-2 {long
+		class="focus-visible:ring-ring absolute grid content-start overflow-hidden rounded-lg ps-2.5 {awaiting
+			? 'pe-4'
+			: 'pe-1.5'} text-start outline-none focus-visible:z-10 focus-visible:ring-2 {long
 			? 'border-line text-ink-soft border border-dashed bg-transparent'
 			: occurrence.source
 				? 'bg-idle border-line border'
@@ -147,16 +149,16 @@
 	>
 		<span class="absolute inset-y-0 start-0 w-[3px]" style:background={edge} aria-hidden="true"
 		></span>
+		{#if awaiting}
+			<!-- In the corner, so the title keeps its lines. -->
+			<Hourglass class="text-ink-soft absolute end-1 top-1 size-3" aria-hidden="true" />
+		{/if}
 		<b
 			bind:this={titleEl}
 			class="text-[13px] font-bold {fit.titleLines === 2 ? 'line-clamp-2' : 'truncate'} {long
 				? ''
 				: 'text-ink'}"
-			style:line-height="{BLOCK.title}px"
-			>{#if awaiting}<Hourglass
-					class="text-ink-soft me-1 inline size-3 align-[-1px]"
-					aria-hidden="true"
-				/>{/if}{occurrence.title}</b
+			style:line-height="{BLOCK.title}px">{occurrence.title}</b
 		>
 		{#each meta as line, i (i)}
 			<small

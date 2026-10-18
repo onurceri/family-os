@@ -46,6 +46,7 @@
 	"due_yesterday": "Yesterday",
 	"due_today": "Today",
 	"due_tomorrow": "Tomorrow",
+	"next_due": "Next due",
 	"field_title": "Chore",
 	"field_start": "First day it is due",
 	"field_repeat": "Repeats",
