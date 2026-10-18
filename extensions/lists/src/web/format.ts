@@ -6,6 +6,7 @@ import {
 	type HourCycle,
 	weekOf,
 } from '@famos/time';
+import { draftDate, type PresenterContext } from '@famos/ui/slots';
 import type { Task } from '../contract/index.js';
 import type { ListsT } from './i18n.js';
 
@@ -87,3 +88,16 @@ export const movedToHiddenCart = (
 	outcome: 'applied' | 'drafted' | 'queued',
 	cartOpen: boolean,
 ): boolean => ticked && outcome === 'applied' && !cartOpen;
+
+/** A card's due row: the day the way every card writes it ("Sunday 25 October · 18:00"). */
+export function draftDue(
+	task: Pick<Task, 'dueDate' | 'dueTime'>,
+	c: Pick<PresenterContext, 'dateLocale' | 'timeZone' | 'hourCycle'>,
+	none: string,
+): string {
+	if (!task.dueDate) return none;
+	const day = draftDate(task.dueDate, c);
+	return task.dueTime
+		? `${day} \u00b7 ${formatClock(task.dueTime, c.dateLocale, c.hourCycle)}`
+		: day;
+}

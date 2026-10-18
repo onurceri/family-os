@@ -1,5 +1,5 @@
 import { describeRecurrence } from '@famos/time';
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { CalendarDays } from '@lucide/svelte';
 import { type EventInput, eventFromReplace } from '../contract/index.js';
 import {
@@ -28,7 +28,9 @@ export const createEventPresenter: DraftPresenter<EventInput> = {
 		const fields = [
 			{
 				label: t('when'),
-				value: describeWhen(input, c.dateLocale, t('all_day'), c.hourCycle),
+				value: describeWhen(input, c.dateLocale, t('all_day'), c.hourCycle, (day) =>
+					draftDate(day, c),
+				),
 				paths: ['date', 'endDate', 'startTime', 'endTime', 'allDay'],
 			},
 			{ label: t('who'), value: who || t('everyone'), path: 'memberIds' },

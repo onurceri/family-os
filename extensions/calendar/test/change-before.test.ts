@@ -88,7 +88,7 @@ describe('the event as it is now, on a change suggestion', () => {
 		});
 		const fields = changeEventFields(replaced.input as never, context, replaced.before);
 		expect(fields.map((f) => [f.label, f.value])).toEqual([
-			['calendar:when', 'Sat 7 Nov 07:45 → Sat 14 Nov 09:00'],
+			['calendar:when', 'Saturday 7 November 07:45 → Saturday 14 November 09:00'],
 			['calendar:where', '— → Zwembad De Kuip'],
 		]);
 		expect((await listed(draftId)).before).toEqual(replaced.before);
@@ -107,7 +107,7 @@ describe('the event as it is now, on a change suggestion', () => {
 		const { before } = await listed(draftId);
 		expect(before).toMatchObject({ date: '2026-10-25', startTime: '20:00', endTime: '21:00' });
 		const [when] = changeEventFields(input, context, before);
-		expect(when?.value).toBe('Sun 25 Oct 20:00 → 18:00');
+		expect(when?.value).toBe('Sunday 25 October 20:00 → 18:00');
 	});
 
 	it('shows the old title and place for a connected app, and nothing once decided', async () => {

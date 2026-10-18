@@ -21,8 +21,8 @@ describe('moveOffer', () => {
 				context,
 			),
 		).toEqual({
-			there: 'calendar:draft_already_there {"what":"Regional Gala · Sat 7 Nov 18:00"}',
-			action: 'calendar:draft_move_instead {"when":"Sat 14 Nov 09:00"}',
+			there: 'calendar:draft_already_there {"what":"Regional Gala · Saturday 7 November 18:00"}',
+			action: 'calendar:draft_move_instead {"when":"Saturday 14 November 09:00"}',
 		});
 	});
 
@@ -34,8 +34,8 @@ describe('moveOffer', () => {
 				context,
 			),
 		).toEqual({
-			there: 'calendar:draft_already_there {"what":"School trip · Tue 20 Oct"}',
-			action: 'calendar:draft_move_instead {"when":"Thu 22 Oct"}',
+			there: 'calendar:draft_already_there {"what":"School trip · Tuesday 20 October"}',
+			action: 'calendar:draft_move_instead {"when":"Thursday 22 October"}',
 		});
 	});
 

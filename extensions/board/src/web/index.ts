@@ -2,6 +2,7 @@ import { defineWebExtension } from '@famos/ui/slots';
 import { StickyNote } from '@lucide/svelte';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
+import { postNotePresenter } from './presenters.js';
 
 /**
  * Board UI: the board page (`/board`), a Today card with the latest notes and a
@@ -13,6 +14,7 @@ export default defineWebExtension({
 	messages: en,
 	labelKey: 'board:feature_name',
 	descriptionKey: 'board:feature_description',
+	drafts: [postNotePresenter],
 	nav: [
 		{
 			id: 'board.nav',

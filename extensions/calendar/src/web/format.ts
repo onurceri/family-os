@@ -23,11 +23,13 @@ export function describeWhen(
 	locale: string,
 	allDayLabel: string,
 	hourCycle?: HourCycle,
+	// A draft card writes its days its own way, so every card shows one format.
+	dayOf: (date: string) => string = (date) => formatDate(date, locale),
 ): string {
-	const day = formatDate(input.date, locale);
+	const day = dayOf(input.date);
 	if (input.allDay) {
 		return input.endDate && input.endDate !== input.date
-			? `${day} – ${formatDate(input.endDate, locale)} · ${allDayLabel}`
+			? `${day} – ${dayOf(input.endDate)} · ${allDayLabel}`
 			: `${day} · ${allDayLabel}`;
 	}
 	const clock = (time: string) => formatClock(time, locale, hourCycle);

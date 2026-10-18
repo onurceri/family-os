@@ -9,6 +9,7 @@ import {
 	checkShoppingItemPresenter,
 	completeTaskPresenter,
 	deleteShoppingItemPresenter,
+	deleteShoppingItemsPresenter,
 	deleteTaskPresenter,
 	updateTaskPresenter,
 } from './presenters.js';
@@ -107,5 +108,6 @@ export default defineWebExtension({
 		checkShoppingItemPresenter,
 		deleteTaskPresenter,
 		deleteShoppingItemPresenter,
+		deleteShoppingItemsPresenter,
 	],
 });

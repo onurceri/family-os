@@ -1,9 +1,9 @@
-import { describeRecurrence, todayIn } from '@famos/time';
+import { describeRecurrence } from '@famos/time';
 import { type DraftPresenter, draftDate, type PresenterContext } from '@famos/ui/slots';
 import { ListChecks, ShoppingCart } from '@lucide/svelte';
 import type { AddShoppingItemsInput, TaskInput } from '../contract/index.js';
 import { loadItems, loadLists } from './data.js';
-import { dueLabel } from './format.js';
+import { draftDue } from './format.js';
 import type { ListsT } from './i18n.js';
 import { draftListName, itemsOnList, quantityChanges, shoppingLists } from './shopping-draft.js';
 import {
@@ -25,16 +25,13 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 	fields(input, c) {
 		const t = tr(c);
 		const who = c.members.find((m) => m.id === input.assigneeId)?.displayName ?? t('anyone');
-		const today = todayIn(c.timeZone, Date.now());
 		const fields = [
 			{
 				label: t('due'),
-				value: dueLabel(
+				value: draftDue(
 					{ dueDate: input.dueDate ?? null, dueTime: input.dueTime ?? null },
-					today,
-					t,
-					c.dateLocale,
-					c.hourCycle,
+					c,
+					t('no_due'),
 				),
 				paths: ['dueDate', 'dueTime'],
 			},
@@ -189,6 +186,16 @@ export const deleteShoppingItemPresenter: DraftPresenter<{ id: string; label?: s
 	kind: (c) => c.t('lists:kind_shopping_remove'),
 	icon: ShoppingCart,
 	title: (input, c) => input.label || c.t('lists:draft_an_item'),
+	fields: () => [],
+	approveLabel: (c) => c.t('lists:draft_approve_delete'),
+};
+
+/** A proposal to remove several shopping items at once: it names how many, as the ids carry no names. */
+export const deleteShoppingItemsPresenter: DraftPresenter<{ ids: readonly string[] }> = {
+	actionId: 'lists.removeShoppingItems',
+	kind: (c) => c.t('lists:kind_shopping_remove'),
+	icon: ShoppingCart,
+	title: (input, c) => tr(c)('items_count', { count: input.ids.length }),
 	fields: () => [],
 	approveLabel: (c) => c.t('lists:draft_approve_delete'),
 };

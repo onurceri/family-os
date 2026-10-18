@@ -1,7 +1,7 @@
-import { describeRecurrence, todayIn } from '@famos/time';
+import { describeRecurrence } from '@famos/time';
 import { changed, type DraftBefore, type DraftField, type PresenterContext } from '@famos/ui/slots';
 import type { TaskReplace } from '../contract/index.js';
-import { dueLabel } from './format.js';
+import { draftDue } from './format.js';
 import type { ListsT } from './i18n.js';
 
 /** What a `lists.changeTask` draft carries. */
@@ -49,9 +49,8 @@ export function changeTaskFields(
 		});
 	}
 	if (input.dueDate !== undefined || input.dueTime !== undefined) {
-		const today = todayIn(c.timeZone, Date.now());
 		const due = (dueDate: string | null, dueTime: string | null) =>
-			dueDate ? dueLabel({ dueDate, dueTime }, today, t, c.dateLocale, c.hourCycle) : t('no_due');
+			draftDue({ dueDate, dueTime }, c, t('no_due'));
 		const oldDate = str(was?.dueDate);
 		const oldTime = str(was?.dueTime);
 		const newDate = input.dueDate !== undefined ? input.dueDate : oldDate;

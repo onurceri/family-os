@@ -1,10 +1,10 @@
 import { type Actor, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
-import { epochOf, todayIn } from '@famos/time';
+import { epochOf } from '@famos/time';
 import { awaitingText } from '@famos/ui/slots';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import lists from '../src/server/index.ts';
-import { dueLabel } from '../src/web/format.ts';
+import { draftDue } from '../src/web/format.ts';
 import { changeTaskFields, updateTaskFields } from '../src/web/task-change.ts';
 
 // A change card reads "old → new": the server sends what the fields it changes hold now.
@@ -59,10 +59,8 @@ describe('a suggested change to a task', () => {
 		};
 		const fields = changeTaskFields(input, context, before);
 		expect(fields[0]?.value).toBe('lists:anyone → Ayse');
-		// The deadline reads as the task list says it, relative to today.
-		const today = todayIn(TZ, Date.now());
-		const due = (dueDate: string) =>
-			dueLabel({ dueDate, dueTime: null }, today, context.t as never, 'en-GB', 'h23');
+		// The deadline reads as every card writes a day.
+		const due = (dueDate: string) => draftDue({ dueDate, dueTime: null }, context, 'none');
 		expect(fields[1]?.value).toBe(`${due('2026-10-20')} → ${due('2026-10-25')}`);
 		// Without it, only the new values.
 		expect(changeTaskFields(input, context, null)[0]?.value).toBe('Ayse');
@@ -110,14 +108,7 @@ describe('an edit saved from the task form that needs approval', () => {
 			context,
 			before as Record<string, unknown>,
 		);
-		const today = todayIn(TZ, Date.now());
-		const due = dueLabel(
-			{ dueDate: '2026-10-20', dueTime: null },
-			today,
-			context.t as never,
-			'en-GB',
-			'h23',
-		);
+		const due = draftDue({ dueDate: '2026-10-20', dueTime: null }, context, 'none');
 		expect(fields.map((f) => f.value)).toEqual([`lists:no_due → ${due}`]);
 
 		// Beside the task, while it waits, the mark says what it will become: the new value alone.

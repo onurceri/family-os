@@ -322,18 +322,29 @@ export const changed = (from: string | undefined, to: string): { value: string; 
 });
 
 /**
- * A `YYYY-MM-DD` written out in the reader's words and region order ("2 September 2026"), for a
- * draft row. A value that is not a calendar date comes back as it was, so a model's odd answer
- * still shows rather than vanishing.
+ * A `YYYY-MM-DD` written out in the reader's words and region order for a draft row, the one way
+ * every card shows a day: weekday, day and month ("Sunday 25 October"), with the year only when it
+ * is not the current one in the family's time zone ("Wednesday 13 October 2027"). A value that
+ * is not a calendar date comes back as it was, so a model's odd answer still shows rather than
+ * vanishing.
  */
-export function draftDate(value: string, context: Pick<PresenterContext, 'dateLocale'>): string {
+export function draftDate(
+	value: string,
+	context: Pick<PresenterContext, 'dateLocale'> & { timeZone?: string },
+	now: number = Date.now(),
+): string {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
 	const at = Date.parse(`${value}T12:00:00Z`);
 	if (Number.isNaN(at) || new Date(at).toISOString().slice(0, 10) !== value) return value;
+	const thisYear = new Intl.DateTimeFormat('en-CA', {
+		year: 'numeric',
+		timeZone: context.timeZone ?? 'UTC',
+	}).format(now);
 	return new Intl.DateTimeFormat(context.dateLocale, {
+		weekday: 'long',
 		day: 'numeric',
 		month: 'long',
-		year: 'numeric',
+		...(value.slice(0, 4) === thisYear ? {} : { year: 'numeric' }),
 		timeZone: 'UTC',
 	}).format(at);
 }

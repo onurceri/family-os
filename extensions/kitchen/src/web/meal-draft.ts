@@ -1,5 +1,4 @@
-import { formatDate } from '@famos/time';
-import type { DraftField, PresenterContext } from '@famos/ui/slots';
+import { type DraftField, draftDate, type PresenterContext } from '@famos/ui/slots';
 import { SvelteMap } from 'svelte/reactivity';
 import type { AddToMealPlanInput } from '../contract/index.js';
 
@@ -43,7 +42,7 @@ export function mealFields(input: AddToMealPlanInput, c: PresenterContext): Draf
 	return [
 		{
 			label: c.t('kitchen:draft_when'),
-			value: [formatDate(input.date, c.dateLocale), c.t(`kitchen:slot_${input.slot ?? 'dinner'}`)]
+			value: [draftDate(input.date, c), c.t(`kitchen:slot_${input.slot ?? 'dinner'}`)]
 				.filter(Boolean)
 				.join(' · '),
 			paths: ['date', 'slot'],

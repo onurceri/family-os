@@ -1,5 +1,11 @@
-import { describeRecurrence, formatClock, formatDate } from '@famos/time';
-import { changed, type DraftBefore, type DraftField, type PresenterContext } from '@famos/ui/slots';
+import { describeRecurrence, formatClock } from '@famos/time';
+import {
+	changed,
+	type DraftBefore,
+	type DraftField,
+	draftDate,
+	type PresenterContext,
+} from '@famos/ui/slots';
 import type { EventReplace } from '../contract/index.js';
 import { describeWhen } from './format.js';
 import { when } from './instead.js';
@@ -53,7 +59,7 @@ function whenText(w: When, c: PresenterContext, withEnd: boolean, timeOnly = fal
 /** The new "when" alone, as it was always shown when nothing is known of the event as it is. */
 function plainWhen(input: ChangeEventInput, c: PresenterContext): string {
 	return [
-		input.date ? formatDate(input.date, c.dateLocale) : null,
+		input.date ? draftDate(input.date, c) : null,
 		input.allDay
 			? c.t('calendar:all_day')
 			: [input.startTime, input.endTime]
@@ -251,7 +257,7 @@ export function deleteEventFields(
 	const fields: DraftField[] = [
 		{
 			label: t('when'),
-			value: describeWhen(at, c.dateLocale, t('all_day'), c.hourCycle),
+			value: describeWhen(at, c.dateLocale, t('all_day'), c.hourCycle, (day) => draftDate(day, c)),
 			path: 'occurrence',
 		},
 	];

@@ -1,5 +1,5 @@
-import { formatClock, formatDate } from '@famos/time';
-import type { PresenterContext } from '@famos/ui/slots';
+import { formatClock } from '@famos/time';
+import { draftDate, type PresenterContext } from '@famos/ui/slots';
 
 /** What a change offered instead of a new event carries (`calendar.changeEvent` input). */
 export interface OfferedChange {
@@ -11,11 +11,7 @@ export interface OfferedChange {
 
 /** A day and maybe a time, short, in the family's formats ("Sat 7 Nov 18:00"). */
 export function when(date: string, time: string | undefined, c: PresenterContext): string {
-	const day = formatDate(date, c.dateLocale, {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-	});
+	const day = draftDate(date, c);
 	return time ? `${day} ${formatClock(time, c.dateLocale, c.hourCycle)}` : day;
 }
 

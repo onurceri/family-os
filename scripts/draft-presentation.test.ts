@@ -4,6 +4,7 @@ import type { AnyActionDefinition, ExtensionDefinition } from '@famos/sdk';
 import type { AnyDraftPresenter, PresenterContext, WebExtension } from '@famos/ui/slots';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { draftHeadline } from '../packages/ui/src/draft-title.ts';
+import { draftDate } from '../packages/ui/src/slots.ts';
 
 const root = join(import.meta.dirname, '..');
 const extensions = readdirSync(join(root, 'extensions')).filter((name) =>
@@ -12,6 +13,8 @@ const extensions = readdirSync(join(root, 'extensions')).filter((name) =>
 
 const ISO = /\d{4}-\d{2}-\d{2}/;
 const DAY = '2026-09-02';
+// Far before the sample day and in the same year, so a day reads as a date without a year.
+const NOW = Date.parse('2026-01-01T09:00:00Z');
 const OLD_DAY = '2026-08-17';
 
 // Translations echo their key and parameters, so a date handed to `t` unformatted shows too.
@@ -87,6 +90,8 @@ function sample(day: string): Record<string, unknown> {
 		task,
 		done: true,
 		notes: 'Note',
+		text: 'Text',
+		ids: ['x_1', 'x_2'],
 	};
 }
 
@@ -122,15 +127,12 @@ const SAME_TO_A_PERSON = [
 	['lists.changeTask', 'lists.updateTask'],
 ];
 
-// What a person reads of a day: a month name (the translation stub only echoes keys, so a day in
-// words can only come from a date formatter).
+// A title that is only a translation key names nothing: it is the kind's generic noun.
 // The sample, with the action's own date fields filled in whatever they are called.
 function withDates(input: Record<string, unknown>, action: AnyActionDefinition, day: string) {
 	return { ...input, ...Object.fromEntries(dateFields(action.input).map((key) => [key, day])) };
 }
 
-const A_DAY_IN_WORDS = /\bSep(t|tember)?\b/;
-// A title that is only a translation key names nothing: it is the kind's generic noun.
 const BARE_KEY = /^[\w-]+:[\w.-]+$/;
 
 describe('draft presenters', () => {
@@ -139,7 +141,7 @@ describe('draft presenters', () => {
 	beforeAll(async () => {
 		// Far before the sample day, so a day reads as a date and not as "3 days ago".
 		vi.useFakeTimers({ toFake: ['Date'] });
-		vi.setSystemTime(new Date('2026-01-01T09:00:00Z'));
+		vi.setSystemTime(NOW);
 		for (const extension of extensions) {
 			const { default: web } = (await import(`../extensions/${extension}/src/web/index.ts`)) as {
 				default: WebExtension;
@@ -191,6 +193,31 @@ describe('draft presenters', () => {
 		expect(offenders).toEqual([]);
 	});
 
+	it('write every day they show the one way draftDate does', () => {
+		const offenders: string[] = [];
+		const written = draftDate(DAY, context, NOW);
+		for (const { presenter } of all) {
+			const shown = JSON.stringify([
+				presenter.title(sample(DAY), context),
+				presenter.fields(sample(DAY), context),
+			]);
+			// Any other writing of the day (short weekday, short month, year always) names the month.
+			if (/\bSep/.test(shown) && !shown.includes(written))
+				offenders.push(`${presenter.actionId}: ${shown}`);
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it('title a board note by its first line and show the rest and its last day', () => {
+		const found = all.find((p) => p.presenter.actionId === 'board.postNote')?.presenter;
+		const input = { text: 'No phones in the hall\nNot at school either', endsOn: DAY };
+		expect(found?.title(input, context)).toBe('No phones in the hall');
+		const rows = found?.fields(input, context) ?? [];
+		expect(rows.map((r) => r.path)).toEqual(['text', 'endsOn']);
+		expect(rows[1]?.value).toBe(draftDate(DAY, context, NOW));
+		expect(found?.fields({ text: 'One line' }, context)).toEqual([]);
+	});
+
 	it('show the day of a change whose input has one', () => {
 		const offenders: string[] = [];
 		for (const { presenter } of all) {
@@ -202,9 +229,18 @@ describe('draft presenters', () => {
 				presenter.title(input, context),
 				presenter.fields(input, context),
 			]);
-			if (!A_DAY_IN_WORDS.test(shown)) offenders.push(`${presenter.actionId}: ${shown}`);
+			if (!shown.includes(draftDate(DAY, context, NOW)))
+				offenders.push(`${presenter.actionId}: ${shown}`);
 		}
 		expect(offenders).toEqual([]);
+	});
+
+	it('exist for every action an AI may propose', () => {
+		const have = new Set(all.map((p) => p.presenter.actionId));
+		const missing = [...actions.values()]
+			.filter((action) => action.ai && !action.readOnly && !have.has(action.id))
+			.map((action) => action.id);
+		expect(missing).toEqual([]);
 	});
 
 	it('belong to an action the server defines', () => {

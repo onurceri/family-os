@@ -82,5 +82,9 @@
 	"empty_hint": "Aileye bir not bırak: bir hatırlatma, bir mesaj, bir teşekkür.",
 	"today_block": "Pano",
 	"today_block_hint": "Panoya asılmış, tüm aile için notlar.",
-	"draft_title_post_note": "Aile panosuna not koy"
+	"draft_title_post_note": "Aile panosuna not koy",
+	"kind_note": "Pano notu",
+	"draft_note": "Not",
+	"draft_until": "Şu güne kadar kalır",
+	"draft_approve_post": "Panoya as"
 }
