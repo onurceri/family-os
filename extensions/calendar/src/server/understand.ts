@@ -1,4 +1,5 @@
 import {
+	addressesEveryone,
 	defineMentionKind,
 	endNamed,
 	type FieldDecision,
@@ -188,8 +189,13 @@ async function newEvent(
 	}
 	const people = peopleNamed(ctx, mention);
 	if (!people.certain) uncertain.add('memberIds');
-	// Nobody named: the event is the whole family's, which is a default, not what the message says.
-	if (people.ids.length === 0) decided.memberIds = 'defaulted';
+	// Nobody named: the event is the whole family's, which is a default, unless the message says
+	// so ("everyone", "the whole family").
+	if (
+		people.ids.length === 0 &&
+		!addressesEveryone(ctx.text, ctx.vocabulary('calendar:words_everyone'), ctx.locale)
+	)
+		decided.memberIds = 'defaulted';
 
 	// The same event already on the calendar that very day (and time): leave it out.
 	const sameDay = await occurrencesBetween(ctx.db, date, date, ctx.timeZone);

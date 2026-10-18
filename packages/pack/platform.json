@@ -53,6 +53,7 @@
 			"UNDERSTANDING_INTENTS",
 			"UNSURE_TARGET",
 			"UnderstandingSchema",
+			"addressesEveryone",
 			"agentInputSchema",
 			"asAppointment",
 			"asData",

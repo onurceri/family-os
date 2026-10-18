@@ -364,3 +364,26 @@ export function unsureFields(
 	}
 	return [...out];
 }
+
+/**
+ * Whether a shared text addresses everyone ("the whole family", "all of us"), by a catalog's
+ * comma-separated everyone-words (`ctx.vocabulary`). Whole words only, case aside. A message that
+ * does is stating the whole family, so a kind that gives an event to everyone is not guessing.
+ */
+export function addressesEveryone(
+	text: string | null,
+	everyoneWords: readonly string[],
+	locale: string,
+): boolean {
+	if (text === null) return false;
+	const split = (value: string) =>
+		value
+			.toLocaleLowerCase(locale)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter(Boolean);
+	const said = ` ${split(text).join(' ')} `;
+	return everyoneWords.some((phrase) => {
+		const words = split(phrase);
+		return words.length > 0 && said.includes(` ${words.join(' ')} `);
+	});
+}

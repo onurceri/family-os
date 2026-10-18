@@ -2,6 +2,7 @@ import { type Mention, type Resolution, systemActor } from '@famos/sdk';
 import {
 	createTestClock,
 	createTestKernel,
+	repoTranslate,
 	resolveMentions,
 	SHARE_AI,
 	type TestKernel,
@@ -15,7 +16,11 @@ const TODAY = Date.UTC(2026, 9, 6, 10, 0);
 let k: TestKernel;
 let admin: Awaited<ReturnType<TestKernel['member']>>;
 beforeEach(async () => {
-	k = await createTestKernel({ extensions: [calendar], clock: createTestClock(TODAY) });
+	k = await createTestKernel({
+		extensions: [calendar],
+		clock: createTestClock(TODAY),
+		translate: repoTranslate(),
+	});
 	admin = await k.member('admin', 'Mara');
 });
 afterEach(() => k.close());
@@ -399,6 +404,28 @@ describe('calendar.event', () => {
 			input: { memberIds: [admin.member.id], date: '2026-10-10', startTime: '09:00' },
 			uncertain: ['memberIds'],
 		});
+	});
+
+	it('marks the whole family as a default only when the message does not say it', async () => {
+		const mention = { title: 'Open day', date: { text: '12 October', day: 12, month: 10 } };
+		const text = (said: string) => ({ text: said, sharer: admin.member.id });
+		const nobody = await resolve('calendar.event', [mention], text('Open day on 12 October'));
+		expect(proposal(nobody[0]).uncertain).toContain('memberIds');
+		for (const said of [
+			'Open day on 12 October, for the whole family',
+			'Everyone is invited to the open day on 12 October',
+		]) {
+			const out = await resolve('calendar.event', [mention], text(said));
+			expect(proposal(out[0])).toMatchObject({ input: { memberIds: [] } });
+			expect(proposal(out[0]).uncertain).not.toContain('memberIds');
+		}
+		// A word that only contains an everyone-word is not one.
+		const inside = await resolve(
+			'calendar.event',
+			[mention],
+			text('Open day on 12 October, everyones coat'),
+		);
+		expect(proposal(inside[0]).uncertain).toContain('memberIds');
 	});
 
 	it('reuses the family’s own tags and keeps two at most', async () => {
