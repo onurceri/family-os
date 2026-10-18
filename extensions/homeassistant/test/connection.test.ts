@@ -24,7 +24,8 @@ const CONFIG = JSON.stringify({
 	external_url: 'https://ha.example.net',
 	internal_url: 'http://192.168.1.20:8123',
 	currency: 'EUR',
-	country: 'NL',
+	// Longer than a real code, so it cannot turn up by chance inside sealed random bytes.
+	country: 'sentinel-country',
 });
 
 let k: TestKernel;
@@ -203,7 +204,14 @@ describe('the check', () => {
 			checked_at: 1_800_000_000_000,
 		});
 		const stored = await everythingStored();
-		for (const secret of ['52.3601', '4.8866', 'config_dir', 'allowlist', 'ha.example.net', 'NL']) {
+		for (const secret of [
+			'52.3601',
+			'4.8866',
+			'config_dir',
+			'allowlist',
+			'ha.example.net',
+			'sentinel-country',
+		]) {
 			expect(stored, secret).not.toContain(secret);
 		}
 		expect(await route()).toEqual({
