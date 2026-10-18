@@ -75,7 +75,7 @@
 		type="button"
 		onclick={onopen}
 		disabled={!onopen}
-		class="grid min-w-0 flex-1 gap-px py-2 pe-2 text-start"
+		class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-px py-2 pe-2 text-start"
 	>
 		<span class="truncate text-[15px] leading-snug font-semibold {done ? 'line-through' : ''}"
 			>{task.title}</span

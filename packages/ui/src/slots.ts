@@ -315,6 +315,23 @@ export const changed = (from: string | undefined, to: string): { value: string; 
 	to,
 });
 
+/**
+ * A `YYYY-MM-DD` written out in the reader's words and region order ("2 September 2026"), for a
+ * draft row. A value that is not a calendar date comes back as it was, so a model's odd answer
+ * still shows rather than vanishing.
+ */
+export function draftDate(value: string, context: Pick<PresenterContext, 'dateLocale'>): string {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+	const at = Date.parse(`${value}T12:00:00Z`);
+	if (Number.isNaN(at) || new Date(at).toISOString().slice(0, 10) !== value) return value;
+	return new Intl.DateTimeFormat(context.dateLocale, {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+		timeZone: 'UTC',
+	}).format(at);
+}
+
 export interface DraftField {
 	label: string;
 	value: string;

@@ -103,9 +103,13 @@
 
 		{#if data}
 			<Section label={t('backups_local_title')}>
-				<p class="text-ink-soft max-w-prose text-sm">
-					{t('backups_schedule', { hour: data.schedule.hour, keep: data.schedule.keep })}
-				</p>
+				<ul class="text-ink-soft grid max-w-prose gap-0.5 text-sm">
+					<li>
+						{t('backups_schedule_nightly', { hour: data.schedule.hour, keep: data.schedule.keep })}
+					</li>
+					<li>{t('backups_schedule_update', { keep: data.schedule.keepBeforeUpdate })}</li>
+					<li>{t('backups_schedule_manual')}</li>
+				</ul>
 				{#if data.local.length > 0}
 					<Card rows>
 						{#each data.local.slice(0, 8) as backup (backup.name)}

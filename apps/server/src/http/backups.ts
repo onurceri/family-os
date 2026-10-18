@@ -11,6 +11,7 @@ import {
 	TestResultSchema,
 } from '@famos/adapters/backup';
 import { CORE_CAPABILITIES, type Kernel } from '@famos/core';
+import { KEEP_BEFORE_UPDATE } from '@famos/db';
 import { FamosError } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
@@ -40,7 +41,13 @@ const BackupsSchema = z.object({
 	local: z.array(LocalBackupSchema),
 	encryption: EncryptionStatusSchema,
 	targets: z.array(TargetStatusSchema),
-	schedule: z.object({ hour: z.number().int(), keep: z.number().int() }),
+	schedule: z.object({
+		hour: z.number().int(),
+		/** Nightly copies kept. */
+		keep: z.number().int(),
+		/** Copies made before an update that are kept. */
+		keepBeforeUpdate: z.number().int(),
+	}),
 });
 const Queued = z.object({ queued: z.literal(true) });
 
@@ -100,7 +107,7 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 				local: await localBackups(deps.dir),
 				encryption: await backups.encryptionStatus(),
 				targets: await backups.listTargets(),
-				schedule: deps.schedule,
+				schedule: { ...deps.schedule, keepBeforeUpdate: KEEP_BEFORE_UPDATE },
 			},
 			200,
 		);

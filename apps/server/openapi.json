@@ -14116,11 +14116,15 @@
 												},
 												"keep": {
 													"type": "integer"
+												},
+												"keepBeforeUpdate": {
+													"type": "integer"
 												}
 											},
 											"required": [
 												"hour",
-												"keep"
+												"keep",
+												"keepBeforeUpdate"
 											]
 										}
 									},

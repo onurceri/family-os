@@ -102,18 +102,24 @@ export function updateTaskFields(
 	);
 	const fields = changeTaskFields({ id: input.id, ...change }, c, before);
 	if ('recurrence' in before) {
-		const repeat = (r: unknown) =>
+		// A weekly repeat on the day the task is due reads "Every Thursday": the day is named once.
+		const repeat = (r: unknown, dueDate: string | undefined) =>
 			r && typeof r === 'object'
 				? describeRecurrence(
 						{ interval: 1, ...r } as Parameters<typeof describeRecurrence>[0],
 						t,
 						c.dateLocale,
 						c.weekStart,
+						dueDate,
 					)
 				: t('repeat_none');
+		const was = typeof before.dueDate === 'string' ? before.dueDate : (task.dueDate ?? undefined);
 		fields.push({
 			label: t('repeat'),
-			...changed(repeat(before.recurrence), repeat(task.recurrence)),
+			...changed(
+				repeat(before.recurrence, was),
+				repeat(task.recurrence, task.dueDate ?? undefined),
+			),
 			path: 'recurrence',
 		});
 	}

@@ -306,6 +306,16 @@ describe('event blocks on the hour grid', () => {
 		expect(blockFit(tall(2, 1), 1)).toEqual({ titleLines: 2, metaLines: 1, tight: false });
 		expect(blockFit(tall(2, 0), 0)).toEqual({ titleLines: 2, metaLines: 0, tight: false });
 	});
+	it('gives a title that does not fit on one line the second line instead of the time', () => {
+		// One hour at 48 px an hour: room for two lines. A short title keeps its time line.
+		const hour = blockHeight(60, 48);
+		expect(blockFit(hour, 1, false)).toMatchObject({ titleLines: 1, metaLines: 1 });
+		expect(blockFit(hour, 1, true)).toMatchObject({ titleLines: 2, metaLines: 0 });
+		// With room for a third line, the time comes back under the two title lines.
+		expect(blockFit(blockHeight(90, 60), 1, true)).toMatchObject({ titleLines: 2, metaLines: 1 });
+		// Too short for two title lines: nothing changes.
+		expect(blockFit(blockHeight(30, 48), 1, true)).toEqual(blockFit(blockHeight(30, 48), 1));
+	});
 	it('fits only the lines that are wanted and that fit whole', () => {
 		expect(blockFit(snug(1, 3), 3).metaLines).toBe(3);
 		expect(blockFit(snug(1, 3) - 1, 3).metaLines).toBe(2);
@@ -313,13 +323,14 @@ describe('event blocks on the hour grid', () => {
 	});
 	it('never chooses more lines than the block holds', () => {
 		for (let height = MIN_BLOCK_HEIGHT; height <= 200; height++)
-			for (let wanted = 0; wanted <= 3; wanted++) {
-				const fit = blockFit(height, wanted);
-				const pad = fit.tight ? BLOCK.tight : BLOCK.pad;
-				const used =
-					2 * BLOCK.border + 2 * pad + fit.titleLines * BLOCK.title + fit.metaLines * BLOCK.meta;
-				expect(used).toBeLessThanOrEqual(height);
-			}
+			for (let wanted = 0; wanted <= 3; wanted++)
+				for (const wraps of [false, true]) {
+					const fit = blockFit(height, wanted, wraps);
+					const pad = fit.tight ? BLOCK.tight : BLOCK.pad;
+					const used =
+						2 * BLOCK.border + 2 * pad + fit.titleLines * BLOCK.title + fit.metaLines * BLOCK.meta;
+					expect(used).toBeLessThanOrEqual(height);
+				}
 	});
 });
 

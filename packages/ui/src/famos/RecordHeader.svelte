@@ -97,6 +97,7 @@
 		overflow-wrap: anywhere;
 	}
 	.meta {
+		min-width: 0;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -118,6 +119,13 @@
 		flex-wrap: wrap;
 		row-gap: 4px;
 		margin-inline-start: -1.25em;
+	}
+	/* A fact longer than the line ends in an ellipsis instead of running off the screen. */
+	.fact {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.fact::before {
 		content: '\00b7' / '';

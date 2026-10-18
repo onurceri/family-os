@@ -177,18 +177,21 @@ export function updateEventFields(
 	);
 	const fields = changeEventFields({ id: input.id, ...change }, c, before);
 	if ('recurrence' in before) {
-		const repeat = (r: unknown) =>
+		// A weekly repeat on the day it starts reads "Every Thursday": the day is named once.
+		const repeat = (r: unknown, startDate: string | undefined) =>
 			r && typeof r === 'object'
 				? describeRecurrence(
 						{ interval: 1, ...r } as Parameters<typeof describeRecurrence>[0],
 						t,
 						c.dateLocale,
 						c.weekStart,
+						startDate,
 					)
 				: t('repeat_none');
+		const was = typeof before.date === 'string' ? before.date : event.date;
 		fields.push({
 			label: t('repeat'),
-			...changed(repeat(before.recurrence), repeat(event.recurrence)),
+			...changed(repeat(before.recurrence, was), repeat(event.recurrence, event.date)),
 			path: 'recurrence',
 		});
 	}

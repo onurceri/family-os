@@ -4,6 +4,7 @@
 	import { timeLabel } from './format.js';
 	import { useCalendar } from './i18n.js';
 	import { BLOCK, blockFit, isLongBlock } from './layout.js';
+	import { canvasMeasure, titleFitter } from './title-fit.js';
 
 	/**
 	 * An occurrence on the wide boards. `block` sits on the hour grid (positioned by the parent's
@@ -36,6 +37,9 @@
 		onclick: () => void;
 	} = $props();
 	const { app, t } = useCalendar();
+
+	const measure = canvasMeasure();
+	const fitsTitle = measure ? titleFitter(measure) : null;
 
 	const colors = $derived(stripeColors(occurrence, app.members()));
 	const past = $derived(isPast(occurrence, now, today));
@@ -82,11 +86,23 @@
 	const details = $derived(
 		showDetails ? [who || time, occurrence.location ?? '', range].filter(Boolean) : [sub],
 	);
+	// Whether the title is wider than one line of the block: then the second line is the title's,
+	// not the time's. The block is as wide as its button; the title has what is left of its border
+	// and its padding (3 px edge side 10 px, other side 6 px).
+	let button = $state<HTMLElement>();
+	let titleEl = $state<HTMLElement>();
+	let width = $state(0);
+	const wraps = $derived.by(() => {
+		if (!button || !titleEl || !width || !fitsTitle) return false;
+		const style = getComputedStyle(titleEl);
+		const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+		return fitsTitle(occurrence.title, font, width - 2 * BLOCK.border - 16);
+	});
 	const fit = $derived.by(() => {
 		if (!place) return blockFit(0, 0);
-		if (titleOnly) return blockFit(place.height, 0);
-		const all = blockFit(place.height, details.length);
-		return all.metaLines === details.length ? all : blockFit(place.height, 1);
+		if (titleOnly) return blockFit(place.height, 0, wraps);
+		const all = blockFit(place.height, details.length, wraps);
+		return all.metaLines === details.length ? all : blockFit(place.height, 1, wraps);
 	});
 	const meta = $derived(
 		fit.metaLines === 0 ? [] : fit.metaLines === details.length ? details : [sub],
@@ -97,6 +113,8 @@
 {#if variant === 'block' && place}
 	<button
 		type="button"
+		bind:this={button}
+		bind:clientWidth={width}
 		data-testid="event-chip"
 		data-long={long || undefined}
 		data-next={next || undefined}
@@ -122,6 +140,7 @@
 		<span class="absolute inset-y-0 start-0 w-[3px]" style:background={edge} aria-hidden="true"
 		></span>
 		<b
+			bind:this={titleEl}
 			class="text-[13px] font-bold {fit.titleLines === 2 ? 'line-clamp-2' : 'truncate'} {long
 				? ''
 				: 'text-ink'}"

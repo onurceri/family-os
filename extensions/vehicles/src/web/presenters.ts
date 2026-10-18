@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { Car, Wrench } from '@lucide/svelte';
 import type { AddLogInput, AddVehicleInput } from '../contract/index.js';
 
@@ -26,7 +26,7 @@ export const addLogPresenter: DraftPresenter<AddLogInput> = {
 			? `${input.vehicleName} · ${c.t(`vehicles:log_kind_${input.kind ?? 'service'}`)}`
 			: c.t(`vehicles:log_kind_${input.kind ?? 'service'}`),
 	fields: (input, c) => [
-		{ label: c.t('vehicles:draft_date'), value: input.doneOn, path: 'doneOn' },
+		{ label: c.t('vehicles:draft_date'), value: draftDate(input.doneOn, c), path: 'doneOn' },
 		...(input.place
 			? [{ label: c.t('vehicles:draft_place'), value: input.place, path: 'place' }]
 			: []),

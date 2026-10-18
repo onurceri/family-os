@@ -46,7 +46,13 @@ export const addTaskPresenter: DraftPresenter<TaskInput> = {
 			>[0];
 			fields.push({
 				label: t('repeat'),
-				value: describeRecurrence(recurrence, t, c.dateLocale, c.weekStart),
+				value: describeRecurrence(
+					recurrence,
+					t,
+					c.dateLocale,
+					c.weekStart,
+					input.dueDate ?? undefined,
+				),
 				path: 'recurrence',
 			});
 		}

@@ -233,12 +233,21 @@ export interface BlockFit {
 /**
  * What a block `height` px tall shows when it would like `wanted` lines under its title: the title
  * always; each line under it only when it fits whole; a second title line with the room left. A
- * line is never cut through: the lines chosen plus padding and border are never taller than the
- * block.
+ * title that does not fit on one line (`titleWraps`) takes the second line before anything under
+ * it does: the block's place on the grid already says when it is, and a title read whole says
+ * more than a title cut short above a time. A line is never cut through: the lines chosen plus
+ * padding and border are never taller than the block.
  */
-export function blockFit(height: number, wanted: number): BlockFit {
+export function blockFit(height: number, wanted: number, titleWraps = false): BlockFit {
 	const within = (pad: number) => {
 		const inner = height - 2 * BLOCK.border - 2 * pad;
+		if (titleWraps && inner >= 2 * BLOCK.title) {
+			const metaLines = Math.max(
+				0,
+				Math.min(wanted, Math.floor((inner - 2 * BLOCK.title) / BLOCK.meta)),
+			);
+			return { titleLines: 2 as const, metaLines, inner };
+		}
 		const room = Math.floor((inner - BLOCK.title) / BLOCK.meta);
 		const metaLines = Math.max(0, Math.min(wanted, room));
 		const titleLines: 1 | 2 = inner - metaLines * BLOCK.meta >= 2 * BLOCK.title ? 2 : 1;

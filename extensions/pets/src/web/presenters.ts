@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { PawPrint, Syringe } from '@lucide/svelte';
 import type { AddPetInput, AddTreatmentInput } from '../contract/index.js';
 
@@ -34,7 +34,7 @@ export const addTreatmentPresenter: DraftPresenter<AddTreatmentInput & { label?:
 		return pet ? `${pet} · ${kind}` : kind;
 	},
 	fields: (input, c) => [
-		{ label: c.t('pets:draft_date'), value: input.givenOn, path: 'givenOn' },
+		{ label: c.t('pets:draft_date'), value: draftDate(input.givenOn, c), path: 'givenOn' },
 		...(input.product
 			? [{ label: c.t('pets:draft_product'), value: input.product, path: 'product' }]
 			: []),

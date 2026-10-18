@@ -1,4 +1,4 @@
-import { changed, type DraftPresenter } from '@famos/ui/slots';
+import { changed, type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { SquareCheckBig, Users } from '@lucide/svelte';
 import type { CreateChoreInput } from '../contract/index.js';
 
@@ -12,7 +12,11 @@ export const createChorePresenter: DraftPresenter<CreateChoreInput> = {
 	icon: SquareCheckBig,
 	title: (input) => input.title,
 	fields: (input, c) => [
-		{ label: c.t('chores:draft_first_due'), value: input.startDate, path: 'startDate' },
+		{
+			label: c.t('chores:draft_first_due'),
+			value: draftDate(input.startDate, c),
+			path: 'startDate',
+		},
 		...(input.recurrence
 			? [
 					{

@@ -50,6 +50,7 @@ import {
 import {
 	createBackup,
 	type DatabaseHandle,
+	KEEP_BEFORE_UPDATE,
 	openDatabase,
 	planMigrations,
 	pruneBackups,
@@ -340,7 +341,7 @@ export async function migrate(runtime: Runtime): Promise<number> {
 			schema: state,
 			reason: 'pre-migration',
 		});
-		await pruneBackups(config.backupsDir, 'pre-migration', 5);
+		await pruneBackups(config.backupsDir, 'pre-migration', KEEP_BEFORE_UPDATE);
 		logger.info({ path }, 'pre-migration backup written');
 	}
 	await runMigrations(handle.db, kernel.migrationScopes);

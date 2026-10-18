@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { CalendarClock } from '@lucide/svelte';
 import type { AddObligationInput } from '../contract/index.js';
 
@@ -10,7 +10,7 @@ export const addObligationPresenter: DraftPresenter<AddObligationInput> = {
 	title: (input) => input.title,
 	fields: (input, c) => [
 		{ label: c.t('records:draft_record'), value: input.recordName, path: 'recordName' },
-		{ label: c.t('records:field_due_date'), value: input.dueDate, path: 'dueDate' },
+		{ label: c.t('records:field_due_date'), value: draftDate(input.dueDate, c), path: 'dueDate' },
 	],
 	approveLabel: (c) => c.t('records:draft_approve_add'),
 };
@@ -28,10 +28,16 @@ export const completeObligationPresenter: DraftPresenter<CompleteInput> = {
 			: c.t('records:draft_complete_title'),
 	fields: (input, c) => [
 		...(input.doneOn
-			? [{ label: c.t('records:field_done_on'), value: input.doneOn, path: 'doneOn' }]
+			? [{ label: c.t('records:field_done_on'), value: draftDate(input.doneOn, c), path: 'doneOn' }]
 			: []),
 		...(input.nextDueDate
-			? [{ label: c.t('records:field_next_due'), value: input.nextDueDate, path: 'nextDueDate' }]
+			? [
+					{
+						label: c.t('records:field_next_due'),
+						value: draftDate(input.nextDueDate, c),
+						path: 'nextDueDate',
+					},
+				]
 			: []),
 	],
 	approveLabel: (c) => c.t('records:mark_done'),

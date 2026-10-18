@@ -35,7 +35,7 @@
 
 	// The day is made in the family's time zone when the picture is made (the page keys it on it).
 	const data = new TodayData(app, {
-		sample: sampleDay(family.timeZone, samplePeople(family.members, t)),
+		sample: sampleDay(family.timeZone, samplePeople(family.members, t, real.me()?.id)),
 	});
 	const Composition = $derived(compositionFor(style));
 

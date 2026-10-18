@@ -55,7 +55,7 @@
 		</span>
 	{/if}
 	{#if lead}{@render lead()}{/if}
-	<span class="grid min-w-0 flex-1 gap-px">
+	<span class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-px">
 		<span class="flex min-w-0 items-baseline gap-1.5">
 			<b
 				class="truncate text-[15px] leading-tight {variant === 'empty'

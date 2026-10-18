@@ -15,13 +15,18 @@ export interface SamplePerson {
 	color: string;
 }
 
-/** The three people of the previews: the first three active members, then made-up ones. */
+/**
+ * The three people of the previews: the viewer first (the preview greets them), then the other
+ * active members in order, then made-up ones.
+ */
 export function samplePeople(
 	members: readonly { id: string; displayName: string; color: string; archived?: boolean }[],
 	label: (key: (typeof SAMPLE_PEOPLE)[number]['nameKey']) => string,
+	meId?: string,
 ): [SamplePerson, SamplePerson, SamplePerson] {
-	const own = members
-		.filter((m) => !m.archived)
+	const active = members.filter((m) => !m.archived);
+	const me = active.find((m) => m.id === meId);
+	const own = (me ? [me, ...active.filter((m) => m !== me)] : active)
 		.slice(0, 3)
 		.map(({ id, displayName, color }) => ({ id, displayName, color }));
 	const made = SAMPLE_PEOPLE.slice(own.length).map((p) => ({

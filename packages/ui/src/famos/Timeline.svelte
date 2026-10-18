@@ -157,7 +157,7 @@
 						{/if}
 					</span>
 					<span class="flex min-w-0 items-center gap-3 py-1.5 pl-3">
-						<span class="grid min-w-0 flex-1 gap-0.5">
+						<span class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0.5">
 							<span
 								class="truncate leading-snug {lit
 									? 'text-[17px] font-extrabold'

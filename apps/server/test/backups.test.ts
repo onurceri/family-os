@@ -201,7 +201,7 @@ describe('Backups API', () => {
 			local: [],
 			targets: [],
 			encryption: { mode: 'unset', recipient: null },
-			schedule: { hour: 3, keep: 7 },
+			schedule: { hour: 3, keep: 7, keepBeforeUpdate: 5 },
 		});
 
 		expect(

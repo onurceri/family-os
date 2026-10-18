@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { useApp } from '@famos/ui/app';
 	import { Button } from '@famos/ui/button';
 	import { Avatar, Chip, Pill, Row } from '@famos/ui/famos';
 	import { Check } from '@lucide/svelte';
@@ -14,7 +15,8 @@
 	 */
 	let { name }: { name: string } = $props();
 
-	const [first, second] = $derived(samplePeople(family.members, t));
+	const app = useApp();
+	const [first, second] = $derived(samplePeople(family.members, t, app.me()?.id));
 </script>
 
 <figure class="grid gap-2" data-testid="palette-sample">

@@ -1,4 +1,4 @@
-import type { DraftPresenter } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate } from '@famos/ui/slots';
 import { House, Refrigerator } from '@lucide/svelte';
 import type { AddHomeInput, AddItemInput, UpdateItemInput } from '../contract/index.js';
 
@@ -33,13 +33,19 @@ export const addItemPresenter: DraftPresenter<AddItemInput> = {
 				]
 			: []),
 		...(input.purchasedOn
-			? [{ label: c.t('home:field_purchased_on'), value: input.purchasedOn, path: 'purchasedOn' }]
+			? [
+					{
+						label: c.t('home:field_purchased_on'),
+						value: draftDate(input.purchasedOn, c),
+						path: 'purchasedOn',
+					},
+				]
 			: []),
 		...(input.warrantyUntil
 			? [
 					{
 						label: c.t('home:field_warranty_until'),
-						value: input.warrantyUntil,
+						value: draftDate(input.warrantyUntil, c),
 						path: 'warrantyUntil',
 					},
 				]
@@ -59,13 +65,19 @@ export const updateItemPresenter: DraftPresenter<UpdateItemInput> = {
 			? [
 					{
 						label: c.t('home:field_warranty_until'),
-						value: input.warrantyUntil,
+						value: draftDate(input.warrantyUntil, c),
 						path: 'warrantyUntil',
 					},
 				]
 			: []),
 		...(input.purchasedOn
-			? [{ label: c.t('home:field_purchased_on'), value: input.purchasedOn, path: 'purchasedOn' }]
+			? [
+					{
+						label: c.t('home:field_purchased_on'),
+						value: draftDate(input.purchasedOn, c),
+						path: 'purchasedOn',
+					},
+				]
 			: []),
 		...(input.brand || input.model
 			? [

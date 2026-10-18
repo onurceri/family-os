@@ -8501,6 +8501,7 @@ export interface operations {
                         schedule: {
                             hour: number;
                             keep: number;
+                            keepBeforeUpdate: number;
                         };
                     };
                 };

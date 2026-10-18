@@ -319,18 +319,21 @@
 					<Row
 						href="/settings/roles"
 						title={role.name ?? tDynamic(`app:role_${role.id}`)}
-						meta="{role.builtIn
+						meta={role.builtIn
 							? tDynamic(`app:role_${role.id}_hint`)
 							: t('role_custom_hint', {
 									base: tDynamic(`app:role_${role.base}`),
-								})} · {role.members === 0
-							? t('roles_nobody')
-							: t('roles_people', { count: role.members })}"
+								})}
 					>
 						{#snippet lead()}
 							<ShieldCheck class="size-[18px]" aria-hidden="true" />
 						{/snippet}
 						{#snippet trail()}
+							<span class="text-ink-soft shrink-0 text-[13px] whitespace-nowrap"
+								>{role.members === 0
+									? t('roles_nobody')
+									: t('roles_people', { count: role.members })}</span
+							>
 							{#if !wide.current}<ChevronRight
 									class="text-ink-soft size-4"
 									aria-hidden="true"

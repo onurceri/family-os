@@ -19,8 +19,9 @@
 	import { Check, ChevronRight, Lock, Minus, Pencil, Plus } from '@lucide/svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { api } from '#lib/api.js';
-	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
+	import { orderedGroups } from '#lib/role-groups.js';
 	import { session } from '#lib/session.svelte.js';
 
 	/**
@@ -59,14 +60,14 @@
 	const roleName = (role: Role) => role.name ?? tDynamic(`app:role_${role.id}`);
 	const builtIn = (id: string) => data?.roles.find((r) => r.id === id);
 	const phoneRole = $derived(data?.roles.find((r) => r.id === shownRole) ?? data?.roles[0]);
-	/** Capabilities grouped by the extension (or core) that declared them, in registry order. */
+	const ownerName = (owner: string) =>
+		owner === 'core' ? t('roles_group_core') : tDynamic(`${owner}:feature_name`);
+	/** Capabilities grouped by the extension (or core) that declared them, in the reader's alphabet. */
 	const groups = $derived.by(() => {
 		const out = new Map<string, Data['capabilities']>();
 		for (const c of data?.capabilities ?? []) out.set(c.owner, [...(out.get(c.owner) ?? []), c]);
-		return [...out];
+		return orderedGroups([...out], ownerName, getLocale());
 	});
-	const ownerName = (owner: string) =>
-		owner === 'core' ? t('roles_group_core') : tDynamic(`${owner}:feature_name`);
 	// The table is long, so the parts start folded except the family-wide one.
 	const open = new SvelteSet<string>(['core']);
 	const allOpen = $derived(groups.every(([owner]) => open.has(owner)));

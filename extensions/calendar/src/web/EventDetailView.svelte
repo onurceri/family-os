@@ -31,13 +31,15 @@
 	const { app, t } = useCalendar();
 
 	const members = $derived(app.members().filter((m) => event.memberIds.includes(m.id)));
-	const when = $derived.by(() => {
-		// The occurrence's own day: a repeating event's detail holds only the first one.
-		const date = occurrence.allDay
+	// The occurrence's own day: a repeating event's detail holds only the first one.
+	const date = $derived(
+		occurrence.allDay
 			? (occurrence.startDate as string)
 			: new Intl.DateTimeFormat('en-CA', { timeZone: app.timeZone() }).format(
 					occurrence.start as number,
-				);
+				),
+	);
+	const when = $derived.by(() => {
 		return describeWhen(
 			{
 				allDay: event.allDay,
@@ -58,7 +60,7 @@
 					(key: string, options?: Record<string, unknown>) => app.t(`calendar:${key}`, options),
 					app.dateLocale(),
 					app.weekStart(),
-					occurrence.startDate ?? undefined,
+					date,
 				)
 			: null,
 	);

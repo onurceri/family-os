@@ -33,7 +33,7 @@
 
 {#if text !== null}
 	<span
-		class="text-ink-soft min-w-0 truncate text-xs font-semibold"
+		class="text-ink-soft max-w-full min-w-0 truncate text-xs font-semibold"
 		title={text}
 		data-testid="approval-mark">{text}</span
 	>
