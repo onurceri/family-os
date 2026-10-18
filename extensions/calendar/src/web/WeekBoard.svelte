@@ -10,6 +10,9 @@
 		blockHeight,
 		clipToDay,
 		firstVisibleHour,
+		FIT_LEAD,
+		fitHour,
+		fitWindow,
 		hourHeight,
 		isLongBlock,
 		layoutDay,
@@ -33,6 +36,7 @@
 		onopen,
 		onadd,
 		onday,
+		fit = false,
 	}: {
 		days: readonly string[];
 		items: readonly Occurrence[];
@@ -45,6 +49,12 @@
 		onadd?: (date: string, time?: string) => void;
 		/** Open one day (week view only). */
 		onday?: (date: string) => void;
+		/**
+		 * The hours worth showing (the events', at least 07:00 to 22:00) fill the board's height and
+		 * the board never scrolls, so a family display sees the whole day at once. A crowded stretch
+		 * still shows "+N more" in its column.
+		 */
+		fit?: boolean;
 	} = $props();
 	const { app, t } = useCalendar();
 	const tz = $derived(app.timeZone());
@@ -55,7 +65,6 @@
 	let headH = $state(0);
 	let bodyW = $state(0);
 	const bodyH = $derived(Math.max(0, scrollH - headH));
-	const hour = $derived(hourHeight(bodyH));
 	// 94 px columns (1024 px windows) show the title only and a narrower gutter.
 	const gutter = $derived(!single && bodyW < 900 ? 44 : 56);
 	const colW = $derived((bodyW - gutter) / days.length);
@@ -115,6 +124,21 @@
 			};
 		}),
 	);
+	const win = $derived(
+		fit
+			? fitWindow(
+					byDay.flatMap((d) =>
+						d.chips
+							.filter(
+								({ chip }) =>
+									!isLongBlock(chip.occurrence.start as number, chip.occurrence.end as number),
+							)
+							.map(({ chip }) => chip),
+					),
+				)
+			: null,
+	);
+	const hour = $derived(win ? fitHour(bodyH, win) : hourHeight(bodyH));
 	// The next thing: today's first event still to start, marked in `accent`.
 	const nextId = $derived.by(() => {
 		if (!days.includes(today)) return null;
@@ -150,7 +174,7 @@
 	let scrolledFor = '';
 	$effect(() => {
 		const key = days.join(',');
-		if (!ready || !scroller || bodyH === 0 || scrolledFor === key) return;
+		if (fit || !ready || !scroller || bodyH === 0 || scrolledFor === key) return;
 		scrolledFor = key;
 		const starts = byDay.flatMap((d) => d.chips.map((c) => c.chip.start));
 		const el = scroller;
@@ -165,6 +189,14 @@
 			}
 			el.scrollTop = top;
 		});
+	});
+
+	// Fitted: the window's first hour sits at the top, and nothing is left to scroll to.
+	$effect(() => {
+		if (!win || !scroller || bodyH === 0) return;
+		const el = scroller;
+		const top = Math.max(0, win.from * hour - FIT_LEAD);
+		void tick().then(() => (el.scrollTop = top));
 	});
 
 	function slot(event: MouseEvent, date: string) {
@@ -205,7 +237,7 @@
 	<div
 		bind:this={scroller}
 		bind:clientHeight={scrollH}
-		class="relative min-h-0 flex-1 overflow-y-auto"
+		class="relative min-h-0 flex-1 {fit ? 'overflow-hidden' : 'overflow-y-auto'}"
 	>
 		<div bind:clientHeight={headH} class="bg-surface sticky top-0 z-20">
 			<div class="border-line grid h-[52px] border-b" style:grid-template-columns={cols}>

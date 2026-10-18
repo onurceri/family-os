@@ -65,6 +65,16 @@ export default defineWebExtension({
 			component: () => import('./CalendarsPage.svelte'),
 		},
 	],
+	slots: [
+		{
+			// This week on a screen of its own, between Today's turns on a family display.
+			slot: 'display.page',
+			id: 'calendar.week',
+			labelKey: 'calendar:display_week',
+			requires: 'calendar.view',
+			component: () => import('./DisplayWeek.svelte'),
+		},
+	],
 	timeline: [calendarTimeline],
 	today: [firstEventStep],
 	drafts: [createEventPresenter, changeEventPresenter, updateEventPresenter, deleteEventPresenter],

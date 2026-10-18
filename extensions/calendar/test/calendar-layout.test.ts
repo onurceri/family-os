@@ -4,7 +4,10 @@ import {
 	blockFit,
 	blockHeight,
 	clipToDay,
+	FIT_LEAD,
 	firstVisibleHour,
+	fitHour,
+	fitWindow,
 	hourHeight,
 	layoutDay,
 	MIN_BLOCK_HEIGHT,
@@ -317,5 +320,39 @@ describe('event blocks on the hour grid', () => {
 					2 * BLOCK.border + 2 * pad + fit.titleLines * BLOCK.title + fit.metaLines * BLOCK.meta;
 				expect(used).toBeLessThanOrEqual(height);
 			}
+	});
+});
+
+describe('fitted board', () => {
+	it('shows 07:00 to 22:00 when the events are inside it', () => {
+		expect(fitWindow([{ start: h(9), end: h(10) }])).toEqual({ from: 7, to: 22 });
+		expect(fitWindow([])).toEqual({ from: 7, to: 22 });
+	});
+
+	it('widens to the earliest start and the latest end, never beyond the day', () => {
+		expect(
+			fitWindow([
+				{ start: h(5, 30), end: h(6) },
+				{ start: h(21), end: h(22, 15) },
+			]),
+		).toEqual({ from: 5, to: 23 });
+		expect(fitWindow([{ start: 0, end: 1440 }])).toEqual({ from: 0, to: 24 });
+	});
+
+	it('gives every hour of the window an equal share of the body', () => {
+		const window = { from: 7, to: 22 };
+		const hour = fitHour(700, window);
+		expect(hour).toBe(Math.floor((700 - FIT_LEAD) / 15));
+		expect(hour * 15 + FIT_LEAD).toBeLessThanOrEqual(700);
+		expect(fitHour(10, window)).toBe(20);
+	});
+
+	it('shows "+N more" for a crowded day instead of narrow slivers', () => {
+		const spans = Array.from({ length: 8 }, (_, i) => ({ id: `e${i}`, start: h(9), end: h(10) }));
+		const placed = layoutDay(spans, undefined, maxColumnsFor(150));
+		const more = overflowOf(spans, placed);
+		const visible = placed.filter((p) => !p.hidden).length;
+		expect(more).toHaveLength(1);
+		expect(visible + (more[0]?.count ?? 0)).toBe(8);
 	});
 });

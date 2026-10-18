@@ -179,6 +179,30 @@ export function clipToDay(
 /** Pixels per hour: at least 44, otherwise 1/14 of the visible body so about 13 hours fit. */
 export const hourHeight = (bodyHeight: number): number => Math.max(44, Math.floor(bodyHeight / 14));
 
+/** The room above the first fitted hour, so its label is not cut in half. */
+export const FIT_LEAD = 10;
+
+/**
+ * The hours a fitted board shows: 07:00 to 22:00, widened to the earliest start and the latest end
+ * of the events (minutes from the start of the day), never beyond the day.
+ */
+export function fitWindow(spans: readonly { start: number; end: number }[]): {
+	from: number;
+	to: number;
+} {
+	let from = 7;
+	let to = 22;
+	for (const s of spans) {
+		from = Math.min(from, Math.floor(s.start / 60));
+		to = Math.max(to, Math.ceil(s.end / 60));
+	}
+	return { from: Math.max(0, from), to: Math.min(24, to) };
+}
+
+/** Pixels per hour so that the window fills a body `bodyHeight` tall (never under 20). */
+export const fitHour = (bodyHeight: number, window: { from: number; to: number }): number =>
+	Math.max(20, Math.floor((bodyHeight - FIT_LEAD) / (window.to - window.from)));
+
 /**
  * The box of an event block on the hour grid, in px: its border, its padding (`tight` when the
  * normal padding would cut a line), and the line heights of the title and of the lines under it. The block's CSS
