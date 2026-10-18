@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { formatTime } from '@famos/time';
 	import type { SlotProps } from '@famos/ui/slots';
 	import { onDestroy } from 'svelte';
 	import { DEFAULT_TIMING, type PhotoList } from '../contract/index.js';
@@ -8,8 +7,8 @@
 	import Slideshow from './Slideshow.svelte';
 
 	/**
-	 * Family display page: the family's photos one after the other, with the clock and the date
-	 * over them as in ambient mode, at the size of a page. On a screen that has pages this is
+	 * Family display page: the family's photos one after the other, with the date over them,
+	 * at the size of a page (the page's head already has the time). On a screen that has pages this is
 	 * how the photos come, since ambient mode does not take such a screen over. Without photos it
 	 * is a calm clock. Nothing on it can be pressed; it reads the photos again each time it comes
 	 * round and when they change.
@@ -21,7 +20,7 @@
 	let loaded = $state(false);
 	let photo = $state<string | null>(null);
 	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 1000);
+	const clock = setInterval(() => (now = Date.now()), 30_000);
 	onDestroy(() => clearInterval(clock));
 
 	async function load() {
@@ -41,7 +40,6 @@
 	});
 
 	const timing = $derived(photos?.timing ?? DEFAULT_TIMING);
-	const time = $derived(formatTime(now, app.timeZone(), app.dateLocale(), app.hourCycle()));
 	const date = $derived(
 		new Intl.DateTimeFormat(app.dateLocale(), {
 			weekday: 'long',
@@ -75,12 +73,6 @@
 				? 'content-end drop-shadow-lg'
 				: 'content-center justify-items-center text-center'}"
 		>
-			<span
-				class="leading-none font-extrabold tracking-tight tabular-nums {hasPhoto
-					? 'text-7xl'
-					: 'text-9xl'}"
-				data-testid="photos-clock">{time}</span
-			>
 			<p class="text-3xl font-bold capitalize">{date}</p>
 			{#if !hasPhoto && (photos?.ids.length ?? 0) === 0}
 				<p class="text-ink-soft text-xl">{t('photos_page_none')}</p>
