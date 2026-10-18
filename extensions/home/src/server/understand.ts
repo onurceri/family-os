@@ -198,6 +198,7 @@ export const itemKind = defineMentionKind({
 			why: 'news about a listed thing changes it',
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const homes: Home[] = await tables(ctx.db)
 			.selectFrom('home_homes')

@@ -211,6 +211,8 @@ describe('a treatment read from a message', () => {
 						location: 'Veteriner',
 					},
 					subject: 'Max · Aşı randevusu',
+					// Nobody is named for the appointment: the whole family is a default.
+					uncertain: ['memberIds'],
 					from: [0],
 				},
 			});

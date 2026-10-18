@@ -148,6 +148,8 @@ describe('work done on a vehicle', () => {
 						location: 'City Garage',
 					},
 					subject: 'Clio · Service',
+					// Nobody is named for the booking: the whole family is a default.
+					uncertain: ['memberIds'],
 					from: [0],
 				},
 			});

@@ -120,6 +120,8 @@ async function resolveMeal(ctx: MentionContext, { index, mention }: IndexedMenti
 			},
 			subject: dish,
 			uncertain: day.certain ? [] : ['date'],
+			// No meal named: dinner, which a person is asked to confirm.
+			...(!isSlot(mention.variant) && { decided: { slot: 'defaulted' as const } }),
 			from: [index],
 		},
 	} satisfies Resolution;
@@ -213,6 +215,7 @@ export const recipeKind = defineMentionKind({
 			why: 'naming a dish is not sharing a recipe',
 		},
 	],
+	decides: {},
 	resolve: each(resolveRecipe),
 });
 
@@ -262,6 +265,7 @@ export const mealKind = defineMentionKind({
 			],
 		},
 	],
+	decides: { slot: 'defaulted' },
 	resolve: each(resolveMeal),
 });
 
@@ -298,5 +302,6 @@ export const mealOffKind = defineMentionKind({
 			why: 'the planned dish goes, the new one comes',
 		},
 	],
+	decides: {},
 	resolve: each(resolveMealOff),
 });

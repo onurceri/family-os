@@ -128,6 +128,9 @@ export function settleResolutions(
 			const uncertain = Array.isArray(p.uncertain)
 				? [...new Set(p.uncertain.filter((f): f is string => typeof f === 'string'))]
 				: [];
+			// A field the resolver defaulted or inferred is a guess, whatever else it listed.
+			for (const field of guessedFields(kind, p.decided, logger))
+				if (!uncertain.includes(field)) uncertain.push(field);
 			const targetTitle = subjectText(p.targetTitle);
 			settled.push({
 				propose: {
@@ -149,6 +152,36 @@ export function settleResolutions(
 	for (const m of given)
 		if (!claimed.has(m.index)) settled.push(refusal('incomplete', subjectOf(m), [m.index]));
 	return settled;
+}
+
+/**
+ * The fields a proposal reports as defaulted or inferred. A field its kind does not declare in
+ * `decides` is still marked (a guess must not be silent) and is logged, so the declaration is
+ * fixed.
+ */
+function guessedFields(
+	kind: MentionKindDefinition,
+	decided: unknown,
+	logger: { warn(context: object, message: string): void },
+): string[] {
+	if (typeof decided !== 'object' || decided === null) return [];
+	const out: string[] = [];
+	for (const [field, how] of Object.entries(decided)) {
+		if (how !== 'defaulted' && how !== 'inferred') continue;
+		if (kind.decides && !declaresField(kind.decides, field))
+			logger.warn({ kind: kind.id, field }, 'a resolver decided a field its kind does not declare');
+		out.push(field);
+	}
+	return out;
+}
+
+/** Whether a declared path (`items.*.category`) covers a field path (`items.0.category`). */
+export function declaresField(declared: Readonly<Record<string, unknown>>, field: string): boolean {
+	return Object.keys(declared).some((path) => {
+		const a = path.split('.');
+		const b = field.split('.');
+		return a.length === b.length && a.every((part, i) => part === '*' || part === b[i]);
+	});
 }
 
 const fromIn = (r: Resolution) =>

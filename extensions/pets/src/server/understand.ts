@@ -75,6 +75,10 @@ async function resolveTreatment(
 				...(keepsNext && { nextDueDate: next.date }),
 			},
 			subject,
+			decided: {
+				...(given ? {} : { givenOn: 'defaulted' as const }),
+				...(isKind(mention.variant) ? {} : { kind: 'defaulted' as const }),
+			},
 			uncertain: [
 				...(pet.certain ? [] : ['petId']),
 				...(given?.certain ? [] : ['givenOn']),
@@ -139,6 +143,7 @@ export const treatmentKind = defineMentionKind({
 			],
 		},
 	],
+	decides: { givenOn: 'defaulted', kind: 'defaulted' },
 	async resolve(ctx, mentions) {
 		const pets = await tables(ctx.db)
 			.selectFrom('pets_pets')

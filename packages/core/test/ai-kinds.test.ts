@@ -402,6 +402,51 @@ describe('resolving mentions', () => {
 		]);
 	});
 
+	it('marks every field a resolver defaulted or inferred, and none it wrote or matched', async () => {
+		await start([
+			notes([noteKind({ decides: { date: 'inferred', 'items.*.list': 'defaulted' } })]),
+		]);
+		resolver = async () => [
+			{
+				propose: {
+					actionId: 'notes.addNote',
+					input: { title: 'Call' },
+					subject: 'Call',
+					uncertain: ['title'],
+					decided: {
+						title: 'written',
+						target: 'matched',
+						date: 'inferred',
+						'items.0.list': 'defaulted',
+					},
+					from: [0],
+				},
+			},
+		];
+		const [out] = await k.ctx.actions.resolveMentions('notes.note', at(note('Call')), ENV, AI);
+		expect(out).toMatchObject({
+			propose: { uncertain: ['title', 'date', 'items.0.list'] },
+		});
+		expect(JSON.stringify(out)).not.toContain('decided');
+	});
+
+	it('marks a decided field its kind did not declare as well, so a guess is never silent', async () => {
+		await start([notes([noteKind({ decides: {} })])]);
+		resolver = async () => [
+			{
+				propose: {
+					actionId: 'notes.addNote',
+					input: { title: 'Call' },
+					subject: 'Call',
+					decided: { date: 'defaulted' },
+					from: [0],
+				},
+			},
+		];
+		const [out] = await k.ctx.actions.resolveMentions('notes.note', at(note('Call')), ENV, AI);
+		expect(out).toMatchObject({ propose: { uncertain: ['date'] } });
+	});
+
 	it('refuses every mention when the resolver fails', async () => {
 		await start();
 		resolver = async () => {

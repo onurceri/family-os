@@ -247,6 +247,7 @@ export const dutyKind = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const out: Resolution[] = [];
 		for (const m of mentions) out.push(await resolveDuty(ctx, m));
@@ -302,6 +303,7 @@ export const dutyDoneKind = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const obligations = await listedObligations(ctx);
 		const out: Resolution[] = [];

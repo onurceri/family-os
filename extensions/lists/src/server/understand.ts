@@ -1,6 +1,7 @@
 import {
 	defineMentionKind,
 	endNamed,
+	type FieldDecision,
 	type IndexedMention,
 	type MentionContext,
 	peopleNamed,
@@ -151,6 +152,7 @@ export const shoppingItem = defineMentionKind({
 			why: 'A thing still to buy goes on the list, also one the household will keep for years.',
 		},
 	],
+	decides: { listId: 'defaulted' },
 	async resolve(ctx, mentions) {
 		const lists = await activeLists(ctx);
 		const fallback = lists[0];
@@ -165,6 +167,7 @@ export const shoppingItem = defineMentionKind({
 		const units = ctx.vocabulary('lists:quantity_units');
 		const out: Resolution[] = [];
 		type Line = { title: string; quantity?: string; category?: Category; key: string };
+		const defaultedLists = new Set<string>();
 		const groups = new Map<string, { lines: Line[]; from: number[]; uncertain: Set<string> }>();
 		for (const { index, mention } of mentions) {
 			let title = mention.title?.trim() ?? '';
@@ -188,7 +191,10 @@ export const shoppingItem = defineMentionKind({
 				doubted = true;
 			}
 			quantity = cut(quantity, SHOPPING_QUANTITY_MAX);
-			const listId = listNamed(ctx, lists, mention.place) ?? fallback.id;
+			const named = listNamed(ctx, lists, mention.place);
+			const listId = named ?? fallback.id;
+			// No list said: the default one, which matters only when the family has more than one.
+			if (named === null && lists.length > 1) defaultedLists.add(listId);
 			const key = titleKey(title, ctx.locale);
 			if (open.some((o) => o.list_id === listId && o.title_key === key)) {
 				out.push(refuse('already', title, [index]));
@@ -221,6 +227,7 @@ export const shoppingItem = defineMentionKind({
 					},
 					subject: group.lines.map((line) => line.title).join(', '),
 					uncertain: [...group.uncertain],
+					...(defaultedLists.has(listId) && { decided: { listId: 'defaulted' as const } }),
 					from: group.from,
 				},
 			});
@@ -259,6 +266,7 @@ export const bought = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const lists = await activeLists(ctx);
 		const rows = await tables(ctx.db)
@@ -409,6 +417,7 @@ export const task = defineMentionKind({
 			why: 'News that a task is done completes it; it is not a new task.',
 		},
 	],
+	decides: { dueDate: 'inferred' },
 	async resolve(ctx, mentions) {
 		const rows = await tables(ctx.db)
 			.selectFrom('lists_tasks')
@@ -426,7 +435,11 @@ export const task = defineMentionKind({
 			const uncertain = new Set(unsureFields(mention, TASK_FIELDS));
 			// A deadline named by a month or a span is its last day.
 			const day = mention.date ? endNamed(ctx, mention.date) : null;
-			if (mention.date && !day?.certain) uncertain.add('dueDate');
+			const decided: Record<string, FieldDecision> = {};
+			if (mention.date && !day?.certain) {
+				uncertain.add('dueDate');
+				decided.dueDate = 'inferred';
+			}
 			let dueDate = day?.date ?? null;
 			let recurrence: unknown;
 			if (mention.repeat) {
@@ -435,6 +448,7 @@ export const task = defineMentionKind({
 				// A repeating task needs a first due date: the first day it repeats on from today.
 				if (dueDate === null) {
 					dueDate = weekdays.length > 0 ? firstWeekday(ctx.today, weekdays) : ctx.today;
+					decided.dueDate = 'inferred';
 					if (weekdays.length === 0) uncertain.add('dueDate');
 				}
 				const until = repeat.until ? endNamed(ctx, repeat.until) : null;
@@ -480,6 +494,7 @@ export const task = defineMentionKind({
 				},
 				subject: title,
 				uncertain: [...uncertain],
+				decided,
 				from: [index],
 			};
 			made.push({ key, due: dueDate, from: proposal.from });
@@ -518,6 +533,7 @@ export const taskDone = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const rows = await tables(ctx.db)
 			.selectFrom('lists_tasks')

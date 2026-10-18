@@ -1,6 +1,7 @@
 import type { DuplicateContext } from './actions.ts';
 import {
 	type DayRef,
+	type FieldDecision,
 	type IndexedMention,
 	MENTION_LIMIT,
 	type Mention,
@@ -117,6 +118,15 @@ export interface MentionKindDefinition {
 	 * may hand a mention to, when what the mention states is that kind's thing (`handOff`).
 	 */
 	handsOff?: readonly string[];
+	/**
+	 * The input fields (dot paths; `*` stands for an index) whose value this kind's resolver may
+	 * settle without the message writing it, and how: `defaulted` (the whole family, a default
+	 * list, today) or `inferred` (an occurrence, a date from a weekday). A kind that never does
+	 * declares `{}`. A proposal reports which of them it used in `decided`, and the host marks
+	 * those fields "check this". Optional so that existing packages stay valid; every bundled
+	 * kind declares it.
+	 */
+	decides?: Readonly<Record<string, Exclude<FieldDecision, 'written' | 'matched'>>>;
 	/**
 	 * Turns mentions of this kind, in answer order, into suggestions and refusals. Each mention
 	 * goes into exactly one resolution's `from`; one left out is refused as `incomplete`. A mention

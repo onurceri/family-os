@@ -97,6 +97,8 @@ describe('a new chore', () => {
 						rotation: 'fixed',
 					},
 					subject: 'Water the plants',
+					// No start day said: today is a default.
+					uncertain: ['startDate'],
 					from: [0],
 				},
 			},
@@ -110,7 +112,7 @@ describe('a new chore', () => {
 						rotation: 'fixed',
 					},
 					subject: 'Feed the fish',
-					uncertain: ['assigneeIds'],
+					uncertain: ['assigneeIds', 'startDate'],
 					from: [1],
 				},
 			},

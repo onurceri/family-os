@@ -91,6 +91,8 @@ function resolveChore(
 				...(mention.notes && { notes: mention.notes }),
 			},
 			subject: title,
+			// No start day said: today, which a person is asked to confirm.
+			...(!start && { decided: { startDate: 'defaulted' as const } }),
 			uncertain: [
 				...(start && !start.certain ? ['startDate'] : []),
 				...(mention.repeat && (!recurrence || (until && !until.certain)) ? ['recurrence'] : []),
@@ -207,6 +209,7 @@ export const choreKind = defineMentionKind({
 			why: 'nobody is named, so anyone may do it',
 		},
 	],
+	decides: { startDate: 'defaulted' },
 	resolve: each(resolveChore),
 });
 
@@ -244,6 +247,7 @@ export const doneKind = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	resolve: each(resolveDone),
 });
 
@@ -270,5 +274,6 @@ export const turnsKind = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	resolve: each(resolveTurns),
 });

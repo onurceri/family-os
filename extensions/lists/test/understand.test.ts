@@ -178,6 +178,8 @@ describe('lists.shoppingItem', () => {
 					actionId: 'lists.addShoppingItems',
 					input: { items: [{ title: 'Milk' }] },
 					subject: 'Milk',
+					// No list said and the family has two: the default one is a guess.
+					uncertain: ['listId'],
 					from: [1],
 				},
 			},

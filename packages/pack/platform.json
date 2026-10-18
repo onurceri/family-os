@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.4",
+	"sdk": "0.8.5",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -25,6 +25,7 @@
 			"ExtensionManifestSchema",
 			"ExternalHttpError",
 			"FALLBACK_TOPICS",
+			"FIELD_DECISIONS",
 			"FamosError",
 			"FileResponseSchema",
 			"HOST_CONTRACTS",

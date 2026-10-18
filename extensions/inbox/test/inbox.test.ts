@@ -803,7 +803,8 @@ describe('inbox pipeline', () => {
 		expect((await items())[0]).toMatchObject({ proposals: 1, skipped: 0 });
 		const [draft] = await drafts();
 		expect(draft.input).toMatchObject({ date: '2026-10-20', startTime: '18:00', memberIds: [] });
-		expect(draft.uncertainFields).toEqual(['tags']);
+		// Nobody is named, so the whole family is a default, marked as well.
+		expect(draft.uncertainFields).toEqual(['tags', 'memberIds']);
 	});
 
 	it('marks a day "check this" when its words do not settle it, and trusts one they do', async () => {
@@ -827,7 +828,12 @@ describe('inbox pipeline', () => {
 					d.uncertainFields,
 				]),
 		);
-		expect(byDate).toEqual({ '2026-10-15': ['date'], '2026-10-16': [], '2026-10-17': ['date'] });
+		// Nobody is named in any of them: Who is the whole family, marked each time.
+		expect(byDate).toEqual({
+			'2026-10-15': ['date', 'memberIds'],
+			'2026-10-16': ['memberIds'],
+			'2026-10-17': ['date', 'memberIds'],
+		});
 	});
 
 	it('undoes an approved draft with its inverse action, keeping what was there before', async () => {

@@ -116,6 +116,8 @@ describe('the meal plan', () => {
 					actionId: 'kitchen.addToMealPlan',
 					input: { date: '2026-10-07', slot: 'dinner', recipeId: soup.id, title: '' },
 					subject: 'Lentil soup',
+					// No meal said: dinner is a default.
+					uncertain: ['slot'],
 					from: [1],
 				},
 			},

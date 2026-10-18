@@ -702,6 +702,17 @@ export interface IndexedMention {
 	mention: Mention;
 }
 
+/**
+ * How a proposal's input field was decided:
+ * - `written`: copied from the message;
+ * - `matched`: found by the matcher, surely (a doubtful match is marked uncertain on its own);
+ * - `defaulted`: a default took its place (the whole family, a default list or section, today);
+ * - `inferred`: worked out (an occurrence of a series, a date from a weekday, a time from a period).
+ * The host marks every `defaulted` and `inferred` field as uncertain, so no guess is silent.
+ */
+export const FIELD_DECISIONS = ['written', 'matched', 'defaulted', 'inferred'] as const;
+export type FieldDecision = (typeof FIELD_DECISIONS)[number];
+
 /** A suggestion a resolver makes of one or more mentions. */
 export interface MentionProposal {
 	/** One of the kind's `actions`. */
@@ -720,6 +731,12 @@ export interface MentionProposal {
 	targetTitle?: string;
 	/** Input fields (dot paths) that rest on a guess, shown as "check this". */
 	uncertain?: readonly string[];
+	/**
+	 * How the input fields this proposal decided other than by copying were decided. Each field
+	 * named here must be one its kind declares in `decides`; `defaulted` and `inferred` ones are
+	 * added to `uncertain` by the host.
+	 */
+	decided?: Readonly<Record<string, FieldDecision>>;
 	/** The mentions it comes from. */
 	from: readonly number[];
 }

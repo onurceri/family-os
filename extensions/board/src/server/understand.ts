@@ -29,6 +29,7 @@ export const noteKind = defineMentionKind({
 			],
 		},
 	],
+	decides: {},
 	async resolve(ctx, mentions) {
 		const now = ctx.now;
 		const onBoard = await tables(ctx.db)

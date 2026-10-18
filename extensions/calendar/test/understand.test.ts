@@ -136,7 +136,7 @@ describe('calendar.event', () => {
 				notes: 'Bring your folder',
 			},
 			subject: 'Choir rehearsal',
-			uncertain: ['date', 'startTime', 'allDay'],
+			uncertain: ['date', 'startTime', 'allDay', 'memberIds'],
 			from: [0],
 		});
 		expect(await draft(out[0])).toBe('drafted');
@@ -220,9 +220,12 @@ describe('calendar.event', () => {
 		]);
 		expect(proposal(out[0])).toMatchObject({
 			input: { recurrence: { until: '2026-10-28' } },
-			uncertain: ['recurrence'],
+			uncertain: ['recurrence', 'memberIds'],
 		});
-		expect(proposal(out[1])).toMatchObject({ input: { date: '2026-10-15' }, uncertain: ['date'] });
+		expect(proposal(out[1])).toMatchObject({
+			input: { date: '2026-10-15' },
+			uncertain: ['date', 'memberIds'],
+		});
 	});
 
 	it('starts a series on its own weekday, and ends a counted one on its last date', async () => {
@@ -246,7 +249,7 @@ describe('calendar.event', () => {
 		// "The end of the year" names no month: the end is a guess for a person to check.
 		expect(proposal(out[1])).toMatchObject({
 			input: { date: '2026-10-20', recurrence: { freq: 'monthly', interval: 1 } },
-			uncertain: ['recurrence'],
+			uncertain: ['recurrence', 'memberIds'],
 		});
 	});
 
@@ -285,6 +288,8 @@ describe('calendar.event', () => {
 						memberIds: [],
 					},
 					subject: 'Class trip to Postojna Cave',
+					// Nobody is named: the whole family is a default, shown as "check this".
+					uncertain: ['memberIds'],
 					from: [0],
 				},
 			},

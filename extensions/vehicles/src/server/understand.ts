@@ -64,6 +64,10 @@ async function resolveLog(
 				notes,
 			},
 			subject,
+			decided: {
+				...(day ? {} : { doneOn: 'defaulted' as const }),
+				...(isKind(mention.variant) ? {} : { kind: 'defaulted' as const }),
+			},
 			uncertain: [
 				...(vehicle.certain ? [] : ['vehicleId']),
 				...(day?.certain ? [] : ['doneOn']),
@@ -121,6 +125,7 @@ export const logKind = defineMentionKind({
 			],
 		},
 	],
+	decides: { doneOn: 'defaulted', kind: 'defaulted' },
 	async resolve(ctx, mentions) {
 		const vehicles = await tables(ctx.db)
 			.selectFrom('vehicles_vehicles')
