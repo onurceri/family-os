@@ -174,7 +174,7 @@ export const shoppingItem = defineMentionKind({
 			}
 			// An amount the model left in the title ("2 kg Tomatoes") is the quantity.
 			if (quantity === '') {
-				const split = splitAnyAmount(title, units);
+				const split = splitAnyAmount(title, units, ctx.locale);
 				if (split.quantity && split.title) {
 					title = split.title;
 					quantity = split.quantity;

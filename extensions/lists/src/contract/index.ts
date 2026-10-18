@@ -5,6 +5,7 @@ import { z } from 'zod';
 export {
 	amountOnlyPattern,
 	amountPattern,
+	capitalize,
 	splitAmount,
 	splitAnyAmount,
 	titleKey,

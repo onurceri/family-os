@@ -14,6 +14,7 @@
 		limit,
 		tooLong,
 		measure,
+		note,
 		onmore,
 		moreLabel,
 		disabled = false,
@@ -38,6 +39,8 @@
 		tooLong?: (counter: string) => string;
 		/** The part of the text the limit applies to, when it is not all of it (the longest item of several). */
 		measure?: (text: string) => string;
+		/** A quiet line under the field, e.g. what Enter is about to add; nothing when undefined. */
+		note?: string;
 		onmore?: (text: string) => void;
 		moreLabel?: string;
 		disabled?: boolean;
@@ -117,6 +120,9 @@
 		{limitState.over && tooLong ? tooLong(counterText(limitState)) : counterText(limitState)}
 	</p>
 {/if}
+{#if note && !limitState?.over}
+	<p class="limit note" title={note}>{note}</p>
+{/if}
 
 <style>
 	.composer {
@@ -136,6 +142,11 @@
 		font-size: 12px;
 		font-variant-numeric: tabular-nums;
 		color: var(--ink-soft);
+	}
+	.note {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.limit.over {
 		color: var(--attention);

@@ -140,6 +140,17 @@ describe('lists.shoppingItem', () => {
 		});
 	});
 
+	it('starts what is left after an amount with a capital, and keeps a title typed without one', async () => {
+		const out = await resolve('lists.shoppingItem', [
+			{ title: '2 L oat milk' },
+			{ title: 'sourdough bread' },
+		]);
+		const [only] = out;
+		expect(only && 'propose' in only && only.propose.input).toEqual({
+			items: [{ title: 'Oat milk', quantity: '2 L' }, { title: 'sourdough bread' }],
+		});
+	});
+
 	it('is one line for a product named twice, and goes on the list the message names', async () => {
 		const hardware = await run<{ id: string }>('lists.createShoppingList', {
 			name: 'Hardware store',

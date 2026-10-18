@@ -24,6 +24,7 @@
 		saveTask,
 	} from './data.js';
 	import { groupTasks, type Urgency } from './format.js';
+	import { revealRow } from './reveal.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import TaskForm from './TaskForm.svelte';
@@ -180,7 +181,10 @@
 	// False when it failed, so the composer gives the typing back.
 	async function quickAdd(title: string): Promise<boolean> {
 		try {
-			report(await addTask({ title, assigneeId: defaultAssignee }), t('saved'));
+			const { outcome, id } = await addTask({ title, assigneeId: defaultAssignee });
+			report(outcome, t('saved'));
+			// A task in a long group lands below the fold: bring it into view.
+			if (id) revealRow('data-task-id', id);
 			return true;
 		} catch {
 			app.toast(t('error'));
@@ -252,10 +256,11 @@
 		busy = true;
 		saveError = null;
 		try {
-			report(
-				await saveTask(taskInputFrom(form), editingId === 'new' ? undefined : editingId),
-				t('saved'),
-			);
+			if (editingId === 'new') {
+				const { outcome, id } = await addTask(taskInputFrom(form));
+				report(outcome, t('saved'));
+				if (id) revealRow('data-task-id', id);
+			} else report(await saveTask(taskInputFrom(form), editingId), t('saved'));
 			close();
 		} catch (error) {
 			saveError = app.failureText(error, t('error'));
@@ -280,7 +285,7 @@
 		class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
 	>
 		{#each list as task (task.id)}
-			<li>
+			<li data-task-id={task.id}>
 				<TaskRow
 					{task}
 					{today}

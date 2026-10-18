@@ -27,13 +27,15 @@ export const loadTasks = (): Promise<Task[]> =>
 export const loadTask = async (taskId: string): Promise<Task> =>
 	unwrap(await api.GET('/api/v1/lists/tasks/{taskId}', { params: { path: { taskId } } }));
 
-export async function addTask(task: TaskInput): Promise<Outcome> {
-	return unwrap(await api.POST('/api/v1/actions/lists.addTask', { body: task })).status;
+/** Adds a task; `id` is the new task's, or null when it went to someone for approval. */
+export async function addTask(task: TaskInput): Promise<{ outcome: Outcome; id: string | null }> {
+	const result = unwrap(await api.POST('/api/v1/actions/lists.addTask', { body: task }));
+	return { outcome: result.status, id: result.status === 'applied' ? result.output.id : null };
 }
 
 /** Saves the whole form: a new task without an id, or that task replaced by it. */
 export async function saveTask(task: TaskReplace, id?: string): Promise<Outcome> {
-	if (!id) return addTask(task);
+	if (!id) return (await addTask(task)).outcome;
 	return unwrap(await api.POST('/api/v1/actions/lists.updateTask', { body: { id, task } })).status;
 }
 
@@ -71,7 +73,7 @@ export async function addItems(
 	app: Runner,
 	input: AddShoppingItemsInput,
 	label: string,
-): Promise<{ outcome: Outcome; already: AlreadyOnList[] }> {
+): Promise<{ outcome: Outcome; already: AlreadyOnList[]; addedIds: readonly string[] }> {
 	const result = await app.runAction<AddedItems>('lists.addShoppingItems', input, {
 		offline: true,
 		label,
@@ -79,6 +81,7 @@ export async function addItems(
 	return {
 		outcome: outcomeOf(result),
 		already: !result.queued && result.status === 'applied' ? alreadyOnList(result.output) : [],
+		addedIds: !result.queued && result.status === 'applied' ? result.output.addedIds : [],
 	};
 }
 

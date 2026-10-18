@@ -61,17 +61,26 @@ export function splitAmount(text: string, pattern: RegExp): { title: string; qua
 	return { title: (match[2] as string).trim(), quantity: (match[1] as string).trim() };
 }
 
+/** The first letter in upper case by the language's own rule ("istanbul" becomes "İstanbul" in Turkish). */
+export function capitalize(text: string, language: string): string {
+	const [first] = text;
+	return first === undefined ? text : first.toLocaleUpperCase(language) + text.slice(first.length);
+}
+
 /**
  * Like `splitAmount`, and also reads an amount with a unit at the end ("Parmesan 150 g"). A
- * leading amount wins when both are there.
+ * leading amount wins when both are there. What is left after a leading amount began in the
+ * middle of the person's phrase ("2 L oat milk"), so it starts with a capital in `language`; a
+ * title typed without an amount in front is kept exactly as typed.
  */
 export function splitAnyAmount(
 	text: string,
 	units: readonly string[],
+	language?: string,
 ): { title: string; quantity?: string } {
 	const line = text.trim();
 	const lead = splitAmount(line, amountPattern(units));
-	if (lead.quantity) return lead;
+	if (lead.quantity) return language ? { ...lead, title: capitalize(lead.title, language) } : lead;
 	const tail = trailingAmountPattern(units).exec(line);
 	if (!tail) return lead;
 	return { title: (tail[1] as string).trim(), quantity: (tail[2] as string).trim() };

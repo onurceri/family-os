@@ -6,7 +6,11 @@ import { amountOnlyPattern, type ShoppingItemInput, splitAnyAmount } from '../co
  * part that is only an amount ("hooks, 4") belongs to the item before it. The units are words of
  * the language packs (`lists:quantity_units`), never of the code.
  */
-export function parseQuickAdd(text: string, units: readonly string[]): ShoppingItemInput[] {
+export function parseQuickAdd(
+	text: string,
+	units: readonly string[],
+	language?: string,
+): ShoppingItemInput[] {
 	const alone = amountOnlyPattern(units);
 	const items: ShoppingItemInput[] = [];
 	const parts = text
@@ -19,16 +23,16 @@ export function parseQuickAdd(text: string, units: readonly string[]): ShoppingI
 			previous.quantity = part;
 			continue;
 		}
-		const item = splitAnyAmount(part, units);
+		const item = splitAnyAmount(part, units, language);
 		if (item.title.length > 0) items.push(item);
 	}
 	return items.slice(0, 50);
 }
 
 /** The longest item title in quick-add text: what the title limit applies to when several are typed at once. */
-export function longestTitle(text: string, units: readonly string[]): string {
+export function longestTitle(text: string, units: readonly string[], language?: string): string {
 	let longest = '';
-	for (const { title } of parseQuickAdd(text, units))
+	for (const { title } of parseQuickAdd(text, units, language))
 		if (title.length > longest.length) longest = title;
 	return longest;
 }

@@ -56,6 +56,7 @@
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from './latest-only.js';
 	import { longestTitle, parseQuickAdd } from './quick-add.js';
+	import { revealRow } from './reveal.js';
 
 	/**
 	 * The Shopping page, made for the shop: one hand, a phone. The lists as chips, a big add field
@@ -230,9 +231,17 @@
 
 	// Quick add: "2 kg tomatoes, bread" → two items.
 	let quick = $state('');
+	const units = $derived(t('quantity_units').split(','));
+	// Several items in one line are said before Enter, from the same reading Enter uses.
+	const preview = $derived.by(() => {
+		const items = parseQuickAdd(quick, units, app.locale());
+		return items.length > 1
+			? t('will_add_many', { count: items.length, items: items.map((i) => i.title).join(', ') })
+			: undefined;
+	});
 	// False when it failed, so the composer gives the typing back.
 	async function quickAdd(text: string): Promise<boolean> {
-		const parsed = parseQuickAdd(text, t('quantity_units').split(','));
+		const parsed = parseQuickAdd(text, units, app.locale());
 		if (!parsed.length || !list) return false;
 		// Nothing is cut: an item that is too long stays in the field with a message.
 		if (parsed.some((p) => itemTooLong(p.title, p.quantity))) {
@@ -240,13 +249,16 @@
 			return false;
 		}
 		try {
-			const { outcome, already } = await addItems(
+			const { outcome, already, addedIds } = await addItems(
 				app,
 				{ listId: list.id, items: parsed },
 				t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 			);
 			report(outcome);
 			if (already.length) sayAlready(already);
+			// The new row lands at the bottom, behind the add bar on a phone: bring it into view.
+			const last = addedIds.at(-1);
+			if (last) revealRow('data-item-id', last);
 			return true;
 		} catch {
 			app.toast(t('error'));
@@ -661,7 +673,8 @@
 							disabled={!list}
 							limit={SHOPPING_TITLE_MAX}
 							tooLong={(counter) => t('too_long', { counter })}
-							measure={(text) => longestTitle(text, t('quantity_units').split(','))}
+							measure={(text) => longestTitle(text, units, app.locale())}
+							note={preview}
 							onsubmit={quickAdd}
 						/>
 					</div>
