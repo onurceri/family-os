@@ -85,14 +85,18 @@ export function quantityChanges(
 
 /**
  * The list a draft adds to, by name, for the card: only when the family has more than one list
- * (with one there is nothing to choose). `listId` undefined means the default (first) list.
+ * (with one there is nothing to choose). `listId` undefined means the default (first) list, which
+ * can have no name of its own: then it is called `unnamed`, so the card always shows where an
+ * item goes.
  */
 export function draftListName(
 	lists: readonly Pick<ShoppingList, 'id' | 'name'>[] | undefined,
 	listId: string | undefined,
+	unnamed = '',
 ): string | undefined {
 	if (!lists || lists.length < 2) return undefined;
-	return (listId ? lists.find((l) => l.id === listId) : lists[0])?.name;
+	const list = listId ? lists.find((l) => l.id === listId) : lists[0];
+	return list ? list.name || unnamed || undefined : undefined;
 }
 
 /** The family's shopping lists for the draft cards, read once and kept fresh like `itemsOnList`. */

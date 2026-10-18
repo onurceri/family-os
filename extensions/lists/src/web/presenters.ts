@@ -84,7 +84,7 @@ export const addShoppingItemsPresenter: DraftPresenter<AddShoppingItemsInput> = 
 			.join(', ');
 		const t = tr(c);
 		const fields = [{ label: t('items'), value, path: 'items' }];
-		const list = draftListName(allLists(), input.listId);
+		const list = draftListName(allLists(), input.listId, c.t('lists:default_list'));
 		if (list) fields.push({ label: t('list'), value: list, path: 'listId' });
 		const changes = quantityChanges(
 			input.items,

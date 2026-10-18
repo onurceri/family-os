@@ -92,4 +92,14 @@ describe('draftListName', () => {
 		expect(draftListName(undefined, 'a')).toBeUndefined();
 		expect(draftListName(lists, 'gone')).toBeUndefined();
 	});
+
+	it('calls the default list without a name of its own by the name given, so the card shows it', () => {
+		const unnamed = [
+			{ id: 'a', name: '' },
+			{ id: 'b', name: 'Hardware store' },
+		];
+		expect(draftListName(unnamed, undefined, 'Groceries')).toBe('Groceries');
+		expect(draftListName(unnamed, 'a', 'Groceries')).toBe('Groceries');
+		expect(draftListName(unnamed, 'b', 'Groceries')).toBe('Hardware store');
+	});
 });
