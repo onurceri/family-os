@@ -86,20 +86,33 @@ async function setup(extra: Record<string, unknown> = {}) {
 }
 
 describe('the family name', () => {
-	it('is none before the family chose one, and public once it did', async () => {
-		expect((await call('GET', '/api/v1/core/setup')).body.familyName).toBeNull();
-		await setup({ familyName: ' The Novaks ' });
-		// The sign-in page reads it before anyone is signed in.
-		expect((await call('GET', '/api/v1/core/setup')).body.familyName).toBe('The Novaks');
+	it('is not in the public setup status', async () => {
+		await setup({ familyName: 'The Novaks' });
+		expect((await call('GET', '/api/v1/core/setup')).body).not.toHaveProperty('familyName');
 	});
 
-	it('stays empty when setup leaves it out, and can be set and cleared later', async () => {
+	it('is told to a trusted family device and not to an untrusted browser', async () => {
+		const cookie = await setup({ familyName: ' The Novaks ' });
+		expect((await call('GET', '/api/v1/core/family-name')).status).toBe(401);
+		const trusted = await call('POST', '/api/v1/core/devices/trust', { name: 'Tablet' }, cookie);
+		expect(trusted.status).toBe(201);
+		const seen = await call('GET', '/api/v1/core/family-name', undefined, trusted.cookie);
+		expect(seen.body).toEqual({ name: 'The Novaks' });
+	});
+
+	it('can be set and cleared later, and is none when setup leaves it out', async () => {
 		const cookie = await setup();
-		expect((await call('GET', '/api/v1/core/setup')).body.familyName).toBeNull();
+		expect((await call('GET', '/api/v1/core/family-name', undefined, cookie)).body).toEqual({
+			name: null,
+		});
 		const set = await call('POST', '/api/v1/actions/core.setFamilyName', { name: 'Ours' }, cookie);
 		expect(set.body).toMatchObject({ status: 'applied', output: { name: 'Ours' } });
-		expect((await call('GET', '/api/v1/core/setup')).body.familyName).toBe('Ours');
+		expect((await call('GET', '/api/v1/core/settings/family', undefined, cookie)).body.name).toBe(
+			'Ours',
+		);
 		await call('POST', '/api/v1/actions/core.setFamilyName', { name: '' }, cookie);
-		expect((await call('GET', '/api/v1/core/setup')).body.familyName).toBeNull();
+		expect((await call('GET', '/api/v1/core/family-name', undefined, cookie)).body).toEqual({
+			name: null,
+		});
 	});
 });

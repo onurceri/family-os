@@ -24,6 +24,8 @@ class Family {
 	locale = $state('en');
 	/** Whether the family settings have been read at least once. */
 	loaded = $state(false);
+	/** What the family is called, when it chose a name. */
+	name = $state<string | null>(null);
 	timeZone = $state(Intl.DateTimeFormat().resolvedOptions().timeZone);
 	// Until the family's settings arrive, the browser's own region.
 	formatLocale = $state(browserFormatLocale());
@@ -55,6 +57,7 @@ class Family {
 		if (settings.data) {
 			this.timeZone = settings.data.timeZone;
 			this.locale = settings.data.locale;
+			this.name = settings.data.name ?? null;
 			this.loaded = true;
 			this.apply(settings.data);
 		}

@@ -16,7 +16,6 @@
 	import { getLanguages, getLocale, t } from '#lib/i18n.svelte.js';
 	import { regionOptions, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
 	import SelectField from '#lib/SelectField.svelte';
-	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import LanguagesSection from './LanguagesSection.svelte';
 
@@ -31,7 +30,7 @@
 	let temperatureUnit = $state<'celsius' | 'fahrenheit'>(family.temperatureUnit);
 	let timeZone = $state(family.timeZone);
 	let error = $state<string | null>(null);
-	let familyName = $state(session.familyName ?? '');
+	let familyName = $state(family.name ?? '');
 
 	async function saveName() {
 		error = null;
@@ -41,7 +40,7 @@
 			);
 			if (result.status === 'applied') {
 				familyName = result.output.name ?? '';
-				session.familyName = result.output.name;
+				family.name = result.output.name;
 			}
 			toasts.show(t('family_name_saved'));
 		} catch {

@@ -17,7 +17,6 @@
 	let started = $state<Started | null>(null);
 	let now = $state(Date.now());
 	let failed = $state(false);
-	let familyName = $state<string | null>(null);
 	let intervalMs = 5000;
 	let pollTimer: ReturnType<typeof setTimeout> | undefined;
 	let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -75,7 +74,6 @@
 	}
 
 	$effect(() => {
-		void api.GET('/api/v1/core/setup').then((r) => (familyName = r.data?.familyName ?? null));
 		void begin();
 		const tick = setInterval(() => {
 			now = Date.now();
@@ -94,9 +92,6 @@
 <main class="bg-wall text-ink grid min-h-dvh place-items-center p-8">
 	<div class="grid w-full max-w-5xl gap-10">
 		<div class="grid gap-2">
-			{#if familyName}
-				<p class="text-ink-soft text-2xl font-semibold" data-testid="family-name">{familyName}</p>
-			{/if}
 			<h1 class="text-5xl font-extrabold text-balance">{t('display_pair_title')}</h1>
 			<p class="text-ink-soft text-2xl">{t('display_pair_intro')}</p>
 		</div>

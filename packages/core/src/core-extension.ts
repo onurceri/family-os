@@ -877,8 +877,6 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			/** Setup asks for the one-time code printed in the server log. */
 			needsCode: z.boolean(),
 			appVersion: z.string(),
-			/** What the family is called, for the sign-in page; null before it chose a name. */
-			familyName: z.string().nullable(),
 		}),
 		async handle(ctx) {
 			const any = await members(ctx.db)
@@ -890,7 +888,6 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				needsSetup: any === undefined,
 				needsCode: deps.setupCode !== undefined,
 				appVersion: deps.appVersion,
-				familyName: any === undefined ? null : ((await readFamilySettings(ctx.db)).name ?? null),
 			};
 		},
 	});
@@ -1107,6 +1104,19 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 						access.effective(r.role_id).has(CORE_CAPABILITIES.signInPin.id),
 				)
 				.map((r) => ({ id: r.id, displayName: r.display_name, color: r.color }));
+		},
+	});
+
+	const familyName = defineRoute({
+		method: 'get',
+		path: '/family-name',
+		operationId: 'core.getFamilyName',
+		summary: 'What the family is called, for the sign-in page of a family device',
+		// A surname identifies the family: only trusted family devices (or signed-in members) get it.
+		requires: 'trusted-device',
+		response: z.object({ name: z.string().nullable() }),
+		async handle(ctx) {
+			return { name: (await ctx.family.settings()).name ?? null };
 		},
 	});
 
@@ -1751,6 +1761,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			listAiAreas,
 			listMembers,
 			listProfiles,
+			familyName,
 			familySettings,
 			listDevices,
 			currentDevice,

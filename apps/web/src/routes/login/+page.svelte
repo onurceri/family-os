@@ -21,10 +21,13 @@
 	let busy = $state(false);
 	/** Profiles and PINs are only offered on family devices. */
 	let trustedDevice = $state(true);
+	/** The family's name, only for a trusted family device. */
+	let familyName = $state<string | null>(null);
 
 	const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'] as const;
 
 	$effect(() => {
+		void api.GET('/api/v1/core/family-name').then((r) => (familyName = r.data?.name ?? null));
 		void api.GET('/api/v1/core/profiles').then((r) => {
 			profiles = r.data ?? [];
 			if (r.response.status === 401) {
@@ -115,9 +118,9 @@
 		</div>
 	{/if}
 	{#if mode === 'profiles'}
-		{#if session.familyName}
+		{#if familyName}
 			<p class="text-ink-soft text-center text-lg font-semibold" data-testid="family-name">
-				{session.familyName}
+				{familyName}
 			</p>
 		{/if}
 		<h1 class="text-center text-2xl font-extrabold tracking-tight">{t('login_title')}</h1>
