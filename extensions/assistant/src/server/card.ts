@@ -8,7 +8,6 @@ import {
 	spanLabel,
 	spanPhrase,
 	weekdayName,
-	whenWords,
 } from '../contract/card-words.ts';
 import type { AnswerCard, CardItem } from '../contract/index.ts';
 
