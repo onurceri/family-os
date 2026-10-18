@@ -389,6 +389,380 @@
 															"type": "string"
 														}
 													},
+													"card": {
+														"type": [
+															"object",
+															"null"
+														],
+														"properties": {
+															"understood": {
+																"type": "object",
+																"properties": {
+																	"topics": {
+																		"type": "array",
+																		"items": {
+																			"type": "string",
+																			"enum": [
+																				"calendar",
+																				"tasks",
+																				"shopping",
+																				"meals",
+																				"chores",
+																				"records",
+																				"pets",
+																				"vehicles",
+																				"home",
+																				"board",
+																				"suggestions"
+																			]
+																		}
+																	},
+																	"people": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		}
+																	},
+																	"everyone": {
+																		"type": "boolean"
+																	},
+																	"unmatched": {
+																		"type": "array",
+																		"items": {
+																			"type": "string"
+																		}
+																	},
+																	"span": {
+																		"type": "object",
+																		"properties": {
+																			"key": {
+																				"type": "string",
+																				"enum": [
+																					"today",
+																					"day",
+																					"this_week",
+																					"coming_days",
+																					"next_week",
+																					"weekend",
+																					"month",
+																					"until",
+																					"range"
+																				]
+																			},
+																			"from": {
+																				"type": "string",
+																				"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																			},
+																			"to": {
+																				"type": "string",
+																				"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																			}
+																		},
+																		"required": [
+																			"key",
+																			"from",
+																			"to"
+																		]
+																	},
+																	"fallback": {
+																		"type": "boolean"
+																	},
+																	"mismatches": {
+																		"type": "array",
+																		"items": {
+																			"type": "object",
+																			"properties": {
+																				"date": {
+																					"type": "string",
+																					"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																				},
+																				"said": {
+																					"type": "integer",
+																					"minimum": 1,
+																					"maximum": 7
+																				}
+																			},
+																			"required": [
+																				"date",
+																				"said"
+																			]
+																		}
+																	}
+																},
+																"required": [
+																	"topics",
+																	"people",
+																	"everyone",
+																	"unmatched",
+																	"span",
+																	"fallback"
+																]
+															},
+															"sections": {
+																"type": "array",
+																"items": {
+																	"type": "object",
+																	"properties": {
+																		"topic": {
+																			"type": "string",
+																			"enum": [
+																				"calendar",
+																				"tasks",
+																				"shopping",
+																				"meals",
+																				"chores",
+																				"records",
+																				"pets",
+																				"vehicles",
+																				"home",
+																				"board",
+																				"suggestions"
+																			]
+																		},
+																		"items": {
+																			"type": "array",
+																			"items": {
+																				"type": "object",
+																				"properties": {
+																					"kind": {
+																						"type": "string",
+																						"enum": [
+																							"event",
+																							"task",
+																							"shopping_list",
+																							"chore",
+																							"meal",
+																							"duty",
+																							"note",
+																							"suggestion"
+																						]
+																					},
+																					"title": {
+																						"type": "string"
+																					},
+																					"date": {
+																						"type": "string",
+																						"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																					},
+																					"time": {
+																						"type": "string"
+																					},
+																					"endDate": {
+																						"type": "string",
+																						"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																					},
+																					"endTime": {
+																						"type": "string"
+																					},
+																					"allDay": {
+																						"type": "boolean"
+																					},
+																					"people": {
+																						"type": "array",
+																						"items": {
+																							"type": "string"
+																						}
+																					},
+																					"notes": {
+																						"type": "string"
+																					},
+																					"status": {
+																						"type": "string",
+																						"enum": [
+																							"past",
+																							"now",
+																							"upcoming",
+																							"overdue",
+																							"pinned",
+																							"waiting",
+																							"failed"
+																						]
+																					},
+																					"place": {
+																						"type": "string"
+																					},
+																					"detail": {
+																						"type": "string"
+																					},
+																					"forOthers": {
+																						"type": "boolean"
+																					}
+																				},
+																				"required": [
+																					"kind",
+																					"title",
+																					"people"
+																				]
+																			}
+																		},
+																		"truncated": {
+																			"type": "boolean"
+																		},
+																		"hidden": {
+																			"type": "integer"
+																		},
+																		"next": {
+																			"type": "object",
+																			"properties": {
+																				"kind": {
+																					"type": "string",
+																					"enum": [
+																						"event",
+																						"task",
+																						"shopping_list",
+																						"chore",
+																						"meal",
+																						"duty",
+																						"note",
+																						"suggestion"
+																					]
+																				},
+																				"title": {
+																					"type": "string"
+																				},
+																				"date": {
+																					"type": "string",
+																					"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																				},
+																				"time": {
+																					"type": "string"
+																				},
+																				"endDate": {
+																					"type": "string",
+																					"pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+																				},
+																				"endTime": {
+																					"type": "string"
+																				},
+																				"allDay": {
+																					"type": "boolean"
+																				},
+																				"people": {
+																					"type": "array",
+																					"items": {
+																						"type": "string"
+																					}
+																				},
+																				"notes": {
+																					"type": "string"
+																				},
+																				"status": {
+																					"type": "string",
+																					"enum": [
+																						"past",
+																						"now",
+																						"upcoming",
+																						"overdue",
+																						"pinned",
+																						"waiting",
+																						"failed"
+																					]
+																				},
+																				"place": {
+																					"type": "string"
+																				},
+																				"detail": {
+																					"type": "string"
+																				},
+																				"forOthers": {
+																					"type": "boolean"
+																				}
+																			},
+																			"required": [
+																				"kind",
+																				"title",
+																				"people"
+																			]
+																		}
+																	},
+																	"required": [
+																		"topic",
+																		"items",
+																		"truncated"
+																	]
+																}
+															},
+															"notHere": {
+																"type": "array",
+																"items": {
+																	"type": "object",
+																	"properties": {
+																		"topic": {
+																			"type": "string",
+																			"enum": [
+																				"calendar",
+																				"tasks",
+																				"shopping",
+																				"meals",
+																				"chores",
+																				"records",
+																				"pets",
+																				"vehicles",
+																				"home",
+																				"board",
+																				"suggestions"
+																			]
+																		},
+																		"why": {
+																			"type": "string",
+																			"enum": [
+																				"not_installed",
+																				"closed_to_ai",
+																				"not_allowed"
+																			]
+																		}
+																	},
+																	"required": [
+																		"topic",
+																		"why"
+																	]
+																}
+															},
+															"lead": {
+																"type": "object",
+																"properties": {
+																	"kept": {
+																		"type": "boolean"
+																	},
+																	"check": {
+																		"type": [
+																			"string",
+																			"null"
+																		],
+																		"enum": [
+																			"iso_date",
+																			"handle",
+																			"unknown_date",
+																			"wrong_weekday",
+																			"unknown_title",
+																			"nothing_over_items",
+																			"too_long",
+																			"empty",
+																			"failed",
+																			null
+																		]
+																	}
+																},
+																"required": [
+																	"kept",
+																	"check"
+																]
+															},
+															"text": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																}
+															}
+														},
+														"required": [
+															"understood",
+															"sections",
+															"notHere",
+															"lead",
+															"text"
+														]
+													},
 													"status": {
 														"type": "string",
 														"enum": [
@@ -414,6 +788,7 @@
 													"content",
 													"toolCalls",
 													"suggested",
+													"card",
 													"status",
 													"errorCode",
 													"createdAt"
@@ -707,6 +1082,14 @@
 										"type": "string",
 										"minLength": 1,
 										"maxLength": 4000
+									},
+									"via": {
+										"type": "string",
+										"enum": [
+											"app",
+											"chat"
+										],
+										"description": "Where the answer is read; the app by default"
 									}
 								},
 								"required": [

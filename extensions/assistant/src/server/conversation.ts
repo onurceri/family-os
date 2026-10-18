@@ -17,7 +17,7 @@ export const conversation: ConversationProvider = {
 		const send = (thread: string | null) =>
 			ctx.actions.invoke<z.infer<typeof SentMessageSchema>>(
 				'assistant.sendMessage',
-				{ text, ...(thread && { threadId: thread }) },
+				{ text, via: 'chat', ...(thread && { threadId: thread }) },
 				actor,
 			);
 		const result = await send(threadId).catch((error: unknown) => {
@@ -37,6 +37,7 @@ export const conversation: ConversationProvider = {
 			.select([
 				'assistant_messages.content',
 				'assistant_messages.suggested',
+				'assistant_messages.card',
 				'assistant_messages.status',
 				'assistant_messages.error_code',
 				'assistant_messages.tool_calls',

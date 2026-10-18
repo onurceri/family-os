@@ -1,0 +1,36 @@
+{
+	"case": "dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"meals"
+				],
+				"span": {
+					"said": "on Friday",
+					"kind": "day",
+					"day": {
+						"text": "Friday",
+						"weekday": 5
+					}
+				},
+				"people": [],
+				"about": [
+					"dinner"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		}
+	]
+}

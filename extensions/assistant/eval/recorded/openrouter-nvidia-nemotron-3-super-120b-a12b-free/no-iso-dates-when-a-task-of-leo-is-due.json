@@ -1,0 +1,36 @@
+{
+	"case": "no ISO dates: when a task of Leo is due",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"tasks"
+				],
+				"span": {
+					"said": "due",
+					"kind": "day"
+				},
+				"people": [
+					{
+						"said": "my"
+					}
+				],
+				"about": [
+					"reading homework"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		}
+	]
+}

@@ -32,6 +32,8 @@ export type AssistantTables = {
 		 * not say them twice.
 		 */
 		suggested: string | null;
+		/** JSON: the answer card of a question (`AnswerCardSchema`), made by code; null otherwise. */
+		card: string | null;
 		status: 'pending' | 'streaming' | 'done' | 'failed';
 		error_code: string | null;
 		created_at: number;
@@ -86,6 +88,11 @@ export const migrations: Migrations = {
 	'0003_message_suggested': {
 		async up(db) {
 			await db.schema.alterTable('assistant_messages').addColumn('suggested', 'text').execute();
+		},
+	},
+	'0004_message_card': {
+		async up(db) {
+			await db.schema.alterTable('assistant_messages').addColumn('card', 'text').execute();
 		},
 	},
 };

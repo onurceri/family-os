@@ -1,0 +1,43 @@
+{
+	"case": "Turkish: add milk and eggs",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [],
+				"about": [
+					"süt",
+					"yumurta"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Süt ve yumurta alışveriş listesine eklemek için bir öneri oluşturdum. Henüz eklenmedi; evdeki bir kişinin onaylaması beliyor.",
+			"toolCalls": [
+				{
+					"name": "lists_addShoppingItems",
+					"input": {
+						"items": [
+							{
+								"title": "Süt"
+							},
+							{
+								"title": "Yumurta"
+							}
+						]
+					}
+				}
+			]
+		}
+	]
+}

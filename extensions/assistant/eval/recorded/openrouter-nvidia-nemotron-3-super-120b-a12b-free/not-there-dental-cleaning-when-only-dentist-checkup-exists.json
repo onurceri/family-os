@@ -1,0 +1,42 @@
+{
+	"case": "not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"people": [],
+				"about": [
+					"Dental cleaning"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I couldn’t find an event titled exactly “Dental cleaning” on the calendar. The closest match is a “Dentist checkup” for Noah on Thursday 2026‑10‑08 at 09:30‑10:30.  \n\nDid you mean that event, or is there another dental‑related appointment you’d like to reschedule to 10:00? Let me know so I can make the change.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Dental cleaning"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"from": "2026-10-06",
+						"to": "2026-10-13"
+					}
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,44 @@
+{
+	"case": "remove: the cheddar is on the list (without naming the list)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [
+					{
+						"said": "I"
+					}
+				],
+				"about": [
+					"cheddar"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I've suggested removing Cheddar from the shopping list. It's waiting for someone in the household to approve it before it's actually taken off.",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				},
+				{
+					"name": "lists_deleteShoppingItem",
+					"input": {
+						"id": "shop_item:2",
+						"label": "Cheddar"
+					}
+				}
+			]
+		}
+	]
+}

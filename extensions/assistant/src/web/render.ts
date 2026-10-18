@@ -24,3 +24,16 @@ export function segments(text: string, isAppPath: (path: string) => boolean): Se
 	if (last < text.length) out.push({ kind: 'text', text: text.slice(last) });
 	return out;
 }
+
+/**
+ * An answer's words with its answer card as plain lines under them, for a page that does not
+ * draw the card itself.
+ */
+export function answerWords(message: {
+	content: string;
+	card: { text: readonly string[] } | null;
+}): string {
+	return [message.content, (message.card?.text ?? []).join('\n')]
+		.filter((part) => part !== '')
+		.join('\n\n');
+}

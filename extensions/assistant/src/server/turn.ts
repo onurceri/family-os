@@ -9,20 +9,28 @@ import {
 	type LlmChatMessage,
 	type MemberId,
 } from '@famos/sdk';
-import { dateWords, numericDateOrder, todayIn, zoned } from '@famos/time';
+import { dateLocale, dateWords, numericDateOrder, todayIn, zoned } from '@famos/time';
 import { z } from 'zod';
 import {
+	type AnswerCard,
+	CHANNELS,
 	CHAT_FEATURE,
 	deltaPayload,
 	donePayload,
 	SUMMARIZE_JOB,
 	TURN_JOB,
 } from '../contract/index.ts';
-import { answerWithRealWeekdays } from './answer-dates.ts';
+import { answerWithRealWeekdays, answerWithWordDates } from './answer-dates.ts';
 import { formatWeekday } from './format.ts';
 import { spokenText } from './messages.ts';
 import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
-import { createHandleScrubber, scrubHandles } from './scrub.ts';
+import { answerQuestion } from './question.ts';
+import {
+	createHandleScrubber,
+	scrubHandles,
+	scrubRecordHandles,
+	withoutToolMarkup,
+} from './scrub.ts';
 import { tables } from './store.ts';
 import {
 	type AssistantTool,
@@ -33,6 +41,13 @@ import {
 	type RecordedCall,
 	toolsClosed,
 } from './tools.ts';
+import {
+	QUESTION_JSON_SCHEMA,
+	type Question,
+	QuestionSchema,
+	understandPrompt,
+	understandSystem,
+} from './understand.ts';
 import { readVocabularies } from './vocabulary.ts';
 
 /** The most notes sent to the model, and the most characters of them. */
@@ -106,21 +121,30 @@ export function proposalLines(
 
 const MAX_STEPS = 8;
 const CHAT_TIMEOUT_MS = 120_000;
+export const UNDERSTAND_TIMEOUT_MS = 60_000;
+const UNDERSTAND_MAX_TOKENS = 1_500;
+/** The person's earlier messages the reading of the latest one sees, for "and on Friday?". */
+const EARLIER_FOR_READING = 2;
 
 /**
- * One answer of the assistant. The message was stored by `assistant.sendMessage`; this
- * job builds the tools the asking member may use, runs the model's tool loop, streams the text to
- * that member only, and stores the result. Idempotent: a finished message is left alone, and a
- * restarted turn starts the answer again.
+ * One answer of the assistant. The message was stored by `assistant.sendMessage`; this job reads
+ * what the message is first. A question is answered by code from the digests of its topics (the
+ * answer card), with opening words a model writes and code checks; anything else gets the tool
+ * loop with the tools the asking member may use, whose text streams to that member only.
+ * Idempotent: a finished message is left alone, and a restarted turn starts the answer again.
  */
 export const turnJob = defineJob({
 	name: TURN_JOB,
-	payload: z.object({ threadId: z.string(), messageId: z.string() }),
-	timeoutMs: 150_000,
+	payload: z.object({
+		threadId: z.string(),
+		messageId: z.string(),
+		via: z.enum(CHANNELS).optional(),
+	}),
+	timeoutMs: 240_000,
 	maxAttempts: 2,
 	lane: 'long',
 	backoff: () => 5_000,
-	async handle(ctx, { threadId, messageId }, run) {
+	async handle(ctx, { threadId, messageId, via }, run) {
 		const db = tables(ctx.db);
 		const reply = await db
 			.selectFrom('assistant_messages')
@@ -144,6 +168,7 @@ export const turnJob = defineJob({
 			suggested?: readonly string[];
 			errorCode?: string | null;
 			calls?: RecordedCall[];
+			card?: AnswerCard;
 		}) => {
 			await persistHandles();
 			await db
@@ -154,6 +179,7 @@ export const turnJob = defineJob({
 					suggested: fields.suggested?.length ? JSON.stringify(fields.suggested) : null,
 					error_code: fields.errorCode ?? null,
 					tool_calls: fields.calls?.length ? JSON.stringify(fields.calls) : null,
+					card: fields.card ? JSON.stringify(fields.card) : null,
 				})
 				.where('id', '=', messageId)
 				.execute();
@@ -202,7 +228,7 @@ export const turnJob = defineJob({
 		};
 		const history = await db
 			.selectFrom('assistant_messages')
-			.select(['role', 'content', 'suggested', 'created_at'])
+			.select(['role', 'content', 'suggested', 'card', 'created_at'])
 			.where('thread_id', '=', threadId)
 			.where('status', '=', 'done')
 			.where('created_at', '<', reply.created_at)
@@ -272,6 +298,92 @@ export const turnJob = defineJob({
 		const time = zoned(now, settings.timeZone).toPlainTime().toString({ smallestUnit: 'minute' });
 		// Weekdays named without a date get their dates from code, the same way every time.
 		const days = weekdayDates(asked, today, time, words, order);
+		const locale = member.locale ?? settings.locale;
+
+		// What the message is, read first: a question is answered from facts code fetched.
+		let question: Question | null = null;
+		try {
+			const read = await ctx.llm.generateObject({
+				role: 'smart',
+				feature: CHAT_FEATURE,
+				// Only the message: names, dates and the family's data are worked out by code.
+				areas: ['assistant'],
+				schema: QuestionSchema,
+				jsonSchema: QUESTION_JSON_SCHEMA,
+				system: understandSystem(),
+				prompt: understandPrompt(
+					asked,
+					kept
+						.filter((m) => m.role === 'user')
+						.slice(0, -1)
+						.slice(-EARLIER_FOR_READING)
+						.map((m) => m.content),
+				),
+				timeoutMs: UNDERSTAND_TIMEOUT_MS,
+				maxOutputTokens: UNDERSTAND_MAX_TOKENS,
+				// The same message should be read the same way every time.
+				temperature: 0,
+				memberId,
+				jobId: run.id,
+			});
+			question = read.output;
+		} catch (error) {
+			if (!isLlmError(error)) throw error;
+			if (error.retryable && run.attempt < run.maxAttempts) {
+				await db
+					.updateTable('assistant_messages')
+					.set({ status: 'pending', content: '' })
+					.where('id', '=', messageId)
+					.execute();
+				throw error;
+			}
+			// A reading that could not be had in the last try (a broken or cut answer, a slow or
+			// busy provider) leaves the message to the tool loop, which answers everything it did
+			// before; a model the family must set up first (no model, a bad key, a limit) ends it.
+			if (!error.retryable && error.code !== 'invalid_output' && error.code !== 'output_too_long')
+				return finish({ status: 'failed', errorCode: error.code });
+		}
+
+		if (question?.intent === 'ask') {
+			try {
+				const answer = await answerQuestion(ctx, {
+					question,
+					asked,
+					member,
+					family,
+					settings,
+					today,
+					actor,
+					policy,
+					via: via ?? 'app',
+					words,
+					order,
+					table,
+					labels,
+					jobId: run.id,
+				});
+				if (answer.lead !== '')
+					await ctx.events.emitTo(memberId, assistantDelta, {
+						threadId,
+						messageId,
+						text: answer.lead,
+						reset: true,
+					});
+				return await finish({
+					status: 'done',
+					content: answer.lead,
+					card: answer.card,
+					calls: answer.calls,
+				});
+			} catch (error) {
+				ctx.logger.error(
+					{ threadId, err: error instanceof Error ? error.name : 'unknown' },
+					'assistant question failed',
+				);
+				return finish({ status: 'failed', errorCode: 'unavailable' });
+			}
+		}
+
 		const vocabularies = await readVocabularies(
 			ctx,
 			actor,
@@ -377,7 +489,6 @@ export const turnJob = defineJob({
 			// Whatever the model wrote, the person is told what was really suggested, from the
 			// suggestions themselves. The lines are kept beside the answer, not in it: the app shows
 			// the suggestions as cards, and a chat outside it gets the lines under the words.
-			const locale = member.locale ?? settings.locale;
 			const suggested = proposalLines(proposals, (key, params) =>
 				ctx.translate(locale, key, params),
 			);
@@ -387,14 +498,30 @@ export const turnJob = defineJob({
 			const written = result.text ? scrubHandles(result.text, nameOf) : '';
 			// A weekday the answer puts next to a date of another weekday is the model's slip: the
 			// date comes from a tool. The stored answer says the real one, and so does the stream.
-			const answer = answerWithRealWeekdays(written, {
-				today,
-				words,
-				order,
-				asked,
-				locales: [locale, settings.locale, 'en'],
-				translate: (lng, key) => ctx.translate(lng, key),
-			});
+			// An ISO date it copied from a tool is written as words, in the reader's date format.
+			// Tool calls a model wrote out as text on the step that had no tools are no answer, and a
+			// record's handle in the words becomes the record's title.
+			const clean = scrubRecordHandles(withoutToolMarkup(written), (handle) =>
+				table.toId.has(handle)
+					? labels.get(handle) || ctx.translate(locale, 'assistant:something')
+					: null,
+			);
+			const answer = answerWithWordDates(
+				answerWithRealWeekdays(clean, {
+					today,
+					words,
+					order,
+					asked,
+					locales: [locale, settings.locale, 'en'],
+					translate: (lng, key) => ctx.translate(lng, key),
+				}),
+				{
+					today,
+					asked,
+					dateLocale: dateLocale(locale, settings.formatLocale, settings.hourCycle),
+					weekdays: [...words.weekdays.flat(), ...words.weekdaysShort.flat()],
+				},
+			);
 			if (answer !== written)
 				await ctx.events.emitTo(memberId, assistantDelta, {
 					threadId,

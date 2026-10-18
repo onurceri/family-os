@@ -743,8 +743,11 @@ export {
 	type DateWords,
 	dateWords,
 	isUncertainDate,
+	namedMonths,
+	namedWeekdays,
 	type WeekdayMismatch,
 	weekdayMismatches,
+	writtenDates,
 } from './date-words.ts';
 export {
 	type DayDirection,

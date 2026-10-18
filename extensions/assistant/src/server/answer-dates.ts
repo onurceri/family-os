@@ -1,4 +1,11 @@
-import { correctWeekdays, type DateOrder, type DateWords, weekdayMismatches } from '@famos/time';
+import {
+	correctWeekdays,
+	type DateOrder,
+	type DateWords,
+	formatDate,
+	isValidDate,
+	weekdayMismatches,
+} from '@famos/time';
 
 /** A weekday's names in one language, from its catalog: full names, then short ones. */
 type WeekdayNames = { full: readonly string[]; short: readonly string[] }[];
@@ -67,4 +74,56 @@ export function answerWithRealWeekdays(
 		},
 	);
 	return fixed.text;
+}
+
+/** An ISO date as models write it, also with the non-breaking hyphens some of them type. */
+const ISO_IN_TEXT = /(?<![\d\p{L}])(\d{4})[-‐‑](\d{2})[-‐‑](\d{2})(?![\d\p{L}])/gu;
+
+const escapeRegex = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The answer with each ISO date ("2026-10-20") written as words in the reader's date locale
+ * ("Tuesday, 20 October"; the year only when it is not this year): models copy dates from tool
+ * results whatever they are told. A weekday word right before it ("Tuesday 2026-10-20") is the
+ * model's own and is dropped, since the words name the weekday. A date the person wrote that way
+ * themselves stays as it is.
+ */
+export function answerWithWordDates(
+	text: string,
+	options: {
+		today: string;
+		/** What the person wrote. */
+		asked: string;
+		/** `dateLocale(language, formatLocale, hourCycle)` of the reader. */
+		dateLocale: string;
+		/** Weekday names (full and short) of every installed language. */
+		weekdays: readonly string[];
+	},
+): string {
+	const own = new Set(
+		[...options.asked.matchAll(ISO_IN_TEXT)].map((m) => `${m[1]}-${m[2]}-${m[3]}`),
+	);
+	const names = options.weekdays.filter(Boolean).toSorted((a, b) => b.length - a.length);
+	const before =
+		names.length > 0
+			? new RegExp(`(?<!\\p{L})(?:${names.map(escapeRegex).join('|')})\\.?,?\\s+$`, 'iu')
+			: null;
+	let out = '';
+	let last = 0;
+	for (const match of text.matchAll(ISO_IN_TEXT)) {
+		const date = `${match[1]}-${match[2]}-${match[3]}`;
+		if (own.has(date) || !isValidDate(date)) continue;
+		let head = text.slice(last, match.index);
+		const weekday = before?.exec(head);
+		if (weekday) head = head.slice(0, weekday.index);
+		out += head;
+		out += formatDate(date, options.dateLocale, {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			...(date.slice(0, 4) !== options.today.slice(0, 4) && { year: 'numeric' }),
+		});
+		last = match.index + match[0].length;
+	}
+	return out + text.slice(last);
 }

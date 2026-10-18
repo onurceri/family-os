@@ -5,6 +5,7 @@ import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { notInstalledPackages } from '../eval/harness.ts';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
 let k: TestKernel;
@@ -40,7 +41,7 @@ async function ask(text: string) {
 describe('areas that are not here', () => {
 	it('are named with why, so "where are the flat papers?" gets "Home is not installed here"', async () => {
 		// The real answer read empty notes and duties as "no household obligations for the flat".
-		k.llm.respondChat([{ text: 'Home is not installed here.' }]);
+		loopTurns(k.llm, [{ text: 'Home is not installed here.' }]);
 		const system = await ask('Where do we keep the flat papers, and what is due this month?');
 		expect(system).toContain(
 			'Not here: areas of FamilyOS you cannot look into (worked out by FamilyOS, true):\n- Home (not installed here): The household',
@@ -54,7 +55,7 @@ describe('areas that are not here', () => {
 			{ extensionId: 'calendar', access: 'off' },
 			systemActor('test'),
 		);
-		k.llm.respondChat([{ text: 'I cannot see the calendar.' }]);
+		loopTurns(k.llm, [{ text: 'I cannot see the calendar.' }]);
 		const system = await ask("What's on tomorrow?");
 		expect(system).toContain('- Calendar (closed to you in the AI settings)');
 		expect(system).toContain('- Home (not installed here)');

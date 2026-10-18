@@ -1,0 +1,42 @@
+{
+	"case": "find: Lukas's Wednesday",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"error": "timeout"
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "on Wednesday",
+					"kind": "day",
+					"day": {
+						"text": "Wednesday",
+						"weekday": 3
+					}
+				},
+				"people": [
+					{
+						"said": "my"
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "On Wednesday, October 7, you have Early shift from 6:45 AM to 3:15 PM and Work dinner from 7:30 PM to 9:30 PM.",
+			"toolCalls": []
+		}
+	]
+}

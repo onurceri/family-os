@@ -1,6 +1,6 @@
 import calendar from '@famos/ext-calendar/server';
 import lists from '@famos/ext-lists/server';
-import { createFakeLlm, createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, type FakeChatTurn, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CASES } from '../eval/cases.ts';
@@ -20,6 +20,7 @@ import {
 import { actionIdOf, plainText, report, runCase } from '../eval/harness.ts';
 import { DEFAULT_FAMILY, seed } from '../eval/seed.ts';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 const TZ = 'Europe/Amsterdam';
 
@@ -127,6 +128,19 @@ describe('the eval cases', () => {
 });
 
 describe('a case run end to end with a scripted model', () => {
+	/** Scripted turns of the tool loop, and the kernel they ran on (for what the model saw). */
+	const scripted = (...turns: FakeChatTurn[]) => {
+		const ran: { k?: TestKernel } = {};
+		return {
+			ran,
+			options: {
+				prepare(kernel: TestKernel) {
+					ran.k = kernel;
+					loopTurns(kernel.llm, ...turns);
+				},
+			},
+		};
+	};
 	const byName = (name: string) => {
 		const found = CASES.find((c) => c.name.startsWith(name));
 		if (!found) throw new Error(`no case ${name}`);
@@ -134,20 +148,18 @@ describe('a case run end to end with a scripted model', () => {
 	};
 
 	it('reads a typographic apostrophe as a plain one (real model output)', async () => {
-		const llm = createFakeLlm();
-		llm.respondChat([
+		const { options } = scripted([
 			{ tool: 'calendar_findEvents', input: { text: 'Dental cleaning' } },
 			{
 				text: 'I couldn’t find any calendar event titled “Dental cleaning.” If you meant a different event (for example, the “Dentist checkup” on October 8 at 09:30), please let me know the exact title or date so I can update it for you.',
 			},
 		]);
-		const result = await runCase(byName('not there: "Dental cleaning"'), llm);
+		const result = await runCase(byName('not there: "Dental cleaning"'), options);
 		expect(result.failed).toEqual([]);
 	});
 
 	it('passes the single-date move when the model gives the date', async () => {
-		const llm = createFakeLlm();
-		llm.respondChat([
+		const { options } = scripted([
 			{ tool: 'calendar_findEvents', input: { text: 'Sunday planning' } },
 			{
 				tool: 'calendar_changeEvent',
@@ -160,7 +172,7 @@ describe('a case run end to end with a scripted model', () => {
 			},
 			{ text: 'I suggested moving the Sunday planning on 25 October to 18:00.' },
 		]);
-		const result = await runCase(byName('one date: Sunday planning on 25 October'), llm);
+		const result = await runCase(byName('one date: Sunday planning on 25 October'), options);
 		expect(result.failed).toEqual([]);
 		expect(result.outcome.turns[0]?.calls.map((c) => c.actionId)).toEqual([
 			'calendar.findEvents',
@@ -170,8 +182,7 @@ describe('a case run end to end with a scripted model', () => {
 	});
 
 	it('fails the follow-up when the model changes the whole series (real model output)', async () => {
-		const llm = createFakeLlm();
-		llm.respondChat(
+		const { options } = scripted(
 			[
 				{ tool: 'calendar_findEvents', input: { text: 'Sunday planning' } },
 				{ text: 'Sunday planning is at 19:30 every Sunday. Shall I move it?' },
@@ -184,7 +195,7 @@ describe('a case run end to end with a scripted model', () => {
 				{ text: 'Done.' },
 			],
 		);
-		const result = await runCase(byName('one date: follow-up'), llm);
+		const result = await runCase(byName('one date: follow-up'), options);
 		expect(result.ok).toBe(false);
 		expect(result.failed).toContain('no change of the whole series in the last turn');
 		const lines = report(result).join('\n');
@@ -194,15 +205,14 @@ describe('a case run end to end with a scripted model', () => {
 	});
 
 	it('fails a claimed suggestion that was never made (real model output)', async () => {
-		const llm = createFakeLlm();
 		// "I made a suggestion to move the Sunday planning on 25 October", after a search only.
-		llm.respondChat([
+		const { options } = scripted([
 			{ tool: 'calendar_findEvents', input: { text: 'Sunday planning' } },
 			{
 				text: 'I made a suggestion to move the Sunday planning on 25 October to 18:00. This needs to be approved by Sofia or Lukas.',
 			},
 		]);
-		const result = await runCase(byName('one date: Sunday planning on 25 October'), llm);
+		const result = await runCase(byName('one date: Sunday planning on 25 October'), options);
 		expect(result.failed).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining('drafted calendar.changeEvent'),
@@ -212,8 +222,7 @@ describe('a case run end to end with a scripted model', () => {
 	});
 
 	it('ticks the bananas on the long list when the model finds them', async () => {
-		const llm = createFakeLlm();
-		llm.respondChat([
+		const { ran, options } = scripted([
 			{ tool: 'lists_shoppingList', input: {} },
 			{
 				tool: 'lists_checkShoppingItem',
@@ -221,9 +230,9 @@ describe('a case run end to end with a scripted model', () => {
 			},
 			{ text: 'Bananas for pancakes is ready to tick off.' },
 		]);
-		const result = await runCase(byName('tick off: "the bananas"'), llm);
+		const result = await runCase(byName('tick off: "the bananas"'), options);
 		// The 63rd row of the list the model was shown.
-		expect(llm.chatTrace[0]?.result).toContain(
+		expect(ran.k?.llm.chatTrace[0]?.result).toContain(
 			'{"id":"shop_item:63","title":"Bananas for pancakes"',
 		);
 		expect(result.failed).toEqual([]);
@@ -231,15 +240,14 @@ describe('a case run end to end with a scripted model', () => {
 	});
 
 	it('fails the Turkish case when the answer is in English (real model mix-up)', async () => {
-		const llm = createFakeLlm();
-		llm.respondChat([
+		const { options } = scripted([
 			{
 				tool: 'lists_addShoppingItems',
 				input: { items: [{ title: 'Süt' }, { title: 'Yumurta' }] },
 			},
 			{ text: 'I added milk and eggs to the list.' },
 		]);
-		const result = await runCase(byName('Turkish'), llm);
+		const result = await runCase(byName('Turkish'), options);
 		expect(result.failed).toEqual([expect.stringContaining('reply never says')]);
 		// The host's own line is in the family language.
 		expect(result.outcome.turns[0]?.reply).toContain('Önerildi, henüz eklenmedi: ');

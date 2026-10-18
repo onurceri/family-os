@@ -4,6 +4,7 @@ import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
 import { proposalLines } from '../src/server/turn.ts';
+import { loopTurns } from './reading.ts';
 
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
 let k: TestKernel;
@@ -82,7 +83,7 @@ describe('the answer never says something else than what was suggested', () => {
 			k.clock.advance(1000);
 			await k.runner.invoke('lists.checkShoppingItem', { id, done: true }, ayse.actor);
 		}
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: {} },
 			// Both are bought already, so the check is refused.
 			{ tool: 'lists_checkShoppingItem', input: { id: 'shop_item:2', done: true, label: 'Milk' } },
@@ -107,7 +108,7 @@ describe('the answer never says something else than what was suggested', () => {
 
 	it('words the line with the stored real title, not the name the model used', async () => {
 		await add('Oat milk');
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: {} },
 			{ tool: 'lists_checkShoppingItem', input: { id: 'shop_item:1', done: true, label: 'milk' } },
 			{ text: 'I suggested ticking it off.' },
@@ -119,7 +120,7 @@ describe('the answer never says something else than what was suggested', () => {
 	});
 
 	it('keeps the lines beside the model’s words, so cards do not say them twice', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Oat milk' }] } },
 			// Real model output: its own sentence already names the suggestion once.
 			{ text: 'Suggested, not added yet: Add shopping items: Oat milk.' },
@@ -131,7 +132,7 @@ describe('the answer never says something else than what was suggested', () => {
 	});
 
 	it('adds no line when nothing was suggested', async () => {
-		k.llm.respondChat([{ text: 'Nothing to do.' }]);
+		loopTurns(k.llm, [{ text: 'Nothing to do.' }]);
 		expect(await answer(await ask('Hello'))).toBe('Nothing to do.');
 	});
 
@@ -161,7 +162,7 @@ describe('the answer never says something else than what was suggested', () => {
 describe('the list a request names', () => {
 	it('is found by name and the item goes on it', async () => {
 		const hardware = await newList('Hardware store');
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: { list: 'Hardware store' } },
 			{
 				tool: 'lists_addShoppingItems',
@@ -182,7 +183,7 @@ describe('the list a request names', () => {
 
 	it('is read by its handle, and an item with a quantity lands on it', async () => {
 		const scratch = await newList('V2 scratch');
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: {} },
 			{ tool: 'lists_shoppingList', input: { listId: 'shop_list:2' } },
 			{

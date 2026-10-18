@@ -1,22 +1,24 @@
 import { runEval } from '@famos/testing';
 import { CASES } from './cases.ts';
-import { report, runCase } from './harness.ts';
+import { casesPromptHash, EVAL_VERSION, report, runCase } from './harness.ts';
 
 /**
  * Runs the assistant cases against real models and reports which checks pass, one column per
  * model. Not part of CI: it costs money and depends on the provider. Each case runs on its own
  * kernel. Usage (the other variables are described in `runEval` of `@famos/testing`):
- *   FAMOS_EVAL_API_KEY=… FAMOS_EVAL_MODELS=openrouter:google/gemini-2.5-flash,openrouter:openai/gpt-4.1-mini \
- *   [FAMOS_EVAL_CASE=substring] [FAMOS_EVAL_RAW=1] pnpm --filter @famos/ext-assistant eval
+ *   FAMOS_EVAL_API_KEY=… FAMOS_EVAL_MODELS=openrouter:nvidia/nemotron-3-super-120b-a12b:free,openrouter:nvidia/nemotron-3.5-super-vl:free \
+ *   [FAMOS_EVAL_CASE=substring] [FAMOS_EVAL_RAW=1] [FAMOS_EVAL_RECORD=1] pnpm --filter @famos/ext-assistant eval
  */
 const raw = Boolean(process.env.FAMOS_EVAL_RAW);
 const verbose = Boolean(process.env.FAMOS_EVAL_VERBOSE);
 process.exit(
 	await runEval({
 		title: 'Assistant eval',
+		version: EVAL_VERSION,
+		promptHash: await casesPromptHash(),
 		cases: CASES,
 		async run(c, llm) {
-			const result = await runCase(c, llm, raw);
+			const result = await runCase(c, { llm, raw });
 			return {
 				ok: result.ok,
 				checks: result.checks,

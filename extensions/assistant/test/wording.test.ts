@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Message } from '../src/contract/index.ts';
 import assistant from '../src/server/index.ts';
 import { systemPrompt } from '../src/server/prompt.ts';
+import { loopTurns } from './reading.ts';
 
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
 let k: TestKernel;
@@ -85,7 +86,7 @@ describe('people in answers', () => {
 	});
 
 	it("replaces a handle in the answer with the member's name, stored and streamed", async () => {
-		k.llm.respondChat([{ text: 'member:1 has the dentist at 10:30.' }]);
+		loopTurns(k.llm, [{ text: 'member:1 has the dentist at 10:30.' }]);
 		const answer = await ask(ayse, 'Who has the dentist?');
 		expect(answer.content).toBe('Ayşe has the dentist at 10:30.');
 		expect(deltas.join('')).toBe('Ayşe has the dentist at 10:30.');
@@ -93,7 +94,7 @@ describe('people in answers', () => {
 
 	it('uses a neutral word, never the handle, when names are not shared', async () => {
 		k.llm.privacy.sendPeople = false;
-		k.llm.respondChat([{ text: 'member:1 has the dentist.' }]);
+		loopTurns(k.llm, [{ text: 'member:1 has the dentist.' }]);
 		const answer = await ask(ayse, 'Who has the dentist?');
 		// The test kernel has no catalogs, so the key itself comes back.
 		expect(answer.content).toBe('assistant:someone has the dentist.');
@@ -103,7 +104,7 @@ describe('people in answers', () => {
 
 describe('suggestions', () => {
 	it('hands the model a sentence that says it is suggested, not added', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Milk' }] } },
 			{ text: 'Suggested.' },
 		]);
@@ -118,7 +119,8 @@ describe('suggestions', () => {
 	});
 
 	it('lets the model see what happened to its suggestions', async () => {
-		k.llm.respondChat(
+		loopTurns(
+			k.llm,
 			[
 				{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Milk' }] } },
 				{ text: 'Suggested.' },
@@ -150,7 +152,8 @@ describe('suggestions', () => {
 	});
 
 	it("does not show another member's suggestions", async () => {
-		k.llm.respondChat(
+		loopTurns(
+			k.llm,
 			[
 				{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Milk' }] } },
 				{ text: 'Suggested.' },

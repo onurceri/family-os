@@ -94,6 +94,7 @@ export const sendMessage = defineAction({
 					content: input.text,
 					tool_calls: null,
 					suggested: null,
+					card: null,
 					status: 'done',
 					error_code: null,
 					created_at: now,
@@ -105,6 +106,7 @@ export const sendMessage = defineAction({
 					content: '',
 					tool_calls: null,
 					suggested: null,
+					card: null,
 					status: 'pending',
 					error_code: null,
 					// After the question, whatever the clock says.
@@ -113,7 +115,11 @@ export const sendMessage = defineAction({
 			])
 			.execute();
 		// The model is never called in a request: the turn is a job.
-		await uow.enqueue(TURN_JOB, { threadId, messageId: replyId }, { dedupeKey: `turn:${replyId}` });
+		await uow.enqueue(
+			TURN_JOB,
+			{ threadId, messageId: replyId, ...(input.via && { via: input.via }) },
+			{ dedupeKey: `turn:${replyId}` },
+		);
 		return { threadId, messageId, replyId };
 	},
 });

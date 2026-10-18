@@ -1,0 +1,33 @@
+{
+	"case": "not there: anchovies on no list",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [],
+				"about": [
+					"anchovies"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I checked all the family shopping lists, and anchovies are not on any of them. There's nothing to remove.",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				}
+			]
+		}
+	]
+}

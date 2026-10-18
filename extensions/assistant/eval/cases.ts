@@ -3,27 +3,31 @@ import {
 	about,
 	atMost,
 	type Check,
-	called,
 	drafted,
 	either,
 	itemTitles,
 	lastTurn,
+	looked,
 	neverSays,
 	noDraft,
 	noDrafts,
 	occurrenceOn,
 	on,
 	says,
+	shortLead,
 } from './checks.ts';
-import type { Case, SeedEvent, SeedItem, SeedTask } from './seed.ts';
+import type { Case, Person, SeedEvent, SeedItem, SeedTask } from './seed.ts';
 
 /**
  * Assistant evaluation cases. Each comes from a mistake the assistant made in use, with the
  * person's own words. "Today" is Tuesday 6 October 2026, 10:00 (Europe/Amsterdam, English) unless
  * a case says otherwise; this week runs Monday 5 to Sunday 11 October. The household is Sofia and
  * Lukas (admins) with Ellie (14) and Noah (9); Sofia asks unless a case says who. Every case is
- * also checked for Markdown bold, raw handles or ids in the answer, and for claiming a suggestion
- * when there is none. Add a case for every assistant mistake found in use.
+ * also checked for Markdown bold, raw handles or ids, ISO dates and wrong weekdays in the answer, and
+ * for claiming a suggestion when there is none. A question case says how it should be read
+ * (`expect`) and is held to its answer card: every fact of those days shown and nothing outside
+ * them. The round-5 cases run in the Novak household on a Sunday (see `novak`). Add a case for every
+ * assistant mistake found in use.
  */
 
 /** The family calendar most cases share. */
@@ -213,7 +217,64 @@ const NOTHING = /\b(nothing|no tasks?|none)\b/i;
 const DUE = /\bnothing (?:is )?due\b/i;
 /** Words that put what is listed outside the span asked about. */
 const OUTSIDE =
-	/\b(outside|after the weekend|later|beyond|next week|before the weekend|other days|not (?:due )?(?:this|on the|at the) weekend)\b/i;
+	/\bnext:|\b(outside|after the weekend|later|beyond|next week|before the weekend|other days|not (?:due )?(?:this|on the|at the) weekend)\b/i;
+
+/**
+ * The household of the round-5 cases: Mara and Tom (admins) with Ivy (14) and Leo (6). It is
+ * Sunday 18 October 2026, 10:00 in Ljubljana, and the region's week starts on Monday, so "this
+ * week" asked today is the coming one.
+ */
+const NOVAK_FAMILY: Person[] = [
+	{ name: 'Mara', roleId: 'admin', about: 'Mother, teacher' },
+	{ name: 'Tom', roleId: 'admin', about: 'Father, works shifts' },
+	{ name: 'Ivy', roleId: 'supervised', about: '14, plays football and the piano' },
+	{ name: 'Leo', roleId: 'supervised', about: '6 years old' },
+];
+
+const NOVAK_WEEK: SeedEvent[] = [
+	{ title: "Parents' evening", date: '2026-10-20', startTime: '18:00', who: ['Mara', 'Tom'] },
+	{ title: 'Football training', date: '2026-10-21', startTime: '17:00', who: ['Ivy'] },
+	{
+		title: 'Swimming lesson',
+		date: '2026-10-22',
+		startTime: '16:30',
+		endTime: '17:30',
+		who: ['Leo'],
+		notes: 'Pick up from the pool at 17:30',
+	},
+	{ title: 'Piano lesson', date: '2026-10-22', startTime: '18:00', who: ['Ivy'] },
+	{
+		title: "Dinner at Nona Marija's",
+		date: '2026-10-23',
+		startTime: '18:30',
+		endTime: '21:00',
+	},
+	{
+		title: 'U13 match',
+		date: '2026-10-24',
+		startTime: '10:00',
+		who: ['Ivy'],
+		location: 'Olimpija',
+		notes: 'Bring white shirt, shin pads & water',
+	},
+	{ title: 'Date night', date: '2026-10-31', startTime: '19:00', who: ['Mara', 'Tom'] },
+];
+
+const NOVAK_TASKS: SeedTask[] = [
+	{ title: 'Sign the school trip form', dueDate: '2026-10-20', who: 'Mara' },
+	{ title: 'Practise reading', dueDate: '2026-10-19', who: 'Leo' },
+];
+
+/** A case in the Novak household, on Sunday 18 October unless it says another day. */
+const novak = (c: Omit<Case, 'family' | 'timeZone' | 'formatLocale'>): Case => ({
+	family: NOVAK_FAMILY,
+	timeZone: 'Europe/Ljubljana',
+	formatLocale: 'sl-SI',
+	today: '2026-10-18',
+	events: NOVAK_WEEK,
+	tasks: NOVAK_TASKS,
+	...c,
+});
 
 export const CASES: Case[] = [
 	// Not the closest item: a name that is not there is refused, not mapped to a similar one.
@@ -281,13 +342,18 @@ export const CASES: Case[] = [
 		as: 'Lukas',
 		events: CALENDAR,
 		asks: ['When is the swimming this week?'],
-		checks: [called('calendar.findEvents', 'searched'), says(/swim training/i, /tue/i, /thu/i)],
+		expect: { from: '2026-10-06', to: '2026-10-11', topics: ['calendar'] },
+		checks: [
+			looked('calendar.findEvents', 'calendar.digest'),
+			says(/swim training/i, /tue/i, /thu/i),
+		],
 	},
 	{
 		name: "find: Lukas's Wednesday",
 		as: 'Lukas',
 		events: CALENDAR,
 		asks: ["What's on my calendar on Wednesday?"],
+		expect: { from: '2026-10-07', to: '2026-10-07', topics: ['calendar'], people: ['Lukas'] },
 		checks: [says(/early shift/i, /work dinner/i), neverSays(/piano lesson/i)],
 	},
 
@@ -296,6 +362,7 @@ export const CASES: Case[] = [
 		name: 'find: "pick up Noah on Thursday" is the swimming lesson (known failure: "no event, no pick-up")',
 		events: CALENDAR,
 		asks: ['Do we need to pick Noah up anywhere on Thursday?'],
+		expect: { from: '2026-10-08', to: '2026-10-08', topics: ['calendar'], people: ['Noah'] },
 		checks: [
 			says(/swimming/i, /17:00|5(?::00)? ?pm/i),
 			neverSays(/\b(no events?|nothing)\b.*\bthursday\b/is),
@@ -314,7 +381,8 @@ export const CASES: Case[] = [
 			},
 		],
 		asks: ['What is for dinner on Friday?'],
-		checks: [called('kitchen.mealPlan', 'looked at the meal plan'), says(/nona marija/i)],
+		expect: { from: '2026-10-09', to: '2026-10-09', topics: ['meals'] },
+		checks: [looked('kitchen.mealPlan', 'kitchen.digest'), says(/nona marija/i)],
 	},
 
 	// A reminder is only a suggestion until a person approves it.
@@ -407,6 +475,11 @@ export const CASES: Case[] = [
 		tasks: ['Buy a birthday present for Mila', 'Book the car service'],
 		shopping: { Groceries: GROCERIES },
 		asks: ["Give me an overview of this week: what's on, the open tasks and the shopping list."],
+		expect: {
+			from: '2026-10-06',
+			to: '2026-10-11',
+			topics: ['calendar', 'tasks', 'shopping'],
+		},
 		checks: [says(/sunday planning|swim/i, /mila/i)],
 	},
 
@@ -469,6 +542,7 @@ export const CASES: Case[] = [
 			{ title: 'Date night', date: '2026-10-17', startTime: '19:00', who: ['Sofia', 'Lukas'] },
 		],
 		asks: ["What's on this weekend?"],
+		expect: { from: '2026-10-10', to: '2026-10-11', topics: ['calendar'] },
 		checks: [says(/\b(nothing|no events?|none|free)\b/i, /date night/i, /17 october|october 17/i)],
 	},
 
@@ -478,6 +552,7 @@ export const CASES: Case[] = [
 		as: 'Ellie',
 		tasks: ELLIE_TASKS,
 		asks: ['What is still open for me this weekend?'],
+		expect: { from: '2026-10-10', to: '2026-10-11', topics: ['tasks'], people: ['Ellie'] },
 		checks: [
 			{
 				// The real answer said "You have nothing open for you this weekend." and then listed
@@ -539,4 +614,86 @@ export const CASES: Case[] = [
 			noDraft('on today', (d) => d.input.date === '2026-10-06' || d.input.dueDate === '2026-10-06'),
 		],
 	},
+	// Round 5, asked on a Sunday: "this week" is the coming one.
+	novak({
+		name: 'Sunday: "this week" asked on the week\'s last day is the coming week',
+		as: 'Mara',
+		asks: ['What is on for the family this week?'],
+		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['calendar', 'tasks'] },
+		checks: [
+			says(/parents' evening/i, /football training/i, /swimming lesson/i, /piano lesson/i),
+			says(/nona marija/i, /u13 match/i),
+			neverSays(/date night/i),
+		],
+	}),
+	novak({
+		name: 'pick-up: "pick up Leo on Thursday" shows the swimming lesson and its note',
+		as: 'Mara',
+		asks: ['Do I need to pick up Leo on Thursday?'],
+		expect: { from: '2026-10-22', to: '2026-10-22', topics: ['calendar'], people: ['Leo'] },
+		checks: [says(/swimming lesson/i, /17:30/), neverSays(/\bno events?\b/i)],
+	}),
+	novak({
+		name: "dinner elsewhere: Friday's dinner at Nona Marija's, with nothing in the meal plan",
+		as: 'Ivy',
+		asks: ['what is for dinner on friday?'],
+		expect: { from: '2026-10-23', to: '2026-10-23', topics: ['meals', 'calendar'] },
+		checks: [says(/nona marija/i)],
+	}),
+	novak({
+		name: "notes: what to bring to Saturday's match is in the event's notes",
+		as: 'Ivy',
+		asks: ['what should I bring to the football match on Saturday?'],
+		expect: { from: '2026-10-24', to: '2026-10-24', topics: ['calendar'], people: ['Ivy'] },
+		checks: [says(/shin pads/i, /white shirt/i)],
+	}),
+	novak({
+		name: 'waiting: a request from Leo and a Quick add card wait for Mara',
+		as: 'Mara',
+		drafts: [
+			{
+				by: 'Leo',
+				action: 'calendar.createEvent',
+				input: {
+					title: "Sleepover at Max's",
+					date: '2026-10-30',
+					startTime: '18:00',
+					memberIds: [],
+				},
+			},
+			{
+				by: 'quick-add',
+				action: 'lists.addTask',
+				input: { title: 'Buy a recorder for music class' },
+				summary: 'School letter',
+			},
+		],
+		asks: ['Is anything still waiting for me?'],
+		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['suggestions'], people: ['Mara'] },
+		checks: [says(/sleepover/i, /recorder/i)],
+	}),
+	novak({
+		name: 'nothing this weekend: the next event is Date night on Saturday 31 October',
+		as: 'Tom',
+		// On a Wednesday, so the weekend is still to come.
+		today: '2026-10-21',
+		events: NOVAK_WEEK.filter((e) => e.title === "Parents' evening" || e.title === 'Date night'),
+		asks: ["What's on this weekend?"],
+		expect: { from: '2026-10-24', to: '2026-10-25', topics: ['calendar'] },
+		checks: [says(/\bnothing\b/i, /date night/i, /31 October/i)],
+	}),
+	novak({
+		name: 'child: Leo (6) gets one short sentence',
+		as: 'Leo',
+		asks: ['what do I have this week?'],
+		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['calendar'], people: ['Leo'] },
+		checks: [says(/swimming lesson/i), shortLead(1, 20)],
+	}),
+	novak({
+		name: 'no ISO dates: when a task of Leo is due',
+		as: 'Leo',
+		asks: ['when is my reading homework due?'],
+		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['tasks'], people: ['Leo'] },
+		checks: [says(/practise reading/i, /monday/i)],
+	}),
 ];

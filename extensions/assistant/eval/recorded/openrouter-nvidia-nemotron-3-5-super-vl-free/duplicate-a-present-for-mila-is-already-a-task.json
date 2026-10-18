@@ -1,0 +1,41 @@
+{
+	"case": "duplicate: a present for Mila is already a task",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"tasks",
+					"shopping"
+				],
+				"people": [
+					{
+						"said": "Mila"
+					}
+				],
+				"about": [
+					"buy",
+					"present"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I suggested adding the task “Buy a present for Mila” to the family to-do list. It’s waiting for someone in the household to approve it before it’s added. It may already be on the list.",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Buy a present for Mila"
+					}
+				}
+			]
+		}
+	]
+}

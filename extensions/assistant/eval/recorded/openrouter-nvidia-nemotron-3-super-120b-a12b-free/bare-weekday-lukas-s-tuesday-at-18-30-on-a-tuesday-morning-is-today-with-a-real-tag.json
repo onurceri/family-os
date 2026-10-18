@@ -1,0 +1,96 @@
+{
+	"case": "bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "on Tuesday at 18:30",
+					"kind": "day",
+					"day": {
+						"text": "Tuesday at 18:30",
+						"weekday": 2
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pick Noah up after football"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "on Tuesday at 18:30",
+					"kind": "day",
+					"day": {
+						"text": "Tuesday",
+						"weekday": 2
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pick Noah up after football"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I’ve created a suggestion for a reminder on **Tuesday 6 October at 18:30** titled “Pick Noah up after football” (tagged football, for Lukas and Noah). It’s waiting for approval.\n\nOn **Saturday 10 October** there are no events scheduled. The next item after that is “Sunday planning” on Sunday 11 October.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"from": "2026-10-10",
+						"to": "2026-10-10"
+					}
+				},
+				{
+					"name": "calendar_createEvent",
+					"input": {
+						"title": "Pick Noah up after football",
+						"date": "2026-10-06",
+						"startTime": "18:30",
+						"endTime": "19:30",
+						"memberIds": [
+							"member:2",
+							"member:4"
+						],
+						"tags": [
+							"football"
+						]
+					}
+				}
+			]
+		}
+	]
+}

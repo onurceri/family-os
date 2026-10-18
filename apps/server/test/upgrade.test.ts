@@ -122,8 +122,12 @@ it('keeps the answers the assistant wrote before its suggestion lines were kept 
 	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
 		scope,
 		migrations: Object.fromEntries(
+			// Before the suggestion lines, and the answer cards, were kept apart from the words.
 			Object.entries(migrations).filter(
-				([name]) => `${scope}/${name}` !== 'assistant/0003_message_suggested',
+				([name]) =>
+					!['assistant/0003_message_suggested', 'assistant/0004_message_card'].includes(
+						`${scope}/${name}`,
+					),
 			),
 		),
 	}));

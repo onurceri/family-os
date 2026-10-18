@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.5",
+	"sdk": "0.8.6",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -165,6 +165,8 @@
 			"isValidDate",
 			"isValidTimeZone",
 			"lastDayOfMonth",
+			"namedMonths",
+			"namedWeekdays",
 			"nextDate",
 			"nextEveryDue",
 			"numericDateOrder",
@@ -181,6 +183,7 @@
 			"weekdayNames",
 			"weekdayOf",
 			"weekdaysAfterDateChange",
+			"writtenDates",
 			"zoned"
 		],
 		"@famos/api-client": ["createApiClient", "isApiError", "unwrap"],

@@ -113,8 +113,11 @@ export function createFakeIdentity(): FakeIdentity {
 /** A scripted response: the output, an error to throw, or a function of the request. */
 export type FakeLlmResponse = unknown | Error | ((request: LlmObjectRequest<unknown>) => unknown);
 
-/** One step of a scripted chat turn: call a tool by name with an input, or answer in text. */
-export type FakeChatStep = { tool: string; input?: unknown } | { text: string };
+/**
+ * One step of a scripted chat turn: call a tool by name with an input, answer in text, or fail
+ * with an error after the steps before it (a model that called tools and then timed out).
+ */
+export type FakeChatStep = { tool: string; input?: unknown } | { text: string } | { error: Error };
 /** A scripted chat turn: steps in order, an error to throw, or a function of the request. */
 export type FakeChatTurn =
 	| readonly FakeChatStep[]
@@ -240,6 +243,7 @@ export function createFakeLlm(): FakeLlm {
 			const toolCalls: { name: string; ok: boolean }[] = [];
 			let rounds = 0;
 			for (const step of steps) {
+				if ('error' in step) throw step.error;
 				if ('text' in step) {
 					const delta = (text ? '\n\n' : '') + step.text;
 					for (const piece of delta.match(/\S+\s*|\s+/g) ?? []) request.onText?.(piece);

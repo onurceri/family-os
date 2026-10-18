@@ -270,6 +270,77 @@ export interface operations {
                                 draftId?: string;
                             }[];
                             suggested: string[];
+                            card: {
+                                understood: {
+                                    topics: ("calendar" | "tasks" | "shopping" | "meals" | "chores" | "records" | "pets" | "vehicles" | "home" | "board" | "suggestions")[];
+                                    people: string[];
+                                    everyone: boolean;
+                                    unmatched: string[];
+                                    span: {
+                                        /** @enum {string} */
+                                        key: "today" | "day" | "this_week" | "coming_days" | "next_week" | "weekend" | "month" | "until" | "range";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    fallback: boolean;
+                                    mismatches?: {
+                                        date: string;
+                                        said: number;
+                                    }[];
+                                };
+                                sections: {
+                                    /** @enum {string} */
+                                    topic: "calendar" | "tasks" | "shopping" | "meals" | "chores" | "records" | "pets" | "vehicles" | "home" | "board" | "suggestions";
+                                    items: {
+                                        /** @enum {string} */
+                                        kind: "event" | "task" | "shopping_list" | "chore" | "meal" | "duty" | "note" | "suggestion";
+                                        title: string;
+                                        date?: string;
+                                        time?: string;
+                                        endDate?: string;
+                                        endTime?: string;
+                                        allDay?: boolean;
+                                        people: string[];
+                                        notes?: string;
+                                        /** @enum {string} */
+                                        status?: "past" | "now" | "upcoming" | "overdue" | "pinned" | "waiting" | "failed";
+                                        place?: string;
+                                        detail?: string;
+                                        forOthers?: boolean;
+                                    }[];
+                                    truncated: boolean;
+                                    hidden?: number;
+                                    next?: {
+                                        /** @enum {string} */
+                                        kind: "event" | "task" | "shopping_list" | "chore" | "meal" | "duty" | "note" | "suggestion";
+                                        title: string;
+                                        date?: string;
+                                        time?: string;
+                                        endDate?: string;
+                                        endTime?: string;
+                                        allDay?: boolean;
+                                        people: string[];
+                                        notes?: string;
+                                        /** @enum {string} */
+                                        status?: "past" | "now" | "upcoming" | "overdue" | "pinned" | "waiting" | "failed";
+                                        place?: string;
+                                        detail?: string;
+                                        forOthers?: boolean;
+                                    };
+                                }[];
+                                notHere: {
+                                    /** @enum {string} */
+                                    topic: "calendar" | "tasks" | "shopping" | "meals" | "chores" | "records" | "pets" | "vehicles" | "home" | "board" | "suggestions";
+                                    /** @enum {string} */
+                                    why: "not_installed" | "closed_to_ai" | "not_allowed";
+                                }[];
+                                lead: {
+                                    kept: boolean;
+                                    /** @enum {string|null} */
+                                    check: "iso_date" | "handle" | "unknown_date" | "wrong_weekday" | "unknown_title" | "nothing_over_items" | "too_long" | "empty" | "failed" | null;
+                                };
+                                text: string[];
+                            } | null;
                             /** @enum {string} */
                             status: "pending" | "streaming" | "done" | "failed";
                             errorCode: string | null;
@@ -404,6 +475,11 @@ export interface operations {
                     /** @description Omit to start a new thread */
                     threadId?: string;
                     text: string;
+                    /**
+                     * @description Where the answer is read; the app by default
+                     * @enum {string}
+                     */
+                    via?: "app" | "chat";
                 };
             };
         };

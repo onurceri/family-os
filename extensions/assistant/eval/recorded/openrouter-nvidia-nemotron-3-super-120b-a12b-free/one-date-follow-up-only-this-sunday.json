@@ -1,0 +1,97 @@
+{
+	"case": "one date: follow-up \"Only this Sunday\"",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Sunday",
+					"kind": "day",
+					"day": {
+						"text": "Sunday",
+						"weekday": 7
+					}
+				},
+				"people": [],
+				"about": [
+					"planning"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I’ve suggested moving the “Sunday planning” event on Sunday 2026‑10‑11 from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval by someone in the household.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Sunday planning"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"occurrence": "2026-10-11",
+						"label": "Sunday planning",
+						"startTime": "18:00",
+						"endTime": "18:30"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Only this Sunday",
+					"kind": "day",
+					"day": {
+						"text": "Only this Sunday",
+						"weekday": 7
+					}
+				},
+				"people": []
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I’ve suggested moving the “Sunday planning” event on Sunday 11 October from 19:30‑20:00 to 18:00‑18:30. The change is only for this occurrence and is waiting for approval by someone in the household.\n\nSuggested, not added yet: Change an event: Sunday planning.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Sunday planning",
+						"from": "2026-10-06",
+						"to": "2026-10-11"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"occurrence": "1791739800000",
+						"label": "Sunday planning",
+						"startTime": "18:00",
+						"endTime": "18:30"
+					}
+				}
+			]
+		}
+	]
+}

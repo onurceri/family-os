@@ -52,3 +52,19 @@ export function createHandleScrubber(name: (handle: string) => string): HandleSc
 export function scrubHandles(text: string, name: (handle: string) => string): string {
 	return text.replace(HANDLE, (handle) => name(handle)).replace(EMPHASIS, '');
 }
+
+/** Tool calls some models write out as text when a step offers no tools. */
+const TOOL_MARKUP = /<tool_call>[\s\S]*?(?:<\/tool_call>|$)|<function=[\s\S]*?(?:<\/function>|$)/g;
+
+/** The answer without tool calls written out as text: they are no words for a person. */
+export const withoutToolMarkup = (text: string): string => text.replace(TOOL_MARKUP, '').trim();
+
+const RECORD_HANDLE = /(?<![\p{L}\p{N}_])[a-z][a-z0-9_]*:\d+(?!\d)/gu;
+
+/**
+ * A complete answer with each handle of a record (`shop_item:3`) the turn knows replaced by
+ * `name` (its title, or a neutral word); `name` returns null for what is no handle of the turn.
+ */
+export function scrubRecordHandles(text: string, name: (handle: string) => string | null): string {
+	return text.replace(RECORD_HANDLE, (handle) => name(handle) ?? handle);
+}

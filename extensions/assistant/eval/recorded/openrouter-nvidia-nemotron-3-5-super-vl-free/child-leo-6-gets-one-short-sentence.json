@@ -1,0 +1,38 @@
+{
+	"case": "child: Leo (6) gets one short sentence",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar",
+					"tasks"
+				],
+				"span": {
+					"said": "this week",
+					"kind": "week",
+					"day": {
+						"text": "this week",
+						"week": "this"
+					}
+				},
+				"people": [
+					{
+						"said": "I"
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		}
+	]
+}

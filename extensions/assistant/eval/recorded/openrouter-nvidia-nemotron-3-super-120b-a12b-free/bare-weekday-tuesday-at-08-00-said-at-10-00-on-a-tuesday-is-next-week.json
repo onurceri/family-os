@@ -1,0 +1,54 @@
+{
+	"case": "bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"chores"
+				],
+				"span": {
+					"said": "on Tuesday at 08:00",
+					"kind": "day",
+					"day": {
+						"text": "Tuesday at 08:00",
+						"weekday": 2
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"put the bins out"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I’ve suggested a task for you to put the bins out on Tuesday 13 October 2026 at 08:00. It’s waiting for approval.",
+			"toolCalls": [
+				{
+					"name": "core_today",
+					"input": {}
+				},
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Put the bins out",
+						"assigneeId": "member:2",
+						"dueDate": "2026-10-13",
+						"dueTime": "08:00"
+					}
+				}
+			]
+		}
+	]
+}

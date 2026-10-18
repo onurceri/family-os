@@ -4,6 +4,7 @@ import { systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
 let k: TestKernel;
@@ -44,7 +45,7 @@ describe('the words the family already uses', () => {
 	it('lists the calendar tags, so a suggestion reuses one instead of inventing one', async () => {
 		// The real model tagged a pick-up reminder "reminder", a tag the family did not have: the
 		// tags were only behind a tool it never called.
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'calendar_createEvent',
 				input: {
@@ -67,7 +68,7 @@ describe('the words the family already uses', () => {
 			{ extensionId: 'calendar', access: 'off' },
 			systemActor('test'),
 		);
-		k.llm.respondChat([{ text: 'Nothing.' }]);
+		loopTurns(k.llm, [{ text: 'Nothing.' }]);
 		const system = await ask('What tags do we use?');
 		expect(system).not.toContain('Existing calendar tags');
 		expect(system).not.toContain('school');
@@ -78,7 +79,7 @@ describe('what the tools cover', () => {
 	it('names the areas, so a question about another gets a plain answer', async () => {
 		// After Home was removed, the real model said "I can tell you what is due for the flat"
 		// and asked for the flat's name, with no tool that could look it up.
-		k.llm.respondChat([{ text: 'I can tell you what is due for the flat. What is its name?' }]);
+		loopTurns(k.llm, [{ text: 'I can tell you what is due for the flat. What is its name?' }]);
 		const system = await ask('Where do we keep the flat papers, and what is due this month?');
 		expect(system).toContain('Your tools cover these areas of FamilyOS: calendar, lists. When');
 		expect(system).toContain('Never ask the person a question back about it');

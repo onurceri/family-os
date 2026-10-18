@@ -8,6 +8,7 @@ import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
 import { toolName } from '../src/server/tools.ts';
+import { loopTurns } from './reading.ts';
 
 const TZ = 'Europe/Istanbul';
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
@@ -77,7 +78,7 @@ describe('the tools offered to the model', () => {
 			'Move the swimming on Tuesday 20 October to 18:00',
 			'Tick off the bananas',
 		]) {
-			k.llm.respondChat([{ text: 'Ok.' }]);
+			loopTurns(k.llm, [{ text: 'Ok.' }]);
 			await ask(question);
 			const offered = k.llm.chatCalls.at(-1)?.tools.map((t) => t.name) ?? [];
 			expect(offered.toSorted()).toEqual(every.toSorted());
@@ -88,7 +89,7 @@ describe('the tools offered to the model', () => {
 	});
 
 	it('come with a rule against claiming a suggestion no tool made', async () => {
-		k.llm.respondChat([{ text: 'Ok.' }]);
+		loopTurns(k.llm, [{ text: 'Ok.' }]);
 		await ask('Move the swimming');
 		expect(k.llm.chatCalls[0]?.system).toContain('only when a tool returned status "drafted"');
 	});
@@ -104,7 +105,7 @@ describe('one date of a timed repeating event', () => {
 			endTime: '16:45',
 			recurrence: { freq: 'weekly', byDay: ['TH'] },
 		});
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { text: 'piano' } },
 			{
 				tool: 'calendar_changeEvent',
@@ -154,7 +155,7 @@ describe('finding events', () => {
 			startTime: '10:00',
 			memberIds: [lukas.member.id],
 		});
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'calendar_findEvents',
 				input: { text: 'swimming', from: '2026-10-13', to: '2026-10-13', members: ['member:2'] },
@@ -172,7 +173,7 @@ describe('finding events', () => {
 
 	it('takes `from` alone as one day, and names what it got when it cannot search', async () => {
 		await createEvent({ title: 'Swim', date: '2026-10-13', startTime: '17:00' });
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { from: '2026-10-13' } },
 			{ tool: 'calendar_findEvents', input: { to: '2026-10-13' } },
 			{ text: 'Ok.' },
@@ -186,7 +187,7 @@ describe('finding events', () => {
 
 describe('what the model reads after a suggestion', () => {
 	it('is a sentence built from the card title and its subject', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addTask',
 				input: { title: 'Pay the swim club fee', dueDate: '2026-10-20' },
@@ -211,7 +212,7 @@ describe('what the model reads after a suggestion', () => {
 			{ title: 'Buy a birthday present for Mila', dueDate: '2026-10-20' },
 			ayse.actor,
 		);
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_addTask', input: { title: 'Buy a present for Mila' } },
 			{ text: 'It may be there already.' },
 		]);
@@ -223,7 +224,7 @@ describe('what the model reads after a suggestion', () => {
 
 	it('names the event already there that the person can move instead, and moves nothing', async () => {
 		await createEvent({ title: 'Regional Gala', date: '2026-11-07', startTime: '18:00' });
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'calendar_createEvent',
 				input: { title: 'Regional gala', date: '2026-11-14', startTime: '09:00' },
@@ -262,7 +263,7 @@ describe('finding one item in a long shopping list', () => {
 			k.clock.advance(1000);
 		}
 		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Cheddar' }] }, ayse.actor);
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: {} },
 			{ tool: 'lists_shoppingList', input: { text: 'cheddar cheese' } },
 			{ text: 'Ok.' },
@@ -326,7 +327,7 @@ describe('an overview the person asks for', () => {
 	it('tells the model that "give me" is who gets the answer, not a person filter', async () => {
 		// What the real model did for "Give me an overview of this week": it filtered both tools
 		// by the asker and left out the family's other events and open tasks.
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'calendar_findEvents',
 				input: { from: '2026-10-12', to: '2026-10-18', members: ['member:1'] },

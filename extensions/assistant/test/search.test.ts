@@ -3,6 +3,7 @@ import { systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 /** The assistant finds things by meaning with `core.searchFamily`, only when set up. */
 let k: TestKernel;
@@ -32,7 +33,7 @@ const tools = () => k.llm.chatCalls.at(-1)?.tools.map((t) => t.name) ?? [];
 
 describe('search as a tool', () => {
 	it('is not offered without an embedding model', async () => {
-		k.llm.respondChat([{ text: 'Hello' }]);
+		loopTurns(k.llm, [{ text: 'Hello' }]);
 		await ask('hi');
 		expect(tools()).toContain('calendar_findEvents');
 		expect(tools()).not.toContain('core_searchFamily');
@@ -59,7 +60,7 @@ describe('search as a tool', () => {
 		);
 		await k.worker.drain();
 
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'core_searchFamily', input: { query: 'boiler warranty' } },
 			{ text: 'There is a boiler service visit on 20 October.' },
 		]);
@@ -96,7 +97,7 @@ describe('search as a tool', () => {
 
 		// The chat model is not local, the embedding model is: the area is indexed but closed to it.
 		k.llm.privacy.local = false;
-		k.llm.respondChat([{ tool: 'core_searchFamily', input: { query: 'boiler service' } }]);
+		loopTurns(k.llm, [{ tool: 'core_searchFamily', input: { query: 'boiler service' } }]);
 		await ask('boiler?');
 		expect(k.llm.chatTrace.find((t) => t.tool === 'core_searchFamily')?.result ?? '').not.toContain(
 			'Boiler service visit',

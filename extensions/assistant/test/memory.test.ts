@@ -5,6 +5,7 @@ import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Message, ThreadDetail } from '../src/contract/index.ts';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 // Memory through the assistant.
 type Who = Awaited<ReturnType<TestKernel['member']>>;
@@ -65,7 +66,7 @@ const asAi = (who: Who): Actor => ({
 
 describe('memory', () => {
 	async function remember(text = 'I am vegetarian') {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'core_addMemory', input: { text } },
 			{ text: 'I suggested keeping that; please confirm it.' },
 		]);
@@ -95,13 +96,13 @@ describe('memory', () => {
 		const { draftId } = await remember();
 		await k.runner.approveDraft(draftId, ayse.actor);
 
-		k.llm.respondChat([{ text: 'Noted' }]);
+		loopTurns(k.llm, [{ text: 'Noted' }]);
 		await ask(ayse, 'What should we cook?');
 		expect(systemPrompt()).toContain('<memory>');
 		expect(systemPrompt()).toContain('I am vegetarian');
 
 		// Another member's thread, and an admin's, never carry it.
-		k.llm.respondChat([{ text: 'Pasta' }], [{ text: 'Soup' }]);
+		loopTurns(k.llm, [{ text: 'Pasta' }], [{ text: 'Soup' }]);
 		await ask(can, 'What should we cook?');
 		expect(JSON.stringify(k.llm.chatCalls.at(-1))).not.toContain('vegetarian');
 		await ask(admin, 'What should we cook?');
@@ -112,7 +113,7 @@ describe('memory', () => {
 		const { draftId } = await remember();
 		await k.runner.approveDraft(draftId, ayse.actor);
 		k.llm.privacy.sendPeople = false;
-		k.llm.respondChat([{ text: 'Pasta' }]);
+		loopTurns(k.llm, [{ text: 'Pasta' }]);
 		await ask(ayse, 'What should we cook?');
 		expect(systemPrompt()).not.toContain('vegetarian');
 	});
@@ -124,7 +125,7 @@ describe('memory', () => {
 				{ text: `note ${String(i).padStart(2, '0')} ${'x'.repeat(200)}` },
 				ayse.actor,
 			);
-		k.llm.respondChat([{ text: 'ok' }]);
+		loopTurns(k.llm, [{ text: 'ok' }]);
 		await ask(ayse, 'hello');
 		const prompt = systemPrompt();
 		expect(prompt).toContain('note 29');

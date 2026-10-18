@@ -5,6 +5,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 const TZ = 'Europe/Istanbul';
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
@@ -53,7 +54,7 @@ async function createEvent(input: Record<string, unknown>) {
 describe('an assistant turn never acts on the closest thing', () => {
 	it('refuses "Move the Delft board meeting" sent to "Delft project call" with no label', async () => {
 		await createEvent({ title: 'Delft project call', date: '2026-01-20', startTime: '10:00' });
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			// The search has no dates: it looks from today on.
 			{ tool: 'calendar_findEvents', input: { text: 'delft' } },
 			// Real model output: the closest event, with no label.
@@ -84,7 +85,7 @@ describe('an assistant turn never acts on the closest thing', () => {
 		});
 		const milk = items.find((i: { title: string }) => i.title === 'Milk');
 		await k.runner.invoke('lists.checkShoppingItem', { id: milk.id, done: true }, ayse.actor);
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: {} },
 			{ tool: 'lists_checkShoppingItem', input: { id: 'shop_item:1', done: true, label: 'Milk' } },
 			{
@@ -120,13 +121,13 @@ describe('a follow-up in the same thread', () => {
 
 	it('moves the date it just looked up instead of adding a second event', async () => {
 		await weeklyPlanning();
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { text: 'planning' } },
 			{ text: 'Sunday planning is at 20:00. Shall I move it?' },
 		]);
 		const sent = await ask(ayse, 'Move Sunday planning to 18:00');
 
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			// Real model output of the follow-up: it still knows the handle of the first turn.
 			{
 				tool: 'calendar_changeEvent',
@@ -162,7 +163,7 @@ describe('a follow-up in the same thread', () => {
 
 	it('does not accept a handle the thread never showed', async () => {
 		await weeklyPlanning();
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_changeEvent', input: { id: 'cal_event:1', startTime: '18:00' } },
 			{ text: 'I could not.' },
 		]);
@@ -173,12 +174,12 @@ describe('a follow-up in the same thread', () => {
 
 	it('keeps the handles of a thread private to that thread', async () => {
 		await weeklyPlanning();
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { text: 'planning' } },
 			{ text: 'It is at 20:00.' },
 		]);
 		await ask(ayse, 'When is Sunday planning?');
-		k.llm.respondChat([{ text: 'Hello.' }]);
+		loopTurns(k.llm, [{ text: 'Hello.' }]);
 		await ask(ayse, 'Hi');
 		expect(k.llm.chatCalls.at(-1)?.system).not.toContain('cal_event:1');
 	});
@@ -199,7 +200,7 @@ describe('what the assistant says about a suggestion', () => {
 			},
 			ayse.actor,
 		);
-		k.llm.respondChat(addMilk);
+		loopTurns(k.llm, addMilk);
 		await ask(can, 'Add milk to the shopping list');
 		const result = k.llm.chatTrace.at(-1)?.result ?? '';
 		expect(result).toContain('It will be added automatically in a moment');
@@ -207,7 +208,7 @@ describe('what the assistant says about a suggestion', () => {
 	});
 
 	it('says a person approves it when auto-approval is off', async () => {
-		k.llm.respondChat(addMilk);
+		loopTurns(k.llm, addMilk);
 		await ask(can, 'Add milk to the shopping list');
 		const result = k.llm.chatTrace.at(-1)?.result ?? '';
 		expect(result).toContain('Suggested, not added yet');
@@ -216,7 +217,7 @@ describe('what the assistant says about a suggestion', () => {
 	});
 
 	it('says someone else approves it when the asker cannot, in words for the asker', async () => {
-		k.llm.respondChat(addMilk);
+		loopTurns(k.llm, addMilk);
 		await ask(kid, 'Add milk to the shopping list');
 		const result = k.llm.chatTrace.at(-1)?.result ?? '';
 		const { say, note } = JSON.parse(
@@ -231,7 +232,7 @@ describe('what the assistant says about a suggestion', () => {
 
 	it('says to the asker that some of it may already be there', async () => {
 		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Oat milk' }] }, ayse.actor);
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addShoppingItems',
 				input: { items: [{ title: 'Oat milk' }, { title: 'Loaf of bread' }] },

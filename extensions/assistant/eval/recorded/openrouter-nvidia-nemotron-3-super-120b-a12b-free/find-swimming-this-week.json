@@ -1,0 +1,36 @@
+{
+	"case": "find: swimming this week",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "this week",
+					"kind": "week",
+					"day": {
+						"text": "this week",
+						"week": "this"
+					}
+				},
+				"people": [],
+				"about": [
+					"swimming"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Swimming is on Tuesday, October 6, 6:00 PM–7:30 PM and Thursday, October 8, 5:00 PM–6:00 PM.",
+			"toolCalls": []
+		}
+	]
+}

@@ -1,0 +1,84 @@
+{
+	"case": "bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"tasks"
+				],
+				"span": {
+					"said": "on Tuesday",
+					"kind": "day",
+					"day": {
+						"text": "Tuesday",
+						"weekday": 2
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pack",
+					"swim bag"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"tasks"
+				],
+				"span": {
+					"said": "on Tuesday",
+					"kind": "day",
+					"day": {
+						"text": "Tuesday",
+						"weekday": 2
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pack",
+					"swim bag"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I've suggested adding a task \"Pack swim bag\" for today, Tuesday 6 October. It's waiting for someone else in the household to approve it before it's added to your list.",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Pack swim bag",
+						"assigneeId": "member:3",
+						"dueDate": "2026-10-06",
+						"notes": "Reminder to pack swim bag on Tuesday"
+					}
+				}
+			]
+		}
+	]
+}

@@ -9,6 +9,7 @@ import en from '../src/messages/en.json' with { type: 'json' };
 import tr from '../src/messages/tr.json' with { type: 'json' };
 import assistant from '../src/server/index.ts';
 import { namedBy, saidBy, withoutUnnamedPeople } from '../src/server/tools.ts';
+import { loopTurns } from './reading.ts';
 
 /*
  * What gpt-4.1-mini sent as tool calls, word for word, in the assistant eval: it fills every
@@ -70,7 +71,7 @@ const drafts = () =>
 
 describe('references a model writes its own way', () => {
 	it('reads a member handle without its colon, a bare number and a name', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addTask',
 				input: { title: 'Pack swim bag', assigneeId: 'member_2', dueDate: '2026-10-06' },
@@ -104,7 +105,7 @@ describe('references a model writes its own way', () => {
 				text: 'bananas',
 			},
 		};
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_shoppingList', input: { list: 'Groceries', listId: '', text: 'bananas' } },
 			invented,
 			invented,
@@ -130,7 +131,7 @@ describe('references a model writes its own way', () => {
 describe('a note to remember', () => {
 	it('is refused when it is not what the person said', async () => {
 		// The model "remembered" where the flat papers are, which nobody said.
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'core_addMemory',
 				input: { text: 'Flat papers are kept in the living room cabinet.' },
@@ -143,7 +144,7 @@ describe('a note to remember', () => {
 	});
 
 	it('is suggested when it says what the person said', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'core_addMemory', input: { text: 'Sofia is vegetarian' } },
 			{ text: 'Suggested.' },
 		]);
@@ -176,7 +177,7 @@ describe('the words for the thing to change', () => {
 		);
 		// xing4.0 for "Change Dental cleaning to 10:00": it found the dentist and labelled the change
 		// with that title, which the runner's own check of label against title lets through.
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { from: '2026-10-05', to: '2026-10-11' } },
 			{
 				tool: 'calendar_changeEvent',
@@ -197,7 +198,8 @@ describe('the words for the thing to change', () => {
 			{ title: 'Dentist checkup', date: '2026-10-08', startTime: '09:30' },
 			systemActor('test'),
 		);
-		k.llm.respondChat(
+		loopTurns(
+			k.llm,
 			[
 				{ tool: 'calendar_findEvents', input: { text: 'Dental cleaning' } },
 				{ tool: 'calendar_findEvents', input: { from: '2026-10-05', to: '2026-10-11' } },
@@ -270,7 +272,7 @@ describe('people on a change', () => {
 
 	it('never takes people the person did not name', async () => {
 		await sundayPlanning();
-		k.llm.respondChat([find, move(['Sofia']), { text: 'Suggested.' }]);
+		loopTurns(k.llm, [find, move(['Sofia']), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00');
 		const [change] = await changes();
 		expect(change?.input.startTime).toBe('18:00');
@@ -279,28 +281,28 @@ describe('people on a change', () => {
 
 	it('drops an empty list of people too', async () => {
 		await sundayPlanning();
-		k.llm.respondChat([find, move([]), { text: 'Suggested.' }]);
+		loopTurns(k.llm, [find, move([]), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00');
 		expect((await changes())[0]?.input).not.toHaveProperty('memberIds');
 	});
 
 	it('clears the people when the message says it is for everyone', async () => {
 		await sundayPlanning();
-		k.llm.respondChat([find, move([]), { text: 'Suggested.' }]);
+		loopTurns(k.llm, [find, move([]), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00 and make it for the whole family');
 		expect((await changes())[0]?.input.memberIds).toEqual([]);
 	});
 
 	it('never takes only the asker for "everyone"', async () => {
 		await sundayPlanning();
-		k.llm.respondChat([find, move(['Sofia']), { text: 'Suggested.' }]);
+		loopTurns(k.llm, [find, move(['Sofia']), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00 for everyone');
 		expect((await changes())[0]?.input).not.toHaveProperty('memberIds');
 	});
 
 	it('takes the people the message names, and the asker who says "me"', async () => {
 		await sundayPlanning();
-		k.llm.respondChat([find, move(['Ellie', 'Sofia']), { text: 'Suggested.' }]);
+		loopTurns(k.llm, [find, move(['Ellie', 'Sofia']), { text: 'Suggested.' }]);
 		await ask('Move Sunday planning to 18:00, for Ellie and me');
 		expect((await changes())[0]?.input.memberIds).toEqual([ellie.member.id, sofia.member.id]);
 	});

@@ -1,0 +1,33 @@
+{
+	"case": "tick off: \"the bananas\" on a long list",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [],
+				"about": [
+					"bananas"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "<tool_call>\n<function=lists_shoppingListItem>\n<parameter=listId>\nshop_list:2\n</parameter>\n<parameter=itemId>\nshop_item:63\n</parameter>\n<parameter=bought>\nTrue\n</parameter>\n</function>\n</tool_call>",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				}
+			]
+		}
+	]
+}

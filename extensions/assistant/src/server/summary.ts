@@ -30,7 +30,7 @@ export const summarizeJob = defineJob({
 		if (!thread) return;
 		const messages = await db
 			.selectFrom('assistant_messages')
-			.select(['role', 'content', 'suggested'])
+			.select(['role', 'content', 'suggested', 'card'])
 			.where('thread_id', '=', threadId)
 			.where('status', '=', 'done')
 			.orderBy('created_at')

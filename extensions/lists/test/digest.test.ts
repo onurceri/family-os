@@ -80,12 +80,21 @@ describe('lists.tasksDigest', () => {
 		await task({ title: 'Undated' });
 		await task({ title: 'Later', dueDate: '2026-01-20' });
 		const week = await digest('lists.tasksDigest', { from: '2026-01-01', to: '2026-01-07' });
-		expect(titles(week)).toEqual(['2025-12-30 Late fee', '2026-01-05 School trip form']);
+		// What has no due date is still to do: after the rest, on the span's first day ahead.
+		expect(titles(week)).toEqual([
+			'2025-12-30 Late fee',
+			'2026-01-05 School trip form',
+			'2026-01-01 Undated',
+		]);
 		expect(week.items[0]?.status).toBe('overdue');
 		expect(week.items[1]).toMatchObject({ time: '08:00', notes: 'Sign page 2', people: [] });
+		expect(week.items[2]?.extra).toEqual({ undated: 'yes' });
 		// Next week holds nothing late: what is late is today's.
 		const next = await digest('lists.tasksDigest', { from: '2026-01-05', to: '2026-01-11' });
-		expect(titles(next)).toEqual(['2026-01-05 School trip form']);
+		expect(titles(next)).toEqual(['2026-01-05 School trip form', '2026-01-05 Undated']);
+		// A span that is over holds no open task without a date.
+		const past = await digest('lists.tasksDigest', { from: '2025-12-01', to: '2025-12-07' });
+		expect(titles(past)).toEqual([]);
 	});
 
 	it('keeps the tasks of the people asked about and the ones anyone may do', async () => {

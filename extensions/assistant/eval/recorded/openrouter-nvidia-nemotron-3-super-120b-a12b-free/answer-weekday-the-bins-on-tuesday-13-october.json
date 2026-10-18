@@ -1,0 +1,42 @@
+{
+	"case": "answer weekday: the bins on Tuesday 13 October",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"chores",
+					"calendar",
+					"tasks"
+				],
+				"span": {
+					"said": "this week",
+					"kind": "week",
+					"day": {
+						"text": "this week",
+						"week": "this"
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"bins going out"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "No bins tonight; nothing this week; bins go out Tuesday, October 13.",
+			"toolCalls": []
+		}
+	]
+}

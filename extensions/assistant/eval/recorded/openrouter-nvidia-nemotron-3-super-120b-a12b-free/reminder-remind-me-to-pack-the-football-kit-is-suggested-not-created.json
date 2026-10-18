@@ -1,0 +1,95 @@
+{
+	"case": "reminder: \"Remind me to pack the football kit\" is suggested, not created",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"tasks"
+				],
+				"span": {
+					"said": "on Thursday",
+					"kind": "day",
+					"day": {
+						"text": "Thursday",
+						"weekday": 4
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pack",
+					"football kit"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Pack the football kit",
+						"assigneeId": "member:2",
+						"dueDate": "2026-10-08"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"tasks"
+				],
+				"span": {
+					"said": "on Thursday",
+					"kind": "day",
+					"day": {
+						"text": "Thursday",
+						"weekday": 4
+					}
+				},
+				"people": [
+					{
+						"said": "me"
+					}
+				],
+				"about": [
+					"pack",
+					"football kit"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I’ve created a suggestion to add an all‑day event on **Thursday, October 8 (2026‑10‑08)** titled “Pack the football kit” for you. It’s waiting for approval by someone in the household before it’s added to the calendar.",
+			"toolCalls": [
+				{
+					"name": "calendar_createEvent",
+					"input": {
+						"title": "Pack the football kit",
+						"allDay": true,
+						"date": "2026-10-08",
+						"memberIds": [
+							"member:2"
+						]
+					}
+				}
+			]
+		}
+	]
+}

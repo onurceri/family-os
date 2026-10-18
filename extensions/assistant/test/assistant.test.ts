@@ -9,6 +9,7 @@ import type { Message, ThreadDetail } from '../src/contract/index.ts';
 import en from '../src/messages/en.json' with { type: 'json' };
 import assistant from '../src/server/index.ts';
 import { KEEP_VERBATIM } from '../src/server/turn.ts';
+import { loopTurns } from './reading.ts';
 
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
 let k: TestKernel;
@@ -84,7 +85,7 @@ describe('a turn', () => {
 			},
 			ayse.actor,
 		);
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'calendar_findEvents', input: { from: '2026-01-01', to: '2026-01-07' } },
 			{ text: 'Friday 10:30 you have the dentist.' },
 		]);
@@ -137,7 +138,7 @@ describe('a turn', () => {
 	it('tells the model the date, the time and the rest of the week in the family time zone', async () => {
 		// Saturday 2026-10-10, 23:30 in Istanbul is still Saturday 20:30 in UTC.
 		k.clock.set(Date.parse('2026-10-10T20:30:00Z'));
-		k.llm.respondChat([{ text: 'Sunday: nothing yet.' }]);
+		loopTurns(k.llm, [{ text: 'Sunday: nothing yet.' }]);
 		await ask(ayse, 'What is on this week?');
 		const system = k.llm.chatCalls.at(-1)?.system ?? '';
 		expect(system).toContain(
@@ -149,7 +150,7 @@ describe('a turn', () => {
 	it('gives the model the days around the family’s today, also when UTC is still on the day before', async () => {
 		// Tuesday 2026-10-13, 00:30 in Istanbul is still Monday 21:30 in UTC.
 		k.clock.set(Date.parse('2026-10-12T21:30:00Z'));
-		k.llm.respondChat([{ text: 'Tuesday 20 October.' }]);
+		loopTurns(k.llm, [{ text: 'Tuesday 20 October.' }]);
 		await ask(ayse, 'What is on Wednesday 20 October?');
 		const system = k.llm.chatCalls.at(-1)?.system ?? '';
 		expect(system).toContain(
@@ -160,7 +161,7 @@ describe('a turn', () => {
 	});
 
 	it('keeps threads private to their member', async () => {
-		k.llm.respondChat([{ text: 'Hello' }]);
+		loopTurns(k.llm, [{ text: 'Hello' }]);
 		const sent = await ask(ayse, 'Hi');
 		expect(
 			(await k.route('assistant.listThreads').call({ actor: ayse.actor })).map(
@@ -218,7 +219,7 @@ describe('a turn', () => {
 	});
 
 	it('creates a draft for a change, recorded with the member, and applies nothing', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Milk' }] } },
 			{ text: 'I suggested adding milk; someone needs to approve it.' },
 		]);
@@ -271,7 +272,7 @@ describe('a turn', () => {
 	});
 
 	it('maps handles back to ids and refuses invented ones', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addTask',
 				input: { title: 'Pay the fee', assigneeId: 'member:2' },
@@ -304,7 +305,7 @@ describe('a turn', () => {
 			{ extensionId: 'calendar', access: 'local' },
 			ayse.actor,
 		);
-		k.llm.respondChat([{ text: 'a' }], [{ text: 'b' }]);
+		loopTurns(k.llm, [{ text: 'a' }], [{ text: 'b' }]);
 		await ask(ayse, 'What is on this week?');
 		expect(toolNames().some((n) => n.startsWith('calendar_'))).toBe(false);
 		expect(k.llm.chatCalls.at(-1)?.areas).not.toContain('calendar');
@@ -332,7 +333,7 @@ describe('a turn', () => {
 	});
 
 	it('records model errors by code, retrying only the ones that can pass', async () => {
-		k.llm.respondChat(new LlmError('limit_reached', 'out of budget'));
+		loopTurns(k.llm, new LlmError('limit_reached', 'out of budget'));
 		const limited = await ask(ayse, 'one');
 		expect(await reply(ayse, limited)).toMatchObject({
 			status: 'failed',
@@ -341,7 +342,8 @@ describe('a turn', () => {
 
 		// No provider of the model meets the data rules: failed at once, with a reason that names
 		// the option.
-		k.llm.respondChat(
+		loopTurns(
+			k.llm,
 			new LlmError(
 				'data_policy',
 				'No provider of this model meets the data rules: turn off "Only providers that keep no data" in AI privacy, choose another model, or check the privacy settings of the OpenRouter account',
@@ -354,7 +356,7 @@ describe('a turn', () => {
 		});
 		expect(en.failed_data_policy).toContain('Only providers that keep no data');
 
-		k.llm.respondChat(new LlmError('timeout', 'slow'), [{ text: 'second time lucky' }]);
+		loopTurns(k.llm, new LlmError('timeout', 'slow'), [{ text: 'second time lucky' }]);
 		const sent = await ask(ayse, 'two');
 		// The first attempt failed in a way that can pass: the answer is back to waiting.
 		expect(await reply(ayse, sent)).toMatchObject({ status: 'pending', content: '' });
@@ -371,7 +373,7 @@ describe('a turn', () => {
 			),
 		).toBe(true);
 
-		k.llm.respondChat(new LlmError('timeout', 'slow'), new LlmError('timeout', 'slow'));
+		loopTurns(k.llm, new LlmError('timeout', 'slow'), new LlmError('timeout', 'slow'));
 		const hopeless = await ask(ayse, 'three');
 		k.clock.advance(10_000);
 		await k.worker.drain();
@@ -383,7 +385,7 @@ describe('a turn', () => {
 			tool: 'calendar_findEvents',
 			input: { from: `2026-01-${String(i + 1).padStart(2, '0')}`, to: '2026-01-20' },
 		}));
-		k.llm.respondChat([...calls, { text: 'Nothing on those days.' }]);
+		loopTurns(k.llm, [...calls, { text: 'Nothing on those days.' }]);
 		const sent = await ask(ayse, 'loop');
 		const message = await reply(ayse, sent);
 		expect(message).toMatchObject({ status: 'done', content: 'Nothing on those days.' });
@@ -393,7 +395,7 @@ describe('a turn', () => {
 	it('answers a repeated call from the turn and closes the tools when it keeps repeating', async () => {
 		// gpt-4.1-mini sent the same lookup again and again until the step limit, with no answer.
 		const same = { tool: 'calendar_findEvents', input: { from: '2026-01-01', to: '2026-01-02' } };
-		k.llm.respondChat([same, same, same, same, same, { text: 'Nothing then.' }]);
+		loopTurns(k.llm, [same, same, same, same, same, { text: 'Nothing then.' }]);
 		const sent = await ask(ayse, 'loop');
 		const message = await reply(ayse, sent);
 		expect(message).toMatchObject({ status: 'done', content: 'Nothing then.' });
@@ -405,7 +407,7 @@ describe('a turn', () => {
 	});
 
 	it('fails with no_answer when the model ends without any words or suggestions', async () => {
-		k.llm.respondChat([{ tool: 'calendar_findEvents', input: { from: '2026-01-01' } }]);
+		loopTurns(k.llm, [{ tool: 'calendar_findEvents', input: { from: '2026-01-01' } }]);
 		const sent = await ask(ayse, 'quiet');
 		expect(await reply(ayse, sent)).toMatchObject({ status: 'failed', errorCode: 'no_answer' });
 	});
@@ -439,7 +441,7 @@ describe('long threads', () => {
 		);
 		if (first.status !== 'applied') throw new Error('expected applied');
 		const { threadId } = first.output;
-		k.llm.respondChat([{ text: 'reply 0' }]);
+		loopTurns(k.llm, [{ text: 'reply 0' }]);
 		await k.worker.drain();
 		// Many earlier turns (stored directly; each is a pair of messages).
 		const db = k.ctx.db.withTables<{
@@ -470,7 +472,7 @@ describe('long threads', () => {
 				})),
 			)
 			.execute();
-		k.llm.respondChat([{ text: 'reply 1' }]);
+		loopTurns(k.llm, [{ text: 'reply 1' }]);
 		// The summariser runs right after the turn (the test worker drains everything).
 		k.llm.respond({ summary: 'They planned the week.' });
 		const sent = await ask(ayse, 'what now?', threadId);
@@ -492,7 +494,7 @@ describe('long threads', () => {
 		expect(call?.temperature).toBe(0);
 		expect(k.llm.calls.at(-1)?.temperature).toBe(0);
 		// The summary reaches the next turn, as data.
-		k.llm.respondChat([{ text: 'reply 2' }]);
+		loopTurns(k.llm, [{ text: 'reply 2' }]);
 		await ask(ayse, 'and then?', threadId);
 		expect(k.llm.chatCalls.at(-1)?.system).toContain('They planned the week.');
 	});

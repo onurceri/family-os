@@ -1,0 +1,40 @@
+{
+	"case": "tick off: milk already bought, oat milk open",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [],
+				"about": [
+					"milk",
+					"oat milk"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "<tool_call>\n<function=lists_shoppingListMarkBought>\n<parameter=listId>\nshop_list:2\n</parameter>\n<parameter=itemId>\nshop_item:1\n</parameter>\n</function>\n</tool_call>",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				},
+				{
+					"name": "lists_shoppingList",
+					"input": {
+						"listId": "shop_list:1"
+					}
+				}
+			]
+		}
+	]
+}

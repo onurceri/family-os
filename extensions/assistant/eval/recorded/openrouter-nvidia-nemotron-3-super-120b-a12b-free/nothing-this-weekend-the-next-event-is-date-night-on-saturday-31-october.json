@@ -1,0 +1,30 @@
+{
+	"case": "nothing this weekend: the next event is Date night on Saturday 31 October",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar",
+					"tasks"
+				],
+				"span": {
+					"said": "this weekend",
+					"kind": "weekend"
+				},
+				"people": []
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Nothing this weekend; next is Date night (Mara and Tom) on Saturday.",
+			"toolCalls": []
+		}
+	]
+}

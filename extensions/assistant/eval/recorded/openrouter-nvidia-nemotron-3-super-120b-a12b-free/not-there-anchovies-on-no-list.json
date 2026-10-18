@@ -1,0 +1,39 @@
+{
+	"case": "not there: anchovies on no list",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"shopping"
+				],
+				"people": [],
+				"about": [
+					"anchovies"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Anchovies aren’t on any of the family’s shopping lists.",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {
+						"text": "anchovies"
+					}
+				},
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				}
+			]
+		}
+	]
+}

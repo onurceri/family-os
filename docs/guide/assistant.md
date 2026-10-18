@@ -10,9 +10,23 @@ People with the permission **Ask the assistant** can use it. Admins, members and
 - **Find things by meaning** when Search is set up: "which paper is about the boiler warranty?" (see [Search](search.md)).
 - **Suggest changes**: "add milk and bread to the shopping list" creates a suggestion under the answer. Nothing changes until someone approves it.
 
+## Questions
+
+When you ask what there is ("what is on this week?", "do I need to pick up Leo on Thursday?", "what is for dinner on Friday?", "is anything waiting for me?"), FamilyOS answers from the facts themselves:
+
+- The first line says what it understood: the parts it looked in, the people and the days, such as "Calendar · Leo · Thursday, 22 October". If that is not what you meant, ask again in other words.
+- Under it come the facts of each part, written by FamilyOS from what is there, with their notes (what to bring, where to pick someone up). When a part has nothing in those days, it says so and names the next thing: "Nothing this weekend; next: Saturday, 31 October, 19:00: Date night".
+- A question about dinner also shows the calendar of that day, so a dinner somewhere else is there even when the meal plan is empty.
+- A part that is not installed, closed to the assistant, or that you may not see gets a line saying so ("Pets: not installed here").
+- Above the facts, the assistant writes a sentence or two. FamilyOS checks them against the facts first: a date written as numbers, a weekday that does not fit its date, a day or a name that is not in the facts, or "nothing" said about something that is there, and the sentence is left out. The facts below it are always shown.
+
+The sentence is written for the person asking, as their description in the family says: someone described as a young child ("6 years old") gets one short sentence. In [Telegram](telegram.md) the sentence is one line, and the facts follow as plain lines.
+
+A question that names no part ("anything on Friday?") gets the calendar and the tasks of those days. A question that names no days covers the coming seven days.
+
 When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.
 
-It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean. Its own answers are checked the same way: dates reach it with their weekday, and if it still writes a weekday that does not fit its date, FamilyOS puts in the right one.
+It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean. Its own answers are checked the same way: dates reach it with their weekday, and if it still writes a weekday that does not fit its date, FamilyOS puts in the right one. A date it writes as numbers ("2026-10-20") is written out in words in your date format ("Tuesday 20 October"), unless you wrote it that way yourself.
 
 A weekday without a date ("remind me on Thursday", "what is on Saturday?") means the coming one. When it is today's own weekday, it means today while the time you mean is still ahead (or you give no time), and the same day next week once that time has passed. FamilyOS works the date out before the assistant answers, so the same words give the same date every time, and the assistant says which date it used. Say "next week" when you mean the later one.
 

@@ -69,14 +69,15 @@ const openDated = (uow: UnitOfWork) =>
 /**
  * The tasks due in a span, for the people asked about and the tasks anyone may do: each date a
  * task is due on (a repeating one on each of its dates), and what is late when the span holds
- * today. Tasks without a due date belong to no day and are not in it.
+ * today. Tasks without a due date are still to do: a span that is not over lists them after the
+ * others, marked `undated`.
  */
 export const tasksDigest = defineDigest({
 	id: 'lists.tasksDigest',
 	topic: 'tasks',
 	title: 'Tasks due in some days, for an answer',
 	description:
-		'The tasks due between two days (repeating ones on each date), with their notes and who does them, and the open ones that are late when the days include today.',
+		'The tasks due between two days (repeating ones on each date), with their notes and who does them, the open ones that are late when the days include today, and the open ones with no due date.',
 	requires: listsView.id,
 	async run(uow, input) {
 		const { timeZone } = await uow.family.settings();
@@ -101,6 +102,23 @@ export const tasksDigest = defineDigest({
 					Number(a.time === undefined) - Number(b.time === undefined) ||
 					(a.time ?? '').localeCompare(b.time ?? ''),
 			);
+		// What has no due date is still to do on any day from today on, so a span that is not over
+		// lists it after what is due, on the span's first day still ahead.
+		if (compareDates(input.to, today) >= 0) {
+			const day = compareDates(input.from, today) > 0 ? input.from : today;
+			const undated = await tables(uow.db)
+				.selectFrom('lists_tasks')
+				.selectAll()
+				.where('deleted_at', 'is', null)
+				.where('done_at', 'is', null)
+				.where('due_date', 'is', null)
+				.orderBy('created_at')
+				.execute();
+			for (const row of undated.filter(forPeople)) {
+				const item = taskItem(row, day, today);
+				items.push({ ...item, extra: { ...item.extra, undated: 'yes' } });
+			}
+		}
 		return digestOf(items, input, {
 			async next() {
 				const after = addDays(input.to, 1);

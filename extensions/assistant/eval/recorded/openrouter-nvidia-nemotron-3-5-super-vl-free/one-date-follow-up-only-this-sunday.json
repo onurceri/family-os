@@ -1,0 +1,136 @@
+{
+	"case": "one date: follow-up \"Only this Sunday\"",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Sunday",
+					"kind": "day",
+					"day": {
+						"text": "Sunday",
+						"weekday": 7
+					}
+				},
+				"people": [],
+				"about": [
+					"planning"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Sunday planning"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Sunday",
+					"kind": "day",
+					"day": {
+						"text": "Sunday",
+						"weekday": 7
+					}
+				},
+				"people": [],
+				"about": [
+					"planning"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Sunday planning",
+						"from": "2026-10-06",
+						"to": "2026-10-11"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"occurrence": "2026-10-11",
+						"startTime": "18:00",
+						"endTime": "18:30",
+						"label": "Sunday planning"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Only this Sunday",
+					"kind": "day",
+					"day": {
+						"text": "this Sunday",
+						"weekday": 7,
+						"week": "this"
+					}
+				},
+				"people": [],
+				"about": [
+					"planning"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Sunday planning"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"occurrence": "2026-10-11",
+						"startTime": "18:00",
+						"endTime": "18:30",
+						"label": "Sunday planning"
+					}
+				}
+			]
+		}
+	]
+}

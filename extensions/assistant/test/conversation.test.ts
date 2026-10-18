@@ -3,6 +3,7 @@ import { isFamosError, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 // The assistant as the conversation the kernel offers channels outside the app (Telegram).
 type Asker = Awaited<ReturnType<TestKernel['member']>>;
@@ -40,7 +41,7 @@ const code = async (promise: Promise<unknown>) => {
 
 describe('the conversation for channels', () => {
 	it('answers a question in the member’s thread and tells only them, with its suggestions', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{ tool: 'lists_addShoppingItems', input: { items: [{ title: 'Milk' }] } },
 			{ text: 'I suggested adding milk.' },
 		]);
@@ -66,7 +67,7 @@ describe('the conversation for channels', () => {
 	});
 
 	it('continues a thread, starts a new one when it was deleted, and waits for the last answer', async () => {
-		k.llm.respondChat([{ text: 'One' }], [{ text: 'Two' }], [{ text: 'Three' }]);
+		loopTurns(k.llm, [{ text: 'One' }], [{ text: 'Two' }], [{ text: 'Three' }]);
 		const first = await k.conversation.ask(ayse.member.id, { text: 'First?', threadId: null });
 		// The last answer is still being written.
 		expect(

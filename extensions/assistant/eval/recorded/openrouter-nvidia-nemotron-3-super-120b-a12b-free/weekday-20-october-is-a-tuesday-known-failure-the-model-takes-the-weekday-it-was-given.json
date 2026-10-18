@@ -1,0 +1,38 @@
+{
+	"case": "weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Wednesday 20 October",
+					"kind": "day",
+					"day": {
+						"text": "Wednesday 20 October",
+						"weekday": 3,
+						"inDays": 0,
+						"numeric": "}}}, "
+					}
+				},
+				"people": [],
+				"about": [
+					"swimming"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		}
+	]
+}

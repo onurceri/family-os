@@ -1,8 +1,8 @@
-import { type AiAreaAccess, systemActor } from '@famos/sdk';
+import { type Actor, type AiAreaAccess, systemActor } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
 import type { Recurrence } from '@famos/time';
-import { epochOf } from '@famos/time';
-import type { Check, Seeded } from './checks.ts';
+import { defaultHourCycle, defaultWeekStart, epochOf } from '@famos/time';
+import type { Check, Expected, Seeded } from './checks.ts';
 
 /**
  * What a case puts in the household before it asks, and whom it asks as. Seeding needs no model,
@@ -25,6 +25,17 @@ export interface SeedEvent {
 	location?: string;
 	/** The event's tags; they become the family's tags. */
 	tags?: string[];
+	notes?: string;
+}
+
+/** A suggestion waiting for a decision, made before the question. */
+export interface SeedDraft {
+	/** A member's display name (a request of theirs), or `quick-add` (a card read from a message). */
+	by: string;
+	action: string;
+	input: Record<string, unknown>;
+	/** The line of a Quick add group. */
+	summary?: string;
 }
 
 export interface SeedTask {
@@ -53,6 +64,15 @@ export interface Case {
 	timeZone?: string;
 	/** The family language. */
 	locale?: string;
+	/** The region format (`sl-SI`); the week's first day and the clock follow it. */
+	formatLocale?: string;
+	/** Today and the time of day, when the case is not on `TODAY` at `NOW`. */
+	today?: string;
+	now?: string;
+	/** Suggestions waiting before the question. */
+	drafts?: SeedDraft[];
+	/** For a question: how it should be read, and the facts its card must hold. */
+	expect?: Expected;
 	events?: SeedEvent[];
 	/** Shopping lists by name, with their items; the first is the default list. */
 	shopping?: Record<string, SeedItem[]>;
@@ -95,17 +115,28 @@ function applied<T>(result: { status: string; output?: unknown }, what: string):
 export async function seed(k: TestKernel, c: Case): Promise<Household> {
 	const timeZone = c.timeZone ?? DEFAULT_TIME_ZONE;
 	const system = systemActor('eval');
+	const format = c.formatLocale;
 	applied(
 		await k.runner.invoke(
 			'core.updateFamilySettings',
-			{ timeZone, locale: c.locale ?? 'en' },
+			{
+				timeZone,
+				locale: c.locale ?? 'en',
+				// As setup would: the region format and what follows from it.
+				...(format && {
+					formatLocale: format,
+					weekStart: defaultWeekStart(format),
+					hourCycle: defaultHourCycle(format),
+				}),
+			},
 			system,
 		),
 		'family settings',
 	);
-	k.clock.set(epochOf(TODAY, NOW, timeZone));
+	k.clock.set(epochOf(c.today ?? TODAY, c.now ?? NOW, timeZone));
 	const seeded: Seeded = {};
 	let asker: Member | undefined;
+	const members = new Map<string, Member>();
 	for (const person of c.family ?? DEFAULT_FAMILY) {
 		const made = await k.member(person.roleId, person.name);
 		if (person.about)
@@ -118,6 +149,7 @@ export async function seed(k: TestKernel, c: Case): Promise<Household> {
 				`about ${person.name}`,
 			);
 		seeded[person.name] = made.member.id;
+		members.set(person.name, made);
 		if (c.as ? person.name === c.as : !asker) asker = made;
 	}
 	if (!asker) throw new Error(`Nobody called ${c.as} in the family`);
@@ -184,5 +216,24 @@ export async function seed(k: TestKernel, c: Case): Promise<Household> {
 		);
 		seeded[title] = made.id;
 	}
+	for (const [n, draft] of (c.drafts ?? []).entries()) {
+		const by: Actor =
+			draft.by === 'quick-add'
+				? { kind: 'ai', mode: 'share', source: 'inbox' }
+				: (members.get(draft.by)?.actor ?? nobody(draft.by));
+		const made = await k.runner.invoke(draft.action, draft.input, by, {
+			draft: {
+				sourceKind: draft.by === 'quick-add' ? 'inbox' : 'request',
+				sourceId: `seed-${n}`,
+				...(draft.summary && { summary: draft.summary }),
+			},
+		});
+		if (made.status !== 'drafted')
+			throw new Error(`Seeding failed: ${draft.action} was not drafted (${made.status})`);
+	}
 	return { seeded, asker };
+}
+
+function nobody(name: string): never {
+	throw new Error(`Nobody called ${name} in the family`);
 }

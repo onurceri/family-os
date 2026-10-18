@@ -1,0 +1,42 @@
+{
+	"case": "no area: the flat papers when Home is not installed",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "1190b8c92537d14f",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"home",
+					"records"
+				],
+				"span": {
+					"said": "this month",
+					"kind": "month",
+					"day": {
+						"text": "this month",
+						"week": "this"
+					}
+				},
+				"people": [
+					{
+						"said": "we"
+					}
+				],
+				"about": [
+					"flat papers",
+					"due"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
+		}
+	]
+}

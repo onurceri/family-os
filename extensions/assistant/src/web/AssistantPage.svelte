@@ -28,6 +28,7 @@
 	import { greetingKey, hourIn, SUGGESTIONS, type SuggestionArea } from './greeting.js';
 	import { useAssistant } from './i18n.js';
 	import { openPath } from './nav.js';
+	import { answerWords } from './render.js';
 	import { reduceStream, type StreamState, settleStream } from './stream.js';
 	import ThreadList from './ThreadList.svelte';
 
@@ -410,7 +411,7 @@
 										</p>
 									{/if}
 								{:else}
-									<AnswerText text={message.content} />
+									<AnswerText text={answerWords(message)} />
 								{/if}
 								{#if ids.length > 0}
 									<AnswerDrafts messageId={message.id} {ids} lines={message.suggested} />

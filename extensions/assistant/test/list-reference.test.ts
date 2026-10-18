@@ -3,6 +3,7 @@ import { systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import assistant from '../src/server/index.ts';
+import { loopTurns } from './reading.ts';
 
 let k: TestKernel;
 let ayse: Awaited<ReturnType<TestKernel['member']>>;
@@ -44,7 +45,7 @@ const drafts = () =>
 describe('adding to a list the person names', () => {
 	it('drafts the add for "Hardware store" when the model sends the name it heard', async () => {
 		// What the real model did: it called only the add tool, with the list's name.
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addShoppingItems',
 				input: { list: 'Hardware store', items: [{ title: 'Picture wire' }] },
@@ -58,7 +59,7 @@ describe('adding to a list the person names', () => {
 	});
 
 	it('refuses a list name that was invented and tells the model the real names', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addShoppingItems',
 				input: { list: 'Grocery shopping', items: [{ title: 'Picture wire' }] },
@@ -79,7 +80,7 @@ describe('adding to a list the person names', () => {
 	});
 
 	it('says which field held a handle it was never shown', async () => {
-		k.llm.respondChat([
+		loopTurns(k.llm, [
 			{
 				tool: 'lists_addShoppingItems',
 				input: {
