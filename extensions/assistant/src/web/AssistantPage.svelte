@@ -14,6 +14,7 @@
 	import { tick, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { Message, Thread } from '../contract/index.js';
+	import AnswerCard from './AnswerCard.svelte';
 	import AnswerDrafts from './AnswerDrafts.svelte';
 	import AnswerText from './AnswerText.svelte';
 	import AskField from './AskField.svelte';
@@ -28,7 +29,6 @@
 	import { greetingKey, hourIn, SUGGESTIONS, type SuggestionArea } from './greeting.js';
 	import { useAssistant } from './i18n.js';
 	import { openPath } from './nav.js';
-	import { answerWords } from './render.js';
 	import { reduceStream, type StreamState, settleStream } from './stream.js';
 	import ThreadList from './ThreadList.svelte';
 
@@ -411,7 +411,10 @@
 										</p>
 									{/if}
 								{:else}
-									<AnswerText text={answerWords(message)} />
+									<div class="grid gap-3">
+										{#if message.content}<AnswerText text={message.content} />{/if}
+										{#if message.card}<AnswerCard card={message.card} />{/if}
+									</div>
 								{/if}
 								{#if ids.length > 0}
 									<AnswerDrafts messageId={message.id} {ids} lines={message.suggested} />
