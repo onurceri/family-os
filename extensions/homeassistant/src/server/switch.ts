@@ -1,8 +1,27 @@
-import { defineAction, defineJob, FamosError, isExternalHttpError } from '@famos/sdk';
+import {
+	defineAction,
+	defineJob,
+	FamosError,
+	isExternalHttpError,
+	type JobContext,
+} from '@famos/sdk';
 import { z } from 'zod';
-import { ItemIdSchema, OperationSchema, SwitchInputSchema, serviceFor } from '../contract/index.ts';
-import { homeassistantControl, switchFailed, valuesChanged } from './capabilities.ts';
+import {
+	EntityIdSchema,
+	ItemIdSchema,
+	LabelSchema,
+	OperationSchema,
+	SwitchInputSchema,
+	serviceFor,
+} from '../contract/index.ts';
+import {
+	homeassistantControl,
+	switchesChanged,
+	switchFailed,
+	valuesChanged,
+} from './capabilities.ts';
 import { load, recordTokenRefused } from './connection.ts';
+import { recordSwitch } from './history.ts';
 import { findItem, mayControl } from './items.ts';
 import { tables } from './store.ts';
 import { forgetValues } from './values.ts';
@@ -25,6 +44,9 @@ const SwitchPayload = z.object({
 	operation: OperationSchema,
 	/** Who asked, to tell only them when it could not be done. */
 	memberId: z.string().nullable(),
+	/** The item's name when it was asked for; the item may be gone by the time the job runs. */
+	label: LabelSchema.optional(),
+	entityId: EntityIdSchema.optional(),
 });
 
 export const switchItem = defineAction({
@@ -46,12 +68,25 @@ export const switchItem = defineAction({
 		const bucket = Math.floor(uow.clock.now() / DOUBLE_TAP_MS);
 		await uow.enqueue(
 			'homeassistant.switch',
-			{ id: row.id, operation: input.operation, memberId },
+			{
+				id: row.id,
+				operation: input.operation,
+				memberId,
+				label: row.label,
+				entityId: row.entity_id,
+			},
 			{ dedupeKey: `homeassistant.switch:${row.id}:${input.operation}:${bucket}` },
 		);
 		return { ok: true as const };
 	},
 });
+
+const findRow = (ctx: JobContext, id: string) =>
+	tables(ctx.db)
+		.selectFrom('homeassistant_items')
+		.selectAll()
+		.where('id', '=', id)
+		.executeTakeFirst();
 
 export const switchJob = defineJob({
 	name: 'homeassistant.switch',
@@ -59,15 +94,27 @@ export const switchJob = defineJob({
 	timeoutMs: 2 * TIMEOUT_MS,
 	// One more try when Home Assistant did not answer; never more, a switch is wanted now.
 	maxAttempts: 2,
-	async handle(ctx, { id, operation, memberId }, run) {
+	async handle(ctx, { id, operation, memberId, label, entityId }, run) {
+		const row = await findRow(ctx, id);
+		const record = async (ok: boolean) => {
+			const entity = row?.entity_id ?? entityId;
+			const name = label ?? row?.label;
+			if (!entity || !name) return;
+			await recordSwitch(ctx, {
+				id: run.id,
+				itemId: id,
+				entityId: entity,
+				label: name,
+				operation,
+				memberId,
+				ok,
+			});
+			await ctx.events.emit(switchesChanged, {});
+		};
 		const failed = async () => {
+			await record(false);
 			if (memberId) await ctx.events.emitTo(memberId, switchFailed, { id });
 		};
-		const row = await tables(ctx.db)
-			.selectFrom('homeassistant_items')
-			.selectAll()
-			.where('id', '=', id)
-			.executeTakeFirst();
 		// Removed, or no longer allowed, since it was asked for: nothing is sent.
 		const service = row && mayControl(row) ? serviceFor(row.entity_id, operation) : null;
 		const connection = await load(ctx.db);
@@ -99,6 +146,7 @@ export const switchJob = defineJob({
 			return failed();
 		}
 		ctx.logger.info({ status: 'ok' }, 'home assistant switch');
+		await record(true);
 		forgetValues(ctx);
 		await ctx.events.emit(valuesChanged, { id });
 	},

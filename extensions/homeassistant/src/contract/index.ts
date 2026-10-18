@@ -176,6 +176,35 @@ export const SetItemControlInputSchema = z.object({
 });
 export const SwitchInputSchema = z.object({ id: ItemIdSchema, operation: OperationSchema });
 
+/** The most switches the history shows at once. */
+export const MAX_HISTORY = 20;
+
+/** One switch, as the history tells it: who asked, what was done to what, and how it went. */
+export const SwitchEntrySchema = z.object({
+	id: z.string().min(1).max(100),
+	itemId: ItemIdSchema,
+	entityId: EntityIdSchema,
+	/** The family's name for the item when it was switched. */
+	label: LabelSchema,
+	operation: OperationSchema,
+	/** Who asked; null for a display, which is never told who, or for no one. */
+	memberId: z.string().nullable(),
+	/** Home Assistant took the order; false when it could not be done. */
+	ok: z.boolean(),
+	at: z.number().int(),
+});
+export type SwitchEntry = z.infer<typeof SwitchEntrySchema>;
+
+export const SwitchHistoryQuerySchema = z.object({
+	/** Only this item's switches. */
+	itemId: ItemIdSchema.optional(),
+	limit: z.coerce.number().int().min(1).max(MAX_HISTORY).optional(),
+});
+export const SwitchHistorySchema = z.object({ entries: z.array(SwitchEntrySchema) });
+export type SwitchHistory = z.infer<typeof SwitchHistorySchema>;
+
+export const switchesChangedPayload = z.object({});
+
 /** A switch could not be done; only the person who asked for it hears of it. */
 export const switchFailedPayload = z.object({ id: ItemIdSchema });
 /** Something was switched: the values are worth reading again. */

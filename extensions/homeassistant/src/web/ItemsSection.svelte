@@ -37,6 +37,7 @@
 	} from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import { sayValue } from './say.js';
+	import SwitchHistoryList from './SwitchHistoryList.svelte';
 	import { createSwitcher } from './switching.svelte.js';
 
 	/**
@@ -437,6 +438,11 @@
 						{t('control_hint', { capability: t('cap_control') })}
 					</p>
 				</div>
+			{/if}
+			{#if switchable}
+				{#key editing.id}
+					<SwitchHistoryList itemId={editing.id} limit={5} framed={false} />
+				{/key}
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				<Button variant="outline" type="button" disabled={index <= 0} onclick={() => move(-1)}

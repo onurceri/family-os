@@ -186,5 +186,18 @@
 	"switch_failed": "{{name}} değiştirilemedi.",
 	"page_empty": "Şu an Home Assistant'tan gösterilecek bir şey yok.",
 	"page_unavailable": "Home Assistant'a şu an ulaşılamıyor.",
-	"page_more": "{{n}} tane daha"
+	"page_more": "{{n}} tane daha",
+	"history_label": "Son açıp kapatılanlar",
+	"history_turn_on": "{{who}}, {{name}} öğesini açtı",
+	"history_turn_off": "{{who}}, {{name}} öğesini kapattı",
+	"history_open_cover": "{{who}}, {{name}} öğesini açtı",
+	"history_close_cover": "{{who}}, {{name}} öğesini kapattı",
+	"history_stop_cover": "{{who}}, {{name}} öğesini durdurdu",
+	"history_lock": "{{who}}, {{name}} öğesini kilitledi",
+	"history_unlock": "{{who}}, {{name}} öğesinin kilidini açtı",
+	"history_run": "{{who}}, {{name}} öğesini çalıştırdı",
+	"history_failed": "{{name}} değiştirilemedi",
+	"history_someone": "Biri",
+	"history_item_label": "Burada son açıp kapatılanlar",
+	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı."
 }

@@ -36,6 +36,22 @@ export type HomeAssistantTables = {
 		created_at: number;
 		updated_at: number;
 	};
+	/** Who switched what and how it went; short-lived, and never more than the last few weeks. */
+	homeassistant_switches: {
+		/** The job's id: a job that runs twice writes once. */
+		id: string;
+		/** The item, which may have been removed since (no foreign key: the history outlives it). */
+		item_id: string;
+		entity_id: string;
+		/** The family's name for the item at the time. */
+		label: string;
+		operation: string;
+		/** A member's id (members are core's: no foreign key); null when no member asked. */
+		member_id: string | null;
+		/** 1: Home Assistant took the order. */
+		ok: number;
+		at: number;
+	};
 	/**
 	 * Which Home Assistant person a member is, and what that member chose to show about it. Only
 	 * the choice is kept: never where they are or were.
@@ -114,6 +130,27 @@ export const migrations: Migrations = {
 			await db.schema
 				.alterTable('homeassistant_items')
 				.addColumn('confirm', 'integer', (c) => c.notNull().defaultTo(1))
+				.execute();
+		},
+	},
+	'0005_switches': {
+		async up(db) {
+			await db.schema
+				.createTable('homeassistant_switches')
+				.addColumn('id', 'text', (c) => c.primaryKey())
+				.addColumn('item_id', 'text', (c) => c.notNull())
+				.addColumn('entity_id', 'text', (c) => c.notNull())
+				.addColumn('label', 'text', (c) => c.notNull())
+				.addColumn('operation', 'text', (c) => c.notNull())
+				.addColumn('member_id', 'text')
+				.addColumn('ok', 'integer', (c) => c.notNull())
+				.addColumn('at', 'integer', (c) => c.notNull())
+				.modifyEnd(sql`strict`)
+				.execute();
+			await db.schema
+				.createIndex('homeassistant_switches_item_at')
+				.on('homeassistant_switches')
+				.columns(['item_id', 'at'])
 				.execute();
 		},
 	},

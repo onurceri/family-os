@@ -186,5 +186,18 @@
 	"switch_failed": "Could not switch {{name}}.",
 	"page_empty": "Nothing from Home Assistant to show right now.",
 	"page_unavailable": "Home Assistant cannot be reached right now.",
-	"page_more": "{{n}} more"
+	"page_more": "{{n}} more",
+	"history_label": "Switched lately",
+	"history_turn_on": "{{who}} turned on {{name}}",
+	"history_turn_off": "{{who}} turned off {{name}}",
+	"history_open_cover": "{{who}} opened {{name}}",
+	"history_close_cover": "{{who}} closed {{name}}",
+	"history_stop_cover": "{{who}} stopped {{name}}",
+	"history_lock": "{{who}} locked {{name}}",
+	"history_unlock": "{{who}} unlocked {{name}}",
+	"history_run": "{{who}} ran {{name}}",
+	"history_failed": "Could not switch {{name}}",
+	"history_someone": "Someone",
+	"history_item_label": "Switched here lately",
+	"history_item_empty": "Nobody has switched this from FamilyOS yet."
 }

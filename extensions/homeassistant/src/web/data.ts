@@ -9,6 +9,7 @@ import type {
 	Persons,
 	PresenceList,
 	SharingLevel,
+	SwitchHistory,
 	TestResult,
 	Values,
 } from '../contract/index.js';
@@ -99,3 +100,10 @@ export async function setItemControl(input: {
 export async function switchItem(id: string, operation: Operation): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/homeassistant.switch', { body: { id, operation } }));
 }
+
+/** The latest switches, newest first; of one item when `itemId` is given. */
+export const loadHistory = async (query: {
+	itemId?: string;
+	limit?: number;
+}): Promise<SwitchHistory> =>
+	unwrap(await api.GET('/api/v1/homeassistant/switches', { params: { query } }));

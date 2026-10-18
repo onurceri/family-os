@@ -31,6 +31,7 @@
 	import { useHomeAssistant } from './i18n.js';
 	import ItemsSection from './ItemsSection.svelte';
 	import PeopleSection from './PeopleSection.svelte';
+	import SwitchHistoryList from './SwitchHistoryList.svelte';
 	import { formStep, type Tested, testKey } from './testflow.js';
 
 	/**
@@ -291,6 +292,7 @@
 				{advice(connected)}
 			</Notice>
 			<ItemsSection bind:this={items} bind:full />
+			<SwitchHistoryList limit={10} />
 			<PeopleSection />
 		{:else}
 			<Card variant="quiet" pad>

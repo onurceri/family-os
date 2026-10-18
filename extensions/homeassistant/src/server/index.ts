@@ -10,6 +10,7 @@ import {
 	homeassistantView,
 	itemsChanged,
 	peopleChanged,
+	switchesChanged,
 	switchFailed,
 	valuesChanged,
 } from './capabilities.ts';
@@ -21,6 +22,7 @@ import {
 	getConnection,
 	testConnection,
 } from './connection.ts';
+import { getSwitchHistory } from './history.ts';
 import { addItem, listItems, moveItem, removeItem, renameItem, setItemControl } from './items.ts';
 import {
 	getMySharing,
@@ -70,8 +72,16 @@ export default defineExtension({
 		listPeople,
 		getMySharing,
 		getPresence,
+		getSwitchHistory,
 	],
-	events: [connectionChanged, itemsChanged, peopleChanged, valuesChanged, switchFailed],
+	events: [
+		connectionChanged,
+		itemsChanged,
+		peopleChanged,
+		valuesChanged,
+		switchFailed,
+		switchesChanged,
+	],
 	capabilities: [
 		homeassistantView,
 		homeassistantPresence,

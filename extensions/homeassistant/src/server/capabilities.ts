@@ -3,6 +3,7 @@ import {
 	connectionChangedPayload,
 	itemsChangedPayload,
 	peopleChangedPayload,
+	switchesChangedPayload,
 	switchFailedPayload,
 	valuesChangedPayload,
 } from '../contract/index.ts';
@@ -52,6 +53,12 @@ export const homeassistantControl = defineCapability({
 
 /** Something was switched: Today and the settings page read the values again. */
 export const valuesChanged = defineEvent('homeassistant.values.changed', valuesChangedPayload);
+
+/** Something was switched, or could not be: the history reads again. */
+export const switchesChanged = defineEvent(
+	'homeassistant.switches.changed',
+	switchesChangedPayload,
+);
 
 /** A switch could not be done; sent only to the person who asked for it. */
 export const switchFailed = defineEvent('homeassistant.switch.failed', switchFailedPayload);

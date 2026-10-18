@@ -90,6 +90,8 @@ On Today, and on the same settings page, the row then has a switch (lights, swit
 
 **The token can do more than FamilyOS lets anyone do with it.** Home Assistant has no token that may only switch some things, so a token can switch and unlock everything that its Home Assistant user can. FamilyOS only ever asks for what you allowed here, but keep the token safe, and keep the separate, non-administrator Home Assistant user for FamilyOS described above.
 
+**Who switched what.** On **Settings → Family → Home Assistant**, **Switched lately** lists the last ten switches in words: "Tom turned on Living room light", "Mara ran Movie night", "Tom unlocked Front door". A switch that could not be done reads "Could not switch Living room light", with who asked beside the time. Each entry uses the name the thing had when it was switched, and stays after the thing is renamed or removed. Tapping a thing that can be switched also shows its own last five switches, with who and when. Entries are kept for about three months. The list only reads: everyone who can open the page sees it, whether or not they may switch. A family display that is not allowed to show names says "Someone".
+
 **When it does not work**, the person who switched sees "Could not switch …". If Home Assistant refused the token, the connection says **Token refused**; create a new token and choose **Change**. If Home Assistant no longer has that thing, remove it from the list or pick it again. When Home Assistant does not answer, FamilyOS tries once more, then gives up: it never switches something later, when nobody expects it.
 
 ## Who is home
