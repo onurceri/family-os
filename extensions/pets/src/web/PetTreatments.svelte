@@ -373,10 +373,11 @@
 					<Row
 						title={item.product || t(`treatment_kind_${item.kind}`)}
 						meta={[
+							// First, so a narrow row never cuts off that it waits.
+							markOf(item.id),
 							item.product ? t(`treatment_kind_${item.kind}`) : null,
 							dateOf(item.givenOn),
 							item.vet,
-							markOf(item.id),
 						]
 							.filter(Boolean)
 							.join(' · ')}

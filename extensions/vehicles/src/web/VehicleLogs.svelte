@@ -314,7 +314,7 @@
 				<div role="listitem">
 					<Row
 						title="{t(`log_kind_${log.kind}`)} · {dateOf(log.doneOn)}"
-						meta={[log.place, log.notes, markOf(log.id)].filter(Boolean).join(' · ') || undefined}
+						meta={[markOf(log.id), log.place, log.notes].filter(Boolean).join(' · ') || undefined}
 						onclick={() => view(log)}
 					>
 						{#snippet lead()}
