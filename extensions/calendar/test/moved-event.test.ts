@@ -81,6 +81,25 @@ describe('a suggested event that is one already on the calendar', () => {
 		});
 	});
 
+	it('offers the move for a title that names the event by its code alone', async () => {
+		const id = await add({ title: 'U13 Eagles away game', date: '2026-10-25', startTime: '10:00' });
+		await add({ title: 'Class 1B trip', date: '2026-10-24', startTime: '08:00' });
+		const draftId = await propose({ title: 'U13 fixture', date: '2026-10-24', startTime: '11:00' });
+		const draft = (
+			(await k
+				.route('core.listDrafts')
+				.call({ actor: admin.actor, query: { limit: 20 } })) as (Listed & { mayExist: boolean })[]
+		).find((d) => d.id === draftId);
+		expect(draft?.mayExist).toBe(true);
+		expect(draft?.instead).toMatchObject({
+			actionId: 'calendar.changeEvent',
+			input: { id, date: '2026-10-24', startTime: '11:00' },
+		});
+		// Another code is another event.
+		const other = await propose({ title: 'U15 fixture', date: '2026-10-24', startTime: '11:00' });
+		expect((await listed(other)).instead).toBeNull();
+	});
+
 	it('moves only the nearest date of a repeating event', async () => {
 		const id = await add({
 			title: 'Swim lesson',

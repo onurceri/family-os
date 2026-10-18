@@ -124,6 +124,43 @@ describe('matchThing', () => {
 	});
 });
 
+describe('a code names its thing', () => {
+	const game = thing('U13 Eagles away game');
+	const others = ['Football training', 'Swim lesson Ivy', 'Class 1B trip'].map((l) => thing(l));
+
+	it('is weak by the same code of letters and digits with other words, and marked when alone', () => {
+		expect(compareThing('U13 fixture', game.label)).toEqual({ band: 'weak', reason: 'code' });
+		const match = matchThing('fixture for U13', [game, ...others]);
+		expect(match).toMatchObject({ band: 'weak', reason: 'code', candidate: game });
+		expect(targetOf(match)).toBe('marked');
+		expect(findTarget('U13 fixture', [game, ...others])).toEqual({ found: game, unsure: true });
+	});
+
+	it('is no match by a bare number, and asks which one when two share the code', () => {
+		expect(compareThing('Dentist 10', 'Swim 10').band).toBe('none');
+		const training = thing('U13 training');
+		const found = findTarget('U13 fixture', [game, training]);
+		expect(found).toMatchObject({ unsure: true });
+		expect(
+			'ambiguous' in found && [...found.ambiguous].toSorted((a, b) => a.id.localeCompare(b.id)),
+		).toEqual([game, training]);
+	});
+
+	it('holds when the message also names something else by a word the thing lacks', () => {
+		const text =
+			"Dear parents, the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad (was 10:00 at Olimpija). Ivy's team kit bag to the club room.";
+		expect(matchThing('U13 Eagles away game', [game, ...others], { text })).toMatchObject({
+			band: 'exact',
+			candidate: game,
+		});
+		expect(matchThing('U13 fixture', [game, ...others], { text })).toMatchObject({
+			band: 'weak',
+			reason: 'code',
+			candidate: game,
+		});
+	});
+});
+
 describe('findTarget on matchThing', () => {
 	it('finds exact and strong matches as sure', () => {
 		const list = [thing('Dentist checkup')];

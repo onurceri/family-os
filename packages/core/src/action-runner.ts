@@ -16,7 +16,6 @@ import {
 	type Logger,
 	type MemberId,
 	type NotifyRequest,
-	namesThing,
 	type ProposalRefusal,
 	type ProposalRefusalDetails,
 	type SecretBox,
@@ -1137,11 +1136,15 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			const resolved = next.resolveNames ? await next.resolveNames(ctx, parsed.data) : parsed.data;
 			const title = next.targetTitle ? await next.targetTitle(ctx, resolved) : null;
 			// The draft's own words must name what it would change, as an AI's label must: an
-			// alternative is never the closest thing, whatever the action offering it found.
+			// alternative is never the closest thing, whatever the action offering it found. A
+			// match a person is asked to check (the same code, other forms of the words) is offered:
+			// the person chooses it or not.
 			const said = subjectOf(JSON.stringify(input));
 			if (next.targetTitle) {
 				const { locale } = await ctx.family.settings();
-				if (title === null || !said || !namesThing(said, title, { language: locale })) return null;
+				if (title === null || !said) return null;
+				const match = compareThing(said, title, { language: locale });
+				if (targetOf({ ...match, candidates: [title] }) === null) return null;
 			}
 			if (next.refuseProposal && (await next.refuseProposal(ctx, resolved)) !== null) return null;
 			// Stored like every draft of that action: with the real title of what it changes.

@@ -1,4 +1,10 @@
-import { type DbExecutor, type DraftAlternative, matchThing, namesThing } from '@famos/sdk';
+import {
+	compareThing,
+	type DbExecutor,
+	type DraftAlternative,
+	matchThing,
+	targetOf,
+} from '@famos/sdk';
 import { addDays, zoned } from '@famos/time';
 import type { EventInput, Occurrence } from '../contract/index.ts';
 import { occurrencesBetween, SAME_EVENT_DAYS } from './store.ts';
@@ -19,9 +25,11 @@ const daysBetween = (a: string, b: string) => Math.abs(Date.parse(a) - Date.pars
  * day) to what the new event says, or null.
  *
  * Only an event the new title surely names (`matchThing`, `exact` or `strong`: the words of one
- * title are all words of the other, and no code or number differs) counts, within a month either
- * side. When several events do, the one the new title names most is meant; a tie, or a title
- * that only partly names an event, names none of them. A new event that is already there at that
+ * title are all words of the other, and no code or number differs), or the one event it names by
+ * the same code ("U13 fixture" for "U13 Eagles away game"), counts, within a month either side:
+ * the move is only offered, and the person decides. When several events are named, the one the
+ * new title names most is meant; a tie, or a title that only partly names an event, names none
+ * of them. A new event that is already there at that
  * very time, or a new repeating event, is not a move.
  */
 export async function movedEvent(
@@ -38,7 +46,10 @@ export async function movedEvent(
 		addDays(input.date, SAME_EVENT_DAYS),
 		timeZone,
 	);
-	const named = near.filter((o) => namesThing(input.title, o.title, words));
+	const named = near.filter((o) => {
+		const { band, reason } = compareThing(input.title, o.title, words);
+		return band === 'exact' || band === 'strong' || reason === 'code';
+	});
 	if (named.length === 0) return null;
 	const allDay = input.allDay ?? false;
 	const already = named.some((o) => {
@@ -49,7 +60,7 @@ export async function movedEvent(
 
 	const events = new Map(named.map((o) => [o.eventId, { id: o.eventId, label: o.title }]));
 	const match = matchThing(input.title, [...events.values()], words);
-	if (match.band !== 'exact' && match.band !== 'strong') return null;
+	if (targetOf(match) === null) return null;
 	const chosen = match.candidate?.id;
 
 	const nearest = named

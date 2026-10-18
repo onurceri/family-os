@@ -140,9 +140,12 @@ export function defineMentionKind(definition: MentionKindDefinition): MentionKin
 	return definition;
 }
 
-/** The slot of a mention field; the bookkeeping fields (`kind`, `unsure`, `quote`) have none. */
+/**
+ * The slot of a mention field; the bookkeeping fields (`kind`, `unsure`, `quote`) and the link to
+ * another mention (`of`, `relation`) have none.
+ */
 function slotOfField(field: string): Slot | null {
-	if (field === 'kind' || field === 'unsure' || field === 'quote') return null;
+	if (['kind', 'unsure', 'quote', 'of', 'relation'].includes(field)) return null;
 	if (field === 'forMe' || field === 'peopleGuessed') return 'people';
 	if (field === 'timeText') return 'time';
 	return field as Slot;
@@ -197,16 +200,21 @@ export function mentionKindProblems(
 	kind.examples.forEach((example, i) => {
 		const at = `${where}, example ${i + 1},`;
 		if (example.text.trim() === '') problems.push(`${at} has no text`);
-		for (const raw of example.mentions) {
+		example.mentions.forEach((raw, place) => {
 			const parsed = StrictMentionSchema.safeParse(raw);
 			if (!parsed.success) {
 				const issue = parsed.error.issues[0];
 				problems.push(
 					`${at} does not read as a mention: ${issue?.path.join('.') || '(mention)'}: ${issue?.message}`,
 				);
-				continue;
+				return;
 			}
 			const mention = parsed.data;
+			if (
+				mention.of !== undefined &&
+				(mention.of === place || mention.of >= example.mentions.length)
+			)
+				problems.push(`${at} points with "of" at no other mention of the example`);
 			// The model copies what the examples do: each shows the words it rests on, as written.
 			if (!mention.quote?.trim()) problems.push(`${at} has a mention without its quote`);
 			else if (!example.text.includes(mention.quote))
@@ -214,7 +222,7 @@ export function mentionKindProblems(
 			const owner = byId.get(mention.kind);
 			if (!owner) {
 				problems.push(`${at} names kind "${mention.kind}", which "${extensionId}" lacks`);
-				continue;
+				return;
 			}
 			for (const field of Object.keys(mention)) {
 				const slot = slotOfField(field);
@@ -228,7 +236,7 @@ export function mentionKindProblems(
 			}
 			if (mention.variant !== undefined && !owner.variants?.includes(mention.variant))
 				problems.push(`${at} has variant "${mention.variant}", which kind "${owner.id}" lacks`);
-		}
+		});
 	});
 	return problems;
 }

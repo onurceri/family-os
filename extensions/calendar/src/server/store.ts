@@ -1,4 +1,4 @@
-import { type DbExecutor, type Migrations, namesThing } from '@famos/sdk';
+import { compareThing, type DbExecutor, type Migrations, namesThing } from '@famos/sdk';
 import {
 	addDays,
 	compareDates,
@@ -275,7 +275,8 @@ export const SAME_EVENT_DAYS = 30;
  * Whether the event seems to be on the calendar already, by the same title matching that finds a
  * moved event (`namesThing`, an `exact` or `strong` match: the words of one title are all words
  * of the other and no code or number differs, so "Parents' evening" is "Parents' evening at
- * school"), or the same title written differently (case, accents). Any day within a month either
+ * school"), by the same code of letters and digits ("U13 fixture" and "U13 Eagles away game"),
+ * or the same title written differently (case, accents). Any day within a month either
  * side counts: news that an event moved arrives with the new day, and the event is still the one
  * on the calendar, not a second one. Repeating events count by each of their dates.
  */
@@ -293,7 +294,8 @@ export async function eventExists(
 	return near.some(
 		(o) =>
 			sameTitle(o.title, input.title) ||
-			namesThing(input.title, o.title, { language: settings.locale }),
+			namesThing(input.title, o.title, { language: settings.locale }) ||
+			compareThing(input.title, o.title, { language: settings.locale }).reason === 'code',
 	);
 }
 

@@ -340,17 +340,18 @@ export const event = defineMentionKind({
 			why: 'The end is copied as its words; code works out its last day.',
 		},
 		{
-			text: 'Choir rehearsal on Thursday, bring your folder',
+			text: 'Choir concert on Thursday in the town hall. No phones during the songs, please. Bring your black folder.',
 			mentions: [
 				{
 					kind: 'calendar.event',
-					quote: 'Choir rehearsal on Thursday, bring your folder',
-					title: 'Choir rehearsal',
+					quote: 'Choir concert on Thursday in the town hall',
+					title: 'Choir concert',
 					date: { text: 'Thursday', weekday: 4 },
-					notes: 'Bring your folder',
+					place: 'Town hall',
+					notes: 'No phones during the songs. Bring your black folder.',
 				},
 			],
-			why: 'No time is written, so none is given.',
+			why: 'No time is written, so none is given. A rule for those who come and what to bring are the notes of the event.',
 		},
 		{
 			text: 'Saturday match vs Riverside: meet at the school gate 9:15, kick-off 10:00. Bring white shirt, shin pads and water.',
@@ -536,6 +537,22 @@ export const eventChange = defineMentionKind({
 				},
 			],
 			why: 'The gala is on the calendar: it moves, it is not a second gala.',
+		},
+		{
+			text: "Saturday's match against Hill Rovers is moved to Sunday 15 November at 11:00 at the north pitch (was 9:30 at the school field)",
+			mentions: [
+				{
+					kind: 'calendar.eventChange',
+					quote:
+						"Saturday's match against Hill Rovers is moved to Sunday 15 November at 11:00 at the north pitch",
+					target: 'Match against Hill Rovers',
+					date: { text: 'Sunday 15 November', day: 15, month: 11, weekday: 7 },
+					time: '11:00',
+					timeText: '11:00',
+					place: 'North pitch',
+				},
+			],
+			why: 'What it was ("was 9:30") only tells which event moves; the slots hold what is new.',
 		},
 		{
 			text: "Parents' evening will be in the school hall, starting at 19:00",

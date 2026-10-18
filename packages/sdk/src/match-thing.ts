@@ -23,7 +23,8 @@ import {
  * - `strong`: one side's words are all whole words of the other ("Milk" and "Oat milk"), with no
  *   code or number that disagrees;
  * - `weak`: something points at it, but not surely: most of its words, the same words in other
- *   forms ("Dentist checkups"), or several things that fit equally well;
+ *   forms ("Dentist checkups"), the same code with other words ("U13 fixture" for "U13 Eagles
+ *   away game"), or several things that fit equally well;
  * - `none`: the words do not name it, or a code or a number says it is another one.
  */
 export type MatchBand = 'exact' | 'strong' | 'weak' | 'none';
@@ -34,6 +35,8 @@ export type MatchBand = 'exact' | 'strong' | 'weak' | 'none';
  * - `within`: the words of one side are all words of the other;
  * - `forms`: the same words, some of them in another form;
  * - `partial`: more than half of the thing's words, not all;
+ * - `code`: the same codes, at least one of letters and digits together ("U13", "1B", a plate),
+ *   with other words around them;
  * - `several`: more than one thing fits equally well;
  * - `codes`: a code or a number differs ("1B" and "3B", "10" and "18", two plates);
  * - `elsewhere`: the shared message names another thing more, or does not name this one;
@@ -44,6 +47,7 @@ export type MatchReason =
 	| 'within'
 	| 'forms'
 	| 'partial'
+	| 'code'
 	| 'several'
 	| 'codes'
 	| 'elsewhere'
@@ -112,6 +116,12 @@ function codesOf(text: string, language: string | undefined): string[] {
 	return [...new Set(tokens.filter((t) => /\p{N}/u.test(t)))];
 }
 
+/**
+ * A code of letters and digits together ("u13", "1b", "lj123"): it names one thing, where a bare
+ * number ("10", a time, an amount) may be anything.
+ */
+const identifies = (code: string) => /\p{L}/u.test(code) && /\p{N}/u.test(code);
+
 type Agreement = 'equal' | 'within' | 'differ';
 
 /**
@@ -150,7 +160,8 @@ function compare(words: string, title: string, share: number, language?: string)
 			? { band: 'exact', reason: 'same' }
 			: { band: 'none', reason: 'unnamed' };
 	}
-	const codes = agreement(codesOf(said, language), codesOf(named, language), same);
+	const saidCodes = codesOf(said, language);
+	const codes = agreement(saidCodes, codesOf(named, language), same);
 	if (codes === 'differ') return { band: 'none', reason: 'codes' };
 	const within = (a: readonly string[], b: readonly string[], eq: typeof same) =>
 		a.every((w) => b.some((h) => eq(w, h)));
@@ -161,6 +172,7 @@ function compare(words: string, title: string, share: number, language?: string)
 	const form = sameStemIn(language);
 	if (within(wanted, have, form) || within(have, wanted, form))
 		return { band: 'weak', reason: 'forms' };
+	if (codes === 'equal' && saidCodes.some(identifies)) return { band: 'weak', reason: 'code' };
 	if (share > MIN_SHARE) return { band: 'weak', reason: 'partial' };
 	return { band: 'none', reason: 'unnamed' };
 }
@@ -193,13 +205,18 @@ export function labelNamesTitle(label: string, title: string): boolean {
 
 /**
  * What may be done with a match: `sure` (an `exact` or `strong` one), `marked` (a lone `weak`
- * one by other forms of the same words, acted on with the target shown as "check this": people
- * say "the swim lessons" for "Swim lesson" all the time, and refusing it would lose what they
- * asked for), or null (ask which one, or nothing is named).
+ * one by other forms of the same words, or by the same code, acted on with the target shown as
+ * "check this": people say "the swim lessons" for "Swim lesson" and "the U13 fixture" for "U13
+ * Eagles away game" all the time, and refusing it would lose what they asked for), or null (ask
+ * which one, or nothing is named).
  */
 export function targetOf(match: Pick<ThingMatch<unknown>, 'band' | 'reason' | 'candidates'>) {
 	if (match.band === 'exact' || match.band === 'strong') return 'sure' as const;
-	if (match.band === 'weak' && match.reason === 'forms' && match.candidates.length === 1)
+	if (
+		match.band === 'weak' &&
+		(match.reason === 'forms' || match.reason === 'code') &&
+		match.candidates.length === 1
+	)
 		return 'marked' as const;
 	return null;
 }
@@ -249,9 +266,20 @@ export function matchThing<T extends { label: string }>(
 	const text = options.text?.trim();
 	const inText = text ? namedShares(text, labels, options) : [];
 	const textShare = (s: { i: number }) => inText[s.i] ?? 0;
-	// The message names it, and names nothing else more.
+	const same = sameWordIn(language);
+	const textWords = text ? significantWords(text, language) : [];
+	const titleWords = labels.map((label) => significantWords(label, language));
+	/** The message says a word of `s` that `o` does not have: it names `s` in its own right. */
+	const apart = (s: { i: number }, o: { i: number }) =>
+		(titleWords[s.i] ?? []).some(
+			(w) => textWords.some((t) => same(w, t)) && !(titleWords[o.i] ?? []).some((x) => same(w, x)),
+		);
+	// The message names it, and names nothing else more, unless it also names it by a word the
+	// other lacks: "the fixture for U13 … Ivy's kit bag" is about the U13 game and about Ivy, and
+	// "U13" is the game's alone.
 	const told = (s: { i: number }) =>
-		textShare(s) > 0 && !scored.some((o) => o.i !== s.i && textShare(o) > textShare(s));
+		textShare(s) > 0 &&
+		!scored.some((o) => o.i !== s.i && textShare(o) > textShare(s) && !apart(s, o));
 
 	if (top === RANK.weak) {
 		if (text) inBand = inBand.filter(told);

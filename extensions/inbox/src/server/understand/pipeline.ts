@@ -26,6 +26,7 @@ import { clockTimes, formatDate, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { EXTRACT_FEATURE, type ExtractionKind, type Skip } from '../../contract/index.ts';
 import { coverage, locate, overlaps, type Span, wordsOf as spanWords } from './evidence.ts';
+import { foldDetails, keepsDetail } from './fold.ts';
 import {
 	type KnownGroup,
 	MAX_KNOWN,
@@ -279,13 +280,15 @@ export interface Placed {
  *   where the message writes its title or target.
  * - Notes that repeat what another mention of the reading is about ("Bring the football kit" as
  *   the notes of a dentist visit, next to a task of that name), and that its own quote does not
- *   hold, belong to that other mention.
+ *   hold, belong to that other mention; unless that mention is a detail of this one (`partOf`,
+ *   by place in `mentions`: the book to bring to the recital), which the recital's notes hold.
  */
 export function placeReading(
 	mentions: readonly Mention[],
 	addressed: readonly string[],
 	text: string,
 	locale: string,
+	partOf: ReadonlyMap<number, number> = new Map(),
 ): Placed {
 	const quotes = mentions.map((m) => (m.quote ? locate(m.quote, text, locale) : null));
 	const evidence = mentions.map((m, i) => {
@@ -312,7 +315,12 @@ export function placeReading(
 		if (notes && overlaps(notes, quote)) return;
 		const elsewhere = mentions.some((other, j) => {
 			const about = other.title ?? other.target;
-			return j !== i && about !== undefined && (namedShares(m.notes ?? '', [about])[0] ?? 0) > 0.5;
+			return (
+				j !== i &&
+				partOf.get(j) !== i &&
+				about !== undefined &&
+				(namedShares(m.notes ?? '', [about])[0] ?? 0) > 0.5
+			);
 		});
 		if (elsewhere) foreignNotes.add(i);
 	});
@@ -509,13 +517,20 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	const text = input.files.length > 0 ? null : input.text;
 	const locale = settings.locale;
 	const seen = new Set<string>();
-	const groups = new Map<string, IndexedMention[]>();
 	const read = parsed.mentions.map((m) => m.mention);
-	const placed = text === null ? null : placeReading(read, parsed.addressed, text, locale);
+	// Which mention each detail says it belongs to, by place in `read`.
+	const atOf = new Map(parsed.mentions.map((m, at) => [m.index, at]));
+	const partOf = new Map<number, number>();
+	for (const [at, { mention }] of parsed.mentions.entries()) {
+		const parent = mention.of === undefined ? undefined : atOf.get(mention.of);
+		if (parent !== undefined && parent !== at) partOf.set(at, parent);
+	}
+	const placed = text === null ? null : placeReading(read, parsed.addressed, text, locale, partOf);
 	const invented =
 		text === null ? new Set<number>() : ungrounded(read, text, locale, placed?.quoted);
 	/** The message's own words each mention rests on, by its place in the answer. */
 	const quoteOf = new Map<number, string>();
+	const kept: IndexedMention[] = [];
 	for (const [at, { index, mention, dropped: lost }] of parsed.mentions.entries()) {
 		const key = keyOf(mention);
 		if (seen.has(key)) continue;
@@ -546,10 +561,12 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 			const { notes: _notes, ...rest } = marked;
 			marked = rest;
 		}
-		const group = groups.get(mention.kind) ?? [];
-		group.push({ index, mention: marked });
-		groups.set(mention.kind, group);
+		kept.push({ index, mention: marked });
 	}
+
+	// A detail of another mention (a thing to bring, a rule, a fee) goes into its notes.
+	const takesNotes = (kind: string) => kinds.find((k) => k.id === kind)?.slots.notes !== undefined;
+	const { mentions: toResolve, details } = foldDetails(kept, takesNotes, locale);
 
 	const env = { text, sharer: input.sharer, records };
 	const resolved: {
@@ -557,18 +574,41 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 		mentions: Mention[];
 		from: readonly number[];
 	}[] = [];
-	for (const [kindId, mentions] of groups) {
-		const byIndex = new Map(mentions.map((m) => [m.index, m.mention]));
-		const out = await ctx.actions.resolveMentions(kindId, mentions, env, actor);
-		for (const resolution of out) {
-			const from = 'propose' in resolution ? resolution.propose.from : resolution.refuse.from;
-			resolved.push({
-				resolution,
-				mentions: from.map((i) => byIndex.get(i)).filter((m): m is Mention => m !== undefined),
-				from,
-			});
+	const resolveAll = async (mentions: readonly IndexedMention[]) => {
+		const groups = new Map<string, IndexedMention[]>();
+		for (const m of mentions)
+			groups.set(m.mention.kind, [...(groups.get(m.mention.kind) ?? []), m]);
+		for (const [kindId, group] of groups) {
+			const byIndex = new Map(group.map((m) => [m.index, m.mention]));
+			const out = await ctx.actions.resolveMentions(kindId, group, env, actor);
+			for (const resolution of out) {
+				const from = 'propose' in resolution ? resolution.propose.from : resolution.refuse.from;
+				resolved.push({
+					resolution,
+					mentions: from.map((i) => byIndex.get(i)).filter((m): m is Mention => m !== undefined),
+					from,
+				});
+			}
 		}
+	};
+	await resolveAll(toResolve);
+	// A mention that was refused, or whose suggestion does not keep its notes (a new event that
+	// turned out to be a move of one on the calendar), cannot carry its details: they are read
+	// on their own, as the model wrote them.
+	const unfolded: IndexedMention[] = [];
+	/** The details each suggestion carries in its notes, by the index of the mention they joined. */
+	const carried = new Map<number, number[]>();
+	for (const [parent, own] of details) {
+		const outcome = resolved.find((r) => r.from.includes(parent))?.resolution;
+		const input = outcome && 'propose' in outcome ? outcome.propose.input : undefined;
+		const holds = own.filter((d) => input !== undefined && keepsDetail(input, d.mention, locale));
+		carried.set(
+			parent,
+			holds.map((d) => d.index),
+		);
+		unfolded.push(...own.filter((d) => !holds.includes(d)));
 	}
+	await resolveAll(unfolded);
 	const first = (r: SettledResolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
 	resolved.sort((a, b) => first(a.resolution) - first(b.resolution));
 
@@ -599,7 +639,8 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 			for (const mention of mentions)
 				for (const field of guessedNamesIn(proposal.input, mention, family, text, locale))
 					uncertain.add(field);
-		const quote = [...new Set(from.flatMap((at) => quoteOf.get(at) ?? []))].join(' … ');
+		const quoted = from.flatMap((at) => [at, ...(carried.get(at) ?? [])]);
+		const quote = [...new Set(quoted.flatMap((at) => quoteOf.get(at) ?? []))].join(' … ');
 		try {
 			await ctx.actions.invoke(proposal.actionId, proposal.input, actor, {
 				draft: {
