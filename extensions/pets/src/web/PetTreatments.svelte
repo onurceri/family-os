@@ -4,6 +4,8 @@
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import {
+		AwaitingRow,
+		awaitingMarkText,
 		Card,
 		ConfirmButton,
 		EmptyLine,
@@ -60,6 +62,13 @@
 	// Also for people who may only suggest a change: theirs waits for approval.
 	const mayAdd = $derived(app.access('pets.addTreatment') !== 'no');
 	const mayRemove = $derived(app.access('pets.removeTreatment') !== 'no');
+	// Treatments someone asked to add that wait for approval: quiet rows until they are decided.
+	const waitingNew = $derived(app.awaitedNew(['pets.addTreatment'], pet.id));
+	/** What waits on a treatment (its removal), said in its row. */
+	const markOf = (id: string) => {
+		const change = app.awaitedChange(id);
+		return change ? awaitingMarkText(app, change) : null;
+	};
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -334,12 +343,12 @@
 
 <Section
 	label={t('treatment_title')}
-	count={treatments.length > 0 ? treatments.length : undefined}
+	count={treatments.length + waitingNew.length || undefined}
 	actions={addAction}
 >
 	{#if loadError}
 		<p class="text-attention font-semibold" role="alert">{t('error')}</p>
-	{:else if loaded && treatments.length === 0}
+	{:else if loaded && treatments.length === 0 && waitingNew.length === 0}
 		<EmptyLine text={t('treatment_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
 			{#if mayAdd}
@@ -352,8 +361,19 @@
 		</EmptyLine>
 	{/if}
 
-	{#if treatments.length > 0}
+	{#if treatments.length > 0 || waitingNew.length > 0}
 		<Card rows role="list">
+			{#each waitingNew as change, i (change.draftId ?? i)}
+				<div role="listitem">
+					<AwaitingRow {change}>
+						{#snippet lead()}
+							<span class="bg-idle grid size-9 place-items-center rounded-full"
+								><Syringe class="size-[18px]" aria-hidden="true" /></span
+							>
+						{/snippet}
+					</AwaitingRow>
+				</div>
+			{/each}
 			{#each treatments as item (item.id)}
 				<div role="listitem">
 					<Row
@@ -362,6 +382,7 @@
 							item.product ? t(`treatment_kind_${item.kind}`) : null,
 							dateOf(item.givenOn),
 							item.vet,
+							markOf(item.id),
 						]
 							.filter(Boolean)
 							.join(' · ')}

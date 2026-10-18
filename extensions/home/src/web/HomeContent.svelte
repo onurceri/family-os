@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import {
+		AwaitingRow,
 		Card,
 		Dialog,
 		EmptyLine,
@@ -14,6 +15,7 @@
 		Section,
 		SidePanel,
 		wide,
+		editLabel,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import {
@@ -116,9 +118,18 @@
 
 	// Also for people who may only suggest a change: theirs waits for approval.
 	const mayEdit = $derived(app.access('home.updateHome') !== 'no');
+	// "Suggest a change" when the change would wait for approval.
+	const editText = $derived(editLabel(app, 'home.updateHome', t('edit')));
 	const mayArchive = $derived(app.access('home.archiveHome') !== 'no');
 	const mayAddItem = $derived(app.access('home.addItem') !== 'no');
 	const mayAddService = $derived(app.access('home.addService') !== 'no');
+	// Things and services someone asked to add that wait for approval: quiet rows until decided.
+	const waitingItems = $derived(app.awaitedNew(['home.addItem'], homeId));
+	const waitingServices = $derived(app.awaitedNew(['home.addService'], homeId));
+	const providerOf = (input: unknown) => {
+		const provider = (input as { provider?: unknown }).provider;
+		return typeof provider === 'string' ? provider : undefined;
+	};
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -187,7 +198,7 @@
 	}
 	const menu = $derived<MenuItem[]>([
 		...(mayEdit
-			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			? [{ id: 'edit', label: editText, icon: pencil, onselect: () => setEditing(true) }]
 			: []),
 		...(mayArchive
 			? [
@@ -303,7 +314,7 @@
 	{#if home}
 		{#if mayEdit}
 			<Button variant="outline" onclick={() => setEditing(true)}
-				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+				><Pencil class="size-4" aria-hidden="true" />{editText}</Button
 			>
 		{/if}
 		{#if menu.length > 0}
@@ -371,15 +382,26 @@
 		{/snippet}
 		<Section
 			label={t('items_title')}
-			count={items.length > 0 ? items.length : undefined}
+			count={items.length + waitingItems.length || undefined}
 			actions={addItemAction}
 		>
-			{#if loaded && items.length === 0}
+			{#if loaded && items.length === 0 && waitingItems.length === 0}
 				<EmptyLine text={t('items_empty')}>
 					{#snippet icon()}<Refrigerator />{/snippet}
 				</EmptyLine>
 			{:else}
 				<Card rows role="list">
+					{#each waitingItems as change, n (change.draftId ?? n)}
+						<div role="listitem">
+							<AwaitingRow {change}>
+								{#snippet lead()}
+									<span class="bg-idle grid size-9 place-items-center rounded-full"
+										><Refrigerator class="size-[18px]" aria-hidden="true" /></span
+									>
+								{/snippet}
+							</AwaitingRow>
+						</div>
+					{/each}
 					{#each items as i (i.id)}
 						<div role="listitem">
 							<Row title={i.name} meta={itemSubtitle(i) || undefined} href="/home/items/{i.id}">
@@ -407,15 +429,26 @@
 		{/snippet}
 		<Section
 			label={t('services_title')}
-			count={services.length > 0 ? services.length : undefined}
+			count={services.length + waitingServices.length || undefined}
 			actions={addServiceAction}
 		>
-			{#if loaded && services.length === 0}
+			{#if loaded && services.length === 0 && waitingServices.length === 0}
 				<EmptyLine text={t('services_empty')}>
 					{#snippet icon()}<Zap />{/snippet}
 				</EmptyLine>
 			{:else}
 				<Card rows role="list">
+					{#each waitingServices as change, n (change.draftId ?? n)}
+						<div role="listitem">
+							<AwaitingRow {change} title={providerOf(change.input)}>
+								{#snippet lead()}
+									<span class="bg-idle grid size-9 place-items-center rounded-full"
+										><Zap class="size-[18px]" aria-hidden="true" /></span
+									>
+								{/snippet}
+							</AwaitingRow>
+						</div>
+					{/each}
 					{#each services as s (s.id)}
 						<div role="listitem">
 							<Row

@@ -32,6 +32,11 @@
 	 * Closing: `beforeclose` may veto (return `false`, or a promise of it); `dirty` with `discard`
 	 * labels asks in a dialog. After closing, `closeHref` is opened through the router (the `?edit=`
 	 * or `?new=` address of the panel goes away); the page still gets `onclose`.
+	 *
+	 * `readFirst`, for a viewer whose change would wait for approval: the panel opens on the thing's
+	 * `details` with one button, "Suggest a change", and the form comes only on that button, so
+	 * reading never starts an edit by accident. It opens on the details again each time the panel
+	 * opens, and when `key` changes (another thing opened in the same panel).
 	 */
 	let {
 		open,
@@ -49,6 +54,7 @@
 		beforeclose,
 		closeHref,
 		approval,
+		readFirst,
 		children,
 	}: {
 		open: boolean;
@@ -77,6 +83,8 @@
 		 * suggestion it is.
 		 */
 		approval?: Approval;
+		/** Details first, and the form on its button (already translated `label`). */
+		readFirst?: { details: Snippet; label: string; key?: string };
 		children: Snippet;
 	} = $props();
 
@@ -84,8 +92,28 @@
 	let opener: HTMLElement | null = null;
 	let asking = $state(false);
 
-	const shownSaveLabel = $derived(approval?.saveLabel ?? saveLabel);
-	const hasFooter = $derived(Boolean(footer || (onsave && shownSaveLabel)));
+	// Reading the details of a `readFirst` panel, until its button opens the form.
+	let suggesting = $state(false);
+	const reading = $derived(Boolean(readFirst) && !suggesting);
+	// A primitive, so a page drawing the same thing again does not close the form.
+	const readKey = $derived(readFirst ? (readFirst.key ?? '') : null);
+	$effect(() => {
+		void readKey;
+		if (!open) suggesting = false;
+		return () => {
+			suggesting = false;
+		};
+	});
+	const shownOnsave = $derived(reading ? undefined : onsave);
+	const shownApproval = $derived(reading ? undefined : approval);
+	const shownSaveLabel = $derived(shownApproval?.saveLabel ?? saveLabel);
+	const hasFooter = $derived(Boolean(reading || footer || (shownOnsave && shownSaveLabel)));
+
+	async function suggest() {
+		suggesting = true;
+		await tick();
+		panel?.querySelector<HTMLElement>('input:not([type=hidden]), select, textarea')?.focus();
+	}
 
 	$effect(() => {
 		if (!open || !wide.current) return;
@@ -115,7 +143,7 @@
 
 	async function requestClose() {
 		if (beforeclose && (await beforeclose()) === false) return;
-		if (dirty && discard) {
+		if (dirty && discard && !reading) {
 			asking = true;
 			return;
 		}
@@ -127,21 +155,39 @@
 		if (e.key === 'Escape') {
 			e.preventDefault();
 			void requestClose();
-		} else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && onsave && !saveDisabled) {
+		} else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && shownOnsave && !saveDisabled) {
 			e.preventDefault();
-			onsave();
+			shownOnsave();
 		}
 	}
 </script>
 
 <svelte:window {onkeydown} />
 
+{#snippet suggestButton()}
+	{#if readFirst}
+		<Button variant="primary" onclick={suggest} data-testid="suggest-change"
+			>{readFirst.label}</Button
+		>
+	{/if}
+{/snippet}
+
+{#snippet content()}
+	{#if reading && readFirst}{@render readFirst.details()}{:else}{@render children()}{/if}
+{/snippet}
+
 {#snippet bottom()}
-	{#if footer}
+	{#if reading}
+		{@render suggestButton()}
+		{#if danger}<span class="ms-auto flex flex-wrap items-center gap-1">{@render danger()}</span
+			>{/if}
+	{:else if footer}
 		{@render footer()}
 	{:else}
-		{#if onsave && shownSaveLabel}
-			<Button variant="primary" disabled={saveDisabled} onclick={onsave}>{shownSaveLabel}</Button>
+		{#if shownOnsave && shownSaveLabel}
+			<Button variant="primary" disabled={saveDisabled} onclick={shownOnsave}
+				>{shownSaveLabel}</Button
+			>
 			<Button variant="ghost" onclick={requestClose}>{cancelLabel ?? closeLabel}</Button>
 		{/if}
 		{#if danger}<span class="ms-auto flex flex-wrap items-center gap-1">{@render danger()}</span
@@ -180,15 +226,15 @@
 					>
 				</button>
 			</header>
-			{#if approval}
+			{#if shownApproval}
 				<p
 					class="text-ink-soft border-line shrink-0 border-b px-5 py-2.5 text-[13px]"
 					data-testid="side-panel-note"
 				>
-					{approval.note}
+					{shownApproval.note}
 				</p>
 			{/if}
-			<div class="min-h-0 flex-1 overflow-y-auto p-5">{@render children()}</div>
+			<div class="min-h-0 flex-1 overflow-y-auto p-5">{@render content()}</div>
 			{#if hasFooter}
 				<footer
 					class="border-line bg-surface flex shrink-0 flex-wrap items-center gap-2 border-t px-5 py-3"
@@ -204,19 +250,22 @@
 			{title}
 			testid="side-panel"
 			onclose={requestClose}
-			{onsave}
+			onsave={shownOnsave}
 			saveLabel={shownSaveLabel}
-			note={approval?.note}
+			note={shownApproval?.note}
 			{saveDisabled}
 			cancelLabel={cancelLabel ?? closeLabel}
 		>
-			{@render children()}
-			{#if danger && !footer}
+			{@render content()}
+			{#if reading}
+				<div class="mt-6 flex flex-wrap items-center gap-2">{@render suggestButton()}</div>
+			{/if}
+			{#if danger && (reading || !footer)}
 				<div class="border-line mt-6 flex flex-wrap items-center gap-1 border-t pt-3">
 					{@render danger()}
 				</div>
 			{/if}
-			{#if footer}
+			{#if footer && !reading}
 				<div class="mt-6 flex flex-wrap items-center gap-2">{@render footer()}</div>
 			{/if}
 		</Sheet>

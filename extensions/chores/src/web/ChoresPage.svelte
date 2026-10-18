@@ -2,13 +2,17 @@
 	import { todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import {
+		AwaitingMark,
+		AwaitingRow,
 		ConfirmButton,
+		DetailRows,
 		EmptyState,
 		Fab,
 		focusFirstInvalid,
 		ListDetail,
 		Section,
 		Segmented,
+		readFirst,
 		SidePanel,
 		ViewOnly,
 	} from '@famos/ui/famos';
@@ -29,6 +33,7 @@
 	} from './data.js';
 	import {
 		type ChoreFormValue,
+		dueLabel,
 		doneToast,
 		emptyChore,
 		fromChore,
@@ -148,7 +153,9 @@
 	let baseline = $state('');
 	const dirty = $derived(editing !== null && JSON.stringify(form) !== baseline);
 	let formEl = $state<HTMLFormElement>();
-	const empty = $derived(loaded && !loadError && chores.length === 0);
+	// New chores someone asked for that wait for approval: quiet rows until they are decided.
+	const waitingNew = $derived(app.awaitedNew(['chores.createChore']));
+	const empty = $derived(loaded && !loadError && chores.length === 0 && waitingNew.length === 0);
 	function openNew() {
 		const fresh = emptyChore(today);
 		form = fresh;
@@ -243,7 +250,7 @@
 			><Plus class="size-4" />{holdsEdit ? t('add_chore') : t('suggest_chore')}</Button
 		>
 	{:else if !mayAdd && !mayTick}
-		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+		<ViewOnly />
 	{/if}
 {/snippet}
 
@@ -253,7 +260,42 @@
 	{/if}
 {/snippet}
 
+{#snippet choreDetails()}
+	{@const chore = editing?.original}
+	{#if chore}
+		<div class="grid gap-5">
+			<AwaitingMark id={chore.id} />
+			<DetailRows
+				rows={[
+					{ label: t('field_title'), value: chore.title },
+					{
+						label: t('draft_first_due'),
+						value: dueLabel(chore.nextDue, today, t, app.dateLocale()),
+					},
+					{
+						label: t('field_repeat'),
+						value: chore.recurrence ? t(`repeat_${chore.recurrence.freq}`) : t('repeat_none'),
+					},
+					{
+						label: t('field_people'),
+						value: chore.assigneeIds.length
+							? chore.assigneeIds
+									.map((id) => app.members().find((m) => m.id === id)?.displayName ?? '')
+									.filter(Boolean)
+									.join(' → ')
+							: t('anyone'),
+					},
+					{ label: t('field_notes'), value: chore.notes },
+				]}
+			/>
+		</div>
+	{/if}
+{/snippet}
+
 {#snippet formCard()}
+	{#if editing?.id && app.awaitsApproval(editing.id)}
+		<div class="mb-4"><AwaitingMark id={editing.id} /></div>
+	{/if}
 	{#if ownTick}
 		{@const done = ownTick}
 		<div class="border-line mb-4 flex items-center gap-3 border-b pb-4" data-testid="own-tick">
@@ -312,13 +354,22 @@
 				</Section>
 			{/if}
 		{/each}
+		{#if waitingNew.length > 0}
+			<Section label={app.t('app:draft_waiting')} count={waitingNew.length}>
+				<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] gap-1.5">
+					{#each waitingNew as change, i (change.draftId ?? i)}
+						<li class="min-w-0"><AwaitingRow {change} /></li>
+					{/each}
+				</ul>
+			</Section>
+		{/if}
 	</div>
 {/snippet}
 
 <ListDetail title={t('title')} actions={empty ? undefined : add} selected={false}>
 	{#snippet list()}
 		{#if empty}
-			<EmptyState art="chores" title={t('empty')} hint={t('empty_hint')}>
+			<EmptyState art="chores" title={t('empty')} hint={mayAdd ? t('empty_hint') : undefined}>
 				{#if mayAdd}
 					<Button onclick={openNew}
 						><Plus class="size-4" />{holdsEdit ? t('add_chore') : t('suggest_chore')}</Button
@@ -350,6 +401,9 @@
 	onsave={() => formEl?.requestSubmit()}
 	approval={app.approval(editing?.id ? 'chores.updateChore' : 'chores.createChore')}
 	danger={editing?.id ? archiveButton : undefined}
+	readFirst={editing?.id
+		? readFirst(app, 'chores.updateChore', choreDetails, { key: editing.id })
+		: undefined}
 	{dirty}
 	discard={{
 		title: t('discard_title'),

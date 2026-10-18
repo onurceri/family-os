@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { awaitedChanges, type WaitingDraft } from './awaiting.js';
+import { awaitedChanges, awaitedNew, type WaitingDraft, waitingChanges } from './awaiting.js';
 
 const awaitedIds = (drafts: readonly WaitingDraft[], memberId: string | undefined) =>
 	new Set(awaitedChanges(drafts, memberId).keys());
@@ -81,5 +81,67 @@ describe('what the member’s own changes wait on', () => {
 			input: { id: 'task_1', task: { title: 'Worksheet', dueDate: '2026-10-20' } },
 			before: { dueDate: null },
 		});
+	});
+
+	it('shows the one who may decide another person’s change, with who asked', () => {
+		const changes = awaitedChanges(
+			[
+				draft({
+					proposedBy: { kind: 'member', memberId: 'leo' },
+					canDecide: true,
+					input: { id: 'e1' },
+				}),
+				draft({
+					proposedBy: { kind: 'ai', mode: 'share', source: 'inbox', onBehalfOf: 'ivy' },
+					canDecide: true,
+					input: { id: 'e2' },
+				}),
+				// What an assistant proposed for nobody in particular is no person's change.
+				draft({ proposedBy: { kind: 'ai', mode: 'mcp' }, canDecide: true, input: { id: 'e3' } }),
+			],
+			'mara',
+		);
+		expect(changes.get('e1')?.by).toBe('leo');
+		expect(changes.get('e2')?.by).toBe('ivy');
+		expect(changes.has('e3')).toBe(false);
+		// The person who asked sees it without a name.
+		expect(awaitedChanges([draft({ input: { id: 'e1' } })], 'ivy').get('e1')?.by).toBeUndefined();
+	});
+});
+
+describe('new entries that wait for approval', () => {
+	const changes = waitingChanges(
+		[
+			draft({
+				id: 'd3',
+				actionId: 'pets.addTreatment',
+				input: { petId: 'pet_1', product: 'Worming' },
+			}),
+			draft({
+				id: 'd2',
+				actionId: 'pets.addTreatment',
+				input: { petId: 'pet_2', product: 'Rabies' },
+			}),
+			draft({
+				id: 'd1',
+				actionId: 'pets.addTreatment',
+				input: { petId: 'pet_1', product: 'Rabies' },
+			}),
+			draft({ id: 'd0', actionId: 'pets.updatePet', input: { id: 'pet_1', name: 'Biscuit' } }),
+		],
+		'ivy',
+	);
+
+	it('are those of the given actions about the given record, oldest first', () => {
+		expect(awaitedNew(changes, ['pets.addTreatment'], 'pet_1').map((c) => c.draftId)).toEqual([
+			'd1',
+			'd3',
+		]);
+		expect(awaitedNew(changes, ['pets.addTreatment']).map((c) => c.draftId)).toEqual([
+			'd1',
+			'd2',
+			'd3',
+		]);
+		expect(awaitedNew(changes, ['pets.addTreatment'], 'pet_9')).toEqual([]);
 	});
 });

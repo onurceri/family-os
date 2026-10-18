@@ -1,8 +1,8 @@
 import type { AwaitedChange } from '@famos/ui/app';
-import { proposedByMember } from '@famos/ui/slots';
 
 /** What the shell needs of a waiting suggestion to mark what it is about and what it changes. */
 export interface WaitingDraft {
+	id?: string;
 	actionId: string;
 	status: string;
 	input?: unknown;
@@ -16,27 +16,86 @@ export interface WaitingDraft {
 /** An input field that holds the id of a record: `id`, or a name that ends in `Id` (`petId`). */
 const ID_FIELD = /^(id|[a-z][a-zA-Z0-9]*Id)$/;
 
+/** The member a suggestion is from: the person who made it, or the one an AI made it for. */
+function proposerOf(proposedBy: unknown): string | undefined {
+	if (typeof proposedBy !== 'object' || proposedBy === null) return undefined;
+	const by = proposedBy as { kind?: string; memberId?: unknown; onBehalfOf?: unknown };
+	const id = by.kind === 'member' ? by.memberId : by.onBehalfOf;
+	return typeof id === 'string' && id ? id : undefined;
+}
+
 /**
- * The things the member's own changes wait on someone else to approve, each with the change that
- * waits: the record a change, a removal or a new entry (a treatment of a pet) is about, read from
- * the fields of the suggestion that hold an id. Lists of ids (the people of an event) are not what
- * it is about. With several waiting changes to one thing, the first given (the newest) is kept.
+ * The changes that wait for someone's approval and concern the signed-in member, newest first
+ * as given: their own that someone else decides, and another person's that they may decide
+ * (`by` names that person). What the member asked for and decides themselves (their own Quick add
+ * suggestions) is not waiting on anyone, and so is left out.
+ */
+export function waitingChanges(
+	drafts: readonly WaitingDraft[],
+	memberId: string | undefined,
+): AwaitedChange[] {
+	if (!memberId) return [];
+	const changes: AwaitedChange[] = [];
+	for (const draft of drafts) {
+		if (draft.status !== 'pending' && draft.status !== 'failed') continue;
+		const proposer = proposerOf(draft.proposedBy);
+		const own = proposer === memberId;
+		if (own ? draft.canDecide : !draft.canDecide || proposer === undefined) continue;
+		const input = draft.editedInput ?? draft.input;
+		if (typeof input !== 'object' || input === null) continue;
+		changes.push({
+			...(draft.id ? { draftId: draft.id } : {}),
+			actionId: draft.actionId,
+			input,
+			before: draft.before ?? null,
+			...(own ? {} : { by: proposer }),
+		});
+	}
+	return changes;
+}
+
+/** The ids of records a change's input names (lists of ids, the people of an event, are not). */
+function idsOf(input: unknown): string[] {
+	if (typeof input !== 'object' || input === null) return [];
+	return Object.entries(input).flatMap(([key, value]) =>
+		ID_FIELD.test(key) && typeof value === 'string' && value ? [value] : [],
+	);
+}
+
+/**
+ * The things waiting changes are about, each with the change that waits: the record a change, a
+ * removal or a new entry (a treatment of a pet) is about, read from the fields of the suggestion
+ * that hold an id. With several waiting changes to one thing, the first given (the newest) is kept.
  */
 export function awaitedChanges(
 	drafts: readonly WaitingDraft[],
 	memberId: string | undefined,
 ): Map<string, AwaitedChange> {
-	const changes = new Map<string, AwaitedChange>();
-	if (!memberId) return changes;
-	for (const draft of drafts) {
-		if (draft.status !== 'pending' && draft.status !== 'failed') continue;
-		if (draft.canDecide || !proposedByMember(draft.proposedBy, memberId)) continue;
-		const input = draft.editedInput ?? draft.input;
-		if (typeof input !== 'object' || input === null) continue;
-		const change: AwaitedChange = { actionId: draft.actionId, input, before: draft.before ?? null };
-		for (const [key, value] of Object.entries(input))
-			if (ID_FIELD.test(key) && typeof value === 'string' && value && !changes.has(value))
-				changes.set(value, change);
-	}
-	return changes;
+	return changesById(waitingChanges(drafts, memberId));
+}
+
+export function changesById(changes: readonly AwaitedChange[]): Map<string, AwaitedChange> {
+	const byId = new Map<string, AwaitedChange>();
+	for (const change of changes)
+		for (const id of idsOf(change.input)) if (!byId.has(id)) byId.set(id, change);
+	return byId;
+}
+
+/**
+ * The waiting changes that would add something new: those of the given actions, and with `aboutId`
+ * only those whose input names it (the treatments of one pet), oldest first, so a list shows them
+ * in the order they were asked for.
+ */
+export function awaitedNew(
+	changes: readonly AwaitedChange[],
+	actionIds: readonly string[],
+	aboutId?: string,
+): AwaitedChange[] {
+	return changes
+		.filter(
+			(change) =>
+				actionIds.includes(change.actionId) &&
+				(aboutId === undefined || idsOf(change.input).includes(aboutId)),
+		)
+		.toReversed();
 }

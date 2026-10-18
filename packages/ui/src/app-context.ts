@@ -81,15 +81,28 @@ export interface AppContext {
 	 */
 	approval(actionId: string, input?: unknown): Approval | undefined;
 	/**
-	 * Whether a change of the signed-in member to the thing with this id (a task, an event, a pet)
-	 * waits for someone else's approval (reactive). Rows and record pages mark it.
+	 * Whether a change to the thing with this id (a task, an event, a pet) waits for approval and
+	 * concerns the signed-in member (reactive): their own that someone else decides, or another
+	 * person's they may decide. Rows and record pages mark it.
 	 */
 	awaitsApproval(id: string): boolean;
 	/**
-	 * The change of the signed-in member to the thing with this id that waits for someone else's
-	 * approval, newest first (reactive), so a mark can say what it will become.
+	 * That change, the newest of several (reactive), so a mark can say what it will become and,
+	 * for the person who decides it, who asked.
 	 */
 	awaitedChange(id: string): AwaitedChange | undefined;
+	/**
+	 * The waiting changes of these actions that would add something (a treatment), oldest first
+	 * (reactive); with `aboutId`, only those whose input names that record (the pet). A list shows
+	 * them as quiet "Waiting for approval" rows (`AwaitingRow`), so it never reads as empty while
+	 * one waits.
+	 */
+	awaitedNew(actionIds: readonly string[], aboutId?: string): readonly AwaitedChange[];
+	/**
+	 * The members who may change what roles allow (reactive): for the line that says whom to ask.
+	 * Undefined while it is not known, or when the viewer may not read the family's roles.
+	 */
+	roleManagers(): readonly PresenterMember[] | undefined;
 	/**
 	 * Runs an action through the API with an idempotency key. With `offline: true`
 	 * (only for actions declared `offline`), a call that cannot reach the server is kept in the
@@ -142,11 +155,15 @@ export type RunActionResult<O = unknown> =
 
 /** A change waiting for approval, as a mark needs it to say what the thing will become. */
 export interface AwaitedChange {
+	/** The suggestion it is (a key for a list of them). */
+	draftId?: string;
 	actionId: string;
 	/** The input it would run with (a saved edit, else what was proposed). */
 	input: unknown;
 	/** What the fields it changes hold now, keyed like its input; null when not known. */
 	before: Readonly<Record<string, unknown>> | null;
+	/** Who asked for it, when it was not the signed-in member (who may then decide it). */
+	by?: string;
 }
 
 /** A queued call, as pages need it to mark items "waiting to send". */

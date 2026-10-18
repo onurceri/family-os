@@ -15,6 +15,7 @@
 	} from '#lib/i18n.svelte.js';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { awaiting } from '#lib/awaiting.svelte.js';
+	import { roleManagers } from '#lib/role-managers.svelte.js';
 	import { notifications } from '#lib/notifications.svelte.js';
 	import { offline } from '#lib/offline.svelte.js';
 	import OfflineStatus from '#lib/OfflineStatus.svelte';
@@ -193,6 +194,8 @@
 		},
 		awaitsApproval: (id) => awaiting.has(id),
 		awaitedChange: (id) => awaiting.get(id),
+		awaitedNew: (actionIds, aboutId) => awaiting.added(actionIds, aboutId),
+		roleManagers: () => roleManagers.list(),
 		runAction: (actionId, input, options) => offline.run(actionId, input, options),
 		waiting: () => offline.waitingChanges(),
 		offline: () => offline.showingOld,

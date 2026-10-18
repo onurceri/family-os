@@ -1,6 +1,8 @@
 export { default as ActionSheet } from './ActionSheet.svelte';
 export { default as Avatar } from './Avatar.svelte';
 export { default as AwaitingMark } from './AwaitingMark.svelte';
+export { default as AwaitingRow } from './AwaitingRow.svelte';
+export { awaitingMarkText, awaitingRowText, presenterContext } from './awaiting.js';
 export { default as BigNumber } from './BigNumber.svelte';
 export { default as Card } from './Card.svelte';
 export { default as Chip } from './Chip.svelte';
@@ -11,6 +13,7 @@ export { default as Composer } from './Composer.svelte';
 export { default as ConfirmButton } from './ConfirmButton.svelte';
 export { default as Countdown } from './Countdown.svelte';
 export { default as DateLine } from './DateLine.svelte';
+export { default as DetailRows } from './DetailRows.svelte';
 export { default as Dialog } from './Dialog.svelte';
 export { default as DisplayPill } from './DisplayPill.svelte';
 export { default as DisplayRow } from './DisplayRow.svelte';
@@ -79,6 +82,7 @@ export {
 } from './RepeatPicker.svelte';
 export { default as Ring } from './Ring.svelte';
 export { default as Row } from './Row.svelte';
+export { editLabel, readFirst } from './read-first.js';
 export {
 	default as ScheduleFields,
 	type ScheduleLabels,
@@ -121,6 +125,7 @@ export {
 export { getTodayBlock, type TodayBlockOptions } from './today-block.js';
 export * from './today-v3.js';
 export { default as ViewOnly } from './ViewOnly.svelte';
+export { joinNames, viewOnlyLine } from './view-only.js';
 export { default as WeatherBlock } from './WeatherBlock.svelte';
 export { default as WeatherIcon, type WeatherShape, weatherShape } from './WeatherIcon.svelte';
 export { default as WeatherSky } from './WeatherSky.svelte';

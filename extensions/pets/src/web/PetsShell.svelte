@@ -28,7 +28,7 @@
 			><Plus class="size-4" />{t('add_pet')}</Button
 		>
 	{:else}
-		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+		<ViewOnly />
 	{/if}
 {/snippet}
 
@@ -41,7 +41,7 @@
 	{count}
 >
 	{#snippet emptyState()}
-		<EmptyState art="pets" title={t('empty')} hint={t('empty_hint')}>
+		<EmptyState art="pets" title={t('empty')} hint={mayAdd ? t('empty_hint') : undefined}>
 			{#if mayAdd}
 				<Button onclick={() => setAdding(true)}><Plus class="size-4" />{t('add_pet')}</Button>
 			{/if}

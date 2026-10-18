@@ -3,6 +3,7 @@
 	import { Button } from '@famos/ui/button';
 	import {
 		Avatar,
+		awaitingMarkText,
 		ConfirmButton,
 		EmptyState,
 		focusFirstInvalid,
@@ -199,7 +200,8 @@
 			viewing = occurrence;
 			return;
 		}
-		if (!mayEdit) {
+		// Someone whose change would wait for approval reads first, and suggests from there.
+		if (!mayEdit || app.access('calendar.updateEvent') === 'suggest') {
 			await openOnBoard(occurrence);
 			return;
 		}
@@ -366,10 +368,14 @@
 				: t('agenda_in_hours', { count: Math.round(minutes / 60) }),
 	});
 	const agenda = $derived(
-		dayItems.map((o): TimelineItem => ({
-			...toTimelineItem(o, day, app),
-			onselect: () => void openEdit(o),
-		})),
+		dayItems.map((o): TimelineItem => {
+			const item = toTimelineItem(o, day, app);
+			const change = app.awaitedChange(o.eventId);
+			const subtitle = change
+				? [awaitingMarkText(app, change), item.subtitle].filter(Boolean).join(' · ')
+				: item.subtitle;
+			return { ...item, ...(subtitle && { subtitle }), onselect: () => void openEdit(o) };
+		}),
 	);
 	const phoneTitle = $derived(monthLabel(day, app.dateLocale()));
 
@@ -549,7 +555,7 @@
 					{#if mayAdd}
 						<Button size="lg" onclick={() => addOn(day)}><Plus class="size-4" />{t('add')}</Button>
 					{:else}
-						<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+						<ViewOnly />
 					{/if}
 				</div>
 			</header>
@@ -627,7 +633,7 @@
 		<PageHeader title={t('title')} subtitle={phoneTitle}>
 			{#snippet actions()}
 				{#if !mayAdd}
-					<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+					<ViewOnly />
 				{/if}
 				<Button
 					size="icon-lg"
@@ -762,7 +768,7 @@
 					<EmptyState
 						art="calendar"
 						title={tagFilter.length ? t('nothing_filtered') : t('nothing')}
-						hint={tagFilter.length ? undefined : t('nothing_hint')}
+						hint={tagFilter.length || !mayAdd ? undefined : t('nothing_hint')}
 					/>
 				{:else}
 					<Timeline items={agenda} {now} showNow={day === today} labels={agendaLabels} />

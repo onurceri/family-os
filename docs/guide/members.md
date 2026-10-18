@@ -35,7 +35,7 @@ Everyone chooses their own language under **Settings → You → Profile & sign-
 
 Everyone also sees their own notifications and the other members.
 
-A button is there only when you may use it. A role that can look but not change a page (a Guest on the board, the calendar or a list) sees the page with a quiet **View only** mark at the top instead of the add button, and check circles that would not work are plain marks.
+A button is there only when you may use it. A role that can look but not change a page (a Guest on the board, the calendar or a list) sees the page with a quiet **View only** mark at the top instead of the add button, and check circles that would not work are plain marks. Tapping **View only** says why, and whom to ask: "Your role lets you see this. Mara and Tom can change what your role may do." (the people whose role may change roles). An empty page does not invite someone who may not add to it: it says only that there is nothing yet. Links to Quick add (on a record's papers, under an assistant's answer) appear only for people who may use Quick add.
 
 Menus show only the pages your role may open. If you follow a link or a bookmark to one that is not for you, the page says so ("This page is for people who may use Members") and offers the way back to Today.
 

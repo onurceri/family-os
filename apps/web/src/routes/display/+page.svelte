@@ -99,6 +99,8 @@
 		sentForApproval: () => {},
 		awaitsApproval: () => false,
 		awaitedChange: () => undefined,
+		awaitedNew: () => [],
+		roleManagers: () => undefined,
 		// A display only looks: no actions, no offline queue.
 		runAction: () => Promise.reject(new Error('Displays cannot run actions')),
 		waiting: () => [],

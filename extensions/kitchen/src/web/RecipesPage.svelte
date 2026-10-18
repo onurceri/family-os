@@ -194,7 +194,7 @@
 		<Button onclick={openAdd} class="max-md:hidden"><Plus class="size-4" />{t('add_recipe')}</Button
 		>
 	{:else if !mayPlan}
-		<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+		<ViewOnly />
 	{/if}
 {/snippet}
 
@@ -231,7 +231,11 @@
 	>
 		{#snippet list()}
 			{#if empty}
-				<EmptyState art="kitchen" title={t('empty_recipes')} hint={t('empty_recipes_hint')}>
+				<EmptyState
+					art="kitchen"
+					title={t('empty_recipes')}
+					hint={mayAdd ? t('empty_recipes_hint') : undefined}
+				>
 					{#if mayAdd}
 						<Button onclick={openAdd}><Plus class="size-4" />{t('add_recipe')}</Button>
 					{/if}

@@ -205,7 +205,10 @@ The page offers what the viewer may do and says so when it does not. What a view
 - **`no`: the control is not drawn.** No disabled buttons, and no look-alikes: a check circle that cannot be ticked is a plain status mark (a filled disc when done, a small dot when open), not a circle button. A row whose tap would open an editor the viewer may not use does not open one, or opens details only (an event).
 - **`suggest`: the form says so before anything is typed.** `SidePanel` takes `approval={app.approval(actionId, input?)}`: one line under the title (in the sheet it stays under the bar while the form scrolls) and the save button reads **Send for approval**. The line is for the exact answer: where the input decides (a task of one's own is saved at once), pass the input so the form never says "someone has to approve" when it will not.
 - **`apply`: as before.**
-- **A page whose main action is `no` says "View only"**: a quiet `ViewOnly` pill (the §5.7 pill with a hint, "Your role can look but not change this.") in the page head, in place of the primary button, once for the whole page. A page with two main acts (Chores: add and tick; Shopping: add and tick; Tasks: add and tick) says it only when neither is open to the viewer.
+- **`suggest` reads first.** A row that opens a form opens, for this viewer, the thing's details (`DetailRows`) with one button, **Suggest a change**, and the form only on it: `SidePanel` takes `readFirst={readFirst(app, actionId, details, { key })}` (undefined for anyone else, so nothing changes for them). A record page's Edit button says the same (`editLabel`).
+- **What waits is shown where it is.** A thing a waiting change is about carries `AwaitingMark` (for the person who asked, and with who asked for those who may decide it; `app.awaitedChange(id)`), and a list shows a new entry that waits as a quiet `AwaitingRow` (`app.awaitedNew(actions, aboutId)`), so it never reads as empty while one waits.
+- **An empty state invites only those who may add**: without the add action, the title alone, no hint.
+- **A page whose main action is `no` says "View only"**: a quiet `ViewOnly` pill in the page head, in place of the primary button, once for the whole page. A tap opens one line under it: "Your role lets you see this. {who} can change what your role may do.", naming the members whose role may change roles (`app.roleManagers()`); it is announced, works on touch, and is never a hover tooltip. A page with two main acts (Chores: add and tick; Shopping: add and tick; Tasks: add and tick) says it only when neither is open to the viewer.
 - **A display shows, never offers.** A display's answers are all `no`: nothing on it is actionable.
 
 A refused change (the role changed since the page was drawn) reads the answers again, so the next draw is right.
@@ -252,7 +255,9 @@ All of them live in `@famos/ui/famos` (vendored shadcn-svelte primitives in `@fa
 | `IconButton` | 36 / 40 / 44 px ghost or outline. |
 | `Fab` | §4.3. |
 | `Notice` | §5.10. |
-| `ViewOnly` | The "View only" pill in a page head, §4.8. |
+| `ViewOnly` | The "View only" pill in a page head; a tap says why and whom to ask, §4.8. |
+| `AwaitingMark` · `AwaitingRow` | What waits for approval: the mark beside a thing, the quiet row of a new entry, §4.8. |
+| `DetailRows` | A thing's details, read only, label above value (the `readFirst` view of a `SidePanel`), §4.8. |
 
 ### 5.1 Buttons
 

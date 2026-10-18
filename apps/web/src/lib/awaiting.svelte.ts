@@ -1,21 +1,23 @@
 import type { AwaitedChange } from '@famos/ui/app';
 import { api } from './api';
-import { awaitedChanges } from './awaiting.js';
+import { awaitedNew, changesById, waitingChanges } from './awaiting.js';
 import { session } from './session.svelte.js';
 
 /**
- * The records the signed-in member's own changes wait on someone else to approve, with the change
- * that waits, so pages can mark them "Waiting for approval" where the change was made and say what
- * it will become. Read again after every change to a suggestion.
+ * The changes that wait for approval and concern the signed-in member (their own, and those of
+ * others they may decide), with the records they are about, so pages can mark them "Waiting for
+ * approval" where the change was made and say what it will become, and lists can show a new entry
+ * that waits. Read again after every change to a suggestion.
  */
 class Awaiting {
-	changes = $state(new Map<string, AwaitedChange>());
+	list = $state<readonly AwaitedChange[]>([]);
+	changes = $derived(changesById(this.list));
 
 	async refresh(): Promise<void> {
 		const me = session.me?.id;
-		// Only people who may propose have changes that wait.
+		// Only people who may propose read suggestions (approvers hold it as well).
 		if (!me || !session.can('core.drafts.propose')) {
-			this.changes = new Map();
+			this.list = [];
 			return;
 		}
 		const read = async (status: 'pending' | 'failed') => {
@@ -29,7 +31,7 @@ class Awaiting {
 			const drafts = (await Promise.all([read('pending'), read('failed')]))
 				.flat()
 				.toSorted((a, b) => b.createdAt - a.createdAt);
-			this.changes = awaitedChanges(drafts, me);
+			this.list = waitingChanges(drafts, me);
 		} catch {
 			// Keep the marks known so far; the next change to a suggestion reads them again.
 		}
@@ -41,6 +43,10 @@ class Awaiting {
 
 	get(id: string): AwaitedChange | undefined {
 		return this.changes.get(id);
+	}
+
+	added(actionIds: readonly string[], aboutId?: string): readonly AwaitedChange[] {
+		return awaitedNew(this.list, actionIds, aboutId);
 	}
 }
 

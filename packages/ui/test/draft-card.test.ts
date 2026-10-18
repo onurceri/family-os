@@ -500,11 +500,15 @@ describe('awaitingText', () => {
 		t: (key: string, o?: Record<string, unknown>) =>
 			key === 'app:draft_waiting_change'
 				? `Waiting for approval · ${String(o?.change)}`
-				: key === 'app:draft_waiting_field'
-					? `${String(o?.label)}: ${String(o?.value)}`
-					: key === 'app:draft_waiting'
-						? 'Waiting for approval'
-						: key,
+				: key === 'app:draft_waiting_change_by'
+					? `Suggested by ${String(o?.name)} · ${String(o?.change)}`
+					: key === 'app:draft_waiting_by'
+						? `Suggested by ${String(o?.name)}`
+						: key === 'app:draft_waiting_field'
+							? `${String(o?.label)}: ${String(o?.value)}`
+							: key === 'app:draft_waiting'
+								? 'Waiting for approval'
+								: key,
 		members: [],
 		formatLocale: 'en-GB',
 		dateLocale: 'en-GB',
@@ -544,5 +548,15 @@ describe('awaitingText', () => {
 				}),
 			),
 		).toBe('Waiting for approval');
+	});
+
+	it('names who asked for the person who may decide it', () => {
+		const rows = presenter(() => [{ label: 'Title', ...changed('Piano', 'Piano lesson') }]);
+		expect(awaitingText({ input: {}, before: null, presenter: rows, context, by: 'Leo' })).toBe(
+			'Suggested by Leo · Title: Piano lesson',
+		);
+		expect(
+			awaitingText({ input: {}, before: null, presenter: undefined, context, by: 'Leo' }),
+		).toBe('Suggested by Leo');
 	});
 });

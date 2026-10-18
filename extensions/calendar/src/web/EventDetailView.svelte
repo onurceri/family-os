@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { describeRecurrence } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { AwaitingMark, ConfirmButton } from '@famos/ui/famos';
+	import { AwaitingMark, ConfirmButton, editLabel } from '@famos/ui/famos';
 	import type { EventDetail, Occurrence, Tag } from '../contract/index.js';
 	import { describeWhen } from './format.js';
 	import { reminderKey } from './form.js';
@@ -105,7 +105,9 @@
 	</dl>
 	{#if mayEdit || mayDelete}
 		<div class="flex flex-wrap items-center gap-2">
-			{#if mayEdit}<Button type="button" size="lg" onclick={onedit}>{t('edit_event')}</Button>{/if}
+			{#if mayEdit}<Button type="button" size="lg" onclick={onedit}
+					>{editLabel(app, 'calendar.updateEvent', t('edit_event'))}</Button
+				>{/if}
 			{#if mayDelete}
 				<span class="ms-auto flex flex-wrap gap-1">
 					{#if occurrence.recurring}

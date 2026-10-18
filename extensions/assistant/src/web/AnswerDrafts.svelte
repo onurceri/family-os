@@ -13,6 +13,8 @@
 		lines = [],
 	}: { messageId: string; ids: readonly string[]; lines?: readonly string[] } = $props();
 	const { app, t } = useAssistant();
+	// Suggestions wait in the family's share page (Quick add), linked for those who may use it.
+	const share = $derived(app.share());
 	let drafts = $state<Draft[]>([]);
 	let failed = $state(false);
 	let loaded = $state(false);
@@ -42,8 +44,11 @@
 		{/each}
 		{#if failed || lines.length > 0}
 			<p class="text-ink-soft text-sm">
-				{#if lines.length === 0}{t('suggestion_created')} ·{/if}
-				<a href="/add" class="font-semibold underline">{t('open_quick_add')}</a>
+				{#if lines.length === 0}{t('suggestion_created')}{/if}
+				{#if share}
+					{#if lines.length === 0}·{/if}
+					<a href={share.path} class="font-semibold underline">{t('open_quick_add')}</a>
+				{/if}
 			</p>
 		{/if}
 	{/if}

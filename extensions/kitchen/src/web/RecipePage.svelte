@@ -13,6 +13,7 @@
 		Section,
 		SidePanel,
 		wide,
+		editLabel,
 	} from '@famos/ui/famos';
 	import {
 		ArrowLeft,
@@ -96,6 +97,8 @@
 	// Without the right to change a recipe, a change is proposed and waits for approval.
 	const mayPlan = $derived(app.access('kitchen.addToMealPlan') !== 'no');
 	const mayEdit = $derived(app.access('kitchen.updateRecipe') !== 'no');
+	// "Suggest a change" when the change would wait for approval.
+	const editText = $derived(editLabel(app, 'kitchen.updateRecipe', t('edit')));
 	const mayArchive = $derived(app.access('kitchen.archiveRecipe') !== 'no');
 	const mayPhoto = $derived(app.access('kitchen.setRecipePhoto') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
@@ -289,7 +292,7 @@
 					>
 				{/if}
 				{#if mayEdit}
-					<Button variant="outline" onclick={edit}>{t('edit')}</Button>
+					<Button variant="outline" onclick={edit}>{editText}</Button>
 				{/if}
 				{#if menuItems.length}
 					<Menu

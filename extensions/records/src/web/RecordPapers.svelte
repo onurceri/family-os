@@ -31,6 +31,8 @@
 	const { app, t } = useRecords();
 	const today = $derived(todayIn(app.timeZone(), Date.now()));
 	const mayAttach = $derived(app.access('records.attachDocument') !== 'no');
+	// Papers arrive through the family's share page (Quick add), for those who may use it.
+	const share = $derived(app.share());
 	const mayEdit = $derived(app.access('records.updateDocument') !== 'no');
 	const mayDetach = $derived(app.access('records.detachDocument') !== 'no');
 
@@ -192,8 +194,8 @@
 </Dialog>
 
 {#snippet addAction()}
-	{#if mayAttach}
-		<Button variant="ghost" size="sm" href="/add"
+	{#if mayAttach && share}
+		<Button variant="ghost" size="sm" href={share.path}
 			><Plus class="size-[15px]" aria-hidden="true" />{t('papers_add')}</Button
 		>
 	{/if}
@@ -209,11 +211,13 @@
 	{:else if loaded && docs.length === 0}
 		<EmptyLine text={t('papers_empty')}>
 			{#snippet icon()}<FileText />{/snippet}
-			<a
-				href="/add"
-				class="text-info inline-flex min-h-9 items-center font-semibold underline underline-offset-4"
-				>{t('papers_share')}</a
-			>
+			{#if share}
+				<a
+					href={share.path}
+					class="text-info inline-flex min-h-9 items-center font-semibold underline underline-offset-4"
+					>{t('papers_share')}</a
+				>
+			{/if}
 		</EmptyLine>
 	{/if}
 

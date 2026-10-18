@@ -7,6 +7,7 @@
 		Composer,
 		ConfirmButton,
 		Dialog,
+		editLabel,
 		EmptyArt,
 		FIELD_REASON,
 		FieldError,
@@ -114,6 +115,35 @@
 				return input.items.map((item, i) => ({ ...item, id: `queued-${n}-${i}` }));
 			}),
 	);
+
+	// Items someone asked to add that wait for approval: shown as such until they are decided.
+	const approvalAdds = $derived(
+		list
+			? app.awaitedNew(['lists.addShoppingItems'], list.id).flatMap((change, n) => {
+					const input = change.input as { items?: { title?: unknown; quantity?: unknown }[] };
+					const by = app.members().find((m) => m.id === change.by)?.displayName;
+					const mark = by
+						? app.t('app:draft_waiting_by', { name: by })
+						: app.t('app:draft_waiting');
+					return (input.items ?? []).flatMap((item, i) =>
+						typeof item.title === 'string'
+							? [
+									{
+										id: `${change.draftId ?? n}-${i}`,
+										title: item.title,
+										quantity: typeof item.quantity === 'string' ? item.quantity : undefined,
+										mark,
+									},
+								]
+							: [],
+					);
+				})
+			: [],
+	);
+	const waitingAdds = $derived([
+		...queuedAdds.map((item) => ({ ...item, mark: t('waiting_to_send') })),
+		...approvalAdds,
+	]);
 
 	async function refreshLists() {
 		try {
@@ -361,7 +391,14 @@
 	}
 	const rowItems = (item: ShoppingItem): MenuItem[] => [
 		...(mayEdit
-			? [{ id: 'edit', label: t('edit_item'), icon: pencilIcon, onselect: () => edit(item) }]
+			? [
+					{
+						id: 'edit',
+						label: editLabel(app, 'lists.updateShoppingItem', t('edit_item')),
+						icon: pencilIcon,
+						onselect: () => edit(item),
+					},
+				]
 			: []),
 		...(mayDelete(item.id, menuFor === item.id)
 			? [
@@ -559,7 +596,7 @@
 {/snippet}
 
 {#snippet viewOnly()}
-	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+	<ViewOnly />
 {/snippet}
 
 {#snippet listMenuTrigger(attrs: Record<string, unknown>)}
@@ -689,7 +726,7 @@
 				<div class="grid min-w-0 gap-6">
 					{#if loadError}
 						<p class="text-attention font-semibold">{t('error')}</p>
-					{:else if itemsLoaded && open.length === 0 && queuedAdds.length === 0}
+					{:else if itemsLoaded && open.length === 0 && waitingAdds.length === 0}
 						<div
 							class="text-ink-soft flex flex-col items-center gap-2 py-6 text-center"
 							data-testid="empty-state"
@@ -700,31 +737,31 @@
 									<span class="text-ink font-semibold">{t('all_in_cart')}</span>
 								{:else}
 									<span class="text-ink font-semibold">{t('list_empty')}</span>
-									{t('list_empty_hint')}
+									{mayAdd ? t('list_empty_hint') : ''}
 								{/if}
 							</p>
 						</div>
 					{/if}
 
-					{#if queuedAdds.length || sections.length}
+					{#if waitingAdds.length || sections.length}
 						<ul
 							class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
 							aria-label={t('to_get_label')}
 						>
-							{#if queuedAdds.length}
+							{#if waitingAdds.length}
 								<li>
 									<ul
 										class="divide-line grid grid-cols-[minmax(0,1fr)] divide-y"
-										aria-label={t('waiting_to_send')}
+										aria-label={app.t('app:draft_waiting')}
 									>
-										{#each queuedAdds as item (item.id)}
+										{#each waitingAdds as item (item.id)}
 											<li
 												class="flex min-h-[52px] items-center gap-3 ps-4 pe-4"
 												data-testid="queued-item"
 											>
 												<span class="min-w-0 truncate text-base font-semibold">{item.title}</span>
 												<span class="text-ink-soft ms-auto shrink-0 text-xs font-semibold"
-													>{t('waiting_to_send')}</span
+													>{item.mark}</span
 												>
 												{#if item.quantity}
 													<span
@@ -740,7 +777,7 @@
 							{#each sections as section (section.category)}
 								<li>
 									<section aria-label={catLabel(section.category)}>
-										{#if sections.length > 1 || queuedAdds.length}
+										{#if sections.length > 1 || waitingAdds.length}
 											<h2
 												class="text-ink-soft px-4 pt-3.5 pb-1 text-xs font-bold tracking-[0.06em] uppercase"
 											>
@@ -832,6 +869,7 @@
 	cancelLabel={t('cancel')}
 	saveLabel={t('save')}
 	onsave={() => editForm?.requestSubmit()}
+	approval={editing ? app.approval('lists.updateShoppingItem', { id: editing.id }) : undefined}
 	danger={editing ? deleteItemButton : undefined}
 	{dirty}
 	discard={{

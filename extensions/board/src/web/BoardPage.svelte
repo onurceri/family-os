@@ -343,7 +343,7 @@
 {/snippet}
 
 {#snippet viewOnly()}
-	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+	<ViewOnly />
 {/snippet}
 
 {#snippet cork()}

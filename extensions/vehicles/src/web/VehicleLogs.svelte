@@ -4,6 +4,8 @@
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import {
+		AwaitingRow,
+		awaitingMarkText,
 		Card,
 		ConfirmButton,
 		EmptyLine,
@@ -48,6 +50,13 @@
 	// Also for people who may only suggest a change: theirs waits for approval.
 	const mayAdd = $derived(app.access('vehicles.addLog') !== 'no');
 	const mayRemove = $derived(app.access('vehicles.removeLog') !== 'no');
+	// Entries someone asked to add that wait for approval: quiet rows until they are decided.
+	const waitingNew = $derived(app.awaitedNew(['vehicles.addLog'], vehicle.id));
+	/** What waits on an entry (its removal), said in its row. */
+	const markOf = (id: string) => {
+		const change = app.awaitedChange(id);
+		return change ? awaitingMarkText(app, change) : null;
+	};
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -276,12 +285,12 @@
 
 <Section
 	label={t('log_title')}
-	count={logs.length > 0 ? logs.length : undefined}
+	count={logs.length + waitingNew.length || undefined}
 	actions={addAction}
 >
 	{#if loadError}
 		<p class="text-attention font-semibold" role="alert">{t('error')}</p>
-	{:else if loaded && logs.length === 0}
+	{:else if loaded && logs.length === 0 && waitingNew.length === 0}
 		<EmptyLine text={t('log_empty')}>
 			{#snippet icon()}<Check class="text-now" />{/snippet}
 			{#if mayAdd}
@@ -294,13 +303,24 @@
 		</EmptyLine>
 	{/if}
 
-	{#if logs.length > 0}
+	{#if logs.length > 0 || waitingNew.length > 0}
 		<Card rows role="list">
+			{#each waitingNew as change, i (change.draftId ?? i)}
+				<div role="listitem">
+					<AwaitingRow {change}>
+						{#snippet lead()}
+							<span class="bg-idle grid size-9 place-items-center rounded-full"
+								><Wrench class="size-[18px]" aria-hidden="true" /></span
+							>
+						{/snippet}
+					</AwaitingRow>
+				</div>
+			{/each}
 			{#each logs as log (log.id)}
 				<div role="listitem">
 					<Row
 						title="{t(`log_kind_${log.kind}`)} · {dateOf(log.doneOn)}"
-						meta={[log.place, log.notes].filter(Boolean).join(' · ') || undefined}
+						meta={[log.place, log.notes, markOf(log.id)].filter(Boolean).join(' · ') || undefined}
 						onclick={() => view(log)}
 					>
 						{#snippet lead()}

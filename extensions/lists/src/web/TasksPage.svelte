@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { formatDate, todayIn } from '@famos/time';
+	import { describeRecurrence, formatDate, todayIn } from '@famos/time';
 	import {
+		AwaitingMark,
+		AwaitingRow,
 		Composer,
 		ConfirmButton,
+		DetailRows,
 		EmptyArt,
 		focusFirstInvalid,
 		Page,
+		readFirst,
 		Segmented,
 		SidePanel,
 		ViewOnly,
@@ -23,7 +27,7 @@
 		reopenTask,
 		saveTask,
 	} from './data.js';
-	import { groupTasks, type Urgency } from './format.js';
+	import { dueLabel, groupTasks, type Urgency } from './format.js';
 	import { revealRow } from './reveal.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
@@ -195,6 +199,8 @@
 	// Full editor for a new task (from the composer text) or an existing one.
 	let editingId = $state<string | 'new' | null>(null);
 	let form = $state<TaskFormValue | null>(null);
+	// The task as it was when it opened: its details, for someone whose change would wait.
+	let opened = $state<Task | null>(null);
 	let formEl = $state<HTMLFormElement | null>(null);
 
 	// What saving the open form would do, asked of the server with what is typed: a task of one's
@@ -234,7 +240,9 @@
 
 	async function openEdit(task: Task) {
 		try {
-			openEditor(taskFormFrom(await loadTask(task.id)), task.id);
+			const full = await loadTask(task.id);
+			opened = full;
+			openEditor(taskFormFrom(full), task.id);
 		} catch {
 			app.toast(t('error'));
 		}
@@ -243,7 +251,19 @@
 	function close() {
 		editingId = null;
 		form = null;
+		opened = null;
 	}
+
+	// New tasks someone asked for that wait for approval: quiet rows until they are decided.
+	const waitingNew = $derived(app.awaitedNew(['lists.addTask']));
+	const reading = $derived(
+		opened && editingId === opened.id
+			? readFirst(app, 'lists.updateTask', taskDetails, {
+					input: { id: opened.id, task: taskInputFrom(taskFormFrom(opened)) },
+					key: opened.id,
+				})
+			: undefined,
+	);
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -317,12 +337,51 @@
 	</section>
 {/snippet}
 
+{#snippet taskDetails()}
+	{#if opened}
+		{@const task = opened}
+		<div class="grid gap-5">
+			<AwaitingMark id={task.id} />
+			<DetailRows
+				rows={[
+					{ label: t('field_title'), value: task.title },
+					{
+						label: t('who'),
+						value: app.members().find((m) => m.id === task.assigneeId)?.displayName ?? t('anyone'),
+					},
+					{
+						label: t('due'),
+						value: task.dueDate
+							? dueLabel(task, today, t, app.dateLocale(), app.hourCycle())
+							: t('no_due'),
+					},
+					{
+						label: t('repeat'),
+						value: task.recurrence
+							? describeRecurrence(
+									task.recurrence as Parameters<typeof describeRecurrence>[0],
+									t,
+									app.dateLocale(),
+									app.weekStart(),
+									task.dueDate ?? undefined,
+								)
+							: task.rrule
+								? t('repeat_custom')
+								: null,
+					},
+					{ label: t('notes'), value: task.notes },
+				]}
+			/>
+		</div>
+	{/if}
+{/snippet}
+
 {#snippet deleteButton()}
 	<ConfirmButton label={t('delete')} confirmLabel={t('delete_confirm')} onconfirm={remove} />
 {/snippet}
 
 {#snippet viewOnly()}
-	<ViewOnly label={app.t('app:view_only')} hint={app.t('app:view_only_hint')} />
+	<ViewOnly />
 {/snippet}
 
 {#snippet filter()}
@@ -363,7 +422,7 @@
 
 			{#if loadError}
 				<p class="text-attention font-semibold">{t('error')}</p>
-			{:else if loadedOnce && groups.length === 0}
+			{:else if loadedOnce && groups.length === 0 && waitingNew.length === 0}
 				<div
 					class="text-ink-soft flex flex-col items-center gap-2 py-6 text-center"
 					data-testid="empty-state"
@@ -371,7 +430,7 @@
 					<EmptyArt name="tasks" />
 					<p class="max-w-[34ch] text-[15px] leading-snug text-pretty">
 						<span class="text-ink font-semibold">{mine ? t('no_tasks_mine') : t('no_tasks')}</span>
-						{mine ? '' : t('no_tasks_hint')}
+						{mine || !mayAdd ? '' : t('no_tasks_hint')}
 					</p>
 				</div>
 			{/if}
@@ -387,6 +446,24 @@
 						</div>
 					{/if}
 				</div>
+			{/if}
+
+			{#if waitingNew.length}
+				<section class="grid gap-2.5" aria-labelledby="tasks-group-waiting">
+					<div class="text-ink-soft flex items-baseline gap-2 text-xs">
+						<h2 id="tasks-group-waiting" class="font-bold tracking-[0.06em] uppercase">
+							{app.t('app:draft_waiting')}
+						</h2>
+						<span class="font-semibold">{waitingNew.length}</span>
+					</div>
+					<ul
+						class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
+					>
+						{#each waitingNew as change, i (change.draftId ?? i)}
+							<li><AwaitingRow {change} /></li>
+						{/each}
+					</ul>
+				</section>
 			{/if}
 
 			{#if done.length}
@@ -421,6 +498,7 @@
 	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
 	{approval}
+	readFirst={reading}
 	danger={mayDelete ? deleteButton : undefined}
 	{dirty}
 	discard={{

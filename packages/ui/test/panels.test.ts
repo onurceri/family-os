@@ -218,6 +218,75 @@ describe('SidePanel on a wide window', () => {
 	});
 });
 
+describe('SidePanel that reads first (a change that waits for approval)', () => {
+	const approval = { note: 'Someone has to approve this.', saveLabel: 'Send for approval' };
+	const readFirst = { details: html('<p>Piano lesson details</p>'), label: 'Suggest a change' };
+
+	it('opens on the details with one "Suggest a change", and the form only on it', async () => {
+		const onsave = vi.fn();
+		panel({ approval, saveLabel: 'Save', onsave, readFirst });
+		expect(document.body.textContent).toContain('Piano lesson details');
+		expect(q('#f')).toBeNull();
+		expect(q('[data-testid=side-panel-note]')).toBeNull();
+		expect(document.body.textContent).not.toContain('Send for approval');
+		key(document.body, 'Enter', { ctrlKey: true });
+		expect(onsave).not.toHaveBeenCalled();
+		click(buttonByText('Suggest a change'));
+		await settle();
+		expect(q('#f')).toBeTruthy();
+		expect(document.activeElement).toBe(q('#f'));
+		expect(q('[data-testid=side-panel-note]')?.textContent).toContain('approve');
+		click(buttonByText('Send for approval'));
+		expect(onsave).toHaveBeenCalledOnce();
+	});
+
+	it('does the same in the phone sheet', () => {
+		wide.current = false;
+		panel({ approval, saveLabel: 'Save', onsave: vi.fn(), readFirst });
+		expect(document.body.textContent).toContain('Piano lesson details');
+		expect(document.body.textContent).not.toContain('Send for approval');
+		click(buttonByText('Suggest a change'));
+		expect(q('#f')).toBeTruthy();
+		expect(document.body.textContent).toContain('Send for approval');
+	});
+
+	it('opens on the details again when it opens again or shows another thing', () => {
+		const props = box({
+			open: true,
+			title: 'Event',
+			closeLabel: 'Close',
+			onclose: vi.fn(),
+			saveLabel: 'Save',
+			onsave: vi.fn(),
+			children: html('<input id="f" />'),
+			readFirst: { ...readFirst, key: 'a' } as typeof readFirst & { key: string },
+		});
+		render(SidePanel, props);
+		click(buttonByText('Suggest a change'));
+		expect(q('#f')).toBeTruthy();
+		// The page draws the same thing again: the form stays.
+		props.readFirst = { ...readFirst, key: 'a' };
+		flushSync();
+		expect(q('#f')).toBeTruthy();
+		props.readFirst = { ...readFirst, key: 'b' };
+		flushSync();
+		expect(q('#f')).toBeNull();
+		click(buttonByText('Suggest a change'));
+		props.open = false;
+		flushSync();
+		props.open = true;
+		flushSync();
+		expect(q('#f')).toBeNull();
+		expect(document.body.textContent).toContain('Piano lesson details');
+	});
+
+	it('is the plain form for someone who changes directly', () => {
+		panel({ saveLabel: 'Save', onsave: vi.fn() });
+		expect(q('#f')).toBeTruthy();
+		expect(qa('button').some((b) => b.textContent?.includes('Suggest a change'))).toBe(false);
+	});
+});
+
 describe('SidePanel below 1024 px', () => {
 	it('is a sheet with Cancel, the title and Save, and the danger action at the end', () => {
 		wide.current = false;

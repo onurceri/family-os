@@ -747,19 +747,24 @@ export function insteadOffer(draft: {
 }
 
 /**
- * What a mark beside a thing says while the member's change to it waits for approval: "Waiting for
- * approval", followed by what the change makes of it, from the presenter of its action ("Due: Tue
- * 20 Oct"). Each row gives its new value alone (`DraftField.to`): the thing on screen already shows
- * what it holds now. Without a presenter, or rows, the plain words.
+ * What a mark beside a thing says while a change to it waits for approval: "Waiting for approval"
+ * (to the person who asked) or "Suggested by Leo" (to one who may decide it, `by`), followed by
+ * what the change makes of it, from the presenter of its action ("Due: Tue 20 Oct"). Each row gives
+ * its new value alone (`DraftField.to`): the thing on screen already shows what it holds now.
+ * Without a presenter, or rows, the plain words.
  */
 export function awaitingText(change: {
 	input: unknown;
 	before: DraftBefore;
 	presenter: AnyDraftPresenter | undefined;
 	context: PresenterContext;
+	/** The name of who asked, when it was someone else. */
+	by?: string;
 }): string {
-	const { context, presenter } = change;
-	const waiting = context.t('app:draft_waiting');
+	const { context, presenter, by } = change;
+	const waiting = by
+		? context.t('app:draft_waiting_by', { name: by })
+		: context.t('app:draft_waiting');
 	if (!presenter) return waiting;
 	let fields: DraftField[];
 	try {
@@ -772,7 +777,9 @@ export function awaitingText(change: {
 		.map((f) => ({ label: f.label, value: (f.to ?? f.value).trim() }))
 		.filter((f) => f.value !== '')
 		.map((f) => context.t('app:draft_waiting_field', f));
-	return parts.length === 0
-		? waiting
-		: context.t('app:draft_waiting_change', { change: parts.join(', ') });
+	if (parts.length === 0) return waiting;
+	const text = parts.join(', ');
+	return by
+		? context.t('app:draft_waiting_change_by', { name: by, change: text })
+		: context.t('app:draft_waiting_change', { change: text });
 }

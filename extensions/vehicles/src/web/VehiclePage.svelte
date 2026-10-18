@@ -9,6 +9,7 @@
 		RecordHeader,
 		SidePanel,
 		wide,
+		editLabel,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Car, Pencil } from '@lucide/svelte';
@@ -72,6 +73,8 @@
 
 	// Also for people who may only suggest a change: theirs waits for approval.
 	const mayEdit = $derived(app.access('vehicles.updateVehicle') !== 'no');
+	// "Suggest a change" when the change would wait for approval.
+	const editText = $derived(editLabel(app, 'vehicles.updateVehicle', t('edit')));
 	const mayArchive = $derived(app.access('vehicles.archiveVehicle') !== 'no');
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
@@ -135,7 +138,7 @@
 	}
 	const menu = $derived<MenuItem[]>([
 		...(mayEdit
-			? [{ id: 'edit', label: t('edit'), icon: pencil, onselect: () => setEditing(true) }]
+			? [{ id: 'edit', label: editText, icon: pencil, onselect: () => setEditing(true) }]
 			: []),
 		...(mayArchive
 			? [
@@ -171,7 +174,7 @@
 	{#if vehicle}
 		{#if mayEdit}
 			<Button variant="outline" onclick={() => setEditing(true)}
-				><Pencil class="size-4" aria-hidden="true" />{t('edit')}</Button
+				><Pencil class="size-4" aria-hidden="true" />{editText}</Button
 			>
 		{/if}
 		{#if menu.length > 0}
