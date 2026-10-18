@@ -58,11 +58,29 @@ Tap the screen in the list of devices to rename it or change these later.
 
 By default a display shows **no names or colors** of family members. Then the day has no columns per person: everything is in one column (or one lane, or one row), chores are one total for the family, and the next thing says what and when, not for whom. Turn on **Show names and colors of family members** if you want a column per person with their name, color and chores. Anyone passing by can read the screen, so decide what you are comfortable with in the hallway.
 
+## Pages
+
+A screen can show more than Today. Tap the screen in the list of devices and look under **Pages**: **Add a page** lists the pages this screen may show, and the screen shows them in turn between Today's turns. Today always comes first and always comes back, so with no pages chosen the screen shows only Today, as before. A page is a full screen of one thing, such as the values you chose to show from Home Assistant (**Around the house**, see [Home Assistant](home-assistant.md)). Each page has its name and the time at the top, and does not scroll: when it has more than fits, it says how many more.
+
+A page is offered only when the screen may show what it needs. If you untick that permission under **What it may show**, the page leaves the list and is not saved. A page that needs something the screen was not given is never shown, whatever was chosen before. Use the arrows to move a page up or down, and the cross to remove it.
+
+Once a page is added, three choices appear:
+
+- **Today stays for**: how long Today shows before the first page (30 seconds to 30 minutes, 2 minutes at first).
+- **Each page stays for**: how long each page shows (10 seconds to 5 minutes, 30 seconds at first).
+- **After a touch, back to Today in**: how long a page you touched stays before the screen goes back to Today (30 seconds to 10 minutes, 2 minutes at first).
+
+**Save** in the panel saves the pages together with the rest.
+
+On the screen, small dots at the bottom show where it is: one for Today and one for each page, the current one darker. A touch anywhere holds the screen where it is, so nobody is surprised while reading; after the time you chose without another touch, it goes back to Today and the turns start again. Swipe sideways to go to the next or the previous screen, or tap a dot to go straight to it. Nothing on a page can be pressed.
+
+When nobody has touched the screen for a while, **ambient mode** (the photos) takes over as before. The dots go away, and when a touch ends it, the screen starts again from Today.
+
 ## Photos and weather
 
 Photos, the weather and the slideshow have their own page: **Settings → Family → Photos and weather** (admins; **Devices** links to it).
 
-When nobody has touched a screen for a while it goes into **ambient mode**: a photo slideshow, the clock, the weather and the next event today. A touch brings Today back.
+When nobody has touched a screen for a while it goes into **ambient mode**: a photo slideshow, the clock, the weather and the next event today. A touch brings Today back (and, if the screen has [pages](#pages), the turns start again from Today).
 
 **Photos.** The slideshow shows pictures you add yourself:
 
