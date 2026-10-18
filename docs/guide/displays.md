@@ -60,7 +60,14 @@ By default a display shows **no names or colors** of family members. Then the da
 
 ## Pages
 
-A screen can show more than Today. Tap the screen in the list of devices and look under **Pages**: **Add a page** lists the pages this screen may show, and the screen shows them in turn between Today's turns. Today always comes first and always comes back, so with no pages chosen the screen shows only Today, as before. A page is a full screen of one thing, such as the values you chose to show from Home Assistant (**Around the house**, see [Home Assistant](home-assistant.md)). Each page has its name and the time at the top, and does not scroll: when it has more than fits, it says how many more.
+A screen can show more than Today. Tap the screen in the list of devices and look under **Pages**: **Add a page** lists the pages this screen may show, and the screen shows them in turn between Today's turns. Today always comes first and always comes back, so with no pages chosen the screen shows only Today, as before. A page is a full screen of one thing. The pages are:
+
+- **This week** (needs *See the calendar*): the week on an hour grid, today marked. A crowded stretch of the day says how many more events it holds.
+- **Shopping** (needs *See tasks and shopping lists*): what is still to buy. One list fills the screen in columns (one, two or three, by the width of the screen); with several lists, each is a column with its name above, up to three, and a line says how many more lists there are. Ticked items are not shown.
+- **Board** (needs *See the notes on the board*): the pinned notes first, then the newest, as papers filling the screen.
+- **Around the house** (needs *See what the family chose to show from Home Assistant*): the values you chose to show from Home Assistant, see [Home Assistant](home-assistant.md).
+
+Each page has its name and the time at the top, and does not scroll: when it has more than fits, it says how many more.
 
 A page is offered only when the screen may show what it needs. If you untick that permission under **What it may show**, the page leaves the list and is not saved. A page that needs something the screen was not given is never shown, whatever was chosen before. Use the arrows to move a page up or down, and the cross to remove it.
 
