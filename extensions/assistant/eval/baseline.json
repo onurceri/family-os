@@ -87,22 +87,27 @@
 		"openrouter-nvidia-nemotron-3-super-120b-a12b-free": {
 			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 			"version": null,
-			"date": "2026-10-17",
+			"date": "2026-10-18",
 			"cases": 25,
 			"passing": [
 				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+				"not there: anchovies on no list",
 				"one date: Sunday planning on 25 October only",
+				"one date: follow-up \"Only this Sunday\"",
 				"tick off: \"the bananas\" on a long list",
 				"tick off: milk already bought, oat milk open",
 				"find: swimming this week",
 				"find: Lukas's Wednesday",
 				"find: \"pick up Noah on Thursday\" is the swimming lesson (known failure: \"no event, no pick-up\")",
+				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created",
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
 				"duplicate: sandpaper is already on the Hardware store list",
 				"remove: the cheddar is on the list (without naming the list)",
 				"honesty: calendar off for the AI, asked to add an appointment",
+				"formatting: an overview of the week",
+				"Turkish: add milk and eggs",
 				"no area: the flat papers when Home is not installed",
 				"span: nothing open for Ellie this weekend",
 				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
@@ -110,21 +115,6 @@
 				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
 			],
 			"failing": {
-				"not there: anchovies on no list": [
-					"reply says /anchov/i and /\\b(no|not|isn't|couldn't|can't|cannot|don't|didn't|doesn't)\\b/i"
-				],
-				"one date: follow-up \"Only this Sunday\"": [
-					"the case ran to the end"
-				],
-				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar": [
-					"reply says /nona marija/i"
-				],
-				"formatting: an overview of the week": [
-					"reply says /sunday planning|swim/i and /mila/i"
-				],
-				"Turkish: add milk and eggs": [
-					"drafted lists.addShoppingItems: süt and yumurta"
-				],
 				"answer weekday: the bins on Tuesday 13 October": [
 					"reply says /tuesday,? 13 october|october 13/i"
 				],
@@ -132,12 +122,6 @@
 					"reply says /\\b(nothing|no events?|none|free)\\b/i and /date night/i and /17 october|october 17/i"
 				]
 			},
-			"outages": [
-				"span: nothing open for Ellie this weekend",
-				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
-				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
-				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
-			],
 			"cost": 0
 		},
 		"openrouter-xingchen-agi-xing4-0-29b-a4b-free": {
@@ -185,7 +169,7 @@
 		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
 			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 			"version": null,
-			"date": "2026-10-17",
+			"date": "2026-10-18",
 			"cases": 25,
 			"passing": [
 				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
@@ -196,7 +180,6 @@
 				"tick off: milk already bought, oat milk open",
 				"find: swimming this week",
 				"find: Lukas's Wednesday",
-				"find: \"pick up Noah on Thursday\" is the swimming lesson (known failure: \"no event, no pick-up\")",
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created",
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
@@ -207,27 +190,22 @@
 				"Turkish: add milk and eggs",
 				"no area: the flat papers when Home is not installed",
 				"answer weekday: the bins on Tuesday 13 October",
-				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
-				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
-				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
-			],
-			"failing": {
-				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar": [
-					"reply says /nona marija/i"
-				],
-				"span: nothing on this weekend, the next event is the Saturday after": [
-					"reply says /\\b(nothing|no events?|none|free)\\b/i and /date night/i and /17 october|october 17/i"
-				],
-				"span: nothing open for Ellie this weekend": [
-					"says nothing falls this weekend, and marks the tasks it lists as outside it"
-				]
-			},
-			"outages": [
 				"span: nothing open for Ellie this weekend",
 				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
 				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week"
 			],
+			"failing": {
+				"find: \"pick up Noah on Thursday\" is the swimming lesson (known failure: \"no event, no pick-up\")": [
+					"reply says /swimming/i and /17:00|5(?::00)? ?pm/i"
+				],
+				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar": [
+					"reply says /nona marija/i"
+				],
+				"span: nothing on this weekend, the next event is the Saturday after": [
+					"reply says /\\b(nothing|no events?|none|free)\\b/i and /date night/i and /17 october|october 17/i"
+				]
+			},
 			"cost": 0
 		}
 	}
