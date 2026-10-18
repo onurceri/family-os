@@ -105,9 +105,9 @@ export const MentionSchema = z.object({
 	 */
 	quote: z.string().max(300).optional(),
 	/**
-	 * The place (from 0) of the mention this one is a detail of, in the same answer; `relation`
-	 * says what it is to it in a word. The host decides what follows: a detail with no day and no
-	 * person of its own goes into the notes of that mention, when its kind takes notes.
+	 * The place (from 0) of the mention this one is a detail of, in the same answer. The host
+	 * decides what follows: a detail with no day and no person of its own goes into the notes of
+	 * that mention, when its kind takes notes.
 	 */
 	of: z
 		.number()
@@ -116,9 +116,8 @@ export const MentionSchema = z.object({
 		.max(MENTION_LIMIT - 1)
 		.optional()
 		.describe(
-			'Only for a detail of another mention of this answer (something to bring to it, a rule for it, a fee for it): that mention\'s place in mentions, counting from 0; relation then says which in a word ("bring", "rule", "fee").',
+			"Only for a detail of another mention of this answer (something to bring to it, a rule for it, a fee for it): that mention's place in mentions, counting from 0.",
 		),
-	relation: z.string().max(20).optional(),
 });
 export type Mention = z.infer<typeof MentionSchema>;
 

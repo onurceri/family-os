@@ -315,14 +315,16 @@ export async function runCaseOn(
 		const seeded = async (steps: NonNullable<Case['seed']>) => {
 			const made: string[] = [];
 			for (const step of steps) {
-				const done = await k.runner.invoke<{ id?: string }>(
+				const done = await k.runner.invoke<{ id?: string; event?: { id: string } }>(
 					step.action,
 					filled(step.input, made),
 					systemActor('eval'),
 				);
 				if (done.status !== 'applied') throw new Error(`expected ${step.action} to be applied`);
-				made.push(done.output.id ?? '');
-				if (step.as) listed[step.as] = done.output.id ?? '';
+				// A change answers with the event it changed: the one-off a moved date became.
+				const id = done.output.id ?? done.output.event?.id ?? '';
+				made.push(id);
+				if (step.as) listed[step.as] = id;
 			}
 		};
 		if (fixture) await seeded(fixture.seed);

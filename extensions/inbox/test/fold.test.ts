@@ -25,8 +25,8 @@ describe('foldDetails', () => {
 	it('puts a rule and a thing to bring into the notes of the event they belong to', () => {
 		const out = fold([
 			recital,
-			at(1, { kind: 'board.note', notes: 'No phones in the hall', of: 0, relation: 'rule' }),
-			at(2, { kind: 'lists.task', title: 'Bring blue music book', of: 0, relation: 'bring' }),
+			at(1, { kind: 'board.note', notes: 'No phones in the hall', of: 0 }),
+			at(2, { kind: 'lists.task', title: 'Bring blue music book', of: 0 }),
 		]);
 		expect(out.mentions).toEqual([
 			at(0, { ...recital.mention, notes: 'No phones in the hall\nBring blue music book' }),

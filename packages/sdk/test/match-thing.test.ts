@@ -161,6 +161,30 @@ describe('a code names its thing', () => {
 	});
 });
 
+describe('words that say more than the message', () => {
+	it('ask which one when the message names another thing as much', () => {
+		const lessons = [thing('Swim lesson Ivy'), thing('Swim lesson Tom'), thing('Piano lesson')];
+		const text = 'swim lesson is cancelled this Saturday, the pool is closed';
+		expect(matchThing('Swim lesson Ivy', lessons, { text })).toMatchObject({
+			band: 'weak',
+			reason: 'several',
+			candidates: [lessons[0], lessons[1]],
+		});
+		expect(findTarget('Swim lesson Ivy', lessons, { text })).toEqual({
+			ambiguous: [lessons[0], lessons[1]],
+			unsure: true,
+		});
+		expect(
+			matchThing('Swim lesson Ivy', lessons, { text: "Ivy's swim lesson is cancelled" }),
+		).toMatchObject({ band: 'exact', candidate: lessons[0] });
+		// A code of two characters sets a thing apart as well as a word.
+		const trips = [thing('Class 1B trip'), thing('Class 4B trip')];
+		expect(
+			matchThing('Class 1B trip', trips, { text: 'the 1B trip to Bled is on Friday' }),
+		).toMatchObject({ band: 'exact', candidate: trips[0] });
+	});
+});
+
 describe('findTarget on matchThing', () => {
 	it('finds exact and strong matches as sure', () => {
 		const list = [thing('Dentist checkup')];

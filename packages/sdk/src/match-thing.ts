@@ -267,8 +267,13 @@ export function matchThing<T extends { label: string }>(
 	const inText = text ? namedShares(text, labels, options) : [];
 	const textShare = (s: { i: number }) => inText[s.i] ?? 0;
 	const same = sameWordIn(language);
-	const textWords = text ? significantWords(text, language) : [];
-	const titleWords = labels.map((label) => significantWords(label, language));
+	// Words and codes ("1b", "u13"): a code of two characters tells things apart as well as a word.
+	const telling = (value: string) => [
+		...significantWords(value, language),
+		...codesOf(compared(value), language),
+	];
+	const textWords = text ? telling(text) : [];
+	const titleWords = labels.map(telling);
 	/** The message says a word of `s` that `o` does not have: it names `s` in its own right. */
 	const apart = (s: { i: number }, o: { i: number }) =>
 		(titleWords[s.i] ?? []).some(
@@ -312,6 +317,26 @@ export function matchThing<T extends { label: string }>(
 			each: chosen.band,
 		};
 	if (text && !told(chosen)) return nothing('elsewhere');
+	// The words name one thing, but the message names another as much and says nothing that sets
+	// this one apart ("swim lesson is cancelled" with a lesson of Ivy and one of Tom): the words
+	// went further than the message, so which one is a question for the person.
+	const rivals = text
+		? scored.filter(
+				(o) =>
+					o.i !== chosen.i &&
+					textShare(o) > 0 &&
+					textShare(o) === textShare(chosen) &&
+					!apart(chosen, o),
+			)
+		: [];
+	if (rivals.length > 0)
+		return {
+			band: 'weak',
+			reason: 'several',
+			candidate: chosen.candidate,
+			candidates: [chosen.candidate, ...rivals.map((o) => o.candidate)],
+			each: 'weak',
+		};
 	return {
 		band: chosen.band,
 		reason: chosen.reason,

@@ -142,10 +142,10 @@ export function defineMentionKind(definition: MentionKindDefinition): MentionKin
 
 /**
  * The slot of a mention field; the bookkeeping fields (`kind`, `unsure`, `quote`) and the link to
- * another mention (`of`, `relation`) have none.
+ * another mention (`of`) have none.
  */
 function slotOfField(field: string): Slot | null {
-	if (['kind', 'unsure', 'quote', 'of', 'relation'].includes(field)) return null;
+	if (['kind', 'unsure', 'quote', 'of'].includes(field)) return null;
 	if (field === 'forMe' || field === 'peopleGuessed') return 'people';
 	if (field === 'timeText') return 'time';
 	return field as Slot;

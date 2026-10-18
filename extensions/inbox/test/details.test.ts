@@ -47,14 +47,12 @@ describe('details folded into the mention they belong to', () => {
 					kind: 'board.note',
 					notes: 'No phones in the hall',
 					of: 0,
-					relation: 'rule',
 					quote: 'no phones in the hall',
 				},
 				{
 					kind: 'lists.task',
 					title: 'Bring blue music book',
 					of: 0,
-					relation: 'bring',
 					quote: 'bring blue music book',
 				},
 			],
@@ -90,7 +88,6 @@ describe('details folded into the mention they belong to', () => {
 						kind: 'lists.task',
 						title: 'Bring white shirt, shin pads & water',
 						of: 0,
-						relation: 'bring',
 						quote: 'Bring white shirt, shin pads & water',
 					},
 					{
@@ -98,7 +95,6 @@ describe('details folded into the mention they belong to', () => {
 						title: 'Pay 10 EUR for the bus',
 						date: { text: 'Fri', weekday: 5 },
 						of: 0,
-						relation: 'fee',
 						quote: 'Pay 10 EUR for the bus by Fri',
 					},
 				],
@@ -128,7 +124,6 @@ describe('details folded into the mention they belong to', () => {
 					kind: 'lists.task',
 					title: 'Bring shin pads and the club shirt',
 					of: 0,
-					relation: 'bring',
 					quote: 'Please bring shin pads and the club shirt.',
 				},
 			],
@@ -220,5 +215,181 @@ describe('a moved fixture', () => {
 		});
 		expect(failedChecks(outcome)).toEqual([]);
 		expect(outcome.drafts[0]).toMatchObject({ actionId: 'calendar.createEvent', mayExist: true });
+	});
+});
+
+describe("the free models' answers, replayed", () => {
+	// Their exact answers in the full run of the eval: each case's checks hold.
+	it.each([
+		[
+			'the recital, with the rule and the book in the notes (120b)',
+			'A recital: the rule and what to bring are its notes (sim)',
+			{
+				label: 'Piano recital',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.event',
+						title: 'Piano recital',
+						date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+						time: '15:00',
+						timeText: '15:00',
+						place: 'Music school',
+						notes: 'Practise every day. No phones in the hall. Bring blue music book.',
+						quote:
+							'piano recital Sat 14 Nov 15:00 music school, practise every day pls. no phones in the hall. bring blue music book',
+					},
+				],
+			},
+		],
+		[
+			'the coach message, the fee a task of its own (120b)',
+			'A coach message: the game, what to bring, the bus fee (sim)',
+			{
+				label: 'U13 Eagles away game',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.event',
+						title: 'U13 Eagles away game',
+						date: { text: 'Sun 25.10', day: 25, month: 10, weekday: 7 },
+						time: '10:00',
+						timeText: '10:00',
+						place: 'Olimpija Park',
+						notes: 'Meet 08:30 at the club. Bring white shirt, shin pads & water.',
+						quote:
+							'U13 Eagles away game Sun 25.10 KO 10:00 at Olimpija Park, meet 08:30 at the club. Bring white shirt, shin pads & water.',
+					},
+					{
+						kind: 'lists.task',
+						title: 'Pay for the bus',
+						date: { text: 'Fri', weekday: 5 },
+						notes: '10 EUR',
+						quote: 'Pay 10 EUR for the bus by Fri thx Coach Jure',
+					},
+				],
+			},
+		],
+		[
+			'the club email, a change of the game on the calendar (120b)',
+			'A club email moves the fixture the calendar has (sim)',
+			{
+				label: 'U13 fixture change',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventChange',
+						target: 'U13 Eagles away game',
+						date: { text: 'Saturday 24.10', day: 24, month: 10, weekday: 6 },
+						time: '11:00',
+						timeText: '11:00',
+						place: 'Stadion Bežigrad',
+						quote:
+							'the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad (was 10:00 at Olimpija)',
+					},
+					{
+						kind: 'lists.task',
+						title: 'Bring shin pads',
+						forMe: false,
+						quote: 'Please bring shin pads and the club shirt.',
+					},
+					{
+						kind: 'lists.task',
+						title: 'Bring the club shirt',
+						forMe: false,
+						quote: 'Please bring shin pads and the club shirt.',
+					},
+					{
+						kind: 'lists.task',
+						title: "Take Ivy's team kit bag to the club room",
+						forMe: false,
+						quote: "Ivy's team kit bag to the club room.",
+					},
+				],
+				addressed: [],
+			},
+		],
+		[
+			'the club email, a change of the game on the calendar (vl)',
+			'A club email moves the fixture the calendar has (sim)',
+			{
+				label: 'U13 fixture moved',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventChange',
+						target: 'U13 Eagles away game',
+						date: { text: 'Saturday 24.10', day: 24, month: 10, year: 2026 },
+						time: '11:00',
+						timeText: '11:00',
+						place: 'Stadion Bežigrad',
+						quote: 'the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad',
+					},
+					{
+						kind: 'lists.task',
+						title: 'Bring shin pads and the club shirt',
+						people: ['Ivy'],
+						quote: 'Please bring shin pads and the club shirt',
+					},
+					{
+						kind: 'lists.task',
+						title: "Take Ivy's team kit bag to the club room",
+						people: ['Ivy'],
+						quote: "Ivy's team kit bag to the club room",
+					},
+				],
+			},
+		],
+		[
+			'the cancellation of the moved piano lesson (120b)',
+			'A cancellation of a moved lesson takes the moved one (sim fixture)',
+			{
+				label: 'Piano lesson cancelled',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventCancel',
+						target: 'Piano lesson',
+						date: { text: 'Friday 16 Oct', day: 16, month: 10, weekday: 5 },
+						quote: 'Piano on Friday 16 Oct is cancelled, the teacher is ill',
+					},
+				],
+			},
+		],
+		[
+			'the cancellation of the moved piano lesson (vl)',
+			'A cancellation of a moved lesson takes the moved one (sim fixture)',
+			{
+				label: 'Piano lesson cancelled',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventCancel',
+						target: 'Piano lesson',
+						date: { text: 'Friday 16 Oct', day: 16, month: 10, weekday: 5 },
+						quote: 'Piano on Friday 16 Oct is cancelled',
+					},
+				],
+			},
+		],
+		[
+			'a swim lesson cancelled, named by the model for Ivy alone (vl)',
+			'A cancellation that fits two swim lessons is not acted on (sim fixture)',
+			{
+				label: 'Swim lesson cancelled',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventCancel',
+						target: 'Swim lesson Ivy',
+						date: { text: 'this Saturday', weekday: 6 },
+						quote: 'swim lesson is cancelled this Saturday',
+					},
+				],
+			},
+		],
+	] as const)('%s', async (_label, name, answer) => {
+		const outcome = await read(caseNamed(name), answer);
+		expect(failedChecks(outcome)).toEqual([]);
 	});
 });

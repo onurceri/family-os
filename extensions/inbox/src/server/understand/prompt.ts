@@ -149,7 +149,6 @@ export const HOST_EXAMPLES: readonly {
 					quote: 'Bring a white shirt',
 					title: 'Bring a white shirt',
 					of: 0,
-					relation: 'bring',
 				},
 				{
 					kind: 'lists.task',
@@ -158,7 +157,6 @@ export const HOST_EXAMPLES: readonly {
 					date: { text: 'Monday', weekday: 1 },
 					notes: 'Tickets: 4 EUR',
 					of: 0,
-					relation: 'fee',
 				},
 			],
 		},
