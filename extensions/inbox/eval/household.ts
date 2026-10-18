@@ -10,6 +10,8 @@ import {
 	type Check,
 	DEFAULT_FAMILY,
 	type Draft,
+	type Failure,
+	type FixtureName,
 	type Listed,
 	type Members,
 } from './cases.ts';
@@ -69,6 +71,121 @@ export async function casesPromptHash(): Promise<string> {
 	}
 }
 
+/** What a household already holds when a case starts: seeded like a case's own `shopping`, `tasks` and `seed`. */
+interface Fixture {
+	shopping: NonNullable<Case['shopping']>;
+	seed: NonNullable<Case['seed']>;
+}
+
+/**
+ * The Novak household, as it stood in the simulation the messages come from: it needs a family
+ * with Tom, Mara, Ivy and Leo. It holds what makes a family's messages hard to place:
+ * - two lessons with one name for two people (the moved event is a lesson one week of which sits
+ *   on another day);
+ * - two class trips whose names differ by a code, and two cars whose plates differ by a code;
+ * - a second shopping list next to the default one.
+ */
+const NOVAK: Fixture = {
+	shopping: [
+		{ title: 'Milk' },
+		{ title: 'Bread' },
+		{ list: 'Hardware store', title: 'Picture wire' },
+		{ list: 'Hardware store', title: 'Batteries' },
+	],
+	seed: [
+		{ action: 'pets.addPet', input: { name: 'Biscuit', species: 'dog' } },
+		{
+			action: 'vehicles.addVehicle',
+			input: { name: 'Octavia', plate: 'LJ AB-123', fuel: 'diesel' },
+		},
+		{ action: 'vehicles.addVehicle', input: { name: 'Golf', plate: 'LJ CD-456', fuel: 'petrol' } },
+		{
+			action: 'calendar.createEvent',
+			as: 'Football training',
+			input: {
+				title: 'Football training',
+				date: '2026-10-07',
+				startTime: '17:30',
+				endTime: '19:00',
+				memberIds: ['@Ivy'],
+				recurrence: { freq: 'weekly', byDay: ['WE'] },
+			},
+		},
+		{
+			action: 'calendar.createEvent',
+			as: 'Swim lesson Ivy',
+			input: {
+				title: 'Swim lesson Ivy',
+				date: '2026-10-10',
+				startTime: '09:00',
+				endTime: '10:00',
+				location: 'City pool',
+				memberIds: ['@Ivy'],
+				recurrence: { freq: 'weekly', byDay: ['SA'] },
+			},
+		},
+		{
+			action: 'calendar.createEvent',
+			as: 'Swim lesson Tom',
+			input: {
+				title: 'Swim lesson Tom',
+				date: '2026-10-10',
+				startTime: '09:30',
+				endTime: '10:30',
+				location: 'City pool',
+				memberIds: ['@Tom'],
+				recurrence: { freq: 'weekly', byDay: ['SA'] },
+			},
+		},
+		{
+			action: 'calendar.createEvent',
+			as: 'Piano series',
+			input: {
+				title: 'Piano lesson',
+				date: '2026-10-01',
+				startTime: '16:00',
+				endTime: '16:45',
+				memberIds: ['@Ivy'],
+				recurrence: { freq: 'weekly', byDay: ['TH'] },
+			},
+		},
+		// The lesson of 15 October sits on Friday this week: a one-off event of its own.
+		{
+			action: 'calendar.changeEvent',
+			as: 'Piano lesson moved',
+			input: {
+				id: '$6',
+				occurrence: '2026-10-15',
+				date: '2026-10-16',
+				startTime: '17:00',
+				endTime: '17:45',
+			},
+		},
+		{
+			action: 'calendar.createEvent',
+			as: 'Class 1B trip',
+			input: {
+				title: 'Class 1B trip',
+				date: '2026-10-30',
+				startTime: '08:10',
+				memberIds: ['@Leo'],
+			},
+		},
+		{
+			action: 'calendar.createEvent',
+			as: 'Class 4B trip',
+			input: {
+				title: 'Class 4B trip',
+				date: '2026-11-06',
+				startTime: '09:00',
+				memberIds: ['@Ivy'],
+			},
+		},
+	],
+};
+
+const FIXTURES: Record<FixtureName, Fixture> = { novak: NOVAK };
+
 export interface CaseOutcome {
 	/** What became of the item (`extracted` when it was read). */
 	status: string;
@@ -76,7 +193,7 @@ export interface CaseOutcome {
 	skipped: number;
 	drafts: Draft[];
 	members: Members;
-	results: { check: Check; ok: boolean }[];
+	results: { check: Check; ok: boolean; failure: Failure | null }[];
 }
 
 /** What failed in a case, as the baseline lists it: the reading itself, then each check. */
@@ -85,6 +202,11 @@ export function failedChecks(outcome: CaseOutcome): string[] {
 		...(outcome.status === 'extracted' ? [] : [`the item was read (${outcome.status})`]),
 		...outcome.results.filter((r) => !r.ok).map((r) => r.check.label),
 	];
+}
+
+/** The failed checks that are harmful (a wrong value shown as certain, or a wrong thing acted on). */
+export function harmfulChecks(outcome: CaseOutcome): string[] {
+	return outcome.results.filter((r) => r.failure === 'harmful').map((r) => r.check.label);
 }
 
 /**
@@ -125,8 +247,9 @@ export async function runCaseOn(
 			);
 		}
 		const listed: Listed = {};
+		const fixture = c.fixture ? FIXTURES[c.fixture] : undefined;
 		const shoppingLists = new Map<string, string>();
-		for (const { list, title } of c.shopping ?? []) {
+		for (const { list, title } of [...(fixture?.shopping ?? []), ...(c.shopping ?? [])]) {
 			let listId: string | undefined;
 			if (list) {
 				listId = shoppingLists.get(list);
@@ -139,6 +262,7 @@ export async function runCaseOn(
 					if (made.status !== 'applied') throw new Error('expected the list to be made');
 					listId = made.output.id;
 					shoppingLists.set(list, listId);
+					listed[`list:${list}`] = listId;
 				}
 			}
 			const added = await k.runner.invoke<{ items: { id: string }[] }>(
@@ -176,27 +300,33 @@ export async function runCaseOn(
 			members[person.name] = created.member.id;
 			sharer ??= created;
 		}
-		const made: string[] = [];
-		const filled = (value: unknown): unknown => {
+		const filled = (value: unknown, made: string[]): unknown => {
 			if (typeof value === 'string') {
 				if (value.startsWith('@')) return members[value.slice(1)] ?? value;
 				if (/^\$\d+$/u.test(value)) return made[Number(value.slice(1))] ?? value;
 				return value;
 			}
-			if (Array.isArray(value)) return value.map(filled);
+			if (Array.isArray(value)) return value.map((one) => filled(one, made));
 			if (value && typeof value === 'object')
-				return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, filled(v)]));
+				return Object.fromEntries(Object.entries(value).map(([key, v]) => [key, filled(v, made)]));
 			return value;
 		};
-		for (const step of c.seed ?? []) {
-			const done = await k.runner.invoke<{ id?: string }>(
-				step.action,
-				filled(step.input),
-				systemActor('eval'),
-			);
-			if (done.status !== 'applied') throw new Error(`expected ${step.action} to be applied`);
-			made.push(done.output.id ?? '');
-		}
+		// `$n` is the id step n of the same list made, so a fixture and a case do not shift each other.
+		const seeded = async (steps: NonNullable<Case['seed']>) => {
+			const made: string[] = [];
+			for (const step of steps) {
+				const done = await k.runner.invoke<{ id?: string }>(
+					step.action,
+					filled(step.input, made),
+					systemActor('eval'),
+				);
+				if (done.status !== 'applied') throw new Error(`expected ${step.action} to be applied`);
+				made.push(done.output.id ?? '');
+				if (step.as) listed[step.as] = done.output.id ?? '';
+			}
+		};
+		if (fixture) await seeded(fixture.seed);
+		await seeded(c.seed ?? []);
 		options.prepare?.(k);
 		const item = await k.route('inbox.createItem').call({
 			body: { channel: 'share', text: c.text },
@@ -229,10 +359,16 @@ export async function runCaseOn(
 			skipped: state.skipped ?? 0,
 			drafts,
 			members,
-			results: c.checks.map((check) => ({
-				check,
-				ok: check.pass(drafts, members, state, c.text, listed),
-			})),
+			results: c.checks.map((check) => {
+				const ok = check.pass(drafts, members, state, c.text, listed);
+				return {
+					check,
+					ok,
+					failure: ok
+						? null
+						: (check.failure?.(drafts, members, state, c.text, listed) ?? 'missed'),
+				};
+			}),
 		};
 	} finally {
 		await k.close();

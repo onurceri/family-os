@@ -75,9 +75,18 @@ describe('the recordings', () => {
 			expect(casesBySlug.get(file.replace(/\.json$/u, ''))?.name, file).toBe(recording.case);
 			expect(baseline.models[model], model).toBeDefined();
 		}
-		for (const slug of Object.keys(baseline.models)) {
+		// Every case the baseline measured has its recording. A case added since has none until the
+		// next full run records it; the replay below skips it, as it has nothing to replay.
+		for (const [slug, entry] of Object.entries(baseline.models)) {
 			const own = recordings.filter((r) => r.model === slug).map((r) => r.recording.case);
-			expect(own.sort(), slug).toEqual(CASES.map((c) => c.name).sort());
+			const measured = [
+				...new Set([...entry.passing, ...Object.keys(entry.failing), ...(entry.outages ?? [])]),
+			];
+			expect(own.sort(), slug).toEqual(measured.sort());
+			expect(
+				measured.filter((name) => !CASES.some((c) => c.name === name)),
+				`${slug}: cases the baseline names but the eval no longer has`,
+			).toEqual([]);
 		}
 	});
 

@@ -11,6 +11,8 @@ import {
 	compareToBaseline,
 	formatCell,
 	formatTable,
+	medianPassRate,
+	mergeRuns,
 	observe,
 	runEval,
 	runPool,
@@ -250,6 +252,123 @@ describe('the report', () => {
 	});
 });
 
+describe('runs, missed and harmful', () => {
+	const answer = { kind: 'object' as const, feature: 'f', output: {} };
+	const verdict = (ok: boolean, failed: string[] = [], harmful: string[] = []) => ({
+		ok,
+		checks: 3,
+		failed,
+		harmful,
+		lines: [],
+	});
+	const cellFor = (name: string, ok: boolean, failed: string[] = [], harmful: string[] = []) =>
+		cellOf(name, 'a', verdict(ok, failed, harmful), [{ ...call(), answer }]);
+
+	it('counts a failed check as missed unless the case called it harmful', () => {
+		const cell = cellFor('one', false, ['no card', 'wrong day'], ['wrong day']);
+		expect(cell).toMatchObject({
+			missedChecks: 1,
+			harmfulChecks: 1,
+			harmful: ['wrong day'],
+			runs: 1,
+			passes: 0,
+		});
+		expect(cellFor('one', false, ['no card'])).toMatchObject({ missedChecks: 1, harmfulChecks: 0 });
+	});
+
+	it('leaves the failures of an outage out of both counts', () => {
+		const broken = cellOf('one', 'a', verdict(false, ['x'], ['x']), [
+			{ ...call({ errorCode: 'unavailable' }), answer },
+		]);
+		expect(broken).toMatchObject({ status: 'outage', missedChecks: 0, harmfulChecks: 0 });
+	});
+
+	it('merges the runs of a case: it passes only when every run did, and keeps the count', () => {
+		const merged = mergeRuns([
+			cellFor('one', true),
+			cellFor('one', false, ['a', 'b'], ['b']),
+			cellFor('one', false, ['a']),
+		]);
+		expect(merged).toMatchObject({
+			status: 'failed',
+			runs: 3,
+			passes: 1,
+			failed: ['a', 'b'],
+			harmful: ['b'],
+			missedChecks: 2,
+			harmfulChecks: 1,
+			runStatuses: ['passed', 'failed', 'failed'],
+			checks: 9,
+			calls: 3,
+		});
+		expect(mergeRuns([cellFor('one', true), cellFor('one', true)]).status).toBe('passed');
+		// An outage in one run is no failure of the model.
+		const outage = cellOf('one', 'a', verdict(false, ['x']), [
+			{ ...call({ errorCode: 'unavailable' }), answer },
+		]);
+		expect(mergeRuns([cellFor('one', true), outage]).status).toBe('passed');
+		expect(mergeRuns([outage, outage]).status).toBe('outage');
+	});
+
+	it('shows the pass count of a case with several runs', () => {
+		const merged = mergeRuns([cellFor('one', true), cellFor('one', false, ['a'])]);
+		expect(formatCell(merged)).toMatch(/^✗ 1\/2 /);
+		expect(formatCell(cellFor('one', true))).toBe('✓ 100/20 $0.0010 0.5s stop');
+	});
+
+	it('takes the median over the runs of the share of cases that passed', () => {
+		const threeRuns = (passes: boolean[]) =>
+			mergeRuns(passes.map((ok) => cellFor('x', ok, ok ? [] : ['a'])));
+		// Run 1: 3 of 4 cases pass, run 2: 2 of 4, run 3: 4 of 4.
+		const cells = [
+			threeRuns([true, true, true]),
+			threeRuns([true, true, true]),
+			threeRuns([true, false, true]),
+			threeRuns([false, false, true]),
+		];
+		expect(medianPassRate(cells)).toBe(0.75);
+		expect(medianPassRate([])).toBeNull();
+		const totals = totalsOf(fakeEnv('a').env, cells);
+		expect(totals).toMatchObject({ runs: 3, medianPassRate: 0.75, harmful: 0 });
+		expect(totals.missed).toBe(3);
+	});
+
+	it('calls a case newly failing only when it failed in most of its runs', () => {
+		const entry = {
+			label: 'a',
+			version: null,
+			date: '2026-10-17',
+			cases: 2,
+			passing: ['steady', 'flaky'],
+			failing: {},
+			runs: 3,
+			passCounts: { steady: 3, flaky: 3 },
+			cost: 0,
+		};
+		const named = (name: string, oks: boolean[]) =>
+			mergeRuns(oks.map((ok) => cellFor(name, ok, ok ? [] : ['a'])));
+		const cells = [named('steady', [true, true, false]), named('flaky', [true, false, false])];
+		expect(compareToBaseline(entry, 'a', cells).newlyFailing).toEqual(['flaky']);
+	});
+
+	it('refuses a number of runs that is not a whole number of 1 or more', async () => {
+		const lines: string[] = [];
+		for (const runs of ['0', '1.5', 'many']) {
+			const code = await runEval({
+				title: 'Test eval',
+				cases: [{ name: 'one' }],
+				models: [fakeEnv('a').env],
+				dir: tmpdir(),
+				env: { FAMOS_EVAL_RUNS: runs },
+				log: (line) => lines.push(line),
+				run: async () => verdict(true),
+			});
+			expect(code).toBe(2);
+		}
+		expect(lines.every((l) => l.includes('FAMOS_EVAL_RUNS'))).toBe(true);
+	});
+});
+
 describe('the pool', () => {
 	it('runs at most the limit at once, in order', async () => {
 		let running = 0;
@@ -343,6 +462,67 @@ describe('runEval', () => {
 		const report = JSON.parse(readFileSync(join(dir, 'report.json'), 'utf8'));
 		expect(report.models.map((m: { passed: number }) => m.passed)).toEqual([2, 1]);
 		expect(lines).toContain('✗ bread');
+	});
+
+	it('runs every case several times, keeps the pass counts and gates on harmful failures', async () => {
+		dir = mkdtempSync(join(tmpdir(), 'famos-eval-'));
+		const a = fakeEnv('a');
+		// Answers in the order of the runs: the first run is the only one recorded.
+		a.fake.respond(
+			{ title: 'Milk' },
+			{ title: 'Bread' },
+			{ title: 'Milk' },
+			{ title: 'Butter' },
+			{ title: 'Milk' },
+			{ title: 'Butter' },
+		);
+		const lines: string[] = [];
+		const code = await runEval({
+			title: 'Test eval',
+			cases: [
+				{ name: 'milk', want: 'Milk' },
+				{ name: 'bread', want: 'Bread' },
+			],
+			models: [a.env],
+			dir,
+			env: {
+				FAMOS_EVAL_CONCURRENCY: '1',
+				FAMOS_EVAL_RUNS: '3',
+				FAMOS_EVAL_RECORD: '1',
+				FAMOS_EVAL_BASELINE: '1',
+			},
+			log: (line) => lines.push(line),
+			async run(c, llm) {
+				const { output } = await llm.generateObject(request);
+				const ok = output.title === c.want;
+				return {
+					ok,
+					checks: 2,
+					failed: ok ? [] : ['the title', 'the day'],
+					harmful: ok ? [] : ['the day'],
+					lines: [`${ok ? '✓' : '✗'} ${c.name}`],
+				};
+			},
+		});
+		// Run order is run by run, case by case: milk, bread; milk, bread; milk, bread.
+		expect(code).toBe(1);
+		expect(lines[0]).toContain('2 cases × 3 runs');
+		expect(lines).toContain('✗ bread (run 2/3)');
+		expect(lines).toContain('✓ milk (run 1/3)');
+		expect(lines.find((l) => l.startsWith('pass rate'))).toMatch(/median 50% of 3 runs/);
+		expect(lines.find((l) => l.startsWith('harmful'))).toMatch(/2$/);
+		expect(lines).toContain(
+			'gate · fake / a: harmful 2 (must be 0), missed 2, median pass rate 50% over 3 runs',
+		);
+		expect(lines).toContain('  harmful · bread: the day');
+		const baseline = JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8')) as Baseline;
+		expect(baseline.models.a).toMatchObject({
+			runs: 3,
+			passCounts: { milk: 3, bread: 1 },
+			harmful: { bread: ['the day'] },
+		});
+		const recorded = JSON.parse(readFileSync(join(dir, 'recorded', 'a', 'bread.json'), 'utf8'));
+		expect(recorded.answers).toHaveLength(1);
 	});
 
 	it('counts a case the provider broke off as an outage, and keeps what the baseline knew of it', async () => {

@@ -11,6 +11,9 @@ import { type EnvCall, type EnvLlm, llmsFromEnv, slugOf } from './llm-from-env.t
  *
  * - `FAMOS_EVAL_MODELS` / `FAMOS_EVAL_MODEL` …: the models (see `llmsFromEnv`).
  * - `FAMOS_EVAL_CASE=substring`: only the cases whose name contains it.
+ * - `FAMOS_EVAL_RUNS=n`: every case runs n times on each model (default 1). The report gives each
+ *   case's pass count out of n and each model's median pass rate over the runs; the baseline keeps
+ *   the pass counts. A model's answers are recorded from the first run only.
  * - `FAMOS_EVAL_CONCURRENCY=n`: at most n cases at once over all models (default: all at once).
  * - `FAMOS_EVAL_MAX_COST=usd`: no case starts once the finished ones cost this much.
  * - `FAMOS_EVAL_REPORT=path`: writes the whole result as JSON.
@@ -46,6 +49,11 @@ export interface CaseVerdict {
 	checks: number;
 	/** Labels of the failed checks. */
 	failed: string[];
+	/**
+	 * Of those, the harmful ones: a wrong value shown as certain, or a wrong thing acted on. The
+	 * rest of the failed checks are missed ones: refused, skipped, or shown as unsure.
+	 */
+	harmful?: string[];
 	/** What to print about the case, its first line starting with ✓ or ✗. */
 	lines: string[];
 }
@@ -59,7 +67,17 @@ export interface Cell {
 	 */
 	status: 'passed' | 'failed' | 'outage' | 'skipped';
 	checks: number;
+	/** The distinct labels of the checks that failed in any run. */
 	failed: string[];
+	/** The distinct labels of the failed checks that were harmful. */
+	harmful: string[];
+	/** Failed checks over all runs that were missed, and that were harmful (outages count none). */
+	missedChecks: number;
+	harmfulChecks: number;
+	/** How many runs were made, how many of them passed, and how each one went. */
+	runs: number;
+	passes: number;
+	runStatuses: ('passed' | 'failed' | 'outage')[];
 	calls: number;
 	inputTokens: number;
 	outputTokens: number;
@@ -82,6 +100,13 @@ export interface ModelTotals {
 	outages: number;
 	checks: number;
 	failedChecks: number;
+	/** Failed checks over all runs, by class (see `CaseVerdict.harmful`). The gate is no harmful ones. */
+	missed: number;
+	harmful: number;
+	/** Runs made of every case. */
+	runs: number;
+	/** The median over the runs of the share of cases that passed in that run, or null if none. */
+	medianPassRate: number | null;
 	calls: number;
 	inputTokens: number;
 	outputTokens: number;
@@ -110,8 +135,13 @@ export interface BaselineEntry {
 	date: string;
 	cases: number;
 	passing: string[];
-	/** Failing cases with the labels of their failed checks. */
+	/** Failing cases with the labels of their failed checks (of any run). */
 	failing: Record<string, string[]>;
+	/** Runs made of each case, and how many of them each case passed (outages left out). */
+	runs?: number;
+	passCounts?: Record<string, number>;
+	/** The harmful failed checks by case; none is the gate. */
+	harmful?: Record<string, string[]>;
 	/** Cases the provider's own failure ended in that run: neither passing nor failing. */
 	outages?: string[];
 	cost: number;
@@ -283,19 +313,28 @@ export function cellOf(
 		if (c.errorCode) errors.add(c.errorCode);
 		if (c.outputMode) modes.add(c.outputMode);
 	}
+	const status: Cell['status'] =
+		verdict === null
+			? 'skipped'
+			: verdict.ok
+				? 'passed'
+				: [...errors].some((e) => OUTAGES.has(e))
+					? 'outage'
+					: 'failed';
+	const failed = verdict?.failed ?? [];
+	const harmful = status === 'failed' ? failed.filter((l) => verdict?.harmful?.includes(l)) : [];
 	return {
 		case: name,
 		model,
-		status:
-			verdict === null
-				? 'skipped'
-				: verdict.ok
-					? 'passed'
-					: [...errors].some((e) => OUTAGES.has(e))
-						? 'outage'
-						: 'failed',
+		status,
 		checks: verdict?.checks ?? 0,
-		failed: verdict?.failed ?? [],
+		failed,
+		harmful,
+		missedChecks: status === 'failed' ? failed.length - harmful.length : 0,
+		harmfulChecks: harmful.length,
+		runs: status === 'skipped' ? 0 : 1,
+		passes: status === 'passed' ? 1 : 0,
+		runStatuses: status === 'skipped' ? [] : [status],
 		calls: calls.length,
 		inputTokens: calls.reduce((n, c) => n + (c.inputTokens ?? 0), 0),
 		outputTokens: calls.reduce((n, c) => n + (c.outputTokens ?? 0), 0),
@@ -306,6 +345,69 @@ export function cellOf(
 		errors: [...errors],
 		outputModes: [...modes],
 	};
+}
+
+/**
+ * The runs of one case on one model as one cell: it passed when every run that was not an
+ * outage passed, and the counts and costs are the runs' together (the time is the slowest run's).
+ */
+export function mergeRuns(runs: readonly Cell[]): Cell {
+	const played = runs.filter((r) => r.status !== 'skipped');
+	const first = played[0];
+	if (!first || played.length === 1) return first ?? (runs[0] as Cell);
+	const sum = (pick: (c: Cell) => number) => played.reduce((n, c) => n + pick(c), 0);
+	const union = (pick: (c: Cell) => string[]) => [...new Set(played.flatMap(pick))];
+	const measured = played.filter((r) => r.status !== 'outage');
+	return {
+		...first,
+		status:
+			measured.length === 0
+				? 'outage'
+				: measured.every((r) => r.status === 'passed')
+					? 'passed'
+					: 'failed',
+		checks: sum((c) => c.checks),
+		failed: union((c) => c.failed),
+		harmful: union((c) => c.harmful),
+		missedChecks: sum((c) => c.missedChecks),
+		harmfulChecks: sum((c) => c.harmfulChecks),
+		runs: played.length,
+		passes: sum((c) => c.passes),
+		runStatuses: played.flatMap((c) => c.runStatuses),
+		calls: sum((c) => c.calls),
+		inputTokens: sum((c) => c.inputTokens),
+		outputTokens: sum((c) => c.outputTokens),
+		reasoningTokens: sum((c) => c.reasoningTokens),
+		cost: sum((c) => c.cost),
+		latencyMs: Math.max(...played.map((c) => c.latencyMs)),
+		finishReasons: union((c) => c.finishReasons),
+		errors: union((c) => c.errors),
+		outputModes: union((c) => c.outputModes),
+	};
+}
+
+const median = (values: readonly number[]): number | null => {
+	if (values.length === 0) return null;
+	const sorted = [...values].sort((a, b) => a - b);
+	const mid = Math.floor(sorted.length / 2);
+	return sorted.length % 2
+		? (sorted[mid] as number)
+		: ((sorted[mid - 1] as number) + (sorted[mid] as number)) / 2;
+};
+
+/**
+ * The share of cases that passed in each run (outages and runs not made left out), and their
+ * median: one run's luck does not decide a model's rate.
+ */
+export function medianPassRate(cells: readonly Cell[]): number | null {
+	const runs = Math.max(0, ...cells.map((c) => c.runStatuses.length));
+	const rates: number[] = [];
+	for (let i = 0; i < runs; i++) {
+		const statuses = cells.map((c) => c.runStatuses[i]).filter((s) => s && s !== 'outage');
+		if (statuses.length > 0)
+			rates.push(statuses.filter((s) => s === 'passed').length / statuses.length);
+	}
+	return median(rates);
 }
 
 /**
@@ -341,7 +443,11 @@ export function totalsOf(model: EnvLlm, cells: readonly Cell[]): ModelTotals {
 		skipped: own.filter((c) => c.status === 'skipped').length,
 		outages: own.filter((c) => c.status === 'outage').length,
 		checks: own.reduce((n, c) => n + c.checks, 0),
-		failedChecks: own.reduce((n, c) => n + c.failed.length, 0),
+		failedChecks: own.reduce((n, c) => n + c.missedChecks + c.harmfulChecks, 0),
+		missed: own.reduce((n, c) => n + c.missedChecks, 0),
+		harmful: own.reduce((n, c) => n + c.harmfulChecks, 0),
+		runs: Math.max(0, ...own.map((c) => c.runs)),
+		medianPassRate: medianPassRate(own),
 		calls: own.reduce((n, c) => n + c.calls, 0),
 		inputTokens: own.reduce((n, c) => n + c.inputTokens, 0),
 		outputTokens: own.reduce((n, c) => n + c.outputTokens, 0),
@@ -363,7 +469,9 @@ export function formatCell(cell: Cell): string {
 	const stop = [...cell.finishReasons, ...cell.errors].join('+') || '-';
 	const modes = cell.outputModes.length ? ` ${cell.outputModes.join(',')}` : '';
 	const mark = cell.status === 'passed' ? '✓' : cell.status === 'outage' ? '! outage' : '✗';
-	return `${mark} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}${modes}`;
+	// Several runs: how many of them passed.
+	const counted = cell.runs > 1 ? ` ${cell.passes}/${cell.runs}` : '';
+	return `${mark}${counted} ${tokens(cell.inputTokens)}/${tokens(cell.outputTokens)} ${usd(cell.cost)} ${seconds(cell.latencyMs)} ${stop}${modes}`;
 }
 
 /** The table: one row per case and one column per model, then the totals of each model. */
@@ -392,7 +500,21 @@ export function formatTable(
 					`${m.passed}/${m.cases}${m.outages ? ` (${m.outages} outage${m.outages > 1 ? 's' : ''})` : ''}${m.skipped ? ` (${m.skipped} skipped)` : ''}`,
 			),
 		],
+		...(models.some((m) => m.runs > 1)
+			? [
+					[
+						'pass rate',
+						...models.map((m) =>
+							m.medianPassRate === null
+								? '-'
+								: `median ${Math.round(m.medianPassRate * 100)}% of ${m.runs} runs`,
+						),
+					],
+				]
+			: []),
 		['checks', ...models.map((m) => `${m.checks - m.failedChecks}/${m.checks}`)],
+		['missed', ...models.map((m) => String(m.missed))],
+		['harmful', ...models.map((m) => String(m.harmful))],
 		['calls', ...models.map((m) => String(m.calls))],
 		['tokens in/out', ...models.map((m) => `${tokens(m.inputTokens)}/${tokens(m.outputTokens)}`)],
 		['cost', ...models.map((m) => usd(m.cost))],
@@ -429,6 +551,17 @@ export function baselineEntry(
 		failing: Object.fromEntries(
 			own.filter((c) => c.status === 'failed').map((c) => [c.case, c.failed]),
 		),
+		runs: totals.runs,
+		passCounts: Object.fromEntries(
+			own
+				.filter((c) => c.status === 'passed' || c.status === 'failed')
+				.map((c) => [c.case, c.passes]),
+		),
+		...(own.some((c) => c.harmful.length > 0) && {
+			harmful: Object.fromEntries(
+				own.filter((c) => c.harmful.length > 0).map((c) => [c.case, c.harmful]),
+			),
+		}),
 		...(own.some((c) => c.status === 'outage') && {
 			outages: own.filter((c) => c.status === 'outage').map((c) => c.case),
 		}),
@@ -436,7 +569,11 @@ export function baselineEntry(
 	};
 }
 
-/** What changed for one model since its baseline: cases that passed there and fail now, and back. */
+/**
+ * What changed for one model since its baseline: cases that passed there and fail now, and back.
+ * With several runs a case fails now when it failed in most of them: one bad run of three is
+ * variance, two are not.
+ */
 export function compareToBaseline(
 	entry: BaselineEntry,
 	slug: string,
@@ -447,7 +584,10 @@ export function compareToBaseline(
 	const failing = new Set(Object.keys(entry.failing));
 	return {
 		newlyFailing: own
-			.filter((c) => c.status === 'failed' && passing.has(c.case))
+			.filter(
+				(c) =>
+					c.status === 'failed' && passing.has(c.case) && (c.runs <= 1 || c.passes * 2 < c.runs),
+			)
 			.map((c) => c.case),
 		newlyPassing: own
 			.filter((c) => c.status === 'passed' && failing.has(c.case))
@@ -466,12 +606,24 @@ export function withEarlierVerdicts(
 	if (!entry.outages?.length || !earlier) return entry;
 	const passing = [...entry.passing];
 	const failing = { ...entry.failing };
+	const passCounts = { ...entry.passCounts };
+	const harmful = { ...entry.harmful };
 	for (const name of entry.outages) {
 		if (earlier.passing.includes(name)) passing.push(name);
 		const checks = earlier.failing[name];
 		if (checks) failing[name] = checks;
+		const count = earlier.passCounts?.[name];
+		if (count !== undefined) passCounts[name] = count;
+		const hurt = earlier.harmful?.[name];
+		if (hurt) harmful[name] = hurt;
 	}
-	return { ...entry, passing, failing };
+	return {
+		...entry,
+		passing,
+		failing,
+		...(entry.passCounts && { passCounts }),
+		...(Object.keys(harmful).length > 0 && { harmful }),
+	};
 }
 
 export interface EvalOptions<C extends { name: string }> {
@@ -516,8 +668,11 @@ export async function runEval<C extends { name: string }>(
 	const raw = Boolean(env.FAMOS_EVAL_RAW);
 	const concurrency = env.FAMOS_EVAL_CONCURRENCY ? Number(env.FAMOS_EVAL_CONCURRENCY) : Infinity;
 	const maxCost = env.FAMOS_EVAL_MAX_COST ? Number(env.FAMOS_EVAL_MAX_COST) : Infinity;
-	if (!(concurrency >= 1) || !(maxCost > 0)) {
-		log('FAMOS_EVAL_CONCURRENCY must be 1 or more and FAMOS_EVAL_MAX_COST more than 0.');
+	const runs = env.FAMOS_EVAL_RUNS ? Number(env.FAMOS_EVAL_RUNS) : 1;
+	if (!(concurrency >= 1) || !(maxCost > 0) || !Number.isInteger(runs) || runs < 1) {
+		log(
+			'FAMOS_EVAL_CONCURRENCY must be 1 or more, FAMOS_EVAL_MAX_COST more than 0 and FAMOS_EVAL_RUNS a whole number of 1 or more.',
+		);
 		return 2;
 	}
 	// Recordings, the report and the baseline are keyed by these names.
@@ -535,18 +690,21 @@ export async function runEval<C extends { name: string }>(
 		: null;
 	const version = options.version ?? null;
 	log(
-		`${options.title}${version ? ` · ${version}` : ''} · ${cases.length} cases · ${models.map((m) => m.label).join(', ')}\n`,
+		`${options.title}${version ? ` · ${version}` : ''} · ${cases.length} cases${runs > 1 ? ` × ${runs} runs` : ''} · ${models.map((m) => m.label).join(', ')}\n`,
 	);
 
-	// Model by model within each case, so a cost cap leaves every model with the same cases.
-	const work = cases.flatMap((c) => models.map((model) => ({ c, model })));
+	// Run by run, case by case and model by model, so a cost cap leaves every model with the
+	// same runs and cases.
+	const work = Array.from({ length: runs }, (_, run) =>
+		cases.flatMap((c) => models.map((model) => ({ c, model, run }))),
+	).flat();
 	let spent = 0;
 	const lines = new Map<string, string[]>();
 	const started = Date.now();
 	const done = await runPool(
 		work,
 		concurrency,
-		async ({ c, model }) => {
+		async ({ c, model, run }) => {
 			const observed = observe(model, raw, options.wait);
 			const verdict = await options.run(c, observed.llm).catch(
 				(error: unknown): CaseVerdict => ({
@@ -561,11 +719,16 @@ export async function runEval<C extends { name: string }>(
 			);
 			const cell = cellOf(c.name, model.slug, verdict, observed.calls);
 			spent += cell.cost;
-			lines.set(`${model.slug}\n${c.name}`, [
-				...verdict.lines,
-				...observed.notes.map((note) => `      · ${note}`),
-			]);
-			if (record) {
+			const own = [...verdict.lines, ...observed.notes.map((note) => `      · ${note}`)];
+			// Several runs: a run that passed is one line, a run that did not is shown whole.
+			const shown = runs > 1 && verdict.ok ? own.slice(0, 1) : own;
+			lines.set(
+				`${model.slug}\n${c.name}\n${run}`,
+				runs > 1
+					? shown.map((line, i) => (i === 0 ? `${line} (run ${run + 1}/${runs})` : line))
+					: shown,
+			);
+			if (record && run === 0) {
 				const folder = join(record, model.slug);
 				mkdirSync(folder, { recursive: true });
 				writeFileSync(
@@ -577,15 +740,21 @@ export async function runEval<C extends { name: string }>(
 		},
 		() => spent < maxCost,
 	);
-	const cells = done.map(
-		(cell, i) => cell ?? cellOf(work[i]?.c.name ?? '', work[i]?.model.slug ?? '', null, []),
+	const cells = cases.flatMap((c) =>
+		models.map((model) => {
+			const own = done.filter(
+				(cell): cell is Cell => cell !== null && cell.case === c.name && cell.model === model.slug,
+			);
+			return own.length > 0 ? mergeRuns(own) : cellOf(c.name, model.slug, null, []);
+		}),
 	);
 	const totals = models.map((model) => totalsOf(model, cells));
 
 	for (const model of models) {
 		log(`── ${model.label}`);
 		for (const c of cases)
-			for (const line of lines.get(`${model.slug}\n${c.name}`) ?? []) log(line);
+			for (let run = 0; run < runs; run++)
+				for (const line of lines.get(`${model.slug}\n${c.name}\n${run}`) ?? []) log(line);
 		log('');
 	}
 	for (const line of formatTable(
@@ -595,9 +764,22 @@ export async function runEval<C extends { name: string }>(
 	))
 		log(line);
 	const skipped = cells.filter((c) => c.status === 'skipped').length;
+	// A run that was not made (the cost cap) leaves the numbers partial too.
+	const partial = done.some((cell) => cell === null);
 	log(
-		`\n${usd(spent)} · ${((Date.now() - started) / 1000).toFixed(0)}s${skipped ? ` · ${skipped} cases skipped at the cost cap of ${usd(maxCost)}` : ''}`,
+		`\n${usd(spent)} · ${((Date.now() - started) / 1000).toFixed(0)}s${partial ? ` · ${done.filter((cell) => cell === null).length} ${runs > 1 ? 'runs of cases' : 'cases'} skipped at the cost cap of ${usd(maxCost)}` : ''}`,
 	);
+	// The gate: a wrong value shown as certain, or a wrong thing acted on, must never happen.
+	for (const t of totals) {
+		log(
+			`gate · ${t.label}: harmful ${t.harmful} (must be 0), missed ${t.missed}${t.medianPassRate === null ? '' : `, median pass rate ${Math.round(t.medianPassRate * 100)}% over ${t.runs} run${t.runs > 1 ? 's' : ''}`}`,
+		);
+		for (const cell of cells.filter((c) => c.model === t.slug)) {
+			for (const label of cell.harmful) log(`  harmful · ${cell.case}: ${label}`);
+			if (cell.runs > 1 && cell.passes > 0 && cell.passes < cell.runs)
+				log(`  unsteady · ${cell.case}: passed ${cell.passes} of ${cell.runs}`);
+		}
+	}
 
 	const baselinePath = join(options.dir, 'baseline.json');
 	const baseline: Baseline = existsSync(baselinePath)
@@ -629,7 +811,7 @@ export async function runEval<C extends { name: string }>(
 			`Outages (the provider failed, which says nothing about the model): ${outages.map((c) => `${c.case} · ${c.model}`).join('; ')}`,
 		);
 	if (env.FAMOS_EVAL_BASELINE) {
-		if (only || skipped) {
+		if (only || skipped || partial) {
 			log(
 				'The baseline is kept only from a run of every case (no FAMOS_EVAL_CASE, no cost cap hit).',
 			);
