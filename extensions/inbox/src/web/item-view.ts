@@ -328,18 +328,24 @@ export function decidedRequests(
 	now: number,
 ): Draft[] {
 	if (!memberId) return [];
+	// One whose subject was deleted meanwhile closed by itself: nobody decided it, so it is dated
+	// by when it was asked.
+	const closedAt = (d: Draft) =>
+		d.reason === 'gone' && d.status === 'expired' ? d.createdAt : d.decidedAt;
 	return drafts
-		.filter(
-			(d) =>
+		.filter((d) => {
+			const at = closedAt(d);
+			return (
 				d.sourceKind !== 'inbox' &&
 				!needsAction(d) &&
-				d.decidedAt !== null &&
-				now - d.decidedAt <= DECIDED_RECENT_MS &&
-				d.decidedBy !== memberId &&
+				at !== null &&
+				now - at <= DECIDED_RECENT_MS &&
+				(d.status === 'expired' ? d.reason === 'gone' : d.decidedBy !== memberId) &&
 				d.reason !== 'withdrawn' &&
-				personBehind(d) === memberId,
-		)
-		.toSorted((a, b) => (b.decidedAt ?? 0) - (a.decidedAt ?? 0));
+				personBehind(d) === memberId
+			);
+		})
+		.toSorted((a, b) => (closedAt(b) ?? 0) - (closedAt(a) ?? 0));
 }
 
 /** The outcome chip of a decided request. */

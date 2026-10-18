@@ -402,6 +402,26 @@ describe('the person’s own requests somebody decided', () => {
 		expect(decidedRequests([mine({})], undefined, NOW)).toEqual([]);
 	});
 
+	it('lists a request whose subject was deleted, dated by when it was asked', () => {
+		const gone = { status: 'expired', reason: 'gone', decidedAt: null, decidedBy: null } as const;
+		const list = decidedRequests(
+			[
+				mine({ id: 'gone', createdAt: NOW - DAY, ...gone }),
+				mine({ id: 'too old', createdAt: NOW - 8 * DAY, ...gone }),
+				mine({ id: 'its day passed', status: 'expired', decidedAt: NOW - 1000 }),
+				mine({
+					id: 'not mine',
+					proposedBy: { kind: 'member', memberId: 'tom' },
+					createdAt: NOW,
+					...gone,
+				}),
+			],
+			'leo',
+			NOW,
+		);
+		expect(list.map((d) => d.id)).toEqual(['gone']);
+	});
+
 	it('says what became of each', () => {
 		expect(requestChip(mine({ status: 'applied' }))).toEqual({ tone: 'now', key: 'chip_approved' });
 		expect(requestChip(mine({}))).toEqual({ tone: 'idle', key: 'chip_rejected' });
