@@ -706,3 +706,19 @@ describe('AI context', () => {
 		]);
 	});
 });
+
+describe('a change to a thing sent for approval', () => {
+	it('names the thing it is about, though the form sends only its id', async () => {
+		const flat = await addHome();
+		const wm = await addItem(flat.id);
+		const kid = await person(k, 'supervised', 'Elif');
+		const change = await k.runner.invoke(
+			'home.updateItem',
+			{ id: wm.id, warrantyUntil: '2029-09-20' },
+			kid.actor,
+		);
+		expect(change).toMatchObject({ status: 'drafted', subject: 'Washing machine' });
+		const archive = await k.runner.invoke('home.archiveItem', { id: wm.id }, kid.actor);
+		expect(archive).toMatchObject({ status: 'drafted', subject: 'Washing machine' });
+	});
+});

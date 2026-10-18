@@ -206,6 +206,16 @@ export const updateItem = defineAction({
 	// The old values of the fields that were given, keyed like the input (for undo).
 	output: ItemSchema.extend({ before: UpdateItemSchema.omit({ id: true, itemName: true }) }),
 	approval: { unless: homeEdit.id },
+	// The thing by its name on record, whatever the caller sent along (a form sends only its id).
+	async subject(ctx, { id }) {
+		const row = await tables(ctx.db)
+			.selectFrom('home_items')
+			.select('name')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		return row?.name ?? null;
+	},
 	undo: ({ id, before }) => ({ actionId: 'home.updateItem', input: { id, ...before } }),
 	ai: {
 		description:
@@ -264,6 +274,16 @@ export const archiveItem = defineAction({
 	input: z.object({ id: ItemIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: homeEdit.id },
+	// The thing by its name on record, whatever the caller sent along (a form sends only its id).
+	async subject(ctx, { id }) {
+		const row = await tables(ctx.db)
+			.selectFrom('home_items')
+			.select('name')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		return row?.name ?? null;
+	},
 	async run(uow, { id }) {
 		const row = await loadItem(uow, id);
 		const now = uow.clock.now();

@@ -55,11 +55,11 @@ export const addItemPresenter: DraftPresenter<AddItemInput> = {
 };
 
 /** A change to a listed thing, such as an extended warranty. */
-export const updateItemPresenter: DraftPresenter<UpdateItemInput> = {
+export const updateItemPresenter: DraftPresenter<UpdateItemInput & { label?: string }> = {
 	actionId: 'home.updateItem',
 	kind: (c) => c.t('home:kind_item_change'),
 	icon: Refrigerator,
-	title: (input, c) => input.itemName ?? c.t('home:kind_item'),
+	title: (input, c) => input.itemName || input.label || input.name || c.t('home:kind_item'),
 	fields: (input, c) => [
 		...(input.warrantyUntil
 			? [

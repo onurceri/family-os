@@ -2,7 +2,9 @@
  * What a draft is called where its presenter does not title it (a remove or archive nobody wrote
  * a presenter for, a draft made by hand): the name of the thing it is about (the review label,
  * else the subject the server read from the record) with the action's own translated name, else
- * its summary, else the action's name, else a generic word (never an action id).
+ * its summary, else the action's name, else a generic word (never an action id). Inside a
+ * capture's group the summary is the group's own line (`groupLine`), which every card would
+ * repeat, so it is left out there and the action's name stands in.
  */
 export function draftHeadline(draft: {
 	summary: string | null;
@@ -10,6 +12,7 @@ export function draftHeadline(draft: {
 	actionId: string;
 	input: unknown;
 	subject?: string | null;
+	groupLine?: string | null;
 	t: (key: string) => string;
 }): string {
 	const label =
@@ -21,7 +24,11 @@ export function draftHeadline(draft: {
 	// What it is about comes before the summary: inside a capture's group the summary is the
 	// group's own line, which every card of the group would repeat.
 	if (named) return draft.titleKey ? `${draft.t(draft.titleKey)} · ${named}` : named;
-	if (draft.summary) return draft.summary;
+	const summary = draft.summary?.trim();
+	const repeatsGroup =
+		Boolean(summary) &&
+		summary?.toLocaleLowerCase() === draft.groupLine?.trim().toLocaleLowerCase();
+	if (summary && !repeatsGroup) return summary;
 	return draft.titleKey ? draft.t(draft.titleKey) : draft.t('app:draft_kind_generic');
 }
 

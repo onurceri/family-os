@@ -17,14 +17,15 @@ export const addVehiclePresenter: DraftPresenter<AddVehicleInput> = {
 };
 
 /** A service or repair, as the AI reads it from an invoice or a person suggests it. */
-export const addLogPresenter: DraftPresenter<AddLogInput> = {
+export const addLogPresenter: DraftPresenter<AddLogInput & { label?: string }> = {
 	actionId: 'vehicles.addLog',
 	kind: (c) => c.t('vehicles:kind_log'),
 	icon: Wrench,
-	title: (input, c) =>
-		input.vehicleName
-			? `${input.vehicleName} · ${c.t(`vehicles:log_kind_${input.kind ?? 'service'}`)}`
-			: c.t(`vehicles:log_kind_${input.kind ?? 'service'}`),
+	title: (input, c) => {
+		const vehicle = input.label || input.vehicleName;
+		const kind = c.t(`vehicles:log_kind_${input.kind ?? 'service'}`);
+		return vehicle ? `${vehicle} · ${kind}` : kind;
+	},
 	fields: (input, c) => [
 		{ label: c.t('vehicles:draft_date'), value: draftDate(input.doneOn, c), path: 'doneOn' },
 		...(input.place

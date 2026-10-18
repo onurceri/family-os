@@ -83,6 +83,7 @@
 	"queued_toast": "Saved on this device. It is sent when you are back online.",
 	"label_done": "Mark “{{title}}” done",
 	"label_undo": "Take back the completion of a chore",
+	"draft_due": "Due",
 	"draft_done_by": "Done by",
 	"draft_approve_done": "Mark done",
 	"quiet_none": "no chores",

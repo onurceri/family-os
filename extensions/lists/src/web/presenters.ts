@@ -1,5 +1,5 @@
 import { describeRecurrence, todayIn } from '@famos/time';
-import type { DraftPresenter, PresenterContext } from '@famos/ui/slots';
+import { type DraftPresenter, draftDate, type PresenterContext } from '@famos/ui/slots';
 import { ListChecks, ShoppingCart } from '@lucide/svelte';
 import type { AddShoppingItemsInput, TaskInput } from '../contract/index.js';
 import { loadItems, loadLists } from './data.js';
@@ -134,14 +134,21 @@ export const updateTaskPresenter: DraftPresenter<UpdateTaskInput> = {
 };
 
 /** A proposal to mark a task done. */
-export const completeTaskPresenter: DraftPresenter<{ id: string; label?: string }> = {
+export const completeTaskPresenter: DraftPresenter<{
+	id: string;
+	label?: string;
+	dueDate?: string | null;
+}> = {
 	actionId: 'lists.completeTask',
 	kind: (c) => c.t('lists:kind_task'),
 	icon: ListChecks,
 	title: (input, c) => input.label || c.t('lists:draft_a_task'),
 	// Says what will happen, so it never reads like a suggestion to add the task.
-	fields: (_input, c) => [
+	fields: (input, c) => [
 		{ label: c.t('lists:draft_change'), value: c.t('lists:draft_approve_done'), path: 'id' },
+		...(input.dueDate
+			? [{ label: c.t('lists:due'), value: draftDate(input.dueDate, c), path: 'dueDate' }]
+			: []),
 	],
 	approveLabel: (c) => c.t('lists:draft_approve_done'),
 };

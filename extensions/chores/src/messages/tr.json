@@ -83,6 +83,7 @@
 	"queued_toast": "Bu cihaza kaydedildi. Bağlantın gelince gönderilecek.",
 	"label_done": "“{{title}}” yapıldı olarak işaretle",
 	"label_undo": "Bir işin yapıldı kaydını geri al",
+	"draft_due": "Tarih",
 	"draft_done_by": "Yapan",
 	"draft_approve_done": "Yapıldı olarak işaretle",
 	"quiet_none": "ev işi yok",

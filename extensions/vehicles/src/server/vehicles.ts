@@ -172,6 +172,16 @@ export const addLog = defineAction({
 	input: AddLogSchema,
 	output: VehicleLogSchema,
 	approval: { unless: vehiclesEdit.id },
+	// The vehicle by its name on record: a form sends only its id.
+	async subject(ctx, { vehicleId }) {
+		const row = await tables(ctx.db)
+			.selectFrom('vehicles_vehicles')
+			.select('name')
+			.where('id', '=', vehicleId)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst();
+		return row?.name ?? null;
+	},
 	undo: (log) => ({ actionId: 'vehicles.removeLog', input: { id: log.id } }),
 	ai: {
 		description:

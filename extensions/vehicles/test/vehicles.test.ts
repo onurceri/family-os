@@ -333,6 +333,19 @@ describe('service and repair log', () => {
 	});
 });
 
+describe('a log entry sent for approval', () => {
+	it('names the vehicle it is for, though the form sends only its id', async () => {
+		const car = await addVehicle();
+		const kid = await person(k, 'supervised', 'Elif');
+		const result = await k.runner.invoke(
+			'vehicles.addLog',
+			{ vehicleId: car.id, doneOn: '2026-08-15' },
+			kid.actor,
+		);
+		expect(result).toMatchObject({ status: 'drafted', subject: car.name });
+	});
+});
+
 describe('capabilities', () => {
 	it('turns a supervised member’s changes into drafts that an admin approves', async () => {
 		const kid = await person(k, 'supervised', 'Elif');

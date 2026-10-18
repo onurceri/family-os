@@ -206,6 +206,7 @@
 						{draft}
 						compact
 						quiet
+						groupLine={captureLine(item)}
 						picked={pickedIds.has(draft.id)}
 						onpick={open && canDecide && !draft.unavailable
 							? (on) => setPicked(draft.id, on)

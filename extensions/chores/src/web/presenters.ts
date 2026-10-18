@@ -87,8 +87,10 @@ export const markDonePresenter: DraftPresenter<{
 	kind: (c) => c.t('chores:kind_chore'),
 	icon: SquareCheckBig,
 	title: (input, c) => input.label || c.t('chores:draft_a_chore'),
-	fields: (input, c) =>
-		input.doneBy
+	// The turn that is marked done, since a repeating chore has one every time.
+	fields: (input, c) => [
+		{ label: c.t('chores:draft_due'), value: draftDate(input.dueDate, c), path: 'dueDate' },
+		...(input.doneBy
 			? [
 					{
 						label: c.t('chores:draft_done_by'),
@@ -96,6 +98,7 @@ export const markDonePresenter: DraftPresenter<{
 						path: 'doneBy',
 					},
 				]
-			: [],
+			: []),
+	],
 	approveLabel: (c) => c.t('chores:draft_approve_done'),
 };

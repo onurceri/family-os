@@ -4,7 +4,7 @@ import { defineProject } from 'vitest/config';
 import { testDefaults } from '../vitest.shared.ts';
 
 export default defineProject({
-	// Loading an extension's web entry (draft-dates.test.ts) pulls in Svelte components; the icon
+	// Loading an extension's web entry (draft-presentation.test.ts) pulls in Svelte components; the icon
 	// library's own components are replaced, since none of the text under test uses one.
 	plugins: [svelte({ configFile: false })],
 	resolve: {

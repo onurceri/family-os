@@ -18,6 +18,9 @@ export const addPetPresenter: DraftPresenter<AddPetInput> = {
 					},
 				]
 			: []),
+		...(input.birthDate
+			? [{ label: c.t('pets:born'), value: draftDate(input.birthDate, c), path: 'birthDate' }]
+			: []),
 	],
 	approveLabel: (c) => c.t('pets:draft_approve_add'),
 };

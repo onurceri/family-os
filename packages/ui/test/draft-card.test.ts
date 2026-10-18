@@ -289,6 +289,16 @@ describe('draftHeadline', () => {
 		);
 	});
 
+	it('never repeats the group line as a card title, even with nothing else to name it', () => {
+		const grouped = { ...base, summary: 'Piano recital', groupLine: ' piano recital ', input: {} };
+		expect(draftHeadline(grouped)).toBe('[vehicles:draft_title_remove_log]');
+		expect(draftHeadline({ ...grouped, subject: 'Oil change' })).toBe(
+			'[vehicles:draft_title_remove_log] · Oil change',
+		);
+		// A summary of its own still titles it.
+		expect(draftHeadline({ ...grouped, summary: 'Invoice' })).toBe('Invoice');
+	});
+
 	it('says which extension a waiting suggestion needs, in the reader’s language', () => {
 		const say = (key: string, options?: Record<string, unknown>) =>
 			`${key}:${String(options?.name)}`;

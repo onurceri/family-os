@@ -37,6 +37,7 @@
 		onreplaced,
 		quiet = false,
 		byline = true,
+		groupLine,
 	}: {
 		draft: Draft;
 		compact?: boolean;
@@ -59,6 +60,8 @@
 		byline?: boolean;
 		/** In a capture's group: a calm card instead of the alarm ring. */
 		quiet?: boolean;
+		/** In a capture's group: the group's own line, which no card repeats as its title. */
+		groupLine?: string;
 	} = $props();
 	const { app, t } = useInbox();
 
@@ -121,6 +124,7 @@
 				actionId: draft.actionId,
 				input: shown,
 				subject: draft.subject,
+				groupLine,
 				t: app.t,
 			}),
 	);
