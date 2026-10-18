@@ -52,5 +52,13 @@ export default defineWebExtension({
 			requires: 'board.view',
 			component: () => import('./DisplayBoard.svelte'),
 		},
+		{
+			// The board on a screen of its own between Today's turns on a family display.
+			slot: 'display.page',
+			id: 'board.notes',
+			labelKey: 'board:display_title',
+			requires: 'board.view',
+			component: () => import('./DisplayBoardPage.svelte'),
+		},
 	],
 });
