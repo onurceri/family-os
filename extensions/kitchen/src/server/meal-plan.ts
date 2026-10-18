@@ -253,7 +253,7 @@ export const aiMealPlan = defineAction({
 	requires: kitchenView.id,
 	ai: {
 		description:
-			'The meal plan: what is planned to be cooked on which day (breakfast, lunch, dinner). Use it for "what is for dinner" questions. It holds only what was planned to be cooked; a dinner elsewhere is not in it, so for a day, look at the calendar too.',
+			'The meal plan: what is planned to be cooked on which day (breakfast, lunch, dinner). It holds only what was planned to be cooked.',
 	},
 	async run(uow, { from, days }) {
 		const { timeZone } = await uow.family.settings();
@@ -267,10 +267,9 @@ export const aiMealPlan = defineAction({
 				title: m.title,
 				recipeId: m.recipeId,
 			})),
-			// An empty result says what it covers, so "nothing planned" is answered as exactly
-			// that, and points to the calendar for meals made elsewhere.
+			// An empty result says what it covers, so "nothing planned" is answered as exactly that.
 			...(meals.length === 0 && {
-				note: `Nothing is planned in the meal plan from ${start} to ${addDays(start, days - 1)}. A meal out or at someone else's home would be on the calendar.`,
+				note: `Nothing is planned in the meal plan from ${start} to ${addDays(start, days - 1)}.`,
 			}),
 		};
 	},
