@@ -97,3 +97,22 @@ describe('pets.digest', () => {
 		expect(local.hidden).toBeUndefined();
 	});
 });
+
+describe('pets.digest links', () => {
+	it("opens the pet's page from the duty a pet was added with", async () => {
+		const added = await k.runner.invoke<{ id: string }>(
+			'pets.addPet',
+			{
+				name: 'Pamuk',
+				species: 'cat',
+				obligations: [{ preset: 'rabies', title: 'Rabies', dueDate: '2026-10-09' }],
+			},
+			mara.actor,
+		);
+		if (added.status !== 'applied') throw new Error('expected a pet');
+		const out = await digest('pets.digest');
+		expect(out.items.find((i) => i.title === 'Rabies')?.href).toBe(`/pets/${added.output.id}`);
+		// A duty added without a page for its record stays plain.
+		expect(out.items.find((i) => i.title === 'Rabies vaccination')?.href).toBeUndefined();
+	});
+});

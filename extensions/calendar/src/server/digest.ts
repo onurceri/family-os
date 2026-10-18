@@ -7,7 +7,7 @@ import {
 	type UnitOfWork,
 } from '@famos/sdk';
 import { addDays, todayIn, zoned } from '@famos/time';
-import type { Occurrence } from '../contract/index.ts';
+import { eventHref, type Occurrence } from '../contract/index.ts';
 import { calendarView } from './capabilities.ts';
 import { occurrencesBetween, sortOccurrences } from './store.ts';
 import { externalOccurrencesBetween } from './subscriptions.ts';
@@ -53,6 +53,8 @@ export function eventItem(o: Occurrence, now: number, today: string, timeZone: s
 		// Only today's events say where they stand; other days are before or after by their date.
 		...((date === today || when === 'now') && { status: when }),
 		...(Object.keys(extra).length > 0 && { extra }),
+		// A subscribed calendar's event has no page of its own.
+		...(o.source === null && { href: eventHref(o.eventId, date) }),
 	};
 }
 

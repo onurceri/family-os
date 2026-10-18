@@ -307,6 +307,7 @@ export interface operations {
                                         place?: string;
                                         detail?: string;
                                         forOthers?: boolean;
+                                        href?: string;
                                     }[];
                                     truncated: boolean;
                                     hidden?: number;
@@ -326,6 +327,7 @@ export interface operations {
                                         place?: string;
                                         detail?: string;
                                         forOthers?: boolean;
+                                        href?: string;
                                     };
                                 }[];
                                 notHere: {

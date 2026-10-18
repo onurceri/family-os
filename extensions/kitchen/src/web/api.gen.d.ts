@@ -2633,6 +2633,7 @@ export interface operations {
                                 extra?: {
                                     [key: string]: string;
                                 };
+                                href?: string;
                             }[];
                             truncated: boolean;
                             nextAfter?: {
@@ -2654,6 +2655,7 @@ export interface operations {
                                 extra?: {
                                     [key: string]: string;
                                 };
+                                href?: string;
                             };
                             hidden?: number;
                         };

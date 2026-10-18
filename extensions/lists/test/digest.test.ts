@@ -198,6 +198,7 @@ describe('lists.shoppingDigest', () => {
 				date: '2026-01-05',
 				people: [],
 				extra: { open: '2', things: 'Milk, Bread' },
+				href: '/lists/shopping',
 			},
 		]);
 	});
@@ -221,5 +222,17 @@ describe('lists.shoppingDigest', () => {
 			about: ['screws'],
 		});
 		expect(out.items.map((i) => i.title)).toEqual(['Hardware', 'Groceries']);
+	});
+});
+
+describe('lists digests links', () => {
+	it('opens a task by its id and the shopping page for a list', async () => {
+		const made = await task({ title: 'School trip form', dueDate: '2026-01-05' });
+		if (made.status !== 'applied') throw new Error('expected a task');
+		const tasks = await digest('lists.tasksDigest', { from: '2026-01-05', to: '2026-01-11' });
+		expect(tasks.items[0]?.href).toBe(`/lists/tasks?task=${(made.output as { id: string }).id}`);
+		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Milk' }] }, mara.actor);
+		const shopping = await digest('lists.shoppingDigest', { from: '2026-01-05', to: '2026-01-11' });
+		expect(shopping.items[0]?.href).toBe('/lists/shopping');
 	});
 });

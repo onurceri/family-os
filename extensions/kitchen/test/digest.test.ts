@@ -95,3 +95,11 @@ describe('kitchen.digest', () => {
 		).rejects.toMatchObject({ code: 'forbidden' });
 	});
 });
+
+describe('kitchen.digest links', () => {
+	it('opens the meal plan on the week of the meal', async () => {
+		await plan({ date: '2026-01-06', title: 'Soup' });
+		const out = await digest({ from: '2026-01-05', to: '2026-01-11' });
+		expect(out.items[0]?.href).toBe('/kitchen/plan?date=2026-01-06');
+	});
+});

@@ -27,6 +27,7 @@
 		reopenTask,
 		saveTask,
 	} from './data.js';
+	import { taskLink } from './deep-link.js';
 	import { dueLabel, groupTasks, type Urgency } from './format.js';
 	import { revealRow } from './reveal.js';
 	import { useLists } from './i18n.js';
@@ -253,6 +254,22 @@
 		form = null;
 		opened = null;
 	}
+
+	// An address that names a task (`?task=…`, from an answer card) brings it into view and, for
+	// whoever may open tasks, opens its details. The address is cleaned afterwards, so Back leaves
+	// the page and a reload does not open it again.
+	const wanted = $derived(taskLink(app.query()));
+	let handledTask = '';
+	$effect(() => {
+		if (!wanted || !loadedOnce || wanted === handledTask) return;
+		handledTask = wanted;
+		const found = tasks.find((task) => task.id === wanted);
+		app.setQuery({ task: null }, { replace: true });
+		if (!found) return;
+		if (found.doneAt !== null) showDone = true;
+		revealRow('data-task-id', found.id);
+		if (mayOpen) void openEdit(found);
+	});
 
 	// New tasks someone asked for that wait for approval: quiet rows until they are decided.
 	const waitingNew = $derived(app.awaitedNew(['lists.addTask']));

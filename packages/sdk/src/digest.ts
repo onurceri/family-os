@@ -25,6 +25,15 @@ export const DIGEST_LIMIT = 60;
 /** How long an item's notes may be; longer notes are cut and end with "…". */
 export const DIGEST_NOTES_MAX = 300;
 
+/**
+ * A path inside the app that opens a digest item (`/calendar?event=…&on=2026-10-22`): it starts
+ * with one slash, so it can never leave the app.
+ */
+export const DigestHrefSchema = z
+	.string()
+	.max(300)
+	.regex(/^\/(?!\/)[^\s\\]*$/, 'Expected a path inside the app');
+
 const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86_400_000;
 
 export const DigestInputSchema = z
@@ -127,6 +136,12 @@ export const DigestItemSchema = z.object({
 	 * duty is for, how many things a list still has. A typed id here becomes a handle as well.
 	 */
 	extra: z.record(z.string(), z.string().max(300)).optional(),
+	/**
+	 * Where the app opens this item, from the page routes of the extension that keeps it. Only
+	 * for the app's own screens: it holds typed ids, so no model ever reads it (a digest is not
+	 * a tool, and `readableOutput` drops every `href`).
+	 */
+	href: DigestHrefSchema.optional(),
 });
 export type DigestItem = z.infer<typeof DigestItemSchema>;
 

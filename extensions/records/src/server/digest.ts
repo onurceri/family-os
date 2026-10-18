@@ -77,6 +77,8 @@ const dutyItem = (row: ObligationRow, date: string, today: string): DigestItem =
 			...(row.lapses === 1 && { ends: 'yes' }),
 			...(row.rrule && { repeats: 'yes' }),
 		},
+		// The page of the record the duty is for, as its owner stored it.
+		...(row.record_url && { href: row.record_url }),
 	};
 };
 

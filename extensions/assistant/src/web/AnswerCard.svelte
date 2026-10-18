@@ -3,13 +3,13 @@
 	import { todayIn } from '@famos/time';
 	import type { CardWords } from '../contract/card-words.js';
 	import type { AnswerCard } from '../contract/index.js';
-	import { cardView, colorOf } from './card-view.js';
+	import { cardView, colorOf, type RowView } from './card-view.js';
 	import { useAssistant } from './i18n.js';
 
 	/**
 	 * The facts of a question's answer, drawn from the stored card: what was understood, each topic
-	 * as a label with its items as rows, what is not here. Rows are plain: the card holds no
-	 * identifiers, so nothing here can open a record.
+	 * as a label with its items as rows, what is not here. A row whose thing has a page of its own
+	 * (the card keeps only a path inside the app) opens it; the others are plain.
 	 */
 	let { card }: { card: AnswerCard } = $props();
 	const { app, t } = useAssistant();
@@ -22,6 +22,27 @@
 	const view = $derived(cardView(card, words));
 	const members = $derived(app.members());
 </script>
+
+{#snippet rowBody(row: RowView)}
+	{#if row.when}<span class="when">{row.when}</span>{/if}
+	<div class="body">
+		<p class="title">{row.title}</p>
+		{#if row.facts.length > 0}<p class="meta">{row.facts.join(' · ')}</p>{/if}
+		{#each row.state as state, j (j)}<p class="state">{state}</p>{/each}
+		{#if row.people.length > 0}
+			<ul class="people" aria-label={row.people.join(', ')}>
+				{#each row.people as name (name)}
+					{@const color = colorOf(name, members)}
+					<li class="person">
+						{#if color}<Avatar {name} {color} size={20} />{/if}
+						<span>{name}</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+		{#if row.notes}<p class="notes">{row.notes}</p>{/if}
+	</div>
+{/snippet}
 
 <div class="card" role="group" aria-label={t('card_answer')} data-testid="answer-card">
 	<p class="understood">
@@ -38,25 +59,14 @@
 			{:else}
 				<ul class="rows">
 					{#each section.rows as row, i (i)}
-						<li class="row">
-							{#if row.when}<span class="when">{row.when}</span>{/if}
-							<div class="body">
-								<p class="title">{row.title}</p>
-								{#if row.facts.length > 0}<p class="meta">{row.facts.join(' · ')}</p>{/if}
-								{#each row.state as state, j (j)}<p class="state">{state}</p>{/each}
-								{#if row.people.length > 0}
-									<ul class="people" aria-label={row.people.join(', ')}>
-										{#each row.people as name (name)}
-											{@const color = colorOf(name, members)}
-											<li class="person">
-												{#if color}<Avatar {name} {color} size={20} />{/if}
-												<span>{name}</span>
-											</li>
-										{/each}
-									</ul>
-								{/if}
-								{#if row.notes}<p class="notes">{row.notes}</p>{/if}
-							</div>
+						<li>
+							{#if row.href}
+								<a href={row.href} class="row link" data-testid="card-row-link">
+									{@render rowBody(row)}
+								</a>
+							{:else}
+								<div class="row">{@render rowBody(row)}</div>
+							{/if}
 						</li>
 					{/each}
 				</ul>
@@ -104,9 +114,31 @@
 		padding-block: 8px;
 		border-top: 1px solid var(--line);
 	}
-	.row:first-child {
+	li:first-child > .row {
 		border-top: 0;
 		padding-top: 0;
+	}
+	.link {
+		color: inherit;
+		text-decoration: none;
+		min-height: 44px;
+		align-content: center;
+	}
+	.link .title {
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-underline-offset: 3px;
+		transition: text-decoration-color 150ms ease-out;
+	}
+	@media (hover: hover) {
+		.link:hover .title {
+			text-decoration-color: currentColor;
+		}
+	}
+	.link:focus-visible {
+		outline: 2px solid var(--info);
+		outline-offset: 2px;
+		border-radius: var(--r-item);
 	}
 	.when {
 		color: var(--ink-soft);

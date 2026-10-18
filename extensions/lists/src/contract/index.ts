@@ -180,3 +180,9 @@ export const ListNameSchema = z.string().trim().min(1).max(LIST_NAME_MAX);
 
 export const taskChangedPayload = z.object({ taskId: z.string() });
 export const shoppingChangedPayload = z.object({ listId: z.string() });
+
+/** Where the app opens a task: the tasks page with the task's details beside it. */
+export const taskHref = (taskId: string) => `/lists/tasks?task=${taskId}`;
+
+/** The shopping page, where every list with things to buy is shown. */
+export const SHOPPING_HREF = '/lists/shopping';

@@ -148,3 +148,6 @@ export const MealEntrySchema = z.object({
 export type MealEntry = z.infer<typeof MealEntrySchema>;
 
 export const kitchenChangedPayload = z.object({ area: z.enum(['recipes', 'meals']) });
+
+/** Where the app shows the meal plan for the week of a day. */
+export const mealPlanHref = (date: string) => `/kitchen/plan?date=${date}`;

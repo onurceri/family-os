@@ -366,8 +366,22 @@ export function withWeekdays(value: unknown): unknown {
 }
 
 /**
- * An action's output as the model reads it: ids become handles, record lists are compact, and
- * dates carry their weekdays.
+ * A result without the paths the app opens things with (`href`): they hold typed ids and mean
+ * nothing to a model, which must never see an id or the app's addresses.
+ */
+export function withoutPaths(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(withoutPaths);
+	if (!value || typeof value !== 'object') return value;
+	return Object.fromEntries(
+		Object.entries(value)
+			.filter(([key]) => key !== 'href')
+			.map(([key, v]) => [key, withoutPaths(v)]),
+	);
+}
+
+/**
+ * An action's output as the model reads it: ids become handles, record lists are compact, dates
+ * carry their weekdays, and the app's paths are left out.
  */
 export function readableOutput(output: unknown, table: HandleTable): unknown {
 	const context = AiContextSchema.safeParse(output);
@@ -383,7 +397,7 @@ export function readableOutput(output: unknown, table: HandleTable): unknown {
 			})),
 		};
 	}
-	return withWeekdays(compact(withHandles(output, table)));
+	return withWeekdays(compact(withHandles(withoutPaths(output), table)));
 }
 
 /** The id and the person's words of a change aimed at one record, or null. */

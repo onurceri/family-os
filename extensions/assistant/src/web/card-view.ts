@@ -10,6 +10,13 @@ import {
 } from '../contract/card-words.js';
 import type { AnswerCard, CardItem } from '../contract/index.js';
 
+/** A path inside the app: one slash first, no second slash, no space or backslash. */
+const APP_PATH = /^\/(?!\/)[^\s\\]*$/;
+
+/** The item's link when it is a path inside the app, else null (a row then stays plain). */
+export const rowHref = (item: Pick<CardItem, 'href'>): string | null =>
+	item.href && item.href.length <= 300 && APP_PATH.test(item.href) ? item.href : null;
+
 /**
  * An answer card as the thread draws it: every line already in words, so the component only
  * lays them out. The facts are the stored card's; nothing here asks the server for more.
@@ -25,6 +32,8 @@ export interface RowView {
 	state: string[];
 	people: string[];
 	notes: string;
+	/** Where tapping the row goes; null: the row is plain. */
+	href: string | null;
 }
 
 export interface SectionView {
@@ -66,6 +75,7 @@ export function rowView(item: CardItem, words: CardWords, sameDay: string | null
 		state,
 		people: item.people,
 		notes: (item.notes ?? '').replace(/\s+/g, ' ').trim(),
+		href: rowHref(item),
 	};
 }
 

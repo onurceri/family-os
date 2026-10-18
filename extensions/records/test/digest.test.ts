@@ -118,3 +118,13 @@ describe('records.digest', () => {
 		).rejects.toMatchObject({ code: 'forbidden' });
 	});
 });
+
+describe('records.digest links', () => {
+	it('carries the page of the record a duty is for, and nothing when the owner gave none', async () => {
+		await duty({ title: 'Inspection', dueDate: '2026-10-07', recordUrl: `/vehicles/${CAR}` });
+		await duty({ title: 'Tyres', dueDate: '2026-10-08' });
+		const out = await digest({ from: '2026-10-06', to: '2026-10-12' });
+		expect(out.items.find((i) => i.title === 'Inspection')?.href).toBe(`/vehicles/${CAR}`);
+		expect(out.items.find((i) => i.title === 'Tyres')?.href).toBeUndefined();
+	});
+});

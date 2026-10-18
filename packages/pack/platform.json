@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.6",
+	"sdk": "0.8.7",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -17,6 +17,7 @@
 			"DIGEST_NOTES_MAX",
 			"DIGEST_STATUSES",
 			"DayRefSchema",
+			"DigestHrefSchema",
 			"DigestInputSchema",
 			"DigestItemSchema",
 			"DigestOutputSchema",
@@ -125,7 +126,8 @@
 			"whichOne",
 			"wholeRecord",
 			"withHandles",
-			"withWeekdays"
+			"withWeekdays",
+			"withoutPaths"
 		],
 		"@famos/time": [
 			"IsoDateSchema",

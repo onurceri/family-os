@@ -333,3 +333,6 @@ export const UpdateTagInputSchema = z.object({
 export const DeleteTagInputSchema = z.object({
 	name: z.string().trim().min(1).max(MAX_TAG_LENGTH),
 });
+
+/** Where the app opens an event: the calendar on its day, with the event's details beside it. */
+export const eventHref = (eventId: string, date: string) => `/calendar?event=${eventId}&on=${date}`;

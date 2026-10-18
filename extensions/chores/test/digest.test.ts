@@ -178,3 +178,12 @@ describe('chores.digest', () => {
 		).rejects.toMatchObject({ code: 'forbidden' });
 	});
 });
+
+describe('chores.digest links', () => {
+	it("opens the chore's page", async () => {
+		const made = await chore({ title: 'Bins out', startDate: '2026-01-05' });
+		if (made.status !== 'applied') throw new Error('expected a chore');
+		const out = await digest({ from: '2026-01-05', to: '2026-01-11' });
+		expect(out.items[0]?.href).toBe(`/chores/${(made.output as { id: string }).id}`);
+	});
+});

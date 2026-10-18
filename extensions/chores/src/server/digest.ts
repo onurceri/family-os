@@ -1,6 +1,6 @@
 import { type DigestItem, defineDigest, digestForPeople, digestNotes, digestOf } from '@famos/sdk';
 import { addDays, compareDates, type Recurrence, todayIn } from '@famos/time';
-import type { Rotation } from '../contract/index.ts';
+import { choreHref, type Rotation } from '../contract/index.ts';
 import { choresView } from './capabilities.ts';
 import { dueAfter } from './schedule.ts';
 import { choreViews } from './shared.ts';
@@ -111,6 +111,7 @@ export const choresDigest = defineDigest({
 								...(notes && { notes }),
 								...(turn.overdue && { status: 'overdue' as const }),
 								...(chore.recurrence && { extra: { repeats: 'yes' } }),
+								href: choreHref(chore.id),
 							}),
 						);
 				})

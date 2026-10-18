@@ -592,6 +592,7 @@ export const boardDigest = defineDigest({
 				...(notes && { notes }),
 				...(row.pinned === 1 && { status: 'pinned' as const }),
 				extra: { posted, ...(row.created_by && { author: row.created_by }) },
+				href: '/board',
 			};
 		});
 		return digestOf(items, input);

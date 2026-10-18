@@ -153,3 +153,6 @@ export const TodayChoresSchema = z.object({
 });
 export type TodayChores = z.infer<typeof TodayChoresSchema>;
 export const TodayByMemberSchema = z.array(TodayChoresSchema);
+
+/** Where the app opens a chore. */
+export const choreHref = (choreId: string) => `/chores/${choreId}`;

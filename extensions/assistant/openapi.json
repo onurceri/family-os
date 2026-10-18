@@ -586,6 +586,11 @@
 																					},
 																					"forOthers": {
 																						"type": "boolean"
+																					},
+																					"href": {
+																						"type": "string",
+																						"maxLength": 300,
+																						"pattern": "^\\/(?!\\/)[^\\s\\\\]*$"
 																					}
 																				},
 																				"required": [
@@ -666,6 +671,11 @@
 																				},
 																				"forOthers": {
 																					"type": "boolean"
+																				},
+																				"href": {
+																					"type": "string",
+																					"maxLength": 300,
+																					"pattern": "^\\/(?!\\/)[^\\s\\\\]*$"
 																				}
 																			},
 																			"required": [

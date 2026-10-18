@@ -56,6 +56,7 @@ export function cardItem(item: DigestItem, names: ReadonlyMap<string, string>): 
 		...(place && { place }),
 		...(detail && { detail }),
 		...(item.kind === 'suggestion' && extra.waitsFor === 'others' && { forOthers: true }),
+		...(item.href && { href: item.href }),
 	};
 }
 

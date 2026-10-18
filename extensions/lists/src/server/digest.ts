@@ -8,6 +8,7 @@ import {
 } from '@famos/sdk';
 import { addDays, compareDates, expandDates, todayIn } from '@famos/time';
 import { sql } from 'kysely';
+import { SHOPPING_HREF, taskHref } from '../contract/index.ts';
 import { type TaskRow, tables } from './store.ts';
 import { listsView } from './tasks.ts';
 
@@ -55,6 +56,7 @@ const taskItem = (row: TaskRow, date: string, today: string): DigestItem => {
 		// Only the open due date can be late; later dates of its rule are still to come.
 		...(date === row.due_date && compareDates(date, today) < 0 && { status: 'overdue' as const }),
 		...(row.rrule && { extra: { repeats: 'yes' } }),
+		href: taskHref(row.id),
 	};
 };
 
@@ -188,6 +190,7 @@ export const shoppingDigest = defineDigest({
 				title: list.name || uow.translate(language, 'lists:default_list'),
 				date,
 				people: [],
+				href: SHOPPING_HREF,
 				extra: {
 					open: String(open.length),
 					things: names.length > 300 ? `${names.slice(0, 299)}…` : names,

@@ -3,7 +3,7 @@ import { dateLocale } from '@famos/time';
 import { describe, expect, it } from 'vitest';
 import type { CardWords } from '../src/contract/card-words.ts';
 import { type AnswerCard, AnswerCardSchema } from '../src/contract/index.ts';
-import { cardView, colorOf } from '../src/web/card-view.ts';
+import { cardView, colorOf, rowHref } from '../src/web/card-view.ts';
 
 const translate = repoTranslate();
 const words = (language: string, hourCycle: 'h12' | 'h23' = 'h23'): CardWords => ({
@@ -82,6 +82,7 @@ describe('the answer card as rows', () => {
 				state: [],
 				people: ['Leo', 'Mara'],
 				notes: 'Bring the swim bag and a towel',
+				href: null,
 			},
 		]);
 		expect(tasks?.rows[0]).toMatchObject({
@@ -218,5 +219,31 @@ describe('member colours on a card', () => {
 		expect(colorOf('Leo', members)).toBe('#112233');
 		expect(colorOf('Sam', members)).toBeNull();
 		expect(colorOf('Grandma', members)).toBeNull();
+	});
+});
+
+describe('a row that opens its thing', () => {
+	const withHref = (href: string) =>
+		card({
+			sections: [
+				{
+					topic: 'calendar',
+					truncated: false,
+					items: [{ kind: 'event', title: 'Swimming lesson', people: [], href }],
+				},
+			],
+		});
+
+	it('links to a path inside the app and is plain without one', () => {
+		const linked = cardView(withHref('/calendar?event=cal_event_1&on=2026-10-22'), words('en'));
+		expect(linked.sections[0]?.rows[0]?.href).toBe('/calendar?event=cal_event_1&on=2026-10-22');
+		expect(cardView(card(), words('en')).sections[0]?.rows[0]?.href).toBeNull();
+	});
+
+	it('never links to another site, even from a stored card that holds one', () => {
+		for (const href of ['https://example.com', '//example.com', 'javascript:alert(1)', '/a b'])
+			expect(rowHref({ href })).toBeNull();
+		expect(rowHref({})).toBeNull();
+		expect(rowHref({ href: '/pets/pet_1' })).toBe('/pets/pet_1');
 	});
 });

@@ -1,4 +1,10 @@
-import { DIGEST_KINDS, DIGEST_STATUSES, idSchema, QUESTION_TOPIC_IDS } from '@famos/sdk';
+import {
+	DIGEST_KINDS,
+	DIGEST_STATUSES,
+	DigestHrefSchema,
+	idSchema,
+	QUESTION_TOPIC_IDS,
+} from '@famos/sdk';
 import { z } from 'zod';
 
 /**
@@ -74,6 +80,8 @@ export const CardItemSchema = z.object({
 	detail: z.string().optional(),
 	/** A suggestion of the asker's own that waits for someone else to decide. */
 	forOthers: z.boolean().optional(),
+	/** Where the app opens it, when the extension that keeps it has a page for it. */
+	href: DigestHrefSchema.optional(),
 });
 export type CardItem = z.infer<typeof CardItemSchema>;
 

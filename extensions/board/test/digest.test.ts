@@ -75,3 +75,11 @@ describe('board.digest', () => {
 		).rejects.toMatchObject({ code: 'forbidden' });
 	});
 });
+
+describe('board.digest links', () => {
+	it('opens the board', async () => {
+		await post({ text: 'Plumber comes Thursday' });
+		const out = await digest({ from: '2026-10-06', to: '2026-10-11' });
+		expect(out.items[0]?.href).toBe('/board');
+	});
+});

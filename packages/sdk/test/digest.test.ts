@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	createHandleTable,
 	DIGEST_NOTES_MAX,
 	DigestInputSchema,
 	type DigestItem,
@@ -10,6 +11,8 @@ import {
 	digestNotes,
 	digestOf,
 	rankDigest,
+	readableOutput,
+	withoutPaths,
 } from '../src/index.ts';
 
 const MEMBER = 'member_0192a3b4-0000-7000-8000-000000000001';
@@ -158,5 +161,34 @@ describe('defineDigest', () => {
 		expect(digest.input).toBe(DigestInputSchema);
 		expect(digest.output).toBe(DigestOutputSchema);
 		expect(digest.ai).toEqual({ description: 'What the garage has', digest: 'vehicles' });
+	});
+});
+
+describe('digest item href', () => {
+	it('is a path inside the app, never an address elsewhere', () => {
+		const parse = (href: string) =>
+			DigestOutputSchema.safeParse({
+				items: [item('Dentist', { href })],
+				truncated: false,
+			}).success;
+		expect(parse('/calendar?event=event_1&on=2026-10-22')).toBe(true);
+		expect(parse('/pets/pet_1')).toBe(true);
+		expect(parse('https://example.com/x')).toBe(false);
+		expect(parse('//example.com/x')).toBe(false);
+		expect(parse('/a b')).toBe(false);
+		expect(parse('/a\\b')).toBe(false);
+	});
+
+	it('is left out of what a model reads', () => {
+		const output = {
+			items: [item('Dentist', { href: '/calendar?event=x' })],
+			nextAfter: item('Later', { href: '/calendar?event=y' }),
+			truncated: false,
+		};
+		const read = JSON.stringify(readableOutput(output, createHandleTable()));
+		expect(read).not.toContain('href');
+		expect(read).not.toContain('/calendar');
+		expect(read).toContain('Dentist');
+		expect(withoutPaths({ a: [{ href: '/x', b: 1 }] })).toEqual({ a: [{ b: 1 }] });
 	});
 });

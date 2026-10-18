@@ -113,6 +113,12 @@ describe('a question', () => {
 		const wording = k.llm.chatCalls[0];
 		expect(wording?.tools).toEqual([]);
 		expect(String(wording?.messages[0]?.content)).toContain('Swimming lesson (Leo)');
+		// The card's rows open their events; the wording call never sees a path or an id.
+		expect(card.sections[0]?.items.map((i) => i.href)).toEqual([
+			expect.stringMatching(/^\/calendar\?event=cal_event_[0-9a-f-]+&on=2026-10-22$/),
+			expect.stringMatching(/^\/calendar\?event=cal_event_[0-9a-f-]+&on=2026-10-23$/),
+		]);
+		expect(String(wording?.messages[0]?.content)).not.toMatch(/\/calendar|cal_event|href/);
 		// The reading saw the message, never the family's data.
 		expect(k.llm.calls[0]?.areas).toEqual(['assistant']);
 	});

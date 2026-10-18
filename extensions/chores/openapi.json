@@ -5051,6 +5051,11 @@
 																			"type": "string",
 																			"maxLength": 300
 																		}
+																	},
+																	"href": {
+																		"type": "string",
+																		"maxLength": 300,
+																		"pattern": "^\\/(?!\\/)[^\\s\\\\]*$"
 																	}
 																},
 																"required": [
@@ -5144,6 +5149,11 @@
 																		"type": "string",
 																		"maxLength": 300
 																	}
+																},
+																"href": {
+																	"type": "string",
+																	"maxLength": 300,
+																	"pattern": "^\\/(?!\\/)[^\\s\\\\]*$"
 																}
 															},
 															"required": [

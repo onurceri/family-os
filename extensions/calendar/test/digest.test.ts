@@ -189,3 +189,21 @@ describe('calendar.findEvents', () => {
 		expect(eight.unmatched).toBeUndefined();
 	});
 });
+
+describe('calendar.digest links', () => {
+	it('opens a family event on its day, each date of a repeating one on its own', async () => {
+		const made = await add({
+			title: 'Piano',
+			date: '2026-01-01',
+			startTime: '17:00',
+			recurrence: { freq: 'weekly', byDay: ['TH'] },
+		});
+		if (made.status !== 'applied') throw new Error('expected an event');
+		const id = (made.output as { id: string }).id;
+		const out = await digest({ from: '2026-01-05', to: '2026-01-15' });
+		expect(out.items.map((i) => i.href)).toEqual([
+			`/calendar?event=${id}&on=2026-01-08`,
+			`/calendar?event=${id}&on=2026-01-15`,
+		]);
+	});
+});

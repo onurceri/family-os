@@ -26,6 +26,7 @@
 		sameMonth,
 		shiftMonth,
 	} from './board.js';
+	import { eventLink, occurrenceFor } from './deep-link.js';
 	import EventDetailView from './EventDetailView.svelte';
 	import MonthBoard from './MonthBoard.svelte';
 	import WeekBoard from './WeekBoard.svelte';
@@ -146,6 +147,27 @@
 					? `${day}:${day}`
 					: `${week[0]}:${week[6]}`),
 	);
+	// An address that names an event (`?event=…&on=…`, from an answer card) shows its day and opens
+	// its details once that day is loaded. The address is cleaned afterwards, so Back leaves the
+	// page and a reload does not open it again.
+	const link = $derived(eventLink(app.query()));
+	let handledLink = '';
+	$effect(() => {
+		if (!link) return;
+		const key = `${link.eventId}:${link.on}`;
+		if (key === handledLink) return;
+		if (link.on && link.on !== day) {
+			selected = link.on;
+			return;
+		}
+		// The loaded range (a week on a phone, whatever the board shows on a tablet) holds the day.
+		const [from = '', to = ''] = loadedRange.split(':');
+		if (day < from || day > to) return;
+		handledLink = key;
+		const found = occurrenceFor(occurrences, link, (o, date) => onDay(o, date, tz));
+		app.setQuery({ event: null, on: null }, { replace: true });
+		if (found) void openOnBoard(found);
+	});
 	const dayItems = $derived(visible.filter((o) => onDay(o, day, tz)));
 	const dotsFor = (date: string) => {
 		const colors = visible

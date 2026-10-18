@@ -19,6 +19,7 @@ import {
 	MealEntryFieldsSchema,
 	MealEntrySchema,
 	MealIdSchema,
+	mealPlanHref,
 	ReviewLabelSchema,
 	UpdateMealEntrySchema,
 } from '../contract/index.ts';
@@ -286,6 +287,7 @@ const mealItem = (meal: MealEntry): DigestItem => {
 		people: [],
 		...(notes && { notes }),
 		extra: { slot: meal.slot, ...(meal.recipeId && { recipe: meal.recipeId }) },
+		href: mealPlanHref(meal.date),
 	};
 };
 
