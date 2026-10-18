@@ -112,6 +112,32 @@ function firstOfWeekdays(
 	return dates[0] ?? null;
 }
 
+const nameWords = (value: string, locale: string) =>
+	value
+		.toLocaleLowerCase(locale)
+		.split(/[^\p{L}\p{N}]+/u)
+		.filter((word) => [...word].length > 1);
+
+/**
+ * The one member whose whole name a new event's title writes, when the mention names nobody and
+ * the shared message writes that name too; null when none or several do, or the mention names
+ * people or the sharer itself.
+ */
+function memberInTitle(ctx: MentionContext, mention: Mention): string | null {
+	if (!mention.title || (mention.people?.length ?? 0) > 0 || mention.forMe) return null;
+	const title = new Set(nameWords(mention.title, ctx.locale));
+	const said = ctx.text === null ? null : new Set(nameWords(ctx.text, ctx.locale));
+	const named = ctx.members.filter((m) => {
+		const words = nameWords(m.displayName, ctx.locale);
+		return (
+			words.length > 0 &&
+			words.every((w) => title.has(w)) &&
+			(said === null || words.some((w) => said.has(w)))
+		);
+	});
+	return named.length === 1 ? (named[0]?.id ?? null) : null;
+}
+
 /** Tags as the family already writes them, new ones cut to size; at most `TAGS_MAX`. */
 function tagsOf(words: readonly string[] | undefined, known: readonly { name: string }[]) {
 	const out: string[] = [];
@@ -187,7 +213,11 @@ async function newEvent(
 		if (last && last.date > date) endDate = last.date;
 		if (!last?.certain || last.date < date) uncertain.add('endDate');
 	}
-	const people = peopleNamed(ctx, mention);
+	let people = peopleNamed(ctx, mention);
+	const titled = people.ids.length === 0 ? memberInTitle(ctx, mention) : null;
+	// The model wrote who it is for into the title ("Deniz vaccination appointment") instead of
+	// naming them: the event is theirs, as a guess for a person to check.
+	if (titled) people = { ids: [titled], certain: false, unmatched: [] };
 	if (!people.certain) uncertain.add('memberIds');
 	// Nobody named: the event is the whole family's, which is a default, unless the message says
 	// so ("everyone", "the whole family").

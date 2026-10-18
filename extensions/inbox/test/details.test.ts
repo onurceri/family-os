@@ -393,3 +393,49 @@ describe("the free models' answers, replayed", () => {
 		expect(failedChecks(outcome)).toEqual([]);
 	});
 });
+
+describe('who an event is for, written into its title', () => {
+	// As 120b read it in two of three runs: the name in the title, nobody in people (the answer
+	// as the drafts of those runs show it; the run kept only their drafts).
+	it('takes the one member the title and the message name, marked for a look', async () => {
+		const outcome = await read(caseNamed('Exact date with year (Turkish)'), {
+			label: 'Aşı randevusu',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Deniz vaccination appointment',
+					date: { text: '3 Kasım 2026', day: 3, month: 11, year: 2026, weekday: 2 },
+					time: '10:15',
+					timeText: '10:15',
+					place: 'Şehitkamil Aile Sağlığı Merkezi',
+					quote: 'Deniz’in aşı randevusu 3 Kasım 2026 Salı saat 10:15',
+				},
+			],
+		});
+		expect(failedChecks(outcome)).toEqual([]);
+		expect(outcome.drafts[0]?.uncertainFields).toContain('memberIds');
+	});
+
+	it('takes nobody when the title names a member the message does not', async () => {
+		const answer = (title: string) => ({
+			label: 'Aşı randevusu',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title,
+					date: { text: '3 Kasım 2026', day: 3, month: 11, year: 2026, weekday: 2 },
+					time: '10:15',
+					timeText: '10:15',
+					quote: 'Deniz’in aşı randevusu 3 Kasım 2026 Salı saat 10:15',
+				},
+			],
+		});
+		const c = caseNamed('Exact date with year (Turkish)');
+		for (const title of ['Mehmet vaccination appointment']) {
+			const outcome = await read(c, answer(title));
+			expect(outcome.drafts[0]?.input.memberIds, title).toEqual([]);
+		}
+	});
+});

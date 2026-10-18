@@ -280,7 +280,13 @@ describe('runs, missed and harmful', () => {
 		const broken = cellOf('one', 'a', verdict(false, ['x'], ['x']), [
 			{ ...call({ errorCode: 'unavailable' }), answer },
 		]);
-		expect(broken).toMatchObject({ status: 'outage', missedChecks: 0, harmfulChecks: 0 });
+		expect(broken).toMatchObject({
+			status: 'outage',
+			failed: [],
+			harmful: [],
+			missedChecks: 0,
+			harmfulChecks: 0,
+		});
 	});
 
 	it('merges the runs of a case: it passes only when every run did, and keeps the count', () => {
@@ -573,6 +579,55 @@ describe('runEval', () => {
 			failing: {},
 			outages: ['one'],
 		});
+	});
+
+	it('keeps no check of a run the provider broke, and records a run it did not break', async () => {
+		dir = mkdtempSync(join(tmpdir(), 'famos-eval-'));
+		const a = fakeEnv('a');
+		// The first run the provider breaks off; the second is the model's own answer.
+		const measured = [call({ errorCode: 'unavailable', finishReason: null }), call()];
+		a.env.calls = async () => [measured.shift() ?? call()];
+		a.fake.respond(new LlmError('unavailable', 'The provider is unavailable'), { title: 'Milk' });
+		const lines: string[] = [];
+		await runEval({
+			title: 'Test eval',
+			cases: [{ name: 'one' }],
+			models: [a.env],
+			dir,
+			wait: async () => undefined,
+			env: {
+				FAMOS_EVAL_BASELINE: '1',
+				FAMOS_EVAL_RECORD: '1',
+				FAMOS_EVAL_RUNS: '2',
+				FAMOS_EVAL_CONCURRENCY: '1',
+			},
+			log: (line) => lines.push(line),
+			async run(_c, llm) {
+				const ok = await llm.generateObject(request).then(
+					() => true,
+					() => false,
+				);
+				return {
+					ok,
+					checks: 1,
+					failed: ok ? [] : ['the title'],
+					harmful: ok ? [] : ['the title'],
+					lines: [`${ok ? '✓' : '✗'} one`, ...(ok ? [] : ['    ✗ HARMFUL the title'])],
+				};
+			},
+		});
+		expect(lines).toContain('! one (the provider failed: counts neither way) (run 1/2)');
+		expect(lines.some((l) => l.includes('HARMFUL'))).toBe(false);
+		expect(lines).toContain(
+			'gate · fake / a: harmful 0 (must be 0), missed 0, median pass rate 100% over 2 runs',
+		);
+		const baseline = JSON.parse(readFileSync(join(dir, 'baseline.json'), 'utf8')) as Baseline;
+		expect(baseline.models.a).toMatchObject({ passing: ['one'], failing: {} });
+		expect(baseline.models.a?.harmful).toBeUndefined();
+		const recorded = JSON.parse(readFileSync(join(dir, 'recorded', 'a', 'one.json'), 'utf8'));
+		expect(recorded.answers).toEqual([
+			{ kind: 'object', feature: 'test.read', output: { title: 'Milk' } },
+		]);
 	});
 
 	it('keeps the baseline of a model the provider never answered', async () => {

@@ -13,7 +13,8 @@ import { type EnvCall, type EnvLlm, llmsFromEnv, slugOf } from './llm-from-env.t
  * - `FAMOS_EVAL_CASE=substring`: only the cases whose name contains it.
  * - `FAMOS_EVAL_RUNS=n`: every case runs n times on each model (default 1). The report gives each
  *   case's pass count out of n and each model's median pass rate over the runs; the baseline keeps
- *   the pass counts. A model's answers are recorded from the first run only.
+ *   the pass counts. A model's answers are recorded from the first run the provider did not
+ *   break (the first run when it broke them all).
  * - `FAMOS_EVAL_CONCURRENCY=n`: at most n cases at once over all models (default: all at once).
  * - `FAMOS_EVAL_MAX_COST=usd`: no case starts once the finished ones cost this much.
  * - `FAMOS_EVAL_REPORT=path`: writes the whole result as JSON.
@@ -321,7 +322,9 @@ export function cellOf(
 				: [...errors].some((e) => OUTAGES.has(e))
 					? 'outage'
 					: 'failed';
-	const failed = verdict?.failed ?? [];
+	// What failed in a run the provider broke says nothing about the model: no check of it counts,
+	// neither as missed nor as harmful, nor as a failure the baseline keeps.
+	const failed = status === 'outage' ? [] : (verdict?.failed ?? []);
 	const harmful = status === 'failed' ? failed.filter((l) => verdict?.harmful?.includes(l)) : [];
 	return {
 		case: name,
@@ -700,6 +703,8 @@ export async function runEval<C extends { name: string }>(
 	).flat();
 	let spent = 0;
 	const lines = new Map<string, string[]>();
+	/** Cases whose recording holds a run the provider did not break, by model and case. */
+	const measured = new Set<string>();
 	const started = Date.now();
 	const done = await runPool(
 		work,
@@ -719,7 +724,12 @@ export async function runEval<C extends { name: string }>(
 			);
 			const cell = cellOf(c.name, model.slug, verdict, observed.calls);
 			spent += cell.cost;
-			const own = [...verdict.lines, ...observed.notes.map((note) => `      · ${note}`)];
+			const notes = observed.notes.map((note) => `      · ${note}`);
+			// A run the provider broke shows no verdict of its checks: it counts neither way.
+			const own =
+				cell.status === 'outage'
+					? [`! ${c.name} (the provider failed: counts neither way)`, ...notes]
+					: [...verdict.lines, ...notes];
 			// Several runs: a run that passed is one line, a run that did not is shown whole.
 			const shown = runs > 1 && verdict.ok ? own.slice(0, 1) : own;
 			lines.set(
@@ -728,7 +738,10 @@ export async function runEval<C extends { name: string }>(
 					? shown.map((line, i) => (i === 0 ? `${line} (run ${run + 1}/${runs})` : line))
 					: shown,
 			);
-			if (record && run === 0) {
+			// The first run the provider did not break is the one kept (the first run when all were).
+			const key = `${model.slug}\n${c.name}`;
+			if (record && !measured.has(key)) {
+				if (cell.status !== 'outage') measured.add(key);
 				const folder = join(record, model.slug);
 				mkdirSync(folder, { recursive: true });
 				writeFileSync(
