@@ -42,6 +42,9 @@
 											"id": {
 												"type": "string"
 											},
+											"version": {
+												"type": "integer"
+											},
 											"title": {
 												"type": "string"
 											},
@@ -184,6 +187,7 @@
 										},
 										"required": [
 											"id",
+											"version",
 											"title",
 											"notes",
 											"assigneeId",
@@ -468,6 +472,9 @@
 										"id": {
 											"type": "string"
 										},
+										"version": {
+											"type": "integer"
+										},
 										"title": {
 											"type": "string"
 										},
@@ -610,6 +617,7 @@
 									},
 									"required": [
 										"id",
+										"version",
 										"title",
 										"notes",
 										"assigneeId",
@@ -884,6 +892,9 @@
 											"id": {
 												"type": "string"
 											},
+											"version": {
+												"type": "integer"
+											},
 											"name": {
 												"type": "string"
 											},
@@ -893,6 +904,7 @@
 										},
 										"required": [
 											"id",
+											"version",
 											"name",
 											"openCount"
 										]
@@ -1172,6 +1184,9 @@
 											"id": {
 												"type": "string"
 											},
+											"version": {
+												"type": "integer"
+											},
 											"listId": {
 												"type": "string"
 											},
@@ -1217,6 +1232,7 @@
 										},
 										"required": [
 											"id",
+											"version",
 											"listId",
 											"title",
 											"quantity",
@@ -4321,6 +4337,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -4463,6 +4482,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"notes",
 														"assigneeId",
@@ -4959,6 +4979,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -5101,6 +5124,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"notes",
 														"assigneeId",
@@ -5488,6 +5512,9 @@
 																"id": {
 																	"type": "string"
 																},
+																"version": {
+																	"type": "integer"
+																},
 																"title": {
 																	"type": "string"
 																},
@@ -5630,6 +5657,7 @@
 															},
 															"required": [
 																"id",
+																"version",
 																"title",
 																"notes",
 																"assigneeId",
@@ -5999,6 +6027,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -6141,6 +6172,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"notes",
 														"assigneeId",
@@ -6483,6 +6515,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -6625,6 +6660,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"notes",
 														"assigneeId",
@@ -7315,6 +7351,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -7457,6 +7496,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"notes",
 														"assigneeId",
@@ -7867,6 +7907,9 @@
 																	"id": {
 																		"type": "string"
 																	},
+																	"version": {
+																		"type": "integer"
+																	},
 																	"listId": {
 																		"type": "string"
 																	},
@@ -7912,6 +7955,7 @@
 																},
 																"required": [
 																	"id",
+																	"version",
 																	"listId",
 																	"title",
 																	"quantity",
@@ -8350,6 +8394,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"listId": {
 															"type": "string"
 														},
@@ -8395,6 +8442,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"listId",
 														"title",
 														"quantity",
@@ -8743,6 +8791,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"listId": {
 															"type": "string"
 														},
@@ -8788,6 +8839,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"listId",
 														"title",
 														"quantity",
@@ -9475,6 +9527,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"listId": {
 															"type": "string"
 														},
@@ -9520,6 +9575,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"listId",
 														"title",
 														"quantity",
@@ -11285,6 +11341,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"name": {
 															"type": "string"
 														},
@@ -11294,6 +11353,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"name",
 														"openCount"
 													]

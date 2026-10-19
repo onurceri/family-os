@@ -31,3 +31,4 @@ For whoever runs FamilyOS at home. Start with the first page; the others can wai
 27. [Appearance](appearance.md): choose a theme for the family, for yourself and for a display, add or remove themes, make your own.
 28. [Extensions](extensions.md): install the kitchen, pets, vehicles or home, see what each reaches, switch one off or uninstall it.
 29. [Connected apps](connected-apps.md): let Home Assistant or a script work with your calendar and lists with a key of its own, and decide what it may do.
+30. [The API for apps and scripts](api.md): read and change the calendar, lists, chores and board from a program, with curl examples.

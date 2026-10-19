@@ -22,6 +22,7 @@ import {
 	satisfiesCaret,
 	tablePrefixOf,
 } from '@famos/sdk';
+import { type ApiOperation, collectApiOperations } from './api-operations.ts';
 import type { ExtensionProblem } from './extension-state.ts';
 
 export interface Registry {
@@ -31,6 +32,8 @@ export interface Registry {
 	readonly jobs: ReadonlyMap<string, AnyJobDefinition>;
 	readonly events: ReadonlyMap<string, EventDefinition>;
 	readonly routes: readonly { extension: string; route: AnyRouteDefinition }[];
+	/** What the extensions offer on the public API, in the order they are loaded. */
+	readonly apiOperations: readonly ApiOperation[];
 	/** All capabilities, core's first. */
 	readonly capabilities: readonly CapabilityDefinition[];
 	/** All notification kinds by id, core's first. */
@@ -409,6 +412,7 @@ export function buildRegistry(
 		if (!ROUTE_ACCESS.has(route.requires))
 			known(route.requires, `Route "${route.operationId}"`, extension);
 	}
+	const apiOperations = collectApiOperations(ordered, refuse, (id) => capabilities.has(id));
 	checkManifests(ordered, actions);
 	const sole = <T>(contract: string, pick: (ext: ExtensionDefinition) => T | undefined) => {
 		const providers = ordered.flatMap((ext) => {
@@ -438,6 +442,7 @@ export function buildRegistry(
 		jobs,
 		events,
 		routes,
+		apiOperations,
 		capabilities: [...capabilities.values()],
 		notificationKinds,
 		shareTarget: share && { extension: share.extension, target: share.value },

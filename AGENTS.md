@@ -21,7 +21,7 @@ It covers a shared calendar, tasks and shopping, chores and a kitchen, household
 ## Repository map
 
 ```
-apps/server        Composition root: Hono API, WebSocket, worker loop, CLI
+apps/server        Composition root: Hono API, public API for connected apps, WebSocket, worker loop, CLI
 apps/web           SvelteKit SPA (adapter-static), PWA, i18n
 packages/sdk       Port interfaces, defineExtension/defineAction, ID and slot types
 packages/core      Kernel: members/RBAC, action runner, drafts, jobs, events, migrator, backup
@@ -87,8 +87,9 @@ docs/              Architecture, design system, user guide, releasing
 - Define routes with `defineRoute` from `@famos/sdk` (never import Hono in an extension). They are served under `/api/v1/<extension>` with a stable `operationId` (`<extension>.<verbNoun>`); actions are exposed automatically at `POST /api/v1/actions/<id>`, except `expose: 'internal'` ones, which have no route and are not in the OpenAPI document.
 - A route can send text with its own content type (an ICS feed) by using `TextResponseSchema` as its `response`: return `{ text, contentType, cacheControl?, etag? }`; only `text/calendar`, `text/plain` and `application/json` keep their type (a matching `If-None-Match` gets `304`), and the response is sandboxed with `nosniff`. Its `cache-control` is the one place the API's `no-store` default is replaced.
 - A route can send a stored file by using `FileResponseSchema` as its `response`; the server streams it sandboxed and only renders images and PDFs inline.
-- After changing routes, run `pnpm gen` and commit what it writes: `apps/server/openapi.json` and `packages/api-client` (core's and the app's routes), and for each extension `extensions/<id>/openapi.json` and `src/web/api.gen.d.ts` (its routes and actions). CI fails if they drift.
+- After changing routes, run `pnpm gen` and commit what it writes: `apps/server/openapi.json`, `apps/server/public-openapi.json` (the public API's) and `packages/api-client` (core's and the app's routes), and for each extension `extensions/<id>/openapi.json` and `src/web/api.gen.d.ts` (its routes and actions). CI fails if they drift.
 - An extension's web client is `createApiClient<paths>()` with its own generated `paths` (`src/web/api.ts`); `@famos/api-client`'s own `paths` are the host's only. To read another extension's routes, import its `./api` types (`import type { paths as calendar } from '@famos/ext-calendar/api'`) and declare it in the manifest (`dependsOn` or `optional`); dependency-cruiser fails otherwise. `apps/web` never imports an extension's `./api`.
+- **The public API (`/api/public/v1`, for connected apps) offers only what an extension marks.** Mark an action with `expose: defineApi({ name, method, path, summary, … })` and a GET read route with `expose` (`name` is `<extension>.<verbNoun>`; one grammar: `GET` list/get, `POST` create and named commands, `PATCH` some fields, `PUT` the whole record, `DELETE`). Never mark everything: expose what a program has a reason to use, and only reads that are plain JSON behind a capability. Answer through an `apiOutput` projection that drops undo and internal fields, writes instants as RFC 3339 with the family time zone's offset, all-day values as plain dates and names with `.meta({ id })` (never on a schema that is also nullable); use `omit` and `describe` so the request is worded for programs, not for a model. What is shipped is a contract: within `v1` it is expand-only (add operations and fields, never rename, remove or make required), and `apps/server/public-openapi.json` (written by `pnpm gen`) changes in the same pull request. Marking never changes who may run an action; `requires` and approval still decide.
 - Never edit generated files by hand.
 
 ## Frontend

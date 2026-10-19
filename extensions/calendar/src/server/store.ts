@@ -459,6 +459,7 @@ export function toDetail(row: EventRow): EventDetail {
 	const end = local(row.ends_at);
 	return {
 		id: row.id,
+		version: row.version,
 		title: row.title,
 		allDay: row.all_day === 1,
 		date: row.all_day ? (row.start_date as string) : (start?.toPlainDate().toString() as string),

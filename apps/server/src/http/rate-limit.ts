@@ -25,6 +25,8 @@ export function addressKey(key: string): string {
 		.join(':')}::/64`;
 }
 
+export type RateLimiter = ReturnType<typeof createRateLimiter>;
+
 /**
  * A small in-memory fixed-window limiter (per process: a restart only forgets it). Used for
  * unauthenticated routes that create records, such as starting a display pairing. It remembers at

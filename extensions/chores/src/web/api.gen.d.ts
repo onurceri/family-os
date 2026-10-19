@@ -249,6 +249,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         title: string;
                         notes: string | null;
                         recurrence: {
@@ -417,6 +418,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         title: string;
                         notes: string | null;
                         recurrence: {
@@ -771,6 +773,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             recurrence: {
@@ -989,6 +992,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             recurrence: {
@@ -1324,6 +1328,7 @@ export interface operations {
                         output: {
                             chore: {
                                 id: string;
+                                version: number;
                                 title: string;
                                 notes: string | null;
                                 recurrence: {
@@ -1514,6 +1519,7 @@ export interface operations {
                         output: {
                             chore: {
                                 id: string;
+                                version: number;
                                 title: string;
                                 notes: string | null;
                                 recurrence: {
@@ -1707,6 +1713,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             recurrence: {

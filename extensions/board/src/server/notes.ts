@@ -24,6 +24,7 @@ import {
 	PostNoteSchema,
 } from '../contract/index.ts';
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
+import { api } from './public.ts';
 import { type NoteRow, tables, toNote } from './store.ts';
 
 const DAY_MS = 86_400_000;
@@ -141,6 +142,7 @@ export function excerpt(text: string, max = 120): string {
 
 export const postNote = defineAction({
 	id: 'board.postNote',
+	expose: api.createNote,
 	title: 'Put a note on the family board',
 	draftTitle: 'board:draft_title_post_note',
 	input: PostNoteSchema,
@@ -418,6 +420,7 @@ export const getNotes = defineRoute({
 	method: 'get',
 	path: '/notes',
 	operationId: 'board.getNotes',
+	expose: api.listNotes,
 	summary:
 		'The notes on the board now: pinned first, then in the order the family arranged them (newest first for notes never moved)',
 	requires: boardView.id,

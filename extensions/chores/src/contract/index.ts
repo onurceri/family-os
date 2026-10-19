@@ -66,6 +66,8 @@ export type UpdateChoreInput = z.input<typeof UpdateChoreSchema>;
 
 export const ChoreSchema = z.object({
 	id: ChoreIdSchema,
+	/** Counts every write of the chore and of the people in its rotation. */
+	version: z.number().int(),
 	title: z.string(),
 	notes: z.string().nullable(),
 	recurrence: RecurrenceSchema.nullable(),

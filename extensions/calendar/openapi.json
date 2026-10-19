@@ -450,6 +450,9 @@
 										"id": {
 											"type": "string"
 										},
+										"version": {
+											"type": "integer"
+										},
 										"title": {
 											"type": "string"
 										},
@@ -616,6 +619,7 @@
 									},
 									"required": [
 										"id",
+										"version",
 										"title",
 										"allDay",
 										"date",
@@ -3491,6 +3495,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -3657,6 +3664,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"allDay",
 														"date",
@@ -4214,6 +4222,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -4380,6 +4391,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"allDay",
 														"date",
@@ -4803,6 +4815,9 @@
 																"id": {
 																	"type": "string"
 																},
+																"version": {
+																	"type": "integer"
+																},
 																"title": {
 																	"type": "string"
 																},
@@ -4969,6 +4984,7 @@
 															},
 															"required": [
 																"id",
+																"version",
 																"title",
 																"allDay",
 																"date",
@@ -5702,6 +5718,9 @@
 														"id": {
 															"type": "string"
 														},
+														"version": {
+															"type": "integer"
+														},
 														"title": {
 															"type": "string"
 														},
@@ -5868,6 +5887,7 @@
 													},
 													"required": [
 														"id",
+														"version",
 														"title",
 														"allDay",
 														"date",

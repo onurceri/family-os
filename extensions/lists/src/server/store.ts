@@ -190,6 +190,7 @@ export function toTask(row: TaskRow): Task {
 	const recurrence: Recurrence | null = row.rrule ? fromRRule(row.rrule, 'UTC') : null;
 	return {
 		id: row.id,
+		version: row.version,
 		title: row.title,
 		notes: row.notes,
 		assigneeId: row.assignee_id,
@@ -205,6 +206,7 @@ export function toTask(row: TaskRow): Task {
 export function toItem(row: ItemRow): ShoppingItem {
 	return {
 		id: row.id,
+		version: row.version,
 		listId: row.list_id,
 		title: row.title,
 		quantity: row.quantity,

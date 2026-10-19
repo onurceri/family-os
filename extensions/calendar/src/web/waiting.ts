@@ -91,6 +91,7 @@ export function waitingDetail(occurrence: WaitingOccurrence): EventDetail {
 	const v = EventInputSchema.parse(occurrence.waiting.input);
 	return {
 		id: occurrence.eventId,
+		version: 0,
 		title: v.title,
 		allDay: v.allDay,
 		date: v.date,

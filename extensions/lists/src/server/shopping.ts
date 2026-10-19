@@ -27,6 +27,7 @@ import {
 	ShoppingListSchema,
 	shoppingChangedPayload,
 } from '../contract/index.ts';
+import { api } from './public.ts';
 import { type ItemRow, tables, titleKey, toItem } from './store.ts';
 import { listsView } from './tasks.ts';
 
@@ -135,6 +136,7 @@ const MergedItemSchema = z.object({
 
 export const addShoppingItems = defineAction({
 	id: 'lists.addShoppingItems',
+	expose: api.addShoppingItems,
 	offline: true,
 	title: 'Add items to a shopping list',
 	draftTitle: 'lists:draft_title_add_shopping_items',
@@ -295,7 +297,27 @@ export const addShoppingItems = defineAction({
 			listId: list.id,
 			itemIds: [...addedIds, ...merged.map((m) => m.id)],
 		});
-		return { listId: list.id, items: out.map(toItem), addedIds, merged };
+		// Read again, so each item carries the version its writes in this call left it at.
+		const current = new Map(
+			(out.length
+				? await db
+						.selectFrom('lists_shopping_items')
+						.selectAll()
+						.where(
+							'id',
+							'in',
+							out.map((r) => r.id),
+						)
+						.execute()
+				: []
+			).map((r) => [r.id, r]),
+		);
+		return {
+			listId: list.id,
+			items: out.map((r) => toItem(current.get(r.id) ?? r)),
+			addedIds,
+			merged,
+		};
 	},
 });
 
@@ -369,6 +391,7 @@ export const undoAddShoppingItems = defineAction({
 
 export const updateShoppingItem = defineAction({
 	id: 'lists.updateShoppingItem',
+	expose: api.patchShoppingItem,
 	target: ({ id }) => ({
 		table: 'lists_shopping_items',
 		id,
@@ -405,6 +428,7 @@ export const updateShoppingItem = defineAction({
 
 export const checkShoppingItem = defineAction({
 	id: 'lists.checkShoppingItem',
+	expose: [api.completeShoppingItem, api.uncheckShoppingItem],
 	target: ({ id }) => ({
 		table: 'lists_shopping_items',
 		id,
@@ -468,6 +492,7 @@ export const checkShoppingItem = defineAction({
 
 export const deleteShoppingItem = defineAction({
 	id: 'lists.deleteShoppingItem',
+	expose: api.deleteShoppingItem,
 	target: ({ id }) => ({
 		table: 'lists_shopping_items',
 		id,
@@ -662,7 +687,7 @@ export const createShoppingList = defineAction({
 			})
 			.execute();
 		uow.emit(shoppingChanged, { listId: id });
-		return { id, name, openCount: 0 };
+		return { id, version: 0, name, openCount: 0 };
 	},
 });
 
@@ -851,6 +876,7 @@ export const listShoppingLists = defineRoute({
 	method: 'get',
 	path: '/shopping/lists',
 	operationId: 'lists.listShoppingLists',
+	expose: api.listShoppingLists,
 	summary: 'Shopping lists with their number of items still to buy',
 	requires: listsView.id,
 	response: z.array(ShoppingListSchema),
@@ -863,13 +889,18 @@ export const listShoppingLists = defineRoute({
 					.on('i.done_at', 'is', null)
 					.on('i.deleted_at', 'is', null),
 			)
-			.select(['l.id', 'l.name', (eb) => eb.fn.count<number>('i.id').as('openCount')])
+			.select(['l.id', 'l.name', 'l.version', (eb) => eb.fn.count<number>('i.id').as('openCount')])
 			.where('l.archived_at', 'is', null)
 			.groupBy('l.id')
 			.orderBy('l.sort')
 			.orderBy('l.created_at')
 			.execute();
-		return rows.map((r) => ({ id: r.id, name: r.name, openCount: Number(r.openCount) }));
+		return rows.map((r) => ({
+			id: r.id,
+			version: r.version,
+			name: r.name,
+			openCount: Number(r.openCount),
+		}));
 	},
 });
 
@@ -880,6 +911,7 @@ export const listShoppingItems = defineRoute({
 	method: 'get',
 	path: '/shopping/lists/{listId}/items',
 	operationId: 'lists.listShoppingItems',
+	expose: api.listShoppingItems,
 	summary: 'Items to buy (in store-section order), then recently bought items',
 	requires: listsView.id,
 	params: z.object({ listId: ShoppingListIdSchema }),

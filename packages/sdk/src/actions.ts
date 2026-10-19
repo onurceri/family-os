@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Actor } from './actor.ts';
+import type { ApiExposure } from './api.ts';
 import type { ExtensionContext, UnitOfWork } from './context.ts';
 import type { QuestionTopic } from './question.ts';
 
@@ -86,6 +87,12 @@ export interface ActionDefinition<
 	 * read-only one). Anything a person reads or a draft is undone with stays `app`.
 	 */
 	readonly expose: ActionExposure;
+	/**
+	 * What of this action the public API (`/api/public/v1`) offers to connected apps: each entry is
+	 * one operation. Empty (the default): the action is not offered there. Marking never changes who
+	 * may run it; the action's `requires`, approval and the app's mode decide that.
+	 */
+	readonly api: readonly ApiExposure[];
 	readonly approval: ApprovalPolicy<z.infer<In>>;
 	/**
 	 * How the action behaves when another action runs it with `uow.run`. By default it is decided
@@ -323,7 +330,11 @@ export function defineAction<
 	output: Out;
 	readOnly?: boolean;
 	requires?: string;
-	expose?: ActionExposure;
+	/**
+	 * `'app'` (the default), `'internal'` (see `ActionDefinition.expose`), or one or more public
+	 * API operations (`defineApi`), which also leave the action on the app's own API.
+	 */
+	expose?: ActionExposure | ApiExposure | readonly ApiExposure[];
 	approval?: ApprovalPolicy<z.infer<In>>;
 	nested?: NestedGovernance<z.infer<In>>;
 	ai?: ActionAiHints;
@@ -364,10 +375,13 @@ export function defineAction<
 		);
 	}
 	const readOnly = definition.readOnly ?? false;
+	const { expose } = definition;
+	const api = expose === undefined || typeof expose === 'string' ? [] : [expose].flat();
 	return {
 		...definition,
 		readOnly,
-		expose: definition.expose ?? 'app',
+		expose: typeof expose === 'string' ? expose : 'app',
+		api,
 		approval: definition.approval ?? (readOnly ? 'never' : 'ai'),
 	} as ActionDefinition<Id, In, Out>;
 }

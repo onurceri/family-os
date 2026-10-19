@@ -7,7 +7,7 @@ import { createMcpHandler } from '@modelcontextprotocol/server';
 import type { Context } from 'hono';
 import { authenticateBearer } from '../http/authenticate.ts';
 import type { AppEnv } from '../http/env.ts';
-import { createRateLimiter } from '../http/rate-limit.ts';
+import { createRateLimiter, type RateLimiter } from '../http/rate-limit.ts';
 import { createServerFor } from './server.ts';
 
 /** Requests per token per minute. */
@@ -45,12 +45,15 @@ export function mountMcp(
 		appVersion: string;
 		logger: Logger;
 		clientIp: (c: Context) => string;
+		/** Wrong tokens per address; shared with the other bearer door when given. */
+		badTokens?: RateLimiter;
 	},
 ): void {
 	const { kernel, logger } = deps;
 	const tokens = kernel.apiTokens;
 	const perToken = createRateLimiter({ max: MCP_RATE_PER_MINUTE, windowMs: 60_000 });
-	const badTokens = createRateLimiter({ max: MAX_BAD_TOKENS_PER_MINUTE, windowMs: 60_000 });
+	const badTokens =
+		deps.badTokens ?? createRateLimiter({ max: MAX_BAD_TOKENS_PER_MINUTE, windowMs: 60_000 });
 
 	const handler = createMcpHandler(
 		async (ctx) => {

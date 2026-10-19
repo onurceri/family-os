@@ -83,6 +83,8 @@ export type TaskReplace = z.input<typeof TaskReplaceSchema>;
 
 export const TaskSchema = z.object({
 	id: z.string(),
+	/** Counts every write of the task (see `EventDetailSchema.version`). */
+	version: z.number().int(),
 	title: z.string(),
 	notes: z.string().nullable(),
 	assigneeId: z.string().nullable(),
@@ -158,6 +160,8 @@ export type AddShoppingItemsInput = z.input<typeof AddShoppingItemsSchema>;
 
 export const ShoppingItemSchema = z.object({
 	id: z.string(),
+	/** Counts every write of the item. */
+	version: z.number().int(),
 	listId: z.string(),
 	title: z.string(),
 	quantity: z.string().nullable(),
@@ -169,6 +173,8 @@ export type ShoppingItem = z.infer<typeof ShoppingItemSchema>;
 
 export const ShoppingListSchema = z.object({
 	id: z.string(),
+	/** Counts every write of the list and of its items. */
+	version: z.number().int(),
 	/** Empty for the list made on install: screens show their translated default name. */
 	name: z.string(),
 	openCount: z.number().int(),

@@ -11,6 +11,7 @@
 			"!**/*.svelte",
 			"!**/generated",
 			"!**/openapi.json",
+			"!**/public-openapi.json",
 			"!extensions/*/eval/baseline.json",
 			"!extensions/*/eval/recorded",
 			"!**/*.gen.d.ts",

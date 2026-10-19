@@ -601,6 +601,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         title: string;
                         allDay: boolean;
                         date: string;
@@ -1823,6 +1824,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             allDay: boolean;
                             date: string;
@@ -2056,6 +2058,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             allDay: boolean;
                             date: string;
@@ -2259,6 +2262,7 @@ export interface operations {
                         output: {
                             event: {
                                 id: string;
+                                version: number;
                                 title: string;
                                 allDay: boolean;
                                 date: string;
@@ -2603,6 +2607,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             allDay: boolean;
                             date: string;

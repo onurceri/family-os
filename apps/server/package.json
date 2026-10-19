@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "FAMOS_DEV_EXTENSIONS=../../extensions tsx watch --clear-screen=false src/main.ts serve",
 		"typecheck": "tsc -p .",
-		"gen": "FAMOS_DEV_EXTENSIONS=../../extensions tsx src/main.ts openapi openapi.json --extensions ../../extensions && tsx scripts/api-types.ts ../../extensions",
+		"gen": "FAMOS_DEV_EXTENSIONS=../../extensions tsx src/main.ts openapi openapi.json --extensions ../../extensions && FAMOS_DEV_EXTENSIONS=../../extensions tsx src/main.ts public-openapi public-openapi.json && tsx scripts/api-types.ts ../../extensions",
 		"build": "node build.mjs"
 	},
 	"dependencies": {

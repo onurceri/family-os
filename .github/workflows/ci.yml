@@ -35,10 +35,10 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup
 
-      - name: Generated code is up to date (OpenAPI, API client, extension API types)
+      - name: Generated code is up to date (OpenAPI, public OpenAPI, API client, extension API types)
         run: |
           pnpm gen
-          changed=$(git status --porcelain --untracked-files=all -- apps/server/openapi.json packages/api-client/src/generated 'extensions/*/openapi.json' 'extensions/*/src/web/api.gen.d.ts')
+          changed=$(git status --porcelain --untracked-files=all -- apps/server/openapi.json apps/server/public-openapi.json packages/api-client/src/generated 'extensions/*/openapi.json' 'extensions/*/src/web/api.gen.d.ts')
           if [ -n "$changed" ]; then echo "$changed"; git diff --stat; exit 1; fi
 
       - run: pnpm lint

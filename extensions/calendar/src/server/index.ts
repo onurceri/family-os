@@ -60,6 +60,7 @@ import {
 	touchFeed,
 } from './feeds.ts';
 import { movedEvent } from './moved.ts';
+import { api } from './public.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
 import {
@@ -161,13 +162,23 @@ function occurrenceDetail(row: EventRow, series: EventDetail, key: string): Even
 }
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+/** An instant as an app writes it (RFC 3339, with an offset): a `+` in an address may arrive as a space. */
+const INSTANT_KEY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+\- ]\d{2}:\d{2})$/;
+
+/** The key of a timed event's occurrence an RFC 3339 instant names; anything else as it is. */
+function instantKey(row: Pick<EventRow, 'all_day'>, key: string): string {
+	if (row.all_day || !INSTANT_KEY.test(key)) return key;
+	const ms = Date.parse(key.replace(/ (\d{2}:\d{2})$/, '+$1'));
+	return Number.isFinite(ms) ? String(ms) : key;
+}
 
 /**
  * The occurrence key of one date of a repeating event. A timed series is keyed by the start
  * (epoch milliseconds), but a model or a person names the date, so a date maps to the one
  * occurrence on that day. Throws a `bad_request` that says what to send instead.
  */
-function occurrenceKey(row: EventRow, key: string): string {
+function occurrenceKey(row: EventRow, given: string): string {
+	const key = instantKey(row, given);
 	const keys = (day: string) => expandRow(row, day, day, row.time_zone).map((o) => o.key);
 	if (!row.all_day && DATE_KEY.test(key)) {
 		const found = isValidDate(key) ? keys(key) : [];
@@ -250,6 +261,7 @@ const eventTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
 
 export const createEvent = defineAction({
 	id: 'calendar.createEvent',
+	expose: api.createEvent,
 	title: 'Add an event to the family calendar',
 	draftTitle: 'calendar:draft_title_create_event',
 	input: EventInputSchema,
@@ -306,6 +318,7 @@ function storedEventReplace(input: unknown): unknown {
 
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
+	expose: api.replaceEvent,
 	target: ({ id }) => ({
 		table: 'calendar_events',
 		id,
@@ -465,6 +478,7 @@ export const updateEvent = defineAction({
 
 export const deleteEvent = defineAction({
 	id: 'calendar.deleteEvent',
+	expose: api.deleteEvent,
 	target: ({ id }) => ({
 		table: 'calendar_events',
 		id,
@@ -698,6 +712,7 @@ function eventFieldsChanged(row: EventRow, next: ReturnType<typeof toRow>): stri
  */
 export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
+	expose: api.patchEvent,
 	target: ({ id }) => ({
 		table: 'calendar_events',
 		id,
@@ -1235,6 +1250,7 @@ const listOccurrences = defineRoute({
 	method: 'get',
 	path: '/occurrences',
 	operationId: 'calendar.listOccurrences',
+	expose: api.listOccurrences,
 	summary:
 		'Event occurrences between two dates (inclusive), recurring events expanded; subscriptions included',
 	requires: calendarView.id,
@@ -1257,6 +1273,7 @@ const getEvent = defineRoute({
 	method: 'get',
 	path: '/events/{eventId}',
 	operationId: 'calendar.getEvent',
+	expose: api.getEvent,
 	summary: 'An event as an editable form',
 	requires: calendarView.id,
 	params: z.object({ eventId: EventIdSchema }),

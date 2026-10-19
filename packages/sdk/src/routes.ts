@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Actor } from './actor.ts';
+import type { ApiExposure } from './api.ts';
 import type { ExtensionContext } from './context.ts';
 
 /**
@@ -120,6 +121,11 @@ export interface RouteDefinition<
 	readonly response: Res;
 	/** Status code for a successful response. */
 	readonly status?: 200 | 201 | 202 | 204;
+	/**
+	 * Offers this read on the public API (`/api/public/v1`) as a `GET`. Only a read of data (a JSON
+	 * response, never a file, text or upload) whose `requires` is a capability can be offered.
+	 */
+	readonly expose?: ApiExposure;
 	handle(
 		ctx: ExtensionContext,
 		request: RouteRequest<z.infer<Params>, z.infer<Query>, z.infer<Body>>,

@@ -26,6 +26,7 @@ import { findAvailable, type LoadedExtensions, loadExtensions } from './extensio
 import { describePurge, previewPurge, purgeExtension, purgeTarget } from './extensions/purge.ts';
 import { createHttpApp, loadedWeb, OPENAPI_INFO } from './http/app.ts';
 import { hostEvents } from './http/host-events.ts';
+import { publicOpenApiDocument } from './http/public/index.ts';
 import { createRealtimeHub, realtimeGuard } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
@@ -65,6 +66,8 @@ Usage: famos <command>
   extensions purge <id> [--yes]
                      Remove an uninstalled extension's data for good (tables, files, settings),
                      after writing a backup; asks first unless --yes
+  public-openapi [file]
+                     Write the public API's OpenAPI document (default: public-openapi.json)
   openapi [file]     Write the OpenAPI document (default: openapi.json). With --extensions <dir>,
                      the file holds core's and the app's routes, and each extension's routes and
                      actions go to <dir>/<id>/openapi.json
@@ -594,6 +597,25 @@ async function main() {
 				await writeJson(join(dir, 'openapi.json'), fragment);
 			}
 			console.log(`OpenAPI documents written: ${out} and ${split.extensions.size} extension(s)`);
+			return;
+		}
+		case 'public-openapi': {
+			const out = arg ?? 'public-openapi.json';
+			const { extensions } = await loadExtensions();
+			const runtime = openRuntime(generationConfig(), {
+				extensions,
+				logger: silentLogger,
+				quiet: true,
+			});
+			const doc = publicOpenApiDocument({
+				kernel: runtime.kernel,
+				logger: runtime.logger,
+				appVersion: APP_VERSION,
+				clientIp: () => '127.0.0.1',
+			});
+			await runtime.close();
+			await writeJson(out, doc);
+			console.log(`Public OpenAPI document written: ${out}`);
 			return;
 		}
 		default:

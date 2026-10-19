@@ -74,6 +74,8 @@ export type MoveNoteInput = z.input<typeof MoveNoteSchema>;
 
 export const BoardNoteSchema = z.object({
 	id: z.string(),
+	/** Counts every write of the note and of who has seen it. */
+	version: z.number().int(),
 	text: z.string(),
 	paper: PaperSchema,
 	pinned: z.boolean(),

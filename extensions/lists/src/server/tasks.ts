@@ -32,6 +32,7 @@ import {
 	TaskSchema,
 	taskChangedPayload,
 } from '../contract/index.ts';
+import { api } from './public.ts';
 import { scheduleTaskReminder } from './reminders.ts';
 import { type TaskRow, tables, titleKey, toTask } from './store.ts';
 
@@ -155,6 +156,7 @@ function replacementFields(row: TaskRow, input: z.infer<typeof TaskInputSchema>,
 
 export const addTask = defineAction({
 	id: 'lists.addTask',
+	expose: api.addTask,
 	title: 'Add a task',
 	draftTitle: 'lists:draft_title_add_task',
 	autoApprove: { label: 'lists:auto_approve_tasks', capabilities: [tasksEdit.id] },
@@ -222,6 +224,7 @@ export const addTask = defineAction({
 
 export const updateTask = defineAction({
 	id: 'lists.updateTask',
+	expose: api.replaceTask,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,
@@ -323,6 +326,7 @@ const TaskChangeSchema = z.object({
  */
 export const changeTask = defineAction({
 	id: 'lists.changeTask',
+	expose: api.patchTask,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,
@@ -415,6 +419,7 @@ export const changeTask = defineAction({
 
 export const completeTask = defineAction({
 	id: 'lists.completeTask',
+	expose: api.completeTask,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,
@@ -493,6 +498,7 @@ export const completeTask = defineAction({
 
 export const reopenTask = defineAction({
 	id: 'lists.reopenTask',
+	expose: api.reopenTask,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,
@@ -530,6 +536,7 @@ export const reopenTask = defineAction({
 
 export const deleteTask = defineAction({
 	id: 'lists.deleteTask',
+	expose: api.deleteTask,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,
@@ -686,6 +693,7 @@ export const listTasks = defineRoute({
 	method: 'get',
 	path: '/tasks',
 	operationId: 'lists.listTasks',
+	expose: api.listTasks,
 	summary: 'Open tasks, plus one-off tasks done in the last week',
 	requires: listsView.id,
 	response: z.array(TaskSchema),
@@ -711,6 +719,7 @@ export const getTask = defineRoute({
 	method: 'get',
 	path: '/tasks/{taskId}',
 	operationId: 'lists.getTask',
+	expose: api.getTask,
 	summary: 'A task as an editable form',
 	requires: listsView.id,
 	params: z.object({ taskId: TaskIdSchema }),

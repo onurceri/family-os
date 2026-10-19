@@ -221,6 +221,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         text: string;
                         /** @enum {string} */
                         paper: "note-1" | "note-2" | "note-3" | "note-4" | "note-5";
@@ -654,6 +655,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             text: string;
                             /** @enum {string} */
                             paper: "note-1" | "note-2" | "note-3" | "note-4" | "note-5";

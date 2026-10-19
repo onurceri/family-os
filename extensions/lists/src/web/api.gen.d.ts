@@ -535,6 +535,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         title: string;
                         notes: string | null;
                         assigneeId: string | null;
@@ -695,6 +696,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         title: string;
                         notes: string | null;
                         assigneeId: string | null;
@@ -853,6 +855,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         name: string;
                         openCount: number;
                     }[];
@@ -987,6 +990,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
+                        version: number;
                         listId: string;
                         title: string;
                         quantity: string | null;
@@ -2191,6 +2195,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             assigneeId: string | null;
@@ -2402,6 +2407,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             assigneeId: string | null;
@@ -2590,6 +2596,7 @@ export interface operations {
                         output: {
                             task: {
                                 id: string;
+                                version: number;
                                 title: string;
                                 notes: string | null;
                                 assigneeId: string | null;
@@ -2772,6 +2779,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             assigneeId: string | null;
@@ -2947,6 +2955,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             assigneeId: string | null;
@@ -3273,6 +3282,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             title: string;
                             notes: string | null;
                             assigneeId: string | null;
@@ -3466,6 +3476,7 @@ export interface operations {
                             listId: string;
                             items: {
                                 id: string;
+                                version: number;
                                 listId: string;
                                 title: string;
                                 quantity: string | null;
@@ -3635,6 +3646,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             listId: string;
                             title: string;
                             quantity: string | null;
@@ -3792,6 +3804,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             listId: string;
                             title: string;
                             quantity: string | null;
@@ -4097,6 +4110,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             listId: string;
                             title: string;
                             quantity: string | null;
@@ -4849,6 +4863,7 @@ export interface operations {
                         status: "applied";
                         output: {
                             id: string;
+                            version: number;
                             name: string;
                             openCount: number;
                         };

@@ -1,0 +1,7640 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "FamilyOS API",
+		"version": "v1",
+		"description": "The API connected apps use. Generated from what the extensions offer; do not edit. Authenticate with `Authorization: Bearer <key>` (a key from Settings, Connected apps); add `X-FamilyOS-On-Behalf-Of: <member id>` to act for a member the app may act for. Every answer carries the family `timeZone`, instants are RFC 3339 with an offset and days are `YYYY-MM-DD`. Within v1 operations and fields are only added."
+	},
+	"servers": [
+		{
+			"url": "/api/public/v1",
+			"description": "This FamilyOS server"
+		}
+	],
+	"components": {
+		"securitySchemes": {
+			"bearer": {
+				"type": "http",
+				"scheme": "bearer",
+				"description": "An app key from Settings, Connected apps"
+			}
+		},
+		"schemas": {
+			"BoardListNotesPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/BoardNote"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"BoardNote": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^board_note_[0-9a-f-]{36}$",
+						"description": "An id of the form board_note_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged note"
+					},
+					"text": {
+						"type": "string",
+						"description": "The note, at most 500 characters"
+					},
+					"paper": {
+						"type": "string",
+						"enum": [
+							"note-1",
+							"note-2",
+							"note-3",
+							"note-4",
+							"note-5"
+						],
+						"description": "The color of the paper"
+					},
+					"pinned": {
+						"type": "boolean",
+						"description": "Pinned notes come first"
+					},
+					"endsAt": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time",
+						"description": "When the note leaves the board; null when it stays"
+					},
+					"endsOn": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "The last day it is on the board"
+					},
+					"hasPhoto": {
+						"type": "boolean"
+					},
+					"createdBy": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "Who put it up; null for an app or a member who is gone"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"seenBy": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f-]{36}$",
+							"description": "An id of the form member_<uuid>"
+						},
+						"description": "The members who have seen it"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"text",
+					"paper",
+					"pinned",
+					"endsAt",
+					"endsOn",
+					"hasPhoto",
+					"createdBy",
+					"createdAt",
+					"updatedAt",
+					"seenBy"
+				]
+			},
+			"Error": {
+				"type": "object",
+				"properties": {
+					"error": {
+						"type": "object",
+						"properties": {
+							"code": {
+								"$ref": "#/components/schemas/ErrorCode"
+							},
+							"message": {
+								"type": "string",
+								"description": "For people; do not match on it"
+							},
+							"fields": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"path": {
+											"type": "string",
+											"description": "The field: a body field, a query or path parameter, or `header:<name>`"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"path",
+										"message"
+									]
+								},
+								"description": "With `bad_request`: what is wrong, field by field"
+							},
+							"reason": {
+								"type": "string",
+								"description": "With `forbidden`: `capability` (the role lacks it), `approval`, `critical`, `on_behalf` (the app may not act for that member)"
+							},
+							"capability": {
+								"type": "string",
+								"description": "With `forbidden`: the capability that would allow it"
+							},
+							"currentVersion": {
+								"type": "integer",
+								"description": "With `precondition_failed`: the version the thing has now"
+							}
+						},
+						"required": [
+							"code",
+							"message"
+						]
+					}
+				},
+				"required": [
+					"error"
+				]
+			},
+			"ErrorCode": {
+				"type": "string",
+				"enum": [
+					"bad_request",
+					"unauthenticated",
+					"forbidden",
+					"not_found",
+					"conflict",
+					"limit_reached",
+					"feature_off",
+					"idempotency_mismatch",
+					"precondition_failed",
+					"gone",
+					"unavailable",
+					"internal"
+				],
+				"description": "`bad_request` (400): the request is wrong, see `fields`. `unauthenticated` (401): no valid key. `forbidden` (403): the key’s role, or the member it acts for, may not. `not_found` (404). `conflict` (409). `idempotency_mismatch` (422): the Idempotency-Key was used for another request. `precondition_failed` (412): the thing changed since the `If-Match` version. `gone` (410): the changes since that cursor are no longer kept. `limit_reached` (429). `feature_off` (404): the extension is switched off. `unavailable` (503). `internal` (500)."
+			},
+			"BoardCreateNoteResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/BoardNote"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"Drafted": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"drafted"
+						]
+					},
+					"draftId": {
+						"type": "string",
+						"description": "Read how it ended at `GET /drafts/{draftId}`"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"status",
+					"draftId",
+					"timeZone"
+				]
+			},
+			"BoardCreateNoteRequest": {
+				"type": "object",
+				"properties": {
+					"text": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 500,
+						"description": "The note, in the family's own words (at most 500 characters); line breaks are kept"
+					},
+					"paper": {
+						"type": "string",
+						"enum": [
+							"note-1",
+							"note-2",
+							"note-3",
+							"note-4",
+							"note-5"
+						],
+						"default": "note-1",
+						"description": "The color of the paper, note-1 … note-5"
+					},
+					"pinned": {
+						"type": "boolean",
+						"description": "Keeps the note at the top; only people who manage the board can"
+					},
+					"endsOn": {
+						"type": "string",
+						"description": "The last day the note stays on the board; without it the note stays"
+					}
+				},
+				"required": [
+					"text"
+				]
+			},
+			"CalendarCreateEventResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Event"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"Event": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^cal_event_[0-9a-f-]{36}$",
+						"description": "An id of the form cal_event_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged event"
+					},
+					"title": {
+						"type": "string"
+					},
+					"allDay": {
+						"type": "boolean"
+					},
+					"start": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						],
+						"description": "When it starts: an instant, or the first day of an all-day event"
+					},
+					"end": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						],
+						"description": "When it ends: an instant, or the last day (inclusive) of an all-day event"
+					},
+					"date": {
+						"type": "string",
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "A day, YYYY-MM-DD, in the family time zone"
+					},
+					"endDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "Last day of a multi-day all-day event"
+					},
+					"startTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "HH:MM in the family time zone"
+					},
+					"endTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "HH:MM in the family time zone"
+					},
+					"memberIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f-]{36}$",
+							"description": "An id of the form member_<uuid>"
+						},
+						"description": "Who is involved; empty means the whole family"
+					},
+					"location": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "How it repeats; null for a one-off event"
+					},
+					"rrule": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The repeat rule (RFC 5545) when it is more than `recurrence` can say"
+					},
+					"reminder": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"description": "Minutes before the start; null for none"
+					},
+					"tags": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"seriesId": {
+						"type": "string",
+						"pattern": "^cal_event_[0-9a-f-]{36}$",
+						"description": "Set on a date moved out of a repeating event: the event it came from"
+					},
+					"recurrenceKey": {
+						"type": "string",
+						"description": "Set with `seriesId`: the `recurrenceId` the series had for the date it replaced"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"title",
+					"allDay",
+					"start",
+					"end",
+					"date",
+					"endDate",
+					"startTime",
+					"endTime",
+					"memberIds",
+					"location",
+					"notes",
+					"recurrence",
+					"rrule",
+					"reminder",
+					"tags"
+				]
+			},
+			"CalendarCreateEventRequest": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 120,
+						"description": "Short title, e.g. \"Zoo trip\""
+					},
+					"allDay": {
+						"type": "boolean",
+						"default": false,
+						"description": "True when the event has no time of day"
+					},
+					"date": {
+						"type": "string",
+						"description": "Start date, YYYY-MM-DD, in the family time zone"
+					},
+					"endDate": {
+						"type": "string",
+						"description": "Last day of a multi-day all-day event (inclusive)"
+					},
+					"startTime": {
+						"type": "string",
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "Start time HH:MM; required unless allDay"
+					},
+					"endTime": {
+						"type": "string",
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day."
+					},
+					"memberIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"default": [],
+						"description": "Family members involved; empty means the whole family"
+					},
+					"location": {
+						"type": "string",
+						"maxLength": 200
+					},
+					"notes": {
+						"type": "string",
+						"maxLength": 2000
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							}
+						],
+						"description": "Repeat rule; omit for a one-off event"
+					},
+					"reminder": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"description": "Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default"
+					},
+					"tags": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 24
+						},
+						"maxItems": 5,
+						"description": "Short labels, at most 5; the family’s existing ones are reused by name"
+					}
+				},
+				"required": [
+					"title",
+					"date"
+				]
+			},
+			"CalendarDeleteEventResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/EventDeleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"EventDeleted": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^cal_event_[0-9a-f-]{36}$",
+						"description": "An id of the form cal_event_<uuid>"
+					},
+					"occurrence": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The `recurrenceId` of the date removed from a repeating event; null when the whole event went"
+					}
+				},
+				"required": [
+					"id",
+					"occurrence"
+				]
+			},
+			"CalendarGetEventResponse": {
+				"type": "object",
+				"properties": {
+					"item": {
+						"$ref": "#/components/schemas/Event"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"item",
+					"timeZone"
+				]
+			},
+			"CalendarPatchEventResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Event"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"CalendarPatchEventRequest": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 120,
+						"description": "New title"
+					},
+					"allDay": {
+						"type": "boolean",
+						"description": "True for an event without a time of day"
+					},
+					"date": {
+						"type": "string",
+						"description": "New start date, YYYY-MM-DD, in the family time zone"
+					},
+					"endDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Last day of a multi-day all-day event"
+					},
+					"startTime": {
+						"type": "string",
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "New start time HH:MM"
+					},
+					"endTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "New end time HH:MM; null for one hour after the start"
+					},
+					"memberIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"description": "Who is involved now (the full list); empty means the whole family"
+					},
+					"location": {
+						"type": [
+							"string",
+							"null"
+						],
+						"maxLength": 200
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						],
+						"maxLength": 2000
+					},
+					"tags": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 40
+						},
+						"maxItems": 3
+					},
+					"occurrence": {
+						"type": "string",
+						"description": "Repeating events: the `recurrenceId` of one occurrence, to affect only that one (an instant, or a day for an all-day event)"
+					}
+				}
+			},
+			"CalendarReplaceEventResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Event"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"CalendarReplaceEventRequest": {
+				"type": "object",
+				"properties": {
+					"event": {
+						"type": "object",
+						"properties": {
+							"title": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 120,
+								"description": "Short title, e.g. \"Zoo trip\""
+							},
+							"allDay": {
+								"type": "boolean",
+								"description": "True when the event has no time of day"
+							},
+							"date": {
+								"type": "string",
+								"description": "Start date, YYYY-MM-DD, in the family time zone"
+							},
+							"endDate": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "Last day of a multi-day all-day event (inclusive)"
+							},
+							"startTime": {
+								"type": [
+									"string",
+									"null"
+								],
+								"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+								"description": "Start time HH:MM; required unless allDay"
+							},
+							"endTime": {
+								"type": [
+									"string",
+									"null"
+								],
+								"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+								"description": "End time HH:MM; defaults to one hour after the start. Earlier than the start means the next day."
+							},
+							"memberIds": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+								},
+								"description": "Family members involved; empty means the whole family"
+							},
+							"location": {
+								"type": [
+									"string",
+									"null"
+								],
+								"maxLength": 200
+							},
+							"notes": {
+								"type": [
+									"string",
+									"null"
+								],
+								"maxLength": 2000
+							},
+							"recurrence": {
+								"oneOf": [
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"daily"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 365,
+												"default": 1
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq"
+										]
+									},
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"weekly"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 52,
+												"default": 1
+											},
+											"byDay": {
+												"type": "array",
+												"items": {
+													"type": "string",
+													"enum": [
+														"MO",
+														"TU",
+														"WE",
+														"TH",
+														"FR",
+														"SA",
+														"SU"
+													]
+												},
+												"minItems": 1,
+												"maxItems": 7
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq",
+											"byDay"
+										]
+									},
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"monthly"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 12,
+												"default": 1
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq"
+										]
+									},
+									{
+										"type": "null"
+									}
+								],
+								"description": "Repeat rule; omit for a one-off event"
+							},
+							"reminder": {
+								"type": [
+									"integer",
+									"null"
+								],
+								"description": "Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default"
+							},
+							"tags": {
+								"type": [
+									"array",
+									"null"
+								],
+								"items": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 24
+								},
+								"maxItems": 5,
+								"description": "Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2."
+							}
+						},
+						"required": [
+							"title",
+							"allDay",
+							"date",
+							"endDate",
+							"startTime",
+							"endTime",
+							"memberIds",
+							"location",
+							"notes",
+							"recurrence",
+							"reminder",
+							"tags"
+						]
+					},
+					"occurrence": {
+						"type": "string",
+						"description": "Repeating events: the `recurrenceId` of one occurrence, to affect only that one (an instant, or a day for an all-day event)"
+					},
+					"scope": {
+						"type": "string",
+						"enum": [
+							"this",
+							"following"
+						],
+						"description": "Repeating events, with `occurrence`: `this` makes only that date an event of its own, `following` ends the series before it and starts a new one"
+					},
+					"keepRule": {
+						"type": "boolean",
+						"description": "True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`); without it an event sent with no `recurrence` stops repeating"
+					}
+				},
+				"required": [
+					"event"
+				]
+			},
+			"CalendarListOccurrencesPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Occurrence"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"Occurrence": {
+				"type": "object",
+				"properties": {
+					"eventId": {
+						"type": "string",
+						"description": "The event, or `<subscription id>:<uid>:<date>` for one of a subscribed calendar"
+					},
+					"recurrenceId": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						],
+						"description": "Which occurrence of the event this is: the instant (or day) it was due to start, which stays when the event is moved"
+					},
+					"seriesId": {
+						"type": "string",
+						"pattern": "^cal_event_[0-9a-f-]{36}$",
+						"description": "Set on a date moved out of a repeating event"
+					},
+					"recurrenceKey": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"allDay": {
+						"type": "boolean"
+					},
+					"start": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						]
+					},
+					"end": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						]
+					},
+					"memberIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f-]{36}$",
+							"description": "An id of the form member_<uuid>"
+						}
+					},
+					"location": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"recurring": {
+						"type": "boolean"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Only a subscribed calendar’s events carry notes here"
+					},
+					"source": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"kind": {
+								"type": "string",
+								"enum": [
+									"subscription"
+								]
+							},
+							"id": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"color": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"kind",
+							"id",
+							"name",
+							"color"
+						],
+						"description": "Null for the family’s own events"
+					},
+					"editable": {
+						"type": "boolean",
+						"description": "False for the events of a subscribed calendar"
+					},
+					"tags": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				},
+				"required": [
+					"eventId",
+					"recurrenceId",
+					"title",
+					"allDay",
+					"start",
+					"end",
+					"memberIds",
+					"location",
+					"recurring",
+					"notes",
+					"source",
+					"editable",
+					"tags"
+				]
+			},
+			"ChoresListChoresPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Chore"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"Chore": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^chore_[0-9a-f-]{36}$",
+						"description": "An id of the form chore_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged chore"
+					},
+					"title": {
+						"type": "string"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "How it repeats; null for a one-off chore"
+					},
+					"startDate": {
+						"type": "string",
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "A day, YYYY-MM-DD, in the family time zone"
+					},
+					"nextDue": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "The day it is due next; null once a one-off chore is done"
+					},
+					"overdue": {
+						"type": "boolean",
+						"description": "True once `nextDue` is before today"
+					},
+					"rotation": {
+						"type": "string",
+						"enum": [
+							"fixed",
+							"round_robin",
+							"least_done"
+						],
+						"description": "How the turn passes on after it is done"
+					},
+					"assigneeId": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "Whose turn it is; null means anyone"
+					},
+					"assigneeIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f-]{36}$",
+							"description": "An id of the form member_<uuid>"
+						},
+						"description": "The people in turn order"
+					},
+					"lastDone": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^chore_done_[0-9a-f-]{36}$",
+								"description": "An id of the form chore_done_<uuid>"
+							},
+							"memberId": {
+								"type": "string",
+								"pattern": "^member_[0-9a-f-]{36}$",
+								"description": "An id of the form member_<uuid>"
+							},
+							"doneAt": {
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							}
+						},
+						"required": [
+							"id",
+							"memberId",
+							"doneAt"
+						],
+						"description": "The latest completion still standing; its `id` takes it back"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"title",
+					"notes",
+					"recurrence",
+					"startDate",
+					"nextDue",
+					"overdue",
+					"rotation",
+					"assigneeId",
+					"assigneeIds",
+					"lastDone",
+					"createdAt",
+					"updatedAt"
+				]
+			},
+			"ChoresGetChoreResponse": {
+				"type": "object",
+				"properties": {
+					"item": {
+						"$ref": "#/components/schemas/ChoreDetail"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"item",
+					"timeZone"
+				]
+			},
+			"ChoreDetail": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^chore_[0-9a-f-]{36}$",
+						"description": "An id of the form chore_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged chore"
+					},
+					"title": {
+						"type": "string"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "How it repeats; null for a one-off chore"
+					},
+					"startDate": {
+						"type": "string",
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "A day, YYYY-MM-DD, in the family time zone"
+					},
+					"nextDue": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "The day it is due next; null once a one-off chore is done"
+					},
+					"overdue": {
+						"type": "boolean",
+						"description": "True once `nextDue` is before today"
+					},
+					"rotation": {
+						"type": "string",
+						"enum": [
+							"fixed",
+							"round_robin",
+							"least_done"
+						],
+						"description": "How the turn passes on after it is done"
+					},
+					"assigneeId": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "Whose turn it is; null means anyone"
+					},
+					"assigneeIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^member_[0-9a-f-]{36}$",
+							"description": "An id of the form member_<uuid>"
+						},
+						"description": "The people in turn order"
+					},
+					"lastDone": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^chore_done_[0-9a-f-]{36}$",
+								"description": "An id of the form chore_done_<uuid>"
+							},
+							"memberId": {
+								"type": "string",
+								"pattern": "^member_[0-9a-f-]{36}$",
+								"description": "An id of the form member_<uuid>"
+							},
+							"doneAt": {
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							}
+						},
+						"required": [
+							"id",
+							"memberId",
+							"doneAt"
+						],
+						"description": "The latest completion still standing; its `id` takes it back"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"history": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"pattern": "^chore_done_[0-9a-f-]{36}$",
+									"description": "An id of the form chore_done_<uuid>"
+								},
+								"choreId": {
+									"type": "string",
+									"pattern": "^chore_[0-9a-f-]{36}$",
+									"description": "An id of the form chore_<uuid>"
+								},
+								"memberId": {
+									"type": "string",
+									"pattern": "^member_[0-9a-f-]{36}$",
+									"description": "An id of the form member_<uuid>"
+								},
+								"dueDate": {
+									"type": "string",
+									"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+									"description": "The due date it was done for"
+								},
+								"doneAt": {
+									"type": "string",
+									"format": "date-time",
+									"description": "A moment, RFC 3339 with the offset of the family time zone"
+								},
+								"undoneAt": {
+									"type": [
+										"string",
+										"null"
+									],
+									"format": "date-time",
+									"description": "A moment, RFC 3339 with the offset of the family time zone"
+								}
+							},
+							"required": [
+								"id",
+								"choreId",
+								"memberId",
+								"dueDate",
+								"doneAt",
+								"undoneAt"
+							]
+						},
+						"description": "Who did it lately, newest first"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"title",
+					"notes",
+					"recurrence",
+					"startDate",
+					"nextDue",
+					"overdue",
+					"rotation",
+					"assigneeId",
+					"assigneeIds",
+					"lastDone",
+					"createdAt",
+					"updatedAt",
+					"history"
+				]
+			},
+			"ChoresCompleteChoreResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ChoreCompleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ChoreCompleted": {
+				"type": "object",
+				"properties": {
+					"chore": {
+						"$ref": "#/components/schemas/Chore"
+					},
+					"completion": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"pattern": "^chore_done_[0-9a-f-]{36}$",
+								"description": "An id of the form chore_done_<uuid>"
+							},
+							"choreId": {
+								"type": "string",
+								"pattern": "^chore_[0-9a-f-]{36}$",
+								"description": "An id of the form chore_<uuid>"
+							},
+							"memberId": {
+								"type": "string",
+								"pattern": "^member_[0-9a-f-]{36}$",
+								"description": "An id of the form member_<uuid>"
+							},
+							"dueDate": {
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "The due date it was done for"
+							},
+							"doneAt": {
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							}
+						},
+						"required": [
+							"id",
+							"choreId",
+							"memberId",
+							"dueDate",
+							"doneAt"
+						],
+						"description": "Null when nothing changed"
+					},
+					"reason": {
+						"type": "string",
+						"enum": [
+							"stale",
+							"already_done"
+						],
+						"description": "When nothing changed: `already_done` for a date done already, `stale` for a chore that has moved on to another date"
+					}
+				},
+				"required": [
+					"chore",
+					"completion"
+				]
+			},
+			"ChoresCompleteChoreRequest": {
+				"type": "object",
+				"properties": {
+					"dueDate": {
+						"type": "string",
+						"description": "The `nextDue` you saw"
+					},
+					"doneBy": {
+						"type": "string",
+						"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+						"description": "Who did it; without it, the person the app acts for. Someone else needs permission to edit chores"
+					}
+				},
+				"required": [
+					"dueDate"
+				]
+			},
+			"ChoresUndoCompletionResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Chore"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsDeleteShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItemDeleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ShoppingItemDeleted": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^shop_item_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_item_<uuid>"
+					}
+				},
+				"required": [
+					"id"
+				]
+			},
+			"ListsPatchShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItem"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ShoppingItem": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^shop_item_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_item_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged item"
+					},
+					"listId": {
+						"type": "string",
+						"pattern": "^shop_list_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_list_<uuid>"
+					},
+					"title": {
+						"type": "string"
+					},
+					"quantity": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "How much, as written (\"2 kg\", \"a dozen\")"
+					},
+					"category": {
+						"type": "string",
+						"enum": [
+							"produce",
+							"bakery",
+							"dairy",
+							"meat",
+							"pantry",
+							"frozen",
+							"drinks",
+							"snacks",
+							"household",
+							"personal",
+							"baby",
+							"pets",
+							"other"
+						],
+						"description": "The store section"
+					},
+					"done": {
+						"type": "boolean",
+						"description": "True once it is bought"
+					},
+					"doneAt": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"addedBy": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "An id of the form member_<uuid>"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"listId",
+					"title",
+					"quantity",
+					"category",
+					"done",
+					"doneAt",
+					"addedBy"
+				]
+			},
+			"ListsPatchShoppingItemRequest": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 120
+					},
+					"quantity": {
+						"type": [
+							"string",
+							"null"
+						],
+						"maxLength": 40
+					},
+					"category": {
+						"type": "string",
+						"enum": [
+							"produce",
+							"bakery",
+							"dairy",
+							"meat",
+							"pantry",
+							"frozen",
+							"drinks",
+							"snacks",
+							"household",
+							"personal",
+							"baby",
+							"pets",
+							"other"
+						]
+					}
+				}
+			},
+			"ListsCompleteShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItem"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsUncheckShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItem"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsListShoppingListsPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ShoppingList"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"ShoppingList": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^shop_list_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_list_<uuid>"
+					},
+					"version": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string",
+						"description": "The list’s name; the list made on install is named in the family language"
+					},
+					"isDefault": {
+						"type": "boolean",
+						"description": "True for the list made on install, which has no name of its own"
+					},
+					"openCount": {
+						"type": "integer",
+						"description": "Items still to buy"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"name",
+					"isDefault",
+					"openCount"
+				]
+			},
+			"ListsListShoppingItemsPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ShoppingItem"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"ListsAddShoppingItemsResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItemsAdded"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ShoppingItemsAdded": {
+				"type": "object",
+				"properties": {
+					"listId": {
+						"type": "string",
+						"pattern": "^shop_list_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_list_<uuid>"
+					},
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ShoppingItem"
+						}
+					},
+					"addedIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f-]{36}$",
+							"description": "An id of the form shop_item_<uuid>"
+						},
+						"description": "The items this call created; the others were already there"
+					}
+				},
+				"required": [
+					"listId",
+					"items",
+					"addedIds"
+				]
+			},
+			"ListsAddShoppingItemsRequest": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"title": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 120,
+									"description": "The product, e.g. \"Milk\""
+								},
+								"quantity": {
+									"type": [
+										"string",
+										"null"
+									],
+									"maxLength": 40,
+									"description": "How much, as written: a number, a count or a measure, e.g. \"2 kg\", \"3\" or \"a dozen\". Never a word that describes the product (\"new\", \"big\"); omit it when no amount is given"
+								},
+								"category": {
+									"type": "string",
+									"enum": [
+										"produce",
+										"bakery",
+										"dairy",
+										"meat",
+										"pantry",
+										"frozen",
+										"drinks",
+										"snacks",
+										"household",
+										"personal",
+										"baby",
+										"pets",
+										"other"
+									],
+									"description": "Store section; omit to reuse the last one used for this product"
+								}
+							},
+							"required": [
+								"title"
+							]
+						},
+						"minItems": 1,
+						"maxItems": 50
+					},
+					"whenOnList": {
+						"type": "string",
+						"enum": [
+							"keep",
+							"update"
+						],
+						"description": "What happens to an item already on the list and not bought: `update` (the default) takes the new quantity and category, `keep` leaves it as it is"
+					}
+				},
+				"required": [
+					"items"
+				]
+			},
+			"ListsListTasksPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Task"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"Task": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^task_[0-9a-f-]{36}$",
+						"description": "An id of the form task_<uuid>"
+					},
+					"version": {
+						"type": "integer",
+						"description": "Counts every write; send it as `If-Match` to change only an unchanged task"
+					},
+					"title": {
+						"type": "string"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"assigneeId": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "Who should do it; null means anyone"
+					},
+					"dueDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "A day, YYYY-MM-DD, in the family time zone"
+					},
+					"dueTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "HH:MM in the family time zone; only with a due date"
+					},
+					"due": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The deadline: an instant when there is a time, else the day, else null"
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "How it repeats; null for a one-off task"
+					},
+					"rrule": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The repeat rule (RFC 5545) when it is more than `recurrence` can say"
+					},
+					"done": {
+						"type": "boolean",
+						"description": "True for a one-off task that is done"
+					},
+					"doneAt": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"doneBy": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "An id of the form member_<uuid>"
+					}
+				},
+				"required": [
+					"id",
+					"version",
+					"title",
+					"notes",
+					"assigneeId",
+					"dueDate",
+					"dueTime",
+					"due",
+					"recurrence",
+					"rrule",
+					"done",
+					"doneAt",
+					"doneBy"
+				]
+			},
+			"ListsAddTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsAddTaskRequest": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 160,
+						"description": "What needs doing, e.g. \"Pay the school trip fee\""
+					},
+					"assigneeId": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+						"description": "The member who should do it; omit or null when anyone can"
+					},
+					"dueDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Deadline, YYYY-MM-DD, in the family time zone"
+					},
+					"dueTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "Deadline time HH:MM; only with a due date"
+					},
+					"recurrence": {
+						"oneOf": [
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"daily"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 365,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"weekly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 52,
+										"default": 1
+									},
+									"byDay": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"enum": [
+												"MO",
+												"TU",
+												"WE",
+												"TH",
+												"FR",
+												"SA",
+												"SU"
+											]
+										},
+										"minItems": 1,
+										"maxItems": 7
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq",
+									"byDay"
+								]
+							},
+							{
+								"type": "object",
+								"properties": {
+									"freq": {
+										"type": "string",
+										"enum": [
+											"monthly"
+										]
+									},
+									"interval": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 12,
+										"default": 1
+									},
+									"until": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"freq"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Repeat rule for chores; requires a due date (the first occurrence)"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						],
+						"maxLength": 2000
+					}
+				},
+				"required": [
+					"title"
+				]
+			},
+			"ListsDeleteTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/TaskDeleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"TaskDeleted": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^task_[0-9a-f-]{36}$",
+						"description": "An id of the form task_<uuid>"
+					}
+				},
+				"required": [
+					"id"
+				]
+			},
+			"ListsGetTaskResponse": {
+				"type": "object",
+				"properties": {
+					"item": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"item",
+					"timeZone"
+				]
+			},
+			"ListsPatchTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsPatchTaskRequest": {
+				"type": "object",
+				"properties": {
+					"title": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 160,
+						"description": "The new title"
+					},
+					"assigneeId": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+						"description": "The member who should do it; null means anyone"
+					},
+					"dueDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "New deadline, YYYY-MM-DD, in the family time zone; null removes it"
+					},
+					"dueTime": {
+						"type": [
+							"string",
+							"null"
+						],
+						"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+						"description": "New deadline time HH:MM; null removes it"
+					},
+					"notes": {
+						"type": [
+							"string",
+							"null"
+						],
+						"maxLength": 2000,
+						"description": "New notes; null clears them"
+					}
+				}
+			},
+			"ListsReplaceTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsReplaceTaskRequest": {
+				"type": "object",
+				"properties": {
+					"task": {
+						"type": "object",
+						"properties": {
+							"title": {
+								"type": "string",
+								"minLength": 1,
+								"maxLength": 160,
+								"description": "What needs doing, e.g. \"Pay the school trip fee\""
+							},
+							"assigneeId": {
+								"type": [
+									"string",
+									"null"
+								],
+								"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+								"description": "The member who should do it; omit or null when anyone can"
+							},
+							"dueDate": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "Deadline, YYYY-MM-DD, in the family time zone"
+							},
+							"dueTime": {
+								"type": [
+									"string",
+									"null"
+								],
+								"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+								"description": "Deadline time HH:MM; only with a due date"
+							},
+							"recurrence": {
+								"oneOf": [
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"daily"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 365,
+												"default": 1
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq"
+										]
+									},
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"weekly"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 52,
+												"default": 1
+											},
+											"byDay": {
+												"type": "array",
+												"items": {
+													"type": "string",
+													"enum": [
+														"MO",
+														"TU",
+														"WE",
+														"TH",
+														"FR",
+														"SA",
+														"SU"
+													]
+												},
+												"minItems": 1,
+												"maxItems": 7
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq",
+											"byDay"
+										]
+									},
+									{
+										"type": "object",
+										"properties": {
+											"freq": {
+												"type": "string",
+												"enum": [
+													"monthly"
+												]
+											},
+											"interval": {
+												"type": "integer",
+												"minimum": 1,
+												"maximum": 12,
+												"default": 1
+											},
+											"until": {
+												"type": "string"
+											}
+										},
+										"required": [
+											"freq"
+										]
+									},
+									{
+										"type": "null"
+									}
+								],
+								"description": "Repeat rule for chores; requires a due date (the first occurrence)"
+							},
+							"notes": {
+								"type": [
+									"string",
+									"null"
+								],
+								"maxLength": 2000
+							}
+						},
+						"required": [
+							"title",
+							"assigneeId",
+							"dueDate",
+							"dueTime",
+							"recurrence",
+							"notes"
+						]
+					},
+					"onlyThisDate": {
+						"type": "string",
+						"description": "A repeating task: moves only the due date now up to this day; the repeat and its start stay"
+					},
+					"keepRule": {
+						"type": "boolean",
+						"description": "True to keep a repeat rule that `recurrence` cannot say (the task shows it as `rrule`); without it a task sent with no `recurrence` stops repeating"
+					}
+				},
+				"required": [
+					"task"
+				]
+			},
+			"ListsCompleteTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ListsCompleteTaskRequest": {
+				"type": "object",
+				"properties": {
+					"dueDate": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The due date you saw. A task whose date has moved on since (a repeating one already completed) is left as it is"
+					}
+				}
+			},
+			"ListsReopenTaskResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/Task"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"Discovery": {
+				"type": "object",
+				"properties": {
+					"api": {
+						"type": "string",
+						"enum": [
+							"v1"
+						]
+					},
+					"familyOS": {
+						"type": "string",
+						"description": "The version of this FamilyOS server"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					},
+					"language": {
+						"type": "string",
+						"description": "The family language"
+					},
+					"caller": {
+						"type": "object",
+						"properties": {
+							"app": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "string"
+									},
+									"name": {
+										"type": "string"
+									},
+									"mode": {
+										"type": "string",
+										"enum": [
+											"apply",
+											"suggest"
+										]
+									}
+								},
+								"required": [
+									"id",
+									"name",
+									"mode"
+								]
+							},
+							"memberId": {
+								"type": [
+									"string",
+									"null"
+								],
+								"description": "The member this request acts for, if it named one"
+							}
+						},
+						"required": [
+							"app",
+							"memberId"
+						]
+					},
+					"extensions": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string"
+								},
+								"version": {
+									"type": "string"
+								},
+								"enabled": {
+									"type": "boolean",
+									"description": "False when it is switched off in Settings"
+								}
+							},
+							"required": [
+								"id",
+								"version",
+								"enabled"
+							]
+						}
+					},
+					"operations": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"description": "The operation’s `operationId`"
+								},
+								"method": {
+									"type": "string",
+									"enum": [
+										"get",
+										"post",
+										"put",
+										"patch",
+										"delete"
+									]
+								},
+								"path": {
+									"type": "string",
+									"description": "The full path, with `{param}` for the parts that vary"
+								},
+								"summary": {
+									"type": "string"
+								},
+								"outcome": {
+									"type": "string",
+									"enum": [
+										"read",
+										"apply",
+										"draft"
+									],
+									"description": "What a call does for this caller now: `read`; `apply` the change is made; `draft` it waits for a person to approve it"
+								}
+							},
+							"required": [
+								"name",
+								"method",
+								"path",
+								"summary",
+								"outcome"
+							]
+						},
+						"description": "Only what this caller may use now: the app’s role, and the member it acts for, decide"
+					}
+				},
+				"required": [
+					"api",
+					"familyOS",
+					"timeZone",
+					"language",
+					"caller",
+					"extensions",
+					"operations"
+				]
+			},
+			"Draft": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"waiting",
+							"applied",
+							"rejected",
+							"undone",
+							"expired",
+							"failed"
+						],
+						"description": "`waiting` for a person to decide; `applied` it was approved and made; `rejected`; `undone` made and then taken back; `expired` its day passed undecided; `failed` approved but could not be made"
+					},
+					"operation": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The `operationId` it was suggested through; null if that is no longer offered"
+					},
+					"result": {
+						"description": "With `applied`: what the operation would have answered, as in `result` of an applied change"
+					},
+					"error": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "With `failed`: why"
+					},
+					"createdAt": {
+						"type": "string",
+						"description": "RFC 3339 with an offset"
+					},
+					"decidedAt": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "RFC 3339 with an offset"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"id",
+					"status",
+					"operation",
+					"error",
+					"createdAt",
+					"decidedAt",
+					"timeZone"
+				]
+			},
+			"Changes": {
+				"type": "object",
+				"properties": {
+					"changes": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"seq": {
+									"type": "integer"
+								},
+								"at": {
+									"type": "string",
+									"description": "RFC 3339 with an offset"
+								},
+								"extension": {
+									"type": "string"
+								},
+								"entity": {
+									"type": "string",
+									"description": "What kind of thing: `event`, `task`, `shopping_item`, `shopping_list`, `chore`, `note` and others; ignore a kind you do not know"
+								},
+								"id": {
+									"type": "string",
+									"description": "Its id"
+								},
+								"op": {
+									"type": "string",
+									"enum": [
+										"upsert",
+										"delete"
+									],
+									"description": "`upsert`: read it again; `delete`: it is gone for you"
+								}
+							},
+							"required": [
+								"seq",
+								"at",
+								"extension",
+								"entity",
+								"id",
+								"op"
+							]
+						}
+					},
+					"cursor": {
+						"type": "integer",
+						"description": "Pass it as `since` next time"
+					},
+					"more": {
+						"type": "boolean",
+						"description": "True when there is more after `cursor`: ask again at once"
+					},
+					"timeZone": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"changes",
+					"cursor",
+					"more",
+					"timeZone"
+				]
+			}
+		},
+		"parameters": {}
+	},
+	"paths": {
+		"/board/notes": {
+			"get": {
+				"operationId": "board.listNotes",
+				"summary": "The notes on the board now: pinned first, then in the order the family arranged them (newest first for notes never moved)",
+				"tags": [
+					"board"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The notes on the board now: pinned first, then in the order the family arranged them (newest first for notes never moved)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BoardListNotesPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "board.createNote",
+				"summary": "Put a note on the board",
+				"tags": [
+					"board"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BoardCreateNoteRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BoardCreateNoteResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/calendar/events": {
+			"post": {
+				"operationId": "calendar.createEvent",
+				"summary": "Add an event",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CalendarCreateEventRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarCreateEventResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/calendar/events/{eventId}": {
+			"delete": {
+				"operationId": "calendar.deleteEvent",
+				"summary": "Delete an event, or with `occurrence` only that date of a repeating event",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "eventId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Repeating events: the `recurrenceId` of one occurrence, to affect only that one (an instant, or a day for an all-day event)"
+						},
+						"required": false,
+						"description": "Repeating events: the `recurrenceId` of one occurrence, to affect only that one (an instant, or a day for an all-day event)",
+						"name": "occurrence",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarDeleteEventResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "calendar.getEvent",
+				"summary": "One event",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "eventId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "One event",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarGetEventResponse"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"operationId": "calendar.patchEvent",
+				"summary": "Change some details of an event and keep the rest; with `occurrence`, only that date of a repeating event, which becomes an event of its own",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "eventId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CalendarPatchEventRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarPatchEventResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "calendar.replaceEvent",
+				"summary": "Replace the whole event with what is sent (every field; null for one left empty). Needs `If-Match`",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "eventId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": true,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CalendarReplaceEventRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarReplaceEventResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/calendar/occurrences": {
+			"get": {
+				"operationId": "calendar.listOccurrences",
+				"summary": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"required": true,
+						"name": "from",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"required": true,
+						"name": "to",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CalendarListOccurrencesPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/chores": {
+			"get": {
+				"operationId": "chores.listChores",
+				"summary": "The chores with whose turn it is, soonest first. A chore is due on its `nextDue` and late once `overdue` is true",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The chores with whose turn it is, soonest first. A chore is due on its `nextDue` and late once `overdue` is true",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ChoresListChoresPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/chores/{choreId}": {
+			"get": {
+				"operationId": "chores.getChore",
+				"summary": "One chore with who did it lately",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "choreId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "One chore with who did it lately",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ChoresGetChoreResponse"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/chores/{choreId}/complete": {
+			"post": {
+				"operationId": "chores.completeChore",
+				"summary": "Mark a chore done for the due date you saw. It moves to its next due date and the turn passes on; a date already done, or one the chore has moved past, changes nothing",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^chore_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "choreId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ChoresCompleteChoreRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ChoresCompleteChoreResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/chores/completions/{completionId}/undo": {
+			"post": {
+				"operationId": "chores.undoCompletion",
+				"summary": "Take a completion back: the due date and whose turn it was return. Your own completion of today, or any with permission to edit chores",
+				"tags": [
+					"chores"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^chore_done_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "completionId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ChoresUndoCompletionResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/items/{itemId}": {
+			"delete": {
+				"operationId": "lists.deleteShoppingItem",
+				"summary": "Take an item off the list",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "itemId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsDeleteShoppingItemResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"operationId": "lists.patchShoppingItem",
+				"summary": "Change the title, quantity or section of an item; what is left out stays",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "itemId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsPatchShoppingItemRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsPatchShoppingItemResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/items/{itemId}/complete": {
+			"post": {
+				"operationId": "lists.completeShoppingItem",
+				"summary": "Tick an item off as bought",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "itemId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsCompleteShoppingItemResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/items/{itemId}/uncheck": {
+			"post": {
+				"operationId": "lists.uncheckShoppingItem",
+				"summary": "Put a bought item back on the list",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "itemId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsUncheckShoppingItemResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/lists": {
+			"get": {
+				"operationId": "lists.listShoppingLists",
+				"summary": "The shopping lists with the number of items still to buy",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The shopping lists with the number of items still to buy",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsListShoppingListsPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/lists/{listId}/items": {
+			"get": {
+				"operationId": "lists.listShoppingItems",
+				"summary": "The items of a list: what is still to buy in store-section order, then what was bought lately",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_list_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "listId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The items of a list: what is still to buy in store-section order, then what was bought lately",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsListShoppingItemsPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "lists.addShoppingItems",
+				"summary": "Add items to a list. An item already on it is not repeated (a new quantity replaces the old); a bought one comes back",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^shop_list_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+							"description": "Target list; omit for the first (default) list"
+						},
+						"required": false,
+						"description": "Target list; omit for the first (default) list",
+						"name": "listId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsAddShoppingItemsRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsAddShoppingItemsResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/tasks": {
+			"get": {
+				"operationId": "lists.listTasks",
+				"summary": "Open tasks, and the one-off tasks done in the last week",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Open tasks, and the one-off tasks done in the last week",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsListTasksPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"operationId": "lists.addTask",
+				"summary": "Add a task",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsAddTaskRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsAddTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/tasks/{taskId}": {
+			"delete": {
+				"operationId": "lists.deleteTask",
+				"summary": "Delete a task",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsDeleteTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "lists.getTask",
+				"summary": "One task",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "One task",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsGetTaskResponse"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"operationId": "lists.patchTask",
+				"summary": "Change some fields of a task; what is left out stays",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsPatchTaskRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsPatchTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "lists.replaceTask",
+				"summary": "Replace the whole task with what is sent (every field; null for one left empty). Needs `If-Match`",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": true,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsReplaceTaskRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsReplaceTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/tasks/{taskId}/complete": {
+			"post": {
+				"operationId": "lists.completeTask",
+				"summary": "Mark a task done; a repeating task moves on to its next due date",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsCompleteTaskRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsCompleteTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/tasks/{taskId}/reopen": {
+			"post": {
+				"operationId": "lists.reopenTask",
+				"summary": "Take the last completion of a task back",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "taskId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsReopenTaskResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/": {
+			"get": {
+				"operationId": "core.discover",
+				"summary": "What this server offers this caller: versions, the family, the extensions and the operations the caller may use now",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The discovery document",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Discovery"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/drafts/{draftId}": {
+			"get": {
+				"operationId": "core.getDraft",
+				"summary": "How a suggestion this app (or the member it acts for) made ended, or that it still waits",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"required": true,
+						"name": "draftId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The draft",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Draft"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/changes": {
+			"get": {
+				"operationId": "core.listChanges",
+				"summary": "What changed since a cursor, for the things this caller may see. Without `since`, only the current cursor is given: read everything, then ask from it",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": [
+								"integer",
+								"null"
+							],
+							"minimum": 0,
+							"description": "The `cursor` of the last answer"
+						},
+						"required": false,
+						"description": "The `cursor` of the last answer",
+						"name": "since",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The changes",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Changes"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"410": {
+						"description": "No longer kept",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"webhooks": {}
+}

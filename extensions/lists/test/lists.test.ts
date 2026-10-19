@@ -382,7 +382,7 @@ describe('tasks', () => {
 describe('shopping', () => {
 	it('starts with a default list', async () => {
 		expect(await k.route('lists.listShoppingLists').call()).toEqual([
-			{ id: DEFAULT_LIST_ID, name: '', openCount: 0 },
+			{ id: DEFAULT_LIST_ID, version: 0, name: '', openCount: 0 },
 		]);
 	});
 
@@ -605,7 +605,7 @@ describe('shopping', () => {
 		);
 		await k.runner.invoke('lists.archiveShoppingList', { id: pharmacy.id }, actor);
 		expect(await k.route('lists.listShoppingLists').call()).toEqual([
-			{ id: DEFAULT_LIST_ID, name: 'Manav', openCount: 0 },
+			{ id: DEFAULT_LIST_ID, version: expect.any(Number), name: 'Manav', openCount: 0 },
 		]);
 		await expect(
 			k.runner.invoke('lists.archiveShoppingList', { id: DEFAULT_LIST_ID }, actor),
@@ -723,7 +723,12 @@ describe('taking back a suggested shopping add', () => {
 		});
 		await k.runner.undoDraft(result.draftId, actor);
 		const after = await items();
-		expect(after.find((i) => i.id === milkId)).toEqual(bought);
+		// Every write counts in the version, so a thing put back keeps all but that.
+		expect(after.find((i) => i.id === milkId)).toEqual({
+			...bought,
+			version: expect.any(Number),
+		});
+		expect(after.find((i) => i.id === milkId)?.version).toBeGreaterThan(bought?.version ?? 0);
 		expect(after.map((i) => i.title)).toEqual(['Süt']);
 	});
 

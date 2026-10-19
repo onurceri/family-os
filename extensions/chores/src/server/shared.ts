@@ -62,6 +62,7 @@ export async function choreViews(
 			last.set(d.chore_id, { id: d.id, memberId: d.member_id, doneAt: d.done_at });
 	return rows.map((row) => ({
 		id: row.id as Chore['id'],
+		version: row.version,
 		title: row.title,
 		notes: row.notes,
 		recurrence: parseRecurrence(row),

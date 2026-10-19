@@ -40,6 +40,7 @@ import { mountEmailRoutes } from './email.ts';
 import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
 import { mountExtensionRoutes } from './extensions.ts';
+import { MAX_BAD_KEYS_PER_MINUTE, mountPublicApi } from './public/index.ts';
 import { mountPushRoutes } from './push.ts';
 import { createRateLimiter } from './rate-limit.ts';
 import { mountTelegramRoutes } from './telegram.ts';
@@ -577,12 +578,24 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		await next();
 		c.header('cache-control', 'no-store');
 	});
+	// Wrong keys are counted per client address across both bearer doors, so a guesser gets no
+	// second budget by trying the other one.
+	const badTokens = createRateLimiter({ max: MAX_BAD_KEYS_PER_MINUTE, windowMs: 60_000 });
 	mountMcp(app, {
 		kernel: deps.kernel,
 		ai: deps.ai,
 		appVersion: deps.appVersion,
 		logger: deps.logger,
 		clientIp,
+		badTokens,
+	});
+	// Connected apps: a bearer key and nothing else, so no cookie, session or CSRF check applies.
+	mountPublicApi(app, {
+		kernel: deps.kernel,
+		logger: deps.logger,
+		appVersion: deps.appVersion,
+		clientIp,
+		badTokens,
 	});
 	mountTelegramRoutes(app, deps.telegram, deps.kernel.access);
 	mountEmailRoutes(app, deps.email, deps.kernel);

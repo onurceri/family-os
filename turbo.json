@@ -47,7 +47,7 @@
 		"@famos/server#gen": {
 			"dependsOn": [],
 			"cache": false,
-			"outputs": ["openapi.json"]
+			"outputs": ["openapi.json", "public-openapi.json"]
 		},
 		"@famos/server#typecheck": {
 			"dependsOn": ["transit", "gen", "^gen", "@famos/server#gen"],

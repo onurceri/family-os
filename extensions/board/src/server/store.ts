@@ -95,6 +95,7 @@ export const tables = (db: DbExecutor) => db.withTables<BoardTables>();
 export function toNote(row: NoteRow, seenBy: readonly string[], endsOn: string | null): BoardNote {
 	return {
 		id: row.id,
+		version: row.version,
 		text: row.text,
 		paper: row.paper,
 		pinned: row.pinned === 1,

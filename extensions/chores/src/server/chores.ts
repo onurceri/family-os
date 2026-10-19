@@ -20,6 +20,7 @@ import {
 	UpdateChoreSchema,
 } from '../contract/index.ts';
 import { choresEdit, choresUse, choresView } from './capabilities.ts';
+import { api } from './public.ts';
 import { scheduleChoreReminder } from './reminders.ts';
 import { nextAssignee } from './rotation.ts';
 import { dueAfterDone, dueFrom } from './schedule.ts';
@@ -301,6 +302,7 @@ export const setAssignees = defineAction({
 
 export const markDone = defineAction({
 	id: 'chores.markDone',
+	expose: api.completeChore,
 	offline: true,
 	title: 'Mark a chore done',
 	draftTitle: 'chores:draft_title_mark_done',
@@ -422,6 +424,7 @@ export const markDone = defineAction({
 
 export const undoDone = defineAction({
 	id: 'chores.undoDone',
+	expose: api.undoCompletion,
 	offline: true,
 	title: 'Undo a completion',
 	description:
@@ -555,6 +558,7 @@ export const listAllChores = defineRoute({
 	method: 'get',
 	path: '/chores',
 	operationId: 'chores.listAllChores',
+	expose: api.listChores,
 	summary: 'The chores with whose turn it is, soonest first; a finished one-off stays for a week',
 	requires: choresView.id,
 	response: z.array(ChoreSchema),
@@ -586,6 +590,7 @@ export const getChore = defineRoute({
 	method: 'get',
 	path: '/chores/{choreId}',
 	operationId: 'chores.getChore',
+	expose: api.getChore,
 	summary: 'One chore with who did it lately',
 	requires: choresView.id,
 	params: z.object({ choreId: ChoreIdSchema }),

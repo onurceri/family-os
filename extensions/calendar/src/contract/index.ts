@@ -151,6 +151,8 @@ export const endsNextDay = (
 
 export const EventDetailSchema = z.object({
 	id: z.string(),
+	/** Counts every write of the event; a caller names it to change the event only if it is unchanged. */
+	version: z.number().int(),
 	title: z.string(),
 	allDay: z.boolean(),
 	date: z.string(),
