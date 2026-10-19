@@ -161,7 +161,7 @@ export const postNote = defineAction({
 			.selectFrom('board_notes')
 			.select('id')
 			.where('text', '=', input.text)
-			.where((eb) => eb.or([eb('ends_at', 'is', null), eb('ends_at', '>', Date.now())]))
+			.where((eb) => eb.or([eb('ends_at', 'is', null), eb('ends_at', '>', ctx.now)]))
 			.executeTakeFirst();
 		return row !== undefined;
 	},

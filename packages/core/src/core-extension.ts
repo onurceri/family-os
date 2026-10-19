@@ -1462,6 +1462,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				db: deps.extensionDb(ownerOf(def.id), uow.db),
 				family: uow.family,
 				translate: uow.translate,
+				now: uow.clock.now(),
 			};
 			return input.success ? ((await look(ctx, input.data)) ?? undefined)?.slice(0, 80) : undefined;
 		} catch {
@@ -1533,6 +1534,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				db: deps.extensionDb(ownerOf(def.id), uow.db),
 				family: uow.family,
 				translate: uow.translate,
+				now: uow.clock.now(),
 			});
 			const actor = uow.actor;
 			// An agent in a conversation: what was suggested there (an MCP draft also names its app

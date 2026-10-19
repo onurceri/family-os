@@ -353,6 +353,18 @@ describe('the endpoint refuses what it should', () => {
 		expect(viaApi.status).toBe(401);
 	});
 
+	it('never lets a caller cache an answer, whether it was served or refused', async () => {
+		const { adminId, cookie } = await setup();
+		await enable(cookie);
+		const { secret } = await newToken(adminId, 'admin');
+		const served = await rpc(secret, legacyList);
+		expect(served.status).toBe(200);
+		expect(served.headers.get('cache-control')).toBe('no-store');
+		const refused = await rpc(null, legacyList);
+		expect(refused.status).toBe(401);
+		expect(refused.headers.get('cache-control')).toBe('no-store');
+	});
+
 	it('answers 401 with a JSON-RPC error for missing, unknown, expired and revoked tokens', async () => {
 		const { adminId, cookie } = await setup();
 		await enable(cookie);

@@ -450,8 +450,14 @@ describe('HTTP API', () => {
 		expect(me.body.capabilities).not.toContain('lists.view');
 	});
 
-	it('exposes the OpenAPI document', async () => {
-		const doc = await call('GET', '/api/openapi.json');
+	it('serves the OpenAPI document to signed-in members only', async () => {
+		const out = await call('GET', '/api/openapi.json');
+		expect(out.status).toBe(401);
+		expect(out.body.paths).toBeUndefined();
+		const { cookie } = await setupAndSignIn();
+		const doc = await call('GET', '/api/openapi.json', undefined, cookie);
+		expect(doc.status).toBe(200);
+		expect(doc.headers.get('cache-control')).toBe('no-store');
 		expect(doc.body.paths['/api/v1/actions/core.createMember'].post.operationId).toBe(
 			'core.createMember',
 		);
@@ -1340,7 +1346,8 @@ describe('family displays', () => {
 				...(body !== undefined && { body: JSON.stringify(body) }),
 			});
 		let first: { deviceCode: string } | undefined;
-		for (let i = 0; i < 10; i++) {
+		// An address may hold three codes open at once; a fourth waits until one is used or expires.
+		for (let i = 0; i < 3; i++) {
 			const res = await fromOneAddress('/api/v1/core/displays/pair');
 			expect(res.status).toBe(201);
 			first ??= (await res.json()) as { deviceCode: string };

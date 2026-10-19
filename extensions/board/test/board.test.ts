@@ -444,6 +444,24 @@ describe('AI', () => {
 		expect(await refused(k.runner.invoke('board.listNotes', {}, AI))).toBe('forbidden');
 	});
 
+	it('judges whether a suggested note is already up by the clock, not the machine time', async () => {
+		k.clock.set(at('2026-10-06', '11:00'));
+		await post({ text: 'Remember the bins', endsOn: '2026-10-07' });
+		const propose = async () => {
+			const result = await k.runner.invoke('board.postNote', { text: 'Remember the bins' }, AI, {
+				draft: { sourceKind: 'inbox', sourceId: 'item', summary: 'Bins' },
+			});
+			if (result.status !== 'drafted') throw new Error('expected a draft');
+			const drafts = (await k
+				.route('core.listDrafts')
+				.call({ query: { status: 'pending', limit: 10 } })) as { id: string; mayExist: boolean }[];
+			return drafts.find((d) => d.id === result.draftId)?.mayExist;
+		};
+		expect(await propose()).toBe(true);
+		k.clock.set(at('2026-10-09', '11:00'));
+		expect(await propose()).toBe(false);
+	});
+
 	it('proposes a note as a draft that a person approves, and undo takes it down', async () => {
 		const result = await k.runner.invoke('board.postNote', { text: 'Remember the bins' }, AI, {
 			draft: { sourceKind: 'inbox', sourceId: 'item', summary: 'Bins' },

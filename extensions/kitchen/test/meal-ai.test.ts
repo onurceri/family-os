@@ -59,7 +59,7 @@ describe('removing a planned meal as the AI', () => {
 		const target = await k.registry.actions
 			.get('kitchen.removeMealPlanEntry')
 			?.targetTitle?.(
-				{ db: k.ctx.db, family: k.ctx.family, translate: repoTranslate() },
+				{ db: k.ctx.db, family: k.ctx.family, translate: repoTranslate(), now: k.clock.now() },
 				{ id: meal.id },
 			);
 		expect(target).toBe('Pancakes · dinner, Thu, Oct 8');

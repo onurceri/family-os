@@ -521,6 +521,7 @@ export function createKernel(options: KernelOptions): Kernel {
 					db: views.db(ownerOf(id), options.db),
 					family: familyReader(options.db),
 					translate: options.translate ?? defaultTranslate,
+					now: options.clock.now(),
 				},
 				parsed.data,
 			);

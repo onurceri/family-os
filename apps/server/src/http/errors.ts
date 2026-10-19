@@ -43,17 +43,20 @@ export function errorBody(code: string, message: string, details?: unknown) {
 	return { error: { code, message, ...(details !== undefined && { details }) } };
 }
 
-/** Maps errors to responses. Unknown errors never leak details to clients. */
+/**
+ * Maps errors to responses. Unknown errors never leak details to clients. The log names the
+ * matched route pattern, never the raw path: a calendar feed's path is its secret address.
+ */
 export function handleError(error: unknown, c: Context, logger: Logger): Response {
 	if (isFamosError(error)) {
 		// A refusal says why in fields of its own, so no app has to read its words.
 		const refusal = accessRefusalOf(error);
 		if (refusal) {
-			logger.debug({ path: c.req.path, ...refusal }, 'refused');
+			logger.debug({ route: c.req.routePath, ...refusal }, 'refused');
 			return c.json({ error: { code: error.code, message: error.message, ...refusal } }, 403);
 		}
 		return c.json(errorBody(error.code, error.message, error.details), STATUS[error.code]);
 	}
-	logger.error({ err: error, path: c.req.path }, 'unhandled error');
+	logger.error({ err: error, route: c.req.routePath }, 'unhandled error');
 	return c.json(errorBody('internal', 'Something went wrong'), 500);
 }

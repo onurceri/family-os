@@ -19,6 +19,8 @@ Adding a screen takes four short steps. You need the screen and a phone or compu
 
 A screen that is not connected yet shows **Connect this screen** with the same four steps from its side: the first is done (you are looking at it), the second shows the code, an address and a QR code. Scan the QR code with your phone, or open that address: it opens **Add a device** at the last step with the code already filled in, so you only choose what it may show and press **Connect the screen**. A code is valid for ten minutes, with a countdown under it; the screen gets a new one by itself.
 
+To keep strangers from filling up the codes, one network can have three codes waiting at once and ask for five in ten minutes. If a screen says it cannot get a code, wait for the ones it already has to run out (ten minutes) and try again.
+
 ## Add a tablet or phone the family shares
 
 A **family device** is a tablet or phone the family shares, such as the kitchen tablet. On it, people pick their name and sign in with a PIN instead of a password. Press **Add a device** and choose **A tablet or phone the family shares**:

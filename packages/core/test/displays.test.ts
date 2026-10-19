@@ -218,6 +218,16 @@ describe('pairing a display', () => {
 		await expect(k.devices.startPairing()).rejects.toMatchObject({ code: 'limit_reached' });
 	});
 
+	it('keeps one address from taking every open slot', async () => {
+		for (let i = 0; i < 3; i++) await k.devices.startPairing({ ip: '10.0.0.7' });
+		await expect(k.devices.startPairing({ ip: '10.0.0.7' })).rejects.toMatchObject({
+			code: 'limit_reached',
+		});
+		// Other addresses still get through.
+		await k.devices.startPairing({ ip: '10.0.0.8' });
+		await k.devices.startPairing();
+	});
+
 	it('lets only admins confirm, and only view capabilities of extensions that are on', async () => {
 		const { actor: child } = await k.member('member');
 		const { actor: admin } = await k.member('admin');

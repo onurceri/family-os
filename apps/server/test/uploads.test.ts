@@ -166,7 +166,9 @@ describe('upload routes', () => {
 		const form = new FormData();
 		form.append('note', 'x');
 		expect((await send(form, false)).status).toBe(401);
-		const doc = (await (await app.request(`${BASE}/api/openapi.json`)).json()) as {
+		const doc = (await (
+			await app.request(`${BASE}/api/openapi.json`, { headers: { cookie } })
+		).json()) as {
 			paths: Record<string, { post: { requestBody: { content: Record<string, unknown> } } }>;
 		};
 		const content = doc.paths['/api/v1/probe/items']?.post.requestBody.content ?? {};

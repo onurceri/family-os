@@ -14,7 +14,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { parse } from 'hono/utils/cookie';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
-import { createRateLimiter } from './rate-limit.ts';
+import { addressKey, createRateLimiter } from './rate-limit.ts';
 
 /**
  * Trusted family devices on the HTTP side. Core owns the device records; this module
@@ -174,7 +174,9 @@ function mountDisplayRoutes(
 ) {
 	const devices = kernel.devices;
 	// Starting a pairing is public: cap it per address so nobody can fill the table with codes.
-	const startLimit = createRateLimiter({ max: 10, windowMs: 10 * 60 * 1000 });
+	// Five starts in ten minutes is enough for a household's displays; the codes one address may
+	// hold open at once are capped in the kernel, so no address can take every slot.
+	const startLimit = createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000 });
 
 	const start = createRoute({
 		method: 'post',
@@ -191,7 +193,7 @@ function mountDisplayRoutes(
 		refuseFamilyBrowser(c);
 		const ip = clientIp(c);
 		if (!startLimit.hit(ip)) throw new FamosError('limit_reached', 'Too many pairing attempts');
-		return c.json(await devices.startPairing({ ip }), 201);
+		return c.json(await devices.startPairing({ ip: addressKey(ip) }), 201);
 	});
 
 	const poll = createRoute({

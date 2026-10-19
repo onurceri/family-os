@@ -4,7 +4,10 @@ import type { ExtensionContext, UnitOfWork } from './context.ts';
 import type { QuestionTopic } from './question.ts';
 
 /** What a duplicate check may read. */
-export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family' | 'translate'>;
+export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family' | 'translate'> & {
+	/** Epoch milliseconds from the context clock (never the machine's own). */
+	readonly now: number;
+};
 
 /**
  * Approval policy for an action:

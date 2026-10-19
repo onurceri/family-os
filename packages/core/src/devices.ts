@@ -109,6 +109,11 @@ const MIN_POLL_MS = 4000;
 const ANSWERING_MS = 15_000;
 const MAX_WRONG_CODES = 5;
 const MAX_OPEN_PAIRINGS = 100;
+/**
+ * Open codes one address may hold, so a few addresses cannot take every one of the family-wide
+ * slots. A household with a few displays starting up at once still fits.
+ */
+export const MAX_OPEN_PAIRINGS_PER_ADDRESS = 3;
 /** No 0/O, 1/I/L: a code read from a screen and typed on a phone must not be ambiguous. */
 const USER_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
@@ -319,6 +324,17 @@ export function createDeviceService(deps: {
 				.executeTakeFirstOrThrow();
 			if (Number(open.n) >= MAX_OPEN_PAIRINGS)
 				throw new FamosError('limit_reached', 'Too many displays are waiting to be paired');
+			if (input?.ip) {
+				const own = await pairings()
+					.selectFrom('core_display_pairings')
+					.select((eb) => eb.fn.countAll<number>().as('n'))
+					.where('status', '!=', 'consumed')
+					.where('expires_at', '>', now)
+					.where('created_ip', '=', input.ip)
+					.executeTakeFirstOrThrow();
+				if (Number(own.n) >= MAX_OPEN_PAIRINGS_PER_ADDRESS)
+					throw new FamosError('limit_reached', 'Too many displays are waiting to be paired here');
+			}
 
 			const deviceCode = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
 			let userCode = randomUserCode();

@@ -616,6 +616,11 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	);
 	mountPushRoutes(app, deps.webPush, deps.kernel);
 	mountApiTokenRoutes(app, deps.kernel);
+	// MCP answers carry family data for a token: never cache them.
+	app.use('/mcp/*', async (c, next) => {
+		await next();
+		c.header('cache-control', 'no-store');
+	});
 	mountMcp(app, {
 		kernel: deps.kernel,
 		ai: deps.ai,
@@ -641,7 +646,16 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		in: 'cookie',
 		name: 'better-auth.session_token',
 	});
-	app.doc31('/api/openapi.json', OPENAPI_INFO);
+	// The document lists the installed extensions and every route, so only a signed-in member
+	// may read it. It is built on the first request, when every route is registered.
+	let openApiDocument: ReturnType<typeof app.getOpenAPI31Document> | undefined;
+	app.use('/api/openapi.json', actorMiddleware(deps));
+	app.get('/api/openapi.json', (c) => {
+		if (c.get('actor')?.kind !== 'member')
+			return c.json(errorBody('unauthenticated', 'Sign in first'), 401);
+		openApiDocument ??= app.getOpenAPI31Document(OPENAPI_INFO);
+		return c.json(openApiDocument);
+	});
 	app.notFound((c) => c.json(errorBody('not_found', 'Not found'), 404));
 	return app;
 }

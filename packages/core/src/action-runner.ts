@@ -380,6 +380,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		db: deps.views.db(ownerOf(def.id), db),
 		family: familyReader(db),
 		translate: deps.translate,
+		now: deps.clock.now(),
 	});
 
 	/**
@@ -973,7 +974,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				if (
 					def.settled &&
 					(await def.settled(
-						{ db: view(ownerOf(def.id)).db, family: uow.family, translate: deps.translate },
+						{
+							db: view(ownerOf(def.id)).db,
+							family: uow.family,
+							translate: deps.translate,
+							now: clock.now(),
+						},
 						input,
 					))
 				) {
