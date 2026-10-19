@@ -12,11 +12,12 @@ export const ANY_MEMBER = { anyMember: true } as const;
 
 /**
  * One way to be in an event's audience: a capability the receiver holds, one member by id (a
- * row that belongs to a person), or everyone / any signed-in member for what every screen shows.
+ * row that belongs to a person), one paired display by device id, or everyone / any signed-in member for what every screen shows.
  */
 export type AudienceTarget =
 	| string
 	| { readonly member: string }
+	| { readonly device: string }
 	| typeof EVERYONE
 	| typeof ANY_MEMBER;
 

@@ -78,10 +78,11 @@ export const aiAreasChanged = defineEvent(
 	{ audience: CORE_CAPABILITIES.aiManage.id },
 );
 
+/** The display itself hears of it too: it checks again and falls back to pairing when revoked. */
 export const deviceChanged = defineEvent(
 	'core.device.changed',
 	z.object({ deviceId: z.string() }),
-	{ audience: CORE_CAPABILITIES.devicesManage.id },
+	{ audience: (payload) => [CORE_CAPABILITIES.devicesManage.id, { device: payload.deviceId }] },
 );
 /** A display told what its screen had no room for (Settings → Devices shows it). */
 export const displayFitChanged = defineEvent(

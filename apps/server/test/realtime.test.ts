@@ -104,12 +104,22 @@ describe('who hears of an event', () => {
 		await k.bus.publish('email.status.changed', {});
 
 		expect(screen.names()).toEqual(['core.themes.changed', 'core.family.changed']);
+		// It hears of its own device changing (it checks again, and a revoked one pairs anew), as the
+		// socket closes.
+		await k.bus.publish('core.device.changed', { deviceId: 'dev_1' });
+		expect(screen.names()).toEqual([
+			'core.themes.changed',
+			'core.family.changed',
+			'core.device.changed',
+		]);
+		expect(screen.closed()).toBe(true);
 		expect(admin.names()).toEqual([
 			'core.themes.changed',
 			'core.family.changed',
 			'core.device.changed',
 			'telegram.status.changed',
 			'email.status.changed',
+			'core.device.changed',
 		]);
 	});
 

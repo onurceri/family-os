@@ -36,6 +36,7 @@ export function inAudience(
 		}
 		if ('everyone' in target) return true;
 		if ('anyMember' in target) return actor.kind === 'member';
+		if ('device' in target) return actor.kind === 'display' && actor.deviceId === target.device;
 		return actor.kind === 'member' && actor.memberId === target.member;
 	});
 }
