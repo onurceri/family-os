@@ -32,6 +32,16 @@ import { scheduleObligationReminders } from './reminders.ts';
 import { OBLIGATION_KIND, PAPER_KIND } from './search.ts';
 import { type ObligationRow, tables, toHistory, toObligation } from './store.ts';
 
+/** The record an obligation belongs to, or null when there is no such obligation. */
+async function recordOfObligation(db: Parameters<typeof tables>[0], id: string) {
+	const row = await tables(db)
+		.selectFrom('records_obligations')
+		.select('record_id')
+		.where('id', '=', id)
+		.executeTakeFirst();
+	return row?.record_id ?? null;
+}
+
 /**
  * A duty belongs to the area of its `audience` capability (a vehicle's, a pet's), so those who
  * cannot see that area are not told it changed.
@@ -114,6 +124,7 @@ export const addObligation = defineAction({
 	input: AddObligationSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
+	nested: { governedBy: 'owner', record: (_ctx, { recordId }) => recordId },
 	undo: (o) => ({ actionId: 'records.removeObligation', input: { id: o.id } }),
 	ai: {
 		description:
@@ -178,6 +189,10 @@ export const updateObligation = defineAction({
 	input: UpdateObligationSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
+	nested: {
+		governedBy: 'owner',
+		record: (ctx, { id }) => recordOfObligation(ctx.db, id),
+	},
 	async run(uow, { id, obligation }) {
 		const row = await load(uow, id);
 		if (row.archived_at !== null) throw new FamosError('conflict', 'This obligation is archived');
@@ -224,6 +239,10 @@ export const completeObligation = defineAction({
 	input: CompleteObligationSchema,
 	output: CompletedObligationSchema,
 	approval: { unless: recordsEdit.id },
+	nested: {
+		governedBy: 'owner',
+		record: (ctx, { id }) => recordOfObligation(ctx.db, id),
+	},
 	// A model reads a renewal notice or a reminder as "done" all too easily; something that really
 	// was done comes with the day it happened or the date it now runs to. Without either, the
 	// duty is still to do, and the model asks the person instead of suggesting it.
@@ -361,6 +380,10 @@ export const removeObligation = defineAction({
 	input: z.object({ id: ObligationIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: recordsEdit.id },
+	nested: {
+		governedBy: 'owner',
+		record: (ctx, { id }) => recordOfObligation(ctx.db, id),
+	},
 	async run(uow, { id }) {
 		const row = await load(uow, id);
 		const db = tables(uow.db);
@@ -375,8 +398,8 @@ export const removeObligation = defineAction({
 /**
  * Called by a domain extension when it archives a record: its obligations and documents are
  * archived (kept, hidden, no more reminders). Idempotent. A domain calls it inside its own
- * archive action (`uow.run`). Run inside another action it is held to its own rule: the person
- * must hold `records.edit` (a run that would only be a suggestion is refused, never applied).
+ * archive action (`uow.run`): the owner of the record has already decided who may, so the run
+ * needs no approval of its own (`nested`). From anyone else it is held to `records.edit`.
  */
 export const archiveForRecord = defineAction({
 	id: 'records.archiveForRecord',
@@ -385,6 +408,7 @@ export const archiveForRecord = defineAction({
 	input: z.object({ recordId: RecordIdSchema }),
 	output: z.object({ obligations: z.number().int(), documents: z.number().int() }),
 	approval: { unless: recordsEdit.id },
+	nested: { governedBy: 'owner', record: (_ctx, { recordId }) => recordId },
 	async run(uow, { recordId }) {
 		const now = uow.clock.now();
 		const db = tables(uow.db);
@@ -435,6 +459,7 @@ export const renameRecord = defineAction({
 	input: RenameRecordSchema,
 	output: z.object({ obligations: z.number().int() }),
 	approval: { unless: recordsEdit.id },
+	nested: { governedBy: 'owner', record: (_ctx, { recordId }) => recordId },
 	async run(uow, { recordId, name, url }) {
 		// `updated_at` stays: reminders read the name when they run and must not be invalidated.
 		const result = await tables(uow.db)

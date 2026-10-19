@@ -4,7 +4,7 @@ import { defineTestExtension } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { type Obligation, type ObligationPreset, RecordIdSchema } from '../src/contract/index.ts';
-import { applied, CAR, createKernel, type Person, person } from './support.ts';
+import { applied, CAR, createKernel, type Person, person, recordId } from './support.ts';
 
 /** A stand-in domain extension: it owns "cars", and talks to records only by action id. */
 const garageEdit = defineCapability({ id: 'garage.edit', label: 'garage:cap_edit', level: 'edit' });
@@ -22,12 +22,65 @@ const archiveCar = defineAction({
 		return { archived: r.obligations };
 	},
 });
+// The same, but a person who lacks `garage.edit` may suggest it.
+const archiveCarAsked = defineAction({
+	id: 'garage.archiveCarAsked',
+	title: 'Archive a car, or suggest it',
+	draftTitle: 'garage:draft_archive',
+	input: z.object({ recordId: RecordIdSchema }),
+	output: z.object({ archived: z.number() }),
+	approval: { unless: garageEdit.id },
+	async run(uow, { recordId }) {
+		const r = await uow.run<unknown, { obligations: number }>('records.archiveForRecord', {
+			recordId,
+		});
+		return { archived: r.obligations };
+	},
+});
+// Archives a record of another extension (a pet), which the garage does not own.
+const archivePet = defineAction({
+	id: 'garage.archivePet',
+	title: 'Archive a pet',
+	input: z.object({ recordId: RecordIdSchema }),
+	output: z.object({ archived: z.number() }),
+	requires: garageEdit.id,
+	approval: 'never',
+	async run(uow, { recordId }) {
+		const r = await uow.run<unknown, { obligations: number }>('records.archiveForRecord', {
+			recordId,
+		});
+		return { archived: r.obligations };
+	},
+});
 const garage = defineTestExtension({
 	id: 'garage',
 	dependsOn: ['records'],
 	calls: ['records.archiveForRecord'],
-	actions: [archiveCar],
+	recordIds: ['vehicle'],
+	actions: [archiveCar, archiveCarAsked, archivePet],
 	capabilities: [garageEdit],
+});
+// Uses records for things it does not own.
+const shed = defineTestExtension({
+	id: 'shed',
+	dependsOn: ['records'],
+	calls: ['records.archiveForRecord'],
+	actions: [
+		defineAction({
+			id: 'shed.archiveCar',
+			title: 'Archive a car from the shed',
+			input: z.object({ recordId: RecordIdSchema }),
+			output: z.object({ archived: z.number() }),
+			requires: garageEdit.id,
+			approval: 'never',
+			async run(uow, { recordId }) {
+				const r = await uow.run<unknown, { obligations: number }>('records.archiveForRecord', {
+					recordId,
+				});
+				return { archived: r.obligations };
+			},
+		}),
+	],
 });
 
 /** What a domain exports for the "what usually needs doing" list. */
@@ -40,7 +93,7 @@ let k: TestKernel;
 let admin: Person;
 
 beforeEach(async () => {
-	({ k } = await createKernel({ extensions: [garage] }));
+	({ k } = await createKernel({ extensions: [garage, shed] }));
 	admin = await person(k, 'admin');
 });
 afterEach(() => k.close());
@@ -76,35 +129,14 @@ describe('a domain extension using records', () => {
 		expect(open).toHaveLength(0);
 	});
 
-	it('asks records.edit of a member whose domain action archives, as it would of the member directly', async () => {
-		// A custom role that may edit cars but not records: archiving through the domain action
-		// would apply a change to records they could only suggest, so it is refused, not applied.
+	it('lets a member with the domain capability archive without records.edit being asked', async () => {
+		// A custom role: may edit cars but not records. The domain action is the permission.
 		const role = await k.runner.invoke<{ id: string }>(
 			'core.createRole',
 			{
 				name: 'Car person',
 				base: 'supervised',
 				overrides: { 'garage.edit': true, 'records.edit': false },
-			},
-			admin.actor,
-		);
-		if (role.status !== 'applied') throw new Error('expected role');
-		const driver = await person(k, role.output.id, 'Driver');
-		await expect(
-			k.runner.invoke('garage.archiveCar', { recordId: CAR }, driver.actor),
-		).rejects.toMatchObject({
-			code: 'forbidden',
-			details: { reason: 'nested_needs_approval', capability: 'records.edit' },
-		});
-	});
-
-	it('lets a member who holds both archive through the domain action', async () => {
-		const role = await k.runner.invoke<{ id: string }>(
-			'core.createRole',
-			{
-				name: 'Car person',
-				base: 'supervised',
-				overrides: { 'garage.edit': true, 'records.edit': true },
 			},
 			admin.actor,
 		);
@@ -117,5 +149,50 @@ describe('a domain extension using records', () => {
 			driver.actor,
 		);
 		expect(out.archived).toBe(0);
+	});
+
+	describe('a record only its owner speaks for', () => {
+		const driverRole = async () => {
+			const role = await k.runner.invoke<{ id: string }>(
+				'core.createRole',
+				{
+					name: 'Car person',
+					base: 'supervised',
+					overrides: { 'garage.edit': true, 'records.edit': false },
+				},
+				admin.actor,
+			);
+			if (role.status !== 'applied') throw new Error('expected role');
+			return person(k, role.output.id, 'Driver');
+		};
+
+		it('refuses another extension that is not the record’s owner', async () => {
+			const driver = await driverRole();
+			await expect(
+				k.runner.invoke('shed.archiveCar', { recordId: CAR }, driver.actor),
+			).rejects.toMatchObject({
+				code: 'forbidden',
+				details: { reason: 'nested_needs_approval', capability: 'records.edit' },
+			});
+		});
+
+		it('refuses the owner on a record of another kind', async () => {
+			const driver = await driverRole();
+			await expect(
+				k.runner.invoke('garage.archivePet', { recordId: recordId('pet') }, driver.actor),
+			).rejects.toMatchObject({
+				code: 'forbidden',
+				details: { reason: 'nested_needs_approval' },
+			});
+		});
+
+		it('still turns a supervised member’s domain action into a suggestion', async () => {
+			const kid = await person(k, 'supervised', 'Elif');
+			const result = await k.runner.invoke('garage.archiveCarAsked', { recordId: CAR }, kid.actor);
+			expect(result.status).toBe('drafted');
+			if (result.status !== 'drafted') return;
+			const approved = await k.runner.approveDraft(result.draftId, admin.actor);
+			expect(approved.status).toBe('applied');
+		});
 	});
 });

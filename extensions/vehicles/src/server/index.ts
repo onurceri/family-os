@@ -28,6 +28,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
+	recordIds: ['vehicle'],
 	ai: { context: aiContext.id, kinds: [logKind] },
 	actions: [
 		addVehicle,

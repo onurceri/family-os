@@ -52,6 +52,12 @@ export interface ExtensionDefinition {
 	 */
 	readonly sensitive: boolean;
 	/**
+	 * The typed-id prefixes of the records this extension owns and hands to a service such as
+	 * records (`vehicle` for `vehicle_<uuid>`). Only the owner's actions are trusted to speak for
+	 * such a record when they run a service action that is `nested.governedBy: 'owner'`.
+	 */
+	readonly recordIds?: readonly string[];
+	/**
 	 * What the extension tells the AI about its records.
 	 * `context` is the id of a read-only action of this extension that returns an
 	 * `AiContext`; the Inbox calls it as the AI actor, so a locked area contributes nothing.
@@ -163,6 +169,7 @@ export function defineExtension(definition: {
 	notifications?: readonly NotificationKindDefinition[];
 	channels?: readonly NotificationChannelDefinition[];
 	sensitive?: boolean;
+	recordIds?: readonly string[];
 	ai?: AiExtensionHints;
 	shareTarget?: ShareTarget;
 	conversation?: ConversationProvider;

@@ -9,6 +9,17 @@ export type DuplicateContext = Pick<ExtensionContext, 'db' | 'family' | 'transla
 	readonly now: number;
 };
 
+/** See `ActionDefinition.nested`. */
+export interface NestedGovernance<I> {
+	readonly governedBy: 'owner';
+	/**
+	 * The typed id of the record the call is about: from the input, or from the stored thing the
+	 * input names. Null when it is about none. Read through the owner of the action, in the
+	 * transaction.
+	 */
+	record(ctx: DuplicateContext, input: I): string | null | Promise<string | null>;
+}
+
 /**
  * Approval policy for an action:
  * - 'never': always applied directly (still subject to RBAC).
@@ -67,6 +78,16 @@ export interface ActionDefinition<
 	 */
 	readonly requires?: string;
 	readonly approval: ApprovalPolicy<z.infer<In>>;
+	/**
+	 * How the action behaves when another action runs it with `uow.run`. By default it is decided
+	 * like any call: if the actor would only be allowed to suggest it, the run is refused
+	 * (`nested_needs_approval`). `governedBy: 'owner'` is for a service that extensions use for the
+	 * things they own (records for a vehicle's duties): when the extension that owns the record,
+	 * as it declares in `recordIds`, runs it on that record, the owner's own action has already
+	 * decided who may, so the run needs no approval of its own. Any other caller, or a record of
+	 * another extension, is held to the default.
+	 */
+	readonly nested?: NestedGovernance<z.infer<In>>;
 	/**
 	 * Set when AI may use this action: a data-changing one is proposed as a draft (a draft tool of
 	 * the assistant, and an Inbox proposal); a read-only one becomes a read tool. Read
@@ -288,6 +309,7 @@ export function defineAction<
 	readOnly?: boolean;
 	requires?: string;
 	approval?: ApprovalPolicy<z.infer<In>>;
+	nested?: NestedGovernance<z.infer<In>>;
 	ai?: ActionAiHints;
 	external?: boolean;
 	autoApprove?: AutoApprovalHints;

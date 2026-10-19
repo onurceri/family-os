@@ -24,6 +24,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
+	recordIds: ['home', 'home_item', 'home_service'],
 	ai: { context: [aiContext.id, aiContextItems.id], index: searchIndex, kinds: [itemKind] },
 	actions: [
 		addHome,

@@ -385,6 +385,32 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		);
 	}
 
+	/** The extension that owns each typed-id prefix of a record, as extensions declare them. */
+	const recordOwners = new Map(
+		registry.extensions.flatMap((e) =>
+			(e.recordIds ?? []).map((prefix) => [prefix, e.id] as const),
+		),
+	);
+	const TYPED_ID = /^(.+)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+	/**
+	 * Whether an action run inside another is covered by the outer action's own decision: it is a
+	 * service action marked `nested.governedBy: 'owner'`, the caller is the extension that owns
+	 * the record it is about (by the id's prefix, as that extension declared it), and the caller
+	 * is not the service itself. Anything else is decided on its own.
+	 */
+	async function governedByOwner(
+		def: AnyActionDefinition,
+		caller: string,
+		input: unknown,
+		db: DbExecutor,
+	): Promise<boolean> {
+		if (def.nested?.governedBy !== 'owner' || caller === ownerOf(def.id)) return false;
+		const record = await def.nested.record(readContext(def, db), input);
+		const prefix = record === null ? undefined : TYPED_ID.exec(record)?.[1];
+		return prefix !== undefined && recordOwners.get(prefix) === caller;
+	}
+
 	/** What an action's checks read (names, titles, duplicates) see: its extension's tables. */
 	const readContext = (def: AnyActionDefinition, db: DbExecutor = deps.db) => ({
 		db: deps.views.db(ownerOf(def.id), db),
@@ -488,7 +514,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					// An action run inside another is decided like any call: what would need a
 					// suggestion for this actor is refused, never applied directly, so the outer
 					// action is the one that carries the approval.
-					if (!decided) {
+					if (!decided && !(await governedByOwner(def, owner, parsed, trx))) {
 						const decision = await decideInput(def, actor, parsed, null, trx);
 						if (decision.outcome === 'refuse') throw refusalError(decision);
 						if (decision.outcome === 'draft')

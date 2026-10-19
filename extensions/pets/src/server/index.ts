@@ -28,6 +28,7 @@ export default defineExtension({
 	manifest: pkg.famos,
 	messages: { en, tr },
 	migrations,
+	recordIds: ['pet'],
 	ai: { context: aiContext.id, kinds: [treatmentKind] },
 	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext, petsDigest],
 	routes: [listPets, getPet, listTreatments],
