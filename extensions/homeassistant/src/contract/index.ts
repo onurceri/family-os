@@ -261,6 +261,8 @@ export const EntitiesSchema = z.object({
 	entities: z.array(z.object({ entityId: EntityIdSchema, name: z.string(), value: ValueSchema })),
 	/** `too_many`: the home has more than FamilyOS reads at once; the picker takes a typed id. */
 	status: z.enum(['ok', 'too_many', 'not_connected', 'unavailable']),
+	/** More entities matched than the list holds; the picker asks for a narrower search. */
+	more: z.boolean(),
 });
 export type Entities = z.infer<typeof EntitiesSchema>;
 

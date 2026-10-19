@@ -1693,11 +1693,15 @@
 												"not_connected",
 												"unavailable"
 											]
+										},
+										"more": {
+											"type": "boolean"
 										}
 									},
 									"required": [
 										"entities",
-										"status"
+										"status",
+										"more"
 									]
 								}
 							}

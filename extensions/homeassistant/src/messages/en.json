@@ -97,6 +97,7 @@
 	"show_search_hint": "Search by name or by id, for example temperature or light.kitchen.",
 	"show_none_found": "Nothing found. People, their phones and places are not shown from here.",
 	"show_too_many": "Your home has too many entities to list. Type the id of the entity instead, for example sensor.kitchen_temperature.",
+	"show_more_matches": "Showing the first 50. Type more of the name to narrow it.",
 	"show_unavailable": "FamilyOS could not ask Home Assistant. Check the connection above.",
 	"show_id_field": "Entity id",
 	"show_id_error": "Enter the id of an entity, like sensor.kitchen_temperature. People, phones and places cannot be shown.",

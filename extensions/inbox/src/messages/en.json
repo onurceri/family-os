@@ -169,6 +169,8 @@
 	"dismiss_rest_from": "Dismiss the rest of {{group}}",
 	"dismiss_all_from": "Dismiss all from {{group}}",
 	"save_edit_first": "Save or cancel your change first",
+	"dismissed_n_one": "{{count}} dismissed",
+	"dismissed_n_other": "{{count}} dismissed",
 	"added_n_one": "{{count}} added",
 	"added_n_other": "{{count}} added",
 	"added_partial": "{{count}} added, {{failed}} did not work",

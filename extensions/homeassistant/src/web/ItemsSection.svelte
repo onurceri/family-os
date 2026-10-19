@@ -117,7 +117,7 @@
 			const result = await findEntities(query.trim());
 			if (run === searchRun) found = result;
 		} catch {
-			if (run === searchRun) found = { entities: [], status: 'unavailable' };
+			if (run === searchRun) found = { entities: [], status: 'unavailable', more: false };
 		} finally {
 			if (run === searchRun) searching = false;
 		}
@@ -361,6 +361,9 @@
 						/>
 					{/each}
 				</Card>
+				{#if found.more}
+					<p class="text-ink-soft text-[13px]">{t('show_more_matches')}</p>
+				{/if}
 			{/if}
 		{/if}
 		{#if picked || (found && found.status !== 'ok' && typedId.trim())}

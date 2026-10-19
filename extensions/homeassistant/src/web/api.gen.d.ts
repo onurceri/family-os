@@ -1094,6 +1094,7 @@ export interface operations {
                         }[];
                         /** @enum {string} */
                         status: "ok" | "too_many" | "not_connected" | "unavailable";
+                        more: boolean;
                     };
                 };
             };

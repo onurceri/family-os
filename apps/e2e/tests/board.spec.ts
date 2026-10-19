@@ -31,6 +31,10 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 	// Write on the first tile: the tile becomes the paper. Paper 3, until tomorrow.
 	await page.getByRole('button', { name: 'Write a note…' }).click();
 	const composer = page.getByTestId('composer');
+	// An empty note is refused with a reason under the field; the button stays pressable.
+	await expect(composer.getByRole('button', { name: 'Put it up' })).toBeEnabled();
+	await composer.getByRole('button', { name: 'Put it up' }).click();
+	await expect(composer.getByTestId('field-error')).toHaveText('Fill this in');
 	await composer.getByLabel('Your note').fill('Dinner is at 7,\nbring the bread');
 	await composer.getByRole('radio', { name: 'Paper 3' }).check({ force: true });
 	await composer.getByLabel('Stays on the board').selectOption('tomorrow');
@@ -102,6 +106,21 @@ test('a note goes up on the board, changes paper, is seen by the family on Today
 
 	// Someone else's note has no actions for a member; the admin pins it.
 	await expect(eceNote.getByRole('button', { name: 'Actions for this note' })).toHaveCount(0);
+
+	// A member's own note offers no Pin (pinning needs the board's manage capability).
+	await ece.page.getByRole('button', { name: 'Write a note…' }).click();
+	await expect(ece.page.getByTestId('composer-pin')).toHaveCount(0);
+	await ece.page.getByTestId('composer').getByLabel('Your note').fill('Mine');
+	await ece.page.getByTestId('composer').getByRole('button', { name: 'Put it up' }).click();
+	await ece.page
+		.getByTestId('note')
+		.filter({ hasText: 'Mine' })
+		.getByRole('button', { name: 'Actions for this note' })
+		.click();
+	await expect(ece.page.getByRole('button', { name: 'Pin', exact: true })).toHaveCount(0);
+	await ece.page.getByRole('button', { name: 'Take down', exact: true }).click();
+	await ece.page.getByRole('button', { name: 'Tap again to take down' }).click();
+	await expect(ece.page.getByTestId('note').filter({ hasText: 'Mine' })).toHaveCount(0);
 
 	await note.getByRole('button', { name: 'Actions for this note' }).click();
 	await actions.getByRole('button', { name: 'Pin', exact: true }).click();

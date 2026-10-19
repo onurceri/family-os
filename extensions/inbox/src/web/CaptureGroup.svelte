@@ -118,7 +118,9 @@
 		busy = true;
 		try {
 			// Nothing is ticked: "the rest" is everything that is left.
-			await Promise.all((rest.length > 0 ? rest : todo).map((d) => rejectDraft(d.id)));
+			const targets = rest.length > 0 ? rest : todo;
+			await Promise.all(targets.map((d) => rejectDraft(d.id)));
+			app.toast(t('dismissed_n', { count: targets.length }));
 		} catch {
 			app.toast(t('error'));
 		} finally {

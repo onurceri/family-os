@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import { Textarea } from '@famos/ui/textarea';
+	import { fieldAria, FIELD_REASON, FieldError, focusFirstInvalid } from '@famos/ui/famos';
 	import { addDays, formatDate, todayIn } from '@famos/time';
 	import { Check, ImagePlus, X } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -59,11 +60,14 @@
 		if (until === 'pick') return pickedDate || null;
 		return null;
 	});
-	const valid = $derived(
-		text.trim().length > 0 &&
-			text.length <= NOTE_MAX_CHARS &&
-			(until !== 'pick' || (pickedDate !== '' && pickedDate >= today)),
-	);
+	const errors = $derived({
+		...(text.trim().length === 0 && { text: FIELD_REASON.required }),
+		...(text.length > NOTE_MAX_CHARS && { text: FIELD_REASON.tooLong }),
+		...(until === 'pick' &&
+			(pickedDate === '' || pickedDate < today) && { date: FIELD_REASON.date }),
+	} as Record<string, string>);
+	// The button stays pressable; a refused press says why under the field.
+	let showErrors = $state(false);
 
 	function choosePhoto(event: Event) {
 		const file = (event.currentTarget as HTMLInputElement).files?.[0] ?? null;
@@ -80,7 +84,12 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!valid || busy) return;
+		if (busy) return;
+		showErrors = true;
+		if (Object.keys(errors).length) {
+			void focusFirstInvalid(event.currentTarget);
+			return;
+		}
 		busy = true;
 		try {
 			let noteId = note?.id ?? null;
@@ -136,8 +145,11 @@
 			placeholder={t('note_placeholder')}
 			class="text-note-ink placeholder:text-note-ink-soft focus-visible:ring-ring min-h-28 w-full resize-y rounded-sm bg-transparent text-base leading-snug font-semibold focus-visible:ring-2 focus-visible:outline-none"
 			data-testid="composer-text"
+			{...fieldAria(showErrors ? errors.text : undefined, `${id}-text`)}
+			id="{id}-text"
 		></Textarea>
 	</label>
+	<FieldError for="{id}-text" error={showErrors ? errors.text : undefined} />
 
 	<fieldset class="min-w-0">
 		<legend class="text-note-ink-soft mb-1.5 text-xs font-semibold">{t('paper_group')}</legend>
@@ -221,7 +233,9 @@
 				bind:value={pickedDate}
 				class={field}
 				data-testid="composer-date"
+				{...fieldAria(showErrors ? errors.date : undefined, `${id}-date`)}
 			/>
+			<FieldError for="{id}-date" error={showErrors ? errors.date : undefined} />
 		{:else if endsOn}
 			<small class="text-note-ink-soft text-xs"
 				>{formatDate(endsOn, app.dateLocale(), {
@@ -241,7 +255,7 @@
 	{/if}
 
 	<div class="flex flex-wrap gap-2">
-		<Button type="submit" size="lg" disabled={!valid || busy} data-testid="composer-submit"
+		<Button type="submit" size="lg" disabled={busy} data-testid="composer-submit"
 			>{note ? t('save') : t('put_up')}</Button
 		>
 		<Button type="button" size="lg" variant="ghost" class="text-note-ink" onclick={oncancel}

@@ -319,17 +319,16 @@ export const getEntities = defineRoute({
 	response: EntitiesSchema,
 	async handle(ctx, { query }) {
 		const connection = await credentials(ctx);
-		if (!connection) return { entities: [], status: 'not_connected' as const };
+		if (!connection) return { entities: [], status: 'not_connected' as const, more: false };
 		const { status, all } = await listing(ctx, connection.stamp);
 		const needle = query.q?.toLowerCase();
-		const entities = (
-			needle
-				? all.filter((e) => e.entityId.includes(needle) || e.name.toLowerCase().includes(needle))
-				: all
-		)
+		const matched = needle
+			? all.filter((e) => e.entityId.includes(needle) || e.name.toLowerCase().includes(needle))
+			: all;
+		const entities = matched
 			.slice(0, MAX_ENTITIES)
 			.map((e) => ({ ...e, entityId: e.entityId as Entities['entities'][number]['entityId'] }));
-		return { entities, status };
+		return { entities, status, more: matched.length > MAX_ENTITIES };
 	},
 });
 

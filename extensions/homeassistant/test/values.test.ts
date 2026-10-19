@@ -302,8 +302,14 @@ describe('entities', () => {
 		);
 		k.http.serve(`${BASE}/api/states`, { text: JSON.stringify(many) });
 		await connect();
-		expect((await entities()).entities).toHaveLength(50);
-		expect((await entities('sensor 1')).entities.length).toBeLessThanOrEqual(50);
+		const all = await entities();
+		expect(all.entities).toHaveLength(50);
+		expect(all.more).toBe(true);
+		// "Sensor 1" matches 1, 10-19 and 100-119: 31 in all, so nothing is cut.
+		const narrowed = await entities('sensor 1');
+		expect(narrowed.entities).toHaveLength(31);
+		expect(narrowed.more).toBe(false);
+		expect((await entities('sensor')).more).toBe(true);
 	});
 
 	it('is cached for a minute', async () => {
@@ -320,17 +326,17 @@ describe('entities', () => {
 	it('says too_many when the list is bigger than FamilyOS reads', async () => {
 		k.http.serve(`${BASE}/api/states`, new ExternalHttpError('too_large'));
 		await connect();
-		expect(await entities()).toEqual({ entities: [], status: 'too_many' });
+		expect(await entities()).toEqual({ entities: [], status: 'too_many', more: false });
 	});
 
 	it('says unavailable when Home Assistant cannot be asked', async () => {
 		k.http.serve(`${BASE}/api/states`, new ExternalHttpError('http_401'));
 		await connect();
-		expect(await entities()).toEqual({ entities: [], status: 'unavailable' });
+		expect(await entities()).toEqual({ entities: [], status: 'unavailable', more: false });
 	});
 
 	it('makes no request when not connected', async () => {
-		expect(await entities()).toEqual({ entities: [], status: 'not_connected' });
+		expect(await entities()).toEqual({ entities: [], status: 'not_connected', more: false });
 		expect(k.http.requests).toHaveLength(0);
 	});
 });

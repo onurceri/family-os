@@ -169,6 +169,8 @@
 	"dismiss_rest_from": "{{group}} içinden kalanları at",
 	"dismiss_all_from": "{{group}} içindekilerin hepsini at",
 	"save_edit_first": "Önce değişikliğinizi kaydedin ya da vazgeçin",
+	"dismissed_n_one": "{{count}} reddedildi",
+	"dismissed_n_other": "{{count}} reddedildi",
 	"added_n_one": "{{count}} eklendi",
 	"added_n_other": "{{count}} eklendi",
 	"added_partial": "{{count}} eklendi, {{failed}} olmadı",
