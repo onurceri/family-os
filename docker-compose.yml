@@ -1,10 +1,10 @@
-# FamilyOS — `docker compose up -d`, then open http://localhost:3000
+# FamilyOS — `docker compose up -d`, then open the address the log prints (http://localhost:3000/setup?code=…)
+# Update: `docker compose pull && docker compose up -d`. To build from source instead:
+# `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`
 services:
   famos:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    image: familyos:local
+    # The released image (amd64 and arm64). Set FAMOS_VERSION to stay on a version, e.g. 0.1 or 0.1.0.
+    image: ghcr.io/onurceri/familyos:${FAMOS_VERSION:-latest}
     ports:
       - "3000:3000"
     volumes:

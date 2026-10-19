@@ -5,10 +5,13 @@ FamilyOS runs as one Docker container. A Raspberry Pi 4 is enough.
 ## Start it
 
 ```bash
-git clone https://github.com/onurceri/family-os && cd family-os
+mkdir familyos && cd familyos
+curl -fsSLO https://raw.githubusercontent.com/onurceri/family-os/main/docker-compose.yml
 docker compose up -d
 docker compose logs famos
 ```
+
+This downloads the compose file and the released FamilyOS image (for ordinary computers and for a Raspberry Pi). The folder holds only that file; the family's data lives in a Docker volume.
 
 The log prints an address ending in `/setup?code=…`. Open it in a browser.
 
@@ -46,8 +49,21 @@ A new family starts with the calendar, lists, Quick add, the assistant, the boar
 
 ## Update
 
+In the folder with `docker-compose.yml`:
+
 ```bash
-git pull && docker compose up -d --build
+docker compose pull && docker compose up -d
 ```
 
-FamilyOS writes a backup before any update that changes the database, and keeps people signed in.
+FamilyOS writes a backup before any update that changes the database, and keeps people signed in. To stay on a version instead of the newest one, set `FAMOS_VERSION` (for example `FAMOS_VERSION=0.1`, which still gets that version's fixes) in a `.env` file next to `docker-compose.yml`. What each version brings is on the [releases page](https://github.com/onurceri/family-os/releases).
+
+### Building from source
+
+To run your own changes, clone the repository and build the image there:
+
+```bash
+git clone https://github.com/onurceri/family-os && cd family-os
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
+To update a source build: `git pull`, then the same command.

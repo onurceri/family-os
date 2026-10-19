@@ -87,10 +87,16 @@ which FamilyOS shows on the right:
 ## Quick start (Docker Compose)
 
 ```bash
-git clone https://github.com/onurceri/family-os && cd family-os
+mkdir familyos && cd familyos
+curl -fsSLO https://raw.githubusercontent.com/onurceri/family-os/main/docker-compose.yml
 docker compose up -d
 docker compose logs famos
 ```
+
+This pulls the released image (`ghcr.io/onurceri/familyos`, for amd64 and arm64, so a Raspberry Pi
+works too). To update: `docker compose pull && docker compose up -d`. To build from source
+instead, clone the repository and run
+`docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
 
 Open the address the log prints (it ends in `/setup?code=…`), choose a language and create the
 first admin account. The one-time setup code is also stored in the data volume as `setup-code`,

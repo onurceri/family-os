@@ -1,0 +1,8 @@
+# Builds FamilyOS from this checkout instead of pulling the released image:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  famos:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: familyos:local
