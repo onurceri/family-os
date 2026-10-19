@@ -1,5 +1,14 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { defineAction, defineRoute, FamosError, systemActor, TextResponseSchema } from '@famos/sdk';
+import {
+	assertFullSignIn,
+	credentialOwner,
+	defineAction,
+	defineRoute,
+	FamosError,
+	type JobContext,
+	systemActor,
+	TextResponseSchema,
+} from '@famos/sdk';
 import { todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
@@ -50,7 +59,8 @@ export const createFeed = defineAction({
 	// The address shows the household's events to whoever holds it: never for the AI.
 	external: true,
 	async run(uow, input) {
-		if (uow.actor.kind !== 'member') throw new FamosError('forbidden', 'Sign in to create a feed');
+		// The address works anywhere, for months: only a password sign-in may make one, never a PIN.
+		assertFullSignIn(uow.actor);
 		// Your own events need only the right to see the calendar; the whole family's, the right to manage.
 		if (input.scope === 'family') {
 			if (!uow.can(calendarManage.id)) throw new FamosError('forbidden', 'Not allowed');
@@ -169,6 +179,16 @@ export const feedRoute = defineRoute({
 						.executeTakeFirst()
 				: undefined;
 		if (!feed) throw new FamosError('not_found', 'Not found');
+		// The address acts for the member who made it, as they are today: gone, archived or no longer
+		// allowed to see (or, for the whole family's, manage) the calendar, it answers as if unknown.
+		const owner = feed.created_by
+			? await credentialOwner(
+					ctx,
+					feed.created_by,
+					feed.scope === 'family' ? calendarManage.id : calendarView.id,
+				)
+			: null;
+		if (!owner) throw new FamosError('not_found', 'Not found');
 
 		const now = ctx.clock.now();
 		if (feed.last_used_at === null || now - feed.last_used_at >= TOUCH_EVERY_MS)
@@ -208,3 +228,16 @@ export const feedRoute = defineRoute({
 		};
 	},
 });
+
+/**
+ * Stops every address a member made, when their sign-ins end (signed out everywhere, new password,
+ * archived). Core retries it until it succeeds; stopping an address twice changes nothing.
+ */
+export async function endFeedsOf(ctx: JobContext, memberId: string): Promise<void> {
+	await events(ctx.db)
+		.updateTable('calendar_feeds')
+		.set({ revoked_at: ctx.clock.now() })
+		.where('created_by', '=', memberId)
+		.where('revoked_at', 'is', null)
+		.execute();
+}

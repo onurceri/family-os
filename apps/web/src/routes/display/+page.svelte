@@ -83,6 +83,7 @@
 		temperatureUnit: () => me?.temperatureUnit ?? 'celsius',
 		members: () => members,
 		me: () => null,
+		fullSignIn: () => false,
 		can: (capability) => me?.capabilities.includes(capability) ?? false,
 		// A display only looks: it never changes or suggests anything.
 		access: () => 'no',

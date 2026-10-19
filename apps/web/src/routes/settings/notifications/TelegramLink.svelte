@@ -111,7 +111,13 @@
 				{:else}
 					<p class="text-ink-soft text-sm">{t('telegram_link_hint')}</p>
 					<div>
-						<Button disabled={busy} onclick={createCode}>{t('telegram_link_button')}</Button>
+						{#if session.me?.fullSignIn}
+							<Button disabled={busy} onclick={createCode}>{t('telegram_link_button')}</Button>
+						{:else}
+							<p class="text-ink-soft text-sm" data-testid="telegram-password-needed">
+								{t('sign_in_password_for_keys')}
+							</p>
+						{/if}
 					</div>
 				{/if}
 				<p class="text-ink-soft text-xs">{t('telegram_link_privacy')}</p>

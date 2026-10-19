@@ -3,7 +3,7 @@ import { assertRestrictiveDefaults, type CapabilityDefinition } from './capabili
 import type { ExtensionContext } from './context.ts';
 import type { ConversationProvider } from './conversation.ts';
 import type { EventDefinition } from './events.ts';
-import type { AnyJobDefinition } from './jobs.ts';
+import type { AnyJobDefinition, JobContext } from './jobs.ts';
 import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
 import type { MentionKindDefinition } from './mention-kinds.ts';
 import type { ExtensionMessages } from './messages.ts';
@@ -62,6 +62,13 @@ export interface ExtensionDefinition {
 	readonly messages?: ExtensionMessages;
 	/** Optional wiring after all extensions are loaded, e.g. event subscriptions. */
 	register?(ctx: ExtensionContext): void | Promise<void>;
+	/**
+	 * Ends what a member made for use away from a session (an address, a key) when their sign-ins
+	 * end: they signed out everywhere, set a new password or were archived. Core enqueues it in the
+	 * same transaction as that change and the queue retries it until it succeeds, so it must be
+	 * idempotent. It runs even when the extension is turned off.
+	 */
+	endCredentials?(ctx: JobContext, memberId: string): Promise<void>;
 }
 
 export interface AiExtensionHints {
@@ -146,6 +153,7 @@ export function defineExtension(definition: {
 	conversation?: ConversationProvider;
 	messages?: ExtensionMessages;
 	register?(ctx: ExtensionContext): void | Promise<void>;
+	endCredentials?(ctx: JobContext, memberId: string): Promise<void>;
 }): ExtensionDefinition {
 	const manifest = parseManifest(definition.manifest);
 	const { id } = manifest;

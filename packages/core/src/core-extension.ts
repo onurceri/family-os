@@ -17,6 +17,8 @@ import {
 	FamosError,
 	type IdentityAdmin,
 	idSchema,
+	isFullSignIn,
+	type JobContext,
 	SDK_VERSION,
 	subjectOf,
 	type UnitOfWork,
@@ -35,6 +37,7 @@ import { z } from 'zod';
 import type { Access } from './access.ts';
 import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
+import { revokeTokensOf } from './api-tokens.ts';
 import { createAutoApproval } from './auto-approval.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
@@ -452,6 +455,9 @@ export const toDevice = (
 			: null,
 });
 
+/** Ends a member's keys and extension credentials; retried until it succeeds. */
+const END_CREDENTIALS_JOB = 'core.endCredentials';
+
 export interface CoreExtensionDeps {
 	/** Family search: its jobs, the `core.searchFamily` action and routes. */
 	search: Pick<Search, 'jobs' | 'actions' | 'routes'>;
@@ -489,6 +495,10 @@ export interface CoreExtensionDeps {
 	draftNotifyDelayMs: number;
 	/** `db` (a transaction too) as an extension sees it: its own tables. */
 	extensionDb: (extensionId: string, db: DbExecutor) => DbExecutor;
+	/** The context an extension's job runs with. */
+	jobContext: (extensionId: string) => JobContext;
+	/** Enqueues a job through the given executor, so it commits with the caller's transaction. */
+	enqueueIn: (db: DbExecutor, job: string, payload: unknown) => Promise<string>;
 }
 
 /** Compares without an early exit, so timing does not reveal how much of a code matched. */
@@ -640,6 +650,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.set({ archived_at: now, updated_at: now })
 				.where('id', '=', input.memberId)
 				.execute();
+			// Keys and addresses end in this transaction, or not at all.
+			await revokeTokensOf(uow.db, input.memberId, now);
+			await uow.enqueue(END_CREDENTIALS_JOB, { memberId: input.memberId });
 			uow.emit(memberChanged, { memberId: input.memberId, endSessions: true });
 			return toMember(await findMember(uow.db, input.memberId));
 		},
@@ -979,6 +992,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			capabilities: z.array(z.string()),
 			/** How this person can sign in. */
 			signIn: SignInMethodsSchema,
+			/** Signed in with a password (not a PIN): only then may keys, tokens and addresses be made. */
+			fullSignIn: z.boolean(),
 			/** Extensions turned off in Settings → Features; their UI is hidden. */
 			disabledExtensions: z.array(z.string()),
 			/** Whose next thing the hero on Today shows (`core.setMyNextUp`). */
@@ -992,6 +1007,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				...toMember(row),
 				capabilities: [...access.effective(row.role_id)].filter((c) => access.can(actor, c)),
 				signIn,
+				fullSignIn: isFullSignIn(actor),
 				disabledExtensions: [...deps.features().disabled()],
 				nextUp: await readNextUp(ctx.db, row.id),
 			};
@@ -1182,6 +1198,17 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 
 	const MemberParams = z.object({ memberId: MemberIdSchema });
 
+	/**
+	 * Revokes the member's API tokens and enqueues the job that ends the extensions' credentials,
+	 * in one transaction, before their sessions end: if it fails the sign-out does not happen and
+	 * the person tries again, so nothing they meant to stop keeps working.
+	 */
+	const endCredentialsOf = (ctx: ExtensionContext, memberId: string) =>
+		ctx.db.transaction().execute(async (trx) => {
+			await revokeTokensOf(trx, memberId, ctx.clock.now());
+			await deps.enqueueIn(trx, END_CREDENTIALS_JOB, { memberId });
+		});
+
 	/** Signs a member out everywhere and closes their open realtime connections at once. */
 	const endSessionsOf = async (ctx: { events: EventBus }, memberId: string) => {
 		await deps.identity.endSessions(memberId);
@@ -1225,6 +1252,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		response: z.object({ ok: z.literal(true) }),
 		async handle(ctx, { params, body, actor }) {
 			const member = await findMember(ctx.db, params.memberId);
+			// The old password may be known to someone: what it made (keys, addresses) ends with it.
+			await endCredentialsOf(ctx, member.id);
 			await deps.identity.setPasswordLogin({
 				memberId: member.id,
 				...body,
@@ -1247,6 +1276,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		status: 200,
 		async handle(ctx, { actor }) {
 			if (actor.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+			// Keys and calendar addresses are sign-ins too: they end with the sessions.
+			await endCredentialsOf(ctx, actor.memberId);
 			await endSessionsOf(ctx, actor.memberId);
 			return { ok: true as const };
 		},
@@ -1722,6 +1753,20 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		},
 	});
 
+	const endCredentials = defineJob({
+		name: END_CREDENTIALS_JOB,
+		payload: z.object({ memberId: z.string() }),
+		maxAttempts: 10,
+		timeoutMs: 30_000,
+		backoff: (attempt) => Math.min(60_000, 2_000 * 2 ** (attempt - 1)),
+		async handle(ctx, { memberId }) {
+			// Again, in case a token was made between the change and now.
+			await revokeTokensOf(ctx.db, memberId, ctx.clock.now());
+			for (const ext of deps.registry().extensions)
+				await ext.endCredentials?.(deps.jobContext(ext.id), memberId);
+		},
+	});
+
 	const expireDrafts = defineJob({
 		name: EXPIRE_JOB,
 		payload: z.object({}),
@@ -1885,6 +1930,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...autoApproval.jobs,
 			pruneIdempotency,
 			expireDrafts,
+			endCredentials,
 			...deps.search.jobs,
 			...deps.extensionInstall.jobs,
 		],

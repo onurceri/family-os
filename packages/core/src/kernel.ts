@@ -290,6 +290,16 @@ export function createKernel(options: KernelOptions): Kernel {
 		notifications,
 		extensionInstall,
 		extensionDb: (id, db) => views.db(id, db),
+		jobContext: (id) => jobContextFor(id),
+		enqueueIn: async (db, job, payload) => {
+			const def = registry.jobs.get(job);
+			if (!def) throw new Error(`Unknown job "${job}"`);
+			const id = await options.queue.enqueue(db, job, def.payload.parse(payload), {
+				maxAttempts: def.maxAttempts,
+			});
+			worker?.wake();
+			return id;
+		},
 		runner: () => {
 			if (!runner) throw new Error('Kernel not initialised');
 			return runner;
@@ -319,7 +329,6 @@ export function createKernel(options: KernelOptions): Kernel {
 		if (endSessions) {
 			// Removes the sign-in too (password, PIN, sessions): the email can be used again.
 			await options.identity.revokeAll(memberId);
-			await apiTokens.revokeForMember(memberId);
 		}
 	});
 

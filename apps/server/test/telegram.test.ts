@@ -253,8 +253,12 @@ describe('Telegram settings and linking', () => {
 		expect((await call('PUT', '/api/v1/telegram/token', { token: null }, kidCookie)).status).toBe(
 			403,
 		);
-		// …but may link their own account.
-		const own = await call('POST', '/api/v1/telegram/link', undefined, kidCookie);
+		// A PIN is short and works on a shared tablet: it cannot link a chat account that would act
+		// as that person from anywhere. A password sign-in can.
+		const refused = await call('POST', '/api/v1/telegram/link', undefined, kidCookie);
+		expect(refused.status).toBe(403);
+		expect(refused.body.error.message).toBe('Sign in with your password to create keys');
+		const own = await call('POST', '/api/v1/telegram/link', undefined);
 		expect(own.status).toBe(200);
 		expect(own.body.url).toBe(`https://t.me/family_test_bot?start=${own.body.code}`);
 

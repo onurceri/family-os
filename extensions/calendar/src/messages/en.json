@@ -97,6 +97,7 @@
 	"nav_calendars": "Calendars & tags",
 	"calendars_title": "Calendars & tags",
 	"calendars_subtitle": "Other calendars shown next to the family's, and the tags on events.",
+	"feeds_password_needed": "Sign in with your password to create an address. A PIN on a shared device cannot make one.",
 	"feed_add": "Add an address",
 	"feed_scope_me": "My events",
 	"feed_scope_family": "The whole family",

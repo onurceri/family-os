@@ -85,7 +85,7 @@ One device can also send at most 10 wrong PINs a minute, for anyone. After that 
 - On the device itself, **Settings → Family → Devices**, then **Stop using** under **This device**, revokes the device and removes the mark from this browser, the same as **Remove** below: it leaves the list, and everyone who signed in there with a PIN is signed out. The sign-in page then shows only the email form.
 - From any admin's device, tap it under **The family's devices** and press **Remove**, then **Tap again to remove**. It stops working at once and everyone who signed in there with a PIN is signed out. Do this when a tablet is lost, sold or given away.
 
-**Sign out** (in the person menu at the foot of the side bar, or under **More** on a phone) ends your sign-in on this device. **Sign out everywhere** ends it on every phone, tablet and browser.
+**Sign out** (in the person menu at the foot of the side bar, or under **More** on a phone) ends your sign-in on this device. **Sign out everywhere** ends it on every phone, tablet and browser, and also stops the app keys and calendar addresses you made. A new password for you or archiving you does the same.
 
 ## Displays
 

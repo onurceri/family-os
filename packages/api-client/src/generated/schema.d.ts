@@ -10184,6 +10184,7 @@ export interface operations {
                             password: boolean;
                             pin: boolean;
                         };
+                        fullSignIn: boolean;
                         disabledExtensions: string[];
                         /** @enum {string} */
                         nextUp: "family" | "me";

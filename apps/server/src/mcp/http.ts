@@ -103,6 +103,8 @@ export function mountMcp(
 			return fail(403, FORBIDDEN, 'This person may not use API tokens');
 		if (!perToken.hit(principal.token.id))
 			return fail(429, RATE_LIMITED, 'Too many requests; try again in a minute', 60);
+		// Only a permitted use counts as one.
+		await tokens.touch(principal.token.id);
 		principals.set(c.req.raw, principal);
 		return next();
 	});

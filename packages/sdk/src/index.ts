@@ -4,6 +4,7 @@ export * from './agent-tools.ts';
 export * from './capabilities.ts';
 export * from './context.ts';
 export * from './conversation.ts';
+export * from './credentials.ts';
 export * from './digest.ts';
 export * from './draft-subject.ts';
 export * from './errors.ts';

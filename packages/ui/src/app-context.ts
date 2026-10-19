@@ -28,6 +28,11 @@ export interface AppContext {
 	 * (the default) or theirs (`core.setMyNextUp`).
 	 */
 	me(): (PresenterMember & { roleId: string; nextUp: 'family' | 'me' }) | null;
+	/**
+	 * Whether the signed-in member used their password (not a PIN on a family device). Only then
+	 * may they make a key, token or address that works away from this device.
+	 */
+	fullSignIn(): boolean;
 	/** Whether the signed-in member's role grants a capability, e.g. `core.drafts.approve`. */
 	can(capability: string): boolean;
 	/** Family time zone (IANA). */

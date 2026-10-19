@@ -324,3 +324,22 @@ describe('RFC 5545 text', () => {
 		expect(vevents(text)[0]?.getFirstPropertyValue('summary')).toBe(title);
 	});
 });
+
+describe('when a member’s sign-ins end', () => {
+	it('stops their addresses from the queue, and only theirs', async () => {
+		const mine = await feed(mum.actor, { scope: mum.member.id });
+		const theirs = await feed(admin.actor, { scope: 'family' });
+		await k.route('core.signOutEverywhere').call({ actor: mum.actor });
+		// Nothing has run yet: the address works until the job does.
+		await expect(fetchFeed(mine.path)).resolves.toBeDefined();
+		await k.worker.drain();
+		await expect(fetchFeed(mine.path)).rejects.toMatchObject({ code: 'not_found' });
+		await expect(fetchFeed(theirs.path)).resolves.toBeDefined();
+	});
+
+	it('answers 404 at once for an archived owner, before any job runs', async () => {
+		const { path } = await feed(mum.actor, { scope: mum.member.id });
+		await k.runner.invoke('core.archiveMember', { memberId: mum.member.id }, admin.actor);
+		await expect(fetchFeed(path)).rejects.toMatchObject({ code: 'not_found' });
+	});
+});

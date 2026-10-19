@@ -4,7 +4,7 @@ FamilyOS can show your family calendar in the calendar app on your phone, and ca
 
 ## The calendar on your phone
 
-Open **Settings → You → Calendar on my phone**. Under **Calendar on your phone**:
+Open **Settings → You → Calendar on my phone**. Addresses can only be made after signing in with your password, not with a PIN on a shared family device. An address stops working when the person who made it signs out everywhere, gets a new password, is archived or loses the right to see the calendar (for a whole-family address, to manage it). Under **Calendar on your phone**:
 
 1. **What to show:** **My events** or **The whole family**. Only admins see this choice; for everyone else the address shows their own events.
 2. Turn on **Include notes** if you want event notes in your phone too. Titles, times and places are always included.

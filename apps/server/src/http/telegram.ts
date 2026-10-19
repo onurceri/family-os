@@ -6,7 +6,7 @@ import {
 	TokenInputSchema,
 } from '@famos/adapters/telegram';
 import { CORE_CAPABILITIES } from '@famos/core';
-import { type AccessControl, FamosError } from '@famos/sdk';
+import { type AccessControl, assertFullSignIn, FamosError } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
@@ -99,7 +99,12 @@ export function mountTelegramRoutes(
 			...errorResponses,
 		},
 	});
-	app.openapi(createLink, async (c) => c.json(await telegram.createLinkCode(me(c)), 200));
+	app.openapi(createLink, async (c) => {
+		// A linked Telegram account acts for the member from anywhere: a PIN must not link one.
+		const actor = c.get('actor');
+		if (actor) assertFullSignIn(actor);
+		return c.json(await telegram.createLinkCode(me(c)), 200);
+	});
 
 	const unlink = createRoute({
 		...base,

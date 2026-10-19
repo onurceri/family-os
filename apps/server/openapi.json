@@ -17736,6 +17736,9 @@
 												"pin"
 											]
 										},
+										"fullSignIn": {
+											"type": "boolean"
+										},
 										"disabledExtensions": {
 											"type": "array",
 											"items": {
@@ -17761,6 +17764,7 @@
 										"archived",
 										"capabilities",
 										"signIn",
+										"fullSignIn",
 										"disabledExtensions",
 										"nextUp"
 									]

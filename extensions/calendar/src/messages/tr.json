@@ -96,6 +96,7 @@
 	"nav_calendars": "Takvimler ve etiketler",
 	"calendars_title": "Takvimler ve etiketler",
 	"calendars_subtitle": "Aile takviminin yanında gösterilen diğer takvimler ve etkinlik etiketleri.",
+	"feeds_password_needed": "Adres oluşturmak için parolanla giriş yap. Ortak bir cihazdaki PIN ile adres oluşturulamaz.",
 	"feed_add": "Adres ekle",
 	"feed_scope_me": "Benim etkinliklerim",
 	"feed_scope_family": "Tüm aile",

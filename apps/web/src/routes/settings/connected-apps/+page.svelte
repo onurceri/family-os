@@ -44,6 +44,8 @@
 	/** Keys are made only where they can work: when AI apps may connect, or by an admin who can
 	 * turn that on. */
 	const usable = $derived(enabled === true || (enabled === false && isAdmin));
+	/** A key works away from this device for months, so a PIN sign-in cannot make one. */
+	const mayCreate = $derived(session.me?.fullSignIn === true);
 	const endpoint = mcpAddress(window.location.origin);
 	const example = appSettings('other', endpoint, null);
 	/** Other people's tokens that still work (an admin can revoke them). */
@@ -124,7 +126,7 @@
 <Page template="settings">
 	<PageHeader title={t('nav_connected_apps')} subtitle={t('mcp_intro')}>
 		{#snippet actions()}
-			{#if usable}
+			{#if usable && mayCreate}
 				<Button variant="primary" onclick={() => (connecting = true)}
 					><Plus aria-hidden="true" />{t('mcp_add')}</Button
 				>
@@ -147,6 +149,11 @@
 					{/key}
 				</Card>
 			</Section>
+		{/if}
+		{#if usable && !mayCreate}
+			<div data-testid="mcp-password-needed">
+				<Notice tone="info">{t('sign_in_password_for_keys')}</Notice>
+			</div>
 		{/if}
 		{#if enabled === false}
 			<div data-testid="mcp-off">

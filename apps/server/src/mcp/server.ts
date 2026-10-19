@@ -1,6 +1,11 @@
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
 import { aiTables } from '@famos/adapters/llm-aisdk';
-import type { ApiTokenService, AuthenticatedToken, Kernel } from '@famos/core';
+import {
+	type ApiTokenService,
+	type AuthenticatedToken,
+	CORE_CAPABILITIES,
+	type Kernel,
+} from '@famos/core';
 import {
 	type Actor,
 	type AiActionInfo,
@@ -91,7 +96,8 @@ export function offeredTools(
 			info,
 		})),
 	];
-	if (peopleAllowed)
+	// The privacy switch lets people leave the house at all; the token's owner must also be allowed to see them.
+	if (peopleAllowed && kernel.access.memberCan(actor, CORE_CAPABILITIES.membersView.id))
 		tools.push({
 			name: 'family_listPeople',
 			actionId: null,

@@ -37,6 +37,8 @@
 	let fresh = $state<{ id: string; url: string; webcal: string } | null>(null);
 
 	const mayShareFamily = $derived(app.can('calendar.manage'));
+	/** An address works anywhere for months, so a PIN sign-in cannot make one. */
+	const mayCreate = $derived(app.fullSignIn());
 
 	async function load() {
 		try {
@@ -131,6 +133,11 @@
 	<div class="grid gap-3">
 		<p class="text-ink-soft max-w-prose px-1 text-sm">{t('feeds_intro')}</p>
 		<Notice tone="warn">{t('feeds_warning')}</Notice>
+		{#if !mayCreate}
+			<Notice tone="info"
+				><span data-testid="feeds-password-needed">{t('feeds_password_needed')}</span></Notice
+			>
+		{/if}
 		<!-- People who come here to add a holiday or school calendar learn where that is done. -->
 		<p class="text-ink-soft max-w-prose px-1 text-[13px]" data-testid="feeds-outside">
 			{#if mayShareFamily}
@@ -171,9 +178,11 @@
 	{#if loaded}
 		<Section label={t('feeds_list_title')} count={feeds.length}>
 			{#snippet actions()}
-				<Button variant="ghost" size="sm" onclick={startAdd}
-					><Plus class="size-4" aria-hidden="true" />{t('feed_add')}</Button
-				>
+				{#if mayCreate}
+					<Button variant="ghost" size="sm" onclick={startAdd}
+						><Plus class="size-4" aria-hidden="true" />{t('feed_add')}</Button
+					>
+				{/if}
 			{/snippet}
 			{#if feeds.length > 0}
 				<Card rows>

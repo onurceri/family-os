@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	assertFullSignIn,
 	type Clock,
 	type DbExecutor,
 	FamosError,
@@ -60,9 +61,11 @@ export interface ApiTokenService {
 	revokeForMember(memberId: string): Promise<void>;
 	/**
 	 * The token behind a secret, or null when it is unknown, revoked, expired, or its member is
-	 * archived. Updates `lastUsedAt` at most hourly.
+	 * archived. Changes nothing: a use that is then refused must not look like a use.
 	 */
 	authenticate(secret: string | null | undefined): Promise<AuthenticatedToken | null>;
+	/** Records a permitted use (`lastUsedAt`), at most hourly. */
+	touch(tokenId: string): Promise<void>;
 	/** The ids a token was shown as these handles (handles it never saw are missing). */
 	resolveHandles(tokenId: string, handles: readonly string[]): Promise<Map<string, string>>;
 	/** Remembers handles shown to a token, so a later request can use them. */
@@ -97,6 +100,30 @@ const view = (row: ApiTokenRow): ApiTokenView => ({
 	revokedAt: row.revoked_at,
 });
 
+/**
+ * Revokes every token of a member and forgets the handles they were shown. Idempotent, and takes
+ * the executor so a sign-out, a new password or an archive can do it in their own transaction.
+ */
+export async function revokeTokensOf(db: DbExecutor, memberId: string, now: number): Promise<void> {
+	const tokens = db.withTables<CoreTables>();
+	const revoked = await tokens
+		.updateTable('core_api_tokens')
+		.set({ revoked_at: now })
+		.where('member_id', '=', memberId)
+		.where('revoked_at', 'is', null)
+		.returning('id')
+		.execute();
+	if (revoked.length > 0)
+		await tokens
+			.deleteFrom('core_api_token_handles')
+			.where(
+				'token_id',
+				'in',
+				revoked.map((r) => r.id),
+			)
+			.execute();
+}
+
 export function createApiTokenService(deps: {
 	db: DbExecutor;
 	clock: Clock;
@@ -111,7 +138,9 @@ export function createApiTokenService(deps: {
 
 	return {
 		async create(actor, input) {
-			const memberId = member(actor);
+			// A token works away from this device for up to a year: a PIN must never mint one.
+			assertFullSignIn(actor);
+			const memberId = actor.memberId;
 			if (!deps.access().can(actor, CORE_CAPABILITIES.mcpUse.id))
 				throw new FamosError('forbidden', 'Not allowed to create API tokens');
 			const name = input.name.trim().slice(0, 60);
@@ -183,23 +212,7 @@ export function createApiTokenService(deps: {
 		},
 
 		async revokeForMember(memberId) {
-			const now = deps.clock.now();
-			const revoked = await tokens()
-				.updateTable('core_api_tokens')
-				.set({ revoked_at: now })
-				.where('member_id', '=', memberId)
-				.where('revoked_at', 'is', null)
-				.returning('id')
-				.execute();
-			if (revoked.length > 0)
-				await tokens()
-					.deleteFrom('core_api_token_handles')
-					.where(
-						'token_id',
-						'in',
-						revoked.map((r) => r.id),
-					)
-					.execute();
+			await revokeTokensOf(deps.db, memberId, deps.clock.now());
 		},
 
 		async authenticate(secret) {
@@ -221,15 +234,22 @@ export function createApiTokenService(deps: {
 				.where('archived_at', 'is', null)
 				.executeTakeFirst();
 			if (!owner) return null;
-			if (row.last_used_at === null || now - row.last_used_at >= SEEN_RESOLUTION_MS) {
-				await tokens()
-					.updateTable('core_api_tokens')
-					.set({ last_used_at: now })
-					.where('id', '=', row.id)
-					.execute();
-				row.last_used_at = now;
-			}
 			return { token: view(row), member: { id: owner.id, roleId: owner.role_id } };
+		},
+
+		async touch(tokenId) {
+			const now = deps.clock.now();
+			await tokens()
+				.updateTable('core_api_tokens')
+				.set({ last_used_at: now })
+				.where('id', '=', tokenId)
+				.where((eb) =>
+					eb.or([
+						eb('last_used_at', 'is', null),
+						eb('last_used_at', '<=', now - SEEN_RESOLUTION_MS),
+					]),
+				)
+				.execute();
 		},
 
 		async resolveHandles(tokenId, handles) {

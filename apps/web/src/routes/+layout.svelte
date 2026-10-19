@@ -154,6 +154,7 @@
 		timeZone: () => family.timeZone,
 		onEvent,
 		draftPresenter: (actionId) => contributions.presenters.get(actionId),
+		fullSignIn: () => session.me?.fullSignIn === true,
 		can: (capability) => session.can(capability),
 		slots: (name) =>
 			enabledOnly(
