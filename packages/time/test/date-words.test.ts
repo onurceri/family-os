@@ -6,6 +6,7 @@ import {
 	clockTimes,
 	correctWeekdays,
 	dateWords,
+	dayNamedIn,
 	isUncertainDate,
 	weekdayMismatches,
 } from '../src/index.ts';
@@ -193,5 +194,29 @@ describe('clockTimes', () => {
 
 	it('leaves out bare hours, dates and impossible times', () => {
 		expect(clockTimes('at 6 on 20.10.2026, 25:00 or 13pm')).toEqual([]);
+	});
+});
+
+describe('dayNamedIn', () => {
+	it('reads the one day a quote names, by weekday, date or distance', () => {
+		expect(dayNamedIn('swim bag for thursday pls', words)).toEqual({ weekday: 4 });
+		expect(dayNamedIn('dentist on 2 nov', words)).toEqual({ day: 2, month: 11 });
+		expect(dayNamedIn('bins tomorrow', words)).toEqual({ inDays: 1 });
+		expect(dayNamedIn('Perşembe için yüzme çantası', words)).toEqual({ weekday: 4 });
+	});
+
+	it('prefers the written date over the weekday that comes with it', () => {
+		expect(dayNamedIn('Thursday 22 Oct at 5pm', words)).toEqual({ day: 22, month: 10 });
+	});
+
+	it('names no day when the quote names none or two', () => {
+		expect(dayNamedIn('swim bag pls', words)).toBeNull();
+		expect(dayNamedIn('swim bag for thursday or friday', words)).toBeNull();
+		expect(dayNamedIn('thursday, not tomorrow', words)).toBeNull();
+		expect(dayNamedIn('1 Nov or 2 Nov', words)).toBeNull();
+	});
+
+	it('does not read the digits of a clock time as a day', () => {
+		expect(dayNamedIn('swimming at 16:30 on friday', words)).toEqual({ weekday: 5 });
 	});
 });

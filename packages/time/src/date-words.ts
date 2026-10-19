@@ -471,3 +471,42 @@ export function clockTimes(text: string): string[] {
 		add(Number(m[1]), 0, m[2]);
 	return out;
 }
+
+/** The parts of the one day a text names, as a model would have read them (`DayParts`). */
+export interface NamedDay {
+	day?: number;
+	month?: number;
+	year?: number;
+	/** 1 = Monday … 7 = Sunday. */
+	weekday?: number;
+	inDays?: number;
+}
+
+/**
+ * The one day a text names in its own words ("by thursday", "on 2 Nov", "tomorrow"), or null when
+ * it names none or more than one: two days in one quote are two things, and nothing may choose
+ * between them. A written date wins over the weekday that comes with it ("Thursday 22 Oct").
+ * Words and order come from the language catalogs and the family's region.
+ */
+export function dayNamedIn(
+	text: string,
+	words: DateWords,
+	order: DateOrder = 'DMY',
+): NamedDay | null {
+	const dates = writtenDates(text, words, order);
+	const distinct = new Map(dates.map((d) => [`${d.year ?? ''}-${d.month}-${d.day}`, d]));
+	if (distinct.size > 1) return null;
+	const [date] = distinct.values();
+	if (date) return date;
+	const weekdays = namedWeekdays(text, words);
+	const distances = words.daysFromToday.filter(
+		(group) =>
+			group.words.length > 0 &&
+			new RegExp(`(?<!\\p{L})(${anyOf(group.words)})(?!\\p{L})`, 'iu').test(text),
+	);
+	if (weekdays.length + distances.length !== 1) return null;
+	const [weekday] = weekdays;
+	if (weekday !== undefined) return { weekday };
+	const inDays = namedDistance(text, words);
+	return inDays === null ? null : { inDays };
+}

@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.12",
+	"sdk": "0.8.13",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -148,6 +148,7 @@
 			"dateLocale",
 			"dateWords",
 			"dayBounds",
+			"dayNamedIn",
 			"daysAround",
 			"defaultHourCycle",
 			"defaultTemperatureUnit",
