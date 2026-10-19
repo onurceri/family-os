@@ -18,6 +18,14 @@ import { discoverSourceExtensions } from './support/extensions.ts';
 const LIST = JSON.parse(
 	readFileSync(join(import.meta.dirname, '../../../extensions.json'), 'utf8'),
 ) as Available['list'];
+
+/** A bundled extension's own version: the product's releases change it, so tests never spell it. */
+const versionOf = (id: string): string =>
+	(
+		JSON.parse(
+			readFileSync(join(import.meta.dirname, `../../../extensions/${id}/package.json`), 'utf8'),
+		) as { version: string }
+	).version;
 const workspace = await discoverSourceExtensions();
 
 function available(): Available {
@@ -315,7 +323,7 @@ describe('purging an uninstalled extension', () => {
 		).toBe(summary.migrations);
 		expect((await readExtensionState(fourth.runtime.handle.db))?.known.pets).toEqual({
 			tablePrefix: 'pets_',
-			version: '0.1.0',
+			version: versionOf('pets'),
 		});
 	});
 });

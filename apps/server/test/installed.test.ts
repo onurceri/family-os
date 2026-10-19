@@ -28,6 +28,14 @@ import { discoverSourceExtensions } from './support/extensions.ts';
 const LIST = JSON.parse(
 	readFileSync(join(import.meta.dirname, '../../../extensions.json'), 'utf8'),
 ) as Available['list'];
+
+/** A bundled extension's own version: the product's releases change it, so tests never spell it. */
+const versionOf = (id: string): string =>
+	(
+		JSON.parse(
+			readFileSync(join(import.meta.dirname, `../../../extensions/${id}/package.json`), 'utf8'),
+		) as { version: string }
+	).version;
 const ALWAYS = [...LIST.always].sort();
 /** What a new family starts with: the core set and the defaults (photos and weather). */
 const FRESH = [...LIST.always, ...LIST.default].sort();
@@ -180,7 +188,10 @@ describe('starting with the installed set', () => {
 		const state = await readExtensionState(runtime.handle.db);
 		expect(state?.installed).toEqual(FRESH);
 		expect(Object.keys(state?.known ?? {}).sort()).toEqual(FRESH);
-		expect(state?.known.records).toEqual({ tablePrefix: 'records_', version: '0.1.0' });
+		expect(state?.known.records).toEqual({
+			tablePrefix: 'records_',
+			version: versionOf('records'),
+		});
 	});
 
 	it('keeps all twelve for a family that upgrades', async () => {
@@ -288,7 +299,7 @@ describe('starting with the installed set', () => {
 		expect(third.selection.refused).toEqual([
 			{
 				id: 'pets',
-				version: '0.1.0',
+				version: versionOf('pets'),
 				reason: expect.stringMatching(/9999_future.*newer version/),
 				code: 'newer_data',
 			},
