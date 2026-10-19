@@ -2,6 +2,36 @@
 	"format": 1,
 	"extensions": [
 		{
+			"id": "ambient",
+			"version": "0.1.0",
+			"sdk": "^0.8.0",
+			"url": "ambient/ambient-0.1.0.famext",
+			"sha256": "187f8f46dc8e16e617c4d14c6508081eafdc672a45b4f8e131b467a0f1643ab2",
+			"size": 115850,
+			"labels": {
+				"en": {
+					"name": "Photos and weather",
+					"description": "The weather on Today, and family photos and weather on family displays."
+				},
+				"tr": {
+					"name": "Fotoğraflar ve hava durumu",
+					"description": "Bugün sayfasında hava durumu; aile ekranlarında fotoğraflar ve hava durumu."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [
+						"api.open-meteo.com",
+						"geocoding-api.open-meteo.com"
+					],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
+		{
 			"id": "homeassistant",
 			"version": "0.2.0",
 			"sdk": "^0.8.0",
