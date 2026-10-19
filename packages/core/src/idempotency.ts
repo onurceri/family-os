@@ -1,4 +1,5 @@
 import {
+	type Actor,
 	type DbExecutor,
 	defineJob,
 	ERROR_HTTP_STATUS,
@@ -6,6 +7,7 @@ import {
 	FamosError,
 	type FamosErrorCode,
 	isFamosError,
+	principalOf,
 } from '@famos/sdk';
 import { z } from 'zod';
 import type { CoreTables } from './tables.ts';
@@ -27,8 +29,37 @@ export const isStoredError = (error: unknown): error is FamosError =>
 
 export interface IdempotencyRequest {
 	key: string;
-	memberId: string;
+	/** Who asked: the key space is per principal, so one key from two callers never meets. */
+	principal: string;
 }
+
+/**
+ * The principal whose keys the runner keeps: a member, or an AI agent together with the member
+ * it works for (a source's id alone could be shared by several members). Displays and the system
+ * send no request keys.
+ */
+export function idempotencyPrincipal(actor: Actor): string | null {
+	switch (actor.kind) {
+		case 'member':
+			return principalOf(actor);
+		case 'ai':
+			return actor.onBehalfOf
+				? `${principalOf(actor)}/member:${actor.onBehalfOf}`
+				: principalOf(actor);
+		default:
+			return null;
+	}
+}
+
+const MEMBER_PREFIX = 'member:';
+
+/**
+ * The owner half of the primary key. A member keeps the column they always had (the member's
+ * id, which is also how rows from before principals are found); everyone else is their
+ * principal, which can never equal a member id.
+ */
+const ownerOf = (principal: string) =>
+	principal.startsWith(MEMBER_PREFIX) ? principal.slice(MEMBER_PREFIX.length) : principal;
 
 /** Thrown inside a transaction when the key turned out to be stored already; nothing was done. */
 export class IdempotentReplay extends Error {
@@ -45,7 +76,7 @@ export type StoredResult =
 
 const table = (db: DbExecutor) => db.withTables<CoreTables>();
 
-/** The stored answer for this member's key, if any. A key used for another action is refused. */
+/** The stored answer for this principal's key, if any. A key used for another action is refused. */
 export async function findStored(
 	db: DbExecutor,
 	request: IdempotencyRequest,
@@ -54,7 +85,7 @@ export async function findStored(
 	const row = await table(db)
 		.selectFrom('core_idempotency')
 		.select(['action_id', 'status', 'response'])
-		.where('member_id', '=', request.memberId)
+		.where('member_id', '=', ownerOf(request.principal))
 		.where('key', '=', request.key)
 		.executeTakeFirst();
 	if (!row) return null;
@@ -121,7 +152,8 @@ async function insert(
 		.insertInto('core_idempotency')
 		.values({
 			key: request.key,
-			member_id: request.memberId,
+			member_id: ownerOf(request.principal),
+			principal: request.principal,
 			action_id: actionId,
 			status,
 			response: JSON.stringify(body),

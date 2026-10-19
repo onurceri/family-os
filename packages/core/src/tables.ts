@@ -191,7 +191,13 @@ export type ApiTokenHandlesTable = {
 /** The stored result of a request with an `Idempotency-Key`. */
 export type IdempotencyTable = {
 	key: string;
+	/**
+	 * The owner half of the primary key: the member's id for a member, the principal itself for
+	 * anyone else, so the two never meet.
+	 */
 	member_id: string;
+	/** Who asked (`principalOf`, with the member an AI works for); null on rows from before it. */
+	principal: string | null;
 	action_id: string;
 	/** HTTP status the first answer had (200, or a stored 400/403/404). */
 	status: number;

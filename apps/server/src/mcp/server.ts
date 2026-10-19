@@ -4,6 +4,7 @@ import {
 	type ApiTokenService,
 	type AuthenticatedToken,
 	CORE_CAPABILITIES,
+	IDEMPOTENCY_KEY,
 	type Kernel,
 } from '@famos/core';
 import {
@@ -194,12 +195,31 @@ export async function createServerFor(
 						}
 					: { readOnlyHint: true, openWorldHint: false },
 			},
-			async (args: unknown) => {
+			async (args: unknown, context) => {
 				const started = kernel.ctx.clock.now();
 				const table: StableHandleTable = createStableHandles(principal.token.id);
 				// Handles from earlier requests: only those this token was shown resolve.
 				const known = await tokens.resolveHandles(principal.token.id, handlesIn(args));
 				for (const [handle, id] of known) table.preload(handle, id);
+
+				// A client may send `Idempotency-Key` with a call that changes something; a repeat
+				// returns the first answer instead of proposing again.
+				const header = draft ? context.http?.req?.headers.get('idempotency-key') : null;
+				const key = header && IDEMPOTENCY_KEY.test(header) ? header : undefined;
+				if (header && !key) {
+					return {
+						content: [
+							{
+								type: 'text' as const,
+								text: asData(
+									tool.name,
+									'The Idempotency-Key header must be 1-100 characters: letters, digits, _ or -.',
+								),
+							},
+						],
+						isError: true,
+					};
+				}
 
 				let text: string;
 				let ok: boolean;
@@ -218,6 +238,7 @@ export async function createServerFor(
 					ok = true;
 				} else {
 					const outcome = await runAgentTool({
+						...(key && { idempotencyKey: key }),
 						actions: kernel.ctx.actions,
 						actor,
 						table,

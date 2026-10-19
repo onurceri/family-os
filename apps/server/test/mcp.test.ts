@@ -747,6 +747,38 @@ describe('tools', () => {
 		});
 	});
 
+	it('proposes once for a repeated Idempotency-Key, and refuses a malformed one', async () => {
+		const { admin } = await family();
+		const event = (title: string) =>
+			legacyCall('calendar_createEvent', {
+				title,
+				date: '2026-10-20',
+				allDay: true,
+				memberIds: [],
+				tags: [],
+			});
+		const drafts = async () =>
+			(await runtime.handle.db
+				.selectFrom('core_drafts' as never)
+				.selectAll()
+				.execute()) as unknown[];
+		const headers = { 'idempotency-key': 'retry_1' };
+		const first = await rpc(admin.secret, event('Dentist'), { headers });
+		const again = await rpc(admin.secret, event('Dentist'), { headers });
+		expect(first.body.result.content[0].text).toContain('"status":"drafted"');
+		expect(again.body.result.content[0].text).toBe(first.body.result.content[0].text);
+		expect(await drafts()).toHaveLength(1);
+		// Without a key two calls are two suggestions, as before.
+		await rpc(admin.secret, event('Dentist'));
+		await rpc(admin.secret, event('Dentist'));
+		expect(await drafts()).toHaveLength(3);
+		const bad = await rpc(admin.secret, event('Dentist'), {
+			headers: { 'idempotency-key': 'not valid!' },
+		});
+		expect(bad.body.result.isError).toBe(true);
+		expect(await drafts()).toHaveLength(3);
+	});
+
 	it('tells the agent which event is already there for the person to move instead', async () => {
 		const { adminId, admin } = await family();
 		const made = await runtime.kernel.runner.invoke(

@@ -59,6 +59,7 @@ import {
 	findStored,
 	type IdempotencyRequest,
 	IdempotentReplay,
+	idempotencyPrincipal,
 	isStoredError,
 	storeError,
 	storeResult,
@@ -74,9 +75,9 @@ export interface InvokeOptions {
 	/** Metadata stored on the draft if the action ends up needing approval. */
 	draft?: DraftMeta;
 	/**
-	 * A client-chosen request key (members only). The same key for the same action
-	 * returns the stored result without running anything again; the key is stored in the
-	 * action's own transaction.
+	 * A client-chosen request key (a member or an AI agent; keys are kept per caller). The same
+	 * key for the same action returns the stored result without running anything again; the key
+	 * is stored in the action's own transaction.
 	 */
 	idempotencyKey?: string;
 	/** Called when the result came from a stored key instead of a new run. */
@@ -579,11 +580,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		actor: Actor,
 		options: InvokeOptions = {},
 	): Promise<ActionResult<O>> {
-		const self = selfOf(actor);
-		if (self === null || !options.idempotencyKey) {
+		const principal = idempotencyPrincipal(actor);
+		if (principal === null || !options.idempotencyKey) {
 			return invokeOnce(actionId, rawInput, actor, options, null);
 		}
-		const request: IdempotencyRequest = { key: options.idempotencyKey, memberId: self };
+		const request: IdempotencyRequest = { key: options.idempotencyKey, principal };
 		const replay = (stored: Awaited<ReturnType<typeof findStored>>) => {
 			if (stored?.kind === 'error') throw stored.error;
 			options.onReplay?.();

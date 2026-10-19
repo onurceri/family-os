@@ -20,6 +20,7 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 	core_idempotency: {
 		key: true,
 		member_id: true,
+		principal: true,
 		action_id: true,
 		status: true,
 		response: true,

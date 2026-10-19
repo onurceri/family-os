@@ -277,7 +277,14 @@ export interface ActionInvoker {
 		actionId: string,
 		input: unknown,
 		actor: Actor,
-		options?: { draft?: DraftMeta },
+		options?: {
+			draft?: DraftMeta;
+			/**
+			 * A request key from a member or an AI agent: the same key from the same caller for the
+			 * same action returns the first result without running again.
+			 */
+			idempotencyKey?: string;
+		},
 	): Promise<ActionResult<O>>;
 	/**
 	 * Actions marked `ai`, for the AI pipeline. Actions of areas that are off for the AI never

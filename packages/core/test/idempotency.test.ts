@@ -1,12 +1,35 @@
-import { FamosError, isFamosError } from '@famos/sdk';
+import {
+	type Actor,
+	defineAction,
+	defineCapability,
+	FamosError,
+	isFamosError,
+	type MemberId,
+} from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import type { CoreTables } from '../src/tables.ts';
 import { notesExtension } from './fixtures.ts';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
+
+// An action the AI may propose, so an agent and a member can send the same key to it.
+const jotEdit = defineCapability({ id: 'jots.edit', label: 'jots:cap', level: 'edit' });
+const addJot = defineAction({
+	id: 'jots.addJot',
+	title: 'Add a jot',
+	input: z.object({ body: z.string().min(1) }),
+	output: z.object({}),
+	approval: { unless: jotEdit.id },
+	ai: { description: 'Adds a jot.' },
+	async run() {
+		return {};
+	},
+});
+const jots = defineTestExtension({ id: 'jots', actions: [addJot], capabilities: [jotEdit] });
 
 let k: TestKernel;
 beforeEach(async () => {
-	k = await createTestKernel({ extensions: [notesExtension] });
+	k = await createTestKernel({ extensions: [notesExtension, jots] });
 });
 afterEach(() => k.close());
 
@@ -102,7 +125,7 @@ describe('idempotency keys', () => {
 		expect(second).toEqual(first);
 	});
 
-	it('ignores keys for actors other than members', async () => {
+	it('keeps no keys for the system or a display', async () => {
 		await k.runner.invoke(
 			'notes.addNote',
 			{ body: 'x' },
@@ -110,6 +133,71 @@ describe('idempotency keys', () => {
 			{ idempotencyKey: 'sys' },
 		);
 		expect(await keyRows()).toHaveLength(0);
+	});
+
+	it('keeps a member and an AI agent working for that member apart, though the key is the same', async () => {
+		const { actor, member } = await k.member('member');
+		const agent: Actor = {
+			kind: 'ai',
+			mode: 'agent',
+			source: 'mcp',
+			sourceId: 'api_token_1',
+			onBehalfOf: member.id as MemberId,
+			roleId: member.roleId,
+		};
+		const options = { idempotencyKey: 'shared' };
+		const own = await k.runner.invoke('jots.addJot', { body: 'mine' }, actor, options);
+		let replays = 0;
+		// The agent's call with the member's key is a new call, not the member's answer replayed.
+		const theirs = await k.runner.invoke('jots.addJot', { body: 'agent' }, agent, {
+			...options,
+			onReplay: () => replays++,
+		});
+		expect(replays).toBe(0);
+		expect(theirs.status).toBe('drafted');
+		expect(theirs).not.toEqual(own);
+		expect(own.status).toBe('applied');
+		// Each is replayed to itself only.
+		expect(await k.runner.invoke('jots.addJot', { body: 'mine' }, actor, options)).toEqual(own);
+		expect(await k.runner.invoke('jots.addJot', { body: 'agent' }, agent, options)).toEqual(theirs);
+		const rows = await keyRows();
+		expect(rows.map((r) => r.principal).sort()).toEqual(
+			[`member:${member.id}`, `ai:mcp:api_token_1/member:${member.id}`].sort(),
+		);
+	});
+
+	it('keeps two agents of the same source apart, and one agent per member it works for', async () => {
+		const { member: a } = await k.member('member');
+		const { member: b } = await k.member('member');
+		const agent = (who: typeof a, sourceId: string): Actor => ({
+			kind: 'ai',
+			mode: 'agent',
+			source: 'mcp',
+			sourceId,
+			onBehalfOf: who.id as MemberId,
+			roleId: who.roleId,
+		});
+		const options = { idempotencyKey: 'same' };
+		await k.runner.invoke('jots.addJot', { body: '1' }, agent(a, 't1'), options);
+		await k.runner.invoke('jots.addJot', { body: '2' }, agent(a, 't2'), options);
+		await k.runner.invoke('jots.addJot', { body: '3' }, agent(b, 't1'), options);
+		expect(await keyRows()).toHaveLength(3);
+	});
+
+	it('answers a member from a key stored before principals existed', async () => {
+		const { actor } = await k.member('member');
+		const first = await k.runner.invoke('notes.addNote', { body: 'old' }, actor, {
+			idempotencyKey: 'legacy',
+		});
+		await k.ctx.db
+			.withTables<CoreTables>()
+			.updateTable('core_idempotency')
+			.set({ principal: null })
+			.execute();
+		expect(
+			await k.runner.invoke('notes.addNote', { body: 'old' }, actor, { idempotencyKey: 'legacy' }),
+		).toEqual(first);
+		expect(await count()).toBe(1);
 	});
 
 	it('deletes keys older than 7 days with the daily job, which schedules itself again', async () => {

@@ -467,6 +467,8 @@ export async function runAgentTool(call: {
 	input: unknown;
 	/** The metadata of the draft this call proposes (draft tools only). */
 	draft?: DraftMeta;
+	/** The client's request key: a repeated call with it returns the first result. */
+	idempotencyKey?: string;
 	/** The draft's name as a suggestion in the person's words ("Add a task"), for the answer. */
 	draftTitle: string;
 	/**
@@ -538,12 +540,10 @@ export async function runAgentTool(call: {
 			),
 		);
 	try {
-		const result: ActionResult<unknown> = await call.actions.invoke(
-			actionId,
-			input,
-			call.actor,
-			call.kind === 'draft' && call.draft ? { draft: call.draft } : undefined,
-		);
+		const result: ActionResult<unknown> = await call.actions.invoke(actionId, input, call.actor, {
+			...(call.kind === 'draft' && call.draft && { draft: call.draft }),
+			...(call.idempotencyKey && { idempotencyKey: call.idempotencyKey }),
+		});
 		if (result.status === 'drafted') {
 			if (target) call.targets?.set(target.id, target.said);
 			const named = result.subject ? `${call.draftTitle}: ${result.subject}` : call.draftTitle;

@@ -387,10 +387,21 @@ export const m0005_draft_quote: Migration = {
 	},
 };
 
+/**
+ * Idempotency answers know who asked, not only which member: an AI agent's key must never
+ * replay a member's answer. Older rows have no principal and count as the member's.
+ */
+export const m0006_idempotency_principal: Migration = {
+	async up(db) {
+		await db.schema.alterTable('core_idempotency').addColumn('principal', 'text').execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
 	'0003_ai_mode': m0003_ai_mode,
 	'0004_file_grants': m0004_file_grants,
 	'0005_draft_quote': m0005_draft_quote,
+	'0006_idempotency_principal': m0006_idempotency_principal,
 };

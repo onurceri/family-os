@@ -25,7 +25,11 @@ afterEach(async () => {
 });
 
 /** The migrations that release had: everything but what this change adds. */
-const NEW_MIGRATIONS = new Set(['core/0004_file_grants', 'core/0005_draft_quote']);
+const NEW_MIGRATIONS = new Set([
+	'core/0004_file_grants',
+	'core/0005_draft_quote',
+	'core/0006_idempotency_principal',
+]);
 
 const FEED = 'https://school.example/cal/private.ics?key=SECRET';
 const ICS = [
@@ -163,7 +167,11 @@ it('keeps the drafts made before drafts kept the words they rest on', async () =
 	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
 		scope,
 		migrations: Object.fromEntries(
-			Object.entries(migrations).filter(([name]) => `${scope}/${name}` !== 'core/0005_draft_quote'),
+			Object.entries(migrations).filter(
+				([name]) =>
+					`${scope}/${name}` !== 'core/0005_draft_quote' &&
+					`${scope}/${name}` !== 'core/0006_idempotency_principal',
+			),
 		),
 	}));
 	await runMigrations(handle.db, previous);
@@ -180,4 +188,31 @@ it('keeps the drafts made before drafts kept the words they rest on', async () =
 	expect(handle.sqlite.prepare('select id, input, quote from core_drafts').all()).toEqual([
 		{ id: 'draft_1', input: '{"title":"Milk"}', quote: null },
 	]);
+});
+
+it('keeps the request keys stored before they knew who asked', async () => {
+	const dataDir = await mkdtemp(join(tmpdir(), 'famos-upgrade-'));
+	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
+	runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true });
+	const { handle, kernel } = runtime;
+	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
+		scope,
+		migrations: Object.fromEntries(
+			Object.entries(migrations).filter(
+				([name]) => `${scope}/${name}` !== 'core/0006_idempotency_principal',
+			),
+		),
+	}));
+	await runMigrations(handle.db, previous);
+	handle.sqlite
+		.prepare(
+			`insert into core_idempotency (key, member_id, action_id, status, response, created_at)
+			values ('k1', 'member_1', 'x.y', 200, '{"status":"applied"}', 1)`,
+		)
+		.run();
+
+	expect(await migrate(runtime)).toBeGreaterThan(0);
+	expect(
+		handle.sqlite.prepare('select key, member_id, principal from core_idempotency').all(),
+	).toEqual([{ key: 'k1', member_id: 'member_1', principal: null }]);
 });

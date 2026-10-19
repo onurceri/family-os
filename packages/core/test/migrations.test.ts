@@ -150,6 +150,23 @@ it('upgrades the audit log and drafts so a draft can become another action', asy
 	expect(index.rows.map((r) => r.name)).toContain('core_audit_log_at_idx');
 });
 
+/** Keys stored before principals existed keep working and stay the member's. */
+it('adds a principal to idempotency answers and keeps the old rows', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const before = Object.fromEntries(
+		Object.entries(coreMigrations).filter(([name]) => name !== '0006_idempotency_principal'),
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: before }]);
+	await sql`insert into core_idempotency (key, member_id, action_id, status, response, created_at)
+		values ('k', 'member_a', 'x.y', 200, '{}', 1)`.execute(db);
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+	const rows = await sql<{
+		member_id: string;
+		principal: string | null;
+	}>`select member_id, principal from core_idempotency`.execute(db);
+	expect(rows.rows).toEqual([{ member_id: 'member_a', principal: null }]);
+});
+
 /** AI actors stored before they said how they work get the mode their source had. */
 it('gives stored AI actors their mode and marks memories the AI proposed', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
