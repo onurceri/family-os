@@ -220,6 +220,27 @@ export interface ActionRunner {
 /** What `passedCheck` needs of a draft. */
 export type PassedFacts = Pick<DraftRow, 'action_id' | 'status' | 'input' | 'edited_input'>;
 
+/** The value a mark points at: a field of the input, or a part of one (`items.0.title`). */
+function fieldOf(input: unknown, mark: string): unknown {
+	let at = input;
+	for (const part of mark.split('.')) {
+		if (at === null || typeof at !== 'object') return undefined;
+		at = (at as Record<string, unknown>)[part];
+	}
+	return at;
+}
+
+/** Whether two values are the same JSON, whatever the order of their keys. */
+function sameValue(a: unknown, b: unknown): boolean {
+	const stable = (value: unknown): string =>
+		JSON.stringify(value, (_key, v: unknown) =>
+			v && typeof v === 'object' && !Array.isArray(v)
+				? Object.fromEntries(Object.entries(v).toSorted(([x], [y]) => x.localeCompare(y)))
+				: v,
+		) ?? 'undefined';
+	return stable(a) === stable(b);
+}
+
 function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: string): z.infer<S> {
 	const result = schema.safeParse(value);
 	if (!result.success)
@@ -864,10 +885,21 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			);
 		const def = getAction(draft.action_id);
 		const parsed = parseOrThrow(def.input, input, `input for ${def.id}`);
+		// A field a person changed is no longer a guess: they looked at it. Marks on the fields
+		// they left alone stay.
+		const before = def.input.safeParse(readStoredInput(def, draft.edited_input ?? draft.input));
+		const marks: string[] = draft.uncertain_fields ? JSON.parse(draft.uncertain_fields) : [];
+		const kept = marks.filter(
+			(mark) => !before.success || sameValue(fieldOf(before.data, mark), fieldOf(parsed, mark)),
+		);
 		await uow.db
 			.withTables<CoreTables>()
 			.updateTable('core_drafts')
-			.set({ edited_input: JSON.stringify(parsed), updated_at: uow.clock.now() })
+			.set({
+				edited_input: JSON.stringify(parsed),
+				uncertain_fields: kept.length > 0 ? JSON.stringify(kept) : null,
+				updated_at: uow.clock.now(),
+			})
 			.where('id', '=', draftId)
 			.where('status', '=', 'pending')
 			.execute();

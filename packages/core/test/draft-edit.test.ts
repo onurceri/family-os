@@ -87,6 +87,30 @@ const aiFor = (who: Who, mode: 'share' | 'conversation' = 'share'): Actor => ({
 });
 
 describe('core.editDraft', () => {
+	it('drops the "check this" mark of a field a person changed, and keeps the others', async () => {
+		const result = await k.runner.invoke('shelf.add', { name: 'lamp', count: 24 }, aiFor(kid), {
+			draft: { uncertainFields: ['count', 'name'] },
+		});
+		const id = (result as { draftId: string }).draftId;
+		const marks = async () => (await list(admin)).find((d) => d.id === id)?.uncertainFields;
+		expect(await marks()).toEqual(['count', 'name']);
+
+		// Saved with nothing changed: still guesses.
+		await edit(admin, id, { name: 'lamp', count: 24 });
+		expect(await marks()).toEqual(['count', 'name']);
+
+		// The person fixed the count and left the name.
+		await edit(admin, id, { name: 'lamp', count: 23 });
+		expect(await marks()).toEqual(['name']);
+
+		// Put back to what the AI said: the person looked at it, so the mark does not return.
+		await edit(admin, id, { name: 'lamp', count: 24 });
+		expect(await marks()).toEqual(['name']);
+
+		await edit(admin, id, { name: 'big lamp', count: 24 });
+		expect(await marks()).toEqual([]);
+	});
+
 	it('stores the edit, so a reload and a second approver see and apply it', async () => {
 		const id = await propose(kid);
 		await edit(admin, id, { name: 'big lamp', count: 2 });
