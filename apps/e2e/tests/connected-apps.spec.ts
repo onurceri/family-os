@@ -52,7 +52,8 @@ test('an admin adds an app, sees its key once, and revokes it; a member has no s
 
 	// Revoking ends the app: its row goes from the list.
 	await page.goto('/settings/connected-apps');
-	await page.getByText('Home Assistant').first().click();
+	await page.getByRole('button', { name: /Home Assistant/ }).click();
+	await expect(page.getByTestId('app-panel')).toBeVisible();
 	await page.getByRole('button', { name: 'Revoke app' }).click();
 	await page.getByRole('button', { name: 'Tap again to revoke' }).click();
 	await expect(page.getByText('No apps yet')).toBeVisible();
