@@ -53,7 +53,8 @@ if (existsSync('extensions.json') && !version.includes('-')) {
 }
 for (const [file, text] of changes) writeFileSync(file, text);
 git('add', ...changes.map(([file]) => file));
-git('commit', '-m', `chore(release): ${version}`);
+// The first release may already carry its version: then the tag goes on the commit as it is.
+if (git('diff', '--cached', '--name-only')) git('commit', '-m', `chore(release): ${version}`);
 git('tag', '-a', `v${version}`, '-m', `FamilyOS ${version}`);
 console.log(`Tagged v${version}. Check the notes, then push:\n`);
 console.log(execFileSync('node', ['scripts/release-notes.mjs', version], { encoding: 'utf8' }));

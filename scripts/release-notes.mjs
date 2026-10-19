@@ -63,7 +63,8 @@ export function parseCorrection(message) {
 
 /**
  * Groups user-visible commits into Markdown; docs, tests and chores are left out. `first` marks
- * the first release, which has no earlier version to compare with.
+ * the first release, which has no earlier version to compare with, so it lists no breaking
+ * changes.
  *
  * Each entry is a message or `{ sha, message }`, newest first (git log order). A later commit
  * can replace an earlier commit's line with `Release-note-for` and `Release-note` footers; the
@@ -90,6 +91,13 @@ export function renderNotes(version, entries, date = new Date(), { first = false
 		const security = c.type === 'fix' && c.scope === 'security';
 		const line = `- ${c.scope && !security ? `**${c.scope}:** ` : ''}${c.subject}`;
 		if (c.breaking) {
+			// A first release breaks nothing: there is no earlier version to break. Its feature
+			// or fix still counts.
+			if (first) {
+				if (c.type === 'feat' || c.type === 'fix')
+					groups.get(security ? 'security' : c.type)?.push(line);
+				continue;
+			}
 			// Each breaking change of a commit gets a line of its own.
 			const lines = c.breakingNotes.map((note) => `${line} — ${note}`);
 			groups.get('breaking').push(...(lines.length ? lines : [line]));

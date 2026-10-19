@@ -129,6 +129,37 @@ describe('release notes', () => {
 		);
 	});
 
+	it('lists no breaking changes in the first release, only what they brought', () => {
+		const date = new Date('2026-10-07T12:00:00Z');
+		expect(
+			renderNotes(
+				'0.1.0',
+				[
+					'feat!: own texts per extension\n\nBREAKING CHANGE: catalogs moved',
+					'fix(calendar)!: feeds refresh\n\nBREAKING CHANGE: enter the address again',
+					'refactor!: drop the old loader',
+				],
+				date,
+				{ first: true },
+			),
+		).toBe(
+			[
+				'## 0.1.0 (2026-10-07)',
+				'',
+				'First release.',
+				'',
+				'### New',
+				'',
+				'- own texts per extension',
+				'',
+				'### Fixed',
+				'',
+				'- **calendar:** feeds refresh',
+				'',
+			].join('\n'),
+		);
+	});
+
 	it('marks the first release, with or without user-visible commits', () => {
 		const date = new Date('2026-10-07T12:00:00Z');
 		expect(renderNotes('0.1.0', ['Initial commit'], date, { first: true })).toBe(

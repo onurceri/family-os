@@ -43,6 +43,19 @@ describe('release in a fresh repository', () => {
 	});
 	afterEach(() => rmSync(repo, { recursive: true, force: true }));
 
+	it('tags the first release on the current commit when the version is already set', () => {
+		for (const app of ['server', 'web'])
+			writeFileSync(
+				join(repo, 'apps', app, 'package.json'),
+				`{\n\t"name": "${app}",\n\t"version": "0.1.0"\n}\n`,
+			);
+		commit('chore: start at 0.1.0');
+		node('scripts/release.mjs', '0.1.0');
+		expect(git('tag', '--list')).toBe('v0.1.0');
+		expect(git('log', '--format=%s')).toBe('chore: start at 0.1.0\nInitial commit');
+		expect(git('rev-list', '-n', '1', 'v0.1.0')).toBe(git('rev-parse', 'HEAD'));
+	});
+
 	it('tags the first release and says so in its notes', () => {
 		const out = node('scripts/release.mjs', '0.1.0');
 		expect(git('tag', '--list')).toBe('v0.1.0');
