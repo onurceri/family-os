@@ -113,6 +113,16 @@ Home Assistant knows where the people of the house are, from their phones (its a
 
 **The assistant does not see it.** FamilyOS's assistant and AI apps connected to FamilyOS ([MCP](mcp.md)) are never told where anyone is.
 
+## Notifications on your phone
+
+FamilyOS can send its notifications to the Home Assistant app on a member's phone, next to the other ways it tells people. It sends them through your Home Assistant, with the same token as the rest, so Home Assistant needs the app set up on that phone first.
+
+1. **An admin picks the phone.** In **Settings → Family → Home Assistant**, tap a linked member in **People**. Under **Notifications**, Home Assistant's phones are listed, and the one that looks like this person's own is marked **Suggested**. Choose it, or **None**, then **Save**. Only linked members can have a phone.
+2. **Send a test.** In the same panel, **Send a test** sends a short text and shows how it went: "Sent: check the phone", "This phone is no longer in Home Assistant" (it was removed there, so choose another), "Home Assistant refused the token" or "Could not reach Home Assistant".
+3. **Each member switches it on.** Notifications in the Home Assistant app are off until the member turns them on, kind by kind, under **Settings → Notifications**. Quiet hours and the other choices there apply as for every way of being notified. A member who is not linked yet sees **Home Assistant app** there with a note that an admin can link them.
+
+**Where the texts go**: to your Home Assistant, and from there through Home Assistant's own push service to the phone. FamilyOS does not send them anywhere else. Home Assistant's address must be the **IP address** (`http://192.168.1.20:8123`) or an `https` address: a name ending in `.local`, like `homeassistant.local`, does not work from FamilyOS.
+
 ## Not possible yet
 
 - **Home Assistant's assistant (Assist)** cannot connect to FamilyOS's AI door ([MCP](mcp.md)) yet, because Home Assistant connects only with a sign-in method that FamilyOS does not offer. Other AI apps work today; see [Bring your own agent (MCP)](mcp.md).

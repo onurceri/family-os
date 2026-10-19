@@ -65,6 +65,16 @@ export type HomeAssistantTables = {
 		level: SharingLevel;
 		/** 1: family displays granted presence show it too (the member's own choice). */
 		on_displays: number;
+		/**
+		 * The `notify` service of the member's phone in Home Assistant (`mobile_app_alex_phone`), set
+		 * by an admin; null until then.
+		 */
+		notify_service: string | null;
+		/**
+		 * How the last send to that service went: `ok`, `missing` (Home Assistant does not have it),
+		 * and, from a test only, `refused` (the token) and `unreachable`; null when never tried.
+		 */
+		notify_status: string | null;
 		created_at: number;
 		updated_at: number;
 	};
@@ -151,6 +161,18 @@ export const migrations: Migrations = {
 				.createIndex('homeassistant_switches_item_at')
 				.on('homeassistant_switches')
 				.columns(['item_id', 'at'])
+				.execute();
+		},
+	},
+	'0006_notify': {
+		async up(db) {
+			await db.schema
+				.alterTable('homeassistant_people')
+				.addColumn('notify_service', 'text')
+				.execute();
+			await db.schema
+				.alterTable('homeassistant_people')
+				.addColumn('notify_status', 'text')
 				.execute();
 		},
 	},

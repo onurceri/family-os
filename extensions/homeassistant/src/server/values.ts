@@ -54,6 +54,8 @@ interface Memory {
 		all: Listed[];
 		persons: Persons['persons'];
 	}> | null;
+	/** The `notify` services Home Assistant offered, by the connection they were read for. */
+	services: Cached<{ status: 'ok' | 'unavailable'; names: string[] }> | null;
 	/** By who asks (a display sees fewer people), each with its own key. */
 	presence: Map<string, Cached<PresenceList>>;
 	/** Rounds in flight, so concurrent callers share one. */
@@ -83,6 +85,7 @@ export function memoryOf(ctx: ExtensionContext): Memory {
 		memory = {
 			values: null,
 			entities: null,
+			services: null,
 			presence: new Map(),
 			inflight: new Map(),
 			settlingUntil: 0,

@@ -12,6 +12,7 @@ import {
 	LinkPersonInputSchema,
 	type MySharing,
 	MySharingSchema,
+	NotifyStatusSchema,
 	type PersonLink,
 	PersonLinkSchema,
 	PersonLinksSchema,
@@ -50,11 +51,13 @@ const OWN_CHOICES = 'core.notifications.receive';
 /** The most answers of `GET /presence` kept at once (one per kind of viewer, in practice). */
 const PRESENCE_KEPT = 8;
 
-const toLink = (row: Row): PersonLink => ({
+export const toLink = (row: Row): PersonLink => ({
 	memberId: row.member_id,
 	personEntity: row.person_entity as PersonLink['personEntity'],
 	level: row.level,
 	onDisplays: row.on_displays === 1,
+	notifyService: row.notify_service,
+	notifyStatus: NotifyStatusSchema.safeParse(row.notify_status).data ?? null,
 });
 
 export const loadPeople = (db: UnitOfWork['db']) =>
@@ -91,11 +94,13 @@ export const linkPerson = defineAction({
 		if (current?.person_entity === input.personEntity) return toLink(current);
 		const now = uow.clock.now();
 		// Someone else in Home Assistant: what the member chose was about the other one, so it
-		// starts again from nothing.
+		// starts again from nothing, and so does the phone texts went to.
 		const fresh = {
 			person_entity: input.personEntity,
 			level: 'none' as const,
 			on_displays: 0,
+			notify_service: null,
+			notify_status: null,
 			updated_at: now,
 		};
 		if (current)

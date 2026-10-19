@@ -4,6 +4,7 @@ import type {
 	Entities,
 	Item,
 	MySharing,
+	NotifyTargets,
 	Operation,
 	PersonLink,
 	Persons,
@@ -107,3 +108,22 @@ export const loadHistory = async (query: {
 	limit?: number;
 }): Promise<SwitchHistory> =>
 	unwrap(await api.GET('/api/v1/homeassistant/switches', { params: { query } }));
+
+/** Home Assistant's notify services, the member's own phones first. */
+export const loadNotifyTargets = async (memberId: string): Promise<NotifyTargets> =>
+	unwrap(
+		await api.GET('/api/v1/homeassistant/notify-targets', { params: { query: { memberId } } }),
+	);
+
+/** Chooses the phone a member's texts go to (or none). */
+export async function setNotifyTarget(input: {
+	memberId: string;
+	service: string | null;
+}): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.setNotifyTarget', { body: input }));
+}
+
+/** Sends a short text to the member's phone; the row says how it went when the job is done. */
+export async function testNotify(memberId: string): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.testNotify', { body: { memberId } }));
+}

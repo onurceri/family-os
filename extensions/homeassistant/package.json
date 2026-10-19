@@ -1,13 +1,13 @@
 {
 	"name": "@famos/ext-homeassistant",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"famos": {
 		"id": "homeassistant",
-		"version": "0.2.0",
-		"sdk": "^0.8.0",
+		"version": "0.3.0",
+		"sdk": "^0.8.12",
 		"capabilities": [
 			"homeassistant.view",
 			"homeassistant.presence",

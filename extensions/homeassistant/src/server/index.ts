@@ -25,6 +25,13 @@ import {
 import { getSwitchHistory } from './history.ts';
 import { addItem, listItems, moveItem, removeItem, renameItem, setItemControl } from './items.ts';
 import {
+	getNotifyTargets,
+	homeassistantChannel,
+	setNotifyTarget,
+	testNotify,
+	testNotifyJob,
+} from './notify.ts';
+import {
 	getMySharing,
 	getPresence,
 	linkPerson,
@@ -41,7 +48,8 @@ import { getEntities, getPersons, getValues } from './values.ts';
  * address and a long-lived access token (sealed) and reads what the family chose to show. It
  * switches only the items the family allowed, for the people allowed to, and only through the
  * services of `CONTROLS`; displays and the AI never switch anything. Who is home is shown only as
- * each person chooses.
+ * each person chooses. Members can also be texted in the Home Assistant app, through a notification
+ * channel of the extension.
  */
 export default defineExtension({
 	manifest: pkg.famos,
@@ -60,8 +68,11 @@ export default defineExtension({
 		linkPerson,
 		unlinkPerson,
 		setMySharing,
+		setNotifyTarget,
+		testNotify,
 	],
-	jobs: [checkJob, switchJob],
+	jobs: [checkJob, switchJob, testNotifyJob],
+	channels: [homeassistantChannel],
 	routes: [
 		getConnection,
 		testConnection,
@@ -72,6 +83,7 @@ export default defineExtension({
 		listPeople,
 		getMySharing,
 		getPresence,
+		getNotifyTargets,
 		getSwitchHistory,
 	],
 	events: [

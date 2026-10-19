@@ -296,12 +296,35 @@ export const SetMySharingInputSchema = z.strictObject({
 	onDisplays: z.boolean(),
 });
 
+/**
+ * A service of Home Assistant's `notify` domain, without the domain (`mobile_app_alex_phone`).
+ * The address of a send is built from it, so it is one word of lower-case letters, digits and
+ * underscores and nothing else.
+ */
+export const NOTIFY_SERVICE_PATTERN = /^[a-z0-9_]+$/;
+export const NotifyServiceSchema = z.string().min(1).max(100).regex(NOTIFY_SERVICE_PATTERN);
+
+/** How the last send to a member's phone went; `refused` and `unreachable` only come from a test. */
+export const NOTIFY_STATUSES = ['ok', 'missing', 'refused', 'unreachable'] as const;
+export const NotifyStatusSchema = z.enum(NOTIFY_STATUSES);
+export type NotifyStatus = z.infer<typeof NotifyStatusSchema>;
+
+export const SetNotifyTargetInputSchema = z.object({
+	memberId: MemberIdSchema,
+	/** Null: texts do not go to Home Assistant for this member. */
+	service: NotifyServiceSchema.nullable(),
+});
+export const TestNotifyInputSchema = z.object({ memberId: MemberIdSchema });
+
 /** One link, as the admin sees it: the person's choice is shown, never changed, there. */
 export const PersonLinkSchema = z.object({
 	memberId: MemberIdSchema,
 	personEntity: PersonEntitySchema,
 	level: SharingLevelSchema,
 	onDisplays: z.boolean(),
+	/** Where this member's texts go in Home Assistant, or null. */
+	notifyService: NotifyServiceSchema.nullable(),
+	notifyStatus: NotifyStatusSchema.nullable(),
 });
 export type PersonLink = z.infer<typeof PersonLinkSchema>;
 export const PersonLinksSchema = z.object({ links: z.array(PersonLinkSchema) });
@@ -345,5 +368,17 @@ export const PresenceListSchema = z.object({
 	status: z.enum(VALUES_STATUSES),
 });
 export type PresenceList = z.infer<typeof PresenceListSchema>;
+
+/** A service Home Assistant offers for texts; `suggested` when its name matches the person's phone. */
+export const NotifyTargetSchema = z.object({
+	service: NotifyServiceSchema,
+	suggested: z.boolean(),
+});
+export const NotifyTargetsQuerySchema = z.object({ memberId: MemberIdSchema.optional() });
+export const NotifyTargetsSchema = z.object({
+	targets: z.array(NotifyTargetSchema),
+	status: z.enum(['ok', 'not_connected', 'unavailable']),
+});
+export type NotifyTargets = z.infer<typeof NotifyTargetsSchema>;
 
 export const peopleChangedPayload = z.object({});

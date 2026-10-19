@@ -5,6 +5,7 @@ import { migrations } from '../src/server/store.ts';
 
 /** What the release before who-is-home had. */
 const {
+	'0006_notify': _notify,
 	'0003_people': _people,
 	'0004_control': _control,
 	'0005_switches': _switches,
@@ -40,7 +41,12 @@ it('adds the people to a home connected before, keeping what it shows', async ()
 });
 
 it('keeps what a home showed before switching existed, switchable by nobody and asking first', async () => {
-	const { '0004_control': _control, '0005_switches': _switches, ...previous } = migrations;
+	const {
+		'0006_notify': _notify,
+		'0004_control': _control,
+		'0005_switches': _switches,
+		...previous
+	} = migrations;
 	const { db } = openDatabase({ path: ':memory:' });
 	await runMigrations(db, [{ scope: 'homeassistant', migrations: previous }]);
 	await sql`insert into homeassistant_items (id, entity_id, label, position, created_at, updated_at)
@@ -51,4 +57,26 @@ it('keeps what a home showed before switching existed, switchable by nobody and 
 	const items = await sql<{ label: string; control: number; confirm: number }>`
 		select label, control, confirm from homeassistant_items`.execute(db);
 	expect(items.rows).toEqual([{ label: 'Front door', control: 0, confirm: 1 }]);
+});
+
+it('adds a phone for texts to the links of 0.2.0, with nothing chosen and nothing tried', async () => {
+	const { '0006_notify': _notify, ...v020 } = migrations;
+	const { db } = openDatabase({ path: ':memory:' });
+	await runMigrations(db, [{ scope: 'homeassistant', migrations: v020 }]);
+	await sql`insert into homeassistant_people (member_id, person_entity, level, on_displays, created_at, updated_at)
+		values ('member_1', 'person.alex', 'home', 1, 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'homeassistant', migrations }]);
+
+	const rows = await sql<{
+		level: string;
+		on_displays: number;
+		notify_service: string | null;
+		notify_status: string | null;
+	}>`select level, on_displays, notify_service, notify_status from homeassistant_people`.execute(
+		db,
+	);
+	expect(rows.rows).toEqual([
+		{ level: 'home', on_displays: 1, notify_service: null, notify_status: null },
+	]);
 });

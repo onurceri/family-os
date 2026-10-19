@@ -744,9 +744,16 @@ describe('HTTP API', () => {
 
 		const prefs = await call('GET', '/api/v1/core/notifications/preferences', undefined, cookie);
 		// Web Push and Telegram exist but nobody has registered a device or linked an account, so they are not offered.
+		// The Home Assistant app is an extension's channel: it says who can link them.
 		expect(prefs.body.channels).toEqual([
 			{ id: 'webpush', label: 'Telefon bildirimleri', available: false },
 			{ id: 'telegram', label: 'Telegram', available: false },
+			{
+				id: 'homeassistant',
+				label: 'Home Assistant uygulaması',
+				available: false,
+				hint: 'Bir yönetici sizi Home Assistant uygulamanıza bağlayabilir',
+			},
 		]);
 		expect(prefs.body.kinds).toEqual([
 			{

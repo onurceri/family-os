@@ -72,7 +72,14 @@ describe('linking', () => {
 		const made = await link(alex.memberId, 'person.alex');
 		expect(made).toMatchObject({ status: 'applied' });
 		expect(await links()).toEqual([
-			{ memberId: alex.memberId, personEntity: 'person.alex', level: 'none', onDisplays: false },
+			{
+				memberId: alex.memberId,
+				personEntity: 'person.alex',
+				level: 'none',
+				onDisplays: false,
+				notifyService: null,
+				notifyStatus: null,
+			},
 		]);
 		expect(routeOf('homeassistant.listPeople')?.requires).toBe('homeassistant.manage');
 		expect(routeOf('homeassistant.listPersons')?.requires).toBe('homeassistant.manage');

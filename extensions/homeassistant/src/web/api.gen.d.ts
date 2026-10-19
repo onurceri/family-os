@@ -157,6 +157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/homeassistant/notify-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The notify services Home Assistant has, a member's own phones first (read live, cached for a minute) */
+        get: operations["homeassistant.listNotifyTargets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/homeassistant/switches": {
         parameters: {
             query?: never;
@@ -372,6 +389,40 @@ export interface paths {
         put?: never;
         /** Choose what FamilyOS shows about where I am */
         post: operations["homeassistant.setMySharing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/actions/homeassistant.setNotifyTarget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Choose the phone a member's texts go to in Home Assistant */
+        post: operations["homeassistant.setNotifyTarget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/actions/homeassistant.testNotify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test text to a member's phone through Home Assistant */
+        post: operations["homeassistant.testNotify"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1313,6 +1364,9 @@ export interface operations {
                             /** @enum {string} */
                             level: "none" | "home" | "place";
                             onDisplays: boolean;
+                            notifyService: string | null;
+                            /** @enum {string|null} */
+                            notifyStatus: "ok" | "missing" | "refused" | "unreachable" | null;
                         }[];
                     };
                 };
@@ -1597,6 +1651,143 @@ export interface operations {
                                 name: string;
                             };
                             since: number | null;
+                        }[];
+                        /** @enum {string} */
+                        status: "ok" | "not_connected" | "unavailable";
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "homeassistant.listNotifyTargets": {
+        parameters: {
+            query?: {
+                memberId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The notify services Home Assistant has, a member's own phones first (read live, cached for a minute) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        targets: {
+                            service: string;
+                            suggested: boolean;
                         }[];
                         /** @enum {string} */
                         status: "ok" | "not_connected" | "unavailable";
@@ -3274,6 +3465,9 @@ export interface operations {
                             /** @enum {string} */
                             level: "none" | "home" | "place";
                             onDisplays: boolean;
+                            notifyService: string | null;
+                            /** @enum {string|null} */
+                            notifyStatus: "ok" | "missing" | "refused" | "unreachable" | null;
                         };
                     } | {
                         /** @enum {string} */
@@ -3578,6 +3772,309 @@ export interface operations {
                             /** @enum {string} */
                             level: "none" | "home" | "place";
                             onDisplays: boolean;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "homeassistant.setNotifyTarget": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    memberId: string;
+                    service: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            memberId: string;
+                            personEntity: string;
+                            /** @enum {string} */
+                            level: "none" | "home" | "place";
+                            onDisplays: boolean;
+                            notifyService: string | null;
+                            /** @enum {string|null} */
+                            notifyStatus: "ok" | "missing" | "refused" | "unreachable" | null;
+                        };
+                    } | {
+                        /** @enum {string} */
+                        status: "drafted";
+                        draftId: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "homeassistant.testNotify": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
+                "idempotency-key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    memberId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Applied, or stored as a draft for approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "applied";
+                        output: {
+                            /** @enum {boolean} */
+                            ok: true;
                         };
                     } | {
                         /** @enum {string} */
