@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Card, ConfirmButton, Row, Section, SidePanel } from '@famos/ui/famos';
+	import {
+		Card,
+		ConfirmButton,
+		FIELD_REASON,
+		FieldError,
+		fieldAria,
+		focusFirstInvalid,
+		Row,
+		Section,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight } from '@lucide/svelte';
@@ -32,18 +42,27 @@
 	let busy = $state(false);
 	let failed = $state(false);
 	let formEl = $state<HTMLFormElement>();
+	// Why Save is refused, shown after the first press; the button itself stays pressable.
+	let showErrors = $state(false);
+	const nameError = $derived(editName.trim() ? undefined : FIELD_REASON.name);
 
 	function startEdit(tag: Tag) {
 		editing = tag.name;
 		editName = tag.name;
 		editColor = tag.color;
 		failed = false;
+		showErrors = false;
 	}
 	const current = $derived(tags.find((x) => x.name === editing));
 
 	async function save(event: SubmitEvent) {
 		event.preventDefault();
 		if (editing === null) return;
+		showErrors = true;
+		if (nameError) {
+			void focusFirstInvalid(formEl);
+			return;
+		}
 		busy = true;
 		failed = false;
 		try {
@@ -104,7 +123,7 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('save')}
-	saveDisabled={busy || !editName.trim()}
+	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
 	onclose={() => (editing = null)}
 	dirty={current !== undefined && (editName !== current.name || editColor !== current.color)}
@@ -135,7 +154,13 @@
 		{/if}
 		<div class="grid gap-1.5">
 			<Label for="tag-name">{t('tag_name')}</Label>
-			<Input id="tag-name" bind:value={editName} required maxlength={MAX_TAG_LENGTH} />
+			<Input
+				id="tag-name"
+				bind:value={editName}
+				maxlength={MAX_TAG_LENGTH}
+				{...fieldAria(showErrors ? nameError : undefined, 'tag-name')}
+			/>
+			<FieldError for="tag-name" error={showErrors ? nameError : undefined} />
 			<p class="text-ink-soft text-[13px]">{t('tag_rename_hint')}</p>
 		</div>
 		<ColorChoice bind:value={editColor} name="tag-color" legend={t('sub_color')} />

@@ -17,8 +17,11 @@
 	let message = $state<string | null>(null);
 
 	async function save() {
-		if (!place) return;
 		message = null;
+		if (!place) {
+			message = t('weather_need_place');
+			return;
+		}
 		busy = true;
 		try {
 			await saveWeather({ enabled: true, place });
@@ -42,7 +45,7 @@
 			{t('weather_place', { name: place.name })}
 		</p>{/if}
 	{#if message}<p class="text-attention text-sm font-semibold" role="alert">{message}</p>{/if}
-	<Button type="button" disabled={busy || !place} onclick={save}>{t('setup_place_save')}</Button>
+	<Button type="button" disabled={busy} onclick={save}>{t('setup_place_save')}</Button>
 	<Button type="button" variant="ghost" disabled={busy} onclick={done}
 		>{t('setup_place_skip')}</Button
 	>

@@ -3,6 +3,10 @@
 	import {
 		Card,
 		ConfirmButton,
+		FIELD_REASON,
+		FieldError,
+		fieldAria,
+		focusFirstInvalid,
 		MemberChips,
 		Notice,
 		Row,
@@ -68,6 +72,7 @@
 		memberIds = [];
 		reminders = allowLocal = false;
 		failed = false;
+		showErrors = false;
 		panel = { id: null, host: '' };
 	}
 
@@ -80,14 +85,27 @@
 		reminders = sub.reminders;
 		allowLocal = sub.allowLocal;
 		failed = false;
+		showErrors = false;
 		panel = { id: sub.id, host: sub.host };
 	}
 
 	const editing = $derived(panel?.id ? subs.find((s) => s.id === panel?.id) : undefined);
 
+	// Why Save is refused, shown after the first press; the button itself stays pressable.
+	let showErrors = $state(false);
+	const errors = $derived({
+		...(name.trim() ? {} : { name: FIELD_REASON.name }),
+		...(!panel?.id && !url.trim() ? { url: FIELD_REASON.required } : {}),
+	} as Record<string, string>);
+
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!panel) return;
+		showErrors = true;
+		if (Object.keys(errors).length) {
+			void focusFirstInvalid(formEl);
+			return;
+		}
 		busy = true;
 		failed = false;
 		try {
@@ -219,7 +237,7 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={panel?.id ? t('sub_save') : t('sub_add')}
-	saveDisabled={busy || !name.trim() || (!panel?.id && !url.trim())}
+	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
 	onclose={() => (panel = null)}
 	dirty={panel !== null && (name !== (editing?.name ?? '') || url !== '')}
@@ -250,24 +268,26 @@
 			<Input
 				id="sub-name"
 				bind:value={name}
-				required
 				maxlength={80}
 				placeholder={t('sub_name_placeholder')}
+				{...fieldAria(showErrors ? errors.name : undefined, 'sub-name')}
 			/>
+			<FieldError for="sub-name" error={showErrors ? errors.name : undefined} />
 		</div>
 		<div class="grid gap-1.5">
 			<Label for="sub-url">{panel?.id ? t('sub_new_url') : t('sub_url')}</Label>
 			<Input
 				id="sub-url"
 				bind:value={url}
-				required={!panel?.id}
 				maxlength={2000}
 				inputmode="url"
 				autocomplete="off"
 				autocapitalize="off"
 				spellcheck={false}
 				placeholder="https://…"
+				{...fieldAria(showErrors ? errors.url : undefined, 'sub-url')}
 			/>
+			<FieldError for="sub-url" error={showErrors ? errors.url : undefined} />
 			<p class="text-ink-soft text-[13px]">
 				{panel?.id ? t('sub_new_url_hint', { host: panel.host }) : t('sub_url_hint')}
 			</p>

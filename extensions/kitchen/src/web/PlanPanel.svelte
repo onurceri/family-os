@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { formatDate, todayIn } from '@famos/time';
-	import { Card, Notice, SidePanel } from '@famos/ui/famos';
+	import {
+		Card,
+		FIELD_REASON,
+		FieldError,
+		fieldAria,
+		focusFirstInvalid,
+		Notice,
+		SidePanel,
+	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { CalendarDays, CookingPot, PencilLine } from '@lucide/svelte';
@@ -98,11 +106,28 @@
 	// A short title (a sheet's bar is narrow); the day is the first line of the panel.
 	const heading = $derived(recipe || !date ? t('plan_this') : t('plan_meal'));
 
+	// Why Save is refused, shown after the first press; the button itself stays pressable.
+	let showErrors = $state(false);
+	$effect(() => {
+		if (!open) showErrors = false;
+	});
+	const errors = $derived.by((): Record<string, string> => {
+		const found: Record<string, string> = {};
+		if (!day) found.day = FIELD_REASON.date;
+		if (!recipe && !free && chosen === '') found.recipe = 'kitchen:plan_choose_error';
+		else if (!recipe && free && !title.trim()) found.title = FIELD_REASON.required;
+		else if (repeated && !addAnyway) found.anyway = 'kitchen:plan_anyway_error';
+		return found;
+	});
+
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		showErrors = true;
+		if (Object.keys(errors).length) {
+			void focusFirstInvalid(formEl);
+			return;
+		}
 		const recipeId = recipe?.id ?? (free ? '' : chosen);
-		if (!day || (!recipeId && !title.trim())) return;
-		if (repeated && !addAnyway) return;
 		busy = true;
 		try {
 			const outcome = await addMeal({
@@ -131,9 +156,7 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('plan_add')}
-	saveDisabled={busy ||
-		(!recipe && !free && chosen === '') ||
-		(repeated !== undefined && !addAnyway)}
+	saveDisabled={busy}
 	onsave={() => formEl?.requestSubmit()}
 	approval={app.approval('kitchen.addToMealPlan')}
 	{onclose}
@@ -153,7 +176,13 @@
 				</p>
 				<div class="grid gap-1.5">
 					<Label for="plan-date">{t('plan_date')}</Label>
-					<Input id="plan-date" type="date" bind:value={day} required />
+					<Input
+						id="plan-date"
+						type="date"
+						bind:value={day}
+						{...fieldAria(showErrors ? errors.day : undefined, 'plan-date')}
+					/>
+					<FieldError for="plan-date" error={showErrors ? errors.day : undefined} />
 				</div>
 			{:else if date}
 				<p class="flex items-center gap-2 text-[15px] font-semibold">
@@ -174,7 +203,10 @@
 			</div>
 			{#if !recipe}
 				{#if recipes.length}
-					<fieldset class="grid gap-1.5">
+					<fieldset
+						class="grid gap-1.5"
+						{...fieldAria(showErrors ? errors.recipe : undefined, 'plan-recipe')}
+					>
 						<legend class="mb-1.5 text-sm font-semibold">{t('plan_recipe')}</legend>
 						<Card rows>
 							{#each recipes as r (r.id)}
@@ -204,12 +236,20 @@
 								>
 							</label>
 						</Card>
+						<FieldError for="plan-recipe" error={showErrors ? errors.recipe : undefined} />
 					</fieldset>
 				{/if}
 				{#if free}
 					<div class="grid gap-1.5">
 						<Label for="plan-title">{t('plan_title')}</Label>
-						<Input id="plan-title" bind:value={title} maxlength={160} autocomplete="off" required />
+						<Input
+							id="plan-title"
+							bind:value={title}
+							maxlength={160}
+							autocomplete="off"
+							{...fieldAria(showErrors ? errors.title : undefined, 'plan-title')}
+						/>
+						<FieldError for="plan-title" error={showErrors ? errors.title : undefined} />
 					</div>
 				{/if}
 			{/if}
@@ -222,9 +262,16 @@
 					})}
 				</Notice>
 				<label class="flex min-h-10 cursor-pointer items-center gap-3 text-[15px]">
-					<input type="checkbox" bind:checked={addAnyway} class="accent-ink size-5 shrink-0" />
+					<input
+						type="checkbox"
+						bind:checked={addAnyway}
+						class="accent-ink size-5 shrink-0"
+						id="plan-anyway"
+						{...fieldAria(showErrors ? errors.anyway : undefined, 'plan-anyway')}
+					/>
 					{t('plan_repeated_anyway')}
 				</label>
+				<FieldError for="plan-anyway" error={showErrors ? errors.anyway : undefined} />
 			{/if}
 		</form>
 	{/if}

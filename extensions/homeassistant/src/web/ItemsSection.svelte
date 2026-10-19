@@ -6,6 +6,7 @@
 		ConfirmButton,
 		FieldError,
 		fieldAria,
+		focusFirstInvalid,
 		Row,
 		Section,
 		SidePanel,
@@ -161,7 +162,10 @@
 	async function submitAdd(event: SubmitEvent) {
 		event.preventDefault();
 		showErrors = true;
-		if (Object.keys(addErrors).length) return;
+		if (Object.keys(addErrors).length) {
+			void focusFirstInvalid(addForm);
+			return;
+		}
 		busy = true;
 		failed = null;
 		try {
@@ -291,7 +295,7 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('show_save')}
-	saveDisabled={busy || !chosenId}
+	saveDisabled={busy}
 	onsave={() => addForm?.requestSubmit()}
 	onclose={() => (adding = false)}
 	dirty={adding && newLabel !== '' && picked !== null}
@@ -364,6 +368,10 @@
 				{#if found.more}
 					<p class="text-ink-soft text-[13px]">{t('show_more_matches')}</p>
 				{/if}
+				<FieldError
+					for="ha-list"
+					error={showErrors ? 'homeassistant:show_pick_error' : undefined}
+				/>
 			{/if}
 		{/if}
 		{#if picked || (found && found.status !== 'ok' && typedId.trim())}

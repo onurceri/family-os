@@ -19,6 +19,7 @@
 	let picking = $state(false);
 	let draft = $state<Place | null>(null);
 	let busy = $state(false);
+	let needPlace = $state(false);
 	let message = $state<string | null>(null);
 
 	async function save(next: { enabled: boolean; place: Place | null }, toast = t('weather_saved')) {
@@ -43,6 +44,7 @@
 	}
 
 	async function savePlace() {
+		needPlace = !draft;
 		if (!draft) return;
 		const choice = placeChoice(settings.weather, draft);
 		const toast = choice.firstPlace
@@ -70,6 +72,7 @@
 			meta={settings.weather.place?.name ?? t('weather_place_none')}
 			onclick={() => {
 				draft = settings.weather.place;
+				needPlace = false;
 				picking = true;
 			}}
 			data-testid="weather-place"
@@ -89,12 +92,17 @@
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}
 	saveLabel={t('weather_save')}
-	saveDisabled={busy || !draft}
+	saveDisabled={busy}
 	onsave={savePlace}
 	onclose={() => (picking = false)}
 >
 	<div class="grid gap-4">
 		<PlacePicker bind:place={draft} onerror={(m) => (message = m)} {busy} />
 		{#if draft}<p class="font-semibold">{t('weather_place', { name: draft.name })}</p>{/if}
+		{#if needPlace && !draft}
+			<p class="text-attention text-[13px] leading-snug font-semibold" role="alert">
+				{t('weather_need_place')}
+			</p>
+		{/if}
 	</div>
 </SidePanel>

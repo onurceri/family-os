@@ -111,6 +111,8 @@
 	"options_for": "Options for {{title}}",
 	"plan_nothing": "Nothing planned.",
 	"plan_repeated": "{{title}} is already planned for {{slot}} on {{date}}.",
+	"plan_choose_error": "Choose a recipe, or pick \"Something else\" and write it.",
+	"plan_anyway_error": "Tick \"Add it anyway\" to plan it again.",
 	"plan_repeated_anyway": "Add it anyway",
 	"see_plan": "See the plan",
 	"plan_recipe_named": "Put {{title}} on the meal plan",

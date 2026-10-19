@@ -110,6 +110,8 @@
 	"discard_confirm": "Sil",
 	"options_for": "{{title}} seçenekleri",
 	"plan_repeated": "{{title}} zaten {{date}} günü {{slot}} için planlandı.",
+	"plan_choose_error": "Bir tarif seçin ya da \"Başka bir şey\"i seçip yazın.",
+	"plan_anyway_error": "Yeniden planlamak için \"Yine de ekle\"yi işaretleyin.",
 	"plan_repeated_anyway": "Yine de ekle",
 	"plan_nothing": "Planlanmış bir şey yok.",
 	"see_plan": "Plana bak",

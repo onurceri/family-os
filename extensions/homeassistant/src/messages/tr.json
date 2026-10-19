@@ -97,6 +97,7 @@
 	"show_search_hint": "Ada ya da kimliğe göre arayın; örneğin sıcaklık ya da light.mutfak.",
 	"show_none_found": "Bir şey bulunamadı. Kişiler, telefonları ve yerler buradan gösterilmez.",
 	"show_too_many": "Evinizde listelenemeyecek kadar çok varlık var. Bunun yerine varlığın kimliğini yazın; örneğin sensor.mutfak_sicaklik.",
+	"show_pick_error": "Listeden bir varlık seçin.",
 	"show_more_matches": "İlk 50 gösteriliyor. Daraltmak için adın daha çoğunu yazın.",
 	"show_unavailable": "FamilyOS Home Assistant’a soramadı. Yukarıdaki bağlantıyı denetleyin.",
 	"show_id_field": "Varlık kimliği",
