@@ -1,9 +1,11 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createPublicKey, verify } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { generateSigningKey, pack } from '../packages/pack/src/famext.ts';
+import { hashFiles, PACKAGE_FILE } from '../packages/pack/src/index.ts';
 
 const scratch = mkdtempSync(join(tmpdir(), 'famos-ext-scripts-'));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -37,6 +39,33 @@ describe('the release key script', () => {
 });
 
 describe('the extensions script', () => {
+	/** A signed package of `id` at 0.1.0, named as a release names it. */
+	async function packed(id: string, privateKey: string): Promise<string> {
+		const dir = mkdtempSync(join(scratch, `${id}-`));
+		mkdirSync(join(dir, 'server'));
+		writeFileSync(join(dir, 'server/index.mjs'), 'export default {};\n');
+		const description = {
+			format: 1,
+			manifest: { id, version: '0.1.0', sdk: '^0.8.0' },
+			labels: { en: { name: id, description: `The ${id}` } },
+			files: await hashFiles(dir),
+		};
+		writeFileSync(join(dir, PACKAGE_FILE), `${JSON.stringify(description)}\n`);
+		const out = join(mkdtempSync(join(scratch, 'out-')), `${id}-0.1.0.famext`);
+		await pack(dir, { privateKey, out });
+		return out;
+	}
+
+	it('adds every package a release gives after --add, not only the first', async () => {
+		const { privateKey } = generateSigningKey();
+		const files = [await packed('pond', privateKey), await packed('garden', privateKey)];
+		const site = join(scratch, 'release-site');
+		const out = run('extensions.mjs', 'index', site, '--add', ...files);
+		expect(out.status).toBe(0);
+		const index = JSON.parse(readFileSync(join(site, 'index.json'), 'utf8'));
+		expect(index.extensions.map((e: { id: string }) => e.id).sort()).toEqual(['garden', 'pond']);
+	});
+
 	it('writes an empty index and signs it with a key from the environment', () => {
 		const file = join(scratch, 'sign-key.pem');
 		execFileSync('node', [script('extension-key.mjs'), 'generate', '--out', file]);

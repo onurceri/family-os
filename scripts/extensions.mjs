@@ -79,11 +79,13 @@ try {
 			break;
 		}
 		case 'index': {
-			const [dir] = rest;
+			// `--add a.famext b.famext` (what a shell makes of `--add famext/*.famext`) gives the
+			// option only its first file; the others arrive after the folder and count as well.
+			const [dir, ...more] = rest;
 			if (!dir) fail(usage);
 			const keep = values.keep === undefined ? undefined : Number(values.keep);
 			const { index, removed } = await writeIndex(dir, {
-				add: values.add ?? [],
+				add: [...(values.add ?? []), ...more],
 				...(keep !== undefined && { keep }),
 			});
 			for (const path of removed) console.log(`removed ${path}`);
