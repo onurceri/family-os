@@ -253,8 +253,11 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 	}
 }
 
-/** How many copies made just before an update are kept (the nightly ones follow the schedule). */
-export const KEEP_BEFORE_UPDATE = 5;
+/**
+ * How many copies made just before a change to the data (an update, installing an extension) are
+ * kept. They have a count of their own, so they never take the places of the nightly ones.
+ */
+export const KEEP_BEFORE_UPDATE = 3;
 
 /** Keeps the newest `keep` backups of the given reason; returns deleted paths. */
 export async function pruneBackups(

@@ -1,6 +1,6 @@
 # Backups
 
-FamilyOS writes a backup every night (at 03:00 by default, `FAMOS_BACKUP_HOUR`) and keeps the last 7 nightly ones (`FAMOS_BACKUP_KEEP`). It also writes one before every update that changes the database (the last 5 of those are kept). Backups you start yourself are never deleted automatically.
+FamilyOS writes a backup every night (at 03:00 by default, `FAMOS_BACKUP_HOUR`) and keeps the last 7 nightly ones (`FAMOS_BACKUP_KEEP`). It also writes one before every change to the data, such as an update or installing an extension (the last 3 of those are kept, apart from the nightly ones, so they never take their places). Backups you start yourself are never deleted automatically.
 
 The hour is the server's local time. In the container that is UTC unless you set `TZ` in `docker-compose.yml`.
 
@@ -37,7 +37,7 @@ Without it, a restore still brings back all data, but everyone must sign in agai
 
 ## Write a backup now
 
-In the app: **Settings → System → Backups → Back up now** (it also sends the copy to your targets). The list under **On this server** shows the newest ones and whether each was **Nightly**, **Manual** or **Before an update**. From a terminal:
+In the app: **Settings → System → Backups → Back up now** (it also sends the copy to your targets). The list under **On this server** shows the newest ones and whether each was **Nightly**, **Manual** or **Before a change to the data**. From a terminal:
 
 ```bash
 docker compose exec famos node /app/server/main.mjs backup

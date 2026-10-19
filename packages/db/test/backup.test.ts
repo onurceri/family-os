@@ -1,9 +1,15 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sql } from 'kysely';
 import { describe, expect, it } from 'vitest';
-import { createBackup, pruneBackups, readBackupManifest, restoreBackup } from '../src/backup.ts';
+import {
+	createBackup,
+	KEEP_BEFORE_UPDATE,
+	pruneBackups,
+	readBackupManifest,
+	restoreBackup,
+} from '../src/backup.ts';
 import { openDatabase } from '../src/connection.ts';
 
 async function setup() {
@@ -59,5 +65,18 @@ describe('backup', () => {
 		}
 		const deleted = await pruneBackups(dir, 'scheduled', 2);
 		expect(deleted.map((p) => p.split('/').at(-1))).toEqual(['famos-1-scheduled.tar']);
+	});
+
+	it('keeps the copies made before a change to the data apart from the nightly ones', async () => {
+		const dir = await mkdtemp(join(tmpdir(), 'famos-prune-'));
+		const nightly = [1, 2, 3, 4, 5].map((n) => `famos-0${n}-scheduled.tar`);
+		const before = [6, 7, 8, 9, 10].map(
+			(n) => `famos-${String(n).padStart(2, '0')}-pre-migration.tar`,
+		);
+		for (const n of [...nightly, ...before]) await writeFile(join(dir, n), '');
+		const deleted = await pruneBackups(dir, 'pre-migration', KEEP_BEFORE_UPDATE);
+		expect(deleted.map((p) => p.split('/').at(-1)).sort()).toEqual(before.slice(0, 2));
+		const left = await readdir(dir);
+		for (const n of nightly) expect(left).toContain(n);
 	});
 });
