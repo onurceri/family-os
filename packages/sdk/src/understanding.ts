@@ -96,20 +96,12 @@ export const MentionSchema = z.object({
 	tags: z.array(z.string().max(40)).optional(),
 	/** One of the kind's own choices (a meal slot, a treatment kind). */
 	variant: z.string().max(40).optional(),
-	/** Slots the model guessed. */
-	unsure: z.array(z.string()).optional(),
-	/**
-	 * The shortest words of the message the mention rests on, copied as written. Code finds them
-	 * in the message: they show where a suggestion comes from, and whether it comes from a part
-	 * of the message that speaks to the machine reading it (`addressed`).
-	 */
-	quote: z.string().max(300).optional(),
 	/**
 	 * The place (from 0) of the mention this one is a detail of, in the same answer. The host
 	 * decides what follows: a detail with no day and no person of its own goes into the notes of
 	 * that mention, when its kind takes notes.
 	 */
-	of: z
+	detailOf: z
 		.number()
 		.int()
 		.min(0)
@@ -118,6 +110,14 @@ export const MentionSchema = z.object({
 		.describe(
 			"Only for a detail of another mention of this answer (something to bring to it, a rule for it, a fee for it): that mention's place in mentions, counting from 0.",
 		),
+	/** Slots the model guessed. */
+	unsure: z.array(z.string()).optional(),
+	/**
+	 * The shortest words of the message the mention rests on, copied as written. Code finds them
+	 * in the message: they show where a suggestion comes from, and whether it comes from a part
+	 * of the message that speaks to the machine reading it (`addressed`).
+	 */
+	quote: z.string().max(300).optional(),
 });
 export type Mention = z.infer<typeof MentionSchema>;
 

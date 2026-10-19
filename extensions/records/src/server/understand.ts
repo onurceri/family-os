@@ -7,6 +7,7 @@ import {
 	namesThing,
 	type Resolution,
 	whichOne,
+	withoutAmounts,
 } from '@famos/sdk';
 import { compareDates } from '@famos/time';
 import {
@@ -87,7 +88,8 @@ async function resolveDuty(ctx: MentionContext, { index, mention }: IndexedMenti
 				...(every && { every }),
 				...(lapses && { lapses }),
 				...(assigneeId && { assigneeId }),
-				...(mention.notes && { notes: mention.notes }),
+				...(mention.notes &&
+					withoutAmounts(mention.notes) && { notes: withoutAmounts(mention.notes) }),
 			},
 			subject: title,
 			uncertain: [
@@ -160,7 +162,8 @@ async function resolveDone(
 				label: duty.listedAs,
 				...(done && { doneOn: done.date }),
 				...(keepsNext && { nextDueDate: next.date }),
-				...(mention.notes && { note: mention.notes }),
+				...(mention.notes &&
+					withoutAmounts(mention.notes) && { note: withoutAmounts(mention.notes) }),
 			},
 			subject: words,
 			targetTitle: duty.title,

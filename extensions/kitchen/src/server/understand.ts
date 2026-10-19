@@ -91,7 +91,10 @@ const isSlot = (value: string | undefined): value is MealSlot =>
 async function resolveMeal(ctx: MentionContext, { index, mention }: IndexedMention) {
 	const dish = mention.title;
 	if (!dish) return refuse('incomplete', null, index);
-	const day = ctx.day(mention.date, 'future');
+	// A meal is for a day: when the model gave none but the words it copied name one ("fish pie
+	// for dinner on Friday"), that is the day, for a person to check.
+	const fromQuote = mention.date === undefined && mention.quote !== undefined;
+	const day = ctx.day(fromQuote ? { text: mention.quote as string } : mention.date, 'future');
 	if (!day) return refuse('incomplete', dish, index);
 	const slot: MealSlot = isSlot(mention.variant) ? mention.variant : 'dinner';
 	const recipes = await tables(ctx.db)
@@ -119,7 +122,7 @@ async function resolveMeal(ctx: MentionContext, { index, mention }: IndexedMenti
 				...(mention.notes && { note: mention.notes }),
 			},
 			subject: dish,
-			uncertain: day.certain ? [] : ['date'],
+			uncertain: day.certain && !fromQuote ? [] : ['date'],
 			// No meal named: dinner, which a person is asked to confirm.
 			...(!isSlot(mention.variant) && { decided: { slot: 'defaulted' as const } }),
 			from: [index],

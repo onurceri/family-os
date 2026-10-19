@@ -9,6 +9,7 @@ import {
 	resolvePeople,
 	stillToCome,
 	unsureFields,
+	withoutAmounts,
 } from '../src/index.ts';
 
 const MEMBERS = [
@@ -185,5 +186,19 @@ describe('asAppointment', () => {
 			asAppointment({ ...mention, title: "Biscuit's vaccination" }, 'Biscuit', 'en').title,
 		).toBe("Biscuit's vaccination");
 		expect(asAppointment({ kind: 'pets.treatment' }, 'Biscuit', 'en').title).toBe('Biscuit');
+	});
+});
+
+describe('withoutAmounts', () => {
+	it('leaves out the sentences that state money, and keeps the rest as written', () => {
+		expect(withoutAmounts('Annual service; Mileage 62,300 km. Total 189.00')).toBe(
+			'Annual service; Mileage 62,300 km.',
+		);
+		expect(withoutAmounts('Paid €45\nBatch L4471')).toBe('Batch L4471');
+		expect(withoutAmounts('Fee 15 EUR')).toBe('');
+		expect(withoutAmounts('Policy AB-123; renews every year')).toBe(
+			'Policy AB-123; renews every year',
+		);
+		expect(withoutAmounts('Total 45,50')).toBe('');
 	});
 });

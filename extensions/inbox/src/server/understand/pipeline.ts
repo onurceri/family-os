@@ -522,7 +522,7 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	const atOf = new Map(parsed.mentions.map((m, at) => [m.index, at]));
 	const partOf = new Map<number, number>();
 	for (const [at, { mention }] of parsed.mentions.entries()) {
-		const parent = mention.of === undefined ? undefined : atOf.get(mention.of);
+		const parent = mention.detailOf === undefined ? undefined : atOf.get(mention.detailOf);
 		if (parent !== undefined && parent !== at) partOf.set(at, parent);
 	}
 	const placed = text === null ? null : placeReading(read, parsed.addressed, text, locale, partOf);

@@ -1,7 +1,7 @@
 import type { IndexedMention, Mention } from '@famos/sdk';
 
 /*
- * Details that belong to another mention of the same reading (`of`): a thing to bring to an
+ * Details that belong to another mention of the same reading (`detailOf`): a thing to bring to an
  * event, a rule for it, a fee for it. The model only says whose detail it is; code decides where
  * it goes. A detail goes into its mention's notes when that mention's kind takes notes, and stays
  * a suggestion of its own when it has a day or a person of its own (a fee due on Friday is a task
@@ -62,7 +62,7 @@ function withLine(notes: string | undefined, line: string, locale: string): stri
 }
 
 /**
- * Folds each detail into the notes of the mention it names with `of` (an index of the reading),
+ * Folds each detail into the notes of the mention it names with `detailOf` (an index of the reading),
  * when that mention is here, is not a detail folded itself, and has a kind that takes notes
  * (`takesNotes`), and when the detail has no day and no person of its own. Every other mention,
  * a detail that cannot be folded included, is resolved as it was read.
@@ -74,7 +74,7 @@ export function foldDetails(
 ): Folded {
 	const byIndex = new Map(mentions.map((m) => [m.index, m]));
 	const foldable = (m: IndexedMention): IndexedMention | null => {
-		const of = m.mention.of;
+		const of = m.mention.detailOf;
 		if (of === undefined || of === m.index || standsAlone(m.mention)) return null;
 		const parent = byIndex.get(of);
 		if (!parent || !takesNotes(parent.mention.kind)) return null;

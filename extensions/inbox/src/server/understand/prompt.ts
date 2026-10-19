@@ -130,7 +130,7 @@ export const HOST_EXAMPLES: readonly {
 		why: 'What to bring for something else is no note of the appointment next to it: it is its own task.',
 	},
 	{
-		text: 'Spring concert on Thursday 12 March at 18:00 in the school hall. Bring a white shirt. Tickets are 4 EUR, to pay by Monday.',
+		text: 'Spring concert on Thursday 12 March at 18:00 in the school hall. Bring a white shirt. Return the signed photo form by Monday.',
 		answer: {
 			label: 'Spring concert',
 			intent: 'actionable',
@@ -148,19 +148,18 @@ export const HOST_EXAMPLES: readonly {
 					kind: 'lists.task',
 					quote: 'Bring a white shirt',
 					title: 'Bring a white shirt',
-					of: 0,
+					detailOf: 0,
 				},
 				{
 					kind: 'lists.task',
-					quote: 'Tickets are 4 EUR, to pay by Monday',
-					title: 'Pay for the concert tickets',
+					quote: 'Return the signed photo form by Monday',
+					title: 'Return the signed photo form',
 					date: { text: 'Monday', weekday: 1 },
-					notes: 'Tickets: 4 EUR',
-					of: 0,
+					detailOf: 0,
 				},
 			],
 		},
-		why: 'Details of the concert point at it with of (mentions count from 0): the shirt goes into its notes, and the fee, which has a day of its own, stays a task.',
+		why: 'Details of the concert point at it with detailOf (mentions count from 0): the shirt goes into its notes, and the form, which has a day of its own, stays a task.',
 	},
 ];
 

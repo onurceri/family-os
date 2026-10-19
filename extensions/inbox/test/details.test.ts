@@ -46,13 +46,13 @@ describe('details folded into the mention they belong to', () => {
 				{
 					kind: 'board.note',
 					notes: 'No phones in the hall',
-					of: 0,
+					detailOf: 0,
 					quote: 'no phones in the hall',
 				},
 				{
 					kind: 'lists.task',
 					title: 'Bring blue music book',
-					of: 0,
+					detailOf: 0,
 					quote: 'bring blue music book',
 				},
 			],
@@ -87,14 +87,14 @@ describe('details folded into the mention they belong to', () => {
 					{
 						kind: 'lists.task',
 						title: 'Bring white shirt, shin pads & water',
-						of: 0,
+						detailOf: 0,
 						quote: 'Bring white shirt, shin pads & water',
 					},
 					{
 						kind: 'lists.task',
 						title: 'Pay 10 EUR for the bus',
 						date: { text: 'Fri', weekday: 5 },
-						of: 0,
+						detailOf: 0,
 						quote: 'Pay 10 EUR for the bus by Fri',
 					},
 				],
@@ -123,7 +123,7 @@ describe('details folded into the mention they belong to', () => {
 				{
 					kind: 'lists.task',
 					title: 'Bring shin pads and the club shirt',
-					of: 0,
+					detailOf: 0,
 					quote: 'Please bring shin pads and the club shirt.',
 				},
 			],
@@ -153,7 +153,7 @@ describe('details folded into the mention they belong to', () => {
 				{
 					kind: 'lists.task',
 					title: 'Bring blue music book',
-					of: 0,
+					detailOf: 0,
 					quote: 'bring blue music book',
 				},
 			],
@@ -437,5 +437,54 @@ describe('who an event is for, written into its title', () => {
 			const outcome = await read(c, answer(title));
 			expect(outcome.drafts[0]?.input.memberIds, title).toEqual([]);
 		}
+	});
+});
+
+describe('readings the free models gave after the detail link came in', () => {
+	it('a meal whose day is only in the words it rests on is planned for that day, marked', async () => {
+		// 120b's exact answer: the fish pie has no date, its quote says Friday.
+		const outcome = await read(caseNamed('Meals planned for the week (English)'), {
+			label: 'Meal plan',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'kitchen.meal',
+					title: 'Tacos',
+					date: { text: 'Wednesday', weekday: 3 },
+					quote: 'tacos on Wednesday',
+				},
+				{
+					kind: 'kitchen.meal',
+					title: 'Fish pie',
+					variant: 'dinner',
+					quote: 'fish pie for dinner on Friday',
+					detailOf: 1,
+				},
+			],
+		});
+		expect(failedChecks(outcome)).toEqual([]);
+		const pie = outcome.drafts.find((d) => d.input.title === 'Fish pie');
+		expect(pie?.uncertainFields).toContain('date');
+	});
+
+	it('a garage invoice keeps no amount of money in the log notes', async () => {
+		// 120b's exact answer: the total copied into the notes.
+		const outcome = await read(caseNamed('A garage invoice for a listed car (English)'), {
+			label: 'Corolla service',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'vehicles.log',
+					about: 'Corolla',
+					date: { text: '3 October 2026', day: 3, month: 10, year: 2026, weekday: 6 },
+					place: 'Northside Garage',
+					notes: 'Mileage 62,300 km. Total 189.00',
+					quote:
+						'Northside Garage - invoice 3 October 2026. Corolla: annual service, oil and filter, new wiper blades. Mileage 62,300 km. Total 189.00',
+				},
+			],
+		});
+		expect(harmfulChecks(outcome)).toEqual([]);
+		expect(outcome.drafts[0]?.input.notes).toBe('Mileage 62,300 km.');
 	});
 });

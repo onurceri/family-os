@@ -6,6 +6,7 @@ import {
 	type MentionContext,
 	type Resolution,
 	whichOne,
+	withoutAmounts,
 } from '@famos/sdk';
 import { Temporal } from '@famos/time';
 import { aiContext, aiContextItems } from './context.ts';
@@ -138,7 +139,8 @@ function resolveNew(
 				...(room && { room }),
 				...(bought && { purchasedOn: bought.date }),
 				...(warranty && { warrantyUntil: warranty.date }),
-				...(mention.notes && { notes: mention.notes }),
+				...(mention.notes &&
+					withoutAmounts(mention.notes) && { notes: withoutAmounts(mention.notes) }),
 			},
 			subject: name,
 			uncertain: [

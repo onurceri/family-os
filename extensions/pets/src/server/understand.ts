@@ -6,6 +6,7 @@ import {
 	type MentionContext,
 	type Resolution,
 	stillToCome,
+	withoutAmounts,
 } from '@famos/sdk';
 import { compareDates } from '@famos/time';
 import { TREATMENT_KINDS, type TreatmentKind } from '../contract/index.ts';
@@ -70,7 +71,8 @@ async function resolveTreatment(
 				givenOn,
 				product,
 				...(mention.place && { vet: mention.place }),
-				...(mention.notes && { notes: mention.notes }),
+				...(mention.notes &&
+					withoutAmounts(mention.notes) && { notes: withoutAmounts(mention.notes) }),
 				...(obligation && { obligationId: obligation.id }),
 				...(keepsNext && { nextDueDate: next.date }),
 			},

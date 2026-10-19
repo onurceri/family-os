@@ -25,8 +25,8 @@ describe('foldDetails', () => {
 	it('puts a rule and a thing to bring into the notes of the event they belong to', () => {
 		const out = fold([
 			recital,
-			at(1, { kind: 'board.note', notes: 'No phones in the hall', of: 0 }),
-			at(2, { kind: 'lists.task', title: 'Bring blue music book', of: 0 }),
+			at(1, { kind: 'board.note', notes: 'No phones in the hall', detailOf: 0 }),
+			at(2, { kind: 'lists.task', title: 'Bring blue music book', detailOf: 0 }),
 		]);
 		expect(out.mentions).toEqual([
 			at(0, { ...recital.mention, notes: 'No phones in the hall\nBring blue music book' }),
@@ -39,11 +39,21 @@ describe('foldDetails', () => {
 			kind: 'lists.task',
 			title: 'Pay 10 EUR for the bus',
 			date: { text: 'Fri', weekday: 5 },
-			of: 0,
+			detailOf: 0,
 		});
-		const forIvy = at(2, { kind: 'lists.task', title: 'Bring the kit', people: ['Ivy'], of: 0 });
-		const mine = at(3, { kind: 'lists.task', title: 'Pack the bag', forMe: true, of: 0 });
-		const daily = at(4, { kind: 'lists.task', title: 'Practise', repeat: { every: 'day' }, of: 0 });
+		const forIvy = at(2, {
+			kind: 'lists.task',
+			title: 'Bring the kit',
+			people: ['Ivy'],
+			detailOf: 0,
+		});
+		const mine = at(3, { kind: 'lists.task', title: 'Pack the bag', forMe: true, detailOf: 0 });
+		const daily = at(4, {
+			kind: 'lists.task',
+			title: 'Practise',
+			repeat: { every: 'day' },
+			detailOf: 0,
+		});
 		const out = fold([recital, fee, forIvy, mine, daily]);
 		expect(out.mentions).toEqual([recital, fee, forIvy, mine, daily]);
 		expect(out.details.size).toBe(0);
@@ -53,12 +63,12 @@ describe('foldDetails', () => {
 		const shopping = at(5, { kind: 'lists.shoppingItem', title: 'Strings' });
 		const mentions = [
 			recital,
-			at(1, { kind: 'lists.task', title: 'Bring the folder', of: 9 }),
-			at(2, { kind: 'lists.task', title: 'Tune it', of: 2 }),
-			at(3, { kind: 'lists.task', title: 'Bring water', of: 0 }),
-			at(4, { kind: 'lists.task', title: 'A detail of a detail', of: 3 }),
+			at(1, { kind: 'lists.task', title: 'Bring the folder', detailOf: 9 }),
+			at(2, { kind: 'lists.task', title: 'Tune it', detailOf: 2 }),
+			at(3, { kind: 'lists.task', title: 'Bring water', detailOf: 0 }),
+			at(4, { kind: 'lists.task', title: 'A detail of a detail', detailOf: 3 }),
 			shopping,
-			at(6, { kind: 'lists.task', title: 'Bring the receipt', of: 5 }),
+			at(6, { kind: 'lists.task', title: 'Bring the receipt', detailOf: 5 }),
 		];
 		const out = fold(mentions);
 		expect(out.mentions.map((m) => m.index)).toEqual([0, 1, 2, 4, 5, 6]);
@@ -68,8 +78,8 @@ describe('foldDetails', () => {
 	it('adds to notes the event has, without repeating what they say', () => {
 		const out = fold([
 			at(0, { ...recital.mention, notes: 'Bring blue music book' }),
-			at(1, { kind: 'lists.task', title: 'bring blue  music book', of: 0 }),
-			at(2, { kind: 'lists.task', title: 'Tickets', amount: '4 EUR', of: 0 }),
+			at(1, { kind: 'lists.task', title: 'bring blue  music book', detailOf: 0 }),
+			at(2, { kind: 'lists.task', title: 'Tickets', amount: '4 EUR', detailOf: 0 }),
 		]);
 		expect(out.mentions).toHaveLength(1);
 		expect(out.mentions[0]?.mention.notes).toBe('Bring blue music book\nTickets, 4 EUR');
@@ -79,7 +89,7 @@ describe('foldDetails', () => {
 		const long = 'x'.repeat(FOLDED_NOTES_MAX - 5);
 		const out = fold([
 			at(0, { ...recital.mention, notes: long }),
-			at(1, { kind: 'lists.task', title: 'Bring blue music book', of: 0 }),
+			at(1, { kind: 'lists.task', title: 'Bring blue music book', detailOf: 0 }),
 		]);
 		expect(out.mentions.map((m) => m.index)).toEqual([0, 1]);
 		expect(out.mentions[0]?.mention.notes).toBe(long);
@@ -115,7 +125,12 @@ describe('placeReading with details', () => {
 				quote: 'piano recital Sat 14 Nov 15:00',
 				notes: 'Bring blue music book',
 			},
-			{ kind: 'lists.task', title: 'Bring blue music book', quote: 'bring blue music book', of: 0 },
+			{
+				kind: 'lists.task',
+				title: 'Bring blue music book',
+				quote: 'bring blue music book',
+				detailOf: 0,
+			},
 		];
 		expect(placeReading(mentions, [], text, 'en').foreignNotes).toEqual(new Set([0]));
 		expect(placeReading(mentions, [], text, 'en', new Map([[1, 0]])).foreignNotes).toEqual(

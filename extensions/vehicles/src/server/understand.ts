@@ -6,6 +6,7 @@ import {
 	type MentionContext,
 	type Resolution,
 	stillToCome,
+	withoutAmounts,
 } from '@famos/sdk';
 import { LOG_KINDS, type LogKind } from '../contract/index.ts';
 import { tables } from './store.ts';
@@ -51,7 +52,10 @@ async function resolveLog(
 		.where('kind', '=', kind)
 		.executeTakeFirst();
 	if (twice) return { refuse: { reason: 'already', subject, from: [index] } };
-	const notes = [mention.title, mention.notes].filter(Boolean).join('; ').slice(0, NOTES_MAX);
+	const notes = withoutAmounts([mention.title, mention.notes].filter(Boolean).join('; ')).slice(
+		0,
+		NOTES_MAX,
+	);
 	return {
 		propose: {
 			actionId: 'vehicles.addLog',

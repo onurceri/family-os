@@ -18,7 +18,9 @@ describe('the understanding schema', () => {
 	it('has a slot for every mention field but the bookkeeping ones and the link to another', () => {
 		const fields = Object.keys(MentionSchema.shape).filter(
 			(key) =>
-				!['kind', 'forMe', 'peopleGuessed', 'timeText', 'unsure', 'quote', 'of'].includes(key),
+				!['kind', 'forMe', 'peopleGuessed', 'timeText', 'unsure', 'quote', 'detailOf'].includes(
+					key,
+				),
 		);
 		expect(fields.toSorted()).toEqual([...SLOTS].toSorted());
 	});
@@ -216,15 +218,15 @@ describe('parseUnderstanding', () => {
 			{
 				mentions: [
 					{ kind: 'calendar.event', title: 'Piano recital' },
-					{ kind: 'lists.shoppingItem', title: 'Blue music book', of: '0' },
-					{ kind: 'lists.shoppingItem', title: 'Water', of: -1 },
+					{ kind: 'lists.shoppingItem', title: 'Blue music book', detailOf: '0' },
+					{ kind: 'lists.shoppingItem', title: 'Water', detailOf: -1 },
 				],
 			},
 			KINDS,
 		);
-		expect(parsed?.mentions[1]?.mention).toMatchObject({ of: 0 });
-		expect(parsed?.mentions[2]).toMatchObject({ dropped: ['of'] });
-		expect(parsed?.mentions[2]?.mention.of).toBeUndefined();
+		expect(parsed?.mentions[1]?.mention).toMatchObject({ detailOf: 0 });
+		expect(parsed?.mentions[2]).toMatchObject({ dropped: ['detailOf'] });
+		expect(parsed?.mentions[2]?.mention.detailOf).toBeUndefined();
 	});
 
 	it('repairs the usual slips', () => {
