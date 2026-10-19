@@ -1,14 +1,14 @@
 {
 	"case": "UK council and school notice: DD/MM dates and Year 5",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Bin collection and parents' evening",
+				"label": "Green bin and parents evening",
 				"intent": "actionable",
 				"mentions": [
 					{

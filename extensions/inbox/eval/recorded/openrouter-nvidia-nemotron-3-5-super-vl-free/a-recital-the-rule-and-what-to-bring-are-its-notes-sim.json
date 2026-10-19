@@ -1,0 +1,45 @@
+{
+	"case": "A recital: the rule and what to bring are its notes (sim)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Piano recital",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Piano recital",
+						"date": {
+							"text": "Sat 14 Nov",
+							"day": 14,
+							"month": 11,
+							"weekday": 6
+						},
+						"time": "15:00",
+						"timeText": "15:00",
+						"place": "Music school",
+						"notes": "No phones in the hall. Bring blue music book.",
+						"quote": "piano recital Sat 14 Nov 15:00 music school"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Practise every day",
+						"date": {
+							"text": "Sat 14 Nov",
+							"day": 14,
+							"month": 11,
+							"weekday": 6
+						},
+						"detailOf": 0,
+						"quote": "practise every day pls"
+					}
+				]
+			}
+		}
+	]
+}

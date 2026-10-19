@@ -1,14 +1,14 @@
 {
 	"case": "A question for the assistant (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Nereye gidiyor?",
+				"label": "Nereye gidiyor",
 				"intent": "question",
 				"mentions": []
 			}

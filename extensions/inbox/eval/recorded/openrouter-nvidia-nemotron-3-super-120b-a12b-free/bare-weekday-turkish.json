@@ -1,8 +1,8 @@
 {
 	"case": "Bare weekday (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -23,9 +23,9 @@
 						"quote": "Cuma günü saat 15:00'te Elif'in doğum günü partisine Deniz de davetli."
 					},
 					{
-						"kind": "lists.task",
-						"title": "Hediye almayı unutmayalım",
-						"forMe": true,
+						"kind": "lists.shoppingItem",
+						"title": "Hediye",
+						"forMe": false,
 						"quote": "Hediye almayı unutmayalım."
 					}
 				]

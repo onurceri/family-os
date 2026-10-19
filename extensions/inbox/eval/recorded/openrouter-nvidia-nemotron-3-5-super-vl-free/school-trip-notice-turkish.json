@@ -1,8 +1,8 @@
 {
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -55,6 +55,7 @@
 							"year": 2026,
 							"weekday": 4
 						},
+						"detailOf": 0,
 						"quote": "İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız."
 					},
 					{

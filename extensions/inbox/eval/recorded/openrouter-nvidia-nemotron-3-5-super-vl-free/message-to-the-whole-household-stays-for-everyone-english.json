@@ -1,19 +1,19 @@
 {
 	"case": "Message to the whole household stays for everyone (English)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Family picnic at the lake",
+				"label": "Family picnic",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Family picnic at the lake",
+						"title": "Family picnic",
 						"date": {
 							"text": "Sunday 11 October",
 							"day": 11,
@@ -22,6 +22,7 @@
 						},
 						"time": "12:00",
 						"timeText": "noon",
+						"place": "Lake",
 						"quote": "Family picnic at the lake on Sunday 11 October at noon"
 					}
 				]

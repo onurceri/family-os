@@ -1,0 +1,51 @@
+{
+	"case": "A school trip message for one child (sim)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Year 8 trip to Bled",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Year 8 trip to Bled",
+						"people": [
+							"Ivy"
+						],
+						"date": {
+							"text": "Thu 29.10",
+							"day": 29,
+							"month": 10,
+							"year": 2026,
+							"weekday": 4
+						},
+						"time": "07:30",
+						"timeText": "07:30",
+						"endTime": "17:00",
+						"place": "School gate",
+						"notes": "Packed lunch. No phones on the bus pls. Ivy must bring her own water bottle",
+						"quote": "Year 8 trip to Bled Thu 29.10: bus leaves school gate 07:30, back about 17:00. Packed lunch. No phones on the bus pls. Ivy must bring her own water bottle"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay Year 8 trip to Bled via ParentPay",
+						"date": {
+							"text": "Fri 23.10",
+							"day": 23,
+							"month": 10,
+							"year": 2026,
+							"weekday": 5
+						},
+						"notes": "24 EUR",
+						"quote": "24 EUR via ParentPay by Fri 23.10"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,14 +1,14 @@
 {
 	"case": "What to bring to a match is the notes of the match, not the shopping list (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Match vs Riverside",
+				"label": "Saturday match",
 				"intent": "actionable",
 				"mentions": [
 					{

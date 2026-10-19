@@ -1,0 +1,31 @@
+{
+	"case": "A move names the swim lesson of Ivy, not Tom (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim lesson moved",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Swim lesson Ivy",
+						"date": {
+							"text": "Saturday 17 Oct",
+							"day": 17,
+							"month": 10,
+							"weekday": 6
+						},
+						"time": "11:00",
+						"timeText": "11:00",
+						"quote": "Ivy's swim lesson on Saturday 17 Oct is moved to 11:00"
+					}
+				]
+			}
+		}
+	]
+}

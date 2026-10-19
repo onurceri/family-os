@@ -1,0 +1,55 @@
+{
+	"case": "A school email changes the time of the trip of class 1B (sim)",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "1B trip to Bled",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Class 1B trip",
+						"date": {
+							"text": "Friday 30 October",
+							"day": 30,
+							"month": 10,
+							"weekday": 5
+						},
+						"time": "07:40",
+						"timeText": "07:40",
+						"quote": "the 1B trip to Bled is on Friday 30 October. We meet at school at 07:40 now, not 08:10."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Return the signed permission slip",
+						"date": {
+							"text": "Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						},
+						"quote": "Please return the signed permission slip by Monday 26 October"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay the 25 EUR bus fee",
+						"date": {
+							"text": "Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						},
+						"notes": "in the school app",
+						"quote": "and pay the 25 EUR bus fee in the school app."
+					}
+				],
+				"addressed": []
+			}
+		}
+	]
+}

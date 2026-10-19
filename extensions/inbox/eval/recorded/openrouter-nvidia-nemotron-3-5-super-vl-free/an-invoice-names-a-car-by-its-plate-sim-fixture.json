@@ -1,0 +1,33 @@
+{
+	"case": "An invoice names a car by its plate (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Brake pads at Northside Garage",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "vehicles.log",
+						"about": "Golf",
+						"title": "New brake pads front",
+						"variant": "repair",
+						"date": {
+							"text": "2 October 2026",
+							"day": 2,
+							"month": 10,
+							"year": 2026
+						},
+						"place": "Northside Garage",
+						"notes": "Mileage 48,200 km",
+						"quote": "Northside Garage - invoice 2 October 2026. Vehicle LJ CD-456: new brake pads front. Mileage 48,200 km."
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,22 +1,19 @@
 {
 	"case": "A couple, no children",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dental visit and dinner with parents",
+				"label": "Dentist and dinner with parents",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Diş randevusu",
-						"people": [
-							"Selin"
-						],
 						"date": {
 							"text": "8 Ekim Perşembe",
 							"day": 8,

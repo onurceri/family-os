@@ -1,8 +1,8 @@
 {
 	"case": "A garage invoice for a listed car (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -18,10 +18,11 @@
 							"text": "3 October 2026",
 							"day": 3,
 							"month": 10,
-							"year": 2026
+							"year": 2026,
+							"weekday": 6
 						},
 						"place": "Northside Garage",
-						"notes": "Mileage 62,300 km",
+						"notes": "Mileage 62,300 km. Total 189.00",
 						"quote": "Northside Garage - invoice 3 October 2026. Corolla: annual service, oil and filter, new wiper blades. Mileage 62,300 km. Total 189.00"
 					}
 				]

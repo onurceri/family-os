@@ -1,8 +1,8 @@
 {
 	"case": "School trip notice (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,9 +14,6 @@
 					{
 						"kind": "calendar.event",
 						"title": "Gaziantep Hayvanat Bahçesi eğitim gezisi",
-						"people": [
-							"Deniz"
-						],
 						"date": {
 							"text": "16 Ekim Cuma",
 							"day": 16,
@@ -26,20 +23,19 @@
 						"time": "08:30",
 						"timeText": "08:30",
 						"place": "Gaziantep Hayvanat Bahçesi",
-						"notes": "Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır. Öğrencilerimizin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalarını rica ederiz.",
+						"notes": "Öğrenciler saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır. Beslenme çantası, su şişesi ve yağmurluk getirmelidir.",
 						"quote": "4-B sınıfımız 16 Ekim Cuma günü Gaziantep Hayvanat Bahçesi'ne eğitim gezisine gidecektir. Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır."
 					},
 					{
 						"kind": "lists.task",
 						"title": "Gezi ücretini öde",
-						"forMe": true,
 						"date": {
 							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız.",
+						"notes": "Ücret 150 TL, sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirin.",
 						"quote": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir. İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız."
 					},
 					{

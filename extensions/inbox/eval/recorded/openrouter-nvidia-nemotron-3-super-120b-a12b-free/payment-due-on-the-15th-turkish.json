@@ -1,8 +1,8 @@
 {
 	"case": "Payment due \"on the 15th\" (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -18,7 +18,6 @@
 							"text": "ayın 15'i",
 							"day": 15
 						},
-						"notes": "1200 TL",
 						"quote": "Apartman aidatı 1200 TL, son ödeme tarihi ayın 15'i."
 					}
 				]

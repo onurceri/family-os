@@ -1,8 +1,8 @@
 {
 	"case": "Tomorrow (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -20,8 +20,7 @@
 						},
 						"time": "09:00",
 						"timeText": "9'da",
-						"notes": "Evde biri olmalı",
-						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı"
+						"quote": "Yarın sabah 9'da su tesisatçısı gelecek"
 					}
 				]
 			}

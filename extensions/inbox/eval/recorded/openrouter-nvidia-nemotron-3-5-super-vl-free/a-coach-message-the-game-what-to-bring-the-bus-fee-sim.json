@@ -1,0 +1,44 @@
+{
+	"case": "A coach message: the game, what to bring, the bus fee (sim)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "U13 Eagles away game",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "U13 Eagles away game",
+						"date": {
+							"text": "Sun 25.10",
+							"day": 25,
+							"month": 10,
+							"year": 2026,
+							"weekday": 7
+						},
+						"time": "10:00",
+						"timeText": "10:00",
+						"place": "Olimpija Park",
+						"notes": "Meet 08:30 at the club. Bring white shirt, shin pads & water.",
+						"quote": "U13 Eagles away game Sun 25.10 KO 10:00 at Olimpija Park, meet 08:30 at the club. Bring white shirt, shin pads & water."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay for the bus",
+						"date": {
+							"text": "Fri",
+							"weekday": 5
+						},
+						"notes": "10 EUR",
+						"quote": "Pay 10 EUR for the bus by Fri thx Coach Jure"
+					}
+				]
+			}
+		}
+	]
+}

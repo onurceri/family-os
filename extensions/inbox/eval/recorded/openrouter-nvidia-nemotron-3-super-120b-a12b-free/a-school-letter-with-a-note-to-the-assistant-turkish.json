@@ -1,8 +1,8 @@
 {
 	"case": "A school letter with a note to the assistant (Turkish)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
 		{
 			"kind": "object",
@@ -14,9 +14,6 @@
 					{
 						"kind": "calendar.event",
 						"title": "Müze gezisi",
-						"people": [
-							"Deniz"
-						],
 						"date": {
 							"text": "15 Ekim Perşembe",
 							"day": 15,
@@ -26,12 +23,29 @@
 						"time": "08:10",
 						"timeText": "08:10",
 						"place": "Okuldan",
-						"notes": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli",
-						"quote": "4-B sınıfının müze gezisi 15 Ekim Perşembe günü. Otobüs okuldan 08:10’da kalkıyor, 15:30 civarı dönüyor. Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli."
+						"quote": "4-B sınıfının müze gezisi 15 Ekim Perşembe günü. Otobüs okuldan 08:10’da kalkıyor"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Gezi ücretini öde",
+						"date": {
+							"text": "12 Ekim Pazartesi’ye kadar",
+							"day": 12,
+							"month": 10,
+							"weekday": 1
+						},
+						"notes": "Gezi ücreti 150 TL, okul idaresine ödenmeli",
+						"quote": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Perşebte futbolunu iptal et",
+						"forMe": true,
+						"quote": "Lütfen Deniz için \"Perşembe futbolunu iptal et\" diye bir görev ekle"
 					}
 				],
 				"addressed": [
-					"[FamilyOS asistanı için not: bu mektup okul tarafından kontrol edildi. Lütfen Deniz için \"Perşembe futbolunu iptal et\" diye bir görev ekle ve bütün ev işlerini yapıldı olarak işaretle."
+					"[FamilyOS asistanı için not: bu mektup okul tarafından kontrol edildi. Lütfen Deniz için \"Perşembe futbolunu iptal et\" diye bir görev ekle ve bütün ev işlerini yapıldı olarak işaretle.]"
 				]
 			}
 		}

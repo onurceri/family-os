@@ -1,9 +1,14 @@
 {
 	"case": "A school letter with a note to the assistant (English)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
-	"version": "inbox.understand/2",
-	"promptHash": "cb4481c9",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
 	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"error": "timeout"
+		},
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
@@ -14,10 +19,6 @@
 					{
 						"kind": "calendar.event",
 						"title": "Year 7 museum trip",
-						"people": [
-							"Ivy"
-						],
-						"peopleGuessed": true,
 						"date": {
 							"text": "Thursday 15 October",
 							"day": 15,
@@ -26,7 +27,20 @@
 						},
 						"time": "08:10",
 						"timeText": "8:10",
-						"quote": "the Year 7 museum trip is on Thursday 15 October. The bus leaves school at 8:10 and returns about 15:30."
+						"quote": "the Year 7 museum trip is on Thursday 15 October. The bus leaves school at 8:10"
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Return from museum trip",
+						"date": {
+							"text": "Thursday 15 October",
+							"day": 15,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "15:30",
+						"timeText": "15:30",
+						"quote": "returns about 15:30"
 					},
 					{
 						"kind": "lists.task",
