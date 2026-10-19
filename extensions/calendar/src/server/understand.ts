@@ -68,11 +68,30 @@ async function eventsBetween(ctx: MentionContext, from: string, to: string) {
 	const byEvent = new Map<string, { id: string; label: string; dates: Occurrence[] }>();
 	for (const o of found) {
 		if (o.source !== null || !o.editable) continue;
-		const entry = byEvent.get(o.eventId) ?? { id: o.eventId, label: o.title, dates: [] };
+		// A date moved out of a series is a date of that series, not an event of its own.
+		const thing = o.seriesId ?? o.eventId;
+		const entry = byEvent.get(thing) ?? { id: thing, label: o.title, dates: [] };
 		entry.dates.push(o);
-		byEvent.set(o.eventId, entry);
+		byEvent.set(thing, entry);
 	}
-	return [...byEvent.values()];
+	const things = [...byEvent.values()];
+	// The series' own title names the thing: a moved date may have been retitled.
+	for (const t of things) {
+		const own = t.dates.find((d) => d.eventId === t.id);
+		if (own) t.label = own.title;
+	}
+	return things;
+}
+
+/** Whether a thing on the calendar repeats: a series, or a series whose date moved out. */
+const repeats = (dates: readonly Occurrence[]) => dates.some((d) => d.recurring || d.seriesId);
+
+/** The day a moved date was moved from, in the family time zone. */
+function originalDay(o: Occurrence, timeZone: string): string | null {
+	if (o.recurrenceKey === undefined) return null;
+	return o.allDay
+		? o.recurrenceKey
+		: zoned(Number(o.recurrenceKey), timeZone).toPlainDate().toString();
 }
 
 /** `HH:MM` of an instant in the family time zone. */
@@ -682,7 +701,10 @@ export const eventChange = defineMentionKind({
 			const chosenByDay = found.byDay && day?.to === undefined;
 			// One date of a repeating event moves: the one nearest the new day. Without a new day,
 			// the change is to the whole series.
-			const o = first.recurring && day ? nearest(dates, day.date, ctx.timeZone) : first;
+			const o =
+				repeats(dates) && day
+					? nearest(dates, day.date, ctx.timeZone)
+					: (dates.find((d) => d.recurring) ?? first);
 			const at = startOf(o, ctx.timeZone);
 			const change: Record<string, unknown> = {};
 			if (day && day.date !== at.date) change.date = day.date;
@@ -710,8 +732,9 @@ export const eventChange = defineMentionKind({
 				propose: {
 					actionId: 'calendar.changeEvent',
 					input: {
-						id: o.eventId,
-						...(first.recurring && day && { occurrence: o.key }),
+						// Without a day the change is to the series, even when its next date is a moved one.
+						id: repeats(dates) && !day ? found.event.id : o.eventId,
+						...(o.recurring && day && { occurrence: o.key }),
 						...change,
 						label: cut(words, LABEL_MAX),
 					},
@@ -810,7 +833,7 @@ export const eventCancel = defineMentionKind({
 				)})`,
 				[index],
 			);
-			if (first.recurring) {
+			if (repeats(dates)) {
 				// Read the day again at the time it happens: a weekday named on that very day after
 				// the event is next week's.
 				if (mention.date && !first.allDay)
@@ -830,14 +853,24 @@ export const eventCancel = defineMentionKind({
 					}
 				} else if (day) {
 					const on = dates.find((d) => startOf(d, ctx.timeZone).date === day?.date);
-					if (!on && (await skippedOn(ctx, first.eventId, day.date))) {
-						out.push(refuse('already', words, [index]));
-						continue;
+					// A date moved to another day is still the series' date of the day it left: the
+					// message names that day, and the date to cancel is the moved one.
+					const left = on
+						? undefined
+						: dates.find((d) => originalDay(d, ctx.timeZone) === day?.date);
+					if (left) {
+						o = left;
+						uncertain.push(UNSURE_TARGET);
+					} else {
+						if (!on && (await skippedOn(ctx, found.event.id, day.date))) {
+							out.push(refuse('already', words, [index]));
+							continue;
+						}
+						o = on ?? nearest(dates, day.date, ctx.timeZone);
 					}
-					o = on ?? nearest(dates, day.date, ctx.timeZone);
 					// A weekday alone ("thursday") names the coming date of a series on that weekday.
 					const sure = day.certain || (on !== undefined && day.why === 'weekday_only');
-					if (!on || !sure) {
+					if (!left && (!on || !sure)) {
 						uncertain.push('occurrence');
 						decided.occurrence = 'inferred';
 					}
@@ -850,7 +883,7 @@ export const eventCancel = defineMentionKind({
 				out.push(offDay);
 				continue;
 			}
-			const key = `${o.eventId}:${first.recurring ? o.key : ''}`;
+			const key = `${o.eventId}:${o.recurring ? o.key : ''}`;
 			const seen = cancelled.get(key);
 			if (seen) {
 				seen.push(index);
@@ -863,7 +896,7 @@ export const eventCancel = defineMentionKind({
 					actionId: 'calendar.deleteEvent',
 					input: {
 						id: o.eventId,
-						...(first.recurring && { occurrence: o.key }),
+						...(o.recurring && { occurrence: o.key }),
 						label: cut(words, LABEL_MAX),
 					},
 					subject: words,

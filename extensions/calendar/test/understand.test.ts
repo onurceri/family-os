@@ -594,25 +594,57 @@ describe('calendar.eventChange of a repeating event with a date moved out of it'
 		expect(input).toMatchObject({ startTime: '17:00' });
 		expect(input.id).not.toBe(series.id);
 		expect(input).not.toHaveProperty('occurrence');
-		expect(p.uncertain).toContain('id');
+		// The series and its moved date are one thing: nothing to ask "which one?" about.
+		expect(p.uncertain ?? []).not.toContain('id');
 	});
 
-	it('says which days the equally named events are on when nothing tells them apart', async () => {
-		await swimmingWithMovedDate();
+	it('changes the series, not its moved date, when no day is named', async () => {
+		const series = await swimmingWithMovedDate();
 		const out = await resolve(
 			'calendar.eventChange',
 			[{ target: 'Leo swimming', time: '17:00', timeText: '5pm' }],
 			{ text: 'Leo swimming moved to 5pm' },
 		);
-		expect(out).toEqual([
+		expect(proposal(out[0]).input).toEqual({
+			id: series.id,
+			startTime: '17:00',
+			label: 'Leo swimming',
+		});
+	});
+
+	it('finds the moved date from the day it left when a cancellation names that day', async () => {
+		await swimmingWithMovedDate();
+		const wednesday = await resolve(
+			'calendar.eventCancel',
+			[{ target: 'Leo swimming', date: { text: 'Wednesday', weekday: 3 } }],
+			{ text: 'No Leo swimming on Wednesday' },
+		);
+		const p = proposal(wednesday[0]);
+		expect(p.actionId).toBe('calendar.deleteEvent');
+		const input = p.input as Record<string, unknown>;
+		// The date of 7 October now lives on Thursday 8 October, as an event of its own.
+		const moved = (await k.route('calendar.listOccurrences').call({
+			query: { from: '2026-10-08', to: '2026-10-08' },
+		})) as { eventId: string; seriesId?: string }[];
+		expect(input).toEqual({ id: moved[0]?.eventId, label: 'Leo swimming' });
+		expect(p.uncertain).toContain('id');
+		expect(await draft(wednesday[0])).toBe('drafted');
+	});
+
+	it('still says a date was taken out when nothing moved from the day named', async () => {
+		const series = await swimmingWithMovedDate();
+		await k.runner.invoke(
+			'calendar.deleteEvent',
+			{ id: series.id, occurrence: '2026-10-14' },
+			admin.actor,
+		);
+		const out = await resolve('calendar.eventCancel', [
 			{
-				refuse: {
-					reason: 'ambiguous',
-					subject: 'Leo swimming (Thu, Oct 8 / Wed, Oct 14)',
-					from: [0],
-				},
+				target: 'Leo swimming',
+				date: { text: 'Wednesday 14 Oct', weekday: 3, day: 14, month: 10 },
 			},
 		]);
+		expect(out).toEqual([{ refuse: { reason: 'already', subject: 'Leo swimming', from: [0] } }]);
 	});
 });
 

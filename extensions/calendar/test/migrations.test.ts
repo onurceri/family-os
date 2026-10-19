@@ -77,3 +77,38 @@ it('subscription events are keyed by UID and recurrence and go with their subscr
 	).rejects.toThrow();
 	await handle.close();
 });
+
+it('upgrades a 0.2.1 database: events stay as they were and gain empty link columns', async () => {
+	const handle = openDatabase({ path: ':memory:' });
+	const { db } = handle;
+	// The schema 0.2.1 shipped: only the first migration.
+	const released = Object.fromEntries(
+		Object.entries(migrations).filter(([n]) => n === '0001_init'),
+	);
+	expect(Object.keys(released)).toEqual(['0001_init']);
+	await runMigrations(db, [{ scope: 'calendar', migrations: released }]);
+	const TZ = 'Europe/Istanbul';
+	const start = epochOf('2026-10-20', '19:00', TZ);
+	await sql`insert into calendar_events
+		(id, title, all_day, starts_at, ends_at, time_zone, rrule, exdates, member_ids, created_at, updated_at)
+		values ('cal_event_series', 'Bins', 0, ${start}, ${start + 1_800_000}, ${TZ}, 'FREQ=WEEKLY', ${`[${start}]`}, '[]', 5, 5)`.execute(
+		db,
+	);
+	await sql`insert into calendar_events
+		(id, title, all_day, starts_at, ends_at, time_zone, member_ids, created_at, updated_at)
+		values ('cal_event_moved', 'Bins', 0, ${start + 86_400_000}, ${start + 88_200_000}, ${TZ}, '[]', 6, 6)`.execute(
+		db,
+	);
+
+	await runMigrations(db, [{ scope: 'calendar', migrations }]);
+
+	const rows = (await sql<EventRow>`select * from calendar_events order by id`.execute(db)).rows;
+	expect(rows.map((r) => r.id)).toEqual(['cal_event_moved', 'cal_event_series']);
+	// A date moved before the link existed cannot be tied to its series safely: it stays unlinked.
+	for (const row of rows) expect(row).toMatchObject({ series_id: null, recurrence_key: null });
+	expect(rows[1]?.exdates).toBe(`[${start}]`);
+	expect(toDetail(rows[0] as EventRow)).not.toHaveProperty('seriesId');
+	// Running the migrations again changes nothing.
+	await runMigrations(db, [{ scope: 'calendar', migrations }]);
+	await handle.close();
+});

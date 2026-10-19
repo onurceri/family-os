@@ -484,6 +484,8 @@ export interface operations {
                         } | null;
                         editable: boolean;
                         tags: string[];
+                        seriesId?: string;
+                        recurrenceKey?: string;
                     }[];
                 };
             };
@@ -648,6 +650,8 @@ export interface operations {
                         reminder: number | null;
                         rrule: string | null;
                         tags: string[];
+                        seriesId?: string;
+                        recurrenceKey?: string;
                     };
                 };
             };
@@ -1868,6 +1872,8 @@ export interface operations {
                             reminder: number | null;
                             rrule: string | null;
                             tags: string[];
+                            seriesId?: string;
+                            recurrenceKey?: string;
                         };
                     } | {
                         /** @enum {string} */
@@ -2099,6 +2105,8 @@ export interface operations {
                             reminder: number | null;
                             rrule: string | null;
                             tags: string[];
+                            seriesId?: string;
+                            recurrenceKey?: string;
                         };
                     } | {
                         /** @enum {string} */
@@ -2300,6 +2308,8 @@ export interface operations {
                                 reminder: number | null;
                                 rrule: string | null;
                                 tags: string[];
+                                seriesId?: string;
+                                recurrenceKey?: string;
                             };
                             before: {
                                 [key: string]: unknown;
@@ -2642,6 +2652,8 @@ export interface operations {
                             reminder: number | null;
                             rrule: string | null;
                             tags: string[];
+                            seriesId?: string;
+                            recurrenceKey?: string;
                         };
                     } | {
                         /** @enum {string} */
@@ -2775,7 +2787,8 @@ export interface operations {
                 "application/json": {
                     id: string;
                     occurrence: string;
-                    splitId: string;
+                    /** @description The moved date, for one moved before dates kept their link to the series */
+                    splitId?: string;
                 };
             };
         };

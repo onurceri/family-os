@@ -51,6 +51,13 @@ export type CalendarTables = {
 		reminder_set: number;
 		/** JSON array of tag names (at most 5); null = none. */
 		tags: string | null;
+		/**
+		 * A date moved out of a repeating event with "Only this one": the series' id. Null for every
+		 * other event, and for dates moved before the link existed.
+		 */
+		series_id: string | null;
+		/** With `series_id`: the original occurrence key, the same value the series' `exdates` hold. */
+		recurrence_key: string | null;
 		created_by: string | null;
 		source_kind: string | null;
 		source_id: string | null;
@@ -251,6 +258,20 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
+	// A date moved out of a series keeps the series' id and the occurrence it replaced. Dates
+	// moved before this migration stay unlinked: nothing in a standalone row says which series it
+	// came from (a title can be edited, a series can be split), so a guess could join the wrong ones.
+	'0002_series_link': {
+		async up(db) {
+			await db.schema.alterTable('calendar_events').addColumn('series_id', 'text').execute();
+			await db.schema.alterTable('calendar_events').addColumn('recurrence_key', 'text').execute();
+			await db.schema
+				.createIndex('calendar_events_series_idx')
+				.on('calendar_events')
+				.columns(['series_id'])
+				.execute();
+		},
+	},
 };
 
 export const events = (db: DbExecutor) => db.withTables<CalendarTables>();
@@ -444,8 +465,15 @@ export function toDetail(row: EventRow): EventDetail {
 		reminder: effectiveReminder(row),
 		rrule: row.rrule && !recurrence ? row.rrule : null,
 		tags: tagsOf(row.tags),
+		...link(row),
 	};
 }
+
+/** `seriesId` and `recurrenceKey` of a date moved out of a series; nothing for any other event. */
+export const link = (row: Pick<EventRow, 'series_id' | 'recurrence_key'>) =>
+	row.series_id && row.recurrence_key !== null
+		? { seriesId: row.series_id, recurrenceKey: row.recurrence_key }
+		: {};
 
 /** Where an occurrence of an event row starts and ends (one entry per occurrence in the range). */
 export type Expanded =
@@ -561,6 +589,7 @@ export async function occurrencesBetween(
 			source: null,
 			editable: true,
 			tags: tagsOf(row.tags),
+			...link(row),
 		};
 		for (const x of expandRow(row, from, to, timeZone)) {
 			out.push(
@@ -606,6 +635,8 @@ export function externalAsEvent(row: ExternalEventRow, sub: SubscriptionRow): Ev
 		exdates: row.exdates,
 		member_ids: sub.member_ids,
 		tags: row.tags,
+		series_id: null,
+		recurrence_key: null,
 		// Nobody chose: the default lead time applies.
 		reminder_minutes: null,
 		reminder_set: 0,

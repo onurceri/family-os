@@ -275,6 +275,8 @@ export const createEvent = defineAction({
 			id,
 			...toRow(input, timeZone),
 			exdates: null,
+			series_id: null,
+			recurrence_key: null,
 			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
 			source_kind: null,
 			source_id: null,
@@ -371,6 +373,8 @@ export const updateEvent = defineAction({
 					id: uow.ids.next('cal_event'),
 					...toRow(scope === 'this' ? single : event, timeZone),
 					exdates: null,
+					series_id: scope === 'this' ? id : null,
+					recurrence_key: scope === 'this' ? occurrence : null,
 					created_by: row.created_by,
 					source_kind: null,
 					source_id: null,
@@ -408,6 +412,21 @@ export const updateEvent = defineAction({
 						})
 						.where('id', '=', id)
 						.execute();
+					// Dates moved out of the part that now belongs to the new series go with it.
+					const later = (key: string | null) =>
+						key !== null && (row.all_day ? key >= occurrence : Number(key) >= Number(occurrence));
+					const linked = await events(uow.db)
+						.selectFrom('calendar_events')
+						.select(['id', 'recurrence_key'])
+						.where('series_id', '=', id)
+						.execute();
+					for (const moved of linked.filter((m) => later(m.recurrence_key))) {
+						await events(uow.db)
+							.updateTable('calendar_events')
+							.set({ series_id: created.id, updated_at: now })
+							.where('id', '=', moved.id)
+							.execute();
+					}
 				}
 				await ensureTags(uow.db, tagsOf(created.tags), now);
 				const schedule = (r: Parameters<typeof scheduleReminder>[1]) =>
@@ -504,6 +523,22 @@ export const deleteEvent = defineAction({
 				.where('id', '=', id)
 				.execute();
 			await uow.ai.remove(EVENT_KIND, id);
+			// The dates moved out of a series go with it; the same stamp lets a restore find them.
+			const moved = await events(uow.db)
+				.selectFrom('calendar_events')
+				.select('id')
+				.where('series_id', '=', id)
+				.where('deleted_at', 'is', null)
+				.execute();
+			for (const m of moved) {
+				await events(uow.db)
+					.updateTable('calendar_events')
+					.set({ deleted_at: now, updated_at: now })
+					.where('id', '=', m.id)
+					.execute();
+				await uow.ai.remove(EVENT_KIND, m.id);
+				uow.emit(eventChanged, { eventId: m.id });
+			}
 		}
 		uow.emit(eventChanged, { eventId: id });
 		return { ok: true as const, id, occurrence: occurrence && row.rrule ? occurrence : null };
@@ -541,6 +576,22 @@ export const restoreEvent = defineAction({
 				.where('id', '=', id)
 				.execute();
 			await uow.ai.reindex(EVENT_KIND, id);
+			// The dates that went with the series (deleted at the same moment) come back with it.
+			const moved = await events(uow.db)
+				.selectFrom('calendar_events')
+				.select('id')
+				.where('series_id', '=', id)
+				.where('deleted_at', '=', row.deleted_at)
+				.execute();
+			for (const m of moved) {
+				await events(uow.db)
+					.updateTable('calendar_events')
+					.set({ deleted_at: null, updated_at: now })
+					.where('id', '=', m.id)
+					.execute();
+				await uow.ai.reindex(EVENT_KIND, m.id);
+				uow.emit(eventChanged, { eventId: m.id });
+			}
 		}
 		const restored = await loadEvent(uow, id);
 		await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), restored, now);
@@ -761,6 +812,8 @@ export const changeEvent = defineAction({
 				id: newId,
 				...next,
 				exdates: null,
+				series_id: id,
+				recurrence_key: occurrence as string,
 				created_by: row.created_by,
 				source_kind: null,
 				source_id: null,
@@ -813,18 +866,37 @@ export const putOccurrenceBack = defineAction({
 	id: 'calendar.putOccurrenceBack',
 	title: 'Put one date of a repeating event back',
 	draftTitle: 'calendar:draft_title_put_occurrence_back',
-	input: z.object({ id: EventIdSchema, occurrence: z.string(), splitId: EventIdSchema }),
+	input: z.object({
+		id: EventIdSchema,
+		occurrence: z.string(),
+		splitId: EventIdSchema.optional().describe(
+			'The moved date, for one moved before dates kept their link to the series',
+		),
+	}),
 	output: z.object({ ok: z.literal(true) }),
 	approval: { unless: calendarEdit.id },
 	async run(uow, { id, occurrence, splitId }) {
 		const now = uow.clock.now();
-		await events(uow.db)
-			.updateTable('calendar_events')
-			.set({ deleted_at: now, updated_at: now })
-			.where('id', '=', splitId)
+		// The moved date is the one linked to this series at that occurrence.
+		const linked = await events(uow.db)
+			.selectFrom('calendar_events')
+			.select('id')
+			.where('series_id', '=', id)
+			.where('recurrence_key', '=', occurrence)
 			.where('deleted_at', 'is', null)
 			.execute();
-		await uow.ai.remove(EVENT_KIND, splitId);
+		const moved = new Set(linked.map((m) => m.id));
+		if (splitId) moved.add(splitId);
+		for (const movedId of moved) {
+			await events(uow.db)
+				.updateTable('calendar_events')
+				.set({ deleted_at: now, updated_at: now })
+				.where('id', '=', movedId)
+				.where('deleted_at', 'is', null)
+				.execute();
+			await uow.ai.remove(EVENT_KIND, movedId);
+			uow.emit(eventChanged, { eventId: movedId });
+		}
 		const series = await events(uow.db)
 			.selectFrom('calendar_events')
 			.selectAll()
@@ -844,7 +916,6 @@ export const putOccurrenceBack = defineAction({
 			now,
 		);
 		uow.emit(eventChanged, { eventId: id });
-		uow.emit(eventChanged, { eventId: splitId });
 		return { ok: true as const };
 	},
 });

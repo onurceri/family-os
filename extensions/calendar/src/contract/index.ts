@@ -166,6 +166,10 @@ export const EventDetailSchema = z.object({
 	/** Raw RRULE when the rule is outside the editable presets. */
 	rrule: z.string().nullable(),
 	tags: z.array(z.string()),
+	/** A date moved out of a repeating event: the series it belongs to and the date it replaced. */
+	seriesId: z.string().optional(),
+	/** With `seriesId`: the replaced occurrence's key, as in `Occurrence.key` of the series. */
+	recurrenceKey: z.string().optional(),
 });
 export type EventDetail = z.infer<typeof EventDetailSchema>;
 
@@ -207,6 +211,10 @@ export const OccurrenceSchema = z.object({
 	editable: z.boolean(),
 	/** Tags of the event (a subscription event keeps the ones its feed names). */
 	tags: z.array(z.string()),
+	/** A date moved out of a repeating event: the series it belongs to (its `eventId` is its own). */
+	seriesId: z.string().optional(),
+	/** With `seriesId`: the key the series' occurrence had (what it replaced). */
+	recurrenceKey: z.string().optional(),
 });
 export type Occurrence = z.infer<typeof OccurrenceSchema>;
 

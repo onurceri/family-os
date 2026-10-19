@@ -97,7 +97,9 @@ Tap an event to change it, or to **Delete** it (then **Tap again to delete**). E
 **Repeats** is **Does not repeat**, **Every day**, **Every week** (pick the days) or **Every month**. Set **Until** if it should end. A change to a repeating event changes the whole series. To remove it, choose:
 
 - **Delete only this one** (then **Tap again to skip this one**): skips that day; the rest stay.
-- **Delete whole series** (then **Tap again to delete all**).
+- **Delete whole series** (then **Tap again to delete all**). The days you moved out of it with **Only this one** go with it, and bringing the series back (**Undo**) brings them back too.
+
+A day moved with **Only this one** stays that series' day: FamilyOS remembers which day it replaced, so putting it back returns the original day, and "football is cancelled on Thursday" finds it even after it moved. In a calendar address (an `.ics` feed) it is sent as a changed date of the series, so a phone's calendar shows one repeating event with one day moved, not a second event. Days moved before this was kept, and moves from a member's address whose series that member does not see, appear as events of their own.
 
 Saving a change to the whole series keeps the days you skipped and the days you moved with **Only this one**. If you move the series to another day or time, skipped days that the new repeat still has stay skipped, and the others are forgotten. A repeat the form cannot show (shown as **Custom rule**, for example from an imported calendar) stays when you save other changes, and **Does not repeat** stops it. The event's own time zone stay as they were unless you change its date or time.
 

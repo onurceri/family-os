@@ -117,11 +117,31 @@ export function vtimezone(timeZone: string, fromMs: number, toMs: number): strin
 
 const jsonList = (value: string | null): (string | number)[] => (value ? JSON.parse(value) : []);
 
-/** The content lines of one VEVENT. */
-export function eventLines(row: EventRow, includeNotes: boolean): string[] {
-	const lines = ['BEGIN:VEVENT', `UID:${row.id}@familyos`];
+/** A date moved out of a series, written as an override of the series' own occurrence. */
+type Override = { series: EventRow; key: string };
+
+/** RECURRENCE-ID of an override: the replaced occurrence, in the series' own zone (§3.8.4.4). */
+function recurrenceId({ series, key }: Override): string {
+	if (series.all_day) return `RECURRENCE-ID;VALUE=DATE:${dateStamp(key)}`;
+	return `RECURRENCE-ID;TZID=${series.time_zone}:${localStamp(Number(key), series.time_zone)}`;
+}
+
+/**
+ * The content lines of one VEVENT. A date moved out of a series (`override`) carries the series'
+ * UID and a RECURRENCE-ID, so a calendar app shows it as that series' date moved, not as a second
+ * event. `overridden` holds the occurrence keys of a series that have an override: an EXDATE for
+ * the same occurrence would contradict it, so they are left out of the series' EXDATE.
+ */
+export function eventLines(
+	row: EventRow,
+	includeNotes: boolean,
+	override?: Override,
+	overridden?: ReadonlySet<string>,
+): string[] {
+	const lines = ['BEGIN:VEVENT', `UID:${(override?.series ?? row).id}@familyos`];
 	lines.push(`DTSTAMP:${utcStamp(row.updated_at)}`, `LAST-MODIFIED:${utcStamp(row.updated_at)}`);
-	const exdates = jsonList(row.exdates);
+	if (override) lines.push(recurrenceId(override));
+	const exdates = jsonList(row.exdates).filter((e) => !overridden?.has(String(e)));
 	if (row.all_day) {
 		const start = row.start_date as string;
 		const end = row.end_date ?? start;
@@ -183,7 +203,22 @@ export function buildCalendar(
 	}
 	const horizon = options.now + 10 * 365 * 86_400_000;
 	for (const [tz, from] of zones) lines.push(...vtimezone(tz, from, horizon));
-	for (const row of rows) lines.push(...eventLines(row, options.includeNotes));
+	// A moved date is an override only while its series is in the feed too (the feed of one member
+	// may hold the date and not the series); otherwise it is an event of its own.
+	const byId = new Map(rows.map((r) => [r.id, r]));
+	const seriesOf = (row: EventRow): Override | undefined => {
+		const series = row.series_id ? byId.get(row.series_id) : undefined;
+		return series?.rrule && row.recurrence_key !== null && !row.rrule
+			? { series, key: row.recurrence_key }
+			: undefined;
+	};
+	const overridden = new Map<string, Set<string>>();
+	for (const row of rows) {
+		const o = seriesOf(row);
+		if (o) overridden.set(o.series.id, (overridden.get(o.series.id) ?? new Set()).add(o.key));
+	}
+	for (const row of rows)
+		lines.push(...eventLines(row, options.includeNotes, seriesOf(row), overridden.get(row.id)));
 	lines.push('END:VCALENDAR');
 	return `${lines.map(foldLine).join(CRLF)}${CRLF}`;
 }

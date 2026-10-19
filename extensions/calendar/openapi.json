@@ -151,6 +151,12 @@
 												"items": {
 													"type": "string"
 												}
+											},
+											"seriesId": {
+												"type": "string"
+											},
+											"recurrenceKey": {
+												"type": "string"
 											}
 										},
 										"required": [
@@ -600,6 +606,12 @@
 											"items": {
 												"type": "string"
 											}
+										},
+										"seriesId": {
+											"type": "string"
+										},
+										"recurrenceKey": {
+											"type": "string"
 										}
 									},
 									"required": [
@@ -3635,6 +3647,12 @@
 															"items": {
 																"type": "string"
 															}
+														},
+														"seriesId": {
+															"type": "string"
+														},
+														"recurrenceKey": {
+															"type": "string"
 														}
 													},
 													"required": [
@@ -4352,6 +4370,12 @@
 															"items": {
 																"type": "string"
 															}
+														},
+														"seriesId": {
+															"type": "string"
+														},
+														"recurrenceKey": {
+															"type": "string"
 														}
 													},
 													"required": [
@@ -4935,6 +4959,12 @@
 																	"items": {
 																		"type": "string"
 																	}
+																},
+																"seriesId": {
+																	"type": "string"
+																},
+																"recurrenceKey": {
+																	"type": "string"
 																}
 															},
 															"required": [
@@ -5828,6 +5858,12 @@
 															"items": {
 																"type": "string"
 															}
+														},
+														"seriesId": {
+															"type": "string"
+														},
+														"recurrenceKey": {
+															"type": "string"
 														}
 													},
 													"required": [
@@ -6153,13 +6189,13 @@
 									},
 									"splitId": {
 										"type": "string",
-										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										"pattern": "^cal_event_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+										"description": "The moved date, for one moved before dates kept their link to the series"
 									}
 								},
 								"required": [
 									"id",
-									"occurrence",
-									"splitId"
+									"occurrence"
 								]
 							}
 						}
