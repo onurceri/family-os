@@ -6,6 +6,7 @@ import {
 	digestNotes,
 	FamosError,
 	searchFinds,
+	selfOf,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -277,7 +278,7 @@ export const createEvent = defineAction({
 			exdates: null,
 			series_id: null,
 			recurrence_key: null,
-			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+			created_by: selfOf(uow.actor),
 			source_kind: null,
 			source_id: null,
 			created_at: now,

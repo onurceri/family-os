@@ -11,6 +11,7 @@ import {
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { ownerOf } from './features.ts';
 import type { CoreTables } from './tables.ts';
+import { unknownKind } from './unknown-kind.ts';
 
 export type CustomRole = {
 	id: string;
@@ -85,7 +86,17 @@ export function createAccess(
 		capabilities,
 		capability: (id) => byId.get(id),
 		memberCan(actor, capability) {
-			if (actor.kind !== 'ai' || actor.onBehalfOf === undefined) return true;
+			switch (actor.kind) {
+				case 'ai':
+					break;
+				case 'member':
+				case 'system':
+				case 'display':
+					return true;
+				default:
+					return unknownKind(actor, false);
+			}
+			if (actor.onBehalfOf === undefined) return true;
 			const definition = byId.get(capability);
 			if (!definition) throw new Error(`Unknown capability "${capability}"`);
 			return isOn(ownerOf(capability)) && holds(actor.roleId, capability);
@@ -97,29 +108,37 @@ export function createAccess(
 			const definition = byId.get(capability);
 			if (!definition) throw new Error(`Unknown capability "${capability}"`);
 			if (!isOn(ownerOf(capability))) return false;
-			// Background work may do everything; an unauthenticated request (public routes) nothing.
-			if (actor.kind === 'system') return actor.source !== ANONYMOUS;
-			// AI only reads; its changes are always drafts. An area that is off for the AI
-			// is closed to it entirely, and a local-only one is open only to an actor whose model is
-			// local (the adapter checks the same again where the model is called).
-			// Acting for a member (the assistant), it also needs what that member holds: it never
-			// exceeds the person asking.
-			if (actor.kind === 'ai') {
-				const area = aiAccess(ownerOf(capability));
-				if (definition.level !== 'view' || area === 'off') return false;
-				// A local-only area's data may reach only a model on the family's own network.
-				if (area === 'local' && actor.local !== true) return false;
-				return actor.onBehalfOf === undefined || holds(actor.roleId, capability);
+			// Every kind is named, so a kind added to `Actor` does not compile until it is handled
+			// here; one that is not known at run time holds nothing.
+			switch (actor.kind) {
+				case 'system':
+					// Background work may do everything; an unauthenticated request (public routes)
+					// nothing.
+					return actor.source !== ANONYMOUS;
+				case 'ai': {
+					// AI only reads; its changes are always drafts. An area that is off for the AI
+					// is closed to it entirely, and a local-only one is open only to an actor whose
+					// model is local (the adapter checks the same again where the model is called).
+					// Acting for a member (the assistant), it also needs what that member holds: it
+					// never exceeds the person asking.
+					const area = aiAccess(ownerOf(capability));
+					if (definition.level !== 'view' || area === 'off') return false;
+					// A local-only area's data may reach only a model on the family's own network.
+					if (area === 'local' && actor.local !== true) return false;
+					return actor.onBehalfOf === undefined || holds(actor.roleId, capability);
+				}
+				case 'display':
+					// A display holds only what was granted at pairing, and never above `view`.
+					if (definition.level !== 'view') return false;
+					if (capability === CORE_CAPABILITIES.membersView.id) return actor.showNames;
+					return actor.capabilities.includes(capability);
+				case 'member':
+					// A PIN sign-in never administers, whatever the role (a PIN can be guessed).
+					if (actor.pin === true && definition.critical === true) return false;
+					return effective(actor.roleId).has(capability);
+				default:
+					return unknownKind(actor, false);
 			}
-			// A display holds only what was granted at pairing, and never above `view`.
-			if (actor.kind === 'display') {
-				if (definition.level !== 'view') return false;
-				if (capability === CORE_CAPABILITIES.membersView.id) return actor.showNames;
-				return actor.capabilities.includes(capability);
-			}
-			// A PIN sign-in never administers, whatever the role (a PIN can be guessed).
-			if (actor.pin === true && definition.critical === true) return false;
-			return effective(actor.roleId).has(capability);
 		},
 		invalidate: () => cache.clear(),
 		async refresh(db) {

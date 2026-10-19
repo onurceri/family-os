@@ -1,4 +1,4 @@
-import { type DbExecutor, defineAction, FamosError } from '@famos/sdk';
+import { type DbExecutor, defineAction, FamosError, personPresent } from '@famos/sdk';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { readJson, writeJson } from './settings-json.ts';
@@ -31,7 +31,7 @@ export const setMyNextUp = defineAction({
 	requires: CORE_CAPABILITIES.notificationsReceive.id,
 	approval: 'never',
 	async run(uow, input) {
-		if (uow.actor.kind !== 'member')
+		if (!personPresent(uow.actor))
 			throw new FamosError('bad_request', 'Only a person can choose whose next thing to show');
 		const stored = await readJson<Stored>(uow.db, KEY, {});
 		const members = { ...stored.members };

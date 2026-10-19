@@ -1,4 +1,4 @@
-import { type Actor, type DbExecutor, defineEvent, FamosError, type UnitOfWork } from '@famos/sdk';
+import { type DbExecutor, defineEvent, FamosError, selfOf, type UnitOfWork } from '@famos/sdk';
 import { type Chore, choreChangedPayload } from '../contract/index.ts';
 import { type ChoreRow, parseRecurrence, tables } from './store.ts';
 
@@ -7,7 +7,7 @@ export const choresChanged = defineEvent('chores.changed', choreChangedPayload, 
 	audience: 'chores.view',
 });
 
-export const memberIdOf = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+export const memberIdOf = selfOf;
 
 export async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
 	if (ids.length === 0) return;

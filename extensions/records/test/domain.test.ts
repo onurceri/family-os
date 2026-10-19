@@ -76,14 +76,35 @@ describe('a domain extension using records', () => {
 		expect(open).toHaveLength(0);
 	});
 
-	it('lets a member with the domain capability archive without records.edit being asked', async () => {
-		// A custom role: may edit cars but not records. The domain action is the permission.
+	it('asks records.edit of a member whose domain action archives, as it would of the member directly', async () => {
+		// A custom role that may edit cars but not records: archiving through the domain action
+		// would apply a change to records they could only suggest, so it is refused, not applied.
 		const role = await k.runner.invoke<{ id: string }>(
 			'core.createRole',
 			{
 				name: 'Car person',
 				base: 'supervised',
 				overrides: { 'garage.edit': true, 'records.edit': false },
+			},
+			admin.actor,
+		);
+		if (role.status !== 'applied') throw new Error('expected role');
+		const driver = await person(k, role.output.id, 'Driver');
+		await expect(
+			k.runner.invoke('garage.archiveCar', { recordId: CAR }, driver.actor),
+		).rejects.toMatchObject({
+			code: 'forbidden',
+			details: { reason: 'nested_needs_approval', capability: 'records.edit' },
+		});
+	});
+
+	it('lets a member who holds both archive through the domain action', async () => {
+		const role = await k.runner.invoke<{ id: string }>(
+			'core.createRole',
+			{
+				name: 'Car person',
+				base: 'supervised',
+				overrides: { 'garage.edit': true, 'records.edit': true },
 			},
 			admin.actor,
 		);

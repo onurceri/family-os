@@ -7,7 +7,7 @@ import {
 	STYLE_IDS,
 	toDevice,
 } from '@famos/core';
-import { FamosError, type TrustedDevice } from '@famos/sdk';
+import { FamosError, personPresent, type TrustedDevice } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
@@ -161,7 +161,8 @@ const GrantSchema = z.object({
  * cookie, and pairing would replace a trusted family device's cookie, untrusting it silently.
  */
 function refuseFamilyBrowser(c: Context<AppEnv>) {
-	if (c.get('actor')?.kind === 'member' || c.get('device'))
+	const actor = c.get('actor');
+	if ((actor && personPresent(actor)) || c.get('device'))
 		throw new FamosError('conflict', 'This browser is used by the family');
 }
 

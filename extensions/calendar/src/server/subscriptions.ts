@@ -6,6 +6,7 @@ import {
 	FamosError,
 	isExternalHttpError,
 	type JobContext,
+	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { dayBounds } from '@famos/time';
@@ -152,7 +153,7 @@ export const addSubscription = defineAction({
 			last_fetched_at: null,
 			last_error: null,
 			event_count: 0,
-			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+			created_by: selfOf(uow.actor),
 			created_at: now,
 			updated_at: now,
 		};

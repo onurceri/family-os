@@ -5,6 +5,7 @@ import {
 	type ExtensionContext,
 	FamosError,
 	isExternalHttpError,
+	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -146,9 +147,9 @@ export const setMySharing = defineAction({
 	// Only the person decides what is shown about where they are: no suggestion of it, by anyone.
 	refuseProposal: async () => 'Only the person can choose what is shown about where they are.',
 	async run(uow, input) {
-		if (uow.actor.kind !== 'member')
+		const memberId = selfOf(uow.actor);
+		if (memberId === null)
 			throw new FamosError('forbidden', 'Only the person can choose what is shown about them');
-		const memberId = uow.actor.memberId;
 		const row = await findPerson(uow.db, memberId);
 		if (!row) throw new FamosError('not_found', 'You are not linked to a Home Assistant person');
 		// Nothing shown means nothing on displays either; choosing again starts with it off.
@@ -183,8 +184,9 @@ export const getMySharing = defineRoute({
 	requires: 'signedIn',
 	response: MySharingSchema,
 	async handle(ctx, { actor }): Promise<MySharing> {
-		if (actor.kind !== 'member') return { linked: false };
-		const row = await findPerson(ctx.db, actor.memberId);
+		const self = selfOf(actor);
+		if (self === null) return { linked: false };
+		const row = await findPerson(ctx.db, self);
 		return row
 			? { linked: true, level: row.level, onDisplays: row.on_displays === 1 }
 			: { linked: false };

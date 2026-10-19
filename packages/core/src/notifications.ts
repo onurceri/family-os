@@ -17,6 +17,7 @@ import {
 	NotifyRequestSchema,
 	type NotifyWhen,
 	NotifyWhenSchema,
+	personPresent,
 } from '@famos/sdk';
 import {
 	addDays,
@@ -396,7 +397,7 @@ export function createNotifications(deps: NotificationsDeps) {
 	/* ───────────── Actions ───────────── */
 
 	const requireMember = (actor: Actor) => {
-		if (actor.kind !== 'member') throw new FamosError('forbidden', 'Only members can do this');
+		if (!personPresent(actor)) throw new FamosError('forbidden', 'Only members can do this');
 		return actor.memberId;
 	};
 

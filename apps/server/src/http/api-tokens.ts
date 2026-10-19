@@ -5,7 +5,7 @@ import {
 	CORE_CAPABILITIES,
 	type Kernel,
 } from '@famos/core';
-import { FamosError } from '@famos/sdk';
+import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
@@ -53,7 +53,8 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		new Map((await kernel.ctx.family.members()).map((m) => [m.id as string, m.displayName]));
 	const me = (c: Context<AppEnv>) => {
 		const actor = c.get('actor');
-		if (actor?.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+		if (!actor || !personPresent(actor))
+			throw new FamosError('unauthenticated', 'Sign in required');
 		return actor;
 	};
 	const present = (token: ApiTokenView, names: Map<string, string> | null) => ({

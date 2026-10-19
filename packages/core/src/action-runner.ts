@@ -15,10 +15,13 @@ import {
 	type JobQueue,
 	type Logger,
 	type MemberId,
+	memberBehind,
 	type NotifyRequest,
 	type ProposalRefusal,
 	type ProposalRefusalDetails,
+	personPresent,
 	type SecretBox,
+	selfOf,
 	subjectOf,
 	targetOf,
 	UNSURE_TARGET,
@@ -255,6 +258,12 @@ function parseOrThrow<S extends z.ZodType>(schema: S, value: unknown, what: stri
  */
 const CLOSED_MATTER = ' Tell the person this and do not suggest anything else for it.';
 
+/** A person decided the outer act, so the actions it runs need no approval of their own. */
+const DECIDED = { decided: true } as const;
+
+/** The `details.reason` of a refusal for an action run inside another that would need approval. */
+export const NESTED_NEEDS_APPROVAL = 'nested_needs_approval';
+
 /** A draft keeps at most this much of the message it rests on: a line on its card, not a copy. */
 const QUOTE_MAX = 300;
 
@@ -307,11 +316,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		actor: Actor,
 		input: unknown,
 		settled: string | null,
+		db: DbExecutor = deps.db,
 	): Promise<Decision> {
 		const facts: DecideFacts = { input, settled };
 		const policy = def.approval;
 		if (typeof policy === 'object' && policy.owner && needsOwner(def, actor, env, facts))
-			facts.owner = await policy.owner(readContext(def), input);
+			facts.owner = await policy.owner(readContext(def, db), input);
 		return decide(def, actor, env, facts);
 	}
 
@@ -391,6 +401,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	async function unitOfWork<T>(
 		actor: Actor,
 		work: (uow: UnitOfWork, view: (extensionId: string) => UnitOfWork) => Promise<T>,
+		/**
+		 * `decided`: a person already approved what this unit of work does (an approved suggestion
+		 * is applied, or taken back), so an action it runs inside needs no approval of its own.
+		 */
+		{ decided = false }: { decided?: boolean } = {},
 	): Promise<T> {
 		const events: [string, unknown][] = [];
 		let enqueued = 0;
@@ -449,7 +464,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 							.updateTable('core_drafts')
 							.set({
 								status: 'rejected',
-								decided_by: actor.kind === 'member' ? actor.memberId : null,
+								decided_by: selfOf(actor),
 								decided_at: now,
 								updated_at: now,
 							})
@@ -469,10 +484,24 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					const def = getAction(actionId);
 					assertCallable(owner, def, actor);
 					authorize(def, actor);
-					return def.run(
-						view(ownerOf(def.id)),
-						parseOrThrow(def.input, input, `input for ${actionId}`),
-					);
+					const parsed = parseOrThrow(def.input, input, `input for ${actionId}`);
+					// An action run inside another is decided like any call: what would need a
+					// suggestion for this actor is refused, never applied directly, so the outer
+					// action is the one that carries the approval.
+					if (!decided) {
+						const decision = await decideInput(def, actor, parsed, null, trx);
+						if (decision.outcome === 'refuse') throw refusalError(decision);
+						if (decision.outcome === 'draft')
+							throw new FamosError(
+								'forbidden',
+								'This needs approval, so it cannot be done as part of another action',
+								{
+									reason: NESTED_NEEDS_APPROVAL,
+									...(decision.capability && { capability: decision.capability }),
+								},
+							);
+					}
+					return def.run(view(ownerOf(def.id)), parsed);
 				},
 			});
 			return work(view('core'), view);
@@ -524,10 +553,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		actor: Actor,
 		options: InvokeOptions = {},
 	): Promise<ActionResult<O>> {
-		if (actor.kind !== 'member' || !options.idempotencyKey) {
+		const self = selfOf(actor);
+		if (self === null || !options.idempotencyKey) {
 			return invokeOnce(actionId, rawInput, actor, options, null);
 		}
-		const request: IdempotencyRequest = { key: options.idempotencyKey, memberId: actor.memberId };
+		const request: IdempotencyRequest = { key: options.idempotencyKey, memberId: self };
 		const replay = (stored: Awaited<ReturnType<typeof findStored>>) => {
 			if (stored?.kind === 'error') throw stored.error;
 			options.onReplay?.();
@@ -817,10 +847,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	 * learn it exists. Checked before anything else, replays included.
 	 */
 	function assertAddressee(approver: Actor, draft: DraftRow): void {
-		if (
-			draft.for_member !== null &&
-			(approver.kind !== 'member' || approver.memberId !== draft.for_member)
-		)
+		if (draft.for_member !== null && selfOf(approver) !== draft.for_member)
 			throw new FamosError('not_found', `Unknown draft "${draft.id}"`);
 	}
 
@@ -832,10 +859,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// The addressee needs no approval capability for a draft that is theirs alone.
 		if (draft.for_member !== null) {
 			assertAddressee(approver, draft);
-		} else if (approver.kind !== 'member' || !can(approver, 'core.drafts.approve')) {
+		} else if (!personPresent(approver) || !can(approver, 'core.drafts.approve')) {
 			throw refusalError({ reason: 'capability', capability: 'core.drafts.approve' });
 		}
-		if (approver.kind !== 'member')
+		// Only a person present decides a suggestion, addressee or not.
+		if (!personPresent(approver))
 			throw refusalError({ reason: 'capability', capability: 'core.drafts.approve' });
 		authorize(def, approver);
 		if (typeof def.approval === 'object' && !can(approver, def.approval.unless)) {
@@ -864,21 +892,20 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	/** The member behind a draft: who proposed it, or who the AI proposed it for. */
 	function proposerOf(draft: DraftRow): string | null {
-		const by = JSON.parse(draft.proposed_by) as Actor;
-		if (by.kind === 'member') return by.memberId;
-		return by.kind === 'ai' ? (by.onBehalfOf ?? null) : null;
+		return memberBehind(JSON.parse(draft.proposed_by) as Actor);
 	}
 
 	/** Whether this actor is the member behind the draft (they may take their own suggestion back). */
 	function isProposer(actor: Actor, draft: DraftRow): boolean {
-		return actor.kind === 'member' && proposerOf(draft) === actor.memberId;
+		const self = selfOf(actor);
+		return self !== null && proposerOf(draft) === self;
 	}
 
 	async function editDraft(uow: UnitOfWork, draftId: string, input: unknown): Promise<DraftRow> {
 		const actor = uow.actor;
 		const draft = await getDraft(uow.db, draftId);
 		assertAddressee(actor, draft);
-		if (actor.kind !== 'member')
+		if (!personPresent(actor))
 			throw new FamosError('forbidden', 'Only a person edits a suggestion');
 		const waits = unavailable(draft) !== null;
 		const allowed =
@@ -951,69 +978,73 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const told = options.auto ? null : await decidedNotice(draft, def, approverId, 'approved');
 
 		try {
-			await unitOfWork(approver, async (uow, view) => {
-				const now = clock.now();
-				const claimed = await uow.db
-					.withTables<CoreTables>()
-					.updateTable('core_drafts')
-					.set({
-						status: 'approved',
-						decided_by: approverId,
-						decided_at: now,
-						updated_at: now,
-						...(options.auto && { auto_approved: 1 }),
-					})
-					.where('id', '=', draftId)
-					.where('status', 'in', ['pending', 'failed'])
-					.executeTakeFirst();
-				if (Number(claimed.numUpdatedRows) === 0)
-					throw new FamosError('conflict', 'Draft was decided concurrently');
+			await unitOfWork(
+				approver,
+				async (uow, view) => {
+					const now = clock.now();
+					const claimed = await uow.db
+						.withTables<CoreTables>()
+						.updateTable('core_drafts')
+						.set({
+							status: 'approved',
+							decided_by: approverId,
+							decided_at: now,
+							updated_at: now,
+							...(options.auto && { auto_approved: 1 }),
+						})
+						.where('id', '=', draftId)
+						.where('status', 'in', ['pending', 'failed'])
+						.executeTakeFirst();
+					if (Number(claimed.numUpdatedRows) === 0)
+						throw new FamosError('conflict', 'Draft was decided concurrently');
 
-				// Already so (ticked, done): running it changes nothing, and recording it as
-				// applied would offer an undo that reverses somebody else's real change.
-				if (
-					def.settled &&
-					(await def.settled(
-						{
-							db: view(ownerOf(def.id)).db,
-							family: uow.family,
-							translate: deps.translate,
-							now: clock.now(),
-						},
-						input,
-					))
-				) {
+					// Already so (ticked, done): running it changes nothing, and recording it as
+					// applied would offer an undo that reverses somebody else's real change.
+					if (
+						def.settled &&
+						(await def.settled(
+							{
+								db: view(ownerOf(def.id)).db,
+								family: uow.family,
+								translate: deps.translate,
+								now: clock.now(),
+							},
+							input,
+						))
+					) {
+						await uow.db
+							.withTables<CoreTables>()
+							.updateTable('core_drafts')
+							.set({ status: 'rejected', error: SETTLED, updated_at: clock.now() })
+							.where('id', '=', draftId)
+							.execute();
+						await audit(uow, draft.action_id, 'rejected', draftId);
+						uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
+						await settleNotices(uow, draft);
+						return;
+					}
+
+					const output = await apply(uow, view, def, input, draftId);
 					await uow.db
 						.withTables<CoreTables>()
 						.updateTable('core_drafts')
-						.set({ status: 'rejected', error: SETTLED, updated_at: clock.now() })
+						.set({
+							status: 'applied',
+							applied_at: clock.now(),
+							// A saved edit stays; an edit sent with the approval replaces it.
+							...(editedInput !== undefined && { edited_input: JSON.stringify(input) }),
+							result: JSON.stringify(output ?? null),
+							error: null,
+							updated_at: clock.now(),
+						})
 						.where('id', '=', draftId)
 						.execute();
-					await audit(uow, draft.action_id, 'rejected', draftId);
-					uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
+					uow.emit(draftUpdated, { draftId, status: 'applied', forMember: draft.for_member });
 					await settleNotices(uow, draft);
-					return;
-				}
-
-				const output = await apply(uow, view, def, input, draftId);
-				await uow.db
-					.withTables<CoreTables>()
-					.updateTable('core_drafts')
-					.set({
-						status: 'applied',
-						applied_at: clock.now(),
-						// A saved edit stays; an edit sent with the approval replaces it.
-						...(editedInput !== undefined && { edited_input: JSON.stringify(input) }),
-						result: JSON.stringify(output ?? null),
-						error: null,
-						updated_at: clock.now(),
-					})
-					.where('id', '=', draftId)
-					.execute();
-				uow.emit(draftUpdated, { draftId, status: 'applied', forMember: draft.for_member });
-				await settleNotices(uow, draft);
-				if (told) await uow.notify(told);
-			});
+					if (told) await uow.notify(told);
+				},
+				DECIDED,
+			);
 		} catch (error) {
 			// What it is about is gone: the draft can never be applied, so it leaves the queue
 			// (a retry would only fail again) and says why.
@@ -1085,7 +1116,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		if (draft.status !== 'pending' && draft.status !== 'failed')
 			throw new FamosError('conflict', `Draft is ${draft.status}`);
 		const approverId =
-			isProposer(approver, draft) && approver.kind === 'member'
+			isProposer(approver, draft) && personPresent(approver)
 				? approver.memberId
 				: assertApprover(approver, getAction(draft.action_id), draft);
 		const def = registry.actions.get(draft.action_id);
@@ -1376,17 +1407,21 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const step = undoStep(draft);
 		if (!step) throw new FamosError('conflict', `Draft is ${draft.status} and cannot be undone`);
 		assertApprover(approver, getAction(draft.action_id), draft);
-		await unitOfWork(approver, async (uow) => {
-			await uow.run(step.actionId, step.input);
-			await uow.db
-				.withTables<CoreTables>()
-				.updateTable('core_drafts')
-				.set({ status: 'undone', updated_at: clock.now() })
-				.where('id', '=', draftId)
-				.execute();
-			await audit(uow, draft.action_id, 'undone', draftId);
-			uow.emit(draftUpdated, { draftId, status: 'undone', forMember: draft.for_member });
-		});
+		await unitOfWork(
+			approver,
+			async (uow) => {
+				await uow.run(step.actionId, step.input);
+				await uow.db
+					.withTables<CoreTables>()
+					.updateTable('core_drafts')
+					.set({ status: 'undone', updated_at: clock.now() })
+					.where('id', '=', draftId)
+					.execute();
+				await audit(uow, draft.action_id, 'undone', draftId);
+				uow.emit(draftUpdated, { draftId, status: 'undone', forMember: draft.for_member });
+			},
+			DECIDED,
+		);
 		return getDraft(deps.db, draftId);
 	}
 
@@ -1405,7 +1440,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	async function suggestAgain(draftId: string, actor: Actor): Promise<DraftRow> {
 		const draft = await getDraft(deps.db, draftId);
 		assertAddressee(actor, draft);
-		if (!isProposer(actor, draft) || actor.kind !== 'member')
+		if (!isProposer(actor, draft) || !personPresent(actor))
 			throw new FamosError('forbidden', 'Only the person who suggested it can suggest it again');
 		if (draft.status !== 'undone')
 			throw new FamosError(

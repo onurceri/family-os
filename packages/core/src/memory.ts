@@ -1,4 +1,12 @@
-import { type Actor, defineAction, defineRoute, FamosError, idSchema } from '@famos/sdk';
+import {
+	type Actor,
+	defineAction,
+	defineRoute,
+	FamosError,
+	idSchema,
+	personPresent,
+	selfOf,
+} from '@famos/sdk';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import type { CoreTables, MemberMemoryTable } from './tables.ts';
@@ -40,14 +48,15 @@ const toMemory = (row: MemberMemoryTable): Memory => ({
  * app's conversation (reading their notes for their own conversations). Never anyone else.
  */
 function ownerOf(actor: Actor): string {
-	if (actor.kind === 'member') return actor.memberId;
+	const self = selfOf(actor);
+	if (self !== null) return self;
 	if (actor.kind === 'ai' && actor.mode === 'conversation' && actor.onBehalfOf)
 		return actor.onBehalfOf;
 	throw new FamosError('forbidden', 'Memories belong to a member');
 }
 
 const memberOnly = (actor: Actor): string => {
-	if (actor.kind !== 'member') throw new FamosError('forbidden', 'Only members can do this');
+	if (!personPresent(actor)) throw new FamosError('forbidden', 'Only members can do this');
 	return actor.memberId;
 };
 

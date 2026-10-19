@@ -1,4 +1,11 @@
-import { defineAction, defineEvent, defineRoute, FamosError, FileResponseSchema } from '@famos/sdk';
+import {
+	defineAction,
+	defineEvent,
+	defineRoute,
+	FamosError,
+	FileResponseSchema,
+	selfOf,
+} from '@famos/sdk';
 import { z } from 'zod';
 import {
 	AttachDocumentSchema,
@@ -66,7 +73,7 @@ export const attachDocument = defineAction({
 				label: input.label,
 				expires_on: input.expiresOn ?? null,
 				source_item_id: input.sourceItemId ?? null,
-				created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+				created_by: selfOf(uow.actor),
 				created_at: now,
 				updated_at: now,
 				archived_at: null,

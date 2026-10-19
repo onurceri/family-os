@@ -7,7 +7,7 @@ import {
 	type WebPush,
 } from '@famos/adapters/webpush';
 import type { CoreTables, Kernel } from '@famos/core';
-import { FamosError } from '@famos/sdk';
+import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
@@ -29,7 +29,8 @@ export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel:
 	const translate = kernel.translate;
 	const me = (c: Context<AppEnv>): string => {
 		const actor = c.get('actor');
-		if (actor?.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+		if (!actor || !personPresent(actor))
+			throw new FamosError('unauthenticated', 'Sign in required');
 		return actor.memberId;
 	};
 

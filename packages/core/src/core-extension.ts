@@ -20,7 +20,10 @@ import {
 	idSchema,
 	isFullSignIn,
 	type JobContext,
+	memberBehind,
+	personPresent,
 	SDK_VERSION,
+	selfOf,
 	subjectOf,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -278,7 +281,8 @@ function draftReason(row: DraftRow): 'gone' | 'settled' | 'withdrawn' | null {
 	// Only a person taking back their own suggestion (or what their own share produced)
 	// withdraws it; declining what an assistant or MCP client proposed is an ordinary rejection.
 	const by = JSON.parse(row.proposed_by) as Actor;
-	if (by.kind === 'member') return row.decided_by === by.memberId ? 'withdrawn' : null;
+	const proposer = selfOf(by);
+	if (proposer !== null) return row.decided_by === proposer ? 'withdrawn' : null;
 	// What a member shared is theirs to take back; what an AI they talk to proposed is not.
 	return by.kind === 'ai' && by.mode === 'share' && row.decided_by === by.onBehalfOf
 		? 'withdrawn'
@@ -393,7 +397,7 @@ async function insertMember(
 }
 
 const requireMember = (actor: Actor) => {
-	if (actor.kind !== 'member') throw new FamosError('forbidden', 'Only members can do this');
+	if (!personPresent(actor)) throw new FamosError('forbidden', 'Only members can do this');
 	return actor;
 };
 
@@ -1268,8 +1272,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				displayName: member.display_name,
 			});
 			// A new password signs the member out everywhere, except an admin changing their own.
-			if (actor.kind !== 'member' || actor.memberId !== member.id)
-				await endSessionsOf(ctx, member.id);
+			if (selfOf(actor) !== member.id) await endSessionsOf(ctx, member.id);
 			return { ok: true as const };
 		},
 	});
@@ -1283,7 +1286,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		response: z.object({ ok: z.literal(true) }),
 		status: 200,
 		async handle(ctx, { actor }) {
-			if (actor.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+			if (!personPresent(actor)) throw new FamosError('unauthenticated', 'Sign in required');
 			// Keys and calendar addresses are sign-ins too: they end with the sessions.
 			await endCredentialsOf(ctx, actor.memberId);
 			await endSessionsOf(ctx, actor.memberId);
@@ -1308,9 +1311,10 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		async handle(ctx, { query, actor }) {
 			let q = ctx.db.withTables<CoreTables>().selectFrom('core_drafts').selectAll();
 			// Drafts addressed to one member (memory, questions) are visible to them alone.
+			const self = selfOf(actor);
 			q = q.where((eb) =>
-				actor.kind === 'member'
-					? eb.or([eb('for_member', 'is', null), eb('for_member', '=', actor.memberId)])
+				self !== null
+					? eb.or([eb('for_member', 'is', null), eb('for_member', '=', self)])
 					: eb('for_member', 'is', null),
 			);
 			// A waiting draft about a day that has passed is expired, even before the daily job.
@@ -1323,7 +1327,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			// another member's (a supervised child's appointment is not for a teenager to see).
 			const runner = deps.runner();
 			const rows = (
-				actor.kind === 'member'
+				personPresent(actor)
 					? all.filter(
 							(row) =>
 								runner.mayDecide(row, actor) ||
@@ -1363,16 +1367,18 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.selectAll()
 				// A suggestion whose applying failed still waits for someone to try it again.
 				.where('status', 'in', [...WAITING_STATUSES])
-				.where((eb) =>
-					actor.kind === 'member'
-						? eb.or([eb('for_member', 'is', null), eb('for_member', '=', actor.memberId)])
-						: eb('for_member', 'is', null),
-				)
+				.where((eb) => {
+					const self = selfOf(actor);
+					return self !== null
+						? eb.or([eb('for_member', 'is', null), eb('for_member', '=', self)])
+						: eb('for_member', 'is', null);
+				})
 				.execute();
 			// A member's count is what they can decide: not their own suggestions, nor what an
 			// approver must look at. A display only shows that something waits.
-			const decidable =
-				actor.kind === 'member' ? rows.filter((row) => deps.runner().mayDecide(row, actor)) : rows;
+			const decidable = personPresent(actor)
+				? rows.filter((row) => deps.runner().mayDecide(row, actor))
+				: rows;
 			// One about a day that has passed no longer waits (it expires).
 			const passed = await deps.runner().passedCheck();
 			const open = decidable.filter((row) => !passed(row));
@@ -1395,19 +1401,15 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		output: z.object({ sourceIds: z.array(z.string()) }),
 		readOnly: true,
 		async run(uow, { sourceKind }) {
-			if (uow.actor.kind !== 'member') return { sourceIds: [] };
+			const self = selfOf(uow.actor);
+			if (self === null) return { sourceIds: [] };
 			const rows = await uow.db
 				.withTables<CoreTables>()
 				.selectFrom('core_drafts')
 				.selectAll()
 				.where('source_kind', '=', sourceKind)
 				.where('status', 'in', ['pending', 'failed'])
-				.where((eb) =>
-					eb.or([
-						eb('for_member', 'is', null),
-						eb('for_member', '=', uow.actor.kind === 'member' ? uow.actor.memberId : ''),
-					]),
-				)
+				.where((eb) => eb.or([eb('for_member', 'is', null), eb('for_member', '=', self)]))
 				.execute();
 			const ids = new Set<string>();
 			const passed = await deps.runner().passedCheck(uow.db);
@@ -1550,13 +1552,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				"Lists the suggestions made in this conversation (the changes you proposed here for the person; for a connected app, the ones made through its app key), newest first, with what became of each: waiting, approved, rejected (withdrawn when the person took it back), undone, expired or failed, and who decided it (decidedBy, the person's name; automatic when the household's auto-approval approved it). Suggestions made elsewhere (Quick add, other conversations or apps) are not listed: never present them as made here. Use it when the person asks whether something was approved or added, or what is still waiting.",
 		},
 		async run(uow, { limit }) {
-			const owner =
-				uow.actor.kind === 'member'
-					? uow.actor.memberId
-					: uow.actor.kind === 'ai'
-						? uow.actor.onBehalfOf
-						: undefined;
-			if (owner === undefined) return { suggestions: [] };
+			const owner = memberBehind(uow.actor);
+			if (owner === null) return { suggestions: [] };
 			const rows = await uow.db
 				.withTables<CoreTables>()
 				.selectFrom('core_drafts')
@@ -1587,10 +1584,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const mine = rows
 				.filter((row) => {
 					const by = JSON.parse(row.proposed_by) as Actor;
-					const theirs =
-						by.kind === 'member'
-							? by.memberId === owner
-							: by.kind === 'ai' && by.onBehalfOf === owner;
+					const theirs = memberBehind(by) === owner;
 					return theirs && here(row, by);
 				})
 				.slice(0, limit);
@@ -1678,13 +1672,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			'The suggestions that wait for the person asking to approve or reject (Quick add cards, requests from others), newest first, and their own suggestions that wait for someone else; who suggested each, and the day it is about.',
 		async run(uow, input) {
 			const actor = uow.actor;
-			const asker =
-				actor.kind === 'member'
-					? actor.memberId
-					: actor.kind === 'ai'
-						? actor.onBehalfOf
-						: undefined;
-			if (asker === undefined) return digestOf([], input);
+			const asker = memberBehind(actor);
+			if (asker === null) return digestOf([], input);
 			const [settings, people] = await Promise.all([uow.family.settings(), uow.family.members()]);
 			const me = people.find((m) => m.id === asker);
 			const roleId =
@@ -1735,7 +1724,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				readable.map(async (row): Promise<DigestItem> => {
 					const def = actions.get(row.action_id);
 					const by = JSON.parse(row.proposed_by) as Actor;
-					const from = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : null;
+					const from = memberBehind(by);
 					const name = def?.draftTitle ? uow.translate(language, def.draftTitle) : def?.title;
 					const day = def ? draftDateOf(def, row) : undefined;
 					return {

@@ -1,3 +1,4 @@
+import { memberBehindDraft } from '@famos/ui/slots';
 import { type InboxItem, itemTitle, type Skip, type SkipReason } from '../contract/index.js';
 import type { Draft } from './data.js';
 
@@ -238,8 +239,7 @@ export interface RequestGroup {
 
 /** The member behind a suggestion: who made it, or who an agent made it for. */
 function personBehind(draft: Draft): string {
-	const by = draft.proposedBy as { kind?: string; memberId?: string; onBehalfOf?: string } | null;
-	return (by?.kind === 'member' ? by.memberId : by?.onBehalfOf) ?? '';
+	return memberBehindDraft(draft.proposedBy) ?? '';
 }
 
 export function requestOrigin(draft: Draft): RequestOrigin {

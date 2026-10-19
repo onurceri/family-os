@@ -4,6 +4,7 @@ import {
 	FamosError,
 	isExternalHttpError,
 	type JobContext,
+	selfOf,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -64,7 +65,7 @@ export const switchItem = defineAction({
 			throw new FamosError('forbidden', 'This item may not be switched from FamilyOS');
 		if (!serviceFor(row.entity_id, input.operation))
 			throw new FamosError('bad_request', 'That cannot be done to this item');
-		const memberId = uow.actor.kind === 'member' ? uow.actor.memberId : null;
+		const memberId = selfOf(uow.actor);
 		const bucket = Math.floor(uow.clock.now() / DOUBLE_TAP_MS);
 		await uow.enqueue(
 			'homeassistant.switch',

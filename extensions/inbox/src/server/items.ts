@@ -8,7 +8,9 @@ import {
 	FamosError,
 	FileResponseSchema,
 	isFamosError,
+	personPresent,
 	type ShareTarget,
+	selfOf,
 	type UnitOfWork,
 	type UploadedFile,
 } from '@famos/sdk';
@@ -45,14 +47,14 @@ export const inboxShare = defineCapability({
  * file). Background work (the system actor) is not a person and may do all of it.
  */
 const mayHandle = (actor: Actor, createdBy: string | null) =>
-	(actor.kind === 'member' && createdBy === actor.memberId) || actor.kind === 'system';
+	(selfOf(actor) !== null && createdBy === selfOf(actor)) || actor.kind === 'system';
 
 /**
  * Items a member may see although they did not share them: those with a suggestion waiting that
  * they may decide (addressed to them, or one they could approve as an approver).
  */
 async function decidableItemIds(ctx: ExtensionContext, actor: Actor): Promise<string[]> {
-	if (actor.kind !== 'member') return [];
+	if (!personPresent(actor)) return [];
 	const result = await ctx.actions.invoke<{ sourceIds: string[] }>(
 		'core.decidableSources',
 		{ sourceKind: 'inbox' },
@@ -176,7 +178,7 @@ export const addItem = defineAction({
 			skips: '[]',
 			model: null,
 			extraction: 0,
-			created_by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+			created_by: selfOf(uow.actor),
 			created_at: now,
 			updated_at: now,
 		};
@@ -311,7 +313,7 @@ async function assertQuota(
 	actor: Actor,
 	files: readonly { size: number }[],
 ) {
-	if (actor.kind !== 'member') return;
+	if (!personPresent(actor)) return;
 	const recent = await tables(ctx.db)
 		.selectFrom('inbox_items')
 		.select('files')
@@ -421,7 +423,7 @@ export const listItems = defineRoute({
 			.selectAll()
 			.where('status', '!=', 'dismissed');
 		// Your own items, and those with a suggestion you must decide.
-		const mine = actor.kind === 'member' ? actor.memberId : '';
+		const mine = selfOf(actor) ?? '';
 		const others = await decidableItemIds(ctx, actor);
 		rows = rows.where((eb) =>
 			others.length > 0

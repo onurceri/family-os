@@ -5,6 +5,7 @@ import {
 	type DbExecutor,
 	FamosError,
 	type IdGenerator,
+	personPresent,
 	type RoleId,
 } from '@famos/sdk';
 import { sql } from 'kysely';
@@ -132,7 +133,7 @@ export function createApiTokenService(deps: {
 }): ApiTokenService {
 	const tokens = () => deps.db.withTables<CoreTables>();
 	const member = (actor: Actor): string => {
-		if (actor.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+		if (!personPresent(actor)) throw new FamosError('unauthenticated', 'Sign in required');
 		return actor.memberId;
 	};
 

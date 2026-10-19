@@ -1,4 +1,5 @@
 import type { AwaitedChange } from '@famos/ui/app';
+import { memberBehindDraft } from '@famos/ui/slots';
 
 /** What the shell needs of a waiting suggestion to mark what it is about and what it changes. */
 export interface WaitingDraft {
@@ -16,14 +17,6 @@ export interface WaitingDraft {
 /** An input field that holds the id of a record: `id`, or a name that ends in `Id` (`petId`). */
 const ID_FIELD = /^(id|[a-z][a-zA-Z0-9]*Id)$/;
 
-/** The member a suggestion is from: the person who made it, or the one an AI made it for. */
-function proposerOf(proposedBy: unknown): string | undefined {
-	if (typeof proposedBy !== 'object' || proposedBy === null) return undefined;
-	const by = proposedBy as { kind?: string; memberId?: unknown; onBehalfOf?: unknown };
-	const id = by.kind === 'member' ? by.memberId : by.onBehalfOf;
-	return typeof id === 'string' && id ? id : undefined;
-}
-
 /**
  * The changes that wait for someone's approval and concern the signed-in member, newest first
  * as given: their own that someone else decides, and another person's that they may decide
@@ -38,7 +31,7 @@ export function waitingChanges(
 	const changes: AwaitedChange[] = [];
 	for (const draft of drafts) {
 		if (draft.status !== 'pending' && draft.status !== 'failed') continue;
-		const proposer = proposerOf(draft.proposedBy);
+		const proposer = memberBehindDraft(draft.proposedBy);
 		const own = proposer === memberId;
 		if (own ? draft.canDecide : !draft.canDecide || proposer === undefined) continue;
 		const input = draft.editedInput ?? draft.input;

@@ -1,4 +1,11 @@
-import { type Actor, defineAction, defineRoute, FamosError, type UnitOfWork } from '@famos/sdk';
+import {
+	type Actor,
+	defineAction,
+	defineRoute,
+	FamosError,
+	personPresent,
+	type UnitOfWork,
+} from '@famos/sdk';
 import { z } from 'zod';
 import {
 	MessageSchema,
@@ -16,7 +23,7 @@ import { tables } from './store.ts';
 
 /** The assistant is personal: every operation is the signed-in member's own. */
 function memberOf(actor: Actor): string {
-	if (actor.kind !== 'member') throw new FamosError('forbidden', 'Sign in to use the assistant');
+	if (!personPresent(actor)) throw new FamosError('forbidden', 'Sign in to use the assistant');
 	return actor.memberId;
 }
 

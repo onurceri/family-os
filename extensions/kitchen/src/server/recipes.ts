@@ -1,9 +1,9 @@
 import {
-	type Actor,
 	defineAction,
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	selfOf,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -20,7 +20,7 @@ import { kitchenChanged, kitchenEdit, kitchenView } from './capabilities.ts';
 import { RECIPE_KIND } from './search.ts';
 import { type RecipeRow, tables, toRecipe, toRecipeSummary } from './store.ts';
 
-export const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+export const memberId = selfOf;
 
 export async function loadRecipe(db: UnitOfWork['db'], id: string): Promise<RecipeRow> {
 	const row = await tables(db)

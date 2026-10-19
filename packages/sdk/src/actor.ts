@@ -79,3 +79,66 @@ export const ActorSchema: z.ZodType<Actor> = z.discriminatedUnion('kind', [
 ]);
 
 export const systemActor = (source: string): Actor => ({ kind: 'system', source });
+
+/**
+ * The end of a switch over every `Actor` kind: `actor` is `never` while all are handled, so a kind
+ * added later does not compile until each switch names it; one nobody knows at run time gets the
+ * closed answer.
+ */
+function closed<T>(_actor: never, answer: T): T {
+	return answer;
+}
+
+/**
+ * The member an action is done by or for: a member's own id, or the member the AI works for.
+ * Null for an AI working for nobody, a display and the system.
+ */
+export function memberBehind(actor: Actor): MemberId | null {
+	switch (actor.kind) {
+		case 'member':
+			return actor.memberId;
+		case 'ai':
+			return actor.onBehalfOf ?? null;
+		case 'display':
+		case 'system':
+			return null;
+		default:
+			return closed(actor, null);
+	}
+}
+
+/**
+ * The member acting for themselves: the id to compare with an assignee, an owner or an author.
+ * Null for everyone else (the AI acts for a member, it is not that member), so a restriction
+ * written as "self is not X" never lets a caller without a self through.
+ */
+export function selfOf(actor: Actor): MemberId | null {
+	return actor.kind === 'member' ? actor.memberId : null;
+}
+
+/**
+ * A human is acting directly, not through the AI, a display or background work. The one
+ * predicate for acts that only a person present may do (deciding drafts, credentials, devices,
+ * sessions, roles, members and extensions).
+ */
+export function personPresent(actor: Actor): actor is Extract<Actor, { kind: 'member' }> {
+	return actor.kind === 'member';
+}
+
+/** A stable string naming who acted, for audit, attribution and idempotency keys. */
+export function principalOf(actor: Actor): string {
+	switch (actor.kind) {
+		case 'member':
+			return `member:${actor.memberId}`;
+		case 'ai':
+			return actor.sourceId === undefined
+				? `ai:${actor.source}`
+				: `ai:${actor.source}:${actor.sourceId}`;
+		case 'display':
+			return `display:${actor.deviceId}`;
+		case 'system':
+			return `system:${actor.source}`;
+		default:
+			return closed(actor, 'unknown');
+	}
+}

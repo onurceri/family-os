@@ -8,8 +8,10 @@ import {
 	FamosError,
 	isFamosError,
 	type JobContext,
+	memberBehind,
 	type NotifyRequest,
 	type NotifyText,
+	personPresent,
 	subjectOf,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -99,12 +101,7 @@ export function factsOf(
 ): DraftFacts {
 	return {
 		proposerKind: actor.kind,
-		proposerMemberId:
-			actor.kind === 'member'
-				? actor.memberId
-				: actor.kind === 'ai'
-					? (actor.onBehalfOf ?? forMember ?? null)
-					: null,
+		proposerMemberId: memberBehind(actor) ?? (actor.kind === 'ai' ? (forMember ?? null) : null),
 		addressedTo,
 	};
 }
@@ -242,8 +239,7 @@ export function createAutoApproval(deps: AutoApprovalDeps) {
 		requires: CORE_CAPABILITIES.autoApproveManage.id,
 		approval: 'never',
 		async run(uow, input) {
-			if (uow.actor.kind !== 'member')
-				throw new FamosError('forbidden', 'Only members can do this');
+			if (!personPresent(uow.actor)) throw new FamosError('forbidden', 'Only members can do this');
 			const def = registry().actions.get(input.actionId);
 			if (!def?.autoApprove)
 				throw new FamosError('bad_request', `"${input.actionId}" cannot be auto-approved`);

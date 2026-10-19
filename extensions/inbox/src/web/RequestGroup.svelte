@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Avatar } from '@famos/ui/famos';
+	import { memberBehindDraft } from '@famos/ui/slots';
 	import { Plug, Sparkles, UserRound } from '@lucide/svelte';
 	import DraftView from './DraftView.svelte';
 	import { captureTime } from './format.js';
@@ -15,10 +16,7 @@
 	const { app, t } = useInbox();
 
 	const first = $derived(group.drafts[0]);
-	const behind = $derived.by(() => {
-		const by = first?.proposedBy as { kind?: string; memberId?: string; onBehalfOf?: string };
-		return by?.kind === 'member' ? by.memberId : by?.onBehalfOf;
-	});
+	const behind = $derived(memberBehindDraft(first?.proposedBy));
 	const person = $derived(
 		behind && behind !== app.me()?.id ? app.members().find((m) => m.id === behind) : undefined,
 	);

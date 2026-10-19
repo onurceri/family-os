@@ -4,6 +4,7 @@ import { ANONYMOUS } from './access.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { ownerOf } from './features.ts';
+import { unknownKind } from './unknown-kind.ts';
 
 /**
  * Why an action or route was refused, in the `details.reason` of a `forbidden` error, so an app
@@ -86,48 +87,67 @@ type Refusal = { reason: AccessRefusal; capability?: string };
  */
 export function admission(def: AnyActionDefinition, actor: Actor, env: DecideEnv): Refusal | null {
 	const can = (capability: string) => env.access.can(actor, capability);
-	// A display only looks: no action, not even a read-only one.
-	if (actor.kind === 'display') return { reason: 'display' };
-	if (actor.kind === 'member' && def.requires && !can(def.requires)) {
-		return { reason: 'capability', capability: def.requires };
+	// Every kind is named: a kind added to `Actor` does not compile until it is handled here, and
+	// one that is not known at run time is refused.
+	switch (actor.kind) {
+		case 'display':
+			// A display only looks: no action, not even a read-only one.
+			return { reason: 'display' };
+		case 'member':
+			if (def.requires && !can(def.requires)) {
+				return { reason: 'capability', capability: def.requires };
+			}
+			return null;
+		case 'ai':
+			return aiAdmission(def, actor, env);
+		case 'system':
+			// An unauthenticated caller of a public route holds no capability: it can never run an
+			// action that requires one (or change data at all). Routes that need bookkeeping use
+			// their own named system actor.
+			if (actor.source === ANONYMOUS && (def.requires || !def.readOnly)) {
+				return { reason: 'sign_in' };
+			}
+			return null;
+		default:
+			return unknownKind(actor, { reason: 'sign_in' });
 	}
+}
+
+/** The AI's share of `admission`. */
+function aiAdmission(
+	def: AnyActionDefinition,
+	actor: Extract<Actor, { kind: 'ai' }>,
+	env: DecideEnv,
+): Refusal | null {
+	const can = (capability: string) => env.access.can(actor, capability);
 	// The AI is checked like a member: it may read what its capabilities and the area switches
 	// allow, so a locked area refuses it. Its data-changing proposals are not judged here (they
 	// only become drafts, which a person approves; `requires` is checked against the approver).
-	if (actor.kind === 'ai' && def.readOnly && def.requires && !can(def.requires)) {
+	if (def.readOnly && def.requires && !can(def.requires)) {
 		return { reason: 'capability', capability: def.requires };
 	}
 	// Acting for a member, it never exceeds them: a change must be one that member could make or
 	// propose, a read one their capabilities allow.
-	if (actor.kind === 'ai' && !mayUseAsAi(env.access, def, actor)) {
+	if (!mayUseAsAi(env.access, def, actor)) {
 		return { reason: 'ai', ...(def.requires && { capability: def.requires }) };
 	}
 	// What only an admin may do (a critical capability: installing extensions, managing members)
 	// is a person's own act: the AI never runs it and never proposes it, not even for an admin, so
 	// no draft of it can reach an approver.
-	if (actor.kind === 'ai' && def.requires && env.critical.has(def.requires)) {
+	if (def.requires && env.critical.has(def.requires)) {
 		return { reason: 'critical', capability: def.requires };
 	}
 	// A locked area is closed to the AI whatever its actions declare: no read (even without
 	// `requires`) and no draft. Protection does not depend on each extension's discipline.
-	if (actor.kind === 'ai' && env.aiArea?.(ownerOf(def.id)) === 'off') {
-		return { reason: 'area' };
-	}
+	if (env.aiArea?.(ownerOf(def.id)) === 'off') return { reason: 'area' };
 	// A digest gathers a topic's facts for a model to read: a local-only area gives them only to a
 	// model that runs on the family's own network.
 	if (
-		actor.kind === 'ai' &&
 		def.ai?.digest !== undefined &&
 		actor.local !== true &&
 		env.aiArea?.(ownerOf(def.id)) === 'local'
 	) {
 		return { reason: 'area' };
-	}
-	// An unauthenticated caller of a public route holds no capability: it can never run an action
-	// that requires one (or change data at all). Routes that need bookkeeping use their own named
-	// system actor.
-	if (actor.kind === 'system' && actor.source === ANONYMOUS && (def.requires || !def.readOnly)) {
-		return { reason: 'sign_in' };
 	}
 	return null;
 }
@@ -144,21 +164,31 @@ function ownerMayAct(def: AnyActionDefinition, actor: Actor, env: DecideEnv): bo
 	return env.access.can(actor, CORE_CAPABILITIES.draftsPropose.id);
 }
 
-type Approval =
+/** Whether and why an actor's change waits for a person's approval. */
+export type Approval =
 	| { needed: false; reason?: 'owner' | 'except' }
 	| { needed: true; reason: 'approval' | 'ai'; capability?: string }
 	/** The answer turns on what the decision has not been given: the input or its owner. */
 	| { needed: 'unknown'; missing: 'input' | 'owner'; capability: string | undefined };
 
-function approval(
+export function approval(
 	def: AnyActionDefinition,
 	actor: Actor,
 	env: DecideEnv,
 	facts: DecideFacts | undefined,
 ): Approval {
 	if (def.readOnly) return { needed: false };
-	// AI is checked first: its changes are always drafts.
-	if (actor.kind === 'ai') return { needed: true, reason: 'ai' };
+	// AI is checked first: its changes are always drafts. A kind that is not known needs approval.
+	switch (actor.kind) {
+		case 'ai':
+			return { needed: true, reason: 'ai' };
+		case 'member':
+		case 'system':
+		case 'display':
+			break;
+		default:
+			return unknownKind(actor, { needed: true, reason: 'approval' });
+	}
 	const policy = def.approval;
 	if (policy === 'never' || policy === 'ai') return { needed: false };
 	if (policy === 'always') return { needed: true, reason: 'approval' };

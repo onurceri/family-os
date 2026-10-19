@@ -1,5 +1,4 @@
 import {
-	type Actor,
 	type DuplicateContext,
 	defineAction,
 	defineCapability,
@@ -8,6 +7,7 @@ import {
 	digestNotes,
 	FamosError,
 	namesThing,
+	selfOf,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -55,7 +55,7 @@ export const tasksComplete = defineCapability({
 	label: 'lists:cap_tasks_complete',
 	level: 'use',
 });
-const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+const memberId = selfOf;
 
 async function assertMember(uow: UnitOfWork, id: string | null | undefined) {
 	if (!id) return;
@@ -164,7 +164,10 @@ export const addTask = defineAction({
 	// Anyone who may propose can add a task for themselves directly; tasks for others need the capability.
 	approval: {
 		unless: tasksEdit.id,
-		except: (actor, input) => actor.kind === 'member' && input.assigneeId === actor.memberId,
+		except: (actor, input) => {
+			const self = selfOf(actor);
+			return self !== null && input.assigneeId === self;
+		},
 	},
 	undo: (task) => ({ actionId: 'lists.deleteTask', input: { id: task.id } }),
 	// A task that says the same: the same words of the title (a longer or shorter way of saying it

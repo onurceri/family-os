@@ -1,5 +1,4 @@
 import {
-	type Actor,
 	type DuplicateContext,
 	defineAction,
 	defineCapability,
@@ -8,6 +7,7 @@ import {
 	FamosError,
 	namesThing,
 	searchFinds,
+	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { sql } from 'kysely';
@@ -49,7 +49,7 @@ export const shoppingManage = defineCapability({
 	label: 'lists:cap_shopping_manage',
 	level: 'edit',
 });
-const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+const memberId = selfOf;
 
 /** What the model calls the list that has no name of its own. */
 const DEFAULT_LIST_LABEL = 'Shopping list';

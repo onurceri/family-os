@@ -1,5 +1,4 @@
 import {
-	type Actor,
 	type DigestItem,
 	defineAction,
 	defineDigest,
@@ -10,6 +9,7 @@ import {
 	type ExtensionContext,
 	FamosError,
 	FileResponseSchema,
+	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { compareDates, dayBounds, todayIn, zoned } from '@famos/time';
@@ -28,7 +28,7 @@ import { type NoteRow, tables, toNote } from './store.ts';
 
 const DAY_MS = 86_400_000;
 
-export const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+export const memberId = selfOf;
 
 type Db = UnitOfWork['db'];
 

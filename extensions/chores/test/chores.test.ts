@@ -71,6 +71,29 @@ describe('chores', () => {
 		expect(await rejected(done(another, elif.actor))).toBe('forbidden');
 	});
 
+	it('keeps "not your turn" for everyone with a self, and lets only background work act without one', async () => {
+		const another = await create({ title: 'Trash', assigneeIds: [ayse.id] });
+		// A caller with no member behind it is no free pass: a display never gets this far, and the
+		// AI only suggests (its suggestion is approved by a person who has a self).
+		const display = {
+			kind: 'display',
+			deviceId: 'dev_1',
+			capabilities: ['chores.view'],
+			showNames: false,
+		} as const;
+		expect(await rejected(done(another, display as never))).toBe('forbidden');
+		const suggested = await k.runner.invoke(
+			'chores.markDone',
+			{ id: another.id, dueDate: another.nextDue },
+			{ kind: 'ai', mode: 'agent', source: 'mcp' },
+		);
+		expect(suggested.status).toBe('drafted');
+		expect((await get(another.id)).lastDone).toBeNull();
+		// The queue and jobs are the system, which holds every capability and so never needs a turn.
+		const byJob = await done(another, { kind: 'system', source: 'queue' } as never);
+		expect(byJob.completion).not.toBeNull();
+	});
+
 	it('adds a chore with its people in turn order and the first one up', async () => {
 		const chore = await create({
 			notes: 'Before bed',

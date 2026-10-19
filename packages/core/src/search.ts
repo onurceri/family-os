@@ -14,6 +14,7 @@ import {
 	type JobContext,
 	type LlmPort,
 	type Logger,
+	memberBehind,
 	type SearchIndexer,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -539,12 +540,7 @@ export function createSearch(deps: SearchDeps) {
 		return false;
 	}
 
-	const memberOf = (actor: Actor): string | null =>
-		actor.kind === 'member'
-			? actor.memberId
-			: actor.kind === 'ai'
-				? (actor.onBehalfOf ?? null)
-				: null;
+	const memberOf = memberBehind;
 
 	/** Whether an area's data may be used for this asker (the AI sandbox). */
 	function areaOpen(actor: Actor, extensionId: string): boolean {

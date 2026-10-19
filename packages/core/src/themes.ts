@@ -9,6 +9,7 @@ import {
 	FamosError,
 	FileResponseSchema,
 	isFamosError,
+	personPresent,
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
@@ -659,7 +660,7 @@ export function createThemes(deps: ThemesDeps) {
 		requires: CORE_CAPABILITIES.notificationsReceive.id,
 		approval: 'never',
 		async run(uow, input) {
-			if (uow.actor.kind !== 'member')
+			if (!personPresent(uow.actor))
 				throw new FamosError('bad_request', 'Only a person can choose a theme for themselves');
 			if (input.theme) assertKnown(input.theme);
 			const choices = await readChoices(uow.db);
@@ -727,7 +728,7 @@ export function createThemes(deps: ThemesDeps) {
 		requires: CORE_CAPABILITIES.notificationsReceive.id,
 		approval: 'never',
 		async run(uow, input) {
-			if (uow.actor.kind !== 'member')
+			if (!personPresent(uow.actor))
 				throw new FamosError('bad_request', 'Only a person can choose a style for themselves');
 			const choices = await readStyleChoices(uow.db);
 			const members = { ...choices.members };
@@ -789,7 +790,7 @@ export function createThemes(deps: ThemesDeps) {
 		requires: CORE_CAPABILITIES.notificationsReceive.id,
 		approval: 'never',
 		async run(uow, input) {
-			if (uow.actor.kind !== 'member')
+			if (!personPresent(uow.actor))
 				throw new FamosError('bad_request', 'Only a person can choose what their Today shows');
 			const hidden = input.hidden ? (hiddenOf(input.hidden) ?? []) : null;
 			const choices = await readHidden(uow.db);

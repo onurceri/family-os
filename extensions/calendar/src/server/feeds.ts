@@ -6,7 +6,9 @@ import {
 	defineRoute,
 	FamosError,
 	type JobContext,
+	personPresent,
 	type RestoreContext,
+	selfOf,
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
@@ -99,7 +101,8 @@ export const revokeFeed = defineAction({
 			.where('id', '=', id)
 			.where('revoked_at', 'is', null)
 			.executeTakeFirst();
-		const own = uow.actor.kind === 'member' && row?.created_by === uow.actor.memberId;
+		const self = selfOf(uow.actor);
+		const own = self !== null && row?.created_by === self;
 		if (!row || !(own || uow.can(calendarManage.id)))
 			throw new FamosError('not_found', 'Feed not found');
 		await events(uow.db)
@@ -141,7 +144,7 @@ export const listFeeds = defineRoute({
 	requires: calendarView.id,
 	response: z.array(FeedSchema),
 	async handle(ctx, { actor }) {
-		if (actor.kind !== 'member') return [];
+		if (!personPresent(actor)) return [];
 		const all = ctx.access.can(actor, calendarManage.id);
 		let query = events(ctx.db)
 			.selectFrom('calendar_feeds')

@@ -6,6 +6,7 @@ import {
 	FamosError,
 	type IdentityAdmin,
 	type IdGenerator,
+	personPresent,
 } from '@famos/sdk';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -203,7 +204,7 @@ export function createDeviceService(deps: {
 	};
 	const devices = () => deps.db.withTables<CoreTables>();
 	const requireAdmin = (actor: Actor): string => {
-		if (actor.kind !== 'member' || !deps.access().can(actor, 'core.devices.manage')) {
+		if (!personPresent(actor) || !deps.access().can(actor, 'core.devices.manage')) {
 			throw new FamosError('forbidden', 'Not allowed to manage family devices');
 		}
 		return actor.memberId;

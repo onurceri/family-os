@@ -24,7 +24,10 @@ import {
 	FileResponseSchema,
 	type Logger,
 	type MemberId,
+	personPresent,
+	principalOf,
 	type RouteAccess,
+	selfOf,
 	type TextResponse,
 	TextResponseSchema,
 	type UploadSpec,
@@ -162,9 +165,9 @@ function requireActor(c: Context<AppEnv>, access: AccessControl, requires: Route
 	// Unauthenticated callers of public routes: a system actor that holds no capability.
 	const anonymous: Actor = { kind: 'system', source: ANONYMOUS };
 	// A display is not a person: public and device-trust routes see it as nobody.
-	if (requires === 'public') return actor?.kind === 'member' ? actor : anonymous;
+	if (requires === 'public') return actor && personPresent(actor) ? actor : anonymous;
 	if (requires === 'trusted-device') {
-		if (actor?.kind === 'member') return actor;
+		if (actor && personPresent(actor)) return actor;
 		if (c.get('device')) return anonymous;
 		throw new FamosError('unauthenticated', 'Sign in, or use a family device');
 	}
@@ -529,7 +532,7 @@ function mountActionCheck(app: OpenAPIHono<AppEnv>, deps: HttpAppDeps) {
 	// biome-ignore lint/suspicious/noExplicitAny: the body's input is checked by the action's own schema.
 	app.openapi(route, (async (c: any) => {
 		const actor = requireActor(c, deps.kernel.access, 'signedIn');
-		const who = actor.kind === 'member' ? actor.memberId : actor.kind;
+		const who = principalOf(actor);
 		if (!limit.hit(who)) throw new FamosError('limit_reached', 'Too many checks; try again soon');
 		const { actionId } = c.req.valid('param');
 		const { input } = c.req.valid('json');
@@ -569,8 +572,8 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 			? await resolveActor(deps.kernel, deps.identity, c.req.raw.headers)
 			: null;
 		const response = await deps.identity.handler(new Request(c.req.raw, { headers }));
-		if (before?.kind === 'member' && response.ok)
-			await deps.kernel.bus.emit(sessionEnded, { memberId: before.memberId });
+		const self = before ? selfOf(before) : null;
+		if (self !== null && response.ok) await deps.kernel.bus.emit(sessionEnded, { memberId: self });
 		return response;
 	});
 
@@ -651,7 +654,8 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	let openApiDocument: ReturnType<typeof app.getOpenAPI31Document> | undefined;
 	app.use('/api/openapi.json', actorMiddleware(deps));
 	app.get('/api/openapi.json', (c) => {
-		if (c.get('actor')?.kind !== 'member')
+		const actor = c.get('actor');
+		if (!actor || !personPresent(actor))
 			return c.json(errorBody('unauthenticated', 'Sign in first'), 401);
 		openApiDocument ??= app.getOpenAPI31Document(OPENAPI_INFO);
 		return c.json(openApiDocument);

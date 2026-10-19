@@ -1,10 +1,10 @@
 import {
-	type Actor,
 	defineAction,
 	defineJob,
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	selfOf,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -44,7 +44,7 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
 	return out;
 }
 
-const memberOf = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+const memberOf = selfOf;
 
 /** Records a photo whose file the upload route already put in the file store. */
 export const addPhoto = defineAction({

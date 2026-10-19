@@ -1,10 +1,10 @@
 import {
-	type Actor,
 	AiContextSchema,
 	defineAction,
 	defineEvent,
 	defineRoute,
 	FamosError,
+	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { addDays, compareDates, todayIn } from '@famos/time';
@@ -61,7 +61,7 @@ function emitChanged(uow: UnitOfWork, recordId: string, audiences: Iterable<stri
 		uow.emit(obligationChanged, { recordId, audience });
 }
 
-const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+const memberId = selfOf;
 
 async function assertMember(uow: UnitOfWork, id: string | null | undefined) {
 	if (!id) return;
@@ -375,7 +375,8 @@ export const removeObligation = defineAction({
 /**
  * Called by a domain extension when it archives a record: its obligations and documents are
  * archived (kept, hidden, no more reminders). Idempotent. A domain calls it inside its own
- * archive action (`uow.run`), so the permission is the domain's.
+ * archive action (`uow.run`). Run inside another action it is held to its own rule: the person
+ * must hold `records.edit` (a run that would only be a suggestion is refused, never applied).
  */
 export const archiveForRecord = defineAction({
 	id: 'records.archiveForRecord',

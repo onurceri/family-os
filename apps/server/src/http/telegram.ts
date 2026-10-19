@@ -6,7 +6,7 @@ import {
 	TokenInputSchema,
 } from '@famos/adapters/telegram';
 import { CORE_CAPABILITIES } from '@famos/core';
-import { type AccessControl, assertFullSignIn, FamosError } from '@famos/sdk';
+import { type AccessControl, assertFullSignIn, FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
@@ -37,7 +37,8 @@ export function mountTelegramRoutes(
 	};
 	const me = (c: Context<AppEnv>): string => {
 		const actor = c.get('actor');
-		if (actor?.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
+		if (!actor || !personPresent(actor))
+			throw new FamosError('unauthenticated', 'Sign in required');
 		return actor.memberId;
 	};
 

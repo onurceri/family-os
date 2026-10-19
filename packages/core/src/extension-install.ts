@@ -6,6 +6,8 @@ import {
 	defineRoute,
 	type ExtensionManifest,
 	FamosError,
+	personPresent,
+	selfOf,
 } from '@famos/sdk';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -157,7 +159,7 @@ export interface ExtensionInstallDeps {
  * token's agent or another AI.
  */
 function assertPerson(actor: Actor, what: string) {
-	if (actor.kind !== 'member' && actor.kind !== 'system')
+	if (!personPresent(actor) && actor.kind !== 'system')
 		throw new FamosError('forbidden', `Only a signed-in member can ${what}`);
 }
 
@@ -196,7 +198,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 
 	/** Who asks and when, as a change waiting for a restart is remembered. */
 	const askedBy = (uow: { actor: Actor; clock: { now(): number } }) => ({
-		by: uow.actor.kind === 'member' ? uow.actor.memberId : null,
+		by: selfOf(uow.actor),
 		at: uow.clock.now(),
 	});
 

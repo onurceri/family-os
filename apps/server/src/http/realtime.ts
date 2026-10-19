@@ -7,7 +7,7 @@ import {
 	memberChanged,
 	sessionEnded,
 } from '@famos/core';
-import type { Actor, EventDefinition, Logger } from '@famos/sdk';
+import { type Actor, type EventDefinition, type Logger, personPresent, selfOf } from '@famos/sdk';
 import type { MiddlewareHandler } from 'hono';
 import type { WSContext } from 'hono/ws';
 
@@ -55,7 +55,7 @@ export function createRealtimeHub(
 		const message = JSON.stringify({ type: 'event', name, payload });
 		const targets = audienceOf(events.get(name), name, payload);
 		for (const [ws, actor] of clients) {
-			if (actor.kind !== 'member' || actor.memberId !== memberId) continue;
+			if (selfOf(actor) !== memberId) continue;
 			if (inAudience(access, actor, targets)) send(ws, message);
 		}
 	});
@@ -74,7 +74,7 @@ export function createRealtimeHub(
 				close(
 					(actor) =>
 						(actor.kind === 'display' && actor.deviceId === deviceId) ||
-						(actor.kind === 'member' && actor.pin === true),
+						(personPresent(actor) && actor.pin === true),
 					'device_changed',
 				);
 		}
@@ -82,8 +82,7 @@ export function createRealtimeHub(
 		// everywhere, or by a new password): their sockets were opened as someone else.
 		if (name === memberChanged.name || name === sessionEnded.name) {
 			const memberId = (payload as { memberId?: string }).memberId;
-			if (memberId)
-				close((actor) => actor.kind === 'member' && actor.memberId === memberId, 'member_changed');
+			if (memberId) close((actor) => selfOf(actor) === memberId, 'member_changed');
 		}
 	});
 	return {

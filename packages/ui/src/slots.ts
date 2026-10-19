@@ -718,6 +718,7 @@ export {
 	type DraftUnavailable,
 	draftHeadline,
 	draftKicker,
+	memberBehindDraft,
 	namedInput,
 	proposedByMember,
 	unavailableLine,

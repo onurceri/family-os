@@ -1,11 +1,11 @@
 import { type AddObligationInput, type Obligation, scheduleOf } from '@famos/ext-records/contract';
 import {
-	type Actor,
 	AiContextSchema,
 	defineAction,
 	defineEvent,
 	defineRoute,
 	FamosError,
+	selfOf,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
@@ -32,7 +32,7 @@ export const petChanged = defineEvent('pets.pet.changed', petChangedPayload, {
 	audience: 'pets.view',
 });
 
-const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
+const memberId = selfOf;
 
 async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
 	if (ids.length === 0) return;

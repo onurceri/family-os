@@ -45,9 +45,19 @@ export function namedInput(input: unknown, subject: string | null | undefined): 
 
 /** Whether the signed-in member is the one behind a draft, so they may withdraw it. */
 export function proposedByMember(proposedBy: unknown, memberId: string | undefined): boolean {
-	if (!memberId || typeof proposedBy !== 'object' || proposedBy === null) return false;
-	const by = proposedBy as { kind?: string; memberId?: string; onBehalfOf?: string };
-	return by.kind === 'member' ? by.memberId === memberId : by.onBehalfOf === memberId;
+	return !!memberId && memberBehindDraft(proposedBy) === memberId;
+}
+
+/**
+ * The member behind a draft's `proposedBy` (as the API sends it): who made it, or who the AI made
+ * it for. Undefined for a display, the system, or an AI working for nobody. The one place the web
+ * reads it, mirroring `memberBehind` of the SDK for data that arrives untyped.
+ */
+export function memberBehindDraft(proposedBy: unknown): string | undefined {
+	if (typeof proposedBy !== 'object' || proposedBy === null) return undefined;
+	const by = proposedBy as { kind?: string; memberId?: unknown; onBehalfOf?: unknown };
+	const id = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : undefined;
+	return typeof id === 'string' && id ? id : undefined;
 }
 
 /**
@@ -72,9 +82,7 @@ export function askedBy(
 	memberId: string | undefined,
 	members: readonly { id: string; displayName: string }[],
 ): string | undefined {
-	if (typeof proposedBy !== 'object' || proposedBy === null) return undefined;
-	const by = proposedBy as { kind?: string; memberId?: string; onBehalfOf?: string };
-	const who = by.kind === 'member' ? by.memberId : by.onBehalfOf;
+	const who = memberBehindDraft(proposedBy);
 	if (!who || who === memberId) return undefined;
 	return members.find((m) => m.id === who)?.displayName;
 }

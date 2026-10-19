@@ -330,8 +330,10 @@ export const markDone = defineAction({
 		// when someone else taps); a chore anyone may do goes to the one who tapped.
 		const doneBy = requestedBy ?? row.assignee_id ?? self;
 		if (!doneBy) throw new FamosError('bad_request', 'Say who did it');
-		if (uow.actor.kind === 'member' && !uow.can(CHORES_EDIT)) {
-			// Own turn, or a chore anyone may do; doing it for someone else needs edit.
+		if (!uow.can(CHORES_EDIT)) {
+			// Own turn, or a chore anyone may do; doing it for someone else needs edit. A caller
+			// without a self of its own (the system holds every capability, so it never gets here)
+			// has no turn.
 			if (doneBy !== self || (row.assignee_id !== null && row.assignee_id !== self))
 				throw new FamosError('forbidden', 'It is not your turn');
 		}
@@ -427,7 +429,7 @@ export const undoDone = defineAction({
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
 		const today = todayIn(timeZone, now);
-		if (uow.actor.kind === 'member' && !uow.can(CHORES_EDIT)) {
+		if (!uow.can(CHORES_EDIT)) {
 			const own =
 				done.member_id === memberIdOf(uow.actor) && todayIn(timeZone, done.done_at) === today;
 			if (!own)
