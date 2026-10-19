@@ -2,32 +2,42 @@
 	"case": "Sunday: \"this week\" asked on the week's last day is the coming week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
+			"error": "timeout"
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar",
-					"tasks"
-				],
-				"span": {
-					"said": "this week",
-					"kind": "week",
-					"day": {
-						"text": "this week",
-						"week": "this"
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is on for the family this week?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": []
 					}
-				},
-				"people": []
+				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Monday, 19 October Leo has Practise reading, on Tuesday, 20 October Mara and Tom have Parents' evening and Mara has to Sign the school trip form, and on Wednesday, 21 October Ivy has Football training. On Thursday, 22 October Leo has Swimming lesson and Ivy has Piano lesson, on Friday, 23 October there is Dinner at Nona Marija's, and on Saturday, 24 October Ivy has U13 match, Olimpija.",
+			"error": "timeout",
 			"toolCalls": []
 		}
 	]

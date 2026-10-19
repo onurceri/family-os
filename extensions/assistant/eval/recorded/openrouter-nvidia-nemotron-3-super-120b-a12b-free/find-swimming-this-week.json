@@ -2,27 +2,37 @@
 	"case": "find: swimming this week",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
+			"error": "timeout"
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "this week",
-					"kind": "week",
-					"day": {
-						"text": "this week",
-						"week": "this"
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "When is the swimming this week?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": [],
+						"about": [
+							"swimming"
+						]
 					}
-				},
-				"people": [],
-				"about": [
-					"swimming"
 				]
 			}
 		},

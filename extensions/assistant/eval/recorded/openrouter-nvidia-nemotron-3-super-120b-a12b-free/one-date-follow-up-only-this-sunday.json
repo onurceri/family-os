@@ -2,35 +2,41 @@
 	"case": "one date: follow-up \"Only this Sunday\"",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "Sunday",
-					"kind": "day",
-					"day": {
-						"text": "Sunday",
-						"weekday": 7
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Move Sunday planning to 18:00",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "Sunday",
+							"kind": "day",
+							"day": {
+								"text": "Sunday",
+								"weekday": 7
+							}
+						},
+						"people": []
 					}
-				},
-				"people": [],
-				"about": [
-					"planning"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I’ve suggested changing the “Sunday planning” event on **Sunday 11 October 2026** from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval in the household. Once approved, it will be updated on the calendar.",
+			"text": "I found a recurring event called “Sunday planning” that currently takes place from 19:30 to 20:00 every Sunday. I’ve suggested changing its time to 18:00–18:30 (keeping the same 30‑minute duration). The suggestion is waiting for approval from someone in the household. Once approved, the change will apply to all future occurrences.",
 			"toolCalls": [
+				{
+					"name": "core_today",
+					"input": {}
+				},
 				{
 					"name": "calendar_findEvents",
 					"input": {
@@ -41,7 +47,6 @@
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"occurrence": "1791739800000",
 						"label": "Sunday planning",
 						"startTime": "18:00",
 						"endTime": "18:30"
@@ -53,39 +58,37 @@
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "Only this Sunday",
-					"kind": "day",
-					"day": {
-						"text": "Only this Sunday",
-						"weekday": 7
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Only this Sunday, please.",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "Only this Sunday",
+							"kind": "day",
+							"day": {
+								"text": "Only this Sunday",
+								"weekday": 7,
+								"inDays": 0
+							}
+						},
+						"people": []
 					}
-				},
-				"people": []
+				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I’ve suggested changing just this Sunday’s “Sunday planning” event (Sunday 11 October 2026) from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval in the household. Once approved, it will be updated on the calendar.\n\nSuggested, not added yet: Change an event: Sunday planning.",
+			"text": "Suggested, not added yet: Change the Sunday planning event on Sunday 11 October 2026 to 18:00–18:30. The change will apply only to that occurrence once someone in the household approves it.",
 			"toolCalls": [
-				{
-					"name": "calendar_findEvents",
-					"input": {
-						"text": "Sunday planning",
-						"from": "2026-10-06",
-						"to": "2026-10-11"
-					}
-				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"occurrence": "1791739800000",
+						"occurrence": "2026-10-11",
 						"startTime": "18:00",
 						"endTime": "18:30",
 						"label": "Sunday planning"

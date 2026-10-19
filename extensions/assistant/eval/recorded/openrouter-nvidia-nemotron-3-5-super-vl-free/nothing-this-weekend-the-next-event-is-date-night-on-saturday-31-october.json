@@ -2,32 +2,33 @@
 	"case": "nothing this weekend: the next event is Date night on Saturday 31 October",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar",
-					"tasks"
-				],
-				"span": {
-					"said": "this weekend",
-					"kind": "weekend",
-					"day": {
-						"text": "this weekend",
-						"week": "this"
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What's on this weekend?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this weekend",
+							"kind": "weekend"
+						},
+						"people": []
 					}
-				},
-				"people": []
+				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the calendar this weekend. There are no tasks this weekend.",
+			"text": "There is nothing on the calendar this weekend, and there are no tasks this weekend.",
 			"toolCalls": []
 		}
 	]

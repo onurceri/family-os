@@ -99,7 +99,12 @@ export function cardView(card: AnswerCard, words: CardWords): CardView {
 			}),
 		),
 		...(understood.unmatched.length > 0
-			? [t('card_unmatched', { names: listOf(understood.unmatched, words.dateLocale) })]
+			? [
+					t('card_unmatched', {
+						count: understood.unmatched.length,
+						names: listOf(understood.unmatched, words.dateLocale),
+					}),
+				]
 			: []),
 	];
 	return {

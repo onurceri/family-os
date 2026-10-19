@@ -275,6 +275,7 @@ export async function runCase(c: Case, options: RunOptions = {}): Promise<CaseRe
 						content: string;
 						suggested: string[];
 						card: AnswerCard | null;
+						cards: AnswerCard[];
 						toolCalls: { name: string }[];
 						status: string;
 						errorCode: string | null;
@@ -304,7 +305,8 @@ export async function runCase(c: Case, options: RunOptions = {}): Promise<CaseRe
 						mayExist: d.mayExist,
 					}),
 				);
-			const card = reply?.card ?? null;
+			const cards = reply?.cards ?? [];
+			const card = cards[0] ?? null;
 			const loopCalls: Call[] = model
 				? model.calls.slice(before)
 				: k.llm.chatTrace.slice(before).map((t) => ({
@@ -318,7 +320,11 @@ export async function runCase(c: Case, options: RunOptions = {}): Promise<CaseRe
 			// The words of the answer, the card's lines and the app's line for each suggestion, as a
 			// chat outside the app shows them, in plain typography (see `plainText`).
 			const shown = plainText(
-				[reply?.content ?? '', (card?.text ?? []).join('\n'), (reply?.suggested ?? []).join('\n')]
+				[
+					reply?.content ?? '',
+					cards.flatMap((c) => c.text).join('\n'),
+					(reply?.suggested ?? []).join('\n'),
+				]
 					.filter((part) => part !== '')
 					.join('\n\n'),
 			);
@@ -335,6 +341,7 @@ export async function runCase(c: Case, options: RunOptions = {}): Promise<CaseRe
 				calls: [...reads, ...loopCalls],
 				drafts,
 				card,
+				cards,
 				lead: card ? (reply?.content ?? '') : '',
 				...(card && { truth: await truthOf(k, c, asker, seeded) }),
 				weekdaySlips: weekdayMismatches(shown, today, words, order).filter(
@@ -415,6 +422,7 @@ export async function casesPromptHash(): Promise<string> {
 			areas: ['{area}'],
 			missing: [{ id: '{id}', name: '{name}', description: '{description}', why: 'not_installed' }],
 			vocabularies: [{ label: '{label}', words: ['{word}'] }],
+			split: { answered: ['{answered}'], requests: ['{request}'] },
 		});
 		return createHash('sha256')
 			.update(understandHash())

@@ -2,36 +2,60 @@
 	"case": "no area: the flat papers when Home is not installed",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"home",
-					"records"
-				],
-				"span": {
-					"said": "this month",
-					"kind": "month"
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "we"
+						"intent": "ask",
+						"quote": "Where do we keep the flat papers",
+						"topics": [
+							"home"
+						],
+						"people": [
+							{
+								"said": "we"
+							}
+						],
+						"about": [
+							"flat papers"
+						]
+					},
+					{
+						"intent": "ask",
+						"quote": "what is due this month for the flat",
+						"topics": [
+							"records"
+						],
+						"span": {
+							"said": "this month",
+							"kind": "month"
+						},
+						"people": [
+							{
+								"said": "we"
+							}
+						],
+						"about": [
+							"flat"
+						]
 					}
-				],
-				"about": [
-					"flat papers",
-					"due"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The records show nothing due this month. Home is not installed here.",
+			"text": "Home is not installed here.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Nothing is due from Tue, Oct 6 to Sat, Oct 31 for the flat.",
 			"toolCalls": []
 		}
 	]

@@ -2,33 +2,38 @@
 	"case": "formatting: an overview of the week",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar",
-					"tasks",
-					"shopping"
-				],
-				"span": {
-					"said": "this week",
-					"kind": "week",
-					"day": {
-						"text": "this week",
-						"week": "this"
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Give me an overview of this week: what's on, the open tasks and the shopping list.",
+						"topics": [
+							"calendar",
+							"tasks",
+							"shopping"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": []
 					}
-				},
-				"people": []
+				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "This week, Tuesday, October 6, 6:00 PM–7:30 PM: Swim training, City pool (Ellie); Wednesday, October 7, 6:45 AM–3:15 PM: Early shift (Lukas); Wednesday, October 7, 11:00 AM–12:00 PM: Client meeting (Sofia); Wednesday, October 7, 4:00 PM–4:45 PM: Piano lesson (Ellie); Wednesday, October 7, 5:00 PM–6:00 PM: Football training (Noah); Wednesday, October 7, 7:30 PM–9:30 PM: Work dinner (Lukas); Thursday, October 8, 9:30 AM–10:30 AM: Dentist checkup (Noah); Thursday, October 8, 5:00 PM–6:00 PM: Swimming (Noah); Sunday, October 11, 7:30 PM–8:00 PM: Sunday planning. Tasks: Buy a birthday present for Mila; Book the car service. Shopping: Groceries: Bread, Cheddar, Tomatoes, Pasta, Eggs.",
 			"toolCalls": []
 		}
 	]

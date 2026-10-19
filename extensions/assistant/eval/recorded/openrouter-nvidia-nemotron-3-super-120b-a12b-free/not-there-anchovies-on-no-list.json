@@ -2,54 +2,35 @@
 	"case": "not there: anchovies on no list",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [],
-				"about": [
-					"anchovies"
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Remove the anchovies from the shopping list",
+						"topics": [
+							"shopping"
+						],
+						"people": [],
+						"about": [
+							"anchovies"
+						]
+					}
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I couldn’t find anchovies on any of the shopping lists.",
+			"text": "I checked the family’s shopping lists, and “anchovies” isn’t on any of them. If you’d like to add it or remove something else, just let me know.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
-					"input": {
-						"text": "anchovies"
-					}
-				},
-				{
-					"name": "lists_shoppingList",
 					"input": {}
-				},
-				{
-					"name": "lists_shoppingList",
-					"input": {
-						"listId": "shop_list:1"
-					}
-				},
-				{
-					"name": "lists_shoppingList",
-					"input": {
-						"listId": "shop_list:2"
-					}
-				},
-				{
-					"name": "lists_shoppingList",
-					"input": {
-						"listId": "shop_list:3"
-					}
 				}
 			]
 		}

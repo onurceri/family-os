@@ -2,70 +2,48 @@
 	"case": "bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks"
-				],
-				"span": {
-					"said": "on Tuesday",
-					"kind": "day",
-					"day": {
-						"text": "Tuesday",
-						"weekday": 2
-					}
-				},
-				"people": [
-					{
-						"said": "me"
-					}
-				],
-				"about": [
-					"put the bins out"
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"error": "timeout",
-			"toolCalls": []
+			"error": "timeout"
 		},
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks"
-				],
-				"span": {
-					"said": "on Tuesday",
-					"kind": "day",
-					"day": {
-						"text": "Tuesday",
-						"weekday": 2
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "me"
+						"intent": "change",
+						"quote": "Remind me on Tuesday at 08:00 to put the bins out",
+						"topics": [
+							"tasks"
+						],
+						"span": {
+							"said": "on Tuesday",
+							"kind": "day",
+							"day": {
+								"text": "Tuesday",
+								"weekday": 2
+							}
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						],
+						"about": [
+							"put the bins out"
+						]
 					}
-				],
-				"about": [
-					"put the bins out"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a task: \"Put the bins out\" for Tuesday 13 October at 08:00, assigned to you. It's waiting for someone in the household to approve it before it's added.",
+			"text": "I used Tuesday 13 October 2026 for \"Tuesday at 08:00\" (this Tuesday has already passed at 08:00 today).\n\nSuggested, not added yet: Add a task: Put the bins out for 2026-10-13. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
@@ -73,8 +51,7 @@
 						"title": "Put the bins out",
 						"assigneeId": "member:2",
 						"dueDate": "2026-10-13",
-						"dueTime": "08:00",
-						"notes": "Reminder for Tuesday at 08:00"
+						"dueTime": "08:00"
 					}
 				}
 			]

@@ -2,36 +2,41 @@
 	"case": "weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "Wednesday 20 October",
-					"kind": "day",
-					"day": {
-						"text": "Wednesday 20 October",
-						"weekday": 3,
-						"inDays": 0,
-						"numeric": "}}}, "
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Is there swimming on Wednesday 20 October?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "Wednesday 20 October",
+							"kind": "day",
+							"day": {
+								"text": "Wednesday 20 October",
+								"weekday": 3,
+								"inDays": 0,
+								"numeric": "}}}, "
+							}
+						},
+						"people": [],
+						"about": [
+							"swimming"
+						]
 					}
-				},
-				"people": [],
-				"about": [
-					"swimming"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is no swimming on Wednesday, October 20 because that day is Tuesday, October 20. The swim training is on Tuesday, October 20 from 6:00 PM–7:30 PM at City pool (Ellie).",
+			"text": "October 20 is a Tuesday, so there is no swimming on Wednesday.",
 			"toolCalls": []
 		}
 	]

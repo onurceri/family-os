@@ -3,14 +3,15 @@
 		"openrouter-nvidia-nemotron-3-super-120b-a12b-free": {
 			"label": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 			"version": "assistant.understand/1",
-			"promptHash": "8526ae00fd76e932",
+			"promptHash": "16d32e9dec32b05c",
 			"date": "2026-10-19",
-			"cases": 35,
+			"cases": 38,
 			"passing": [
 				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 				"not there: anchovies on no list",
 				"one date: Sunday planning on 25 October only",
 				"one date: follow-up \"Only this Sunday\"",
+				"follow-up: \"move it\" after a question moves the record the card showed",
 				"tick off: \"the bananas\" on a long list",
 				"tick off: milk already bought, oat milk open",
 				"find: swimming this week",
@@ -19,6 +20,9 @@
 				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created",
 				"reminder: the suggestion says the day it is for",
+				"question and request: \"Do I have anything on Thursday? I also want to remember to pack my football kit\"",
+				"request and question: \"Add milk and what is for dinner tonight?\"",
+				"two questions: \"What is on Thursday? And what is on Saturday?\" get a card each",
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
 				"duplicate: sandpaper is already on the Hardware store list",
@@ -39,12 +43,11 @@
 				"notes: what to bring to Saturday's match is in the event's notes",
 				"waiting: a request from Leo and a Quick add card wait for Mara",
 				"nothing this weekend: the next event is Date night on Saturday 31 October",
-				"child: Leo (6) gets one short sentence",
-				"no ISO dates: when a task of Leo is due"
+				"child: Leo (6) gets one short sentence"
 			],
 			"failing": {
-				"follow-up: \"move it\" after a question moves the record the card showed": [
-					"drafted calendar.changeEvent: Dentist checkup to 10:00"
+				"no ISO dates: when a task of Leo is due": [
+					"understood: tasks · Leo · 2026-10-18..2026-10-24"
 				]
 			},
 			"runs": 1,
@@ -53,7 +56,7 @@
 				"not there: anchovies on no list": 1,
 				"one date: Sunday planning on 25 October only": 1,
 				"one date: follow-up \"Only this Sunday\"": 1,
-				"follow-up: \"move it\" after a question moves the record the card showed": 0,
+				"follow-up: \"move it\" after a question moves the record the card showed": 1,
 				"tick off: \"the bananas\" on a long list": 1,
 				"tick off: milk already bought, oat milk open": 1,
 				"find: swimming this week": 1,
@@ -62,6 +65,9 @@
 				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar": 1,
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created": 1,
 				"reminder: the suggestion says the day it is for": 1,
+				"question and request: \"Do I have anything on Thursday? I also want to remember to pack my football kit\"": 1,
+				"request and question: \"Add milk and what is for dinner tonight?\"": 1,
+				"two questions: \"What is on Thursday? And what is on Saturday?\" get a card each": 1,
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)": 1,
 				"duplicate: a present for Mila is already a task": 1,
 				"duplicate: sandpaper is already on the Hardware store list": 1,
@@ -83,16 +89,16 @@
 				"waiting: a request from Leo and a Quick add card wait for Mara": 1,
 				"nothing this weekend: the next event is Date night on Saturday 31 October": 1,
 				"child: Leo (6) gets one short sentence": 1,
-				"no ISO dates: when a task of Leo is due": 1
+				"no ISO dates: when a task of Leo is due": 0
 			},
 			"cost": 0
 		},
 		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
 			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 			"version": "assistant.understand/1",
-			"promptHash": "8526ae00fd76e932",
+			"promptHash": "16d32e9dec32b05c",
 			"date": "2026-10-19",
-			"cases": 35,
+			"cases": 38,
 			"passing": [
 				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 				"not there: anchovies on no list",
@@ -107,6 +113,8 @@
 				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created",
 				"reminder: the suggestion says the day it is for",
+				"request and question: \"Add milk and what is for dinner tonight?\"",
+				"two questions: \"What is on Thursday? And what is on Saturday?\" get a card each",
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
 				"duplicate: sandpaper is already on the Hardware store list",
@@ -118,7 +126,6 @@
 				"answer weekday: the bins on Tuesday 13 October",
 				"span: nothing on this weekend, the next event is the Saturday after",
 				"span: nothing open for Ellie this weekend",
-				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
 				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week",
 				"Sunday: \"this week\" asked on the week's last day is the coming week",
@@ -128,7 +135,8 @@
 				"waiting: a request from Leo and a Quick add card wait for Mara",
 				"nothing this weekend: the next event is Date night on Saturday 31 October",
 				"child: Leo (6) gets one short sentence",
-				"no ISO dates: when a task of Leo is due"
+				"no ISO dates: when a task of Leo is due",
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today"
 			],
 			"failing": {},
 			"runs": 1,
@@ -146,6 +154,8 @@
 				"dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar": 1,
 				"reminder: \"Remind me to pack the football kit\" is suggested, not created": 1,
 				"reminder: the suggestion says the day it is for": 1,
+				"request and question: \"Add milk and what is for dinner tonight?\"": 1,
+				"two questions: \"What is on Thursday? And what is on Saturday?\" get a card each": 1,
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)": 1,
 				"duplicate: a present for Mila is already a task": 1,
 				"duplicate: sandpaper is already on the Hardware store list": 1,
@@ -157,7 +167,6 @@
 				"answer weekday: the bins on Tuesday 13 October": 1,
 				"span: nothing on this weekend, the next event is the Saturday after": 1,
 				"span: nothing open for Ellie this weekend": 1,
-				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today": 1,
 				"bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag": 1,
 				"bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week": 1,
 				"Sunday: \"this week\" asked on the week's last day is the coming week": 1,
@@ -167,8 +176,13 @@
 				"waiting: a request from Leo and a Quick add card wait for Mara": 1,
 				"nothing this weekend: the next event is Date night on Saturday 31 October": 1,
 				"child: Leo (6) gets one short sentence": 1,
-				"no ISO dates: when a task of Leo is due": 1
+				"no ISO dates: when a task of Leo is due": 1,
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today": 1
 			},
+			"outages": [
+				"question and request: \"Do I have anything on Thursday? I also want to remember to pack my football kit\"",
+				"bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today"
+			],
 			"cost": 0
 		}
 	}

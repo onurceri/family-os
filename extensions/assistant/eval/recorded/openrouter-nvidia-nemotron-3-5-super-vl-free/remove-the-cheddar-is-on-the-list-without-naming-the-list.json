@@ -2,23 +2,28 @@
 	"case": "remove: the cheddar is on the list (without naming the list)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [
+				"parts": [
 					{
-						"said": "I"
+						"intent": "change",
+						"quote": "take the cheddar off the shopping list, I dont like it",
+						"topics": [
+							"shopping"
+						],
+						"people": [
+							{
+								"said": "I"
+							}
+						],
+						"about": [
+							"cheddar"
+						]
 					}
-				],
-				"about": [
-					"cheddar"
 				]
 			}
 		},
@@ -35,7 +40,7 @@
 					"name": "lists_deleteShoppingItem",
 					"input": {
 						"id": "shop_item:2",
-						"label": "Cheddar"
+						"label": "cheddar"
 					}
 				}
 			]

@@ -2,34 +2,36 @@
 	"case": "dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"meals"
-				],
-				"span": {
-					"said": "on Friday",
-					"kind": "day",
-					"day": {
-						"text": "Friday",
-						"weekday": 5
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is for dinner on Friday?",
+						"topics": [
+							"meals"
+						],
+						"span": {
+							"said": "on Friday",
+							"kind": "day",
+							"day": {
+								"text": "Friday",
+								"weekday": 5
+							}
+						},
+						"people": []
 					}
-				},
-				"people": [],
-				"about": [
-					"dinner"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing for meals on Friday. Dinner at Nona Marija's is from 6:30 PM to 9:00 PM.",
+			"error": "timeout",
 			"toolCalls": []
 		}
 	]

@@ -42,6 +42,8 @@ export interface Turn {
 	drafts: Draft[];
 	/** The answer card, when the message was answered as a question. */
 	card?: AnswerCard | null;
+	/** Every answer card, in the order asked (`card` is the first). */
+	cards?: AnswerCard[];
 	/** The model's opening words that were kept (empty when dropped or none). */
 	lead?: string;
 	/** What the card had to show, when the case says how its question should be read. */
@@ -267,6 +269,23 @@ export function understood(expected: Expected): Check {
 						u.people.filter((name) => name !== o.asker),
 						expected.people ?? [],
 					))
+			);
+		},
+	};
+}
+
+/** The last message got one answer card for each of these spans, in this order. */
+export function answeredWithCards(...spans: { from: string; to: string }[]): Check {
+	return {
+		label: `answered with ${spans.length} cards: ${spans.map((s) => `${s.from}..${s.to}`).join(', ')}`,
+		pass: (o) => {
+			const cards = lastTurn(o).cards ?? [];
+			return (
+				cards.length === spans.length &&
+				cards.every(
+					(c, i) =>
+						c.understood.span.from === spans[i]?.from && c.understood.span.to === spans[i]?.to,
+				)
 			);
 		},
 	};

@@ -2,39 +2,40 @@
 	"case": "reminder: \"Remind me to pack the football kit\" is suggested, not created",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks"
-				],
-				"span": {
-					"said": "on Thursday",
-					"kind": "day",
-					"day": {
-						"text": "Thursday",
-						"weekday": 4
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "me"
+						"intent": "change",
+						"quote": "Remind me on Thursday to pack the football kit",
+						"topics": [
+							"tasks"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						]
 					}
-				],
-				"about": [
-					"pack",
-					"football kit"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I used Thursday, October 8 (2026‑10‑08).  \nSuggested, not added yet: Add a task: Pack the football kit for 2026-10-08. It appears once someone in the household approves it.",
+			"text": "I suggested adding a task “Pack the football kit” for Thursday 8 October. It’s waiting for approval.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",

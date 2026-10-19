@@ -22,9 +22,9 @@ import {
 } from '../contract/index.ts';
 import { answerWithRealWeekdays, answerWithWordDates, dayInWords } from './answer-dates.ts';
 import { formatWeekday } from './format.ts';
-import { cardOf, spokenText } from './messages.ts';
+import { cardOf, cardsColumn, spokenText } from './messages.ts';
 import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
-import { answerQuestion } from './question.ts';
+import { answerQuestion, type QuestionAnswer } from './question.ts';
 import {
 	createHandleScrubber,
 	scrubHandles,
@@ -44,8 +44,8 @@ import {
 } from './tools.ts';
 import {
 	QUESTION_JSON_SCHEMA,
-	type Question,
-	QuestionSchema,
+	type Reading,
+	ReadingSchema,
 	understandPrompt,
 	understandSystem,
 } from './understand.ts';
@@ -175,7 +175,7 @@ export const turnJob = defineJob({
 			suggested?: readonly string[];
 			errorCode?: string | null;
 			calls?: RecordedCall[];
-			card?: AnswerCard;
+			cards?: readonly AnswerCard[];
 		}) => {
 			await persistHandles();
 			await db
@@ -186,7 +186,7 @@ export const turnJob = defineJob({
 					suggested: fields.suggested?.length ? JSON.stringify(fields.suggested) : null,
 					error_code: fields.errorCode ?? null,
 					tool_calls: fields.calls?.length ? JSON.stringify(fields.calls) : null,
-					card: fields.card ? JSON.stringify(fields.card) : null,
+					card: cardsColumn(fields.cards ?? []),
 				})
 				.where('id', '=', messageId)
 				.execute();
@@ -307,14 +307,14 @@ export const turnJob = defineJob({
 		const locale = member.locale ?? settings.locale;
 
 		// What the message is, read first: a question is answered from facts code fetched.
-		let question: Question | null = null;
+		let reading: Reading | null = null;
 		try {
 			const read = await ctx.llm.generateObject({
 				role: 'smart',
 				feature: CHAT_FEATURE,
 				// Only the message: names, dates and the family's data are worked out by code.
 				areas: ['assistant'],
-				schema: QuestionSchema,
+				schema: ReadingSchema,
 				jsonSchema: QUESTION_JSON_SCHEMA,
 				system: understandSystem(),
 				prompt: understandPrompt(
@@ -332,7 +332,7 @@ export const turnJob = defineJob({
 				memberId,
 				jobId: run.id,
 			});
-			question = read.output;
+			reading = read.output;
 		} catch (error) {
 			if (!isLlmError(error)) throw error;
 			if (error.retryable && run.attempt < run.maxAttempts) {
@@ -350,54 +350,97 @@ export const turnJob = defineJob({
 				return finish({ status: 'failed', errorCode: error.code });
 		}
 
-		if (question?.intent === 'ask') {
+		// What the message asks, in the order asked: each question is answered by code with a card,
+		// and the requests go together to the tool loop. A reading that could not be had leaves the
+		// whole message to the loop.
+		const parts = reading?.parts ?? [];
+		const questions = parts.filter((p) => p.intent === 'ask');
+		const requests = parts.filter((p) => p.intent !== 'ask');
+		const compound = parts.length > 1;
+		// What a part is about, for the tool loop: its quote, else the little the reading kept.
+		const wordsOf = (part: Reading['parts'][number]) =>
+			part.quote ||
+			(compound ? [...(part.about ?? []), ...part.topics].join(', ') || asked : asked);
+		const answers: QuestionAnswer[] = [];
+		let questionsFailed = 0;
+		for (const question of questions) {
 			try {
-				const answer = await answerQuestion(ctx, {
-					question,
-					asked,
-					member,
-					family,
-					settings,
-					today,
-					actor,
-					policy,
-					via: via ?? 'app',
-					words,
-					order,
-					table,
-					labels,
-					jobId: run.id,
-				});
-				if (answer.lead !== '')
-					await ctx.events.emitTo(memberId, assistantDelta, {
-						threadId,
-						messageId,
-						text: answer.lead,
-						reset: true,
-					});
-				return await finish({
-					status: 'done',
-					content: answer.lead,
-					card: answer.card,
-					calls: answer.calls,
-				});
+				answers.push(
+					await answerQuestion(ctx, {
+						question,
+						// A part is answered for its own words, not the whole message.
+						asked: compound && question.quote ? question.quote : asked,
+						member,
+						family,
+						settings,
+						today,
+						actor,
+						policy,
+						via: via ?? 'app',
+						words,
+						order,
+						table,
+						labels,
+						jobId: run.id,
+					}),
+				);
 			} catch (error) {
+				questionsFailed++;
 				ctx.logger.error(
 					{ threadId, err: error instanceof Error ? error.name : 'unknown' },
 					'assistant question failed',
 				);
-				return finish({ status: 'failed', errorCode: 'unavailable' });
 			}
+		}
+		const cards = answers.map((a) => a.card);
+		const prefix = answers
+			.map((a) => a.lead)
+			.filter((lead) => lead !== '')
+			.join('\n\n');
+		const questionCalls = answers.flatMap((a) => a.calls);
+		// What a part that failed leaves the person to know.
+		const failureNotes = (requestFailed: boolean) => [
+			...(questionsFailed > 0 ? [ctx.translate(locale, 'assistant:question_failed')] : []),
+			...(requestFailed ? [ctx.translate(locale, 'assistant:request_failed')] : []),
+		];
+		const joined = (...texts: string[]) => texts.filter((text) => text !== '').join('\n\n');
+		if (prefix !== '')
+			await ctx.events.emitTo(memberId, assistantDelta, {
+				threadId,
+				messageId,
+				text: prefix,
+				reset: true,
+			});
+
+		// Only questions: the cards are the answer.
+		if (questions.length > 0 && requests.length === 0) {
+			if (answers.length === 0) return finish({ status: 'failed', errorCode: 'unavailable' });
+			return finish({
+				status: 'done',
+				content: joined(prefix, ...failureNotes(false)),
+				cards,
+				calls: questionCalls,
+			});
 		}
 
 		// A change or a thing to remember gets the tools of what it is about, plus those of what the
 		// answer just before it was about ("yes, move it" after a card on the calendar); anything
 		// else keeps every tool.
 		const lastCard = cardOf(history.find((m) => m.role === 'assistant') ?? { card: null });
+		const intent = requests.some((p) => p.intent === 'other')
+			? 'other'
+			: requests.some((p) => p.intent === 'remember')
+				? 'remember'
+				: requests.length > 0
+					? 'change'
+					: 'other';
 		const tools = scopeTools(
 			offered,
-			question?.intent ?? 'other',
-			scopeTopics(question?.topics ?? [], lastCard?.sections.map((s) => s.topic) ?? []),
+			intent,
+			scopeTopics(
+				[...new Set(requests.flatMap((p) => p.topics))],
+				lastCard?.sections.map((s) => s.topic) ?? [],
+			),
 		);
 
 		const vocabularies = await readVocabularies(
@@ -405,7 +448,7 @@ export const turnJob = defineJob({
 			actor,
 			new Set(tools.filter((t) => t.kind === 'draft').map((t) => areaOf(t.actionId))),
 		);
-		const calls: RecordedCall[] = [];
+		const calls: RecordedCall[] = [...questionCalls];
 		const proposals: Proposal[] = [];
 		const inject = {
 			'core.addMemory': { source: 'ai' },
@@ -419,9 +462,16 @@ export const turnJob = defineJob({
 			);
 		};
 		const scrubber = createHandleScrubber(nameOf);
+		// The model's words come after the opening words of the cards, in a paragraph of their own.
+		let separate = prefix !== '';
 		const emit = (text: string) => {
-			if (text !== '')
-				void ctx.events.emitTo(memberId, assistantDelta, { threadId, messageId, text });
+			if (text === '') return;
+			void ctx.events.emitTo(memberId, assistantDelta, {
+				threadId,
+				messageId,
+				text: separate ? `\n\n${text}` : text,
+			});
+			separate = false;
 		};
 
 		try {
@@ -456,6 +506,12 @@ export const turnJob = defineJob({
 					areas: [...new Set(tools.map((t) => areaOf(t.actionId)))],
 					missing: ctx.actions.aiMissingAreas({ local: policy.local }),
 					vocabularies,
+					...(answers.length > 0 && {
+						split: {
+							answered: questions.map(wordsOf),
+							requests: requests.map(wordsOf),
+						},
+					}),
 				}),
 				messages,
 				tools: chatTools(tools, {
@@ -541,17 +597,26 @@ export const turnJob = defineJob({
 					weekdays: [...words.weekdays.flat(), ...words.weekdaysShort.flat()],
 				},
 			);
+			const content = joined(prefix, answer);
 			if (answer !== written)
 				await ctx.events.emitTo(memberId, assistantDelta, {
 					threadId,
 					messageId,
-					text: answer,
+					text: content,
 					reset: true,
 				});
+			// With no words and no suggestions the request got no answer; the cards still stand.
+			const silent = answer === '' && suggested.length === 0;
 			await finish(
-				answer === '' && suggested.length === 0
+				silent && answers.length === 0
 					? { status: 'failed', errorCode: 'no_answer', calls }
-					: { status: 'done', content: answer, suggested, calls },
+					: {
+							status: 'done',
+							content: joined(content, ...failureNotes(silent)),
+							suggested,
+							calls,
+							cards,
+						},
 			);
 			const total = await db
 				.selectFrom('assistant_messages')
@@ -575,14 +640,28 @@ export const turnJob = defineJob({
 						.execute();
 					throw error;
 				}
-				return finish({ status: 'failed', errorCode: error.code, calls });
+				return answers.length > 0
+					? finish({
+							status: 'done',
+							content: joined(prefix, ...failureNotes(true)),
+							cards,
+							calls: questionCalls,
+						})
+					: finish({ status: 'failed', errorCode: error.code, calls });
 			}
 			// Never log the conversation: the error alone says what went wrong.
 			ctx.logger.error(
 				{ threadId, err: error instanceof Error ? error.name : 'unknown' },
 				'assistant turn failed',
 			);
-			return finish({ status: 'failed', errorCode: 'unavailable', calls });
+			return answers.length > 0
+				? finish({
+						status: 'done',
+						content: joined(prefix, ...failureNotes(true)),
+						cards,
+						calls: questionCalls,
+					})
+				: finish({ status: 'failed', errorCode: 'unavailable', calls });
 		}
 	},
 });

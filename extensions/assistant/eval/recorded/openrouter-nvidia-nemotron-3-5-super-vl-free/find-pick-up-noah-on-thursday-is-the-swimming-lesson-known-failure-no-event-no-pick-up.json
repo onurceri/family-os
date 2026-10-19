@@ -2,38 +2,48 @@
 	"case": "find: \"pick up Noah on Thursday\" is the swimming lesson (known failure: \"no event, no pick-up\")",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
+			"error": "unavailable"
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "on Thursday",
-					"kind": "day",
-					"day": {
-						"text": "Thursday",
-						"weekday": 4
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "Noah"
+						"intent": "ask",
+						"quote": "Do we need to pick Noah up anywhere on Thursday?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "Noah"
+							}
+						],
+						"about": [
+							"pick up"
+						]
 					}
-				],
-				"about": [
-					"pick up"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Noah has Dentist checkup and Swimming on Thursday.",
+			"text": "Noah has Dentist checkup and Swimming on Thursday, October 8.",
 			"toolCalls": []
 		}
 	]

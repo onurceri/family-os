@@ -2,40 +2,66 @@
 	"case": "answer weekday: the bins on Tuesday 13 October",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"chores",
-					"calendar",
-					"tasks"
-				],
-				"span": {
-					"said": "tonight",
-					"kind": "day",
-					"day": {
-						"text": "tonight",
-						"inDays": 0
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "me"
+						"intent": "ask",
+						"quote": "are the bins going out tonight?",
+						"topics": [
+							"chores"
+						],
+						"span": {
+							"said": "tonight",
+							"kind": "day",
+							"day": {
+								"text": "tonight",
+								"inDays": 0
+							}
+						},
+						"people": [],
+						"about": [
+							"bins going out"
+						]
+					},
+					{
+						"intent": "ask",
+						"quote": "whats on for me this week",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						]
 					}
-				],
-				"about": [
-					"bins going out"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "No bins tonight; next bin day is Tuesday, October 13.",
+			"text": "No bins are going out tonight because there are no chores today.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Nothing this week; next: Tuesday, October 13: Take out the bins.",
 			"toolCalls": []
 		}
 	]

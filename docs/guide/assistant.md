@@ -23,6 +23,10 @@ When you ask what there is ("what is on this week?", "do I need to pick up Leo o
 
 The sentence is written for the person asking, as their description in the family says: someone described as a young child ("6 years old") gets one short sentence. In [Telegram](telegram.md) the sentence is one line, and the facts follow as plain lines.
 
+A message can hold more than one thing. "Do I have anything on Thursday? I also want to remember to pack my football kit" gets the facts for Thursday and, under them, a suggestion for the kit, in one reply; "Add milk and what is for dinner tonight?" does the same the other way round. Two questions about different days ("what is on Thursday? And on Saturday?") get a card each, in the order you asked. If one part cannot be done, the other still is, and the reply tells you what was missed.
+
+A question about someone that names a name nobody in the family has ("Biscuit") says so: "No family member is called Biscuit". The line only speaks of people: a pet or a thing is kept in its own part.
+
 A question that names no part ("anything on Friday?") gets the calendar and the tasks of those days. A question that names no days covers the coming seven days.
 
 When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.

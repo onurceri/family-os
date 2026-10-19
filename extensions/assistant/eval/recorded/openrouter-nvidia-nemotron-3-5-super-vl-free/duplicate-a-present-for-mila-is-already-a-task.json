@@ -2,25 +2,29 @@
 	"case": "duplicate: a present for Mila is already a task",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks",
-					"shopping"
-				],
-				"people": [
+				"parts": [
 					{
-						"said": "Mila"
+						"intent": "change",
+						"quote": "Add a task to buy a present for Mila",
+						"topics": [
+							"shopping"
+						],
+						"people": [
+							{
+								"said": "Mila"
+							}
+						],
+						"about": [
+							"buy",
+							"present"
+						]
 					}
-				],
-				"about": [
-					"buy",
-					"present"
 				]
 			}
 		},

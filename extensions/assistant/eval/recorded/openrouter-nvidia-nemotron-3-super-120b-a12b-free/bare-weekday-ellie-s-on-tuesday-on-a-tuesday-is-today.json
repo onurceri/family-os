@@ -2,44 +2,49 @@
 	"case": "bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks"
-				],
-				"span": {
-					"said": "on Tuesday",
-					"kind": "day",
-					"day": {
-						"text": "Tuesday",
-						"weekday": 2
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "me"
+						"intent": "change",
+						"quote": "Remind me to pack my swim bag on Tuesday",
+						"topics": [
+							"tasks"
+						],
+						"span": {
+							"said": "on Tuesday",
+							"kind": "day",
+							"day": {
+								"text": "Tuesday",
+								"weekday": 2
+							}
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						],
+						"about": [
+							"pack",
+							"swim bag"
+						]
 					}
-				],
-				"about": [
-					"pack",
-					"swim bag"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I used today’s date, Tuesday October 6 (2026‑10‑06), for “Tuesday” with no time given.\n\nI’ve suggested adding a task: **Remind me to pack my swim bag** for 2026‑10‑06. The suggestion is waiting for approval by someone else in the household. Once approved, it will be added to your tasks.",
+			"text": "I suggested adding a task for you to pack your swim bag on Tuesday, October 6, 2026. The suggestion is waiting for approval from someone else in the household.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
-						"title": "Remind me to pack my swim bag",
+						"title": "Pack my swim bag",
 						"assigneeId": "member:3",
 						"dueDate": "2026-10-06"
 					}

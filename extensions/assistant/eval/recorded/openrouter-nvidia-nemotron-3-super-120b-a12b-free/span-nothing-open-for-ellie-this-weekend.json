@@ -2,24 +2,29 @@
 	"case": "span: nothing open for Ellie this weekend",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar",
-					"tasks"
-				],
-				"span": {
-					"said": "this weekend",
-					"kind": "weekend"
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "me"
+						"intent": "ask",
+						"quote": "What is still open for me this weekend?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this weekend",
+							"kind": "weekend"
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						]
 					}
 				]
 			}

@@ -178,6 +178,11 @@ export const MessageSchema = z.object({
 	suggested: z.array(z.string()),
 	/** The answer card of a question, made by code; null for other answers. */
 	card: AnswerCardSchema.nullable(),
+	/**
+	 * The answer cards when the message asked several questions (or a question and a request), in
+	 * the order asked; `card` is the first of them.
+	 */
+	cards: z.array(AnswerCardSchema),
 	status: z.enum(MESSAGE_STATUSES),
 	/** Why an answer failed: an `LlmErrorCode` or one of this extension's. */
 	errorCode: z.string().nullable(),

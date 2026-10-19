@@ -13,16 +13,26 @@ export function suggestedOf(row: Pick<MessageRow, 'suggested'>): string[] {
 	}
 }
 
-/** The answer card of a question, or null (none, or one this version cannot read). */
-export function cardOf(row: Pick<MessageRow, 'card'>): AnswerCard | null {
-	if (!row.card) return null;
+/** The column's text for the cards of an answer: one card as itself, several as a list. */
+export const cardsColumn = (cards: readonly AnswerCard[]): string | null =>
+	cards.length === 0 ? null : JSON.stringify(cards.length === 1 ? cards[0] : cards);
+
+/** The answer cards of a message, in the order asked (none, or ones this version cannot read, are left out). */
+export function cardsOf(row: Pick<MessageRow, 'card'>): AnswerCard[] {
+	if (!row.card) return [];
 	try {
-		const parsed = AnswerCardSchema.safeParse(JSON.parse(row.card));
-		return parsed.success ? parsed.data : null;
+		const stored: unknown = JSON.parse(row.card);
+		return (Array.isArray(stored) ? stored : [stored]).flatMap((one) => {
+			const parsed = AnswerCardSchema.safeParse(one);
+			return parsed.success ? [parsed.data] : [];
+		});
 	} catch {
-		return null;
+		return [];
 	}
 }
+
+/** The first answer card of a message, or null. */
+export const cardOf = (row: Pick<MessageRow, 'card'>): AnswerCard | null => cardsOf(row)[0] ?? null;
 
 /**
  * The whole answer as words, for what has no cards: the model's words, the answer card as plain
@@ -30,7 +40,13 @@ export function cardOf(row: Pick<MessageRow, 'card'>): AnswerCard | null {
  * own history, the summary).
  */
 export const spokenText = (row: Pick<MessageRow, 'content' | 'suggested' | 'card'>): string =>
-	[row.content, (cardOf(row)?.text ?? []).join('\n'), suggestedOf(row).join('\n')]
+	[
+		row.content,
+		cardsOf(row)
+			.flatMap((card) => card.text)
+			.join('\n'),
+		suggestedOf(row).join('\n'),
+	]
 		.filter((part) => part !== '')
 		.join('\n\n');
 
@@ -50,6 +66,7 @@ export const toMessage = (row: MessageRow): Message => ({
 	toolCalls: toolCallsOf(row),
 	suggested: suggestedOf(row),
 	card: cardOf(row),
+	cards: cardsOf(row),
 	status: row.status,
 	errorCode: row.error_code,
 	createdAt: row.created_at,

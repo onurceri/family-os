@@ -2,19 +2,21 @@
 	"case": "tick off: \"the bananas\" on a long list",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [],
-				"about": [
-					"bananas"
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Tick off the bananas",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					}
 				]
 			}
 		},

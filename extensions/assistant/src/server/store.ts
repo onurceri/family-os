@@ -32,7 +32,10 @@ export type AssistantTables = {
 		 * not say them twice.
 		 */
 		suggested: string | null;
-		/** JSON: the answer card of a question (`AnswerCardSchema`), made by code; null otherwise. */
+		/**
+		 * JSON: the answer card of a question (`AnswerCardSchema`), made by code; a list of cards when
+		 * the message asked several questions; null otherwise.
+		 */
 		card: string | null;
 		status: 'pending' | 'streaming' | 'done' | 'failed';
 		error_code: string | null;

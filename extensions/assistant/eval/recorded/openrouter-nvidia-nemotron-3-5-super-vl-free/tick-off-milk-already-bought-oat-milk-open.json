@@ -2,27 +2,32 @@
 	"case": "tick off: milk already bought, oat milk open",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [],
-				"about": [
-					"milk",
-					"oat milk"
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Tick off the milk and the oat milk",
+						"topics": [
+							"shopping"
+						],
+						"people": [],
+						"about": [
+							"milk",
+							"oat milk"
+						]
+					}
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Oat milk is suggested to be ticked off — it's waiting for someone in the household to approve it. Milk is already marked as bought on the list.",
+			"text": "Oat milk: I've suggested ticking it off — it's waiting for someone in the household to approve it.\n\nMilk: it's already marked as bought on the list, so there's nothing to do there.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

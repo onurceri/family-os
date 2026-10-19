@@ -2,30 +2,35 @@
 	"case": "no ISO dates: when a task of Leo is due",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"tasks"
-				],
-				"people": [
+				"parts": [
 					{
-						"said": "my"
+						"intent": "ask",
+						"quote": "when is my reading homework due?",
+						"topics": [
+							"tasks"
+						],
+						"people": [
+							{
+								"said": "my"
+							}
+						],
+						"about": [
+							"reading homework"
+						]
 					}
-				],
-				"about": [
-					"reading homework"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Practise reading is on Monday.",
+			"error": "unavailable",
 			"toolCalls": []
 		}
 	]

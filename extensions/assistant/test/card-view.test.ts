@@ -162,7 +162,7 @@ describe('the answer card as rows', () => {
 			}),
 			words('en'),
 		);
-		expect(view.notices).toEqual(['Not in this family: Grandma']);
+		expect(view.notices).toEqual(['No family member is called Grandma']);
 		expect(view.notHere).toEqual([
 			'Pets: not installed here.',
 			'Records: closed to the assistant in the AI settings.',

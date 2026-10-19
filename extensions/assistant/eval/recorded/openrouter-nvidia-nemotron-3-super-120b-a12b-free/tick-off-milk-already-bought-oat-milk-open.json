@@ -2,27 +2,28 @@
 	"case": "tick off: milk already bought, oat milk open",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [],
-				"about": [
-					"milk",
-					"oat milk"
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Tick off the milk and the oat milk",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					}
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Milk is already ticked off on the shopping list.\n\nFor oat milk, I've created a suggestion to mark it as bought. It will be added once someone in the household approves it.",
+			"text": "Milk is already marked as bought on the Groceries list.  \nI’ve suggested ticking off oat milk on the Groceries list. This suggestion is waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
@@ -31,17 +32,15 @@
 				{
 					"name": "lists_checkShoppingItem",
 					"input": {
-						"id": "shop_item:7",
-						"done": true,
-						"label": "milk"
-					}
-				},
-				{
-					"name": "lists_checkShoppingItem",
-					"input": {
 						"id": "shop_item:1",
 						"done": true,
 						"label": "oat milk"
+					}
+				},
+				{
+					"name": "lists_shoppingList",
+					"input": {
+						"list": "Shopping list"
 					}
 				}
 			]

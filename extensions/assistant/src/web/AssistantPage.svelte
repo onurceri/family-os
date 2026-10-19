@@ -413,7 +413,7 @@
 								{:else}
 									<div class="grid gap-3">
 										{#if message.content}<AnswerText text={message.content} />{/if}
-										{#if message.card}<AnswerCard card={message.card} />{/if}
+										{#each message.cards as card, i (i)}<AnswerCard {card} />{/each}
 									</div>
 								{/if}
 								{#if ids.length > 0}

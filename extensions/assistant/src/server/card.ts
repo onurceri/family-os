@@ -132,7 +132,12 @@ export function cardText(card: Omit<AnswerCard, 'text' | 'lead'>, words: CardWor
 			}),
 		);
 	if (understood.unmatched.length > 0)
-		lines.push(t('card_unmatched', { names: listOf(understood.unmatched, words.dateLocale) }));
+		lines.push(
+			t('card_unmatched', {
+				count: understood.unmatched.length,
+				names: listOf(understood.unmatched, words.dateLocale),
+			}),
+		);
 	for (const section of card.sections) {
 		lines.push('', t(`topic_${section.topic}`));
 		if (section.items.length === 0) {

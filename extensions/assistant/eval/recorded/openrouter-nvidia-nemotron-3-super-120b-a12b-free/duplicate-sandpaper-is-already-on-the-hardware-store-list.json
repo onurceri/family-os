@@ -2,26 +2,28 @@
 	"case": "duplicate: sandpaper is already on the Hardware store list",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"shopping"
-				],
-				"people": [],
-				"about": [
-					"sandpaper"
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Add sandpaper to the Hardware store list",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					}
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Sandpaper is already on the Hardware store list (2 sheets). If you’d like to add more or change the quantity, just let me know.",
+			"text": "Sandpaper is already on the Hardware store list (you’ll see it listed as “Sandpaper – 2 sheets”). If you’d like to change the quantity or add another item, just let me know!",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

@@ -11,6 +11,7 @@ import {
 import {
 	EXAMPLES,
 	QuestionSchema,
+	ReadingSchema,
 	understandHash,
 	understandPrompt,
 	understandSystem,
@@ -37,8 +38,13 @@ describe('the reading of a message', () => {
 	});
 
 	it('reads every example of its own prompt', () => {
-		for (const example of EXAMPLES)
-			expect(QuestionSchema.parse(example.answer).intent, example.text).toBe(example.answer.intent);
+		for (const example of EXAMPLES) {
+			const parts = Array.isArray(example.answer) ? example.answer : [example.answer];
+			expect(
+				ReadingSchema.parse({ parts }).parts.map((p) => p.intent),
+				example.text,
+			).toEqual(parts.map((p) => p.intent));
+		}
 	});
 
 	it('is a short prompt with no family data, and its fingerprint is stable', () => {
@@ -201,7 +207,7 @@ describe('the answer card as plain lines', () => {
 		const lines = cardText(card, words('en'));
 		expect(lines).toEqual([
 			'Tasks, Shopping and Waiting for approval · Leo · This week, Mon, 19 Oct – Sun, 25 Oct',
-			'Not in this family: Grandma',
+			'No family member is called Grandma',
 			'',
 			'Tasks',
 			'- Practise reading (Leo), late since Friday, 16 October',

@@ -2,32 +2,36 @@
 	"case": "notes: what to bring to Saturday's match is in the event's notes",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "ask",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "on Saturday",
-					"kind": "day",
-					"day": {
-						"text": "Saturday",
-						"weekday": 6
-					}
-				},
-				"people": [
+				"parts": [
 					{
-						"said": "I"
+						"intent": "ask",
+						"quote": "what should I bring to the football match on Saturday?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on Saturday",
+							"kind": "day",
+							"day": {
+								"text": "Saturday",
+								"weekday": 6
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							}
+						],
+						"about": [
+							"football match"
+						]
 					}
-				],
-				"about": [
-					"bring",
-					"football match"
 				]
 			}
 		},

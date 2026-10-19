@@ -2,28 +2,30 @@
 	"case": "one date: Sunday planning on 25 October only",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "8526ae00fd76e932",
+	"promptHash": "16d32e9dec32b05c",
 	"answers": [
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
 			"output": {
-				"intent": "change",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "on 25 October",
-					"kind": "day",
-					"day": {
-						"text": "25 October",
-						"day": 25,
-						"month": 10
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Move only the Sunday planning on 25 October to 18:00",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on 25 October",
+							"kind": "day",
+							"day": {
+								"text": "25 October",
+								"day": 25,
+								"month": 10
+							}
+						},
+						"people": []
 					}
-				},
-				"people": [],
-				"about": [
-					"Sunday planning"
 				]
 			}
 		},
@@ -35,16 +37,16 @@
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"text": "Sunday planning",
 						"from": "2026-10-25",
-						"to": "2026-10-25"
+						"to": "2026-10-25",
+						"text": "Sunday planning"
 					}
 				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"occurrence": "1792953000000",
+						"occurrence": "2026-10-25",
 						"startTime": "18:00",
 						"endTime": "18:30",
 						"label": "Sunday planning"

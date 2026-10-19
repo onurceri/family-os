@@ -1,6 +1,7 @@
 import type { Outcome } from './checks.ts';
 import {
 	about,
+	answeredWithCards,
 	atMost,
 	type Check,
 	drafted,
@@ -420,6 +421,46 @@ export const CASES: Case[] = [
 		as: 'Lukas',
 		asks: ['Add a task: Pack my football kit on Thursday'],
 		checks: [remindsOn('2026-10-08'), says(/Thursday,? (?:8 October|October 8)/i)],
+	},
+
+	// A message with a question and a request answers both: a card for the question and a
+	// suggestion for the request, in one reply.
+	novak({
+		name: 'question and request: "Do I have anything on Thursday? I also want to remember to pack my football kit"',
+		as: 'Ivy',
+		asks: ['Do I have anything on Thursday? I also want to remember to pack my football kit'],
+		expect: { from: '2026-10-22', to: '2026-10-22', topics: ['calendar'], people: ['Ivy'] },
+		checks: [
+			{
+				label: 'suggested a task or event about the football kit',
+				pass: (o) => lastTurn(o).drafts.some((d) => /kit/i.test(JSON.stringify(d.input))),
+			},
+			says(/kit/i),
+		],
+	}),
+	// The same, the request first.
+	{
+		name: 'request and question: "Add milk and what is for dinner tonight?"',
+		as: 'Lukas',
+		asks: ['Add milk and what is for dinner tonight?'],
+		expect: { from: '2026-10-06', to: '2026-10-06', topics: ['meals'] },
+		checks: [
+			drafted('lists.addShoppingItems', 'milk', (i) => /milk/i.test(itemTitles(i).join(' '))),
+		],
+	},
+	// Two questions about different days are two cards.
+	{
+		name: 'two questions: "What is on Thursday? And what is on Saturday?" get a card each',
+		as: 'Sofia',
+		events: CALENDAR,
+		asks: ['What is on Thursday? And what is on Saturday?'],
+		checks: [
+			answeredWithCards(
+				{ from: '2026-10-08', to: '2026-10-08' },
+				{ from: '2026-10-10', to: '2026-10-10' },
+			),
+			noDrafts(),
+		],
 	},
 
 	// Weekdays.
