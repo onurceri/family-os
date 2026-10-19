@@ -8,6 +8,7 @@
 		ConfirmButton,
 		Dialog,
 		editLabel,
+		removeLabels,
 		EmptyArt,
 		FIELD_REASON,
 		FieldError,
@@ -82,6 +83,10 @@
 		(exact
 			? app.accessFor('lists.deleteShoppingItem', { id })
 			: app.access('lists.deleteShoppingItem')) !== 'no';
+
+	/** The words of a removal: "Suggest removing" when it would wait for approval. */
+	const removal = (actionId: string, label: string, confirmLabel: string, input?: unknown) =>
+		removeLabels(app, actionId, { label, confirmLabel }, input);
 
 	let lists = $state<ShoppingList[]>([]);
 	let selectedId = $state<string | null>(null);
@@ -404,7 +409,12 @@
 			? [
 					{
 						id: 'delete',
-						label: t('delete_item'),
+						label: removal(
+							'lists.deleteShoppingItem',
+							t('delete_item'),
+							'',
+							menuFor === item.id ? { id: item.id } : undefined,
+						).label,
 						icon: trashIcon,
 						danger: true,
 						onselect: () => void removeWithUndo(item),
@@ -442,7 +452,7 @@
 						? [
 								{
 									id: 'remove',
-									label: t('remove_list'),
+									label: removal('lists.archiveShoppingList', t('remove_list'), '').label,
 									icon: trashIcon,
 									danger: true,
 									onselect: () => (confirmRemove = true),
@@ -503,8 +513,12 @@
 {#snippet deleteItemButton()}
 	{#if editing && mayDelete(editing.id, true)}
 		<ConfirmButton
-			label={t('delete')}
-			confirmLabel={t('delete_confirm')}
+			{...removal(
+				'lists.deleteShoppingItem',
+				t('delete'),
+				t('delete_confirm'),
+				editing ? { id: editing.id } : undefined,
+			)}
 			onconfirm={() => removeItem(editing?.id ?? '')}
 		/>
 	{/if}
@@ -824,8 +838,7 @@
 								{@const listId = list.id}
 								<span class="ms-auto text-[13px]"
 									><ConfirmButton
-										label={t('clear_cart')}
-										confirmLabel={t('clear_bought_confirm')}
+										{...removal('lists.clearBought', t('clear_cart'), t('clear_bought_confirm'))}
 										onconfirm={() => clear(listId)}
 									/></span
 								>
@@ -857,7 +870,9 @@
 >
 	{#snippet actions()}
 		<Button variant="ghost" onclick={() => (confirmRemove = false)}>{t('cancel')}</Button>
-		<Button variant="danger" data-armed="true" onclick={removeList}>{t('remove_list')}</Button>
+		<Button variant="danger" data-armed="true" onclick={removeList}
+			>{removal('lists.archiveShoppingList', t('remove_list'), '').label}</Button
+		>
 	{/snippet}
 </Dialog>
 

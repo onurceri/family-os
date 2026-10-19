@@ -16,6 +16,7 @@
 		SidePanel,
 		wide,
 		editLabel,
+		removeLabels,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import {
@@ -123,6 +124,14 @@
 	// "Suggest a change" when the change would wait for approval.
 	const editText = $derived(editLabel(app, 'home.updateHome', t('edit')));
 	const mayArchive = $derived(app.access('home.archiveHome') !== 'no');
+	// "Suggest removing" when archiving would wait for approval.
+	const archiveText = (label: string) =>
+		removeLabels(
+			app,
+			'home.archiveHome',
+			{ label, confirmLabel: '' },
+			home ? { id: home.id } : undefined,
+		).label;
 	const mayAddItem = $derived(app.access('home.addItem') !== 'no');
 	const mayAddService = $derived(app.access('home.addService') !== 'no');
 	// Things and services someone asked to add that wait for approval: quiet rows until decided.
@@ -206,7 +215,7 @@
 			? [
 					{
 						id: 'archive',
-						label: t('archive_home'),
+						label: archiveText(t('archive_home')),
 						icon: box,
 						danger: true,
 						onselect: () => (archiving = true),
@@ -532,6 +541,8 @@
 	{#snippet actions()}
 		<Button variant="ghost" data-autofocus onclick={() => (archiving = false)}>{t('cancel')}</Button
 		>
-		<Button variant="danger" data-armed="true" onclick={archive}>{t('archive_do')}</Button>
+		<Button variant="danger" data-armed="true" onclick={archive}
+			>{archiveText(t('archive_do'))}</Button
+		>
 	{/snippet}
 </Dialog>

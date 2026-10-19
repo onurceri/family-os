@@ -33,3 +33,20 @@ export function editLabel(
 	const answer = input === undefined ? app.access(actionId) : app.accessFor(actionId, input);
 	return answer === 'suggest' ? app.t('app:suggest_change') : label;
 }
+
+/**
+ * The words of a delete, remove or archive button and of its second tap: when the removal would
+ * wait for approval they say so ("Suggest removing", "Tap again to send for approval") instead of
+ * promising a removal that does not happen. With an input, the exact answer for it.
+ */
+export function removeLabels(
+	app: Pick<AppContext, 'access' | 'accessFor' | 't'>,
+	actionId: string,
+	words: { label: string; confirmLabel: string },
+	input?: unknown,
+): { label: string; confirmLabel: string } {
+	const answer = input === undefined ? app.access(actionId) : app.accessFor(actionId, input);
+	return answer === 'suggest'
+		? { label: app.t('app:suggest_remove'), confirmLabel: app.t('app:suggest_remove_confirm') }
+		: words;
+}

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { describeRecurrence } from '@famos/time';
 	import { Button } from '@famos/ui/button';
-	import { AwaitingMark, awaitingRowText, ConfirmButton, editLabel } from '@famos/ui/famos';
+	import {
+		AwaitingMark,
+		awaitingRowText,
+		ConfirmButton,
+		editLabel,
+		removeLabels,
+	} from '@famos/ui/famos';
 	import type { EventDetail, Occurrence, Tag } from '../contract/index.js';
 	import { describeWhen } from './format.js';
 	import { reminderKey } from './form.js';
@@ -30,6 +36,9 @@
 		mayDelete: boolean;
 	} = $props();
 	const { app, t } = useCalendar();
+	// Whose event it is can decide whether removing it waits for approval.
+	const removal = (label: string, confirmLabel: string) =>
+		removeLabels(app, 'calendar.deleteEvent', { label, confirmLabel }, { id: occurrence.eventId });
 
 	const members = $derived(app.members().filter((m) => event.memberIds.includes(m.id)));
 	// The occurrence's own day: a repeating event's detail holds only the first one.
@@ -120,19 +129,16 @@
 				<span class="ms-auto flex flex-wrap gap-1">
 					{#if occurrence.recurring}
 						<ConfirmButton
-							label={t('delete_one')}
-							confirmLabel={t('delete_one_confirm')}
+							{...removal(t('delete_one'), t('delete_one_confirm'))}
 							onconfirm={() => ondelete(true)}
 						/>
 						<ConfirmButton
-							label={t('delete_series')}
-							confirmLabel={t('delete_series_confirm')}
+							{...removal(t('delete_series'), t('delete_series_confirm'))}
 							onconfirm={() => ondelete(false)}
 						/>
 					{:else}
 						<ConfirmButton
-							label={t('delete')}
-							confirmLabel={t('delete_confirm')}
+							{...removal(t('delete'), t('delete_confirm'))}
 							onconfirm={() => ondelete(false)}
 						/>
 					{/if}

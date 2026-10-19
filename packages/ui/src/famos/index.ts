@@ -87,7 +87,7 @@ export {
 } from './RepeatScope.svelte';
 export { default as Ring } from './Ring.svelte';
 export { default as Row } from './Row.svelte';
-export { editLabel, readFirst } from './read-first.js';
+export { editLabel, readFirst, removeLabels } from './read-first.js';
 export {
 	default as ScheduleFields,
 	type ScheduleLabels,

@@ -5,6 +5,7 @@
 		AwaitingRow,
 		Composer,
 		ConfirmButton,
+		removeLabels,
 		DetailRows,
 		EmptyArt,
 		focusFirstInvalid,
@@ -452,7 +453,15 @@
 {/snippet}
 
 {#snippet deleteButton()}
-	<ConfirmButton label={t('delete')} confirmLabel={t('delete_confirm')} onconfirm={remove} />
+	<ConfirmButton
+		{...removeLabels(
+			app,
+			'lists.deleteTask',
+			{ label: t('delete'), confirmLabel: t('delete_confirm') },
+			editingId ? { id: editingId } : undefined,
+		)}
+		onconfirm={remove}
+	/>
 {/snippet}
 
 {#snippet viewOnly()}

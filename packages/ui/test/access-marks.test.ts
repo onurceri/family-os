@@ -7,6 +7,7 @@ import {
 	DetailRows,
 	editLabel,
 	readFirst,
+	removeLabels,
 	ViewOnly,
 } from '../src/famos/index.js';
 import { bubblePlace, joinNames, viewOnlyLine } from '../src/famos/view-only.js';
@@ -23,6 +24,8 @@ const WORDS: Record<string, string> = {
 		"Your role lets you see this. Someone who manages the family's roles can change what your role may do.",
 	'app:today_names_and': '{{list}} and {{last}}',
 	'app:suggest_change': 'Suggest a change',
+	'app:suggest_remove': 'Suggest removing',
+	'app:suggest_remove_confirm': 'Tap again to send for approval',
 	'app:draft_waiting': 'Waiting for approval',
 	'app:draft_waiting_by': 'Suggested by {{name}}',
 	'app:draft_waiting_change': 'Waiting for approval · {{change}}',
@@ -153,6 +156,28 @@ describe('reading first when a change waits for approval', () => {
 	it("words a record page's edit button by the same answer", () => {
 		expect(editLabel(app('suggest'), 'pets.updatePet', 'Edit')).toBe('Suggest a change');
 		expect(editLabel(app('apply'), 'pets.updatePet', 'Edit')).toBe('Edit');
+	});
+
+	it("words a removal's buttons by the same answer", () => {
+		const words = { label: 'Delete', confirmLabel: 'Tap again to delete' };
+		expect(removeLabels(app('suggest'), 'calendar.deleteEvent', words)).toEqual({
+			label: 'Suggest removing',
+			confirmLabel: 'Tap again to send for approval',
+		});
+		for (const answer of ['apply', 'no', 'depends'] as const)
+			expect(removeLabels(app(answer), 'calendar.deleteEvent', words)).toEqual(words);
+		const asked: unknown[] = [];
+		const exact = fakeApp({
+			access: () => 'depends',
+			accessFor: (_id: string, input: unknown) => {
+				asked.push(input);
+				return 'suggest';
+			},
+		});
+		expect(removeLabels(exact, 'calendar.deleteEvent', words, { id: 'e1' }).label).toBe(
+			'Suggest removing',
+		);
+		expect(asked).toEqual([{ id: 'e1' }]);
 	});
 
 	it('lists only the details that hold something', () => {

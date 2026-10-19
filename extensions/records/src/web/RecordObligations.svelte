@@ -5,6 +5,7 @@
 		Card,
 		Chip,
 		ConfirmButton,
+		removeLabels,
 		EmptyLine,
 		focusFirstInvalid,
 		Section,
@@ -255,8 +256,12 @@
 		{#if editingId && editingId !== 'new' && mayRemove}
 			{@const id = editingId}
 			<ConfirmButton
-				label={t('remove')}
-				confirmLabel={t('remove_confirm')}
+				{...removeLabels(
+					app,
+					'records.removeObligation',
+					{ label: t('remove'), confirmLabel: t('remove_confirm') },
+					{ id },
+				)}
 				onconfirm={() => remove(id)}
 			/>
 		{/if}

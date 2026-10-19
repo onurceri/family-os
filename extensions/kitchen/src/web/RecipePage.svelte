@@ -3,6 +3,7 @@
 	import {
 		Card,
 		ConfirmButton,
+		removeLabels,
 		focusFirstInvalid,
 		IconButton,
 		Menu,
@@ -447,7 +448,15 @@
 >
 	{#snippet danger()}
 		{#if mayArchive}
-			<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+			<ConfirmButton
+				{...removeLabels(
+					app,
+					'kitchen.archiveRecipe',
+					{ label: t('archive'), confirmLabel: t('archive_confirm') },
+					recipe ? { id: recipe.id } : undefined,
+				)}
+				onconfirm={archive}
+			/>
 		{/if}
 	{/snippet}
 	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>

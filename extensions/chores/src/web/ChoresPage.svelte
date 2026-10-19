@@ -5,6 +5,7 @@
 		AwaitingMark,
 		AwaitingRow,
 		ConfirmButton,
+		removeLabels,
 		DetailRows,
 		EmptyState,
 		Fab,
@@ -306,7 +307,15 @@
 
 {#snippet archiveButton()}
 	{#if mayArchive}
-		<ConfirmButton label={t('archive')} confirmLabel={t('archive_confirm')} onconfirm={archive} />
+		<ConfirmButton
+			{...removeLabels(
+				app,
+				'chores.archiveChore',
+				{ label: t('archive'), confirmLabel: t('archive_confirm') },
+				editing?.id ? { id: editing.id } : undefined,
+			)}
+			onconfirm={archive}
+		/>
 	{/if}
 {/snippet}
 

@@ -8,6 +8,7 @@
 		awaitingMarkText,
 		Card,
 		ConfirmButton,
+		removeLabels,
 		EmptyLine,
 		FIELD_REASON,
 		fieldAria,
@@ -331,8 +332,12 @@
 			{#if mayRemove}
 				<div>
 					<ConfirmButton
-						label={t('remove')}
-						confirmLabel={t('remove_confirm')}
+						{...removeLabels(
+							app,
+							'pets.removeTreatment',
+							{ label: t('remove'), confirmLabel: t('remove_confirm') },
+							{ id: item.id },
+						)}
 						onconfirm={() => remove(item)}
 					/>
 				</div>

@@ -142,7 +142,9 @@
 									{#if mayUnplan}
 										<IconButton
 											size="sm"
-											label={t('remove_meal', { title: m.title })}
+											label={app.access('kitchen.removeMealPlanEntry') === 'suggest'
+												? app.t('app:suggest_remove')
+												: t('remove_meal', { title: m.title })}
 											onclick={() => remove(m)}><X /></IconButton
 										>
 									{/if}

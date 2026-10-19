@@ -10,6 +10,7 @@
 		SidePanel,
 		wide,
 		editLabel,
+		removeLabels,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Car, Pencil } from '@lucide/svelte';
@@ -76,6 +77,14 @@
 	// "Suggest a change" when the change would wait for approval.
 	const editText = $derived(editLabel(app, 'vehicles.updateVehicle', t('edit')));
 	const mayArchive = $derived(app.access('vehicles.archiveVehicle') !== 'no');
+	// "Suggest removing" when archiving would wait for approval.
+	const archiveText = (label: string) =>
+		removeLabels(
+			app,
+			'vehicles.archiveVehicle',
+			{ label, confirmLabel: '' },
+			vehicle ? { id: vehicle.id } : undefined,
+		).label;
 	const report = (outcome: Outcome, message: string) => {
 		if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
@@ -144,7 +153,7 @@
 			? [
 					{
 						id: 'archive',
-						label: t('archive'),
+						label: archiveText(t('archive')),
 						icon: box,
 						danger: true,
 						onselect: () => (archiving = true),
@@ -280,6 +289,8 @@
 	{#snippet actions()}
 		<Button variant="ghost" data-autofocus onclick={() => (archiving = false)}>{t('cancel')}</Button
 		>
-		<Button variant="danger" data-armed="true" onclick={archive}>{t('archive_do')}</Button>
+		<Button variant="danger" data-armed="true" onclick={archive}
+			>{archiveText(t('archive_do'))}</Button
+		>
 	{/snippet}
 </Dialog>

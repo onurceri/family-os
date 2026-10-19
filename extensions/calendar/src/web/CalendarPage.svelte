@@ -12,6 +12,7 @@
 		PageHeader,
 		RepeatScope,
 		type RepeatScopeChoice,
+		removeLabels,
 		SidePanel,
 		ViewOnly,
 		Timeline,
@@ -200,6 +201,14 @@
 	const mayAdd = $derived(app.access('calendar.createEvent') !== 'no');
 	const mayEdit = $derived(app.access('calendar.updateEvent') !== 'no');
 	const mayDelete = $derived(app.access('calendar.deleteEvent') !== 'no');
+	// Whose event it is can decide whether removing it waits for approval.
+	const removal = (label: string, confirmLabel: string) =>
+		removeLabels(
+			app,
+			'calendar.deleteEvent',
+			{ label, confirmLabel },
+			editing?.mode === 'edit' ? { id: editing.occurrence.eventId } : undefined,
+		);
 
 	// Editor: a new event, or an existing one opened from one of its occurrences.
 	type Editing = { mode: 'new' } | { mode: 'edit'; occurrence: Occurrence };
@@ -519,19 +528,16 @@
 	{#if editing?.mode === 'edit' && mayDelete}
 		{#if editing.occurrence.recurring}
 			<ConfirmButton
-				label={t('delete_one')}
-				confirmLabel={t('delete_one_confirm')}
+				{...removal(t('delete_one'), t('delete_one_confirm'))}
 				onconfirm={() => remove(true)}
 			/>
 			<ConfirmButton
-				label={t('delete_series')}
-				confirmLabel={t('delete_series_confirm')}
+				{...removal(t('delete_series'), t('delete_series_confirm'))}
 				onconfirm={() => remove(false)}
 			/>
 		{:else}
 			<ConfirmButton
-				label={t('delete')}
-				confirmLabel={t('delete_confirm')}
+				{...removal(t('delete'), t('delete_confirm'))}
 				onconfirm={() => remove(false)}
 			/>
 		{/if}
