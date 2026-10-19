@@ -170,6 +170,33 @@
 		},
 		{
 			"id": "homeassistant",
+			"version": "0.3.1",
+			"sdk": "^0.8.12",
+			"url": "homeassistant/homeassistant-0.3.1.famext",
+			"sha256": "4b68c002a08be56e65761b754c6bd1f12e6902942fa2136cc52c78b08e195f64",
+			"size": 179462,
+			"labels": {
+				"en": {
+					"name": "Home Assistant",
+					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
+				},
+				"tr": {
+					"name": "Home Assistant",
+					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": true,
+					"local": true
+				},
+				"capabilities": 4,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "homeassistant",
 			"version": "0.3.0",
 			"sdk": "^0.8.12",
 			"url": "homeassistant/homeassistant-0.3.0.famext",
