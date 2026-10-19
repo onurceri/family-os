@@ -423,6 +423,20 @@ describe('resolvePeople', () => {
 		expect(people({ people: ['ivy moreau'] }, 'Ivy has swimming').ids).toEqual(['m_ivy']);
 	});
 
+	it('leaves a name two members share unmatched, for the card to ask which one', () => {
+		const twins = [
+			{ id: 'm_nina1', displayName: 'Nina' },
+			{ id: 'm_nina2', displayName: 'Nina' },
+			{ id: 'm_ivy', displayName: 'Ivy' },
+		];
+		const found = resolvePeople(
+			{ people: ['Nina', 'Ivy'] },
+			{ members: twins, sharer: 'm_ivy', text: 'Nina and Ivy have swimming', locale: 'en' },
+		);
+		expect(found.ids).toEqual(['m_ivy']);
+		expect(found.unmatched).toEqual(['Nina']);
+	});
+
 	it('reads a name with a possessive after an apostrophe', () => {
 		expect(people({ people: ['Deniz’in'] }, 'Deniz’in aşı randevusu').ids).toEqual(['m_deniz']);
 		expect(people({ people: ["Deniz'in"] }, "Deniz'in aşı randevusu").ids).toEqual(['m_deniz']);

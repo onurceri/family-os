@@ -23,6 +23,7 @@
 	import { onEvent } from '#lib/realtime.js';
 	import RowMenu from '#lib/RowMenu.svelte';
 	import SelectField from '#lib/SelectField.svelte';
+	import { nameKey, nameTwin } from '#lib/member-names.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 
@@ -57,6 +58,10 @@
 	let formEl = $state<HTMLFormElement>();
 
 	const editing = $derived(panel?.memberId ? members.find((m) => m.id === panel?.memberId) : null);
+	// Two people may share a name; the first save only asks, the second saves.
+	let warnedName = $state<string | null>(null);
+	const twin = $derived(nameTwin(members, name, editing));
+	const warned = $derived(twin !== undefined && warnedName === nameKey(name));
 	const roleName = (id: string) => {
 		const role = roles.find((r) => r.id === id);
 		return role?.name ?? tDynamic(`app:role_${id}`);
@@ -158,6 +163,7 @@
 		about = '';
 		pin = email = password = '';
 		error = null;
+		warnedName = null;
 		panel = { memberId: null };
 	}
 
@@ -167,12 +173,17 @@
 		about = member.about ?? '';
 		pin = email = password = '';
 		error = null;
+		warnedName = null;
 		panel = { memberId: member.id };
 	}
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!panel || saving) return;
+		if (twin && warnedName !== nameKey(name)) {
+			warnedName = nameKey(name);
+			return;
+		}
 		saving = true;
 		error = null;
 		try {
@@ -350,7 +361,7 @@
 		title={editing ? editing.displayName : t('members_add')}
 		closeLabel={t('side_panel_close')}
 		cancelLabel={t('cancel')}
-		saveLabel={t('save')}
+		saveLabel={warned ? t(editing ? 'members_save_anyway' : 'members_add_anyway') : t('save')}
 		saveDisabled={saving || !name.trim()}
 		onsave={() => formEl?.requestSubmit()}
 		onclose={() => (panel = null)}
@@ -375,6 +386,13 @@
 			<div class="grid gap-1.5">
 				<Label for="member-name">{t('members_name')}</Label>
 				<Input id="member-name" bind:value={name} required maxlength={60} />
+				{#if warned && twin}
+					<p class="text-attention text-sm font-semibold" role="alert">
+						{t(editing ? 'members_name_twin_save' : 'members_name_twin', {
+							name: twin.displayName,
+						})}
+					</p>
+				{/if}
 			</div>
 			<div class="grid gap-1.5">
 				<Label for="member-role">{t('members_role')}</Label>

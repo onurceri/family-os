@@ -69,6 +69,18 @@ describe('resolveAskedPeople', () => {
 		expect(ask(['Alexander Pine']).ids).toEqual(['m_alex2']);
 	});
 
+	it('asks which one when two members have exactly the same name', () => {
+		const twins = [
+			{ id: 'm_nina1', displayName: 'Nina' },
+			{ id: 'm_nina2', displayName: 'Nina' },
+			{ id: 'm_ivy', displayName: 'Ivy' },
+		];
+		const result = resolveAskedPeople(['Nina', 'Ivy'], twins, 'm_ivy', ['me']);
+		expect(result.ids).toEqual(['m_ivy']);
+		expect(result.people[0]).toEqual({ said: 'Nina', how: 'ambiguous', memberId: null });
+		expect(result.unmatched).toEqual(['Nina']);
+	});
+
 	it('keeps a name that is no member in unmatched and the order and repeats under control', () => {
 		const result = ask(['Leo', 'the dentist', 'Ivy', 'leo', 'me']);
 		expect(result.ids).toEqual(['m_leo', 'm_ivy', 'm_mara']);

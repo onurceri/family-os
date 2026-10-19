@@ -8,7 +8,7 @@ Only admins can do what is on this page.
 
 Open **Settings → Family → Members** press **Add a member** and fill in the panel:
 
-- **Name**: up to 60 characters.
+- **Name**: up to 60 characters. Two people may have the same name; when you save a name someone already has, the panel asks "Someone in the family is already called Nina. Add anyway?" and saves on the second press. The AI never guesses between two people of the same name: it asks which one, so give them a short **About** to tell them apart.
 - **Role**: see below. A short note under the field says what the role is for.
 - **About (optional)**: a few words such as "9 years old, at primary school" or "Deniz's partner". It helps the AI decide whom a school notice or an appointment is for. You can stop the AI from seeing it with **Send names and descriptions** (see [AI and privacy](ai.md)). Up to 300 characters.
 

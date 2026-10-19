@@ -12,7 +12,7 @@
 
 	/**
 	 * A style's Today as a picture (Settings → Appearance): the real composition with a
-	 * made-up day (`sampleDay`), in the palette in use, drawn at the size Today has on this screen
+	 * made-up day (`sampleDay`, labelled "Example" because it carries the family's own names), in the palette in use, drawn at the size Today has on this screen
 	 * and scaled down to the width it is given. It is inert: nothing in it can be focused or
 	 * clicked, nothing in it loads cards, and it is hidden from assistive technology (the page
 	 * names the style beside it).
@@ -73,6 +73,12 @@
 			<Composition {data} />
 		</div>
 	{/if}
+	<!-- The day is made up, whatever the names: the label says so. -->
+	<span
+		class="bg-surface text-ink-soft absolute end-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-[0.06em] uppercase shadow-[inset_0_0_0_1px_var(--line)]"
+		aria-hidden="true"
+		data-testid="style-preview-example">{t('appearance_example')}</span
+	>
 </div>
 
 <style>
