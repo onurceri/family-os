@@ -339,7 +339,7 @@ describe('the endpoint refuses what it should', () => {
 		expect(names.filter((n) => /extension|restart/i.test(n))).toEqual([]);
 		const called = await rpc(secret, legacyCall('core.installExtension', { extensionId: 'pets' }));
 		expect(JSON.stringify(called.body)).not.toContain('"status":"applied"');
-		// The API takes a token nowhere but at /mcp: the action route wants a session.
+		// The API takes a token nowhere but at /mcp: the app's door refuses the header outright.
 		const viaApi = await app.request(`${BASE}/api/v1/actions/core.installExtension`, {
 			method: 'POST',
 			headers: {
@@ -350,7 +350,7 @@ describe('the endpoint refuses what it should', () => {
 			},
 			body: JSON.stringify({ extensionId: 'pets' }),
 		});
-		expect(viaApi.status).toBe(401);
+		expect(viaApi.status).toBe(400);
 	});
 
 	it('never lets a caller cache an answer, whether it was served or refused', async () => {
@@ -914,5 +914,59 @@ describe('protocol', () => {
 			headers: { authorization: `Bearer ${secret}`, accept: 'text/event-stream' },
 		});
 		expect(get.status).toBe(405);
+	});
+});
+
+describe('doors', () => {
+	it('mounts no route for an internal action, and refuses a person who runs one another way', async () => {
+		const { adminId, cookie } = await setup();
+		for (const id of ['calendar.touchFeed']) {
+			const res = await call('POST', `/api/v1/actions/${id}`, {}, cookie);
+			expect(res.status).toBe(404);
+			await expect(
+				runtime.kernel.runner.invoke(id, {}, memberActor(adminId, 'admin')),
+			).rejects.toMatchObject({ code: 'forbidden' });
+		}
+		// An ordinary action stays where it was.
+		const ordinary = await call(
+			'POST',
+			'/api/v1/actions/calendar.findEvents',
+			{ query: 'x' },
+			cookie,
+		);
+		expect(ordinary.status).not.toBe(404);
+	});
+
+	it('refuses an Authorization header on the app API, with or without a session', async () => {
+		const { cookie } = await setup();
+		for (const withCookie of [true, false]) {
+			const res = await app.request(`${BASE}/api/v1/core/me`, {
+				headers: {
+					origin: BASE,
+					'x-forwarded-for': '10.2.9.9',
+					authorization: 'Bearer famos_anything',
+					...(withCookie && { cookie }),
+				},
+			});
+			expect(res.status).toBe(400);
+			expect(((await res.json()) as { error: { code: string } }).error.code).toBe('bad_request');
+		}
+		const socket = await app.request(`${BASE}/api/v1/ws`, {
+			headers: { origin: BASE, authorization: 'Bearer famos_anything', cookie },
+		});
+		expect(socket.status).toBe(400);
+	});
+
+	it('ignores a session cookie on /mcp: the token alone decides who calls', async () => {
+		const { cookie } = await setup();
+		await enable(cookie);
+		const teen = await teenRole(cookie);
+		const kid = await addMember(cookie, 'Kid', teen);
+		const token = await newToken(kid, teen);
+		const plain = await rpc(token.secret, legacyList);
+		// The admin's session rides along; it must change nothing.
+		const withCookie = await rpc(token.secret, legacyList, { headers: { cookie } });
+		expect(withCookie.status).toBe(200);
+		expect(toolNames(withCookie)).toEqual(toolNames(plain));
 	});
 });

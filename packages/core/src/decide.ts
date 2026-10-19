@@ -94,6 +94,8 @@ export function admission(def: AnyActionDefinition, actor: Actor, env: DecideEnv
 			// A display only looks: no action, not even a read-only one.
 			return { reason: 'display' };
 		case 'member':
+			// Plumbing for jobs and the AI: no person runs it, nor does a unit of work on a person's behalf.
+			if (def.expose === 'internal') return { reason: 'capability' };
 			if (def.requires && !can(def.requires)) {
 				return { reason: 'capability', capability: def.requires };
 			}
@@ -120,6 +122,19 @@ function aiAdmission(
 	env: DecideEnv,
 ): Refusal | null {
 	const can = (capability: string) => env.access.can(actor, capability);
+	// An internal action is read by the AI (a digest, the records it may refer to) and never
+	// changed by it: a draft of one could not be approved, since no person may run it.
+	if (def.expose === 'internal' && !def.readOnly) return { reason: 'ai' };
+	// A read-only connection never proposes a change, whichever door built its tool list.
+	if (actor.scope === 'read' && !def.readOnly) return { reason: 'ai' };
+	// Meant for a person's own request in the app's conversation: not for an AI reading shared
+	// (untrusted) content, and not for outside agents.
+	if (
+		def.ai?.conversationOnly &&
+		!(actor.mode === 'conversation' && actor.onBehalfOf !== undefined)
+	) {
+		return { reason: 'ai' };
+	}
 	// The AI is checked like a member: it may read what its capabilities and the area switches
 	// allow, so a locked area refuses it. Its data-changing proposals are not judged here (they
 	// only become drafts, which a person approves; `requires` is checked against the approver).

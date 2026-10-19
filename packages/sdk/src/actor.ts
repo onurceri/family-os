@@ -14,6 +14,10 @@ export type RoleId = string;
 export const AI_MODES = ['share', 'conversation', 'agent'] as const;
 export type AiMode = (typeof AI_MODES)[number];
 
+/** What an outside connection's token allows: reading only, or also suggesting changes. */
+export const AI_SCOPES = ['read', 'read_write'] as const;
+export type AiScope = (typeof AI_SCOPES)[number];
+
 export type Actor =
 	/**
 	 * A person. `pin`: they signed in with a PIN on a family device. A PIN is short, so such a
@@ -35,7 +39,8 @@ export type Actor =
 	 * model that reads the results runs on the family's own network (absent means it does not),
 	 * which decides whether data of local-only areas may reach it. `sourceId`: the conversation it
 	 * works in (a thread, an app key of an MCP client), so it can tell its own suggestions from the
-	 * person's others.
+	 * person's others. `scope`: the limit of the connection it works through (an MCP token); `read`
+	 * refuses every action that changes something, whatever the door offered.
 	 */
 	| {
 			kind: 'ai';
@@ -45,6 +50,7 @@ export type Actor =
 			onBehalfOf?: MemberId;
 			roleId?: RoleId;
 			local?: boolean;
+			scope?: AiScope;
 	  }
 	| { kind: 'system'; source: string }
 	/**
@@ -68,6 +74,7 @@ export const ActorSchema: z.ZodType<Actor> = z.discriminatedUnion('kind', [
 		onBehalfOf: z.custom<MemberId>().optional(),
 		roleId: z.string().optional(),
 		local: z.boolean().optional(),
+		scope: z.enum(AI_SCOPES).optional(),
 	}),
 	z.object({ kind: z.literal('system'), source: z.string() }),
 	z.object({

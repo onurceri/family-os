@@ -1,10 +1,11 @@
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
-import { type AuthenticatedToken, CORE_CAPABILITIES, type Kernel } from '@famos/core';
-import type { Logger, MemberId } from '@famos/sdk';
+import type { AuthenticatedToken, Kernel } from '@famos/core';
+import type { Logger } from '@famos/sdk';
 import type { OpenAPIHono } from '@hono/zod-openapi';
 import { createMcpHonoApp } from '@modelcontextprotocol/hono';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import type { Context } from 'hono';
+import { authenticateBearer } from '../http/authenticate.ts';
 import type { AppEnv } from '../http/env.ts';
 import { createRateLimiter } from '../http/rate-limit.ts';
 import { createServerFor } from './server.ts';
@@ -90,17 +91,14 @@ export function mountMcp(
 					'Tokens in the address are refused; send an Authorization: Bearer header',
 				);
 
-		const header = /^Bearer\s+(\S+)$/i.exec(c.req.header('authorization') ?? '');
-		if (!header) return unauthorized('Send an Authorization: Bearer header with a FamilyOS token');
-		const principal = await tokens.authenticate(header[1]);
-		if (!principal) return unauthorized('The token is unknown, expired or revoked');
-		const holder = {
-			kind: 'member' as const,
-			memberId: principal.member.id as MemberId,
-			roleId: principal.member.roleId,
-		};
-		if (!kernel.access.can(holder, CORE_CAPABILITIES.mcpUse.id))
+		const caller = await authenticateBearer(kernel, c.req.raw.headers);
+		if (caller.outcome === 'missing')
+			return unauthorized('Send an Authorization: Bearer header with a FamilyOS token');
+		if (caller.outcome === 'unknown')
+			return unauthorized('The token is unknown, expired or revoked');
+		if (caller.outcome === 'forbidden')
 			return fail(403, FORBIDDEN, 'This person may not use API tokens');
+		const principal = caller.principal;
 		if (!perToken.hit(principal.token.id))
 			return fail(429, RATE_LIMITED, 'Too many requests; try again in a minute', 60);
 		// Only a permitted use counts as one.

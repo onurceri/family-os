@@ -170,9 +170,14 @@ describe('core.editDraft', () => {
 	});
 
 	it('is refused for a draft addressed to someone else', async () => {
-		const result = await k.runner.invoke('core.addMemory', { text: 'Likes tea' }, aiFor(kid), {
-			draft: { sourceKind: 'assistant', sourceId: 't1' },
-		});
+		const result = await k.runner.invoke(
+			'core.addMemory',
+			{ text: 'Likes tea' },
+			aiFor(kid, 'conversation'),
+			{
+				draft: { sourceKind: 'assistant', sourceId: 't1' },
+			},
+		);
 		const id = (result as { draftId: string }).draftId;
 		expect(await code(edit(admin, id, { text: 'Hates tea' }))).toBe('not_found');
 	});

@@ -92,7 +92,7 @@ export function mountDeviceRoutes(
 	});
 	app.openapi(trust, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		// This browser is a paired display: replacing its cookie would silently unpair it.
 		const current = await devices.verify(getCookie(c, DEVICE_COOKIE));
@@ -251,7 +251,7 @@ function mountDisplayRoutes(
 	});
 	app.openapi(confirm, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		const { userCode, ...grant } = c.req.valid('json');
 		return c.json(await devices.confirmPairing(actor, userCode, grant), 200);
@@ -272,7 +272,7 @@ function mountDisplayRoutes(
 	});
 	app.openapi(pairing, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		return c.json(await devices.pairingStatus(actor, c.req.valid('param').pairingId), 200);
 	});
@@ -294,7 +294,7 @@ function mountDisplayRoutes(
 	});
 	app.openapi(address, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
 			throw new FamosError('forbidden', 'Your role does not allow this', {
@@ -321,7 +321,7 @@ function mountDisplayRoutes(
 	});
 	app.openapi(grantable, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
 			throw new FamosError('forbidden', 'Your role does not allow this', {
@@ -356,7 +356,7 @@ function mountDisplayRoutes(
 	});
 	app.openapi(update, async (c) => {
 		const actor = c.get('actor');
-		if (!actor || actor.kind === 'display')
+		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
 		const row = await devices.updateDisplay(
 			actor,

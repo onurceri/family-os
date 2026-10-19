@@ -7,15 +7,9 @@ import {
 	IDEMPOTENCY_KEY,
 	type Kernel,
 } from '@famos/core';
-import {
-	type Actor,
-	type AiActionInfo,
-	agentInputSchema,
-	asData,
-	type MemberId,
-	runAgentTool,
-} from '@famos/sdk';
+import { type Actor, type AiActionInfo, agentInputSchema, asData, runAgentTool } from '@famos/sdk';
 import { McpServer, type StandardSchemaWithJSON } from '@modelcontextprotocol/server';
+import { mcpActor } from '../http/authenticate.ts';
 import { createStableHandles, STABLE_HANDLE, type StableHandleTable } from './handles.ts';
 
 /** The feature name in AI activity (Settings → AI → Usage & limits). */
@@ -69,15 +63,7 @@ export function offeredTools(
 	principal: AuthenticatedToken,
 	peopleAllowed: boolean,
 ): { actor: Actor; tools: Offered[] } {
-	const actor: Actor = {
-		kind: 'ai',
-		mode: 'agent',
-		source: 'mcp',
-		// What this app key suggested is its own; the person's other suggestions are not.
-		sourceId: principal.token.id,
-		onBehalfOf: principal.member.id as MemberId,
-		roleId: principal.member.roleId,
-	};
+	const actor = mcpActor(principal);
 	const read = kernel.ctx.actions.aiReadTools({ local: false, actor });
 	const draft =
 		principal.token.scope === 'read_write'

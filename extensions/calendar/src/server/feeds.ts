@@ -118,6 +118,7 @@ export const revokeFeed = defineAction({
 export const touchFeed = defineAction({
 	id: 'calendar.touchFeed',
 	title: 'Note that a calendar address was used',
+	expose: 'internal',
 	input: z.object({ id: FeedIdSchema }),
 	output: z.object({ ok: z.literal(true) }),
 	requires: calendarManage.id,

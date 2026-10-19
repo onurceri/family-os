@@ -4,16 +4,7 @@ import { CLIENT_IP_HEADER, type Identity } from '@famos/adapters/identity-better
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
 import type { Telegram } from '@famos/adapters/telegram';
 import type { WebPush } from '@famos/adapters/webpush';
-import {
-	ANONYMOUS,
-	CORE_CAPABILITIES,
-	type CoreTables,
-	DecisionSchema,
-	displayActor,
-	IDEMPOTENCY_KEY,
-	type Kernel,
-	sessionEnded,
-} from '@famos/core';
+import { ANONYMOUS, DecisionSchema, IDEMPOTENCY_KEY, type Kernel, sessionEnded } from '@famos/core';
 import {
 	type AccessControl,
 	type Actor,
@@ -23,7 +14,6 @@ import {
 	type FileResponse,
 	FileResponseSchema,
 	type Logger,
-	type MemberId,
 	personPresent,
 	principalOf,
 	type RouteAccess,
@@ -41,9 +31,10 @@ import { describeLoaded, type LoadedWeb, type WebPackage } from '../extensions/w
 import { mountMcp } from '../mcp/http.ts';
 import { mountAiRoutes } from './ai.ts';
 import { mountApiTokenRoutes } from './api-tokens.ts';
+import { authenticate } from './authenticate.ts';
 import { mountBackupRoutes } from './backups.ts';
 import { createClientIp } from './client-ip.ts';
-import { deviceMiddleware, deviceTokenFromHeaders, mountDeviceRoutes } from './devices.ts';
+import { deviceMiddleware, mountDeviceRoutes } from './devices.ts';
 import { mountEmailRoutes } from './email.ts';
 import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
@@ -105,59 +96,19 @@ export const OPENAPI_INFO = {
 	},
 };
 
-/**
- * Who is calling: a signed-in member, or else a paired family display, or null. A
- * member session always wins, so an admin who signs in on a display's browser acts as themselves.
- */
-export async function resolveActor(
-	kernel: Kernel,
-	identity: Pick<Identity, 'resolveMember'>,
-	headers: Headers,
-): Promise<Actor | null> {
-	const member = await resolveMember(kernel, identity, headers);
-	if (member) return member;
-	// The device is checked on every request, so revoking a display ends it at once.
-	return displayActor(await kernel.devices.verify(deviceTokenFromHeaders(headers)));
-}
-
-/**
- * Resolves the session cookie to an active member Actor, or null. A PIN session counts only while
- * its device is still trusted and the member's role still allows PIN sign-in, so revoking a device
- * or changing a role takes effect on the next request even if ending the sessions failed. It is
- * marked `pin`, so it never holds a critical capability.
- */
-async function resolveMember(
-	kernel: Kernel,
-	identity: Pick<Identity, 'resolveMember'>,
-	headers: Headers,
-): Promise<Actor | null> {
-	const session = await identity.resolveMember(headers);
-	if (!session) return null;
-	const member = await kernel.ctx.db
-		.withTables<CoreTables>()
-		.selectFrom('core_members')
-		.select(['id', 'role_id'])
-		.where('id', '=', session.memberId)
-		.where('archived_at', 'is', null)
-		.executeTakeFirst();
-	if (!member) return null;
-	const actor: Actor = { kind: 'member', memberId: member.id as MemberId, roleId: member.role_id };
-	if (!session.deviceId) return actor;
-	if (!(await kernel.devices.isActive(session.deviceId))) return null;
-	if (!kernel.access.effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) return null;
-	return { ...actor, pin: true };
-}
-
 /** The identity routes that end a session or replace a credential. */
 const SESSION_ENDING_PATH =
 	/\/(sign-out|revoke-session|revoke-sessions|revoke-other-sessions|change-password|reset-password|set-password)$/;
 
 function actorMiddleware(deps: HttpAppDeps): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
-		c.set('actor', await resolveActor(deps.kernel, deps.identity, c.req.raw.headers));
+		c.set('actor', await authenticate(deps, c.req.raw.headers, 'session'));
 		await next();
 	};
 }
+
+/** The callers a sign-in-only route admits. */
+const SIGNED_IN_KINDS: readonly Actor['kind'][] = ['member'];
 
 /** Resolves who calls a route and checks its access. */
 function requireActor(c: Context<AppEnv>, access: AccessControl, requires: RouteAccess): Actor {
@@ -172,8 +123,10 @@ function requireActor(c: Context<AppEnv>, access: AccessControl, requires: Route
 		throw new FamosError('unauthenticated', 'Sign in, or use a family device');
 	}
 	if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
-	// Only capability routes are open to a display, and only for the view capabilities it holds.
-	if (requires === 'signedIn' && actor.kind === 'display')
+	// A route that needs only a sign-in is for a person; a display reaches only capability routes,
+	// and only for the view capabilities it holds. Every kind is named, so one added later is
+	// refused here until it is decided.
+	if (requires === 'signedIn' && !SIGNED_IN_KINDS.includes(actor.kind))
 		throw new FamosError('unauthenticated', 'Sign in required');
 	if (requires !== 'signedIn' && !access.can(actor, requires))
 		throw new FamosError('forbidden', 'Your role does not allow this', {
@@ -568,9 +521,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		// Signing out (or ending sessions, or changing the password) must close the member's open
 		// realtime sockets too: they were opened with the session that is going away.
 		const endsSession = SESSION_ENDING_PATH.test(new URL(c.req.url).pathname);
-		const before = endsSession
-			? await resolveActor(deps.kernel, deps.identity, c.req.raw.headers)
-			: null;
+		const before = endsSession ? await authenticate(deps, c.req.raw.headers, 'session') : null;
 		const response = await deps.identity.handler(new Request(c.req.raw, { headers }));
 		const self = before ? selfOf(before) : null;
 		if (self !== null && response.ok) await deps.kernel.bus.emit(sessionEnded, { memberId: self });
@@ -642,7 +593,9 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	for (const { extension, route } of deps.kernel.registry.routes)
 		mountRoute(app, deps, extension, route);
 	mountActionCheck(app, deps);
-	for (const action of deps.kernel.registry.actions.values()) mountAction(app, deps, action);
+	// An internal action has no route: a job or the AI runs it through the runner.
+	for (const action of deps.kernel.registry.actions.values())
+		if (action.expose !== 'internal') mountAction(app, deps, action);
 
 	app.openAPIRegistry.registerComponent('securitySchemes', 'session', {
 		type: 'apiKey',

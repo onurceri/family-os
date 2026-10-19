@@ -53,6 +53,8 @@ export type ApprovalPolicy<I> =
 	  }
 	| ((actor: Actor, input: I, can: (capability: string) => boolean) => boolean);
 
+export type ActionExposure = 'app' | 'internal';
+
 export interface ActionDefinition<
 	Id extends string = string,
 	In extends z.ZodType = z.ZodType,
@@ -77,6 +79,13 @@ export interface ActionDefinition<
 	 * `requires`, `approval: { unless }`, or both.
 	 */
 	readonly requires?: string;
+	/**
+	 * Where the action is reachable. `app` (the default): the app's own API, for a person's
+	 * session. `internal`: plumbing for jobs (a feed's last-read mark); it has no HTTP route, and
+	 * the runner refuses a person or a display, so only the system runs it (and the AI, for a
+	 * read-only one). Anything a person reads or a draft is undone with stays `app`.
+	 */
+	readonly expose: ActionExposure;
 	readonly approval: ApprovalPolicy<z.infer<In>>;
 	/**
 	 * How the action behaves when another action runs it with `uow.run`. By default it is decided
@@ -308,6 +317,7 @@ export function defineAction<
 	output: Out;
 	readOnly?: boolean;
 	requires?: string;
+	expose?: ActionExposure;
 	approval?: ApprovalPolicy<z.infer<In>>;
 	nested?: NestedGovernance<z.infer<In>>;
 	ai?: ActionAiHints;
@@ -351,6 +361,7 @@ export function defineAction<
 	return {
 		...definition,
 		readOnly,
+		expose: definition.expose ?? 'app',
 		approval: definition.approval ?? (readOnly ? 'never' : 'ai'),
 	} as ActionDefinition<Id, In, Out>;
 }

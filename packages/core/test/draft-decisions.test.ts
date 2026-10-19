@@ -74,9 +74,9 @@ const propose = async (who: Who, name = 'lamp') => {
 };
 const waiting = (who: Who) =>
 	k.route('core.countWaitingDrafts').call({ actor: who.actor }) as Promise<{ count: number }>;
-const aiFor = (who: Who): Actor => ({
+const aiFor = (who: Who, mode: 'agent' | 'conversation' = 'agent'): Actor => ({
 	kind: 'ai',
-	mode: 'agent',
+	mode,
 	source: 'mcp',
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,
@@ -131,7 +131,7 @@ describe('a draft about something that is gone', () => {
 describe('who decides an addressed draft', () => {
 	it('lets a supervised addressee decide their own memory draft, not another’s', async () => {
 		const memory = (who: Who) =>
-			k.runner.invoke('core.addMemory', { text: 'Likes tea' }, aiFor(who), {
+			k.runner.invoke('core.addMemory', { text: 'Likes tea' }, aiFor(who, 'conversation'), {
 				draft: { sourceKind: 'assistant', sourceId: 't1' },
 			});
 		const mine = (await memory(kid)) as { draftId: string };
@@ -169,7 +169,7 @@ describe('the waiting count', () => {
 	});
 
 	it('counts an addressed draft for its addressee', async () => {
-		await k.runner.invoke('core.addMemory', { text: 'Likes tea' }, aiFor(kid));
+		await k.runner.invoke('core.addMemory', { text: 'Likes tea' }, aiFor(kid, 'conversation'));
 		expect(await waiting(kid)).toEqual({ count: 1 });
 		expect(await waiting(parent)).toEqual({ count: 0 });
 	});
