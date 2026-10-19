@@ -33,7 +33,7 @@ describe('event form reasons', () => {
 		expect(known(validate({ ...base(), repeat: 'weekly', byDay: [] })).recurrence).toBe(
 			FIELD_REASON.repeatDays,
 		);
-		expect(known(validate({ ...base(), repeat: 'custom' })).recurrence).toBe(FIELD_REASON.repeat);
+		expect(validate({ ...base(), repeat: 'custom' }).recurrence).toBeUndefined();
 		expect(known(validate({ ...base(), repeat: 'daily', until: '2026-10-01' })).until).toBe(
 			FIELD_REASON.beforeStart,
 		);

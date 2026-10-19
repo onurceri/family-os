@@ -132,7 +132,6 @@ export function taskInputFrom(v: TaskFormValue): TaskReplace {
 export function validateTask(v: TaskFormValue): FieldErrors {
 	const errors: FieldErrors = {};
 	if (!v.title.trim()) errors.title = FIELD_REASON.title;
-	if (v.repeat === 'custom') errors.recurrence = FIELD_REASON.repeat;
 	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.recurrence = FIELD_REASON.repeatDays;
 	if (v.until && v.dueDate && v.until < v.dueDate) errors.until = FIELD_REASON.beforeStart;
 	const result = TaskInputSchema.safeParse(taskInputFrom(v));

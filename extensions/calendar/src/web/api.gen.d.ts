@@ -2050,6 +2050,8 @@ export interface operations {
                      * @enum {string}
                      */
                     scope?: "this" | "following";
+                    /** @description True when the form left a repeat rule outside the presets as it was: the rule is kept. Without it, an event with no `recurrence` does not repeat */
+                    keepRule?: boolean;
                 };
             };
         };

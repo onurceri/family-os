@@ -434,6 +434,7 @@
 							id,
 							replaceFrom(sent),
 							scope && saved ? { occurrence: saved.key, scope } : undefined,
+							sent.repeat === 'custom',
 						)
 					: createEvent(inputFrom(sent))),
 				'saved',

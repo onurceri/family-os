@@ -38,11 +38,12 @@ export async function saveTask(
 	task: TaskReplace,
 	id?: string,
 	onlyThisDate?: string,
+	keepRule?: boolean,
 ): Promise<Outcome> {
 	if (!id) return (await addTask(task)).outcome;
 	return unwrap(
 		await api.POST('/api/v1/actions/lists.updateTask', {
-			body: { id, task, ...(onlyThisDate && { onlyThisDate }) },
+			body: { id, task, ...(onlyThisDate && { onlyThisDate }), ...(keepRule && { keepRule }) },
 		}),
 	).status;
 }

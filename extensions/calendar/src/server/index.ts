@@ -314,6 +314,12 @@ export const updateEvent = defineAction({
 			.describe(
 				'Repeating events, with `occurrence`: `this` makes just that date its own one-off event with the form and skips it in the series; `following` ends the series before that date and starts a new one from the form. Leave out to replace the whole series',
 			),
+		keepRule: z
+			.boolean()
+			.optional()
+			.describe(
+				'True when the form left a repeat rule outside the presets as it was: the rule is kept. Without it, an event with no `recurrence` does not repeat',
+			),
 	}),
 	// Waiting from when a field left out meant empty, and a reminder left out the default one.
 	storedInput: storedEventReplace,
@@ -322,7 +328,7 @@ export const updateEvent = defineAction({
 	targetTitle: eventTitle,
 	// The form sends the whole event: what differs from the event as it is now is what changes,
 	// so the card lists only those fields, "old → new".
-	async currentValues(ctx, { id, event }) {
+	async currentValues(ctx, { id, event, keepRule }) {
 		const row = await events(ctx.db)
 			.selectFrom('calendar_events')
 			.selectAll()
@@ -332,11 +338,14 @@ export const updateEvent = defineAction({
 		if (!row) return null;
 		const { timeZone } = await ctx.family.settings();
 		const { current } = eventAsItIs(row, undefined);
-		const keys = eventFieldsChanged(row, replacementRow(row, eventFromReplace(event), timeZone));
+		const keys = eventFieldsChanged(
+			row,
+			replacementRow(row, eventFromReplace(event), timeZone, keepRule),
+		);
 		const now: Record<string, unknown> = { ...current, reminder: effectiveReminder(row) };
 		return Object.fromEntries(keys.map((k) => [k, now[k] ?? null]));
 	},
-	async run(uow, { id, event: whole, occurrence: rawOccurrence, scope }) {
+	async run(uow, { id, event: whole, occurrence: rawOccurrence, scope, keepRule }) {
 		const row = await loadEvent(uow, id);
 		const event = eventFromReplace(whole);
 		await assertMembers(uow, event.memberIds ?? []);
@@ -403,7 +412,7 @@ export const updateEvent = defineAction({
 				return toDetail(created);
 			}
 		}
-		const next = replacementRow(row, event, timeZone);
+		const next = replacementRow(row, event, timeZone, keepRule);
 		await events(uow.db)
 			.updateTable('calendar_events')
 			.set({ ...next, exdates: skippedAfter(row, next), updated_at: now })

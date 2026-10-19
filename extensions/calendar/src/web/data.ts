@@ -36,9 +36,12 @@ export async function replaceEvent(
 	id: string,
 	event: EventReplace,
 	from?: { occurrence: string; scope: 'this' | 'following' },
+	keepRule?: boolean,
 ): Promise<Outcome> {
 	return unwrap(
-		await api.POST('/api/v1/actions/calendar.updateEvent', { body: { id, event, ...from } }),
+		await api.POST('/api/v1/actions/calendar.updateEvent', {
+			body: { id, event, ...from, ...(keepRule && { keepRule }) },
+		}),
 	).status;
 }
 

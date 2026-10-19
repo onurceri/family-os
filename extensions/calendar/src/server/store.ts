@@ -355,10 +355,16 @@ export function toRow(input: EventInput, timeZone: string) {
 
 /**
  * The stored row for a whole replacement of a saved event. What the form does not carry stays:
- * the event's own time zone while its date and time are the same, and a repeat rule outside the
- * presets (the form shows no rule for it, so it sends none).
+ * the event's own time zone while its date and time are the same, and, when the form says it
+ * left the repeat as it was (`keepRule`), a repeat rule outside the presets, which the form
+ * cannot show and so sends no rule for. Without `keepRule` no rule means the event does not repeat.
  */
-export function replacementRow(row: EventRow, input: EventInput, familyTimeZone: string) {
+export function replacementRow(
+	row: EventRow,
+	input: EventInput,
+	familyTimeZone: string,
+	keepRule = false,
+) {
 	const own = toRow(input, row.time_zone);
 	const sameWhen =
 		own.all_day === row.all_day &&
@@ -367,7 +373,7 @@ export function replacementRow(row: EventRow, input: EventInput, familyTimeZone:
 		own.start_date === row.start_date &&
 		own.end_date === row.end_date;
 	const next = sameWhen ? own : toRow(input, familyTimeZone);
-	if (row.rrule && !input.recurrence && !fromRRule(row.rrule, row.time_zone))
+	if (keepRule && row.rrule && !input.recurrence && !fromRRule(row.rrule, row.time_zone))
 		next.rrule = row.rrule;
 	return next;
 }

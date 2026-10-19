@@ -2385,6 +2385,8 @@ export interface operations {
                     };
                     /** @description Repeating tasks: moves only the due date now up to this day (YYYY-MM-DD); the repeat and its start stay as they are. Leave out to change the task from now on */
                     onlyThisDate?: string;
+                    /** @description True when the form left a repeat rule outside the presets as it was: the rule is kept. Without it, a task with no `recurrence` does not repeat */
+                    keepRule?: boolean;
                 };
             };
         };

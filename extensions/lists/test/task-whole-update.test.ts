@@ -49,8 +49,8 @@ const form = (over: Record<string, unknown>) => ({
 	...over,
 });
 
-const save = (id: string, task: Record<string, unknown>) =>
-	k.runner.invoke('lists.updateTask', { id, task }, admin.actor);
+const save = (id: string, task: Record<string, unknown>, keepRule?: boolean) =>
+	k.runner.invoke('lists.updateTask', { id, task, ...(keepRule && { keepRule }) }, admin.actor);
 
 describe('saving a whole repeating task', () => {
 	it('keeps a repeat rule outside the presets through a form save', async () => {
@@ -61,11 +61,24 @@ describe('saving a whole repeating task', () => {
 			.set({ rrule: rule })
 			.where('id', '=', id)
 			.execute();
-		await save(id, form({ title: 'Bins out', recurrence: null }));
+		await save(id, form({ title: 'Bins out', recurrence: null }), true);
 		const saved = await row(id);
 		expect(saved.rrule).toBe(rule);
 		expect(saved.rrule_start).toBe('2026-10-20');
 		expect(saved.title).toBe('Bins out');
+	});
+
+	it('stops a custom repeat when the person chose "Does not repeat"', async () => {
+		const id = await bins();
+		await tables(k.ctx.db)
+			.updateTable('lists_tasks')
+			.set({ rrule: 'FREQ=MONTHLY;BYDAY=TU;BYSETPOS=-1' })
+			.where('id', '=', id)
+			.execute();
+		await save(id, form({ recurrence: null }));
+		const saved = await row(id);
+		expect(saved.rrule).toBeNull();
+		expect(saved.rrule_start).toBeNull();
 	});
 
 	it('keeps the day a repeat counts from while the rule and the due date stay', async () => {

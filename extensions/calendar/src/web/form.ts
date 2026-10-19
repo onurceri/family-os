@@ -175,7 +175,6 @@ export function validate(v: EventFormValue): FieldErrors {
 	if (!v.title.trim()) errors.title = FIELD_REASON.title;
 	if (!v.date) errors.date = FIELD_REASON.date;
 	if (!v.allDay && !v.startTime) errors.startTime = FIELD_REASON.time;
-	if (v.repeat === 'custom') errors.recurrence = FIELD_REASON.repeat;
 	if (v.repeat === 'weekly' && v.byDay.length === 0) errors.recurrence = FIELD_REASON.repeatDays;
 	if (v.until && v.until < v.date) errors.until = FIELD_REASON.beforeStart;
 	const result = EventInputSchema.safeParse(inputFrom(v));

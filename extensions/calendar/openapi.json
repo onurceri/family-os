@@ -4160,6 +4160,10 @@
 											"following"
 										],
 										"description": "Repeating events, with `occurrence`: `this` makes just that date its own one-off event with the form and skips it in the series; `following` ends the series before that date and starts a new one from the form. Leave out to replace the whole series"
+									},
+									"keepRule": {
+										"type": "boolean",
+										"description": "True when the form left a repeat rule outside the presets as it was: the rule is kept. Without it, an event with no `recurrence` does not repeat"
 									}
 								},
 								"required": [

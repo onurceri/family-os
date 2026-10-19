@@ -58,8 +58,12 @@ const whole = (over: Record<string, unknown>) => ({
 	...over,
 });
 
-const save = (id: string, event: Record<string, unknown>) =>
-	k.runner.invoke('calendar.updateEvent', { id, event }, admin.actor);
+const save = (id: string, event: Record<string, unknown>, keepRule?: boolean) =>
+	k.runner.invoke(
+		'calendar.updateEvent',
+		{ id, event, ...(keepRule && { keepRule }) },
+		admin.actor,
+	);
 
 const starts = async (from: string, to: string) =>
 	(await range(from, to)).map((o: { start: number }) => o.start);
@@ -109,9 +113,21 @@ describe('saving a whole repeating event', () => {
 		const before = await detail(id);
 		expect(before.recurrence).toBeNull();
 		expect(before.rrule).toBe(rule);
-		await save(id, whole({ title: 'Bins out', recurrence: null }));
+		await save(id, whole({ title: 'Bins out', recurrence: null }), true);
 		expect((await row(id)).rrule).toBe(rule);
 		expect((await row(id)).title).toBe('Bins out');
+	});
+
+	it('stops a custom repeat when the person chose "Does not repeat"', async () => {
+		const id = await create(bins);
+		await events(k.ctx.db)
+			.updateTable('calendar_events')
+			.set({ rrule: 'FREQ=MONTHLY;BYDAY=TU;BYSETPOS=-1' })
+			.where('id', '=', id)
+			.execute();
+		await save(id, whole({ recurrence: null }));
+		expect((await row(id)).rrule).toBeNull();
+		expect(await starts('2026-10-13', '2026-12-01')).toEqual([epochOf('2026-10-13', '19:00', TZ)]);
 	});
 
 	it('keeps the own time zone of an event while its date and time stay', async () => {

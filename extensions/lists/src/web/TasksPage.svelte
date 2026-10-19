@@ -219,7 +219,11 @@
 		const task = { ...taskInputFrom(form), title: form.title.trim() || 'Task' };
 		return editingId === 'new'
 			? app.approval('lists.addTask', task)
-			: app.approval('lists.updateTask', { id: editingId, task });
+			: app.approval('lists.updateTask', {
+					id: editingId,
+					task,
+					...(form.repeat === 'custom' && { keepRule: true }),
+				});
 	});
 	const mayDelete = $derived(
 		editingId !== null &&
@@ -356,7 +360,11 @@
 					const { task, onlyThisDate } = onlyThisTask(saved, form, today);
 					report(await saveTask(task, editingId, onlyThisDate), t('saved'));
 				} else report(await saveTask(fromThisTask(saved, form, today), editingId), t('saved'));
-			} else report(await saveTask(taskInputFrom(form), editingId), t('saved'));
+			} else
+				report(
+					await saveTask(taskInputFrom(form), editingId, undefined, form.repeat === 'custom'),
+					t('saved'),
+				);
 			close();
 		} catch (error) {
 			saveError = app.failureText(error, t('error'));
