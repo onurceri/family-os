@@ -448,6 +448,25 @@ describe('who may do what', () => {
 		).toBe('drafted');
 	});
 
+	it('refuses a suggestion about a chore that does not exist, as a direct run is', async () => {
+		const ghost = 'chore_00000000-0000-7000-8000-000000000000';
+		for (const [action, input] of [
+			['chores.archiveChore', { id: ghost }],
+			['chores.setAssignees', { id: ghost, memberIds: [bora.id] }],
+		] as const) {
+			expect(await rejected(k.runner.invoke(action, input, elif.actor))).toBe('not_found');
+			expect(await rejected(k.runner.invoke(action, input, ayse.actor))).toBe('not_found');
+		}
+		// An archived chore is no longer there either.
+		const gone = await create({ title: 'Old' });
+		await applied(k, 'chores.archiveChore', { id: gone.id }, ayse.actor);
+		expect(
+			await rejected(
+				k.runner.invoke('chores.setAssignees', { id: gone.id, memberIds: [bora.id] }, elif.actor),
+			),
+		).toBe('not_found');
+	});
+
 	it('shows chores to guests and displays only what the view capability allows', async () => {
 		expect(mayCall(k, guest.actor, 'chores.listAllChores')).toBe(true);
 		expect(mayCall(k, guest.actor, 'chores.getChore')).toBe(true);

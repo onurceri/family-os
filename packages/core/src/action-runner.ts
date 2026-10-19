@@ -345,7 +345,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		uow: UnitOfWork,
 		draft: { id: string; source_kind: string | null; source_id: string | null },
 	): Promise<void> {
-		for (const memberId of await settleWaitingNotices(uow.db, draft, clock.now()))
+		for (const memberId of await settleWaitingNotices(uow.db, draft))
 			uow.emit(notificationRead, { memberId });
 	}
 
@@ -588,6 +588,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			});
 			return { status: 'applied', output: output as O };
 		}
+		// A suggestion about something that is not there is refused as the direct run would be,
+		// instead of waiting for a person to find out it can never be applied.
+		if (await targetIsGone(def, input))
+			throw new FamosError('not_found', 'What this changes was not found');
 		const meta = options.draft ?? {};
 		// Every draft carries the real name of what it changes, so cards and notices show what
 		// will happen whoever proposed it (a screen sends only the id).
@@ -1472,6 +1476,25 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			hasPassed(draftDateOf(registry.actions.get(draft.action_id), draft), today);
 	}
 
+	/** Whether the row an input points at (`target` of the action) is missing or no longer live. */
+	async function targetIsGone(def: AnyActionDefinition, input: unknown): Promise<boolean> {
+		if (!def.target) return false;
+		try {
+			const target = def.target(input);
+			if (!target) return false;
+			const tables = deps.views
+				.db(ownerOf(def.id), deps.db)
+				.withTables<Record<string, RowWithId>>();
+			let query = tables.selectFrom(target.table).select('id').where('id', '=', target.id);
+			if (target.liveColumn) query = query.where(target.liveColumn, 'is', null);
+			return (await query.executeTakeFirst()) === undefined;
+		} catch (error) {
+			// A table that cannot be read judges nothing: the suggestion is made as before.
+			logger.warn({ err: error, action: def.id }, 'checking the target of a suggestion failed');
+			return false;
+		}
+	}
+
 	async function goneAmong(
 		drafts: readonly DraftRow[],
 		db: DbExecutor = deps.db,
@@ -1544,7 +1567,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.executeTakeFirst();
 			if (Number(done.numUpdatedRows) === 0) continue;
 			expired.push(draft.id);
-			for (const memberId of await settleWaitingNotices(deps.db, draft, now))
+			for (const memberId of await settleWaitingNotices(deps.db, draft))
 				await bus.publish(notificationRead.name, { memberId });
 		}
 		for (const draftId of expired)
