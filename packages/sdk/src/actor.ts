@@ -18,13 +18,28 @@ export type AiMode = (typeof AI_MODES)[number];
 export const AI_SCOPES = ['read', 'read_write'] as const;
 export type AiScope = (typeof AI_SCOPES)[number];
 
+/** What a connected app's changes do: they apply as its role allows, or only wait for approval. */
+export const APP_MODES = ['apply', 'suggest'] as const;
+export type AppMode = (typeof APP_MODES)[number];
+
+/** The app a member's request came through, with the limits it brings. */
+export type AppVia = { appId: string; appRoleId: RoleId; mode: AppMode };
+
 export type Actor =
 	/**
 	 * A person. `pin`: they signed in with a PIN on a family device. A PIN is short, so such a
 	 * sign-in never holds a critical capability (managing people, devices, settings), whatever the
 	 * role: a guessed PIN never yields administration.
+	 * `via`: a connected app acts for them. They are the member (their own things stay theirs),
+	 * but no person is present: they hold only what both they and the app's role hold, never a
+	 * critical capability, and in `suggest` mode every change waits for approval.
 	 */
-	| { kind: 'member'; memberId: MemberId; roleId: RoleId; pin?: boolean }
+	| { kind: 'member'; memberId: MemberId; roleId: RoleId; pin?: boolean; via?: AppVia }
+	/**
+	 * A connected app acting for itself, with the capabilities of its role (never a critical one),
+	 * for nobody in particular. In `suggest` mode every change it makes waits for approval.
+	 */
+	| { kind: 'app'; appId: string; roleId: RoleId; mode: AppMode }
 	/**
 	 * The AI. `mode` says how it works, and grants what goes with that and nothing else:
 	 * - `share`: it reads what a member shared (untrusted content); what it proposes is the
@@ -65,6 +80,13 @@ export const ActorSchema: z.ZodType<Actor> = z.discriminatedUnion('kind', [
 		memberId: z.custom<MemberId>(),
 		roleId: z.string(),
 		pin: z.boolean().optional(),
+		via: z.object({ appId: z.string(), appRoleId: z.string(), mode: z.enum(APP_MODES) }).optional(),
+	}),
+	z.object({
+		kind: z.literal('app'),
+		appId: z.string(),
+		roleId: z.string(),
+		mode: z.enum(APP_MODES),
 	}),
 	z.object({
 		kind: z.literal('ai'),
@@ -106,6 +128,7 @@ export function memberBehind(actor: Actor): MemberId | null {
 			return actor.memberId;
 		case 'ai':
 			return actor.onBehalfOf ?? null;
+		case 'app':
 		case 'display':
 		case 'system':
 			return null;
@@ -128,15 +151,28 @@ export function selfOf(actor: Actor): MemberId | null {
  * predicate for acts that only a person present may do (deciding drafts, credentials, devices,
  * sessions, roles, members and extensions).
  */
-export function personPresent(actor: Actor): actor is Extract<Actor, { kind: 'member' }> {
-	return actor.kind === 'member';
+export function personPresent(
+	actor: Actor,
+): actor is Extract<Actor, { kind: 'member' }> & { via?: undefined } {
+	return actor.kind === 'member' && actor.via === undefined;
+}
+
+/** The connected app behind the actor (as itself, or acting for a member), or null. */
+export function appOf(actor: Actor): AppVia | null {
+	if (actor.kind === 'app')
+		return { appId: actor.appId, appRoleId: actor.roleId, mode: actor.mode };
+	return actor.kind === 'member' ? (actor.via ?? null) : null;
 }
 
 /** A stable string naming who acted, for audit, attribution and idempotency keys. */
 export function principalOf(actor: Actor): string {
 	switch (actor.kind) {
 		case 'member':
-			return `member:${actor.memberId}`;
+			return actor.via
+				? `app:${actor.via.appId}/member:${actor.memberId}`
+				: `member:${actor.memberId}`;
+		case 'app':
+			return `app:${actor.appId}`;
 		case 'ai':
 			return actor.sourceId === undefined
 				? `ai:${actor.source}`

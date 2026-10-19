@@ -716,6 +716,7 @@ export function defineWebExtension(
 export {
 	askedBy,
 	type DraftUnavailable,
+	draftByline,
 	draftHeadline,
 	draftKicker,
 	memberBehindDraft,

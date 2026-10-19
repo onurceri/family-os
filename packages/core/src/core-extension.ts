@@ -192,6 +192,8 @@ export const DraftSchema = z.object({
 	/** `expired`: nobody decided it and the day it was about has passed (it never runs). */
 	status: z.enum(DRAFT_STATUSES),
 	proposedBy: z.unknown(),
+	/** The connected app it came through (its current name), or null. */
+	app: z.object({ id: z.string(), name: z.string() }).nullable(),
 	sourceKind: z.string().nullable(),
 	sourceId: z.string().nullable(),
 	summary: z.string().nullable(),
@@ -303,6 +305,7 @@ const toDraft = (
 	read: (json: string) => unknown = JSON.parse,
 	unavailable: z.infer<typeof DraftSchema>['unavailable'] = null,
 	waitingGone = false,
+	app: { id: string; name: string } | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,
@@ -310,6 +313,7 @@ const toDraft = (
 	editedInput: row.edited_input === null ? null : read(row.edited_input),
 	status: row.status,
 	proposedBy: JSON.parse(row.proposed_by),
+	app,
 	sourceKind: row.source_kind,
 	sourceId: row.source_id,
 	summary: row.summary,
@@ -842,6 +846,13 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.executeTakeFirst();
 			if (used)
 				throw new FamosError('conflict', 'Members still have this role (archived members too)');
+			const app = await members(uow.db)
+				.selectFrom('core_apps')
+				.select('id')
+				.where('role_id', '=', id)
+				.where('revoked_at', 'is', null)
+				.executeTakeFirst();
+			if (app) throw new FamosError('conflict', 'A connected app still has this role');
 			await members(uow.db).deleteFrom('core_roles').where('id', '=', id).execute();
 			uow.emit(roleChanged, { roleId: id });
 			return { ok: true as const };
@@ -1814,6 +1825,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			(json) => readStoredInput(deps.registry().actions.get(row.action_id), json),
 			unavailableOf(row),
 			waitingGone,
+			await deps.runner().appBehind(row),
 		);
 
 	const approve = defineRoute({

@@ -8,6 +8,28 @@ import { createTestKernel } from './harness.ts';
  * a list/database mismatch.
  */
 const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } = {
+	core_apps: {
+		id: true,
+		name: true,
+		role_id: true,
+		mode: true,
+		acts_for: true,
+		created_by: true,
+		created_at: true,
+		updated_at: true,
+		revoked_at: true,
+		paused_at: true,
+	},
+	core_app_tokens: {
+		id: true,
+		app_id: true,
+		name: true,
+		token_hash: true,
+		expires_at: true,
+		last_used_at: true,
+		created_at: true,
+		revoked_at: true,
+	},
 	core_file_grants: { key: true, grantee: true, created_at: true },
 	core_member_memory: {
 		id: true,

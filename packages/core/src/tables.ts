@@ -180,6 +180,36 @@ export type ApiTokensTable = {
 	revoked_at: number | null;
 };
 
+/** A connected app: see `m0008_connected_apps`. */
+export type AppsTable = {
+	id: string;
+	name: string;
+	/** A built-in role or a `core_roles` id; the app holds what it holds, minus what apps never do. */
+	role_id: string;
+	/** `apply`: changes follow the role; `suggest`: every change waits for approval. */
+	mode: 'apply' | 'suggest';
+	/** JSON list of the member ids the app may act for (`X-FamilyOS-On-Behalf-Of`). */
+	acts_for: string;
+	created_by: string | null;
+	created_at: number;
+	updated_at: number;
+	revoked_at: number | null;
+	/** Set by a restore (and by an admin): the app's keys do not work until it is resumed. */
+	paused_at: number | null;
+};
+
+/** A key of a connected app: only its SHA-256 is stored. */
+export type AppTokensTable = {
+	id: string;
+	app_id: string;
+	name: string;
+	token_hash: string;
+	expires_at: number | null;
+	last_used_at: number | null;
+	created_at: number;
+	revoked_at: number | null;
+};
+
 /** Which id a token was shown as which handle (MCP is stateless). */
 export type ApiTokenHandlesTable = {
 	token_id: string;
@@ -262,6 +292,8 @@ export type FileGrantsTable = {
 };
 
 export type CoreTables = {
+	core_apps: AppsTable;
+	core_app_tokens: AppTokensTable;
 	core_file_grants: FileGrantsTable;
 	core_member_memory: MemberMemoryTable;
 	core_idempotency: IdempotencyTable;
@@ -286,3 +318,5 @@ export type MemberUpdate = Updateable<MembersTable>;
 export type DraftRow = Selectable<DraftsTable>;
 export type DeviceRow = Selectable<DevicesTable>;
 export type ApiTokenRow = Selectable<ApiTokensTable>;
+export type AppRow = Selectable<AppsTable>;
+export type AppTokenRow = Selectable<AppTokensTable>;

@@ -13,6 +13,21 @@ import { ownerOf } from './features.ts';
 import type { CoreTables } from './tables.ts';
 import { unknownKind } from './unknown-kind.ts';
 
+/**
+ * What no connected app ever holds, whatever role the admin gives it: a critical capability, and
+ * the acts only a person present does (deciding suggestions, creating keys, signing in by PIN).
+ * An app acting for a member is held to the same, so it can never do more than the app could.
+ */
+const NEVER_FOR_APPS: ReadonlySet<string> = new Set([
+	CORE_CAPABILITIES.draftsApprove.id,
+	CORE_CAPABILITIES.mcpUse.id,
+	CORE_CAPABILITIES.signInPin.id,
+]);
+
+/** Whether a capability may reach an app at all. */
+export const appMayHold = (definition: Pick<CapabilityDefinition, 'id' | 'critical'>): boolean =>
+	definition.critical !== true && !NEVER_FOR_APPS.has(definition.id);
+
 export type CustomRole = {
 	id: string;
 	name: string;
@@ -90,6 +105,7 @@ export function createAccess(
 				case 'ai':
 					break;
 				case 'member':
+				case 'app':
 				case 'system':
 				case 'display':
 					return true;
@@ -132,9 +148,20 @@ export function createAccess(
 					if (definition.level !== 'view') return false;
 					if (capability === CORE_CAPABILITIES.membersView.id) return actor.showNames;
 					return actor.capabilities.includes(capability);
+				case 'app':
+					// An app holds what its role holds, minus what only a person may do.
+					return appMayHold(definition) && holds(actor.roleId, capability);
 				case 'member':
 					// A PIN sign-in never administers, whatever the role (a PIN can be guessed).
 					if (actor.pin === true && definition.critical === true) return false;
+					// A member through an app holds what they and the app's role both hold, and never
+					// what an app may not.
+					if (actor.via)
+						return (
+							appMayHold(definition) &&
+							holds(actor.via.appRoleId, capability) &&
+							holds(actor.roleId, capability)
+						);
 					return effective(actor.roleId).has(capability);
 				default:
 					return unknownKind(actor, false);

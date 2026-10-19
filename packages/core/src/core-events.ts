@@ -13,7 +13,7 @@ const draftCreatedPayload = z.object({
 	draftId: z.string(),
 	actionId: z.string(),
 	/** Who proposed it. `member`: a person; `ai`: the Inbox or the assistant; `system`: a job. */
-	proposerKind: z.enum(['member', 'ai', 'system', 'display']),
+	proposerKind: z.enum(['member', 'app', 'ai', 'system', 'display']),
 	/** The member behind it: the person, or the one the assistant works for or the Inbox item is from. */
 	proposerMemberId: z.string().nullable(),
 	/** Where it came from: `inbox`, `assistant`… (null for a hand-made proposal). */

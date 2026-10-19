@@ -155,7 +155,10 @@ it('adds a principal to idempotency answers and keeps the old rows', async () =>
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
 		Object.entries(coreMigrations).filter(
-			([name]) => name !== '0006_idempotency_principal' && name !== '0007_changes',
+			([name]) =>
+				name !== '0006_idempotency_principal' &&
+				name !== '0007_changes' &&
+				name !== '0008_connected_apps',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -227,4 +230,44 @@ it('gives stored AI actors their mode and marks memories the AI proposed', async
 		source: string;
 	}>`select source from core_member_memory order by id`.execute(db);
 	expect(memories.rows.map((r) => r.source)).toEqual(['ai', 'member']);
+});
+
+/** Connected apps are new tables: personal keys and members from before stay as they were. */
+it('adds connected apps beside the personal keys that already exist', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const before = Object.fromEntries(
+		Object.entries(coreMigrations).filter(([name]) => name !== '0008_connected_apps'),
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: before }]);
+	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
+		db,
+	);
+	await sql`insert into core_api_tokens (id, member_id, name, token_hash, scope, created_at)
+		values ('api_token_1', 'member_a', 'Claude', 'h1', 'read', 1)`.execute(db);
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+	const old = await sql<{
+		id: string;
+		scope: string;
+	}>`select id, scope from core_api_tokens`.execute(db);
+	expect(old.rows).toEqual([{ id: 'api_token_1', scope: 'read' }]);
+	await sql`insert into core_apps (id, name, role_id, mode, created_at, updated_at)
+		values ('app_1', 'HA', 'member', 'apply', 1, 1)`.execute(db);
+	const app = await sql<{
+		acts_for: string;
+		paused_at: number | null;
+	}>`select acts_for, paused_at from core_apps`.execute(db);
+	expect(app.rows).toEqual([{ acts_for: '[]', paused_at: null }]);
+	await expect(
+		sql`insert into core_apps (id, name, role_id, mode, created_at, updated_at) values ('app_2', 'X', 'member', 'nonsense', 1, 1)`.execute(
+			db,
+		),
+	).rejects.toThrow(/CHECK/);
+	await sql`insert into core_app_tokens (id, app_id, name, token_hash, created_at) values ('t1', 'app_1', 'k', 'x', 1)`.execute(
+		db,
+	);
+	await expect(
+		sql`insert into core_app_tokens (id, app_id, name, token_hash, created_at) values ('t2', 'app_1', 'k', 'x', 1)`.execute(
+			db,
+		),
+	).rejects.toThrow(/UNIQUE/);
 });

@@ -31,6 +31,7 @@ import { type AiAreas, createAiAreas } from './ai-areas.ts';
 import { aiMissingAreas } from './ai-missing-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { type ApiTokenService, createApiTokenService, revokeTokensOf } from './api-tokens.ts';
+import { type AppService, createAppService } from './apps.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
 import { type ChangesReader, createChanges } from './changes.ts';
 import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './core-events.ts';
@@ -144,6 +145,8 @@ export interface Kernel {
 	readonly devices: DeviceService;
 	/** Personal API tokens for MCP clients. */
 	readonly apiTokens: ApiTokenService;
+	/** Connected apps and their keys. */
+	readonly apps: AppService;
 	/** Capabilities and roles. */
 	readonly access: Access;
 	/** The change log: what changed since a cursor, and a validator for a collection. */
@@ -209,6 +212,12 @@ export function createKernel(options: KernelOptions): Kernel {
 		features: () => features,
 	});
 	const apiTokens = createApiTokenService({
+		db: options.db,
+		clock: options.clock,
+		ids: options.ids,
+		access: () => access,
+	});
+	const apps = createAppService({
 		db: options.db,
 		clock: options.clock,
 		ids: options.ids,
@@ -666,6 +675,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		worker,
 		devices,
 		apiTokens,
+		apps,
 		access,
 		changes: createChanges({ db: options.db, clock: options.clock, access: () => access }),
 		features,

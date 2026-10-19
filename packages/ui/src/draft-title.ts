@@ -55,6 +55,7 @@ export function proposedByMember(proposedBy: unknown, memberId: string | undefin
  */
 export function memberBehindDraft(proposedBy: unknown): string | undefined {
 	if (typeof proposedBy !== 'object' || proposedBy === null) return undefined;
+	// A member through a connected app is the member (`via` says which app); the app alone is no one.
 	const by = proposedBy as { kind?: string; memberId?: unknown; onBehalfOf?: unknown };
 	const id = by.kind === 'member' ? by.memberId : by.kind === 'ai' ? by.onBehalfOf : undefined;
 	return typeof id === 'string' && id ? id : undefined;
@@ -85,6 +86,30 @@ export function askedBy(
 	const who = memberBehindDraft(proposedBy);
 	if (!who || who === memberId) return undefined;
 	return members.find((m) => m.id === who)?.displayName;
+}
+
+/**
+ * The line above a suggestion card saying who it comes from. A suggestion through a connected app
+ * names the app ("Home Assistant", or "Leo via Home Assistant" when it acted for a member); one
+ * from a member or an assistant behind someone else names that person (`askedBy`). Undefined when
+ * it is the signed-in member's own and no app is behind it.
+ */
+export function draftByline(
+	draft: { proposedBy?: unknown; app?: { name: string } | null },
+	memberId: string | undefined,
+	members: readonly { id: string; displayName: string }[],
+	t: (key: string, params?: Record<string, unknown>) => string,
+): string | undefined {
+	const app = draft.app?.name;
+	const who = memberBehindDraft(draft.proposedBy);
+	if (!app) {
+		const name = askedBy(draft.proposedBy, memberId, members);
+		return name ? t('app:draft_asked_by', { name }) : undefined;
+	}
+	if (!who) return t('app:draft_by_app', { app });
+	if (who === memberId) return t('app:draft_via_app', { app });
+	const name = members.find((m) => m.id === who)?.displayName;
+	return name ? t('app:draft_via_app_member', { name, app }) : t('app:draft_by_app', { app });
 }
 
 /** Why a waiting draft cannot be decided now (`Draft.unavailable`). */

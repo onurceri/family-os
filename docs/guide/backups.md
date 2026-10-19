@@ -60,6 +60,7 @@ A backup is a picture of an earlier day, and the restore must not undo what the 
 
 - Everyone is signed out and signs in again, on every phone, tablet and computer.
 - What was **ended after the backup stays ended**, as long as the replaced data is still next to the new one (`famos.db.pre-restore-<time>`): app keys that were revoked, devices and displays that were removed, members who were removed, calendar addresses that were stopped, and Telegram chats that were unlinked. A password or PIN changed after the backup stays changed, so a password changed after a leak does not come back.
+- **Connected apps are paused**, even on a new server: a backup can hold the key of an app that was revoked, replaced or leaked since. Admins look at them in **Settings → Connected apps** and press **Resume** on the ones they trust.
 - Nothing is ever switched back on by this. Keys, devices, addresses and links made after the backup are gone, as the rest of that day is, and a person must make them again.
 - On a new server, where nothing was set aside, nothing was ended since, so only the sign-out happens.
 

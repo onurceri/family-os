@@ -94,6 +94,7 @@ export function admission(def: AnyActionDefinition, actor: Actor, env: DecideEnv
 			// A display only looks: no action, not even a read-only one.
 			return { reason: 'display' };
 		case 'member':
+		case 'app':
 			// Plumbing for jobs and the AI: no person runs it, nor does a unit of work on a person's behalf.
 			if (def.expose === 'internal') return { reason: 'capability' };
 			if (def.requires && !can(def.requires)) {
@@ -174,10 +175,15 @@ function aiAdmission(
  * mistake back). The AI is never asked: its changes are always drafts.
  */
 function ownerMayAct(def: AnyActionDefinition, actor: Actor, env: DecideEnv): boolean {
-	if (actor.kind !== 'member') return false;
+	if (actor.kind !== 'member' || appSuggests(actor)) return false;
 	if (def.requires !== undefined && env.access.can(actor, def.requires)) return true;
 	return env.access.can(actor, CORE_CAPABILITIES.draftsPropose.id);
 }
+
+/** An app that only suggests, or a member through one: every change of theirs waits. */
+const appSuggests = (actor: Actor): boolean =>
+	(actor.kind === 'app' && actor.mode === 'suggest') ||
+	(actor.kind === 'member' && actor.via?.mode === 'suggest');
 
 /** Whether and why an actor's change waits for a person's approval. */
 export type Approval =
@@ -197,7 +203,13 @@ export function approval(
 	switch (actor.kind) {
 		case 'ai':
 			return { needed: true, reason: 'ai' };
+		case 'app':
+			// A suggest-mode app's changes are always suggestions, like the AI's.
+			if (appSuggests(actor)) return { needed: true, reason: 'approval' };
+			break;
 		case 'member':
+			if (appSuggests(actor)) return { needed: true, reason: 'approval' };
+			break;
 		case 'system':
 		case 'display':
 			break;
@@ -209,14 +221,15 @@ export function approval(
 	if (policy === 'always') return { needed: true, reason: 'approval' };
 	const can = (capability: string) => env.access.can(actor, capability);
 	if (typeof policy === 'object') {
-		if (actor.kind !== 'member' || can(policy.unless)) return { needed: false };
+		if ((actor.kind !== 'member' && actor.kind !== 'app') || can(policy.unless))
+			return { needed: false };
 		const capability = policy.unless;
 		if (policy.except) {
 			if (!facts) return { needed: 'unknown', missing: 'input', capability };
 			if (policy.except(actor, facts.input) === true) return { needed: false, reason: 'except' };
 		}
 		// Their own thing: they act directly (see `ownerMayAct`).
-		if (policy.owner && ownerMayAct(def, actor, env)) {
+		if (policy.owner && actor.kind === 'member' && ownerMayAct(def, actor, env)) {
 			if (!facts) return { needed: 'unknown', missing: 'input', capability };
 			if (facts.owner === undefined) return { needed: 'unknown', missing: 'owner', capability };
 			if (facts.owner !== null && facts.owner === actor.memberId)
@@ -251,7 +264,10 @@ export function decide(
 		needs.needed === 'unknown' || (proposal && !facts) ? { depends: true as const } : {};
 	const capability = needs.capability;
 	// Members without the capability may still propose, if their role allows proposing.
-	if (actor.kind === 'member' && !env.access.can(actor, CORE_CAPABILITIES.draftsPropose.id)) {
+	if (
+		(actor.kind === 'member' || actor.kind === 'app') &&
+		!env.access.can(actor, CORE_CAPABILITIES.draftsPropose.id)
+	) {
 		return {
 			outcome: 'refuse',
 			reason: 'approval',

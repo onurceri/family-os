@@ -3,6 +3,7 @@ import {
 	type ActionTarget,
 	type Actor,
 	type AnyActionDefinition,
+	appOf,
 	type Clock,
 	compareThing,
 	type DbExecutor,
@@ -177,6 +178,8 @@ export interface ActionRunner {
 	suggestAgain(draftId: string, actor: Actor): Promise<DraftRow>;
 	/** Whether an undone draft was suggested again already. */
 	suggestedAgain(draft: DraftRow): Promise<boolean>;
+	/** The connected app a draft came through, by its current name, or null. */
+	appBehind(draft: DraftRow): Promise<{ id: string; name: string } | null>;
 	/** The inverse step of an applied draft, or null when it cannot be undone. */
 	undoStep(draft: DraftRow): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
@@ -1472,6 +1475,17 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	const againKey = (draftId: string) => `again:${draftId}`;
 
+	async function appBehind(draft: DraftRow) {
+		const app = appOf(JSON.parse(draft.proposed_by) as Actor);
+		if (!app) return null;
+		const row = await coreDb()
+			.selectFrom('core_apps')
+			.select(['id', 'name'])
+			.where('id', '=', app.appId)
+			.executeTakeFirst();
+		return row ?? null;
+	}
+
 	async function suggestedAgain(draft: DraftRow): Promise<boolean> {
 		if (draft.status !== 'undone') return false;
 		const row = await coreDb()
@@ -1725,6 +1739,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		undoDraft,
 		suggestAgain,
 		suggestedAgain,
+		appBehind,
 		undoStep,
 		mayExist,
 		alternative,

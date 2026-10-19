@@ -31,6 +31,7 @@ import { describeLoaded, type LoadedWeb, type WebPackage } from '../extensions/w
 import { mountMcp } from '../mcp/http.ts';
 import { mountAiRoutes } from './ai.ts';
 import { mountApiTokenRoutes } from './api-tokens.ts';
+import { mountAppRoutes } from './apps.ts';
 import { authenticate } from './authenticate.ts';
 import { mountBackupRoutes } from './backups.ts';
 import { createClientIp } from './client-ip.ts';
@@ -570,6 +571,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	);
 	mountPushRoutes(app, deps.webPush, deps.kernel);
 	mountApiTokenRoutes(app, deps.kernel);
+	mountAppRoutes(app, deps.kernel);
 	// MCP answers carry family data for a token: never cache them.
 	app.use('/mcp/*', async (c, next) => {
 		await next();

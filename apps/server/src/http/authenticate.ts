@@ -1,10 +1,12 @@
 import type { Identity } from '@famos/adapters/identity-betterauth';
 import {
+	type AppCaller,
 	type AuthenticatedToken,
 	CORE_CAPABILITIES,
 	type CoreTables,
 	displayActor,
 	type Kernel,
+	ON_BEHALF_OF_HEADER,
 } from '@famos/core';
 import { type Actor, FamosError, type MemberId } from '@famos/sdk';
 import { deviceTokenFromHeaders } from './devices.ts';
@@ -14,19 +16,28 @@ import { deviceTokenFromHeaders } from './devices.ts';
  * credential can stand for, so a credential meant for one door never works at another:
  * - `session`: the app's own API and its socket, by the session cookie (a member) or a paired
  *   display's device cookie; a bearer header is refused outright;
- * - `mcp`: the AI agents' endpoint, by a bearer token; cookies are never read.
+ * - `mcp`: the AI agents' endpoint, by a bearer token; cookies are never read;
+ * - `api`: connected apps, by an app key as a bearer: the app itself, or a member it acts for
+ *   (never a member who signed in), and cookies are never read.
  */
-export type Door = 'session' | 'mcp';
+export type Door = 'session' | 'mcp' | 'api';
 
 /** The kinds of caller each door admits. */
 export const DOOR_KINDS = {
 	session: ['member', 'display'],
 	mcp: ['ai'],
+	api: ['app', 'member'],
 } as const satisfies Record<Door, readonly Actor['kind'][]>;
 
-/** Whether a door admits this kind of caller. */
-export const admits = (door: Door, kind: Actor['kind']): boolean =>
-	(DOOR_KINDS[door] as readonly string[]).includes(kind);
+/**
+ * Whether a door admits this caller. A member through an app belongs to the `api` door alone, and
+ * a member who signed in never does there, so neither credential works at the other's door.
+ */
+export function admits(door: Door, actor: Actor): boolean {
+	if (!(DOOR_KINDS[door] as readonly string[]).includes(actor.kind)) return false;
+	if (actor.kind !== 'member') return true;
+	return door === 'api' ? actor.via !== undefined : actor.via === undefined;
+}
 
 type SessionDeps = { kernel: Kernel; identity: Pick<Identity, 'resolveMember'> };
 
@@ -50,7 +61,7 @@ export async function authenticate(
 	// The device is checked on every request, so revoking a display ends it at once.
 	const actor =
 		member ?? displayActor(await deps.kernel.devices.verify(deviceTokenFromHeaders(headers)));
-	return actor && admits(door, actor.kind) ? actor : null;
+	return actor && admits(door, actor) ? actor : null;
 }
 
 /**
@@ -121,6 +132,27 @@ export async function authenticateBearer(kernel: Kernel, headers: Headers): Prom
 	};
 	if (!kernel.access.can(holder, CORE_CAPABILITIES.mcpUse.id)) return { outcome: 'forbidden' };
 	const actor = mcpActor(principal);
-	if (!admits('mcp', actor.kind)) return { outcome: 'forbidden' };
+	if (!admits('mcp', actor)) return { outcome: 'forbidden' };
 	return { outcome: 'ok', actor, principal };
+}
+
+/** What an app key is let in as, or why it is not. */
+export type AppBearerResult =
+	| { outcome: 'ok'; caller: AppCaller }
+	| { outcome: 'missing' }
+	| { outcome: 'unknown' };
+
+/**
+ * Who calls the connected apps' door: the `Authorization: Bearer` header only, never a cookie,
+ * with an optional `X-FamilyOS-On-Behalf-Of` naming the member the request is for. A member who
+ * is not on the app's list, or is no longer active, is refused with `forbidden`; the call is not
+ * quietly served as the app itself. A personal (MCP) key is not an app key and is `unknown`.
+ */
+export async function authenticateApp(kernel: Kernel, headers: Headers): Promise<AppBearerResult> {
+	const header = /^Bearer\s+(\S+)$/i.exec(headers.get('authorization') ?? '');
+	if (!header) return { outcome: 'missing' };
+	const caller = await kernel.apps.authenticate(header[1], headers.get(ON_BEHALF_OF_HEADER));
+	if (!caller) return { outcome: 'unknown' };
+	if (!admits('api', caller.actor)) return { outcome: 'unknown' };
+	return { outcome: 'ok', caller };
 }

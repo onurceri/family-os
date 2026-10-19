@@ -63,6 +63,8 @@ docs/              Architecture, design system, user guide, releasing
 11. **AI-facing read actions declare `ai` hints and return handles, never ids** (the host maps ids to handles).
 12. **An extension may not be installed.** Only the always set (`extensions.json`) is certain; any other extension can be missing, refused or uninstalled with its data kept. Reach an `optional` extension only behind a check (its capability, `app.can('<id>.view')`, or a `not_found` from its action), never assume its tables or routes. An always installed extension never `dependsOn` an offered one. Installing, uninstalling and restarting are `core.*` actions behind the critical `core.extensions.manage`; the AI never runs or proposes an action that requires a critical capability.
 
+13. **A connected app is not a person.** An app (Home Assistant, a script) is the actor `{ kind: 'app' }`, or a member with `via` when it acts for one; neither is `personPresent`, neither ever holds a critical capability, `core.drafts.approve`, `core.mcp.use` or `core.signIn.pin` (`appMayHold`), and an app in `suggest` mode only ever makes drafts. Ask the SDK helpers (`selfOf`, `memberBehind`, `personPresent`, `principalOf`, `appOf`), never `actor.kind === 'member'` alone, for anything only a person may do. App keys live in `core_app_tokens`, managed outside actions with `core.apps.manage` and a password sign-in, shown once; a restore pauses every app.
+
 - **Region-neutral**: no country-specific presets, defaults, enums, prompts or examples; language (words) is separate from region formats (dates, numbers, first day of week, units).
 
 ## Data and migrations

@@ -27,6 +27,7 @@ afterEach(async () => {
 /** The migrations that release had: everything but what this change adds. */
 const VERSION_MIGRATIONS = [
 	'core/0007_changes',
+	'core/0008_connected_apps',
 	'calendar/0003_version',
 	'lists/0002_versions',
 	'chores/0002_versions',

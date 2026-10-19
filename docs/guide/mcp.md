@@ -1,5 +1,7 @@
 # Bring your own agent (MCP)
 
+> Home Assistant, a script or another program that is not an AI agent connects as a [connected app](connected-apps.md) instead, on the same page.
+
 If you already use a personal AI agent, such as Hermes Agent by Nous Research, Claude Desktop, Claude Code or another app that supports the **Model Context Protocol (MCP)**, you can connect it to FamilyOS instead of using the built-in [assistant](assistant.md). Then you can ask your agent "what is on the calendar this week?" or "put milk on the shopping list" from wherever you already talk to it.
 
 **It has exactly the powers of the [assistant](assistant.md), and no more.** The agent sees only what you may see, and only in the areas the family has opened to the AI. Every change it proposes is a *suggestion* that you approve in FamilyOS, like everything else the AI does. It cannot send anything outside, and it cannot do what you cannot do.

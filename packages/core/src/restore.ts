@@ -7,6 +7,7 @@ import type {
 	Logger,
 	NotifyRequest,
 } from '@famos/sdk';
+import { pauseAllApps } from './apps.ts';
 import type { CoreTables } from './tables.ts';
 
 /** What a restore changed on the first start after it. */
@@ -17,6 +18,8 @@ export interface RestoreReport {
 	kept: number;
 	/** The extensions whose `onRestore` failed; the others were reconciled. */
 	failed: string[];
+	/** Connected apps paused until an admin looks at them again. */
+	appsPaused: number;
 }
 
 export interface RestoreDeps {
@@ -52,6 +55,9 @@ export async function reconcileRestore(
 	await deps.identity.endAllSessions();
 	let kept = 0;
 	const failed: string[] = [];
+	// A restore may bring back keys of apps that were revoked, rotated or leaked since: every
+	// live app waits until an admin has looked at it.
+	const appsPaused = await pauseAllApps(deps.db, deps.clock.now());
 	if (previous) {
 		const now = deps.clock.now();
 		const archived = await carryArchivedMembers(deps.db, previous);
@@ -63,6 +69,8 @@ export async function reconcileRestore(
 		kept += archived.length;
 		kept += (await carryRevoked(deps.db, previous, 'core_api_tokens', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_devices', now)).length;
+		kept += (await carryRevoked(deps.db, previous, 'core_apps', now)).length;
+		kept += (await carryRevoked(deps.db, previous, 'core_app_tokens', now)).length;
 		kept += await deps.identity.carryNewerLogins(previous);
 		for (const step of hostSteps) kept += await step();
 	}
@@ -91,7 +99,16 @@ export async function reconcileRestore(
 		url: '/settings/backups',
 		source: { kind: 'restore', id: 'restore' },
 	});
-	return { sessionsEnded: true, kept, failed };
+	if (appsPaused > 0)
+		await deps.notify({
+			kind: 'core.backupRestored',
+			to: { capability: 'core.apps.manage' },
+			title: { key: 'app:notify_backup_restored_apps_title' },
+			body: { key: 'app:notify_backup_restored_apps_body', params: { count: appsPaused } },
+			url: '/settings/connected-apps',
+			source: { kind: 'restore', id: 'restore-apps' },
+		});
+	return { sessionsEnded: true, kept, failed, appsPaused };
 }
 
 /** Members archived since the backup are archived again; returns their ids. */
@@ -120,7 +137,7 @@ async function carryArchivedMembers(db: DbExecutor, previous: DbExecutor): Promi
 async function carryRevoked(
 	db: DbExecutor,
 	previous: DbExecutor,
-	table: 'core_api_tokens' | 'core_devices',
+	table: 'core_api_tokens' | 'core_devices' | 'core_apps' | 'core_app_tokens',
 	now: number,
 ): Promise<string[]> {
 	const later = await previous

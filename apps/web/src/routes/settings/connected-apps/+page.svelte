@@ -14,12 +14,16 @@
 		Section,
 		SwitchRow,
 	} from '@famos/ui/famos';
-	import { ChevronRight, KeyRound, Plus } from '@lucide/svelte';
+	import { ChevronRight, KeyRound, Plug, Plus } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
-	import { t } from '#lib/i18n.svelte.js';
+	import { family } from '#lib/family.svelte.js';
+	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { appSettings, mcpAddress } from './app-settings.js';
+	import { appIsLive, nextWarning } from './apps.js';
+	import AppPanel, { type ConnectedApp } from './AppPanel.svelte';
 	import ConnectApp from './ConnectApp.svelte';
 
 	type Json<P extends keyof paths> = paths[P] extends {
@@ -28,6 +32,7 @@
 		? R
 		: never;
 	type Token = Json<'/api/v1/mcp/tokens'>['tokens'][number];
+	type Roles = Json<'/api/v1/core/roles'>;
 
 	/** Personal app keys (API tokens) for AI apps that speak MCP; "Connect an app" walks
 	 * through turning it on, creating a key and copying the settings into the app. */
@@ -39,6 +44,18 @@
 	/** Turning AI apps on asks first; the switch stays where it was until the answer. */
 	let confirmingOn = $state(false);
 	let switchKey = $state(0);
+
+	/** Programs with a key of their own (Home Assistant, scripts): an admin's to look after. */
+	let apps = $state<ConnectedApp[]>([]);
+	let roles = $state<Roles['roles']>([]);
+	let warnDays = $state(14);
+	/** The app open in the panel: an id, `new`, or none. */
+	let panel = $state<string | null>(null);
+	const mayManageApps = $derived(
+		session.can('core.apps.manage') && session.me?.fullSignIn === true,
+	);
+	const shownApps = $derived(apps.filter((a) => a.revokedAt === null));
+	const openApp = $derived(apps.find((a) => a.id === panel) ?? null);
 
 	const isAdmin = $derived(session.can('core.ai.manage'));
 	/** Keys are made only where they can work: when AI apps may connect, or by an admin who can
@@ -77,6 +94,39 @@
 	$effect(() => {
 		if (session.can('core.mcp.use')) void load();
 	});
+
+	async function loadApps() {
+		const [list, roleList] = await Promise.all([
+			api.GET('/api/v1/apps'),
+			api.GET('/api/v1/core/roles'),
+		]);
+		apps = list.data?.apps ?? [];
+		warnDays = list.data?.warnDays ?? 14;
+		roles = roleList.data?.roles ?? [];
+	}
+	$effect(() => {
+		if (mayManageApps) void loadApps();
+	});
+	$effect(() => {
+		if (mayManageApps) return onEvent('core.role.', () => void loadApps());
+	});
+
+	const appMeta = (app: ConnectedApp) => {
+		const names = app.actsFor
+			.map((id) => family.members.find((m) => m.id === id)?.displayName)
+			.filter((n): n is string => !!n);
+		const role = roles.find((r) => r.id === app.roleId);
+		const parts = [
+			role?.name ?? tDynamic(`app:role_${app.roleId}`),
+			app.mode === 'apply' ? t('apps_mode_apply') : t('apps_mode_suggest'),
+			names.length > 0 ? t('apps_acts_for', { names: names.join(', ') }) : t('apps_acts_alone'),
+			app.lastUsedAt ? t('apps_used', { date: when(app.lastUsedAt) }) : t('apps_never_used'),
+		];
+		if (app.pausedAt !== null) parts.unshift(t('apps_paused'));
+		const soon = nextWarning(app.tokens, Date.now(), warnDays);
+		if (soon !== null) parts.push(t('apps_key_expiring', { date: when(soon) }));
+		return parts.join(' · ');
+	};
 
 	async function setEnabled(on: boolean): Promise<boolean> {
 		try {
@@ -135,6 +185,34 @@
 	</PageHeader>
 
 	<div class="grid gap-7">
+		{#if mayManageApps}
+			<Section label={t('apps_section')} count={shownApps.length}>
+				{#snippet actions()}
+					<Button variant="ghost" size="sm" onclick={() => (panel = 'new')}
+						><Plus class="size-4" aria-hidden="true" />{t('apps_add')}</Button
+					>
+				{/snippet}
+				{#if shownApps.length > 0}
+					<Card rows>
+						{#each shownApps as app (app.id)}
+							<Row
+								wrap
+								title={app.name}
+								idle={!appIsLive(app)}
+								meta={appMeta(app)}
+								onclick={() => (panel = app.id)}
+							>
+								{#snippet lead()}<Plug class="size-5" aria-hidden="true" />{/snippet}
+								{#snippet trail()}<ChevronRight class="size-4" aria-hidden="true" />{/snippet}
+							</Row>
+						{/each}
+					</Card>
+				{:else}
+					<EmptyState art="assistant" title={t('apps_empty_title')} hint={t('apps_empty_hint')}
+					></EmptyState>
+				{/if}
+			</Section>
+		{/if}
 		{#if isAdmin}
 			<Section label={t('mcp_switch_title')}>
 				<Card rows>
@@ -246,6 +324,15 @@
 			</details>
 		{/if}
 	</div>
+
+	<AppPanel
+		open={panel !== null && (panel === 'new' || openApp !== null)}
+		app={panel === 'new' ? null : openApp}
+		{roles}
+		{warnDays}
+		onclose={() => (panel = null)}
+		onchanged={loadApps}
+	/>
 
 	<ConnectApp
 		open={connecting}

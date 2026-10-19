@@ -424,6 +424,47 @@ export const m0007_changes: Migration = {
 	},
 };
 
+/**
+ * Connected apps: programs outside FamilyOS (Home Assistant, scripts) that a family's admin
+ * registers with a role, a mode and the members they may act for. Their keys live apart from the
+ * personal ones, so an app key can never open the AI door nor the reverse.
+ */
+export const m0008_connected_apps: Migration = {
+	async up(db) {
+		await db.schema
+			.createTable('core_apps')
+			.addColumn('id', 'text', (c) => c.primaryKey())
+			.addColumn('name', 'text', (c) => c.notNull())
+			.addColumn('role_id', 'text', (c) => c.notNull())
+			.addColumn('mode', 'text', (c) => c.notNull().check(sql`mode in ('apply', 'suggest')`))
+			.addColumn('acts_for', 'text', (c) => c.notNull().defaultTo('[]'))
+			.addColumn('created_by', 'text')
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addColumn('updated_at', 'integer', (c) => c.notNull())
+			.addColumn('revoked_at', 'integer')
+			.addColumn('paused_at', 'integer')
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createTable('core_app_tokens')
+			.addColumn('id', 'text', (c) => c.primaryKey())
+			.addColumn('app_id', 'text', (c) => c.notNull().references('core_apps.id'))
+			.addColumn('name', 'text', (c) => c.notNull())
+			.addColumn('token_hash', 'text', (c) => c.notNull().unique())
+			.addColumn('expires_at', 'integer')
+			.addColumn('last_used_at', 'integer')
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addColumn('revoked_at', 'integer')
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createIndex('core_app_tokens_app_idx')
+			.on('core_app_tokens')
+			.column('app_id')
+			.execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
@@ -432,4 +473,5 @@ export const coreMigrations = {
 	'0005_draft_quote': m0005_draft_quote,
 	'0006_idempotency_principal': m0006_idempotency_principal,
 	'0007_changes': m0007_changes,
+	'0008_connected_apps': m0008_connected_apps,
 };

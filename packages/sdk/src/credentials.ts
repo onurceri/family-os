@@ -4,7 +4,7 @@ import type { FamilyReader } from './context.ts';
 import { FamosError } from './errors.ts';
 
 /** A person who signed in with a password: not a PIN, not the AI, a display or the system. */
-export type FullSignInActor = Extract<Actor, { kind: 'member' }>;
+export type FullSignInActor = Extract<Actor, { kind: 'member' }> & { via?: undefined };
 
 /** Whether the actor is a member who signed in with a password rather than a PIN. */
 export const isFullSignIn = (actor: Actor): actor is FullSignInActor =>

@@ -41,6 +41,7 @@ export interface IdempotencyRequest {
 export function idempotencyPrincipal(actor: Actor): string | null {
 	switch (actor.kind) {
 		case 'member':
+		case 'app':
 			return principalOf(actor);
 		case 'ai':
 			return actor.onBehalfOf

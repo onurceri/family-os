@@ -2,7 +2,7 @@
 	import { isApiError } from '@famos/api-client';
 	import { DraftCard, type DraftCardStatus } from '@famos/ui/famos';
 	import {
-		askedBy,
+		draftByline,
 		draftHeadline,
 		draftKicker,
 		insteadOffer,
@@ -130,7 +130,7 @@
 	);
 	const mine = $derived(proposedByMember(draft.proposedBy, app.me()?.id));
 	const asker = $derived(
-		byline ? askedBy(draft.proposedBy, app.me()?.id, app.members()) : undefined,
+		byline ? draftByline(draft, app.me()?.id, app.members(), app.t) : undefined,
 	);
 	const labels = $derived({
 		approve: presenter?.approveLabel?.(context) ?? a('draft_approve'),
@@ -281,7 +281,7 @@
 
 <DraftCard
 	kind={presenter?.kind(context) ?? draftKicker({ actionId: draft.actionId, t: app.t })}
-	askedBy={asker ? app.t('app:draft_asked_by', { name: asker }) : undefined}
+	askedBy={asker}
 	icon={presenter?.icon}
 	{title}
 	source={draft.quote ? app.t('app:draft_from_message', { quote: draft.quote }) : undefined}

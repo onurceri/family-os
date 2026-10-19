@@ -2,6 +2,7 @@ export * from './access.ts';
 export * from './action-runner.ts';
 export * from './ai-areas.ts';
 export * from './api-tokens.ts';
+export * from './apps.ts';
 export * from './changes.ts';
 export * from './core-capabilities.ts';
 export * from './core-events.ts';
