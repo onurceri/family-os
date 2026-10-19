@@ -29349,6 +29349,9 @@
 													},
 													"available": {
 														"type": "boolean"
+													},
+													"hint": {
+														"type": "string"
 													}
 												},
 												"required": [

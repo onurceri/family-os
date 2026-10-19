@@ -18,6 +18,7 @@ export * from './manifest.ts';
 export * from './match-thing.ts';
 export * from './mention-kinds.ts';
 export * from './messages.ts';
+export * from './notification-channels.ts';
 export * from './notifications.ts';
 export * from './ports.ts';
 export * from './question.ts';

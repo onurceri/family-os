@@ -48,6 +48,7 @@ import { createHostDoors, type HostDoors } from './host-doors.ts';
 import { anyLanguage, type LanguagePort } from './languages.ts';
 import { createMentionKinds } from './mention-kinds.ts';
 import {
+	type BoundChannel,
 	createNotifications,
 	defaultTranslate,
 	noVocabulary,
@@ -98,8 +99,13 @@ export interface KernelOptions {
 	/** The one-time code first-run setup requires (the server always sets one). */
 	setupCode?: string;
 	worker?: WorkerOptions;
-	/** Ways to reach people outside the app. None by default: the in-app list only. */
+	/**
+	 * Ways to reach people outside the app that the host brings (Web Push, Telegram). The installed
+	 * extensions' own channels follow them. None by default: the in-app list only.
+	 */
 	channels?: readonly NotificationChannel[];
+	/** The family's public address (`FAMOS_BASE_URL`), when set: notifications carry absolute links. */
+	publicUrl?: string;
 	/** Renders a translation key in a locale (the server builds it from the shared catalogs). */
 	translate?: Translate;
 	/** The words a key lists in every installed language; none by default. */
@@ -142,8 +148,8 @@ export interface Kernel {
 	readonly features: Features;
 	/** What the AI may use per area (Settings → AI). */
 	readonly aiAreas: AiAreas;
-	/** Notification channels, in registration order. */
-	readonly channels: readonly NotificationChannel[];
+	/** Notification channels now: the host's, then those of the running extensions. */
+	readonly channels: () => readonly BoundChannel[];
 	/** Renders a translation key in a language (English when the language lacks it). */
 	readonly translate: Translate;
 	/** The language packs available. */
@@ -199,14 +205,41 @@ export function createKernel(options: KernelOptions): Kernel {
 	const aiAreas = createAiAreas(
 		(id) => registry.extensions.find((e) => e.id === id)?.sensitive === true,
 	);
-	const channels = options.channels ?? [];
+	const hostChannels: readonly BoundChannel[] = (options.channels ?? []).map((c) => ({
+		id: c.id,
+		label: c.label,
+		onByDefault: true,
+		isAvailableFor: (memberId) => c.isAvailableFor(memberId),
+		send: (_ctx, memberId, message) => c.send(memberId, message),
+	}));
+	/** The host's channels, then each running extension's, bound to that extension. */
+	const channelList = (): readonly BoundChannel[] => [
+		...hostChannels,
+		...registry.extensions
+			.filter((ext) => features.isOn(ext.id))
+			.flatMap((ext) =>
+				// A package built with an earlier SDK has none.
+				(ext.channels ?? []).map(
+					(channel): BoundChannel => ({
+						id: channel.id,
+						label: channel.label,
+						...(channel.hint && { hint: channel.hint }),
+						onByDefault: channel.byDefault !== 'off',
+						isAvailableFor: (memberId) => channel.isAvailableFor(contextFor(ext.id), memberId),
+						send: (_ctx, memberId, message) =>
+							channel.send(jobContextFor(ext.id), memberId, message),
+					}),
+				),
+			),
+	];
 	const notifications = createNotifications({
 		db: options.db,
 		queue: options.queue,
 		clock: options.clock,
 		ids: options.ids,
 		logger: options.logger,
-		channels,
+		channels: channelList,
+		...(options.publicUrl && { publicUrl: options.publicUrl }),
 		translate: options.translate ?? defaultTranslate,
 		registry: () => registry,
 		access: () => access,
@@ -607,7 +640,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		access,
 		features,
 		aiAreas,
-		channels,
+		channels: channelList,
 		translate: options.translate ?? defaultTranslate,
 		languages: options.languages ?? anyLanguage,
 		themes,
@@ -661,7 +694,11 @@ function buildLeavingOutRefused(
 	let candidates = [...options.extensions];
 	for (;;) {
 		try {
-			const registry = buildRegistry([core, ...candidates], options.infrastructureJobs);
+			const registry = buildRegistry(
+				[core, ...candidates],
+				options.infrastructureJobs,
+				(options.channels ?? []).map((c) => c.id),
+			);
 			assertNoInfrastructureClash(registry, options.infrastructureMigrations);
 			return registry;
 		} catch (error) {

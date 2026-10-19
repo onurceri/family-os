@@ -220,9 +220,9 @@ describe('linking', () => {
 		fake.say(55, 'a thought');
 		await until(async () => !(await tg.linkOf('mem_1')).linked, 'the link to go');
 		expect(shared).toEqual([]);
-		expect(await tg.channel.send('mem_1', { title: 't', body: null, url: null, tag: 'n' })).toBe(
-			'gone',
-		);
+		expect(
+			await tg.channel.send('mem_1', { title: 't', body: null, url: null, link: null, tag: 'n' }),
+		).toBe('gone');
 	});
 
 	it('moves a link when the same account is claimed by another member', async () => {
@@ -479,6 +479,7 @@ describe('notifications', () => {
 		title: 'Dinner <at> 6',
 		body: 'Grandma & friends',
 		url: '/calendar',
+		link: null,
 		tag: 'n1',
 	};
 

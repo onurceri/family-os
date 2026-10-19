@@ -7,6 +7,7 @@ import type { AnyJobDefinition } from './jobs.ts';
 import { type ExtensionManifest, type ExtensionManifestInput, parseManifest } from './manifest.ts';
 import type { MentionKindDefinition } from './mention-kinds.ts';
 import type { ExtensionMessages } from './messages.ts';
+import type { NotificationChannelDefinition } from './notification-channels.ts';
 import type { NotificationKindDefinition } from './notifications.ts';
 import type { DbExecutor } from './ports.ts';
 import type { AnyRouteDefinition } from './routes.ts';
@@ -37,6 +38,8 @@ export interface ExtensionDefinition {
 	readonly capabilities: readonly CapabilityDefinition[];
 	/** What this extension may tell people; `notify` refuses undeclared kinds. */
 	readonly notifications: readonly NotificationKindDefinition[];
+	/** Ways it reaches people outside the app; the id is its own or `<id>.<name>`. */
+	readonly channels: readonly NotificationChannelDefinition[];
 	/**
 	 * Holds data the AI should not reach unless the family allows it (health). Its AI
 	 * access starts Off instead of Any provider. Only marks; the family decides.
@@ -136,6 +139,7 @@ export function defineExtension(definition: {
 	events?: readonly EventDefinition[];
 	capabilities?: readonly CapabilityDefinition[];
 	notifications?: readonly NotificationKindDefinition[];
+	channels?: readonly NotificationChannelDefinition[];
 	sensitive?: boolean;
 	ai?: AiExtensionHints;
 	shareTarget?: ShareTarget;
@@ -154,6 +158,7 @@ export function defineExtension(definition: {
 		events: [],
 		capabilities: [],
 		notifications: [],
+		channels: [],
 		sensitive: false,
 		...definition,
 		manifest,
@@ -169,6 +174,10 @@ export function defineExtension(definition: {
 	for (const job of ext.jobs) owned('Job', job.name);
 	for (const event of ext.events) owned('Event', event.name);
 	for (const kind of ext.notifications) owned('Notification kind', kind.id);
+	for (const channel of ext.channels) {
+		if (channel.id !== id && !channel.id.startsWith(`${id}.`))
+			throw new Error(`Notification channel "${channel.id}" must be "${id}" or "${id}.…"`);
+	}
 	for (const capability of ext.capabilities) {
 		owned('Capability', capability.id);
 		assertRestrictiveDefaults(id, capability);

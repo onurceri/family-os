@@ -28,6 +28,8 @@
 	let quietEnd = $state(DEFAULT_QUIET.end);
 
 	const available = $derived(options?.channels.filter((c) => c.available) ?? []);
+	/** Channels this person cannot be reached through yet, which say what to do about it. */
+	const explained = $derived(options?.channels.filter((c) => !c.available && c.hint) ?? []);
 
 	async function loadPrefs() {
 		const res = await api.GET('/api/v1/core/notifications/preferences');
@@ -206,6 +208,19 @@
 					{/if}
 				</Card>
 			</Section>
+
+			{#if explained.length > 0}
+				<Section label={t('channels_unavailable_title')}>
+					<Card rows>
+						{#each explained as channel (channel.id)}
+							<div class="grid gap-0.5 px-4 py-3">
+								<span class="font-medium">{channel.label}</span>
+								<small class="text-ink-soft text-xs">{channel.hint}</small>
+							</div>
+						{/each}
+					</Card>
+				</Section>
+			{/if}
 
 			{#if available.length === 0}
 				<p class="text-ink-soft max-w-prose px-1 text-sm">{t('notifications_in_app_only')}</p>

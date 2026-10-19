@@ -292,6 +292,7 @@ export function createWebPush(deps: WebPushDeps) {
 				title: message.title,
 				body: message.body ?? null,
 				url: '/notifications',
+				link: null,
 				tag: 'test',
 			});
 			return t.ok;

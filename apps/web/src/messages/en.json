@@ -585,6 +585,7 @@
 	"notifications_mark_all_read": "Mark all as read",
 	"notifications_unread": "unread",
 	"notifications_in_app_only": "Notifications appear here in the app.",
+	"channels_unavailable_title": "Not set up for you",
 	"nav_notification_settings": "Notification settings",
 	"notifications_new": "{{count}} new",
 	"notifications_today": "Today",

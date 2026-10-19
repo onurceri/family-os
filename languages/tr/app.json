@@ -585,6 +585,7 @@
 	"notifications_mark_all_read": "Tümünü okundu say",
 	"notifications_unread": "okunmadı",
 	"notifications_in_app_only": "Bildirimler burada, uygulamanın içinde görünür.",
+	"channels_unavailable_title": "Sizin için kurulmadı",
 	"nav_notification_settings": "Bildirim ayarları",
 	"notifications_new": "{{count}} yeni",
 	"notifications_today": "Bugün",

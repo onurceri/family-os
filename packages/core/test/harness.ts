@@ -14,13 +14,17 @@ import { openDatabase, runMigrations } from '@famos/db';
 import {
 	type Actor,
 	defineExtension,
+	type ExtensionContext,
 	type ExtensionDefinition,
 	type ExtensionManifestInput,
 	ExternalHttpError,
 	type IdentityAdmin,
+	type JobContext,
 	LlmError,
 	type MemberId,
 	type NotificationChannel,
+	type NotificationChannelDefinition,
+	type NotificationMessage,
 	type RouteRequest,
 	SDK_VERSION,
 	systemActor,
@@ -54,6 +58,8 @@ export async function createTestKernel(
 	options: {
 		extensions?: ExtensionDefinition[];
 		channels?: readonly NotificationChannel[];
+		/** The family's public address, for absolute links. */
+		publicUrl?: string;
 		translate?: (locale: string, key: string, params?: Record<string, unknown>) => string;
 		languages?: LanguagePort;
 		themes?: ThemePort;
@@ -136,6 +142,7 @@ export async function createTestKernel(
 		infrastructureMigrations: [{ scope: 'queue', migrations: queueMigrations }],
 		appVersion: '0.0.0-test',
 		...(options.channels && { channels: options.channels }),
+		...(options.publicUrl && { publicUrl: options.publicUrl }),
 		...(options.translate && { translate: options.translate }),
 		...(options.languages && { languages: options.languages }),
 		...(options.themes && { themes: options.themes }),
@@ -228,6 +235,55 @@ export function fakeChannel(id: string): FakeChannel {
 				url: message.url,
 				...(message.source && { source: message.source }),
 			});
+			return result;
+		},
+	};
+	return channel;
+}
+
+export interface FakeExtensionChannel extends NotificationChannelDefinition {
+	/** Sends that were answered `sent` or `gone`, with the context `send` received. */
+	readonly sent: { memberId: string; message: NotificationMessage; ctx: JobContext }[];
+	/** Every `send` call, including the ones that threw. */
+	readonly attempts: number;
+	/** Everybody, nobody, the member ids that can be reached, or a check of its own. */
+	available:
+		| boolean
+		| readonly string[]
+		| ((ctx: ExtensionContext, memberId: string) => Promise<boolean>);
+	/** Results for the next sends, in order; afterwards `sent`. An Error is thrown. */
+	next(...results: ('sent' | 'gone' | Error)[]): void;
+	/** Runs inside `send` with its context, to try what the extension may touch. */
+	onSend?: (ctx: JobContext, memberId: string) => Promise<void>;
+}
+
+/** A channel an extension contributes (`defineExtension({ channels })`) that records what it sent. */
+export function fakeExtensionChannel(
+	id: string,
+	options: { label?: string; hint?: string; byDefault?: 'on' | 'off' } = {},
+): FakeExtensionChannel {
+	const results: ('sent' | 'gone' | Error)[] = [];
+	const channel: FakeExtensionChannel = {
+		id,
+		label: options.label ?? `${id}:channel_label`,
+		...(options.hint && { hint: options.hint }),
+		...(options.byDefault && { byDefault: options.byDefault }),
+		sent: [],
+		attempts: 0,
+		available: true,
+		next: (...queued) => void results.push(...queued),
+		async isAvailableFor(ctx, memberId) {
+			if (typeof channel.available === 'function') return channel.available(ctx, memberId);
+			return Array.isArray(channel.available)
+				? channel.available.includes(memberId)
+				: channel.available === true;
+		},
+		async send(ctx, memberId, message) {
+			(channel as { attempts: number }).attempts++;
+			await channel.onSend?.(ctx, memberId);
+			const result = results.shift() ?? 'sent';
+			if (result instanceof Error) throw result;
+			channel.sent.push({ memberId, message, ctx });
 			return result;
 		},
 	};

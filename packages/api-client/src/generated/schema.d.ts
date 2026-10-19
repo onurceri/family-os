@@ -15221,6 +15221,7 @@ export interface operations {
                             id: string;
                             label: string;
                             available: boolean;
+                            hint?: string;
                         }[];
                         prefs: {
                             kinds: {

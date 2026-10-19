@@ -259,6 +259,8 @@ function checkMentionKinds(
 export function buildRegistry(
 	extensions: readonly ExtensionDefinition[],
 	infrastructureJobs: readonly AnyJobDefinition[] = [],
+	/** Ids of the host's own channels, which an extension's cannot take. */
+	hostChannels: readonly string[] = [],
 ): Registry {
 	const ordered = orderExtensions(extensions);
 	const actions = new Map<string, AnyActionDefinition>();
@@ -312,6 +314,22 @@ export function buildRegistry(
 				refuse(ext.id, `Notification kind "${kind.id}" must be namespaced as "${ext.id}.…"`);
 			unique(notificationKinds, kind.id, kind, 'notification kind', ext.id);
 			kindOwner.set(kind.id, ext.id);
+		}
+	}
+	const channelOwner = new Map<string, string>(hostChannels.map((id) => [id, 'the host']));
+	for (const ext of coreFirst) {
+		// A package built with an earlier SDK has none.
+		for (const channel of ext.channels ?? []) {
+			if (channel.id !== ext.id && !channel.id.startsWith(`${ext.id}.`))
+				refuse(ext.id, `Notification channel "${channel.id}" must be "${ext.id}" or "${ext.id}.…"`);
+			const first = channelOwner.get(channel.id);
+			if (first !== undefined)
+				refuse(
+					ext.id,
+					`Notification channel "${channel.id}" is already taken by ${first === 'the host' ? first : `"${first}"`}`,
+					'name_clash',
+				);
+			channelOwner.set(channel.id, ext.id);
 		}
 	}
 	const digests = new Map<string, string>();

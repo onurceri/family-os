@@ -126,6 +126,7 @@ const message = {
 	title: 'Dinner at 6',
 	body: 'Grandma is coming',
 	url: '/calendar',
+	link: null,
 	tag: 'notif_1',
 };
 
@@ -179,7 +180,8 @@ describe('Web Push channel', () => {
 		expect(req.headers.urgency).toBe('normal');
 		expect(req.headers.authorization).toContain(`k=${await push.publicKey()}`);
 		const plain = decryptPayload(req.body, browser.getPrivateKey(), browser.getPublicKey(), auth);
-		expect(JSON.parse(plain.toString())).toEqual(message);
+		// The payload carries what the service worker shows; the absolute link is for other channels.
+		expect(JSON.parse(plain.toString())).toEqual({ ...message, link: undefined });
 		const [device] = await push.list('mem_1');
 		expect(device).toMatchObject({
 			label: 'iPhone · Safari',

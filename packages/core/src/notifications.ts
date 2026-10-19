@@ -9,9 +9,10 @@ import {
 	type FamilySettings,
 	FamosError,
 	type IdGenerator,
+	type JobContext,
 	type JobQueue,
 	type Logger,
-	type NotificationChannel,
+	type NotificationMessage,
 	type NotifyRequest,
 	NotifyRequestSchema,
 	type NotifyWhen,
@@ -75,16 +76,39 @@ async function readPrefs(db: DbExecutor, memberId: string): Promise<Notification
 	return parsed.success ? parsed.data : EMPTY_PREFS;
 }
 
+/**
+ * A way to reach people outside the app, as the delivery sees it: the host's own channels
+ * (which need nothing of the job) and the installed extensions' (each bound to its extension's
+ * own contexts, so its tables, secrets and network apply).
+ */
+export interface BoundChannel {
+	readonly id: string;
+	/** i18n key shown in preferences. */
+	readonly label: string;
+	/** i18n key for a member who cannot be reached through it, if any. */
+	readonly hint?: string;
+	/** Whether it is on for a kind that names no default channels. */
+	readonly onByDefault: boolean;
+	isAvailableFor(memberId: string): Promise<boolean>;
+	send(ctx: JobContext, memberId: string, message: NotificationMessage): Promise<'sent' | 'gone'>;
+}
+
 /** Whether a channel is switched on for a kind: the member's choice, else the kind's default. */
 function channelEnabled(
 	prefs: NotificationPrefs,
 	kind: { id: string; defaultChannels?: readonly string[] | undefined },
-	channelId: string,
+	channel: Pick<BoundChannel, 'id' | 'onByDefault'>,
 ): boolean {
-	const chosen = prefs.kinds[kind.id]?.[channelId];
+	const chosen = prefs.kinds[kind.id]?.[channel.id];
 	if (chosen !== undefined) return chosen;
-	return kind.defaultChannels ? kind.defaultChannels.includes(channelId) : true;
+	return defaultOn(kind, channel);
 }
+
+/** A kind that names its default channels decides alone; otherwise each channel says. */
+const defaultOn = (
+	kind: { defaultChannels?: readonly string[] | undefined },
+	channel: Pick<BoundChannel, 'id' | 'onByDefault'>,
+) => (kind.defaultChannels ? kind.defaultChannels.includes(channel.id) : channel.onByDefault);
 
 const minutesOf = (time: string) => {
 	const [h, m] = time.split(':');
@@ -132,7 +156,10 @@ export interface NotificationsDeps {
 	clock: Clock;
 	ids: IdGenerator;
 	logger: Logger;
-	channels: readonly NotificationChannel[];
+	/** The channels now: the host's, then those of the installed extensions that are on. */
+	channels: () => readonly BoundChannel[];
+	/** The family's public address, if it set one. */
+	publicUrl?: string | undefined;
 	translate: Translate;
 	registry: () => Registry;
 	access: () => Access;
@@ -170,8 +197,30 @@ function readParams(
 	);
 }
 
+/** `path` on the family's public address, or null without one (or for something that is no path). */
+export function absoluteLink(publicUrl: string | undefined, path: string | null): string | null {
+	if (!publicUrl || !path?.startsWith('/') || path.startsWith('//')) return null;
+	return `${publicUrl.replace(/\/+$/, '')}${path}`;
+}
+
+/**
+ * Whether a channel can reach a member. A check that fails means "not available", logged
+ * without details, and never stops the notification or the other channels.
+ */
+async function reachable(
+	channel: BoundChannel,
+	memberId: string,
+	logger: Logger,
+): Promise<boolean> {
+	try {
+		return await channel.isAvailableFor(memberId);
+	} catch {
+		logger.warn({ channel: channel.id, memberId }, 'notification channel check failed');
+		return false;
+	}
+}
+
 export function createNotifications(deps: NotificationsDeps) {
-	const { channels } = deps;
 	const core = (db: DbExecutor) => db.withTables<CoreTables>();
 
 	const notifier: Notifier = {
@@ -225,11 +274,15 @@ export function createNotifications(deps: NotificationsDeps) {
 
 			// Channel lookups touch other tables on the one connection: do them before the transaction.
 			const plan = new Map<string, string[]>();
+			const channels = deps.channels();
 			for (const memberId of recipients) {
 				const prefs = await readPrefs(ctx.db, memberId);
 				const use: string[] = [];
 				for (const channel of channels) {
-					if (channelEnabled(prefs, kind, channel.id) && (await channel.isAvailableFor(memberId)))
+					if (
+						channelEnabled(prefs, kind, channel) &&
+						(await reachable(channel, memberId, ctx.logger))
+					)
 						use.push(channel.id);
 				}
 				plan.set(memberId, use);
@@ -283,7 +336,7 @@ export function createNotifications(deps: NotificationsDeps) {
 		payload: DeliverPayloadSchema,
 		maxAttempts: 8,
 		async handle(ctx, { notificationId, channel: channelId }) {
-			const channel = channels.find((c) => c.id === channelId);
+			const channel = deps.channels().find((c) => c.id === channelId);
 			if (!channel) return;
 			const row = await core(ctx.db)
 				.selectFrom('core_notifications')
@@ -304,7 +357,7 @@ export function createNotifications(deps: NotificationsDeps) {
 
 			const family = await ctx.family.settings();
 			const prefs = await readPrefs(ctx.db, row.member_id);
-			if (!channelEnabled(prefs, kind, channelId)) return;
+			if (!channelEnabled(prefs, kind, channel)) return;
 			const until = quietUntil(prefs.quietHours, ctx.clock.now(), family.timeZone);
 			if (until !== null) {
 				await deps.queue.enqueue(
@@ -321,12 +374,13 @@ export function createNotifications(deps: NotificationsDeps) {
 			}
 
 			const locale = member.locale ?? family.locale;
-			const outcome = await channel.send(row.member_id, {
+			const outcome = await channel.send(ctx, row.member_id, {
 				title: deps.translate(locale, row.title_key, readParams(row.title_params, locale, family)),
 				body: row.body_key
 					? deps.translate(locale, row.body_key, readParams(row.body_params, locale, family))
 					: null,
 				url: row.url,
+				link: absoluteLink(deps.publicUrl, row.url),
 				tag: row.id,
 				...(row.source_kind !== null &&
 					row.source_id !== null && { source: { kind: row.source_kind, id: row.source_id } }),
@@ -489,7 +543,15 @@ export function createNotifications(deps: NotificationsDeps) {
 					defaultChannels: z.array(z.string()),
 				}),
 			),
-			channels: z.array(z.object({ id: z.string(), label: z.string(), available: z.boolean() })),
+			channels: z.array(
+				z.object({
+					id: z.string(),
+					label: z.string(),
+					available: z.boolean(),
+					/** What to do when the member cannot be reached through it, if the channel says. */
+					hint: z.string().optional(),
+				}),
+			),
 			prefs: NotificationPrefsSchema,
 		}),
 		async handle(ctx, { actor }) {
@@ -497,6 +559,7 @@ export function createNotifications(deps: NotificationsDeps) {
 			const locale = await memberLocale(ctx, memberId);
 			const features = deps.features();
 			const held = deps.access().effective(roleOf(actor));
+			const channels = deps.channels();
 			return {
 				kinds: [...deps.registry().notificationKinds.values()]
 					.filter((k) => features.isOn(ownerOf(k.id)))
@@ -504,14 +567,20 @@ export function createNotifications(deps: NotificationsDeps) {
 					.map((k) => ({
 						id: k.id,
 						label: deps.translate(locale, k.label),
-						defaultChannels: k.defaultChannels ? [...k.defaultChannels] : channels.map((c) => c.id),
+						defaultChannels: k.defaultChannels
+							? [...k.defaultChannels]
+							: channels.filter((c) => c.onByDefault).map((c) => c.id),
 					})),
 				channels: await Promise.all(
-					channels.map(async (c) => ({
-						id: c.id,
-						label: deps.translate(locale, c.label),
-						available: await c.isAvailableFor(memberId),
-					})),
+					channels.map(async (c) => {
+						const available = await reachable(c, memberId, ctx.logger);
+						return {
+							id: c.id,
+							label: deps.translate(locale, c.label),
+							available,
+							...(!available && c.hint && { hint: deps.translate(locale, c.hint) }),
+						};
+					}),
 				),
 				prefs: await readPrefs(ctx.db, memberId),
 			};

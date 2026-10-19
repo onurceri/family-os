@@ -129,6 +129,8 @@ export interface NotificationMessage {
 	body: string | null;
 	/** A path inside the app, or null. */
 	url: string | null;
+	/** `url` as an absolute address when the family set its public address, else null. */
+	link: string | null;
 	/** The notification row id: lets a channel replace or tag its copy. */
 	tag: string;
 	/** What the notification is about (for example the Inbox item whose drafts wait), if anything. */

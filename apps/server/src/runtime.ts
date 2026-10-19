@@ -292,6 +292,7 @@ export function openRuntime(
 		languages,
 		themes,
 		channels: [webPush.channel, telegram.channel],
+		...(config.publicURL && { publicUrl: config.publicURL }),
 		...(config.notifyDelayMs !== undefined && { draftNotifyDelayMs: config.notifyDelayMs }),
 	});
 	kernelRef = kernel;
