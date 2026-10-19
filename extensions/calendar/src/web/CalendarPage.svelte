@@ -10,6 +10,8 @@
 		focusFirstInvalid,
 		Page,
 		PageHeader,
+		RepeatScope,
+		type RepeatScopeChoice,
 		SidePanel,
 		ViewOnly,
 		Timeline,
@@ -44,10 +46,16 @@
 	import EventForm from './EventForm.svelte';
 	import ExternalDetail from './ExternalDetail.svelte';
 	import {
+		asksWhichDates,
+		atOccurrence,
+		dateChoices,
 		emptyForm,
 		type EventFormValue,
 		formFrom,
+		fromThisDateForm,
 		inputFrom,
+		onDate,
+		onlyThisDateForm,
 		replaceFrom,
 		validate,
 	} from './form.js';
@@ -201,6 +209,24 @@
 	let formEl = $state<HTMLFormElement | null>(null);
 
 	let form = $state<EventFormValue | null>(null);
+	// A repeating event opened from one of its dates: the form as it opened (on that date), and the
+	// event's own first day, which an unchanged date goes back to when the whole series is saved.
+	let saved = $state<{ form: EventFormValue; seriesDate: string; key: string } | null>(null);
+	const dayOf = (o: Occurrence) =>
+		o.allDay
+			? (o.startDate as string)
+			: zoned(o.start as number, tz)
+					.toPlainDate()
+					.toString();
+	function formAt(event: EventDetail, occurrence: Occurrence): EventFormValue {
+		const opened = occurrence.recurring
+			? atOccurrence(formFrom(event), dayOf(occurrence))
+			: formFrom(event);
+		saved = occurrence.recurring
+			? { form: { ...opened }, seriesDate: event.date, key: occurrence.key }
+			: null;
+		return opened;
+	}
 	// What the form held when it opened, to tell whether closing it would lose something.
 	let baseline = $state('');
 	const dirty = $derived(Boolean(editing && form) && JSON.stringify(form) !== baseline);
@@ -236,7 +262,7 @@
 		viewing = null;
 		try {
 			const detail = await loadEvent(occurrence.eventId);
-			form = formFrom(detail);
+			form = formAt(detail, occurrence);
 			arm();
 			editing = { mode: 'edit', occurrence };
 			showErrors = false;
@@ -249,6 +275,7 @@
 	function close() {
 		editing = null;
 		form = null;
+		saved = null;
 		viewing = null;
 		detail = null;
 	}
@@ -274,7 +301,7 @@
 
 	function editDetail() {
 		if (!detail || !mayEdit) return;
-		form = formFrom(detail.event);
+		form = formAt(detail.event, detail.occurrence);
 		arm();
 		editing = { mode: 'edit', occurrence: detail.occurrence };
 		detail = null;
@@ -347,13 +374,59 @@
 			void focusFirstInvalid(event.currentTarget);
 			return;
 		}
+		// A saved repeating event whose date or days moved asks which dates the change is for.
+		if (editing.mode === 'edit' && saved && asksWhichDates(saved.form, form)) {
+			asking = true;
+			return;
+		}
+		await commit();
+	}
+
+	let asking = $state(false);
+	const choices = $derived(saved && form ? dateChoices(saved.form, form, today) : null);
+	const scopeWords = $derived.by(() => {
+		const date = (d: string | undefined) => (d ? formatDate(d, app.dateLocale()) : '');
+		return {
+			title: t('scope_title'),
+			only: {
+				label: t('scope_only'),
+				hint: t('scope_only_hint', { date: date(choices?.onlyDate) }),
+			},
+			following: {
+				label: t('scope_following'),
+				hint: t('scope_following_hint', { date: date(choices?.nextDate) }),
+			},
+			cancel: t('cancel'),
+		};
+	});
+	function pick(choice: RepeatScopeChoice) {
+		asking = false;
+		void commit(choice);
+	}
+
+	async function commit(scope?: RepeatScopeChoice) {
+		if (!form || !editing) return;
 		busy = true;
 		saveError = null;
 		try {
 			const id = editing.mode === 'edit' ? editing.occurrence.eventId : undefined;
-			const date = form.date;
+			let sent = form;
+			if (scope && saved)
+				sent =
+					scope === 'this'
+						? onlyThisDateForm(saved.form, form, today)
+						: fromThisDateForm(saved.form, form, today);
+			// An unchanged date saves the whole series: its own first day, not the date it was opened on.
+			else if (saved && form.date === saved.form.date) sent = onDate(form, saved.seriesDate);
+			const date = sent.date;
 			report(
-				await (id ? replaceEvent(id, replaceFrom(form)) : createEvent(inputFrom(form))),
+				await (id
+					? replaceEvent(
+							id,
+							replaceFrom(sent),
+							scope && saved ? { occurrence: saved.key, scope } : undefined,
+						)
+					: createEvent(inputFrom(sent))),
 				'saved',
 			);
 			selected = date;
@@ -431,7 +504,7 @@
 			aria-label={editing.mode === 'new' ? t('add') : form.title || t('title')}
 			novalidate
 		>
-			<EventForm bind:value={form} {errors} />
+			<EventForm bind:value={form} {errors} saved={editing.mode === 'edit'} />
 			{#if editing.mode === 'edit' && editing.occurrence.recurring}
 				<p class="text-ink-soft text-sm">{t('edit_series_hint')}</p>
 			{/if}
@@ -868,4 +941,5 @@
 			{@render eventForm()}
 		{/if}
 	</SidePanel>
+	<RepeatScope open={asking} words={scopeWords} onpick={pick} onclose={() => (asking = false)} />
 </Page>

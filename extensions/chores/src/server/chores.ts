@@ -148,11 +148,23 @@ export const updateChore = defineAction({
 	storedInput: storedAsWhole(ChoreDetailsSchema, 'chore'),
 	output: ChoreSchema,
 	approval: { unless: choresEdit.id },
-	async run(uow, { id, chore }) {
+	async run(uow, { id, chore, onlyThisTurnOn }) {
 		const row = await loadChore(uow.db, id);
 		const now = uow.clock.now();
 		const { timeZone } = await uow.family.settings();
 		const today = todayIn(timeZone, now);
+		if (onlyThisTurnOn && row.next_due) {
+			// Only this turn moves: the repeat and its start stay, the turn after follows them.
+			const { start_date: _start, recurrence: _rule, ...details } = fieldsOf(chore);
+			await tables(uow.db)
+				.updateTable('chores_chores')
+				.set({ ...details, next_due: onlyThisTurnOn, updated_at: now })
+				.where('id', '=', id)
+				.execute();
+			await scheduleReminder(uow, id);
+			uow.emit(choresChanged, { choreId: id });
+			return choreView(uow.db, await loadChore(uow.db, id), today);
+		}
 		const recurrence = chore.recurrence ?? null;
 		const patch = fieldsOf(chore);
 		// A new start or repeat moves the schedule; anything else leaves the due date alone.

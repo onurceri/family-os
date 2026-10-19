@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { todayIn } from '@famos/time';
+	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import {
 		AwaitingMark,
@@ -10,6 +10,8 @@
 		Fab,
 		focusFirstInvalid,
 		ListDetail,
+		RepeatScope,
+		type RepeatScopeChoice,
 		Section,
 		Segmented,
 		readFirst,
@@ -32,14 +34,18 @@
 		updateChore,
 	} from './data.js';
 	import {
+		asksWhichTurns,
 		type ChoreFormValue,
 		dueLabel,
 		doneToast,
 		emptyChore,
 		fromChore,
+		fromThisTurnOn,
 		type Group,
 		groupOf,
+		onlyThisTurn,
 		toDetails,
+		turnChoices,
 		validate,
 	} from './form.js';
 	import { useChores } from './i18n.js';
@@ -199,17 +205,58 @@
 			void focusFirstInvalid(event.currentTarget);
 			return;
 		}
+		// A saved repeating chore whose date or days moved asks which turns the change is for.
+		if (editing.original && asksWhichTurns(fromChore(editing.original), form)) {
+			asking = true;
+			return;
+		}
+		await commit();
+	}
+
+	let asking = $state(false);
+	const choices = $derived(
+		editing?.original ? turnChoices(fromChore(editing.original), form, today) : null,
+	);
+	const scopeWords = $derived.by(() => {
+		const date = (d: string | undefined) => (d ? formatDate(d, app.dateLocale()) : '');
+		return {
+			title: t('scope_title'),
+			only: {
+				label: t('scope_only'),
+				hint: t('scope_only_hint', { date: date(choices?.onlyDate) }),
+			},
+			following: {
+				label: t('scope_following'),
+				hint: t('scope_following_hint', { date: date(choices?.nextDate) }),
+			},
+			cancel: t('cancel'),
+		};
+	});
+	function pick(choice: RepeatScopeChoice) {
+		asking = false;
+		void commit(choice);
+	}
+
+	async function commit(scope?: RepeatScopeChoice) {
+		if (!editing) return;
 		saving = true;
 		try {
-			const details = toDetails(form);
 			if (editing.id && editing.original) {
 				const before = editing.original.assigneeIds;
-				let outcome = await updateChore({ id: editing.id, chore: details });
+				const saved = fromChore(editing.original);
+				const change =
+					scope === 'this'
+						? onlyThisTurn(saved, form, today)
+						: { chore: scope ? fromThisTurnOn(saved, form, today) : toDetails(form) };
+				let outcome = await updateChore({ id: editing.id, ...change });
 				if (form.assigneeIds.join() !== before.join())
 					outcome = await setAssignees(editing.id, form.assigneeIds);
 				report(outcome, t('saved'));
 			} else {
-				const { outcome } = await createChore({ ...details, assigneeIds: form.assigneeIds });
+				const { outcome } = await createChore({
+					...toDetails(form),
+					assigneeIds: form.assigneeIds,
+				});
 				report(outcome, t('saved'));
 			}
 			closeForm();
@@ -307,7 +354,7 @@
 		</div>
 	{/if}
 	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>
-		<ChoreForm bind:value={form} {errors} idPrefix="chore" />
+		<ChoreForm bind:value={form} {errors} saved={Boolean(editing?.id)} idPrefix="chore" />
 	</form>
 {/snippet}
 
@@ -422,3 +469,5 @@
 >
 	{@render formCard()}
 </SidePanel>
+
+<RepeatScope open={asking} words={scopeWords} onpick={pick} onclose={() => (asking = false)} />

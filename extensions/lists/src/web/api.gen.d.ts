@@ -2383,6 +2383,8 @@ export interface operations {
                         } | null;
                         notes: string | null;
                     };
+                    /** @description Repeating tasks: moves only the due date now up to this day (YYYY-MM-DD); the repeat and its start stay as they are. Leave out to change the task from now on */
+                    onlyThisDate?: string;
                 };
             };
         };

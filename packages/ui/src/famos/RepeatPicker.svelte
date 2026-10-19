@@ -9,11 +9,13 @@
 		monthly: string;
 		custom: string;
 		until: string;
+		/** The line under the weekly days naming the first time, given the date already written out. */
+		firstTime?: (date: string) => string;
 	}
 </script>
 
 <script lang="ts">
-	import { weekdaysAfterDateChange } from '@famos/time';
+	import { firstRepeatDate, formatDate, weekdaysAfterDateChange } from '@famos/time';
 	import { untrack } from 'svelte';
 	import { Input } from '../components/input/index.js';
 	import { Label } from '../components/label/index.js';
@@ -34,6 +36,8 @@
 		labels,
 		min,
 		startDate,
+		saved = false,
+		dateLocale,
 		idPrefix,
 		error,
 		untilError,
@@ -47,10 +51,17 @@
 		/** Earliest allowed end date (the start date). */
 		min?: string;
 		/**
-		 * The date the series starts on. When it changes, the weekly days follow it (see
-		 * `weekdaysAfterDateChange`), so the first turn is always on the date shown.
+		 * The date the series starts on. For a new item the weekly days follow it
+		 * when it changes (see `weekdaysAfterDateChange`); a saved item keeps its days.
 		 */
 		startDate?: string | undefined;
+		/**
+		 * The item is already saved. Moving its date then never changes the days: a saved "every
+		 * Tuesday" stays as it is.
+		 */
+		saved?: boolean;
+		/** The reader's date locale, for the line that names the first time. */
+		dateLocale?: string | undefined;
 		idPrefix: string;
 		error?: string | undefined;
 		untilError?: string | undefined;
@@ -70,11 +81,17 @@
 		const previous = seenDate;
 		seenDate = next;
 		untrack(() => {
-			const moved = weekdaysAfterDateChange(byDay, previous, next);
+			const moved = weekdaysAfterDateChange(byDay, previous, next, saved);
 			if (moved.length === byDay.length && moved.every((d, i) => d === byDay[i])) return;
 			byDay = days.map((d) => d.code).filter((c) => moved.includes(c));
 		});
 	});
+
+	const first = $derived(
+		preset === 'weekly' && labels.firstTime && dateLocale && startDate
+			? firstRepeatDate(startDate, byDay)
+			: null,
+	);
 
 	function toggleDay(code: string) {
 		const next = byDay.includes(code) ? byDay.filter((d) => d !== code) : [...byDay, code];
@@ -127,6 +144,11 @@
 			{/each}
 		</div>
 		<FieldError for="{idPrefix}-days" {error} />
+		{#if first && labels.firstTime && dateLocale}
+			<p class="text-ink-soft text-[13px]" data-testid="repeat-first-time">
+				{labels.firstTime(formatDate(first, dateLocale))}
+			</p>
+		{/if}
 	{:else}
 		<FieldError for="{idPrefix}-repeat" {error} />
 	{/if}

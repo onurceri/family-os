@@ -972,6 +972,8 @@ export interface operations {
                          */
                         rotation: "fixed" | "round_robin" | "least_done";
                     };
+                    /** @description Moves only the turn that is up now to this day (YYYY-MM-DD); the repeat and the start stay as they are and the turn after it follows the repeat. Leave out to change the chore from now on */
+                    onlyThisTurnOn?: string;
                 };
             };
         };

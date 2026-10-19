@@ -4148,6 +4148,18 @@
 											"reminder",
 											"tags"
 										]
+									},
+									"occurrence": {
+										"type": "string",
+										"description": "Repeating events, with `scope`: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD), of the date the form was opened on"
+									},
+									"scope": {
+										"type": "string",
+										"enum": [
+											"this",
+											"following"
+										],
+										"description": "Repeating events, with `occurrence`: `this` makes just that date its own one-off event with the form and skips it in the series; `following` ends the series before that date and starts a new one from the form. Leave out to replace the whole series"
 									}
 								},
 								"required": [

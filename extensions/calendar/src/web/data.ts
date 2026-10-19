@@ -32,9 +32,14 @@ export async function createEvent(event: EventInput): Promise<Outcome> {
 }
 
 /** Replaces the event with the whole form. */
-export async function replaceEvent(id: string, event: EventReplace): Promise<Outcome> {
-	return unwrap(await api.POST('/api/v1/actions/calendar.updateEvent', { body: { id, event } }))
-		.status;
+export async function replaceEvent(
+	id: string,
+	event: EventReplace,
+	from?: { occurrence: string; scope: 'this' | 'following' },
+): Promise<Outcome> {
+	return unwrap(
+		await api.POST('/api/v1/actions/calendar.updateEvent', { body: { id, event, ...from } }),
+	).status;
 }
 
 export async function deleteEvent(id: string, occurrence?: string): Promise<Outcome> {

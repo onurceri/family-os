@@ -1,4 +1,13 @@
-import { compareDates, formatDate, type Weekday, weekdayOf } from '@famos/time';
+import {
+	compareDates,
+	formatDate,
+	type RepeatChoices,
+	type RepeatEdit,
+	repeatChoices,
+	repeatEditAsks,
+	type Weekday,
+	weekdayOf,
+} from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	type Chore,
@@ -70,6 +79,43 @@ export function toDetails(v: ChoreFormValue): UpdateChoreInput['chore'] {
 		rotation: v.assigneeIds.length > 1 ? v.rotation : 'fixed',
 	};
 }
+
+const scheduleOf = (v: ChoreFormValue): RepeatEdit => ({
+	repeat: v.repeat,
+	date: v.startDate,
+	byDay: v.byDay,
+});
+
+/** Whether saving the change of a saved chore must ask: only this turn, or this one and the ones after. */
+export const asksWhichTurns = (saved: ChoreFormValue, form: ChoreFormValue): boolean =>
+	repeatEditAsks(scheduleOf(saved), scheduleOf(form));
+
+/** What each answer does to a saved chore, `today` being where "only this turn" looks for the next day of new days. */
+export const turnChoices = (
+	saved: ChoreFormValue,
+	form: ChoreFormValue,
+	today: string,
+): RepeatChoices => repeatChoices(scheduleOf(saved), scheduleOf(form), today);
+
+/** Only this turn moves: the saved schedule stays, the rest of the form is saved. */
+export function onlyThisTurn(
+	saved: ChoreFormValue,
+	form: ChoreFormValue,
+	today: string,
+): Omit<UpdateChoreInput, 'id'> {
+	const { startDate, repeat, byDay, interval, until } = saved;
+	return {
+		chore: toDetails({ ...form, startDate, repeat, byDay, interval, until }),
+		onlyThisTurnOn: turnChoices(saved, form, today).onlyDate,
+	};
+}
+
+/** This turn and the ones after: the form as it is, a lone weekday following the new date. */
+export const fromThisTurnOn = (
+	saved: ChoreFormValue,
+	form: ChoreFormValue,
+	today: string,
+): UpdateChoreInput['chore'] => toDetails({ ...form, byDay: turnChoices(saved, form, today).days });
 
 /** Why each field is refused (a translation key per field), the schema's checks included. */
 export function validate(v: ChoreFormValue): FieldErrors {

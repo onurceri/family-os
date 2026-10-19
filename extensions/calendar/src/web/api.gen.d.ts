@@ -2043,6 +2043,13 @@ export interface operations {
                         /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
                         tags: string[] | null;
                     };
+                    /** @description Repeating events, with `scope`: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD), of the date the form was opened on */
+                    occurrence?: string;
+                    /**
+                     * @description Repeating events, with `occurrence`: `this` makes just that date its own one-off event with the form and skips it in the series; `following` ends the series before that date and starts a new one from the form. Leave out to replace the whole series
+                     * @enum {string}
+                     */
+                    scope?: "this" | "following";
                 };
             };
         };

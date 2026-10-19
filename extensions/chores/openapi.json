@@ -2047,6 +2047,10 @@
 											"startDate",
 											"rotation"
 										]
+									},
+									"onlyThisTurnOn": {
+										"type": "string",
+										"description": "Moves only the turn that is up now to this day (YYYY-MM-DD); the repeat and the start stay as they are and the turn after it follows the repeat. Leave out to change the chore from now on"
 									}
 								},
 								"required": [

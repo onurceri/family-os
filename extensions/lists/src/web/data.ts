@@ -34,9 +34,17 @@ export async function addTask(task: TaskInput): Promise<{ outcome: Outcome; id: 
 }
 
 /** Saves the whole form: a new task without an id, or that task replaced by it. */
-export async function saveTask(task: TaskReplace, id?: string): Promise<Outcome> {
+export async function saveTask(
+	task: TaskReplace,
+	id?: string,
+	onlyThisDate?: string,
+): Promise<Outcome> {
 	if (!id) return (await addTask(task)).outcome;
-	return unwrap(await api.POST('/api/v1/actions/lists.updateTask', { body: { id, task } })).status;
+	return unwrap(
+		await api.POST('/api/v1/actions/lists.updateTask', {
+			body: { id, task, ...(onlyThisDate && { onlyThisDate }) },
+		}),
+	).status;
 }
 
 /** Completes a task; the task after it, 'queued' without a connection, or null (a draft). */

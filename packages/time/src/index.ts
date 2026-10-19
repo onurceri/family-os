@@ -88,20 +88,103 @@ export const weekdayOf = (date: string): Weekday =>
  * The weekly repeat days after the date moved from `previousDate` to `nextDate`. A repeat that
  * is empty, or only held the old date's weekday, follows the date. Days the person chose
  * themselves are never dropped: the new date's weekday is added to them, so a weekly series
- * always includes the day it starts on. An incomplete date changes nothing.
+ * always includes the day it starts on. An incomplete date changes nothing. A `saved` item is
+ * never changed by a date change: moving the start of "every Tuesday" leaves it as it is.
  */
 export function weekdaysAfterDateChange(
 	byDay: readonly string[],
 	previousDate: string,
 	nextDate: string,
+	saved = false,
 ): string[] {
-	if (!ISO_DATE.test(nextDate)) return [...byDay];
+	if (saved || !ISO_DATE.test(nextDate)) return [...byDay];
 	const next = weekdayOf(nextDate);
 	if (byDay.includes(next)) return [...byDay];
 	const followsDate =
 		byDay.length === 0 ||
 		(byDay.length === 1 && ISO_DATE.test(previousDate) && byDay[0] === weekdayOf(previousDate));
 	return followsDate ? [next] : [...byDay, next];
+}
+
+/**
+ * The first date on or after `startDate` that falls on one of the weekly `byDay` codes: the day
+ * a new weekly series first turns up. It is the start date itself when that matches. Null when
+ * no day is chosen or the date is incomplete.
+ */
+export function firstRepeatDate(startDate: string, byDay: readonly string[]): string | null {
+	if (!ISO_DATE.test(startDate) || !isValidDate(startDate)) return null;
+	const chosen = new Set(byDay.filter((d) => (WEEKDAYS as readonly string[]).includes(d)));
+	if (chosen.size === 0) return null;
+	for (let i = 0; i < 7; i++) {
+		const date = addDays(startDate, i);
+		if (chosen.has(weekdayOf(date))) return date;
+	}
+	return null;
+}
+
+/** What a saved repeating item's form says about its schedule: the repeat, the date and the weekly days. */
+export interface RepeatEdit {
+	repeat: string;
+	date: string;
+	byDay: readonly string[];
+}
+
+const REPEATS = ['daily', 'weekly', 'monthly'];
+
+/**
+ * Whether saving a repeating item must ask "only this one" or "this one and the ones after":
+ * its date moved, or its weekly days changed, while it stays a repeat.
+ */
+export function repeatEditAsks(before: RepeatEdit, after: RepeatEdit): boolean {
+	if (!REPEATS.includes(before.repeat) || !REPEATS.includes(after.repeat)) return false;
+	if (before.date !== after.date) return true;
+	return (
+		before.repeat === 'weekly' &&
+		after.repeat === 'weekly' &&
+		[...before.byDay].sort().join() !== [...after.byDay].sort().join()
+	);
+}
+
+/**
+ * The date "only this one" lands on: the date typed when it moved, otherwise (the days changed)
+ * the first date on or after `from` that matches the new days.
+ */
+export function onlyThisDate(before: RepeatEdit, after: RepeatEdit, from: string): string {
+	if (before.date !== after.date) return after.date;
+	const start = isValidDate(from) && compareDates(from, after.date) > 0 ? from : after.date;
+	return firstRepeatDate(start, after.byDay) ?? after.date;
+}
+
+/**
+ * The weekly days of "this one and the ones after": a lone day that was the old date's weekday
+ * moves to the new date's weekday; days the person chose are kept as the form shows them.
+ */
+export function followingDays(before: RepeatEdit, after: RepeatEdit): string[] {
+	const lone =
+		after.byDay.length === 1 &&
+		isValidDate(before.date) &&
+		isValidDate(after.date) &&
+		after.byDay[0] === weekdayOf(before.date);
+	return lone ? [weekdayOf(after.date)] : [...after.byDay];
+}
+
+/** What each answer to "only this one, or this one and the ones after" does. */
+export interface RepeatChoices {
+	/** Only this one: the date it lands on. */
+	onlyDate: string;
+	/** This one and the ones after: the weekly days from now on. */
+	days: string[];
+	/** This one and the ones after: the first date of the new series. */
+	nextDate: string;
+}
+
+export function repeatChoices(before: RepeatEdit, after: RepeatEdit, from: string): RepeatChoices {
+	const days = after.repeat === 'weekly' ? followingDays(before, after) : [...after.byDay];
+	return {
+		onlyDate: onlyThisDate(before, after, from),
+		days,
+		nextDate: (after.repeat === 'weekly' ? firstRepeatDate(after.date, days) : null) ?? after.date,
+	};
 }
 
 /**

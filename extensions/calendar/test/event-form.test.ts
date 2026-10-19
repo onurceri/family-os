@@ -1,8 +1,16 @@
-import { Temporal, weekdaysAfterDateChange } from '@famos/time';
+import { firstRepeatDate, Temporal, weekdaysAfterDateChange } from '@famos/time';
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { describe, expect, it } from 'vitest';
 import catalog from '../src/messages/en.json';
-import { emptyForm, inputFrom, validate } from '../src/web/form.ts';
+import {
+	asksWhichDates,
+	atOccurrence,
+	emptyForm,
+	fromThisDateForm,
+	inputFrom,
+	onlyThisDateForm,
+	validate,
+} from '../src/web/form.ts';
 
 // Every reason a form gives is a shared one or a key of this extension's catalog.
 const shared = new Set<string>(Object.values(FIELD_REASON));
@@ -62,5 +70,54 @@ describe('weekly repeat days follow the date', () => {
 		expect(inputFrom({ ...form, title: 'Call' }).recurrence).toMatchObject({
 			byDay: ['MO', 'WE', 'TH'],
 		});
+	});
+});
+
+describe('a saved weekly event keeps its days when its date moves', () => {
+	it('stays every Tuesday', () => {
+		const now = Temporal.ZonedDateTime.from('2026-10-17T10:00[Europe/Berlin]');
+		const form = {
+			...emptyForm('2026-10-18', now),
+			title: 'Bins',
+			repeat: 'weekly' as const,
+			byDay: ['TU'],
+		};
+		form.byDay = weekdaysAfterDateChange(form.byDay, form.date, '2026-10-21', true);
+		form.date = '2026-10-21';
+		expect(inputFrom(form).recurrence).toMatchObject({ freq: 'weekly', byDay: ['TU'] });
+		expect(firstRepeatDate(form.date, form.byDay)).toBe('2026-10-27');
+	});
+});
+
+describe('saving a change to a saved weekly event', () => {
+	const now = Temporal.ZonedDateTime.from('2026-10-17T10:00[Europe/Berlin]');
+	// Opened from its date on Sunday 18 October.
+	const saved = () =>
+		atOccurrence(
+			{ ...emptyForm('2026-10-11', now), title: 'Bins', repeat: 'weekly' as const, byDay: ['TU'] },
+			'2026-10-18',
+		);
+
+	it('opens on the date it was opened from', () => {
+		expect(saved().date).toBe('2026-10-18');
+		expect(atOccurrence({ ...saved(), repeat: 'none' }, '2026-10-25').date).toBe('2026-10-18');
+	});
+
+	it('asks only when the date or the days moved', () => {
+		expect(asksWhichDates(saved(), saved())).toBe(false);
+		expect(asksWhichDates(saved(), { ...saved(), date: '2026-10-21' })).toBe(true);
+		expect(asksWhichDates(saved(), { ...saved(), byDay: ['TU', 'WE'] })).toBe(true);
+	});
+
+	it('only this one is a single event on the new day', () => {
+		const sent = onlyThisDateForm(saved(), { ...saved(), date: '2026-10-21' }, '2026-10-19');
+		expect(sent).toMatchObject({ date: '2026-10-21', repeat: 'none' });
+		expect(inputFrom(sent).recurrence).toBeUndefined();
+	});
+
+	it('this one and the ones after starts its first matching day', () => {
+		const sent = fromThisDateForm(saved(), { ...saved(), date: '2026-10-21' }, '2026-10-19');
+		expect(sent).toMatchObject({ date: '2026-10-27', byDay: ['TU'] });
+		expect(inputFrom(sent).recurrence).toMatchObject({ freq: 'weekly', byDay: ['TU'] });
 	});
 });

@@ -80,6 +80,11 @@ export {
 	type RepeatLabels,
 	type RepeatPreset,
 } from './RepeatPicker.svelte';
+export {
+	default as RepeatScope,
+	type RepeatScopeChoice,
+	type RepeatScopeWords,
+} from './RepeatScope.svelte';
 export { default as Ring } from './Ring.svelte';
 export { default as Row } from './Row.svelte';
 export { editLabel, readFirst } from './read-first.js';

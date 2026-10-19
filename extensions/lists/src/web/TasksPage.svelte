@@ -10,6 +10,8 @@
 		focusFirstInvalid,
 		Page,
 		readFirst,
+		RepeatScope,
+		type RepeatScopeChoice,
 		Segmented,
 		SidePanel,
 		ViewOnly,
@@ -35,8 +37,12 @@
 	import TaskForm from './TaskForm.svelte';
 	import TaskRow from './TaskRow.svelte';
 	import {
+		asksWhichOnes,
 		emptyTask,
+		fromThisTask,
+		onlyThisTask,
 		type TaskFormValue,
+		taskChoices,
 		taskFormFrom,
 		taskInputFrom,
 		validateTask,
@@ -302,6 +308,40 @@
 			void focusFirstInvalid(event.currentTarget);
 			return;
 		}
+		// A saved repeating task whose date or days moved asks which ones the change is for.
+		if (opened && editingId !== 'new' && asksWhichOnes(taskFormFrom(opened), form)) {
+			asking = true;
+			return;
+		}
+		await commit();
+	}
+
+	let asking = $state(false);
+	const choices = $derived(
+		opened && form && editingId !== 'new' ? taskChoices(taskFormFrom(opened), form, today) : null,
+	);
+	const scopeWords = $derived.by(() => {
+		const date = (d: string | undefined) => (d ? formatDate(d, app.dateLocale()) : '');
+		return {
+			title: t('scope_title'),
+			only: {
+				label: t('scope_only'),
+				hint: t('scope_only_hint', { date: date(choices?.onlyDate) }),
+			},
+			following: {
+				label: t('scope_following'),
+				hint: t('scope_following_hint', { date: date(choices?.nextDate) }),
+			},
+			cancel: t('cancel'),
+		};
+	});
+	function pick(choice: RepeatScopeChoice) {
+		asking = false;
+		void commit(choice);
+	}
+
+	async function commit(scope?: RepeatScopeChoice) {
+		if (!form || !editingId) return;
 		busy = true;
 		saveError = null;
 		try {
@@ -309,6 +349,12 @@
 				const { outcome, id } = await addTask(taskInputFrom(form));
 				report(outcome, t('saved'));
 				if (id) revealRow('data-task-id', id);
+			} else if (scope && opened) {
+				const saved = taskFormFrom(opened);
+				if (scope === 'this') {
+					const { task, onlyThisDate } = onlyThisTask(saved, form, today);
+					report(await saveTask(task, editingId, onlyThisDate), t('saved'));
+				} else report(await saveTask(fromThisTask(saved, form, today), editingId), t('saved'));
 			} else report(await saveTask(taskInputFrom(form), editingId), t('saved'));
 			close();
 		} catch (error) {
@@ -541,7 +587,7 @@
 >
 	{#if editingId && form}
 		<form bind:this={formEl} onsubmit={submit} class="grid gap-5" novalidate>
-			<TaskForm bind:value={form} {errors} />
+			<TaskForm bind:value={form} {errors} saved={editingId !== 'new'} />
 			{#if saveError}<p class="text-attention text-sm font-semibold" role="alert">
 					{saveError}
 				</p>{/if}
@@ -549,3 +595,5 @@
 		</form>
 	{/if}
 </SidePanel>
+
+<RepeatScope open={asking} words={scopeWords} onpick={pick} onclose={() => (asking = false)} />

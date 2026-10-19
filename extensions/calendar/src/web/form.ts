@@ -1,4 +1,13 @@
-import { Temporal, type Weekday, weekdayOf } from '@famos/time';
+import {
+	addDays,
+	type RepeatChoices,
+	type RepeatEdit,
+	repeatChoices,
+	repeatEditAsks,
+	Temporal,
+	type Weekday,
+	weekdayOf,
+} from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import {
 	ALL_DAY_REMINDERS,
@@ -176,6 +185,63 @@ export function validate(v: EventFormValue): FieldErrors {
 			endTime: 'calendar:error_end_same',
 		});
 	return errors;
+}
+
+const daysBetween = (from: string, to: string) =>
+	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
+
+/** The form with its first day moved to `date`; a multi-day event keeps its length. */
+export function onDate(v: EventFormValue, date: string): EventFormValue {
+	if (!v.date || v.date === date) return { ...v, date };
+	return {
+		...v,
+		date,
+		endDate: v.endDate ? addDays(v.endDate, daysBetween(v.date, date)) : v.endDate,
+	};
+}
+
+const scheduleOf = (v: EventFormValue): RepeatEdit => ({
+	repeat: v.repeat,
+	date: v.date,
+	byDay: v.byDay,
+});
+
+/**
+ * A repeating event opened from one of its dates: the form holds that date, so changing the date
+ * moves this one and the ones after it, not the series' first day.
+ */
+export const atOccurrence = (v: EventFormValue, day: string): EventFormValue =>
+	v.repeat === 'none' ? v : onDate(v, day);
+
+/** Whether saving the change of a saved repeating event must ask: only this one, or this one and the ones after. */
+export const asksWhichDates = (saved: EventFormValue, form: EventFormValue): boolean =>
+	repeatEditAsks(scheduleOf(saved), scheduleOf(form));
+
+/** What each answer does, `from` being where "only this one" looks for the next day of new days. */
+export const dateChoices = (
+	saved: EventFormValue,
+	form: EventFormValue,
+	from: string,
+): RepeatChoices => repeatChoices(scheduleOf(saved), scheduleOf(form), from);
+
+/** Only this date: it becomes an event of its own on its new day. */
+export const onlyThisDateForm = (
+	saved: EventFormValue,
+	form: EventFormValue,
+	from: string,
+): EventFormValue => ({
+	...onDate(form, dateChoices(saved, form, from).onlyDate),
+	repeat: 'none',
+});
+
+/** This date and the ones after: the new series, starting on its first matching day. */
+export function fromThisDateForm(
+	saved: EventFormValue,
+	form: EventFormValue,
+	from: string,
+): EventFormValue {
+	const { days, nextDate } = dateChoices(saved, form, from);
+	return { ...onDate(form, nextDate), byDay: days };
 }
 
 /** Keeps the end time after the start when the start moves (same duration). */

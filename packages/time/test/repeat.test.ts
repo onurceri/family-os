@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
 	describeRecurrence,
+	firstRepeatDate,
 	firstWeekday,
+	followingDays,
 	lastDayOfMonth,
+	onlyThisDate,
+	repeatEditAsks,
 	repeatRule,
 	weekdayOf,
 	weekdaysAfterDateChange,
@@ -139,5 +143,76 @@ describe('weekdaysAfterDateChange', () => {
 	it('leaves the days alone while the date is not complete', () => {
 		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '')).toEqual(['SA']);
 		expect(weekdaysAfterDateChange(['SA'], '2026-10-17', '2026-10-2')).toEqual(['SA']);
+	});
+});
+
+describe('a saved repeat keeps its days', () => {
+	it('is not changed by a date change', () => {
+		expect(weekdaysAfterDateChange(['TU'], '2026-10-18', '2026-10-21', true)).toEqual(['TU']);
+		expect(weekdaysAfterDateChange([], '2026-10-18', '2026-10-21', true)).toEqual([]);
+	});
+	it('still follows the date for a new item', () => {
+		expect(weekdaysAfterDateChange(['SU'], '2026-10-18', '2026-10-21')).toEqual(['WE']);
+	});
+});
+
+describe('firstRepeatDate', () => {
+	// 2026-10-18 is a Sunday.
+	it('is the start date when it matches', () => {
+		expect(firstRepeatDate('2026-10-18', ['SU'])).toBe('2026-10-18');
+		expect(firstRepeatDate('2026-10-18', ['TU', 'SU'])).toBe('2026-10-18');
+	});
+	it('is the next matching day otherwise', () => {
+		expect(firstRepeatDate('2026-10-21', ['TU'])).toBe('2026-10-27');
+		expect(firstRepeatDate('2026-10-21', ['MO', 'FR'])).toBe('2026-10-23');
+		expect(firstRepeatDate('2026-10-21', ['TU', 'TH'])).toBe('2026-10-22');
+	});
+	it('does not depend on the order of the days, so not on the week start', () => {
+		// Monday-first and Sunday-first lists give the same date.
+		expect(firstRepeatDate('2026-10-24', ['MO', 'SU'])).toBe('2026-10-25');
+		expect(firstRepeatDate('2026-10-24', ['SU', 'MO'])).toBe('2026-10-25');
+		expect(firstRepeatDate('2026-10-25', ['MO', 'SU'])).toBe('2026-10-25');
+	});
+	it('has nothing without days or a date', () => {
+		expect(firstRepeatDate('2026-10-21', [])).toBeNull();
+		expect(firstRepeatDate('', ['TU'])).toBeNull();
+		expect(firstRepeatDate('2026-13-45', ['TU'])).toBeNull();
+	});
+});
+
+describe('editing a saved repeat', () => {
+	// 2026-10-18 is a Sunday, 2026-10-21 a Wednesday.
+	const before = { repeat: 'weekly', date: '2026-10-18', byDay: ['TU'] };
+
+	it('asks when the date moved or the weekly days changed', () => {
+		expect(repeatEditAsks(before, { ...before, date: '2026-10-21' })).toBe(true);
+		expect(repeatEditAsks(before, { ...before, byDay: ['TU', 'TH'] })).toBe(true);
+		expect(repeatEditAsks(before, { ...before })).toBe(false);
+	});
+
+	it('asks nothing for what does not repeat before or after', () => {
+		const moved = { ...before, date: '2026-10-21' };
+		expect(repeatEditAsks({ ...before, repeat: 'none' }, moved)).toBe(false);
+		expect(repeatEditAsks(before, { ...moved, repeat: 'none' })).toBe(false);
+		expect(repeatEditAsks({ ...before, repeat: 'custom' }, moved)).toBe(false);
+	});
+
+	it('moves only this one to the typed date, or to the first of the new days', () => {
+		expect(onlyThisDate(before, { ...before, date: '2026-10-21' }, '2026-10-18')).toBe(
+			'2026-10-21',
+		);
+		const days = { ...before, byDay: ['FR'] };
+		expect(onlyThisDate(before, days, '2026-10-18')).toBe('2026-10-23');
+		expect(onlyThisDate(before, days, '2026-10-24')).toBe('2026-10-30');
+	});
+
+	it('moves a lone weekday of the old date, and keeps chosen days', () => {
+		const lone = { repeat: 'weekly', date: '2026-10-18', byDay: ['SU'] };
+		expect(followingDays(lone, { ...lone, date: '2026-10-21' })).toEqual(['WE']);
+		expect(followingDays(before, { ...before, date: '2026-10-21' })).toEqual(['TU']);
+		expect(followingDays(lone, { ...lone, date: '2026-10-21', byDay: ['SU', 'MO'] })).toEqual([
+			'SU',
+			'MO',
+		]);
 	});
 });

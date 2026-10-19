@@ -24,11 +24,14 @@
 		value = $bindable(),
 		errors = {},
 		uncertain = [],
+		saved = false,
 		idPrefix = 'task',
 	}: {
 		value: TaskFormValue;
 		errors?: FieldErrors;
 		uncertain?: readonly string[];
+		/** The item is already saved: moving its date leaves its repeat days as they are. */
+		saved?: boolean;
 		idPrefix?: string;
 	} = $props();
 
@@ -44,6 +47,7 @@
 		monthly: t('repeat_short_monthly'),
 		custom: t('repeat_custom'),
 		until: t('field_until'),
+		firstTime: (date: string) => t('repeat_next', { date }),
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
 </script>
@@ -120,6 +124,8 @@
 			labels={repeatLabels}
 			min={value.dueDate || undefined}
 			startDate={value.dueDate}
+			{saved}
+			dateLocale={app.dateLocale()}
 			{idPrefix}
 			error={errors.recurrence}
 			untilError={errors.until}

@@ -1,4 +1,11 @@
-import { type Weekday, weekdayOf } from '@famos/time';
+import {
+	type RepeatChoices,
+	type RepeatEdit,
+	repeatChoices,
+	repeatEditAsks,
+	type Weekday,
+	weekdayOf,
+} from '@famos/time';
 import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
 import { type Task, type TaskInput, TaskInputSchema, type TaskReplace } from '../contract/index.js';
 
@@ -50,6 +57,47 @@ export function taskFormFrom(source: TaskInput | Task): TaskFormValue {
 		interval: recurrence?.interval ?? 1,
 		until: recurrence?.until ?? '',
 	};
+}
+
+const scheduleOf = (v: TaskFormValue): RepeatEdit => ({
+	repeat: v.repeat,
+	date: v.dueDate,
+	byDay: v.byDay,
+});
+
+/** Whether saving the change of a saved repeating task must ask: only this one, or this one and the ones after. */
+export const asksWhichOnes = (saved: TaskFormValue, form: TaskFormValue): boolean =>
+	repeatEditAsks(scheduleOf(saved), scheduleOf(form));
+
+/** What each answer does, `today` being where "only this one" looks for the next day of new days. */
+export const taskChoices = (
+	saved: TaskFormValue,
+	form: TaskFormValue,
+	today: string,
+): RepeatChoices => repeatChoices(scheduleOf(saved), scheduleOf(form), today);
+
+/** Only this one: the due date moves, the repeat stays as saved and the rest of the form is saved. */
+export function onlyThisTask(
+	saved: TaskFormValue,
+	form: TaskFormValue,
+	today: string,
+): { task: TaskReplace; onlyThisDate: string } {
+	const { repeat, byDay, interval, until } = saved;
+	const onlyThisDate = taskChoices(saved, form, today).onlyDate;
+	return {
+		task: taskInputFrom({ ...form, repeat, byDay, interval, until, dueDate: onlyThisDate }),
+		onlyThisDate,
+	};
+}
+
+/** This one and the ones after: the form, a lone weekday following the date and the first due day on the days. */
+export function fromThisTask(
+	saved: TaskFormValue,
+	form: TaskFormValue,
+	today: string,
+): TaskReplace {
+	const { days, nextDate } = taskChoices(saved, form, today);
+	return taskInputFrom({ ...form, byDay: days, dueDate: nextDate });
 }
 
 export function taskInputFrom(v: TaskFormValue): TaskReplace {

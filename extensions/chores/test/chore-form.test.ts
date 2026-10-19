@@ -1,8 +1,18 @@
-import { weekdaysAfterDateChange } from '@famos/time';
+import { firstRepeatDate, weekdaysAfterDateChange } from '@famos/time';
 import { FIELD_REASON, type FieldErrors } from '@famos/ui/forms';
 import { describe, expect, it } from 'vitest';
+import type { Chore } from '../src/contract/index.ts';
 import catalog from '../src/messages/en.json';
-import { doneToast, emptyChore, toDetails, validate } from '../src/web/form.ts';
+import {
+	asksWhichTurns,
+	doneToast,
+	emptyChore,
+	fromChore,
+	fromThisTurnOn,
+	onlyThisTurn,
+	toDetails,
+	validate,
+} from '../src/web/form.ts';
 
 // Every reason a form gives is a shared one or a key of this extension's catalog.
 const shared = new Set<string>(Object.values(FIELD_REASON));
@@ -71,5 +81,68 @@ describe('the weekly days follow the start date', () => {
 		const chosen = { ...weekly(), byDay: ['TU', 'TH'] };
 		expect(moveTo(chosen, '2026-10-22').byDay).toEqual(['TU', 'TH']);
 		expect(moveTo(chosen, '2026-10-23').byDay).toEqual(['TU', 'TH', 'FR']);
+	});
+});
+
+describe('a saved chore keeps its days when its date moves', () => {
+	it('stays every Tuesday', () => {
+		const saved = fromChore({
+			...({} as Chore),
+			title: 'Take out the bins',
+			notes: null,
+			startDate: '2026-10-18',
+			recurrence: { freq: 'weekly', interval: 1, byDay: ['TU'] },
+			assigneeIds: [],
+			rotation: 'round_robin',
+		});
+		const byDay = weekdaysAfterDateChange(saved.byDay, saved.startDate, '2026-10-21', true);
+		expect(toDetails({ ...saved, startDate: '2026-10-21', byDay }).recurrence).toMatchObject({
+			freq: 'weekly',
+			byDay: ['TU'],
+		});
+		expect(firstRepeatDate('2026-10-21', byDay)).toBe('2026-10-27');
+	});
+});
+
+describe('saving a change to a saved weekly chore', () => {
+	// 2026-10-18 is a Sunday, 2026-10-21 a Wednesday.
+	const saved = () => ({
+		...emptyChore('2026-10-18'),
+		title: 'Bins',
+		repeat: 'weekly' as const,
+		byDay: ['TU'],
+	});
+
+	it('asks only when the date or the days moved', () => {
+		expect(asksWhichTurns(saved(), saved())).toBe(false);
+		expect(asksWhichTurns(saved(), { ...saved(), startDate: '2026-10-21' })).toBe(true);
+		expect(asksWhichTurns(saved(), { ...saved(), byDay: ['TU', 'TH'] })).toBe(true);
+		expect(
+			asksWhichTurns({ ...saved(), repeat: 'none' }, { ...saved(), startDate: '2026-10-21' }),
+		).toBe(false);
+	});
+
+	it('only this turn keeps the saved schedule and names the new day', () => {
+		const sent = onlyThisTurn(
+			saved(),
+			{ ...saved(), startDate: '2026-10-21', title: 'Bins!' },
+			'2026-10-19',
+		);
+		expect(sent.onlyThisTurnOn).toBe('2026-10-21');
+		expect(sent.chore).toMatchObject({
+			title: 'Bins!',
+			startDate: '2026-10-18',
+			recurrence: { freq: 'weekly', byDay: ['TU'] },
+		});
+	});
+
+	it('this one and the ones after moves a lone weekday of the old date', () => {
+		const lone = { ...saved(), byDay: ['SU'] };
+		expect(
+			fromThisTurnOn(lone, { ...lone, startDate: '2026-10-21' }, '2026-10-19').recurrence,
+		).toMatchObject({ byDay: ['WE'] });
+		expect(
+			fromThisTurnOn(saved(), { ...saved(), startDate: '2026-10-21' }, '2026-10-19'),
+		).toMatchObject({ startDate: '2026-10-21', recurrence: { byDay: ['TU'] } });
 	});
 });

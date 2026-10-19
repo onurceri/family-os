@@ -15,15 +15,17 @@ const labels = {
 	custom: 'Custom',
 	until: 'Until',
 };
-const setup = (byDay: string[], startDate: string) =>
+const setup = (byDay: string[], startDate: string, saved = false) =>
 	box({
 		preset: 'weekly' as const,
 		byDay,
 		until: '',
 		days,
-		labels,
+		labels: { ...labels, firstTime: (date: string) => `First time: ${date}` },
 		idPrefix: 'rp',
 		startDate,
+		saved,
+		dateLocale: 'en-GB',
 	});
 const pressed = (el: HTMLElement) =>
 	qa('#rp-days button', el)
@@ -55,5 +57,32 @@ describe('RepeatPicker start date', () => {
 		const props = setup(['MO', 'WE'], '2026-10-20');
 		render(RepeatPicker, props);
 		expect(props.byDay).toEqual(['MO', 'WE']);
+	});
+});
+
+describe('RepeatPicker for a saved item', () => {
+	it('keeps its days when the start date moves', () => {
+		const props = setup(['TU'], '2026-10-18', true);
+		const el = render(RepeatPicker, props);
+		props.startDate = '2026-10-21';
+		flushSync();
+		expect(props.byDay).toEqual(['TU']);
+		expect(pressed(el)).toEqual(['TU']);
+		expect(el.querySelector('[data-testid="repeat-first-time"]')?.textContent?.trim()).toMatch(
+			/^First time: Tuesday,? 27 October$/,
+		);
+	});
+
+	it('says the first time follows the new date for a new item too', () => {
+		const props = setup(['TU'], '2026-10-20');
+		const el = render(RepeatPicker, props);
+		expect(el.querySelector('[data-testid="repeat-first-time"]')?.textContent).toContain(
+			'20 October',
+		);
+	});
+
+	it('has no line when no day is chosen', () => {
+		const el = render(RepeatPicker, setup([], '2026-10-20', true));
+		expect(el.querySelector('[data-testid="repeat-first-time"]')).toBeNull();
 	});
 });

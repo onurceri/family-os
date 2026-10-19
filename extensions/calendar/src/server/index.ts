@@ -11,11 +11,14 @@ import {
 } from '@famos/sdk';
 import {
 	addDays,
+	compareDates,
 	formatDate,
+	fromRRule,
 	IsoDateSchema,
 	IsoTimeSchema,
 	isValidDate,
 	todayIn,
+	toRRule,
 	zoned,
 } from '@famos/time';
 import { z } from 'zod';
@@ -294,7 +297,22 @@ export const updateEvent = defineAction({
 	description:
 		'Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.',
 	draftTitle: 'calendar:draft_title_update_event',
-	input: z.object({ id: EventIdSchema, event: EventReplaceSchema }),
+	input: z.object({
+		id: EventIdSchema,
+		event: EventReplaceSchema,
+		occurrence: z
+			.string()
+			.optional()
+			.describe(
+				'Repeating events, with `scope`: the `occurrence` key from calendar.findEvents, or the date (YYYY-MM-DD), of the date the form was opened on',
+			),
+		scope: z
+			.enum(['this', 'following'])
+			.optional()
+			.describe(
+				'Repeating events, with `occurrence`: `this` makes just that date its own one-off event with the form and skips it in the series; `following` ends the series before that date and starts a new one from the form. Leave out to replace the whole series',
+			),
+	}),
 	// Waiting from when a field left out meant empty, and a reminder left out the default one.
 	storedInput: storedEventReplace,
 	output: EventDetailSchema,
@@ -316,12 +334,73 @@ export const updateEvent = defineAction({
 		const now: Record<string, unknown> = { ...current, reminder: effectiveReminder(row) };
 		return Object.fromEntries(keys.map((k) => [k, now[k] ?? null]));
 	},
-	async run(uow, { id, event: whole }) {
-		await loadEvent(uow, id);
+	async run(uow, { id, event: whole, occurrence: rawOccurrence, scope }) {
+		const row = await loadEvent(uow, id);
 		const event = eventFromReplace(whole);
 		await assertMembers(uow, event.memberIds ?? []);
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
+		if (scope && rawOccurrence && row.rrule) {
+			const occurrence = occurrenceKey(row, rawOccurrence);
+			const day = row.all_day
+				? occurrence
+				: zoned(Number(occurrence), row.time_zone).toPlainDate().toString();
+			// The first date of a series has nothing before it to keep: "from here on" is all of it.
+			if (scope === 'this' || compareDates(day, toDetail(row).date) > 0) {
+				const { recurrence: _repeat, ...single } = event;
+				const created = {
+					id: uow.ids.next('cal_event'),
+					...toRow(scope === 'this' ? single : event, timeZone),
+					exdates: null,
+					created_by: row.created_by,
+					source_kind: null,
+					source_id: null,
+					created_at: now,
+					updated_at: now,
+					deleted_at: null,
+				};
+				await events(uow.db).insertInto('calendar_events').values(created).execute();
+				if (scope === 'this') {
+					const skipped: (string | number)[] = row.exdates ? JSON.parse(row.exdates) : [];
+					skipped.push(row.all_day ? occurrence : Number(occurrence));
+					await events(uow.db)
+						.updateTable('calendar_events')
+						.set({ exdates: JSON.stringify(skipped), updated_at: now })
+						.where('id', '=', id)
+						.execute();
+				} else {
+					const rule = fromRRule(row.rrule, row.time_zone);
+					if (!rule)
+						throw new FamosError(
+							'bad_request',
+							'This repeat rule cannot be split; change the whole series instead.',
+						);
+					const last = addDays(day, -1);
+					const until = rule.until && compareDates(rule.until, last) < 0 ? rule.until : last;
+					const kept = (row.exdates ? (JSON.parse(row.exdates) as (string | number)[]) : []).filter(
+						(e) => (row.all_day ? String(e) < occurrence : Number(e) < Number(occurrence)),
+					);
+					await events(uow.db)
+						.updateTable('calendar_events')
+						.set({
+							rrule: toRRule({ ...rule, until }, row.all_day ? null : row.time_zone),
+							exdates: kept.length ? JSON.stringify(kept) : null,
+							updated_at: now,
+						})
+						.where('id', '=', id)
+						.execute();
+				}
+				await ensureTags(uow.db, tagsOf(created.tags), now);
+				const schedule = (r: Parameters<typeof scheduleReminder>[1]) =>
+					scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), r, now);
+				await schedule(created);
+				await schedule(await loadEvent(uow, id));
+				await uow.ai.reindex(EVENT_KIND, created.id);
+				uow.emit(eventChanged, { eventId: id });
+				uow.emit(eventChanged, { eventId: created.id });
+				return toDetail(created);
+			}
+		}
 		await events(uow.db)
 			.updateTable('calendar_events')
 			.set({ ...toRow(event, timeZone), exdates: null, updated_at: now })

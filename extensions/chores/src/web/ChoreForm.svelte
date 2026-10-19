@@ -22,10 +22,13 @@
 	let {
 		value = $bindable(),
 		errors = {},
+		saved = false,
 		idPrefix = 'chore',
 	}: {
 		value: ChoreFormValue;
 		errors?: FieldErrors;
+		/** The item is already saved: moving its date leaves its repeat days as they are. */
+		saved?: boolean;
 		idPrefix?: string;
 	} = $props();
 
@@ -41,6 +44,7 @@
 		monthly: t('repeat_monthly'),
 		custom: t('repeat_custom'),
 		until: t('field_until'),
+		firstTime: (date: string) => t('repeat_next', { date }),
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const ordered = $derived(
@@ -99,6 +103,8 @@
 				labels={repeatLabels}
 				min={value.startDate || undefined}
 				startDate={value.startDate}
+				{saved}
+				dateLocale={app.dateLocale()}
 				{idPrefix}
 				error={errors.recurrence}
 				untilError={errors.until}

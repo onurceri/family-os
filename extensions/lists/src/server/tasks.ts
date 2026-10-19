@@ -192,7 +192,13 @@ export const updateTask = defineAction({
 	description:
 		'Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.',
 	draftTitle: 'lists:draft_title_update_task',
-	input: z.object({ id: TaskIdSchema, task: TaskReplaceSchema }),
+	input: z.object({
+		id: TaskIdSchema,
+		task: TaskReplaceSchema,
+		onlyThisDate: IsoDateSchema.optional().describe(
+			'Repeating tasks: moves only the due date now up to this day (YYYY-MM-DD); the repeat and its start stay as they are. Leave out to change the task from now on',
+		),
+	}),
 	// Waiting from when a field left out meant empty (or its default): read that way.
 	storedInput: storedAsWhole(TaskInputSchema, 'task'),
 	output: TaskSchema,
@@ -230,12 +236,18 @@ export const updateTask = defineAction({
 		};
 		return Object.fromEntries(keys.map((k) => [k, values[k] ?? null]));
 	},
-	async run(uow, { id, task }) {
-		await load(uow, id);
+	async run(uow, { id, task, onlyThisDate }) {
+		const row = await load(uow, id);
 		await assertMember(uow, task.assigneeId);
+		// Only this one: the due date moves, the repeat and its start stay as they are.
+		const { rrule: _rule, rrule_start: _start, ...details } = fields(task);
+		const patch =
+			onlyThisDate && row.rrule
+				? { ...details, due_date: onlyThisDate, due_time: task.dueTime ?? null }
+				: fields(task);
 		await tables(uow.db)
 			.updateTable('lists_tasks')
-			.set({ ...fields(task), updated_at: uow.clock.now() })
+			.set({ ...patch, updated_at: uow.clock.now() })
 			.where('id', '=', id)
 			.execute();
 		await scheduleReminder(uow, id);

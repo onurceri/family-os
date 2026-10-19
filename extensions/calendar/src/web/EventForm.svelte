@@ -31,11 +31,14 @@
 		value = $bindable(),
 		errors = {},
 		uncertain = [],
+		saved = false,
 		idPrefix = 'event',
 	}: {
 		value: EventFormValue;
 		errors?: FieldErrors;
 		uncertain?: readonly string[];
+		/** The item is already saved: moving its date leaves its repeat days as they are. */
+		saved?: boolean;
 		idPrefix?: string;
 	} = $props();
 
@@ -51,6 +54,7 @@
 		monthly: t('repeat_monthly'),
 		custom: t('repeat_custom'),
 		until: t('field_until'),
+		firstTime: (date: string) => t('repeat_next', { date }),
 	});
 	// The family's tags: suggestions and colours. The form still works without them.
 	let knownTags = $state<Tag[]>([]);
@@ -185,6 +189,8 @@
 				labels={repeatLabels}
 				min={value.date}
 				startDate={value.date}
+				{saved}
+				dateLocale={app.dateLocale()}
 				{idPrefix}
 				error={errors.recurrence}
 				untilError={errors.until}
