@@ -353,6 +353,62 @@ export function toRow(input: EventInput, timeZone: string) {
 	};
 }
 
+/**
+ * The stored row for a whole replacement of a saved event. What the form does not carry stays:
+ * the event's own time zone while its date and time are the same, and a repeat rule outside the
+ * presets (the form shows no rule for it, so it sends none).
+ */
+export function replacementRow(row: EventRow, input: EventInput, familyTimeZone: string) {
+	const own = toRow(input, row.time_zone);
+	const sameWhen =
+		own.all_day === row.all_day &&
+		own.starts_at === row.starts_at &&
+		own.ends_at === row.ends_at &&
+		own.start_date === row.start_date &&
+		own.end_date === row.end_date;
+	const next = sameWhen ? own : toRow(input, familyTimeZone);
+	if (row.rrule && !input.recurrence && !fromRRule(row.rrule, row.time_zone))
+		next.rrule = row.rrule;
+	return next;
+}
+
+/**
+ * The skipped dates of a series after it was replaced. They stay while its start, its time of
+ * day, all-day and its rule are the same. Otherwise a skipped day stays skipped only if the new
+ * rule still has a date on that day (moved to the new time); the others are dropped. Dates moved
+ * out with "only this one" are events of their own and are not touched here.
+ */
+export function skippedAfter(row: EventRow, next: ReturnType<typeof toRow>): string | null {
+	if (!row.exdates || !next.rrule) return null;
+	const same =
+		next.all_day === row.all_day &&
+		next.starts_at === row.starts_at &&
+		next.start_date === row.start_date &&
+		sameRule(row, next.rrule);
+	if (same) return row.exdates;
+	const old: (string | number)[] = JSON.parse(row.exdates);
+	const days = old
+		.map((e) =>
+			row.all_day ? String(e) : zoned(Number(e), row.time_zone).toPlainDate().toString(),
+		)
+		.sort();
+	const from = days[0] as string;
+	const to = days[days.length - 1] as string;
+	const dayOf = (o: Expanded) =>
+		o.allDay ? o.startDate : zoned(o.start, next.time_zone).toPlainDate().toString();
+	const kept = expandRow({ ...row, ...next, exdates: null }, from, to, next.time_zone)
+		.filter((o) => days.includes(dayOf(o)))
+		.map((o) => (o.allDay ? o.key : Number(o.key)));
+	return kept.length ? JSON.stringify(kept) : null;
+}
+
+/** Whether a stored rule and a new one say the same, whatever the order of their parts. */
+function sameRule(row: EventRow, rrule: string): boolean {
+	if (row.rrule === rrule) return true;
+	const stored = fromRRule(row.rrule as string, row.time_zone);
+	return stored !== null && toRRule(stored, row.all_day ? null : row.time_zone) === rrule;
+}
+
 /** The reminder in effect: the chosen one, or the default for rows nobody chose for. */
 export function effectiveReminder(row: EventRow): number | null {
 	return row.reminder_set === 1 ? row.reminder_minutes : defaultReminder(row.all_day === 1);

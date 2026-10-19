@@ -62,6 +62,8 @@ import {
 	expandRow,
 	migrations,
 	occurrencesBetween,
+	replacementRow,
+	skippedAfter,
 	sortOccurrences,
 	tagsOf,
 	toDetail,
@@ -330,7 +332,7 @@ export const updateEvent = defineAction({
 		if (!row) return null;
 		const { timeZone } = await ctx.family.settings();
 		const { current } = eventAsItIs(row, undefined);
-		const keys = eventFieldsChanged(row, toRow(eventFromReplace(event), timeZone));
+		const keys = eventFieldsChanged(row, replacementRow(row, eventFromReplace(event), timeZone));
 		const now: Record<string, unknown> = { ...current, reminder: effectiveReminder(row) };
 		return Object.fromEntries(keys.map((k) => [k, now[k] ?? null]));
 	},
@@ -401,9 +403,10 @@ export const updateEvent = defineAction({
 				return toDetail(created);
 			}
 		}
+		const next = replacementRow(row, event, timeZone);
 		await events(uow.db)
 			.updateTable('calendar_events')
-			.set({ ...toRow(event, timeZone), exdates: null, updated_at: now })
+			.set({ ...next, exdates: skippedAfter(row, next), updated_at: now })
 			.where('id', '=', id)
 			.execute();
 		const updated = await loadEvent(uow, id);

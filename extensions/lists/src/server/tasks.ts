@@ -11,7 +11,15 @@ import {
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { formatDate, IsoDateSchema, IsoTimeSchema, nextDate, todayIn, toRRule } from '@famos/time';
+import {
+	formatDate,
+	fromRRule,
+	IsoDateSchema,
+	IsoTimeSchema,
+	nextDate,
+	todayIn,
+	toRRule,
+} from '@famos/time';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import {
@@ -25,7 +33,7 @@ import {
 	taskChangedPayload,
 } from '../contract/index.ts';
 import { scheduleTaskReminder } from './reminders.ts';
-import { tables, titleKey, toTask } from './store.ts';
+import { type TaskRow, tables, titleKey, toTask } from './store.ts';
 
 export const taskChanged = defineEvent('lists.task.changed', taskChangedPayload, {
 	audience: 'lists.view',
@@ -124,6 +132,25 @@ function fields(input: z.infer<typeof TaskInputSchema>) {
 	};
 }
 
+/**
+ * The columns a whole replacement of a saved task writes. What the form does not carry stays: a
+ * repeat rule outside the presets (the form shows none, so it sends none), and the day the rule
+ * counts from while the rule and the due date are the same.
+ */
+function replacementFields(row: TaskRow, input: z.infer<typeof TaskInputSchema>) {
+	const next = fields(input);
+	if (row.rrule && !input.recurrence && !fromRRule(row.rrule, 'UTC')) {
+		next.rrule = row.rrule;
+		next.rrule_start = next.due_date;
+	}
+	const stored = row.rrule ? fromRRule(row.rrule, 'UTC') : null;
+	const sameRule =
+		next.rrule !== null &&
+		(next.rrule === row.rrule || (stored !== null && toRRule(stored, null) === next.rrule));
+	if (sameRule && next.due_date === row.due_date) next.rrule_start = row.rrule_start;
+	return next;
+}
+
 export const addTask = defineAction({
 	id: 'lists.addTask',
 	title: 'Add a task',
@@ -220,7 +247,7 @@ export const updateTask = defineAction({
 			.where('deleted_at', 'is', null)
 			.executeTakeFirst();
 		if (!row) return null;
-		const next = fields(task);
+		const next = replacementFields(row, task);
 		const keys: string[] = [];
 		if (row.title !== next.title) keys.push('title');
 		if (row.assignee_id !== next.assignee_id) keys.push('assigneeId');
@@ -242,11 +269,12 @@ export const updateTask = defineAction({
 		const row = await load(uow, id);
 		await assertMember(uow, task.assigneeId);
 		// Only this one: the due date moves, the repeat and its start stay as they are.
-		const { rrule: _rule, rrule_start: _start, ...details } = fields(task);
+		const whole = replacementFields(row, task);
+		const { rrule: _rule, rrule_start: _start, ...details } = whole;
 		const patch =
 			onlyThisDate && row.rrule
 				? { ...details, due_date: onlyThisDate, due_time: task.dueTime ?? null }
-				: fields(task);
+				: whole;
 		await tables(uow.db)
 			.updateTable('lists_tasks')
 			.set({ ...patch, updated_at: uow.clock.now() })
