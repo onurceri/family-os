@@ -436,7 +436,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					const waiting = await trx
 						.withTables<CoreTables>()
 						.selectFrom('core_drafts')
-						.select(['id', 'action_id', 'source_kind', 'source_id'])
+						.select(['id', 'action_id', 'source_kind', 'source_id', 'for_member'])
 						.where('source_kind', '=', source.kind)
 						.where('source_id', '=', source.id)
 						.where('status', 'in', ['pending', 'failed'])
@@ -455,7 +455,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 							.where('id', '=', draft.id)
 							.execute();
 						await audit(view('core'), draft.action_id, 'rejected', draft.id);
-						view('core').emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
+						view('core').emit(draftUpdated, {
+							draftId: draft.id,
+							status: 'rejected',
+							forMember: draft.for_member,
+						});
 					}
 					if (waiting[0]) await settleNotices(view('core'), waiting[0]);
 					return waiting.length;
@@ -691,6 +695,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				proposerKind: actor.kind,
 				proposerMemberId: facts.proposerMemberId,
 				sourceKind: meta.sourceKind ?? null,
+				forMember: addressedTo,
 			});
 			// A draft addressed to one member needs no announcement: they are looking at it.
 			if (addressedTo) {
@@ -907,7 +912,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			.where('id', '=', draftId)
 			.where('status', '=', 'pending')
 			.execute();
-		uow.emit(draftUpdated, { draftId, status: 'pending' });
+		uow.emit(draftUpdated, { draftId, status: 'pending', forMember: draft.for_member });
 		return getDraft(uow.db, draftId);
 	}
 
@@ -979,7 +984,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						.where('id', '=', draftId)
 						.execute();
 					await audit(uow, draft.action_id, 'rejected', draftId);
-					uow.emit(draftUpdated, { draftId, status: 'rejected' });
+					uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
 					await settleNotices(uow, draft);
 					return;
 				}
@@ -999,7 +1004,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					})
 					.where('id', '=', draftId)
 					.execute();
-				uow.emit(draftUpdated, { draftId, status: 'applied' });
+				uow.emit(draftUpdated, { draftId, status: 'applied', forMember: draft.for_member });
 				await settleNotices(uow, draft);
 				if (told) await uow.notify(told);
 			});
@@ -1020,7 +1025,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				})
 				.where('id', '=', draftId)
 				.execute();
-			await bus.publish(draftUpdated.name, { draftId, status: 'failed' });
+			await bus.publish(draftUpdated.name, {
+				draftId,
+				status: 'failed',
+				forMember: draft.for_member,
+			});
 			throw new FamosError('unavailable', 'Applying the draft failed; it can be retried');
 		}
 		return getDraft(deps.db, draftId);
@@ -1049,7 +1058,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.executeTakeFirst();
 			if (Number(closed.numUpdatedRows) === 0) return;
 			await audit(uow, draft.action_id, 'rejected', draft.id);
-			uow.emit(draftUpdated, { draftId: draft.id, status: 'rejected' });
+			uow.emit(draftUpdated, {
+				draftId: draft.id,
+				status: 'rejected',
+				forMember: draft.for_member,
+			});
 			await settleNotices(uow, draft);
 		});
 		return getDraft(deps.db, draft.id);
@@ -1080,7 +1093,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.where('id', '=', draftId)
 				.execute();
 			await audit(uow, draft.action_id, 'rejected', draftId);
-			uow.emit(draftUpdated, { draftId, status: 'rejected' });
+			uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
 			await settleNotices(uow, draft);
 			if (told) await uow.notify(told);
 		});
@@ -1345,7 +1358,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (Number(changed.numUpdatedRows) === 0)
 				throw new FamosError('conflict', 'Draft was decided concurrently');
 			await audit(uow, draft.action_id, 'replaced', draftId);
-			uow.emit(draftUpdated, { draftId, status: 'pending' });
+			uow.emit(draftUpdated, { draftId, status: 'pending', forMember: draft.for_member });
 		});
 		return getDraft(deps.db, draftId);
 	}
@@ -1366,7 +1379,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.where('id', '=', draftId)
 				.execute();
 			await audit(uow, draft.action_id, 'undone', draftId);
-			uow.emit(draftUpdated, { draftId, status: 'undone' });
+			uow.emit(draftUpdated, { draftId, status: 'undone', forMember: draft.for_member });
 		});
 		return getDraft(deps.db, draftId);
 	}
@@ -1445,6 +1458,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				proposerKind: (JSON.parse(draft.proposed_by) as Actor).kind,
 				proposerMemberId: actor.memberId,
 				sourceKind: draft.source_kind,
+				forMember: draft.for_member,
 			});
 			// A draft addressed to one member is theirs to decide; the others are told it waits.
 			if (draft.for_member !== null) return;
@@ -1552,10 +1566,19 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const passed = await passedCheck();
 		const waiting = await coreDb()
 			.selectFrom('core_drafts')
-			.select(['id', 'action_id', 'status', 'input', 'edited_input', 'source_kind', 'source_id'])
+			.select([
+				'id',
+				'action_id',
+				'status',
+				'input',
+				'edited_input',
+				'source_kind',
+				'source_id',
+				'for_member',
+			])
 			.where('status', 'in', [...WAITING_STATUSES])
 			.execute();
-		const expired: string[] = [];
+		const expired: { id: string; forMember: string | null }[] = [];
 		for (const draft of waiting.filter(passed)) {
 			const now = clock.now();
 			// Only if still waiting: a person may have decided it meanwhile.
@@ -1566,12 +1589,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.where('status', 'in', [...WAITING_STATUSES])
 				.executeTakeFirst();
 			if (Number(done.numUpdatedRows) === 0) continue;
-			expired.push(draft.id);
+			expired.push({ id: draft.id, forMember: draft.for_member });
 			for (const memberId of await settleWaitingNotices(deps.db, draft))
 				await bus.publish(notificationRead.name, { memberId });
 		}
-		for (const draftId of expired)
-			await bus.publish(draftUpdated.name, { draftId, status: 'expired' });
+		for (const { id, forMember } of expired)
+			await bus.publish(draftUpdated.name, { draftId: id, status: 'expired', forMember });
 		return expired.length;
 	}
 

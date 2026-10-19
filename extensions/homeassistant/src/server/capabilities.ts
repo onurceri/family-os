@@ -34,10 +34,13 @@ export const homeassistantManage = defineCapability({
 export const connectionChanged = defineEvent(
 	'homeassistant.connection.changed',
 	connectionChangedPayload,
+	{ audience: 'homeassistant.manage' },
 );
 
 /** What the family shows from Home Assistant was added to, renamed, moved or removed. */
-export const itemsChanged = defineEvent('homeassistant.items.changed', itemsChangedPayload);
+export const itemsChanged = defineEvent('homeassistant.items.changed', itemsChangedPayload, {
+	audience: 'homeassistant.view',
+});
 
 /**
  * Switching what the family allowed (lights, locks, covers, scenes) through Home Assistant. A
@@ -52,16 +55,23 @@ export const homeassistantControl = defineCapability({
 });
 
 /** Something was switched: Today and the settings page read the values again. */
-export const valuesChanged = defineEvent('homeassistant.values.changed', valuesChangedPayload);
+export const valuesChanged = defineEvent('homeassistant.values.changed', valuesChangedPayload, {
+	audience: 'homeassistant.view',
+});
 
 /** Something was switched, or could not be: the history reads again. */
 export const switchesChanged = defineEvent(
 	'homeassistant.switches.changed',
 	switchesChangedPayload,
+	{ audience: 'homeassistant.view' },
 );
 
 /** A switch could not be done; sent only to the person who asked for it. */
-export const switchFailed = defineEvent('homeassistant.switch.failed', switchFailedPayload);
+export const switchFailed = defineEvent('homeassistant.switch.failed', switchFailedPayload, {
+	audience: 'homeassistant.control',
+});
 
 /** A person was linked or unlinked, or changed what they show (pages and Today reload). */
-export const peopleChanged = defineEvent('homeassistant.people.changed', peopleChangedPayload);
+export const peopleChanged = defineEvent('homeassistant.people.changed', peopleChangedPayload, {
+	audience: 'homeassistant.presence',
+});

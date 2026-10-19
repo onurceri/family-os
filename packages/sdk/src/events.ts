@@ -5,19 +5,50 @@ import type { z } from 'zod';
  * not data. Use events for UI invalidation and non-critical reactions; anything that must
  * survive a crash goes through the job queue instead.
  */
+/** Anyone signed in or paired as a display. */
+export const EVERYONE = { everyone: true } as const;
+/** Any signed-in person; a display is not one. */
+export const ANY_MEMBER = { anyMember: true } as const;
+
+/**
+ * One way to be in an event's audience: a capability the receiver holds, one member by id (a
+ * row that belongs to a person), or everyone / any signed-in member for what every screen shows.
+ */
+export type AudienceTarget =
+	| string
+	| { readonly member: string }
+	| typeof EVERYONE
+	| typeof ANY_MEMBER;
+
+/** Who may receive an event: any of these targets. An empty list is nobody (internal events). */
+export type AudienceRule<Payload = unknown> =
+	| AudienceTarget
+	| readonly AudienceTarget[]
+	| ((payload: Payload) => AudienceTarget | readonly AudienceTarget[]);
+
 export interface EventDefinition<
 	Name extends string = string,
 	Schema extends z.ZodType = z.ZodType,
 > {
 	readonly name: Name;
 	readonly payload: Schema;
+	/**
+	 * Who may be told. Left out, the event goes only to those who hold the `view` capability of
+	 * the extension that owns it (the part of the name before the first dot): `calendar.view` for
+	 * `calendar.event.changed`. A display receives it only if that capability was granted to it.
+	 * Give a payload function when rows differ in who may see them.
+	 */
+	readonly audience?: AudienceRule<z.infer<Schema>>;
 }
 
 export function defineEvent<const Name extends string, Schema extends z.ZodType>(
 	name: Name,
 	payload: Schema,
+	options: { audience?: AudienceRule<z.infer<Schema>> } = {},
 ): EventDefinition<Name, Schema> {
-	return { name, payload };
+	return options.audience === undefined
+		? { name, payload }
+		: { name, payload, audience: options.audience };
 }
 
 export type EventPayload<E extends EventDefinition> = z.infer<E['payload']>;

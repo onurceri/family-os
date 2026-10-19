@@ -26,15 +26,40 @@ import {
 	UpdateObligationSchema,
 } from '../contract/index.ts';
 import { recordsEdit, recordsView } from './capabilities.ts';
+import { documentChanged } from './documents.ts';
 import { fromRule, nextDue, toRule } from './recurrence.ts';
 import { scheduleObligationReminders } from './reminders.ts';
 import { OBLIGATION_KIND, PAPER_KIND } from './search.ts';
 import { type ObligationRow, tables, toHistory, toObligation } from './store.ts';
 
+/**
+ * A duty belongs to the area of its `audience` capability (a vehicle's, a pet's), so those who
+ * cannot see that area are not told it changed.
+ */
 export const obligationChanged = defineEvent(
 	'records.obligation.changed',
 	obligationChangedPayload,
+	{ audience: (payload) => payload.audience },
 );
+
+/**
+ * The capability to tell about a duty of this audience: its own while that area is installed,
+ * otherwise the records' own, as a duty of a missing area is listed.
+ */
+function areaOf(uow: UnitOfWork, audience: string) {
+	try {
+		uow.can(audience);
+		return audience;
+	} catch {
+		return DEFAULT_AUDIENCE;
+	}
+}
+
+/** Tells each area among `audiences` that something on the record changed. */
+function emitChanged(uow: UnitOfWork, recordId: string, audiences: Iterable<string>) {
+	for (const audience of new Set([...audiences].map((a) => areaOf(uow, a))))
+		uow.emit(obligationChanged, { recordId, audience });
+}
 
 const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
 
@@ -140,7 +165,7 @@ export const addObligation = defineAction({
 		await tables(uow.db).insertInto('records_obligations').values(row).execute();
 		await uow.ai.reindex(OBLIGATION_KIND, row.id);
 		await scheduleReminders(uow, row.id);
-		uow.emit(obligationChanged, { recordId: row.record_id });
+		emitChanged(uow, row.record_id, [row.audience]);
 		return toObligation(row);
 	},
 });
@@ -183,7 +208,8 @@ export const updateObligation = defineAction({
 			.execute();
 		await uow.ai.reindex(OBLIGATION_KIND, id);
 		await scheduleReminders(uow, id);
-		uow.emit(obligationChanged, { recordId: row.record_id });
+		// Moved to another area: both the one it left and the one it joined hear of it.
+		emitChanged(uow, row.record_id, [row.audience, obligation.audience ?? row.audience]);
 		return toObligation(await load(uow, id));
 	},
 });
@@ -273,7 +299,7 @@ export const completeObligation = defineAction({
 		if (next) await scheduleReminders(uow, id);
 		// A one-off duty that is done leaves the active list, and search with it.
 		else await uow.ai.remove(OBLIGATION_KIND, id);
-		uow.emit(obligationChanged, { recordId: row.record_id });
+		emitChanged(uow, row.record_id, [row.audience]);
 		return {
 			...toObligation(await load(uow, id)),
 			before: {
@@ -322,7 +348,7 @@ export const undoCompletion = defineAction({
 			.execute();
 		await uow.ai.reindex(OBLIGATION_KIND, id);
 		await scheduleReminders(uow, id);
-		uow.emit(obligationChanged, { recordId: row.record_id });
+		emitChanged(uow, row.record_id, [row.audience]);
 		return toObligation(await load(uow, id));
 	},
 });
@@ -341,7 +367,7 @@ export const removeObligation = defineAction({
 		await db.deleteFrom('records_obligation_history').where('obligation_id', '=', id).execute();
 		await db.deleteFrom('records_obligations').where('id', '=', id).execute();
 		await uow.ai.remove(OBLIGATION_KIND, id);
-		uow.emit(obligationChanged, { recordId: row.record_id });
+		emitChanged(uow, row.record_id, [row.audience]);
 		return { ok: true as const };
 	},
 });
@@ -363,7 +389,7 @@ export const archiveForRecord = defineAction({
 		const db = tables(uow.db);
 		const goneObligations = await db
 			.selectFrom('records_obligations')
-			.select('id')
+			.select(['id', 'audience'])
 			.where('record_id', '=', recordId)
 			.where('archived_at', 'is', null)
 			.execute();
@@ -387,7 +413,12 @@ export const archiveForRecord = defineAction({
 			.where('record_id', '=', recordId)
 			.where('archived_at', 'is', null)
 			.executeTakeFirst();
-		uow.emit(obligationChanged, { recordId });
+		emitChanged(
+			uow,
+			recordId,
+			goneObligations.map((o) => o.audience),
+		);
+		if (gonePapers.length > 0) uow.emit(documentChanged, { recordId });
 		return {
 			obligations: Number(obligations.numUpdatedRows),
 			documents: Number(documents.numUpdatedRows),
@@ -414,7 +445,7 @@ export const renameRecord = defineAction({
 		const db = tables(uow.db);
 		const duties = await db
 			.selectFrom('records_obligations')
-			.select('id')
+			.select(['id', 'audience'])
 			.where('record_id', '=', recordId)
 			.where('archived_at', 'is', null)
 			.execute();
@@ -426,7 +457,12 @@ export const renameRecord = defineAction({
 			.execute();
 		for (const { id } of duties) await uow.ai.reindex(OBLIGATION_KIND, id);
 		for (const { id } of papers) await uow.ai.reindex(PAPER_KIND, id);
-		uow.emit(obligationChanged, { recordId });
+		emitChanged(
+			uow,
+			recordId,
+			duties.map((d) => d.audience),
+		);
+		if (papers.length > 0) uow.emit(documentChanged, { recordId });
 		return { obligations: Number(result.numUpdatedRows) };
 	},
 });

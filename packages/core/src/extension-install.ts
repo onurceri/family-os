@@ -35,9 +35,16 @@ import type { Registry } from './registry.ts';
 export const extensionsChanged = defineEvent(
 	'core.extensions.changed',
 	z.object({ extensionId: z.string() }),
+	{ audience: CORE_CAPABILITIES.extensionsManage.id },
 );
 /** Someone asked the server to restart: it finishes what it does and starts again. */
-export const restartRequested = defineEvent('core.restart.requested', z.object({ at: z.number() }));
+export const restartRequested = defineEvent(
+	'core.restart.requested',
+	z.object({ at: z.number() }),
+	{
+		audience: CORE_CAPABILITIES.extensionsManage.id,
+	},
+);
 
 const EXTENSION_STATUS = [
 	/** Installed and running. */

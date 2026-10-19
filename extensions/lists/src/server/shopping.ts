@@ -34,7 +34,9 @@ import { listsView } from './tasks.ts';
 const withinLimit = (merged: string | null, asked: string | null | undefined) =>
 	merged && merged.length > SHOPPING_QUANTITY_MAX ? (asked ?? merged) : merged;
 
-export const shoppingChanged = defineEvent('lists.shopping.changed', shoppingChangedPayload);
+export const shoppingChanged = defineEvent('lists.shopping.changed', shoppingChangedPayload, {
+	audience: 'lists.view',
+});
 
 /** What shopping protects: adding and ticking off items, and managing the lists. */
 export const shoppingEdit = defineCapability({

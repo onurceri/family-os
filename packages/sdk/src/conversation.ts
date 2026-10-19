@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Actor } from './actor.ts';
 import type { ExtensionContext } from './context.ts';
-import { defineEvent } from './events.ts';
+import { ANY_MEMBER, defineEvent } from './events.ts';
 
 /** A question a member asked, and where its answer will be. */
 export interface ConversationAsked {
@@ -55,4 +55,6 @@ export interface ConversationProvider {
 export const conversationAnswered = defineEvent(
 	'core.conversation.answered',
 	z.object({ replyId: z.string() }),
+	// Addressed to one member by `emitTo`; the answer itself is read with their own rights.
+	{ audience: ANY_MEMBER },
 );

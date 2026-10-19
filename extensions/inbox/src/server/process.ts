@@ -147,7 +147,7 @@ async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
 		.where('id', '=', row.id)
 		.execute();
 	await ctx.ai.reindex(ITEM_KIND, row.id);
-	await ctx.events.emit(itemChanged, { itemId: row.id });
+	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 }
 
 /** AI is off: keep the item unread (not a failure) until someone reads it again. */
@@ -158,7 +158,7 @@ async function hold(ctx: JobContext, row: ItemRow) {
 		.where('id', '=', row.id)
 		.execute();
 	await ctx.ai.reindex(ITEM_KIND, row.id);
-	await ctx.events.emit(itemChanged, { itemId: row.id });
+	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 }
 
 /** The person's own notification when what they shared from outside the app has been read. */
@@ -249,7 +249,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		.where('status', '!=', 'filed')
 		.execute();
 	await ctx.ai.reindex(ITEM_KIND, row.id);
-	await ctx.events.emit(itemChanged, { itemId: row.id });
+	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 }
 
 /**
@@ -295,7 +295,7 @@ export const processItem = defineJob({
 					.execute();
 				row = { ...row, status: 'normalized', normalized_text: text, transcript };
 				await ctx.ai.reindex(ITEM_KIND, row.id);
-				await ctx.events.emit(itemChanged, { itemId: row.id });
+				await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 			}
 			await extract(ctx, row, run);
 		} catch (error) {
@@ -314,7 +314,7 @@ export const processItem = defineJob({
 				.set({ read_attempt: run.attempt + 1, updated_at: ctx.clock.now() })
 				.where('id', '=', row.id)
 				.execute();
-			await ctx.events.emit(itemChanged, { itemId: row.id });
+			await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 			throw error;
 		}
 	},

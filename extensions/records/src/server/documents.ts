@@ -12,7 +12,9 @@ import { recordsEdit, recordsView } from './capabilities.ts';
 import { PAPER_KIND } from './search.ts';
 import { type DocumentRow, tables, toDocument } from './store.ts';
 
-export const documentChanged = defineEvent('records.document.changed', documentChangedPayload);
+export const documentChanged = defineEvent('records.document.changed', documentChangedPayload, {
+	audience: 'records.view',
+});
 
 /**
  * Links files that arrived through the Inbox to a record. The file stays where the

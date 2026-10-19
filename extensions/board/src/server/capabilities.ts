@@ -21,7 +21,9 @@ export const boardManage = defineCapability({
 	level: 'manage',
 });
 
-export const boardChanged = defineEvent('board.changed', boardChangedPayload);
+export const boardChanged = defineEvent('board.changed', boardChangedPayload, {
+	audience: BOARD_VIEW,
+});
 
 /** A new note: everyone who sees the board, except the author. */
 export const postedKind = defineNotificationKind({

@@ -62,6 +62,11 @@ import pkg from '../package.json' with { type: 'json' };
 import type { Config } from './config.ts';
 import { wireEmail } from './email.ts';
 import { deviceTokenFromHeaders } from './http/devices.ts';
+import {
+	emailStatusChanged,
+	telegramLinkChanged,
+	telegramStatusChanged,
+} from './http/host-events.ts';
 import { catalogsOf, createTranslate, createVocabulary } from './i18n.ts';
 import {
 	createLanguageRegistry,
@@ -181,8 +186,8 @@ export function openRuntime(
 		logger,
 		baseURL: config.baseURL,
 		// Pages showing the bot or a link refresh (ids only; the hub forwards every bus event).
-		onStatusChange: () => void kernelRef?.bus.publish('telegram.status.changed', {}),
-		onLinkChange: (memberId) => void kernelRef?.bus.publish('telegram.link.changed', { memberId }),
+		onStatusChange: () => void kernelRef?.bus.emit(telegramStatusChanged, {}),
+		onLinkChange: (memberId) => void kernelRef?.bus.emit(telegramLinkChanged, { memberId }),
 		vocabulary: (key) => kernelRef?.ctx.vocabulary(key) ?? [],
 		...((options.telegramApiRoot ?? config.telegramApiRoot) && {
 			apiRoot: (options.telegramApiRoot ?? config.telegramApiRoot) as string,
@@ -216,7 +221,7 @@ export function openRuntime(
 			maxTextChars: 20_000,
 			maxTitleChars: 300,
 		},
-		onStatusChange: () => void kernelRef?.bus.publish('email.status.changed', {}),
+		onStatusChange: () => void kernelRef?.bus.emit(emailStatusChanged, {}),
 	});
 	const backups = createBackupService({
 		db: handle.db,

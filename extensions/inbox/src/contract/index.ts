@@ -193,7 +193,11 @@ export const UPLOAD_QUOTA = {
 	windowMs: 24 * 60 * 60 * 1000,
 } as const;
 
-export const itemChangedPayload = z.object({ itemId: z.string() });
+/** `memberId`: whose item it is (the only one who hears of it). */
+export const itemChangedPayload = z.object({
+	itemId: z.string(),
+	memberId: z.string().nullable(),
+});
 
 /** Typed or shared text up to this long, in one paragraph, is its own title. */
 export const OWN_TITLE_MAX = 120;

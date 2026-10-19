@@ -5,6 +5,7 @@ import {
 	defineEvent,
 	defineJob,
 	defineRoute,
+	EVERYONE,
 	FamosError,
 	FileResponseSchema,
 	isFamosError,
@@ -150,6 +151,7 @@ export const defaultThemes: ThemePort = {
 export const themesChanged = defineEvent(
 	'core.themes.changed',
 	z.object({ id: z.string().nullable() }),
+	{ audience: EVERYONE },
 );
 
 const INSTALLED_KEY = 'themes.installed';

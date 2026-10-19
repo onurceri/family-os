@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.14",
+	"sdk": "0.8.15",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -7,6 +7,7 @@
 		"@famos/sdk": [
 			"AI_AREA_ACCESS",
 			"AI_MODES",
+			"ANY_MEMBER",
 			"ActorSchema",
 			"AiContextSchema",
 			"BUILT_IN_ROLES",
@@ -22,6 +23,7 @@
 			"DigestItemSchema",
 			"DigestOutputSchema",
 			"ERROR_HTTP_STATUS",
+			"EVERYONE",
 			"EXTERNAL_HTTP_MAX_POST_BYTES",
 			"ExtensionManifestSchema",
 			"ExternalHttpError",
@@ -196,9 +198,20 @@
 			"writtenDates",
 			"zoned"
 		],
-		"@famos/api-client": ["createApiClient", "isApiError", "unwrap"],
-		"@famos/ui/styles": ["DEFAULT_STYLE", "STYLES", "STYLE_IDS", "isStyleId"],
-		"@famos/ui/utils": ["cn"],
+		"@famos/api-client": [
+			"createApiClient",
+			"isApiError",
+			"unwrap"
+		],
+		"@famos/ui/styles": [
+			"DEFAULT_STYLE",
+			"STYLES",
+			"STYLE_IDS",
+			"isStyleId"
+		],
+		"@famos/ui/utils": [
+			"cn"
+		],
 		"@famos/ui/slots": [
 			"SETTINGS_SECTIONS",
 			"askedBy",
@@ -215,11 +228,26 @@
 			"removalPresenter",
 			"unavailableLine"
 		],
-		"@famos/ui/slot": ["default"],
-		"@famos/ui/button": ["Button", "Root", "buttonVariants"],
-		"@famos/ui/input": ["Input", "Root"],
-		"@famos/ui/textarea": ["Root", "Textarea"],
-		"@famos/ui/label": ["Label", "Root"],
+		"@famos/ui/slot": [
+			"default"
+		],
+		"@famos/ui/button": [
+			"Button",
+			"Root",
+			"buttonVariants"
+		],
+		"@famos/ui/input": [
+			"Input",
+			"Root"
+		],
+		"@famos/ui/textarea": [
+			"Root",
+			"Textarea"
+		],
+		"@famos/ui/label": [
+			"Label",
+			"Root"
+		],
 		"@famos/ui/famos": [
 			"ActionSheet",
 			"Avatar",
@@ -353,7 +381,12 @@
 			"wide",
 			"withShortNames"
 		],
-		"@famos/ui/timeline": ["groupOf", "hasEnded", "sortTimeline", "viewTimeline"],
+		"@famos/ui/timeline": [
+			"groupOf",
+			"hasEnded",
+			"sortTimeline",
+			"viewTimeline"
+		],
 		"@famos/ui/forms": [
 			"FIELD_REASON",
 			"fieldAria",
@@ -361,6 +394,11 @@
 			"focusFirstInvalid",
 			"issueErrors"
 		],
-		"@famos/ui/app": ["findApp", "namespaced", "provideAppContext", "useApp"]
+		"@famos/ui/app": [
+			"findApp",
+			"namespaced",
+			"provideAppContext",
+			"useApp"
+		]
 	}
 }

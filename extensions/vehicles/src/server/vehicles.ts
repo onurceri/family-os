@@ -28,7 +28,9 @@ import {
 import { vehiclesEdit, vehiclesView } from './capabilities.ts';
 import { tables, toLog, toVehicle, type VehicleRow } from './store.ts';
 
-export const vehicleChanged = defineEvent('vehicles.vehicle.changed', vehicleChangedPayload);
+export const vehicleChanged = defineEvent('vehicles.vehicle.changed', vehicleChangedPayload, {
+	audience: 'vehicles.view',
+});
 
 const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
 

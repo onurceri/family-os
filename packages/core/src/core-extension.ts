@@ -13,6 +13,7 @@ import {
 	defineNotificationKind,
 	defineRoute,
 	digestOf,
+	type EventBus,
 	FamosError,
 	type IdentityAdmin,
 	idSchema,
@@ -42,6 +43,7 @@ import {
 	featuresChanged,
 	memberChanged,
 	roleChanged,
+	sessionEnded,
 } from './core-events.ts';
 import { DecisionSchema } from './decide.ts';
 import type { DeviceService } from './devices.ts';
@@ -1180,6 +1182,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 
 	const MemberParams = z.object({ memberId: MemberIdSchema });
 
+	/** Signs a member out everywhere and closes their open realtime connections at once. */
+	const endSessionsOf = async (ctx: { events: EventBus }, memberId: string) => {
+		await deps.identity.endSessions(memberId);
+		await ctx.events.emit(sessionEnded, { memberId });
+	};
+
 	const setPin = defineRoute({
 		method: 'put',
 		path: '/members/{memberId}/pin',
@@ -1201,7 +1209,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				pin: body.pin,
 				displayName: member.display_name,
 			});
-			await deps.identity.endSessions(member.id);
+			await endSessionsOf(ctx, member.id);
 			return { ok: true as const };
 		},
 	});
@@ -1224,7 +1232,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			});
 			// A new password signs the member out everywhere, except an admin changing their own.
 			if (actor.kind !== 'member' || actor.memberId !== member.id)
-				await deps.identity.endSessions(member.id);
+				await endSessionsOf(ctx, member.id);
 			return { ok: true as const };
 		},
 	});
@@ -1237,9 +1245,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		requires: 'signedIn',
 		response: z.object({ ok: z.literal(true) }),
 		status: 200,
-		async handle(_ctx, { actor }) {
+		async handle(ctx, { actor }) {
 			if (actor.kind !== 'member') throw new FamosError('unauthenticated', 'Sign in required');
-			await deps.identity.endSessions(actor.memberId);
+			await endSessionsOf(ctx, actor.memberId);
 			return { ok: true as const };
 		},
 	});

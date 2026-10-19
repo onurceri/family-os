@@ -27,7 +27,9 @@ import {
 import { scheduleTaskReminder } from './reminders.ts';
 import { tables, titleKey, toTask } from './store.ts';
 
-export const taskChanged = defineEvent('lists.task.changed', taskChangedPayload);
+export const taskChanged = defineEvent('lists.task.changed', taskChangedPayload, {
+	audience: 'lists.view',
+});
 
 /** What tasks protect. */
 export const listsView = defineCapability({

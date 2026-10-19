@@ -18,4 +18,6 @@ export const ambientManage = defineCapability({
 	level: 'manage',
 });
 
-export const settingsChanged = defineEvent('ambient.settings.changed', settingsChangedPayload);
+export const settingsChanged = defineEvent('ambient.settings.changed', settingsChangedPayload, {
+	audience: ['ambient.photos', 'ambient.weather', 'ambient.manage'],
+});

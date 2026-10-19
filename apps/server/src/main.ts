@@ -24,8 +24,9 @@ import {
 } from './extensions/installed.ts';
 import { findAvailable, type LoadedExtensions, loadExtensions } from './extensions/load.ts';
 import { describePurge, previewPurge, purgeExtension, purgeTarget } from './extensions/purge.ts';
-import { createHttpApp, loadedWeb, OPENAPI_INFO, resolveActor } from './http/app.ts';
-import { createRealtimeHub } from './http/realtime.ts';
+import { createHttpApp, loadedWeb, OPENAPI_INFO } from './http/app.ts';
+import { hostEvents } from './http/host-events.ts';
+import { createRealtimeHub, realtimeGuard } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
 import { ARCHIVE_EXTENSION } from './packages/archive.ts';
@@ -146,21 +147,19 @@ async function serveCommand() {
 			extensions,
 			boot,
 		});
-		const hub = createRealtimeHub(kernel.bus, logger);
+		const hub = createRealtimeHub(
+			kernel.bus,
+			logger,
+			kernel.access,
+			new Map([...kernel.registry.events, ...hostEvents.map((e) => [e.name, e] as const)]),
+		);
 		app.get(
 			'/api/v1/ws',
-			async (c, next) => {
-				// Same rules as the API: archived members, stale PIN sessions and revoked displays are refused.
-				if (!(await resolveActor(kernel, runtime.identity, c.req.raw.headers)))
-					return c.json({ error: { code: 'unauthenticated', message: 'Sign in required' } }, 401);
-				return next();
-			},
+			realtimeGuard(config.trustedOrigins, (c) => c.get('actor')),
 			upgradeWebSocket((c) => {
 				const actor = c.get('actor');
-				return hub.events(
-					actor?.kind === 'display' ? actor.deviceId : null,
-					actor?.kind === 'member' ? actor.memberId : null,
-				);
+				// The check above resolved the actor; a socket never opens without one.
+				return hub.events(actor ?? { kind: 'system', source: 'anonymous' });
 			}),
 		);
 		if (config.webDir) mountSpa(app, config.webDir, extensions);

@@ -13,4 +13,6 @@ export const kitchenEdit = defineCapability({
 	level: 'edit',
 });
 
-export const kitchenChanged = defineEvent('kitchen.changed', kitchenChangedPayload);
+export const kitchenChanged = defineEvent('kitchen.changed', kitchenChangedPayload, {
+	audience: 'kitchen.view',
+});

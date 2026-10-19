@@ -2,7 +2,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
-import type { ExtensionDefinition } from '@famos/sdk';
+import type { Actor, ExtensionDefinition, MemberId } from '@famos/sdk';
 import { defineTestExtension } from '@famos/testing';
 import type { WSContext } from 'hono/ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1140,10 +1140,21 @@ describe('family displays', () => {
 
 	it('closes a display’s open WebSocket when its device is revoked or changed', async () => {
 		const { cookie } = await setupAndSignIn();
-		const hub = createRealtimeHub(runtime.kernel.bus, silentLogger);
+		const hub = createRealtimeHub(
+			runtime.kernel.bus,
+			silentLogger,
+			runtime.kernel.access,
+			runtime.kernel.registry.events,
+		);
 		const open = (deviceId: string | null) => {
 			const ws = { send: vi.fn(), close: vi.fn() } as unknown as WSContext;
-			hub.events(deviceId).onOpen(undefined, ws);
+			hub
+				.events(
+					deviceId
+						? { kind: 'display', deviceId, capabilities: ['calendar.view'], showNames: false }
+						: { kind: 'member', memberId: 'member_x' as MemberId, roleId: 'admin' },
+				)
+				.onOpen(undefined, ws);
 			return ws;
 		};
 		const first = await pairDisplay(cookie, { name: 'First' });
@@ -1172,34 +1183,53 @@ describe('family displays', () => {
 
 	it('delivers member-targeted events to that member’s sockets only', async () => {
 		const { cookie } = await setupAndSignIn();
-		const hub = createRealtimeHub(runtime.kernel.bus, silentLogger);
-		const open = (deviceId: string | null, memberId: string | null) => {
+		const hub = createRealtimeHub(
+			runtime.kernel.bus,
+			silentLogger,
+			runtime.kernel.access,
+			runtime.kernel.registry.events,
+		);
+		const display = await pairDisplay(cookie, { name: 'Hall', capabilities: ['lists.view'] });
+		const member = (memberId: string): Actor => ({
+			kind: 'member',
+			memberId: memberId as MemberId,
+			roleId: 'member',
+		});
+		const open = (actor: Actor) => {
 			const ws = { send: vi.fn(), close: vi.fn() } as unknown as WSContext;
-			hub.events(deviceId, memberId).onOpen(undefined, ws);
+			hub.events(actor).onOpen(undefined, ws);
 			return ws;
 		};
-		const display = await pairDisplay(cookie, { name: 'Hall' });
-		const ayse = open(null, 'member_ayse');
-		const ayseSecond = open(null, 'member_ayse');
-		const can = open(null, 'member_can');
-		const hall = open(display.deviceId, null);
+		const ayse = open(member('member_ayse'));
+		const ayseSecond = open(member('member_ayse'));
+		const can = open(member('member_can'));
+		const hall = open({
+			kind: 'display',
+			deviceId: display.deviceId,
+			capabilities: ['lists.view'],
+			showNames: false,
+		});
 		const sent = (ws: WSContext) =>
 			(ws.send as ReturnType<typeof vi.fn>).mock.calls.map((c) => JSON.parse(c[0] as string));
 
-		await runtime.kernel.bus.publishTo('member_ayse', 'assistant.delta', { text: 'private' });
+		await runtime.kernel.bus.publishTo('member_ayse', 'core.conversation.answered', {
+			replyId: 'private',
+		});
 		expect(sent(ayse)).toContainEqual({
 			type: 'event',
-			name: 'assistant.delta',
-			payload: { text: 'private' },
+			name: 'core.conversation.answered',
+			payload: { replyId: 'private' },
 		});
 		expect(sent(ayseSecond)).toHaveLength(2); // hello + the event
 		expect(JSON.stringify(sent(can))).not.toContain('private');
 		expect(JSON.stringify(sent(hall))).not.toContain('private');
 
-		// Ordinary events still reach everyone; targeted ones are not seen by `onAny` listeners.
+		// Ordinary events reach those in their audience; targeted ones are not seen by `onAny` listeners.
 		const seen: string[] = [];
 		runtime.kernel.bus.onAny((name) => void seen.push(name));
-		await runtime.kernel.bus.publishTo('member_ayse', 'assistant.done', {});
+		await runtime.kernel.bus.publishTo('member_ayse', 'core.conversation.answered', {
+			replyId: 'again',
+		});
 		expect(seen).toEqual([]);
 		await runtime.kernel.bus.publish('lists.task.changed', { taskId: 't' });
 		expect(sent(can).some((m) => m.name === 'lists.task.changed')).toBe(true);

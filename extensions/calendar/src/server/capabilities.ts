@@ -20,11 +20,17 @@ export const calendarManage = defineCapability({
 	level: 'manage',
 });
 
-export const eventChanged = defineEvent('calendar.event.changed', eventChangedPayload);
+export const eventChanged = defineEvent('calendar.event.changed', eventChangedPayload, {
+	audience: 'calendar.view',
+});
 /** A subscription was added, changed, removed or refreshed (the agenda reloads). */
 export const subscriptionChanged = defineEvent(
 	'calendar.subscription.changed',
 	z.object({ subscriptionId: z.string() }),
+	{ audience: 'calendar.view' },
 );
 /** A tag was renamed, recoloured or deleted (the agenda reloads). */
-export const tagChanged = defineEvent('calendar.tag.changed', z.object({ name: z.string() }));
+export const tagChanged = defineEvent('calendar.tag.changed', z.object({}), {
+	// No name: a tag's name is read through the calendar's own routes, by those who may.
+	audience: 'calendar.view',
+});

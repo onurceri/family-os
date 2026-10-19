@@ -13,6 +13,7 @@ export {
 	DecisionSchema,
 } from './decide.ts';
 export * from './devices.ts';
+export * from './event-audience.ts';
 export * from './event-bus.ts';
 export * from './extension-find.ts';
 export * from './extension-install.ts';

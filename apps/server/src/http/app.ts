@@ -12,6 +12,7 @@ import {
 	displayActor,
 	IDEMPOTENCY_KEY,
 	type Kernel,
+	sessionEnded,
 } from '@famos/core';
 import {
 	type AccessControl,
@@ -143,6 +144,10 @@ async function resolveMember(
 	if (!kernel.access.effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) return null;
 	return { ...actor, pin: true };
 }
+
+/** The identity routes that end a session or replace a credential. */
+const SESSION_ENDING_PATH =
+	/\/(sign-out|revoke-session|revoke-sessions|revoke-other-sessions|change-password|reset-password|set-password)$/;
 
 function actorMiddleware(deps: HttpAppDeps): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
@@ -553,11 +558,20 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	// Sign-in bodies are tiny; refuse large ones before better-auth parses them.
 	app.use('/api/auth/*', bodyLimit({ maxSize: 16 * 1024 }));
 	const clientIp = createClientIp(deps.trustedProxies ?? []);
-	app.on(['GET', 'POST'], '/api/auth/*', (c) => {
+	app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
 		// better-auth rate-limits by this header only; set it from the socket, never from the client.
 		const headers = new Headers(c.req.raw.headers);
 		headers.set(CLIENT_IP_HEADER, clientIp(c));
-		return deps.identity.handler(new Request(c.req.raw, { headers }));
+		// Signing out (or ending sessions, or changing the password) must close the member's open
+		// realtime sockets too: they were opened with the session that is going away.
+		const endsSession = SESSION_ENDING_PATH.test(new URL(c.req.url).pathname);
+		const before = endsSession
+			? await resolveActor(deps.kernel, deps.identity, c.req.raw.headers)
+			: null;
+		const response = await deps.identity.handler(new Request(c.req.raw, { headers }));
+		if (before?.kind === 'member' && response.ok)
+			await deps.kernel.bus.emit(sessionEnded, { memberId: before.memberId });
+		return response;
 	});
 
 	// API responses contain family data: never cache them (browser, proxies, service worker).

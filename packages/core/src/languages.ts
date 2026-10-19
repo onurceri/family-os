@@ -4,6 +4,7 @@ import {
 	defineEvent,
 	defineJob,
 	defineRoute,
+	EVERYONE,
 	FamosError,
 	isFamosError,
 	systemActor,
@@ -96,9 +97,12 @@ export const anyLanguage: LanguagePort = {
 export const languagesChanged = defineEvent(
 	'core.languages.changed',
 	z.object({ code: z.string().nullable() }),
+	{ audience: EVERYONE },
 );
 /** Family settings (language, region formats, time zone) changed: open screens refresh them. */
-export const familySettingsChanged = defineEvent('core.family.changed', z.object({}));
+export const familySettingsChanged = defineEvent('core.family.changed', z.object({}), {
+	audience: EVERYONE,
+});
 
 const KEY = 'languages';
 const FETCH_KEY = 'languages.fetch';

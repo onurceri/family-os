@@ -81,8 +81,13 @@ async function recallMemories(ctx: Pick<JobContext, 'actions'>, actor: Actor): P
 	}
 }
 
-export const assistantDelta = defineEvent('assistant.delta', deltaPayload);
-export const assistantDone = defineEvent('assistant.done', donePayload);
+export const assistantDelta = defineEvent('assistant.delta', deltaPayload, {
+	// Sent to the asking member alone (`emitTo`); the hub also asks that they may still use it.
+	audience: 'assistant.use',
+});
+export const assistantDone = defineEvent('assistant.done', donePayload, {
+	audience: 'assistant.use',
+});
 
 /** Messages of a thread sent verbatim; older ones live in the summary. */
 export const KEEP_VERBATIM = 12;

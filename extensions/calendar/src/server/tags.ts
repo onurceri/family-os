@@ -92,7 +92,7 @@ export const updateTag = defineAction({
 						.execute();
 					name = newName;
 				}
-				uow.emit(tagChanged, { name });
+				uow.emit(tagChanged, {});
 				return { name, color };
 			}
 			// Only the spelling changes (case): events follow.
@@ -104,7 +104,7 @@ export const updateTag = defineAction({
 			.set({ name, color })
 			.where('key', '=', current.key)
 			.execute();
-		uow.emit(tagChanged, { name });
+		uow.emit(tagChanged, {});
 		return { name, color };
 	},
 });
@@ -120,7 +120,7 @@ export const deleteTag = defineAction({
 		const current = await loadTag(uow.db, name);
 		await rewriteEvents(uow.db, current.key, null);
 		await events(uow.db).deleteFrom('calendar_tags').where('key', '=', current.key).execute();
-		uow.emit(tagChanged, { name: current.name });
+		uow.emit(tagChanged, {});
 		return { ok: true as const };
 	},
 });

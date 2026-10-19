@@ -22,7 +22,9 @@ import {
 import { readJson, writeJson } from './settings-json.ts';
 
 /** What was found in the official index, or the download of one package, changed. */
-export const extensionsFound = defineEvent('core.extensions.found', z.object({}));
+export const extensionsFound = defineEvent('core.extensions.found', z.object({}), {
+	audience: CORE_CAPABILITIES.extensionsManage.id,
+});
 
 const KEY = 'extension_index';
 export const FIND_JOB = 'core.fetchExtensionIndex';

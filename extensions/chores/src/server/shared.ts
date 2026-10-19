@@ -3,7 +3,9 @@ import { type Chore, choreChangedPayload } from '../contract/index.ts';
 import { type ChoreRow, parseRecurrence, tables } from './store.ts';
 
 /** Anything in chores changed (a chore, a completion): the UI reloads. */
-export const choresChanged = defineEvent('chores.changed', choreChangedPayload);
+export const choresChanged = defineEvent('chores.changed', choreChangedPayload, {
+	audience: 'chores.view',
+});
 
 export const memberIdOf = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
 

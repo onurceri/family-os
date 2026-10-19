@@ -28,7 +28,9 @@ import {
 import { petsEdit, petsView } from './capabilities.ts';
 import { type PetRow, tables, toPet, toTreatment } from './store.ts';
 
-export const petChanged = defineEvent('pets.pet.changed', petChangedPayload);
+export const petChanged = defineEvent('pets.pet.changed', petChangedPayload, {
+	audience: 'pets.view',
+});
 
 const memberId = (actor: Actor) => (actor.kind === 'member' ? actor.memberId : null);
 

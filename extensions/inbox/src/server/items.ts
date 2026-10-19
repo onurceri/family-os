@@ -27,7 +27,10 @@ import {
 import { MalformedImageError, STRIPPED_TYPES, stripImageMetadata } from './metadata.ts';
 import { filesOf, ITEM_KIND, type StoredFile, tables, toItem } from './store.ts';
 
-export const itemChanged = defineEvent('inbox.item.changed', itemChangedPayload);
+/** An item is its sender's own (others see it only through a suggestion), so only they hear of it. */
+export const itemChanged = defineEvent('inbox.item.changed', itemChangedPayload, {
+	audience: (payload) => (payload.memberId ? { member: payload.memberId } : []),
+});
 export const PROCESS_JOB = 'inbox.process';
 
 /** What the Inbox protects: sharing into it. */
@@ -189,7 +192,7 @@ export const addItem = defineAction({
 			);
 		}
 		await uow.ai.reindex(ITEM_KIND, input.id);
-		uow.emit(itemChanged, { itemId: input.id });
+		uow.emit(itemChanged, { itemId: input.id, memberId: row.created_by });
 		return toItem(row);
 	},
 });
@@ -220,7 +223,7 @@ export const fileItem = defineAction({
 		};
 		await tables(uow.db).updateTable('inbox_items').set(patch).where('id', '=', id).execute();
 		await uow.ai.reindex(ITEM_KIND, id);
-		uow.emit(itemChanged, { itemId: id });
+		uow.emit(itemChanged, { itemId: id, memberId: row.created_by });
 		return toItem({ ...row, ...patch });
 	},
 });
@@ -267,7 +270,7 @@ export const retryItem = defineAction({
 			{ dedupeKey: `${PROCESS_JOB}:${id}:${extraction}` },
 		);
 		await uow.ai.reindex(ITEM_KIND, id);
-		uow.emit(itemChanged, { itemId: id });
+		uow.emit(itemChanged, { itemId: id, memberId: row.created_by });
 		return toItem({ ...row, ...patch });
 	},
 });
@@ -290,7 +293,7 @@ export const dismissItem = defineAction({
 			.execute();
 		await uow.rejectDraftsOf({ kind: 'inbox', id });
 		await uow.ai.reindex(ITEM_KIND, id);
-		uow.emit(itemChanged, { itemId: id });
+		uow.emit(itemChanged, { itemId: id, memberId: row.created_by });
 		return { ok: true as const };
 	},
 });
