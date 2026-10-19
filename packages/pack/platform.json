@@ -127,6 +127,7 @@
 			"wholeRecord",
 			"withHandles",
 			"withWeekdays",
+			"withoutAmounts",
 			"withoutPaths"
 		],
 		"@famos/time": [
