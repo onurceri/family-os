@@ -224,7 +224,11 @@ export async function answerQuestion(
 			);
 			if (result.status !== 'applied') throw new Error('not applied');
 			record.ok = true;
-			fetched.push({ topic, output: result.output });
+			fetched.push({
+				topic,
+				output: result.output,
+				...(memberIds && { others: await othersOf(ctx, actionId, span, result.output, actor) }),
+			});
 		} catch (error) {
 			// An area refused at the last moment (a role changed, the area closed) is not here.
 			ctx.logger.warn(
@@ -265,6 +269,38 @@ export async function answerQuestion(
 	const text = cardText(facts, words);
 	const { lead, check } = await wordLead(ctx, input, facts, text, words);
 	return { card: { ...facts, lead: { kept: check === null, check }, text }, lead, calls };
+}
+
+/**
+ * What the same days hold for other people, when the question was about some of them: only how
+ * many, so the card can say there is more than the asker's ("2 more are for other people")
+ * without showing it. A read that fails leaves the line out; it never fails the answer.
+ */
+async function othersOf(
+	ctx: Pick<JobContext, 'actions' | 'logger'>,
+	actionId: string,
+	span: { from: string; to: string },
+	theirs: DigestOutput,
+	actor: Actor,
+): Promise<{ count: number; more: boolean } | undefined> {
+	try {
+		const all = await ctx.actions.invoke<DigestOutput>(
+			actionId,
+			{ from: span.from, to: span.to },
+			actor,
+		);
+		if (all.status !== 'applied') return undefined;
+		const keyOf = (item: DigestOutput['items'][number]) =>
+			item.handle ?? `${item.kind}|${item.date}|${item.time ?? ''}|${item.title}`;
+		const shown = new Set(theirs.items.map(keyOf));
+		const count = all.output.items.filter((item) => !shown.has(keyOf(item))).length;
+		// A cut read cannot tell how many: it can only say that there are more.
+		if (count === 0 && !all.output.truncated) return undefined;
+		return { count, more: all.output.truncated };
+	} catch {
+		ctx.logger.warn({ actionId }, 'digest read for others failed');
+		return undefined;
+	}
 }
 
 async function wordLead(

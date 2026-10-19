@@ -3,6 +3,7 @@ import {
 	dayWords,
 	itemText,
 	listOf,
+	othersLine,
 	spanLabel,
 	spanPhrase,
 	weekdayName,
@@ -46,6 +47,8 @@ export interface SectionView {
 	more: string | null;
 	/** The items the assistant may not read. */
 	hidden: string | null;
+	/** "2 more are for other people." when the question was about some people. */
+	others: string | null;
 }
 
 export interface CardView {
@@ -123,6 +126,7 @@ export function cardView(card: AnswerCard, words: CardWords): CardView {
 							: t('card_nothing', { span }),
 				more: section.truncated ? t('card_more') : null,
 				hidden: section.hidden ? t('card_hidden', { count: section.hidden }) : null,
+				others: section.others ? othersLine(section.others, words) : null,
 			};
 		}),
 		notHere: card.notHere.map((missing) =>

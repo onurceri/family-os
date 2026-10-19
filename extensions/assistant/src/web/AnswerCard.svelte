@@ -73,6 +73,7 @@
 			{/if}
 			{#if section.more}<p class="quiet">{section.more}</p>{/if}
 			{#if section.hidden}<p class="quiet">{section.hidden}</p>{/if}
+			{#if section.others}<p class="quiet" data-testid="card-others">{section.others}</p>{/if}
 		</Section>
 	{/each}
 	{#each view.notHere as line, i (i)}

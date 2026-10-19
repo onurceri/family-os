@@ -107,3 +107,10 @@ export function itemText(item: CardItem, words: CardWords, sameDay: string | nul
 		? t('card_notes', { what: line, notes: item.notes.replace(/\s+/g, ' ') })
 		: line;
 }
+
+/** That the same days hold more for other people, and how many when the read was whole. */
+export function othersLine(others: { count: number; more: boolean }, words: CardWords): string {
+	return others.more
+		? words.t('card_others_more')
+		: words.t('card_others', { count: others.count });
+}

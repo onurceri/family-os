@@ -236,6 +236,34 @@ describe('a question', () => {
 		expect(cardOf(reply).understood.people).toEqual(['Leo']);
 	});
 
+	it('says how many more the days hold for others when the question is about someone', async () => {
+		await k.runner.invoke(
+			'calendar.createEvent',
+			{
+				title: 'Staff meeting',
+				date: '2026-10-22',
+				startTime: '09:00',
+				memberIds: [mara.member.id],
+			},
+			systemActor('test'),
+		);
+		k.llm.respond({ ...THIS_WEEK, people: [{ said: 'I' }] }, THIS_WEEK);
+		k.llm.respondChat([{ text: 'You have a Swimming lesson on Thursday.' }], [{ text: 'A week.' }]);
+		const mine = cardOf((await ask(leo, 'what do I have this week?')).reply);
+		// Leo's own lesson and the family's dinner are his; Mara's meeting is only counted.
+		expect(mine.sections[0]?.items.map((i) => i.title)).toEqual([
+			'Swimming lesson',
+			"Dinner at Nona Marija's",
+		]);
+		expect(mine.sections[0]?.others).toEqual({ count: 1, more: false });
+		expect(mine.text).toContain('One more is for someone else.');
+		expect(mine.text.join('\n')).not.toContain('Staff meeting');
+		// Nobody named: everything is shown, and there is no such line.
+		const all = cardOf((await ask(mara, 'What is on this week?')).reply);
+		expect(all.sections[0]?.items.map((i) => i.title)).toContain('Staff meeting');
+		expect(all.sections[0]?.others).toBeUndefined();
+	});
+
 	it('reads the calendar beside the meal plan, so a dinner elsewhere is shown', async () => {
 		k.llm.respond({
 			intent: 'ask',

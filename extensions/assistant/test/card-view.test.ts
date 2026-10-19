@@ -93,6 +93,21 @@ describe('the answer card as rows', () => {
 		expect(tasks?.hidden).toBe('2 more the assistant may not read.');
 	});
 
+	it('says the days hold more for other people, in the reader’s language, with the count or without', () => {
+		const [base] = card().sections;
+		if (!base) throw new Error('expected a section');
+		const counted = card({ sections: [{ ...base, others: { count: 2, more: false } }] });
+		expect(cardView(counted, words('en')).sections[0]?.others).toBe('2 more are for other people.');
+		expect(cardView(counted, words('tr')).sections[0]?.others).toBe(
+			'Başkaları için 2 tane daha var.',
+		);
+		const one = card({ sections: [{ ...base, others: { count: 1, more: false } }] });
+		expect(cardView(one, words('en')).sections[0]?.others).toBe('One more is for someone else.');
+		const cut = card({ sections: [{ ...base, others: { count: 3, more: true } }] });
+		expect(cardView(cut, words('en')).sections[0]?.others).toBe('More are for other people.');
+		expect(cardView(card(), words('en')).sections[0]?.others).toBeNull();
+	});
+
 	it('leaves the day out when the card is about one day, and uses the reader’s clock', () => {
 		const one = card({
 			understood: {

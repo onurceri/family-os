@@ -16,6 +16,7 @@ When you ask what there is ("what is on this week?", "do I need to pick up Leo o
 
 - The first line says what it understood: the parts it looked in, the people and the days, such as "Calendar · Leo · Thursday, 22 October". If that is not what you meant, ask again in other words.
 - Under it come the facts of each part, written by FamilyOS from what is there, with their notes (what to bring, where to pick someone up). Tap an event, a task, a chore, a meal or a duty to open it on its own page (the event or task opens in its details); what has no page of its own stays plain. When a part has nothing in those days, it says so and names the next thing: "Nothing this weekend; next: Saturday, 31 October, 19:00: Date night".
+- A question about someone ("do I have anything on Thursday?") shows what is for them and for the whole family. When those days hold more for other people, a line says how many ("2 more are for other people.") without showing them; the calendar has them.
 - A question about dinner also shows the calendar of that day, so a dinner somewhere else is there even when the meal plan is empty.
 - A part that is not installed, closed to the assistant, or that you may not see gets a line saying so ("Pets: not installed here").
 - Above the facts, the assistant writes a sentence or two. FamilyOS checks them against the facts first: a date written as numbers, a weekday that does not fit its date, a day or a name that is not in the facts, or "nothing" said about something that is there, and the sentence is left out. The facts below it are always shown.

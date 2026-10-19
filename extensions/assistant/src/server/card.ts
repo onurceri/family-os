@@ -5,6 +5,7 @@ import {
 	dayWords,
 	itemText,
 	listOf,
+	othersLine,
 	spanLabel,
 	spanPhrase,
 	weekdayName,
@@ -63,6 +64,8 @@ export function cardItem(item: DigestItem, names: ReadonlyMap<string, string>): 
 export interface Fetched {
 	topic: QuestionTopic;
 	output: DigestOutput;
+	/** When the question was about some people: what the same days hold for the others. */
+	others?: { count: number; more: boolean } | undefined;
 }
 
 export interface CardParts {
@@ -91,12 +94,13 @@ export function buildCard(parts: CardParts): Omit<AnswerCard, 'text' | 'lead'> {
 			fallback: parts.fallback,
 			...(parts.mismatches?.length && { mismatches: [...parts.mismatches] }),
 		},
-		sections: parts.fetched.map(({ topic, output }) => ({
+		sections: parts.fetched.map(({ topic, output, others }) => ({
 			topic,
 			items: output.items.map((item) => cardItem(item, parts.names)),
 			truncated: output.truncated,
 			...(output.hidden !== undefined && { hidden: output.hidden }),
 			...(output.nextAfter && { next: cardItem(output.nextAfter, parts.names) }),
+			...(others && { others: { ...others } }),
 		})),
 		notHere: [...parts.notHere],
 	};
@@ -142,6 +146,7 @@ export function cardText(card: Omit<AnswerCard, 'text' | 'lead'>, words: CardWor
 		for (const item of section.items) lines.push(`- ${itemText(item, words, sameDay)}`);
 		if (section.truncated) lines.push(t('card_more'));
 		if (section.hidden) lines.push(t('card_hidden', { count: section.hidden }));
+		if (section.others) lines.push(othersLine(section.others, words));
 	}
 	if (card.notHere.length > 0) lines.push('');
 	for (const missing of card.notHere)

@@ -148,6 +148,11 @@ export const AnswerCardSchema = z.object({
 			truncated: z.boolean(),
 			/** Items the assistant may not read. */
 			hidden: z.number().int().optional(),
+			/**
+			 * When the question was about some people: how many items the same days hold for others
+			 * (`more` when that read was cut, so only "more" is known).
+			 */
+			others: z.object({ count: z.number().int().min(0), more: z.boolean() }).optional(),
 			/** When the days hold nothing: the first item after them. */
 			next: CardItemSchema.optional(),
 		}),
