@@ -375,13 +375,19 @@ Ayrıca 20 Ekim Salı günü saat 18:00'de veli toplantımız yapılacaktır.`,
 			total(1),
 			has(
 				'lists.addShoppingItems',
-				'four items with sections',
+				'four items, the tomatoes with their quantity',
 				(i) =>
 					items(i).length === 4 &&
-					items(i).some(
-						(x) => /domates/i.test(x.title) && x.category === 'produce' && Boolean(x.quantity),
-					),
+					items(i).some((x) => /domates/i.test(x.title) && Boolean(x.quantity)),
 			),
+			// A card without sections loses nothing: every item is there, only not sorted.
+			{
+				label: 'lists.addShoppingItems: the tomatoes in the produce section',
+				pass: (ds) =>
+					of(ds, 'lists.addShoppingItems').some((d) =>
+						items(d.input).some((x) => /domates/i.test(x.title) && x.category === 'produce'),
+					),
+			},
 		],
 	},
 	{

@@ -74,9 +74,6 @@
 					"calendar.createEvent: trip on 16 Oct 08:30 for Deniz",
 					"lists.addTask: permission form by 8 or 9 Oct"
 				],
-				"Shopping list (Turkish)": [
-					"lists.addShoppingItems: four items with sections"
-				],
 				"A couple, no children": [
 					"calendar.createEvent: dentist on 8 Oct 15:00 for Selin"
 				],
@@ -100,6 +97,9 @@
 				],
 				"A class email for 4B changes only the trip of 4B (sim)": [
 					"calendar.createEvent: the lake walk on Fri 6 Nov 13:00"
+				],
+				"Shopping list (Turkish)": [
+					"lists.addShoppingItems: the tomatoes in the produce section"
 				]
 			},
 			"runs": 1,
@@ -176,11 +176,6 @@
 				"Ticking off an item names the right one of two lists (sim fixture)": 1,
 				"New items go to the list that fits, or are marked (sim fixture)": 1
 			},
-			"harmful": {
-				"Shopping list (Turkish)": [
-					"lists.addShoppingItems: four items with sections"
-				]
-			},
 			"cost": 0
 		},
 		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
@@ -198,7 +193,6 @@
 				"A vet appointment tomorrow is an event, not a treatment (Turkish)",
 				"Weekly lessons with an end (Turkish)",
 				"Payment due \"on the 15th\" (Turkish)",
-				"Shopping list (Turkish)",
 				"A couple, no children",
 				"Nothing to do",
 				"Instructions inside the shared content are ignored",
@@ -258,7 +252,8 @@
 				"A cancellation of a moved lesson takes the moved one (sim fixture)",
 				"An invoice names a car by its plate (sim fixture)",
 				"Ticking off an item names the right one of two lists (sim fixture)",
-				"New items go to the list that fits, or are marked (sim fixture)"
+				"New items go to the list that fits, or are marked (sim fixture)",
+				"Shopping list (Turkish)"
 			],
 			"failing": {
 				"An adult child set it up for their parents": [
