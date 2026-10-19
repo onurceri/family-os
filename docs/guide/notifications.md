@@ -18,7 +18,7 @@ Reminder times follow the family's time zone (see [Region and formats](region.md
 
 ## The list in the app
 
-On a computer or tablet, the **bell** at the top of the navigation shows how many notifications you have not read; press it to see the latest ones, **Mark all read**, or open one. On a phone, the bell is at the top of **Today**; it opens the full list (also under **Settings → You → Notifications**, where the number on **More** counts what you have not read). Tap a notification to mark it read and go to the thing it is about. **Mark all as read** clears the count.
+On a computer or tablet, the **bell** at the top of the navigation shows how many notifications you have not read; press it to see the latest ones, **Mark all read**, or open one. On a phone, the bell is at the top of **Today**; it opens the full list (also under **Settings → You → Notifications**, where the number on **More** counts what you have not read). Tap a notification to mark it read and go to the thing it is about. **Mark all as read** clears the count. A "suggestion to review" notification leaves the list once someone has decided the suggestion, so the bell never asks you to review something that is already done.
 
 Each person has their own list, in their own language.
 

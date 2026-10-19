@@ -282,7 +282,7 @@ describe('the waiting notice once the suggestion is decided', () => {
 	const sourced = { sourceKind: 'inbox', sourceId: 'inbox_9' };
 	const unread = async () => (await waitingNotices()).filter((n) => n.read_at === null);
 
-	it('is read when the suggestion is rejected, applied or withdrawn', async () => {
+	it('is removed when the suggestion is rejected, applied or withdrawn', async () => {
 		for (const decide of ['reject', 'approve', 'withdraw'] as const) {
 			const id = await propose({ id: 'item_1' }, kid.actor, 'cart.remove');
 			k.clock.advance(60_000);
@@ -290,11 +290,11 @@ describe('the waiting notice once the suggestion is decided', () => {
 			expect((await unread()).length).toBeGreaterThan(0);
 			if (decide === 'approve') await k.runner.approveDraft(id, parent.actor);
 			else await k.runner.rejectDraft(id, decide === 'reject' ? parent.actor : kid.actor);
-			expect(await unread()).toEqual([]);
+			expect(await waitingNotices()).toEqual([]);
 		}
 	});
 
-	it('stays unread while another suggestion of the same message waits', async () => {
+	it('stays while another suggestion of the same message waits', async () => {
 		const first = await propose({ name: 'Cheddar', done: true }, kid.actor, 'cart.tick', sourced);
 		const second = await propose({ id: 'item_1' }, kid.actor, 'cart.remove', sourced);
 		k.clock.advance(60_000);
@@ -303,7 +303,7 @@ describe('the waiting notice once the suggestion is decided', () => {
 		await k.runner.rejectDraft(first, parent.actor);
 		expect((await unread()).length).toBeGreaterThan(0);
 		await k.runner.rejectDraft(second, parent.actor);
-		expect(await unread()).toEqual([]);
+		expect(await waitingNotices()).toEqual([]);
 	});
 
 	it('is never made when the suggestion was decided during the delay', async () => {

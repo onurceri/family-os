@@ -55,13 +55,14 @@ export async function stillWaiting(db: DbExecutor, dedupeKey: string): Promise<b
 }
 
 /**
- * Marks the "waiting" notices of a decided suggestion as read, unless another suggestion of
- * the same shared item still waits. Returns the members whose unread count changed.
+ * Removes the "waiting" notices of a decided suggestion, unless another suggestion of the same
+ * shared item still waits: a bell must not keep inviting people to review what has been decided
+ * (the person behind it hears the outcome in their own notice). Returns the members whose list
+ * changed.
  */
 export async function settleWaitingNotices(
 	db: DbExecutor,
 	draft: { id: string; source_kind: string | null; source_id: string | null },
-	now: number,
 ): Promise<string[]> {
 	const key = waitingDedupeKey({
 		id: draft.id,
@@ -69,24 +70,22 @@ export async function settleWaitingNotices(
 		sourceId: draft.source_id,
 	});
 	if (await stillWaiting(db, key)) return [];
-	const unread = await db
+	const rows = await db
 		.withTables<CoreTables>()
 		.selectFrom('core_notifications')
 		.select(['id', 'member_id'])
 		.where('kind', '=', WAITING_KIND)
 		.where('dedupe_key', '=', key)
-		.where('read_at', 'is', null)
 		.execute();
-	if (unread.length === 0) return [];
+	if (rows.length === 0) return [];
 	await db
 		.withTables<CoreTables>()
-		.updateTable('core_notifications')
-		.set({ read_at: now })
+		.deleteFrom('core_notifications')
 		.where(
 			'id',
 			'in',
-			unread.map((n) => n.id),
+			rows.map((n) => n.id),
 		)
 		.execute();
-	return [...new Set(unread.map((n) => n.member_id))];
+	return [...new Set(rows.map((n) => n.member_id))];
 }
