@@ -20,6 +20,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, FileText, Plus, Syringe } from '@lucide/svelte';
+	import { type TreatmentFacts, treatmentLines } from './treatment-lines.js';
 	import {
 		type Pet,
 		type PetTreatment,
@@ -75,6 +76,13 @@
 	};
 	const dateOf = (d: string) =>
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+	const linesOf = (facts: TreatmentFacts & { kind?: TreatmentKind }) =>
+		treatmentLines(facts, t(`treatment_kind_${facts.kind ?? 'vaccination'}`), dateOf);
+	// A waiting treatment shows what a saved one does, so two of them can be told apart.
+	const waitingRow = (change: { input: unknown }) => {
+		const { title, parts } = linesOf(change.input as TreatmentFacts & { kind?: TreatmentKind });
+		return { title, detail: parts.join(' · ') };
+	};
 
 	// The add form, in the panel (a sheet on phones).
 	let adding = $state(false);
@@ -364,20 +372,20 @@
 	{#if treatments.length > 0 || waitingNew.length > 0}
 		<Card rows role="list">
 			{#each waitingNew as change, i (change.draftId ?? i)}
+				{@const row = waitingRow(change)}
 				<div role="listitem">
-					<AwaitingRow {change} />
+					<AwaitingRow {change} title={row.title} detail={row.detail} />
 				</div>
 			{/each}
 			{#each treatments as item (item.id)}
+				{@const lines = linesOf(item)}
 				<div role="listitem">
 					<Row
-						title={item.product || t(`treatment_kind_${item.kind}`)}
+						title={lines.title}
 						meta={[
 							// First, so a narrow row never cuts off that it waits.
 							markOf(item.id),
-							item.product ? t(`treatment_kind_${item.kind}`) : null,
-							dateOf(item.givenOn),
-							item.vet,
+							...lines.parts,
 						]
 							.filter(Boolean)
 							.join(' · ')}

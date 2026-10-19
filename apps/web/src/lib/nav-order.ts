@@ -36,3 +36,27 @@ export function groupedByName<T extends Orderable & { group?: string }>(
 	}
 	return [...groups].map(([group, list]) => ({ group, items: list.toSorted(name) }));
 }
+
+/**
+ * The settings list: the parts in the order given, the pages inside each by name in the reader's
+ * language. A page marked `first` stays on top of its part (Profile & sign-in is where Settings
+ * opens). A page without a part belongs to `fallback`.
+ */
+export function settingsByName<
+	S extends string,
+	T extends Orderable & { section?: S; first?: boolean },
+>(
+	items: readonly T[],
+	sections: readonly S[],
+	fallback: S,
+	name: (a: Orderable, b: Orderable) => number,
+): { section: S; items: T[] }[] {
+	return sections
+		.map((section) => ({
+			section,
+			items: items
+				.filter((i) => (i.section ?? fallback) === section)
+				.toSorted((a, b) => Number(!!b.first) - Number(!!a.first) || name(a, b)),
+		}))
+		.filter((s) => s.items.length > 0);
+}

@@ -17,6 +17,7 @@ import {
 	CATEGORIES,
 	CategorySchema,
 	ListNameSchema,
+	mergeQuantity,
 	ReviewLabelSchema,
 	SHOPPING_QUANTITY_MAX,
 	SHOPPING_TITLE_MAX,
@@ -28,6 +29,10 @@ import {
 } from '../contract/index.ts';
 import { type ItemRow, tables, titleKey, toItem } from './store.ts';
 import { listsView } from './tasks.ts';
+
+/** A merged amount that no longer fits the field gives way to the one just asked for. */
+const withinLimit = (merged: string | null, asked: string | null | undefined) =>
+	merged && merged.length > SHOPPING_QUANTITY_MAX ? (asked ?? merged) : merged;
 
 export const shoppingChanged = defineEvent('lists.shopping.changed', shoppingChangedPayload);
 
@@ -226,8 +231,13 @@ export const addShoppingItems = defineAction({
 					done_at: null,
 					done_by: null,
 					// An add without an amount never clears the one on the list (an editor sends null for
-					// an empty field); clearing it is `lists.updateShoppingItem`.
-					quantity: item.quantity || existing.quantity,
+					// an empty field); clearing it is `lists.updateShoppingItem`. An amount in another unit
+					// sits beside the one on the list instead of replacing it; a bought item that comes
+					// back starts over with the new amount.
+					quantity:
+						existing.done_at === null
+							? withinLimit(mergeQuantity(existing.quantity, item.quantity), item.quantity)
+							: item.quantity || existing.quantity,
 					category: item.category ?? existing.category,
 					updated_at: now,
 				};

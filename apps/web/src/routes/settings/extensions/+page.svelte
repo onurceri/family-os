@@ -509,6 +509,12 @@
 {#snippet fileIcon()}<FileUp class="size-4" aria-hidden="true" />{/snippet}
 {#snippet lookIcon()}<Search class="size-4" aria-hidden="true" />{/snippet}
 
+{#snippet lookAgainAction()}
+	<Button variant="ghost" size="sm" disabled={looking} onclick={() => void look()}
+		><Search class="size-[15px]" aria-hidden="true" />{t('extensions_look_again')}</Button
+	>
+{/snippet}
+
 {#snippet foundSection()}
 	<!-- What the index gave is announced when it arrives; focus lands here after a look. -->
 	{#if found?.search}
@@ -523,7 +529,19 @@
 			<Section
 				label={t('extensions_found')}
 				count={search.status === 'done' ? found.found.length : undefined}
+				actions={lookAgainAction}
 			>
+				{#if search.status !== 'looking'}
+					<p class="text-ink-soft text-xs font-semibold" data-testid="found-looked-at">
+						{t('extensions_looked_at', {
+							when: dateTimeFormat({
+								dateStyle: 'medium',
+								timeStyle: 'short',
+								timeZone: family.timeZone,
+							}).format(search.at),
+						})}
+					</p>
+				{/if}
 				{#if search.status === 'looking'}
 					<EmptyLine text={t('extensions_looking')}>
 						{#snippet icon()}<Search aria-hidden="true" />{/snippet}

@@ -490,6 +490,19 @@ describe('shopping', () => {
 		expect(await items()).toMatchObject([{ title: 'Eggs', quantity: '4' }]);
 	});
 
+	it('keeps the unit when the new amount counts in another one', async () => {
+		const { actor } = await k.member('admin');
+		const add = (input: object) => k.runner.invoke('lists.addShoppingItems', input, actor);
+		await add({ items: [{ title: 'Oat milk', quantity: '2 L' }] });
+		await add({ items: [{ title: 'oat milk', quantity: '2' }] });
+		expect((await items()).map((i) => i.quantity)).toEqual(['2 L + 2']);
+		// The same ask again changes nothing, and an amount in a unit already there replaces its part.
+		await add({ items: [{ title: 'oat milk', quantity: '2' }] });
+		expect((await items()).map((i) => i.quantity)).toEqual(['2 L + 2']);
+		await add({ items: [{ title: 'oat milk', quantity: '3 l' }] });
+		expect((await items()).map((i) => i.quantity)).toEqual(['3 l + 2']);
+	});
+
 	it('keeps the quantity and section on the list when the add has none (an empty editor field)', async () => {
 		const { actor } = await k.member('admin');
 		const add = (input: object) => k.runner.invoke('lists.addShoppingItems', input, actor);
@@ -510,8 +523,10 @@ describe('shopping', () => {
 			{ title: 'Oat milk', quantity: '1 l', category: 'dairy' },
 			{ title: 'Rice', quantity: '1 kg' },
 		]);
+		await add({ items: [{ title: 'Rice', quantity: '3 kg' }] });
+		expect((await items()).find((i) => i.title === 'Rice')?.quantity).toBe('3 kg');
 		await add({ items: [{ title: 'Rice', quantity: 'a bag' }] });
-		expect((await items()).find((i) => i.title === 'Rice')?.quantity).toBe('a bag');
+		expect((await items()).find((i) => i.title === 'Rice')?.quantity).toBe('3 kg + a bag');
 	});
 
 	it('brings a bought item back with the new quantity even when keeping', async () => {

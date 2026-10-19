@@ -5,16 +5,20 @@
 	/**
 	 * A new entry that waits for approval (`app.awaitedNew`), as a quiet row in the list it would
 	 * join: an hourglass where a saved row has its icon, what it is in soft ink, and "Waiting for
-	 * approval" (or, for someone who may decide it, who asked). It opens nothing, so it has no hover
+	 * approval" (or, for someone who may decide it, who asked), then the same facts a saved row of the
+	 * list shows, so two waiting entries can be told apart. It opens nothing, so it has no hover
 	 * or chevron: the suggestion is decided in Quick add.
 	 */
 	let {
 		change,
 		title,
+		detail,
 	}: {
 		change: AwaitedChange;
 		/** What it is, when the action has no presenter that titles it (already translated). */
 		title?: string;
+		/** What a saved row would show beside it (date, product, place), already translated. */
+		detail?: string;
 	} = $props();
 	const app = findApp();
 	const text = $derived(app ? awaitingRowText(app, change) : null);
@@ -37,7 +41,7 @@
 		</span>
 		<span class="txt">
 			<span class="title">{title || text.title}</span>
-			<span class="meta">{text.meta}</span>
+			<span class="meta">{detail ? `${text.meta} · ${detail}` : text.meta}</span>
 		</span>
 	</div>
 {/if}
@@ -83,8 +87,6 @@
 	.meta {
 		font-size: 13px;
 		font-weight: 600;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		overflow-wrap: anywhere;
 	}
 </style>

@@ -20,6 +20,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, FileText, Plus, Wrench } from '@lucide/svelte';
+	import { type LogFacts, logLines } from './log-lines.js';
 	import { LOG_KINDS, type LogKind, type Vehicle, type VehicleLog } from '../contract/index.js';
 	import { addLog, loadLogs, loadPapers, type Outcome, removeLog } from './data.js';
 	import { useVehicles } from './i18n.js';
@@ -63,6 +64,8 @@
 	};
 	const dateOf = (d: string) =>
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+	const linesOf = (facts: LogFacts & { kind?: LogKind }) =>
+		logLines(facts, t(`log_kind_${facts.kind ?? 'service'}`), dateOf);
 
 	// The add form, in the panel (a sheet on phones).
 	let adding = $state(false);
@@ -306,15 +309,17 @@
 	{#if logs.length > 0 || waitingNew.length > 0}
 		<Card rows role="list">
 			{#each waitingNew as change, i (change.draftId ?? i)}
+				{@const row = linesOf(change.input as LogFacts & { kind?: LogKind })}
 				<div role="listitem">
-					<AwaitingRow {change} />
+					<AwaitingRow {change} title={row.title} detail={row.parts.join(' · ')} />
 				</div>
 			{/each}
 			{#each logs as log (log.id)}
+				{@const lines = linesOf(log)}
 				<div role="listitem">
 					<Row
-						title="{t(`log_kind_${log.kind}`)} · {dateOf(log.doneOn)}"
-						meta={[markOf(log.id), log.place, log.notes].filter(Boolean).join(' · ') || undefined}
+						title={lines.title}
+						meta={[markOf(log.id), ...lines.parts].filter(Boolean).join(' · ') || undefined}
 						onclick={() => view(log)}
 					>
 						{#snippet lead()}

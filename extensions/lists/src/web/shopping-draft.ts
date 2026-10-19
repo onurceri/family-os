@@ -1,5 +1,6 @@
 import { SvelteMap } from 'svelte/reactivity';
 import {
+	mergeQuantity,
 	type ShoppingItem,
 	type ShoppingItemInput,
 	type ShoppingList,
@@ -78,7 +79,9 @@ export function quantityChanges(
 			onList.find((i) => !i.doneAt && titleKey(i.title, locale) === key) ??
 			onList.find((i) => titleKey(i.title, locale) === key);
 		const from = existing?.quantity?.trim();
-		if (existing && from && from !== to) changes.push({ title: existing.title, from, to });
+		const merged = existing?.doneAt ? to : mergeQuantity(from ?? null, to);
+		if (existing && from && merged && merged !== from)
+			changes.push({ title: existing.title, from, to: merged });
 	}
 	return changes;
 }

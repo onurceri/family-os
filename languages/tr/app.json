@@ -278,6 +278,8 @@
 	"extensions_why": "Neden devre dışı",
 	"extensions_error_missing": "{{name}} gerekiyor, ama bu sunucuda yok.",
 	"extensions_add_file": "Dosyadan ekle",
+	"extensions_look_again": "Yeniden ara",
+	"extensions_looked_at": "Son arama: {{when}}",
 	"extensions_look": "Daha fazlasını ara",
 	"extensions_found": "İnternette bulunanlar",
 	"extensions_looking": "FamilyOS dizinine bakılıyor…",

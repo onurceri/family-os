@@ -82,12 +82,12 @@
 		>
 		{#if due || repeats || waiting || app.awaitsApproval(task.id)}
 			<span
-				class="flex items-center gap-1 truncate text-[13px] {!done && level === 'overdue'
+				class="flex min-w-0 flex-wrap items-center gap-x-1 text-[13px] {!done && level === 'overdue'
 					? 'text-attention font-semibold'
 					: 'text-ink-soft'}"
 			>
 				{#if repeats}<Repeat class="size-3 shrink-0" aria-hidden="true" />{/if}
-				{#if due}<span class="truncate">{due}</span>{/if}
+				{#if due}<span class="min-w-0 truncate">{due}</span>{/if}
 				{#if waiting}
 					<span class="shrink-0 font-semibold" data-testid="waiting-mark"
 						>{due ? '· ' : ''}{t('waiting_to_send')}</span

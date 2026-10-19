@@ -36,6 +36,7 @@
 		type Item,
 		type ItemPresetId,
 		type Service,
+		type ServiceKind,
 		homeUrl,
 		ITEM_PRESETS,
 	} from '../contract/index.js';
@@ -72,6 +73,7 @@
 	import ItemForm from './ItemForm.svelte';
 	import { openPath } from './nav.js';
 	import RecordMenu from './RecordMenu.svelte';
+	import { type ItemFacts, itemLine, type ServiceFacts, serviceLine } from './row-lines.js';
 	import ServiceForm from './ServiceForm.svelte';
 
 	/**
@@ -302,8 +304,9 @@
 		}
 	}
 
-	const itemSubtitle = (i: Item) =>
-		[i.room, [i.brand, i.model].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+	const itemSubtitle = (i: ItemFacts) => itemLine(i);
+	const serviceSubtitle = (s: ServiceFacts & { kind?: ServiceKind }) =>
+		serviceLine(s, t(`service_kind_${s.kind ?? 'other'}`), (day) => t('due_day_short', { day }));
 	const facts = $derived(home ? [t(`tenure_${home.tenure}`), home.address.split('\n')[0]] : []);
 </script>
 
@@ -393,7 +396,7 @@
 				<Card rows role="list">
 					{#each waitingItems as change, n (change.draftId ?? n)}
 						<div role="listitem">
-							<AwaitingRow {change} />
+							<AwaitingRow {change} detail={itemSubtitle(change.input as ItemFacts)} />
 						</div>
 					{/each}
 					{#each items as i (i.id)}
@@ -434,21 +437,16 @@
 				<Card rows role="list">
 					{#each waitingServices as change, n (change.draftId ?? n)}
 						<div role="listitem">
-							<AwaitingRow {change} title={providerOf(change.input)} />
+							<AwaitingRow
+								{change}
+								title={providerOf(change.input)}
+								detail={serviceSubtitle(change.input as ServiceFacts & { kind?: ServiceKind })}
+							/>
 						</div>
 					{/each}
 					{#each services as s (s.id)}
 						<div role="listitem">
-							<Row
-								title={s.provider}
-								meta={[
-									t(`service_kind_${s.kind}`),
-									s.dueDay ? t('due_day_short', { day: s.dueDay }) : '',
-								]
-									.filter(Boolean)
-									.join(' · ')}
-								href="/home/services/{s.id}"
-							>
+							<Row title={s.provider} meta={serviceSubtitle(s)} href="/home/services/{s.id}">
 								{#snippet lead()}
 									<span class="bg-idle grid size-9 place-items-center rounded-full"
 										><Zap class="size-[18px]" aria-hidden="true" /></span

@@ -23,7 +23,7 @@ import {
 import type { Component } from 'svelte';
 import { contributions, enabledOnly } from './extensions';
 import { getLocale, tDynamic } from './i18n.svelte';
-import { byName, groupedByName, orderedBy } from './nav-order';
+import { byName, groupedByName, orderedBy, settingsByName } from './nav-order';
 
 /**
  * Navigation model:
@@ -42,6 +42,8 @@ export interface NavItem {
 	section?: SettingsSection;
 	/** Lower comes first. */
 	order?: number;
+	/** For settings pages: stays at the top of its part of the list, before the alphabetical rest. */
+	first?: boolean;
 	/** Capability needed to see this entry. */
 	requires?: string;
 	/** The page where things are shared with the family (its key is `n`). */
@@ -91,6 +93,7 @@ export const APP_SETTINGS: readonly NavItem[] = [
 		icon: UserRound,
 		group: 'settings',
 		section: 'you',
+		first: true,
 	},
 	{
 		id: 'core.appearance',
@@ -305,15 +308,12 @@ export function buildNav(
 		.map((c) => ({ ...c, group: c.group ?? 'pages' }));
 	const more = [...overflow, ...visible.filter((c) => c.placement === 'more').toSorted(byOrder)];
 	const groupBy = (items: NavItem[]) => groupedByName(items, name);
-	// The app's own settings and the pages extensions add, in one order (the app's first on a tie).
+	// The app's own settings and the pages extensions add; each part of the list is then ordered by name.
 	const settingsItems = [
 		...APP_SETTINGS.filter((i) => allowed(i, can)),
 		...visible.filter((c) => c.placement === 'more' && c.group === 'settings'),
-	].toSorted(byOrder);
-	const settings = SETTINGS_SECTIONS.map((section) => ({
-		section,
-		items: settingsItems.filter((i) => (i.section ?? 'system') === section),
-	})).filter((s) => s.items.length > 0);
+	];
+	const settings = settingsByName(settingsItems, SETTINGS_SECTIONS, 'system', name);
 	return {
 		settings,
 		household: groupBy(

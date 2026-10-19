@@ -155,6 +155,9 @@
 	let formEl = $state<HTMLFormElement>();
 	// New chores someone asked for that wait for approval: quiet rows until they are decided.
 	const waitingNew = $derived(app.awaitedNew(['chores.createChore']));
+	// A waiting chore says when it is first due, as a saved one does.
+	const dueOf = (startDate: string | undefined) =>
+		startDate ? dueLabel(startDate, today, t, app.dateLocale()) : undefined;
 	const empty = $derived(loaded && !loadError && chores.length === 0 && waitingNew.length === 0);
 	function openNew() {
 		const fresh = emptyChore(today);
@@ -358,7 +361,12 @@
 			<Section label={app.t('app:draft_waiting')} count={waitingNew.length}>
 				<ul class="grid grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] gap-1.5">
 					{#each waitingNew as change, i (change.draftId ?? i)}
-						<li class="min-w-0"><AwaitingRow {change} /></li>
+						<li class="min-w-0">
+							<AwaitingRow
+								{change}
+								detail={dueOf((change.input as { startDate?: string }).startDate)}
+							/>
+						</li>
 					{/each}
 				</ul>
 			</Section>

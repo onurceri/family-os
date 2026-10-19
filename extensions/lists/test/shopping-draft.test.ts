@@ -20,8 +20,14 @@ describe('quantityChanges', () => {
 	const onList = [item('Rice', '1 kg'), item('Oat milk', '1 l'), item('Salt', null)];
 
 	it('names an item on the list whose quantity would be replaced', () => {
-		expect(quantityChanges([{ title: 'rice', quantity: 'a bag' }], onList, 'en')).toEqual([
-			{ title: 'Rice', from: '1 kg', to: 'a bag' },
+		expect(quantityChanges([{ title: 'rice', quantity: '3 kg' }], onList, 'en')).toEqual([
+			{ title: 'Rice', from: '1 kg', to: '3 kg' },
+		]);
+	});
+
+	it('shows an amount in another unit beside the one on the list', () => {
+		expect(quantityChanges([{ title: 'Oat milk', quantity: '2' }], onList, 'en')).toEqual([
+			{ title: 'Oat milk', from: '1 l', to: '1 l + 2' },
 		]);
 	});
 

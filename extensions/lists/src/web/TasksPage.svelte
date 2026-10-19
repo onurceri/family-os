@@ -273,6 +273,18 @@
 
 	// New tasks someone asked for that wait for approval: quiet rows until they are decided.
 	const waitingNew = $derived(app.awaitedNew(['lists.addTask']));
+	// A waiting task says when it is due, as a saved one does.
+	type WaitingTaskDue = { dueDate?: string | null; dueTime?: string | null };
+	const dueOf = (input: WaitingTaskDue) =>
+		input.dueDate
+			? dueLabel(
+					{ dueDate: input.dueDate, dueTime: input.dueTime ?? null },
+					today,
+					t,
+					app.dateLocale(),
+					app.hourCycle(),
+				)
+			: undefined;
 	const reading = $derived(
 		opened && editingId === opened.id
 			? readFirst(app, 'lists.updateTask', taskDetails, {
@@ -477,7 +489,9 @@
 						class="bg-surface divide-line grid grid-cols-[minmax(0,1fr)] divide-y rounded-[var(--r-card)] shadow-[inset_0_0_0_1px_var(--line)]"
 					>
 						{#each waitingNew as change, i (change.draftId ?? i)}
-							<li><AwaitingRow {change} /></li>
+							<li>
+								<AwaitingRow {change} detail={dueOf(change.input as WaitingTaskDue)} />
+							</li>
 						{/each}
 					</ul>
 				</section>

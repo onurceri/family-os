@@ -278,6 +278,8 @@
 	"extensions_why": "Why it is left out",
 	"extensions_error_missing": "It needs {{name}}, which this server does not have.",
 	"extensions_add_file": "Add from a file",
+	"extensions_look_again": "Look again",
+	"extensions_looked_at": "Last looked {{when}}",
 	"extensions_look": "Look for more",
 	"extensions_found": "Found online",
 	"extensions_looking": "Looking in the FamilyOS index…",

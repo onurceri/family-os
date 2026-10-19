@@ -85,3 +85,43 @@ export function splitAnyAmount(
 	if (!tail) return lead;
 	return { title: (tail[1] as string).trim(), quantity: (tail[2] as string).trim() };
 }
+
+const AMOUNT_START = new RegExp(`^${AMOUNT}`, 'u');
+const SEPARATOR = ' + ';
+
+/** What an amount counts in: "2 L" gives "l", "3" gives "" ("a dozen" is all unit). */
+export function quantityUnit(quantity: string): string {
+	return quantity
+		.trim()
+		.replace(AMOUNT_START, '')
+		.replace(/\.$/u, '')
+		.trim()
+		.replace(/\s+/gu, ' ')
+		.toLowerCase();
+}
+
+/**
+ * The amount an item has once `added` is asked for on top of `existing`. An amount in the same
+ * unit replaces the one on the list (asking again for "3 L" means 3, not 5), and one in another
+ * unit sits beside it ("2 L + 2"): the two cannot be added up without knowing the product, and
+ * dropping the unit would lose what the list said. Asking for the same amount twice changes
+ * nothing, so a retried add is safe.
+ */
+export function mergeQuantity(
+	existing: string | null,
+	added: string | null | undefined,
+): string | null {
+	const next = added?.trim();
+	if (!next) return existing;
+	const current = existing?.trim();
+	if (!current) return next;
+	const parts = current
+		.split(SEPARATOR)
+		.map((p) => p.trim())
+		.filter(Boolean);
+	const unit = quantityUnit(next);
+	const at = parts.findIndex((p) => quantityUnit(p) === unit);
+	if (at === -1) parts.push(next);
+	else parts[at] = next;
+	return parts.join(SEPARATOR);
+}
