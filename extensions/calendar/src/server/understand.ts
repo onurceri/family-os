@@ -9,6 +9,7 @@ import {
 	peopleNamed,
 	type Resolution,
 	type ResolvedDay,
+	UNSURE_TARGET,
 	unsureFields,
 	whichOne,
 } from '@famos/sdk';
@@ -482,7 +483,11 @@ export const event = defineMentionKind({
 
 /** An event a change or a cancellation names, among the family's coming ones. */
 type Found =
-	| { event: { id: string; label: string; dates: Occurrence[] } }
+	| {
+			event: { id: string; label: string; dates: Occurrence[] };
+			/** The day the message gives was what told equally named events apart. */
+			byDay?: true;
+	  }
 	| { refusal: Resolution };
 
 /** Whether a date is the day read, or inside the span read ("this week"). */
@@ -510,9 +515,38 @@ function eventNamed(
 		const onDay = found.ambiguous.filter((e) =>
 			e.dates.some((o) => within(startOf(o, ctx.timeZone).date, day)),
 		);
-		if (onDay.length === 1) return { event: onDay[0] as (typeof coming)[number] };
+		if (onDay.length === 1) return { event: onDay[0] as (typeof coming)[number], byDay: true };
 	}
-	return { refusal: refuse('ambiguous', whichOne(words, found.ambiguous), [index]) };
+	return { refusal: refuse('ambiguous', whichEvent(ctx, words, found.ambiguous), [index]) };
+}
+
+/**
+ * The "which one?" subject of equally named events. Their names tell them apart when they differ;
+ * events with one name ("Leo swimming") are told by the day each is next on
+ * ("Leo swimming (Thu 22 Oct, Wed 28 Oct)").
+ */
+function whichEvent(
+	ctx: MentionContext,
+	words: string,
+	candidates: readonly { label: string; dates: readonly Occurrence[] }[],
+): string {
+	const named = whichOne(words, candidates);
+	if (named !== words) return named;
+	const locale = dateLocale(ctx.locale, ctx.formatLocale, ctx.hourCycle);
+	const days = candidates.flatMap((e) => {
+		const first = e.dates[0];
+		return first
+			? [
+					formatDate(startOf(first, ctx.timeZone).date, locale, {
+						weekday: 'short',
+						day: 'numeric',
+						month: 'short',
+					}),
+				]
+			: [];
+	});
+	// The days hold commas in some formats, so they are set apart by a slash.
+	return days.length === 0 ? words : `${words} (${days.slice(0, 4).join(' / ')})`;
 }
 
 /** The date of an event nearest to a day (the earlier one on a tie). */
@@ -629,7 +663,7 @@ export const eventChange = defineMentionKind({
 			}
 			const to = addDays(ctx.today, AHEAD_DAYS);
 			const reach = day && day.date > to ? addDays(day.date, SAME_EVENT_DAYS) : to;
-			const found = eventNamed(ctx, await eventsBetween(ctx, ctx.today, reach), words, null, index);
+			const found = eventNamed(ctx, await eventsBetween(ctx, ctx.today, reach), words, day, index);
 			if ('refusal' in found) {
 				// News that something the calendar does not have moved to a day ("the bin
 				// collection moves to 09/10") still says when it now is: that is a new event, which
@@ -643,6 +677,9 @@ export const eventChange = defineMentionKind({
 			}
 			const { dates, label } = found.event;
 			const first = dates[0] as Occurrence;
+			// A day alone chose between equally named events (a span, "this week", is a firmer
+			// choice): the person checks which one it is.
+			const chosenByDay = found.byDay && day?.to === undefined;
 			// One date of a repeating event moves: the one nearest the new day. Without a new day,
 			// the change is to the whole series.
 			const o = first.recurring && day ? nearest(dates, day.date, ctx.timeZone) : first;
@@ -680,7 +717,10 @@ export const eventChange = defineMentionKind({
 					},
 					subject: words,
 					targetTitle: label,
-					uncertain: [...uncertain].filter((f) => f in change),
+					uncertain: [
+						...[...uncertain].filter((f) => f in change),
+						...(chosenByDay ? [UNSURE_TARGET] : []),
+					],
 					decided,
 					from: [index],
 				},

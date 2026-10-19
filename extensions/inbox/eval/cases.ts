@@ -1699,6 +1699,66 @@ const SIMULATION_CASES: Case[] = [
 			}),
 		],
 	},
+	{
+		// A weekly lesson with this week's date moved out of it ("Only this one"): the news is
+		// about the moved date, not the series' next date.
+		name: 'A move this week finds the moved date, not the series (sim fixture)',
+		...NOVAK_HOME,
+		family: asSharer('Tom'),
+		seed: [
+			{
+				action: 'calendar.createEvent',
+				as: 'Leo swimming series',
+				input: {
+					title: 'Leo swimming',
+					date: '2026-10-07',
+					startTime: '16:30',
+					endTime: '17:15',
+					memberIds: ['@Leo'],
+					recurrence: { freq: 'weekly', byDay: ['WE'] },
+				},
+			},
+			{
+				action: 'calendar.changeEvent',
+				as: 'Leo swimming moved',
+				input: { id: '$0', occurrence: '2026-10-07', date: '2026-10-08', startTime: '16:30' },
+			},
+		],
+		text: 'Leo swimming moved to Thursday 5pm this week',
+		checks: [
+			{
+				label: 'calendar.changeEvent: the moved date of this week to 17:00',
+				pass: (ds, _m, _r, _t, listed) =>
+					aimedAt(ds, 'calendar.changeEvent', listed, 'Leo swimming moved').some(
+						(d) => d.input.startTime === '17:00',
+					),
+				failure: (ds) => wrongOrMissing(ds, 'calendar.changeEvent'),
+			},
+			harmful({
+				label: 'the series is not changed as a whole',
+				pass: (ds, _m, _r, _t, listed) =>
+					aimedAt(ds, 'calendar.changeEvent', listed, 'Leo swimming series').every(
+						(d) => d.input.occurrence !== undefined,
+					),
+			}),
+		],
+	},
+	{
+		// The model gave no day for the task, but its own quote names Thursday.
+		name: 'A day in the quote is read when the answer has none (sim)',
+		...NOVAK_HOME,
+		family: asSharer('Leo'),
+		text: 'swim bag for thursday pls!! and dentist ?? 2nd nov',
+		checks: [
+			flagged(
+				'lists.addTask',
+				'the swim bag, due Thursday 8 Oct',
+				(i) => i.dueDate === '2026-10-08',
+				'dueDate',
+			),
+			has('calendar.createEvent', 'the dentist on 2 Nov', (i) => i.date === '2026-11-02'),
+		],
+	},
 ];
 
 export const CASES: Case[] = [

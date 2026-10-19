@@ -27,6 +27,74 @@ const day = (text: string, dayOfMonth: number, month: number, weekday: number, y
 	...(year && { year }),
 });
 
+describe('a day the model left out but its quote names', () => {
+	it('is read from the quote and shown as a guess (an answer a free model gave)', async () => {
+		const outcome = await read('A day in the quote is read when the answer has none (sim)', {
+			label: 'Swim bag and dentist',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'lists.task',
+					title: 'Take the swim bag to school',
+					forMe: true,
+					quote: 'swim bag for thursday pls!!',
+				},
+				{
+					kind: 'calendar.event',
+					title: 'Dentist',
+					date: { text: '2nd nov', day: 2, month: 11 },
+					quote: 'dentist ?? 2nd nov',
+				},
+			],
+		});
+		const task = outcome.drafts.find((d) => d.actionId === 'lists.addTask');
+		expect(task?.input.dueDate).toBe('2026-10-08');
+		expect(task?.uncertainFields).toContain('dueDate');
+		expect(failedChecks(outcome)).toEqual([]);
+	});
+
+	it('is not read when the quote names two days', async () => {
+		const outcome = await read('A day in the quote is read when the answer has none (sim)', {
+			label: 'Swim bag',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'lists.task',
+					title: 'Take the swim bag to school',
+					quote: 'swim bag for thursday or friday',
+				},
+			],
+		});
+		const task = outcome.drafts.find((d) => d.actionId === 'lists.addTask');
+		expect(task?.input.dueDate).toBeUndefined();
+	});
+});
+
+describe('a move that names the week, of a repeating event with a date moved out of it', () => {
+	it('changes the moved date of this week (the answer both free models gave)', async () => {
+		const outcome = await read(
+			'A move this week finds the moved date, not the series (sim fixture)',
+			{
+				label: 'Leo swimming',
+				intent: 'actionable',
+				mentions: [
+					{
+						kind: 'calendar.eventChange',
+						target: 'Leo swimming',
+						date: { text: 'Thursday', weekday: 4 },
+						time: '17:00',
+						timeText: '5pm',
+						quote: 'Leo swimming moved to Thursday 5pm this week',
+					},
+				],
+			},
+		);
+		expect(outcome.skipped).toBe(0);
+		expect(outcome.drafts).toHaveLength(1);
+		expect(failedChecks(outcome)).toEqual([]);
+	});
+});
+
 describe('the household the simulation cases start from', () => {
 	it('holds similar lessons, class codes, car plates, a moved lesson and two shopping lists', async () => {
 		const outcome = await read('A child: a ball for the dog is shopping (sim)', {
