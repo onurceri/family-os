@@ -129,6 +129,7 @@ export const createChore = defineAction({
 			created_at: now,
 			updated_at: now,
 			archived_at: null,
+			version: 0,
 		};
 		await tables(uow.db).insertInto('chores_chores').values(row).execute();
 		await writeAssignees(uow, row.id, input.assigneeIds);
@@ -140,7 +141,12 @@ export const createChore = defineAction({
 
 export const updateChore = defineAction({
 	id: 'chores.updateChore',
-	target: ({ id }) => ({ table: 'chores_chores', id, liveColumn: 'archived_at' }),
+	target: ({ id }) => ({
+		table: 'chores_chores',
+		id,
+		liveColumn: 'archived_at',
+		versionColumn: 'version',
+	}),
 	title: 'Change a chore',
 	draftTitle: 'chores:draft_title_update_chore',
 	input: UpdateChoreSchema,
@@ -190,7 +196,7 @@ export const updateChore = defineAction({
 /** Hides the chore (its history stays) and stops its reminders. */
 export const archiveChore = defineAction({
 	id: 'chores.archiveChore',
-	target: ({ id }) => ({ table: 'chores_chores', id }),
+	target: ({ id }) => ({ table: 'chores_chores', id, versionColumn: 'version' }),
 	title: 'Archive a chore',
 	draftTitle: 'chores:draft_title_archive_chore',
 	input: z.object({ id: ChoreIdSchema }),
@@ -210,14 +216,19 @@ export const archiveChore = defineAction({
 			.set({ archived_at: now, updated_at: now })
 			.where('id', '=', id)
 			.execute();
-		uow.emit(choresChanged, { choreId: id });
+		uow.emit(choresChanged, { choreId: id, op: 'delete' });
 		return { ok: true as const };
 	},
 });
 
 export const setAssignees = defineAction({
 	id: 'chores.setAssignees',
-	target: ({ id }) => ({ table: 'chores_chores', id, liveColumn: 'archived_at' }),
+	target: ({ id }) => ({
+		table: 'chores_chores',
+		id,
+		liveColumn: 'archived_at',
+		versionColumn: 'version',
+	}),
 	title: 'Choose who does a chore',
 	draftTitle: 'chores:draft_title_set_assignees',
 	description:

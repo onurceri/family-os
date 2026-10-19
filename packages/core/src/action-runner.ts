@@ -23,6 +23,7 @@ import {
 	type SecretBox,
 	selfOf,
 	subjectOf,
+	systemActor,
 	targetOf,
 	UNSURE_TARGET,
 	type UndoStep,
@@ -40,6 +41,7 @@ import {
 	readAutoApproval,
 	waitingNotice,
 } from './auto-approval.ts';
+import { recordChanges } from './changes.ts';
 import { draftCreated, draftUpdated, notificationRead } from './core-events.ts';
 import {
 	admission,
@@ -87,6 +89,12 @@ export interface InvokeOptions {
 	 * manifest's `calls` lists, or as an AI actor what the AI is offered. Left out: the host.
 	 */
 	caller?: string;
+	/**
+	 * The version of the thing the caller read (the `versionColumn` of the action's `target`). When
+	 * the row has moved on, the action is refused with `precondition_failed` and nothing changes;
+	 * the check and the write share one transaction, so two callers cannot both win.
+	 */
+	ifMatch?: number;
 }
 
 /** What the runner needs to give each extension its own view of a transaction. */
@@ -155,6 +163,11 @@ export interface ActionRunner {
 	check(actionId: string, input: unknown, actor: Actor): Promise<Decision>;
 	/** The decision for every data-changing action that is on, for any input (see `decide`). */
 	decisions(actor: Actor): Record<string, Decision>;
+	/**
+	 * One transaction for an extension's own writes outside an action (a job): events emitted in
+	 * it are kept in the change log with the data and fire after the commit.
+	 */
+	unit<T>(extensionId: string, work: (uow: UnitOfWork) => Promise<T>): Promise<T>;
 	/** Takes back an applied draft with its action's inverse, in one transaction. */
 	undoDraft(draftId: string, approver: Actor): Promise<DraftRow>;
 	/**
@@ -531,7 +544,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					return def.run(view(ownerOf(def.id)), parsed);
 				},
 			});
-			return work(view('core'), view);
+			const done = await work(view('core'), view);
+			// Written in the transaction of the change: a rollback leaves no trace, a commit all of it.
+			await recordChanges(trx, registry.events, clock.now(), events);
+			return done;
 		});
 		if (enqueued > 0) deps.onJobsEnqueued?.();
 		for (const [name, payload] of events) await bus.publish(name, payload);
@@ -644,6 +660,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			const prepared = def.prepare ? await def.prepare(input, actor) : undefined;
 			const output = await unitOfWork(actor, async (uow, view) => {
 				await guard(uow);
+				await assertVersion(def, input, options.ifMatch, uow.db);
 				const out = await apply(uow, view, def, input, null, prepared);
 				await remember(uow, { status: 'applied', output: out });
 				return out;
@@ -675,6 +692,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		let byOthers = false;
 		await unitOfWork(actor, async (uow) => {
 			await guard(uow);
+			await assertVersion(def, input, options.ifMatch, uow.db);
 			if (meta.dedupeKey) {
 				const existing = await uow.db
 					.withTables<CoreTables>()
@@ -1558,6 +1576,36 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			hasPassed(draftDateOf(registry.actions.get(draft.action_id), draft), today);
 	}
 
+	/**
+	 * The conditional write: the caller read a version of the row the input points at; if it moved
+	 * on, nothing may change. Runs inside the transaction of the write, so the check and the write
+	 * cannot be pulled apart by another caller.
+	 */
+	async function assertVersion(
+		def: AnyActionDefinition,
+		input: unknown,
+		ifMatch: number | undefined,
+		db: DbExecutor,
+	): Promise<void> {
+		if (ifMatch === undefined) return;
+		const target = def.target?.(input);
+		const column = target?.versionColumn;
+		if (!target || !column)
+			throw new FamosError('bad_request', `${def.id} cannot be changed conditionally`);
+		const row = await deps.views
+			.db(ownerOf(def.id), db)
+			.withTables<Record<string, RowWithId>>()
+			.selectFrom(target.table)
+			.select(column)
+			.where('id', '=', target.id)
+			.executeTakeFirst();
+		if (!row) throw new FamosError('not_found', 'What this changes was not found');
+		if (row[column] !== ifMatch)
+			throw new FamosError('precondition_failed', 'It changed since you read it', {
+				version: row[column],
+			});
+	}
+
 	/** Whether the row an input points at (`target` of the action) is missing or no longer live. */
 	async function targetIsGone(def: AnyActionDefinition, input: unknown): Promise<boolean> {
 		if (!def.target) return false;
@@ -1668,6 +1716,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	return {
 		invoke,
+		unit: (extensionId, work) =>
+			unitOfWork(systemActor(extensionId), (_core, view) => work(view(extensionId))),
 		check,
 		decisions: decisionsFor,
 		approveDraft,

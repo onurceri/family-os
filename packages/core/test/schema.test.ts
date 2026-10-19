@@ -26,6 +26,15 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 		response: true,
 		created_at: true,
 	},
+	core_changes: {
+		seq: true,
+		at: true,
+		extension: true,
+		entity: true,
+		entity_id: true,
+		op: true,
+		audience: true,
+	},
 	core_embeddings: {
 		id: true,
 		extension_id: true,

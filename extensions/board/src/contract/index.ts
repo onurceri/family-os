@@ -91,4 +91,8 @@ export const BoardNoteSchema = z.object({
 });
 export type BoardNote = z.infer<typeof BoardNoteSchema>;
 
-export const boardChangedPayload = z.object({ noteId: z.string().optional() });
+export const boardChangedPayload = z.object({
+	noteId: z.string().optional(),
+	/** `delete`: the note is gone for readers. */
+	op: z.enum(['upsert', 'delete']).optional(),
+});

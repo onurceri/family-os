@@ -23,6 +23,7 @@ export const boardManage = defineCapability({
 
 export const boardChanged = defineEvent('board.changed', boardChangedPayload, {
 	audience: BOARD_VIEW,
+	changes: ({ noteId, op }) => (noteId ? [{ entity: 'note', id: noteId, op: op ?? 'upsert' }] : []),
 });
 
 /** A new note: everyone who sees the board, except the author. */

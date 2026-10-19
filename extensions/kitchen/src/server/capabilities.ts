@@ -15,4 +15,6 @@ export const kitchenEdit = defineCapability({
 
 export const kitchenChanged = defineEvent('kitchen.changed', kitchenChangedPayload, {
 	audience: 'kitchen.view',
+	changes: ({ area, id, op }) =>
+		id ? [{ entity: area === 'recipes' ? 'recipe' : 'meal', id, op: op ?? 'upsert' }] : [],
 });

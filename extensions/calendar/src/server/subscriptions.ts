@@ -216,7 +216,7 @@ export const removeSubscription = defineAction({
 		const db = events(uow.db);
 		await db.deleteFrom('calendar_external_events').where('subscription_id', '=', id).execute();
 		await db.deleteFrom('calendar_subscriptions').where('id', '=', id).execute();
-		uow.emit(subscriptionChanged, { subscriptionId: id });
+		uow.emit(subscriptionChanged, { subscriptionId: id, op: 'delete' });
 		return { ok: true as const };
 	},
 });
@@ -304,13 +304,18 @@ export const refreshJob = defineJob({
 			.executeTakeFirst();
 		// Removed since: the chain of refreshes ends here.
 		if (!sub) return;
-		const db = events(ctx.db);
 		const now = ctx.clock.now();
 		const log = ctx.logger.child({ subscription: sub.id, host: sub.url_host });
-		const record = async (set: Partial<SubscriptionRow>) => {
-			await db.updateTable('calendar_subscriptions').set(set).where('id', '=', sub.id).execute();
-			await ctx.events.emit(subscriptionChanged, { subscriptionId: sub.id });
-		};
+		// The write and its entry in the change log are one transaction, as for an action.
+		const record = (set: Partial<SubscriptionRow>) =>
+			ctx.unit(async (uow) => {
+				await events(uow.db)
+					.updateTable('calendar_subscriptions')
+					.set(set)
+					.where('id', '=', sub.id)
+					.execute();
+				uow.emit(subscriptionChanged, { subscriptionId: sub.id });
+			});
 
 		try {
 			const url = ctx.secrets.open(sub.sealed_url);
@@ -344,8 +349,8 @@ export const refreshJob = defineJob({
 					tags: e.tags.length ? JSON.stringify(e.tags) : null,
 				}));
 				// Replaced as a whole: readers see the old events or the new ones, never a mix.
-				await ctx.db.transaction().execute(async (trx) => {
-					const t = events(trx);
+				await ctx.unit(async (uow) => {
+					const t = events(uow.db);
 					await t
 						.deleteFrom('calendar_external_events')
 						.where('subscription_id', '=', sub.id)
@@ -367,8 +372,8 @@ export const refreshJob = defineJob({
 						})
 						.where('id', '=', sub.id)
 						.execute();
+					uow.emit(subscriptionChanged, { subscriptionId: sub.id });
 				});
-				await ctx.events.emit(subscriptionChanged, { subscriptionId: sub.id });
 			}
 			await scheduleReminders(ctx, sub, now);
 		} catch (error) {

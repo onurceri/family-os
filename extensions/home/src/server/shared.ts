@@ -4,6 +4,8 @@ import { type HomeRow, tables } from './store.ts';
 
 export const homeChanged = defineEvent('home.changed', homeChangedPayload, {
 	audience: 'home.view',
+	// A home, its items and its services are one thing to a reader: the home changed.
+	changes: ({ homeId }) => (homeId ? [{ entity: 'home', id: homeId, op: 'upsert' as const }] : []),
 });
 
 export const memberId = selfOf;

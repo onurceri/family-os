@@ -284,6 +284,7 @@ export const createEvent = defineAction({
 			created_at: now,
 			updated_at: now,
 			deleted_at: null,
+			version: 0,
 		};
 		await events(uow.db).insertInto('calendar_events').values(row).execute();
 		await ensureTags(uow.db, tagsOf(row.tags), now);
@@ -305,7 +306,12 @@ function storedEventReplace(input: unknown): unknown {
 
 export const updateEvent = defineAction({
 	id: 'calendar.updateEvent',
-	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'calendar_events',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	title: 'Change an event',
 	description:
 		'Replaces the whole event with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use calendar.changeEvent.',
@@ -382,6 +388,7 @@ export const updateEvent = defineAction({
 					created_at: now,
 					updated_at: now,
 					deleted_at: null,
+					version: 0,
 				};
 				await events(uow.db).insertInto('calendar_events').values(created).execute();
 				if (scope === 'this') {
@@ -458,7 +465,12 @@ export const updateEvent = defineAction({
 
 export const deleteEvent = defineAction({
 	id: 'calendar.deleteEvent',
-	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'calendar_events',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	title: 'Delete an event, or one occurrence of a repeating event',
 	draftTitle: 'calendar:draft_title_delete_event',
 	input: z.object({
@@ -538,10 +550,14 @@ export const deleteEvent = defineAction({
 					.where('id', '=', m.id)
 					.execute();
 				await uow.ai.remove(EVENT_KIND, m.id);
-				uow.emit(eventChanged, { eventId: m.id });
+				uow.emit(eventChanged, { eventId: m.id, op: 'delete' });
 			}
 		}
-		uow.emit(eventChanged, { eventId: id });
+		// Skipping one date of a series changes the series; removing the event takes it away.
+		uow.emit(eventChanged, {
+			eventId: id,
+			op: occurrence && row.rrule ? 'upsert' : 'delete',
+		});
 		return { ok: true as const, id, occurrence: occurrence && row.rrule ? occurrence : null };
 	},
 });
@@ -682,7 +698,12 @@ function eventFieldsChanged(row: EventRow, next: ReturnType<typeof toRow>): stri
  */
 export const changeEvent = defineAction({
 	id: 'calendar.changeEvent',
-	target: ({ id }) => ({ table: 'calendar_events', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'calendar_events',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	title: 'Change some details of an event',
 	draftTitle: 'calendar:draft_title_change_event',
 	input: EventChangeSchema.extend({
@@ -821,6 +842,7 @@ export const changeEvent = defineAction({
 				created_at: now,
 				updated_at: now,
 				deleted_at: null,
+				version: 0,
 			};
 			await events(uow.db).insertInto('calendar_events').values(created).execute();
 			const skipped: (string | number)[] = row.exdates ? JSON.parse(row.exdates) : [];
@@ -896,7 +918,7 @@ export const putOccurrenceBack = defineAction({
 				.where('deleted_at', 'is', null)
 				.execute();
 			await uow.ai.remove(EVENT_KIND, movedId);
-			uow.emit(eventChanged, { eventId: movedId });
+			uow.emit(eventChanged, { eventId: movedId, op: 'delete' });
 		}
 		const series = await events(uow.db)
 			.selectFrom('calendar_events')

@@ -147,7 +147,13 @@ export const MealEntrySchema = z.object({
 });
 export type MealEntry = z.infer<typeof MealEntrySchema>;
 
-export const kitchenChangedPayload = z.object({ area: z.enum(['recipes', 'meals']) });
+export const kitchenChangedPayload = z.object({
+	area: z.enum(['recipes', 'meals']),
+	/** The recipe or the planned meal (by `area`) that changed. */
+	id: z.string().optional(),
+	/** `delete`: it is gone for readers (an archived recipe, a meal taken off the plan). */
+	op: z.enum(['upsert', 'delete']).optional(),
+});
 
 /** Where the app shows the meal plan for the week of a day. */
 export const mealPlanHref = (date: string) => `/kitchen/plan?date=${date}`;

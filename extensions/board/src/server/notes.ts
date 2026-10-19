@@ -185,6 +185,7 @@ export const postNote = defineAction({
 			updated_at: now,
 			// A new note comes first in its group, also on a board the family has arranged.
 			position: await topOf(uow.db, pinned, now),
+			version: 0,
 		};
 		await tables(uow.db).insertInto('board_notes').values(row).execute();
 		// The author has seen their own note.
@@ -216,7 +217,7 @@ export const postNote = defineAction({
 
 export const editNote = defineAction({
 	id: 'board.editNote',
-	target: ({ id }) => ({ table: 'board_notes', id }),
+	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Change a note on the family board',
 	input: EditNoteSchema,
 	output: z.object({ ok: z.literal(true) }),
@@ -239,7 +240,7 @@ export const editNote = defineAction({
 
 export const removeNote = defineAction({
 	id: 'board.removeNote',
-	target: ({ id }) => ({ table: 'board_notes', id }),
+	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Take a note off the family board',
 	input: z.object({ id: NoteIdSchema }),
 	output: z.object({ removed: z.boolean() }),
@@ -257,14 +258,14 @@ export const removeNote = defineAction({
 		await tables(uow.db).deleteFrom('board_notes').where('id', '=', id).execute();
 		// The file goes with a job, so it is removed only if the row really is gone.
 		if (row.photo) await uow.enqueue('board.deleteFile', { key: row.photo });
-		uow.emit(boardChanged, { noteId: id });
+		uow.emit(boardChanged, { noteId: id, op: 'delete' });
 		return { removed: true };
 	},
 });
 
 export const pinNote = defineAction({
 	id: 'board.pinNote',
-	target: ({ id }) => ({ table: 'board_notes', id }),
+	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Pin or unpin a note on the family board',
 	input: z.object({ id: NoteIdSchema, pinned: z.boolean() }),
 	output: z.object({ ok: z.literal(true) }),
@@ -288,7 +289,7 @@ export const pinNote = defineAction({
 
 export const moveNote = defineAction({
 	id: 'board.moveNote',
-	target: ({ id }) => ({ table: 'board_notes', id }),
+	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Move a note on the family board',
 	input: MoveNoteSchema,
 	output: z.object({ moved: z.boolean() }),
@@ -325,12 +326,15 @@ export const moveNote = defineAction({
 		// In an arranged group every position is a number.
 		const prev = others[index - 1]?.position ?? undefined;
 		const next = others[index]?.position ?? undefined;
-		const set = (noteId: string, position: number) =>
-			tables(uow.db)
+		const moved: string[] = [];
+		const set = (noteId: string, position: number) => {
+			moved.push(noteId);
+			return tables(uow.db)
 				.updateTable('board_notes')
 				.set({ position })
 				.where('id', '=', noteId)
 				.execute();
+		};
 		const roomy = prev === undefined || next === undefined || next - prev > MIN_GAP;
 		if (arranged && roomy) {
 			const position =
@@ -341,7 +345,8 @@ export const moveNote = defineAction({
 			const order = [...others.slice(0, index), row, ...others.slice(index)];
 			for (const [i, note] of order.entries()) await set(note.id, i + 1);
 		}
-		uow.emit(boardChanged, { noteId: id });
+		// Renumbering a group moves every note in it, and each one is told.
+		for (const noteId of moved) uow.emit(boardChanged, { noteId });
 		return { moved: true };
 	},
 });
@@ -636,7 +641,11 @@ export const cleanupJob = defineJob({
 			.execute();
 		for (const note of due) {
 			if (note.photo) await ctx.files.delete(note.photo);
-			await tables(ctx.db).deleteFrom('board_notes').where('id', '=', note.id).execute();
+			// The removal and its entry in the change log are one transaction.
+			await ctx.unit(async (uow) => {
+				await tables(uow.db).deleteFrom('board_notes').where('id', '=', note.id).execute();
+				uow.emit(boardChanged, { noteId: note.id, op: 'delete' });
+			});
 		}
 		await scheduleCleanup(ctx);
 	},

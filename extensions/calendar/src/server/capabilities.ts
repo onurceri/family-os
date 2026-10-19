@@ -22,12 +22,18 @@ export const calendarManage = defineCapability({
 
 export const eventChanged = defineEvent('calendar.event.changed', eventChangedPayload, {
 	audience: 'calendar.view',
+	changes: ({ eventId, op }) => [{ entity: 'event', id: eventId, op: op ?? 'upsert' }],
 });
 /** A subscription was added, changed, removed or refreshed (the agenda reloads). */
 export const subscriptionChanged = defineEvent(
 	'calendar.subscription.changed',
-	z.object({ subscriptionId: z.string() }),
-	{ audience: 'calendar.view' },
+	z.object({ subscriptionId: z.string(), op: z.enum(['upsert', 'delete']).optional() }),
+	{
+		audience: 'calendar.view',
+		changes: ({ subscriptionId, op }) => [
+			{ entity: 'subscription', id: subscriptionId, op: op ?? 'upsert' },
+		],
+	},
 );
 /** A tag was renamed, recoloured or deleted (the agenda reloads). */
 export const tagChanged = defineEvent('calendar.tag.changed', z.object({}), {

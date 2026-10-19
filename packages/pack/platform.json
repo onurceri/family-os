@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.20",
+	"sdk": "0.8.21",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -57,6 +57,7 @@
 			"UNDERSTANDING_INTENTS",
 			"UNSURE_TARGET",
 			"UnderstandingSchema",
+			"addVersion",
 			"addressesEveryone",
 			"agentInputSchema",
 			"asAppointment",
@@ -64,6 +65,7 @@
 			"assertFullSignIn",
 			"assertIdPrefix",
 			"assertRestrictiveDefaults",
+			"bumpParentVersion",
 			"compact",
 			"compareThing",
 			"conversationAnswered",

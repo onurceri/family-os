@@ -154,7 +154,9 @@ it('upgrades the audit log and drafts so a draft can become another action', asy
 it('adds a principal to idempotency answers and keeps the old rows', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
-		Object.entries(coreMigrations).filter(([name]) => name !== '0006_idempotency_principal'),
+		Object.entries(coreMigrations).filter(
+			([name]) => name !== '0006_idempotency_principal' && name !== '0007_changes',
+		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
 	await sql`insert into core_idempotency (key, member_id, action_id, status, response, created_at)

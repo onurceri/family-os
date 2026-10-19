@@ -109,7 +109,7 @@ export const addToMealPlan = defineAction({
 			updated_at: now,
 		};
 		await tables(uow.db).insertInto('kitchen_meal_plan').values(row).execute();
-		uow.emit(kitchenChanged, { area: 'meals' });
+		uow.emit(kitchenChanged, { area: 'meals', id: row.id });
 		return mealOut(uow, row);
 	},
 });
@@ -140,7 +140,7 @@ export const updateMealPlanEntry = defineAction({
 			updated_at: uow.clock.now(),
 		};
 		await tables(uow.db).updateTable('kitchen_meal_plan').set(patch).where('id', '=', id).execute();
-		uow.emit(kitchenChanged, { area: 'meals' });
+		uow.emit(kitchenChanged, { area: 'meals', id });
 		return mealOut(uow, { ...row, ...patch });
 	},
 });
@@ -201,7 +201,7 @@ export const removeMealPlanEntry = defineAction({
 			.executeTakeFirst();
 		if (!row) return { ok: true as const };
 		await tables(uow.db).deleteFrom('kitchen_meal_plan').where('id', '=', id).execute();
-		uow.emit(kitchenChanged, { area: 'meals' });
+		uow.emit(kitchenChanged, { area: 'meals', id, op: 'delete' });
 		return {
 			ok: true as const,
 			removed: {

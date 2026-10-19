@@ -254,6 +254,12 @@ export interface ActionTarget {
 	id: string;
 	/** A column that is set once the row is archived or deleted (`archived_at`). */
 	liveColumn?: string;
+	/**
+	 * An integer column that counts every write of the row (starts at 0, a trigger bumps it).
+	 * A caller that names the version it read (`ifMatch`) is refused with `precondition_failed`
+	 * when the row has moved on.
+	 */
+	versionColumn?: string;
 }
 
 /**

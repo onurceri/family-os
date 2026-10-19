@@ -1,6 +1,6 @@
-import type { DbExecutor, Migrations } from '@famos/sdk';
+import { addVersion, bumpParentVersion, type DbExecutor, type Migrations } from '@famos/sdk';
 import type { Recurrence } from '@famos/time';
-import { sql } from 'kysely';
+import { type Generated, type Selectable, sql } from 'kysely';
 import type { Rotation } from '../contract/index.ts';
 
 /** Storage for chores (tables prefixed `chores_`). */
@@ -21,6 +21,8 @@ export type ChoresTables = {
 		created_at: number;
 		updated_at: number;
 		archived_at: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 	/** The people in rotation order. */
 	chores_assignees: {
@@ -41,7 +43,7 @@ export type ChoresTables = {
 		undone_at: number | null;
 	};
 };
-export type ChoreRow = ChoresTables['chores_chores'];
+export type ChoreRow = Selectable<ChoresTables['chores_chores']>;
 export type CompletionRow = ChoresTables['chores_completions'];
 
 export const migrations: Migrations = {
@@ -106,6 +108,22 @@ export const migrations: Migrations = {
 				.on('chores_completions')
 				.columns(['member_id', 'done_at'])
 				.execute();
+		},
+	},
+	'0002_versions': {
+		async up(db) {
+			await addVersion(db, 'chores_chores');
+			// A chore shows its people in turn order and its latest completion.
+			await bumpParentVersion(db, {
+				parent: 'chores_chores',
+				child: 'chores_assignees',
+				childKey: 'chore_id',
+			});
+			await bumpParentVersion(db, {
+				parent: 'chores_chores',
+				child: 'chores_completions',
+				childKey: 'chore_id',
+			});
 		},
 	},
 };

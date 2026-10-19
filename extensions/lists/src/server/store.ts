@@ -1,6 +1,6 @@
-import type { DbExecutor, Migrations } from '@famos/sdk';
+import { addVersion, bumpParentVersion, type DbExecutor, type Migrations } from '@famos/sdk';
 import { fromRRule, type Recurrence } from '@famos/time';
-import { sql } from 'kysely';
+import { type Generated, type Selectable, sql } from 'kysely';
 import type { Category, ShoppingItem, Task } from '../contract/index.ts';
 
 /** Storage for tasks and shopping (tables prefixed `lists_`). */
@@ -26,6 +26,8 @@ export type ListsTables = {
 		created_at: number;
 		updated_at: number;
 		deleted_at: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 	/** Every completion, so a repeating task can be reopened (Undo) and shows history later. */
 	lists_task_completions: {
@@ -43,6 +45,8 @@ export type ListsTables = {
 		created_at: number;
 		updated_at: number;
 		archived_at: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 	lists_shopping_items: {
 		id: string;
@@ -60,10 +64,12 @@ export type ListsTables = {
 		created_at: number;
 		updated_at: number;
 		deleted_at: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 };
-export type TaskRow = ListsTables['lists_tasks'];
-export type ItemRow = ListsTables['lists_shopping_items'];
+export type TaskRow = Selectable<ListsTables['lists_tasks']>;
+export type ItemRow = Selectable<ListsTables['lists_shopping_items']>;
 
 /**
  * The list created on install, so shopping works before anyone sets lists up. Its name stays
@@ -159,6 +165,19 @@ export const migrations: Migrations = {
 			await sql`insert into lists_shopping_lists (id, name, sort, created_at, updated_at) values (${DEFAULT_LIST_ID}, '', 0, ${now}, ${now})`.execute(
 				db,
 			);
+		},
+	},
+	'0002_versions': {
+		async up(db) {
+			await addVersion(db, 'lists_tasks');
+			await addVersion(db, 'lists_shopping_lists');
+			await addVersion(db, 'lists_shopping_items');
+			// A list shows how many of its items are open.
+			await bumpParentVersion(db, {
+				parent: 'lists_shopping_lists',
+				child: 'lists_shopping_items',
+				childKey: 'list_id',
+			});
 		},
 	},
 };

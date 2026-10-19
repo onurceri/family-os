@@ -32,6 +32,7 @@ import { aiMissingAreas } from './ai-missing-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { type ApiTokenService, createApiTokenService, revokeTokensOf } from './api-tokens.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
+import { type ChangesReader, createChanges } from './changes.ts';
 import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './core-events.ts';
 import { createCoreExtension, END_CREDENTIALS_JOB } from './core-extension.ts';
 import { createDeviceService, type DeviceService } from './devices.ts';
@@ -145,6 +146,8 @@ export interface Kernel {
 	readonly apiTokens: ApiTokenService;
 	/** Capabilities and roles. */
 	readonly access: Access;
+	/** The change log: what changed since a cursor, and a validator for a collection. */
+	readonly changes: ChangesReader;
 	/** Extensions turned on or off (Settings → Features). */
 	readonly features: Features;
 	/** What the AI may use per area (Settings → AI). */
@@ -611,7 +614,11 @@ export function createKernel(options: KernelOptions): Kernel {
 		const key = isHost(id) ? 'core' : id;
 		let made = jobContexts.get(key);
 		if (!made) {
-			made = { ...contextFor(key), llm: options.llm };
+			made = {
+				...contextFor(key),
+				llm: options.llm,
+				unit: (work) => (runner as ActionRunner).unit(key, work),
+			};
 			jobContexts.set(key, made);
 		}
 		return made;
@@ -660,6 +667,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		devices,
 		apiTokens,
 		access,
+		changes: createChanges({ db: options.db, clock: options.clock, access: () => access }),
 		features,
 		aiAreas,
 		channels: channelList,

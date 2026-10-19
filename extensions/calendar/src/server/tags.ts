@@ -13,7 +13,7 @@ import {
 	tagKey,
 	UpdateTagInputSchema,
 } from '../contract/index.ts';
-import { calendarEdit, calendarView, tagChanged } from './capabilities.ts';
+import { calendarEdit, calendarView, eventChanged, tagChanged } from './capabilities.ts';
 import { events, tagsOf } from './store.ts';
 
 /**
@@ -23,9 +23,12 @@ import { events, tagsOf } from './store.ts';
  * guards planned reminders, and tags do not change when a reminder fires.
  */
 
-/** Rewrites the tag lists of all events that have `key`; `replace` null removes the tag. */
-async function rewriteEvents(db: UnitOfWork['db'], key: string, replace: string | null) {
-	const t = events(db);
+/**
+ * Rewrites the tag lists of all events that have `key`; `replace` null removes the tag. Each event
+ * it changed is announced, so a reader of the change log learns that those events changed.
+ */
+async function rewriteEvents(uow: UnitOfWork, key: string, replace: string | null) {
+	const t = events(uow.db);
 	const rows = await t
 		.selectFrom('calendar_events')
 		.select(['id', 'tags'])
@@ -42,6 +45,7 @@ async function rewriteEvents(db: UnitOfWork['db'], key: string, replace: string 
 			.set({ tags: next.length ? JSON.stringify(next) : null })
 			.where('id', '=', row.id)
 			.execute();
+		uow.emit(eventChanged, { eventId: row.id });
 	}
 }
 
@@ -79,7 +83,7 @@ export const updateTag = defineAction({
 					.selectAll()
 					.where('key', '=', newKey)
 					.executeTakeFirst();
-				await rewriteEvents(uow.db, current.key, target?.name ?? newName);
+				await rewriteEvents(uow, current.key, target?.name ?? newName);
 				await t.deleteFrom('calendar_tags').where('key', '=', current.key).execute();
 				if (target) {
 					color = input.color ?? target.color;
@@ -97,7 +101,7 @@ export const updateTag = defineAction({
 			}
 			// Only the spelling changes (case): events follow.
 			name = newName;
-			await rewriteEvents(uow.db, current.key, newName);
+			await rewriteEvents(uow, current.key, newName);
 		}
 		await t
 			.updateTable('calendar_tags')
@@ -118,7 +122,7 @@ export const deleteTag = defineAction({
 	approval: 'never',
 	async run(uow, { name }) {
 		const current = await loadTag(uow.db, name);
-		await rewriteEvents(uow.db, current.key, null);
+		await rewriteEvents(uow, current.key, null);
 		await events(uow.db).deleteFrom('calendar_tags').where('key', '=', current.key).execute();
 		uow.emit(tagChanged, {});
 		return { ok: true as const };

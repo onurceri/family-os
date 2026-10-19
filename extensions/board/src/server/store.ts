@@ -1,5 +1,5 @@
-import type { DbExecutor, Migrations } from '@famos/sdk';
-import { sql } from 'kysely';
+import { addVersion, bumpParentVersion, type DbExecutor, type Migrations } from '@famos/sdk';
+import { type Generated, type Selectable, sql } from 'kysely';
 import type { BoardNote, Paper } from '../contract/index.ts';
 
 /** Storage for the family board (tables prefixed `board_`). */
@@ -23,6 +23,8 @@ export type BoardTables = {
 		 * a note in a group nobody has arranged yet (those go newest first).
 		 */
 		position: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 	board_note_seen: {
 		note_id: string;
@@ -30,7 +32,7 @@ export type BoardTables = {
 		seen_at: number;
 	};
 };
-export type NoteRow = BoardTables['board_notes'];
+export type NoteRow = Selectable<BoardTables['board_notes']>;
 
 export const migrations: Migrations = {
 	'0001_init': {
@@ -72,6 +74,17 @@ export const migrations: Migrations = {
 				.addPrimaryKeyConstraint('board_note_seen_pk', ['note_id', 'member_id'])
 				.modifyEnd(sql`strict`)
 				.execute();
+		},
+	},
+	'0002_versions': {
+		async up(db) {
+			await addVersion(db, 'board_notes');
+			// A note shows who has seen it.
+			await bumpParentVersion(db, {
+				parent: 'board_notes',
+				child: 'board_note_seen',
+				childKey: 'note_id',
+			});
 		},
 	},
 };

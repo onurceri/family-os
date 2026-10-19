@@ -14,6 +14,10 @@ export type FamosErrorCode =
 	| 'feature_off'
 	/** An `Idempotency-Key` was reused for a different action. */
 	| 'idempotency_mismatch'
+	/** The thing changed since the version the caller named (`ifMatch`). */
+	| 'precondition_failed'
+	/** What the caller asked about was kept only for a while and is no longer there. */
+	| 'gone'
 	| 'unavailable';
 
 /**
@@ -51,6 +55,8 @@ export const ERROR_HTTP_STATUS: Record<FamosErrorCode, number> = {
 	limit_reached: 429,
 	feature_off: 404,
 	idempotency_mismatch: 422,
+	precondition_failed: 412,
+	gone: 410,
 	unavailable: 503,
 };
 

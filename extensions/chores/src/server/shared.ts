@@ -5,6 +5,8 @@ import { type ChoreRow, parseRecurrence, tables } from './store.ts';
 /** Anything in chores changed (a chore, a completion): the UI reloads. */
 export const choresChanged = defineEvent('chores.changed', choreChangedPayload, {
 	audience: 'chores.view',
+	changes: ({ choreId, op }) =>
+		choreId ? [{ entity: 'chore', id: choreId, op: op ?? 'upsert' }] : [],
 });
 
 export const memberIdOf = selfOf;

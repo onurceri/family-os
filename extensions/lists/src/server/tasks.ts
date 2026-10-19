@@ -37,6 +37,7 @@ import { type TaskRow, tables, titleKey, toTask } from './store.ts';
 
 export const taskChanged = defineEvent('lists.task.changed', taskChangedPayload, {
 	audience: 'lists.view',
+	changes: ({ taskId, op }) => [{ entity: 'task', id: taskId, op: op ?? 'upsert' }],
 });
 
 /** What tasks protect. */
@@ -210,6 +211,7 @@ export const addTask = defineAction({
 			created_at: now,
 			updated_at: now,
 			deleted_at: null,
+			version: 0,
 		};
 		await tables(uow.db).insertInto('lists_tasks').values(row).execute();
 		await scheduleReminder(uow, row.id);
@@ -220,7 +222,12 @@ export const addTask = defineAction({
 
 export const updateTask = defineAction({
 	id: 'lists.updateTask',
-	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_tasks',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	title: 'Change a task',
 	description:
 		'Replaces the whole task with what the form saved: send every field, null for one left empty. To change some fields and keep the rest, use lists.changeTask.',
@@ -316,7 +323,12 @@ const TaskChangeSchema = z.object({
  */
 export const changeTask = defineAction({
 	id: 'lists.changeTask',
-	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_tasks',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	targetTitle: taskTitle,
 	title: 'Change some details of a task',
 	draftTitle: 'lists:draft_title_change_task',
@@ -403,7 +415,12 @@ export const changeTask = defineAction({
 
 export const completeTask = defineAction({
 	id: 'lists.completeTask',
-	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_tasks',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	targetTitle: taskTitle,
 	offline: true,
 	title: 'Mark a task done',
@@ -476,7 +493,12 @@ export const completeTask = defineAction({
 
 export const reopenTask = defineAction({
 	id: 'lists.reopenTask',
-	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_tasks',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	offline: true,
 	title: 'Undo the last completion of a task',
 	input: z.object({ id: TaskIdSchema }),
@@ -508,7 +530,12 @@ export const reopenTask = defineAction({
 
 export const deleteTask = defineAction({
 	id: 'lists.deleteTask',
-	target: ({ id }) => ({ table: 'lists_tasks', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_tasks',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	targetTitle: taskTitle,
 	title: 'Delete a task',
 	draftTitle: 'lists:draft_title_delete_task',
@@ -528,7 +555,7 @@ export const deleteTask = defineAction({
 			.set({ deleted_at: now, updated_at: now })
 			.where('id', '=', id)
 			.execute();
-		uow.emit(taskChanged, { taskId: id });
+		uow.emit(taskChanged, { taskId: id, op: 'delete' });
 		return { ok: true as const, id };
 	},
 });

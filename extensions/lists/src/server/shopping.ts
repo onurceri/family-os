@@ -36,6 +36,16 @@ const withinLimit = (merged: string | null, asked: string | null | undefined) =>
 
 export const shoppingChanged = defineEvent('lists.shopping.changed', shoppingChangedPayload, {
 	audience: 'lists.view',
+	// The list is told too: it shows how many items are open.
+	changes: ({ listId, itemIds, removedItemIds, listRemoved }) => [
+		...(itemIds ?? []).map((id) => ({ entity: 'shopping_item', id, op: 'upsert' as const })),
+		...(removedItemIds ?? []).map((id) => ({ entity: 'shopping_item', id, op: 'delete' as const })),
+		{
+			entity: 'shopping_list',
+			id: listId,
+			op: listRemoved ? ('delete' as const) : ('upsert' as const),
+		},
+	],
 });
 
 /** What shopping protects: adding and ticking off items, and managing the lists. */
@@ -275,12 +285,16 @@ export const addShoppingItems = defineAction({
 				created_at: now,
 				updated_at: now,
 				deleted_at: null,
+				version: 0,
 			};
 			await db.insertInto('lists_shopping_items').values(row).execute();
 			out.push(row);
 			addedIds.push(row.id);
 		}
-		uow.emit(shoppingChanged, { listId: list.id });
+		uow.emit(shoppingChanged, {
+			listId: list.id,
+			itemIds: [...addedIds, ...merged.map((m) => m.id)],
+		});
 		return { listId: list.id, items: out.map(toItem), addedIds, merged };
 	},
 });
@@ -304,16 +318,21 @@ export const undoAddShoppingItems = defineAction({
 	async run(uow, { addedIds, merged }) {
 		const db = tables(uow.db);
 		const now = uow.clock.now();
-		const lists = new Set<string>();
+		const lists = new Map<string, { changed: string[]; removed: string[] }>();
+		const touched = (listId: string) => {
+			const known = lists.get(listId) ?? { changed: [], removed: [] };
+			lists.set(listId, known);
+			return known;
+		};
 		let removed = 0;
 		if (addedIds.length) {
 			const rows = await db
 				.selectFrom('lists_shopping_items')
-				.select('list_id')
+				.select(['id', 'list_id'])
 				.where('id', 'in', addedIds)
 				.where('deleted_at', 'is', null)
 				.execute();
-			for (const r of rows) lists.add(r.list_id);
+			for (const r of rows) touched(r.list_id).removed.push(r.id);
 			const result = await db
 				.updateTable('lists_shopping_items')
 				.set({ deleted_at: now, updated_at: now })
@@ -339,17 +358,23 @@ export const undoAddShoppingItems = defineAction({
 				.executeTakeFirst();
 			if (result) {
 				restored += 1;
-				lists.add(result.list_id);
+				touched(result.list_id).changed.push(result.id);
 			}
 		}
-		for (const listId of lists) uow.emit(shoppingChanged, { listId });
+		for (const [listId, ids] of lists)
+			uow.emit(shoppingChanged, { listId, itemIds: ids.changed, removedItemIds: ids.removed });
 		return { removed, restored };
 	},
 });
 
 export const updateShoppingItem = defineAction({
 	id: 'lists.updateShoppingItem',
-	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_shopping_items',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	title: 'Change a shopping item',
 	requires: shoppingEdit.id,
 	input: z.object({
@@ -373,14 +398,19 @@ export const updateShoppingItem = defineAction({
 			.set(patch)
 			.where('id', '=', id)
 			.execute();
-		uow.emit(shoppingChanged, { listId: row.list_id });
+		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
 		return toItem({ ...row, ...patch });
 	},
 });
 
 export const checkShoppingItem = defineAction({
 	id: 'lists.checkShoppingItem',
-	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_shopping_items',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	targetTitle: itemTitle,
 	offline: true,
 	title: 'Tick off (or untick) a shopping item',
@@ -431,14 +461,19 @@ export const checkShoppingItem = defineAction({
 			.set(patch)
 			.where('id', '=', id)
 			.execute();
-		uow.emit(shoppingChanged, { listId: row.list_id });
+		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
 		return toItem({ ...row, ...patch });
 	},
 });
 
 export const deleteShoppingItem = defineAction({
 	id: 'lists.deleteShoppingItem',
-	target: ({ id }) => ({ table: 'lists_shopping_items', id, liveColumn: 'deleted_at' }),
+	target: ({ id }) => ({
+		table: 'lists_shopping_items',
+		id,
+		liveColumn: 'deleted_at',
+		versionColumn: 'version',
+	}),
 	targetTitle: itemTitle,
 	title: 'Remove a shopping item',
 	draftTitle: 'lists:draft_title_delete_shopping_item',
@@ -459,7 +494,7 @@ export const deleteShoppingItem = defineAction({
 			.set({ deleted_at: now, updated_at: now })
 			.where('id', '=', id)
 			.execute();
-		uow.emit(shoppingChanged, { listId: row.list_id });
+		uow.emit(shoppingChanged, { listId: row.list_id, removedItemIds: [id] });
 		return { ok: true as const, id };
 	},
 });
@@ -484,7 +519,7 @@ export const restoreShoppingItem = defineAction({
 			.set(patch)
 			.where('id', '=', id)
 			.execute();
-		uow.emit(shoppingChanged, { listId: row.list_id });
+		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
 		return toItem({ ...row, ...patch });
 	},
 });
@@ -518,7 +553,11 @@ export const removeShoppingItems = defineAction({
 			.where('id', 'in', ids)
 			.where('deleted_at', 'is', null)
 			.executeTakeFirst();
-		for (const listId of new Set(rows.map((r) => r.list_id))) uow.emit(shoppingChanged, { listId });
+		for (const listId of new Set(rows.map((r) => r.list_id)))
+			uow.emit(shoppingChanged, {
+				listId,
+				removedItemIds: rows.filter((r) => r.list_id === listId).map((r) => r.id),
+			});
 		return { removed: Number(result.numUpdatedRows), ids: rows.map((r) => r.id) };
 	},
 });
@@ -534,7 +573,7 @@ export const restoreShoppingItems = defineAction({
 		const db = tables(uow.db);
 		const rows = await db
 			.selectFrom('lists_shopping_items')
-			.select('list_id')
+			.select(['id', 'list_id'])
 			.where('id', 'in', ids)
 			.execute();
 		const result = await db
@@ -542,7 +581,11 @@ export const restoreShoppingItems = defineAction({
 			.set({ deleted_at: null, updated_at: uow.clock.now() })
 			.where('id', 'in', ids)
 			.executeTakeFirst();
-		for (const listId of new Set(rows.map((r) => r.list_id))) uow.emit(shoppingChanged, { listId });
+		for (const listId of new Set(rows.map((r) => r.list_id)))
+			uow.emit(shoppingChanged, {
+				listId,
+				itemIds: rows.filter((r) => r.list_id === listId).map((r) => r.id),
+			});
 		return { restored: Number(result.numUpdatedRows) };
 	},
 });
@@ -558,6 +601,13 @@ export const clearBought = defineAction({
 	async run(uow, { listId }) {
 		const list = await activeList(uow, listId);
 		const now = uow.clock.now();
+		const bought = await tables(uow.db)
+			.selectFrom('lists_shopping_items')
+			.select('id')
+			.where('list_id', '=', list.id)
+			.where('done_at', 'is not', null)
+			.where('deleted_at', 'is', null)
+			.execute();
 		const result = await tables(uow.db)
 			.updateTable('lists_shopping_items')
 			.set({ deleted_at: now, updated_at: now })
@@ -565,7 +615,7 @@ export const clearBought = defineAction({
 			.where('done_at', 'is not', null)
 			.where('deleted_at', 'is', null)
 			.executeTakeFirst();
-		uow.emit(shoppingChanged, { listId: list.id });
+		uow.emit(shoppingChanged, { listId: list.id, removedItemIds: bought.map((r) => r.id) });
 		return { cleared: Number(result.numUpdatedRows) };
 	},
 });
@@ -659,7 +709,7 @@ export const archiveShoppingList = defineAction({
 			.set({ archived_at: now, updated_at: now })
 			.where('id', '=', id)
 			.execute();
-		uow.emit(shoppingChanged, { listId: id });
+		uow.emit(shoppingChanged, { listId: id, listRemoved: true });
 		return { ok: true as const };
 	},
 });

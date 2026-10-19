@@ -43,6 +43,7 @@ import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
 import { revokeTokensOf } from './api-tokens.ts';
 import { createAutoApproval } from './auto-approval.ts';
+import { pruneChanges, schedulePruneChanges } from './changes.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
 	aiAreasChanged,
@@ -1926,6 +1927,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.notifications.jobs,
 			...autoApproval.jobs,
 			pruneIdempotency,
+			pruneChanges,
 			expireDrafts,
 			endCredentials,
 			...deps.search.jobs,
@@ -1981,6 +1983,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		register: async (ctx) => {
 			// First pruning a day after start; the job schedules the next one itself.
 			await schedulePrune(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
+			await schedulePruneChanges(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
 			// Suggestions about a day that has passed expire shortly after midnight (family time).
 			await scheduleExpiry(ctx);
 		},

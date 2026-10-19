@@ -142,7 +142,11 @@ export type ChoreDetail = z.infer<typeof ChoreDetailSchema>;
 
 export const OkSchema = z.object({ ok: z.literal(true) });
 
-export const choreChangedPayload = z.object({ choreId: z.string().optional() });
+export const choreChangedPayload = z.object({
+	choreId: z.string().optional(),
+	/** `delete`: the chore is gone for readers (archived). */
+	op: z.enum(['upsert', 'delete']).optional(),
+});
 
 /**
  * Today's chores for one person, or for anyone (`memberId: null`): what was due today or is late

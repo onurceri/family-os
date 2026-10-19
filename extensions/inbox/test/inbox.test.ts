@@ -533,7 +533,7 @@ describe('inbox pipeline', () => {
 			.set({ status: 'normalized' } as never)
 			.execute();
 		await processItem.handle(
-			{ ...k.ctx, llm: k.llm },
+			{ ...k.ctx, llm: k.llm, unit: (work) => k.runner.unit('inbox', work) },
 			{ itemId: item.id },
 			{ id: 'job_x', attempt: 1, maxAttempts: 4 },
 		);

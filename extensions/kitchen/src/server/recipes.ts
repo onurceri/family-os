@@ -61,7 +61,7 @@ async function insertRecipe(
 	};
 	await tables(uow.db).insertInto('kitchen_recipes').values(row).execute();
 	await uow.ai.reindex(RECIPE_KIND, row.id);
-	uow.emit(kitchenChanged, { area: 'recipes' });
+	uow.emit(kitchenChanged, { area: 'recipes', id: row.id });
 	return row;
 }
 
@@ -110,7 +110,7 @@ export const updateRecipe = defineAction({
 		const patch = { ...fieldsOf(recipe), updated_at: uow.clock.now() };
 		await tables(uow.db).updateTable('kitchen_recipes').set(patch).where('id', '=', id).execute();
 		await uow.ai.reindex(RECIPE_KIND, id);
-		uow.emit(kitchenChanged, { area: 'recipes' });
+		uow.emit(kitchenChanged, { area: 'recipes', id });
 		return toRecipe({ ...row, ...patch });
 	},
 });
@@ -140,7 +140,7 @@ export const archiveRecipe = defineAction({
 				.where('id', '=', id)
 				.execute();
 			await uow.ai.remove(RECIPE_KIND, id);
-			uow.emit(kitchenChanged, { area: 'recipes' });
+			uow.emit(kitchenChanged, { area: 'recipes', id, op: 'delete' });
 		}
 		return { ok: true as const };
 	},
@@ -169,7 +169,7 @@ export const setRecipePhoto = defineAction({
 			.set({ photo_key: key, photo_type: type, updated_at: uow.clock.now() })
 			.where('id', '=', id)
 			.execute();
-		uow.emit(kitchenChanged, { area: 'recipes' });
+		uow.emit(kitchenChanged, { area: 'recipes', id });
 		return { previousKey: row.photo_key };
 	},
 });

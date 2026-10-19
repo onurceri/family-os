@@ -179,8 +179,20 @@ export type ShoppingList = z.infer<typeof ShoppingListSchema>;
 export const LIST_NAME_MAX = 30;
 export const ListNameSchema = z.string().trim().min(1).max(LIST_NAME_MAX);
 
-export const taskChangedPayload = z.object({ taskId: z.string() });
-export const shoppingChangedPayload = z.object({ listId: z.string() });
+export const taskChangedPayload = z.object({
+	taskId: z.string(),
+	/** `delete`: the task is gone for readers. */
+	op: z.enum(['upsert', 'delete']).optional(),
+});
+export const shoppingChangedPayload = z.object({
+	listId: z.string(),
+	/** Items added, changed or put back. */
+	itemIds: z.array(z.string()).optional(),
+	/** Items taken off the list. */
+	removedItemIds: z.array(z.string()).optional(),
+	/** The list itself was removed. */
+	listRemoved: z.boolean().optional(),
+});
 
 /** Where the app opens a task: the tasks page with the task's details beside it. */
 export const taskHref = (taskId: string) => `/lists/tasks?task=${taskId}`;

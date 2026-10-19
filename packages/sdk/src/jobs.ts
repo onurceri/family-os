@@ -1,11 +1,18 @@
 import type { z } from 'zod';
-import type { ExtensionContext } from './context.ts';
+import type { ExtensionContext, UnitOfWork } from './context.ts';
 import type { LlmPort } from './llm.ts';
 import type { EnqueueOptions } from './ports.ts';
 
 /** What a job handler gets: the extension context plus model access. */
 export interface JobContext extends ExtensionContext {
 	readonly llm: LlmPort;
+	/**
+	 * Writes the extension's own tables outside an action (clearing what has expired, replacing
+	 * what a feed holds) in one transaction, as the system. It is the same unit of work an action
+	 * gets: events emitted in it are kept in the change log with the data, and fire after the
+	 * commit. A job that changes what apps may read goes through it, not through `ctx.db`.
+	 */
+	unit<T>(work: (uow: UnitOfWork) => Promise<T>): Promise<T>;
 }
 
 export type JobLane = 'default' | 'long';

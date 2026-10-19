@@ -25,10 +25,18 @@ afterEach(async () => {
 });
 
 /** The migrations that release had: everything but what this change adds. */
+const VERSION_MIGRATIONS = [
+	'core/0007_changes',
+	'calendar/0003_version',
+	'lists/0002_versions',
+	'chores/0002_versions',
+	'board/0002_versions',
+];
 const NEW_MIGRATIONS = new Set([
 	'core/0004_file_grants',
 	'core/0005_draft_quote',
 	'core/0006_idempotency_principal',
+	...VERSION_MIGRATIONS,
 ]);
 
 const FEED = 'https://school.example/cal/private.ics?key=SECRET';
@@ -170,7 +178,8 @@ it('keeps the drafts made before drafts kept the words they rest on', async () =
 			Object.entries(migrations).filter(
 				([name]) =>
 					`${scope}/${name}` !== 'core/0005_draft_quote' &&
-					`${scope}/${name}` !== 'core/0006_idempotency_principal',
+					`${scope}/${name}` !== 'core/0006_idempotency_principal' &&
+					!VERSION_MIGRATIONS.includes(`${scope}/${name}`),
 			),
 		),
 	}));
@@ -199,7 +208,9 @@ it('keeps the request keys stored before they knew who asked', async () => {
 		scope,
 		migrations: Object.fromEntries(
 			Object.entries(migrations).filter(
-				([name]) => `${scope}/${name}` !== 'core/0006_idempotency_principal',
+				([name]) =>
+					`${scope}/${name}` !== 'core/0006_idempotency_principal' &&
+					!VERSION_MIGRATIONS.includes(`${scope}/${name}`),
 			),
 		),
 	}));
@@ -215,4 +226,48 @@ it('keeps the request keys stored before they knew who asked', async () => {
 	expect(
 		handle.sqlite.prepare('select key, member_id, principal from core_idempotency').all(),
 	).toEqual([{ key: 'k1', member_id: 'member_1', principal: null }]);
+});
+
+/**
+ * Rows made before versions existed start at version 0, and every later write counts: a write
+ * that leaves `updated_at` alone (the reminder's guard) still moves the version.
+ */
+it('gives rows from before versions a version, counted from their next write', async () => {
+	const dataDir = await mkdtemp(join(tmpdir(), 'famos-upgrade-'));
+	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: 'http://localhost' });
+	runtime = openRuntime(config, { extensions, logger: silentLogger, quiet: true });
+	const { handle, kernel } = runtime;
+	const previous = kernel.migrationScopes.map(({ scope, migrations }) => ({
+		scope,
+		migrations: Object.fromEntries(
+			Object.entries(migrations).filter(
+				([name]) => !VERSION_MIGRATIONS.includes(`${scope}/${name}`),
+			),
+		),
+	}));
+	await runMigrations(handle.db, previous);
+	handle.sqlite
+		.prepare(
+			`insert into board_notes (id, text, paper, pinned, created_at, updated_at)
+			values ('note_1', 'Bins on Thursday', 'note-1', 0, 1, 1)`,
+		)
+		.run();
+	handle.sqlite
+		.prepare(
+			`insert into lists_shopping_items (id, list_id, title, title_key, category, created_at, updated_at)
+			values ('item_1', 'shop_list_00000000-0000-7000-8000-000000000001', 'Milk', 'milk', 'dairy', 1, 1)`,
+		)
+		.run();
+
+	expect(await migrate(runtime)).toBeGreaterThan(0);
+	const version = (table: string, id: string) =>
+		(
+			handle.sqlite.prepare(`select version from ${table} where id = ?`).get(id) as {
+				version: number;
+			}
+		).version;
+	expect(version('board_notes', 'note_1')).toBe(0);
+	expect(version('lists_shopping_items', 'item_1')).toBe(0);
+	handle.sqlite.prepare("update board_notes set pinned = 1 where id = 'note_1'").run();
+	expect(version('board_notes', 'note_1')).toBe(1);
 });

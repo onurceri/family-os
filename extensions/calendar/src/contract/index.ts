@@ -222,7 +222,11 @@ export const RangeQuerySchema = z
 	.object({ from: IsoDateSchema, to: IsoDateSchema })
 	.refine((r) => r.from <= r.to, { message: '`from` must not be after `to`' });
 
-export const eventChangedPayload = z.object({ eventId: z.string() });
+export const eventChangedPayload = z.object({
+	eventId: z.string(),
+	/** `delete`: the event is gone for readers (removed, or a moved date put back). */
+	op: z.enum(['upsert', 'delete']).optional(),
+});
 
 /* ───────────── Feeds out: a secret ICS address per family or member ───────────── */
 

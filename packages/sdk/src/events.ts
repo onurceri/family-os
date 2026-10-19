@@ -27,6 +27,17 @@ export type AudienceRule<Payload = unknown> =
 	| readonly AudienceTarget[]
 	| ((payload: Payload) => AudienceTarget | readonly AudienceTarget[]);
 
+/** One thing an event says changed, as the change log keeps it. */
+export interface EntityChange {
+	/** The kind of thing, within the extension that owns the event (`task`, `shopping_item`). */
+	readonly entity: string;
+	readonly id: string;
+	/** `delete`: the thing is gone for readers (removed, archived), whatever happened to its row. */
+	readonly op: 'upsert' | 'delete';
+}
+
+export type ChangesRule<Payload = unknown> = (payload: Payload) => readonly EntityChange[];
+
 export interface EventDefinition<
 	Name extends string = string,
 	Schema extends z.ZodType = z.ZodType,
@@ -40,16 +51,29 @@ export interface EventDefinition<
 	 * Give a payload function when rows differ in who may see them.
 	 */
 	readonly audience?: AudienceRule<z.infer<Schema>>;
+	/**
+	 * The things this event says changed. When given, the action runner writes one row per thing
+	 * to the change log in the transaction that emitted it, so a client that was away reads what
+	 * changed since (and what was removed) by a cursor. Give it to every event of a thing that
+	 * apps may read; the payload must carry the ids.
+	 */
+	readonly changes?: ChangesRule<z.infer<Schema>>;
 }
 
 export function defineEvent<const Name extends string, Schema extends z.ZodType>(
 	name: Name,
 	payload: Schema,
-	options: { audience?: AudienceRule<z.infer<Schema>> } = {},
+	options: {
+		audience?: AudienceRule<z.infer<Schema>>;
+		changes?: ChangesRule<z.infer<Schema>>;
+	} = {},
 ): EventDefinition<Name, Schema> {
-	return options.audience === undefined
-		? { name, payload }
-		: { name, payload, audience: options.audience };
+	return {
+		name,
+		payload,
+		...(options.audience !== undefined && { audience: options.audience }),
+		...(options.changes !== undefined && { changes: options.changes }),
+	};
 }
 
 export type EventPayload<E extends EventDefinition> = z.infer<E['payload']>;

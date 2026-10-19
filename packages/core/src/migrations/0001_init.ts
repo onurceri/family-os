@@ -397,6 +397,33 @@ export const m0006_idempotency_principal: Migration = {
 	},
 };
 
+/**
+ * The change log: one row per thing an event said changed, written in the transaction of the
+ * change, so apps can read by a cursor what happened since (and what was removed). `audience` is
+ * the event's audience (its targets as JSON), checked again when the log is read.
+ */
+export const m0007_changes: Migration = {
+	async up(db) {
+		await db.schema
+			.createTable('core_changes')
+			.addColumn('seq', 'integer', (c) => c.primaryKey().autoIncrement())
+			.addColumn('at', 'integer', (c) => c.notNull())
+			.addColumn('extension', 'text', (c) => c.notNull())
+			.addColumn('entity', 'text', (c) => c.notNull())
+			.addColumn('entity_id', 'text', (c) => c.notNull())
+			.addColumn('op', 'text', (c) => c.notNull().check(sql`op in ('upsert', 'delete')`))
+			.addColumn('audience', 'text', (c) => c.notNull())
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createIndex('core_changes_extension_idx')
+			.on('core_changes')
+			.columns(['extension', 'seq'])
+			.execute();
+		await db.schema.createIndex('core_changes_at_idx').on('core_changes').column('at').execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
@@ -404,4 +431,5 @@ export const coreMigrations = {
 	'0004_file_grants': m0004_file_grants,
 	'0005_draft_quote': m0005_draft_quote,
 	'0006_idempotency_principal': m0006_idempotency_principal,
+	'0007_changes': m0007_changes,
 };

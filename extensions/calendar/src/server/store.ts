@@ -1,4 +1,4 @@
-import { compareThing, type DbExecutor, type Migrations, namesThing } from '@famos/sdk';
+import { addVersion, compareThing, type DbExecutor, type Migrations, namesThing } from '@famos/sdk';
 import {
 	addDays,
 	compareDates,
@@ -11,7 +11,7 @@ import {
 	toRRule,
 	zoned,
 } from '@famos/time';
-import { sql } from 'kysely';
+import { type Generated, type Selectable, sql } from 'kysely';
 import type { EventDetail, EventInput, Occurrence } from '../contract/index.ts';
 import {
 	defaultReminder,
@@ -64,6 +64,8 @@ export type CalendarTables = {
 		created_at: number;
 		updated_at: number;
 		deleted_at: number | null;
+		/** Goes up by one on every write of the row (a trigger does it); what `ifMatch` compares. */
+		version: Generated<number>;
 	};
 	/** The family's tags with their colours; `key` is the case-folded name. */
 	calendar_tags: {
@@ -137,7 +139,7 @@ export type CalendarTables = {
 		tags: string | null;
 	};
 };
-export type EventRow = CalendarTables['calendar_events'];
+export type EventRow = Selectable<CalendarTables['calendar_events']>;
 export type FeedRow = CalendarTables['calendar_feeds'];
 export type SubscriptionRow = CalendarTables['calendar_subscriptions'];
 export type TagRow = CalendarTables['calendar_tags'];
@@ -270,6 +272,11 @@ export const migrations: Migrations = {
 				.on('calendar_events')
 				.columns(['series_id'])
 				.execute();
+		},
+	},
+	'0003_version': {
+		async up(db) {
+			await addVersion(db, 'calendar_events');
 		},
 	},
 };
@@ -646,6 +653,7 @@ export function externalAsEvent(row: ExternalEventRow, sub: SubscriptionRow): Ev
 		created_at: 0,
 		updated_at: 0,
 		deleted_at: null,
+		version: 0,
 	};
 }
 

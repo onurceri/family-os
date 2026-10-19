@@ -188,6 +188,18 @@ export type ApiTokenHandlesTable = {
 	created_at: number;
 };
 
+/** One thing that changed (see `m0007_changes`); `seq` is the cursor apps read by. */
+export type ChangesTable = {
+	seq: Generated<number>;
+	at: number;
+	extension: string;
+	entity: string;
+	entity_id: string;
+	op: 'upsert' | 'delete';
+	/** The event's audience, as JSON. */
+	audience: string;
+};
+
 /** The stored result of a request with an `Idempotency-Key`. */
 export type IdempotencyTable = {
 	key: string;
@@ -253,6 +265,7 @@ export type CoreTables = {
 	core_file_grants: FileGrantsTable;
 	core_member_memory: MemberMemoryTable;
 	core_idempotency: IdempotencyTable;
+	core_changes: ChangesTable;
 	core_embeddings: EmbeddingsTable;
 	core_api_tokens: ApiTokensTable;
 	core_api_token_handles: ApiTokenHandlesTable;
