@@ -25,8 +25,10 @@ https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
 - [x] Extensions are isolated from each other: each one reaches only its own data, files and secrets
 - [x] Install and remove extensions from Settings (official, signed packages); pets, vehicles, home,
       kitchen and photos & weather become optional
-- [ ] Home Assistant: sensors and who is home on Today and the wall display
-- [ ] Home Assistant: FamilyOS notifications and actions from your automations
+- [x] Home Assistant: sensors and who is home on Today and the wall display, and switching the
+      devices you choose
+- [x] Home Assistant: FamilyOS notifications in the Home Assistant app
+- [ ] Home Assistant: actions from your automations (add to the shopping list, tick off a chore)
 - [ ] Home Assistant integration (HACS): the family calendar and lists as Home Assistant entities
 - [ ] Extensions from other authors, with your explicit consent
 - [ ] 1.0: a stable data format and API, with a backward-compatibility promise
@@ -49,12 +51,17 @@ https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
   (insurance, inspections, vaccinations, warranties), reminders before they are due, and the
   papers that go with them.
 - **Family board.** Short notes for everyone, with a photo, an end day and a pin.
-- **Assistant.** Ask in plain language ("what's on this week?", "put milk on the list") and
-  search by meaning. Every change it proposes waits for your approval.
+- **Assistant.** Ask in plain language ("what's on this week?", "put milk on the list", or both
+  in one message) and search by meaning. Answers come with the facts they rest on, and every
+  change it proposes waits for your approval.
 - **Bring your own AI agent.** Connect Claude Desktop, Claude Code or any other MCP client with
   a personal app key. It sees only what you may see, and its changes are suggestions too.
 - **Family displays.** Turn a wall tablet or an old TV into a view-only screen with the day,
-  photos and the weather. It is paired with a code and can never change anything.
+  photos and the weather, turning to the week, the shopping list or the board in between. It is
+  paired with a code and can never change anything.
+- **Home Assistant.** An optional extension: values and who is home on Today and the wall
+  display, the devices you choose switchable by the people you allow, and FamilyOS
+  notifications in the Home Assistant app.
 - **For any household.** Admin, Member, Supervised and Guest roles and your own roles on top;
   PIN sign-in only on devices you trust at home; notifications in the app, on phones and on
   Telegram, with quiet hours.
