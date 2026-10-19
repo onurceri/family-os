@@ -1,0 +1,81 @@
+{
+	"case": "follow-up: \"move it\" after a question moves the record the card showed",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "assistant.understand/1",
+	"promptHash": "8526ae00fd76e932",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "on Thursday",
+					"kind": "day",
+					"day": {
+						"text": "Thursday",
+						"weekday": 4
+					}
+				},
+				"people": [],
+				"about": [
+					"dentist"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "The dentist checkup is on Thursday from 9:30 AM to 10:30 AM.",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"people": [],
+				"about": [
+					"dentist"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I've suggested moving the Dentist checkup to 10:00 AM on Thursday. It's waiting for someone in the household to approve it before it's added to the calendar.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Dentist"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"startTime": "10:00",
+						"endTime": "11:00",
+						"label": "the dentist"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"startTime": "10:00",
+						"endTime": "11:00",
+						"label": "Dentist checkup"
+					}
+				}
+			]
+		}
+	]
+}

@@ -2,7 +2,7 @@
 	"case": "pick-up: \"pick up Leo on Thursday\" shows the swimming lesson and its note",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -33,7 +33,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Yes, you need to pick up Leo from the pool at 17:30 on Thursday, 22 October.",
+			"text": "Yes, you need to pick up Leo from the pool at 17:30 on Thursday for his swimming lesson.",
 			"toolCalls": []
 		}
 	]

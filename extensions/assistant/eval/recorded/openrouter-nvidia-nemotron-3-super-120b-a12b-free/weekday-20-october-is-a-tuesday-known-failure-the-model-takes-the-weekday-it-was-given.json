@@ -2,7 +2,7 @@
 	"case": "weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "There is no swimming on Wednesday, October 20 because that day is Tuesday, October 20. The swim training is on Tuesday, October 20 from 6:00 PM–7:30 PM at City pool (Ellie).",
 			"toolCalls": []
 		}
 	]

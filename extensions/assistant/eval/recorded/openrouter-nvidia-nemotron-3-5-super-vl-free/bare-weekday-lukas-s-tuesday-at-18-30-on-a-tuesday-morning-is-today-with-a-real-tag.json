@@ -2,7 +2,7 @@
 	"case": "bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -10,6 +10,7 @@
 			"output": {
 				"intent": "change",
 				"topics": [
+					"tasks",
 					"calendar"
 				],
 				"span": {
@@ -17,38 +18,6 @@
 					"kind": "day",
 					"day": {
 						"text": "Tuesday",
-						"weekday": 2
-					}
-				},
-				"people": [
-					{
-						"said": "me"
-					}
-				],
-				"about": [
-					"pick Noah up after football"
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"error": "timeout",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"intent": "change",
-				"topics": [
-					"calendar"
-				],
-				"span": {
-					"said": "on Tuesday at 18:30",
-					"kind": "day",
-					"day": {
-						"text": "Tuesday at 18:30",
 						"weekday": 2
 					}
 				},
@@ -69,7 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I used Tuesday, October 6 (today) at 6:30 PM for the reminder, and Saturday, October 10 for your question about Saturday.\n\nI suggested adding an event \"Pick Noah up after football\" on Tuesday, October 6 at 6:30 PM with a 15-minute reminder. It is not added yet — someone in the household needs to approve it first.\n\nNothing is on Saturday, October 10. The next event after that is \"Sunday planning\" on Sunday, October 11.",
+			"text": "Saturday 10 October has nothing on the family calendar.\n\nI suggested a reminder for Tuesday 6 October at 6:30 PM to pick Noah up after football. It is waiting for someone in the household to approve it before it is added.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -84,9 +53,9 @@
 						"title": "Pick Noah up after football",
 						"date": "2026-10-06",
 						"startTime": "18:30",
-						"endTime": "19:00",
+						"endTime": "19:30",
 						"memberIds": [
-							"Lukas"
+							"member:2"
 						],
 						"tags": [
 							"football"

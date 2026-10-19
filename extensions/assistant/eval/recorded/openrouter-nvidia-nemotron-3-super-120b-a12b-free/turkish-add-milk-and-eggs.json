@@ -2,7 +2,7 @@
 	"case": "Turkish: add milk and eggs",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -12,13 +12,17 @@
 				"topics": [
 					"shopping"
 				],
-				"people": []
+				"people": [],
+				"about": [
+					"süt",
+					"yumurta"
+				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Öğe ekleme önerisi oluşturuldu ve henüz eklenmedi. Bir aile üyesi onayladığında listeye eklenecek: Süt, Yumurta.",
+			"text": "Öneri oluşturuldu, henüz eklenmedi: Alışveriş öğeleri ekle: Süt, Yumurta. Bir household üyesi onayladığında listeye eklenecek.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",

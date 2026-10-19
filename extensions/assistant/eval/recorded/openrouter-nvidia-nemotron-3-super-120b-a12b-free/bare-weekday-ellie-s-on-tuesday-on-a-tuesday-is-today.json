@@ -2,7 +2,7 @@
 	"case": "bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,16 +34,12 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I’ve created a suggestion to add a task for you: **Pack swim bag** for today, Tuesday 2026‑10‑06. The suggestion is waiting for another household member to approve it before it’s added to your tasks.",
+			"text": "I used today’s date, Tuesday October 6 (2026‑10‑06), for “Tuesday” with no time given.\n\nI’ve suggested adding a task: **Remind me to pack my swim bag** for 2026‑10‑06. The suggestion is waiting for approval by someone else in the household. Once approved, it will be added to your tasks.",
 			"toolCalls": [
-				{
-					"name": "core_today",
-					"input": {}
-				},
 				{
 					"name": "lists_addTask",
 					"input": {
-						"title": "Pack swim bag",
+						"title": "Remind me to pack my swim bag",
 						"assigneeId": "member:3",
 						"dueDate": "2026-10-06"
 					}

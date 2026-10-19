@@ -1,0 +1,74 @@
+{
+	"case": "follow-up: \"move it\" after a question moves the record the card showed",
+	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "8526ae00fd76e932",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "ask",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "on Thursday",
+					"kind": "day",
+					"day": {
+						"text": "Thursday",
+						"weekday": 4
+					}
+				},
+				"people": [],
+				"about": [
+					"dentist"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "The dentist is scheduled for 9:30 AM–10:30 AM on Thursday, October 8.",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"intent": "change",
+				"topics": [
+					"calendar"
+				],
+				"span": {
+					"said": "Thursday",
+					"kind": "day",
+					"day": {
+						"text": "Thursday",
+						"weekday": 4
+					}
+				},
+				"people": [],
+				"about": [
+					"dentist"
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I couldn’t find an event matching “the dentist” on the calendar. The dentist appointment is listed as “Dentist checkup.” If you’d like to move that event, please let me know using that exact title or describe it in a way that matches the calendar entry.",
+			"toolCalls": [
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"label": "the dentist",
+						"startTime": "10:00",
+						"endTime": "11:00"
+					}
+				}
+			]
+		}
+	]
+}

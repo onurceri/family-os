@@ -2,13 +2,8 @@
 	"case": "find: Lukas's Wednesday",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"error": "timeout"
-		},
 		{
 			"kind": "object",
 			"feature": "assistant.chat",

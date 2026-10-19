@@ -2,7 +2,7 @@
 	"case": "no ISO dates: when a task of Leo is due",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -13,8 +13,11 @@
 					"tasks"
 				],
 				"span": {
-					"said": "due",
-					"kind": "day"
+					"said": "my reading homework due",
+					"kind": "day",
+					"day": {
+						"text": "my reading homework due"
+					}
 				},
 				"people": [
 					{
@@ -29,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "Your reading homework is due on Monday, 19 October.",
 			"toolCalls": []
 		}
 	]

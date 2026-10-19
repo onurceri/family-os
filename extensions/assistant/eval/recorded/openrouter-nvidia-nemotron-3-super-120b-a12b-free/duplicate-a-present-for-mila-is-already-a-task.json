@@ -2,7 +2,7 @@
 	"case": "duplicate: a present for Mila is already a task",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -19,7 +19,8 @@
 					}
 				],
 				"about": [
-					"buy a present"
+					"buy",
+					"present"
 				]
 			}
 		},

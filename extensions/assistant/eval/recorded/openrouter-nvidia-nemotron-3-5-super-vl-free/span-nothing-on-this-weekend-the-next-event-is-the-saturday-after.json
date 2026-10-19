@@ -2,8 +2,13 @@
 	"case": "span: nothing on this weekend, the next event is the Saturday after",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"error": "timeout"
+		},
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
@@ -27,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the Calendar this weekend. There is nothing in Tasks this weekend.",
+			"text": "There is nothing on the calendar this weekend, and there are no tasks this weekend.",
 			"toolCalls": []
 		}
 	]

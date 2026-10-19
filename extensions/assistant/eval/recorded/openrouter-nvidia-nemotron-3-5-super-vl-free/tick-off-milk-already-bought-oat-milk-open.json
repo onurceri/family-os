@@ -2,7 +2,7 @@
 	"case": "tick off: milk already bought, oat milk open",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -33,7 +33,7 @@
 					"input": {
 						"id": "shop_item:1",
 						"done": true,
-						"label": "Oat milk"
+						"label": "oat milk"
 					}
 				}
 			]

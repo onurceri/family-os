@@ -2,7 +2,7 @@
 	"case": "waiting: a request from Leo and a Quick add card wait for Mara",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,7 +22,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Yes, two items are waiting for your approval: Add a task: Buy a recorder for music class (School letter) and Add an event: Sleepover at Max's, from Leo, for Friday, 30 October.",
+			"text": "Yes, two things are waiting for your approval: Add a task: Buy a recorder for music class (School letter) and Add an event: Sleepover at Max's, from Leo, for Friday, 30 October.",
 			"toolCalls": []
 		}
 	]

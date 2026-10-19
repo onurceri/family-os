@@ -2,13 +2,8 @@
 	"case": "no ISO dates: when a task of Leo is due",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"error": "timeout"
-		},
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
@@ -30,7 +25,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Practise reading is on Monday, 19 October.",
+			"text": "Practise reading is on Monday.",
 			"toolCalls": []
 		}
 	]

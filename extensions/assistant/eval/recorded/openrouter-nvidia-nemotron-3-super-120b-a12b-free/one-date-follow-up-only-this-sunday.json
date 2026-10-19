@@ -2,7 +2,7 @@
 	"case": "one date: follow-up \"Only this Sunday\"",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -29,7 +29,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I’ve suggested moving the “Sunday planning” event on Sunday 2026‑10‑11 from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval by someone in the household.",
+			"text": "I’ve suggested changing the “Sunday planning” event on **Sunday 11 October 2026** from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval in the household. Once approved, it will be updated on the calendar.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -41,7 +41,7 @@
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"occurrence": "2026-10-11",
+						"occurrence": "1791739800000",
 						"label": "Sunday planning",
 						"startTime": "18:00",
 						"endTime": "18:30"
@@ -71,7 +71,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I’ve suggested moving the “Sunday planning” event on Sunday 11 October from 19:30‑20:00 to 18:00‑18:30. The change is only for this occurrence and is waiting for approval by someone in the household.\n\nSuggested, not added yet: Change an event: Sunday planning.",
+			"text": "I’ve suggested changing just this Sunday’s “Sunday planning” event (Sunday 11 October 2026) from 19:30‑20:00 to 18:00‑18:30. The change is waiting for approval in the household. Once approved, it will be updated on the calendar.\n\nSuggested, not added yet: Change an event: Sunday planning.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -86,9 +86,9 @@
 					"input": {
 						"id": "cal_event:1",
 						"occurrence": "1791739800000",
-						"label": "Sunday planning",
 						"startTime": "18:00",
-						"endTime": "18:30"
+						"endTime": "18:30",
+						"label": "Sunday planning"
 					}
 				}
 			]

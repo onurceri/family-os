@@ -2,7 +2,7 @@
 	"case": "dinner elsewhere: Friday's dinner at Nona Marija's, with nothing in the meal plan",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -29,7 +29,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "There is nothing for meals on Friday. Dinner at Nona Marija's is from 18:30 to 21:00.",
 			"toolCalls": []
 		}
 	]

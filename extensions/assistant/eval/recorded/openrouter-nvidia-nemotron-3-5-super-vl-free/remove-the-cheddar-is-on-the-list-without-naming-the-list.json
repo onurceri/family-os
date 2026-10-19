@@ -2,7 +2,7 @@
 	"case": "remove: the cheddar is on the list (without naming the list)",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -25,7 +25,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested removing Cheddar from the shopping list. It's waiting for someone in the household to approve it before it's actually taken off.",
+			"text": "Suggested, not added yet: Remove a shopping item: Cheddar. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

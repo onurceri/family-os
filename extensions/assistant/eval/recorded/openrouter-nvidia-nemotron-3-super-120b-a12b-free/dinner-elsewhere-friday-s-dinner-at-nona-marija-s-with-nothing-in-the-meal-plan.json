@@ -2,7 +2,7 @@
 	"case": "dinner elsewhere: Friday's dinner at Nona Marija's, with nothing in the meal plan",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -20,16 +20,13 @@
 						"weekday": 5
 					}
 				},
-				"people": [],
-				"about": [
-					"dinner"
-				]
+				"people": []
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "On Friday, 23 October, dinner is at Nona Marija's.",
 			"toolCalls": []
 		}
 	]

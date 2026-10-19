@@ -92,7 +92,7 @@ export const QUESTION_JSON_SCHEMA: Record<string, unknown> = {
 
 const RULES = [
 	'intent: "ask" when the message asks what there is (on the calendar, to do, to buy, planned, due, waiting); "change" when it asks to add, change, move, cancel, tick off, remove or be reminded of something; "remember" when it asks the assistant to remember something about the person; "other" for anything else (ideas, advice, a chat, a question none of the topics answers).',
-	'topics: what the answer is about, from this list only: calendar (events, appointments, lessons, pick-ups, where someone has to be), tasks (things to do), shopping (what to buy), meals (the meal plan, what is for dinner), chores, records (documents, insurance, contracts, renewals), pets, vehicles, home (the house or flat, its papers and upkeep), board (notes for the family), suggestions (what waits for someone to approve). An overview of the days ("what is on") is calendar and tasks. Leave topics empty when the message names none.',
+	'topics: what the answer is about, from this list only: calendar (events, appointments, lessons, pick-ups, where someone has to be), tasks (things to do, and reminders to do something), shopping (what to buy), meals (the meal plan, what is for dinner), chores, records (documents, insurance, contracts, renewals), pets, vehicles, home (the house or flat, its papers and upkeep), board (notes for the family), suggestions (what waits for someone to approve). An overview of the days ("what is on") is calendar and tasks. Leave topics empty when the message names none.',
 	'span: the days asked about. Copy the words that name them into said. kind: "day", "week" (this week, or day.week says which), "weekend", "month" or "next" (next week). day, from and to are day references: copy their words into text and fill only the parts those words give (weekday 1 = Monday ... 7 = Sunday, week, inDays, day, month, numeric). Never work out a date. Leave span out when the message names no days.',
 	'people: each person the message names, one entry each, copied as written ("Leo", "Mum", "me", "my", "I"). A word for the person asking counts. Leave it empty when nobody is named.',
 	'about: the words of the thing asked about, as written ("pick up", "dentist", "bring"), without words of days or people. Leave it out when the topic alone says it.',
@@ -149,6 +149,16 @@ export const EXAMPLES: readonly { text: string; answer: Record<string, unknown>;
 		{
 			text: 'Move the dentist to Friday at 10 and add milk to the list',
 			answer: { intent: 'change', topics: ['calendar', 'shopping'], people: [] },
+		},
+		{
+			text: 'Remind me on Friday at 8 to put the recycling out',
+			answer: {
+				intent: 'change',
+				topics: ['tasks'],
+				span: { said: 'on Friday', kind: 'day', day: { text: 'Friday', weekday: 5 } },
+				people: [{ said: 'me' }],
+			},
+			why: 'A reminder is a task for its day, whatever chore it names.',
 		},
 		{
 			text: 'Remember that I am vegetarian',

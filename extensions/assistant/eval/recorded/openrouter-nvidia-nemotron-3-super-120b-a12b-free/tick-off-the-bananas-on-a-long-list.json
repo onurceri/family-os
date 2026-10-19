@@ -2,7 +2,7 @@
 	"case": "tick off: \"the bananas\" on a long list",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -21,18 +21,20 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I don’t see an item just called “bananas” on the shopping list. There is an item **“Bananas for pancakes”**. If that’s what you meant, let me know and I can tick it off for you. Otherwise, bananas aren’t currently on the list.",
+			"text": "Suggested, not added yet: Tick off a shopping item: Bananas for pancakes. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
-					"input": {}
+					"input": {
+						"text": "bananas"
+					}
 				},
 				{
 					"name": "lists_checkShoppingItem",
 					"input": {
-						"id": "shop_item:63",
+						"id": "shop_item:1",
 						"done": true,
-						"label": "Bananas for pancakes"
+						"label": "bananas"
 					}
 				}
 			]

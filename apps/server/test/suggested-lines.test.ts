@@ -94,7 +94,8 @@ const toolName = (id: string) => id.replace('.', '_');
 
 describe('the line that names each suggestion', () => {
 	async function answerTo(calls: typeof SUGGESTIONS, text: string) {
-		k.llm.respond({ intent: 'change', topics: [], people: [] });
+		// Not a scoped change: the test drafts in many areas at once.
+		k.llm.respond({ intent: 'other', topics: [], people: [] });
 		k.llm.respondChat([
 			...[...READS, ...calls].map((c) => ({ tool: toolName(c.tool), input: c.input })),
 			{ text },

@@ -2,7 +2,7 @@
 	"case": "not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -21,7 +21,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I couldn’t find an event titled exactly “Dental cleaning” on the calendar. The closest match is a “Dentist checkup” for Noah on Thursday 2026‑10‑08 at 09:30‑10:30.  \n\nDid you mean that event, or is there another dental‑related appointment you’d like to reschedule to 10:00? Let me know so I can make the change.",
+			"text": "I couldn’t find any event on the family calendar titled “Dental cleaning”. If you have more details (such as the date it’s currently on or a different wording), let me know and I’ll look again.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -32,8 +32,35 @@
 				{
 					"name": "calendar_findEvents",
 					"input": {
+						"text": "Dental"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"members": [
+							"member:1"
+						]
+					}
+				},
+				{
+					"name": "core_today",
+					"input": {}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
 						"from": "2026-10-06",
-						"to": "2026-10-13"
+						"to": "2026-10-11",
+						"members": [
+							"member:1"
+						]
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Dental cleaning"
 					}
 				}
 			]

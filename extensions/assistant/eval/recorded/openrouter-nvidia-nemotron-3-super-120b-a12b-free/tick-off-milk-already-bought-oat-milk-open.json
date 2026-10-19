@@ -2,7 +2,7 @@
 	"case": "tick off: milk already bought, oat milk open",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -22,16 +22,26 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "<tool_call>\n<function=lists_shoppingListMarkBought>\n<parameter=listId>\nshop_list:2\n</parameter>\n<parameter=itemId>\nshop_item:1\n</parameter>\n</function>\n</tool_call>",
+			"text": "Milk is already ticked off on the shopping list.\n\nFor oat milk, I've created a suggestion to mark it as bought. It will be added once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
 					"input": {}
 				},
 				{
-					"name": "lists_shoppingList",
+					"name": "lists_checkShoppingItem",
 					"input": {
-						"listId": "shop_list:1"
+						"id": "shop_item:7",
+						"done": true,
+						"label": "milk"
+					}
+				},
+				{
+					"name": "lists_checkShoppingItem",
+					"input": {
+						"id": "shop_item:1",
+						"done": true,
+						"label": "oat milk"
 					}
 				}
 			]

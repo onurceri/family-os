@@ -2,7 +2,7 @@
 	"case": "reminder: \"Remind me to pack the football kit\" is suggested, not created",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,52 +34,15 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"intent": "change",
-				"topics": [
-					"tasks"
-				],
-				"span": {
-					"said": "on Thursday",
-					"kind": "day",
-					"day": {
-						"text": "Thursday",
-						"weekday": 4
-					}
-				},
-				"people": [
-					{
-						"said": "me"
-					}
-				],
-				"about": [
-					"pack",
-					"football kit"
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "I've suggested a calendar reminder for Thursday 8 October to pack the football kit. It's waiting for someone in the household to approve it before it's added to the calendar.",
+			"text": "Suggested, not added yet: Add a task: Pack the football kit for 2026-10-08. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
-					"name": "calendar_createEvent",
+					"name": "lists_addTask",
 					"input": {
 						"title": "Pack the football kit",
-						"date": "2026-10-08",
-						"allDay": true,
-						"startTime": "09:00",
-						"memberIds": [
-							"Lukas"
-						],
-						"reminder": 0
+						"assigneeId": "member:2",
+						"dueDate": "2026-10-08",
+						"notes": "Reminder for Thursday"
 					}
 				}
 			]

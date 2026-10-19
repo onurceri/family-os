@@ -2,7 +2,7 @@
 	"case": "Sunday: \"this week\" asked on the week's last day is the coming week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -27,7 +27,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "On Monday, 19 October Leo has Practise reading, on Tuesday, 20 October Mara and Tom have Parents' evening and Mara has to Sign the school trip form, and on Wednesday, 21 October Ivy has Football training. On Thursday, 22 October Leo has Swimming lesson and Ivy has Piano lesson, on Friday, 23 October there is Dinner at Nona Marija's, and on Saturday, 24 October Ivy has U13 match, Olimpija.",
 			"toolCalls": []
 		}
 	]

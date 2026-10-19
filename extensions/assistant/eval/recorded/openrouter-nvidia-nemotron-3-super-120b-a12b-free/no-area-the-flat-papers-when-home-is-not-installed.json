@@ -2,7 +2,7 @@
 	"case": "no area: the flat papers when Home is not installed",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -15,11 +15,7 @@
 				],
 				"span": {
 					"said": "this month",
-					"kind": "month",
-					"day": {
-						"text": "this month",
-						"month": 1
-					}
+					"kind": "month"
 				},
 				"people": [
 					{
@@ -35,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "The records show nothing due this month. Home is not installed here.",
 			"toolCalls": []
 		}
 	]

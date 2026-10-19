@@ -2,7 +2,7 @@
 	"case": "tick off: \"the bananas\" on a long list",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -21,11 +21,19 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "<tool_call>\n<function=lists_shoppingListItem>\n<parameter=listId>\nshop_list:2\n</parameter>\n<parameter=itemId>\nshop_item:63\n</parameter>\n<parameter=bought>\nTrue\n</parameter>\n</function>\n</tool_call>",
+			"text": "Suggested, not added yet: Tick off a shopping item: Bananas for pancakes. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
 					"input": {}
+				},
+				{
+					"name": "lists_checkShoppingItem",
+					"input": {
+						"id": "shop_item:63",
+						"done": true,
+						"label": "bananas"
+					}
 				}
 			]
 		}

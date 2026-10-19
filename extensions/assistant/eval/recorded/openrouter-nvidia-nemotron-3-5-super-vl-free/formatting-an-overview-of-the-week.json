@@ -2,7 +2,7 @@
 	"case": "formatting: an overview of the week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -28,7 +28,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "This week has Swim training on Tuesday, October 6, Early shift, Client meeting, Piano lesson, Football training, and Work dinner on Wednesday, October 7, Dentist checkup and Swimming on Thursday, October 8, and Sunday planning on Sunday, October 11. Open tasks are Buy a birthday present for Mila and Book the car service, and the shopping list is Groceries: Bread, Cheddar, Tomatoes, Pasta, Eggs.",
 			"toolCalls": []
 		}
 	]

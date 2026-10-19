@@ -2,7 +2,7 @@
 	"case": "span: nothing open for Ellie this weekend",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "There is nothing on your Calendar this weekend. There are no Tasks this weekend.",
 			"toolCalls": []
 		}
 	]

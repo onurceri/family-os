@@ -2,8 +2,13 @@
 	"case": "one date: Sunday planning on 25 October only",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"error": "timeout"
+		},
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
@@ -35,19 +40,23 @@
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"text": "planning",
 						"from": "2026-10-25",
 						"to": "2026-10-25"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "planning"
 					}
 				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"date": "2026-10-25",
+						"occurrence": "2026-10-25",
 						"startTime": "18:00",
 						"endTime": "18:30",
-						"occurrence": "2026-10-25",
 						"label": "Sunday planning on 25 October"
 					}
 				}

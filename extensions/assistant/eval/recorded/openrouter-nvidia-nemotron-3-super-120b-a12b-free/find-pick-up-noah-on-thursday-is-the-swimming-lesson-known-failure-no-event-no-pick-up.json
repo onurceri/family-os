@@ -2,7 +2,7 @@
 	"case": "find: \"pick up Noah on Thursday\" is the swimming lesson (known failure: \"no event, no pick-up\")",
 	"model": "openrouter / nvidia/nemotron-3-super-120b-a12b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "1190b8c92537d14f",
+	"promptHash": "8526ae00fd76e932",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,14 +26,15 @@
 					}
 				],
 				"about": [
-					"pick up"
+					"pick",
+					"up"
 				]
 			}
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing about picking up Noah on Thursday.",
+			"text": "On Thursday, Noah has a dentist checkup from 9:30 AM to 10:30 AM and swimming from 5:00 PM to 6:00 PM.",
 			"toolCalls": []
 		}
 	]
