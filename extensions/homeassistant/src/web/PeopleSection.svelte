@@ -2,6 +2,7 @@
 	import { isApiError } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Avatar, Card, ConfirmButton, Row, Section, SidePanel } from '@famos/ui/famos';
+	import { Check } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import type {
 		NotifyStatus,
@@ -277,7 +278,12 @@
 						meta={other ? t('people_linked_to', { name: other }) : undefined}
 						selected={chosen === person.entityId}
 						onclick={other ? undefined : () => (chosen = person.entityId)}
-					/>
+					>
+						{#snippet trail()}{#if chosen === person.entityId}<Check
+									class="size-4"
+									aria-hidden="true"
+								/>{/if}{/snippet}
+					</Row>
 				{/each}
 			</Card>
 		{/if}
@@ -298,13 +304,23 @@
 								meta={option.suggested ? t('notify_suggested') : undefined}
 								selected={phone === option.service}
 								onclick={() => (phone = option.service)}
-							/>
+							>
+								{#snippet trail()}{#if phone === option.service}<Check
+											class="size-4"
+											aria-hidden="true"
+										/>{/if}{/snippet}
+							</Row>
 						{/each}
 						<Row
 							title={t('notify_none_option')}
 							selected={phone === null}
 							onclick={() => (phone = null)}
-						/>
+						>
+							{#snippet trail()}{#if phone === null}<Check
+										class="size-4"
+										aria-hidden="true"
+									/>{/if}{/snippet}
+						</Row>
 					</Card>
 				{/if}
 				<div class="flex flex-wrap items-center gap-3">
