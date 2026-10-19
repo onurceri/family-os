@@ -311,6 +311,10 @@ export interface operations {
                                     }[];
                                     truncated: boolean;
                                     hidden?: number;
+                                    others?: {
+                                        count: number;
+                                        more: boolean;
+                                    };
                                     next?: {
                                         /** @enum {string} */
                                         kind: "event" | "task" | "shopping_list" | "chore" | "meal" | "duty" | "note" | "suggestion";

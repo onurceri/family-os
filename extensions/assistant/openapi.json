@@ -606,6 +606,22 @@
 																		"hidden": {
 																			"type": "integer"
 																		},
+																		"others": {
+																			"type": "object",
+																			"properties": {
+																				"count": {
+																					"type": "integer",
+																					"minimum": 0
+																				},
+																				"more": {
+																					"type": "boolean"
+																				}
+																			},
+																			"required": [
+																				"count",
+																				"more"
+																			]
+																		},
 																		"next": {
 																			"type": "object",
 																			"properties": {
