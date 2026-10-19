@@ -616,6 +616,26 @@ describe('calendar.eventChange of a repeating event with a date moved out of it'
 	});
 });
 
+describe('a day in the quote of a change', () => {
+	it('names which date, so it is not read as the new date (answer with no date)', async () => {
+		const training = await footballTraining();
+		const out = await resolve('calendar.eventChange', [
+			{
+				target: 'Football training',
+				time: '18:00',
+				timeText: '18:00',
+				quote: "Friday's football training is now at 18:00",
+			},
+		]);
+		const input = proposal(out[0]).input as Record<string, unknown>;
+		expect(input).toEqual({
+			id: training.id,
+			startTime: '18:00',
+			label: 'Football training',
+		});
+	});
+});
+
 describe('calendar.eventCancel', () => {
 	it('never cancels another class’s trip because most of its words are the same', async () => {
 		// Before one matcher decided it, "Class 3B trip" named all the words of "Class 1B trip"

@@ -344,7 +344,10 @@ export function createMentionKinds(deps: MentionKindsDeps): MentionKinds {
 	): IndexedMention => {
 		const { mention } = given;
 		const quote = mention.quote?.trim();
-		if (kind.slots.date === undefined || mention.date || !quote) return given;
+		// A kind with a `target` changes or cancels something that exists: a day in its quote
+		// usually says which one, not a new date, so it is never read as the date.
+		if (kind.slots.date === undefined || kind.slots.target !== undefined) return given;
+		if (mention.date || !quote) return given;
 		const named = dayNamedIn(quote, dateWords(deps.vocabulary), numericDateOrder(formatLocale));
 		if (!named) return given;
 		return {
