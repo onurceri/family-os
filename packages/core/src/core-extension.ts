@@ -14,6 +14,7 @@ import {
 	defineRoute,
 	digestOf,
 	type EventBus,
+	type ExtensionContext,
 	FamosError,
 	type IdentityAdmin,
 	idSchema,

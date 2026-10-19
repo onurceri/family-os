@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
 import type { MemberId } from '@famos/sdk';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { APP_VERSION, migrate, openRuntime, type Runtime } from '../src/runtime.ts';
@@ -140,9 +140,11 @@ const mcpStatus = async (secret: string) =>
 	).status;
 
 const feedStatus = async (path: string) => (await call('GET', path)).status;
-/** Addresses end from the job queue, a moment after the change that ended them. */
-const feedEnds = (path: string) =>
-	vi.waitFor(async () => expect(await feedStatus(path)).toBe(404), { timeout: 15_000 });
+/** Addresses end from the job queue, after the change that ended them: run the worker. */
+const feedEnds = async (path: string) => {
+	await runtime.kernel.worker.drain();
+	expect(await feedStatus(path)).toBe(404);
+};
 
 describe('a PIN cannot make a credential that works away from the device', () => {
 	it('refuses API tokens, calendar addresses and Telegram links, with the reason', async () => {

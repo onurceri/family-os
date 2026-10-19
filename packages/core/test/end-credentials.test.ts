@@ -50,7 +50,8 @@ describe('ending a member’s credentials', () => {
 		const { actor, member } = await memberWithToken();
 		failures = 1;
 		await k.route('core.signOutEverywhere').call({ actor });
-		expect(await k.worker.drain()).toBe(0);
+		// The first attempt fails and is scheduled again; nothing ended yet.
+		expect(await k.worker.drain()).toBe(1);
 		expect(ended).toEqual([]);
 		k.clock.advance(60_000);
 		expect(await k.worker.drain()).toBe(1);

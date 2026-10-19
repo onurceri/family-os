@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.15",
+	"sdk": "0.8.16",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -95,7 +95,6 @@
 			"isLlmError",
 			"labelNamesTitle",
 			"matchThing",
-			"memberCredentialsEnded",
 			"mentionKindProblems",
 			"namedShares",
 			"namesThing",
