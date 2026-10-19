@@ -119,23 +119,30 @@ const nameWords = (value: string, locale: string) =>
 		.filter((word) => [...word].length > 1);
 
 /**
- * The one member whose whole name a new event's title writes, when the mention names nobody and
- * the shared message writes that name too; null when none or several do, or the mention names
- * people or the sharer itself.
+ * The one member whose whole name a new event's title writes, or else the words of the message it
+ * rests on (its quote), when the mention names nobody and the shared message writes that name
+ * too; null when none or several do, or the mention names people or the sharer itself.
  */
-function memberInTitle(ctx: MentionContext, mention: Mention): string | null {
-	if (!mention.title || (mention.people?.length ?? 0) > 0 || mention.forMe) return null;
-	const title = new Set(nameWords(mention.title, ctx.locale));
+function memberWritten(ctx: MentionContext, mention: Mention): string | null {
+	if ((mention.people?.length ?? 0) > 0 || mention.forMe) return null;
 	const said = ctx.text === null ? null : new Set(nameWords(ctx.text, ctx.locale));
-	const named = ctx.members.filter((m) => {
-		const words = nameWords(m.displayName, ctx.locale);
-		return (
-			words.length > 0 &&
-			words.every((w) => title.has(w)) &&
-			(said === null || words.some((w) => said.has(w)))
-		);
-	});
-	return named.length === 1 ? (named[0]?.id ?? null) : null;
+	const namedIn = (value: string | undefined) => {
+		if (!value) return [];
+		const words = new Set(nameWords(value, ctx.locale));
+		return ctx.members.filter((m) => {
+			const name = nameWords(m.displayName, ctx.locale);
+			return (
+				name.length > 0 &&
+				name.every((w) => words.has(w)) &&
+				(said === null || name.some((w) => said.has(w)))
+			);
+		});
+	};
+	for (const value of [mention.title, mention.quote]) {
+		const named = namedIn(value);
+		if (named.length > 0) return named.length === 1 ? (named[0]?.id ?? null) : null;
+	}
+	return null;
 }
 
 /** Tags as the family already writes them, new ones cut to size; at most `TAGS_MAX`. */
@@ -214,9 +221,10 @@ async function newEvent(
 		if (!last?.certain || last.date < date) uncertain.add('endDate');
 	}
 	let people = peopleNamed(ctx, mention);
-	const titled = people.ids.length === 0 ? memberInTitle(ctx, mention) : null;
-	// The model wrote who it is for into the title ("Deniz vaccination appointment") instead of
-	// naming them: the event is theirs, as a guess for a person to check.
+	const titled = people.ids.length === 0 ? memberWritten(ctx, mention) : null;
+	// The model wrote who it is for into the title ("Deniz vaccination appointment"), or left out
+	// the name its own words hold ("Selin's dentist appointment"): the event is theirs, as a
+	// guess for a person to check.
 	if (titled) people = { ids: [titled], certain: false, unmatched: [] };
 	if (!people.certain) uncertain.add('memberIds');
 	// Nobody named: the event is the whole family's, which is a default, unless the message says

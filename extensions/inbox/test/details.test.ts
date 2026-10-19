@@ -417,14 +417,14 @@ describe('who an event is for, written into its title', () => {
 		expect(outcome.drafts[0]?.uncertainFields).toContain('memberIds');
 	});
 
-	it('takes nobody when the title names a member the message does not', async () => {
-		const answer = (title: string) => ({
+	it('never takes a member the message does not name, from the title', async () => {
+		const outcome = await read(caseNamed('Exact date with year (Turkish)'), {
 			label: 'Aşı randevusu',
 			intent: 'actionable',
 			mentions: [
 				{
 					kind: 'calendar.event',
-					title,
+					title: 'Mehmet vaccination appointment',
 					date: { text: '3 Kasım 2026', day: 3, month: 11, year: 2026, weekday: 2 },
 					time: '10:15',
 					timeText: '10:15',
@@ -432,11 +432,9 @@ describe('who an event is for, written into its title', () => {
 				},
 			],
 		});
-		const c = caseNamed('Exact date with year (Turkish)');
-		for (const title of ['Mehmet vaccination appointment']) {
-			const outcome = await read(c, answer(title));
-			expect(outcome.drafts[0]?.input.memberIds, title).toEqual([]);
-		}
+		// Mehmet is not in the message; the words it rests on name Deniz, marked for a look.
+		expect(outcome.drafts[0]?.input.memberIds).toEqual([outcome.members.Deniz]);
+		expect(outcome.drafts[0]?.uncertainFields).toContain('memberIds');
 	});
 });
 
@@ -486,5 +484,36 @@ describe('readings the free models gave after the detail link came in', () => {
 		});
 		expect(harmfulChecks(outcome)).toEqual([]);
 		expect(outcome.drafts[0]?.input.notes).toBe('Mileage 62,300 km.');
+	});
+});
+
+describe('who an event is for, in the words it rests on', () => {
+	it("takes the member the quote names when the model named nobody (120b's exact answer)", async () => {
+		const outcome = await read(caseNamed('A couple, no children'), {
+			label: 'Dentist and dinner with parents',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Diş randevusu',
+					date: { text: '8 Ekim Perşembe', day: 8, month: 10, weekday: 4 },
+					time: '15:00',
+					timeText: '15:00',
+					quote: "Selin'in diş randevusu 8 Ekim Perşembe 15:00'te",
+				},
+				{
+					kind: 'calendar.event',
+					title: 'Annemi yemeğe götürüyorum',
+					forMe: true,
+					date: { text: '9 Ekim Cuma', day: 9, month: 10, weekday: 5 },
+					time: '19:30',
+					timeText: '19:30',
+					quote: "Ben de 9 Ekim Cuma akşam 19:30'da annemleri yemeğe götürüyorum",
+				},
+			],
+		});
+		expect(failedChecks(outcome)).toEqual([]);
+		const dentist = outcome.drafts.find((d) => d.input.date === '2026-10-08');
+		expect(dentist?.uncertainFields).toContain('memberIds');
 	});
 });
