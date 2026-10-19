@@ -28,6 +28,7 @@ export { coreMigrations } from './migrations/0001_init.ts';
 export * from './next-up.ts';
 export * from './notifications.ts';
 export * from './registry.ts';
+export type { RestoreReport } from './restore.ts';
 export * from './search.ts';
 export * from './tables.ts';
 export * from './themes.ts';

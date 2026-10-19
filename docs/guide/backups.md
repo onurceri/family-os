@@ -55,6 +55,16 @@ docker compose start famos
 
 To restore a copy from elsewhere, put it into the volume first (`docker compose cp ./file.tar famos:/data/backups/`). Restoring never deletes the current data: it is moved aside as `famos.db.pre-restore-<time>`, `files.pre-restore-<time>` and, if the backup holds language or theme packs or extensions installed from a file, `languages.pre-restore-<time>`, `themes.pre-restore-<time>` and `extensions.pre-restore-<time>`. A backup from a newer FamilyOS is refused.
 
+### After a restore: everyone signs in again
+A backup is a picture of an earlier day, and the restore must not undo what the family ended since. So the first time the server starts after a restore:
+
+- Everyone is signed out and signs in again, on every phone, tablet and computer.
+- What was **ended after the backup stays ended**, as long as the replaced data is still next to the new one (`famos.db.pre-restore-<time>`): app keys that were revoked, devices and displays that were removed, members who were removed, calendar addresses that were stopped, and Telegram chats that were unlinked. A password or PIN changed after the backup stays changed, so a password changed after a leak does not come back.
+- Nothing is ever switched back on by this. Keys, devices, addresses and links made after the backup are gone, as the rest of that day is, and a person must make them again.
+- On a new server, where nothing was set aside, nothing was ended since, so only the sign-out happens.
+
+Admins get a notification that says what stayed ended. If you delete the `*.pre-restore-*` files before the first start, only the sign-out happens.
+
 Extensions installed from a file come back with the backup, and FamilyOS checks their signature again when it starts. A backup from an older FamilyOS that does not hold them still restores: an extension it says is installed but that this server has no package of is left out (Settings lists it with the reason), and everything else starts as usual. Install that extension again to bring it back; its data was kept.
 
 ### Restoring an encrypted backup

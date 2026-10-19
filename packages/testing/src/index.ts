@@ -76,6 +76,8 @@ export interface FakeIdentity extends IdentityAdmin {
 	/** Members and devices whose sessions were ended, in order. */
 	readonly endedSessions: string[];
 	readonly endedDeviceSessions: string[];
+	/** How many times everyone was signed out (after a restore). */
+	readonly endedAll: { count: number };
 }
 
 export function createFakeIdentity(): FakeIdentity {
@@ -83,7 +85,9 @@ export function createFakeIdentity(): FakeIdentity {
 	const pins = new Map<string, string>();
 	const endedSessions: string[] = [];
 	const endedDeviceSessions: string[] = [];
+	const endedAll = { count: 0 };
 	return {
+		endedAll,
 		passwords,
 		pins,
 		endedSessions,
@@ -93,6 +97,12 @@ export function createFakeIdentity(): FakeIdentity {
 		},
 		async endDeviceSessions(deviceId) {
 			endedDeviceSessions.push(deviceId);
+		},
+		async endAllSessions() {
+			endedAll.count += 1;
+		},
+		async carryNewerLogins() {
+			return 0;
 		},
 		async setPasswordLogin({ memberId, email, password }) {
 			passwords.set(memberId, { email, password });

@@ -30,10 +30,10 @@ import { type ActionRunner, createActionRunner, type ExtensionViews } from './ac
 import { type AiAreas, createAiAreas } from './ai-areas.ts';
 import { aiMissingAreas } from './ai-missing-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
-import { type ApiTokenService, createApiTokenService } from './api-tokens.ts';
+import { type ApiTokenService, createApiTokenService, revokeTokensOf } from './api-tokens.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
 import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './core-events.ts';
-import { createCoreExtension } from './core-extension.ts';
+import { createCoreExtension, END_CREDENTIALS_JOB } from './core-extension.ts';
 import { createDeviceService, type DeviceService } from './devices.ts';
 import { createEventBus, type InProcessEventBus } from './event-bus.ts';
 import { createExtensionInstall, type ExtensionList } from './extension-install.ts';
@@ -61,6 +61,7 @@ import {
 	isExtensionRefusedError,
 	type Registry,
 } from './registry.ts';
+import { type RestoreReport, reconcileRestore } from './restore.ts';
 import {
 	createSchemaNames,
 	hostFiles,
@@ -178,6 +179,16 @@ export interface Kernel {
 	readonly migrationScopes: readonly { scope: string; migrations: Migrations }[];
 	/** Family search follows the AI settings: run after a model, provider or area changes. */
 	reconcileSearch(): Promise<void>;
+	/**
+	 * The step for the first start after a backup was restored (run after `start`, before the
+	 * worker): everyone signs in again, and what was ended since the backup stays ended. `previous`
+	 * is the database the restore set aside, null on a new server; `hostSteps` carry the same for
+	 * what the host's adapters keep (Telegram links) and return how many they carried.
+	 */
+	reconcileRestore(
+		previous: DbExecutor | null,
+		hostSteps?: readonly (() => Promise<number>)[],
+	): Promise<RestoreReport>;
 	/** Calls every extension's `register`. Run after migrations. */
 	start(): Promise<void>;
 	stop(): Promise<void>;
@@ -267,6 +278,15 @@ export function createKernel(options: KernelOptions): Kernel {
 		refused: () => refused,
 		features: () => features,
 	});
+	const enqueueIn = async (db: DbExecutor, job: string, payload: unknown) => {
+		const def = registry.jobs.get(job);
+		if (!def) throw new Error(`Unknown job "${job}"`);
+		const id = await options.queue.enqueue(db, job, def.payload.parse(payload), {
+			maxAttempts: def.maxAttempts,
+		});
+		worker?.wake();
+		return id;
+	};
 	const core = createCoreExtension({
 		themes,
 		search,
@@ -291,15 +311,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		extensionInstall,
 		extensionDb: (id, db) => views.db(id, db),
 		jobContext: (id) => jobContextFor(id),
-		enqueueIn: async (db, job, payload) => {
-			const def = registry.jobs.get(job);
-			if (!def) throw new Error(`Unknown job "${job}"`);
-			const id = await options.queue.enqueue(db, job, def.payload.parse(payload), {
-				maxAttempts: def.maxAttempts,
-			});
-			worker?.wake();
-			return id;
-		},
+		enqueueIn,
 		runner: () => {
 			if (!runner) throw new Error('Kernel not initialised');
 			return runner;
@@ -662,6 +674,27 @@ export function createKernel(options: KernelOptions): Kernel {
 		listExtensions: () => extensionInstall.describe(options.db),
 		migrationScopes,
 		reconcileSearch,
+		reconcileRestore: (previous, hostSteps) =>
+			reconcileRestore(
+				{
+					db: options.db,
+					clock: options.clock,
+					logger: options.logger,
+					identity: options.identity,
+					extensions: () => registry.extensions,
+					jobContextFor,
+					previousViewFor: (id, db) =>
+						isHost(id) ? db : views.db(id, db).withPlugin(readOnlyPlugin(id)),
+					endCredentialsOf: (memberId) =>
+						options.db.transaction().execute(async (trx) => {
+							await revokeTokensOf(trx, memberId, options.clock.now());
+							await enqueueIn(trx, END_CREDENTIALS_JOB, { memberId });
+						}),
+					notify: (request) => ctx.notify(request),
+				},
+				previous,
+				hostSteps,
+			),
 		async start() {
 			await schemaNames.refresh(options.db);
 			await access.refresh(options.db);

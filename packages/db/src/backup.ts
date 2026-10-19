@@ -1,8 +1,18 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { cp, mkdir, mkdtemp, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
+import {
+	cp,
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	rename,
+	rm,
+	stat,
+	writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import type Database from 'better-sqlite3';
 import * as tar from 'tar';
 
@@ -191,10 +201,15 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 			throw new Error('Backup database checksum mismatch');
 
 		const suffix = `pre-restore-${stamp(options.now ?? new Date())}`;
+		// The journal files are renamed after the database's new name, so SQLite finds them when
+		// the moved-aside copy is opened to read what changed since the backup.
+		const movedAside = `${options.dbPath}.${suffix}`;
+		const hadDatabase = await stat(options.dbPath).then(
+			() => true,
+			() => false,
+		);
 		for (const ext of ['', '-wal', '-shm']) {
-			await rename(`${options.dbPath}${ext}`, `${options.dbPath}${ext}.${suffix}`).catch(
-				ignoreMissing,
-			);
+			await rename(`${options.dbPath}${ext}`, `${movedAside}${ext}`).catch(ignoreMissing);
 		}
 		await rename(options.filesDir, `${options.filesDir}.${suffix}`).catch(ignoreMissing);
 
@@ -247,10 +262,55 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 				await cp(restored, options.extensionsDir, { recursive: true });
 			}
 		}
+		await writeFile(
+			markerPath(options.dbPath),
+			JSON.stringify({
+				restoredAt: (options.now ?? new Date()).toISOString(),
+				previousDb: hadDatabase ? basename(movedAside) : null,
+			} satisfies RestoreMarker),
+		);
 		return manifest;
 	} finally {
 		await rm(staging, { recursive: true, force: true });
 	}
+}
+
+/**
+ * Left next to the database by a restore and consumed by the first start after it, which signs
+ * everyone out and carries over what was ended since the backup. `previousDb` is the file name
+ * of the database the restore moved aside, or null when there was none (a new server).
+ */
+export interface RestoreMarker {
+	restoredAt: string;
+	previousDb: string | null;
+}
+
+const markerPath = (dbPath: string) => join(dirname(dbPath), 'restore-pending.json');
+
+/** The pending restore with the path of the moved-aside database, or null when there is none. */
+export async function readRestoreMarker(
+	dbPath: string,
+): Promise<(RestoreMarker & { previousPath: string | null }) | null> {
+	let raw: string;
+	try {
+		raw = await readFile(markerPath(dbPath), 'utf8');
+	} catch (error) {
+		if (isMissing(error)) return null;
+		throw error;
+	}
+	const marker = JSON.parse(raw) as RestoreMarker;
+	const previousPath = marker.previousDb ? join(dirname(dbPath), marker.previousDb) : null;
+	const exists =
+		previousPath !== null &&
+		(await stat(previousPath).then(
+			() => true,
+			() => false,
+		));
+	return { ...marker, previousPath: exists ? previousPath : null };
+}
+
+export async function clearRestoreMarker(dbPath: string): Promise<void> {
+	await rm(markerPath(dbPath), { force: true });
 }
 
 /**

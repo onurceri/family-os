@@ -24,6 +24,12 @@ export interface Migration {
  */
 export type Migrations = Readonly<Record<string, Migration>>;
 
+/** What an extension's `onRestore` gets: its own context, and the database that was set aside. */
+export interface RestoreContext extends JobContext {
+	/** This extension's own tables in the database before the restore, read-only; null if none. */
+	readonly previous: DbExecutor | null;
+}
+
 export interface ExtensionDefinition {
 	/** What the extension is and what it reaches, from the `famos` field of its package.json. */
 	readonly manifest: ExtensionManifest;
@@ -69,6 +75,15 @@ export interface ExtensionDefinition {
 	 * idempotent. It runs even when the extension is turned off.
 	 */
 	endCredentials?(ctx: JobContext, memberId: string): Promise<void>;
+	/**
+	 * Runs once on the first start after a backup was restored, so a decision made after the
+	 * backup (an address stopped, a link removed) is not undone by it. `previous` reads this
+	 * extension's own tables, read-only, in the database the restore moved aside; it is null when
+	 * there was none (a new server). Carry over only what ends or removes access, never what
+	 * grants it. Returns how many such decisions it carried, for the note admins get. It may run
+	 * more than once, so it must be idempotent.
+	 */
+	onRestore?(ctx: RestoreContext): Promise<number>;
 }
 
 export interface AiExtensionHints {
@@ -154,6 +169,7 @@ export function defineExtension(definition: {
 	messages?: ExtensionMessages;
 	register?(ctx: ExtensionContext): void | Promise<void>;
 	endCredentials?(ctx: JobContext, memberId: string): Promise<void>;
+	onRestore?(ctx: RestoreContext): Promise<number>;
 }): ExtensionDefinition {
 	const manifest = parseManifest(definition.manifest);
 	const { id } = manifest;

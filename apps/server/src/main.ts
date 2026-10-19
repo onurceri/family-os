@@ -35,6 +35,7 @@ import { createExtensionStore, type ExtensionStore, withStore } from './packages
 import { TRUST_ROOTS } from './packages/trust.ts';
 import { askLine, askSecret } from './prompt.ts';
 import { restoreFile } from './restore.ts';
+import { finishRestore } from './restore-pending.ts';
 import {
 	APP_VERSION,
 	backupNow,
@@ -104,6 +105,8 @@ async function serveCommand() {
 		await runtime.close();
 		process.exit(RESTART_EXIT_CODE);
 	}
+	// Before anything serves: after a restore nobody is signed in and what was ended stays ended.
+	await finishRestore(runtime);
 	await announceSetup(runtime);
 	// Old copies in the store go once this start has chosen what it runs; the previous one of
 	// each stays.
@@ -543,7 +546,7 @@ async function main() {
 				askPassphrase: () => askSecret('Backup passphrase: '),
 			});
 			console.log(
-				`Restored backup from ${manifest.createdAt} (FamilyOS ${manifest.appVersion}). Previous data was kept as *.pre-restore-*.`,
+				`Restored backup from ${manifest.createdAt} (FamilyOS ${manifest.appVersion}). Previous data was kept as *.pre-restore-*. At the next start everyone signs in again, and keys, devices, members and passwords changed after the backup stay changed.`,
 			);
 			return;
 		}

@@ -83,6 +83,14 @@ export interface IdentityAdmin {
 	endSessions(memberId: string): Promise<void>;
 	/** Ends the PIN sessions opened on a family device (the device was revoked). */
 	endDeviceSessions(deviceId: string): Promise<void>;
+	/** Signs everyone out: every session of every member ends. */
+	endAllSessions(): Promise<void>;
+	/**
+	 * After a restore: for a login that exists in `previous` (the database that was set aside)
+	 * and here, takes over the password or PIN hash that was set later there, and returns how
+	 * many it took. Logins missing on either side are left alone.
+	 */
+	carryNewerLogins(previous: DbExecutor): Promise<number>;
 }
 
 export interface EnqueueOptions {

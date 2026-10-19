@@ -2,7 +2,14 @@ import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startFakeDav } from '../support/fake-dav.ts';
-import { api, expect, setUpAndSignIn, test } from '../support/fixtures.ts';
+import {
+	ADMIN,
+	api,
+	expect,
+	setUpAndSignIn,
+	signInWithPassword,
+	test,
+} from '../support/fixtures.ts';
 
 const today = () =>
 	new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date());
@@ -115,7 +122,12 @@ test('an encrypted backup restores with its passphrase; a wrong passphrase or a 
 		// The temporary decrypted copy is cleaned up.
 		expect((await readdir(family.dataDir)).filter((n) => n.startsWith('.restore-'))).toEqual([]);
 		await family.start();
+		// A restore signs everyone out: the browser's old session is gone, so Deniz signs in again.
 		await page.goto('/');
+		expect((await page.request.get(`${new URL(page.url()).origin}/api/v1/core/me`)).status()).toBe(
+			401,
+		);
+		await signInWithPassword(page, ADMIN.email, ADMIN.password);
 		await expect(page.getByTestId('day-sentence')).toBeVisible();
 		const titles = await eventTitles(page);
 		expect(titles).toContain('Parents evening');

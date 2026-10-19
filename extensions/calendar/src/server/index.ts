@@ -49,7 +49,15 @@ import {
 } from './capabilities.ts';
 import { aiContextEvents } from './context.ts';
 import { calendarDigest } from './digest.ts';
-import { createFeed, endFeedsOf, feedRoute, listFeeds, revokeFeed, touchFeed } from './feeds.ts';
+import {
+	carryStoppedFeeds,
+	createFeed,
+	endFeedsOf,
+	feedRoute,
+	listFeeds,
+	revokeFeed,
+	touchFeed,
+} from './feeds.ts';
 import { movedEvent } from './moved.ts';
 import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
@@ -1203,4 +1211,5 @@ export default defineExtension({
 	notifications: [reminderKind],
 	jobs: [remindJob, refreshJob],
 	endCredentials: endFeedsOf,
+	onRestore: carryStoppedFeeds,
 });

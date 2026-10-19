@@ -334,6 +334,7 @@ describe('delivery', () => {
 			'core.draftWaiting',
 			'core.draftDecided',
 			'core.backupFailed',
+			'core.backupRestored',
 			'core.autoApprovalStopped',
 		]);
 	});
@@ -527,6 +528,11 @@ describe('reading and preferences', () => {
 			{
 				id: 'core.backupFailed',
 				label: 'en|app:notify_kind_backup_failed|',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.backupRestored',
+				label: 'en|app:notify_kind_backup_restored|',
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{

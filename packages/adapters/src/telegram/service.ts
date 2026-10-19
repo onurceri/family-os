@@ -11,7 +11,7 @@ import { Bot, GrammyError, HttpError } from 'grammy';
 import type { CallbackQuery, InlineKeyboardButton, Message, Update } from 'grammy/types';
 import type { SecretBox } from '../secrets/index.ts';
 import type { LinkCode, MemberLink, TelegramStatus } from './schemas.ts';
-import { telegramTables } from './tables.ts';
+import { type TelegramTables, telegramTables } from './tables.ts';
 
 /** What a linked member sent to the bot. */
 export interface TelegramShare {
@@ -1005,6 +1005,46 @@ export function createTelegram(deps: TelegramDeps) {
 		async unlink(memberId: string): Promise<void> {
 			await removeLink(memberId);
 			await db().deleteFrom('telegram_link_codes').where('member_id', '=', memberId).execute();
+		},
+
+		/**
+		 * After a restore: removes the links the family had ended since the backup. A link goes
+		 * when its member is known to `previous` (the database that was set aside) and that
+		 * database has no link of theirs to the same chat; a member it does not know is left as
+		 * restored. Returns how many went.
+		 */
+		async carryUnlinks(previous: DbExecutor): Promise<number> {
+			const before = previous.withTables<TelegramTables & { core_members: { id: string } }>();
+			let known: Set<string>;
+			let linked: Map<string, number>;
+			try {
+				known = new Set(
+					(await before.selectFrom('core_members').select('id').execute()).map((m) => m.id),
+				);
+				linked = new Map(
+					(
+						await before
+							.selectFrom('telegram_links')
+							.select(['member_id', 'telegram_user_id'])
+							.execute()
+					).map((l) => [l.member_id, l.telegram_user_id]),
+				);
+			} catch (error) {
+				if (/no such (table|column)/i.test(String(error))) return 0;
+				throw error;
+			}
+			let removed = 0;
+			for (const link of await db().selectFrom('telegram_links').selectAll().execute()) {
+				if (!known.has(link.member_id) || linked.get(link.member_id) === link.telegram_user_id)
+					continue;
+				await removeLink(link.member_id);
+				await db()
+					.deleteFrom('telegram_link_codes')
+					.where('member_id', '=', link.member_id)
+					.execute();
+				removed += 1;
+			}
+			return removed;
 		},
 
 		/** The member's link as the app shows it (no ids). */

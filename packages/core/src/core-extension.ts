@@ -404,6 +404,13 @@ export const backupFailed = defineNotificationKind({
 	audience: 'core.settings.manage',
 });
 
+/** Admins are told what a restore kept from before it, and that everyone signs in again. */
+export const backupRestored = defineNotificationKind({
+	id: 'core.backupRestored',
+	label: 'app:notify_kind_backup_restored',
+	audience: 'core.settings.manage',
+});
+
 /** The person behind a suggestion is told when someone else approved or rejected it. */
 export const draftDecided = defineNotificationKind({
 	id: 'core.draftDecided',
@@ -457,7 +464,7 @@ export const toDevice = (
 });
 
 /** Ends a member's keys and extension credentials; retried until it succeeds. */
-const END_CREDENTIALS_JOB = 'core.endCredentials';
+export const END_CREDENTIALS_JOB = 'core.endCredentials';
 
 export interface CoreExtensionDeps {
 	/** Family search: its jobs, the `core.searchFamily` action and routes. */
@@ -1935,7 +1942,13 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.search.jobs,
 			...deps.extensionInstall.jobs,
 		],
-		notifications: [draftWaiting, draftDecided, backupFailed, ...autoApproval.notifications],
+		notifications: [
+			draftWaiting,
+			draftDecided,
+			backupFailed,
+			backupRestored,
+			...autoApproval.notifications,
+		],
 		capabilities: Object.values(CORE_CAPABILITIES),
 		routes: [
 			listRoles,

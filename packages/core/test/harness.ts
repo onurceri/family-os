@@ -87,6 +87,8 @@ export async function createTestKernel(
 			),
 		endSessions: async () => {},
 		endDeviceSessions: async () => {},
+		endAllSessions: async () => {},
+		carryNewerLogins: async () => 0,
 		revokeAll: async (memberId) => {
 			passwords.delete(memberId);
 			pins.delete(memberId);

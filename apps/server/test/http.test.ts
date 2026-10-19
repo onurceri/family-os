@@ -778,6 +778,11 @@ describe('HTTP API', () => {
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{
+				id: 'core.backupRestored',
+				label: 'Bir yedek geri yüklendi',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
 				id: 'core.autoApprovalStopped',
 				label: 'Otomatik onay durduruldu',
 				defaultChannels: ['webpush', 'telegram'],

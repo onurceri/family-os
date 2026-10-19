@@ -2,6 +2,7 @@ import { type DbExecutor, FamosError, type IdentityAdmin } from '@famos/sdk';
 import { type BetterAuthOptions, type BetterAuthPlugin, betterAuth } from 'better-auth';
 import { APIError, createAuthEndpoint } from 'better-auth/api';
 import { setSessionCookie } from 'better-auth/cookies';
+import { sql } from 'kysely';
 import { z } from 'zod';
 
 /**
@@ -276,6 +277,52 @@ export function createIdentity(options: IdentityOptions): Identity {
 				model: 'session',
 				where: [{ field: 'deviceId', value: deviceId }],
 			});
+		},
+		async endAllSessions() {
+			await sql`delete from auth_sessions`.execute(options.db);
+		},
+		async carryNewerLogins(previous) {
+			const at = (value: unknown) =>
+				typeof value === 'number' ? value : Date.parse(String(value));
+			type Account = { id: string; password: string | null; updatedAt: unknown };
+			type Earlier = Account & { userId: string; providerId: string; memberId: string };
+			let before: Earlier[];
+			try {
+				// Only logins both databases know: same login, same member.
+				before = (
+					await sql<Earlier>`
+						select a.id, a."userId", a."providerId", a.password, a."updatedAt", u."memberId"
+						from auth_accounts a join auth_users u on u.id = a."userId"
+						where a.password is not null`.execute(previous)
+				).rows;
+			} catch (error) {
+				if (/no such (table|column)/i.test(String(error))) return 0;
+				throw error;
+			}
+			const memberOf = new Map(
+				(
+					await sql<{
+						id: string;
+						memberId: string;
+					}>`select id, "memberId" from auth_users`.execute(options.db)
+				).rows.map((u) => [u.id, u.memberId]),
+			);
+			let carried = 0;
+			for (const account of before) {
+				if (memberOf.get(account.userId) !== account.memberId) continue;
+				const now = (
+					await sql<Account>`select id, password, "updatedAt" from auth_accounts
+						where "userId" = ${account.userId} and "providerId" = ${account.providerId}`.execute(
+						options.db,
+					)
+				).rows[0];
+				if (!now || now.password === account.password) continue;
+				if (at(account.updatedAt) <= at(now.updatedAt)) continue;
+				await sql`update auth_accounts set password = ${account.password}, "updatedAt" = ${account.updatedAt}
+					where id = ${now.id}`.execute(options.db);
+				carried += 1;
+			}
+			return carried;
 		},
 		async revokeAll(memberId) {
 			const user = await findUser(memberId);

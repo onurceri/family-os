@@ -6,6 +6,7 @@ import {
 	defineRoute,
 	FamosError,
 	type JobContext,
+	type RestoreContext,
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
@@ -240,4 +241,28 @@ export async function endFeedsOf(ctx: JobContext, memberId: string): Promise<voi
 		.where('created_by', '=', memberId)
 		.where('revoked_at', 'is', null)
 		.execute();
+}
+
+/**
+ * After a restore: addresses stopped since the backup stay stopped. Only addresses the backup also
+ * holds are matched, by id, and nothing is ever started again.
+ */
+export async function carryStoppedFeeds(ctx: RestoreContext): Promise<number> {
+	if (!ctx.previous) return 0;
+	const stopped = await events(ctx.previous)
+		.selectFrom('calendar_feeds')
+		.select(['id', 'revoked_at'])
+		.where('revoked_at', 'is not', null)
+		.execute();
+	let carried = 0;
+	for (const feed of stopped) {
+		const result = await events(ctx.db)
+			.updateTable('calendar_feeds')
+			.set({ revoked_at: feed.revoked_at ?? ctx.clock.now() })
+			.where('id', '=', feed.id)
+			.where('revoked_at', 'is', null)
+			.executeTakeFirst();
+		carried += Number(result.numUpdatedRows);
+	}
+	return carried;
 }
