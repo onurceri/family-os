@@ -47,6 +47,7 @@ import {
 	startScheduler,
 } from './runtime.ts';
 import { RESTART_EXIT_CODE } from './supervisor.ts';
+import { type DistrustResult, distrustCertificates, logDistrust } from './tls.ts';
 
 const USAGE = `famos ${APP_VERSION}
 
@@ -76,10 +77,11 @@ Usage: famos <command>
 /** How often a process that serves no API looks whether a restart was asked for. */
 const RESTART_POLL_MS = 30_000;
 
-async function serveCommand() {
+async function serveCommand(distrust: DistrustResult) {
 	const config = await loadConfig();
 	const { runtime, web, selection, store } = await openWithExtensions(config);
 	const { logger, kernel } = runtime;
+	logDistrust(logger, distrust);
 	const extensions = loadedWeb(kernel, web);
 	const boot = randomUUID();
 	const bootedAt = Date.now();
@@ -516,9 +518,11 @@ async function main() {
 		return;
 	}
 
+	// Before any outbound connection of any command (backup upload, extension install, serve).
+	const distrust = distrustCertificates();
 	switch (command) {
 		case 'serve':
-			return serveCommand();
+			return serveCommand(distrust);
 		case 'migrate': {
 			const { runtime } = await openWithExtensions(await loadConfig());
 			const applied = await migrate(runtime);
