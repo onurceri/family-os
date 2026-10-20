@@ -57,6 +57,8 @@
 	let made = $state<{ label: string; secret: string } | null>(null);
 	let keyName = $state('');
 	let copied = $state(false);
+	/** The member whose id was just copied. */
+	let copiedMember = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	let tried = $state(false);
@@ -102,6 +104,7 @@
 			made = null;
 			keyName = t('apps_key_name_default');
 			copied = false;
+			copiedMember = null;
 			error = null;
 			tried = false;
 		});
@@ -219,6 +222,17 @@
 			// The text is selectable; copying by hand still works.
 		}
 	}
+
+	async function copyMemberId(id: string) {
+		try {
+			await navigator.clipboard.writeText(id);
+			copiedMember = id;
+		} catch {
+			// Nothing to fall back on here: the id also comes from the API's discovery.
+		}
+	}
+
+	const chosen = $derived(family.members.filter((m) => actsFor.includes(m.id)));
 
 	const keyStatus = (token: ConnectedApp['tokens'][number]) => {
 		const state = expiryState(token, Date.now(), warnDays);
@@ -339,6 +353,28 @@
 					<span class="text-sm font-semibold">{t('apps_acts_for_label')}</span>
 					<MemberChips members={family.members} bind:selected={actsFor} multiple />
 					<small class="text-ink-soft text-[13px] leading-snug">{t('apps_acts_for_hint')}</small>
+					{#if chosen.length > 0}
+						<ul class="grid gap-1" data-testid="app-acts-for-ids">
+							{#each chosen as member (member.id)}
+								<li class="flex items-center justify-between gap-2 text-sm">
+									<span class="min-w-0 break-words">{member.displayName}</span>
+									<Button
+										size="sm"
+										variant="ghost"
+										type="button"
+										onclick={() => copyMemberId(member.id)}
+									>
+										{#if copiedMember === member.id}<Check
+												class="size-4"
+												aria-hidden="true"
+											/>{:else}<Copy class="size-4" aria-hidden="true" />{/if}
+										{copiedMember === member.id ? t('mcp_copied') : t('apps_copy_id')}
+										<span class="sr-only">{member.displayName}</span>
+									</Button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
 				</div>
 				{#if app === null}
 					<div class="grid gap-1.5">

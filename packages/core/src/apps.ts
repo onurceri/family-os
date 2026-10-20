@@ -68,6 +68,8 @@ export type AppCaller = {
 	tokenId: string;
 	/** The member it acts for, when the request named one. */
 	memberId: string | null;
+	/** Every member on the app's list, active or not; callers narrow it to the active ones. */
+	actsFor: string[];
 };
 
 /**
@@ -444,7 +446,7 @@ export function createAppService(deps: {
 			const caller = { id: app.id, name: app.name };
 			if (onBehalfOf === undefined || onBehalfOf === null || onBehalfOf === '') {
 				const actor: Actor = { kind: 'app', appId: app.id, roleId: app.role_id, mode: app.mode };
-				return { actor, app: caller, tokenId: token.id, memberId: null };
+				return { actor, app: caller, tokenId: token.id, memberId: null, actsFor: actsForOf(app) };
 			}
 			// The member must be on the app's list and still active; anything else is refused, not
 			// quietly served as the app itself, so a script never acts as nobody by mistake.
@@ -466,7 +468,13 @@ export function createAppService(deps: {
 				roleId: member.role_id,
 				via: { appId: app.id, appRoleId: app.role_id, mode: app.mode },
 			};
-			return { actor, app: caller, tokenId: token.id, memberId: member.id };
+			return {
+				actor,
+				app: caller,
+				tokenId: token.id,
+				memberId: member.id,
+				actsFor: actsForOf(app),
+			};
 		},
 
 		async touch(tokenId) {

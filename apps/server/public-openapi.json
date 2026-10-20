@@ -3360,6 +3360,25 @@
 							"memberId"
 						]
 					},
+					"actsFor": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"memberId": {
+									"type": "string"
+								},
+								"name": {
+									"type": "string"
+								}
+							},
+							"required": [
+								"memberId",
+								"name"
+							]
+						},
+						"description": "The active members this app may act for: send one `memberId` in `X-FamilyOS-On-Behalf-Of` to act as that person"
+					},
 					"extensions": {
 						"type": "array",
 						"items": {
@@ -3436,6 +3455,7 @@
 					"timeZone",
 					"language",
 					"caller",
+					"actsFor",
 					"extensions",
 					"operations"
 				]

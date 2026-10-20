@@ -1383,6 +1383,7 @@
 	"apps_mode": "Değişiklikleri ne olur",
 	"apps_acts_for_label": "Adına çalışabileceği kişiler",
 	"apps_acts_for_hint": "Uygulama bu kişilerden biri gibi çalışmayı isteyebilir. O zaman yalnızca hem kişinin hem de rolünün yapabildiği şeyleri yapabilir.",
+	"apps_copy_id": "Kimliği kopyala",
 	"apps_never_hint": "Rolü ne olursa olsun bir uygulama kişileri, rolleri, cihazları ya da anahtarları yönetemez ve önerileri onaylayamaz.",
 	"apps_create": "Uygulamayı ekle",
 	"apps_save": "Kaydet",

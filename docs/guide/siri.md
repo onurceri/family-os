@@ -5,7 +5,7 @@ Say "Hey Siri, add to FamilyOS" and the shopping list grows. Apple's Shortcuts a
 ## Before you start
 
 1. As an admin, open **Settings → You → Connected apps** and press **Add an app**. Name it "Siri", choose the role **Member** (or a role of your own that may do less), choose **Changes apply**, and under **May act for** pick yourself. Press **Add app** and copy the key. It is shown once.
-2. Find your member id. FamilyOS shows it nowhere in its screens, but the browser can: signed in to FamilyOS, open `https://your-address/api/v1/core/members`, find your name and copy its `id` (it starts with `member_`).
+2. Find your member id. Open the app again from the list (press its name): under **May act for**, press **Copy id** beside your name and paste it somewhere you can reach. Or ask FamilyOS from a computer: `curl -H "Authorization: Bearer KEY" ADDRESS/api/public/v1/` lists `actsFor` with each person's `memberId`, which starts with `member_`.
 3. The phone must reach your FamilyOS address wherever you say the words: at home on the same network, or from anywhere through Tailscale or https (see [HTTPS and phones](https.md)).
 
 Below, `ADDRESS` is your FamilyOS address, `KEY` the key and `MEMBER` your member id.

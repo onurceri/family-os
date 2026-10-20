@@ -1383,6 +1383,7 @@
 	"apps_mode": "What happens to its changes",
 	"apps_acts_for_label": "May act for",
 	"apps_acts_for_hint": "The app can ask to work as one of these people. It then holds only what both the person and its role may do.",
+	"apps_copy_id": "Copy id",
 	"apps_never_hint": "Whatever its role, an app never manages people, roles, devices or keys, and never approves suggestions.",
 	"apps_create": "Add app",
 	"apps_save": "Save",

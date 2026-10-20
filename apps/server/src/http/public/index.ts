@@ -580,6 +580,11 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 					.nullable()
 					.describe('The member this request acts for, if it named one'),
 			}),
+			actsFor: z
+				.array(z.object({ memberId: z.string(), name: z.string() }))
+				.describe(
+					'The active members this app may act for: send one `memberId` in `X-FamilyOS-On-Behalf-Of` to act as that person',
+				),
 			extensions: z.array(
 				z.object({
 					id: z.string(),
@@ -625,6 +630,11 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		const actor = c.get('actor');
 		const caller = c.get('caller');
 		const settings = await kernel.ctx.family.settings();
+		const active = new Map((await kernel.ctx.family.members()).map((m) => [m.id as string, m]));
+		const actsFor = caller.actsFor.flatMap((id) => {
+			const member = active.get(id);
+			return member ? [{ memberId: member.id as string, name: member.displayName }] : [];
+		});
 		const decisions = kernel.runner.decisions(actor);
 		const usable: z.infer<typeof DiscoverySchema>['operations'] = [];
 		for (const op of operations) {
@@ -660,6 +670,7 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 					},
 					memberId: caller.memberId,
 				},
+				actsFor,
 				extensions: kernel.registry.extensions
 					.filter((ext) => ext.id !== 'core')
 					.map((ext) => ({

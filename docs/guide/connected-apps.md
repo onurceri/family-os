@@ -22,7 +22,7 @@ Press **Add app**. The key appears **once**: copy it into the app. FamilyOS keep
 
 ## Acting for a person
 
-An app that is allowed to act for Leo can say so with the header `X-FamilyOS-On-Behalf-Of: <Leo's id>` on a request. It then works as Leo:
+An app that is allowed to act for Leo can say so with the header `X-FamilyOS-On-Behalf-Of: <Leo's id>` on a request. Find the id with **Copy id** next to his name under **May act for** in the app's panel, or in the `actsFor` list of the API's first call. It then works as Leo:
 
 - It can do only what **both** Leo and the app's role may do. A supervised Leo stays supervised: his changes wait for approval.
 - His own things stay his, so a chore marked done through the app counts as Leo's.

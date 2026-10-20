@@ -314,6 +314,33 @@ describe('discovery', () => {
 		expect(asSuggest.caller.app.mode).toBe('suggest');
 	});
 
+	it('lists the active members the app may act for, and nobody else', async () => {
+		const { cookie } = await setup();
+		const leoId = await addMember(cookie, 'Leo', 'member');
+		const ivyId = await addMember(cookie, 'Ivy', 'member');
+		const goneId = await addMember(cookie, 'Gone', 'member');
+		await addMember(cookie, 'Other', 'member');
+		const { secret } = await addApp(cookie, { roleId: 'member', actsFor: [leoId, ivyId, goneId] });
+		const none = await addApp(cookie, { roleId: 'member' });
+		await request('POST', '/api/v1/actions/core.archiveMember', {
+			cookie,
+			body: { memberId: goneId },
+		});
+
+		const found = await pub(secret, 'GET', '/');
+		expect(found.body.actsFor).toEqual(
+			expect.arrayContaining([
+				{ memberId: leoId, name: 'Leo' },
+				{ memberId: ivyId, name: 'Ivy' },
+			]),
+		);
+		expect(found.body.actsFor).toHaveLength(2);
+		// The same list when the request already acts for one of them.
+		const named = await pub(secret, 'GET', '/', undefined, { 'x-familyos-on-behalf-of': leoId });
+		expect(named.body.actsFor).toHaveLength(2);
+		expect((await pub(none.secret, 'GET', '/')).body.actsFor).toEqual([]);
+	});
+
 	it('follows the member an app acts for', async () => {
 		const { cookie } = await setup();
 		const kid = await addMember(cookie, 'Kid', 'supervised');

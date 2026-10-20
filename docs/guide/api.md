@@ -26,6 +26,7 @@ The first call, `GET /`, tells you what to expect:
   "timeZone": "Europe/Istanbul",
   "language": "en",
   "caller": { "app": { "id": "app_…", "name": "Hall script", "mode": "apply" }, "memberId": null },
+  "actsFor": [{ "memberId": "member_…", "name": "Leo" }],
   "extensions": [{ "id": "calendar", "version": "0.2.1", "enabled": true }, …],
   "operations": [
     { "name": "calendar.createEvent", "method": "post", "path": "/api/public/v1/calendar/events",
@@ -35,7 +36,7 @@ The first call, `GET /`, tells you what to expect:
 }
 ```
 
-`operations` lists only what **this** key may do now: the app's role decides, and the member it acts for, if it named one. `outcome` is `read`, `apply` (the change is made) or `draft` (it waits for a person to approve it). An extension you switched off in **Settings → Features** shows `"enabled": false` and its operations are gone; calling one answers `404` with the code `feature_off`.
+`actsFor` lists the people this app may act for (only those still in the family), each with the `memberId` to send in `X-FamilyOS-On-Behalf-Of`; it is empty when the app may act for no one. `operations` lists only what **this** key may do now: the app's role decides, and the member it acts for, if it named one. `outcome` is `read`, `apply` (the change is made) or `draft` (it waits for a person to approve it). An extension you switched off in **Settings → Features** shows `"enabled": false` and its operations are gone; calling one answers `404` with the code `feature_off`.
 
 The full description of every operation is the OpenAPI document: `GET /openapi.json` on the same address, and `apps/server/public-openapi.json` in the source. Client libraries are generated from it.
 
