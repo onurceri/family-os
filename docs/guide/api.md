@@ -71,7 +71,7 @@ curl -H "Authorization: Bearer $KEY" $FAMOS/chores
 curl -H "Authorization: Bearer $KEY" $FAMOS/board/notes
 ```
 
-An occurrence is one date of an event: `{ "eventId": …, "recurrenceId": "2026-10-28T16:00:00+03:00", … }`. The `recurrenceId` is the moment (or day) that date was due and does not change when the date is moved. A date moved out of a repeating event is an event of its own; it names the series with `seriesId`.
+An occurrence is one date of an event: `{ "eventId": …, "recurrenceId": "2026-10-28T16:00:00+03:00", … }`. The `recurrenceId` is the moment (or day) that date was due and does not change when the date is moved. A date moved out of a repeating event is an event of its own; it names the series with `seriesId`, and `seriesRecurrenceId` says when the series had that date start before it was moved (an instant, or a day for an all-day event, written like `recurrenceId`); events and occurrences carry it too.
 
 **Ask only when something changed.** Every list answers with an `ETag`. Send it back as `If-None-Match` and an unchanged list answers `304` with no body, which is cheap to poll:
 
@@ -117,7 +117,7 @@ curl -X PATCH -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json
 curl -X DELETE -H "Authorization: Bearer $KEY" $FAMOS/board/notes/board_note_0192…
 ```
 
-A note may be changed or removed by the person who put it up and by anyone who manages the board, as in the app. An app that is nobody (not acting for a member) is never an author, so it needs a role that manages the board. Send the note's `version` as `If-Match` to change or remove it only if nobody changed it since.
+A note may be changed or removed by the person who put it up and by anyone who manages the board, as in the app. A note an app puts up on its own (not acting for a member) is the app's: the app may change or remove it, the board shows the app's name as its author, and `createdByApp` names it in the API; a note put up for a member stays that member's. Send the note's `version` as `If-Match` to change or remove it only if nobody changed it since.
 
 The same words everywhere: `POST` adds or does something (`…/complete`, `…/reopen`, `…/uncheck`), `PATCH` changes the fields you send and keeps the rest, `PUT` replaces the whole thing, `DELETE` removes it. Deleting one date of a repeating event is `DELETE …/calendar/events/{id}?occurrence=<recurrenceId>` (write `+` in an offset as `%2B` in an address); without `occurrence` the whole series goes.
 

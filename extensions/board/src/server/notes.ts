@@ -44,11 +44,20 @@ async function loadNote(db: Db, id: string): Promise<NoteRow> {
 	return row;
 }
 
-/** The author, or a manager (`board.manage`); the author must still be allowed to post. */
+/** The app that is the actor alone, not one acting for a member (that member is the author). */
+const appAlone = (actor: UnitOfWork['actor']): string | null =>
+	actor.kind === 'app' ? actor.appId : null;
+
+/**
+ * The author (a member, or the app that put it up on its own), or a manager (`board.manage`); the
+ * author must still be allowed to post.
+ */
 function assertMayChange(uow: UnitOfWork, row: NoteRow): void {
 	if (uow.can(boardManage.id)) return;
 	const me = memberId(uow.actor);
 	if (me !== null && row.created_by === me && uow.can(boardPost.id)) return;
+	const app = appAlone(uow.actor);
+	if (app !== null && row.created_by_app === app && uow.can(boardPost.id)) return;
 	throw new FamosError('forbidden', 'Only the author or a manager can change this note');
 }
 
@@ -128,13 +137,24 @@ async function notesById(
 				.execute()
 		: [];
 	const { timeZone } = await ctx.family.settings();
+	const apps = await appNames(ctx, rows);
 	return rows.map((row) =>
 		toNote(
 			row,
 			seen.filter((s) => s.note_id === row.id).map((s) => s.member_id),
 			endsOnOf(row.ends_at, timeZone),
+			apps,
 		),
 	);
+}
+
+/** The names of the apps behind these notes, by id (none looked up when no note has one). */
+async function appNames(
+	ctx: Pick<ExtensionContext, 'family'>,
+	rows: readonly NoteRow[],
+): Promise<Map<string, string>> {
+	if (!rows.some((row) => row.created_by_app !== null)) return new Map();
+	return new Map((await ctx.family.apps()).map((a) => [a.id, a.name]));
 }
 
 /** Notes that are on the board now, in board order. */
@@ -154,11 +174,13 @@ async function visibleNotes(ctx: Pick<ExtensionContext, 'db' | 'family' | 'clock
 				.execute()
 		: [];
 	const { timeZone } = await ctx.family.settings();
+	const apps = await appNames(ctx, rows);
 	return rows.map((row) =>
 		toNote(
 			row,
 			seen.filter((s) => s.note_id === row.id).map((s) => s.member_id),
 			endsOnOf(row.ends_at, timeZone),
+			apps,
 		),
 	);
 }
@@ -202,6 +224,7 @@ export const postNote = defineAction({
 		const now = uow.clock.now();
 		const endsAt = input.endsOn ? await endOfDay(uow.family, input.endsOn, now) : null;
 		const author = memberId(uow.actor);
+		const byApp = appAlone(uow.actor);
 		const pinned = input.pinned ? 1 : 0;
 		const row: NoteRow = {
 			id: uow.ids.next('board_note'),
@@ -212,6 +235,7 @@ export const postNote = defineAction({
 			pinned,
 			ends_at: endsAt,
 			created_by: author,
+			created_by_app: byApp,
 			created_at: now,
 			updated_at: now,
 			// A new note comes first in its group, also on a board the family has arranged.
@@ -242,7 +266,8 @@ export const postNote = defineAction({
 		});
 		uow.emit(boardChanged, { noteId: row.id });
 		const { timeZone } = await uow.family.settings();
-		return toNote(row, author ? [author] : [], endsOnOf(endsAt, timeZone));
+		const apps = await appNames(uow, [row]);
+		return toNote(row, author ? [author] : [], endsOnOf(endsAt, timeZone), apps);
 	},
 });
 

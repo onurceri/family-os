@@ -103,7 +103,26 @@
 							"null"
 						],
 						"pattern": "^member_[0-9a-f-]{36}$",
-						"description": "Who put it up; null for an app or a member who is gone"
+						"description": "Who put it up; null for an app on its own or a member who is gone"
+					},
+					"createdByApp": {
+						"type": [
+							"object",
+							"null"
+						],
+						"properties": {
+							"id": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"id",
+							"name"
+						],
+						"description": "The app that put it up on its own; it may change or remove the note like a member may theirs. Null otherwise"
 					},
 					"createdAt": {
 						"type": "string",
@@ -135,6 +154,7 @@
 					"endsOn",
 					"hasPhoto",
 					"createdBy",
+					"createdByApp",
 					"createdAt",
 					"updatedAt",
 					"seenBy"
@@ -621,7 +641,22 @@
 					},
 					"recurrenceKey": {
 						"type": "string",
-						"description": "Set with `seriesId`: the `recurrenceId` the series had for the date it replaced"
+						"description": "Set with `seriesId`: the key the series had for the date it replaced"
+					},
+					"seriesRecurrenceId": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						],
+						"description": "Set with `seriesId`: when the series had this date start before it was moved, as the series’ `recurrenceId` writes it (an instant, or a day for an all-day event)"
 					}
 				},
 				"required": [
@@ -1271,6 +1306,21 @@
 					},
 					"recurrenceKey": {
 						"type": "string"
+					},
+					"seriesRecurrenceId": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time",
+								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							{
+								"type": "string",
+								"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+								"description": "A day, YYYY-MM-DD, in the family time zone"
+							}
+						],
+						"description": "Set with `seriesId`: when the series had this date start before it was moved, written like `recurrenceId`"
 					},
 					"title": {
 						"type": "string"
@@ -3953,7 +4003,7 @@
 		"/board/notes/{noteId}": {
 			"delete": {
 				"operationId": "board.removeNote",
-				"summary": "Take a note off the board. Only its author or someone who manages the board may",
+				"summary": "Take a note off the board. Only its author (a member, or the app that put it up on its own) or someone who manages the board may",
 				"tags": [
 					"board"
 				],
@@ -4108,7 +4158,7 @@
 			},
 			"patch": {
 				"operationId": "board.editNote",
-				"summary": "Change the text, paper or last day of a note; what is left out stays. Only its author or someone who manages the board may",
+				"summary": "Change the text, paper or last day of a note; what is left out stays. Only its author (a member, or the app that put it up on its own) or someone who manages the board may",
 				"tags": [
 					"board"
 				],

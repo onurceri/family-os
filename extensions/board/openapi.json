@@ -82,6 +82,24 @@
 													"null"
 												]
 											},
+											"createdByApp": {
+												"type": [
+													"object",
+													"null"
+												],
+												"properties": {
+													"id": {
+														"type": "string"
+													},
+													"name": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"id",
+													"name"
+												]
+											},
 											"createdAt": {
 												"type": "number"
 											},
@@ -105,6 +123,7 @@
 											"endsOn",
 											"hasPhoto",
 											"createdBy",
+											"createdByApp",
 											"createdAt",
 											"updatedAt",
 											"seenBy"
@@ -1045,6 +1064,24 @@
 																"null"
 															]
 														},
+														"createdByApp": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"id": {
+																	"type": "string"
+																},
+																"name": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"id",
+																"name"
+															]
+														},
 														"createdAt": {
 															"type": "number"
 														},
@@ -1068,6 +1105,7 @@
 														"endsOn",
 														"hasPhoto",
 														"createdBy",
+														"createdByApp",
 														"createdAt",
 														"updatedAt",
 														"seenBy"
@@ -1466,6 +1504,24 @@
 																"null"
 															]
 														},
+														"createdByApp": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"id": {
+																	"type": "string"
+																},
+																"name": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"id",
+																"name"
+															]
+														},
 														"createdAt": {
 															"type": "number"
 														},
@@ -1495,6 +1551,7 @@
 														"endsOn",
 														"hasPhoto",
 														"createdBy",
+														"createdByApp",
 														"createdAt",
 														"updatedAt",
 														"seenBy",

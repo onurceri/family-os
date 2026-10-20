@@ -86,6 +86,8 @@ export const BoardNoteSchema = z.object({
 	hasPhoto: z.boolean(),
 	/** Who put it up; null when the member is gone or it was not a person. */
 	createdBy: z.string().nullable(),
+	/** The connected app that put it up on its own (then `createdBy` is null); null otherwise. */
+	createdByApp: z.object({ id: z.string(), name: z.string() }).nullable(),
 	createdAt: z.number(),
 	updatedAt: z.number(),
 	/** The members who have seen it, the author included. */

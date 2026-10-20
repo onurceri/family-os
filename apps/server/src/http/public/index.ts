@@ -566,6 +566,8 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 
 	// ───────────── discovery, drafts, changes ─────────────
 
+	const LIST_DRAFTS_SUMMARY =
+		'The suggestions that wait for a person to decide, as Quick add lists them for this caller: an app alone sees its own, an app acting for a member sees what that member would see';
 	const Method = z.enum(['get', 'post', 'put', 'patch', 'delete']);
 	const DiscoverySchema = z
 		.object({
@@ -656,6 +658,15 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 				outcome,
 			});
 		}
+		// The suggestions it may read are core's own route, not an extension's, so they are named here.
+		if (kernel.access.can(actor, CORE_CAPABILITIES.draftsPropose.id))
+			usable.push({
+				name: 'core.listDrafts',
+				method: 'get',
+				path: `${PUBLIC_API_BASE}/drafts`,
+				summary: LIST_DRAFTS_SUMMARY,
+				outcome: 'read',
+			});
 		return c.json(
 			{
 				api: 'v1' as const,
@@ -808,8 +819,7 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		method: 'get',
 		path: '/drafts',
 		operationId: 'core.listDrafts',
-		summary:
-			'The suggestions that wait for a person to decide, as Quick add lists them for this caller: an app alone sees its own, an app acting for a member sees what that member would see',
+		summary: LIST_DRAFTS_SUMMARY,
 		tags: ['core'],
 		security: [{ bearer: [] }],
 		request: {
@@ -906,27 +916,45 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 			.orderBy('id', 'desc')
 			.execute();
 		const runner = kernel.runner;
-		let seen: DraftRow[];
-		if (actor.kind === 'member') {
-			// The member as they are in the app: the same reading of "theirs or theirs to decide".
-			const { via: _via, ...person } = actor;
-			seen = all.filter(
-				(row) =>
-					runner.mayDecide(row, person) ||
-					runner.isProposer(person, row) ||
-					(runner.unavailable(row) !== null &&
-						kernel.access.can(person, CORE_CAPABILITIES.draftsApprove.id)),
-			);
-		} else {
-			seen = all.filter(
-				(row) => principalOf(JSON.parse(row.proposed_by) as Actor) === principalOf(actor),
-			);
-		}
+		const seen = all.filter((row) => draftVisibleTo(actor, row));
 		// One about a day that has passed, or about something that is gone, no longer waits.
 		const passed = await runner.passedCheck();
 		const open = seen.filter((row) => !passed(row));
 		const gone = await runner.goneAmong(open);
 		return open.filter((row) => !gone.has(row.id));
+	}
+
+	/**
+	 * Whether this caller sees a suggestion: a person as they are in the app (theirs, or theirs to
+	 * decide), any other caller only what it made itself.
+	 */
+	function draftVisibleTo(actor: Actor, row: DraftRow): boolean {
+		const member = memberBehind(actor);
+		if (row.for_member !== null && row.for_member !== member) return false;
+		if (actor.kind === 'member') {
+			const runner = kernel.runner;
+			const { via: _via, ...person } = actor;
+			return (
+				runner.mayDecide(row, person) ||
+				runner.isProposer(person, row) ||
+				(runner.unavailable(row) !== null &&
+					kernel.access.can(person, CORE_CAPABILITIES.draftsApprove.id))
+			);
+		}
+		return principalOf(JSON.parse(row.proposed_by) as Actor) === principalOf(actor);
+	}
+
+	/** The ids among these suggestions that this caller sees: the only core things the feed names. */
+	async function visibleDraftIds(actor: Actor, ids: readonly string[]): Promise<Set<string>> {
+		if (ids.length === 0) return new Set();
+		if (!kernel.access.can(actor, CORE_CAPABILITIES.draftsPropose.id)) return new Set();
+		const rows = await kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_drafts')
+			.selectAll()
+			.where('id', 'in', [...ids])
+			.execute();
+		return new Set(rows.filter((row) => draftVisibleTo(actor, row)).map((row) => row.id));
 	}
 
 	async function summaryOf(
@@ -1024,20 +1052,28 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 			);
 		const offered = new Set(operations.map((op) => op.extension));
 		const page = await kernel.changes.since(since, actor);
+		// Core offers no things of its own here but the suggestions this caller may read, named
+		// by id alone.
+		const drafts = await visibleDraftIds(
+			actor,
+			page.changes
+				.filter((change) => change.extension === 'core' && change.entity === 'draft')
+				.map((change) => change.id),
+		);
+		const heard = (change: (typeof page.changes)[number]) =>
+			change.extension === 'core'
+				? change.entity === 'draft' && drafts.has(change.id)
+				: offered.has(change.extension) && kernel.features.isOn(change.extension);
 		return c.json(
 			{
-				changes: page.changes
-					.filter(
-						(change) => offered.has(change.extension) && kernel.features.isOn(change.extension),
-					)
-					.map((change) => ({
-						seq: change.seq,
-						at: apiInstant(change.at, ctx.timeZone),
-						extension: change.extension,
-						entity: change.entity,
-						id: change.id,
-						op: change.op,
-					})),
+				changes: page.changes.filter(heard).map((change) => ({
+					seq: change.seq,
+					at: apiInstant(change.at, ctx.timeZone),
+					extension: change.extension,
+					entity: change.entity,
+					id: change.id,
+					op: change.op,
+				})),
 				cursor: page.cursor,
 				more: page.more,
 				timeZone: ctx.timeZone,

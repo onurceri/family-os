@@ -29,8 +29,14 @@ export const PublicNoteSchema = z
 		endsOn: ApiDateSchema.nullable().describe('The last day it is on the board'),
 		hasPhoto: z.boolean(),
 		createdBy: MemberId.nullable().describe(
-			'Who put it up; null for an app or a member who is gone',
+			'Who put it up; null for an app on its own or a member who is gone',
 		),
+		createdByApp: z
+			.object({ id: z.string(), name: z.string() })
+			.nullable()
+			.describe(
+				'The app that put it up on its own; it may change or remove the note like a member may theirs. Null otherwise',
+			),
 		createdAt: ApiInstantSchema,
 		updatedAt: ApiInstantSchema,
 		seenBy: z.array(MemberId).describe('The members who have seen it'),
@@ -74,7 +80,7 @@ export const api = {
 		path: '/notes/{noteId}',
 		params: { noteId: 'id' },
 		summary:
-			'Change the text, paper or last day of a note; what is left out stays. Only its author or someone who manages the board may',
+			'Change the text, paper or last day of a note; what is left out stays. Only its author (a member, or the app that put it up on its own) or someone who manages the board may',
 		describe: {
 			endsOn: 'The last day the note stays on the board; null lets it stay',
 		},
@@ -89,7 +95,8 @@ export const api = {
 		method: 'delete',
 		path: '/notes/{noteId}',
 		params: { noteId: 'id' },
-		summary: 'Take a note off the board. Only its author or someone who manages the board may',
+		summary:
+			'Take a note off the board. Only its author (a member, or the app that put it up on its own) or someone who manages the board may',
 		output: apiOutput(
 			z
 				.object({ removed: z.boolean().describe('False when the note was already gone') })

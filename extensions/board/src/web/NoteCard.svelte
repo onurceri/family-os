@@ -232,7 +232,9 @@
 	</div>
 
 	<footer class="meta text-note-ink-soft flex flex-wrap items-center gap-x-1.5 gap-y-1">
-		{#if author}
+		{#if note.createdByApp}
+			<span class="font-bold">{note.createdByApp.name}</span>
+		{:else if author}
 			<Avatar
 				name={author.displayName}
 				color={author.color}

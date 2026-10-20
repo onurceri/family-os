@@ -52,6 +52,11 @@ export interface FamilyReader {
 	settings(): Promise<FamilySettings>;
 	/** Active (not archived) members. Extensions reference members only by these IDs. */
 	members(): Promise<FamilyMember[]>;
+	/**
+	 * The connected apps by name, revoked ones too: what something an app did is shown as ("put up
+	 * by Home Assistant") stays readable after the app is gone.
+	 */
+	apps(): Promise<{ id: string; name: string }[]>;
 }
 
 /**

@@ -230,6 +230,10 @@ export interface operations {
                         endsOn: string | null;
                         hasPhoto: boolean;
                         createdBy: string | null;
+                        createdByApp: {
+                            id: string;
+                            name: string;
+                        } | null;
                         createdAt: number;
                         updatedAt: number;
                         seenBy: string[];
@@ -664,6 +668,10 @@ export interface operations {
                             endsOn: string | null;
                             hasPhoto: boolean;
                             createdBy: string | null;
+                            createdByApp: {
+                                id: string;
+                                name: string;
+                            } | null;
                             createdAt: number;
                             updatedAt: number;
                             seenBy: string[];
@@ -828,6 +836,10 @@ export interface operations {
                             endsOn: string | null;
                             hasPhoto: boolean;
                             createdBy: string | null;
+                            createdByApp: {
+                                id: string;
+                                name: string;
+                            } | null;
                             createdAt: number;
                             updatedAt: number;
                             seenBy: string[];

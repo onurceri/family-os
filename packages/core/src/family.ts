@@ -116,4 +116,11 @@ export async function readActiveMembers(db: DbExecutor): Promise<FamilyMember[]>
 export const familyReader = (db: DbExecutor): FamilyReader => ({
 	settings: () => readFamilySettings(db),
 	members: () => readActiveMembers(db),
+	apps: () =>
+		db
+			.withTables<CoreTables>()
+			.selectFrom('core_apps')
+			.select(['id', 'name'])
+			.orderBy('created_at')
+			.execute(),
 });

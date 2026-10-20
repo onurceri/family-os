@@ -53,9 +53,23 @@ export const PublicEventSchema = z
 		recurrenceKey: z
 			.string()
 			.optional()
-			.describe('Set with `seriesId`: the `recurrenceId` the series had for the date it replaced'),
+			.describe('Set with `seriesId`: the key the series had for the date it replaced'),
+		seriesRecurrenceId: Moment.optional().describe(
+			'Set with `seriesId`: when the series had this date start before it was moved, as the series’ `recurrenceId` writes it (an instant, or a day for an all-day event)',
+		),
 	})
 	.meta({ id: 'Event' });
+
+/**
+ * The start a moved date had in its series, written as the series' own `recurrenceId` is: an
+ * instant for a timed one, a day for an all-day one. A key that is neither says nothing.
+ */
+function seriesStart(key: string | undefined, timeZone: string): string | undefined {
+	if (key === undefined) return undefined;
+	if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return key;
+	const ms = Number(key);
+	return key.trim() !== '' && Number.isFinite(ms) ? apiInstant(ms, timeZone) : undefined;
+}
 
 /** The moment an event starts and ends, from its local date and times. */
 function whenOf(event: EventDetail, timeZone: string): { start: string; end: string } {
@@ -69,10 +83,14 @@ function whenOf(event: EventDetail, timeZone: string): { start: string; end: str
 	return { start: apiInstant(startsAt, timeZone), end: apiInstant(endsAt, timeZone) };
 }
 
-export const projectEvent = apiOutput(PublicEventSchema, (event: EventDetail, { timeZone }) => ({
-	...event,
-	...whenOf(event, timeZone),
-}));
+export const projectEvent = apiOutput(PublicEventSchema, (event: EventDetail, { timeZone }) => {
+	const was = seriesStart(event.recurrenceKey, timeZone);
+	return {
+		...event,
+		...whenOf(event, timeZone),
+		...(was !== undefined && { seriesRecurrenceId: was }),
+	};
+});
 
 export const PublicOccurrenceSchema = z
 	.object({
@@ -84,6 +102,9 @@ export const PublicOccurrenceSchema = z
 		),
 		seriesId: EventId.optional().describe('Set on a date moved out of a repeating event'),
 		recurrenceKey: z.string().optional(),
+		seriesRecurrenceId: Moment.optional().describe(
+			'Set with `seriesId`: when the series had this date start before it was moved, written like `recurrenceId`',
+		),
 		title: z.string(),
 		allDay: z.boolean(),
 		start: Moment,
@@ -112,11 +133,13 @@ const projectOccurrences = apiOutput(
 		occurrences.map((o) => {
 			const timed = !o.allDay && o.start !== null && o.end !== null;
 			const asInstant = (ms: number) => apiInstant(ms, timeZone);
+			const was = seriesStart(o.recurrenceKey, timeZone);
 			return {
 				eventId: o.eventId,
 				recurrenceId: timed && Number.isFinite(Number(o.key)) ? asInstant(Number(o.key)) : o.key,
 				...(o.seriesId !== undefined && { seriesId: o.seriesId }),
 				...(o.recurrenceKey !== undefined && { recurrenceKey: o.recurrenceKey }),
+				...(was !== undefined && { seriesRecurrenceId: was }),
 				title: o.title,
 				allDay: o.allDay,
 				start: timed ? asInstant(o.start as number) : (o.startDate as string),

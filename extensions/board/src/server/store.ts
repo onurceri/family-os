@@ -16,6 +16,8 @@ export type BoardTables = {
 		/** The instant the note leaves the board; null keeps it. */
 		ends_at: number | null;
 		created_by: string | null;
+		/** The app that put the note up on its own (then `created_by` is null); null otherwise. */
+		created_by_app: string | null;
 		created_at: number;
 		updated_at: number;
 		/**
@@ -87,12 +89,23 @@ export const migrations: Migrations = {
 			});
 		},
 	},
+	'0003_app_author': {
+		async up(db) {
+			// A note an app put up for nobody has no member behind it; the app is its author.
+			await db.schema.alterTable('board_notes').addColumn('created_by_app', 'text').execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<BoardTables>();
 
 /** A note as the API shows it; `endsOn` is worked out in the family's time zone by the caller. */
-export function toNote(row: NoteRow, seenBy: readonly string[], endsOn: string | null): BoardNote {
+export function toNote(
+	row: NoteRow,
+	seenBy: readonly string[],
+	endsOn: string | null,
+	apps: ReadonlyMap<string, string> = new Map(),
+): BoardNote {
 	return {
 		id: row.id,
 		version: row.version,
@@ -103,6 +116,10 @@ export function toNote(row: NoteRow, seenBy: readonly string[], endsOn: string |
 		endsOn,
 		hasPhoto: row.photo !== null,
 		createdBy: row.created_by,
+		createdByApp:
+			row.created_by_app === null
+				? null
+				: { id: row.created_by_app, name: apps.get(row.created_by_app) ?? row.created_by_app },
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 		seenBy: [...seenBy],

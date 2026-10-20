@@ -32,6 +32,7 @@ const VERSION_MIGRATIONS = [
 	'lists/0002_versions',
 	'chores/0002_versions',
 	'board/0002_versions',
+	'board/0003_app_author',
 ];
 const NEW_MIGRATIONS = new Set([
 	'core/0004_file_grants',
@@ -268,6 +269,10 @@ it('gives rows from before versions a version, counted from their next write', a
 			}
 		).version;
 	expect(version('board_notes', 'note_1')).toBe(0);
+	// A note from before apps could write is nobody's app.
+	expect(
+		handle.sqlite.prepare("select created_by_app as a from board_notes where id = 'note_1'").get(),
+	).toEqual({ a: null });
 	expect(version('lists_shopping_items', 'item_1')).toBe(0);
 	handle.sqlite.prepare("update board_notes set pinned = 1 where id = 'note_1'").run();
 	expect(version('board_notes', 'note_1')).toBe(1);

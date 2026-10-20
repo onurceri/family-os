@@ -314,6 +314,26 @@ describe('discovery', () => {
 		expect(asSuggest.caller.app.mode).toBe('suggest');
 	});
 
+	it('lists the waiting suggestions only to a caller that may read them', async () => {
+		const { cookie } = await setup();
+		const admin = await addApp(cookie, { roleId: 'admin' });
+		const guest = await addApp(cookie, { roleId: 'guest' });
+		const asAdmin = (await pub(admin.secret, 'GET', '/')).body.operations.find(
+			(o: { name: string }) => o.name === 'core.listDrafts',
+		);
+		expect(asAdmin).toMatchObject({
+			method: 'get',
+			path: '/api/public/v1/drafts',
+			outcome: 'read',
+		});
+		// The guest role cannot suggest, so it cannot read them: the call is refused too.
+		const asGuest = (await pub(guest.secret, 'GET', '/')).body.operations.map(
+			(o: { name: string }) => o.name,
+		);
+		expect(asGuest).not.toContain('core.listDrafts');
+		expect((await pub(guest.secret, 'GET', '/drafts?status=waiting')).status).toBe(403);
+	});
+
 	it('lists the active members the app may act for, and nobody else', async () => {
 		const { cookie } = await setup();
 		const leoId = await addMember(cookie, 'Leo', 'member');
@@ -807,6 +827,8 @@ describe('what the API says', () => {
 			seriesId: id,
 			start: '2026-10-28T17:00:00+00:00',
 			recurrence: null,
+			// Where the series had it before, whatever the move.
+			seriesRecurrenceId: '2026-10-28T16:00:00+00:00',
 		});
 		expect(moved.body.result.id).not.toBe(id);
 		const range = await pub(admin, 'GET', '/calendar/occurrences?from=2026-10-20&to=2026-11-05');
@@ -822,6 +844,9 @@ describe('what the API says', () => {
 		]);
 		const link = range.body.items[1];
 		expect(typeof link.recurrenceKey).toBe('string');
+		expect(link.seriesRecurrenceId).toBe('2026-10-28T16:00:00+00:00');
+		// Only a moved date has one.
+		expect(range.body.items[0]).not.toHaveProperty('seriesRecurrenceId');
 		// Deleting one date takes only that date.
 		const one = await pub(
 			admin,
@@ -844,6 +869,34 @@ describe('what the API says', () => {
 		await pub(admin, 'DELETE', `/calendar/events/${id}`);
 		const gone = await pub(admin, 'GET', '/calendar/occurrences?from=2026-10-20&to=2026-11-05');
 		expect(gone.body.items).toEqual([]);
+	});
+
+	it('gives the original day of an all-day date that was moved out of a series', async () => {
+		const series = await pub(admin, 'POST', '/calendar/events', {
+			title: 'Bin day',
+			date: '2026-10-21',
+			allDay: true,
+			recurrence: { freq: 'weekly', interval: 1, byDay: ['WE'] },
+		});
+		const id = series.body.result.id as string;
+		const moved = await pub(admin, 'PATCH', `/calendar/events/${id}`, {
+			occurrence: '2026-10-28',
+			date: '2026-10-29',
+		});
+		expect(moved.status).toBe(200);
+		expect(moved.body.result).toMatchObject({
+			seriesId: id,
+			start: '2026-10-29',
+			seriesRecurrenceId: '2026-10-28',
+		});
+		const range = await pub(admin, 'GET', '/calendar/occurrences?from=2026-10-27&to=2026-10-30');
+		expect(range.body.items).toEqual([
+			expect.objectContaining({
+				recurrenceId: '2026-10-29',
+				seriesId: id,
+				seriesRecurrenceId: '2026-10-28',
+			}),
+		]);
 	});
 
 	it('shapes a refused request as its own validation errors, not zod’s', async () => {
@@ -1221,9 +1274,88 @@ describe('waiting suggestions', () => {
 		expect(decided.status).toBe(200);
 		expect(decided.body.items).toHaveLength(1);
 
-		// The change feed carries the family’s things, not suggestions.
+		// The change feed names the app's own suggestions by id, and nothing else of core's.
 		const feed = await pub(hall.secret, 'GET', `/changes?since=${head}`);
-		expect(feed.body.changes.map((c: { extension: string }) => c.extension)).not.toContain('core');
+		expect(feed.body.changes).toHaveLength(2);
+		expect(feed.body.changes).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					extension: 'core',
+					entity: 'draft',
+					id: made.body.draftId,
+					op: 'upsert',
+				}),
+			]),
+		);
+		for (const change of feed.body.changes)
+			expect(Object.keys(change).toSorted()).toEqual([
+				'at',
+				'entity',
+				'extension',
+				'id',
+				'op',
+				'seq',
+			]);
+	});
+
+	it('tells an app of its own suggestions in the changes feed, and of no other caller’s', async () => {
+		const { cookie, adminId } = await setup();
+		const kid = await addMember(cookie, 'Kid', 'supervised');
+		const mia = await addMember(cookie, 'Mia', 'supervised');
+		const hall = await addApp(cookie, {
+			name: 'Hall',
+			roleId: 'admin',
+			mode: 'suggest',
+			actsFor: [kid, mia, adminId],
+		});
+		const other = await addApp(cookie, {
+			name: 'Other',
+			roleId: 'admin',
+			mode: 'suggest',
+			actsFor: [kid, mia, adminId],
+		});
+		const cursorOf = async (secret: string, on?: string) =>
+			(await pub(secret, 'GET', '/changes', undefined, on ? { 'x-familyos-on-behalf-of': on } : {}))
+				.body.cursor as number;
+		const feedOf = async (secret: string, since: number, on?: string) => {
+			const res = await pub(
+				secret,
+				'GET',
+				`/changes?since=${since}`,
+				undefined,
+				on ? { 'x-familyos-on-behalf-of': on } : {},
+			);
+			expect(res.status).toBe(200);
+			return res.body.changes
+				.filter((c: { extension: string }) => c.extension === 'core')
+				.map((c: { id: string }) => c.id);
+		};
+		const hallAlone = await cursorOf(hall.secret);
+		const otherAlone = await cursorOf(other.secret);
+		const hallKid = await cursorOf(hall.secret, kid);
+		const hallMia = await cursorOf(hall.secret, mia);
+		const hallAdmin = await cursorOf(hall.secret, adminId);
+
+		const ownDraft = (await task(hall.secret, 'Hall alone')).body.draftId as string;
+		const kidDraft = (await task(hall.secret, 'Hall for Kid', kid)).body.draftId as string;
+		const strangerDraft = (await task(other.secret, 'Other alone')).body.draftId as string;
+
+		// An app alone: its own, never another app's, never a member's.
+		expect(await feedOf(hall.secret, hallAlone)).toEqual([ownDraft]);
+		expect(await feedOf(other.secret, otherAlone)).toEqual([strangerDraft]);
+		// Acting for a member: that member's view, so not another member's.
+		expect(await feedOf(hall.secret, hallKid, kid)).toEqual([kidDraft]);
+		expect(await feedOf(hall.secret, hallMia, mia)).toEqual([]);
+		// An admin may decide every one of them in the app, so acting for the admin shows all.
+		expect((await feedOf(hall.secret, hallAdmin, adminId)).toSorted()).toEqual(
+			[ownDraft, kidDraft, strangerDraft].toSorted(),
+		);
+
+		// A decision is a change of the same suggestion.
+		const after = await cursorOf(hall.secret);
+		await runtime.kernel.runner.rejectDraft(ownDraft, adminActor(adminId));
+		expect(await feedOf(hall.secret, after)).toEqual([ownDraft]);
+		expect(await feedOf(other.secret, after)).toEqual([]);
 	});
 });
 
@@ -1643,6 +1775,68 @@ describe('chores and the board', () => {
 			{ 'x-familyos-on-behalf-of': leo },
 		);
 		expect(made.body.result.createdBy).toBe(leo);
+	});
+});
+
+describe('notes an app puts up alone', () => {
+	it('are the app’s own: it shows as the author and may change and remove them', async () => {
+		const { cookie } = await setup();
+		const leo = await addMember(cookie, 'Leo', 'member');
+		const home = (await addApp(cookie, { roleId: 'member', name: 'Home Assistant' })).secret;
+		const other = (await addApp(cookie, { roleId: 'member', name: 'Other app' })).secret;
+		const viaApp = (await addApp(cookie, { roleId: 'member', name: 'Via', actsFor: [leo] })).secret;
+		const made = await pub(home, 'POST', '/board/notes', { text: 'Door open' });
+		expect(made.status).toBe(201);
+		expect(made.body.result).toMatchObject({
+			createdBy: null,
+			createdByApp: { name: 'Home Assistant' },
+		});
+		const id = made.body.result.id as string;
+		const listed = await pub(home, 'GET', '/board/notes');
+		expect(listed.body.items[0].createdByApp).toEqual(made.body.result.createdByApp);
+
+		const edited = await pub(home, 'PATCH', `/board/notes/${id}`, { text: 'Door closed' });
+		expect(edited.status).toBe(200);
+		expect(edited.body.result.createdByApp.name).toBe('Home Assistant');
+		// Another app, and the same app speaking for a member, are not the author.
+		expect((await pub(other, 'PATCH', `/board/notes/${id}`, { text: 'no' })).status).toBe(403);
+		expect((await pub(other, 'DELETE', `/board/notes/${id}`)).status).toBe(403);
+		const forLeo = await pub(
+			home,
+			'PATCH',
+			`/board/notes/${id}`,
+			{ text: 'as Leo' },
+			{ 'x-familyos-on-behalf-of': leo },
+		);
+		expect(forLeo.status).toBe(403);
+		expect((await pub(home, 'GET', '/board/notes')).body.items[0].text).toBe('Door closed');
+		expect((await pub(home, 'DELETE', `/board/notes/${id}`)).body.result).toEqual({
+			removed: true,
+		});
+
+		// A member's note through an app stays the member's, with no app as author.
+		const leos = await pub(
+			viaApp,
+			'POST',
+			'/board/notes',
+			{ text: 'From Leo' },
+			{ 'x-familyos-on-behalf-of': leo },
+		);
+		expect(leos.body.result).toMatchObject({ createdBy: leo, createdByApp: null });
+		expect(
+			(await pub(viaApp, 'PATCH', `/board/notes/${leos.body.result.id}`, { text: 'x' })).status,
+		).toBe(403);
+	});
+
+	it('keep the name of an app that was revoked', async () => {
+		const { cookie } = await setup();
+		const home = await addApp(cookie, { roleId: 'member', name: 'Home Assistant' });
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		await pub(home.secret, 'POST', '/board/notes', { text: 'Door open' });
+		const revoked = await request('DELETE', `/api/v1/apps/${home.id}`, { cookie });
+		expect(revoked.status).toBeLessThan(300);
+		const listed = await pub(admin, 'GET', '/board/notes');
+		expect(listed.body.items[0].createdByApp).toMatchObject({ name: 'Home Assistant' });
 	});
 });
 
