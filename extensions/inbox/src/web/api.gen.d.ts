@@ -162,7 +162,7 @@ export interface operations {
                         /** @enum {string|null} */
                         kind: "actionable" | "nothing" | "question" | null;
                         /** @enum {string|null} */
-                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        errorCode: "not_configured" | "model_not_found" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
                         attempt: number | null;
                         proposals: number;
                         skipped: number;
@@ -354,7 +354,7 @@ export interface operations {
                         /** @enum {string|null} */
                         kind: "actionable" | "nothing" | "question" | null;
                         /** @enum {string|null} */
-                        errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                        errorCode: "not_configured" | "model_not_found" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
                         attempt: number | null;
                         proposals: number;
                         skipped: number;
@@ -689,7 +689,7 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "model_not_found" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
                             attempt: number | null;
                             proposals: number;
                             skipped: number;
@@ -878,7 +878,7 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "model_not_found" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
                             attempt: number | null;
                             proposals: number;
                             skipped: number;
@@ -1222,7 +1222,7 @@ export interface operations {
                             /** @enum {string|null} */
                             kind: "actionable" | "nothing" | "question" | null;
                             /** @enum {string|null} */
-                            errorCode: "not_configured" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
+                            errorCode: "not_configured" | "model_not_found" | "limit_reached" | "auth" | "rejected" | "data_policy" | "ai_local_required" | "timeout" | "unavailable" | "invalid_output" | "output_too_long" | "unsupported" | "files_off" | "voice_not_read" | null;
                             attempt: number | null;
                             proposals: number;
                             skipped: number;

@@ -75,7 +75,7 @@ Suggestions that did not come from a capture wait here too, next to the captures
 
 ### When reading fails
 
-If the AI could not read a capture, it says why, for example **AI is not set up yet.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.** or **This is too long for the AI to read in one go. Share it in smaller parts.** Admins also get a link to the AI settings. Fix the cause, then press **Try again** to read the same capture again. If the AI is switched off for this kind of capture, it is kept and says **AI is off. Kept here unread.**; press **Read now** to read it.
+If the AI could not read a capture, it says why, for example **AI is not set up yet.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.** or **This is too long for the AI to read in one go. Share it in smaller parts.** Admins also get a link to the AI settings. Fix the cause, then press **Try again** to read the same capture again. If the AI is switched off for this kind of capture, it is kept and says **AI is off. Kept here unread.**; press **Read now** to read it.
 
 **Remove** (then **Tap again to remove**) takes a capture away and declines any suggestions from it that are still waiting. Only the person who made a capture can remove it, read it again or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
 

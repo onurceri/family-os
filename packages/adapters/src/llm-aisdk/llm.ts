@@ -184,11 +184,34 @@ export function retryAfterOf(
 	return Number.isNaN(at) ? undefined : Math.max(0, at - now);
 }
 
-function toLlmError(error: unknown): LlmError {
+/**
+ * Whether a gateway's error body says the provider behind the model failed (OpenRouter puts the
+ * upstream's name in `error.metadata.provider_name` and words the message "Provider returned
+ * error"), as opposed to the gateway not knowing the model.
+ */
+function isGatewayUpstreamFailure(body: string | undefined): boolean {
+	if (!body) return false;
+	try {
+		const error: unknown = (JSON.parse(body) as { error?: unknown } | null)?.error;
+		if (typeof error !== 'object' || error === null) return false;
+		const { message, metadata } = error as { message?: unknown; metadata?: unknown };
+		const provider =
+			typeof metadata === 'object' && metadata !== null
+				? (metadata as { provider_name?: unknown }).provider_name
+				: undefined;
+		return (
+			(typeof provider === 'string' && provider !== '') || message === 'Provider returned error'
+		);
+	} catch {
+		return false;
+	}
+}
+
+function toLlmError(error: unknown, model?: string): LlmError {
 	if (isLlmError(error)) return error;
 	// The AI SDK's own retry gave up: what failed is its last error (a 429 keeps its wait).
 	if (RetryError.isInstance(error) && error.lastError !== undefined)
-		return toLlmError(error.lastError);
+		return toLlmError(error.lastError, model);
 	if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
 		return new LlmError('timeout', 'The model did not answer in time', { cause: error });
 	}
@@ -230,9 +253,22 @@ function toLlmError(error: unknown): LlmError {
 			);
 		}
 		if (status === 404) {
-			return new LlmError('not_configured', `The model was not found: ${error.message}`, {
-				cause: error,
-			});
+			// A gateway (OpenRouter) answers 404 when the provider behind the model fails: the model
+			// exists, so asking again later can work.
+			if (isGatewayUpstreamFailure(error.responseBody)) {
+				return new LlmError(
+					'unavailable',
+					'The provider behind the model is not answering (HTTP 404 from the gateway)',
+					{ cause: error },
+				);
+			}
+			return new LlmError(
+				'model_not_found',
+				model
+					? `The provider does not know the model "${model}"`
+					: 'The provider does not know the model',
+				{ cause: error },
+			);
 		}
 		if (status === 400 || status === 422) {
 			// Gateways (OpenRouter) put the upstream reason in the body, not in the message.
@@ -464,7 +500,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			try {
 				await checkAreas(request.areas, provider.baseUrl);
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				await record({ errorCode: failure.code });
 				throw failure;
 			}
@@ -578,7 +614,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				} catch (error) {
 					// Models without a thinking mode can refuse the setting; asking again without it
 					// still gets the answer.
-					if (reasoning && toLlmError(error).code === 'rejected') {
+					if (reasoning && toLlmError(error, role.model).code === 'rejected') {
 						logger.warn(
 							{ feature: request.feature, model: label },
 							'provider rejected the reasoning setting; asking again without it',
@@ -612,7 +648,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					});
 					return { output, model: label, usage, outputMode: mode };
 				} catch (error) {
-					const failure = toLlmError(error);
+					const failure = toLlmError(error, role.model);
 					await record({ ...failureFields(failure), outputMode: mode });
 					// A rate limit that asks for a long wait is left to the job's backoff.
 					if (
@@ -667,7 +703,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			try {
 				await checkAreas(request.areas, provider.baseUrl);
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				await record({ errorCode: failure.code });
 				throw failure;
 			}
@@ -771,7 +807,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 				await record({ input, output, cost: usage.cost, finishReason });
 				return { text: text.trim(), toolCalls: calls, model: label, usage };
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				// Before any step finished nothing was charged, not even the zero of a local model.
 				await record({
 					errorCode: failure.code,
@@ -815,7 +851,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			try {
 				await checkAreas([request.area], provider.baseUrl);
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				await record({ errorCode: failure.code });
 				throw failure;
 			}
@@ -850,7 +886,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 						? new LlmError('invalid_output', 'The model did not return one vector per text', {
 								cause: error,
 							})
-						: toLlmError(error);
+						: toLlmError(error, role.model);
 				await record({
 					errorCode: failure.code,
 					input: tokens,
@@ -909,7 +945,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 			try {
 				await checkAreas(request.areas, provider.baseUrl);
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				await record({ errorCode: failure.code });
 				throw failure;
 			}
@@ -950,7 +986,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					usage: { inputTokens: null, outputTokens: null, cost },
 				};
 			} catch (error) {
-				const failure = toLlmError(error);
+				const failure = toLlmError(error, role.model);
 				await record({ errorCode: failure.code, cost });
 				logger.warn(
 					{

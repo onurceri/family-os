@@ -163,6 +163,7 @@ const OUTAGES: ReadonlySet<string> = new Set([
 	'auth',
 	'limit_reached',
 	'not_configured',
+	'model_not_found',
 	'rejected',
 	'data_policy',
 ]);

@@ -57,6 +57,7 @@
 		'limit_reached',
 		'auth',
 		'not_configured',
+		'model_not_found',
 		'data_policy',
 		'rejected',
 		'timeout',

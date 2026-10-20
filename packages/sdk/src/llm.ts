@@ -281,6 +281,8 @@ export interface LlmPort {
  */
 export type LlmErrorCode =
 	| 'not_configured'
+	/** The provider does not know the chosen model: a person must choose another. */
+	| 'model_not_found'
 	/** AI, or this feature, is turned off. */
 	| 'disabled'
 	| 'limit_reached'

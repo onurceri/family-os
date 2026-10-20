@@ -111,6 +111,25 @@ const server = http.createServer((req, res) => {
 					error: { message: 'No endpoints found matching your data policy (Zero data retention)' },
 				}),
 			);
+		// OpenRouter when the provider behind a model fails: the gateway knows the model.
+		if (model === 'upstream-down')
+			return res.writeHead(404).end(
+				JSON.stringify({
+					error: {
+						message: 'Provider returned error',
+						code: 404,
+						metadata: {
+							raw: '{"status":404,"title":"Not Found","detail":"Function not found for account"}',
+							provider_name: 'Nvidia',
+							is_byok: false,
+						},
+					},
+				}),
+			);
+		if (model === 'unknown-model')
+			return res
+				.writeHead(404)
+				.end(JSON.stringify({ error: { message: 'The model `unknown-model` does not exist' } }));
 		if (model === 'denied')
 			return res.writeHead(401).end(JSON.stringify({ error: { message: 'bad key' } }));
 		// Rate limits, as free models answer: `busy-once` asks for a short wait on its first call
@@ -639,6 +658,21 @@ describe('AI SDK LlmPort', () => {
 		expect((error as Error).message).toContain('Only providers that keep no data');
 		const { entries } = await settings.activity();
 		expect(entries[0]).toMatchObject({ errorCode: 'data_policy' });
+	});
+
+	it('treats a gateway 404 from the provider behind the model as an outage to retry', async () => {
+		await useModel('upstream-down');
+		const error = await ask().catch((e: unknown) => e);
+		expect(error).toMatchObject({ code: 'unavailable', retryable: true });
+		const { entries } = await settings.activity();
+		expect(entries[0]).toMatchObject({ errorCode: 'unavailable' });
+	});
+
+	it('says a plain 404 means the model is unknown, names it and does not retry', async () => {
+		await useModel('unknown-model');
+		const error = await ask().catch((e: unknown) => e);
+		expect(error).toMatchObject({ code: 'model_not_found', retryable: false });
+		expect((error as Error).message).toContain('unknown-model');
 	});
 
 	it('sends files as image parts', async () => {

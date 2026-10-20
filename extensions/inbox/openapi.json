@@ -236,6 +236,7 @@
 											],
 											"enum": [
 												"not_configured",
+												"model_not_found",
 												"limit_reached",
 												"auth",
 												"rejected",
@@ -758,6 +759,7 @@
 												],
 												"enum": [
 													"not_configured",
+													"model_not_found",
 													"limit_reached",
 													"auth",
 													"rejected",
@@ -1683,6 +1685,7 @@
 															],
 															"enum": [
 																"not_configured",
+																"model_not_found",
 																"limit_reached",
 																"auth",
 																"rejected",
@@ -2262,6 +2265,7 @@
 															],
 															"enum": [
 																"not_configured",
+																"model_not_found",
 																"limit_reached",
 																"auth",
 																"rejected",
@@ -3214,6 +3218,7 @@
 															],
 															"enum": [
 																"not_configured",
+																"model_not_found",
 																"limit_reached",
 																"auth",
 																"rejected",

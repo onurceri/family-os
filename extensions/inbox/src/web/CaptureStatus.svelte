@@ -9,6 +9,7 @@
 	/** Failures an admin fixes in AI settings. */
 	const AI_SETTINGS_ERRORS: ReadonlySet<string> = new Set([
 		'not_configured',
+		'model_not_found',
 		'data_policy',
 		'ai_local_required',
 		'files_off',

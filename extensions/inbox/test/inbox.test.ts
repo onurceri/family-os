@@ -489,6 +489,21 @@ describe('inbox pipeline', () => {
 		expect(k.llm.calls).toHaveLength(2); // the failure, then the answer
 	});
 
+	it('fails at once when the provider does not know the model, with words of its own', async () => {
+		k.llm.respond(new LlmError('model_not_found', 'The provider does not know the model "x"'));
+		const item = await share({ text: NOTICE });
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'failed', errorCode: 'model_not_found' });
+		expect(k.llm.calls).toHaveLength(1);
+		expect(en.error_model_not_found).toContain('was not found at its provider');
+		expect(en.error_model_not_found).not.toBe(en.error_not_configured);
+
+		k.llm.respond(proposals());
+		await k.runner.invoke('inbox.retryItem', { id: item.id }, parent.actor);
+		await k.worker.drain();
+		expect((await items())[0]).toMatchObject({ status: 'extracted', proposals: 2 });
+	});
+
 	it('fails at once when no provider of the model meets the data rules, and says how to fix it', async () => {
 		// What the AI adapter throws when OpenRouter finds no provider that keeps no data.
 		k.llm.respond(

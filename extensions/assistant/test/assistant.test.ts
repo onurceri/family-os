@@ -356,6 +356,17 @@ describe('a turn', () => {
 		});
 		expect(en.failed_data_policy).toContain('Only providers that keep no data');
 
+		// The provider does not know the chosen model: failed at once, with words of its own.
+		loopTurns(k.llm, new LlmError('model_not_found', 'The provider does not know the model "x"'));
+		const unknown = await ask(ayse, 'one more');
+		expect(await reply(ayse, unknown)).toMatchObject({
+			status: 'failed',
+			errorCode: 'model_not_found',
+		});
+		expect(en.failed_model_not_found).toContain('was not found at its provider');
+		expect(en.failed_model_not_found).not.toBe(en.failed_not_configured);
+		expect(en.failed_unavailable).toContain('not answering right now');
+
 		loopTurns(k.llm, new LlmError('timeout', 'slow'), [{ text: 'second time lucky' }]);
 		const sent = await ask(ayse, 'two');
 		// The first attempt failed in a way that can pass: the answer is back to waiting.

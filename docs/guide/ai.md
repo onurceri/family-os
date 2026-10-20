@@ -64,6 +64,8 @@ Only areas that are turned on in **Settings → Family → Extensions** appear, 
 
 **See what the AI did.** **Settings → AI → Usage & limits → See what the AI did** lists every time a model was asked something, newest first: when, for what (for example **Read shared items**), **which areas it looked at**, which provider and model, what it cost, and whether it worked. A call that drew on a record shows that area as well, for example **Finance** once you have opened it, so you can check that a locked area really stayed out. If a call was refused because an area is off, you see that too. It never shows what was shared or what the model answered; FamilyOS does not keep that. **Show older** loads earlier entries.
 
+**When the AI does not answer.** **AI is not set up yet.** means no model is chosen in Settings → AI. **The AI model chosen in Settings → AI was not found at its provider** means the provider does not know that model name; an admin should choose another one. **The AI service is not answering right now** means the model is fine but its provider is down or busy; FamilyOS tries again by itself, and you can press **Try again** later. In **See what the AI did**, the same two cases read **The provider does not know the chosen model** and **The provider did not answer**.
+
 ## Privacy switches
 
 Under **Settings → AI → What the AI may read → What the AI sees**:

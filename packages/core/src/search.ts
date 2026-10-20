@@ -710,7 +710,11 @@ export function createSearch(deps: SearchDeps) {
 				return { vector: normalize(result.vectors[0] as Float32Array), model: result.model };
 			} catch (error) {
 				if (isLlmError(error)) {
-					if (error.code === 'not_configured' || error.code === 'disabled')
+					if (
+						error.code === 'not_configured' ||
+						error.code === 'model_not_found' ||
+						error.code === 'disabled'
+					)
 						throw new FamosError('conflict', 'not_configured', { reason: 'not_configured' });
 					throw new FamosError('unavailable', 'Search could not reach the embedding model', {
 						reason: error.code,

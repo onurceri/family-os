@@ -40,6 +40,8 @@ export type ItemStatus = z.infer<typeof ItemStatusSchema>;
 /** Why an item failed: the model error codes, or a file the pipeline cannot read. */
 export const ErrorCodeSchema = z.enum([
 	'not_configured',
+	/** The provider does not know the model chosen in Settings → AI. */
+	'model_not_found',
 	'limit_reached',
 	'auth',
 	'rejected',

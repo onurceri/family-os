@@ -21,6 +21,8 @@
 	"busy": "Asistan hâlâ yanıtlıyor.",
 	"failed_disabled": "Asistan kapalı.",
 	"failed_not_configured": "Yapay zekâ henüz kurulmadı. Yönetici bunu Ayarlar → Yapay zekâ bölümünden yapabilir.",
+	"failed_model_not_found": "Ayarlar → Yapay zekâ bölümünde seçilen model sağlayıcısında bulunamadı. Yönetici başka bir model seçebilir.",
+	"failed_unavailable": "Yapay zekâ hizmeti şu an yanıt vermiyor. Biraz sonra tekrar deneyin.",
 	"failed_limit_reached": "Aylık yapay zekâ sınırına ulaşıldı.",
 	"failed_auth": "Yapay zekâ hizmeti anahtarı reddetti. Yönetici bunu Ayarlar → Yapay zekâ bölümünden kontrol edebilir.",
 	"failed_data_policy": "Seçilen yapay zekâ modelinin veri kurallarına uyan bir sağlayıcısı yok. Yönetici Ayarlar → Yapay zekânın okuyabildikleri bölümünden “Yalnızca veri saklamayan sağlayıcılar” seçeneğini kapatabilir ya da başka bir model seçebilir.",

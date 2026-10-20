@@ -59,6 +59,8 @@
 	const FAILURES: Record<string, Parameters<typeof t>[0]> = {
 		disabled: 'failed_disabled',
 		not_configured: 'failed_not_configured',
+		model_not_found: 'failed_model_not_found',
+		unavailable: 'failed_unavailable',
 		limit_reached: 'failed_limit_reached',
 		auth: 'failed_auth',
 		data_policy: 'failed_data_policy',

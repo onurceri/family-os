@@ -21,6 +21,8 @@
 	"busy": "The assistant is still answering.",
 	"failed_disabled": "The assistant is turned off.",
 	"failed_not_configured": "The AI is not set up yet. An admin can set it up in Settings → AI.",
+	"failed_model_not_found": "The AI model chosen in Settings → AI was not found at its provider. An admin can choose another model.",
+	"failed_unavailable": "The AI service is not answering right now. Try again in a while.",
 	"failed_limit_reached": "The monthly AI limit is reached.",
 	"failed_auth": "The AI service refused its key. An admin can check it in Settings → AI.",
 	"failed_data_policy": "No provider of the chosen AI model met the data rules. An admin can turn off “Only providers that keep no data” in Settings → What the AI may read, or choose another model.",
