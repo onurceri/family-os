@@ -1,12 +1,15 @@
 import {
 	type ApiOperation,
 	type AppCaller,
+	CORE_CAPABILITIES,
 	type CoreTables,
+	type DraftRow,
 	describeField,
 	IDEMPOTENCY_KEY,
 	type Kernel,
 	pathParams,
 	publicPath,
+	WAITING_STATUSES,
 } from '@famos/core';
 import {
 	type ActionResult,
@@ -18,6 +21,7 @@ import {
 	appOf,
 	FamosError,
 	type Logger,
+	memberBehind,
 	principalOf,
 } from '@famos/sdk';
 import { OpenAPIHono } from '@hono/zod-openapi';
@@ -35,6 +39,7 @@ import {
 	ErrorSchema,
 	encodeCursor,
 	errorResponse,
+	type Field,
 	fieldsOf,
 	matchesTag,
 	PAGE_DEFAULT,
@@ -753,6 +758,197 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		);
 	});
 
+	const DraftSummarySchema = z
+		.object({
+			id: z.string(),
+			status: z
+				.enum(['waiting', 'failed'])
+				.describe(
+					'`waiting` for a person to decide; `failed` approved but could not be made, and waiting to be tried again',
+				),
+			extension: z.string().describe('The extension the suggested change belongs to'),
+			title: z
+				.string()
+				.describe('What it suggests, in the family language: the words of the suggestion'),
+			subject: z.string().nullable().describe('What it is about, by name, when that is known'),
+			proposedAt: z.string().describe('RFC 3339 with an offset'),
+			proposedBy: z
+				.string()
+				.nullable()
+				.describe(
+					'Who suggested it: a person’s name, an app’s name, or `Leo via Home Assistant`; null when nobody is named',
+				),
+			canDecide: z
+				.boolean()
+				.describe('Always false here: only a person decides a suggestion, in FamilyOS itself'),
+		})
+		.meta({ id: 'DraftSummary' });
+	const DraftSummaryPageSchema = z
+		.object({
+			items: z.array(DraftSummarySchema),
+			next: z
+				.string()
+				.nullable()
+				.describe('Pass it as `cursor` for the next page; null when this was the last'),
+			timeZone: z.string().describe('The family time zone'),
+		})
+		.meta({ id: 'DraftSummaryPage' });
+	api.openAPIRegistry.registerPath({
+		method: 'get',
+		path: '/drafts',
+		operationId: 'core.listDrafts',
+		summary:
+			'The suggestions that wait for a person to decide, as Quick add lists them for this caller: an app alone sees its own, an app acting for a member sees what that member would see',
+		tags: ['core'],
+		security: [{ bearer: [] }],
+		request: {
+			query: z.object({
+				status: z
+					.enum(['waiting'])
+					.describe('Which suggestions; only `waiting` for now (those not yet decided)'),
+				limit: z.coerce
+					.number()
+					.int()
+					.min(1)
+					.max(PAGE_MAX)
+					.optional()
+					.describe(`How many items at most; ${PAGE_DEFAULT} by default, ${PAGE_MAX} at most`),
+				cursor: z.string().optional().describe('The `next` of the previous page'),
+			}),
+			headers: z.object({
+				'if-none-match': z
+					.string()
+					.optional()
+					.describe('The `ETag` of the last answer; an unchanged one is answered with 304'),
+				'x-familyos-on-behalf-of': onBehalfHeader,
+			}),
+		},
+		responses: {
+			200: { description: 'The waiting suggestions', ...json(DraftSummaryPageSchema) },
+			304: { description: 'Not modified since the `ETag` in `If-None-Match`' },
+			...errorDocs([400, 401, 403, 429]),
+		},
+	});
+	api.get('/drafts', async (c) => {
+		const actor = c.get('actor');
+		if (!kernel.access.can(actor, CORE_CAPABILITIES.draftsPropose.id))
+			throw new FamosError('forbidden', 'This role may not read suggestions', {
+				reason: 'capability',
+				capability: CORE_CAPABILITIES.draftsPropose.id,
+			});
+		const { limit, cursor, ...rest } = queryOf(c);
+		const fields: Field[] = [];
+		if (rest.status !== 'waiting')
+			fields.push({ path: 'status', message: 'Ask for the suggestions that are `waiting`' });
+		let size = PAGE_DEFAULT;
+		if (limit !== undefined) {
+			const n = Number(limit);
+			if (!Number.isInteger(n) || n < 1 || n > PAGE_MAX)
+				fields.push({ path: 'limit', message: `A whole number from 1 to ${PAGE_MAX}` });
+			else size = n;
+		}
+		const offset = cursor ? decodeCursor(cursor) : 0;
+		if (fields.length > 0) throw badFields(fields);
+
+		const ctx = await contextOf();
+		const rows = await waitingFor(actor);
+		// The ids and states are in the validator too: a suggestion that expires or fails is not
+		// a write the log hears of.
+		const window = JSON.stringify({
+			p: c.req.path,
+			q: Object.entries(rest).sort(),
+			size,
+			offset,
+			tz: ctx.timeZone,
+			lang: ctx.language,
+			rows: rows.map((row) => `${row.id}:${row.status}`),
+		});
+		const tag = `"${await kernel.changes.collectionTag('core', actor, window)}"`;
+		c.header('etag', tag);
+		if (matchesTag(c.req.header('if-none-match'), tag)) return c.body(null, 304);
+
+		const members = new Map((await kernel.ctx.family.members()).map((m) => [m.id, m.displayName]));
+		const page = rows.slice(offset, offset + size);
+		const items = await Promise.all(page.map((row) => summaryOf(row, ctx, members)));
+		const next = offset + size < rows.length ? encodeCursor(offset + size) : null;
+		return c.json({ items, next, timeZone: ctx.timeZone }, 200);
+	});
+
+	/**
+	 * The suggestions still waiting that this caller sees, newest first: what Quick add lists a
+	 * member (their own, and those they may decide). An app alone sees the ones it made; an app
+	 * acting for a member sees that member's view, within the app's own capabilities.
+	 */
+	async function waitingFor(actor: Actor): Promise<DraftRow[]> {
+		const member = memberBehind(actor);
+		const all = await kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_drafts')
+			.selectAll()
+			.where('status', 'in', [...WAITING_STATUSES])
+			.where((eb) =>
+				member !== null
+					? eb.or([eb('for_member', 'is', null), eb('for_member', '=', member)])
+					: eb('for_member', 'is', null),
+			)
+			.orderBy('created_at', 'desc')
+			.orderBy('id', 'desc')
+			.execute();
+		const runner = kernel.runner;
+		let seen: DraftRow[];
+		if (actor.kind === 'member') {
+			// The member as they are in the app: the same reading of "theirs or theirs to decide".
+			const { via: _via, ...person } = actor;
+			seen = all.filter(
+				(row) =>
+					runner.mayDecide(row, person) ||
+					runner.isProposer(person, row) ||
+					(runner.unavailable(row) !== null &&
+						kernel.access.can(person, CORE_CAPABILITIES.draftsApprove.id)),
+			);
+		} else {
+			seen = all.filter(
+				(row) => principalOf(JSON.parse(row.proposed_by) as Actor) === principalOf(actor),
+			);
+		}
+		// One about a day that has passed, or about something that is gone, no longer waits.
+		const passed = await runner.passedCheck();
+		const open = seen.filter((row) => !passed(row));
+		const gone = await runner.goneAmong(open);
+		return open.filter((row) => !gone.has(row.id));
+	}
+
+	async function summaryOf(
+		row: DraftRow,
+		ctx: ApiContext,
+		members: ReadonlyMap<string, string>,
+	): Promise<z.infer<typeof DraftSummarySchema>> {
+		const action = kernel.registry.actions.get(row.action_id);
+		const by = JSON.parse(row.proposed_by) as Actor;
+		const person = memberBehind(by);
+		const name = person === null ? null : (members.get(person) ?? null);
+		const through = await kernel.runner.appBehind(row);
+		let proposedBy: string | null = name;
+		if (through)
+			proposedBy = name
+				? ctx.translate('app:draft_via_app_member', { name, app: through.name })
+				: through.name;
+		return {
+			id: row.id,
+			status: row.status === 'failed' ? 'failed' : 'waiting',
+			extension: row.action_id.split('.')[0] ?? row.action_id,
+			title:
+				row.summary ??
+				(action?.draftTitle ? ctx.translate(action.draftTitle) : null) ??
+				action?.title ??
+				row.action_id,
+			subject: await kernel.runner.subject(row),
+			proposedAt: apiInstant(row.created_at, ctx.timeZone),
+			proposedBy,
+			canDecide: false,
+		};
+	}
+
 	const ChangesSchema = z
 		.object({
 			changes: z.array(
@@ -853,7 +1049,20 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 /** Mounts the public API on the server's app, below `/api/public/v1`. */
 export function mountPublicApi(app: OpenAPIHono<AppEnv>, deps: PublicApiDeps): void {
 	const api = createPublicApi(deps);
-	app.mount(PUBLIC_API_BASE, api.fetch);
+	// Hono's own copy of the request reads `duplex` from the server's request object, which is not
+	// a real `Request` and refuses it, so every call with a body failed. Built from its parts here.
+	app.mount(PUBLIC_API_BASE, api.fetch, {
+		replaceRequest: (request) => {
+			const url = new URL(request.url);
+			url.pathname = url.pathname.slice(PUBLIC_API_BASE.length) || '/';
+			const bodyless = request.method === 'GET' || request.method === 'HEAD';
+			return new Request(url, {
+				method: request.method,
+				headers: request.headers,
+				...(!bodyless && { body: request.body, duplex: 'half' }),
+			});
+		},
+	});
 }
 
 /** The document of the public API (`public-openapi.json`). */

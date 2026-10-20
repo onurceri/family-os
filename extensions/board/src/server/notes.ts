@@ -16,6 +16,7 @@ import { compareDates, dayBounds, todayIn, zoned } from '@famos/time';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import {
+	type BoardNote,
 	BoardNoteSchema,
 	EditNoteSchema,
 	KEEP_AFTER_END_DAYS,
@@ -107,6 +108,34 @@ async function topOf(db: Db, pinned: number, now: number): Promise<number | null
 
 /** Below this gap between two neighbours the group is numbered afresh (1, 2, 3 …). */
 const MIN_GAP = 1e-6;
+
+/** The notes with these ids, whether or not they are on the board now. */
+async function notesById(
+	ctx: Pick<ExtensionContext, 'db' | 'family'>,
+	ids: readonly string[],
+): Promise<BoardNote[]> {
+	const rows = await tables(ctx.db)
+		.selectFrom('board_notes')
+		.selectAll()
+		.where('id', 'in', ids)
+		.execute();
+	const seen = rows.length
+		? await tables(ctx.db)
+				.selectFrom('board_note_seen')
+				.select(['note_id', 'member_id'])
+				.where('note_id', 'in', ids)
+				.orderBy('seen_at')
+				.execute()
+		: [];
+	const { timeZone } = await ctx.family.settings();
+	return rows.map((row) =>
+		toNote(
+			row,
+			seen.filter((s) => s.note_id === row.id).map((s) => s.member_id),
+			endsOnOf(row.ends_at, timeZone),
+		),
+	);
+}
 
 /** Notes that are on the board now, in board order. */
 async function visibleNotes(ctx: Pick<ExtensionContext, 'db' | 'family' | 'clock'>) {
@@ -221,8 +250,10 @@ export const editNote = defineAction({
 	id: 'board.editNote',
 	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Change a note on the family board',
+	expose: api.editNote,
 	input: EditNoteSchema,
-	output: z.object({ ok: z.literal(true) }),
+	// `ok` is what callers have always read; the note as it is now follows.
+	output: BoardNoteSchema.extend({ ok: z.literal(true) }),
 	requires: boardView.id,
 	approval: 'never',
 	async run(uow, { id, text, paper, endsOn }) {
@@ -236,12 +267,15 @@ export const editNote = defineAction({
 			patch.ends_at = endsOn === null ? null : await endOfDay(uow.family, endsOn, now);
 		await tables(uow.db).updateTable('board_notes').set(patch).where('id', '=', id).execute();
 		uow.emit(boardChanged, { noteId: id });
-		return { ok: true as const };
+		// Read again: the write moved the note's version on.
+		const [changed] = await notesById(uow, [id]);
+		return { ok: true as const, ...(changed as BoardNote) };
 	},
 });
 
 export const removeNote = defineAction({
 	id: 'board.removeNote',
+	expose: api.removeNote,
 	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Take a note off the family board',
 	input: z.object({ id: NoteIdSchema }),

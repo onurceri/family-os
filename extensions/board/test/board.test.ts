@@ -150,6 +150,19 @@ describe('changing notes', () => {
 		expect((await notes())[0]?.endsOn).toBe('2026-10-07');
 	});
 
+	it('answers with the note as it is after the change, and its new version', async () => {
+		const note = await post();
+		const out = await applied<BoardNote & { ok: true }>(
+			k,
+			'board.editNote',
+			{ id: note.id, text: 'Changed' },
+			bora.actor,
+		);
+		expect(out).toMatchObject({ ok: true, id: note.id, text: 'Changed' });
+		expect(out.version).toBeGreaterThan(note.version);
+		expect(out.version).toBe((await notes())[0]?.version);
+	});
+
 	it('refuses other members, lets a manager edit and remove', async () => {
 		const note = await post();
 		expect(

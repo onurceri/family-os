@@ -1423,6 +1423,61 @@
 												"output": {
 													"type": "object",
 													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"version": {
+															"type": "integer"
+														},
+														"text": {
+															"type": "string"
+														},
+														"paper": {
+															"type": "string",
+															"enum": [
+																"note-1",
+																"note-2",
+																"note-3",
+																"note-4",
+																"note-5"
+															]
+														},
+														"pinned": {
+															"type": "boolean"
+														},
+														"endsAt": {
+															"type": [
+																"number",
+																"null"
+															]
+														},
+														"endsOn": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"hasPhoto": {
+															"type": "boolean"
+														},
+														"createdBy": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"createdAt": {
+															"type": "number"
+														},
+														"updatedAt": {
+															"type": "number"
+														},
+														"seenBy": {
+															"type": "array",
+															"items": {
+																"type": "string"
+															}
+														},
 														"ok": {
 															"type": "boolean",
 															"enum": [
@@ -1431,6 +1486,18 @@
 														}
 													},
 													"required": [
+														"id",
+														"version",
+														"text",
+														"paper",
+														"pinned",
+														"endsAt",
+														"endsOn",
+														"hasPhoto",
+														"createdBy",
+														"createdAt",
+														"updatedAt",
+														"seenBy",
 														"ok"
 													]
 												}

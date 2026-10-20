@@ -294,6 +294,92 @@
 					"text"
 				]
 			},
+			"BoardRemoveNoteResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/BoardNoteDeleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"BoardNoteDeleted": {
+				"type": "object",
+				"properties": {
+					"removed": {
+						"type": "boolean",
+						"description": "False when the note was already gone"
+					}
+				},
+				"required": [
+					"removed"
+				]
+			},
+			"BoardEditNoteResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/BoardNote"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"BoardEditNoteRequest": {
+				"type": "object",
+				"properties": {
+					"text": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 500,
+						"description": "The note, in the family's own words (at most 500 characters); line breaks are kept"
+					},
+					"paper": {
+						"type": "string",
+						"enum": [
+							"note-1",
+							"note-2",
+							"note-3",
+							"note-4",
+							"note-5"
+						]
+					},
+					"endsOn": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The last day the note stays on the board; null lets it stay"
+					}
+				}
+			},
 			"CalendarCreateEventResult": {
 				"type": "object",
 				"properties": {
@@ -3414,6 +3500,89 @@
 					"timeZone"
 				]
 			},
+			"DraftSummaryPage": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/DraftSummary"
+						}
+					},
+					"next": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Pass it as `cursor` for the next page; null when this was the last"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"items",
+					"next",
+					"timeZone"
+				]
+			},
+			"DraftSummary": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"waiting",
+							"failed"
+						],
+						"description": "`waiting` for a person to decide; `failed` approved but could not be made, and waiting to be tried again"
+					},
+					"extension": {
+						"type": "string",
+						"description": "The extension the suggested change belongs to"
+					},
+					"title": {
+						"type": "string",
+						"description": "What it suggests, in the family language: the words of the suggestion"
+					},
+					"subject": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "What it is about, by name, when that is known"
+					},
+					"proposedAt": {
+						"type": "string",
+						"description": "RFC 3339 with an offset"
+					},
+					"proposedBy": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Who suggested it: a person’s name, an app’s name, or `Leo via Home Assistant`; null when nobody is named"
+					},
+					"canDecide": {
+						"type": "boolean",
+						"description": "Always false here: only a person decides a suggestion, in FamilyOS itself"
+					}
+				},
+				"required": [
+					"id",
+					"status",
+					"extension",
+					"title",
+					"subject",
+					"proposedAt",
+					"proposedBy",
+					"canDecide"
+				]
+			},
 			"Changes": {
 				"type": "object",
 				"properties": {
@@ -3664,6 +3833,328 @@
 							"application/json": {
 								"schema": {
 									"$ref": "#/components/schemas/BoardCreateNoteResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/board/notes/{noteId}": {
+			"delete": {
+				"operationId": "board.removeNote",
+				"summary": "Take a note off the board. Only its author or someone who manages the board may",
+				"tags": [
+					"board"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^board_note_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "noteId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BoardRemoveNoteResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"operationId": "board.editNote",
+				"summary": "Change the text, paper or last day of a note; what is left out stays. Only its author or someone who manages the board may",
+				"tags": [
+					"board"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^board_note_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+						},
+						"required": true,
+						"name": "noteId",
+						"in": "path"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/BoardEditNoteRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BoardEditNoteResult"
 								}
 							}
 						}
@@ -7767,6 +8258,132 @@
 					},
 					"404": {
 						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/drafts": {
+			"get": {
+				"operationId": "core.listDrafts",
+				"summary": "The suggestions that wait for a person to decide, as Quick add lists them for this caller: an app alone sees its own, an app acting for a member sees what that member would see",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"enum": [
+								"waiting"
+							],
+							"description": "Which suggestions; only `waiting` for now (those not yet decided)"
+						},
+						"required": true,
+						"description": "Which suggestions; only `waiting` for now (those not yet decided)",
+						"name": "status",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 500,
+							"description": "How many items at most; 100 by default, 500 at most"
+						},
+						"required": false,
+						"description": "How many items at most; 100 by default, 500 at most",
+						"name": "limit",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `next` of the previous page"
+						},
+						"required": false,
+						"description": "The `next` of the previous page",
+						"name": "cursor",
+						"in": "query"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `ETag` of the last answer; an unchanged one is answered with 304"
+						},
+						"required": false,
+						"description": "The `ETag` of the last answer; an unchanged one is answered with 304",
+						"name": "if-none-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The waiting suggestions",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/DraftSummaryPage"
+								}
+							}
+						}
+					},
+					"304": {
+						"description": "Not modified since the `ETag` in `If-None-Match`"
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
 						"content": {
 							"application/json": {
 								"schema": {

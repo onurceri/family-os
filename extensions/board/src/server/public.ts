@@ -68,4 +68,33 @@ export const api = {
 			projectNoteOf(note, timeZone),
 		),
 	}),
+	editNote: defineApi({
+		name: 'board.editNote',
+		method: 'patch',
+		path: '/notes/{noteId}',
+		params: { noteId: 'id' },
+		summary:
+			'Change the text, paper or last day of a note; what is left out stays. Only its author or someone who manages the board may',
+		describe: {
+			endsOn: 'The last day the note stays on the board; null lets it stay',
+		},
+		output: apiOutput(
+			PublicNoteSchema,
+			({ ok: _ok, ...note }: BoardNote & { ok: true }, { timeZone }) =>
+				projectNoteOf(note, timeZone),
+		),
+	}),
+	removeNote: defineApi({
+		name: 'board.removeNote',
+		method: 'delete',
+		path: '/notes/{noteId}',
+		params: { noteId: 'id' },
+		summary: 'Take a note off the board. Only its author or someone who manages the board may',
+		output: apiOutput(
+			z
+				.object({ removed: z.boolean().describe('False when the note was already gone') })
+				.meta({ id: 'BoardNoteDeleted' }),
+			(result: { removed: boolean }) => ({ removed: result.removed }),
+		),
+	}),
 };

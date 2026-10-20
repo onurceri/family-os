@@ -16,6 +16,7 @@ export {
 	DecisionSchema,
 } from './decide.ts';
 export * from './devices.ts';
+export { WAITING_STATUSES } from './draft-expiry.ts';
 export * from './event-audience.ts';
 export * from './event-bus.ts';
 export * from './extension-find.ts';

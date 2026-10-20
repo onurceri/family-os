@@ -1005,6 +1005,201 @@ describe('suggestions', () => {
 	});
 });
 
+describe('waiting suggestions', () => {
+	const waiting = (secret: string, query = '?status=waiting', onBehalfOf?: string) =>
+		pub(
+			secret,
+			'GET',
+			`/drafts${query}`,
+			undefined,
+			onBehalfOf ? { 'x-familyos-on-behalf-of': onBehalfOf } : {},
+		);
+	const task = (secret: string, title: string, onBehalfOf?: string) =>
+		pub(
+			secret,
+			'POST',
+			'/lists/tasks',
+			{ title },
+			onBehalfOf ? { 'x-familyos-on-behalf-of': onBehalfOf } : {},
+		);
+
+	it('lists what an app alone suggested, with who and what, and never lets it decide', async () => {
+		const { cookie, adminId } = await setup();
+		const hall = await addApp(cookie, { name: 'Hall script', roleId: 'admin', mode: 'suggest' });
+		const other = await addApp(cookie, { name: 'Other', roleId: 'admin', mode: 'suggest' });
+		const made = await task(hall.secret, 'Pay the fee');
+		expect(made.status).toBe(202);
+		await task(other.secret, 'Not mine');
+
+		const list = await waiting(hall.secret);
+		expect(list.status).toBe(200);
+		expect(list.body).toEqual({
+			items: [
+				{
+					id: made.body.draftId,
+					status: 'waiting',
+					extension: 'lists',
+					title: expect.any(String),
+					subject: 'Pay the fee',
+					proposedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT.*\+00:00$/),
+					proposedBy: 'Hall script',
+					canDecide: false,
+				},
+			],
+			next: null,
+			timeZone: 'UTC',
+		});
+		// Each app sees its own and nothing of the other's.
+		expect((await waiting(other.secret)).body.items).toHaveLength(1);
+
+		// A suggestion that was decided no longer waits.
+		await runtime.kernel.runner.rejectDraft(made.body.draftId, adminActor(adminId));
+		expect((await waiting(hall.secret)).body.items).toEqual([]);
+	});
+
+	it('shows an app acting for a member what that member would see', async () => {
+		const { cookie, adminId } = await setup();
+		const kid = await addMember(cookie, 'Kid', 'supervised');
+		const hall = await addApp(cookie, {
+			name: 'Hall script',
+			roleId: 'admin',
+			mode: 'suggest',
+			actsFor: [kid, adminId],
+		});
+		const alone = await task(hall.secret, 'By the app');
+		const forKid = await task(hall.secret, 'By the app for Kid', kid);
+		// The child asks in the app itself.
+		const own = await runtime.kernel.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Party', date: '2026-10-21', startTime: '15:00' },
+			{ kind: 'member', memberId: kid as MemberId, roleId: 'supervised' },
+		);
+		expect(own.status).toBe('drafted');
+		const ownId = (own as { draftId: string }).draftId;
+
+		const kidSees = await waiting(hall.secret, '?status=waiting', kid);
+		expect(kidSees.status).toBe(200);
+		const byId = new Map(
+			kidSees.body.items.map((item: { id: string }) => [item.id, item] as const),
+		);
+		expect([...byId.keys()].toSorted()).toEqual([forKid.body.draftId, ownId].toSorted());
+		expect(byId.get(forKid.body.draftId)).toMatchObject({
+			proposedBy: 'Kid via Hall script',
+			canDecide: false,
+		});
+		expect(byId.get(ownId)).toMatchObject({
+			proposedBy: 'Kid',
+			extension: 'calendar',
+			canDecide: false,
+		});
+
+		// The admin may decide all three in the app; through the API they are listed, not decidable.
+		const adminSees = await waiting(hall.secret, '?status=waiting', adminId);
+		expect(adminSees.body.items).toHaveLength(3);
+		for (const item of adminSees.body.items) expect(item.canDecide).toBe(false);
+		expect(adminSees.body.items.map((i: { id: string }) => i.id)).toContain(alone.body.draftId);
+
+		// Naming a member the app may not act for is refused as everywhere.
+		const stranger = await addMember(cookie, 'Stranger', 'member');
+		expect((await waiting(hall.secret, '?status=waiting', stranger)).status).toBe(403);
+	});
+
+	it('keeps a member’s suggestions from a member who may not decide them', async () => {
+		const { cookie } = await setup();
+		const kid = await addMember(cookie, 'Kid', 'supervised');
+		const role = await request('POST', '/api/v1/actions/core.createRole', {
+			cookie,
+			body: { name: 'No deciding', base: 'member', overrides: { 'core.drafts.approve': false } },
+		});
+		const guest = await addMember(cookie, 'Guest', role.body.output.id);
+		const hall = await addApp(cookie, { roleId: 'admin', mode: 'suggest', actsFor: [kid, guest] });
+		await runtime.kernel.runner.invoke(
+			'calendar.createEvent',
+			{ title: 'Party', date: '2026-10-21', startTime: '15:00' },
+			{ kind: 'member', memberId: kid as MemberId, roleId: 'supervised' },
+		);
+		expect((await waiting(hall.secret, '?status=waiting', guest)).body.items).toEqual([]);
+		expect((await waiting(hall.secret, '?status=waiting', kid)).body.items).toHaveLength(1);
+	});
+
+	it('holds an app to its own role, and asks for the status', async () => {
+		const { cookie } = await setup();
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		const role = await request('POST', '/api/v1/actions/core.createRole', {
+			cookie,
+			body: {
+				name: 'No suggestions',
+				base: 'member',
+				overrides: { 'core.drafts.propose': false },
+			},
+		});
+		const limited = (await addApp(cookie, { roleId: role.body.output.id, name: 'Limited' })).secret;
+		const refused = await waiting(limited);
+		expect(refused.status).toBe(403);
+		expect(refused.body.error).toMatchObject({
+			code: 'forbidden',
+			capability: 'core.drafts.propose',
+		});
+		const bad = await waiting(admin, '');
+		expect(bad.status).toBe(400);
+		expect(bad.body.error.fields).toEqual([expect.objectContaining({ path: 'status' })]);
+		expect((await waiting(admin, '?status=applied')).status).toBe(400);
+		expect((await waiting(admin, '?status=waiting&limit=0')).status).toBe(400);
+		expect((await waiting(admin)).status).toBe(200);
+		// A key is needed.
+		expect((await request('GET', '/api/public/v1/drafts?status=waiting')).status).toBe(401);
+	});
+
+	it('pages like other lists', async () => {
+		const { cookie } = await setup();
+		const hall = await addApp(cookie, { roleId: 'admin', mode: 'suggest' });
+		for (const title of ['One', 'Two', 'Three']) await task(hall.secret, title);
+		const first = await waiting(hall.secret, '?status=waiting&limit=2');
+		expect(first.body.items.map((i: { subject: string }) => i.subject)).toEqual(['Three', 'Two']);
+		expect(first.body.next).toEqual(expect.any(String));
+		const second = await waiting(
+			hall.secret,
+			`?status=waiting&limit=2&cursor=${first.body.next as string}`,
+		);
+		expect(second.body.items.map((i: { subject: string }) => i.subject)).toEqual(['One']);
+		expect(second.body.next).toBeNull();
+	});
+
+	it('answers 304 until the waiting list changes, and the log hears of drafts', async () => {
+		const { cookie, adminId } = await setup();
+		const hall = await addApp(cookie, { roleId: 'admin', mode: 'suggest' });
+		const head = await runtime.kernel.changes.head();
+		const made = await task(hall.secret, 'Pay');
+		expect(await runtime.kernel.changes.head()).toBeGreaterThan(head);
+
+		const first = await waiting(hall.secret);
+		const tag = first.headers.get('etag') as string;
+		expect(tag).toMatch(/^"[0-9a-f]+"$/);
+		const again = (etag: string, query = '?status=waiting') =>
+			pub(hall.secret, 'GET', `/drafts${query}`, undefined, { 'if-none-match': etag });
+		const same = await again(tag);
+		expect(same.status).toBe(304);
+		expect(same.body).toBeNull();
+		// Another page size is another validator.
+		expect((await again(tag, '?status=waiting&limit=1')).status).toBe(200);
+
+		expect((await task(hall.secret, 'Call')).status).toBe(202);
+		const more = await again(tag);
+		expect(more.status).toBe(200);
+		expect(more.headers.get('etag')).not.toBe(tag);
+
+		// A decision in the app moves it on as well.
+		await runtime.kernel.runner.rejectDraft(made.body.draftId, adminActor(adminId));
+		const decided = await again(more.headers.get('etag') as string);
+		expect(decided.status).toBe(200);
+		expect(decided.body.items).toHaveLength(1);
+
+		// The change feed carries the family’s things, not suggestions.
+		const feed = await pub(hall.secret, 'GET', `/changes?since=${head}`);
+		expect(feed.body.changes.map((c: { extension: string }) => c.extension)).not.toContain('core');
+	});
+});
+
 describe('validators and conditional writes', () => {
 	let cookie: string;
 	let admin: string;
@@ -1424,6 +1619,108 @@ describe('chores and the board', () => {
 	});
 });
 
+describe('changing and removing notes', () => {
+	it('edits a note and removes it, for an app that manages the board', async () => {
+		const { cookie } = await setup();
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		const made = await pub(admin, 'POST', '/board/notes', { text: 'Back at six' });
+		const id = made.body.result.id as string;
+		expect(made.headers.get('etag')).toBe('"v0"');
+
+		const edited = await pub(admin, 'PATCH', `/board/notes/${id}`, {
+			text: 'Back at seven',
+			paper: 'note-3',
+			endsOn: '2026-12-01',
+		});
+		expect(edited.status).toBe(200);
+		expect(edited.body.status).toBe('applied');
+		expect(edited.body.result).toMatchObject({
+			id,
+			text: 'Back at seven',
+			paper: 'note-3',
+			endsOn: '2026-12-01',
+			version: 1,
+		});
+		expect(edited.body.result).not.toHaveProperty('ok');
+		expect(edited.body.result.endsAt).toMatch(/\+00:00$/);
+		expect(edited.headers.get('etag')).toBe('"v1"');
+		// What is left out stays; null lets a note stay.
+		const kept = await pub(admin, 'PATCH', `/board/notes/${id}`, { endsOn: null });
+		expect(kept.body.result).toMatchObject({ text: 'Back at seven', endsOn: null, endsAt: null });
+
+		const removed = await pub(admin, 'DELETE', `/board/notes/${id}`);
+		expect(removed.status).toBe(200);
+		expect(removed.body).toEqual({ status: 'applied', result: { removed: true }, timeZone: 'UTC' });
+		expect((await pub(admin, 'GET', '/board/notes')).body.items).toEqual([]);
+		// Asking again finds it gone; editing says there is no such note.
+		expect((await pub(admin, 'DELETE', `/board/notes/${id}`)).body.result).toEqual({
+			removed: false,
+		});
+		expect((await pub(admin, 'PATCH', `/board/notes/${id}`, { text: 'x' })).status).toBe(404);
+		expect((await pub(admin, 'PATCH', '/board/notes/board_note_nope', { text: 'x' })).status).toBe(
+			400,
+		);
+	});
+
+	it('changes only a note nobody moved on when If-Match is sent', async () => {
+		const { cookie } = await setup();
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		const made = await pub(admin, 'POST', '/board/notes', { text: 'One' });
+		const id = made.body.result.id as string;
+		await pub(admin, 'PATCH', `/board/notes/${id}`, { text: 'Two' });
+		const stale = await pub(
+			admin,
+			'PATCH',
+			`/board/notes/${id}`,
+			{ text: 'Three' },
+			{ 'if-match': '"v0"' },
+		);
+		expect(stale.status).toBe(412);
+		expect(stale.body.error).toMatchObject({ code: 'precondition_failed', currentVersion: 1 });
+		const staleDelete = await pub(admin, 'DELETE', `/board/notes/${id}`, undefined, {
+			'if-match': '"v0"',
+		});
+		expect(staleDelete.status).toBe(412);
+		const fresh = await pub(
+			admin,
+			'PATCH',
+			`/board/notes/${id}`,
+			{ text: 'Three' },
+			{ 'if-match': '"v1"' },
+		);
+		expect(fresh.status).toBe(200);
+		expect(fresh.body.result.text).toBe('Three');
+		expect(
+			(await pub(admin, 'DELETE', `/board/notes/${id}`, undefined, { 'if-match': '"v2"' })).status,
+		).toBe(200);
+	});
+
+	it('follows the app’s rules: the author or a manager, and the role', async () => {
+		const { cookie } = await setup();
+		const leo = await addMember(cookie, 'Leo', 'member');
+		const mia = await addMember(cookie, 'Mia', 'member');
+		const admin = (await addApp(cookie, { roleId: 'admin', actsFor: [leo, mia] })).secret;
+		const plain = (await addApp(cookie, { roleId: 'member', name: 'Plain' })).secret;
+		const guest = (await addApp(cookie, { roleId: 'guest', name: 'Guest' })).secret;
+		const as = (who: string) => ({ 'x-familyos-on-behalf-of': who });
+
+		const note = await pub(admin, 'POST', '/board/notes', { text: 'Leo’s' }, as(leo));
+		const id = note.body.result.id as string;
+		// The author, through an app, may change their own note.
+		const mine = await pub(admin, 'PATCH', `/board/notes/${id}`, { text: 'Leo’s again' }, as(leo));
+		expect(mine.status).toBe(200);
+		// Another member, or an app that is nobody and manages nothing, may not.
+		const theirs = await pub(admin, 'PATCH', `/board/notes/${id}`, { text: 'Mia’s' }, as(mia));
+		expect(theirs.status).toBe(403);
+		expect((await pub(admin, 'DELETE', `/board/notes/${id}`, undefined, as(mia))).status).toBe(403);
+		expect((await pub(plain, 'PATCH', `/board/notes/${id}`, { text: 'no' })).status).toBe(403);
+		expect((await pub(plain, 'DELETE', `/board/notes/${id}`)).status).toBe(403);
+		expect((await pub(guest, 'DELETE', `/board/notes/${id}`)).status).toBe(403);
+		// The refused ones changed nothing.
+		expect((await pub(admin, 'GET', '/board/notes')).body.items[0].text).toBe('Leo’s again');
+	});
+});
+
 describe('the shopping lists', () => {
 	it('adds, ticks, unticks, changes and removes items', async () => {
 		const { cookie } = await setup();
@@ -1575,14 +1872,21 @@ describe('the public document', () => {
 		expect(JSON.parse(JSON.stringify(generated))).toEqual(committed);
 	});
 
-	it('holds every operation extensions offer, and the three of the door itself', () => {
+	it('holds every operation extensions offer, and the four of the door itself', () => {
 		const offered = runtime.kernel.registry.apiOperations.map(
 			(op) => `${op.exposure.method} ${publicPath(op.extension, op.exposure.path)}`,
 		);
 		const documented = operations().map(([method, path]) => `${method} ${path}`);
 		expect(documented.toSorted()).toEqual(
-			[...offered, 'get /', 'get /drafts/{draftId}', 'get /changes'].toSorted(),
+			[...offered, 'get /', 'get /drafts', 'get /drafts/{draftId}', 'get /changes'].toSorted(),
 		);
+	});
+
+	it('names the waiting suggestions and their page', () => {
+		const op = committed.paths['/drafts']?.get;
+		expect(op?.operationId).toBe('core.listDrafts');
+		expect(committed.components.schemas.DraftSummary).toBeDefined();
+		expect(committed.components.schemas.DraftSummaryPage).toBeDefined();
 	});
 
 	it('gives every operation one stable name and asks for the bearer key', () => {

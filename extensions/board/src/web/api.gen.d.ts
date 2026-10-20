@@ -818,6 +818,19 @@ export interface operations {
                         /** @enum {string} */
                         status: "applied";
                         output: {
+                            id: string;
+                            version: number;
+                            text: string;
+                            /** @enum {string} */
+                            paper: "note-1" | "note-2" | "note-3" | "note-4" | "note-5";
+                            pinned: boolean;
+                            endsAt: number | null;
+                            endsOn: string | null;
+                            hasPhoto: boolean;
+                            createdBy: string | null;
+                            createdAt: number;
+                            updatedAt: number;
+                            seenBy: string[];
                             /** @enum {boolean} */
                             ok: true;
                         };

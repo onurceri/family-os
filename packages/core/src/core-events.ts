@@ -31,8 +31,14 @@ const draftAudience = (payload: { forMember?: string | null }): AudienceTarget[]
 		? [{ member: payload.forMember }]
 		: [CORE_CAPABILITIES.draftsPropose.id, CORE_CAPABILITIES.draftsWaiting.id];
 
+/** A draft is a thing in the change log, so a list of waiting suggestions has a validator. */
+const draftChanges = ({ draftId }: { draftId: string }) => [
+	{ entity: 'draft', id: draftId, op: 'upsert' as const },
+];
+
 export const draftCreated = defineEvent('core.draft.created', draftCreatedPayload, {
 	audience: draftAudience,
+	changes: draftChanges,
 });
 export const draftUpdated = defineEvent(
 	'core.draft.updated',
@@ -41,7 +47,7 @@ export const draftUpdated = defineEvent(
 		status: z.string(),
 		forMember: z.string().nullable().optional(),
 	}),
-	{ audience: draftAudience },
+	{ audience: draftAudience, changes: draftChanges },
 );
 /**
  * Someone's profile, role or standing changed. The member hears of their own, and those who see
