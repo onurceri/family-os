@@ -3,6 +3,36 @@
 	"extensions": [
 		{
 			"id": "ambient",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "ambient/ambient-0.3.1.famext",
+			"sha256": "74963a3e0df60814e75ef34df091ecf2e3e7680a8b3f50c6c350fdcebe1f4ba1",
+			"size": 116029,
+			"labels": {
+				"en": {
+					"name": "Photos and weather",
+					"description": "The weather on Today, and family photos and weather on family displays."
+				},
+				"tr": {
+					"name": "Fotoğraflar ve hava durumu",
+					"description": "Bugün sayfasında hava durumu; aile ekranlarında fotoğraflar ve hava durumu."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [
+						"api.open-meteo.com",
+						"geocoding-api.open-meteo.com"
+					],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "ambient",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "ambient/ambient-0.3.0.famext",
@@ -123,6 +153,33 @@
 		},
 		{
 			"id": "assistant",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "assistant/assistant-0.3.1.famext",
+			"sha256": "a6435e098a6e87e28ad9776e9beeefdc380b9118b041e63601dd39993d6aff37",
+			"size": 193126,
+			"labels": {
+				"en": {
+					"name": "Assistant",
+					"description": "Ask questions in plain language and get suggestions to approve."
+				},
+				"tr": {
+					"name": "Asistan",
+					"description": "Düz bir dille soru sorun, onaylayacağınız öneriler alın."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 1,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "assistant",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "assistant/assistant-0.3.0.famext",
@@ -231,6 +288,33 @@
 		},
 		{
 			"id": "board",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "board/board-0.3.1.famext",
+			"sha256": "5e6a00c1b7b97cb090b9b858f757d2128d5d0397476ca902e23df2f6e06cc083",
+			"size": 129137,
+			"labels": {
+				"en": {
+					"name": "Board",
+					"description": "Short notes for the whole family on papers, with a photo, an end date and a pin. Shown on its own page, on Today and on the family displays."
+				},
+				"tr": {
+					"name": "Pano",
+					"description": "Tüm aile için kâğıtlara yazılmış kısa notlar; fotoğraf, bitiş günü ve sabitleme ile. Kendi sayfasında, Bugün'de ve aile ekranlarında görünür."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "board",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "board/board-0.3.0.famext",
@@ -332,6 +416,33 @@
 					"hosts": [],
 					"userUrls": false,
 					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "calendar",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "calendar/calendar-0.3.1.famext",
+			"sha256": "39a33fad6427569d6c19e89484179277f4cedc0eca9acaf3ca8efe87a87bef28",
+			"size": 461635,
+			"labels": {
+				"en": {
+					"name": "Calendar",
+					"description": "Shared family calendar with a Today card."
+				},
+				"tr": {
+					"name": "Takvim",
+					"description": "Bugün kartıyla ortak aile takvimi."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": true,
+					"local": true
 				},
 				"capabilities": 3,
 				"dependsOn": []
@@ -447,6 +558,33 @@
 		},
 		{
 			"id": "chores",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "chores/chores-0.3.1.famext",
+			"sha256": "8984240c7f29d3c9fbcb3367750233b12679f8e61829b899ff600c85f32db1f2",
+			"size": 125304,
+			"labels": {
+				"en": {
+					"name": "Chores",
+					"description": "Household chores that take turns fairly and are ticked off with one tap."
+				},
+				"tr": {
+					"name": "Ev işleri",
+					"description": "Sırayla adil paylaşılan ve tek dokunuşla işaretlenen ev işleri."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "chores",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "chores/chores-0.3.0.famext",
@@ -551,6 +689,35 @@
 				},
 				"capabilities": 3,
 				"dependsOn": []
+			}
+		},
+		{
+			"id": "home",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "home/home-0.3.1.famext",
+			"sha256": "aead8d458ee21d29c9c345c399f1a4dd3282b3ca21cc15b1ba48d376bb613aaf",
+			"size": 146136,
+			"labels": {
+				"en": {
+					"name": "Home",
+					"description": "The household’s homes with their insurance and upkeep dates, the things in them with warranties, utilities and subscriptions, and papers."
+				},
+				"tr": {
+					"name": "Ev",
+					"description": "Evler: sigorta ve bakım tarihleri, içindeki eşyalar ve garantileri, abonelikler ve belgeler."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 2,
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
@@ -779,6 +946,33 @@
 		},
 		{
 			"id": "inbox",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "inbox/inbox-0.3.1.famext",
+			"sha256": "ffd5c96419b72bc5493c7b70800cba6daace18dbf5627017d42a04904e254aaf",
+			"size": 217957,
+			"labels": {
+				"en": {
+					"name": "Quick add",
+					"description": "Give it a message, photo or document; the AI suggests what to add."
+				},
+				"tr": {
+					"name": "Hızlı ekle",
+					"description": "Ona mesaj, fotoğraf ya da belge ver; yapay zekâ ne ekleneceğini önerir."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 1,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "inbox",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "inbox/inbox-0.3.0.famext",
@@ -882,6 +1076,33 @@
 					"local": false
 				},
 				"capabilities": 1,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "kitchen",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "kitchen/kitchen-0.3.1.famext",
+			"sha256": "5ad5d7df1aa71d09dbb16ff2066f11ef7324356f07150c909c3cf88143090807",
+			"size": 156463,
+			"labels": {
+				"en": {
+					"name": "Kitchen",
+					"description": "Recipes you type in, a weekly meal plan and ingredients to the shopping list."
+				},
+				"tr": {
+					"name": "Mutfak",
+					"description": "Yazdığın tarifler, haftalık yemek planı ve malzemeleri alışveriş listesine ekleme."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 2,
 				"dependsOn": []
 			}
 		},
@@ -995,6 +1216,33 @@
 		},
 		{
 			"id": "lists",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "lists/lists-0.3.1.famext",
+			"sha256": "d8e530ab23052b3ca5dc0f12b2fdbfbe0a29427e17e02cb8b8b5b69b3dee6701",
+			"size": 245868,
+			"labels": {
+				"en": {
+					"name": "Lists",
+					"description": "Tasks and the shopping list."
+				},
+				"tr": {
+					"name": "Listeler",
+					"description": "Görevler ve alışveriş listesi."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 5,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "lists",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "lists/lists-0.3.0.famext",
@@ -1099,6 +1347,35 @@
 				},
 				"capabilities": 5,
 				"dependsOn": []
+			}
+		},
+		{
+			"id": "pets",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "pets/pets-0.3.1.famext",
+			"sha256": "8e2a86228531c8365fdabb838e1f2729b3b4e09654edd649fa0973138c7b483d",
+			"size": 118959,
+			"labels": {
+				"en": {
+					"name": "Pets",
+					"description": "The household’s pets with their vaccination and parasite dates, vet details, papers and a treatment history."
+				},
+				"tr": {
+					"name": "Evcil hayvanlar",
+					"description": "Evdeki hayvanlar, aşı ve parazit tarihleri, veteriner bilgileri, belgeleri ve tedavi geçmişi."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 2,
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
@@ -1219,6 +1496,33 @@
 		},
 		{
 			"id": "records",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "records/records-0.3.1.famext",
+			"sha256": "142b5ec35aa2f3d62d1fd3a757d02d73210b3586d2a0c99cc7a78ffbf6095a4e",
+			"size": 135979,
+			"labels": {
+				"en": {
+					"name": "Records",
+					"description": "Duties that come back (renewals, services, vaccinations) with reminders, and the papers that go with them."
+				},
+				"tr": {
+					"name": "Kayıtlar",
+					"description": "Tekrar eden işler (yenilemeler, bakımlar, aşılar) ve hatırlatmaları; ayrıca belgeleri."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 2,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "records",
 			"version": "0.3.0",
 			"sdk": "^0.8.0",
 			"url": "records/records-0.3.0.famext",
@@ -1323,6 +1627,35 @@
 				},
 				"capabilities": 2,
 				"dependsOn": []
+			}
+		},
+		{
+			"id": "vehicles",
+			"version": "0.3.1",
+			"sdk": "^0.8.0",
+			"url": "vehicles/vehicles-0.3.1.famext",
+			"sha256": "a439936a370e37a9add420c64a612911ec4bbeef9427766ee09a51250f968a97",
+			"size": 113261,
+			"labels": {
+				"en": {
+					"name": "Vehicles",
+					"description": "The household’s cars with their insurance, inspection and service dates, papers and a service log."
+				},
+				"tr": {
+					"name": "Araçlar",
+					"description": "Evdeki araçlar: sigorta, muayene ve bakım tarihleri, belgeler ve bakım defteri."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 2,
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
