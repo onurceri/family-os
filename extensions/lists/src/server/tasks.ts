@@ -395,7 +395,7 @@ export const changeTask = defineAction({
 			before.dueDate = row.due_date;
 			patch.due_date = change.dueDate;
 			// A repeating task restarts its rule from the new date.
-			if (row.rrule) patch.rrule_start = change.dueDate;
+			if (row.rrule && change.dueDate !== row.due_date) patch.rrule_start = change.dueDate;
 		}
 		if (change.dueTime !== undefined || (change.dueDate === null && row.due_time)) {
 			before.dueTime = row.due_time;

@@ -471,7 +471,7 @@ export function toDetail(row: EventRow): EventDetail {
 		notes: row.notes,
 		recurrence,
 		reminder: effectiveReminder(row),
-		rrule: row.rrule && !recurrence ? row.rrule : null,
+		rrule: row.rrule,
 		tags: tagsOf(row.tags),
 		...link(row),
 	};

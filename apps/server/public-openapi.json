@@ -513,7 +513,7 @@
 							"string",
 							"null"
 						],
-						"description": "The repeat rule (RFC 5545) when it is more than `recurrence` can say"
+						"description": "The repeat rule (RFC 5545) of a repeating event; null for a one-off event"
 					},
 					"reminder": {
 						"type": [
@@ -1122,7 +1122,7 @@
 					},
 					"keepRule": {
 						"type": "boolean",
-						"description": "True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`); without it an event sent with no `recurrence` stops repeating"
+						"description": "True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`, with `recurrence` null); without it an event sent with no `recurrence` stops repeating"
 					}
 				},
 				"required": [

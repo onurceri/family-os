@@ -85,7 +85,7 @@ export function emptyForm(date: string, now: Temporal.ZonedDateTime): EventFormV
 
 export function formFrom(source: EventInput | EventDetail): EventFormValue {
 	const recurrence = source.recurrence ?? null;
-	const custom = 'rrule' in source && source.rrule !== null;
+	const custom = 'rrule' in source && source.rrule !== null && recurrence === null;
 	return {
 		title: source.title,
 		allDay: source.allDay ?? false,

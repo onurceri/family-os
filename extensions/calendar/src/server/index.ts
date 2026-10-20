@@ -882,12 +882,11 @@ export const changeEvent = defineAction({
 			};
 		}
 		// A repeat rule outside the editable presets is kept as it was.
-		if (was.rrule) next.rrule = row.rrule;
-		const moved = ['date', 'startTime', 'allDay'].some((k) => k in before);
+		if (was.rrule && !was.recurrence) next.rrule = row.rrule;
 		const now = uow.clock.now();
 		await events(uow.db)
 			.updateTable('calendar_events')
-			.set({ ...next, exdates: moved ? null : row.exdates, updated_at: now })
+			.set({ ...next, exdates: skippedAfter(row, next), updated_at: now })
 			.where('id', '=', id)
 			.execute();
 		const updated = await loadEvent(uow, id);

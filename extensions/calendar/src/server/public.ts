@@ -44,7 +44,7 @@ export const PublicEventSchema = z
 		rrule: z
 			.string()
 			.nullable()
-			.describe('The repeat rule (RFC 5545) when it is more than `recurrence` can say'),
+			.describe('The repeat rule (RFC 5545) of a repeating event; null for a one-off event'),
 		reminder: z.number().int().nullable().describe('Minutes before the start; null for none'),
 		tags: z.array(z.string()),
 		seriesId: EventId.optional().describe(
@@ -203,7 +203,7 @@ export const api = {
 			'event.tags': 'Short labels, at most 5; the family’s existing ones are reused by name',
 			occurrence: OCCURRENCE_DOC,
 			keepRule:
-				'True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`); without it an event sent with no `recurrence` stops repeating',
+				'True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`, with `recurrence` null); without it an event sent with no `recurrence` stops repeating',
 			scope:
 				'Repeating events, with `occurrence`: `this` makes only that date an event of its own, `following` ends the series before it and starts a new one',
 		},

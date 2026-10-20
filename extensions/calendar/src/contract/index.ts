@@ -165,7 +165,7 @@ export const EventDetailSchema = z.object({
 	recurrence: RecurrenceSchema.nullable(),
 	/** Minutes before the start (see `EventInputSchema`); null = no reminder. Defaults resolved. */
 	reminder: z.number().nullable(),
-	/** Raw RRULE when the rule is outside the editable presets. */
+	/** The stored RRULE of a repeating event (also when `recurrence` can say it); null for a one-off. */
 	rrule: z.string().nullable(),
 	tags: z.array(z.string()),
 	/** A date moved out of a repeating event: the series it belongs to and the date it replaced. */
