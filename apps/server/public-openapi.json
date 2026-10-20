@@ -1090,7 +1090,7 @@
 									"maxLength": 24
 								},
 								"maxItems": 5,
-								"description": "Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2."
+								"description": "Short labels, at most 5; the family’s existing ones are reused by name"
 							}
 						},
 						"required": [
@@ -1760,50 +1760,7 @@
 					"history": {
 						"type": "array",
 						"items": {
-							"type": "object",
-							"properties": {
-								"id": {
-									"type": "string",
-									"pattern": "^chore_done_[0-9a-f-]{36}$",
-									"description": "An id of the form chore_done_<uuid>"
-								},
-								"choreId": {
-									"type": "string",
-									"pattern": "^chore_[0-9a-f-]{36}$",
-									"description": "An id of the form chore_<uuid>"
-								},
-								"memberId": {
-									"type": "string",
-									"pattern": "^member_[0-9a-f-]{36}$",
-									"description": "An id of the form member_<uuid>"
-								},
-								"dueDate": {
-									"type": "string",
-									"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-									"description": "The due date it was done for"
-								},
-								"doneAt": {
-									"type": "string",
-									"format": "date-time",
-									"description": "A moment, RFC 3339 with the offset of the family time zone"
-								},
-								"undoneAt": {
-									"type": [
-										"string",
-										"null"
-									],
-									"format": "date-time",
-									"description": "A moment, RFC 3339 with the offset of the family time zone"
-								}
-							},
-							"required": [
-								"id",
-								"choreId",
-								"memberId",
-								"dueDate",
-								"doneAt",
-								"undoneAt"
-							]
+							"$ref": "#/components/schemas/ChoreCompletion"
 						},
 						"description": "Who did it lately, newest first"
 					}
@@ -1824,6 +1781,52 @@
 					"createdAt",
 					"updatedAt",
 					"history"
+				]
+			},
+			"ChoreCompletion": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^chore_done_[0-9a-f-]{36}$",
+						"description": "An id of the form chore_done_<uuid>"
+					},
+					"choreId": {
+						"type": "string",
+						"pattern": "^chore_[0-9a-f-]{36}$",
+						"description": "An id of the form chore_<uuid>"
+					},
+					"memberId": {
+						"type": "string",
+						"pattern": "^member_[0-9a-f-]{36}$",
+						"description": "An id of the form member_<uuid>"
+					},
+					"dueDate": {
+						"type": "string",
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+						"description": "The due date it was done for"
+					},
+					"doneAt": {
+						"type": "string",
+						"format": "date-time",
+						"description": "A moment, RFC 3339 with the offset of the family time zone"
+					},
+					"undoneAt": {
+						"type": [
+							"string",
+							"null"
+						],
+						"format": "date-time",
+						"description": "When it was taken back; null while it stands"
+					}
+				},
+				"required": [
+					"id",
+					"choreId",
+					"memberId",
+					"dueDate",
+					"doneAt",
+					"undoneAt"
 				]
 			},
 			"ChoresCompleteChoreResult": {
@@ -1885,6 +1888,14 @@
 								"type": "string",
 								"format": "date-time",
 								"description": "A moment, RFC 3339 with the offset of the family time zone"
+							},
+							"undoneAt": {
+								"type": [
+									"string",
+									"null"
+								],
+								"format": "date-time",
+								"description": "When it was taken back; null while it stands"
 							}
 						},
 						"required": [
@@ -1892,7 +1903,8 @@
 							"choreId",
 							"memberId",
 							"dueDate",
-							"doneAt"
+							"doneAt",
+							"undoneAt"
 						],
 						"description": "Null when nothing changed"
 					},
@@ -1950,7 +1962,7 @@
 					"timeZone"
 				]
 			},
-			"ListsDeleteShoppingItemResult": {
+			"ListsAddShoppingItemsDefaultResult": {
 				"type": "object",
 				"properties": {
 					"status": {
@@ -1960,7 +1972,7 @@
 						]
 					},
 					"result": {
-						"$ref": "#/components/schemas/ShoppingItemDeleted"
+						"$ref": "#/components/schemas/ShoppingItemsAdded"
 					},
 					"timeZone": {
 						"type": "string",
@@ -1973,40 +1985,34 @@
 					"timeZone"
 				]
 			},
-			"ShoppingItemDeleted": {
+			"ShoppingItemsAdded": {
 				"type": "object",
 				"properties": {
-					"id": {
+					"listId": {
 						"type": "string",
-						"pattern": "^shop_item_[0-9a-f-]{36}$",
-						"description": "An id of the form shop_item_<uuid>"
+						"pattern": "^shop_list_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_list_<uuid>"
+					},
+					"items": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ShoppingItem"
+						}
+					},
+					"addedIds": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"pattern": "^shop_item_[0-9a-f-]{36}$",
+							"description": "An id of the form shop_item_<uuid>"
+						},
+						"description": "The items this call created; the others were already there"
 					}
 				},
 				"required": [
-					"id"
-				]
-			},
-			"ListsPatchShoppingItemResult": {
-				"type": "object",
-				"properties": {
-					"status": {
-						"type": "string",
-						"enum": [
-							"applied"
-						]
-					},
-					"result": {
-						"$ref": "#/components/schemas/ShoppingItem"
-					},
-					"timeZone": {
-						"type": "string",
-						"description": "The family time zone"
-					}
-				},
-				"required": [
-					"status",
-					"result",
-					"timeZone"
+					"listId",
+					"items",
+					"addedIds"
 				]
 			},
 			"ShoppingItem": {
@@ -2086,6 +2092,127 @@
 					"done",
 					"doneAt",
 					"addedBy"
+				]
+			},
+			"ListsAddShoppingItemsDefaultRequest": {
+				"type": "object",
+				"properties": {
+					"items": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"title": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 120,
+									"description": "The product, e.g. \"Milk\""
+								},
+								"quantity": {
+									"type": [
+										"string",
+										"null"
+									],
+									"maxLength": 40,
+									"description": "How much, as written: \"2 kg\", \"3\" or \"a dozen\"; leave it out when there is no amount"
+								},
+								"category": {
+									"type": "string",
+									"enum": [
+										"produce",
+										"bakery",
+										"dairy",
+										"meat",
+										"pantry",
+										"frozen",
+										"drinks",
+										"snacks",
+										"household",
+										"personal",
+										"baby",
+										"pets",
+										"other"
+									],
+									"description": "The store section; without it the section last used for this product"
+								}
+							},
+							"required": [
+								"title"
+							]
+						},
+						"minItems": 1,
+						"maxItems": 50
+					},
+					"whenOnList": {
+						"type": "string",
+						"enum": [
+							"keep",
+							"update"
+						],
+						"description": "What happens to an item already on the list and not bought: `update` (the default) takes the new quantity and category, `keep` leaves it as it is"
+					}
+				},
+				"required": [
+					"items"
+				]
+			},
+			"ListsDeleteShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItemDeleted"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
+				]
+			},
+			"ShoppingItemDeleted": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^shop_item_[0-9a-f-]{36}$",
+						"description": "An id of the form shop_item_<uuid>"
+					}
+				},
+				"required": [
+					"id"
+				]
+			},
+			"ListsPatchShoppingItemResult": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"enum": [
+							"applied"
+						]
+					},
+					"result": {
+						"$ref": "#/components/schemas/ShoppingItem"
+					},
+					"timeZone": {
+						"type": "string",
+						"description": "The family time zone"
+					}
+				},
+				"required": [
+					"status",
+					"result",
+					"timeZone"
 				]
 			},
 			"ListsPatchShoppingItemRequest": {
@@ -2278,36 +2405,6 @@
 					"timeZone"
 				]
 			},
-			"ShoppingItemsAdded": {
-				"type": "object",
-				"properties": {
-					"listId": {
-						"type": "string",
-						"pattern": "^shop_list_[0-9a-f-]{36}$",
-						"description": "An id of the form shop_list_<uuid>"
-					},
-					"items": {
-						"type": "array",
-						"items": {
-							"$ref": "#/components/schemas/ShoppingItem"
-						}
-					},
-					"addedIds": {
-						"type": "array",
-						"items": {
-							"type": "string",
-							"pattern": "^shop_item_[0-9a-f-]{36}$",
-							"description": "An id of the form shop_item_<uuid>"
-						},
-						"description": "The items this call created; the others were already there"
-					}
-				},
-				"required": [
-					"listId",
-					"items",
-					"addedIds"
-				]
-			},
 			"ListsAddShoppingItemsRequest": {
 				"type": "object",
 				"properties": {
@@ -2328,7 +2425,7 @@
 										"null"
 									],
 									"maxLength": 40,
-									"description": "How much, as written: a number, a count or a measure, e.g. \"2 kg\", \"3\" or \"a dozen\". Never a word that describes the product (\"new\", \"big\"); omit it when no amount is given"
+									"description": "How much, as written: \"2 kg\", \"3\" or \"a dozen\"; leave it out when there is no amount"
 								},
 								"category": {
 									"type": "string",
@@ -2347,7 +2444,7 @@
 										"pets",
 										"other"
 									],
-									"description": "Store section; omit to reuse the last one used for this product"
+									"description": "The store section; without it the section last used for this product"
 								}
 							},
 							"required": [
@@ -2746,7 +2843,7 @@
 								"type": "null"
 							}
 						],
-						"description": "Repeat rule for chores; requires a due date (the first occurrence)"
+						"description": "How the task repeats; needs a due date, which is the first one"
 					},
 					"notes": {
 						"type": [
@@ -4430,7 +4527,7 @@
 		"/calendar/occurrences": {
 			"get": {
 				"operationId": "calendar.listOccurrences",
-				"summary": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included",
+				"summary": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included. `to` may be at most 62 days after `from`; a longer range is refused with `bad_request`",
 				"tags": [
 					"calendar"
 				],
@@ -4501,7 +4598,7 @@
 				],
 				"responses": {
 					"200": {
-						"description": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included",
+						"description": "The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included. `to` may be at most 62 days after `from`; a longer range is refused with `bad_request`",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5026,6 +5123,164 @@
 							"application/json": {
 								"schema": {
 									"$ref": "#/components/schemas/ChoresUndoCompletionResult"
+								}
+							}
+						}
+					},
+					"202": {
+						"description": "Waits for a person to approve it (the app only suggests, or the role may only suggest)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Drafted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The request is not valid (see `fields`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "No valid key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "The key’s role, or the member it acts for, may not",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found, or the extension is switched off",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict with the state of the thing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"412": {
+						"description": "The thing changed since the version in `If-Match`",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for another request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Too many requests (see `Retry-After`)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/lists/shopping/items": {
+			"post": {
+				"operationId": "lists.addShoppingItemsDefault",
+				"summary": "Add items to the default shopping list, the one made when FamilyOS was installed. An item already on it is not repeated (a new quantity replaces the old); a bought one comes back",
+				"tags": [
+					"lists"
+				],
+				"security": [
+					{
+						"bearer": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422"
+						},
+						"required": false,
+						"description": "Makes the request safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same request returns the first answer (header `Idempotent-Replayed: true`); for another request it is refused with 422",
+						"name": "idempotency-key",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on"
+						},
+						"required": false,
+						"description": "The `version` (or `ETag`) of what you read; refused with 412 if it moved on",
+						"name": "if-match",
+						"in": "header"
+					},
+					{
+						"schema": {
+							"type": "string",
+							"description": "The member the app acts for; the app must be allowed to"
+						},
+						"required": false,
+						"description": "The member the app acts for; the app must be allowed to",
+						"name": "x-familyos-on-behalf-of",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsAddShoppingItemsDefaultRequest"
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Applied",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ListsAddShoppingItemsDefaultResult"
 								}
 							}
 						}
@@ -6029,10 +6284,10 @@
 						"schema": {
 							"type": "string",
 							"pattern": "^shop_list_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-							"description": "Target list; omit for the first (default) list"
+							"description": "The list to add to"
 						},
-						"required": false,
-						"description": "Target list; omit for the first (default) list",
+						"required": true,
+						"description": "The list to add to",
 						"name": "listId",
 						"in": "path"
 					},

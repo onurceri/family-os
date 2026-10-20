@@ -465,6 +465,9 @@ async function walk(
 	await call('lists.addShoppingItems', 'POST', `/lists/shopping/lists/${fx.listId}/items`, {
 		items: [{ title: 'Eggs', quantity: '12' }],
 	});
+	await call('lists.addShoppingItemsDefault', 'POST', '/lists/shopping/items', {
+		items: [{ title: 'Butter' }],
+	});
 	const [milk, bread, apples] = fx.added.items;
 	await call('lists.patchShoppingItem', 'PATCH', `/lists/shopping/items/${milk.id}`, {
 		quantity: '2 l',
@@ -523,6 +526,7 @@ const FULL: Record<string, number> = {
 	'lists.listShoppingLists': 200,
 	'lists.listShoppingItems': 200,
 	'lists.addShoppingItems': 201,
+	'lists.addShoppingItemsDefault': 201,
 	'lists.patchShoppingItem': 200,
 	'lists.completeShoppingItem': 200,
 	'lists.uncheckShoppingItem': 200,
@@ -1363,6 +1367,7 @@ describe('chores and the board', () => {
 			choreId,
 			memberId: adminId,
 			dueDate: '2026-10-20',
+			undoneAt: null,
 		});
 		expect(done.body.result.chore.nextDue).toBe('2026-10-21');
 		// A stale tap changes nothing, and says so.
@@ -1373,9 +1378,7 @@ describe('chores and the board', () => {
 		expect(stale.body.result).toMatchObject({ completion: null, reason: 'already_done' });
 
 		const detail = await pub(admin, 'GET', `/chores/${choreId}`);
-		expect(detail.body.item.history).toEqual([
-			expect.objectContaining({ id: done.body.result.completion.id }),
-		]);
+		expect(detail.body.item.history).toEqual([done.body.result.completion]);
 		const undone = await pub(
 			admin,
 			'POST',
@@ -1483,6 +1486,65 @@ describe('the shopping lists', () => {
 	});
 });
 
+describe('adding to the default shopping list', () => {
+	it('adds without naming a list, to the list made on install', async () => {
+		const { cookie } = await setup();
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		const listId = (await pub(admin, 'GET', '/lists/shopping/lists')).body.items[0].id as string;
+		const added = await pub(admin, 'POST', '/lists/shopping/items', {
+			items: [{ title: 'Milk', quantity: '2 l' }],
+		});
+		expect(added.status).toBe(201);
+		expect(added.body.result.listId).toBe(listId);
+		expect(added.body.result.items[0]).toMatchObject({ title: 'Milk', quantity: '2 l', listId });
+		// A list named in the body is not what this operation reads.
+		const named = await pub(admin, 'POST', '/lists/shopping/items', {
+			listId: 'shop_list_00000000-0000-7000-8000-000000000099',
+			items: [{ title: 'Bread' }],
+		});
+		expect(named.status).toBe(201);
+		expect(named.body.result.listId).toBe(listId);
+		const items = await pub(admin, 'GET', `/lists/shopping/lists/${listId}/items`);
+		expect(items.body.items.map((i: { title: string }) => i.title).toSorted()).toEqual([
+			'Bread',
+			'Milk',
+		]);
+	});
+
+	it('suggests when the app only suggests, and refuses a role that may not add', async () => {
+		const { cookie } = await setup();
+		const suggest = (await addApp(cookie, { roleId: 'admin', mode: 'suggest' })).secret;
+		const drafted = await pub(suggest, 'POST', '/lists/shopping/items', {
+			items: [{ title: 'Eggs' }],
+		});
+		expect(drafted.status).toBe(202);
+		const guest = (await addApp(cookie, { roleId: 'guest' })).secret;
+		const refused = await pub(guest, 'POST', '/lists/shopping/items', {
+			items: [{ title: 'Eggs' }],
+		});
+		expect(refused.status).toBe(403);
+	});
+});
+
+describe('the calendar range', () => {
+	it('refuses a range of more than 62 days, and the document says so', async () => {
+		const { cookie } = await setup();
+		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
+		const ok = await pub(admin, 'GET', '/calendar/occurrences?from=2026-01-01&to=2026-03-04');
+		expect(ok.status).toBe(200);
+		const long = await pub(admin, 'GET', '/calendar/occurrences?from=2026-01-01&to=2026-03-05');
+		expect(long.status).toBe(400);
+		expect(long.body.error.code).toBe('bad_request');
+		const committed = JSON.parse(
+			readFileSync(join(import.meta.dirname, '../public-openapi.json'), 'utf8'),
+		);
+		expect(committed.paths['/calendar/occurrences'].get.summary).toContain('62 days');
+		expect(readFileSync(join(import.meta.dirname, '../../../docs/guide/api.md'), 'utf8')).toContain(
+			'62 days',
+		);
+	});
+});
+
 describe('the public document', () => {
 	const committed = JSON.parse(
 		readFileSync(join(import.meta.dirname, '../public-openapi.json'), 'utf8'),
@@ -1564,6 +1626,46 @@ describe('the public document', () => {
 			expect(names).toContain(expected);
 	});
 
+	it('takes the list of a shopping item from the path, which cannot be left out', () => {
+		const named = committed.paths['/lists/shopping/lists/{listId}/items'].post;
+		const listId = named.parameters.find((p: { name: string }) => p.name === 'listId');
+		expect(listId).toMatchObject({ in: 'path', required: true });
+		expect(listId.description).not.toMatch(/omit/i);
+		const request = committed.components.schemas.ListsAddShoppingItemsRequest;
+		expect(request.properties).not.toHaveProperty('listId');
+		// The default list has an address of its own, and no list in it.
+		const standard = committed.paths['/lists/shopping/items'].post;
+		expect(standard.operationId).toBe('lists.addShoppingItemsDefault');
+		expect(standard.parameters.map((p: { in: string }) => p.in)).not.toContain('path');
+		expect(
+			committed.components.schemas.ListsAddShoppingItemsDefaultRequest.properties,
+		).not.toHaveProperty('listId');
+	});
+
+	it('describes nested fields for people, in each operation that has them', () => {
+		const quantity = (name: string) =>
+			committed.components.schemas[name].properties.items.items.properties.quantity.description;
+		expect(quantity('ListsAddShoppingItemsRequest')).toBe(
+			quantity('ListsAddShoppingItemsDefaultRequest'),
+		);
+		expect(quantity('ListsAddShoppingItemsRequest')).toContain('a dozen');
+		const tags = committed.components.schemas.CalendarReplaceEventRequest.properties.event
+			.properties.tags.description as string;
+		expect(tags).toContain('at most 5');
+	});
+
+	it('gives a chore completion one shape wherever it is named', () => {
+		const schemas = committed.components.schemas;
+		expect(schemas.ChoreCompletion.required).toContain('undoneAt');
+		// A nullable schema is written out in place, with the same fields as the named one.
+		const inline = schemas.ChoreCompleted.properties.completion;
+		expect(Object.keys(inline.properties)).toEqual(Object.keys(schemas.ChoreCompletion.properties));
+		expect(inline.required).toEqual(schemas.ChoreCompletion.required);
+		expect(schemas.ChoreDetail.properties.history.items).toEqual({
+			$ref: '#/components/schemas/ChoreCompletion',
+		});
+	});
+
 	it('lists every error code as an enum, and describes the error in our own shape', () => {
 		const codes = committed.components.schemas.ErrorCode.enum as string[];
 		for (const code of Object.keys(ERROR_HTTP_STATUS)) expect(codes).toContain(code);
@@ -1576,7 +1678,7 @@ describe('the public document', () => {
 	it('speaks to programs: no word of the AI tools the actions are also written for', () => {
 		const text = JSON.stringify(committed);
 		expect(text).not.toMatch(
-			/calendar\.find|lists\.shoppingList|lists\.openTasks|lists\.changeTask|calendar\.changeEvent|Required for you|reviewer|\bAI\b|\bmodel\b/,
+			/calendar\.find|lists\.shoppingList|lists\.openTasks|lists\.changeTask|calendar\.changeEvent|Required for you|do not call|this tool|, for the AI|reviewer|\bAI\b|\bmodel\b|\btools?\b|instead of inventing|Never a word/,
 		);
 		// Nothing of the app's own API leaks in.
 		expect(text).not.toContain('/api/v1');

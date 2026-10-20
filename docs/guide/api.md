@@ -68,7 +68,8 @@ A key may make 300 requests a minute. Wrong keys are counted per address: after 
 ## Reading
 
 ```bash
-# Events between two days (inclusive), repeating events expanded
+# Events between two days (inclusive), repeating events expanded; `to` may be at most 62 days
+# after `from`, and a longer range is refused with `bad_request`
 curl -H "Authorization: Bearer $KEY" "$FAMOS/calendar/occurrences?from=2026-10-20&to=2026-10-31"
 
 # One event
@@ -101,9 +102,11 @@ One thing (an event, a task) has the `ETag` of its version, such as `"v3"`.
 curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"title":"Dentist","date":"2026-10-21","startTime":"09:00"}' $FAMOS/calendar/events
 
-# Add shopping items; tick one off and put it back
+# Add shopping items to a list, or to the default list; tick one off and put it back
 curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"items":[{"title":"Milk","quantity":"2 l"}]}' $FAMOS/lists/shopping/lists/shop_list_0192…/items
+curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+  -d '{"items":[{"title":"Bread"}]}' $FAMOS/lists/shopping/items
 curl -X POST -H "Authorization: Bearer $KEY" $FAMOS/lists/shopping/items/shop_item_0192…/complete
 curl -X POST -H "Authorization: Bearer $KEY" $FAMOS/lists/shopping/items/shop_item_0192…/uncheck
 

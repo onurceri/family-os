@@ -133,6 +133,23 @@ const projectDeleted = (name: string, id: z.ZodType<string>) =>
 		(result: { id: string }) => ({ id: result.id }) as never,
 	);
 
+const addedOutput = apiOutput(
+	z
+		.object({
+			listId: ListId,
+			items: z.array(PublicShoppingItemSchema),
+			addedIds: z
+				.array(ItemId)
+				.describe('The items this call created; the others were already there'),
+		})
+		.meta({ id: 'ShoppingItemsAdded' }),
+	(result: { listId: string; items: ShoppingItem[]; addedIds: string[] }, { timeZone }) => ({
+		listId: result.listId,
+		items: result.items.map((i) => projectItemOf(i, timeZone)),
+		addedIds: result.addedIds,
+	}),
+);
+
 export const api = {
 	listShoppingLists: defineApi({
 		name: 'lists.listShoppingLists',
@@ -161,25 +178,30 @@ export const api = {
 			'Add items to a list. An item already on it is not repeated (a new quantity replaces the old); a bought one comes back',
 		omit: ['list'],
 		describe: {
+			listId: 'The list to add to',
+			'items.quantity':
+				'How much, as written: "2 kg", "3" or "a dozen"; leave it out when there is no amount',
+			'items.category': 'The store section; without it the section last used for this product',
 			whenOnList:
 				'What happens to an item already on the list and not bought: `update` (the default) takes the new quantity and category, `keep` leaves it as it is',
 		},
-		output: apiOutput(
-			z
-				.object({
-					listId: ListId,
-					items: z.array(PublicShoppingItemSchema),
-					addedIds: z
-						.array(ItemId)
-						.describe('The items this call created; the others were already there'),
-				})
-				.meta({ id: 'ShoppingItemsAdded' }),
-			(result: { listId: string; items: ShoppingItem[]; addedIds: string[] }, { timeZone }) => ({
-				listId: result.listId,
-				items: result.items.map((i) => projectItemOf(i, timeZone)),
-				addedIds: result.addedIds,
-			}),
-		),
+		output: addedOutput,
+	}),
+	addShoppingItemsDefault: defineApi({
+		name: 'lists.addShoppingItemsDefault',
+		method: 'post',
+		path: '/shopping/items',
+		summary:
+			'Add items to the default shopping list, the one made when FamilyOS was installed. An item already on it is not repeated (a new quantity replaces the old); a bought one comes back',
+		omit: ['list', 'listId'],
+		describe: {
+			'items.quantity':
+				'How much, as written: "2 kg", "3" or "a dozen"; leave it out when there is no amount',
+			'items.category': 'The store section; without it the section last used for this product',
+			whenOnList:
+				'What happens to an item already on the list and not bought: `update` (the default) takes the new quantity and category, `keep` leaves it as it is',
+		},
+		output: addedOutput,
 	}),
 	completeShoppingItem: defineApi({
 		name: 'lists.completeShoppingItem',
@@ -239,6 +261,7 @@ export const api = {
 		method: 'post',
 		path: '/tasks',
 		summary: 'Add a task',
+		describe: { recurrence: 'How the task repeats; needs a due date, which is the first one' },
 		output: projectTask,
 	}),
 	replaceTask: defineApi({

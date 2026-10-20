@@ -26,6 +26,7 @@ const PublicCompletionSchema = z
 		memberId: MemberId,
 		dueDate: ApiDateSchema.describe('The due date it was done for'),
 		doneAt: ApiInstantSchema,
+		undoneAt: ApiInstantSchema.nullable().describe('When it was taken back; null while it stands'),
 	})
 	.meta({ id: 'ChoreCompletion' });
 
@@ -57,9 +58,7 @@ export const PublicChoreSchema = z
 	.meta({ id: 'Chore' });
 
 export const PublicChoreDetailSchema = PublicChoreSchema.extend({
-	history: z
-		.array(PublicCompletionSchema.extend({ undoneAt: ApiInstantSchema.nullable() }))
-		.describe('Who did it lately, newest first'),
+	history: z.array(PublicCompletionSchema).describe('Who did it lately, newest first'),
 }).meta({ id: 'ChoreDetail' });
 
 function projectChoreOf(chore: Chore, timeZone: string) {
@@ -134,7 +133,11 @@ export const api = {
 				completion:
 					result.completion === null
 						? null
-						: { ...result.completion, doneAt: apiInstant(result.completion.doneAt, timeZone) },
+						: {
+								...result.completion,
+								doneAt: apiInstant(result.completion.doneAt, timeZone),
+								undoneAt: null,
+							},
 				...(result.reason !== undefined && { reason: result.reason }),
 			}),
 		),

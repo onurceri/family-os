@@ -10,6 +10,7 @@ import {
 } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { describeField } from '../src/api-operations.ts';
 import { buildRegistry } from '../src/registry.ts';
 import { defineTestExtension } from './harness.ts';
 
@@ -126,6 +127,39 @@ describe('what extensions offer on the public API', () => {
 			'garage.parkCar',
 			'garage.unparkCar',
 		]);
+	});
+
+	it.each([
+		[
+			'a description of a field that is not there',
+			() => build([change({ describe: { 'name.first': 'x' } })]),
+			/"name\.first" is not a field/,
+		],
+		[
+			'a description of a nested field that is not there',
+			() => build([change({ describe: { 'nope.first': 'x' } })]),
+			/"nope\.first" is not a field/,
+		],
+	])('refuses %s', (_name, make, message) => {
+		expect(make).toThrow(message);
+	});
+
+	it('describes a field inside another, in objects, arrays and optionals, and keeps the checks', () => {
+		const schema = z.object({
+			items: z.array(z.object({ quantity: z.string().max(3).nullable().optional() })).min(1),
+		});
+		const described = describeField(schema, ['items', 'quantity'], 'How much') as z.ZodObject;
+		const quantity = (described.shape.items as z.ZodArray).element as z.ZodObject;
+		expect(z.toJSONSchema(described).properties).toMatchObject({
+			items: { items: { properties: { quantity: { description: 'How much' } } } },
+		});
+		expect(quantity.shape.quantity).toBeDefined();
+		expect(described.safeParse({ items: [{ quantity: 'abcd' }] }).success).toBe(false);
+		expect(described.safeParse({ items: [] }).success).toBe(false);
+		expect(described.safeParse({ items: [{}] }).success).toBe(true);
+		// The schema it started from is untouched.
+		expect(JSON.stringify(z.toJSONSchema(schema))).not.toContain('How much');
+		expect(describeField(schema, ['items', 'nope'], 'x')).toBeNull();
 	});
 
 	it.each([

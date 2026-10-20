@@ -26,6 +26,40 @@ const PARAM = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
 export const publicPath = (extension: string, path: string): string =>
 	path === '/' ? `/${extension}` : `/${extension}${path}`;
 
+/**
+ * The schema with the field at `path` described for the public document. A path goes through
+ * objects by field name and through arrays by none (`items.quantity` is the `quantity` of each
+ * item); null when the path leads nowhere. The checks of every schema on the way stay as they were.
+ */
+export function describeField(
+	schema: z.ZodType,
+	path: readonly string[],
+	text: string,
+): z.ZodType | null {
+	if (path.length === 0) return schema.describe(text);
+	if (
+		schema instanceof z.ZodOptional ||
+		schema instanceof z.ZodNullable ||
+		schema instanceof z.ZodDefault
+	) {
+		const inner = describeField(schema.unwrap() as z.ZodType, path, text);
+		return inner && schema.clone({ ...schema.def, innerType: inner } as never);
+	}
+	if (schema instanceof z.ZodArray) {
+		const element = describeField(schema.element as z.ZodType, path, text);
+		return element && schema.clone({ ...schema.def, element } as never);
+	}
+	if (schema instanceof z.ZodObject) {
+		const [key, ...rest] = path as [string, ...string[]];
+		const field = (schema.shape as Record<string, z.ZodType>)[key];
+		const described = field && describeField(field, rest, text);
+		return described
+			? schema.clone({ ...schema.def, shape: { ...schema.shape, [key]: described } } as never)
+			: null;
+	}
+	return null;
+}
+
 /** The names of the `{param}` parts of a path. */
 export const pathParams = (path: string): string[] =>
 	[...path.matchAll(PARAM)].map((m) => m[1] as string);
@@ -83,10 +117,13 @@ export function collectApiOperations(
 					...pathParams(exposure.path).map((name) => exposure.params?.[name] ?? name),
 					...Object.keys(exposure.fixed ?? {}),
 					...(exposure.omit ?? []),
-					...Object.keys(exposure.describe ?? {}),
+					...Object.keys(exposure.describe ?? {}).filter((key) => !key.includes('.')),
 				];
 				for (const name of fields)
 					if (!(name in shape)) refuse(ext.id, `${where}: "${name}" is not a field of its input`);
+				for (const [key, text] of Object.entries(exposure.describe ?? {}))
+					if (key.includes('.') && !describeField(action.input, key.split('.'), text))
+						refuse(ext.id, `${where}: "${key}" is not a field of its input`);
 				for (const name of exposure.omit ?? [])
 					if (!shape[name]?.safeParse(undefined).success)
 						refuse(

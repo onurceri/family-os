@@ -160,7 +160,7 @@ export const api = {
 		method: 'get',
 		path: '/occurrences',
 		summary:
-			'The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included',
+			'The occurrences of events between two days (inclusive), repeating events expanded, subscribed calendars included. `to` may be at most 62 days after `from`; a longer range is refused with `bad_request`',
 		output: projectOccurrences,
 	}),
 	getEvent: defineApi({
@@ -200,6 +200,7 @@ export const api = {
 		summary:
 			'Replace the whole event with what is sent (every field; null for one left empty). Needs `If-Match`',
 		describe: {
+			'event.tags': 'Short labels, at most 5; the family’s existing ones are reused by name',
 			occurrence: OCCURRENCE_DOC,
 			keepRule:
 				'True to keep a repeat rule that `recurrence` cannot say (the event shows it as `rrule`); without it an event sent with no `recurrence` stops repeating',

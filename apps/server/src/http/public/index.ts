@@ -2,6 +2,7 @@ import {
 	type ApiOperation,
 	type AppCaller,
 	type CoreTables,
+	describeField,
 	IDEMPOTENCY_KEY,
 	type Kernel,
 	pathParams,
@@ -375,11 +376,17 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		const fromPath = new Set(names.map((n) => fieldOfParam(op, n)));
 		const fixed = exposure.fixed ?? {};
 		const skipped = new Set([...fromPath, ...Object.keys(fixed), ...(exposure.omit ?? [])]);
-		const own: Record<string, z.ZodType> = {};
+		let own: Record<string, z.ZodType> = {};
 		for (const [field, schema] of Object.entries(shape)) {
 			if (skipped.has(field)) continue;
 			const text = exposure.describe?.[field];
 			own[field] = text ? schema.describe(text) : schema;
+		}
+		// A description for a field inside another (`items.quantity`) goes in the same way.
+		for (const [key, text] of Object.entries(exposure.describe ?? {})) {
+			if (!key.includes('.')) continue;
+			const described = describeField(z.object(own), key.split('.'), text);
+			if (described instanceof z.ZodObject) own = described.shape as Record<string, z.ZodType>;
 		}
 		const inQuery = exposure.method === 'delete';
 		const hasOwn = Object.keys(own).length > 0;
@@ -393,8 +400,18 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 				timeZone: z.string().describe('The family time zone'),
 			})
 			.meta({ id: `${P}Result` });
+		// A part of the path cannot be left out, whatever the action's field says, and it is described
+		// for the program as the body's fields are.
+		const pathPart = (name: string): z.ZodType => {
+			const field = fieldOfParam(op, name);
+			let schema = shape[field] as z.ZodType;
+			while (schema instanceof z.ZodOptional || schema instanceof z.ZodDefault)
+				schema = schema.unwrap() as z.ZodType;
+			const text = exposure.describe?.[field];
+			return text ? schema.describe(text) : schema;
+		};
 		const pathSchema = names.length
-			? z.object(Object.fromEntries(names.map((n) => [n, shape[fieldOfParam(op, n)] as z.ZodType])))
+			? z.object(Object.fromEntries(names.map((n) => [n, pathPart(n)])))
 			: null;
 		api.openAPIRegistry.registerPath({
 			method: exposure.method,

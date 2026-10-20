@@ -75,7 +75,8 @@ export interface ApiExposure {
 	readonly omit?: readonly string[];
 	/**
 	 * What a field is for, written for the document: the action's own descriptions are written for
-	 * a model and name its tools.
+	 * a model and name its tools. A field inside another is named by its path (`items.quantity`
+	 * describes the `quantity` of each of `items`).
 	 */
 	readonly describe?: Readonly<Record<string, string>>;
 }

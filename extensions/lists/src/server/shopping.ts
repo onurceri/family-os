@@ -136,7 +136,7 @@ const MergedItemSchema = z.object({
 
 export const addShoppingItems = defineAction({
 	id: 'lists.addShoppingItems',
-	expose: api.addShoppingItems,
+	expose: [api.addShoppingItems, api.addShoppingItemsDefault],
 	offline: true,
 	title: 'Add items to a shopping list',
 	draftTitle: 'lists:draft_title_add_shopping_items',
