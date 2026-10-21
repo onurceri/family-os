@@ -1103,19 +1103,20 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// Domain errors (validation, permissions, conflicts) leave the draft untouched.
 			if (isFamosError(error)) throw error;
 			logger.error({ err: error, draftId }, 'applying draft failed');
-			await coreDb()
-				.updateTable('core_drafts')
-				.set({
-					status: 'failed',
-					error: error instanceof Error ? error.message : String(error),
-					updated_at: clock.now(),
-				})
-				.where('id', '=', draftId)
-				.execute();
-			await bus.publish(draftUpdated.name, {
-				draftId,
-				status: 'failed',
-				forMember: draft.for_member,
+			// Its own unit of work: the apply was rolled back, and the new state of the draft reaches
+			// the change log with the write.
+			await unitOfWork(systemActor('core'), async (uow) => {
+				await uow.db
+					.withTables<CoreTables>()
+					.updateTable('core_drafts')
+					.set({
+						status: 'failed',
+						error: error instanceof Error ? error.message : String(error),
+						updated_at: clock.now(),
+					})
+					.where('id', '=', draftId)
+					.execute();
+				uow.emit(draftUpdated, { draftId, status: 'failed', forMember: draft.for_member });
 			});
 			throw new FamosError('unavailable', 'Applying the draft failed; it can be retried');
 		}
@@ -1735,24 +1736,33 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			])
 			.where('status', 'in', [...WAITING_STATUSES])
 			.execute();
-		const expired: { id: string; forMember: string | null }[] = [];
+		let expired = 0;
 		for (const draft of waiting.filter(passed)) {
 			const now = clock.now();
-			// Only if still waiting: a person may have decided it meanwhile.
-			const done = await coreDb()
-				.updateTable('core_drafts')
-				.set({ status: 'expired', decided_at: now, updated_at: now })
-				.where('id', '=', draft.id)
-				.where('status', 'in', [...WAITING_STATUSES])
-				.executeTakeFirst();
-			if (Number(done.numUpdatedRows) === 0) continue;
-			expired.push({ id: draft.id, forMember: draft.for_member });
+			// Only if still waiting (a person may have decided it meanwhile); the write and its
+			// entry in the change log are one transaction.
+			const done = await unitOfWork(systemActor('core'), async (uow) => {
+				const result = await uow.db
+					.withTables<CoreTables>()
+					.updateTable('core_drafts')
+					.set({ status: 'expired', decided_at: now, updated_at: now })
+					.where('id', '=', draft.id)
+					.where('status', 'in', [...WAITING_STATUSES])
+					.executeTakeFirst();
+				if (Number(result.numUpdatedRows) === 0) return false;
+				uow.emit(draftUpdated, {
+					draftId: draft.id,
+					status: 'expired',
+					forMember: draft.for_member,
+				});
+				return true;
+			});
+			if (!done) continue;
+			expired++;
 			for (const memberId of await settleWaitingNotices(deps.db, draft))
 				await bus.publish(notificationRead.name, { memberId });
 		}
-		for (const { id, forMember } of expired)
-			await bus.publish(draftUpdated.name, { draftId: id, status: 'expired', forMember });
-		return expired.length;
+		return expired;
 	}
 
 	return {

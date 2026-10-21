@@ -169,6 +169,38 @@ describe('suggestions about a day that has passed', () => {
 	});
 });
 
+describe('expiring a suggestion in the change log', () => {
+	const display = (capabilities: string[]): Actor => ({
+		kind: 'display',
+		deviceId: 'device_1',
+		capabilities,
+		showNames: false,
+	});
+
+	it('is told to those who list suggestions, as a change after the cursor', async () => {
+		const yesterday = await propose('Dinner', '2025-12-31');
+		const seen = await k.changes.head();
+		await k.runner.expirePassed();
+		const page = await k.changes.since(seen, admin.actor);
+		expect(page.changes.map((c) => [c.extension, c.entity, c.id, c.op])).toEqual([
+			['core', 'draft', yesterday, 'upsert'],
+		]);
+		// A display that holds neither capability of the audience hears nothing.
+		const none = await k.changes.since(seen, display([]));
+		expect(none.changes).toEqual([]);
+		expect(none.cursor).toBe(page.cursor);
+		expect((await k.changes.since(seen, display(['core.drafts.waiting']))).changes).toHaveLength(1);
+	});
+
+	it('leaves no row for a draft a person decided meanwhile', async () => {
+		const yesterday = await propose('Dinner', '2025-12-31');
+		await k.runner.rejectDraft(yesterday, admin.actor);
+		const seen = await k.changes.head();
+		await k.runner.expirePassed();
+		expect((await k.changes.since(seen, admin.actor)).changes).toEqual([]);
+	});
+});
+
 describe('the day a suggestion is about, for the words that tell of it', () => {
 	const late = defineAction({
 		id: 'plans.addTodo',

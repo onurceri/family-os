@@ -129,3 +129,16 @@ describe('tasks in the change log', () => {
 		expect(await version()).toBe(1);
 	});
 });
+
+describe('taking back a completion in the change log', () => {
+	it('tells a reader the task changed, as the finished record is gone', async () => {
+		const task = await applied<{ id: string }>('lists.addTask', { title: 'Call the school' });
+		await applied('lists.completeTask', { id: task.id });
+		const seen = await k.changes.head();
+		await applied('lists.reopenTask', { id: task.id });
+		const page = await k.changes.since(seen, admin.actor);
+		expect(page.changes.map((c) => [c.entity, c.id, c.op])).toEqual([['task', task.id, 'upsert']]);
+		const display: Actor = { kind: 'display', deviceId: 'd1', capabilities: [], showNames: false };
+		expect((await k.changes.since(seen, display)).changes).toEqual([]);
+	});
+});

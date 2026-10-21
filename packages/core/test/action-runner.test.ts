@@ -237,7 +237,12 @@ describe('drafts', () => {
 			{ kind: 'ai', mode: 'share', source: 'inbox' },
 		);
 		if (failing.status !== 'drafted') throw new Error('expected draft');
+		// A draft that failed changed state for readers too, and the change log hears of it.
+		const seen = await k.changes.head();
 		expect(await codeOf(k.runner.approveDraft(failing.draftId, admin))).toBe('unavailable');
+		expect((await k.changes.since(seen, admin)).changes.map((c) => [c.entity, c.id, c.op])).toEqual(
+			[['draft', failing.draftId, 'upsert']],
+		);
 
 		const domain = await k.runner.invoke(
 			'notes.conflict',

@@ -66,6 +66,18 @@ describe('the calendar in the change log', () => {
 		expect(page.changes.map((c) => [c.id, c.op])).toEqual([[id, 'upsert']]);
 	});
 
+	it('tells a reader which events a deleted tag was taken from', async () => {
+		const id = await create({ tags: ['School', 'Swim'] });
+		const other = await create({ title: 'Other', tags: ['Swim'] });
+		const seen = (await k.changes.head()) as number;
+		await k.runner.invoke('calendar.deleteTag', { name: 'School' }, admin.actor);
+		const page = await k.changes.since(seen, admin.actor);
+		expect(page.changes.map((c) => [c.id, c.op])).toEqual([[id, 'upsert']]);
+		expect(page.changes.some((c) => c.id === other)).toBe(false);
+		const display: Actor = { kind: 'display', deviceId: 'd1', capabilities: [], showNames: false };
+		expect((await k.changes.since(seen, display)).changes).toEqual([]);
+	});
+
 	it('refuses a write made on a version that has moved on', async () => {
 		const id = await create({ tags: ['School'] });
 		await k.runner.invoke('calendar.updateTag', { name: 'School', newName: 'Class' }, admin.actor);

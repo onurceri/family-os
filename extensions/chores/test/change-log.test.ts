@@ -1,3 +1,4 @@
+import type { Actor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Chore } from '../src/contract/index.ts';
 import { tables } from '../src/server/store.ts';
@@ -52,5 +53,19 @@ describe('chores in the change log', () => {
 		expect(afterPeople).toBeGreaterThan(created);
 		await applied(k, 'chores.markDone', { id: chore.id, dueDate: chore.nextDue }, bora.actor);
 		expect(await versionOf(chore.id)).toBeGreaterThan(afterPeople);
+	});
+});
+
+describe('the people of a chore in the change log', () => {
+	it('tells a reader the chore changed when its people were rewritten, and no one else', async () => {
+		const chore = await create();
+		const seen = await k.changes.head();
+		await applied(k, 'chores.setAssignees', { id: chore.id, memberIds: [bora.id] }, ayse.actor);
+		const page = await k.changes.since(seen, ayse.actor);
+		expect(page.changes.map((c) => [c.entity, c.id, c.op])).toEqual([
+			['chore', chore.id, 'upsert'],
+		]);
+		const display: Actor = { kind: 'display', deviceId: 'd1', capabilities: [], showNames: false };
+		expect((await k.changes.since(seen, display)).changes).toEqual([]);
 	});
 });

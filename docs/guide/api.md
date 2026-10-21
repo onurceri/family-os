@@ -179,7 +179,7 @@ curl -H "Authorization: Bearer $KEY" $FAMOS/changes                 # {"changes"
 curl -H "Authorization: Bearer $KEY" "$FAMOS/changes?since=812"
 ```
 
-The answer lists the things that changed since the cursor, once each: `{ "extension": "calendar", "entity": "event", "id": "cal_event_…", "op": "upsert" }`; `upsert` means read it again, `delete` means it is gone for you. Ignore a kind of thing you do not know. Pass the new `cursor` next time; if `more` is true, ask again at once. You hear only of what this key may see. Changes are kept for 30 days; a cursor older than that answers `410 gone`, and the program reads everything again.
+The answer lists the things that changed since the cursor, once each: `{ "extension": "calendar", "entity": "event", "id": "cal_event_…", "op": "upsert" }`; `upsert` means read it again, `delete` means it is gone for you. A subscribed calendar changes as a whole: a `subscription` that changed or went means read the occurrences again. Suggestions that expired or failed show as `draft` changes. Ignore a kind of thing you do not know. Pass the new `cursor` next time; if `more` is true, ask again at once. You hear only of what this key may see. Changes are kept for 30 days; a cursor older than that answers `410 gone`, and the program reads everything again.
 
 ## Acting for a member
 
