@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Bin collection and parents' evening",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.eventChange",

@@ -10,7 +10,6 @@
 			"output": {
 				"label": "E27 light bulbs bought",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.bought",

@@ -13,7 +13,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Dentist",
+						"title": "Dentist appointment",
 						"date": {
 							"text": "Wednesday, 14.10.2026",
 							"day": 14,
@@ -31,7 +31,7 @@
 						"kind": "lists.task",
 						"title": "Cancel dentist appointment",
 						"date": {
-							"text": "12.10.2026, 12:00",
+							"text": "12.10.2026",
 							"day": 12,
 							"month": 10,
 							"year": 2026

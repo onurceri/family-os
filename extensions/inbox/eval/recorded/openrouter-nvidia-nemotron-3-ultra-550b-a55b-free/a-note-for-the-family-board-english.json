@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Water off Thursday",
+				"label": "Water off notice",
 				"intent": "actionable",
 				"addressed": [
 					"Can you put this on the board for everyone: the water is off on Thursday from 9 to 12, so fill some bottles the night before."

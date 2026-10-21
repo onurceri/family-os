@@ -14,15 +14,15 @@
 					{
 						"kind": "calendar.event",
 						"title": "Elif'in doğum günü partisi",
-						"people": [
-							"Deniz"
-						],
 						"date": {
 							"text": "Cuma günü",
 							"weekday": 5
 						},
 						"time": "15:00",
 						"timeText": "15:00",
+						"people": [
+							"Deniz"
+						],
 						"quote": "Cuma günü saat 15:00'te Elif'in doğum günü partisine Deniz de davetli"
 					},
 					{

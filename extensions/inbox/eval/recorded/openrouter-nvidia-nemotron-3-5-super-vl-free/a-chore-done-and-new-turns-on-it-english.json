@@ -8,14 +8,18 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Bins out and new bin turns",
+				"label": "Bins taken out and turns changed",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "chores.done",
 						"target": "Take out the bins",
 						"forMe": true,
-						"quote": "I took the bins out this morning"
+						"date": {
+							"text": "this morning",
+							"inDays": 0
+						},
+						"quote": "I took the bins out this morning."
 					},
 					{
 						"kind": "chores.turns",
@@ -24,7 +28,7 @@
 							"Ivy",
 							"Leo"
 						],
-						"quote": "From now on Ivy and Leo take turns on the bins, Ivy first"
+						"quote": "From now on Ivy and Leo take turns on the bins, Ivy first."
 					}
 				]
 			}

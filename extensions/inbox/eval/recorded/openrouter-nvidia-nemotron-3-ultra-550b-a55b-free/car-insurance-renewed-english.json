@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Car insurance renewed",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "records.dutyDone",
@@ -27,7 +28,7 @@
 							"month": 10,
 							"year": 2027
 						},
-						"quote": "Your payment was received and your comprehensive car insurance policy for your Golf has been renewed. New period of cover: 20 October 2026 to 19 October 2027."
+						"quote": "your car insurance has been renewed. New period of cover: 20 October 2026 to 19 October 2027."
 					}
 				]
 			}

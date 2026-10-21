@@ -13,7 +13,7 @@
 				"mentions": [
 					{
 						"kind": "lists.task",
-						"title": "Swim bag for Thursday",
+						"title": "Take the swim bag",
 						"date": {
 							"text": "Thursday",
 							"weekday": 4
@@ -21,7 +21,7 @@
 						"quote": "swim bag for thursday pls!!"
 					},
 					{
-						"kind": "calendar.event",
+						"kind": "lists.task",
 						"title": "Dentist",
 						"date": {
 							"text": "2nd nov",

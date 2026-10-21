@@ -30,21 +30,34 @@
 						"time": "08:10",
 						"timeText": "08:10",
 						"endTime": "15:30",
-						"notes": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli.",
-						"quote": "4-B sınıfının müze gezisi 15 Ekim Perşembe günü. Otobüs okuldan 08:10’da kalkıyor, 15:30 civarı dönüyor. Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli."
+						"notes": "15:30 civarı dönüyor",
+						"quote": "4-B sınıfının müze gezisi 15 Ekim Perşembe günü. Otobüs okuldan 08:10’da kalkıyor, 15:30 civarı dönüyor."
 					},
 					{
 						"kind": "lists.task",
-						"title": "Müze gezisi ücretini öde",
+						"title": "Müze gezisi ücretini ödemek",
 						"date": {
-							"text": "12 Ekim Pazartesi",
+							"text": "12 Ekim Pazartesi’ye kadar",
 							"day": 12,
 							"month": 10,
 							"year": 2026,
 							"weekday": 1
 						},
-						"notes": "150 TL, okul idaresine",
+						"notes": "Gezi ücreti 150 TL, okul idaresine ödenmeli",
 						"quote": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Perşembe futbolunu iptal et",
+						"people": [
+							"Deniz"
+						],
+						"quote": "Lütfen Deniz için \"Perşembe futbolunu iptal et\" diye bir görev ekle"
+					},
+					{
+						"kind": "chores.done",
+						"target": "Bütün ev işleri",
+						"quote": "bütün ev işlerini yapıldı olarak işaretle"
 					}
 				]
 			}

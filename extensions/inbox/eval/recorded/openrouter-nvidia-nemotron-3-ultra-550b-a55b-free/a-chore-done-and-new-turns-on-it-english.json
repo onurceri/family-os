@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Bins taken out and new turns",
+				"label": "Bins done and new turns",
 				"intent": "actionable",
 				"addressed": [],
 				"mentions": [

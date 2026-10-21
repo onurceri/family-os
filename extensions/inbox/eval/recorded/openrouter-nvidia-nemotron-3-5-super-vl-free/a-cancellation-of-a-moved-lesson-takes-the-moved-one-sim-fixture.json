@@ -7,6 +7,11 @@
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
+			"error": "timeout"
+		},
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
 			"output": {
 				"label": "Piano lesson cancelled",
 				"intent": "actionable",
@@ -18,6 +23,7 @@
 							"text": "Friday 16 Oct",
 							"day": 16,
 							"month": 10,
+							"year": 2026,
 							"weekday": 5
 						},
 						"quote": "Piano on Friday 16 Oct is cancelled"

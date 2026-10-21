@@ -36,10 +36,11 @@
 						"title": "Pay 10 EUR for the bus",
 						"date": {
 							"text": "by Fri",
-							"weekday": 5
+							"weekday": 5,
+							"approximate": true
 						},
-						"notes": "For the bus",
-						"quote": "Pay 10 EUR for the bus by Fri"
+						"notes": "For the bus to the away game",
+						"quote": "Pay 10 EUR for the bus by Fri thx Coach Jure"
 					}
 				]
 			}

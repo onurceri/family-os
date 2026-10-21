@@ -28,7 +28,7 @@
 						"quote": "piano recital Sat 14 Nov 15:00 music school, practise every day pls. no phones in the hall. bring blue music book"
 					},
 					{
-						"kind": "chores.chore",
+						"kind": "lists.task",
 						"title": "Practise piano",
 						"repeat": {
 							"every": "day"

@@ -19,9 +19,6 @@
 							"text": "tonite",
 							"inDays": 0
 						},
-						"repeat": {
-							"every": "day"
-						},
 						"quote": "bins!! tonite?"
 					}
 				]

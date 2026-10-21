@@ -13,11 +13,10 @@
 				"mentions": [
 					{
 						"kind": "calendar.eventCancel",
-						"target": "Swim lesson Ivy",
+						"target": "Swim lesson",
 						"date": {
 							"text": "this Saturday",
-							"weekday": 6,
-							"inDays": 4
+							"weekday": 6
 						},
 						"quote": "swim lesson is cancelled this Saturday"
 					}

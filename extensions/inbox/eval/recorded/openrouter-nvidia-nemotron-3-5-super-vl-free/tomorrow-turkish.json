@@ -16,6 +16,7 @@
 						"title": "Plumber",
 						"date": {
 							"text": "Yarın sabah",
+							"weekday": 3,
 							"inDays": 1
 						},
 						"time": "09:00",

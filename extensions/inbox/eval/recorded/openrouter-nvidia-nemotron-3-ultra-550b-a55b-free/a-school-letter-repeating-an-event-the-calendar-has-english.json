@@ -46,14 +46,14 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay trip cost 14 EUR through school e-office",
+						"title": "Pay trip cost 14 EUR",
 						"date": {
 							"text": "by 23 October",
 							"day": 23,
 							"month": 10,
 							"weekday": 5
 						},
-						"notes": "Cost: 14 EUR, payable through the school e-office",
+						"notes": "Payable through the school e-office",
 						"detailOf": 0,
 						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
 					},

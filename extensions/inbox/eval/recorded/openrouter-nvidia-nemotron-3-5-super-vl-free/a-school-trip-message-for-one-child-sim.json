@@ -25,15 +25,16 @@
 							"weekday": 4
 						},
 						"time": "07:30",
-						"timeText": "17:00",
+						"timeText": "07:30",
 						"endTime": "17:00",
+						"timeTextEnd": "17:00",
 						"place": "School gate",
 						"notes": "Packed lunch. No phones on the bus pls. Ivy must bring her own water bottle",
 						"quote": "Year 8 trip to Bled Thu 29.10: bus leaves school gate 07:30, back about 17:00. Packed lunch. No phones on the bus pls. Ivy must bring her own water bottle"
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay the Year 8 trip to Bled",
+						"title": "Pay Year 8 trip to Bled via ParentPay",
 						"date": {
 							"text": "Fri 23.10",
 							"day": 23,
@@ -41,7 +42,7 @@
 							"year": 2026,
 							"weekday": 5
 						},
-						"notes": "24 EUR via ParentPay",
+						"notes": "24 EUR",
 						"quote": "24 EUR via ParentPay by Fri 23.10"
 					}
 				]

@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Family picnic",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",
@@ -22,10 +23,10 @@
 						},
 						"time": "12:00",
 						"timeText": "noon",
+						"place": "the lake",
 						"quote": "Family picnic at the lake on Sunday 11 October at noon"
 					}
-				],
-				"addressed": []
+				]
 			}
 		}
 	]

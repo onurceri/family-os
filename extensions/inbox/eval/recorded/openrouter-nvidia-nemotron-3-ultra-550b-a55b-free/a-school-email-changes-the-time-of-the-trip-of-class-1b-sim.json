@@ -15,16 +15,9 @@
 					{
 						"kind": "calendar.eventChange",
 						"target": "Class 1B trip",
-						"date": {
-							"text": "Friday 30 October",
-							"day": 30,
-							"month": 10,
-							"weekday": 5
-						},
 						"time": "07:40",
 						"timeText": "07:40",
-						"place": "School",
-						"quote": "the 1B trip to Bled is on Friday 30 October. We meet at school at 07:40 now, not 08:10"
+						"quote": "We meet at school at 07:40 now, not 08:10."
 					},
 					{
 						"kind": "lists.task",
@@ -35,13 +28,12 @@
 							"month": 10,
 							"weekday": 1
 						},
-						"notes": "For the 1B trip to Bled",
 						"quote": "Please return the signed permission slip by Monday 26 October"
 					},
 					{
 						"kind": "lists.task",
 						"title": "Pay the 25 EUR bus fee",
-						"notes": "In the school app, for the 1B trip to Bled",
+						"notes": "In the school app",
 						"quote": "pay the 25 EUR bus fee in the school app"
 					}
 				]

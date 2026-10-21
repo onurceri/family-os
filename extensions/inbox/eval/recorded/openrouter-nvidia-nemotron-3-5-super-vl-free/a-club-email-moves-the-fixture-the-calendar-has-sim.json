@@ -29,12 +29,34 @@
 					{
 						"kind": "lists.task",
 						"title": "Bring shin pads and the club shirt",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Saturday 24.10",
+							"day": 24,
+							"month": 10,
+							"year": 2026,
+							"weekday": 6
+						},
 						"detailOf": 0,
 						"quote": "Please bring shin pads and the club shirt"
 					},
 					{
 						"kind": "lists.task",
 						"title": "Take Ivy's team kit bag to the club room",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Saturday 24.10",
+							"day": 24,
+							"month": 10,
+							"year": 2026,
+							"weekday": 6
+						},
 						"detailOf": 0,
 						"quote": "Ivy's team kit bag to the club room"
 					}

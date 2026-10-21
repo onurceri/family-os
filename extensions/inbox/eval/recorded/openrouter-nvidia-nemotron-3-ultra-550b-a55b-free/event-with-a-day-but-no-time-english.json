@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Choir rehearsal moved",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.eventChange",
@@ -19,13 +18,8 @@
 							"text": "Thursday",
 							"weekday": 4
 						},
-						"quote": "Choir rehearsal moved to Thursday"
-					},
-					{
-						"kind": "lists.task",
-						"title": "Bring your folder",
-						"detailOf": 0,
-						"quote": "bring your folder"
+						"notes": "Bring your folder",
+						"quote": "Choir rehearsal moved to Thursday, bring your folder"
 					}
 				]
 			}

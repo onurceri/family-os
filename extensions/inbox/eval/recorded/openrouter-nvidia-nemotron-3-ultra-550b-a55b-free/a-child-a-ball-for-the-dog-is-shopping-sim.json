@@ -10,16 +10,17 @@
 			"output": {
 				"label": "Ball for Biscuit",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Ball",
 						"quantity": "1",
 						"variant": "pets",
+						"place": "Shopping list",
 						"quote": "can we get a ball for biscuit pls"
 					}
-				],
-				"addressed": []
+				]
 			}
 		}
 	]

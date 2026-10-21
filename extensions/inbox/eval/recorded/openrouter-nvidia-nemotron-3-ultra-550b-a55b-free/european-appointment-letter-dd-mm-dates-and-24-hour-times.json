@@ -25,9 +25,22 @@
 						},
 						"time": "14:30",
 						"timeText": "14:30",
-						"place": "Dental practice of Dr. Braun",
-						"notes": "Bring insurance card. Cancel by 12.10.2026, 12:00 if cannot attend.",
-						"quote": "your appointment at the dental practice of Dr. Braun is on Wednesday, 14.10.2026 at 14:30. Please bring your insurance card. If you cannot come, please cancel by 12.10.2026, 12:00."
+						"notes": "Bring insurance card",
+						"quote": "your appointment at the dental practice of Dr. Braun is on Wednesday, 14.10.2026 at 14:30. Please bring your insurance card."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Cancel dental appointment if needed",
+						"forMe": true,
+						"date": {
+							"text": "by 12.10.2026, 12:00",
+							"day": 12,
+							"month": 10,
+							"year": 2026,
+							"time": "12:00",
+							"timeText": "12:00"
+						},
+						"quote": "If you cannot come, please cancel by 12.10.2026, 12:00."
 					}
 				]
 			}

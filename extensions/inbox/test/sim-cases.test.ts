@@ -471,7 +471,11 @@ describe('a start the words repeat as the end', () => {
 			],
 		});
 		const event = outcome.drafts.find((d) => d.actionId === 'calendar.createEvent');
-		expect(event?.input).toMatchObject({ date: '2026-10-29', startTime: '07:30', endTime: '17:00' });
+		expect(event?.input).toMatchObject({
+			date: '2026-10-29',
+			startTime: '07:30',
+			endTime: '17:00',
+		});
 		expect(harmfulChecks(outcome)).toEqual([]);
 	});
 });

@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Elif'in doğum günü partisi",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",

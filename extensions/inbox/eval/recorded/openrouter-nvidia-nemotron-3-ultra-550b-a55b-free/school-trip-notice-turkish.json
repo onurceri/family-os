@@ -28,9 +28,9 @@
 						"time": "08:30",
 						"timeText": "08:30",
 						"endTime": "15:00",
-						"place": "Gaziantep Hayvanat Bahçesi",
-						"notes": "Öğrencilerin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmaları gerekli.",
-						"quote": "4-B sınıfımız 16 Ekim Cuma günü Gaziantep Hayvanat Bahçesi'ne eğitim gezisine gidecektir. Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır."
+						"place": "Okul",
+						"notes": "Yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalılar. Dönüş 15:00 civarında.",
+						"quote": "16 Ekim Cuma günü Gaziantep Hayvanat Bahçesi'ne eğitim gezisine gidecektir. Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır."
 					},
 					{
 						"kind": "lists.task",
@@ -45,7 +45,7 @@
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "Ücret: 150 TL. Sınıf öğretmenine elden teslim edilecek.",
+						"notes": "150 TL, sınıf öğretmenine elden teslim",
 						"quote": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir."
 					},
 					{
@@ -74,7 +74,7 @@
 						},
 						"time": "18:00",
 						"timeText": "18:00",
-						"quote": "Ayrıca 20 Ekim Salı günü saat 18:00'de veli toplantımız yapılacaktır."
+						"quote": "20 Ekim Salı günü saat 18:00'de veli toplantımız yapılacaktır."
 					}
 				]
 			}

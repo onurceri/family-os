@@ -18,6 +18,7 @@
 							"text": "Sun 25.10",
 							"day": 25,
 							"month": 10,
+							"year": 2026,
 							"weekday": 7
 						},
 						"time": "10:00",
@@ -28,7 +29,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay for the bus",
+						"title": "Pay 10 EUR for the bus",
 						"date": {
 							"text": "Fri",
 							"weekday": 5

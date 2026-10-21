@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Brake pads for Golf",
+				"label": "Brake pads at Northside Garage",
 				"intent": "actionable",
 				"mentions": [
 					{
