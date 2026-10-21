@@ -334,3 +334,94 @@ describe('missed and harmful', () => {
 		expect(harmfulChecks(absent)).toEqual([]);
 	});
 });
+
+describe('a cancelled date with another day instead', () => {
+	it('is one change: the cancellation of the same date is not a draft of its own', async () => {
+		const outcome = await read('A cancelled date with another day instead is one move (English)', {
+			label: 'Football training change',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.eventChange',
+					target: 'Football training',
+					date: day('Thursday 15 October', 15, 10, 4),
+					time: '18:00',
+					timeText: '18:00',
+					quote: 'we train on Thursday 15 October at 18:00 instead',
+				},
+				{
+					kind: 'calendar.eventCancel',
+					target: 'Football training',
+					date: day('Tuesday 13 October', 13, 10, 2),
+					quote: 'no football on Tuesday 13 October',
+				},
+			],
+		});
+		expect(outcome.drafts.map((d) => d.actionId)).toEqual(['calendar.changeEvent']);
+		expect(outcome.drafts[0]?.input).toMatchObject({ date: '2026-10-15', startTime: '18:00' });
+		expect(failedChecks(outcome)).toEqual([]);
+	});
+
+	it('still cancels a different date than the one the change moves', async () => {
+		const outcome = await read('A cancelled date with another day instead is one move (English)', {
+			label: 'Football training',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.eventChange',
+					target: 'Football training',
+					date: day('Thursday 15 October', 15, 10, 4),
+					time: '18:00',
+					timeText: '18:00',
+					quote: 'we train on Thursday 15 October at 18:00 instead',
+				},
+				{
+					kind: 'calendar.eventCancel',
+					target: 'Football training',
+					date: day('Tuesday 20 October', 20, 10, 2),
+					quote: 'no football on Tuesday 20 October',
+				},
+			],
+		});
+		expect(outcome.drafts.map((d) => d.actionId).sort()).toEqual([
+			'calendar.changeEvent',
+			'calendar.deleteEvent',
+		]);
+	});
+});
+
+describe('a time that only says when something is over', () => {
+	const trip = (extra: Record<string, unknown>) =>
+		read('A time that only says when it is over is not the start (English)', {
+			label: 'Leo class trip',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Leo class trip',
+					date: day('Friday 30 October', 30, 10, 5),
+					time: '16:00',
+					timeText: '16:00',
+					quote: 'the Leo class trip is Friday 30 October, back by 16:00',
+					...extra,
+				},
+			],
+		});
+
+	it('does not become the start: an all-day event the person checks (an answer a free model gave)', async () => {
+		const outcome = await trip({});
+		const event = outcome.drafts.find((d) => d.actionId === 'calendar.createEvent');
+		expect(event?.input.startTime).toBeUndefined();
+		expect(event?.input.allDay).toBe(true);
+		expect(event?.uncertainFields).toEqual(expect.arrayContaining(['startTime', 'allDay']));
+		expect(failedChecks(outcome)).toEqual([]);
+	});
+
+	it('stays the start when the message writes it as one', async () => {
+		const outcome = await trip({
+			quote: 'the Leo class trip is Friday 30 October, leaving at 16:00',
+		});
+		const event = outcome.drafts.find((d) => d.actionId === 'calendar.createEvent');
+		expect(event?.input.startTime).toBe('16:00');
+	});
+});

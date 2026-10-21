@@ -743,6 +743,13 @@ export interface MentionProposal {
 	 * tables hold it; absent when it makes something new.
 	 */
 	targetTitle?: string;
+	/**
+	 * True when the action takes the existing thing away (cancels an event, removes a meal). The
+	 * host drops it when the same message also changes that very thing (`id`, and `occurrence`
+	 * when there is one): "no football Tuesday, Thursday instead" is one move, not a change and
+	 * a cancellation of the same date.
+	 */
+	removes?: boolean;
 	/** Input fields (dot paths) that rest on a guess, shown as "check this". */
 	uncertain?: readonly string[];
 	/**

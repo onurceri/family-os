@@ -227,5 +227,6 @@
 	"draft_title_put_occurrence_back": "Put one date of a repeating event back",
 	"setup_step": "Put something on the calendar",
 	"setup_step_text": "Or subscribe to a calendar you already use",
-	"setup_step_action": "Add event"
+	"setup_step_action": "Add event",
+	"words_end_time": "back by, back at, back around, back before, home by, home at, until, till, ends at, ends by, end at, finishes at, finish at, finished by, over by, done by, returns at, returning at"
 }

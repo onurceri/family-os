@@ -900,6 +900,45 @@ const ALREADY_THERE_CASES: Case[] = [
 		],
 	},
 	{
+		// Found in use: "no football on Tuesday, we train on Thursday instead" gave a change of
+		// that Tuesday and a cancellation of it, which cannot both be approved.
+		name: 'A cancelled date with another day instead is one move (English)',
+		events: [
+			{
+				title: 'Football training',
+				date: '2026-10-06',
+				startTime: '17:30',
+				recurrence: { freq: 'weekly', byDay: ['TU'] },
+			},
+		],
+		text: 'Coach message: no football on Tuesday 13 October, we train on Thursday 15 October at 18:00 instead, bring boots.',
+		checks: [
+			has(
+				'calendar.changeEvent',
+				'the training moved to Thursday 15 Oct at 18:00',
+				(i) => i.date === '2026-10-15' && i.startTime === '18:00',
+			),
+			harmful(none('calendar.deleteEvent')),
+		],
+	},
+	{
+		// Found in use: "back by 16:00" made the class trip start at 16:00, shown as certain.
+		name: 'A time that only says when it is over is not the start (English)',
+		family: NOVAKS,
+		text: 'Reminder from the school: the Leo class trip is Friday 30 October, back by 16:00. Bring a packed lunch and 5 euro for the museum shop.',
+		checks: [
+			has(
+				'calendar.createEvent',
+				'the class trip on Friday 30 Oct',
+				(i) => i.date === '2026-10-30',
+			),
+			harmful({
+				label: 'calendar.createEvent: 16:00 (the return) is not the start of the trip',
+				pass: (ds) => of(ds, 'calendar.createEvent').every((d) => d.input.startTime !== '16:00'),
+			}),
+		],
+	},
+	{
 		// Found in use: a letter whose date is a day off the calendar's gave a second parents'
 		// evening instead of asking which date is right.
 		name: 'A letter a day off an event the calendar has moves it (English)',

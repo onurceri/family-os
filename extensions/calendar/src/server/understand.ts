@@ -99,6 +99,42 @@ const clockAt = (ms: number, timeZone: string) =>
 	zoned(ms, timeZone).toPlainTime().toString().slice(0, 5);
 
 /** A clock time as the parser keeps it, or null. */
+const CLOCK = /\p{N}{1,2}[:.]\p{N}{2}/gu;
+
+/**
+ * Whether the time the model gave as the start is only when something ends ("back by 16:00",
+ * "until 17:30"): the words just before it in the message are end words (`words_end_time`, in the
+ * reader's languages). The model has a slot for the end, but a free one puts the time in the
+ * start; a return time shown as the start of the event would be certain and wrong. Never when
+ * the mention has an end of its own, since then the time is its start.
+ */
+function endsOnly(ctx: MentionContext, mention: Mention): boolean {
+	if (mention.endTime || !mention.time) return false;
+	const words = ctx
+		.vocabulary('calendar:words_end_time')
+		.map((w) => w.toLocaleLowerCase(ctx.locale));
+	if (words.length === 0) return false;
+	for (const hay of [mention.timeText, mention.quote]) {
+		if (!hay) continue;
+		const clocks = [...hay.matchAll(CLOCK)];
+		const at = clocks.find((m) => m[0] === mention.time) ?? clocks.at(-1);
+		if (!at) continue;
+		const before = hay
+			.slice(0, at.index)
+			.toLocaleLowerCase(ctx.locale)
+			.replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+			.replace(/\s+/gu, ' ')
+			.trim();
+		if (words.some((w) => before === w || before.endsWith(` ${w}`))) return true;
+	}
+	return false;
+}
+
+/** The start the mention states: none when its only time is an end. */
+function startedAt(ctx: MentionContext, mention: Mention) {
+	return endsOnly(ctx, mention) ? null : ctx.time(mention);
+}
+
 const clockOf = (value: string | undefined) =>
 	value && /^([01]\d|2[0-3]):[0-5]\d$/u.test(value) ? value : null;
 
@@ -192,7 +228,9 @@ async function newEvent(
 		return refuse('incomplete', mention.target ?? null, [index]);
 	}
 	const uncertain = new Set(unsureFields(mention, EVENT_FIELDS));
-	const time = ctx.time(mention);
+	// An event that only says when it is over has no start to give: it is an all-day event the
+	// person is asked to check (the end is in the message's words, which the card quotes).
+	const time = startedAt(ctx, mention);
 	const day = mention.date ? ctx.day(mention.date, 'future', time?.time) : null;
 	let date = day?.date ?? null;
 	let doubt = day !== null && !day.certain;
@@ -670,11 +708,12 @@ export const eventChange = defineMentionKind({
 				continue;
 			}
 			const uncertain = new Set(unsureFields(mention, CHANGE_FIELDS));
-			const time = ctx.time(mention);
+			const endOnly = endsOnly(ctx, mention);
+			const time = startedAt(ctx, mention);
 			const day: ResolvedDay | null = mention.date
 				? ctx.day(mention.date, 'future', time?.time)
 				: null;
-			const endTime = clockOf(mention.endTime);
+			const endTime = clockOf(endOnly ? mention.time : mention.endTime);
 			const place = mention.place ? cut(mention.place, PLACE_MAX) : '';
 			if (!day && !time && !endTime && !place) {
 				out.push(refuse('incomplete', words, [index]));
@@ -901,6 +940,7 @@ export const eventCancel = defineMentionKind({
 					},
 					subject: words,
 					targetTitle: label,
+					removes: true,
 					uncertain,
 					decided,
 					from,

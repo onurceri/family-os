@@ -155,6 +155,7 @@ async function resolveMealOff(ctx: MentionContext, { index, mention }: IndexedMe
 			input: { id: found.found.id, label: words },
 			subject: words,
 			targetTitle: found.found.label,
+			removes: true,
 			from: [index],
 		},
 	} satisfies Resolution;

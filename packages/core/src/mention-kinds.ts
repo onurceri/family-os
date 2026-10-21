@@ -146,6 +146,7 @@ export function settleResolutions(
 					input: p.input,
 					subject: subjectText(p.subject),
 					...(targetTitle !== null && { targetTitle }),
+					...(p.removes === true && { removes: true }),
 					...(uncertain.length > 0 && { uncertain }),
 					from: held,
 				},

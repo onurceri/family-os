@@ -448,6 +448,41 @@ async function askModel(
 	}
 }
 
+/** The existing thing (and occurrence of it) a suggestion's input names, or null. */
+function aimOf(input: unknown): string | null {
+	if (typeof input !== 'object' || input === null) return null;
+	const { id, occurrence } = input as { id?: unknown; occurrence?: unknown };
+	if (typeof id !== 'string') return null;
+	return `${id}:${typeof occurrence === 'string' ? occurrence : ''}`;
+}
+
+/**
+ * A message that cancels one date and says what happens instead ("no football on Tuesday, we
+ * train on Thursday instead") reads as a change and a cancellation of the same occurrence. They
+ * are one move: the cancellation goes (approving both would delete the date the change moves)
+ * and its words join the change's, which keeps them as its quote.
+ */
+function foldMoves<
+	T extends { resolution: SettledResolution; mentions: Mention[]; from: readonly number[] },
+>(resolved: T[]): void {
+	const changes = new Map<string, T>();
+	for (const r of resolved) {
+		if (!('propose' in r.resolution) || r.resolution.propose.removes === true) continue;
+		const aim = aimOf(r.resolution.propose.input);
+		if (aim !== null && !changes.has(aim)) changes.set(aim, r);
+	}
+	for (let i = resolved.length - 1; i >= 0; i--) {
+		const r = resolved[i] as T;
+		if (!('propose' in r.resolution) || r.resolution.propose.removes !== true) continue;
+		const aim = aimOf(r.resolution.propose.input);
+		const move = aim === null ? undefined : changes.get(aim);
+		if (!move || !('propose' in move.resolution)) continue;
+		move.from = [...move.from, ...r.from];
+		move.mentions = [...move.mentions, ...r.mentions];
+		resolved.splice(i, 1);
+	}
+}
+
 /**
  * Reads one item into drafts. With no kind offered (every area off for the AI, or none
  * installed) the model is not asked. Throws what the model call throws; the job decides whether
@@ -611,6 +646,7 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	await resolveAll(unfolded);
 	const first = (r: SettledResolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
 	resolved.sort((a, b) => first(a.resolution) - first(b.resolution));
+	foldMoves(resolved);
 
 	const hash = promptHash(kinds);
 	const missing = ctx.actions.aiMissingAreas({ local: input.local });

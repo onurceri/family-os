@@ -178,6 +178,7 @@ describe('the meal plan', () => {
 					input: { id: fish.id, label: 'Fish' },
 					subject: 'Fish',
 					targetTitle: 'Fish',
+					removes: true,
 					from: [0],
 				},
 			},
