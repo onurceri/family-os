@@ -21,6 +21,7 @@ let k: TestKernel;
 
 beforeEach(async () => {
 	k = await createTestKernel({ extensions });
+	k.clock.set(Date.UTC(2026, 9, 19, 7));
 });
 afterEach(() => k.close());
 

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
 import { type CoreTables, publicPath } from '@famos/core';
 import { ERROR_HTTP_STATUS, type MemberId } from '@famos/sdk';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
 import { publicOpenApiDocument } from '../src/http/public/index.ts';
@@ -19,6 +19,8 @@ let runtime: Runtime;
 let app: ReturnType<typeof createHttpApp>;
 
 beforeEach(async () => {
+	// The dates in these tests are fixed days; the clock stands on the morning before them.
+	vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-19T07:00:00Z') });
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-public-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
@@ -46,7 +48,10 @@ beforeEach(async () => {
 		trustedProxies: ['127.0.0.1'],
 	});
 });
-afterEach(() => runtime.close());
+afterEach(() => {
+	vi.useRealTimers();
+	return runtime.close();
+});
 
 let ip = 0;
 const nextIp = () => `10.6.${Math.floor(++ip / 250)}.${(ip % 250) + 1}`;

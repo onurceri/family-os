@@ -68,8 +68,15 @@ async function boot(extra: readonly ExtensionDefinition[] = []) {
 		trustedProxies: ['127.0.0.1'],
 	});
 }
-beforeEach(() => boot([outbox]));
-afterEach(() => runtime.close());
+beforeEach(() => {
+	// The dates in these tests are fixed days; the clock stands on the morning before them.
+	vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-19T07:00:00Z') });
+	return boot([outbox]);
+});
+afterEach(() => {
+	vi.useRealTimers();
+	return runtime.close();
+});
 
 let ip = 0;
 async function call(method: string, path: string, body?: unknown, cookie?: string) {

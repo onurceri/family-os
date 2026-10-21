@@ -19,6 +19,7 @@ let admin: Awaited<ReturnType<TestKernel['member']>>;
 
 beforeEach(async () => {
 	k = await createTestKernel({ extensions: [...extensions] });
+	k.clock.set(Date.UTC(2026, 9, 19, 7));
 	await k.runner.invoke('core.updateFamilySettings', { timeZone: 'Europe/Istanbul' }, system);
 	admin = await k.member('admin', 'Ayşe');
 });
