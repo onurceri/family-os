@@ -171,6 +171,16 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 	);
 	api.use('*', async (c, next) => {
 		const result = await authenticateApp(kernel, c.req.raw.headers);
+		if (result.outcome === 'paused') {
+			// The key is right, so this is no wrong guess to count; the app is told to wait, not to
+			// ask for a new key.
+			c.header('www-authenticate', 'Bearer realm="FamilyOS"');
+			throw new FamosError(
+				'unauthenticated',
+				'This app is paused in FamilyOS; it works again when it is resumed',
+				{ reason: 'paused' },
+			);
+		}
 		if (result.outcome !== 'ok') {
 			if (!badTokens.hit(deps.clientIp(c))) {
 				c.header('retry-after', '60');

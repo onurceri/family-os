@@ -314,9 +314,25 @@ describe('the door for apps', () => {
 		const secret = created.body.secret as string;
 		const appId = created.body.app.id as string;
 		await call('POST', `/api/v1/apps/${appId}/pause`, undefined, cookie);
-		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('unknown');
+		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('paused');
+		expect((await authenticateApp(runtime.kernel, bearer('famos_nope'))).outcome).toBe('unknown');
 		await call('POST', `/api/v1/apps/${appId}/resume`, undefined, cookie);
 		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('ok');
+		await call('POST', `/api/v1/apps/${appId}/pause`, undefined, cookie);
+		await call('DELETE', `/api/v1/apps/${appId}`, undefined, cookie);
+		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('unknown');
+	});
+
+	it('an archived member is refused', async () => {
+		const { cookie } = await setup();
+		const leoId = await addMember(cookie, 'Leo', 'member');
+		const created = await call(
+			'POST',
+			'/api/v1/apps',
+			{ name: 'HA', roleId: 'member', mode: 'apply', actsFor: [leoId] },
+			cookie,
+		);
+		const secret = created.body.secret as string;
 		await call('POST', '/api/v1/actions/core.archiveMember', { memberId: leoId }, cookie);
 		await expect(
 			authenticateApp(runtime.kernel, bearer(secret, { 'x-familyos-on-behalf-of': leoId })),

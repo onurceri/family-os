@@ -189,11 +189,20 @@ describe('the door', () => {
 		const { cookie } = await setup();
 		const { secret, id } = await addApp(cookie, { roleId: 'admin' });
 		await request('POST', `/api/v1/apps/${id}/pause`, { cookie });
-		expect((await pub(secret, 'GET', '/')).status).toBe(401);
+		const paused = await pub(secret, 'GET', '/');
+		expect(paused.status).toBe(401);
+		expect(paused.body.error).toMatchObject({ code: 'unauthenticated', reason: 'paused' });
+		// A stranger learns nothing: an unknown key gets no reason.
+		const stranger = await pub('famos_nope', 'GET', '/');
+		expect(stranger.status).toBe(401);
+		expect(stranger.body.error.reason).toBeUndefined();
 		await request('POST', `/api/v1/apps/${id}/resume`, { cookie });
 		expect((await pub(secret, 'GET', '/')).status).toBe(200);
+		await request('POST', `/api/v1/apps/${id}/pause`, { cookie });
 		await request('DELETE', `/api/v1/apps/${id}`, { cookie });
-		expect((await pub(secret, 'GET', '/')).status).toBe(401);
+		const revoked = await pub(secret, 'GET', '/');
+		expect(revoked.status).toBe(401);
+		expect(revoked.body.error.reason).toBeUndefined();
 	});
 
 	it('limits wrong keys per address, and every app’s requests', async () => {

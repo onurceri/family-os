@@ -140,7 +140,9 @@ export async function authenticateBearer(kernel: Kernel, headers: Headers): Prom
 export type AppBearerResult =
 	| { outcome: 'ok'; caller: AppCaller }
 	| { outcome: 'missing' }
-	| { outcome: 'unknown' };
+	| { outcome: 'unknown' }
+	/** A valid key whose app is paused: it works again when the app is resumed. */
+	| { outcome: 'paused' };
 
 /**
  * Who calls the connected apps' door: the `Authorization: Bearer` header only, never a cookie,
@@ -152,7 +154,8 @@ export async function authenticateApp(kernel: Kernel, headers: Headers): Promise
 	const header = /^Bearer\s+(\S+)$/i.exec(headers.get('authorization') ?? '');
 	if (!header) return { outcome: 'missing' };
 	const caller = await kernel.apps.authenticate(header[1], headers.get(ON_BEHALF_OF_HEADER));
-	if (!caller) return { outcome: 'unknown' };
+	if (!caller)
+		return (await kernel.apps.isPaused(header[1])) ? { outcome: 'paused' } : { outcome: 'unknown' };
 	if (!admits('api', caller.actor)) return { outcome: 'unknown' };
 	return { outcome: 'ok', caller };
 }

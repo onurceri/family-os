@@ -192,7 +192,7 @@ Every error is `{ "error": { "code": …, "message": … } }`, and the status sa
 | Code | Status | What it means, and what to do |
 |---|---|---|
 | `bad_request` | 400 | The request is wrong; `fields` names which, each with a `path` and a `message`. Fix it; do not repeat it unchanged. |
-| `unauthenticated` | 401 | No valid key: missing, wrong, revoked, expired or paused. Do not retry; ask a person for a new key. |
+| `unauthenticated` | 401 | No valid key: missing, wrong, revoked or expired. Do not retry; ask a person for a new key. With `reason: "paused"` the key is right but its app is paused in **Connected apps**: it works again after **Resume**, so retry later (slowly) and do not ask for a new key. |
 | `forbidden` | 403 | The key's role, or the member it acts for, may not do this. `reason` says why: `capability` (the role lacks `capability`), `approval`, `critical`, `on_behalf` (the app may not act for that member). Do not retry. |
 | `not_found` | 404 | There is no such thing, or it is not yours to know of. |
 | `feature_off` | 404 | The extension was switched off in **Settings → Features**. Its operations are gone from `GET /` until it is switched on again. |

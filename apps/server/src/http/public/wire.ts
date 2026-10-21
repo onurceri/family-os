@@ -51,7 +51,7 @@ export const ErrorSchema = z
 				.string()
 				.optional()
 				.describe(
-					'With `forbidden`: `capability` (the role lacks it), `approval`, `critical`, `on_behalf` (the app may not act for that member)',
+					'With `forbidden`: `capability` (the role lacks it), `approval`, `critical`, `on_behalf` (the app may not act for that member). With `unauthenticated`: `paused` (the key is right but the app is paused in FamilyOS; retry later, do not ask for a new key)',
 				),
 			capability: z
 				.string()
@@ -106,7 +106,10 @@ export function errorResponse(error: unknown): { status: number; body: ErrorBody
 	if (refusal) {
 		out.reason = refusal.reason;
 		if (refusal.capability) out.capability = refusal.capability;
-	} else if (error.code === 'forbidden' && typeof details.reason === 'string') {
+	} else if (
+		(error.code === 'forbidden' || error.code === 'unauthenticated') &&
+		typeof details.reason === 'string'
+	) {
 		out.reason = details.reason;
 	}
 	if (error.code === 'precondition_failed' && typeof details.version === 'number')

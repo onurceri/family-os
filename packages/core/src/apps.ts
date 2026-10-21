@@ -105,6 +105,11 @@ export interface AppService {
 		secret: string | null | undefined,
 		onBehalfOf?: string | null,
 	): Promise<AppCaller | null>;
+	/**
+	 * Whether the key is one that would be valid but for its app being paused. Only a live key of
+	 * a live, paused app answers true, so an unknown, revoked or expired key tells nothing.
+	 */
+	isPaused(secret: string | null | undefined): Promise<boolean>;
 	/** Records a permitted use (`lastUsedAt`), at most hourly. */
 	touch(tokenId: string): Promise<void>;
 }
@@ -475,6 +480,26 @@ export function createAppService(deps: {
 				memberId: member.id,
 				actsFor: actsForOf(app),
 			};
+		},
+
+		async isPaused(secret) {
+			if (!secret?.startsWith(API_TOKEN_PREFIX) || secret.length > 128) return false;
+			const token = await t()
+				.selectFrom('core_app_tokens')
+				.select(['app_id', 'expires_at'])
+				.where('token_hash', '=', await sha256Hex(secret))
+				.where('revoked_at', 'is', null)
+				.executeTakeFirst();
+			if (!token) return false;
+			if (token.expires_at !== null && token.expires_at <= deps.clock.now()) return false;
+			const app = await t()
+				.selectFrom('core_apps')
+				.select('id')
+				.where('id', '=', token.app_id)
+				.where('revoked_at', 'is', null)
+				.where('paused_at', 'is not', null)
+				.executeTakeFirst();
+			return app !== undefined;
 		},
 
 		async touch(tokenId) {

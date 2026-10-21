@@ -195,7 +195,7 @@
 							},
 							"reason": {
 								"type": "string",
-								"description": "With `forbidden`: `capability` (the role lacks it), `approval`, `critical`, `on_behalf` (the app may not act for that member)"
+								"description": "With `forbidden`: `capability` (the role lacks it), `approval`, `critical`, `on_behalf` (the app may not act for that member). With `unauthenticated`: `paused` (the key is right but the app is paused in FamilyOS; retry later, do not ask for a new key)"
 							},
 							"capability": {
 								"type": "string",

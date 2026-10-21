@@ -26,7 +26,13 @@ Open **Shortcuts**, press **+** and name the shortcut **Add to FamilyOS**. That 
 
 `Content-Type: application/json` is set by choosing the JSON request body. Each piece is its own request; the items land on the family's default shopping list.
 
-To be told the truth when changes wait for approval (see [Safety](#safety)), put **Get Dictionary Value** for `status` after **Get Contents of URL**, and speak "Waiting for approval" if it is `drafted`.
+Check the answer instead of assuming it worked. Put these after **Get Contents of URL** (inside the repeat) and drop the final "Added to the shopping list" line:
+
+1. **Get Dictionary Value**: `error` from **Contents of URL**, then **Get Dictionary Value** `message` from that. An error answer always has an `error`; a good one never does.
+2. **If** the message **has any value**: **Speak Text** "FamilyOS did not answer: " followed by the message, then **Stop This Shortcut**.
+3. **Otherwise**: **Get Dictionary Value** `status` from **Contents of URL**. If it is `drafted`, **Speak Text** "Waiting for approval" (see [Safety](#safety)); if not, **Speak Text** "Added to the shopping list".
+
+If the phone cannot reach FamilyOS at all, the shortcut stops with Shortcuts' own error; that is also "did not answer".
 
 ## Shortcut 2: What is on today
 
@@ -35,24 +41,25 @@ Name it **What is on today**.
 1. **Current Date**.
 2. **Format Date**: **Current Date**, format **Custom**, `yyyy-MM-dd`. Call it `Today`.
 3. **Get Contents of URL**: `ADDRESS/api/public/v1/calendar/occurrences?from=Today&to=Today` (insert the `Today` variable in both places), method GET, header `Authorization` = `Bearer KEY`.
-4. **Get Dictionary Value**: `items` from the contents.
-5. **Repeat with Each** over the items. Inside:
+4. **Get Dictionary Value**: `error` from the contents, then `message` from that. **If** the message **has any value**: **Speak Text** "FamilyOS did not answer: " and the message, then **Stop This Shortcut**. Without this check an error would be read as an empty day.
+5. **Get Dictionary Value**: `items` from the contents.
+6. **Repeat with Each** over the items. Inside:
    1. **Get Dictionary Value** `title`, then **Get Dictionary Value** `start`.
    2. **If** `allDay` is **yes**: **Text** "all day, Title". **Otherwise**: **Format Date** the `start` with **Custom** `HH:mm`, then **Text** "Time Title".
    3. **Add to Variable** `Lines` with that text.
-6. After the repeat: **Speak Text** with `Lines` (or "Nothing today" if there are none).
+7. After the repeat: **If** `Lines` has no value, **Speak Text** "Nothing today"; otherwise **Speak Text** with `Lines`. "Nothing today" is only said after a `200` answer with no events.
 
 Events come in the order of the day. `start` carries the family's time zone; the phone shows it in its own, so keep the phone in the same zone as the family, or the hours will be off.
 
 ## Shortcut 3 (optional): Add a task
 
-Name it **Add a task**. **Ask for Input**, then **Get Contents of URL** with `ADDRESS/api/public/v1/lists/tasks`, method POST, the same two headers, and a JSON body with the field `title` (Text) set to the answer. Speak "Task added".
+Name it **Add a task**. **Ask for Input**, then **Get Contents of URL** with `ADDRESS/api/public/v1/lists/tasks`, method POST, the same two headers, and a JSON body with the field `title` (Text) set to the answer. Then check the answer as in Shortcut 1: if the answer has an `error` `message`, speak "FamilyOS did not answer" and that message; if the `status` is `drafted`, speak "Waiting for approval"; otherwise speak "Task added".
 
 ## Safety
 
 - The key does only what the app's role allows. A **Member** key can add to the lists and the calendar, but can never manage people, keys or settings, or approve a suggestion.
 - The key is written inside the shortcut. Keep the shortcut on your own devices and do not share it: sharing a shortcut shares the key. Make a separate app for each person or each phone that needs one.
-- If a phone is lost, open **Settings → You → Connected apps** and **Revoke** the key (or **Pause** the app). The shortcut stops working at once.
+- If a phone is lost, open **Settings → You → Connected apps** and **Revoke** the key (or **Pause** the app). The shortcut stops working at once. A paused app answers "This app is paused in FamilyOS", which the shortcut speaks; **Resume** makes it work again with the same key.
 - If you choose **Changes wait for approval**, or the person is supervised, a spoken item does not reach the list: it becomes a suggestion that a person approves, and the answer says `drafted`.
 
 ## Other languages
