@@ -12,6 +12,7 @@ import {
 } from '@famos/sdk';
 import { roleGrants } from './access.ts';
 import { pauseAllApps } from './apps.ts';
+import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import type { CoreTables } from './tables.ts';
 
 /** What a restore changed on the first start after it. */
@@ -32,6 +33,8 @@ export interface RestoreReport {
 		roles: string[];
 		/** People whose two roles could not be combined into one that exists: they keep today's. */
 		undecided: string[];
+		/** Admins who kept their earlier role and active state because the backup left none. */
+		keptForAdmin: string[];
 	};
 }
 
@@ -72,7 +75,7 @@ export async function reconcileRestore(
 	await deps.identity.endAllSessions();
 	let kept = 0;
 	const failed: string[] = [];
-	let access: RestoreReport['access'] = { people: [], roles: [], undecided: [] };
+	let access: RestoreReport['access'] = { people: [], roles: [], undecided: [], keptForAdmin: [] };
 	// A restore may bring back keys of apps that were revoked, rotated or leaked since: every
 	// live app waits until an admin has looked at it.
 	const appsPaused = await pauseAllApps(deps.db, deps.clock.now());
@@ -87,10 +90,15 @@ export async function reconcileRestore(
 		kept += archived.length;
 		access = await carryNarrowerAccess(deps, previous, now);
 		kept += access.people.length + access.roles.length;
-		if (access.roles.length > 0) await deps.refreshRoles();
+		if (access.roles.length > 0 || access.keptForAdmin.length > 0) await deps.refreshRoles();
 		if (access.people.length > 0 || access.roles.length > 0 || access.undecided.length > 0)
 			deps.logger.info(
-				{ people: access.people, roles: access.roles, undecided: access.undecided },
+				{
+					people: access.people,
+					roles: access.roles,
+					undecided: access.undecided,
+					keptForAdmin: access.keptForAdmin,
+				},
 				'restore kept the narrower access of people and roles',
 			);
 		kept += (await carryRevoked(deps.db, previous, 'core_api_tokens', now)).length;
@@ -222,7 +230,12 @@ async function carryNarrowerAccess(
 	previous: DbExecutor,
 	now: number,
 ): Promise<RestoreReport['access']> {
-	const result: RestoreReport['access'] = { people: [], roles: [], undecided: [] };
+	const result: RestoreReport['access'] = {
+		people: [],
+		roles: [],
+		undecided: [],
+		keptForAdmin: [],
+	};
 	const before = previous.withTables<CoreTables>();
 	const tables = deps.db.withTables<CoreTables>();
 	const parse = (r: { base: CustomGrants['base']; overrides: string }): CustomGrants => ({
@@ -315,6 +328,36 @@ async function carryNarrowerAccess(
 			.where('id', '=', member.id)
 			.execute();
 		people.add(member.id);
+	}
+
+	// The restored family must keep someone who can run its settings (and so undo this restore):
+	// when the backup and the carries above leave nobody, the people who held that access before
+	// the restore keep it.
+	const manage = CORE_CAPABILITIES.settingsManage.id;
+	const holdsManage = (roleId: string, roles: Map<string, CustomGrants>) =>
+		grantsOf(roles, roleId)?.has(manage) === true;
+	const restoredMembers = await tables
+		.selectFrom('core_members')
+		.select(['id', 'role_id', 'archived_at'])
+		.execute();
+	if (!restoredMembers.some((m) => m.archived_at === null && holdsManage(m.role_id, current))) {
+		const earlierMembers = await before
+			.selectFrom('core_members')
+			.select(['id', 'role_id'])
+			.where('archived_at', 'is', null)
+			.execute();
+		const restoredIds = new Set(restoredMembers.map((m) => m.id));
+		for (const member of earlierMembers) {
+			if (!restoredIds.has(member.id) || !holdsManage(member.role_id, earlier)) continue;
+			await bringRole(member.role_id);
+			await tables
+				.updateTable('core_members')
+				.set({ role_id: member.role_id, archived_at: null, updated_at: now })
+				.where('id', '=', member.id)
+				.execute();
+			result.keptForAdmin.push(member.id);
+			people.add(member.id);
+		}
 	}
 	result.people = [...people];
 	return result;

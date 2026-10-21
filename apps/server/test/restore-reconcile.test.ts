@@ -415,4 +415,51 @@ describe('a restore does not bring back what the family ended after the backup',
 		// The demoted member, the holder of the narrowed role and the two whose roles were combined.
 		expect(JSON.parse(note.body_params as string)).toEqual({ count: 4 });
 	});
+
+	for (const how of ['demoted', 'archived'] as const)
+		it(`the people who ran the family before keep their admin access when every admin of the backup was ${how} since`, async () => {
+			const config = await newConfig();
+			const r = await boot(config);
+			const setup = await call('POST', '/api/v1/core/setup', {
+				displayName: 'Parent',
+				email: 'parent@example.com',
+				password: PASSWORD,
+				locale: 'en',
+				setupCode: r.config.setupCode,
+			});
+			const parent = setup.body.id as string;
+			const admin = (await signIn('parent@example.com', PASSWORD)).cookie;
+			const run = async (action: string, input: unknown) => {
+				const done = await call('POST', `/api/v1/actions/${action}`, input, admin);
+				expect(done.body.status).toBe('applied');
+				return done.body.output;
+			};
+			const successor = (
+				await run('core.createMember', { displayName: 'Successor', roleId: 'member' })
+			).id as string;
+			const { path: backup } = await backupNow(r, 'manual');
+
+			await run('core.updateMember', { memberId: successor, roleId: 'admin' });
+			if (how === 'demoted') await run('core.updateMember', { memberId: parent, roleId: 'member' });
+			else await run('core.archiveMember', { memberId: parent });
+
+			await r.close();
+			runtime = undefined;
+			await restoreFile(config, backup, { extensions });
+			const restored = await boot(config);
+			await restored.kernel.worker.drain();
+
+			const tables = restored.kernel.ctx.db.withTables<CoreTables>();
+			const row = (id: string) =>
+				tables
+					.selectFrom('core_members')
+					.select(['role_id', 'archived_at'])
+					.where('id', '=', id)
+					.executeTakeFirstOrThrow();
+			// Without this the family would be left with nobody who can change its settings.
+			expect(await row(successor)).toEqual({ role_id: 'admin', archived_at: null });
+			const before = await row(parent);
+			if (how === 'archived') expect(before.archived_at).not.toBeNull();
+			else expect(before.role_id).toBe('member');
+		});
 });
