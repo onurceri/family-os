@@ -67,6 +67,7 @@ import {
 	telegramLinkChanged,
 	telegramStatusChanged,
 } from './http/host-events.ts';
+import { createKnownDevices, type KnownDevices } from './http/known-devices.ts';
 import { catalogsOf, createTranslate, createVocabulary } from './i18n.ts';
 import {
 	createLanguageRegistry,
@@ -84,6 +85,8 @@ export interface Runtime {
 	handle: DatabaseHandle;
 	kernel: Kernel;
 	identity: Identity;
+	/** Browsers that signed in to an account before (the sign-in cookie's key comes from the secret). */
+	knownDevices: KnownDevices;
 	queue: SqliteJobQueue;
 	ai: AiSettingsService;
 	webPush: WebPush;
@@ -309,6 +312,7 @@ export function openRuntime(
 		handle,
 		kernel,
 		identity,
+		knownDevices: createKnownDevices(config.secret),
 		queue,
 		ai,
 		webPush,

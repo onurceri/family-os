@@ -32,6 +32,8 @@ export async function startFamilyOS(options: {
 	telegramApiRoot?: string;
 	emailFakeDir?: string;
 	dataDir?: string;
+	/** Believe `X-Forwarded-For` from this machine, so a test can send requests from other addresses. */
+	behindProxy?: boolean;
 }) {
 	if (
 		!existsSync(SERVER) ||
@@ -58,6 +60,7 @@ export async function startFamilyOS(options: {
 		FAMOS_NOTIFY_DELAY_MS: '500',
 		...(options.telegramApiRoot && { FAMOS_TELEGRAM_API_ROOT: options.telegramApiRoot }),
 		...(options.emailFakeDir && { FAMOS_EMAIL_FAKE_DIR: options.emailFakeDir }),
+		...(options.behindProxy && { FAMOS_TRUSTED_PROXIES: '127.0.0.1' }),
 	} as NodeJS.ProcessEnv;
 
 	let child: ChildProcess | undefined;

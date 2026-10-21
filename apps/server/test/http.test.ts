@@ -40,6 +40,7 @@ async function boot(extraExtensions: readonly ExtensionDefinition[] = []) {
 		backupsDir: runtime.config.backupsDir,
 		backupSchedule: runtime.config.backup,
 		identity: runtime.identity,
+		knownDevices: runtime.knownDevices,
 		logger: silentLogger,
 		trustedOrigins: [BASE],
 		publicUrl: 'https://famos.example',

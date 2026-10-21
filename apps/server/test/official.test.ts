@@ -380,6 +380,7 @@ describe('Look for more, end to end', () => {
 			backupsDir: runtime.config.backupsDir,
 			backupSchedule: runtime.config.backup,
 			identity: runtime.identity,
+			knownDevices: runtime.knownDevices,
 			logger: silentLogger,
 			trustedOrigins: [BASE],
 			appVersion: '0.0.0',

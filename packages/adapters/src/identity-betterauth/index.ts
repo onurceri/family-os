@@ -4,6 +4,8 @@ import { APIError, createAuthEndpoint } from 'better-auth/api';
 import { setSessionCookie } from 'better-auth/cookies';
 import { sql } from 'kysely';
 import { z } from 'zod';
+import { addressKey } from './address.ts';
+import { createAddressLimit, createLockout } from './limits.ts';
 
 /**
  * Identity adapter on better-auth.
@@ -44,6 +46,8 @@ export interface IdentityOptions {
 		hash: (password: string) => Promise<string>;
 		verify: (input: { hash: string; password: string }) => Promise<boolean>;
 	};
+	/** The clock the sign-in locks read; tests pass a fake one. */
+	now?: () => number;
 }
 
 export interface Identity {
@@ -63,9 +67,29 @@ export interface Identity {
  * rate limiter reads only this header, so a client cannot pick its own address.
  */
 export const CLIENT_IP_HEADER = 'x-famos-client-ip';
-/** Failed sign-ins per account before it is locked, and for how long. */
+/**
+ * Set to `1` by the HTTP layer when a password sign-in comes from a device the family already
+ * knows: a family device, or a browser that signed in to the same account before. Like the client
+ * address it is removed from every incoming request first, so a client cannot claim it.
+ */
+export const KNOWN_DEVICE_HEADER = 'x-famos-known-device';
+/**
+ * Wrong secrets for one account from one address before that address is locked out of the
+ * account, and for how long. A PIN (only ever tried on family devices) locks the whole account
+ * after the same count, from any address.
+ */
 const LOCK_AFTER = 5;
 const LOCK_MS = 15 * 60_000;
+/**
+ * The account-wide backstop for passwords: wrong passwords from all addresses together in an hour
+ * before devices the family does not know are refused for an hour. One address alone is held to
+ * 5 per 15 minutes by the lock above, so this only trips on a guess spread over many addresses,
+ * and it caps such a guess at about 20 tries an hour. It never refuses a known device, so a
+ * stranger who trips it does not keep the person out.
+ */
+const BACKSTOP_AFTER = 20;
+const BACKSTOP_WINDOW_MS = 60 * 60_000;
+const BACKSTOP_LOCK_MS = 60 * 60_000;
 /**
  * Wrong PINs or passwords one address may send in a window, across all accounts. The per-account
  * lock stops guessing one secret; this stops one device from walking through every account.
@@ -187,8 +211,20 @@ export function createIdentity(options: IdentityOptions): Identity {
 	const auth = betterAuth(config);
 
 	const context = () => auth.$context;
-	const lockout = createLockout();
-	const addressFailures = createAddressLimit();
+	const now = options.now ?? Date.now;
+	// Per (account, address) for passwords; per account for PINs, which only family devices send.
+	const lockout = createLockout({ after: LOCK_AFTER, lockMs: LOCK_MS, now });
+	const backstop = createLockout({
+		after: BACKSTOP_AFTER,
+		windowMs: BACKSTOP_WINDOW_MS,
+		lockMs: BACKSTOP_LOCK_MS,
+		now,
+	});
+	const addressFailures = createAddressLimit({
+		max: FAILURES_PER_ADDRESS,
+		windowMs: ADDRESS_WINDOW_MS,
+		now,
+	});
 	const findUser = async (memberId: string) =>
 		(await context()).adapter.findOne<AuthUser>({
 			model: 'user',
@@ -336,9 +372,20 @@ export function createIdentity(options: IdentityOptions): Identity {
 
 	return {
 		async handler(request) {
-			const key = await signInKey(request);
-			const lockedMs = key ? lockout.lockedFor(key) : 0;
-			if (key && lockedMs > 0) {
+			const target = await signInTarget(request);
+			if (!target) return auth.handler(request);
+			const ip = request.headers.get(CLIENT_IP_HEADER);
+			const address = ip ? addressKey(ip) : 'unknown';
+			const account = `${target.kind}:${target.id}`;
+			// A password locks the guesser (this address, for this account), never the person; a PIN
+			// is only tried on family devices, so its lock stays on the account.
+			const lockKey = target.kind === 'pin' ? account : `${account}|${address}`;
+			const known = target.kind === 'email' && request.headers.get(KNOWN_DEVICE_HEADER) === '1';
+			const lockedMs = Math.max(
+				lockout.lockedFor(lockKey),
+				target.kind === 'email' && !known ? backstop.lockedFor(account) : 0,
+			);
+			if (lockedMs > 0) {
 				// The wait comes from here, so the sign-in screen never states a duration of its own.
 				const retryAfter = Math.ceil(lockedMs / 1000);
 				return Response.json(
@@ -346,9 +393,8 @@ export function createIdentity(options: IdentityOptions): Identity {
 					{ status: 429, headers: { 'retry-after': String(retryAfter) } },
 				);
 			}
-			const ip = key ? request.headers.get(CLIENT_IP_HEADER) : null;
-			const address = key && ip ? `${key.split(':')[0]}:${ip}` : null;
-			const waitMs = address ? addressFailures.waitFor(address) : 0;
+			const sender = ip ? `${target.kind}:${address}` : null;
+			const waitMs = sender ? addressFailures.waitFor(sender) : 0;
 			if (waitMs > 0) {
 				const retryAfter = Math.ceil(waitMs / 1000);
 				return Response.json(
@@ -361,8 +407,11 @@ export function createIdentity(options: IdentityOptions): Identity {
 			// that (a device that is not a family device, a malformed request) says nothing about the
 			// secret, and must not lock a child out of the family tablet.
 			const failed = response.status === 401;
-			if (key && (failed || response.ok)) lockout.record(key, response.ok);
-			if (address && failed) addressFailures.fail(address);
+			if (failed || response.ok) lockout.record(lockKey, response.ok);
+			// The backstop forgets only with time: a right password from one place does not hand a
+			// distributed guesser a fresh budget.
+			if (failed && target.kind === 'email') backstop.record(account, false);
+			if (sender && failed) addressFailures.fail(sender);
 			return response;
 		},
 		async resolveMember(headers) {
@@ -377,8 +426,13 @@ export function createIdentity(options: IdentityOptions): Identity {
 	};
 }
 
-/** The account a sign-in attempt targets, for the per-account lockout. */
-async function signInKey(request: Request): Promise<string | null> {
+/**
+ * The account a sign-in attempt names: an email (lowercased) or a member id for a PIN. Null for
+ * anything that is not a sign-in.
+ */
+export async function signInTarget(
+	request: Request,
+): Promise<{ kind: 'email' | 'pin'; id: string } | null> {
 	if (request.method !== 'POST') return null;
 	const path = new URL(request.url).pathname;
 	const kind = path.endsWith('/sign-in/pin')
@@ -390,66 +444,11 @@ async function signInKey(request: Request): Promise<string | null> {
 	try {
 		const body = (await request.clone().json()) as { memberId?: unknown; email?: unknown };
 		const id = kind === 'pin' ? body.memberId : body.email;
-		return typeof id === 'string' && id ? `${kind}:${id.toLowerCase()}` : null;
+		return typeof id === 'string' && id ? { kind, id: id.toLowerCase() } : null;
 	} catch {
 		return null;
 	}
 }
 
-/**
- * Locks an account after repeated failures, whatever address they come from (the IP rate limit
- * alone does not stop a slow, distributed guess at a 4-digit PIN). In memory: a restart clears it,
- * which is acceptable for a single family server.
- */
-function createLockout(now: () => number = Date.now) {
-	const failures = new Map<string, { count: number; until: number }>();
-	return {
-		/** Milliseconds left on the lock, or 0 when the account is not locked. */
-		lockedFor(key: string) {
-			const entry = failures.get(key);
-			if (!entry || entry.until <= now()) {
-				if (entry?.until) failures.delete(key);
-				return 0;
-			}
-			return entry.until - now();
-		},
-		record(key: string, ok: boolean) {
-			if (ok) {
-				failures.delete(key);
-				return;
-			}
-			const entry = failures.get(key) ?? { count: 0, until: 0 };
-			entry.count += 1;
-			if (entry.count >= LOCK_AFTER) {
-				entry.count = 0;
-				entry.until = now() + LOCK_MS;
-			}
-			failures.set(key, entry);
-		},
-	};
-}
-
-/** Counts failures per address in fixed windows; at the limit the address waits out its window. */
-function createAddressLimit(now: () => number = Date.now) {
-	const windows = new Map<string, { count: number; ends: number }>();
-	return {
-		/** Milliseconds the address must wait, or 0. */
-		waitFor(address: string) {
-			const entry = windows.get(address);
-			if (!entry || entry.ends <= now()) {
-				if (entry) windows.delete(address);
-				return 0;
-			}
-			return entry.count >= FAILURES_PER_ADDRESS ? entry.ends - now() : 0;
-		},
-		fail(address: string) {
-			const current = windows.get(address);
-			const entry =
-				current && current.ends > now() ? current : { count: 0, ends: now() + ADDRESS_WINDOW_MS };
-			entry.count += 1;
-			windows.set(address, entry);
-		},
-	};
-}
-
+export { addressKey } from './address.ts';
 export { identityMigrations } from './migrations.ts';

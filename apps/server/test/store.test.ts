@@ -574,6 +574,7 @@ describe('the upload route', () => {
 			backupsDir: runtime.config.backupsDir,
 			backupSchedule: runtime.config.backup,
 			identity: runtime.identity,
+			knownDevices: runtime.knownDevices,
 			logger: silentLogger,
 			trustedOrigins: [BASE],
 			appVersion: '0.0.0',

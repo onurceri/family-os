@@ -1,11 +1,13 @@
 import { answer, mention, on } from '../support/drafts.ts';
 import {
+	ADMIN,
 	addCard,
 	draftCard,
 	expect,
 	nextWeek,
 	setUpAndSignIn,
 	shareText,
+	signInWithPassword,
 	test,
 } from '../support/fixtures.ts';
 import { createMember, familyTablet, PHONE } from '../support/members.ts';
@@ -133,4 +135,33 @@ test('a supervised member signs in with a PIN on a family device; changes wait f
 	// Decided: the capture is Elif's, so it leaves the admin's Quick add.
 	await expect(card).toHaveCount(0);
 	await context.close();
+});
+
+test.describe('a stranger guessing from the internet', () => {
+	test.use({ freshFamily: true, behindProxy: true });
+
+	test('cannot lock the admin out of a browser that signed in before', async ({
+		page,
+		playwright,
+		family,
+	}) => {
+		await setUpAndSignIn(page);
+		const origin = family.url;
+		await page.request.post(`${origin}/api/auth/sign-out`, { headers: { origin }, data: {} });
+
+		// Wrong passwords from twenty addresses: enough to refuse any device the family does not know.
+		const stranger = await playwright.request.newContext();
+		const tryPassword = (password: string, address: string) =>
+			stranger.post(`${origin}/api/auth/sign-in/email`, {
+				headers: { origin, 'x-forwarded-for': address },
+				data: { email: ADMIN.email, password },
+			});
+		for (let i = 1; i <= 20; i++)
+			expect((await tryPassword('wrong password!!', `198.51.100.${i}`)).status()).toBe(401);
+		expect((await tryPassword(ADMIN.password, '198.51.100.99')).status()).toBe(429);
+		await stranger.dispose();
+
+		// The admin's own browser still signs in, through the sign-in page.
+		await signInWithPassword(page, ADMIN.email, ADMIN.password);
+	});
 });

@@ -30,8 +30,11 @@ let identity: Identity;
 let db: ReturnType<typeof openDatabase>['db'];
 /** Members whose role no longer signs in with a PIN. */
 const noPin = new Set<string>();
+/** The clock the sign-in locks read. */
+let clock = 0;
 
 beforeEach(async () => {
+	clock = Date.now();
 	({ db } = openDatabase({ path: ':memory:' }));
 	await runMigrations(db, [{ scope: 'identity', migrations: identityMigrations }]);
 	// Requests with the header `x-test-device: <id>` count as coming from a family device.
@@ -43,10 +46,11 @@ beforeEach(async () => {
 		trustedDevice: async (headers) => headers.get('x-test-device'),
 		mayUsePin: async (memberId) => !noPin.has(memberId),
 		passwordHasher,
+		now: () => clock,
 	});
 });
 
-const post = (path: string, body: unknown, ip = '10.0.0.1', trusted = true) =>
+const post = (path: string, body: unknown, ip = '10.0.0.1', trusted = true, known = false) =>
 	identity.handler(
 		new Request(`${BASE}/api/auth${path}`, {
 			method: 'POST',
@@ -55,6 +59,7 @@ const post = (path: string, body: unknown, ip = '10.0.0.1', trusted = true) =>
 				origin: BASE,
 				'x-famos-client-ip': ip,
 				...(trusted && { 'x-test-device': 'device_1' }),
+				...(known && { 'x-famos-known-device': '1' }),
 			},
 			body: JSON.stringify(body),
 		}),
@@ -350,5 +355,71 @@ describe('identity-betterauth', () => {
 				displayName: 'B',
 			}),
 		).rejects.toMatchObject({ code: 'conflict' });
+	});
+
+	describe('wrong passwords lock the guesser, not the person', () => {
+		const RIGHT = 'correct horse battery';
+		const WRONG = 'wrong password!!';
+		const signIn = (password: string, ip: string, known = false) =>
+			post('/sign-in/email', { email: 'parent@example.com', password }, ip, false, known);
+		beforeEach(() =>
+			identity.admin.setPasswordLogin({
+				memberId: 'member_a',
+				email: 'parent@example.com',
+				password: RIGHT,
+				displayName: 'P',
+			}),
+		);
+
+		it('locks one address for the account after five wrong passwords; another still signs in', async () => {
+			for (let i = 0; i < 5; i++) expect((await signIn(WRONG, '203.0.113.7')).status).toBe(401);
+			const locked = await signIn(RIGHT, '203.0.113.7');
+			expect(locked.status).toBe(429);
+			expect(await locked.json()).toMatchObject({ code: 'LOCKED', retryAfter: 900 });
+			expect((await signIn(RIGHT, '198.51.100.4')).status).toBe(200);
+			// The lock runs out after 15 minutes.
+			clock += 15 * 60_000;
+			expect((await signIn(RIGHT, '203.0.113.7')).status).toBe(200);
+		});
+
+		it('locks unknown devices out after twenty wrong passwords from many addresses, never a known one', async () => {
+			for (let i = 0; i < 20; i++)
+				expect((await signIn(WRONG, `203.0.113.${i + 1}`)).status).toBe(401);
+			const unknown = await signIn(RIGHT, '198.51.100.4');
+			expect(unknown.status).toBe(429);
+			expect(await unknown.json()).toMatchObject({ code: 'LOCKED', retryAfter: 3600 });
+			expect((await signIn(RIGHT, '198.51.100.5', true)).status).toBe(200);
+			// A right password does not lift the backstop for strangers.
+			expect((await signIn(RIGHT, '198.51.100.6')).status).toBe(429);
+			clock += 60 * 60_000;
+			expect((await signIn(RIGHT, '198.51.100.6')).status).toBe(200);
+		});
+
+		it('still locks a known device after its own five wrong passwords', async () => {
+			for (let i = 0; i < 5; i++)
+				expect((await signIn(WRONG, '198.51.100.9', true)).status).toBe(401);
+			expect((await signIn(RIGHT, '198.51.100.9', true)).status).toBe(429);
+		});
+
+		it('counts IPv6 addresses in one /64 together', async () => {
+			for (let i = 0; i < 5; i++)
+				expect((await signIn(WRONG, `2001:db8:1:2::${(i + 1).toString(16)}`)).status).toBe(401);
+			expect((await signIn(RIGHT, '2001:db8:1:2:ffff:eeee:dddd:cccc')).status).toBe(429);
+			expect((await signIn(RIGHT, '2001:db8:1:3::1')).status).toBe(200);
+		});
+
+		it('keeps the PIN lock on the account, from any address on family devices', async () => {
+			await identity.admin.setPin({ memberId: 'member_a', pin: '1234', displayName: 'P' });
+			for (let i = 0; i < 5; i++)
+				expect(
+					(await post('/sign-in/pin', { memberId: 'member_a', pin: '0000' }, `2001:db8:9:${i}::1`))
+						.status,
+				).toBe(401);
+			expect(
+				(await post('/sign-in/pin', { memberId: 'member_a', pin: '1234' }, '2001:db8:a::1')).status,
+			).toBe(429);
+			// The password is a separate account key: wrong PINs do not lock it.
+			expect((await signIn(RIGHT, '198.51.100.4')).status).toBe(200);
+		});
 	});
 });

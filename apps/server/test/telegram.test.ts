@@ -158,6 +158,7 @@ async function start(installed?: readonly ExtensionDefinition[]) {
 		backupsDir: runtime.config.backupsDir,
 		backupSchedule: runtime.config.backup,
 		identity: runtime.identity,
+		knownDevices: runtime.knownDevices,
 		logger: runtime.logger,
 		trustedOrigins: [BASE],
 		appVersion: APP_VERSION,

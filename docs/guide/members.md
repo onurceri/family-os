@@ -76,7 +76,13 @@ A PIN sign-in lasts only as long as the device is a family device and the person
 
 ### Wrong PINs
 
-After 5 wrong PINs for one person, that person cannot sign in for 15 minutes, even with the right PIN, on any device. The screen says "Too many wrong PINs. Try again in 15 minutes." (the wait comes from the server). The same limit applies to a wrong email or password, with its own message. Only a wrong PIN counts: signing in with the right one, or a refusal on a device that is not a family device, does not. Restarting FamilyOS clears the lock.
+After 5 wrong PINs for one person, that person cannot sign in for 15 minutes, even with the right PIN, on any device. The screen says "Too many wrong PINs. Try again in 15 minutes." (the wait comes from the server). Only a wrong PIN counts: signing in with the right one, or a refusal on a device that is not a family device, does not. Restarting FamilyOS clears the lock.
+
+### Wrong passwords
+
+After 5 wrong passwords for one person from the same place (the same internet address), that place must wait 15 minutes before it can sign in as that person again. The screen says "Too many wrong attempts. Try again in 15 minutes." Everyone else, and the same person from anywhere else, signs in as usual.
+
+Wrong passwords from elsewhere cannot lock you out of a device you have signed in on before. If someone on the internet keeps guessing a person's password from many places (20 wrong passwords in an hour), FamilyOS stops accepting that person's password for an hour on devices it does not know, but the browsers where they signed in before and the family devices still let them in. Restarting FamilyOS clears these locks too.
 
 One device can also send at most 10 wrong PINs a minute, for anyone. After that the screen says "Too many tries from this device. Wait 1 minute and try again." Children switching profiles on the kitchen tablet never reach it, because right PINs do not count.
 

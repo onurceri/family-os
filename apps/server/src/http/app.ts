@@ -1,6 +1,11 @@
 import type { BackupService } from '@famos/adapters/backup';
 import type { Email } from '@famos/adapters/email';
-import { CLIENT_IP_HEADER, type Identity } from '@famos/adapters/identity-betterauth';
+import {
+	CLIENT_IP_HEADER,
+	type Identity,
+	KNOWN_DEVICE_HEADER,
+	signInTarget,
+} from '@famos/adapters/identity-betterauth';
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
 import type { Telegram } from '@famos/adapters/telegram';
 import type { WebPush } from '@famos/adapters/webpush';
@@ -35,11 +40,12 @@ import { mountAppRoutes } from './apps.ts';
 import { authenticate } from './authenticate.ts';
 import { mountBackupRoutes } from './backups.ts';
 import { createClientIp } from './client-ip.ts';
-import { deviceMiddleware, mountDeviceRoutes } from './devices.ts';
+import { deviceMiddleware, deviceTokenFromHeaders, mountDeviceRoutes } from './devices.ts';
 import { mountEmailRoutes } from './email.ts';
 import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
 import { mountExtensionRoutes } from './extensions.ts';
+import type { KnownDevices } from './known-devices.ts';
 import { MAX_BAD_KEYS_PER_MINUTE, mountPublicApi } from './public/index.ts';
 import { mountPushRoutes } from './push.ts';
 import { createRateLimiter } from './rate-limit.ts';
@@ -64,6 +70,8 @@ export interface HttpAppDeps {
 	backupsDir: string;
 	backupSchedule: { hour: number; keep: number };
 	identity: Pick<Identity, 'handler' | 'resolveMember'>;
+	/** Browsers that signed in to an account before, which the account-wide sign-in lock lets through. */
+	knownDevices: KnownDevices;
 	logger: Logger;
 	trustedOrigins: string[];
 	/** The address the admin configured for the family (`FAMOS_BASE_URL`), when there is one. */
@@ -495,6 +503,16 @@ function mountActionCheck(app: OpenAPIHono<AppEnv>, deps: HttpAppDeps) {
 	}) as never);
 }
 
+/**
+ * A device the family already knows for this account: a family device, or a browser that signed in
+ * to it with the password before. Displays are not family devices and never sign in.
+ */
+async function knownDevice(deps: HttpAppDeps, headers: Headers, email: string): Promise<boolean> {
+	if (deps.knownDevices.knows(headers.get('cookie'), email)) return true;
+	const device = await deps.kernel.devices.verify(deviceTokenFromHeaders(headers));
+	return device?.kind === 'family';
+}
+
 export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	const app = new OpenAPIHono<AppEnv>({
 		defaultHook: (result, c) => {
@@ -520,6 +538,12 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		// better-auth rate-limits by this header only; set it from the socket, never from the client.
 		const headers = new Headers(c.req.raw.headers);
 		headers.set(CLIENT_IP_HEADER, clientIp(c));
+		// Whether the device is known is decided here, from the family device and sign-in cookies,
+		// never taken from the client.
+		headers.delete(KNOWN_DEVICE_HEADER);
+		const target = await signInTarget(c.req.raw);
+		const email = target?.kind === 'email' ? target.id : null;
+		if (email && (await knownDevice(deps, headers, email))) headers.set(KNOWN_DEVICE_HEADER, '1');
 		// Signing out (or ending sessions, or changing the password) must close the member's open
 		// realtime sockets too: they were opened with the session that is going away.
 		const endsSession = SESSION_ENDING_PATH.test(new URL(c.req.url).pathname);
@@ -527,7 +551,14 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		const response = await deps.identity.handler(new Request(c.req.raw, { headers }));
 		const self = before ? selfOf(before) : null;
 		if (self !== null && response.ok) await deps.kernel.bus.emit(sessionEnded, { memberId: self });
-		return response;
+		if (!email || !response.ok) return response;
+		// A right password makes this browser known for the account from now on.
+		const remembered = new Response(response.body, response);
+		remembered.headers.append(
+			'set-cookie',
+			deps.knownDevices.remember(headers.get('cookie'), email, deps.secureCookies),
+		);
+		return remembered;
 	});
 
 	// API responses contain family data: never cache them (browser, proxies, service worker).

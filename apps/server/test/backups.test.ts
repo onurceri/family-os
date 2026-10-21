@@ -86,6 +86,7 @@ const open = () => {
 		backupsDir: r.config.backupsDir,
 		backupSchedule: r.config.backup,
 		identity: r.identity,
+		knownDevices: r.knownDevices,
 		logger: silentLogger,
 		trustedOrigins: [BASE],
 		appVersion: '0.0.0-test',
