@@ -57,6 +57,7 @@ import {
 import { type FacetWords, type TodayWords, todayWords } from '#lib/today-words.js';
 import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } from './blocks.js';
 import { mergeMemberNotes, notesRefreshMs } from './member-notes.js';
+import { quietTextKey } from './quiet-text.js';
 
 /**
  * Everything Today shows, loaded and settled in one place. Every style's
@@ -1027,11 +1028,15 @@ export class TodayData {
 			this.todayItems.filter((i) => i.kind !== 'meal').length === 0,
 	);
 
-	/** The quiet day's sentence; a display's has nobody to wait for. */
+	/** The quiet day's sentence; a display's has nobody to wait for, and a person with something to decide is not told nothing waits. */
 	readonly quietText = $derived.by(() => {
-		const week = this.nextDaysItems.length === 0;
-		if (this.familyMode) return t(week ? 'home_quiet_text_week_family' : 'home_quiet_text_family');
-		return t(week ? 'home_quiet_text_week' : 'home_quiet_text');
+		return tDynamic(
+			`app:${quietTextKey({
+				family: this.familyMode,
+				week: this.nextDaysItems.length === 0,
+				waiting: this.needsTotal,
+			})}`,
+		);
 	});
 
 	/** Saves whose next thing the hero shows (`core.setMyNextUp`); the page follows at once. */

@@ -78,6 +78,8 @@
 	"home_quiet_text_week": "Nothing is on the calendar today or in the coming week, and nothing is waiting for you.",
 	"home_quiet_text_family": "Nothing is on the calendar today.",
 	"home_quiet_text_week_family": "Nothing is on the calendar today or in the coming week.",
+	"home_quiet_text_open": "Nothing is on the calendar today.",
+	"home_quiet_text_week_open": "Nothing is on the calendar today or in the coming week.",
 	"today_next_up": "Next up",
 	"today_next_up_toggle": "Whose next thing to show",
 	"today_next_up_family": "Family",
