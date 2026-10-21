@@ -235,6 +235,8 @@ export interface RequestGroup {
 	drafts: Draft[];
 	/** When the newest of them was made. */
 	latest: number;
+	/** The connected app behind an app group (its current name), when the server names it. */
+	app: { id: string; name: string } | null;
 }
 
 /** The member behind a suggestion: who made it, or who an agent made it for. */
@@ -244,7 +246,8 @@ function personBehind(draft: Draft): string {
 
 export function requestOrigin(draft: Draft): RequestOrigin {
 	if (draft.sourceKind === 'assistant') return 'assistant';
-	if (draft.sourceKind === 'mcp') return 'app';
+	// Suggestions through the public API carry no source kind; the app behind them is named.
+	if (draft.sourceKind === 'mcp' || draft.app) return 'app';
 	return 'person';
 }
 
@@ -259,12 +262,15 @@ export function requestGroups(drafts: readonly Draft[]): RequestGroup[] {
 		const key =
 			origin === 'person'
 				? `person:${personBehind(draft)}`
-				: `${origin}:${draft.sourceId ?? draft.id}:${personBehind(draft)}`;
+				: draft.app
+					? `app:${draft.app.id}:${personBehind(draft)}`
+					: `${origin}:${draft.sourceId ?? draft.id}:${personBehind(draft)}`;
 		const group = groups.get(key);
 		if (group) {
 			group.drafts.push(draft);
 			group.latest = Math.max(group.latest, draft.createdAt);
-		} else groups.set(key, { key, origin, drafts: [draft], latest: draft.createdAt });
+		} else
+			groups.set(key, { key, origin, drafts: [draft], latest: draft.createdAt, app: draft.app });
 	}
 	return [...groups.values()].toSorted((a, b) => b.latest - a.latest);
 }

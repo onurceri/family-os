@@ -35,7 +35,10 @@ let k: TestKernel;
 let parent: Who;
 let kid: Who;
 beforeEach(async () => {
-	k = await createTestKernel({ extensions: [pantry] });
+	k = await createTestKernel({
+		extensions: [pantry],
+		translate: (_locale, key, params) => `${key} ${JSON.stringify(params ?? {})}`,
+	});
 	parent = await k.member('member');
 	kid = await k.member('supervised');
 });
@@ -90,6 +93,46 @@ describe('the name of what a suggestion is about', () => {
 			name: 'Rice',
 			who: kid.member.displayName,
 		});
+	});
+});
+
+describe('a suggestion from a connected app', () => {
+	const appActor = (via?: MemberId): Actor =>
+		via
+			? {
+					kind: 'member',
+					memberId: via,
+					roleId: 'supervised',
+					via: { appId: 'app_home', appRoleId: 'supervised', mode: 'suggest' },
+				}
+			: { kind: 'app', appId: 'app_home', roleId: 'member', mode: 'suggest' };
+	beforeEach(async () => {
+		await db()
+			.insertInto('core_apps')
+			.values({
+				id: 'app_home',
+				name: 'Home Assistant',
+				role_id: 'member',
+				mode: 'suggest',
+				acts_for: '[]',
+				created_at: 0,
+				updated_at: 0,
+			})
+			.execute();
+	});
+
+	it('reaches the approvers naming the app', async () => {
+		await propose(appActor());
+		const [note] = await notices('core.draftWaiting');
+		expect(JSON.parse(note?.body_params ?? '{}')).toMatchObject({ who: 'Home Assistant' });
+	});
+
+	it('names the member and the app when it acts for someone', async () => {
+		await propose(appActor(kid.member.id as MemberId));
+		const [note] = await notices('core.draftWaiting');
+		const { who } = JSON.parse(note?.body_params ?? '{}') as { who: string };
+		expect(who).toContain(kid.member.displayName);
+		expect(who).toContain('Home Assistant');
 	});
 });
 

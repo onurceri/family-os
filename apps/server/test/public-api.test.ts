@@ -1742,6 +1742,32 @@ describe('chores and the board', () => {
 		expect(undone.body.result.nextDue).toBe('2099-01-01');
 	});
 
+	it('shows a suggestion to complete a chore with the chore’s name and the app behind it', async () => {
+		const { cookie } = await setup();
+		const home = await addApp(cookie, {
+			roleId: 'member',
+			mode: 'suggest',
+			name: 'Home Assistant',
+		});
+		const created = await request('POST', '/api/v1/actions/chores.createChore', {
+			cookie,
+			body: { title: 'Empty the dishwasher', startDate: '2099-01-01' },
+		});
+		const choreId = created.body.output.id as string;
+		const made = await pub(home.secret, 'POST', `/chores/${choreId}/complete`, {
+			dueDate: '2099-01-01',
+		});
+		expect(made.status).toBe(202);
+		const drafts = await request('GET', '/api/v1/core/drafts?status=pending&limit=20', { cookie });
+		expect(drafts.body).toEqual([
+			expect.objectContaining({
+				actionId: 'chores.markDone',
+				subject: 'Empty the dishwasher',
+				app: { id: expect.any(String), name: 'Home Assistant' },
+			}),
+		]);
+	});
+
 	it('puts a note on the board and lists it', async () => {
 		const { cookie } = await setup();
 		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;

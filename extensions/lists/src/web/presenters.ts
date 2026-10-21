@@ -167,7 +167,8 @@ export const checkShoppingItemPresenter: DraftPresenter<{
 			path: 'done',
 		},
 	],
-	approveLabel: (c) => c.t('lists:draft_approve_apply'),
+	approveLabel: (c, input) =>
+		c.t(input?.done === false ? 'lists:draft_approve_put_back' : 'lists:draft_approve_bought'),
 };
 
 /** A proposal to delete a task. */

@@ -805,9 +805,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// Tell whoever may approve, and who asked; several drafts from one shared item collapse
 			// into one.
 			const who =
-				facts.proposerMemberId === null
-					? undefined
-					: (await uow.family.members()).find((m) => m.id === facts.proposerMemberId)?.displayName;
+				actor.kind === 'ai'
+					? facts.proposerMemberId === null
+						? undefined
+						: (await uow.family.members()).find((m) => m.id === facts.proposerMemberId)?.displayName
+					: await proposerLabel(uow, actor);
 			await uow.notify(
 				waitingNotice(
 					{
@@ -1475,6 +1477,31 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 
 	const againKey = (draftId: string) => `again:${draftId}`;
 
+	/**
+	 * Who a notice names as the one who asked: the member, "Home Assistant" for an app on its own,
+	 * or "Tom via Home Assistant" for an app acting for a member. Written in the family's language
+	 * (the notice is stored once for every approver).
+	 */
+	async function proposerLabel(uow: UnitOfWork, actor: Actor): Promise<string | undefined> {
+		const memberId = memberBehind(actor);
+		const name =
+			memberId === null
+				? undefined
+				: (await uow.family.members()).find((m) => m.id === memberId)?.displayName;
+		const via = appOf(actor);
+		if (!via) return name;
+		const app = await uow.db
+			.withTables<CoreTables>()
+			.selectFrom('core_apps')
+			.select('name')
+			.where('id', '=', via.appId)
+			.executeTakeFirst();
+		if (!app) return name;
+		if (!name) return app.name;
+		const { locale } = await uow.family.settings();
+		return deps.translate(locale, 'app:draft_via_app_member', { name, app: app.name });
+	}
+
 	async function appBehind(draft: DraftRow) {
 		const app = appOf(JSON.parse(draft.proposed_by) as Actor);
 		if (!app) return null;
@@ -1562,7 +1589,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			});
 			// A draft addressed to one member is theirs to decide; the others are told it waits.
 			if (draft.for_member !== null) return;
-			const who = (await uow.family.members()).find((m) => m.id === actor.memberId)?.displayName;
+			const who = await proposerLabel(uow, actor);
 			await uow.notify(
 				waitingNotice(
 					{

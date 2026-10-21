@@ -1,5 +1,6 @@
 import {
 	type DigestItem,
+	type DuplicateContext,
 	defineAction,
 	defineDigest,
 	defineJob,
@@ -274,11 +275,22 @@ export const postNote = defineAction({
 	},
 });
 
+/** A note by the start of its text, for a card that names it by its id alone. */
+const noteSubject = async (ctx: DuplicateContext, { id }: { id: string }) => {
+	const row = await tables(ctx.db)
+		.selectFrom('board_notes')
+		.select('text')
+		.where('id', '=', id)
+		.executeTakeFirst();
+	return row ? excerpt(row.text, 60) : null;
+};
+
 export const editNote = defineAction({
 	id: 'board.editNote',
 	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Change a note on the family board',
 	expose: api.editNote,
+	subject: noteSubject,
 	input: EditNoteSchema,
 	// `ok` is what callers have always read; the note as it is now follows.
 	output: BoardNoteSchema.extend({ ok: z.literal(true) }),
@@ -304,6 +316,7 @@ export const editNote = defineAction({
 export const removeNote = defineAction({
 	id: 'board.removeNote',
 	expose: api.removeNote,
+	subject: noteSubject,
 	target: ({ id }) => ({ table: 'board_notes', id, versionColumn: 'version' }),
 	title: 'Take a note off the family board',
 	input: z.object({ id: NoteIdSchema }),

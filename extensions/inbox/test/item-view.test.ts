@@ -23,6 +23,7 @@ import {
 	pickedDrafts,
 	requestChip,
 	requestGroups,
+	requestOrigin,
 	skipLines,
 } from '../src/web/item-view.ts';
 
@@ -216,6 +217,7 @@ describe('requests that are not from a capture', () => {
 			createdAt: 1,
 			sourceKind: null,
 			sourceId: null,
+			app: null,
 			proposedBy: { kind: 'member', memberId: 'noah' },
 			canDecide: true,
 			...over,
@@ -249,6 +251,33 @@ describe('requests that are not from a capture', () => {
 			['app', ['delft', 'plasters']],
 			['app', ['other app']],
 		]);
+	});
+
+	it('groups what a program made through the public API by the app, and keeps its name', () => {
+		const home = { id: 'app_home', name: 'Home Assistant' };
+		const viaApp = (id: string, memberId: string, at: number) =>
+			request({
+				id,
+				createdAt: at,
+				app: home,
+				proposedBy: {
+					kind: 'member',
+					memberId,
+					via: { appId: 'app_home', appRoleId: 'member', mode: 'suggest' },
+				},
+			});
+		const groups = requestGroups([
+			viaApp('yoghurt', 'tom', 1),
+			viaApp('bread', 'tom', 2),
+			viaApp('eggs', 'ivy', 3),
+			request({ id: 'own', createdAt: 4, proposedBy: { kind: 'member', memberId: 'tom' } }),
+		]);
+		expect(groups.map((g) => [g.origin, g.app?.name ?? null, g.drafts.map((d) => d.id)])).toEqual([
+			['person', null, ['own']],
+			['app', 'Home Assistant', ['eggs']],
+			['app', 'Home Assistant', ['yoghurt', 'bread']],
+		]);
+		expect(requestOrigin(viaApp('x', 'tom', 1))).toBe('app');
 	});
 
 	it('leaves out what is decided', () => {

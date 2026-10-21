@@ -133,7 +133,7 @@
 		byline ? draftByline(draft, app.me()?.id, app.members(), app.t) : undefined,
 	);
 	const labels = $derived({
-		approve: presenter?.approveLabel?.(context) ?? a('draft_approve'),
+		approve: presenter?.approveLabel?.(context, shown) ?? a('draft_approve'),
 		edit: a('draft_edit'),
 		save: onedit ? a('draft_save_edit') : a('draft_save'),
 		cancel: a('draft_cancel'),

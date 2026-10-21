@@ -23,15 +23,19 @@
 	const Icon = $derived(
 		group.origin === 'assistant' ? Sparkles : group.origin === 'app' ? Plug : UserRound,
 	);
-	const line = $derived(
-		t(
+	const line = $derived.by(() => {
+		if (group.origin === 'app' && group.app)
+			return person
+				? app.t('app:draft_via_app_member', { name: person.displayName, app: group.app.name })
+				: group.app.name;
+		return t(
 			group.origin === 'assistant'
 				? 'request_from_assistant'
 				: group.origin === 'app'
 					? 'request_from_app'
 					: 'request_from_person',
-		),
-	);
+		);
+	});
 </script>
 
 <article class="grid gap-3" aria-label={line} data-testid="request-group">
@@ -43,7 +47,7 @@
 			<h3 class="text-[17px] leading-snug font-bold text-balance">{line}</h3>
 			<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
 				<span>{captureTime(app, group.latest)}</span>
-				{#if person}
+				{#if person && !(group.origin === 'app' && group.app)}
 					<span class="flex items-center gap-1.5 font-semibold">
 						<Avatar name={person.displayName} color={person.color} size={18} />
 						{t('from', { name: person.displayName })}

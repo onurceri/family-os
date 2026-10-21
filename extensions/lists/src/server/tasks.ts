@@ -499,6 +499,7 @@ export const completeTask = defineAction({
 export const reopenTask = defineAction({
 	id: 'lists.reopenTask',
 	expose: api.reopenTask,
+	subject: taskTitle,
 	target: ({ id }) => ({
 		table: 'lists_tasks',
 		id,

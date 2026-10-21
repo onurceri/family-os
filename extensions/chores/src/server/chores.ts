@@ -1,4 +1,11 @@
-import { defineAction, defineRoute, FamosError, storedAsWhole, type UnitOfWork } from '@famos/sdk';
+import {
+	type DuplicateContext,
+	defineAction,
+	defineRoute,
+	FamosError,
+	storedAsWhole,
+	type UnitOfWork,
+} from '@famos/sdk';
 import { compareDates, type Recurrence, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
@@ -38,6 +45,17 @@ const DAY_MS = 86_400_000;
 /** A finished one-off chore stays on the list this long. */
 const DONE_VISIBLE_MS = 7 * DAY_MS;
 const HISTORY = 30;
+
+/** A chore by its name on record, or null when it is gone. */
+const choreTitle = async (ctx: DuplicateContext, { id }: { id: string }) =>
+	(
+		await tables(ctx.db)
+			.selectFrom('chores_chores')
+			.select('title')
+			.where('id', '=', id)
+			.where('archived_at', 'is', null)
+			.executeTakeFirst()
+	)?.title ?? null;
 
 /** Plans the reminder for a chore as it is now (after every change that can move it). */
 async function scheduleReminder(uow: UnitOfWork, id: string) {
@@ -238,15 +256,7 @@ export const setAssignees = defineAction({
 	output: SetAssigneesResultSchema,
 	approval: { unless: choresEdit.id },
 	// The chore by its name on record, whatever title the caller sent along.
-	async subject(ctx, { id }) {
-		const row = await tables(ctx.db)
-			.selectFrom('chores_chores')
-			.select('title')
-			.where('id', '=', id)
-			.where('archived_at', 'is', null)
-			.executeTakeFirst();
-		return row?.title ?? null;
-	},
+	subject: choreTitle,
 	// Who takes turns now, for the card's "old → new".
 	async currentValues(ctx, { id }) {
 		const row = await tables(ctx.db)
@@ -310,6 +320,8 @@ export const markDone = defineAction({
 		'Records who did it, moves the chore to its next due date and hands it to the next person in turn. A tap on a date that has already been done changes nothing.',
 	input: MarkDoneSchema,
 	output: MarkDoneResultSchema,
+	// A suggestion from a program sends no label: the card names the chore from the record.
+	subject: choreTitle,
 	requires: choresUse.id,
 	// That date is already done, or the chore moved on: running it records nothing.
 	async settled(ctx, { id, dueDate }) {
@@ -431,6 +443,16 @@ export const undoDone = defineAction({
 		'Takes the latest completion of a chore back: the due date and whose turn it was return. Your own completion can be undone the same day.',
 	input: UndoDoneSchema,
 	output: ChoreSchema,
+	// The chore the completion belongs to.
+	async subject(ctx, { completionId }) {
+		const row = await tables(ctx.db)
+			.selectFrom('chores_completions')
+			.innerJoin('chores_chores', 'chores_chores.id', 'chores_completions.chore_id')
+			.select('chores_chores.title')
+			.where('chores_completions.id', '=', completionId)
+			.executeTakeFirst();
+		return row?.title ?? null;
+	},
 	requires: choresUse.id,
 	async run(uow, { completionId }) {
 		const t = tables(uow.db);

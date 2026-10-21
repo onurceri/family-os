@@ -392,6 +392,7 @@ export const undoAddShoppingItems = defineAction({
 export const updateShoppingItem = defineAction({
 	id: 'lists.updateShoppingItem',
 	expose: api.patchShoppingItem,
+	subject: itemTitle,
 	target: ({ id }) => ({
 		table: 'lists_shopping_items',
 		id,

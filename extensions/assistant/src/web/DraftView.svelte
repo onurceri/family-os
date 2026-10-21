@@ -87,7 +87,7 @@
 	const mine = $derived(proposedByMember(draft.proposedBy, app.me()?.id));
 	const asker = $derived(draftByline(draft, app.me()?.id, app.members(), app.t));
 	const labels = $derived({
-		approve: presenter?.approveLabel?.(context) ?? a('draft_approve'),
+		approve: presenter?.approveLabel?.(context, input) ?? a('draft_approve'),
 		edit: a('draft_edit'),
 		save: a('draft_save'),
 		cancel: a('draft_cancel'),

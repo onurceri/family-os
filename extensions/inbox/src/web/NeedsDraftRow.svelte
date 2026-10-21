@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ConfirmButton, TodayRow } from '@famos/ui/famos';
-	import { draftHeadline, namedInput, type PresenterContext } from '@famos/ui/slots';
+	import { draftByline, draftHeadline, namedInput, type PresenterContext } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
 	import { useInbox } from './i18n.js';
@@ -50,7 +50,10 @@
 		metaLine(
 			headline,
 			fields.map((f) => f.value),
-			uncertain ? [a('draft_check_this')] : [],
+			[
+				draftByline(draft, app.me()?.id, app.members(), app.t),
+				...(uncertain ? [a('draft_check_this')] : []),
+			].filter((part): part is string => Boolean(part)),
 		),
 	);
 
@@ -146,7 +149,7 @@
 					class="bg-idle text-ink hover:bg-line {buttonClass}"
 					disabled={busy}
 					onclick={() => approve()}
-					>{presenter?.approveLabel?.(context) ?? a('draft_approve')}</button
+					>{presenter?.approveLabel?.(context, shown) ?? a('draft_approve')}</button
 				>
 			{/if}
 		{/snippet}

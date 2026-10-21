@@ -387,8 +387,11 @@ export interface DraftPresenter<I = unknown> {
 	 * (from the action's `currentValues`, waiting drafts only), for rows that read "old → new".
 	 */
 	fields(input: I, context: PresenterContext, before?: DraftBefore): DraftField[];
-	/** Label of the approve button, e.g. "Add to calendar". */
-	approveLabel?(context: PresenterContext): string;
+	/**
+	 * Label of the approve button, e.g. "Add to calendar": a verb for what approving does. The
+	 * input (as shown on the card) is for a presenter whose action does opposite things.
+	 */
+	approveLabel?(context: PresenterContext, input?: I): string;
 	/** What a decided card says when the neutral "Done" is too vague, e.g. "Added to the calendar". */
 	appliedLabel?(context: PresenterContext): string;
 	editor?: () => Promise<{ default: Component<DraftEditorProps<I>> }>;
