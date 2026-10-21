@@ -122,7 +122,10 @@ const make = async (
 		mode,
 		actsFor,
 	});
-	return { app: created.app, secret: created.secret };
+	const { secret } = await k.apps.createToken(admin.actor, created.id, { name: created.name });
+	const app = (await k.apps.list(admin.actor)).find((a) => a.id === created.id);
+	if (!app) throw new Error('app missing');
+	return { app, secret };
 };
 
 /** Who the key is, with the member it names. */
@@ -419,11 +422,15 @@ describe('keys and lifecycle', () => {
 	});
 
 	it('lets the admin set an expiry, and refuses an expired key', async () => {
-		const created = await k.apps.create(admin.actor, {
+		const app = await k.apps.create(admin.actor, {
 			name: 'Script',
 			roleId: 'member',
 			mode: 'apply',
 			actsFor: [],
+		});
+		expect(app.tokens).toEqual([]);
+		const created = await k.apps.createToken(admin.actor, app.id, {
+			name: 'Script',
 			expiresInDays: 2,
 		});
 		expect(created.token.expiresAt).toBe(k.clock.now() + 2 * 86_400_000);
@@ -431,7 +438,7 @@ describe('keys and lifecycle', () => {
 		k.clock.advance(3 * 86_400_000);
 		expect(await k.apps.authenticate(created.secret)).toBeNull();
 		await expect(
-			k.apps.createToken(admin.actor, created.app.id, { name: 'x', expiresInDays: 0 }),
+			k.apps.createToken(admin.actor, app.id, { name: 'x', expiresInDays: 0 }),
 		).rejects.toMatchObject({ code: 'bad_request' });
 	});
 

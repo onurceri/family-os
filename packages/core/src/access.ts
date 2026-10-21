@@ -18,7 +18,7 @@ import { unknownKind } from './unknown-kind.ts';
  * the acts only a person present does (deciding suggestions, creating keys, signing in by PIN).
  * An app acting for a member is held to the same, so it can never do more than the app could.
  */
-const NEVER_FOR_APPS: ReadonlySet<string> = new Set([
+export const PERSON_ONLY_CAPABILITIES: ReadonlySet<string> = new Set([
 	CORE_CAPABILITIES.draftsApprove.id,
 	CORE_CAPABILITIES.mcpUse.id,
 	CORE_CAPABILITIES.signInPin.id,
@@ -26,7 +26,7 @@ const NEVER_FOR_APPS: ReadonlySet<string> = new Set([
 
 /** Whether a capability may reach an app at all. */
 export const appMayHold = (definition: Pick<CapabilityDefinition, 'id' | 'critical'>): boolean =>
-	definition.critical !== true && !NEVER_FOR_APPS.has(definition.id);
+	definition.critical !== true && !PERSON_ONLY_CAPABILITIES.has(definition.id);
 
 export type CustomRole = {
 	id: string;

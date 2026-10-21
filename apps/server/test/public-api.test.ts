@@ -111,17 +111,21 @@ async function addApp(
 	cookie: string,
 	options: { name?: string; roleId: string; mode?: 'apply' | 'suggest'; actsFor?: string[] },
 ) {
-	const created = await request('POST', '/api/v1/apps', {
+	const name = options.name ?? 'Test app';
+	const created = await request('POST', '/api/v1/actions/core.createApp', {
 		cookie,
 		body: {
-			name: options.name ?? 'Test app',
+			name,
 			roleId: options.roleId,
 			mode: options.mode ?? 'apply',
 			actsFor: options.actsFor ?? [],
 		},
 	});
-	expect(created.status).toBe(201);
-	return { secret: created.body.secret as string, id: created.body.app.id as string };
+	expect(created.body.status).toBe('applied');
+	const id = created.body.output.id as string;
+	const key = await request('POST', `/api/v1/apps/${id}/tokens`, { cookie, body: { name } });
+	expect(key.status).toBe(201);
+	return { secret: key.body.secret as string, id };
 }
 
 const pub = (
@@ -194,7 +198,7 @@ describe('the door', () => {
 	it('turns away a paused or revoked app at once', async () => {
 		const { cookie } = await setup();
 		const { secret, id } = await addApp(cookie, { roleId: 'admin' });
-		await request('POST', `/api/v1/apps/${id}/pause`, { cookie });
+		await request('POST', '/api/v1/actions/core.pauseApp', { cookie, body: { appId: id } });
 		const paused = await pub(secret, 'GET', '/');
 		expect(paused.status).toBe(401);
 		expect(paused.body.error).toMatchObject({ code: 'unauthenticated', reason: 'paused' });
@@ -202,10 +206,10 @@ describe('the door', () => {
 		const stranger = await pub('famos_nope', 'GET', '/');
 		expect(stranger.status).toBe(401);
 		expect(stranger.body.error.reason).toBeUndefined();
-		await request('POST', `/api/v1/apps/${id}/resume`, { cookie });
+		await request('POST', '/api/v1/actions/core.resumeApp', { cookie, body: { appId: id } });
 		expect((await pub(secret, 'GET', '/')).status).toBe(200);
-		await request('POST', `/api/v1/apps/${id}/pause`, { cookie });
-		await request('DELETE', `/api/v1/apps/${id}`, { cookie });
+		await request('POST', '/api/v1/actions/core.pauseApp', { cookie, body: { appId: id } });
+		await request('POST', '/api/v1/actions/core.revokeApp', { cookie, body: { appId: id } });
 		const revoked = await pub(secret, 'GET', '/');
 		expect(revoked.status).toBe(401);
 		expect(revoked.body.error.reason).toBeUndefined();
@@ -268,7 +272,12 @@ describe('the door, more', () => {
 	it('counts wrong keys together with the MCP endpoint’s', async () => {
 		const { cookie } = await setup();
 		expect(
-			(await request('PUT', '/api/v1/mcp/settings', { cookie, body: { enabled: true } })).status,
+			(
+				await request('POST', '/api/v1/actions/core.setMcpEnabled', {
+					cookie,
+					body: { enabled: true },
+				})
+			).status,
 		).toBe(200);
 		const address = { 'x-forwarded-for': '10.88.0.1' };
 		for (let i = 0; i < 30; i++)
@@ -1874,7 +1883,10 @@ describe('notes an app puts up alone', () => {
 		const home = await addApp(cookie, { roleId: 'member', name: 'Home Assistant' });
 		const admin = (await addApp(cookie, { roleId: 'admin' })).secret;
 		await pub(home.secret, 'POST', '/board/notes', { text: 'Door open' });
-		const revoked = await request('DELETE', `/api/v1/apps/${home.id}`, { cookie });
+		const revoked = await request('POST', '/api/v1/actions/core.revokeApp', {
+			cookie,
+			body: { appId: home.id },
+		});
 		expect(revoked.status).toBeLessThan(300);
 		const listed = await pub(admin, 'GET', '/board/notes');
 		expect(listed.body.items[0].createdByApp).toMatchObject({ name: 'Home Assistant' });

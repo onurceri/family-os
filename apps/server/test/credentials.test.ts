@@ -117,7 +117,9 @@ const actorOf = (id: string, roleId: string) => ({
 });
 
 async function enableMcp(cookie: string) {
-	expect((await call('PUT', '/api/v1/mcp/settings', { enabled: true }, cookie)).status).toBe(200);
+	expect(
+		(await call('POST', '/api/v1/actions/core.setMcpEnabled', { enabled: true }, cookie)).status,
+	).toBe(200);
 }
 
 async function feedOf(cookie: string, scope: string) {

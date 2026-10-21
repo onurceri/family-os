@@ -264,7 +264,8 @@ describe('HTTP API', () => {
 		).toBe(403);
 		expect((await call('GET', '/api/v1/core/devices', undefined, cookie)).body).toHaveLength(1);
 		expect(
-			(await call('DELETE', `/api/v1/core/devices/${device.id}`, undefined, cookie)).status,
+			(await call('POST', '/api/v1/actions/core.revokeDevice', { deviceId: device.id }, cookie))
+				.status,
 		).toBe(200);
 		expect((await call('GET', '/api/v1/core/profiles', undefined, deviceCookie)).status).toBe(401);
 		expect((await call('POST', '/api/auth/sign-in/pin', pinBody, deviceCookie)).status).toBe(403);
@@ -849,7 +850,7 @@ describe('family displays', () => {
 		expect(start.status).toBe(201);
 		const confirm = await call(
 			'POST',
-			'/api/v1/core/displays/confirm',
+			'/api/v1/actions/core.confirmDisplayPairing',
 			{
 				userCode: start.body.userCode,
 				name: grant.name ?? 'Hallway',
@@ -867,7 +868,7 @@ describe('family displays', () => {
 		return {
 			start,
 			poll,
-			pairingId: confirm.body.pairingId as string,
+			pairingId: confirm.body.output.pairingId as string,
 			displayCookie: poll.cookie,
 			deviceId: poll.body.device.id as string,
 		};
@@ -879,11 +880,11 @@ describe('family displays', () => {
 		const start = await call('POST', '/api/v1/core/displays/pair');
 		const confirm = await call(
 			'POST',
-			'/api/v1/core/displays/confirm',
+			'/api/v1/actions/core.confirmDisplayPairing',
 			{ userCode: start.body.userCode, name: 'Kitchen wall', capabilities: [], showNames: false },
 			cookie,
 		);
-		const path = `/api/v1/core/displays/pairings/${confirm.body.pairingId}`;
+		const path = `/api/v1/core/displays/pairings/${confirm.body.output.pairingId}`;
 		expect((await call('GET', path, undefined, cookie)).body).toEqual({
 			status: 'waiting',
 			answering: false,
@@ -1130,19 +1131,19 @@ describe('family displays', () => {
 			display: { capabilities: ['calendar.view', 'lists.view'], showNames: false },
 		});
 		const patched = await call(
-			'PATCH',
-			`/api/v1/core/displays/${deviceId}`,
-			{ name: 'Kitchen', capabilities: ['calendar.view'] },
+			'POST',
+			'/api/v1/actions/core.updateDisplay',
+			{ deviceId, name: 'Kitchen', capabilities: ['calendar.view'] },
 			cookie,
 		);
-		expect(patched.body).toMatchObject({
+		expect(patched.body.output).toMatchObject({
 			name: 'Kitchen',
 			display: { capabilities: ['calendar.view'] },
 		});
 		expect((await tasks()).status).toBe(403);
 
 		expect(
-			(await call('DELETE', `/api/v1/core/devices/${deviceId}`, undefined, cookie)).status,
+			(await call('POST', '/api/v1/actions/core.revokeDevice', { deviceId }, cookie)).status,
 		).toBe(200);
 		expect((await tasks()).status).toBe(401);
 		expect((await call('GET', '/api/v1/core/displays/me', undefined, displayCookie)).status).toBe(
@@ -1176,9 +1177,9 @@ describe('family displays', () => {
 		const memberSocket = open(null);
 
 		await call(
-			'PATCH',
-			`/api/v1/core/displays/${first.deviceId}`,
-			{ name: 'Renamed', capabilities: ['calendar.view'] },
+			'POST',
+			'/api/v1/actions/core.updateDisplay',
+			{ deviceId: first.deviceId, name: 'Renamed', capabilities: ['calendar.view'] },
 			cookie,
 		);
 		expect(firstSocket.close).toHaveBeenCalledTimes(1);
@@ -1187,7 +1188,7 @@ describe('family displays', () => {
 
 		// It reconnects; revoking ends the new socket too.
 		const again = open(first.deviceId);
-		await call('DELETE', `/api/v1/core/devices/${first.deviceId}`, undefined, cookie);
+		await call('POST', '/api/v1/actions/core.revokeDevice', { deviceId: first.deviceId }, cookie);
 		expect(again.close).toHaveBeenCalledTimes(1);
 		expect(secondSocket.close).not.toHaveBeenCalled();
 		expect(hub.size()).toBe(2);
@@ -1310,16 +1311,25 @@ describe('family displays', () => {
 		).cookie;
 		const start = await call('POST', '/api/v1/core/displays/pair');
 		const grant = { userCode: start.body.userCode, name: 'X', capabilities: [], showNames: false };
-		expect((await call('POST', '/api/v1/core/displays/confirm', grant)).status).toBe(401);
-		expect((await call('POST', '/api/v1/core/displays/confirm', grant, kidSession)).status).toBe(
-			403,
-		);
-		expect((await call('POST', '/api/v1/core/displays/confirm', grant, displayCookie)).status).toBe(
+		expect((await call('POST', '/api/v1/actions/core.confirmDisplayPairing', grant)).status).toBe(
 			401,
 		);
 		expect(
-			(await call('PATCH', `/api/v1/core/displays/${deviceId}`, { name: 'Mine' }, kidSession))
+			(await call('POST', '/api/v1/actions/core.confirmDisplayPairing', grant, kidSession)).status,
+		).toBe(403);
+		expect(
+			(await call('POST', '/api/v1/actions/core.confirmDisplayPairing', grant, displayCookie))
 				.status,
+		).toBe(401);
+		expect(
+			(
+				await call(
+					'POST',
+					'/api/v1/actions/core.updateDisplay',
+					{ deviceId, name: 'Mine' },
+					kidSession,
+				)
+			).status,
 		).toBe(403);
 		expect(
 			(await call('GET', '/api/v1/core/displays/capabilities', undefined, kidSession)).status,

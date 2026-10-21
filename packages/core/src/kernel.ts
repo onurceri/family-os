@@ -32,6 +32,7 @@ import { aiMissingAreas } from './ai-missing-areas.ts';
 import { mayUseAsAi } from './ai-tools.ts';
 import { type ApiTokenService, createApiTokenService, revokeTokensOf } from './api-tokens.ts';
 import { type AppService, createAppService } from './apps.ts';
+import { type AuditTrail, createAuditTrail } from './audit.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
 import { type ChangesReader, createChanges } from './changes.ts';
 import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './core-events.ts';
@@ -147,6 +148,11 @@ export interface Kernel {
 	readonly apiTokens: ApiTokenService;
 	/** Connected apps and their keys. */
 	readonly apps: AppService;
+	/**
+	 * The audit log for what credential routes did outside the runner (a key minted, a device
+	 * trusted, a password set): one `applied` row with the route's operation id and its target.
+	 */
+	readonly audit: AuditTrail;
 	/** Capabilities and roles. */
 	readonly access: Access;
 	/** The change log: what changed since a cursor, and a validator for a collection. */
@@ -223,6 +229,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		ids: options.ids,
 		access: () => access,
 	});
+	const audit = createAuditTrail({ db: options.db, clock: options.clock });
 	let runner: ActionRunner | undefined;
 	const features = createFeatures();
 	const aiAreas = createAiAreas(
@@ -308,6 +315,9 @@ export function createKernel(options: KernelOptions): Kernel {
 		draftNotifyDelayMs: options.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
 		languages: () => options.languages ?? anyLanguage,
 		devices: () => devices,
+		apps: () => apps,
+		apiTokens: () => apiTokens,
+		audit,
 		access: () => access,
 		features: () => features,
 		extensionIds: () => registry.extensions.map((e) => e.id),
@@ -676,6 +686,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		devices,
 		apiTokens,
 		apps,
+		audit,
 		access,
 		changes: createChanges({ db: options.db, clock: options.clock, access: () => access }),
 		features,

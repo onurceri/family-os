@@ -18,7 +18,7 @@ Press **Add an app** (you must be signed in with your password; a PIN is not eno
 - **May act for**: the people the app may ask to work as. Leave it empty if the app only needs to work as itself.
 - **Key lasts**: until revoked (the default, so the app does not stop one day without warning) or 30, 90, 180 or 365 days.
 
-Press **Add app**. The key appears **once**: copy it into the app. FamilyOS keeps only a fingerprint, so a lost key cannot be looked up; add a new key and revoke the old one. For Home Assistant, give the FamilyOS integration your address and this key. To write a program of your own, see [the API](api.md). To talk to FamilyOS from an iPhone, see [Siri and Shortcuts](siri.md).
+Press **Add app**. The key appears **once**: copy it into the app. If the key could not be made, the app is added without one: its panel opens, and **Add a key** makes it. FamilyOS keeps only a fingerprint, so a lost key cannot be looked up; add a new key and revoke the old one. For Home Assistant, give the FamilyOS integration your address and this key. To write a program of your own, see [the API](api.md). To talk to FamilyOS from an iPhone, see [Siri and Shortcuts](siri.md).
 
 ## Acting for a person
 

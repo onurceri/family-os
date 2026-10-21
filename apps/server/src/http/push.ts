@@ -16,7 +16,8 @@ import { errorResponses } from './errors.ts';
 /**
  * Web Push devices of the signed-in member. Subscriptions are credentials, so like
  * passwords and device trust these routes call the adapter directly instead of going through
- * actions. Every route is for the member's own devices only.
+ * actions, and record themselves in the audit log. Every route is for the member's own devices
+ * only.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const body = <S extends z.ZodType>(schema: S) => ({
@@ -27,12 +28,13 @@ const Ok = z.object({ ok: z.literal(true) });
 
 export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel: Kernel): void {
 	const translate = kernel.translate;
-	const me = (c: Context<AppEnv>): string => {
+	const person = (c: Context<AppEnv>) => {
 		const actor = c.get('actor');
 		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor.memberId;
+		return actor;
 	};
+	const me = (c: Context<AppEnv>): string => person(c).memberId;
 
 	const getKey = createRoute({
 		...base,
@@ -57,8 +59,10 @@ export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel:
 		responses: { 201: { description: 'Registered', ...json(Ok) }, ...errorResponses },
 	});
 	app.openapi(subscribe, async (c) => {
-		const memberId = me(c);
-		await push.subscribe(memberId, c.req.valid('json'));
+		const actor = person(c);
+		await push.subscribe(actor.memberId, c.req.valid('json'));
+		// The browser's address is its credential: the row says only that it was registered.
+		await kernel.audit.record(actor, 'push.subscribe');
 		return c.json({ ok: true as const }, 201);
 	});
 
@@ -72,7 +76,9 @@ export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel:
 		responses: { 200: { description: 'Removed', ...json(Ok) }, ...errorResponses },
 	});
 	app.openapi(unsubscribe, async (c) => {
-		await push.unsubscribe(me(c), c.req.valid('json').endpoint);
+		const actor = person(c);
+		await push.unsubscribe(actor.memberId, c.req.valid('json').endpoint);
+		await kernel.audit.record(actor, 'push.unsubscribe');
 		return c.json({ ok: true as const }, 200);
 	});
 

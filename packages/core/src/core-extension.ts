@@ -25,6 +25,7 @@ import {
 	SDK_VERSION,
 	selfOf,
 	subjectOf,
+	systemActor,
 	type UnitOfWork,
 } from '@famos/sdk';
 import {
@@ -40,8 +41,12 @@ import {
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
+import { createAdminActions } from './admin-actions.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
+import type { ApiTokenService } from './api-tokens.ts';
 import { revokeTokensOf } from './api-tokens.ts';
+import type { AppService } from './apps.ts';
+import type { AuditTrail } from './audit.ts';
 import { createAutoApproval } from './auto-approval.ts';
 import { pruneChanges, schedulePruneChanges } from './changes.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
@@ -54,7 +59,7 @@ import {
 	sessionEnded,
 } from './core-events.ts';
 import { DecisionSchema } from './decide.ts';
-import type { DeviceService } from './devices.ts';
+import { DeviceSchema, type DeviceService, toDevice } from './devices.ts';
 import { draftDateOf, EXPIRE_JOB, scheduleExpiry, WAITING_STATUSES } from './draft-expiry.ts';
 import { waitingUnit } from './draft-notices.ts';
 import type { createExtensionInstall } from './extension-install.ts';
@@ -76,7 +81,7 @@ import type { createNotifications } from './notifications.ts';
 import type { Registry } from './registry.ts';
 import type { Search } from './search.ts';
 import { readStoredInput } from './stored-input.ts';
-import type { CoreTables, DeviceRow, DraftRow, MemberRow } from './tables.ts';
+import type { CoreTables, DraftRow, MemberRow } from './tables.ts';
 import type { Themes } from './themes.ts';
 
 /**
@@ -434,44 +439,6 @@ export const draftWaiting = defineNotificationKind({
 	audience: 'core.drafts.approve',
 });
 
-export const DeviceSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	kind: z.enum(['family', 'kiosk']),
-	createdAt: z.number(),
-	lastSeenAt: z.number(),
-	/**
-	 * Displays only: what the display may show, and what its screen last had no room for (widget
-	 * ids, and `family`, `chores`, `extras`, `photo` for groups of Today's blocks).
-	 */
-	display: z
-		.object({
-			capabilities: z.array(z.string()),
-			showNames: z.boolean(),
-			leftOut: z.array(z.string()),
-		})
-		.nullable(),
-});
-
-export const toDevice = (
-	row: DeviceRow,
-	leftOut: readonly string[] = [],
-): z.infer<typeof DeviceSchema> => ({
-	id: row.id,
-	name: row.name,
-	kind: row.kind,
-	createdAt: row.created_at,
-	lastSeenAt: row.last_seen_at,
-	display:
-		row.kind === 'kiosk' && row.display_capabilities !== null
-			? {
-					capabilities: JSON.parse(row.display_capabilities) as string[],
-					showNames: row.display_show_names === 1,
-					leftOut: [...leftOut],
-				}
-			: null,
-});
-
 /** Ends a member's keys and extension credentials; retried until it succeeds. */
 export const END_CREDENTIALS_JOB = 'core.endCredentials';
 
@@ -481,6 +448,10 @@ export interface CoreExtensionDeps {
 	identity: IdentityAdmin;
 	runner: () => ActionRunner;
 	devices: () => DeviceService;
+	apps: () => AppService;
+	apiTokens: () => ApiTokenService;
+	/** Records what the credential routes did (they run outside actions). */
+	audit: AuditTrail;
 	appVersion: string;
 	access: () => Access;
 	features: () => Features;
@@ -554,6 +525,12 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 
 	const languages = createLanguages({ languages: deps.languages });
 	const memory = createMemory();
+	const admin = createAdminActions({
+		apps: deps.apps,
+		apiTokens: deps.apiTokens,
+		devices: deps.devices,
+		identity: deps.identity,
+	});
 
 	const createMember = defineAction({
 		id: 'core.createMember',
@@ -1001,6 +978,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				await members(ctx.db).deleteFrom('core_members').where('id', '=', row.id).execute();
 				throw error;
 			}
+			// Nobody is signed in yet: the first admin and their password are made by setup itself.
+			await deps.audit.record(systemActor('setup'), 'core.completeSetup', row.id);
 			return toMember(row);
 		},
 	});
@@ -1206,20 +1185,6 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		},
 	});
 
-	const revokeDevice = defineRoute({
-		method: 'delete',
-		path: '/devices/{deviceId}',
-		operationId: 'core.revokeDevice',
-		summary: 'Revoke a trusted device (stops profile picker and PIN sign-in on it)',
-		requires: CORE_CAPABILITIES.devicesManage.id,
-		params: z.object({ deviceId: idSchema('device') }),
-		response: DeviceSchema,
-		status: 200,
-		async handle(_ctx, { params, actor }) {
-			return toDevice(await deps.devices().revoke(actor, params.deviceId));
-		},
-	});
-
 	const MemberParams = z.object({ memberId: MemberIdSchema });
 
 	/**
@@ -1249,7 +1214,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		body: z.object({ pin: z.string().regex(/^\d{4,6}$/) }),
 		response: z.object({ ok: z.literal(true) }),
 		status: 200,
-		async handle(ctx, { params, body }) {
+		async handle(ctx, { params, body, actor }) {
 			const member = await findMember(ctx.db, params.memberId);
 			// A custom role may be kept to passwords. (A PIN sign-in never administers, whatever the role.)
 			if (!deps.access().effective(member.role_id).has(CORE_CAPABILITIES.signInPin.id)) {
@@ -1261,6 +1226,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				displayName: member.display_name,
 			});
 			await endSessionsOf(ctx, member.id);
+			await deps.audit.record(actor, 'core.setMemberPin', member.id);
 			return { ok: true as const };
 		},
 	});
@@ -1285,6 +1251,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			});
 			// A new password signs the member out everywhere, except an admin changing their own.
 			if (selfOf(actor) !== member.id) await endSessionsOf(ctx, member.id);
+			await deps.audit.record(actor, 'core.setMemberPassword', member.id);
 			return { ok: true as const };
 		},
 	});
@@ -1302,6 +1269,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			// Keys and calendar addresses are sign-ins too: they end with the sessions.
 			await endCredentialsOf(ctx, actor.memberId);
 			await endSessionsOf(ctx, actor.memberId);
+			await deps.audit.record(actor, 'core.signOutEverywhere', actor.memberId);
 			return { ok: true as const };
 		},
 	});
@@ -1931,6 +1899,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.notifications.actions,
 			...deps.search.actions,
 			...memory.actions,
+			...admin.actions,
 			...deps.extensionInstall.actions,
 		],
 		jobs: [
@@ -1942,6 +1911,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			pruneChanges,
 			expireDrafts,
 			endCredentials,
+			...admin.jobs,
 			...deps.search.jobs,
 			...deps.extensionInstall.jobs,
 		],
@@ -1967,7 +1937,6 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			familySettings,
 			listDevices,
 			currentDevice,
-			revokeDevice,
 			setPin,
 			setPassword,
 			signOutEverywhere,

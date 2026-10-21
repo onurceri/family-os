@@ -628,7 +628,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		clientIp,
 		badTokens,
 	});
-	mountTelegramRoutes(app, deps.telegram, deps.kernel.access);
+	mountTelegramRoutes(app, deps.telegram, deps.kernel.access, deps.kernel.audit);
 	mountEmailRoutes(app, deps.email, deps.kernel);
 	mountBackupRoutes(app, {
 		backups: deps.backups,

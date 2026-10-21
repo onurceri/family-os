@@ -152,7 +152,8 @@ async function teenRole(cookie: string) {
 }
 
 async function enable(cookie: string, on = true) {
-	expect((await call('PUT', '/api/v1/mcp/settings', { enabled: on }, cookie)).status).toBe(200);
+	const res = await call('POST', '/api/v1/actions/core.setMcpEnabled', { enabled: on }, cookie);
+	expect(res.body.status).toBe('applied');
 }
 
 /** Raw JSON-RPC over HTTP, the way any client does it. */
@@ -232,12 +233,12 @@ describe('personal API tokens', () => {
 		expect(JSON.stringify(list.body)).not.toContain('token_hash');
 
 		const revoked = await call(
-			'DELETE',
-			`/api/v1/mcp/tokens/${created.body.token.id}`,
-			undefined,
+			'POST',
+			'/api/v1/actions/core.revokeApiToken',
+			{ tokenId: created.body.token.id },
 			cookie,
 		);
-		expect(revoked.body.revokedAt).not.toBeNull();
+		expect(revoked.body.output.revokedAt).not.toBeNull();
 	});
 
 	it('limits the lifetime to a year and needs a name', async () => {
@@ -272,8 +273,13 @@ describe('personal API tokens', () => {
 			'Kid',
 			'Parent',
 		]);
-		const gone = await call('DELETE', `/api/v1/mcp/tokens/${mine.token.id}`, undefined, cookie);
-		expect(gone.status).toBe(200);
+		const gone = await call(
+			'POST',
+			'/api/v1/actions/core.revokeApiToken',
+			{ tokenId: mine.token.id },
+			cookie,
+		);
+		expect(gone.body.status).toBe('applied');
 
 		await expect(newToken(guest, 'guest')).rejects.toMatchObject({ code: 'forbidden' });
 	});

@@ -196,9 +196,8 @@
 		const deviceId = openId;
 		try {
 			unwrap(
-				await api.PATCH('/api/v1/core/displays/{deviceId}', {
-					params: { path: { deviceId } },
-					body: { name: editName, capabilities: editCaps, showNames: editNames },
+				await api.POST('/api/v1/actions/core.updateDisplay', {
+					body: { deviceId, name: editName, capabilities: editCaps, showNames: editNames },
 				}),
 			);
 		} catch {
@@ -233,9 +232,7 @@
 	async function remove(id: string) {
 		error = null;
 		try {
-			unwrap(
-				await api.DELETE('/api/v1/core/devices/{deviceId}', { params: { path: { deviceId: id } } }),
-			);
+			unwrap(await api.POST('/api/v1/actions/core.revokeDevice', { body: { deviceId: id } }));
 			openId = null;
 			await load();
 		} catch {

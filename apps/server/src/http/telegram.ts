@@ -5,7 +5,7 @@ import {
 	TelegramStatusSchema,
 	TokenInputSchema,
 } from '@famos/adapters/telegram';
-import { CORE_CAPABILITIES } from '@famos/core';
+import { type AuditTrail, CORE_CAPABILITIES } from '@famos/core';
 import { type AccessControl, assertFullSignIn, FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
@@ -15,7 +15,8 @@ import { errorResponses } from './errors.ts';
 /**
  * Telegram settings for admins and linking for members. The bot token and the links
  * are credentials, so like passwords and provider keys these routes call the adapter directly
- * instead of going through actions. The token is never returned.
+ * instead of going through actions; setting the token and making a link code record themselves
+ * in the audit log. The token is never returned.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const body = <S extends z.ZodType>(schema: S) => ({
@@ -28,12 +29,14 @@ export function mountTelegramRoutes(
 	app: OpenAPIHono<AppEnv>,
 	telegram: Telegram,
 	access: AccessControl,
+	audit: AuditTrail,
 ): void {
 	const requireAdmin = (c: Context<AppEnv>) => {
 		const actor = c.get('actor');
 		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
 		if (!access.can(actor, CORE_CAPABILITIES.settingsManage.id))
 			throw new FamosError('forbidden', 'Not allowed to manage Telegram');
+		return actor;
 	};
 	const me = (c: Context<AppEnv>): string => {
 		const actor = c.get('actor');
@@ -71,8 +74,10 @@ export function mountTelegramRoutes(
 		},
 	});
 	app.openapi(setToken, async (c) => {
-		requireAdmin(c);
+		const actor = requireAdmin(c);
 		await telegram.setToken(c.req.valid('json').token);
+		// Never the token: the row says only that the bot was connected or disconnected.
+		await audit.record(actor, 'telegram.setToken');
 		return c.json(await telegram.status(), 200);
 	});
 
@@ -104,7 +109,10 @@ export function mountTelegramRoutes(
 		// A linked Telegram account acts for the member from anywhere: a PIN must not link one.
 		const actor = c.get('actor');
 		if (actor) assertFullSignIn(actor);
-		return c.json(await telegram.createLinkCode(me(c)), 200);
+		const memberId = me(c);
+		const code = await telegram.createLinkCode(memberId);
+		if (actor) await audit.record(actor, 'telegram.createLinkCode', memberId);
+		return c.json(code, 200);
 	});
 
 	const unlink = createRoute({

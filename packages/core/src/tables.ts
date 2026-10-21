@@ -94,6 +94,8 @@ export type AuditLogTable = {
 	action_id: string;
 	draft_id: string | null;
 	outcome: AuditOutcome;
+	/** The id of what the change was about (an app, a key, a device), when it names one. */
+	target: string | null;
 };
 
 export type SettingsTable = {

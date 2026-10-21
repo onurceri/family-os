@@ -31,6 +31,7 @@ export function mountEmailRoutes(app: OpenAPIHono<AppEnv>, email: Email, kernel:
 		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.settingsManage.id))
 			throw new FamosError('forbidden', 'Not allowed to manage email');
+		return actor;
 	};
 
 	const getSettings = createRoute({
@@ -84,8 +85,12 @@ export function mountEmailRoutes(app: OpenAPIHono<AppEnv>, email: Email, kernel:
 		},
 	});
 	app.openapi(putSettings, async (c) => {
-		requireAdmin(c);
-		return c.json(await email.update(c.req.valid('json')), 200);
+		const actor = requireAdmin(c);
+		const saved = await email.update(c.req.valid('json'));
+		// The saved switch depends on a test that needs the password and the network, so this
+		// stays a route; the row never holds what was typed.
+		await kernel.audit.record(actor, 'email.updateSettings');
+		return c.json(saved, 200);
 	});
 
 	const deleteSettings = createRoute({

@@ -1399,6 +1399,7 @@
 	"apps_ha_hint": "In Home Assistant, give the FamilyOS integration this address and this key: {{address}}",
 	"apps_on_behalf_hint": "To work as one person, the app names them in the X-FamilyOS-On-Behalf-Of header.",
 	"apps_keys": "Keys",
+	"apps_key_failed": "The app was added, but its key could not be made. Add a key below.",
 	"apps_key_add": "Add a key",
 	"apps_key_name": "Key name",
 	"apps_key_name_default": "New key",

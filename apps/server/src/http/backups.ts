@@ -90,6 +90,7 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.settingsManage.id))
 			throw new FamosError('forbidden', 'Not allowed to manage backups');
+		return actor;
 	};
 
 	const list = createRoute({
@@ -158,8 +159,12 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 		},
 	});
 	app.openapi(createTarget, async (c) => {
-		requireAdmin(c);
-		return c.json(await backups.createTarget(c.req.valid('json')), 201);
+		const actor = requireAdmin(c);
+		const target = await backups.createTarget(c.req.valid('json'));
+		// Its address and keys are one sealed credential, so adding it stays a route; the row
+		// names the target, never what was typed.
+		await kernel.audit.record(actor, 'backups.createTarget', target.id);
+		return c.json(target, 201);
 	});
 
 	const updateTarget = createRoute({

@@ -158,7 +158,8 @@ it('adds a principal to idempotency answers and keeps the old rows', async () =>
 			([name]) =>
 				name !== '0006_idempotency_principal' &&
 				name !== '0007_changes' &&
-				name !== '0008_connected_apps',
+				name !== '0008_connected_apps' &&
+				name !== '0009_audit_target',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -236,7 +237,9 @@ it('gives stored AI actors their mode and marks memories the AI proposed', async
 it('adds connected apps beside the personal keys that already exist', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
-		Object.entries(coreMigrations).filter(([name]) => name !== '0008_connected_apps'),
+		Object.entries(coreMigrations).filter(
+			([name]) => name !== '0008_connected_apps' && name !== '0009_audit_target',
+		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
 	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
@@ -270,4 +273,41 @@ it('adds connected apps beside the personal keys that already exist', async () =
 			db,
 		),
 	).rejects.toThrow(/UNIQUE/);
+});
+
+/**
+ * The audit log of the release before audit rows named their target keeps every row as it was
+ * (with no target); rows written after the upgrade can name one.
+ */
+it('lets audit rows name their target and keeps the rows from before', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const before = Object.fromEntries(
+		Object.entries(coreMigrations).filter(([name]) => name !== '0009_audit_target'),
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: before }]);
+	await sql`insert into core_audit_log (at, actor, action_id, draft_id, outcome)
+		values (5, '{"kind":"system","source":"test"}', 'core.createMember', null, 'applied')`.execute(
+		db,
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+	await sql`insert into core_audit_log (at, actor, action_id, outcome, target)
+		values (6, '{"kind":"system","source":"test"}', 'core.pauseApp', 'applied', 'app_1')`.execute(
+		db,
+	);
+	const rows = await sql<{
+		at: number;
+		action_id: string;
+		outcome: string;
+		target: string | null;
+	}>`select at, action_id, outcome, target from core_audit_log order by id`.execute(db);
+	expect(rows.rows).toEqual([
+		{ at: 5, action_id: 'core.createMember', outcome: 'applied', target: null },
+		{ at: 6, action_id: 'core.pauseApp', outcome: 'applied', target: 'app_1' },
+	]);
+	const index = await sql<{
+		name: string;
+	}>`select name from sqlite_master where type = 'index' and tbl_name = 'core_audit_log'`.execute(
+		db,
+	);
+	expect(index.rows.map((r) => r.name)).toContain('core_audit_log_at_idx');
 });

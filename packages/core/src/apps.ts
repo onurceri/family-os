@@ -74,16 +74,17 @@ export type AppCaller = {
 
 /**
  * Connected apps: an admin registers a program with a role, a mode and the members it may act
- * for, and gives it keys (hashed, shown once, long-lived, rotated by overlap). Like device trust
- * and personal keys this is credential management, so it runs outside actions and only for a
- * person who signed in with a password and holds `core.apps.manage`.
+ * for, and gives it keys (hashed, shown once, long-lived, rotated by overlap). Only a person who
+ * signed in with a password and holds `core.apps.manage` manages them. Minting a key returns its
+ * secret once, so it stays outside actions (an action's answer is kept for replays); the app
+ * itself, its changes and every revocation run as core actions through `in(uow.db)`.
  */
 export interface AppService {
+	/** The same service on another executor: an action's unit of work, so it commits with it. */
+	in(db: DbExecutor): AppService;
 	list(actor: Actor): Promise<AppView[]>;
-	create(
-		actor: Actor,
-		input: AppInput & { tokenName?: string; expiresInDays?: number },
-	): Promise<{ app: AppView; secret: string; token: AppTokenView }>;
+	/** Registers the app without a key; its first key is minted with `createToken`. */
+	create(actor: Actor, input: AppInput): Promise<AppView>;
 	update(actor: Actor, appId: string, input: Partial<AppInput>): Promise<AppView>;
 	pause(actor: Actor, appId: string): Promise<AppView>;
 	resume(actor: Actor, appId: string): Promise<AppView>;
@@ -274,6 +275,8 @@ export function createAppService(deps: {
 	}
 
 	return {
+		in: (db) => createAppService({ ...deps, db }),
+
 		async list(actor) {
 			manager(actor);
 			const apps = await t()
@@ -302,7 +305,6 @@ export function createAppService(deps: {
 			if (!APP_MODES.includes(input.mode)) throw new FamosError('bad_request', 'Unknown mode');
 			checkRole(input.roleId);
 			const actsFor = await checkActsFor(input.actsFor);
-			const days = checkDays(input.expiresInDays);
 			const active = await t()
 				.selectFrom('core_apps')
 				.select((eb) => eb.fn.countAll<number>().as('n'))
@@ -327,9 +329,7 @@ export function createAppService(deps: {
 					paused_at: null,
 				})
 				.execute();
-			const { secret } = await mint(id, checkName(input.tokenName ?? name), days);
-			const app = await viewOf(id);
-			return { app, secret, token: app.tokens[0] as AppTokenView };
+			return viewOf(id);
 		},
 
 		async update(actor, appId, input) {

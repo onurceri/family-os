@@ -465,6 +465,16 @@ export const m0008_connected_apps: Migration = {
 	},
 };
 
+/**
+ * An audit row names what it touched (the app, key, device or display), so an admin can tell
+ * which one an admin change was about. Never a secret and never the input; older rows have none.
+ */
+export const m0009_audit_target: Migration = {
+	async up(db) {
+		await db.schema.alterTable('core_audit_log').addColumn('target', 'text').execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
@@ -474,4 +484,5 @@ export const coreMigrations = {
 	'0006_idempotency_principal': m0006_idempotency_principal,
 	'0007_changes': m0007_changes,
 	'0008_connected_apps': m0008_connected_apps,
+	'0009_audit_target': m0009_audit_target,
 };

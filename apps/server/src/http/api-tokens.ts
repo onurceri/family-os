@@ -1,9 +1,10 @@
 import {
 	API_TOKEN_DEFAULT_DAYS,
 	API_TOKEN_MAX_DAYS,
-	type ApiTokenView,
+	ApiTokenSchema,
 	CORE_CAPABILITIES,
 	type Kernel,
+	presentApiToken,
 } from '@famos/core';
 import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
@@ -12,24 +13,15 @@ import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 
 /**
- * Personal API tokens for AI apps. A token is a credential, so like push
- * subscriptions and device trust these routes call the service directly instead of going
- * through actions. A member manages their own tokens; an admin can list and revoke everyone's.
+ * Personal API tokens for AI apps. A token's secret is shown once and an action's answer is kept
+ * for replays, so creating one is a route that calls the service directly and records itself in
+ * the audit log. Revoking a token and the MCP switch are actions (`core.revokeApiToken`,
+ * `core.setMcpEnabled`). A member manages their own tokens; an admin can list and revoke
+ * everyone's.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const base = { tags: ['mcp'], security: [{ session: [] }] };
 
-const TokenSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	scope: z.enum(['read', 'read_write']),
-	expiresAt: z.number().int().nullable(),
-	lastUsedAt: z.number().int().nullable(),
-	createdAt: z.number().int(),
-	revokedAt: z.number().int().nullable(),
-	/** Whose token it is (the list of everyone's only; null for the caller's own). */
-	member: z.string().nullable(),
-});
 const CreateInputSchema = z.object({
 	name: z.string().trim().min(1).max(60),
 	scope: z.enum(['read', 'read_write']),
@@ -39,7 +31,7 @@ const CreateInputSchema = z.object({
 const CreatedSchema = z.object({
 	/** The token itself. Shown once; only its hash is kept. */
 	secret: z.string(),
-	token: TokenSchema,
+	token: ApiTokenSchema,
 });
 const McpSettingsSchema = z.object({
 	/** Whether the MCP endpoint answers at all. */
@@ -57,17 +49,6 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 			throw new FamosError('unauthenticated', 'Sign in required');
 		return actor;
 	};
-	const present = (token: ApiTokenView, names: Map<string, string> | null) => ({
-		id: token.id,
-		name: token.name,
-		scope: token.scope,
-		expiresAt: token.expiresAt,
-		lastUsedAt: token.lastUsedAt,
-		createdAt: token.createdAt,
-		revokedAt: token.revokedAt,
-		member: names ? (names.get(token.memberId) ?? null) : null,
-	});
-
 	const list = createRoute({
 		...base,
 		method: 'get',
@@ -76,7 +57,7 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		summary: 'My API tokens (never the secrets); admins can list everyone’s with all=true',
 		request: { query: z.object({ all: z.enum(['true', 'false']).optional() }) },
 		responses: {
-			200: { description: 'Tokens', ...json(z.object({ tokens: z.array(TokenSchema) })) },
+			200: { description: 'Tokens', ...json(z.object({ tokens: z.array(ApiTokenSchema) })) },
 			...errorResponses,
 		},
 	});
@@ -84,7 +65,7 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		const all = c.req.valid('query').all === 'true';
 		const tokens = await kernel.apiTokens.list(me(c), { all });
 		const names = all ? await members() : null;
-		return c.json({ tokens: tokens.map((t) => present(t, names)) }, 200);
+		return c.json({ tokens: tokens.map((t) => presentApiToken(t, names)) }, 200);
 	});
 
 	const create = createRoute({
@@ -99,22 +80,10 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		responses: { 201: { description: 'Created', ...json(CreatedSchema) }, ...errorResponses },
 	});
 	app.openapi(create, async (c) => {
-		const created = await kernel.apiTokens.create(me(c), c.req.valid('json'));
-		return c.json({ secret: created.secret, token: present(created.token, null) }, 201);
-	});
-
-	const revoke = createRoute({
-		...base,
-		method: 'delete',
-		path: '/api/v1/mcp/tokens/{tokenId}',
-		operationId: 'mcp.revokeToken',
-		summary: 'Revoke an API token at once',
-		request: { params: z.object({ tokenId: z.string() }) },
-		responses: { 200: { description: 'Revoked', ...json(TokenSchema) }, ...errorResponses },
-	});
-	app.openapi(revoke, async (c) => {
-		const token = await kernel.apiTokens.revoke(me(c), c.req.valid('param').tokenId);
-		return c.json(present(token, null), 200);
+		const actor = me(c);
+		const created = await kernel.apiTokens.create(actor, c.req.valid('json'));
+		await kernel.audit.record(actor, 'mcp.createToken', created.token.id);
+		return c.json({ secret: created.secret, token: presentApiToken(created.token, null) }, 201);
 	});
 
 	const settings = createRoute({
@@ -134,28 +103,5 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 			},
 			200,
 		);
-	});
-
-	const setSettings = createRoute({
-		...base,
-		method: 'put',
-		path: '/api/v1/mcp/settings',
-		operationId: 'mcp.setEnabled',
-		summary: 'Turn the MCP endpoint on or off (needs permission to manage AI)',
-		request: {
-			body: {
-				content: { 'application/json': { schema: z.object({ enabled: z.boolean() }) } },
-				required: true,
-			},
-		},
-		responses: {
-			200: { description: 'Saved', ...json(z.object({ enabled: z.boolean() })) },
-			...errorResponses,
-		},
-	});
-	app.openapi(setSettings, async (c) => {
-		const { enabled } = c.req.valid('json');
-		await kernel.apiTokens.setEnabled(me(c), enabled);
-		return c.json({ enabled }, 200);
 	});
 }

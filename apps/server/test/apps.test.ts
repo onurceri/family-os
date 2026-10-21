@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
+import type { CoreTables } from '@famos/core';
 import type { Actor, MemberId } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
@@ -113,26 +114,44 @@ async function signInAs(displayName: string) {
 	return res.cookie;
 }
 
+/** Registers an app (an action) and mints its first key (a route), as the page does. */
+async function createApp(
+	cookie: string,
+	body: { name: string; roleId: string; mode: 'apply' | 'suggest'; actsFor: string[] },
+) {
+	const made = await call('POST', '/api/v1/actions/core.createApp', body, cookie);
+	if (made.status !== 200) return { status: made.status, appId: '', secret: '', tokenId: '' };
+	const appId = made.body.output.id as string;
+	const key = await call('POST', `/api/v1/apps/${appId}/tokens`, { name: body.name }, cookie);
+	return {
+		status: key.status,
+		appId,
+		secret: key.body.secret as string,
+		tokenId: key.body.token.id as string,
+		expiresAt: key.body.token.expiresAt as number | null,
+	};
+}
+
 const bearer = (secret: string, extra: Record<string, string> = {}) =>
 	new Headers({ authorization: `Bearer ${secret}`, ...extra });
 
 describe('the connected apps routes', () => {
 	it('lets an admin add an app, shows its key once, and never lists a secret', async () => {
 		const { cookie } = await setup();
-		const created = await call(
-			'POST',
-			'/api/v1/apps',
-			{ name: 'Home Assistant', roleId: 'member', mode: 'apply', actsFor: [] },
-			cookie,
-		);
+		const created = await createApp(cookie, {
+			name: 'Home Assistant',
+			roleId: 'member',
+			mode: 'apply',
+			actsFor: [],
+		});
 		expect(created.status).toBe(201);
-		const secret = created.body.secret as string;
+		const secret = created.secret;
 		expect(secret.startsWith('famos_')).toBe(true);
-		expect(created.body.app.tokens).toHaveLength(1);
-		expect(created.body.app.tokens[0].expiresAt).toBeNull();
+		expect(created.expiresAt).toBeNull();
 		const listed = await call('GET', '/api/v1/apps', undefined, cookie);
 		expect(listed.status).toBe(200);
 		expect(listed.body.apps).toHaveLength(1);
+		expect(listed.body.apps[0].tokens).toHaveLength(1);
 		expect(JSON.stringify(listed.body)).not.toContain(secret);
 		expect(JSON.stringify(listed.body)).not.toContain('token_hash');
 	});
@@ -145,7 +164,7 @@ describe('the connected apps routes', () => {
 		expect((await call('GET', '/api/v1/apps')).status).toBe(401);
 		for (const who of [memberCookie]) {
 			expect((await call('GET', '/api/v1/apps', undefined, who)).status).toBe(403);
-			expect((await call('POST', '/api/v1/apps', body, who)).status).toBe(403);
+			expect((await call('POST', '/api/v1/actions/core.createApp', body, who)).status).toBe(403);
 		}
 		expect(memberId).toBeTruthy();
 		// An admin signed in with a PIN is not an admin here: the key is a credential.
@@ -161,28 +180,73 @@ describe('the connected apps routes', () => {
 
 	it('rotates a key and revokes an app', async () => {
 		const { cookie } = await setup();
-		const created = await call(
-			'POST',
-			'/api/v1/apps',
-			{ name: 'Script', roleId: 'member', mode: 'suggest', actsFor: [] },
-			cookie,
-		);
-		const appId = created.body.app.id as string;
-		const first = created.body.secret as string;
+		const created = await createApp(cookie, {
+			name: 'Script',
+			roleId: 'member',
+			mode: 'suggest',
+			actsFor: [],
+		});
+		const { appId, secret: first, tokenId: firstId } = created;
 		const second = await call('POST', `/api/v1/apps/${appId}/tokens`, { name: 'Second' }, cookie);
 		expect(second.status).toBe(201);
-		const firstId = created.body.app.tokens[0].id as string;
-		expect(
-			(await call('DELETE', `/api/v1/apps/${appId}/tokens/${firstId}`, undefined, cookie)).status,
-		).toBe(200);
+		const revoked = await call(
+			'POST',
+			'/api/v1/actions/core.revokeAppToken',
+			{ appId, tokenId: firstId },
+			cookie,
+		);
+		expect(revoked.body.status).toBe('applied');
 		expect((await authenticateApp(runtime.kernel, bearer(first))).outcome).toBe('unknown');
 		expect((await authenticateApp(runtime.kernel, bearer(second.body.secret))).outcome).toBe('ok');
-		expect((await call('DELETE', `/api/v1/apps/${appId}`, undefined, cookie)).status).toBe(200);
+		expect(
+			(await call('POST', '/api/v1/actions/core.revokeApp', { appId }, cookie)).body.status,
+		).toBe('applied');
 		expect((await authenticateApp(runtime.kernel, bearer(second.body.secret))).outcome).toBe(
 			'unknown',
 		);
 		const listed = await call('GET', '/api/v1/apps', undefined, cookie);
 		expect(listed.body.apps[0].revokedAt).not.toBeNull();
+	});
+});
+
+describe('the audit log', () => {
+	const rows = () =>
+		runtime.kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_audit_log')
+			.select(['action_id', 'outcome', 'target', 'actor'])
+			.orderBy('id')
+			.execute();
+
+	it('names what was minted or trusted outside the runner, and never holds a secret', async () => {
+		const { adminId, cookie } = await setup();
+		const { appId, secret, tokenId } = await createApp(cookie, {
+			name: 'Home Assistant',
+			roleId: 'member',
+			mode: 'apply',
+			actsFor: [],
+		});
+		const key = await call('POST', '/api/v1/mcp/tokens', { name: 'Laptop', scope: 'read' }, cookie);
+		const trusted = await call('POST', '/api/v1/core/devices/trust', { name: 'Tablet' }, cookie);
+		await call('POST', '/api/v1/actions/core.pauseApp', { appId }, cookie);
+
+		const log = await rows();
+		expect(log.map(({ action_id, outcome, target }) => ({ action_id, outcome, target }))).toEqual(
+			expect.arrayContaining([
+				{ action_id: 'core.completeSetup', outcome: 'applied', target: adminId },
+				{ action_id: 'core.createApp', outcome: 'applied', target: null },
+				{ action_id: 'apps.createToken', outcome: 'applied', target: tokenId },
+				{ action_id: 'mcp.createToken', outcome: 'applied', target: key.body.token.id },
+				{ action_id: 'core.trustThisDevice', outcome: 'applied', target: trusted.body.id },
+				{ action_id: 'core.pauseApp', outcome: 'applied', target: appId },
+			]),
+		);
+		const minted = log.find((r) => r.action_id === 'apps.createToken');
+		expect(JSON.parse(minted?.actor ?? '{}')).toMatchObject({ kind: 'member', memberId: adminId });
+		const text = JSON.stringify(log);
+		expect(text).not.toContain(secret);
+		expect(text).not.toContain(key.body.secret);
+		expect(text).not.toContain('correct horse battery');
 	});
 });
 
@@ -193,13 +257,7 @@ describe('the door for apps', () => {
 		actsFor: string[],
 		cookie: string,
 	) {
-		const created = await call(
-			'POST',
-			'/api/v1/apps',
-			{ name: 'Home Assistant', roleId, mode, actsFor },
-			cookie,
-		);
-		return created.body.secret as string;
+		return (await createApp(cookie, { name: 'Home Assistant', roleId, mode, actsFor })).secret;
 	}
 
 	it('takes a bearer and reads who the app acts for from the header', async () => {
@@ -254,7 +312,9 @@ describe('the door for apps', () => {
 		);
 
 		// An app key is not a personal key: the AI door does not know it.
-		expect((await call('PUT', '/api/v1/mcp/settings', { enabled: true }, cookie)).status).toBe(200);
+		expect(
+			(await call('POST', '/api/v1/actions/core.setMcpEnabled', { enabled: true }, cookie)).status,
+		).toBe(200);
 		const mcp = await app.request(`${BASE}/mcp`, {
 			method: 'POST',
 			headers: {
@@ -306,34 +366,31 @@ describe('the door for apps', () => {
 	it('a paused or revoked app is turned away at once, and an archived member is refused', async () => {
 		const { cookie } = await setup();
 		const leoId = await addMember(cookie, 'Leo', 'member');
-		const created = await call(
-			'POST',
-			'/api/v1/apps',
-			{ name: 'HA', roleId: 'member', mode: 'apply', actsFor: [leoId] },
-			cookie,
-		);
-		const secret = created.body.secret as string;
-		const appId = created.body.app.id as string;
-		await call('POST', `/api/v1/apps/${appId}/pause`, undefined, cookie);
+		const { secret, appId } = await createApp(cookie, {
+			name: 'HA',
+			roleId: 'member',
+			mode: 'apply',
+			actsFor: [leoId],
+		});
+		await call('POST', '/api/v1/actions/core.pauseApp', { appId }, cookie);
 		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('paused');
 		expect((await authenticateApp(runtime.kernel, bearer('famos_nope'))).outcome).toBe('unknown');
-		await call('POST', `/api/v1/apps/${appId}/resume`, undefined, cookie);
+		await call('POST', '/api/v1/actions/core.resumeApp', { appId }, cookie);
 		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('ok');
-		await call('POST', `/api/v1/apps/${appId}/pause`, undefined, cookie);
-		await call('DELETE', `/api/v1/apps/${appId}`, undefined, cookie);
+		await call('POST', '/api/v1/actions/core.pauseApp', { appId }, cookie);
+		await call('POST', '/api/v1/actions/core.revokeApp', { appId }, cookie);
 		expect((await authenticateApp(runtime.kernel, bearer(secret))).outcome).toBe('unknown');
 	});
 
 	it('an archived member is refused', async () => {
 		const { cookie } = await setup();
 		const leoId = await addMember(cookie, 'Leo', 'member');
-		const created = await call(
-			'POST',
-			'/api/v1/apps',
-			{ name: 'HA', roleId: 'member', mode: 'apply', actsFor: [leoId] },
-			cookie,
-		);
-		const secret = created.body.secret as string;
+		const { secret } = await createApp(cookie, {
+			name: 'HA',
+			roleId: 'member',
+			mode: 'apply',
+			actsFor: [leoId],
+		});
 		await call('POST', '/api/v1/actions/core.archiveMember', { memberId: leoId }, cookie);
 		await expect(
 			authenticateApp(runtime.kernel, bearer(secret, { 'x-familyos-on-behalf-of': leoId })),

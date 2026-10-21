@@ -8,6 +8,7 @@ import {
 	type IdGenerator,
 	personPresent,
 } from '@famos/sdk';
+import { z } from 'zod';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { deviceChanged, displayFitChanged } from './core-events.ts';
@@ -32,11 +33,17 @@ export interface DeviceService {
 	/** Revokes the device and ends the sessions signed in on it. */
 	revoke(actor: Actor, deviceId: string): Promise<DeviceRow>;
 	/**
+	 * Revokes the device in the caller's transaction and nothing more: the action that does it
+	 * ends the device's sessions with a job and tells the screens (`deviceChanged`) itself.
+	 */
+	revokeIn(db: DbExecutor, actor: Actor, deviceId: string): Promise<DeviceRow>;
+	/**
 	 * The holder of a family device's token stops using it as a family device: the same effect as
 	 * `revoke` (record revoked, PIN sessions on it ended), without needing an admin to be signed in.
-	 * Returns false when the token is not an active family device (displays are not affected).
+	 * Returns the device's id, or null when the token is not an active family device (displays are
+	 * not affected).
 	 */
-	forget(token: string | undefined | null): Promise<boolean>;
+	forget(token: string | undefined | null): Promise<string | null>;
 	/** Whether a family device id is trusted and not revoked (checked for every PIN session). */
 	isActive(deviceId: string): Promise<boolean>;
 
@@ -55,10 +62,30 @@ export interface DeviceService {
 		userCode: string,
 		input: DisplayGrant,
 	): Promise<{ name: string; pairingId: string }>;
+	/**
+	 * The open pairing a typed code names, once the grant is valid. A wrong code is counted against every open pairing
+	 * (five misses end them all), so it runs on its own, never inside a transaction that a
+	 * refusal would roll back with the count.
+	 */
+	findPairing(actor: Actor, userCode: string, input: DisplayGrant): Promise<string>;
+	/** Confirms the pairing `findPairing` found, in the caller's transaction. */
+	confirmPairingIn(
+		db: DbExecutor,
+		actor: Actor,
+		pairingId: string,
+		input: DisplayGrant,
+	): Promise<{ name: string; pairingId: string }>;
 	/** Whether the display of a confirmed code has claimed it yet, for the admin who confirmed it. */
 	pairingStatus(actor: Actor, pairingId: string): Promise<PairingStatus>;
 	/** Renames a display or changes what it may show. */
 	updateDisplay(actor: Actor, deviceId: string, patch: Partial<DisplayGrant>): Promise<DeviceRow>;
+	/** `updateDisplay` in the caller's transaction; the action tells the display (`deviceChanged`). */
+	updateDisplayIn(
+		db: DbExecutor,
+		actor: Actor,
+		deviceId: string,
+		patch: Partial<DisplayGrant>,
+	): Promise<DeviceRow>;
 	/** The view capabilities an admin can give a display (extensions that are on). */
 	grantableCapabilities(): CapabilityDefinition[];
 	/**
@@ -100,6 +127,44 @@ export type PairingStatus =
 	| { status: 'waiting'; answering: boolean }
 	| { status: 'connected'; deviceId: string }
 	| { status: 'expired' };
+
+export const DeviceSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	kind: z.enum(['family', 'kiosk']),
+	createdAt: z.number(),
+	lastSeenAt: z.number(),
+	/**
+	 * Displays only: what the display may show, and what its screen last had no room for (widget
+	 * ids, and `family`, `chores`, `extras`, `photo` for groups of Today's blocks).
+	 */
+	display: z
+		.object({
+			capabilities: z.array(z.string()),
+			showNames: z.boolean(),
+			leftOut: z.array(z.string()),
+		})
+		.nullable(),
+});
+
+export const toDevice = (
+	row: DeviceRow,
+	leftOut: readonly string[] = [],
+): z.infer<typeof DeviceSchema> => ({
+	id: row.id,
+	name: row.name,
+	kind: row.kind,
+	createdAt: row.created_at,
+	lastSeenAt: row.last_seen_at,
+	display:
+		row.kind === 'kiosk' && row.display_capabilities !== null
+			? {
+					capabilities: JSON.parse(row.display_capabilities) as string[],
+					showNames: row.display_show_names === 1,
+					leftOut: [...leftOut],
+				}
+			: null,
+});
 
 /** Pairing codes live ten minutes. */
 export const PAIRING_TTL_MS = 10 * 60 * 1000;
@@ -210,20 +275,114 @@ export function createDeviceService(deps: {
 		return actor.memberId;
 	};
 
-	const revokeById = async (deviceId: string): Promise<DeviceRow> => {
-		const now = deps.clock.now();
-		const result = await devices()
+	const markRevoked = async (db: DbExecutor, deviceId: string): Promise<DeviceRow> => {
+		const result = await db
+			.withTables<CoreTables>()
 			.updateTable('core_devices')
-			.set({ revoked_at: now })
+			.set({ revoked_at: deps.clock.now() })
 			.where('id', '=', deviceId)
 			.where('revoked_at', 'is', null)
 			.returningAll()
 			.executeTakeFirst();
 		if (!result) throw new FamosError('not_found', 'Device not found');
 		fits.delete(deviceId);
+		return result;
+	};
+
+	const revokeById = async (deviceId: string): Promise<DeviceRow> => {
+		const result = await markRevoked(deps.db, deviceId);
 		await deps.identity.endDeviceSessions(deviceId);
 		await deps.bus.publish(deviceChanged.name, { deviceId });
 		return result;
+	};
+
+	const findPairing = async (
+		actor: Actor,
+		userCode: string,
+		input: DisplayGrant,
+	): Promise<string> => {
+		requireAdmin(actor);
+		// Checked before the code, so a bad grant never counts as a wrong code.
+		cleanName(input.name);
+		checkGrant(input.capabilities);
+		const now = deps.clock.now();
+		const code = normalizeUserCode(userCode);
+		const row = code
+			? await pairings()
+					.selectFrom('core_display_pairings')
+					.select('id')
+					.where('user_code', '=', code)
+					.where('status', '=', 'pending')
+					.where('expires_at', '>', now)
+					.where('attempts', '<', MAX_WRONG_CODES)
+					.executeTakeFirst()
+			: undefined;
+		if (!row) {
+			// A wrong code counts against every open pairing: five misses end them all, so the
+			// codes cannot be guessed (the displays simply ask for a new one).
+			await pairings()
+				.updateTable('core_display_pairings')
+				.set((eb) => ({ attempts: eb('attempts', '+', 1) }))
+				.where('status', '=', 'pending')
+				.where('expires_at', '>', now)
+				.execute();
+			throw new FamosError('not_found', 'This code is not valid (any more)');
+		}
+		return row.id;
+	};
+
+	const confirmPairingIn = async (
+		db: DbExecutor,
+		actor: Actor,
+		pairingId: string,
+		input: DisplayGrant,
+	): Promise<{ name: string; pairingId: string }> => {
+		const confirmedBy = requireAdmin(actor);
+		const name = cleanName(input.name);
+		const capabilities = checkGrant(input.capabilities);
+		const confirmed = await db
+			.withTables<CoreTables>()
+			.updateTable('core_display_pairings')
+			.set({
+				status: 'confirmed',
+				name,
+				capabilities: JSON.stringify(capabilities),
+				show_names: input.showNames ? 1 : 0,
+				confirmed_by: confirmedBy,
+			})
+			.where('id', '=', pairingId)
+			.where('status', '=', 'pending')
+			.where('expires_at', '>', deps.clock.now())
+			.returning('id')
+			.executeTakeFirst();
+		if (!confirmed) throw new FamosError('not_found', 'This code is not valid (any more)');
+		return { name, pairingId };
+	};
+
+	const updateDisplayIn = async (
+		db: DbExecutor,
+		actor: Actor,
+		deviceId: string,
+		patch: Partial<DisplayGrant>,
+	): Promise<DeviceRow> => {
+		requireAdmin(actor);
+		const set: Partial<DeviceRow> = {};
+		if (patch.name !== undefined) set.name = cleanName(patch.name);
+		if (patch.capabilities !== undefined)
+			set.display_capabilities = JSON.stringify(checkGrant(patch.capabilities));
+		if (patch.showNames !== undefined) set.display_show_names = patch.showNames ? 1 : 0;
+		const table = db.withTables<CoreTables>();
+		const row = await table
+			.selectFrom('core_devices')
+			.selectAll()
+			.where('id', '=', deviceId)
+			.where('kind', '=', 'kiosk')
+			.where('revoked_at', 'is', null)
+			.executeTakeFirst();
+		if (!row) throw new FamosError('not_found', 'Display not found');
+		if (Object.keys(set).length > 0)
+			await table.updateTable('core_devices').set(set).where('id', '=', deviceId).execute();
+		return { ...row, ...set };
 	};
 
 	return {
@@ -292,7 +451,7 @@ export function createDeviceService(deps: {
 		},
 
 		async forget(token) {
-			if (!token || token.length < 32 || token.length > 128) return false;
+			if (!token || token.length < 32 || token.length > 128) return null;
 			const row = await devices()
 				.selectFrom('core_devices')
 				.select('id')
@@ -300,14 +459,19 @@ export function createDeviceService(deps: {
 				.where('kind', '=', 'family')
 				.where('revoked_at', 'is', null)
 				.executeTakeFirst();
-			if (!row) return false;
+			if (!row) return null;
 			await revokeById(row.id);
-			return true;
+			return row.id;
 		},
 
 		async revoke(actor, deviceId) {
 			requireAdmin(actor);
 			return revokeById(deviceId);
+		},
+
+		async revokeIn(db, actor, deviceId) {
+			requireAdmin(actor);
+			return markRevoked(db, deviceId);
 		},
 
 		async startPairing(input) {
@@ -422,48 +586,11 @@ export function createDeviceService(deps: {
 		},
 
 		async confirmPairing(actor, userCode, input) {
-			const confirmedBy = requireAdmin(actor);
-			const name = cleanName(input.name);
-			const capabilities = checkGrant(input.capabilities);
-			const now = deps.clock.now();
-			const code = normalizeUserCode(userCode);
-			const row = code
-				? await pairings()
-						.selectFrom('core_display_pairings')
-						.select('id')
-						.where('user_code', '=', code)
-						.where('status', '=', 'pending')
-						.where('expires_at', '>', now)
-						.where('attempts', '<', MAX_WRONG_CODES)
-						.executeTakeFirst()
-				: undefined;
-			if (!row) {
-				// A wrong code counts against every open pairing: five misses end them all, so the
-				// codes cannot be guessed (the displays simply ask for a new one).
-				await pairings()
-					.updateTable('core_display_pairings')
-					.set((eb) => ({ attempts: eb('attempts', '+', 1) }))
-					.where('status', '=', 'pending')
-					.where('expires_at', '>', now)
-					.execute();
-				throw new FamosError('not_found', 'This code is not valid (any more)');
-			}
-			const confirmed = await pairings()
-				.updateTable('core_display_pairings')
-				.set({
-					status: 'confirmed',
-					name,
-					capabilities: JSON.stringify(capabilities),
-					show_names: input.showNames ? 1 : 0,
-					confirmed_by: confirmedBy,
-				})
-				.where('id', '=', row.id)
-				.where('status', '=', 'pending')
-				.returning('id')
-				.executeTakeFirst();
-			if (!confirmed) throw new FamosError('not_found', 'This code is not valid (any more)');
-			return { name, pairingId: row.id };
+			return confirmPairingIn(deps.db, actor, await findPairing(actor, userCode, input), input);
 		},
+
+		findPairing,
+		confirmPairingIn,
 
 		async pairingStatus(actor, pairingId) {
 			requireAdmin(actor);
@@ -483,26 +610,12 @@ export function createDeviceService(deps: {
 		},
 
 		async updateDisplay(actor, deviceId, patch) {
-			requireAdmin(actor);
-			const set: Partial<DeviceRow> = {};
-			if (patch.name !== undefined) set.name = cleanName(patch.name);
-			if (patch.capabilities !== undefined)
-				set.display_capabilities = JSON.stringify(checkGrant(patch.capabilities));
-			if (patch.showNames !== undefined) set.display_show_names = patch.showNames ? 1 : 0;
-			const row = await devices()
-				.selectFrom('core_devices')
-				.selectAll()
-				.where('id', '=', deviceId)
-				.where('kind', '=', 'kiosk')
-				.where('revoked_at', 'is', null)
-				.executeTakeFirst();
-			if (!row) throw new FamosError('not_found', 'Display not found');
-			if (Object.keys(set).length > 0) {
-				await devices().updateTable('core_devices').set(set).where('id', '=', deviceId).execute();
-			}
+			const row = await updateDisplayIn(deps.db, actor, deviceId, patch);
 			await deps.bus.publish(deviceChanged.name, { deviceId });
-			return { ...row, ...set };
+			return row;
 		},
+
+		updateDisplayIn,
 
 		grantableCapabilities: grantable,
 

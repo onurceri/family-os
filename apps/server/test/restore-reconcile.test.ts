@@ -132,7 +132,9 @@ describe('a restore does not bring back what the family ended after the backup',
 		const adminId = setup.body.id as string;
 		const admin = (await signIn('parent@example.com', PASSWORD)).cookie;
 		const admin2 = actorOf(adminId, 'admin');
-		expect((await call('PUT', '/api/v1/mcp/settings', { enabled: true }, admin)).status).toBe(200);
+		expect(
+			(await call('POST', '/api/v1/actions/core.setMcpEnabled', { enabled: true }, admin)).status,
+		).toBe(200);
 
 		const member = async (displayName: string, email: string, password: string) => {
 			const made = await call(
@@ -191,9 +193,15 @@ describe('a restore does not bring back what the family ended after the backup',
 		const revokedKeyId = listed.find((t) => t.name === 'Will be revoked')?.id as string;
 		await r.kernel.apiTokens.revoke(admin2, revokedKeyId);
 		expect(
-			(await call('DELETE', `/api/v1/core/devices/${revokedDevice.device.id}`, undefined, admin))
-				.status,
-		).toBe(200);
+			(
+				await call(
+					'POST',
+					'/api/v1/actions/core.revokeDevice',
+					{ deviceId: revokedDevice.device.id },
+					admin,
+				)
+			).body.status,
+		).toBe('applied');
 		expect(
 			(await call('POST', '/api/v1/actions/core.archiveMember', { memberId: kid }, admin)).body
 				.status,
@@ -276,7 +284,7 @@ describe('a restore does not bring back what the family ended after the backup',
 		});
 		const adminId = setup.body.id as string;
 		const cookie = (await signIn('parent@example.com', PASSWORD)).cookie;
-		await call('PUT', '/api/v1/mcp/settings', { enabled: true }, cookie);
+		await call('POST', '/api/v1/actions/core.setMcpEnabled', { enabled: true }, cookie);
 		const { secret } = await r.kernel.apiTokens.create(actorOf(adminId, 'admin'), {
 			name: 'Laptop',
 			scope: 'read',

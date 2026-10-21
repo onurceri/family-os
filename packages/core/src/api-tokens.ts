@@ -46,10 +46,14 @@ export interface AuthenticatedToken {
 
 /**
  * Personal API tokens: a member creates one in the app, sees it once, and gives it to
- * an AI app that speaks MCP. Only the SHA-256 is stored. Like device trust, this is credential
- * management and runs outside actions. Uses Web Crypto, so core stays runtime-neutral.
+ * an AI app that speaks MCP. Only the SHA-256 is stored. Creating one returns its secret once, so
+ * it stays outside actions (an action's answer is kept for replays); revoking a token and the
+ * MCP switch run as core actions through `in(uow.db)`. Uses Web Crypto, so core stays
+ * runtime-neutral.
  */
 export interface ApiTokenService {
+	/** The same service on another executor: an action's unit of work, so it commits with it. */
+	in(db: DbExecutor): ApiTokenService;
 	create(
 		actor: Actor,
 		input: { name: string; scope: ApiTokenScope; expiresInDays?: number },
@@ -138,6 +142,8 @@ export function createApiTokenService(deps: {
 	};
 
 	return {
+		in: (db) => createApiTokenService({ ...deps, db }),
+
 		async create(actor, input) {
 			// A token works away from this device for up to a year: a PIN must never mint one.
 			assertFullSignIn(actor);

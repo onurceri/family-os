@@ -1,0 +1,31 @@
+import type { Actor, Clock, DbExecutor } from '@famos/sdk';
+import type { CoreTables } from './tables.ts';
+
+/**
+ * The audit log for changes that cannot run as actions: creating or setting a secret (a
+ * password, a PIN, a key shown once, a device's cookie) happens in a route, outside the runner,
+ * and records what was done here instead. A row says who did it, the route's operation id and
+ * the id of what it touched, never the secret and never the input.
+ */
+export interface AuditTrail {
+	record(actor: Actor, id: string, target?: string | null): Promise<void>;
+}
+
+export function createAuditTrail(deps: { db: DbExecutor; clock: Clock }): AuditTrail {
+	return {
+		async record(actor, id, target = null) {
+			await deps.db
+				.withTables<CoreTables>()
+				.insertInto('core_audit_log')
+				.values({
+					at: deps.clock.now(),
+					actor: JSON.stringify(actor),
+					action_id: id,
+					draft_id: null,
+					outcome: 'applied',
+					target,
+				})
+				.execute();
+		},
+	};
+}

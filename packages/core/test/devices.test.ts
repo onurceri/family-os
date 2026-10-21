@@ -45,15 +45,15 @@ describe('trusted devices', () => {
 		const { actor: parent } = await k.member('admin');
 		const { device, token } = await k.devices.trust(parent, { name: 'Tablet' });
 		const other = await k.devices.trust(parent, { name: 'Other' });
-		expect(await k.devices.forget('x'.repeat(43))).toBe(false);
-		expect(await k.devices.forget(undefined)).toBe(false);
+		expect(await k.devices.forget('x'.repeat(43))).toBeNull();
+		expect(await k.devices.forget(undefined)).toBeNull();
 
-		expect(await k.devices.forget(token)).toBe(true);
+		expect(await k.devices.forget(token)).toBe(device.id);
 		expect(await k.devices.verify(token)).toBeNull();
 		expect(await k.devices.isActive(device.id)).toBe(false);
 		expect((await k.devices.list()).map((d) => d.id)).toEqual([other.device.id]);
 		// Already gone: nothing more to do.
-		expect(await k.devices.forget(token)).toBe(false);
+		expect(await k.devices.forget(token)).toBeNull();
 	});
 
 	it('records last use at most hourly', async () => {

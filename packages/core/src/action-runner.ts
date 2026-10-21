@@ -32,7 +32,7 @@ import {
 } from '@famos/sdk';
 import { todayIn } from '@famos/time';
 import { z } from 'zod';
-import type { Access } from './access.ts';
+import { type Access, PERSON_ONLY_CAPABILITIES } from './access.ts';
 import {
 	AUTO_APPROVE_JOB,
 	DEFAULT_DRAFT_NOTIFY_DELAY_MS,
@@ -308,9 +308,12 @@ export const SETTLED = 'settled';
 export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	const { registry, bus, clock, ids, logger, access } = deps;
 	const can = (actor: Actor, capability: string) => access.can(actor, capability);
-	const criticalCapabilities = new Set(
-		registry.capabilities.filter((c) => c.critical === true).map((c) => c.id),
-	);
+	// What only a person may do: an admin's critical acts, and the acts no app holds (deciding
+	// suggestions, a person's own keys, PIN sign-in). The AI never runs nor proposes either.
+	const criticalCapabilities = new Set([
+		...registry.capabilities.filter((c) => c.critical === true).map((c) => c.id),
+		...PERSON_ONLY_CAPABILITIES,
+	]);
 
 	const env: DecideEnv = {
 		access,
@@ -495,7 +498,15 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					const waiting = await trx
 						.withTables<CoreTables>()
 						.selectFrom('core_drafts')
-						.select(['id', 'action_id', 'source_kind', 'source_id', 'for_member'])
+						.select([
+							'id',
+							'action_id',
+							'input',
+							'edited_input',
+							'source_kind',
+							'source_id',
+							'for_member',
+						])
 						.where('source_kind', '=', source.kind)
 						.where('source_id', '=', source.id)
 						.where('status', 'in', ['pending', 'failed'])
@@ -513,7 +524,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 							})
 							.where('id', '=', draft.id)
 							.execute();
-						await audit(view('core'), draft.action_id, 'rejected', draft.id);
+						await audit(view('core'), draft.action_id, 'rejected', draft.id, draftTargetOf(draft));
 						view('core').emit(draftUpdated, {
 							draftId: draft.id,
 							status: 'rejected',
@@ -562,6 +573,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		actionId: string,
 		outcome: 'applied' | 'drafted' | 'rejected' | 'undone' | 'replaced',
 		draftId: string | null,
+		target: string | null,
 	) {
 		await uow.db
 			.withTables<CoreTables>()
@@ -572,8 +584,37 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				action_id: actionId,
 				draft_id: draftId,
 				outcome,
+				target,
 			})
 			.execute();
+	}
+
+	/**
+	 * The id of the row an input works on (the action's `target`), which the audit row names; null
+	 * for an action without one or an input that names none. Only the id: never the input itself.
+	 */
+	function targetIdOf(def: AnyActionDefinition | undefined, input: unknown): string | null {
+		if (!def?.target) return null;
+		try {
+			return def.target(input)?.id ?? null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** The target of a stored draft, read as its action reads the input today. */
+	function draftTargetOf(
+		draft: Pick<DraftRow, 'action_id' | 'input' | 'edited_input'>,
+	): string | null {
+		const def = registry.actions.get(draft.action_id);
+		if (!def?.target) return null;
+		try {
+			const input = def.input.safeParse(readStoredInput(def, draft.edited_input ?? draft.input));
+			return input.success ? targetIdOf(def, input.data) : null;
+		} catch {
+			// An input stored by another version may not fit today's shape: the row names nothing.
+			return null;
+		}
 	}
 
 	async function apply(
@@ -589,7 +630,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			await def.run(view(ownerOf(def.id)), input, prepared),
 			`output of ${def.id}`,
 		);
-		if (!def.readOnly) await audit(uow, def.id, 'applied', draftId);
+		if (!def.readOnly) await audit(uow, def.id, 'applied', draftId, targetIdOf(def, input));
 		return output;
 	}
 
@@ -764,7 +805,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					updated_at: now,
 				})
 				.execute();
-			await audit(uow, actionId, 'drafted', draftId);
+			await audit(uow, actionId, 'drafted', draftId, targetIdOf(def, input));
 			const facts = { ...personal, addressedTo };
 			// A person's AI whose draft goes to the approvers: someone else decides it.
 			byOthers = !auto && actor.kind === 'ai' && facts.proposerMemberId !== null && !addressedTo;
@@ -1068,7 +1109,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 							.set({ status: 'rejected', error: SETTLED, updated_at: clock.now() })
 							.where('id', '=', draftId)
 							.execute();
-						await audit(uow, draft.action_id, 'rejected', draftId);
+						await audit(uow, draft.action_id, 'rejected', draftId, draftTargetOf(draft));
 						uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
 						await settleNotices(uow, draft);
 						return;
@@ -1145,7 +1186,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.where('status', 'in', ['pending', 'failed'])
 				.executeTakeFirst();
 			if (Number(closed.numUpdatedRows) === 0) return;
-			await audit(uow, draft.action_id, 'rejected', draft.id);
+			await audit(uow, draft.action_id, 'rejected', draft.id, draftTargetOf(draft));
 			uow.emit(draftUpdated, {
 				draftId: draft.id,
 				status: 'rejected',
@@ -1180,7 +1221,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.set({ status: 'rejected', decided_by: approverId, decided_at: now, updated_at: now })
 				.where('id', '=', draftId)
 				.execute();
-			await audit(uow, draft.action_id, 'rejected', draftId);
+			await audit(uow, draft.action_id, 'rejected', draftId, draftTargetOf(draft));
 			uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
 			await settleNotices(uow, draft);
 			if (told) await uow.notify(told);
@@ -1445,7 +1486,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				.executeTakeFirst();
 			if (Number(changed.numUpdatedRows) === 0)
 				throw new FamosError('conflict', 'Draft was decided concurrently');
-			await audit(uow, draft.action_id, 'replaced', draftId);
+			await audit(uow, draft.action_id, 'replaced', draftId, draftTargetOf(draft));
 			uow.emit(draftUpdated, { draftId, status: 'pending', forMember: draft.for_member });
 		});
 		return getDraft(deps.db, draftId);
@@ -1468,7 +1509,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					.set({ status: 'undone', updated_at: clock.now() })
 					.where('id', '=', draftId)
 					.execute();
-				await audit(uow, draft.action_id, 'undone', draftId);
+				await audit(uow, draft.action_id, 'undone', draftId, draftTargetOf(draft));
 				uow.emit(draftUpdated, { draftId, status: 'undone', forMember: draft.for_member });
 			},
 			DECIDED,
@@ -1579,7 +1620,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					updated_at: now,
 				})
 				.execute();
-			await audit(uow, draft.action_id, 'drafted', id);
+			await audit(uow, draft.action_id, 'drafted', id, draftTargetOf(draft));
 			uow.emit(draftCreated, {
 				draftId: id,
 				actionId: draft.action_id,

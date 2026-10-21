@@ -40,7 +40,7 @@ export async function pairDisplay(
 	const start = await (
 		await context.request.post('/api/v1/core/displays/pair', { headers })
 	).json();
-	await api(page, 'POST', '/api/v1/core/displays/confirm', {
+	await api(page, 'POST', '/api/v1/actions/core.confirmDisplayPairing', {
 		userCode: start.userCode,
 		name,
 		capabilities: options.capabilities,

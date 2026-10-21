@@ -37,6 +37,7 @@
 		warnDays,
 		onclose,
 		onchanged,
+		onopen,
 	}: {
 		open: boolean;
 		/** The app being changed, or null to add one. */
@@ -46,6 +47,8 @@
 		onclose: () => void;
 		/** Something changed: the page reloads its list. */
 		onchanged: () => void;
+		/** Show this app instead (one just added whose first key could not be made). */
+		onopen: (appId: string) => void;
 	} = $props();
 
 	let name = $state('');
@@ -60,6 +63,8 @@
 	/** The member whose id was just copied. */
 	let copiedMember = $state<string | null>(null);
 	let error = $state<string | null>(null);
+	/** A message for the app the panel shows next (it opens again on the app just added). */
+	let carried: string | null = null;
 	let busy = $state(false);
 	let tried = $state(false);
 	let form = $state<HTMLFormElement>();
@@ -91,10 +96,12 @@
 	);
 
 	// Each opening starts from the app (or fresh). Only opening, or another app, resets the form:
-	// a reload of the same app (after a key was added) must not hide the key just shown.
+	// a reload of the same app (after a key was added) must not hide the key just shown. The id is
+	// a derived value, so a reloaded copy of the same app (a new object) does not count as another.
+	const appId = $derived(app?.id ?? null);
 	$effect(() => {
 		if (!open) return;
-		void app?.id;
+		void appId;
 		untrack(() => {
 			name = app?.name ?? '';
 			roleId = app?.roleId ?? 'member';
@@ -105,7 +112,8 @@
 			keyName = t('apps_key_name_default');
 			copied = false;
 			copiedMember = null;
-			error = null;
+			error = carried;
+			carried = null;
 			tried = false;
 		});
 	});
@@ -121,22 +129,31 @@
 		try {
 			if (app === null) {
 				const result = unwrap(
-					await api.POST('/api/v1/apps', {
-						body: {
-							name,
-							roleId,
-							mode,
-							actsFor,
-							...(days > 0 && { expiresInDays: days }),
-						},
+					await api.POST('/api/v1/actions/core.createApp', {
+						body: { name, roleId, mode, actsFor },
 					}),
 				);
-				made = { label: result.app.name, secret: result.secret };
+				if (result.status !== 'applied') throw new Error('not applied');
+				const created = result.output;
+				// The app is there now; its first key is made right after. If that fails, the app
+				// opens without a key and offers to add one.
+				try {
+					const key = unwrap(
+						await api.POST('/api/v1/apps/{appId}/tokens', {
+							params: { path: { appId: created.id } },
+							body: { name: created.name, ...(days > 0 && { expiresInDays: days }) },
+						}),
+					);
+					made = { label: created.name, secret: key.secret };
+				} catch {
+					carried = t('apps_key_failed');
+					onopen(created.id);
+					return;
+				}
 			} else {
 				unwrap(
-					await api.PATCH('/api/v1/apps/{appId}', {
-						params: { path: { appId: app.id } },
-						body: { name, roleId, mode, actsFor },
+					await api.POST('/api/v1/actions/core.updateApp', {
+						body: { appId: app.id, name, roleId, mode, actsFor },
 					}),
 				);
 				onclose();
@@ -177,8 +194,8 @@
 		error = null;
 		try {
 			unwrap(
-				await api.DELETE('/api/v1/apps/{appId}/tokens/{tokenId}', {
-					params: { path: { appId: app.id, tokenId } },
+				await api.POST('/api/v1/actions/core.revokeAppToken', {
+					body: { appId: app.id, tokenId },
 				}),
 			);
 			onchanged();
@@ -191,10 +208,11 @@
 		if (!app) return;
 		error = null;
 		try {
+			const body = { appId: app.id };
 			unwrap(
-				await api.POST(on ? '/api/v1/apps/{appId}/pause' : '/api/v1/apps/{appId}/resume', {
-					params: { path: { appId: app.id } },
-				}),
+				on
+					? await api.POST('/api/v1/actions/core.pauseApp', { body })
+					: await api.POST('/api/v1/actions/core.resumeApp', { body }),
 			);
 			onchanged();
 		} catch {
@@ -206,7 +224,7 @@
 		if (!app) return;
 		error = null;
 		try {
-			unwrap(await api.DELETE('/api/v1/apps/{appId}', { params: { path: { appId: app.id } } }));
+			unwrap(await api.POST('/api/v1/actions/core.revokeApp', { body: { appId: app.id } }));
 			onchanged();
 			onclose();
 		} catch {

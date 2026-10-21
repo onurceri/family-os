@@ -143,11 +143,13 @@
 		error = null;
 		busy = true;
 		try {
-			const done = unwrap(
-				await api.POST('/api/v1/core/displays/confirm', {
+			const result = unwrap(
+				await api.POST('/api/v1/actions/core.confirmDisplayPairing', {
 					body: { userCode: code.trim(), name, capabilities: caps, showNames },
 				}),
 			);
+			if (result.status !== 'applied') throw new Error('not applied');
+			const done = result.output;
 			added = done.name;
 			pairingId = done.pairingId;
 			pairing = 'waiting';

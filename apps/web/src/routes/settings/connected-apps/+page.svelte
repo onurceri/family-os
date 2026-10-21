@@ -130,7 +130,7 @@
 
 	async function setEnabled(on: boolean): Promise<boolean> {
 		try {
-			unwrap(await api.PUT('/api/v1/mcp/settings', { body: { enabled: on } }));
+			unwrap(await api.POST('/api/v1/actions/core.setMcpEnabled', { body: { enabled: on } }));
 			enabled = on;
 			return true;
 		} catch {
@@ -163,9 +163,7 @@
 	async function revoke(id: string) {
 		error = null;
 		try {
-			unwrap(
-				await api.DELETE('/api/v1/mcp/tokens/{tokenId}', { params: { path: { tokenId: id } } }),
-			);
+			unwrap(await api.POST('/api/v1/actions/core.revokeApiToken', { body: { tokenId: id } }));
 			await load();
 		} catch {
 			error = t('error_generic');
@@ -332,6 +330,10 @@
 		{warnDays}
 		onclose={() => (panel = null)}
 		onchanged={loadApps}
+		onopen={async (id) => {
+			await loadApps();
+			panel = id;
+		}}
 	/>
 
 	<ConnectApp

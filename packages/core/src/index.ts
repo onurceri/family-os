@@ -1,9 +1,11 @@
 export * from './access.ts';
 export * from './action-runner.ts';
+export * from './admin-actions.ts';
 export * from './ai-areas.ts';
 export { type ApiOperation, describeField, pathParams, publicPath } from './api-operations.ts';
 export * from './api-tokens.ts';
 export * from './apps.ts';
+export * from './audit.ts';
 export * from './changes.ts';
 export * from './core-capabilities.ts';
 export * from './core-events.ts';

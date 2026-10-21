@@ -24,10 +24,14 @@ afterEach(async () => {
 	runtime = undefined;
 });
 
-/** The migrations that release had: everything but what this change adds. */
+/**
+ * What came after that release: the change these tests are about, and core's later migrations,
+ * which run in order after it.
+ */
 const VERSION_MIGRATIONS = [
 	'core/0007_changes',
 	'core/0008_connected_apps',
+	'core/0009_audit_target',
 	'calendar/0003_version',
 	'lists/0002_versions',
 	'chores/0002_versions',

@@ -1399,6 +1399,7 @@
 	"apps_ha_hint": "Home Assistant'ta FamilyOS entegrasyonuna şu adresi ve bu anahtarı verin: {{address}}",
 	"apps_on_behalf_hint": "Uygulama bir kişi adına çalışmak için onu X-FamilyOS-On-Behalf-Of başlığında belirtir.",
 	"apps_keys": "Anahtarlar",
+	"apps_key_failed": "Uygulama eklendi ama anahtarı oluşturulamadı. Aşağıdan bir anahtar ekleyin.",
 	"apps_key_add": "Anahtar ekle",
 	"apps_key_name": "Anahtarın adı",
 	"apps_key_name_default": "Yeni anahtar",

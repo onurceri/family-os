@@ -127,6 +127,7 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 		action_id: true,
 		draft_id: true,
 		outcome: true,
+		target: true,
 	},
 	core_settings: { key: true, value: true, updated_at: true },
 	core_devices: {

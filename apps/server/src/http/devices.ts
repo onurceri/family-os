@@ -7,7 +7,7 @@ import {
 	STYLE_IDS,
 	toDevice,
 } from '@famos/core';
-import { FamosError, personPresent, type TrustedDevice } from '@famos/sdk';
+import { FamosError, personPresent, systemActor, type TrustedDevice } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
@@ -100,6 +100,7 @@ export function mountDeviceRoutes(
 			throw new FamosError('conflict', 'This browser is a paired display');
 		const { device, token } = await devices.trust(actor, { name: c.req.valid('json').name });
 		setDeviceCookie(c, token, secure);
+		await kernel.audit.record(actor, 'core.trustThisDevice', device.id);
 		return c.json(toDevice(device), 201);
 	});
 
@@ -119,8 +120,15 @@ export function mountDeviceRoutes(
 	});
 	app.openapi(forget, async (c) => {
 		// Revoke on the server too, or the device would stay listed and PIN sessions on it would live on.
-		await devices.forget(getCookie(c, DEVICE_COOKIE));
+		const forgotten = await devices.forget(getCookie(c, DEVICE_COOKIE));
 		deleteCookie(c, DEVICE_COOKIE, { path: '/' });
+		// Whoever holds the device's cookie may forget it, signed in or not.
+		if (forgotten)
+			await kernel.audit.record(
+				c.get('actor') ?? systemActor('device'),
+				'core.forgetThisDevice',
+				forgotten,
+			);
 		return c.json({ ok: true as const }, 200);
 	});
 
@@ -146,15 +154,10 @@ const PairingStatusSchema = z.discriminatedUnion('status', [
 	z.object({ status: z.literal('expired') }),
 ]);
 
-const GrantSchema = z.object({
-	name: z.string().trim().min(1).max(60),
-	capabilities: z.array(z.string().max(80)).max(50),
-	showNames: z.boolean(),
-});
-
 /**
- * Pairing and managing family displays. Like device trust, this is credential
- * management (it sets the device cookie), so it lives outside the action runner.
+ * Pairing family displays. A display's cookie is its credential, so pairing lives outside the
+ * action runner like device trust; confirming a code, renaming a display and changing what it
+ * may show are actions (`core.confirmDisplayPairing`, `core.updateDisplay`).
  */
 /**
  * A browser the family uses cannot also be a display (409): a member's session outranks the display
@@ -220,41 +223,13 @@ function mountDisplayRoutes(
 		const result = await devices.pollPairing(c.req.valid('json').deviceCode);
 		if (result.status !== 'paired') return c.json({ status: result.status }, 200);
 		setDeviceCookie(c, result.token, secure);
+		// The display's key is made now, by nobody signed in: the admin who confirmed the code is
+		// on the device record and in the audit row of the confirmation.
+		await kernel.audit.record(systemActor('pairing'), 'core.pollDisplayPairing', result.device.id);
 		return c.json(
 			{ status: 'paired' as const, device: { id: result.device.id, name: result.device.name } },
 			200,
 		);
-	});
-
-	const confirm = createRoute({
-		method: 'post',
-		path: '/api/v1/core/displays/confirm',
-		operationId: 'core.confirmDisplayPairing',
-		summary: 'Confirm the code a display shows, name it and choose what it may show',
-		tags: ['core'],
-		request: {
-			body: {
-				content: {
-					'application/json': { schema: GrantSchema.extend({ userCode: z.string().max(20) }) },
-				},
-				required: true,
-			},
-		},
-		responses: {
-			200: {
-				description: 'Confirmed; the display is connected once it claims it (see the pairing)',
-				...json(z.object({ name: z.string(), pairingId: z.string() })),
-			},
-			...errorResponses,
-		},
-		security: [{ session: [] }],
-	});
-	app.openapi(confirm, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		const { userCode, ...grant } = c.req.valid('json');
-		return c.json(await devices.confirmPairing(actor, userCode, grant), 200);
 	});
 
 	const pairing = createRoute({
@@ -336,34 +311,6 @@ function mountDisplayRoutes(
 			})),
 			200,
 		);
-	});
-
-	const update = createRoute({
-		method: 'patch',
-		path: '/api/v1/core/displays/{deviceId}',
-		operationId: 'core.updateDisplay',
-		summary: 'Rename a display or change what it may show',
-		tags: ['core'],
-		request: {
-			params: z.object({ deviceId: z.string().max(80) }),
-			body: { content: { 'application/json': { schema: GrantSchema.partial() } }, required: true },
-		},
-		responses: {
-			200: { description: 'The display', ...json(DeviceSchema) },
-			...errorResponses,
-		},
-		security: [{ session: [] }],
-	});
-	app.openapi(update, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		const row = await devices.updateDisplay(
-			actor,
-			c.req.valid('param').deviceId,
-			c.req.valid('json'),
-		);
-		return c.json(toDevice(row, devices.leftOut(row.id)), 200);
 	});
 
 	const me = createRoute({
