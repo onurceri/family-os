@@ -362,6 +362,66 @@ describe('a cancelled date with another day instead', () => {
 		expect(failedChecks(outcome)).toEqual([]);
 	});
 
+	it('is one change when the model wrote a cancellation and a new event of the same name (answer of a larger free model)', async () => {
+		const outcome = await read('A cancelled date with another day instead is one move (English)', {
+			label: 'Football training change',
+			intent: 'actionable',
+			addressed: [],
+			mentions: [
+				{
+					kind: 'calendar.eventCancel',
+					target: 'Football training',
+					date: { text: 'Tuesday 13 October', day: 13, month: 10, weekday: 2 },
+					quote: 'no football on Tuesday 13 October',
+				},
+				{
+					kind: 'calendar.event',
+					title: 'Football training',
+					date: { text: 'Thursday 15 October', day: 15, month: 10, weekday: 4 },
+					time: '18:00',
+					timeText: '18:00',
+					notes: 'Bring boots',
+					quote: 'we train on Thursday 15 October at 18:00 instead, bring boots',
+				},
+			],
+		});
+		expect(outcome.drafts.map((d) => d.actionId)).toEqual(['calendar.changeEvent']);
+		expect(outcome.drafts[0]?.input).toMatchObject({
+			date: '2026-10-15',
+			startTime: '18:00',
+			notes: 'Bring boots',
+		});
+		expect(failedChecks(outcome)).toEqual([]);
+		expect(harmfulChecks(outcome)).toEqual([]);
+	});
+
+	it('leaves a cancellation and a new event of another name as two suggestions', async () => {
+		const outcome = await read('A cancelled date with another day instead is one move (English)', {
+			label: 'Training',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.eventCancel',
+					target: 'Football training',
+					date: { text: 'Tuesday 13 October', day: 13, month: 10, weekday: 2 },
+					quote: 'no football on Tuesday 13 October',
+				},
+				{
+					kind: 'calendar.event',
+					title: 'Dentist',
+					date: { text: 'Thursday 15 October', day: 15, month: 10, weekday: 4 },
+					time: '18:00',
+					timeText: '18:00',
+					quote: 'dentist on Thursday 15 October at 18:00',
+				},
+			],
+		});
+		expect(outcome.drafts.map((d) => d.actionId).sort()).toEqual([
+			'calendar.createEvent',
+			'calendar.deleteEvent',
+		]);
+	});
+
 	it('still cancels a different date than the one the change moves', async () => {
 		const outcome = await read('A cancelled date with another day instead is one move (English)', {
 			label: 'Football training',
@@ -415,6 +475,32 @@ describe('a time that only says when something is over', () => {
 		expect(event?.input.allDay).toBe(true);
 		expect(event?.uncertainFields).toEqual(expect.arrayContaining(['startTime', 'allDay']));
 		expect(failedChecks(outcome)).toEqual([]);
+	});
+
+	it('is an all-day event when the model gave only an end and the words hold the clock (answer of a larger free model)', async () => {
+		const outcome = await read('A time that only says when it is over is not the start (English)', {
+			label: 'Leo class trip',
+			intent: 'actionable',
+			addressed: [],
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Leo class trip',
+					people: ['Leo'],
+					date: { text: 'Friday 30 October', day: 30, month: 10, weekday: 5 },
+					endTime: '16:00',
+					timeText: '16:00',
+					notes: 'Bring a packed lunch and 5 euro for the museum shop',
+					quote:
+						'the Leo class trip is Friday 30 October, back by 16:00. Bring a packed lunch and 5 euro for the museum shop',
+				},
+			],
+		});
+		const event = outcome.drafts.find((d) => d.actionId === 'calendar.createEvent');
+		expect(event?.input.startTime).toBeUndefined();
+		expect(event?.input.allDay).toBe(true);
+		expect(event?.uncertainFields).toEqual(expect.arrayContaining(['startTime', 'allDay']));
+		expect(harmfulChecks(outcome)).toEqual([]);
 	});
 
 	it('stays the start when the message writes it as one', async () => {

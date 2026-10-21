@@ -132,6 +132,8 @@ function endsOnly(ctx: MentionContext, mention: Mention): boolean {
 
 /** The start the mention states: none when its only time is an end. */
 function startedAt(ctx: MentionContext, mention: Mention) {
+	// An end with no start of its own: the words' clock (`timeText`) is that end, not a start.
+	if (mention.endTime && !mention.time) return null;
 	return endsOnly(ctx, mention) ? null : ctx.time(mention);
 }
 

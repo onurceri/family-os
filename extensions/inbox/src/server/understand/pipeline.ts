@@ -15,6 +15,7 @@ import {
 	type MentionRecord,
 	type ModelRole,
 	namedShares,
+	namesThing,
 	type ParsedUnderstanding,
 	type ProposalRefusalDetails,
 	parseUnderstanding,
@@ -464,7 +465,7 @@ function aimOf(input: unknown): string | null {
  */
 function foldMoves<
 	T extends { resolution: SettledResolution; mentions: Mention[]; from: readonly number[] },
->(resolved: T[]): void {
+>(resolved: T[], language: string): void {
 	const changes = new Map<string, T>();
 	for (const r of resolved) {
 		if (!('propose' in r.resolution) || r.resolution.propose.removes === true) continue;
@@ -479,6 +480,74 @@ function foldMoves<
 		if (!move || !('propose' in move.resolution)) continue;
 		move.from = [...move.from, ...r.from];
 		move.mentions = [...move.mentions, ...r.mentions];
+		resolved.splice(i, 1);
+	}
+	foldCancelAndCreate(resolved, language);
+}
+
+/** The fields of a new event that say what a moved date becomes. */
+const MOVE_FIELDS = ['date', 'startTime', 'allDay', 'endTime', 'location', 'notes'] as const;
+
+/**
+ * A message that cancels one date and says the same event happens on another ("no football on
+ * Tuesday, we train on Thursday at 18:00 instead") is sometimes read as a cancellation and a new
+ * event of the same name. When exactly one new, non-repeating event carries the title of the
+ * event a cancellation takes a date from, they are one move of that date: the cancellation goes,
+ * the new event becomes a change of the cancelled date, and their words and doubts join. With
+ * several candidates nothing is folded, since which one is the move is not clear.
+ */
+function foldCancelAndCreate<
+	T extends { resolution: SettledResolution; mentions: Mention[]; from: readonly number[] },
+>(resolved: T[], language: string): void {
+	for (let i = resolved.length - 1; i >= 0; i--) {
+		const cancel = resolved[i] as T;
+		if (!('propose' in cancel.resolution)) continue;
+		const gone = cancel.resolution.propose;
+		const aim = gone.removes === true ? aimOf(gone.input) : null;
+		if (aim === null || gone.actionId !== 'calendar.deleteEvent' || !gone.targetTitle) continue;
+		const title = gone.targetTitle;
+		const matches = resolved.filter((r) => {
+			if (!('propose' in r.resolution)) return false;
+			const made = r.resolution.propose;
+			const input = made.input as { title?: unknown; recurrence?: unknown };
+			return (
+				made.actionId === 'calendar.createEvent' &&
+				input.recurrence === undefined &&
+				typeof input.title === 'string' &&
+				(input.title.toLocaleLowerCase(language) === title.toLocaleLowerCase(language) ||
+					namesThing(input.title, title, { language }))
+			);
+		});
+		const [only] = matches;
+		if (matches.length !== 1 || !only || !('propose' in only.resolution)) continue;
+		const made = only.resolution.propose;
+		const input = made.input as Record<string, unknown>;
+		const change: Record<string, unknown> = {};
+		for (const field of MOVE_FIELDS) if (input[field] !== undefined) change[field] = input[field];
+		const target = gone.input as { id: string; occurrence?: string; label?: unknown };
+		only.resolution = {
+			propose: {
+				...made,
+				actionId: 'calendar.changeEvent',
+				input: {
+					id: target.id,
+					...(target.occurrence !== undefined && { occurrence: target.occurrence }),
+					...change,
+					label: target.label ?? made.subject,
+				},
+				targetTitle: title,
+				uncertain: [
+					...new Set([
+						...(made.uncertain ?? []).filter((f) => f in change),
+						...(gone.uncertain ?? []),
+					]),
+				],
+				decided: { ...(gone.decided ?? {}), ...made.decided },
+				from: [...made.from, ...gone.from],
+			},
+		};
+		only.from = [...only.from, ...cancel.from];
+		only.mentions = [...only.mentions, ...cancel.mentions];
 		resolved.splice(i, 1);
 	}
 }
@@ -646,7 +715,7 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 	await resolveAll(unfolded);
 	const first = (r: SettledResolution) => Math.min(...('propose' in r ? r.propose : r.refuse).from);
 	resolved.sort((a, b) => first(a.resolution) - first(b.resolution));
-	foldMoves(resolved);
+	foldMoves(resolved, settings.locale);
 
 	const hash = promptHash(kinds);
 	const missing = ctx.actions.aiMissingAreas({ local: input.local });
