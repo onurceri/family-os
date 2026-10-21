@@ -21,7 +21,7 @@
 	import { APP_KINDS, type AppKind, appSettings, mcpAddress } from './app-settings.js';
 
 	/**
-	 * "Connect an app" (guided steps): turn AI apps on (once, for the whole family; an
+	 * "Connect an AI app" (guided steps): turn AI apps on (once, for the whole family; an
 	 * admin), create a key for the app, copy the settings into the app. The key is shown only in
 	 * the last step, once.
 	 */

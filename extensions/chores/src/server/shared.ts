@@ -11,11 +11,15 @@ export const choresChanged = defineEvent('chores.changed', choreChangedPayload, 
 
 export const memberIdOf = selfOf;
 
-export async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
+/** Refuses a member that is not in the family, naming the input field so a program can find it. */
+export async function assertMembers(uow: UnitOfWork, ids: readonly string[], field: string) {
 	if (ids.length === 0) return;
 	const active = new Set((await uow.family.members()).map((m) => m.id));
 	const unknown = ids.find((id) => !active.has(id));
-	if (unknown) throw new FamosError('bad_request', `Unknown member: ${unknown}`);
+	if (unknown)
+		throw new FamosError('bad_request', `Unknown member: ${unknown}`, {
+			fields: [{ path: field, message: 'Not a member of this family' }],
+		});
 }
 
 export async function loadChore(db: DbExecutor, id: string): Promise<ChoreRow> {

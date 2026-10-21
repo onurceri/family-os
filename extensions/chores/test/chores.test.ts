@@ -38,6 +38,24 @@ const rejected = (p: Promise<unknown>) =>
 	);
 
 describe('chores', () => {
+	it('names the field of a person who is not in the family', async () => {
+		const c = await create();
+		const failure = await k.runner
+			.invoke(
+				'chores.markDone',
+				{ id: c.id, dueDate: c.nextDue, doneBy: k.ctx.ids.next('member') },
+				ayse.actor,
+			)
+			.then(
+				() => null,
+				(e: { code?: string; details?: unknown }) => e,
+			);
+		expect(failure).toMatchObject({
+			code: 'bad_request',
+			details: { fields: [{ path: 'doneBy' }] },
+		});
+	});
+
 	it('says why a tap changed nothing', async () => {
 		const c = await create();
 		const first = await done(c);

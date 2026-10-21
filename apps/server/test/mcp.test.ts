@@ -818,7 +818,7 @@ describe('tools', () => {
 				secret,
 				legacyCall('calendar_createEvent', {
 					title,
-					date: '2026-10-20',
+					date: '2099-01-01',
 					allDay: true,
 					memberIds: [],
 					tags: [],

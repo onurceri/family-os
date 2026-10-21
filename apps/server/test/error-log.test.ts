@@ -28,16 +28,21 @@ const feed = defineRoute({
 
 let runtime: Runtime;
 const lines: object[] = [];
+const errors: object[] = [];
 const logger: Logger = {
 	debug: (obj) => void lines.push(obj),
 	info: (obj) => void lines.push(obj),
 	warn: (obj) => void lines.push(obj),
-	error: (obj) => void lines.push(obj),
+	error: (obj) => {
+		lines.push(obj);
+		errors.push(obj);
+	},
 	child: () => silentLogger,
 };
 
 beforeEach(async () => {
 	lines.length = 0;
+	errors.length = 0;
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-errlog-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
@@ -74,5 +79,35 @@ describe('the unhandled-error log', () => {
 		const logged = JSON.stringify(lines, (_k, v) => (v instanceof Error ? v.message : v));
 		expect(logged).toContain('/api/v1/probe/feed/:secret/calendar.ics');
 		expect(logged).not.toContain('s3cr3t-token-value');
+	});
+
+	it('answers a cross-site write with 403 and its own body, not a logged fault', async () => {
+		const app = createHttpApp({
+			kernel: runtime.kernel,
+			ai: runtime.ai,
+			webPush: runtime.webPush,
+			telegram: runtime.telegram,
+			email: runtime.email,
+			backups: runtime.backups,
+			backupsDir: runtime.config.backupsDir,
+			backupSchedule: runtime.config.backup,
+			identity: runtime.identity,
+			logger,
+			trustedOrigins: [BASE],
+			appVersion: APP_VERSION,
+			secureCookies: false,
+			trustedProxies: ['127.0.0.1'],
+		});
+		// What `curl -d x=1` sends: a form body and no Origin.
+		const res = await app.request(`${BASE}/api/v1/actions/lists.addShoppingItems`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: 'x=1',
+		});
+		expect(res.status).toBe(403);
+		expect(await res.json()).toEqual({
+			error: { code: 'forbidden', message: 'This request came from another site' },
+		});
+		expect(errors).toEqual([]);
 	});
 });

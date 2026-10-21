@@ -161,7 +161,7 @@ curl -H "Authorization: Bearer $KEY" "$FAMOS/drafts?status=waiting"
 }
 ```
 
-It is the list Quick add shows, as far as this key may see it. An app on its own sees the suggestions it made. An app acting for a member (`X-FamilyOS-On-Behalf-Of`) sees what that member would see in the app, their own and those they may decide, and never more than the app's role allows. A suggestion whose day has passed, or whose subject is gone, no longer waits and is not listed.
+It is the list Quick add shows, as far as this key may see it. An app on its own sees the suggestions it made as itself; the ones it made for a member, it sees when it acts for that member. An app acting for a member (`X-FamilyOS-On-Behalf-Of`) sees what that member would see in the app, their own and those they may decide, and never more than the app's role allows. A suggestion whose day has passed, or whose subject is gone, no longer waits and is not listed.
 
 - `status` is `waiting`, or `failed` for a suggestion that was approved but could not be made and waits to be tried again.
 - `title` is what it suggests, `subject` what it is about by name (when known), `proposedBy` a person's name, an app's name or `Leo via Hall script`, and null when nobody is named. All are in the family's language.

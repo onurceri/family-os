@@ -52,6 +52,8 @@ export default defineWebExtension({
 			id: 'inbox.waiting',
 			band: 'needs',
 			order: 0,
+			// The card reads the suggestions list, which only people who may propose can open.
+			requires: 'core.drafts.propose',
 			component: () => import('./InboxCard.svelte'),
 		},
 		{

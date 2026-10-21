@@ -16,9 +16,9 @@ AI apps cannot connect until an admin allows it: **Settings → You → Connecte
 
 Who may create app keys is a permission, **Connect AI apps with their own app key**. Admins and members have it by default; supervised members and guests do not. An app key lets an app the family did not choose read everything its holder can see and send it to that app's own AI provider, which the family's AI settings do not cover, so children do not get it unless an admin decides so. Change it per role in **Settings → Family → Roles**; a key someone already made stops working as soon as their role no longer has the permission. Keys can only be made after signing in with your password: someone who signed in with a PIN on a shared family device sees a note instead of the button. A key also stops when its owner signs out everywhere, gets a new password or is archived.
 
-## Connect an app
+## Connect an AI app
 
-Each app gets its own **app key**: like a password only for that app, which you can take back at any time. On **Settings → You → Connected apps**, press **Connect an app**. A panel walks you through three steps. (While AI apps are not allowed yet, only admins see this button; everyone else sees a note that an admin has to turn it on.)
+Each app gets its own **app key**: like a password only for that app, which you can take back at any time. On **Settings → You → Connected apps**, press **Connect an AI app**. A panel walks you through three steps. (While AI apps are not allowed yet, only admins see this button; everyone else sees a note that an admin has to turn it on.)
 
 1. **Turn on AI apps.** For the whole family, once; an admin presses **Turn on**. When it is on already, this step is done and says **On for the whole family**.
 2. **Create a key for the app.** Give it a **Name** that says where it will be used ("Claude Desktop on my laptop"), choose **What it may do** (**Read only**, or **Read and suggest changes**; suggestions always wait for a family member to approve them) and, under **Valid for**, 30, 90, 180 or 365 days (90 by default). When it runs out it simply stops working; create a new one. Press **Create app key**.
@@ -29,7 +29,7 @@ Each app gets its own **app key**: like a password only for that app, which you 
 
    Then press **I have copied it**.
 
-Your keys are listed under **My app keys**, with what each may do, until when it is valid and when it was last used. Each person can have up to 20 working app keys. Press **Revoke**, then **Revoke now**, and a key stops working at once. Admins can also see and revoke other people's keys, under **Other people's app keys**. Keys end by themselves when you are archived. A key starts with `famos_`, so it is easy to recognise if it ends up somewhere it should not.
+Your keys are listed under **My AI app keys**, with what each may do, until when it is valid and when it was last used. Each person can have up to 20 working app keys. Press **Revoke**, then **Revoke now**, and a key stops working at once. Admins can also see and revoke other people's keys, under **Other people's AI app keys**. Keys end by themselves when you are archived. A key starts with `famos_`, so it is easy to recognise if it ends up somewhere it should not.
 
 Treat it like a password. It shows whoever holds it what you could see, in the areas open to the AI.
 

@@ -17,6 +17,15 @@ const tr = read('../../../../languages/tr/app.json');
 // The reasons the server names in a 403 (`ACCESS_REFUSALS` in packages/core/src/decide.ts).
 const SERVER_REASONS = ['capability', 'approval', 'display', 'sign_in', 'ai', 'critical', 'area'];
 
+describe('refusals a role can meet', () => {
+	it('say who can help, in both languages', () => {
+		for (const key of ['refused_capability', 'refused_approval']) {
+			expect(en[key], key).toMatch(/Ask someone who looks after it/);
+			expect(tr[key], key).toMatch(/Ailende bununla ilgilenen birinden/);
+		}
+	});
+});
+
 describe('refusal words', () => {
 	it('has words for every reason the server gives, in English and Turkish', () => {
 		for (const reason of SERVER_REASONS) {

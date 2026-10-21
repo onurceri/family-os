@@ -34,7 +34,7 @@
 	type Token = Json<'/api/v1/mcp/tokens'>['tokens'][number];
 	type Roles = Json<'/api/v1/core/roles'>;
 
-	/** Personal app keys (API tokens) for AI apps that speak MCP; "Connect an app" walks
+	/** Personal app keys (API tokens) for AI apps that speak MCP; "Connect an AI app" walks
 	 * through turning it on, creating a key and copying the settings into the app. */
 	let enabled = $state<boolean | null>(null);
 	let mine = $state<Token[]>([]);

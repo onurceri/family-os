@@ -2,6 +2,7 @@ import { ACCESS_REFUSALS, accessRefusalOf } from '@famos/core';
 import { ERROR_HTTP_STATUS, type FamosErrorCode, isFamosError, type Logger } from '@famos/sdk';
 import { z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 export const ErrorSchema = z.object({
@@ -57,6 +58,29 @@ export function handleError(error: unknown, c: Context, logger: Logger): Respons
 		}
 		return c.json(errorBody(error.code, error.message, error.details), STATUS[error.code]);
 	}
+	// A refusal by a middleware (a cross-site request, a body over its limit) is the caller's
+	// doing, not a fault: it keeps its status and says nothing of the stack.
+	if (error instanceof HTTPException) return httpExceptionResponse(error, c, logger);
 	logger.error({ err: error, route: c.req.routePath }, 'unhandled error');
 	return c.json(errorBody('internal', 'Something went wrong'), 500);
+}
+
+const HTTP_ERROR: Record<number, { code: FamosErrorCode; message: string }> = {
+	400: { code: 'bad_request', message: 'The request is not valid' },
+	401: { code: 'unauthenticated', message: 'Sign in first' },
+	403: { code: 'forbidden', message: 'This request came from another site' },
+	404: { code: 'not_found', message: 'Not found' },
+	413: { code: 'bad_request', message: 'The request is too large' },
+	429: { code: 'limit_reached', message: 'Too many requests' },
+};
+
+function httpExceptionResponse(error: HTTPException, c: Context, logger: Logger): Response {
+	const status = error.status as ContentfulStatusCode;
+	const known = HTTP_ERROR[status];
+	logger.debug({ route: c.req.routePath, status }, 'refused by middleware');
+	if (status >= 500) logger.warn({ route: c.req.routePath, status }, 'middleware failed');
+	const body = known
+		? errorBody(known.code, known.message)
+		: errorBody(status >= 500 ? 'internal' : 'bad_request', 'The request was refused');
+	return c.json(body, status);
 }

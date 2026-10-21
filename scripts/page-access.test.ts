@@ -140,4 +140,14 @@ describe('page access', () => {
 			);
 		expect(offenders, 'give the page `requires` in APP_SETTINGS instead').toEqual([]);
 	});
+
+	it("keeps Today's suggestions card to people who may read the suggestions list", () => {
+		// The card loads `/core/drafts`, a route that needs `core.drafts.propose`; without the
+		// same `requires` on the card, a role holding only `core.drafts.waiting` meets two 403s.
+		const index = readFileSync(join(root, 'extensions/inbox/src/web/index.ts'), 'utf8');
+		const card = /slot: 'dashboard\.card',\s*id: 'inbox\.waiting',[^}]*?requires: '([^']+)'/.exec(
+			index,
+		);
+		expect(card?.[1]).toBe('core.drafts.propose');
+	});
 });

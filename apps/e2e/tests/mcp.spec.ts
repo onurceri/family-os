@@ -35,8 +35,8 @@ test('a member connects an AI app with an app key and the app uses it; the call 
 	await expect(page.getByRole('switch', { name: /^Allow AI apps/ })).toBeChecked();
 	await expect(page.getByTestId('mcp-off')).toHaveCount(0);
 
-	// Connect an app: AI apps are on, so the sheet opens at "Create a key for the app".
-	await page.getByRole('button', { name: 'Connect an app' }).click();
+	// Connect an AI app: AI apps are on, so the sheet opens at "Create a key for the app".
+	await page.getByRole('button', { name: 'Connect an AI app' }).click();
 	const sheet = page.getByTestId('connect-app');
 	await sheet.getByLabel('Name', { exact: true }).fill('Claude Desktop');
 	await sheet.getByRole('button', { name: 'Create app key' }).click();

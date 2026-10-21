@@ -1691,7 +1691,7 @@ describe('chores and the board', () => {
 			cookie,
 			body: {
 				title: 'Dishes',
-				startDate: '2026-10-20',
+				startDate: '2099-01-01',
 				recurrence: { freq: 'daily', interval: 1 },
 			},
 		});
@@ -1700,7 +1700,7 @@ describe('chores and the board', () => {
 		expect(list.body.items).toEqual([
 			expect.objectContaining({
 				id: choreId,
-				nextDue: '2026-10-20',
+				nextDue: '2099-01-01',
 				overdue: expect.any(Boolean),
 				version: 0,
 			}),
@@ -1709,24 +1709,24 @@ describe('chores and the board', () => {
 
 		// An app is nobody, so it says who did it.
 		const nobody = await pub(admin, 'POST', `/chores/${choreId}/complete`, {
-			dueDate: '2026-10-20',
+			dueDate: '2099-01-01',
 		});
 		expect(nobody.status).toBe(400);
 		const done = await pub(admin, 'POST', `/chores/${choreId}/complete`, {
-			dueDate: '2026-10-20',
+			dueDate: '2099-01-01',
 			doneBy: adminId,
 		});
 		expect(done.status).toBe(200);
 		expect(done.body.result.completion).toMatchObject({
 			choreId,
 			memberId: adminId,
-			dueDate: '2026-10-20',
+			dueDate: '2099-01-01',
 			undoneAt: null,
 		});
-		expect(done.body.result.chore.nextDue).toBe('2026-10-21');
+		expect(done.body.result.chore.nextDue).toBe('2099-01-02');
 		// A stale tap changes nothing, and says so.
 		const stale = await pub(admin, 'POST', `/chores/${choreId}/complete`, {
-			dueDate: '2026-10-20',
+			dueDate: '2099-01-01',
 			doneBy: adminId,
 		});
 		expect(stale.body.result).toMatchObject({ completion: null, reason: 'already_done' });
@@ -1739,7 +1739,7 @@ describe('chores and the board', () => {
 			`/chores/completions/${done.body.result.completion.id}/undo`,
 		);
 		expect(undone.status).toBe(200);
-		expect(undone.body.result.nextDue).toBe('2026-10-20');
+		expect(undone.body.result.nextDue).toBe('2099-01-01');
 	});
 
 	it('puts a note on the board and lists it', async () => {

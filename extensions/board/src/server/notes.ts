@@ -249,10 +249,13 @@ export const postNote = defineAction({
 				.insertInto('board_note_seen')
 				.values({ note_id: row.id, member_id: author, seen_at: now })
 				.execute();
-		// The notice names the person who put the note up, when there is one.
+		// The notice names who put the note up: the member (also when an app carries the request),
+		// else the app that posted alone.
 		const name = author
 			? (await uow.family.members()).find((m) => m.id === author)?.displayName
-			: undefined;
+			: byApp
+				? (await uow.family.apps()).find((a) => a.id === byApp)?.name
+				: undefined;
 		await uow.notify({
 			kind: postedKind.id,
 			to: { capability: boardView.id, ...(author && { except: author }) },

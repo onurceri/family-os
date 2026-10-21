@@ -116,7 +116,7 @@ export const createChore = defineAction({
 		return row !== undefined;
 	},
 	async run(uow, input) {
-		await assertMembers(uow, input.assigneeIds);
+		await assertMembers(uow, input.assigneeIds, 'assigneeIds');
 		const recurrence = input.recurrence ?? null;
 		const nextDue = firstDue(recurrence, input.startDate, input.startDate);
 		const now = uow.clock.now();
@@ -276,7 +276,7 @@ export const setAssignees = defineAction({
 	},
 	async run(uow, { id, memberIds }) {
 		const row = await loadChore(uow.db, id);
-		await assertMembers(uow, memberIds);
+		await assertMembers(uow, memberIds, 'memberIds');
 		const previous = await assigneeOrder(uow, id);
 		await writeAssignees(uow, id, memberIds);
 		const assignee =
@@ -368,7 +368,7 @@ export const markDone = defineAction({
 				completion: null,
 				reason: taken ? ('already_done' as const) : ('stale' as const),
 			};
-		await assertMembers(uow, [doneBy]);
+		await assertMembers(uow, [doneBy], 'doneBy');
 
 		const completion = {
 			id: uow.ids.next('chore_done'),

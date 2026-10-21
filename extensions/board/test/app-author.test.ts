@@ -6,11 +6,12 @@ import type { BoardNote } from '../src/contract/index.ts';
 import { applied, createKernel, type Person, person, refused } from './support.ts';
 
 let k: TestKernel;
+let channel: Awaited<ReturnType<typeof createKernel>>['channel'];
 let ayse: Person; // admin: manage
 let bora: Person; // member: post
 
 beforeEach(async () => {
-	({ k } = await createKernel());
+	({ k, channel } = await createKernel());
 	ayse = await person(k, 'admin', 'Ayşe');
 	bora = await person(k, 'member', 'Bora');
 });
@@ -75,5 +76,28 @@ describe('notes an app puts up alone', () => {
 	it('leave a member’s note with the member when an app speaks for them', async () => {
 		const note = await post('From Bora', boraViaApp());
 		expect(note).toMatchObject({ createdBy: bora.id, createdByApp: null });
+	});
+});
+
+describe('the notice of a note an app put up', () => {
+	const titles = async () => {
+		await k.worker.drain();
+		return channel.sent
+			.filter((s) => s.message.title.includes('board:posted_title'))
+			.map((s) => s.message.title);
+	};
+
+	it('names the app when it posted alone', async () => {
+		await nameApp('app_home', 'Home Assistant');
+		await post('Door open', homeApp());
+		expect(await titles()).toContain('en|board:posted_title_by|{"name":"Home Assistant"}');
+	});
+
+	it('names the member when an app speaks for them', async () => {
+		await nameApp('app_home', 'Home Assistant');
+		await post('From Bora', boraViaApp());
+		const found = await titles();
+		expect(found).toContain('en|board:posted_title_by|{"name":"Bora"}');
+		expect(found.some((t) => t.includes('Home Assistant'))).toBe(false);
 	});
 });
