@@ -311,6 +311,28 @@ describe('missed and harmful', () => {
 		expect(harmfulChecks(outcome)).toEqual([]);
 	});
 
+	it('the 1B trip fee has no date of its own: undated passes, another date is harmful, none is missed', async () => {
+		const name = 'A school email changes the time of the trip of class 1B (sim)';
+		const FEE = 'the 25 EUR bus fee, undated or by Mon 26 Oct';
+		const feeChecks = (o: Awaited<ReturnType<typeof outcomeOf>>) =>
+			failedChecks(o).filter((label) => label.includes('bus fee'));
+		const undated = await outcomeOf(name, [
+			draft('lists.addTask', { title: 'Pay the 25 EUR bus fee' }),
+		]);
+		expect(feeChecks(undated)).toEqual([]);
+		const dated = await outcomeOf(name, [
+			draft('lists.addTask', { title: 'Pay the 25 EUR bus fee', dueDate: '2026-10-26' }),
+		]);
+		expect(feeChecks(dated)).toEqual([]);
+		const wrong = await outcomeOf(name, [
+			draft('lists.addTask', { title: 'Pay the 25 EUR bus fee', dueDate: '2026-10-27' }),
+		]);
+		expect(harmfulChecks(wrong)).toContain(`lists.addTask: ${FEE}`);
+		const none = await outcomeOf(name, []);
+		expect(feeChecks(none)).toEqual([`lists.addTask: ${FEE}`]);
+		expect(harmfulChecks(none)).not.toContain(`lists.addTask: ${FEE}`);
+	});
+
 	it('something proposed that must not be is harmful, unless it is shown as unsure', async () => {
 		const name = 'A cancellation that fits two swim lessons is not acted on (sim fixture)';
 		const acted = await outcomeOf(name, [draft('calendar.deleteEvent', { id: 'cal_event_1' })]);

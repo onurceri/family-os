@@ -132,6 +132,13 @@ function harmful(check: Check): Check {
 	return { ...check, failure: () => 'harmful' };
 }
 
+const isFee = (d: Draft) => /fee|pay|bus|25/i.test(String(d.input.title));
+/** The inputs of the fee tasks proposed. */
+const fees = (ds: Draft[]) =>
+	of(ds, 'lists.addTask')
+		.filter(isFee)
+		.map((d) => d.input);
+
 /** At least one draft of `action` whose input passes `match`. */
 function has(
 	action: string,
@@ -1518,11 +1525,16 @@ const SIMULATION_CASES: Case[] = [
 				'the permission slip by Mon 26 Oct',
 				(i) => i.dueDate === '2026-10-26' && /slip|permission/i.test(String(i.title)),
 			),
-			has(
-				'lists.addTask',
-				'the 25 EUR bus fee by Mon 26 Oct',
-				(i) => i.dueDate === '2026-10-26' && /fee|pay|bus|25/i.test(String(i.title)),
-			),
+			{
+				// "By Monday" belongs to the slip: the fee has no date of its own, so no date is
+				// right and a different one is a wrong value shown as certain.
+				label: 'lists.addTask: the 25 EUR bus fee, undated or by Mon 26 Oct',
+				pass: (ds) => fees(ds).some((i) => i.dueDate === undefined || i.dueDate === '2026-10-26'),
+				failure: (ds) =>
+					fees(ds).length > 0 && !of(ds, 'lists.addTask').filter(isFee).some(shown)
+						? 'harmful'
+						: 'missed',
+			},
 			shortLabel(),
 		],
 	},
