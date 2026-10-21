@@ -1,3 +1,4 @@
+import { isLocalAddress } from '@famos/adapters/http-guard';
 import {
 	CORE_CAPABILITIES,
 	DeviceSchema,
@@ -197,7 +198,12 @@ function mountDisplayRoutes(
 		refuseFamilyBrowser(c);
 		const ip = clientIp(c);
 		if (!startLimit.hit(ip)) throw new FamosError('limit_reached', 'Too many pairing attempts');
-		return c.json(await devices.startPairing({ ip: addressKey(ip) }), 201);
+		// The home network has slots of its own, so a flood from the internet cannot stop the family
+		// pairing a display at home.
+		return c.json(
+			await devices.startPairing({ ip: addressKey(ip), local: isLocalAddress(ip) }),
+			201,
+		);
 	});
 
 	const poll = createRoute({

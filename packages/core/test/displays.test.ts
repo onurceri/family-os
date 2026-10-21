@@ -218,6 +218,22 @@ describe('pairing a display', () => {
 		await expect(k.devices.startPairing()).rejects.toMatchObject({ code: 'limit_reached' });
 	});
 
+	it('keeps slots for the home network that pairings from outside cannot take', async () => {
+		for (let i = 0; i < 100; i++) await k.devices.startPairing({ ip: `198.51.100.${i}` });
+		await expect(k.devices.startPairing({ ip: '203.0.113.1' })).rejects.toMatchObject({
+			code: 'limit_reached',
+		});
+		for (let i = 0; i < 100; i++)
+			await k.devices.startPairing({ ip: `10.0.${Math.floor(i / 3)}.${i % 3}`, local: true });
+		// The home network is bounded too, and its own pairings never open the cap to outside.
+		await expect(k.devices.startPairing({ ip: '10.9.9.9', local: true })).rejects.toMatchObject({
+			code: 'limit_reached',
+		});
+		await expect(k.devices.startPairing({ ip: '203.0.113.1' })).rejects.toMatchObject({
+			code: 'limit_reached',
+		});
+	});
+
 	it('keeps one address from taking every open slot', async () => {
 		for (let i = 0; i < 3; i++) await k.devices.startPairing({ ip: '10.0.0.7' });
 		await expect(k.devices.startPairing({ ip: '10.0.0.7' })).rejects.toMatchObject({

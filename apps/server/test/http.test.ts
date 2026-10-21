@@ -1466,6 +1466,21 @@ describe('family displays', () => {
 		expect((await poll()).status).toBe('slow_down');
 	});
 
+	it('keeps pairing open to the home network when the internet holds every open code', async () => {
+		const pairFrom = (address: string) =>
+			app.request(`${BASE}/api/v1/core/displays/pair`, {
+				method: 'POST',
+				headers: { origin: BASE, 'x-forwarded-for': address },
+			});
+		// 34 internet addresses at three open codes each take all 100 family-wide slots.
+		for (let a = 1; a <= 34; a++) for (let n = 0; n < 3; n++) await pairFrom(`198.51.100.${a}`);
+		expect((await pairFrom('203.0.113.9')).status).toBe(429);
+		expect((await pairFrom('2001:db8:5::1')).status).toBe(429);
+		// The display in the hallway still gets a code, on IPv4 and IPv6 alike.
+		expect((await pairFrom('192.168.1.20')).status).toBe(201);
+		expect((await pairFrom('fd00::20')).status).toBe(201);
+	});
+
 	it('makes actions safe to repeat with an Idempotency-Key header', async () => {
 		const { cookie } = await setupAndSignIn();
 		const create = (name: string, key?: string) =>

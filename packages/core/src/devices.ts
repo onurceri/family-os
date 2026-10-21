@@ -49,8 +49,11 @@ export interface DeviceService {
 
 	/* ───────────── Family displays ───────────── */
 
-	/** Starts pairing a display: a long device code for the display, a short user code for the phone. */
-	startPairing(input?: { ip?: string }): Promise<PairingStart>;
+	/**
+	 * Starts pairing a display: a long device code for the display, a short user code for the phone.
+	 * `local` says the request came from the family's own network.
+	 */
+	startPairing(input?: { ip?: string; local?: boolean }): Promise<PairingStart>;
 	/** The display asks whether it was confirmed. The token comes back exactly once. */
 	pollPairing(deviceCode: string): Promise<PairingPoll>;
 	/**
@@ -175,6 +178,13 @@ const MIN_POLL_MS = 4000;
 const ANSWERING_MS = 15_000;
 const MAX_WRONG_CODES = 5;
 const MAX_OPEN_PAIRINGS = 100;
+/**
+ * Slots past the family-wide cap that only the family's own network may use. Starting a pairing is
+ * public, so enough addresses on the internet can hold every one of the 100 open; a display in the
+ * hallway must still get a code then. A pairing from outside is refused at 100 open, so these stay
+ * free for the home network whatever arrives from outside.
+ */
+const LOCAL_RESERVE = 100;
 /**
  * Open codes one address may hold, so a few addresses cannot take every one of the family-wide
  * slots. A household with a few displays starting up at once still fits.
@@ -487,7 +497,8 @@ export function createDeviceService(deps: {
 				.where('status', '!=', 'consumed')
 				.where('expires_at', '>', now)
 				.executeTakeFirstOrThrow();
-			if (Number(open.n) >= MAX_OPEN_PAIRINGS)
+			const cap = input?.local ? MAX_OPEN_PAIRINGS + LOCAL_RESERVE : MAX_OPEN_PAIRINGS;
+			if (Number(open.n) >= cap)
 				throw new FamosError('limit_reached', 'Too many displays are waiting to be paired');
 			if (input?.ip) {
 				const own = await pairings()
