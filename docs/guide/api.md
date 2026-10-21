@@ -103,7 +103,8 @@ curl -X POST -H "Authorization: Bearer $KEY" $FAMOS/lists/tasks/task_0192…/com
 curl -X PATCH -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"notes":"Bring cash"}' $FAMOS/lists/tasks/task_0192…
 
-# Mark a chore done for the date you saw (an app is nobody, so it says who did it)
+# Mark a chore done: send the chore's `nextDue` as `dueDate`, the date it is done for
+# (an app is nobody, so it says who did it)
 curl -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
   -d '{"dueDate":"2026-10-21","doneBy":"member_0192…"}' $FAMOS/chores/chore_0192…/complete
 
