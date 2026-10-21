@@ -18,11 +18,7 @@
 						],
 						"span": {
 							"said": "this weekend",
-							"kind": "weekend",
-							"day": {
-								"text": "this weekend",
-								"week": "this"
-							}
+							"kind": "weekend"
 						},
 						"people": [
 							{

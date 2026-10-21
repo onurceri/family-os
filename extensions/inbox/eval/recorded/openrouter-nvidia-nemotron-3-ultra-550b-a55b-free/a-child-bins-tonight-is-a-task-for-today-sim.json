@@ -1,0 +1,31 @@
+{
+	"case": "A child: bins tonight is a task for today (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Bins tonight",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "chores.chore",
+						"title": "Take out the bins",
+						"date": {
+							"text": "tonite",
+							"inDays": 0
+						},
+						"repeat": {
+							"every": "day"
+						},
+						"quote": "bins!! tonite?"
+					}
+				]
+			}
+		}
+	]
+}

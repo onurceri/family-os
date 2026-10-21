@@ -18,7 +18,11 @@
 						],
 						"span": {
 							"said": "this weekend",
-							"kind": "weekend"
+							"kind": "weekend",
+							"day": {
+								"text": "this weekend",
+								"week": "this"
+							}
 						},
 						"people": []
 					}
@@ -28,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the calendar this weekend, and there are no tasks this weekend.",
+			"text": "There is nothing on the calendar this weekend and nothing in tasks this weekend.",
 			"toolCalls": []
 		}
 	]

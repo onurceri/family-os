@@ -1,0 +1,24 @@
+{
+	"case": "An appliance still to buy goes on the shopping list (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "New toaster needed",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Toaster",
+						"quote": "can someone pick up a new one when you go into town?"
+					}
+				]
+			}
+		}
+	]
+}

@@ -26,7 +26,32 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I checked all the family shopping lists, and I don't see anchovies on any of them. The lists I can see are:\n\n- Shopping list — empty\n- Groceries — Bread, Cheddar, Tomatoes, Pasta, Eggs\n- Pharmacy — Plasters\n\nIf anchovies are on a different list or under a different name, let me know and I'll look again.",
+			"error": "timeout",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Remove the anchovies from the shopping list",
+						"topics": [
+							"shopping"
+						],
+						"people": [],
+						"about": [
+							"anchovies"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I checked all the family shopping lists, and anchovies is not on any of them.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

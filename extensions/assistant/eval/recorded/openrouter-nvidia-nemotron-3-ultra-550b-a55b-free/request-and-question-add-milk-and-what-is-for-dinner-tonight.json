@@ -1,0 +1,64 @@
+{
+	"case": "request and question: \"Add milk and what is for dinner tonight?\"",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Add milk",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					},
+					{
+						"intent": "ask",
+						"quote": "what is for dinner tonight?",
+						"topics": [
+							"meals"
+						],
+						"span": {
+							"said": "tonight",
+							"kind": "day",
+							"day": {
+								"text": "tonight",
+								"inDays": 0
+							}
+						},
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "There is nothing for dinner tonight. The Meals for today, Tuesday, October 6 show nothing today.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I suggested adding milk to the shopping list. It's waiting for someone in the household to approve it.",
+			"toolCalls": [
+				{
+					"name": "lists_addShoppingItems",
+					"input": {
+						"items": [
+							{
+								"title": "Milk",
+								"category": "dairy"
+							}
+						]
+					}
+				}
+			]
+		}
+	]
+}

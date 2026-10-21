@@ -26,7 +26,7 @@
 						},
 						"people": [],
 						"about": [
-							"planning"
+							"Sunday planning"
 						]
 					}
 				]
@@ -35,14 +35,12 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested moving the Sunday planning on 25 October to 18:00. It's not added yet — it waits for someone in the household to approve it.",
+			"text": "I've suggested moving the Sunday planning on Sunday 25 October from 19:30 to 18:00 (18:00–18:30), just for that one date. It's not added yet — it's waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"text": "planning",
-						"from": "2026-10-06",
-						"to": "2026-10-25"
+						"text": "planning"
 					}
 				},
 				{
@@ -52,7 +50,7 @@
 						"occurrence": "2026-10-25",
 						"startTime": "18:00",
 						"endTime": "18:30",
-						"label": "Sunday planning on 25 October"
+						"label": "Sunday planning"
 					}
 				}
 			]

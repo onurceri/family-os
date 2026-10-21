@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Class 1B trip to Bled",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.eventChange",

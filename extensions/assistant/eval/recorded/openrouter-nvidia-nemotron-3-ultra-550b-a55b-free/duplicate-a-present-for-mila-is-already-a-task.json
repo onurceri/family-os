@@ -1,0 +1,41 @@
+{
+	"case": "duplicate: a present for Mila is already a task",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Add a task to buy a present for Mila",
+						"topics": [
+							"tasks",
+							"shopping"
+						],
+						"people": [],
+						"about": [
+							"buy a present for Mila"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Suggested, not added yet: Add a task: Buy a present for Mila. It appears once someone in the household approves it. It may already be there (Buy a present for Mila).",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Buy a present for Mila"
+					}
+				}
+			]
+		}
+	]
+}

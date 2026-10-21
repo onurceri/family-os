@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -23,7 +18,11 @@
 						],
 						"span": {
 							"said": "this weekend",
-							"kind": "weekend"
+							"kind": "weekend",
+							"day": {
+								"text": "this weekend",
+								"week": "this"
+							}
 						},
 						"people": []
 					}
@@ -33,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the calendar this weekend. There is nothing in tasks this weekend.",
+			"text": "There is nothing on the Calendar this weekend and nothing in Tasks this weekend. The next event is Date night on Saturday, October 17, 7:00 PM–8:00 PM (Sofia and Lukas).",
 			"toolCalls": []
 		}
 	]

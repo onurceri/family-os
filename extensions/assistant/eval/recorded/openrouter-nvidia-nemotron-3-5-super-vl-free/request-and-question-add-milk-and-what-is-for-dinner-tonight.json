@@ -39,51 +39,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing for dinner tonight. Meals say nothing today.",
-			"toolCalls": []
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "change",
-						"quote": "Add milk",
-						"topics": [
-							"shopping"
-						],
-						"people": []
-					},
-					{
-						"intent": "ask",
-						"quote": "what is for dinner tonight?",
-						"topics": [
-							"meals"
-						],
-						"span": {
-							"said": "tonight",
-							"kind": "day",
-							"day": {
-								"text": "tonight",
-								"inDays": 0
-							}
-						},
-						"people": []
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "There is nothing for dinner tonight. Meals say nothing today.",
+			"text": "There is nothing for dinner tonight. Meals says Nothing today.",
 			"toolCalls": []
 		},
 		{

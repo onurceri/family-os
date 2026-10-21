@@ -1,0 +1,24 @@
+{
+	"case": "Ticking off an item names the right one of two lists (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Batteries bought",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "batteries",
+						"place": "Hardware store",
+						"quote": "Got the batteries already, tick them off the hardware list"
+					}
+				]
+			}
+		}
+	]
+}

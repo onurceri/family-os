@@ -1,0 +1,43 @@
+{
+	"case": "pronoun: \"his\" in the second part is Leo, never a name nobody has",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is Leo doing this week, and is anything of his still open?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": [
+							{
+								"said": "Leo"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Leo has a Swimming lesson (Leo) on Thursday, 22 October, a Dinner at Nona Marija's on Friday, 23 October, and a Practise reading (Leo) task on Monday, 19 October. The facts do not indicate any open items for Leo.",
+			"toolCalls": []
+		}
+	]
+}

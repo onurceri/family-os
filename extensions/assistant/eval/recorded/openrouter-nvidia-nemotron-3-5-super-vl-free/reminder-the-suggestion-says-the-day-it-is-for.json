@@ -39,14 +39,15 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I used Thursday 8 October 2026 for \"Thursday\".\n\nSuggested, not added yet: Add a task: Pack my football kit for 2026-10-08. It appears once someone in the household approves it.",
+			"text": "I suggested adding the task \"Pack my football kit\" for Thursday 8 October, assigned to you. It is waiting for someone in the household to approve it before it is added.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
 						"title": "Pack my football kit",
 						"assigneeId": "member:2",
-						"dueDate": "2026-10-08"
+						"dueDate": "2026-10-08",
+						"notes": "None"
 					}
 				}
 			]

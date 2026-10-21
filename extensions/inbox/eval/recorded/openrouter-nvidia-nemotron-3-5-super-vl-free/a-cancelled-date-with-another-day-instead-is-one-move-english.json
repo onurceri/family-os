@@ -1,0 +1,43 @@
+{
+	"case": "A cancelled date with another day instead is one move (English)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Football training change",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Football training",
+						"date": {
+							"text": "Thursday 15 October",
+							"day": 15,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "18:00",
+						"timeText": "18:00",
+						"notes": "Bring boots",
+						"quote": "we train on Thursday 15 October at 18:00 instead, bring boots"
+					},
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Football training",
+						"date": {
+							"text": "Tuesday 13 October",
+							"day": 13,
+							"month": 10,
+							"weekday": 2
+						},
+						"quote": "no football on Tuesday 13 October"
+					}
+				]
+			}
+		}
+	]
+}

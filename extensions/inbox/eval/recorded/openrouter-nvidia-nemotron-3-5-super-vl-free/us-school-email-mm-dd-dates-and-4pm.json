@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Picture day and field trip permission slip",
+				"label": "Picture day and permission slip",
 				"intent": "actionable",
 				"mentions": [
 					{
@@ -27,13 +27,13 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Return the signed permission slip for the field trip",
+						"title": "Return the signed permission slip",
 						"date": {
 							"text": "by 10/8",
 							"day": 8,
 							"month": 10
 						},
-						"quote": "Please return the signed permission slip for the field trip by 10/8."
+						"quote": "Please return the signed permission slip for the field trip by 10/8"
 					}
 				]
 			}

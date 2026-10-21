@@ -1,0 +1,58 @@
+{
+	"case": "An adult child set it up for their parents",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Babamın kardiyoloji kontrolü",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Kardiyoloji kontrolü",
+						"people": [
+							"Ali"
+						],
+						"date": {
+							"text": "21 Ekim Çarşamba",
+							"day": 21,
+							"month": 10,
+							"weekday": 3
+						},
+						"time": "10:30",
+						"timeText": "10:30",
+						"place": "Şehir Hastanesi",
+						"quote": "Babamın kardiyoloji kontrolü 21 Ekim Çarşamba 10:30, Şehir Hastanesi"
+					},
+					{
+						"kind": "calendar.event",
+						"title": "Kardiyoloji kontrolüne eşlik",
+						"people": [
+							"Fatma"
+						],
+						"date": {
+							"text": "21 Ekim Çarşamba",
+							"day": 21,
+							"month": 10,
+							"weekday": 3
+						},
+						"time": "10:30",
+						"timeText": "10:30",
+						"place": "Şehir Hastanesi",
+						"quote": "Annem de onunla gidecek"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Eczaneden ilaçları al",
+						"quote": "Eczaneden ilaçlarını almayı unutmayalım"
+					}
+				]
+			}
+		}
+	]
+}

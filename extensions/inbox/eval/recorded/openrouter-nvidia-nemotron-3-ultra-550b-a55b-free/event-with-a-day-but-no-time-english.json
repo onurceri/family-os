@@ -1,0 +1,33 @@
+{
+	"case": "Event with a day but no time (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Choir rehearsal moved",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Choir rehearsal",
+						"date": {
+							"text": "Thursday",
+							"weekday": 4
+						},
+						"quote": "Choir rehearsal moved to Thursday"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Bring your folder",
+						"detailOf": 0,
+						"quote": "bring your folder"
+					}
+				]
+			}
+		}
+	]
+}

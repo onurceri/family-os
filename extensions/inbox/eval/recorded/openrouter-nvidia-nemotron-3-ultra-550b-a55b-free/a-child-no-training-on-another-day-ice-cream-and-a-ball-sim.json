@@ -1,0 +1,39 @@
+{
+	"case": "A child: no training on another day, ice cream and a ball (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Training cancelled and shopping",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Football training",
+						"date": {
+							"text": "thurs",
+							"weekday": 4
+						},
+						"quote": "coach says no training thurs"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Ice cream",
+						"variant": "frozen",
+						"quote": "ice cream"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Football",
+						"quote": "a new football"
+					}
+				]
+			}
+		}
+	]
+}

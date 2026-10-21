@@ -27,7 +27,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Oat milk: I've suggested ticking it off — it's waiting for someone in the household to approve it.\n\nMilk: it's already marked as bought on the list, so there's nothing to do there.",
+			"text": "Oat milk: I've suggested ticking it off — it's waiting for someone in the household to approve it.\n\nMilk: it's already marked as bought on the list, so nothing to do there.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

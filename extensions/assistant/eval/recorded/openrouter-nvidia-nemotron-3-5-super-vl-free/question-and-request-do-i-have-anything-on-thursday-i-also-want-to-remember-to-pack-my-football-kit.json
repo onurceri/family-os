@@ -7,7 +7,60 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "unavailable"
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Do I have anything on Thursday?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							}
+						],
+						"about": []
+					},
+					{
+						"intent": "change",
+						"quote": "I also want to remember to pack my football kit",
+						"topics": [
+							"tasks"
+						],
+						"people": [
+							{
+								"said": "I"
+							}
+						],
+						"about": [
+							"pack",
+							"football kit"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "You have a Piano lesson on Thursday, 22 October from 18:00–19:00. You have no tasks on Thursday, 22 October.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "timeout",
+			"toolCalls": []
 		},
 		{
 			"kind": "object",
@@ -58,14 +111,22 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "You have a Piano lesson on Thursday, 22 October from 18:00–19:00. There are no tasks on Thursday, 22 October.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": []
+			"text": "I suggested adding a task to pack your football kit. It's waiting for someone else in the household to approve it before it's added.",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Pack football kit",
+						"assigneeId": "member:3"
+					}
+				}
+			]
 		}
 	]
 }

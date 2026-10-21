@@ -1,0 +1,42 @@
+{
+	"case": "span: nothing open for Ellie this weekend",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is still open for me this weekend?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this weekend",
+							"kind": "weekend",
+							"day": {
+								"text": "this weekend"
+							}
+						},
+						"people": [
+							{
+								"said": "me"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "There is nothing open this weekend. The next task is Tuesday, October 13: Fractions worksheet (Ellie).",
+			"toolCalls": []
+		}
+	]
+}

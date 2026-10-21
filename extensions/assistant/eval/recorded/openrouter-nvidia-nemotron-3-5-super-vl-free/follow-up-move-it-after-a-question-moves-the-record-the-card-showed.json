@@ -59,14 +59,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Change an event: Dentist checkup for 2026-10-08. It appears once someone in the household approves it.",
+			"text": "Suggested, not added yet: Change an event: Dentist checkup. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
 						"label": "Dentist checkup",
-						"date": "2026-10-08",
 						"startTime": "10:00"
 					}
 				}

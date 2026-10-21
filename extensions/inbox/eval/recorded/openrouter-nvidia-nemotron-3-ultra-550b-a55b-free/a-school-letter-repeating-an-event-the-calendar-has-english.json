@@ -1,0 +1,78 @@
+{
+	"case": "A school letter repeating an event the calendar has (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Year 7 class trip and parents' evening update",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Year 7 class trip to Postojna Cave",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Thursday 29 October",
+							"day": 29,
+							"month": 10,
+							"weekday": 4
+						},
+						"time": "07:50",
+						"timeText": "7:50",
+						"endTime": "16:30",
+						"place": "Postojna Cave",
+						"notes": "Bus leaves school at 7:50 and returns about 16:30. Packed lunch and sturdy shoes required.",
+						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Send signed permission slip",
+						"detailOf": 0,
+						"date": {
+							"text": "by Monday 26 October",
+							"day": 26,
+							"month": 10,
+							"weekday": 1
+						},
+						"quote": "Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay trip cost 14 EUR",
+						"detailOf": 0,
+						"date": {
+							"text": "by 23 October",
+							"day": 23,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Payable through the school e-office",
+						"quote": "The cost is 14 EUR, payable through the school e-office by 23 October."
+					},
+					{
+						"kind": "calendar.eventChange",
+						"target": "Parents' evening at school",
+						"date": {
+							"text": "20 October",
+							"day": 20,
+							"month": 10,
+							"weekday": 2
+						},
+						"time": "18:00",
+						"timeText": "18:00",
+						"place": "School hall",
+						"quote": "Parents' evening moved to 20 October, 18:00 in the school hall."
+					}
+				]
+			}
+		}
+	]
+}

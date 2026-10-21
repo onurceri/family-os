@@ -41,7 +41,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Yes. Pick up Leo from the pool at 17:30 on Thursday for the Swimming lesson.",
+			"text": "Yes, pick up Leo from the pool at 17:30 on Thursday for the Swimming lesson.",
 			"toolCalls": []
 		}
 	]

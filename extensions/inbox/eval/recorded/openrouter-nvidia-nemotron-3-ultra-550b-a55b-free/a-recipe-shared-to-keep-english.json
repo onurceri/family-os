@@ -1,0 +1,36 @@
+{
+	"case": "A recipe shared to keep (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Grandma's banana bread recipe",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "kitchen.recipe",
+						"title": "Grandma's banana bread",
+						"lines": [
+							"3 ripe bananas",
+							"250 g flour",
+							"100 g sugar",
+							"1 egg",
+							"1 tsp baking soda",
+							"1. Mash the bananas.",
+							"2. Mix in everything else.",
+							"3. Bake at 175 C for 60 minutes."
+						],
+						"quantity": "8",
+						"amount": "70",
+						"quote": "Grandma's banana bread (serves 8, 70 min): 3 ripe bananas, 250 g flour, 100 g sugar, 1 egg, 1 tsp baking soda. Mash the bananas, mix in everything else, then bake at 175 C for 60 minutes."
+					}
+				]
+			}
+		}
+	]
+}

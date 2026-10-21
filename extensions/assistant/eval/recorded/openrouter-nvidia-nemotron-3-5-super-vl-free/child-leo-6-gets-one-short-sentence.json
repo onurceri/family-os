@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "You have Practise reading Monday, Swimming lesson Thursday, Dinner at Nona Marija's Friday.",
 			"toolCalls": []
 		}
 	]

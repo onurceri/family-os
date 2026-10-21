@@ -1,0 +1,34 @@
+{
+	"case": "A garage invoice for a listed car (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Corolla service invoice",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "vehicles.log",
+						"about": "Corolla",
+						"title": "Annual service, oil and filter, new wiper blades",
+						"variant": "service",
+						"date": {
+							"text": "3 October 2026",
+							"day": 3,
+							"month": 10,
+							"year": 2026
+						},
+						"place": "Northside Garage",
+						"notes": "Mileage 62,300 km",
+						"quote": "Corolla: annual service, oil and filter, new wiper blades. Mileage 62,300 km."
+					}
+				]
+			}
+		}
+	]
+}

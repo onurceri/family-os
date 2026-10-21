@@ -1,0 +1,32 @@
+{
+	"case": "New items go to the list that fits, or are marked (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Hardware store and washing powder",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Screws",
+						"place": "Hardware store",
+						"variant": "household",
+						"quote": "screws for the hardware store list"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Washing powder",
+						"variant": "household",
+						"quote": "washing powder"
+					}
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,65 @@
+{
+	"case": "A letter that names nobody marks Who as \"check this\" (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Year 8 options evening and football kit",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Year 8 options evening",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Thursday 12 November",
+							"day": 12,
+							"month": 11,
+							"weekday": 4
+						},
+						"time": "17:30",
+						"timeText": "17:30",
+						"place": "Main hall",
+						"quote": "the Year 8 options evening is on Thursday 12 November at 17:30 in the main hall"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Return the reply slip",
+						"date": {
+							"text": "Friday 30 October",
+							"day": 30,
+							"month": 10,
+							"weekday": 5
+						},
+						"quote": "Please return the reply slip by Friday 30 October"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Bring football kit for photo session",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Wednesday 28 October",
+							"day": 28,
+							"month": 10,
+							"weekday": 3
+						},
+						"time": "08:00",
+						"timeText": "8:00",
+						"quote": "Ivy is asked to bring her football kit to change for the photo session on Wednesday 28 October, 8:00"
+					}
+				]
+			}
+		}
+	]
+}

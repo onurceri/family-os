@@ -1,0 +1,46 @@
+{
+	"case": "Turkish: add milk and eggs",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Alışveriş listesine süt ve yumurta ekler misin?",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Süt ve yumurta alışveriş listesine eklenmek üzere öneri oluşturuldu. Bu öneri henüz onaylanmadı; aileden biri onayladığında listeye eklenecek.",
+			"toolCalls": [
+				{
+					"name": "lists_addShoppingItems",
+					"input": {
+						"items": [
+							{
+								"title": "Süt",
+								"category": "dairy"
+							},
+							{
+								"title": "Yumurta",
+								"category": "dairy"
+							}
+						]
+					}
+				}
+			]
+		}
+	]
+}

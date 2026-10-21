@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "unavailable"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -60,13 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing for Chores today.",
+			"text": "There is nothing for Chores today, Tuesday.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Nothing is on for you this week.",
+			"text": "Nothing is on your calendar or tasks this week.",
 			"toolCalls": []
 		}
 	]

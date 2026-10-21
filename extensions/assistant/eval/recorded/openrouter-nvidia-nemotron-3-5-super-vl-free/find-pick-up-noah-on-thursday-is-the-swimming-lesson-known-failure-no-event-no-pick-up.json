@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "unavailable"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -43,7 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Noah has Dentist checkup and Swimming on Thursday, October 8.",
+			"text": "Noah has a Dentist checkup and Swimming on Thursday, October 8.",
 			"toolCalls": []
 		}
 	]

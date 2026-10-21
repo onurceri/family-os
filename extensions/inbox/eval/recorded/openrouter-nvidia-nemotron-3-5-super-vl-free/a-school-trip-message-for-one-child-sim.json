@@ -33,7 +33,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay Year 8 trip to Bled via ParentPay",
+						"title": "Pay the Year 8 trip fee",
 						"date": {
 							"text": "Fri 23.10",
 							"day": 23,
@@ -41,7 +41,7 @@
 							"year": 2026,
 							"weekday": 5
 						},
-						"notes": "24 EUR",
+						"notes": "24 EUR via ParentPay",
 						"quote": "24 EUR via ParentPay by Fri 23.10"
 					}
 				]

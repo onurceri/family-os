@@ -1,0 +1,70 @@
+{
+	"case": "question and request: \"Do I have anything on Thursday? I also want to remember to pack my football kit\"",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Do I have anything on Thursday?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							}
+						]
+					},
+					{
+						"intent": "change",
+						"quote": "I also want to remember to pack my football kit",
+						"topics": [
+							"tasks"
+						],
+						"people": [
+							{
+								"said": "I"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "You have a Piano lesson (Ivy) on Thursday, 22 October from 18:00–19:00. Tasks show nothing on Thursday, 22 October.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I suggested a task for you: \"Pack football kit\" for Thursday 22 October. It's waiting for someone else in the household to approve it.",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"dueDate": "2026-10-22",
+						"assigneeId": "member:3",
+						"title": "Pack football kit"
+					}
+				}
+			]
+		}
+	]
+}

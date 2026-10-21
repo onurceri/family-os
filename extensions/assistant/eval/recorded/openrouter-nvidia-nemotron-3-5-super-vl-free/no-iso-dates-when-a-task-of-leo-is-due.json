@@ -30,7 +30,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
+			"text": "Practise reading is on Monday, 19 October.",
 			"toolCalls": []
 		}
 	]

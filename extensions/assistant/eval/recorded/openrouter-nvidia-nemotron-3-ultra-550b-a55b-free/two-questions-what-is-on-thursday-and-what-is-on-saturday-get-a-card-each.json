@@ -1,0 +1,62 @@
+{
+	"case": "two questions: \"What is on Thursday? And what is on Saturday?\" get a card each",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is on Thursday?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": []
+					},
+					{
+						"intent": "ask",
+						"quote": "And what is on Saturday?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "Saturday",
+							"kind": "day",
+							"day": {
+								"text": "Saturday",
+								"weekday": 6
+							}
+						},
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "On Thursday, October 8, the calendar shows a Dentist checkup (Noah) from 9:30 AM to 10:30 AM and Swimming (Noah) from 5:00 PM to 6:00 PM. Tasks indicate nothing on Thursday, October 8.",
+			"toolCalls": []
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "There is nothing on Saturday, October 10 in Calendar or Tasks; the next event is Sunday planning on Sunday, October 11 at 7:30 PM–8:00 PM.",
+			"toolCalls": []
+		}
+	]
+}

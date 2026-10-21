@@ -24,18 +24,20 @@
 						"timeText": "15:00",
 						"place": "Music school",
 						"notes": "No phones in the hall. Bring blue music book.",
-						"quote": "piano recital Sat 14 Nov 15:00 music school"
+						"quote": "piano recital Sat 14 Nov 15:00 music school, no phones in the hall. bring blue music book"
 					},
 					{
 						"kind": "lists.task",
-						"title": "Practise every day",
+						"title": "Practise piano every day",
 						"date": {
 							"text": "Sat 14 Nov",
 							"day": 14,
 							"month": 11,
 							"weekday": 6
 						},
-						"detailOf": 0,
+						"repeat": {
+							"every": "day"
+						},
 						"quote": "practise every day pls"
 					}
 				]

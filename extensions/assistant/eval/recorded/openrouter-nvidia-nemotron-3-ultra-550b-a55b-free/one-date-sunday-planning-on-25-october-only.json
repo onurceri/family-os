@@ -1,0 +1,61 @@
+{
+	"case": "one date: Sunday planning on 25 October only",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Move only the Sunday planning on 25 October to 18:00",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on 25 October",
+							"kind": "day",
+							"day": {
+								"text": "25 October",
+								"day": 25,
+								"month": 10
+							}
+						},
+						"people": [],
+						"about": [
+							"Sunday planning"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"from": "2026-10-20",
+						"text": "planning",
+						"to": "2026-10-30"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"id": "cal_event:1",
+						"occurrence": "1792953000000",
+						"startTime": "18:00",
+						"endTime": "18:30",
+						"label": "Sunday planning on 25 October"
+					}
+				}
+			]
+		}
+	]
+}

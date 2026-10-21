@@ -1,0 +1,40 @@
+{
+	"case": "formatting: an overview of the week",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Give me an overview of this week: what's on, the open tasks and the shopping list.",
+						"topics": [
+							"calendar",
+							"tasks",
+							"shopping"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "This week features Swim training for Ellie on Tuesday, October 6; Early shift for Lukas, Client meeting for Sofia, Piano lesson for Ellie, Football training for Noah, and Work dinner for Lukas on Wednesday, October 7; Dentist checkup and Swimming for Noah on Thursday, October 8; and Sunday planning on Sunday, October 11. Open tasks are buying a birthday present for Mila and booking the car service, and the shopping list includes Bread, Cheddar, Tomatoes, Pasta, and Eggs.",
+			"toolCalls": []
+		}
+	]
+}

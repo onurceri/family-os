@@ -1,0 +1,100 @@
+{
+	"case": "one date: follow-up \"Only this Sunday\"",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Move Sunday planning to 18:00",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "Sunday",
+							"kind": "day",
+							"day": {
+								"text": "Sunday",
+								"weekday": 7
+							}
+						},
+						"people": [],
+						"about": [
+							"planning"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I've suggested moving the \"Sunday planning\" event on Sunday, October 11 from 7:30 PM to 6:00 PM (ending at 6:30 PM). This change is waiting for someone in the household to approve it in Quick add.",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"from": "2026-10-11",
+						"text": "planning",
+						"to": "2026-10-11"
+					}
+				},
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"label": "Sunday planning",
+						"id": "cal_event:1",
+						"endTime": "18:30",
+						"startTime": "18:00",
+						"occurrence": "1791739800000"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Only this Sunday, please.",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "this Sunday",
+							"kind": "day",
+							"day": {
+								"text": "this Sunday",
+								"weekday": 7
+							}
+						},
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I've suggested moving only this Sunday's \"Sunday planning\" (Sunday, October 11) to 6:00 PM. This change is waiting for someone in the household to approve it in Quick add.\n\nSuggested, not added yet: Change an event: Sunday planning",
+			"toolCalls": [
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"startTime": "18:00",
+						"occurrence": "2026-10-11",
+						"label": "Sunday planning",
+						"id": "cal_event:1"
+					}
+				}
+			]
+		}
+	]
+}

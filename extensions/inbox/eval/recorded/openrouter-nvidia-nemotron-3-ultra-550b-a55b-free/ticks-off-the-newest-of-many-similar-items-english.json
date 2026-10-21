@@ -1,0 +1,24 @@
+{
+	"case": "Ticks off the newest of many similar items (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Picture wire bought",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.bought",
+						"target": "Picture wire",
+						"place": "Hardware store",
+						"quote": "Got the picture wire already, tick it off the Hardware store list"
+					}
+				]
+			}
+		}
+	]
+}

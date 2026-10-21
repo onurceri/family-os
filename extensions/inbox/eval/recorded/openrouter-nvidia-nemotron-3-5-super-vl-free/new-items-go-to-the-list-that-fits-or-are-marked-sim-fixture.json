@@ -15,12 +15,12 @@
 						"kind": "lists.shoppingItem",
 						"title": "Screws",
 						"place": "Hardware store",
-						"quote": "screws for the hardware store list"
+						"quote": "we need screws for the hardware store list"
 					},
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Washing powder",
-						"quote": "washing powder"
+						"quote": "and washing powder"
 					}
 				]
 			}

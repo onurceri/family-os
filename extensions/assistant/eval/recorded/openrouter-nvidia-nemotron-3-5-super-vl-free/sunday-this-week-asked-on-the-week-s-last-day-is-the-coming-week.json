@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -37,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "This week includes Practise reading for Leo on Monday, 19 October, Parents' evening for Mara and Tom on Tuesday, 20 October at 18:00–19:00, Sign the school trip form for Mara on Tuesday, 20 October, Football training for Ivy on Wednesday, 21 October at 17:00–18:00, Swimming lesson for Leo on Thursday, 22 October at 16:30–17:30, Piano lesson for Ivy on Thursday, 22 October at 18:00–19:00, Dinner at Nona Marija's on Friday, 23 October at 18:30–21:00, and U13 match, Olimpija for Ivy on Saturday, 24 October at 10:00–11:00.",
 			"toolCalls": []
 		}
 	]

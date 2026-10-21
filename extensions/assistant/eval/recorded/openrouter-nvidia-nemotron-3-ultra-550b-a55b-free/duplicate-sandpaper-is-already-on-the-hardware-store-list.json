@@ -1,0 +1,35 @@
+{
+	"case": "duplicate: sandpaper is already on the Hardware store list",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Add sandpaper to the Hardware store list",
+						"topics": [
+							"shopping"
+						],
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Sandpaper is already on the Hardware store list (2 sheets).",
+			"toolCalls": [
+				{
+					"name": "lists_shoppingList",
+					"input": {}
+				}
+			]
+		}
+	]
+}

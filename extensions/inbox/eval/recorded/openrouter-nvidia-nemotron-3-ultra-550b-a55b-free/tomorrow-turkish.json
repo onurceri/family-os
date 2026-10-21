@@ -1,0 +1,32 @@
+{
+	"case": "Tomorrow (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Su tesisatçısı geliyor",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Su tesisatçısı",
+						"date": {
+							"text": "Yarın",
+							"inDays": 1,
+							"weekday": 3
+						},
+						"time": "09:00",
+						"timeText": "9'da",
+						"notes": "Evde biri olmalı",
+						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı."
+					}
+				]
+			}
+		}
+	]
+}

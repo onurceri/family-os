@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -43,15 +38,20 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I used Tuesday 13 October 2026 for \"Tuesday at 08:00\" (this Tuesday has already passed at 08:00 today).\n\nSuggested, not added yet: Add a task: Put the bins out for 2026-10-13. It appears once someone in the household approves it.",
+			"text": "I suggested a task: Put the bins out for Tuesday 13 October at 08:00. It's waiting for someone in the household to approve it before it's added.",
 			"toolCalls": [
+				{
+					"name": "lists_openTasks",
+					"input": {}
+				},
 				{
 					"name": "lists_addTask",
 					"input": {
 						"title": "Put the bins out",
 						"assigneeId": "member:2",
 						"dueDate": "2026-10-13",
-						"dueTime": "08:00"
+						"dueTime": "08:00",
+						"notes": "Reminder to put the bins out on Tuesday at 08:00"
 					}
 				}
 			]

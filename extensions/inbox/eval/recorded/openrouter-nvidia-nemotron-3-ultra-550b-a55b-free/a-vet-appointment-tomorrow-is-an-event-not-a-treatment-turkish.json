@@ -1,0 +1,31 @@
+{
+	"case": "A vet appointment tomorrow is an event, not a treatment (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Biscuit aşı randevusu",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Biscuit aşı randevusu",
+						"about": "Biscuit",
+						"date": {
+							"text": "yarın",
+							"inDays": 1
+						},
+						"time": "10:00",
+						"timeText": "saat 10",
+						"place": "veteriner",
+						"quote": "yarın biscuit aşı randevusu saat 10 veteriner"
+					}
+				]
+			}
+		}
+	]
+}

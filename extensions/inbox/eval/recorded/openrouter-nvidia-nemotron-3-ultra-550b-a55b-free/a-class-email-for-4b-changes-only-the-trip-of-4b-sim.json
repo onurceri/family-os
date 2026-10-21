@@ -1,0 +1,51 @@
+{
+	"case": "A class email for 4B changes only the trip of 4B (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Class 4B trip to Bled",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Class 4B trip to Bled",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Friday 6 November",
+							"day": 6,
+							"month": 11,
+							"weekday": 5
+						},
+						"time": "07:40",
+						"timeText": "7:40",
+						"endTime": "16:00",
+						"place": "Bled",
+						"notes": "Pack a packed lunch and a warm jacket. Parents welcome to join the lake walk at 13:00.",
+						"quote": "our class trip to Bled is on Friday 6 November. The bus leaves school at 7:40 and we are back about 16:00. Please pack a packed lunch and a warm jacket. Parents are welcome to join the lake walk at 13:00."
+					},
+					{
+						"kind": "lists.task",
+						"title": "Pay trip fee and return signed permission slip",
+						"date": {
+							"text": "Thursday 29 October",
+							"day": 29,
+							"month": 10,
+							"weekday": 4
+						},
+						"notes": "Fee: 22 EUR",
+						"quote": "The trip costs 22 EUR, to be paid together with the signed permission slip by Thursday 29 October."
+					}
+				]
+			}
+		}
+	]
+}

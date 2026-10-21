@@ -38,7 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I can't add calendar appointments. The family calendar is not available to me in FamilyOS.",
+			"text": "I can't add a dentist appointment. The calendar is not available to me in FamilyOS, so I cannot create or change appointments. Friday would be October 9.",
 			"toolCalls": []
 		}
 	]

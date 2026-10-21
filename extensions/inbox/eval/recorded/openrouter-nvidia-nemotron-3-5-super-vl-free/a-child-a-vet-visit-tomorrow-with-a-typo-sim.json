@@ -14,7 +14,9 @@
 					{
 						"kind": "calendar.event",
 						"title": "Biscuit vet",
-						"about": "Biscuit",
+						"people": [
+							"Biscuit"
+						],
 						"date": {
 							"text": "tomorrow",
 							"inDays": 1

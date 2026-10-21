@@ -1,0 +1,37 @@
+{
+	"case": "A day in the quote is read when the answer has none (sim)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim bag and dentist",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Take the swim bag",
+						"date": {
+							"text": "Thursday",
+							"weekday": 4
+						},
+						"quote": "swim bag for thursday pls!!"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Dentist",
+						"date": {
+							"text": "2nd nov",
+							"day": 2,
+							"month": 11
+						},
+						"quote": "dentist ?? 2nd nov"
+					}
+				]
+			}
+		}
+	]
+}

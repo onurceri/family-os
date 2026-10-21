@@ -1,0 +1,53 @@
+{
+	"case": "not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Change Dental cleaning to 10:00",
+						"topics": [
+							"calendar"
+						],
+						"people": [],
+						"about": [
+							"Dental cleaning"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I don't see an event called \"Dental cleaning\" on the calendar. There is a **Dentist checkup** for Noah on **Thursday 8 October at 9:30 AM–10:30 AM** (event `cal_event:7`). \n\nIs that the one you want to move to 10:00 AM? If so, I can change its start time to 10:00 (keeping the same duration, so it would end at 11:00).",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Dental cleaning"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "dental"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"to": "2026-10-20",
+						"from": "2026-10-06"
+					}
+				}
+			]
+		}
+	]
+}

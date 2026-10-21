@@ -1,0 +1,28 @@
+{
+	"case": "A child: a vet visit tomorrow, with a typo (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Biscuit vet appointment",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Vet appointment",
+						"about": "Biscuit",
+						"date": {
+							"text": "tomorow",
+							"inDays": 1
+						},
+						"quote": "biscuit vet tomorow!!"
+					}
+				]
+			}
+		}
+	]
+}

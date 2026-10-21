@@ -1,0 +1,43 @@
+{
+	"case": "child: Leo (6) gets one short sentence",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "what do I have this week?",
+						"topics": [
+							"calendar",
+							"tasks"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "You have swimming lesson Thursday, dinner at Nona Marija's Friday, and practise reading Monday.",
+			"toolCalls": []
+		}
+	]
+}

@@ -1,0 +1,42 @@
+{
+	"case": "A flat message with nothing installed for it (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Boiler service and flat insurance",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "records.duty",
+						"title": "Boiler service",
+						"about": "Our flat",
+						"variant": "due",
+						"date": {
+							"text": "March",
+							"month": 3
+						},
+						"quote": "Boiler service for our flat is due in March"
+					},
+					{
+						"kind": "records.duty",
+						"title": "Flat insurance",
+						"about": "Our flat",
+						"variant": "due",
+						"date": {
+							"text": "1 Dec",
+							"day": 1,
+							"month": 12
+						},
+						"quote": "the flat insurance renews 1 Dec"
+					}
+				]
+			}
+		}
+	]
+}

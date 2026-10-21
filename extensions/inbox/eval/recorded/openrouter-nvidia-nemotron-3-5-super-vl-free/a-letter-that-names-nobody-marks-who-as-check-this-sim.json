@@ -22,7 +22,7 @@
 						},
 						"time": "17:30",
 						"timeText": "17:30",
-						"place": "Main hall",
+						"place": "main hall",
 						"quote": "the Year 8 options evening is on Thursday 12 November at 17:30 in the main hall"
 					},
 					{
@@ -37,8 +37,11 @@
 						"quote": "Please return the reply slip by Friday 30 October"
 					},
 					{
-						"kind": "calendar.event",
-						"title": "Photo session",
+						"kind": "lists.task",
+						"title": "Bring football kit",
+						"people": [
+							"Ivy"
+						],
 						"date": {
 							"text": "Wednesday 28 October",
 							"day": 28,
@@ -47,10 +50,6 @@
 						},
 						"time": "08:00",
 						"timeText": "8:00",
-						"people": [
-							"Ivy"
-						],
-						"notes": "Bring her football kit to change",
 						"quote": "Ivy is asked to bring her football kit to change for the photo session on Wednesday 28 October, 8:00"
 					}
 				]

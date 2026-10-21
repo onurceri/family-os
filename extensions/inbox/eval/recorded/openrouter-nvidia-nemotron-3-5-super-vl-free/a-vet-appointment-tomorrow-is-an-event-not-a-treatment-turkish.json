@@ -14,9 +14,7 @@
 					{
 						"kind": "calendar.event",
 						"title": "Biscuit aşı randevusu",
-						"people": [
-							"Biscuit"
-						],
+						"about": "Biscuit",
 						"date": {
 							"text": "yarın",
 							"inDays": 1

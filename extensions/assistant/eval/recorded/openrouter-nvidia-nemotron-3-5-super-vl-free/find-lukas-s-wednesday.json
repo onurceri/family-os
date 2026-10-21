@@ -35,7 +35,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Wednesday, October 7, you have Early shift from 6:45 AM to 3:15 PM and Work dinner from 7:30 PM to 9:30 PM. 3 more are for other people.",
+			"text": "On Wednesday, October 7, you have Early shift from 6:45 AM to 3:15 PM and Work dinner from 7:30 PM to 9:30 PM.",
 			"toolCalls": []
 		}
 	]

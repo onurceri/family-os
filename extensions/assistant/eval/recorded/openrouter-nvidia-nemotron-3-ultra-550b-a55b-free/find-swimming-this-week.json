@@ -1,0 +1,41 @@
+{
+	"case": "find: swimming this week",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "When is the swimming this week?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "this week",
+							"kind": "week",
+							"day": {
+								"text": "this week",
+								"week": "this"
+							}
+						},
+						"people": [],
+						"about": [
+							"swimming"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Swim training is on Tuesday, October 6 at 6:00 PM–7:30 PM at City pool for Ellie, and Swimming is on Thursday, October 8 at 5:00 PM–6:00 PM for Noah.",
+			"toolCalls": []
+		}
+	]
+}

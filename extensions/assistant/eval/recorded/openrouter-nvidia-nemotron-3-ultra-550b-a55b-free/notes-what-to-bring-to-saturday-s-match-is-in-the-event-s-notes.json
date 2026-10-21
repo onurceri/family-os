@@ -1,0 +1,45 @@
+{
+	"case": "notes: what to bring to Saturday's match is in the event's notes",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "what should I bring to the football match on Saturday?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on Saturday",
+							"kind": "day",
+							"day": {
+								"text": "Saturday",
+								"weekday": 6
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							}
+						],
+						"about": [
+							"football match"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "For the U13 match, Olimpija (Ivy) on Saturday, 24 October, bring a white shirt, shin pads and water.",
+			"toolCalls": []
+		}
+	]
+}

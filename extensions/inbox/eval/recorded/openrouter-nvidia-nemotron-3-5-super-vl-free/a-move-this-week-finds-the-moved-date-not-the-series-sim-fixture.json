@@ -1,0 +1,29 @@
+{
+	"case": "A move this week finds the moved date, not the series (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Leo swimming moved",
+				"intent": "actionable",
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "Leo swimming",
+						"date": {
+							"text": "Thursday",
+							"weekday": 4
+						},
+						"time": "17:00",
+						"timeText": "5pm",
+						"quote": "Leo swimming moved to Thursday 5pm this week"
+					}
+				]
+			}
+		}
+	]
+}

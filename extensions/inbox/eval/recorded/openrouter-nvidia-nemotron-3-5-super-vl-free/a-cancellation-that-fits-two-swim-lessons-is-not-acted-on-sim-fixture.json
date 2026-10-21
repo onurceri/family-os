@@ -13,7 +13,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.eventCancel",
-						"target": "Swim lesson",
+						"target": "Swim lesson Ivy",
 						"date": {
 							"text": "this Saturday",
 							"weekday": 6,

@@ -29,8 +29,8 @@
 						"quote": "Babamın kardiyoloji kontrolü 21 Ekim Çarşamba 10:30, Şehir Hastanesi"
 					},
 					{
-						"kind": "lists.task",
-						"title": "Eczaneden ilaçlarını al",
+						"kind": "calendar.event",
+						"title": "Kardiyoloji kontrolü",
 						"people": [
 							"Fatma"
 						],
@@ -40,7 +40,21 @@
 							"month": 10,
 							"weekday": 3
 						},
-						"quote": "Annem de onunla gidecek. Eczaneden ilaçlarını almayı unutmayalım"
+						"time": "10:30",
+						"timeText": "10:30",
+						"place": "Şehir Hastanesi",
+						"quote": "Annem de onunla gidecek"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Eczaneden ilaçlarını al",
+						"date": {
+							"text": "21 Ekim Çarşamba",
+							"day": 21,
+							"month": 10,
+							"weekday": 3
+						},
+						"quote": "Eczaneden ilaçlarını almayı unutmayalım"
 					}
 				]
 			}

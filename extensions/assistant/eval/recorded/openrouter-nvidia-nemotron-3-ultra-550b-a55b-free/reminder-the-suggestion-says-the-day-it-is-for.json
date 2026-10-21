@@ -1,0 +1,54 @@
+{
+	"case": "reminder: the suggestion says the day it is for",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Add a task: Pack my football kit on Thursday",
+						"topics": [
+							"tasks"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "my"
+							}
+						],
+						"about": [
+							"Pack my football kit"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Suggested, not added yet: Add a task: Pack my football kit for Thursday 8 October. It appears once someone in the household approves it.",
+			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"dueDate": "2026-10-08",
+						"title": "Pack my football kit",
+						"assigneeId": "member:2"
+					}
+				}
+			]
+		}
+	]
+}

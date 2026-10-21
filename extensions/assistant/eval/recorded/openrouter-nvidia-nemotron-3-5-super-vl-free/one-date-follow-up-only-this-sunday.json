@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -39,7 +34,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
+			"text": "I've suggested moving Sunday planning (Sunday 11 October) from 19:30 to 18:00. It's waiting for someone in the household to approve it before it's added to the calendar.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -103,9 +98,9 @@
 					"name": "calendar_changeEvent",
 					"input": {
 						"id": "cal_event:1",
-						"occurrence": "2026-10-11",
+						"occurrence": "1791739800000",
 						"startTime": "18:00",
-						"endTime": "18:30",
+						"endTime": "19:00",
 						"label": "Sunday planning"
 					}
 				}

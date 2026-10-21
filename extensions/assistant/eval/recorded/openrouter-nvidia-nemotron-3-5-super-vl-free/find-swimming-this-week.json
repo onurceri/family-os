@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -39,7 +34,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Swim training is on Tuesday, 6:00 PM–7:30 PM. Swimming is on Thursday, 5:00 PM–6:00 PM.",
+			"text": "Swim training is on Tuesday, October 6, 6:00 PM–7:30 PM. Swimming is on Thursday, October 8, 5:00 PM–6:00 PM.",
 			"toolCalls": []
 		}
 	]

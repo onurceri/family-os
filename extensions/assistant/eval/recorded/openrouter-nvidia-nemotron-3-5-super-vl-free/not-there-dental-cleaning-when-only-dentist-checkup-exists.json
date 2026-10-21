@@ -26,7 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I don't see an event called \"Dental cleaning\" on the family calendar. There is a \"Dentist checkup\" on Thursday 8 October at 9:30 AM for Noah, but that's not the same title. If you meant that one, let me know and I can change it to 10:00.",
+			"text": "I don't see an event called \"Dental cleaning\" on the family calendar. There is a **Dentist checkup** on Thursday 8 October at 9:30 AM for Noah — is that the one you'd like moved to 10:00?",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",

@@ -1,0 +1,52 @@
+{
+	"case": "A club email moves the fixture the calendar has (sim)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "U13 fixture moved",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.eventChange",
+						"target": "U13 Eagles away game",
+						"date": {
+							"text": "Saturday 24.10",
+							"day": 24,
+							"month": 10,
+							"weekday": 6
+						},
+						"time": "11:00",
+						"timeText": "11:00",
+						"place": "Stadion Bežigrad",
+						"quote": "the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad (was 10:00 at Olimpija)"
+					},
+					{
+						"kind": "calendar.event",
+						"title": "U13 Eagles away game",
+						"people": [
+							"Ivy"
+						],
+						"peopleGuessed": true,
+						"date": {
+							"text": "Saturday 24.10",
+							"day": 24,
+							"month": 10,
+							"weekday": 6
+						},
+						"time": "11:00",
+						"timeText": "11:00",
+						"place": "Stadion Bežigrad",
+						"notes": "Bring shin pads and the club shirt. Ivy's team kit bag to the club room.",
+						"quote": "Please bring shin pads and the club shirt. Ivy's team kit bag to the club room."
+					}
+				]
+			}
+		}
+	]
+}

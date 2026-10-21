@@ -1,0 +1,37 @@
+{
+	"case": "Car insurance renewed (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Car insurance renewed",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "records.dutyDone",
+						"target": "Car insurance",
+						"about": "Golf",
+						"date": {
+							"text": "20 October 2026",
+							"day": 20,
+							"month": 10,
+							"year": 2026
+						},
+						"endDate": {
+							"text": "19 October 2027",
+							"day": 19,
+							"month": 10,
+							"year": 2027
+						},
+						"quote": "Your payment was received and your comprehensive car insurance policy for your Golf has been renewed. New period of cover: 20 October 2026 to 19 October 2027."
+					}
+				]
+			}
+		}
+	]
+}

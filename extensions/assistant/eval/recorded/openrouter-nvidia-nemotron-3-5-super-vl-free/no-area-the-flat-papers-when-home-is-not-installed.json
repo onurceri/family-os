@@ -37,7 +37,7 @@
 							"kind": "month",
 							"day": {
 								"text": "this month",
-								"week": "this"
+								"month": 1
 							}
 						},
 						"people": [
@@ -55,13 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "There is nothing in Records in the coming 7 days. Home is not installed here.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "Home is not installed here. Records show nothing from Tue, Oct 6 to Sat, Oct 31.",
 			"toolCalls": []
 		}
 	]

@@ -14,7 +14,7 @@
 				"mentions": [
 					{
 						"kind": "lists.bought",
-						"target": "Batteries",
+						"target": "batteries",
 						"place": "Hardware store",
 						"quote": "Got the batteries already, tick them off the hardware list"
 					}

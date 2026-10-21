@@ -40,7 +40,7 @@
 					"name": "lists_deleteShoppingItem",
 					"input": {
 						"id": "shop_item:2",
-						"label": "cheddar"
+						"label": "Cheddar"
 					}
 				}
 			]

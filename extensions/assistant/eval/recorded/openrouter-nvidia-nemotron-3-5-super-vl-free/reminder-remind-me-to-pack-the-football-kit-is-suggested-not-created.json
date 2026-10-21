@@ -39,7 +39,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested adding a task: Pack the football kit for Thursday 8 October. It's waiting for someone in the household to approve it before it's added.",
+			"text": "I've suggested a task: Pack the football kit for Thursday 8 October. It's waiting for someone in the household to approve it before it's added.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",

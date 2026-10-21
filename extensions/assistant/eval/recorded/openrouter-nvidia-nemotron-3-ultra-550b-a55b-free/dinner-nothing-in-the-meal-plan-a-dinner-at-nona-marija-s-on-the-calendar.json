@@ -1,0 +1,38 @@
+{
+	"case": "dinner: nothing in the meal plan, a dinner at Nona Marija's on the calendar",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "What is for dinner on Friday?",
+						"topics": [
+							"meals"
+						],
+						"span": {
+							"said": "on Friday",
+							"kind": "day",
+							"day": {
+								"text": "Friday",
+								"weekday": 5
+							}
+						},
+						"people": []
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "There is a dinner at Nona Marija's on Friday, October 9 from 6:30 PM to 9:00 PM.",
+			"toolCalls": []
+		}
+	]
+}

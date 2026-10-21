@@ -1,0 +1,31 @@
+{
+	"case": "Task nobody is named for is not silently assigned (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim club autumn term fee",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Pay the swim club autumn term fee",
+						"date": {
+							"text": "Friday 16 October",
+							"day": 16,
+							"month": 10,
+							"weekday": 5
+						},
+						"notes": "Fee: 120, pay at the front desk",
+						"quote": "the autumn term fee of 120 is due by Friday 16 October. Please pay at the front desk."
+					}
+				]
+			}
+		}
+	]
+}

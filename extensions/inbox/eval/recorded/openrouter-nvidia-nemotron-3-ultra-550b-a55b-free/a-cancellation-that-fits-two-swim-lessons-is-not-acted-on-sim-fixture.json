@@ -1,0 +1,29 @@
+{
+	"case": "A cancellation that fits two swim lessons is not acted on (sim fixture)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Swim lesson cancelled",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Swim lesson",
+						"date": {
+							"text": "this Saturday",
+							"weekday": 6,
+							"week": "this"
+						},
+						"quote": "swim lesson is cancelled this Saturday"
+					}
+				]
+			}
+		}
+	]
+}

@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Diş randevusu ve akşam yemeği",
+				"label": "Diş randevusu ve anne yemeği",
 				"intent": "actionable",
 				"mentions": [
 					{

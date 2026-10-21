@@ -1,0 +1,39 @@
+{
+	"case": "A cancelled date of a weekly activity, in a messy message (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Football cancelled, ball and ice cream",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.eventCancel",
+						"target": "Football training",
+						"date": {
+							"text": "Thursday",
+							"weekday": 4
+						},
+						"quote": "football thursday was cancelled"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Football",
+						"quote": "i need a new ball"
+					},
+					{
+						"kind": "lists.shoppingItem",
+						"title": "Ice cream",
+						"variant": "frozen",
+						"quote": "ice cream pls"
+					}
+				]
+			}
+		}
+	]
+}

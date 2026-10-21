@@ -1,0 +1,29 @@
+{
+	"case": "Payment due \"on the 15th\" (Turkish)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Apartman aidatı ödemesi",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "lists.task",
+						"title": "Apartman aidatını öde",
+						"date": {
+							"text": "ayın 15'i",
+							"day": 15
+						},
+						"notes": "Tutar: 1200 TL",
+						"quote": "Apartman aidatı 1200 TL, son ödeme tarihi ayın 15'i."
+					}
+				]
+			}
+		}
+	]
+}

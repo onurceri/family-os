@@ -1,0 +1,48 @@
+{
+	"case": "pick-up: \"pick up Leo on Thursday\" shows the swimming lesson and its note",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "assistant.understand/1",
+	"promptHash": "16d32e9dec32b05c",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "ask",
+						"quote": "Do I need to pick up Leo on Thursday?",
+						"topics": [
+							"calendar"
+						],
+						"span": {
+							"said": "on Thursday",
+							"kind": "day",
+							"day": {
+								"text": "Thursday",
+								"weekday": 4
+							}
+						},
+						"people": [
+							{
+								"said": "I"
+							},
+							{
+								"said": "Leo"
+							}
+						],
+						"about": [
+							"pick up"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "Yes, you need to pick up Leo from the pool at 17:30 after his Swimming lesson on Thursday, 22 October.",
+			"toolCalls": []
+		}
+	]
+}

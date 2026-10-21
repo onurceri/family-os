@@ -1,0 +1,32 @@
+{
+	"case": "What to bring to a match is the notes of the match, not the shopping list (English)",
+	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
+	"version": "inbox.understand/3",
+	"promptHash": "46207680",
+	"answers": [
+		{
+			"kind": "object",
+			"feature": "inbox.extract",
+			"output": {
+				"label": "Saturday match vs Riverside",
+				"intent": "actionable",
+				"addressed": [],
+				"mentions": [
+					{
+						"kind": "calendar.event",
+						"title": "Match vs Riverside",
+						"date": {
+							"text": "Saturday",
+							"weekday": 6
+						},
+						"time": "09:15",
+						"timeText": "9:15",
+						"place": "School gate",
+						"notes": "Bring white shirt, shin pads and water",
+						"quote": "Saturday match vs Riverside: meet at the school gate 9:15, kick-off 10:00. Bring white shirt, shin pads & water."
+					}
+				]
+			}
+		}
+	]
+}
