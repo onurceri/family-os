@@ -295,4 +295,124 @@ describe('a restore does not bring back what the family ended after the backup',
 		expect(await mcpStatus(secret)).toBe(200);
 		expect((await readdir(target.dataDir)).includes('restore-pending.json')).toBe(false);
 	});
+
+	it('keeps demotions, archives and narrowed roles made after the backup, and loses promotions and widenings', async () => {
+		const config = await newConfig();
+		const r = await boot(config);
+		const setup = await call('POST', '/api/v1/core/setup', {
+			displayName: 'Parent',
+			email: 'parent@example.com',
+			password: PASSWORD,
+			locale: 'en',
+			setupCode: r.config.setupCode,
+		});
+		const adminId = setup.body.id as string;
+		const admin = (await signIn('parent@example.com', PASSWORD)).cookie;
+		const run = async (action: string, input: unknown) => {
+			const done = await call('POST', `/api/v1/actions/${action}`, input, admin);
+			expect(done.body.status).toBe('applied');
+			return done.body.output;
+		};
+		const person = async (displayName: string, roleId: string) =>
+			(await run('core.createMember', { displayName, roleId })).id as string;
+		const role = async (name: string, overrides: Record<string, boolean>) =>
+			(await run('core.createRole', { name, base: 'member', overrides })).id as string;
+
+		const narrowed = await role('Helper', {});
+		const widened = await role('Limited', { 'core.drafts.propose': false });
+		const demoted = await person('Demoted', 'member');
+		const archived = await person('Archived', 'member');
+		const promoted = await person('Promoted', 'supervised');
+		const helper = await person('Helper holder', narrowed);
+		const limited = await person('Limited holder', widened);
+		const untouched = await person('Untouched', 'member');
+		// Two roles that each lack something the other has; a third that lacks both exists for the
+		// first pair only.
+		const noPropose = await role('No suggestions', { 'core.drafts.propose': false });
+		const noReceive = await role('No notices', { 'core.notifications.receive': false });
+		const neither = await role('Neither', {
+			'core.drafts.propose': false,
+			'core.notifications.receive': false,
+		});
+		const noMemory = await role('No memory', { 'core.memory.use': false });
+		const noWaiting = await role('No waiting', { 'core.drafts.waiting': false });
+		const combined = await person('Combined', noPropose);
+		const stuck = await person('Stuck', noMemory);
+		const { path: backup } = await backupNow(r, 'manual');
+
+		// After the backup the family narrows some access and widens other.
+		await run('core.updateMember', { memberId: demoted, roleId: 'supervised' });
+		await run('core.archiveMember', { memberId: archived });
+		await run('core.updateMember', { memberId: promoted, roleId: 'member' });
+		await run('core.updateRole', { id: narrowed, overrides: { 'core.drafts.propose': false } });
+		await run('core.updateRole', { id: widened, overrides: {} });
+		await run('core.updateMember', { memberId: combined, roleId: noReceive });
+		await run('core.updateMember', { memberId: stuck, roleId: noWaiting });
+		const later = await person('Added later', 'member');
+
+		await r.close();
+		runtime = undefined;
+		await restoreFile(config, backup, { extensions });
+		const restored = await boot(config);
+		await restored.kernel.worker.drain();
+
+		const tables = restored.kernel.ctx.db.withTables<CoreTables>();
+		const roleOf = async (id: string) =>
+			(
+				await tables
+					.selectFrom('core_members')
+					.select('role_id')
+					.where('id', '=', id)
+					.executeTakeFirst()
+			)?.role_id;
+		const overridesOf = async (id: string) =>
+			JSON.parse(
+				(
+					await tables
+						.selectFrom('core_roles')
+						.select('overrides')
+						.where('id', '=', id)
+						.executeTakeFirstOrThrow()
+				).overrides,
+			) as Record<string, boolean>;
+		const archivedAt = async (id: string) =>
+			(
+				await tables
+					.selectFrom('core_members')
+					.select('archived_at')
+					.where('id', '=', id)
+					.executeTakeFirst()
+			)?.archived_at;
+
+		// A demotion and an archive stay; a promotion is lost; a member added later is not brought back.
+		expect(await roleOf(demoted)).toBe('supervised');
+		expect(await archivedAt(archived)).not.toBeNull();
+		expect(await roleOf(promoted)).toBe('supervised');
+		expect(await roleOf(later)).toBeUndefined();
+		// A role narrowed since stays narrow; one widened since is back to the narrower set.
+		expect((await overridesOf(narrowed))['core.drafts.propose']).toBe(false);
+		expect((await overridesOf(widened))['core.drafts.propose']).toBe(false);
+		expect(restored.kernel.access.effective(narrowed).has('core.drafts.propose')).toBe(false);
+		expect(restored.kernel.access.effective(widened).has('core.drafts.propose')).toBe(false);
+		// Roles that each lack something the other has: the role lacking both when there is one,
+		// else the person keeps the role they have now.
+		expect(await roleOf(combined)).toBe(neither);
+		expect(await roleOf(stuck)).toBe(noWaiting);
+		// Everyone else is as the backup had them.
+		expect(await roleOf(untouched)).toBe('member');
+		expect(await roleOf(helper)).toBe(narrowed);
+		expect(await roleOf(limited)).toBe(widened);
+		expect(await roleOf(adminId)).toBe('admin');
+		expect(await archivedAt(untouched)).toBeNull();
+
+		// Admins are told how many people kept the access they have now.
+		const note = await tables
+			.selectFrom('core_notifications')
+			.select(['body_key', 'body_params'])
+			.where('source_id', '=', 'restore-access')
+			.executeTakeFirstOrThrow();
+		expect(note.body_key).toBe('app:notify_backup_restored_access_body');
+		// The demoted member, the holder of the narrowed role and the two whose roles were combined.
+		expect(JSON.parse(note.body_params as string)).toEqual({ count: 4 });
+	});
 });

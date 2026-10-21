@@ -51,6 +51,28 @@ export interface Access extends AccessControl {
 
 const BUILT_IN: ReadonlySet<string> = new Set(BUILT_IN_ROLES);
 
+/**
+ * What a role grants out of the given capabilities: a built-in role by its defaults, a custom
+ * one by its base with its overrides on top. Critical capabilities stay with Admin whatever a
+ * custom role says.
+ */
+export function roleGrants(
+	capabilities: readonly CapabilityDefinition[],
+	role: BuiltInRole | { base: Exclude<BuiltInRole, 'admin'>; overrides: Record<string, boolean> },
+): Set<string> {
+	const granted = new Set<string>();
+	for (const c of capabilities) {
+		const value =
+			typeof role === 'string'
+				? defaultGrant(c, role)
+				: c.critical
+					? false
+					: (role.overrides[c.id] ?? defaultGrant(c, role.base));
+		if (value) granted.add(c.id);
+	}
+	return granted;
+}
+
 /** The system actor's source for unauthenticated requests on public routes: holds no capability. */
 export const ANONYMOUS = 'anonymous';
 
@@ -74,20 +96,10 @@ export function createAccess(
 		if (cached) return cached;
 		const active = capabilities.filter((c) => isOn(ownerOf(c.id)));
 		let granted: Set<string>;
-		if (BUILT_IN.has(roleId)) {
-			granted = new Set(
-				active.filter((c) => defaultGrant(c, roleId as BuiltInRole)).map((c) => c.id),
-			);
-		} else {
+		if (BUILT_IN.has(roleId)) granted = roleGrants(active, roleId as BuiltInRole);
+		else {
 			const role = custom.get(roleId);
-			granted = new Set();
-			if (role) {
-				for (const c of active) {
-					// Critical capabilities stay with the Admin role whatever a custom role says.
-					const value = c.critical ? false : (role.overrides[c.id] ?? defaultGrant(c, role.base));
-					if (value) granted.add(c.id);
-				}
-			}
+			granted = role ? roleGrants(active, role) : new Set();
 		}
 		cache.set(roleId, granted);
 		return granted;

@@ -698,6 +698,8 @@ export function createKernel(options: KernelOptions): Kernel {
 					db: options.db,
 					clock: options.clock,
 					logger: options.logger,
+					capabilities: registry.capabilities,
+					refreshRoles: () => access.refresh(options.db),
 					identity: options.identity,
 					extensions: () => registry.extensions,
 					jobContextFor,

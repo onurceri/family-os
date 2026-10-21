@@ -1,12 +1,16 @@
-import type {
-	Clock,
-	DbExecutor,
-	ExtensionDefinition,
-	IdentityAdmin,
-	JobContext,
-	Logger,
-	NotifyRequest,
+import {
+	BUILT_IN_ROLES,
+	type BuiltInRole,
+	type CapabilityDefinition,
+	type Clock,
+	type DbExecutor,
+	type ExtensionDefinition,
+	type IdentityAdmin,
+	type JobContext,
+	type Logger,
+	type NotifyRequest,
 } from '@famos/sdk';
+import { roleGrants } from './access.ts';
 import { pauseAllApps } from './apps.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -20,12 +24,25 @@ export interface RestoreReport {
 	failed: string[];
 	/** Connected apps paused until an admin looks at them again. */
 	appsPaused: number;
+	/** Access that was narrowed after the backup and stayed narrow. */
+	access: {
+		/** People whose role is the narrower one, or who hold a role that was narrowed. */
+		people: string[];
+		/** Custom roles whose capabilities were narrowed back to what they are now. */
+		roles: string[];
+		/** People whose two roles could not be combined into one that exists: they keep today's. */
+		undecided: string[];
+	};
 }
 
 export interface RestoreDeps {
 	db: DbExecutor;
 	clock: Clock;
 	logger: Logger;
+	/** Every registered capability, to compare what two roles grant. */
+	capabilities: readonly CapabilityDefinition[];
+	/** Reloads the cached custom roles after the step changed them. */
+	refreshRoles: () => Promise<void>;
 	identity: IdentityAdmin;
 	extensions: () => readonly ExtensionDefinition[];
 	/** An extension's context with its own tables only; `readonly` for the database set aside. */
@@ -55,6 +72,7 @@ export async function reconcileRestore(
 	await deps.identity.endAllSessions();
 	let kept = 0;
 	const failed: string[] = [];
+	let access: RestoreReport['access'] = { people: [], roles: [], undecided: [] };
 	// A restore may bring back keys of apps that were revoked, rotated or leaked since: every
 	// live app waits until an admin has looked at it.
 	const appsPaused = await pauseAllApps(deps.db, deps.clock.now());
@@ -67,6 +85,14 @@ export async function reconcileRestore(
 			await deps.identity.revokeAll(memberId);
 		}
 		kept += archived.length;
+		access = await carryNarrowerAccess(deps, previous, now);
+		kept += access.people.length + access.roles.length;
+		if (access.roles.length > 0) await deps.refreshRoles();
+		if (access.people.length > 0 || access.roles.length > 0 || access.undecided.length > 0)
+			deps.logger.info(
+				{ people: access.people, roles: access.roles, undecided: access.undecided },
+				'restore kept the narrower access of people and roles',
+			);
 		kept += (await carryRevoked(deps.db, previous, 'core_api_tokens', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_devices', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_apps', now)).length;
@@ -99,6 +125,18 @@ export async function reconcileRestore(
 		url: '/settings/backups',
 		source: { kind: 'restore', id: 'restore' },
 	});
+	if (access.people.length > 0)
+		await deps.notify({
+			kind: 'core.backupRestored',
+			to: { capability: 'core.settings.manage' },
+			title: { key: 'app:notify_backup_restored_access_title' },
+			body: {
+				key: 'app:notify_backup_restored_access_body',
+				params: { count: access.people.length },
+			},
+			url: '/settings/members',
+			source: { kind: 'restore', id: 'restore-access' },
+		});
 	if (appsPaused > 0)
 		await deps.notify({
 			kind: 'core.backupRestored',
@@ -108,7 +146,7 @@ export async function reconcileRestore(
 			url: '/settings/connected-apps',
 			source: { kind: 'restore', id: 'restore-apps' },
 		});
-	return { sessionsEnded: true, kept, failed, appsPaused };
+	return { sessionsEnded: true, kept, failed, appsPaused, access };
 }
 
 /** Members archived since the backup are archived again; returns their ids. */
@@ -160,4 +198,124 @@ async function carryRevoked(
 	if (table === 'core_api_tokens' && carried.length > 0)
 		await tables.deleteFrom('core_api_token_handles').where('token_id', 'in', carried).execute();
 	return carried;
+}
+
+type CustomGrants = { base: 'member' | 'supervised' | 'guest'; overrides: Record<string, boolean> };
+
+const BUILT_IN_IDS: readonly BuiltInRole[] = BUILT_IN_ROLES;
+
+const isSubset = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+	[...a].every((id) => b.has(id));
+const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+	a.size === b.size && isSubset(a, b);
+
+/**
+ * For every custom role and every person, the narrower of the backup's and the earlier
+ * database's access stays: a role keeps only the capabilities both gave it, and a person keeps
+ * the role that grants less (judged by capabilities, never by names). A promotion or widening
+ * made after the backup is lost, as the restore loses the rest of that day. Two roles that
+ * each grant something the other does not become the built-in or custom role granting exactly
+ * what both give, when there is one; otherwise the person keeps the role they have now.
+ */
+async function carryNarrowerAccess(
+	deps: RestoreDeps,
+	previous: DbExecutor,
+	now: number,
+): Promise<RestoreReport['access']> {
+	const result: RestoreReport['access'] = { people: [], roles: [], undecided: [] };
+	const before = previous.withTables<CoreTables>();
+	const tables = deps.db.withTables<CoreTables>();
+	const parse = (r: { base: CustomGrants['base']; overrides: string }): CustomGrants => ({
+		base: r.base,
+		overrides: JSON.parse(r.overrides) as Record<string, boolean>,
+	});
+	const earlierRows = await before.selectFrom('core_roles').selectAll().execute();
+	const earlier = new Map(earlierRows.map((r) => [r.id, parse(r)]));
+	const current = new Map(
+		(await tables.selectFrom('core_roles').selectAll().execute()).map((r) => [r.id, parse(r)]),
+	);
+	const grantsOf = (roles: Map<string, CustomGrants>, id: string): Set<string> | null => {
+		if ((BUILT_IN_IDS as readonly string[]).includes(id))
+			return roleGrants(deps.capabilities, id as BuiltInRole);
+		const role = roles.get(id);
+		return role ? roleGrants(deps.capabilities, role) : null;
+	};
+
+	for (const [id, wasRole] of earlier) {
+		const role = current.get(id);
+		if (!role) continue;
+		const had = roleGrants(deps.capabilities, role);
+		const both = new Set(
+			[...roleGrants(deps.capabilities, wasRole)].filter((capability) => had.has(capability)),
+		);
+		if (sameSet(both, had)) continue;
+		// Spelled out for every capability, so the role cannot gain one a later extension adds.
+		const overrides = Object.fromEntries(
+			deps.capabilities.filter((c) => !c.critical).map((c) => [c.id, both.has(c.id)]),
+		);
+		await tables
+			.updateTable('core_roles')
+			.set({ overrides: JSON.stringify(overrides), updated_at: now })
+			.where('id', '=', id)
+			.execute();
+		current.set(id, { base: role.base, overrides });
+		result.roles.push(id);
+	}
+
+	/** A role the earlier database had but the backup lacks comes along when a person needs it. */
+	const bringRole = async (id: string) => {
+		if (current.has(id)) return;
+		const row = earlierRows.find((r) => r.id === id);
+		if (!row) return;
+		await tables.insertInto('core_roles').values(row).execute();
+		current.set(id, parse(row));
+	};
+
+	const people = new Set<string>();
+	const members = await tables.selectFrom('core_members').select(['id', 'role_id']).execute();
+	const laterMembers = new Map(
+		(await before.selectFrom('core_members').select(['id', 'role_id']).execute()).map((m) => [
+			m.id,
+			m.role_id,
+		]),
+	);
+	for (const member of members) {
+		const laterRole = laterMembers.get(member.id);
+		if (laterRole === undefined) continue;
+		if (laterRole === member.role_id) {
+			// Same role id: a role narrowed above already changed what this person holds.
+			if (result.roles.includes(laterRole)) people.add(member.id);
+			continue;
+		}
+		const wanted = grantsOf(earlier, laterRole);
+		const restored = grantsOf(current, member.role_id);
+		if (!wanted || !restored) continue;
+		if (sameSet(wanted, restored)) continue;
+		let target: string;
+		if (isSubset(wanted, restored)) target = laterRole;
+		else if (isSubset(restored, wanted)) continue;
+		else {
+			// Each grants something the other does not.
+			const both = new Set([...wanted].filter((capability) => restored.has(capability)));
+			const fitting = [...BUILT_IN_IDS, ...current.keys()].find((id) => {
+				const grants = grantsOf(current, id);
+				return grants !== null && sameSet(grants, both);
+			});
+			if (fitting) target = fitting;
+			else {
+				target = laterRole;
+				result.undecided.push(member.id);
+			}
+		}
+		if (target === member.role_id) continue;
+		await bringRole(target);
+		await tables
+			.updateTable('core_members')
+			.set({ role_id: target, updated_at: now })
+			.where('id', '=', member.id)
+			.execute();
+		people.add(member.id);
+	}
+	result.people = [...people];
+	return result;
 }
