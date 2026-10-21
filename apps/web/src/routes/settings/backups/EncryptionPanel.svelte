@@ -57,13 +57,18 @@
 		confirmingNone = false;
 		busy = true;
 		try {
-			const body =
-				mode === 'passphrase'
-					? { mode: 'passphrase' as const, passphrase }
-					: mode === 'recipient'
-						? { mode: 'recipient' as const, recipient: recipient.trim() }
-						: { mode: 'none' as const };
-			unwrap(await api.PUT('/api/v1/backups/encryption', { body }));
+			// A passphrase is a secret, so it has a route of its own; the other choices are actions.
+			if (mode === 'passphrase')
+				unwrap(await api.PUT('/api/v1/backups/encryption/passphrase', { body: { passphrase } }));
+			else
+				unwrap(
+					await api.POST('/api/v1/actions/core.setBackupEncryption', {
+						body:
+							mode === 'recipient'
+								? { mode: 'recipient' as const, recipient: recipient.trim() }
+								: { mode: 'none' as const },
+					}),
+				);
 			// The passphrase leaves memory as soon as the server has it.
 			passphrase = again = '';
 			step = 3;

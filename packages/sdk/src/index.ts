@@ -13,6 +13,7 @@ export * from './errors.ts';
 export * from './events.ts';
 export * from './extension.ts';
 export * from './handles.ts';
+export * from './host-settings.ts';
 export * from './ids.ts';
 export * from './jobs.ts';
 export { namedShares, searchFinds, significantWords, type WordOptions } from './label-words.ts';

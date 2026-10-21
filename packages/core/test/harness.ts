@@ -3,6 +3,8 @@
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { backupMigrations, createBackupSettingsAdmin } from '@famos/adapters/backup';
+import { createEmailSettingsAdmin, emailMigrations } from '@famos/adapters/email';
 import { createFsFileStore } from '@famos/adapters/files-fs';
 import {
 	type AiSettingsService,
@@ -16,10 +18,14 @@ import {
 	type SqliteJobQueue,
 } from '@famos/adapters/queue-sqlite';
 import { silentLogger, uuidv7Ids } from '@famos/adapters/runtime';
+import { createTelegramLinkAdmin, telegramMigrations } from '@famos/adapters/telegram';
 import { openDatabase, runMigrations } from '@famos/db';
 import {
 	type Actor,
+	BACKUP_RUN_JOB,
 	defineExtension,
+	defineJob,
+	EMAIL_POLL_JOB,
 	type ExtensionContext,
 	type ExtensionDefinition,
 	type ExtensionManifestInput,
@@ -35,6 +41,7 @@ import {
 	SDK_VERSION,
 	systemActor,
 } from '@famos/sdk';
+import { z } from 'zod';
 import type { Member } from '../src/core-extension.ts';
 import type { ExtensionPackagesPort } from '../src/extension-state.ts';
 import { createKernel, type Kernel } from '../src/kernel.ts';
@@ -133,7 +140,18 @@ export async function createTestKernel(
 			},
 		},
 		identity,
+		// The adapters' own jobs are the server's to register; the actions only queue them by name.
+		infrastructureJobs: [BACKUP_RUN_JOB, EMAIL_POLL_JOB].map((name) =>
+			defineJob({ name, payload: z.object({}), lane: 'long', handle: async () => {} }),
+		),
 		aiSettings: ai,
+		backupSettings: createBackupSettingsAdmin({
+			box: createSecretBox('core-test-secret'),
+			clock,
+			logger: silentLogger,
+		}),
+		emailSettings: createEmailSettingsAdmin({ clock }),
+		telegramLinks: createTelegramLinkAdmin(),
 		llm: {
 			generateObject: async () => {
 				throw new LlmError('not_configured', 'No model in core tests');
@@ -160,6 +178,9 @@ export async function createTestKernel(
 		infrastructureMigrations: [
 			{ scope: 'queue', migrations: queueMigrations },
 			{ scope: 'ai', migrations: aiMigrations },
+			{ scope: 'telegram', migrations: telegramMigrations },
+			{ scope: 'email', migrations: emailMigrations },
+			{ scope: 'backup', migrations: backupMigrations },
 		],
 		appVersion: '0.0.0-test',
 		...(options.channels && { channels: options.channels }),

@@ -1,8 +1,8 @@
-import { type AnyJobDefinition, defineJob } from '@famos/sdk';
+import { type AnyJobDefinition, defineJob, EMAIL_POLL_JOB } from '@famos/sdk';
 import { z } from 'zod';
 import type { Email } from './service.ts';
 
-export const POLL_JOB = 'email.poll';
+export const POLL_JOB = EMAIL_POLL_JOB;
 
 /**
  * The mailbox check, registered with `KernelOptions.infrastructureJobs`. The service

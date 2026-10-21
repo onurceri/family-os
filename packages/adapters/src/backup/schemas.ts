@@ -85,41 +85,14 @@ export const TargetPatchSchema = z.object({
 });
 export type TargetPatch = z.infer<typeof TargetPatchSchema>;
 
-/** What the settings page may see of a target's configuration: never a secret. */
-export const TargetSummarySchema = z.object({
-	endpoint: z.string().optional(),
-	region: z.string().optional(),
-	bucket: z.string().optional(),
-	prefix: z.string().optional(),
-	pathStyle: z.boolean().optional(),
-	url: z.string().optional(),
-	username: z.string().optional(),
-});
-
-export const TargetStatusSchema = z.object({
-	id: z.string(),
-	kind: z.enum(['s3', 'webdav']),
-	name: z.string(),
-	keep: z.number().int(),
-	enabled: z.boolean(),
-	lastRunAt: z.number().int().nullable(),
-	/** `ok`, or a code such as `http_403`, `unreachable`, `timeout`, `unreadable`. */
-	lastResult: z.string().nullable(),
-	lastSize: z.number().int().nullable(),
-	createdAt: z.number().int(),
-	summary: TargetSummarySchema,
-});
-export type TargetStatus = z.infer<typeof TargetStatusSchema>;
-
-export const EncryptionModeSchema = z.enum(['unset', 'passphrase', 'recipient', 'none']);
-export type EncryptionMode = z.infer<typeof EncryptionModeSchema>;
-
-export const EncryptionStatusSchema = z.object({
-	mode: EncryptionModeSchema,
-	/** The `age1…` key in recipient mode. */
-	recipient: z.string().nullable(),
-});
-export type EncryptionStatus = z.infer<typeof EncryptionStatusSchema>;
+export {
+	BackupEncryptionModeSchema as EncryptionModeSchema,
+	type BackupEncryptionStatus as EncryptionStatus,
+	BackupEncryptionStatusSchema as EncryptionStatusSchema,
+	type BackupTargetStatus as TargetStatus,
+	BackupTargetStatusSchema as TargetStatusSchema,
+	BackupTargetSummarySchema as TargetSummarySchema,
+} from '@famos/sdk';
 
 export const EncryptionInputSchema = z.discriminatedUnion('mode', [
 	z.object({ mode: z.literal('passphrase'), passphrase: z.string().min(12).max(500) }),

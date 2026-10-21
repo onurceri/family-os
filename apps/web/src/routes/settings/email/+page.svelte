@@ -75,7 +75,7 @@
 		void load();
 		// The members (allowed senders) come from the shell, which keeps them current.
 		// The worker reports the result of a check after the page opened.
-		return onEvent('email.status.', () => void load());
+		return onEvent('core.email.status.', () => void load());
 	});
 
 	async function save(event: SubmitEvent) {
@@ -112,7 +112,7 @@
 	async function disconnect() {
 		busy = true;
 		try {
-			unwrap(await api.DELETE('/api/v1/email/settings'));
+			unwrap(await api.POST('/api/v1/actions/core.disconnectEmail', { body: {} }));
 			formLoaded = false;
 			host = username = password = '';
 			port = 993;
@@ -126,7 +126,7 @@
 		checking = true;
 		checkedBefore = settings?.checkedAt ?? null;
 		try {
-			unwrap(await api.POST('/api/v1/email/check'));
+			unwrap(await api.POST('/api/v1/actions/core.checkEmailNow', { body: {} }));
 		} catch {
 			checking = false;
 			error = t('error_generic');
@@ -151,7 +151,7 @@
 		error = null;
 		try {
 			unwrap(
-				await api.POST('/api/v1/email/senders', {
+				await api.POST('/api/v1/actions/core.addEmailSender', {
 					body: {
 						address: newAddress,
 						memberId: newMember,
@@ -169,7 +169,7 @@
 	}
 
 	async function removeSender(address: string) {
-		unwrap(await api.DELETE('/api/v1/email/senders/{address}', { params: { path: { address } } }));
+		unwrap(await api.POST('/api/v1/actions/core.removeEmailSender', { body: { address } }));
 		await load();
 	}
 

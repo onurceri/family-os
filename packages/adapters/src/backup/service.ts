@@ -5,6 +5,15 @@ import { Readable } from 'node:stream';
 import type { Clock, IdGenerator, Logger } from '@famos/sdk';
 import { FamosError } from '@famos/sdk';
 import type { SecretBox } from '../secrets/index.ts';
+import {
+	deleteTarget,
+	editTarget,
+	openConfig,
+	presentTarget,
+	requireTarget as requireTargetIn,
+	type TargetRow,
+	writeEncryption,
+} from './admin.ts';
 import { type Encryption, encryptStream, isRecipient, remoteName } from './encryption.ts';
 import { createS3Target } from './s3.ts';
 import {
@@ -17,7 +26,7 @@ import {
 	type TestResult,
 	WebDavConfigSchema,
 } from './schemas.ts';
-import { type BackupTables, backupTables } from './tables.ts';
+import { backupTables } from './tables.ts';
 import { type BackupTarget, BackupTargetError, expired } from './target.ts';
 import { createWebDavTarget } from './webdav.ts';
 
@@ -35,7 +44,7 @@ export interface BackupDeps {
 
 export type BackupService = ReturnType<typeof createBackupService>;
 
-type Row = BackupTables['backup_targets'];
+type Row = TargetRow;
 
 /**
  * Remote backups: the encryption choice, the targets and the upload itself. Credentials
@@ -48,11 +57,7 @@ export function createBackupService(deps: BackupDeps) {
 	const log = deps.logger.child({ component: 'backup' });
 	const fetchImpl = deps.fetch ?? fetch;
 
-	const open = (row: Row): Record<string, unknown> => {
-		const plain = deps.box.open(row.config);
-		if (plain === null) throw new BackupTargetError('unreadable', false);
-		return JSON.parse(plain) as Record<string, unknown>;
-	};
+	const open = (row: Row) => openConfig(deps.box, row);
 
 	function buildTarget(row: Row): BackupTarget {
 		const config = open(row);
@@ -61,41 +66,7 @@ export function createBackupService(deps: BackupDeps) {
 			: createWebDavTarget(WebDavConfigSchema.parse(config), fetchImpl);
 	}
 
-	function summary(row: Row): TargetStatus['summary'] {
-		let config: Record<string, unknown>;
-		try {
-			config = open(row);
-		} catch {
-			return {};
-		}
-		if (row.kind === 's3') {
-			const c = S3ConfigSchema.safeParse(config);
-			return c.success
-				? {
-						endpoint: c.data.endpoint,
-						region: c.data.region,
-						bucket: c.data.bucket,
-						prefix: c.data.prefix,
-						pathStyle: c.data.pathStyle,
-					}
-				: {};
-		}
-		const c = WebDavConfigSchema.safeParse(config);
-		return c.success ? { url: c.data.url, username: c.data.username } : {};
-	}
-
-	const toStatus = (row: Row): TargetStatus => ({
-		id: row.id,
-		kind: row.kind,
-		name: row.name,
-		keep: row.keep,
-		enabled: row.enabled === 1,
-		lastRunAt: row.last_run_at,
-		lastResult: row.last_result,
-		lastSize: row.last_size,
-		createdAt: row.created_at,
-		summary: summary(row),
-	});
+	const toStatus = (row: Row): TargetStatus => presentTarget(deps.box, row);
 
 	async function encryption(): Promise<Encryption> {
 		const row = await db().selectFrom('backup_settings').selectAll().executeTakeFirst();
@@ -117,11 +88,7 @@ export function createBackupService(deps: BackupDeps) {
 		return { mode: row?.encryption_mode ?? 'unset', recipient: row?.recipient ?? null };
 	}
 
-	const requireTarget = async (id: string) => {
-		const row = await findTarget(id);
-		if (!row) throw new FamosError('not_found', 'Backup target not found');
-		return row;
-	};
+	const requireTarget = (id: string) => requireTargetIn(deps.db, id);
 
 	return {
 		encryptionStatus,
@@ -129,20 +96,15 @@ export function createBackupService(deps: BackupDeps) {
 		async setEncryption(input: EncryptionInput): Promise<EncryptionStatus> {
 			if (input.mode === 'recipient' && !(await isRecipient(input.recipient)))
 				throw new FamosError('bad_request', 'This is not an age public key (it starts with age1)');
-			const values = {
-				id: 1,
-				encryption_mode: input.mode,
-				sealed_passphrase: input.mode === 'passphrase' ? deps.box.seal(input.passphrase) : null,
-				recipient: input.mode === 'recipient' ? input.recipient : null,
-				updated_at: deps.clock.now(),
-			};
-			await db()
-				.insertInto('backup_settings')
-				.values(values)
-				.onConflict((oc) => oc.column('id').doUpdateSet(values))
-				.execute();
+			const status = await writeEncryption(
+				deps.db,
+				deps.clock,
+				input.mode === 'passphrase'
+					? { mode: 'passphrase', sealedPassphrase: deps.box.seal(input.passphrase) }
+					: input,
+			);
 			log.info({ mode: input.mode }, 'backup encryption changed');
-			return encryptionStatus();
+			return status;
 		},
 
 		async listTargets(): Promise<TargetStatus[]> {
@@ -180,27 +142,26 @@ export function createBackupService(deps: BackupDeps) {
 
 		async updateTarget(id: string, patch: TargetPatch): Promise<TargetStatus> {
 			const row = await requireTarget(id);
-			const set: Partial<Row> = {};
-			if (patch.name !== undefined) set.name = patch.name;
-			if (patch.keep !== undefined) set.keep = patch.keep;
-			if (patch.enabled !== undefined) set.enabled = patch.enabled ? 1 : 0;
-			if (patch.config) {
+			const { config, ...plain } = patch;
+			await editTarget(deps.db, id, plain);
+			if (config) {
 				// Empty fields (a password left blank in the form) keep their stored value.
-				const given = Object.fromEntries(Object.entries(patch.config).filter(([, v]) => v !== ''));
+				const given = Object.fromEntries(Object.entries(config).filter(([, v]) => v !== ''));
 				const merged = { ...open(row), ...given };
 				const parsed = (row.kind === 's3' ? S3ConfigSchema : WebDavConfigSchema).safeParse(merged);
 				if (!parsed.success)
 					throw new FamosError('bad_request', 'Invalid target settings', parsed.error.issues);
-				set.config = deps.box.seal(JSON.stringify(parsed.data));
+				await db()
+					.updateTable('backup_targets')
+					.set({ config: deps.box.seal(JSON.stringify(parsed.data)) })
+					.where('id', '=', id)
+					.execute();
 			}
-			if (Object.keys(set).length > 0)
-				await db().updateTable('backup_targets').set(set).where('id', '=', id).execute();
 			return toStatus(await requireTarget(id));
 		},
 
 		async removeTarget(id: string): Promise<void> {
-			await requireTarget(id);
-			await db().deleteFrom('backup_targets').where('id', '=', id).execute();
+			await deleteTarget(deps.db, id);
 			log.info({ target: id }, 'backup target removed');
 		},
 

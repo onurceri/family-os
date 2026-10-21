@@ -7,23 +7,22 @@ import {
 } from '@famos/adapters/telegram';
 import { type AuditTrail, CORE_CAPABILITIES } from '@famos/core';
 import { type AccessControl, assertFullSignIn, FamosError, personPresent } from '@famos/sdk';
-import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
+import { createRoute, type OpenAPIHono, type z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 
 /**
- * Telegram settings for admins and linking for members. The bot token and the links
- * are credentials, so like passwords and provider keys these routes call the adapter directly
- * instead of going through actions; setting the token and making a link code record themselves
- * in the audit log. The token is never returned.
+ * Telegram settings for admins and linking for members. The bot token and the link code are
+ * credentials, so like passwords and provider keys these routes call the adapter directly instead
+ * of going through actions; setting the token and making a link code record themselves in the
+ * audit log. Ending a link is an action (`core.unlinkTelegram`). The token is never returned.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const body = <S extends z.ZodType>(schema: S) => ({
 	body: { content: { 'application/json': { schema } }, required: true as const },
 });
 const base = { tags: ['telegram'], security: [{ session: [] }] };
-const Ok = z.object({ ok: z.literal(true) });
 
 export function mountTelegramRoutes(
 	app: OpenAPIHono<AppEnv>,
@@ -113,18 +112,5 @@ export function mountTelegramRoutes(
 		const code = await telegram.createLinkCode(memberId);
 		if (actor) await audit.record(actor, 'telegram.createLinkCode', memberId);
 		return c.json(code, 200);
-	});
-
-	const unlink = createRoute({
-		...base,
-		method: 'delete',
-		path: '/api/v1/telegram/link',
-		operationId: 'telegram.unlink',
-		summary: 'Unlink my Telegram account',
-		responses: { 200: { description: 'Unlinked', ...json(Ok) }, ...errorResponses },
-	});
-	app.openapi(unlink, async (c) => {
-		await telegram.unlink(me(c));
-		return c.json({ ok: true as const }, 200);
 	});
 }

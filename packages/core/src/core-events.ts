@@ -89,6 +89,22 @@ export const aiModelsChanged = defineEvent('core.aiModels.changed', z.object({})
 	audience: CORE_CAPABILITIES.aiManage.id,
 });
 
+/**
+ * The settings pages of the host's own channels (the Telegram bot, the mailbox) refresh when
+ * their state changes. They belong to no extension, so each names its audience.
+ */
+export const telegramStatusChanged = defineEvent('core.telegram.status.changed', z.object({}), {
+	audience: CORE_CAPABILITIES.settingsManage.id,
+});
+export const telegramLinkChanged = defineEvent(
+	'core.telegram.link.changed',
+	z.object({ memberId: z.string() }),
+	{ audience: (payload) => [{ member: payload.memberId }, CORE_CAPABILITIES.settingsManage.id] },
+);
+export const emailStatusChanged = defineEvent('core.email.status.changed', z.object({}), {
+	audience: CORE_CAPABILITIES.settingsManage.id,
+});
+
 /** The display itself hears of it too: it checks again and falls back to pairing when revoked. */
 export const deviceChanged = defineEvent(
 	'core.device.changed',
@@ -126,6 +142,9 @@ export const coreEvents = [
 	featuresChanged,
 	aiAreasChanged,
 	aiModelsChanged,
+	telegramStatusChanged,
+	telegramLinkChanged,
+	emailStatusChanged,
 	notificationCreated,
 	notificationRead,
 ];

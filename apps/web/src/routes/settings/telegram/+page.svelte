@@ -40,7 +40,7 @@
 		if (!session.can('core.settings.manage')) return;
 		void load();
 		// The poller reports "Working" (or a problem) after the page opened.
-		return onEvent('telegram.status.', () => void load());
+		return onEvent('core.telegram.status.', () => void load());
 	});
 
 	async function save(next: string | null) {

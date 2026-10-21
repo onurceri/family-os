@@ -4,6 +4,7 @@ import {
 	backupMigrations,
 	createBackupJobs,
 	createBackupService,
+	createBackupSettingsAdmin,
 	enqueueUploads,
 } from '@famos/adapters/backup';
 import {
@@ -11,6 +12,7 @@ import {
 	createDirMailbox,
 	createEmail,
 	createEmailJobs,
+	createEmailSettingsAdmin,
 	POLL_JOB as EMAIL_POLL_JOB,
 	type Email,
 	emailMigrations,
@@ -38,14 +40,22 @@ import {
 } from '@famos/adapters/queue-sqlite';
 import { createLogger, systemClock, uuidv7Ids } from '@famos/adapters/runtime';
 import { createExtensionSecrets } from '@famos/adapters/secrets';
-import { createTelegram, type Telegram, telegramMigrations } from '@famos/adapters/telegram';
+import {
+	createTelegram,
+	createTelegramLinkAdmin,
+	type Telegram,
+	telegramMigrations,
+} from '@famos/adapters/telegram';
 import { createWebPush, type WebPush, webPushMigrations } from '@famos/adapters/webpush';
 import {
 	CORE_CAPABILITIES,
 	createKernel,
 	type ExtensionPackagesPort,
+	emailStatusChanged,
 	type Kernel,
 	type RefusedExtension,
+	telegramLinkChanged,
+	telegramStatusChanged,
 } from '@famos/core';
 import {
 	createBackup,
@@ -62,11 +72,6 @@ import pkg from '../package.json' with { type: 'json' };
 import type { Config } from './config.ts';
 import { wireEmail } from './email.ts';
 import { deviceTokenFromHeaders } from './http/devices.ts';
-import {
-	emailStatusChanged,
-	telegramLinkChanged,
-	telegramStatusChanged,
-} from './http/host-events.ts';
 import { createKnownDevices, type KnownDevices } from './http/known-devices.ts';
 import { catalogsOf, createTranslate, createVocabulary } from './i18n.ts';
 import {
@@ -270,6 +275,13 @@ export function openRuntime(
 		http: options.http ?? createGuardedHttp(),
 		identity: identity.admin,
 		aiSettings: ai,
+		backupSettings: createBackupSettingsAdmin({
+			box: createSecretBox(config.secret, 'backup'),
+			clock: systemClock,
+			logger,
+		}),
+		emailSettings: createEmailSettingsAdmin({ clock: systemClock }),
+		telegramLinks: createTelegramLinkAdmin(),
 		llm,
 		extensions: loaded,
 		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),

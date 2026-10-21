@@ -1680,7 +1680,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			.withTables<Record<string, RowWithId>>()
 			.selectFrom(target.table)
 			.select(column)
-			.where('id', '=', target.id)
+			.where(target.idColumn ?? 'id', '=', target.id)
 			.executeTakeFirst();
 		if (!row) throw new FamosError('not_found', 'What this changes was not found');
 		if (row[column] !== ifMatch)
@@ -1698,7 +1698,8 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			const tables = deps.views
 				.db(ownerOf(def.id), deps.db)
 				.withTables<Record<string, RowWithId>>();
-			let query = tables.selectFrom(target.table).select('id').where('id', '=', target.id);
+			const idColumn = target.idColumn ?? 'id';
+			let query = tables.selectFrom(target.table).select(idColumn).where(idColumn, '=', target.id);
 			if (target.liveColumn) query = query.where(target.liveColumn, 'is', null);
 			return (await query.executeTakeFirst()) === undefined;
 		} catch (error) {
@@ -1715,7 +1716,13 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		// Drafts by the row they work on: one query per table and live column.
 		const groups = new Map<
 			string,
-			{ extension: string; table: string; liveColumn?: string; ids: Map<string, string[]> }
+			{
+				extension: string;
+				table: string;
+				idColumn: string;
+				liveColumn?: string;
+				ids: Map<string, string[]>;
+			}
 		>();
 		for (const draft of drafts) {
 			if (!(WAITING_STATUSES as readonly string[]).includes(draft.status)) continue;
@@ -1731,10 +1738,12 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			}
 			if (!target) continue;
 			const extension = ownerOf(def.id);
-			const key = `${extension}:${target.table}:${target.liveColumn ?? ''}`;
+			const idColumn = target.idColumn ?? 'id';
+			const key = `${extension}:${target.table}:${idColumn}:${target.liveColumn ?? ''}`;
 			const group = groups.get(key) ?? {
 				extension,
 				table: target.table,
+				idColumn,
 				...(target.liveColumn && { liveColumn: target.liveColumn }),
 				ids: new Map<string, string[]>(),
 			};
@@ -1747,10 +1756,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				const tables = deps.views.db(group.extension, db).withTables<Record<string, RowWithId>>();
 				let query = tables
 					.selectFrom(group.table)
-					.select('id')
-					.where('id', 'in', [...group.ids.keys()]);
+					.select(group.idColumn)
+					.where(group.idColumn, 'in', [...group.ids.keys()]);
 				if (group.liveColumn) query = query.where(group.liveColumn, 'is', null);
-				const live = new Set((await query.execute()).map((row) => row.id));
+				const live = new Set((await query.execute()).map((row) => row[group.idColumn]));
 				for (const [id, draftIds] of group.ids)
 					if (!live.has(id)) for (const draftId of draftIds) gone.add(draftId);
 			} catch (error) {

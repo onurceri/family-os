@@ -2,6 +2,7 @@ import type { Clock, DbExecutor, Logger } from '@famos/sdk';
 import { FamosError } from '@famos/sdk';
 import PostalMime, { type Address, type Email as ParsedEmail } from 'postal-mime';
 import type { SecretBox } from '../secrets/index.ts';
+import { deleteSender, disconnectMailbox, saveSender } from './admin.ts';
 import {
 	type MailboxConnect,
 	MailboxError,
@@ -257,8 +258,7 @@ export function createEmail(deps: EmailDeps) {
 	}
 
 	async function remove() {
-		await db().deleteFrom('email_settings').where('id', '=', 1).execute();
-		await db().deleteFrom('email_seen').execute();
+		await disconnectMailbox(deps.db);
 		statusChanged();
 	}
 
@@ -280,31 +280,13 @@ export function createEmail(deps: EmailDeps) {
 	}
 
 	async function addSender(input: EmailSenderInput): Promise<EmailSender> {
-		const now = deps.clock.now();
-		await db()
-			.insertInto('email_senders')
-			.values({
-				address: input.address.toLowerCase(),
-				member_id: input.memberId,
-				label: input.label ?? null,
-				created_at: now,
-			})
-			.onConflict((oc) =>
-				oc.column('address').doUpdateSet({ member_id: input.memberId, label: input.label ?? null }),
-			)
-			.execute();
-		// Mail that waited for this address gets another look at the next check.
-		await db().deleteFrom('email_seen').where('outcome', '=', 'unknown_sender').execute();
+		const saved = await saveSender(deps.db, deps.clock, input);
 		statusChanged();
-		return {
-			address: input.address.toLowerCase(),
-			memberId: input.memberId,
-			label: input.label ?? null,
-		};
+		return saved;
 	}
 
 	async function removeSender(address: string): Promise<void> {
-		await db().deleteFrom('email_senders').where('address', '=', address.toLowerCase()).execute();
+		await deleteSender(deps.db, address);
 		statusChanged();
 	}
 

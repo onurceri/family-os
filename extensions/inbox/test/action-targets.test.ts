@@ -14,11 +14,18 @@ describe('the targets of the shipped actions', () => {
 				if (!def.target) continue;
 				const owner = def.id.slice(0, def.id.indexOf('.'));
 				// Every id field an action may name its target by.
-				const target = def.target({ id: 'x', homeId: 'x', petId: 'x', vehicleId: 'x' });
+				const target = def.target({
+					id: 'x',
+					homeId: 'x',
+					petId: 'x',
+					vehicleId: 'x',
+					address: 'x',
+				});
 				expect(target, def.id).not.toBeNull();
 				if (!target) continue;
 				const db = k.contextFor(owner).db.withTables<Record<string, Record<string, unknown>>>();
-				let query = db.selectFrom(target.table).select('id').where('id', '=', 'x');
+				const idColumn = target.idColumn ?? 'id';
+				let query = db.selectFrom(target.table).select(idColumn).where(idColumn, '=', 'x');
 				if (target.liveColumn) query = query.where(target.liveColumn, 'is', null);
 				await expect(query.execute(), def.id).resolves.toEqual([]);
 				checked.push(def.id);

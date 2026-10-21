@@ -36,11 +36,11 @@
 		if (session.status !== 'ready') return;
 		void load();
 		// Linked or unlinked from the chat, or the bot was connected or removed.
-		const offLink = onEvent('telegram.link.', (_name, payload) => {
+		const offLink = onEvent('core.telegram.link.', (_name, payload) => {
 			const who = (payload as { memberId?: string } | undefined)?.memberId;
 			if (!who || who === session.me?.id) void load();
 		});
-		const offStatus = onEvent('telegram.status.', () => void load());
+		const offStatus = onEvent('core.telegram.status.', () => void load());
 		return () => {
 			offLink();
 			offStatus();
@@ -70,7 +70,7 @@
 		busy = true;
 		error = null;
 		try {
-			await api.DELETE('/api/v1/telegram/link');
+			unwrap(await api.POST('/api/v1/actions/core.unlinkTelegram', { body: {} }));
 			code = null;
 			await load();
 		} finally {

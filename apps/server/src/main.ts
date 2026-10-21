@@ -25,7 +25,6 @@ import {
 import { findAvailable, type LoadedExtensions, loadExtensions } from './extensions/load.ts';
 import { describePurge, previewPurge, purgeExtension, purgeTarget } from './extensions/purge.ts';
 import { createHttpApp, loadedWeb, OPENAPI_INFO } from './http/app.ts';
-import { hostEvents } from './http/host-events.ts';
 import { publicOpenApiDocument } from './http/public/index.ts';
 import { createRealtimeHub, realtimeGuard } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
@@ -156,12 +155,7 @@ async function serveCommand(distrust: DistrustResult) {
 			extensions,
 			boot,
 		});
-		const hub = createRealtimeHub(
-			kernel.bus,
-			logger,
-			kernel.access,
-			new Map([...kernel.registry.events, ...hostEvents.map((e) => [e.name, e] as const)]),
-		);
+		const hub = createRealtimeHub(kernel.bus, logger, kernel.access, kernel.registry.events);
 		app.get(
 			'/api/v1/ws',
 			realtimeGuard(config.trustedOrigins, (c) => c.get('actor')),

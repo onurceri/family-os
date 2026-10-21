@@ -1,3 +1,4 @@
+export { createBackupSettingsAdmin } from './admin.ts';
 export {
 	DecryptError,
 	decryptFile,

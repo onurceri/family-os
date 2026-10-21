@@ -1,3 +1,4 @@
+export { createTelegramLinkAdmin } from './admin.ts';
 export * from './schemas.ts';
 export {
 	createTelegram,
@@ -7,4 +8,4 @@ export {
 	type TelegramHandlers,
 	type TelegramShare,
 } from './service.ts';
-export { telegramMigrations } from './tables.ts';
+export { type TelegramTables, telegramMigrations } from './tables.ts';

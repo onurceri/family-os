@@ -47,7 +47,7 @@
 		error = null;
 		const known = new Set(data?.local.map((b) => b.name));
 		try {
-			unwrap(await api.POST('/api/v1/backups/run'));
+			unwrap(await api.POST('/api/v1/actions/core.runBackup', { body: {} }));
 			toasts.show(t('backups_run_queued'));
 			// The worker writes the backup in the background: look for it for a little while.
 			for (let i = 0; i < 40; i++) {

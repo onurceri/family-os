@@ -1,3 +1,4 @@
+export { createEmailSettingsAdmin } from './admin.ts';
 export { createDirMailbox } from './fake-mailbox.ts';
 export { createEmailJobs, POLL_JOB } from './jobs.ts';
 export {

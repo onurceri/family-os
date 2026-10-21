@@ -1,6 +1,8 @@
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { backupMigrations, createBackupSettingsAdmin } from '@famos/adapters/backup';
+import { createEmailSettingsAdmin, emailMigrations } from '@famos/adapters/email';
 import { createFsFileStore } from '@famos/adapters/files-fs';
 import {
 	type AiSettingsService,
@@ -15,6 +17,7 @@ import {
 } from '@famos/adapters/queue-sqlite';
 import { silentLogger, uuidv7Ids } from '@famos/adapters/runtime';
 import { createExtensionSecrets } from '@famos/adapters/secrets';
+import { createTelegramLinkAdmin, telegramMigrations } from '@famos/adapters/telegram';
 import {
 	createKernel,
 	type ExtensionPackagesPort,
@@ -585,11 +588,21 @@ export async function createTestKernel(
 		http,
 		identity,
 		aiSettings: ai,
+		backupSettings: createBackupSettingsAdmin({
+			box: createSecretBox(TEST_SECRET),
+			clock,
+			logger: silentLogger,
+		}),
+		emailSettings: createEmailSettingsAdmin({ clock }),
+		telegramLinks: createTelegramLinkAdmin(),
 		llm: options.llm ?? llm,
 		extensions: options.extensions ?? [],
 		infrastructureMigrations: [
 			{ scope: 'queue', migrations: queueMigrations },
 			{ scope: 'ai', migrations: aiMigrations },
+			{ scope: 'telegram', migrations: telegramMigrations },
+			{ scope: 'email', migrations: emailMigrations },
+			{ scope: 'backup', migrations: backupMigrations },
 		],
 		appVersion: '0.0.0-test',
 		...(options.channels && { channels: options.channels }),

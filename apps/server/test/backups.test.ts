@@ -183,15 +183,17 @@ describe('Backups API', () => {
 				password: password.password,
 			})
 		).cookie;
-		for (const [method, path] of [
-			['GET', '/api/v1/backups'],
-			['POST', '/api/v1/backups/run'],
-			['POST', '/api/v1/backups/targets/x/test'],
+		for (const [method, path, body] of [
+			['GET', '/api/v1/backups', undefined],
+			['POST', '/api/v1/backups/targets/x/test', undefined],
+			['PUT', '/api/v1/backups/encryption/passphrase', { passphrase: PASSPHRASE }],
+			['PUT', '/api/v1/backups/targets/x/config', { config: {} }],
+			['POST', '/api/v1/actions/core.runBackup', {}],
+			['POST', '/api/v1/actions/core.setBackupEncryption', { mode: 'none' }],
+			['POST', '/api/v1/actions/core.updateBackupTarget', { targetId: 'x', enabled: false }],
+			['POST', '/api/v1/actions/core.deleteBackupTarget', { targetId: 'x' }],
 		] as const)
-			expect((await call(method, path, undefined, aunt)).status).toBe(403);
-		expect((await call('PUT', '/api/v1/backups/encryption', { mode: 'none' }, aunt)).status).toBe(
-			403,
-		);
+			expect((await call(method, path, body, aunt)).status).toBe(403);
 		expect((await call('GET', '/api/v1/backups', undefined, cookie)).status).toBe(200);
 	});
 
@@ -206,20 +208,14 @@ describe('Backups API', () => {
 		});
 
 		expect(
-			(
-				await call(
-					'PUT',
-					'/api/v1/backups/encryption',
-					{ mode: 'passphrase', passphrase: 'short' },
-					cookie,
-				)
-			).status,
+			(await call('PUT', '/api/v1/backups/encryption/passphrase', { passphrase: 'short' }, cookie))
+				.status,
 		).toBe(400);
 		expect(
 			(
 				await call(
-					'PUT',
-					'/api/v1/backups/encryption',
+					'POST',
+					'/api/v1/actions/core.setBackupEncryption',
 					{ mode: 'recipient', recipient: 'age1not-a-key-at-all' },
 					cookie,
 				)
@@ -227,8 +223,8 @@ describe('Backups API', () => {
 		).toBe(400);
 		const enc = await call(
 			'PUT',
-			'/api/v1/backups/encryption',
-			{ mode: 'passphrase', passphrase: PASSPHRASE },
+			'/api/v1/backups/encryption/passphrase',
+			{ passphrase: PASSPHRASE },
 			cookie,
 		);
 		expect(enc.body).toEqual({ mode: 'passphrase', recipient: null });
@@ -249,7 +245,10 @@ describe('Backups API', () => {
 		});
 
 		// "Back up now" only queues; the worker writes the backup and then the upload.
-		expect((await call('POST', '/api/v1/backups/run', undefined, cookie)).status).toBe(202);
+		const run = await call('POST', '/api/v1/actions/core.runBackup', {}, cookie);
+		expect(run.body).toMatchObject({ status: 'applied', output: { queued: true } });
+		// Pressing it twice queues one backup.
+		await call('POST', '/api/v1/actions/core.runBackup', {}, cookie);
 		expect(await readdir(config.backupsDir).catch(() => [])).toEqual([]);
 		await runtime.kernel.worker.drain();
 
@@ -267,16 +266,65 @@ describe('Backups API', () => {
 		).toBe('age-encryption.org/v1');
 
 		const patched = await call(
-			'PATCH',
-			`/api/v1/backups/targets/${id}`,
-			{ enabled: false },
+			'POST',
+			'/api/v1/actions/core.updateBackupTarget',
+			{ targetId: id, enabled: false, keep: 5, name: 'Attic' },
 			cookie,
 		);
-		expect(patched.body).toMatchObject({ enabled: false });
-		expect((await call('DELETE', `/api/v1/backups/targets/${id}`, undefined, cookie)).status).toBe(
-			200,
+		expect(patched.body).toMatchObject({
+			status: 'applied',
+			output: { enabled: false, keep: 5, name: 'Attic', summary: { username: 'anna' } },
+		});
+		// The address and keys are a sealed credential and have a route of their own.
+		const sealed = await call(
+			'PUT',
+			`/api/v1/backups/targets/${id}/config`,
+			{ config: { username: 'bea', password: '' } },
+			cookie,
 		);
+		expect(sealed.body).toMatchObject({ summary: { url: dav.url, username: 'bea' } });
+		const bad = await call(
+			'POST',
+			'/api/v1/actions/core.deleteBackupTarget',
+			{ targetId: 'backup_target_missing' },
+			cookie,
+		);
+		expect(bad.status).toBe(404);
+		expect(
+			(await call('POST', '/api/v1/actions/core.deleteBackupTarget', { targetId: id }, cookie))
+				.body,
+		).toMatchObject({ status: 'applied', output: { targetId: id } });
 		expect((await call('GET', '/api/v1/backups', undefined, cookie)).body.targets).toEqual([]);
+
+		// The audit log names the target and the setting, never what was typed.
+		const audit = await runtime.kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_audit_log')
+			.select(['action_id', 'target', 'outcome'])
+			.where('action_id', 'like', '%ackup%')
+			.orderBy('at')
+			.execute();
+		expect(audit.map((r) => [r.action_id, r.outcome])).toEqual([
+			['backups.setPassphrase', 'applied'],
+			['backups.createTarget', 'applied'],
+			['core.runBackup', 'applied'],
+			['core.runBackup', 'applied'],
+			['core.updateBackupTarget', 'applied'],
+			['backups.updateTargetConfig', 'applied'],
+			['core.deleteBackupTarget', 'applied'],
+		]);
+		expect(audit.filter((r) => r.action_id.endsWith('Target')).every((r) => r.target === id)).toBe(
+			true,
+		);
+		const rows = JSON.stringify(
+			await runtime.kernel.ctx.db
+				.withTables<CoreTables>()
+				.selectFrom('core_audit_log')
+				.selectAll()
+				.execute(),
+		);
+		expect(rows).not.toContain(DAV_PASSWORD);
+		expect(rows).not.toContain(PASSPHRASE);
 
 		for (const text of responses) {
 			expect(text).not.toContain(DAV_PASSWORD);
@@ -286,10 +334,10 @@ describe('Backups API', () => {
 
 	it('tells the admins when the upload finally fails', async () => {
 		const cookie = await admin();
-		await call('PUT', '/api/v1/backups/encryption', { mode: 'none' }, cookie);
+		await call('POST', '/api/v1/actions/core.setBackupEncryption', { mode: 'none' }, cookie);
 		dav.status = 401;
 		const created = await call('POST', '/api/v1/backups/targets', webdav(), cookie);
-		await call('POST', '/api/v1/backups/run', undefined, cookie);
+		await call('POST', '/api/v1/actions/core.runBackup', {}, cookie);
 		await runtime.kernel.worker.drain();
 		const list = await call('GET', '/api/v1/backups', undefined, cookie);
 		expect(list.body.targets[0]).toMatchObject({ id: created.body.id, lastResult: 'http_401' });

@@ -3,6 +3,7 @@ import {
 	AI_AREA_ACCESS,
 	type AiSettingsAdmin,
 	type AnyActionDefinition,
+	type BackupSettingsAdmin,
 	BUILT_IN_ROLES,
 	type DbExecutor,
 	type DigestItem,
@@ -14,6 +15,7 @@ import {
 	defineNotificationKind,
 	defineRoute,
 	digestOf,
+	type EmailSettingsAdmin,
 	type EventBus,
 	type ExtensionContext,
 	FamosError,
@@ -27,6 +29,7 @@ import {
 	selfOf,
 	subjectOf,
 	systemActor,
+	type TelegramLinkAdmin,
 	type UnitOfWork,
 } from '@famos/sdk';
 import {
@@ -51,6 +54,7 @@ import type { AppService } from './apps.ts';
 import type { AuditTrail } from './audit.ts';
 import { createAutoApproval } from './auto-approval.ts';
 import { pruneChanges, schedulePruneChanges } from './changes.ts';
+import { createChannelActions } from './channel-actions.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
 	aiAreasChanged,
@@ -449,6 +453,9 @@ export interface CoreExtensionDeps {
 	search: Pick<Search, 'jobs' | 'actions' | 'routes'>;
 	identity: IdentityAdmin;
 	aiSettings: AiSettingsAdmin;
+	backupSettings: BackupSettingsAdmin;
+	emailSettings: EmailSettingsAdmin;
+	telegramLinks: TelegramLinkAdmin;
 	runner: () => ActionRunner;
 	devices: () => DeviceService;
 	apps: () => AppService;
@@ -1904,6 +1911,11 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...memory.actions,
 			...admin.actions,
 			...createAiSettingsActions({ settings: deps.aiSettings }),
+			...createChannelActions({
+				backups: deps.backupSettings,
+				email: deps.emailSettings,
+				telegram: deps.telegramLinks,
+			}),
 			...deps.extensionInstall.actions,
 		],
 		jobs: [

@@ -259,6 +259,8 @@ export interface ActionTarget {
 	/** The extension's own table. */
 	table: string;
 	id: string;
+	/** The column that holds `id` when the table's key is not called `id` (an address). */
+	idColumn?: string;
 	/** A column that is set once the row is archived or deleted (`archived_at`). */
 	liveColumn?: string;
 	/**

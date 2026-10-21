@@ -5,8 +5,10 @@ import type {
 	AiSettingsAdmin,
 	AnyActionDefinition,
 	AnyJobDefinition,
+	BackupSettingsAdmin,
 	Clock,
 	DbExecutor,
+	EmailSettingsAdmin,
 	EventBus,
 	ExtensionContext,
 	ExtensionDefinition,
@@ -22,6 +24,7 @@ import type {
 	NotificationChannel,
 	NotifyRequest,
 	SecretBox,
+	TelegramLinkAdmin,
 } from '@famos/sdk';
 import { QUESTION_TOPIC_IDS, type QuestionTopic, tablePrefixOf } from '@famos/sdk';
 import type { KyselyPlugin } from 'kysely';
@@ -98,6 +101,10 @@ export interface KernelOptions {
 	identity: IdentityAdmin;
 	/** The AI settings the admin actions write, on the unit of work's own connection. */
 	aiSettings: AiSettingsAdmin;
+	/** The same for backups, the family mailbox and Telegram links. */
+	backupSettings: BackupSettingsAdmin;
+	emailSettings: EmailSettingsAdmin;
+	telegramLinks: TelegramLinkAdmin;
 	/** Model access for background jobs only. */
 	llm: LlmPort;
 	extensions: readonly ExtensionDefinition[];
@@ -320,6 +327,9 @@ export function createKernel(options: KernelOptions): Kernel {
 		search,
 		identity: options.identity,
 		aiSettings: options.aiSettings,
+		backupSettings: options.backupSettings,
+		emailSettings: options.emailSettings,
+		telegramLinks: options.telegramLinks,
 		appVersion: options.appVersion,
 		...(options.setupCode !== undefined && { setupCode: options.setupCode }),
 		draftNotifyDelayMs: options.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,

@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type FakeBotApi, startFakeBotApi } from '@famos/adapters/telegram/fake-bot-api';
-import type { CoreTables } from '@famos/core';
+import { type CoreTables, telegramLinkChanged } from '@famos/core';
 import type { ExtensionDefinition, Logger } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
@@ -280,8 +280,22 @@ describe('Telegram settings and linking', () => {
 			linked: true,
 			username: 'user55',
 		});
-		expect((await call('DELETE', '/api/v1/telegram/link')).status).toBe(200);
+		const heard: string[] = [];
+		runtime.kernel.bus.on(telegramLinkChanged, ({ memberId }) => void heard.push(memberId));
+		const parent = (await call('GET', '/api/v1/core/me')).body.id as string;
+		expect((await call('POST', '/api/v1/actions/core.unlinkTelegram', {})).body).toMatchObject({
+			status: 'applied',
+		});
 		expect((await call('GET', '/api/v1/telegram/link')).body.linked).toBe(false);
+		// Open pages of that member hear that the link went.
+		expect(heard).toEqual([parent]);
+		const audit = await runtime.kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_audit_log')
+			.select(['action_id', 'outcome'])
+			.where('action_id', '=', 'core.unlinkTelegram')
+			.execute();
+		expect(audit).toEqual([{ action_id: 'core.unlinkTelegram', outcome: 'applied' }]);
 	});
 
 	it('unlinks a member who is archived', async () => {

@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDirMailbox } from '@famos/adapters/email';
+import { type CoreTables, emailStatusChanged } from '@famos/core';
 import type { Logger } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
@@ -187,11 +188,11 @@ describe('email settings', () => {
 		for (const [method, path, body] of [
 			['GET', '/api/v1/email/settings', undefined],
 			['PUT', '/api/v1/email/settings', settings],
-			['DELETE', '/api/v1/email/settings', undefined],
 			['GET', '/api/v1/email/senders', undefined],
-			['POST', '/api/v1/email/senders', { address: 'a@b.example', memberId: kid }],
-			['DELETE', '/api/v1/email/senders/a%40b.example', undefined],
-			['POST', '/api/v1/email/check', undefined],
+			['POST', '/api/v1/actions/core.disconnectEmail', {}],
+			['POST', '/api/v1/actions/core.addEmailSender', { address: 'a@b.example', memberId: kid }],
+			['POST', '/api/v1/actions/core.removeEmailSender', { address: 'a@b.example' }],
+			['POST', '/api/v1/actions/core.checkEmailNow', {}],
 		] as const)
 			expect((await call(method, path, body, kidCookie)).status, `${method} ${path}`).toBe(403);
 
@@ -248,29 +249,56 @@ describe('email settings', () => {
 
 	it('manages allowed senders and only for real members', async () => {
 		const me = (await call('GET', '/api/v1/core/me')).body.id as string;
-		const added = await call('POST', '/api/v1/email/senders', {
+		const heard: string[] = [];
+		runtime.kernel.bus.on(emailStatusChanged, () => void heard.push('status'));
+		const added = await call('POST', '/api/v1/actions/core.addEmailSender', {
 			address: ' Office@School.EXAMPLE ',
 			memberId: me,
 			label: 'School',
 		});
-		expect(added.body).toEqual({ address: 'office@school.example', memberId: me, label: 'School' });
+		expect(added.body).toMatchObject({
+			status: 'applied',
+			output: { address: 'office@school.example', memberId: me, label: 'School' },
+		});
 		expect(
 			(
-				await call('POST', '/api/v1/email/senders', {
+				await call('POST', '/api/v1/actions/core.addEmailSender', {
 					address: 'x@y.example',
 					memberId: 'mem_nope',
 				})
 			).status,
 		).toBe(400);
 		expect(
-			(await call('POST', '/api/v1/email/senders', { address: 'not-an-address', memberId: me }))
-				.status,
+			(
+				await call('POST', '/api/v1/actions/core.addEmailSender', {
+					address: 'not-an-address',
+					memberId: me,
+				})
+			).status,
 		).toBe(400);
 		expect((await call('GET', '/api/v1/email/senders')).body).toHaveLength(1);
-		expect((await call('DELETE', '/api/v1/email/senders/Office%40school.example')).status).toBe(
-			200,
-		);
+		expect(
+			(
+				await call('POST', '/api/v1/actions/core.removeEmailSender', {
+					address: 'Office@school.example',
+				})
+			).status,
+		).toBe(200);
 		expect((await call('GET', '/api/v1/email/senders')).body).toEqual([]);
+		// Open settings pages hear of each change, once the unit of work has committed.
+		expect(heard).toEqual(['status', 'status']);
+		// The audit log names the sender it was about, once for each applied change.
+		const audit = await runtime.kernel.ctx.db
+			.withTables<CoreTables>()
+			.selectFrom('core_audit_log')
+			.select(['action_id', 'target', 'outcome'])
+			.where('action_id', 'like', 'core.%EmailSender')
+			.orderBy('at')
+			.execute();
+		expect(audit).toEqual([
+			{ action_id: 'core.addEmailSender', target: 'office@school.example', outcome: 'applied' },
+			{ action_id: 'core.removeEmailSender', target: 'office@school.example', outcome: 'applied' },
+		]);
 	});
 });
 
@@ -278,7 +306,10 @@ describe('reading the mailbox', () => {
 	it('"Check now" queues a job that adds allowed mail to the Inbox as the member', async () => {
 		const me = (await call('GET', '/api/v1/core/me')).body.id as string;
 		await call('PUT', '/api/v1/email/settings', settings);
-		await call('POST', '/api/v1/email/senders', { address: 'school@school.example', memberId: me });
+		await call('POST', '/api/v1/actions/core.addEmailSender', {
+			address: 'school@school.example',
+			memberId: me,
+		});
 		await writeFile(
 			join(mailDir, 'INBOX', '1.eml'),
 			eml('School <school@school.example>', 'Parents evening', 'a'),
@@ -288,10 +319,10 @@ describe('reading the mailbox', () => {
 			eml('Spam <spam@evil.example>', 'You won', 'b'),
 		);
 
-		const check = await call('POST', '/api/v1/email/check');
-		expect(check.status).toBe(202);
+		const check = await call('POST', '/api/v1/actions/core.checkEmailNow', {});
+		expect(check.body).toMatchObject({ status: 'applied', output: { queued: true } });
 		// A second request while one is queued adds nothing.
-		await call('POST', '/api/v1/email/check');
+		await call('POST', '/api/v1/actions/core.checkEmailNow', {});
 		await runtime.kernel.worker.drain();
 
 		const items = (await call('GET', '/api/v1/inbox/items')).body;
@@ -330,7 +361,10 @@ describe('reading the mailbox', () => {
 	it('keeps mail waiting while the Inbox is off, then adds it', async () => {
 		const me = (await call('GET', '/api/v1/core/me')).body.id as string;
 		await call('PUT', '/api/v1/email/settings', settings);
-		await call('POST', '/api/v1/email/senders', { address: 'school@school.example', memberId: me });
+		await call('POST', '/api/v1/actions/core.addEmailSender', {
+			address: 'school@school.example',
+			memberId: me,
+		});
 		await writeFile(join(mailDir, 'INBOX', '1.eml'), eml('school@school.example', 'Hello', 'c'));
 		await call('POST', '/api/v1/actions/core.setFeatureEnabled', {
 			extensionId: 'inbox',

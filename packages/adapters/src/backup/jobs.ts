@@ -1,11 +1,11 @@
 import { basename } from 'node:path';
-import { type AnyJobDefinition, defineJob } from '@famos/sdk';
+import { type AnyJobDefinition, BACKUP_RUN_JOB, defineJob } from '@famos/sdk';
 import { z } from 'zod';
 import type { BackupService } from './service.ts';
 import { BackupTargetError } from './target.ts';
 
 export const UPLOAD_JOB = 'backup.upload';
-export const RUN_JOB = 'backup.run';
+export const RUN_JOB = BACKUP_RUN_JOB;
 
 const UploadPayload = z.object({
 	targetId: z.string(),

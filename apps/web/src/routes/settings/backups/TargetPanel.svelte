@@ -71,6 +71,14 @@
 		test = null;
 	});
 
+	/** Whether the connection settings differ from what is saved, or a secret was typed. */
+	function configChanged(saved: Target, next: Record<string, string | boolean>): boolean {
+		const s = saved.summary as Record<string, string | boolean | undefined>;
+		return Object.entries(next).some(([key, value]) =>
+			key in s || typeof value === 'boolean' ? s[key] !== value : value !== '',
+		);
+	}
+
 	async function save() {
 		busy = true;
 		failed = false;
@@ -87,12 +95,20 @@
 			};
 			const dav = { url: url.trim(), username: username.trim(), password };
 			if (target) {
-				unwrap(
-					await api.PATCH('/api/v1/backups/targets/{targetId}', {
-						params: { path: { targetId: target.id } },
-						body: { ...common, config: kind === 's3' ? s3 : dav },
+				const result = unwrap(
+					await api.POST('/api/v1/actions/core.updateBackupTarget', {
+						body: { targetId: target.id, ...common },
 					}),
 				);
+				if (result.status !== 'applied') throw new Error('not applied');
+				// The address and keys are one sealed credential, kept apart from the rest.
+				if (configChanged(target, kind === 's3' ? s3 : dav))
+					unwrap(
+						await api.PUT('/api/v1/backups/targets/{targetId}/config', {
+							params: { path: { targetId: target.id } },
+							body: { config: kind === 's3' ? s3 : dav },
+						}),
+					);
 			} else if (kind === 's3') {
 				unwrap(
 					await api.POST('/api/v1/backups/targets', {
@@ -133,9 +149,8 @@
 		if (!target) return;
 		try {
 			unwrap(
-				await api.PATCH('/api/v1/backups/targets/{targetId}', {
-					params: { path: { targetId: target.id } },
-					body: { enabled: next },
+				await api.POST('/api/v1/actions/core.updateBackupTarget', {
+					body: { targetId: target.id, enabled: next },
 				}),
 			);
 		} finally {
@@ -146,8 +161,8 @@
 	async function remove() {
 		if (!target) return;
 		unwrap(
-			await api.DELETE('/api/v1/backups/targets/{targetId}', {
-				params: { path: { targetId: target.id } },
+			await api.POST('/api/v1/actions/core.deleteBackupTarget', {
+				body: { targetId: target.id },
 			}),
 		);
 		onchanged();

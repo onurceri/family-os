@@ -89,16 +89,9 @@ export const EmailSaveResultSchema = z.object({
 	test: z.object({ ok: z.boolean(), code: EmailTestCodeSchema }),
 });
 
-export const EmailSenderSchema = z.object({
-	address: z.string(),
-	memberId: z.string(),
-	label: z.string().nullable(),
-});
-export type EmailSender = z.infer<typeof EmailSenderSchema>;
-
-export const EmailSenderInputSchema = z.object({
-	address: z.string().trim().toLowerCase().max(320).pipe(z.email()),
-	memberId: z.string().min(1).max(100),
-	label: z.string().trim().max(100).optional(),
-});
-export type EmailSenderInput = z.infer<typeof EmailSenderInputSchema>;
+export {
+	type EmailSender,
+	type EmailSenderInput,
+	EmailSenderInputSchema,
+	EmailSenderSchema,
+} from '@famos/sdk';

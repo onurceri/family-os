@@ -2,11 +2,8 @@ import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
 	type BackupService,
-	EncryptionInputSchema,
 	EncryptionStatusSchema,
-	RUN_JOB,
 	TargetInputSchema,
-	TargetPatchSchema,
 	TargetStatusSchema,
 	TestResultSchema,
 } from '@famos/adapters/backup';
@@ -19,9 +16,11 @@ import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 
 /**
- * Backups for admins. The encryption passphrase and the targets' credentials are
- * secrets, so like AI keys and the Telegram token these routes call the adapter directly instead
- * of going through actions. Nothing secret is ever returned. The backup itself is a job: no
+ * Backups for admins: what to read, and the secrets. The encryption passphrase and the targets'
+ * credentials are secrets, so like AI keys and the Telegram token these routes call the adapter
+ * directly and record themselves in the audit log. Running a backup, choosing no or public-key
+ * encryption, a target's name, retention and switch, and removing a target are actions
+ * (`core.runBackup` ...). Nothing secret is ever returned. The backup itself is a job: no
  * request writes a backup or talks to a remote store, except the connection test.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
@@ -30,6 +29,10 @@ const body = <S extends z.ZodType>(schema: S) => ({
 });
 const base = { tags: ['backups'], security: [{ session: [] }] };
 const TargetParams = z.object({ targetId: z.string() });
+const PassphraseInputSchema = z.object({ passphrase: z.string().min(12).max(500) });
+const TargetConfigPatchSchema = z.object({
+	config: z.record(z.string(), z.union([z.string(), z.boolean()])),
+});
 
 const LocalBackupSchema = z.object({
 	name: z.string(),
@@ -49,7 +52,6 @@ const BackupsSchema = z.object({
 		keepBeforeUpdate: z.number().int(),
 	}),
 });
-const Queued = z.object({ queued: z.literal(true) });
 
 const LOCAL_BACKUP = /^famos-.+-(manual|scheduled|pre-migration)\.tar$/;
 
@@ -114,36 +116,27 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 		);
 	});
 
-	const run = createRoute({
-		...base,
-		method: 'post',
-		path: '/api/v1/backups/run',
-		operationId: 'backups.run',
-		summary: 'Write a backup now and send it to the enabled targets (runs in the background)',
-		responses: { 202: { description: 'Queued', ...json(Queued) }, ...errorResponses },
-	});
-	app.openapi(run, async (c) => {
-		requireAdmin(c);
-		// Pressing the button twice queues one backup.
-		await kernel.ctx.enqueue(RUN_JOB, {}, { dedupeKey: RUN_JOB });
-		return c.json({ queued: true as const }, 202);
-	});
-
-	const setEncryption = createRoute({
+	const setPassphrase = createRoute({
 		...base,
 		method: 'put',
-		path: '/api/v1/backups/encryption',
-		operationId: 'backups.setEncryption',
-		summary: 'Choose how backups are encrypted before they leave the server',
-		request: body(EncryptionInputSchema),
+		path: '/api/v1/backups/encryption/passphrase',
+		operationId: 'backups.setPassphrase',
+		summary: 'Encrypt backups with a passphrase (stored encrypted, never returned)',
+		request: body(PassphraseInputSchema),
 		responses: {
 			200: { description: 'Encryption', ...json(EncryptionStatusSchema) },
 			...errorResponses,
 		},
 	});
-	app.openapi(setEncryption, async (c) => {
-		requireAdmin(c);
-		return c.json(await backups.setEncryption(c.req.valid('json')), 200);
+	app.openapi(setPassphrase, async (c) => {
+		const actor = requireAdmin(c);
+		const status = await backups.setEncryption({
+			mode: 'passphrase',
+			passphrase: c.req.valid('json').passphrase,
+		});
+		// The passphrase is a secret, so this stays a route; the row says only that it was set.
+		await kernel.audit.record(actor, 'backups.setPassphrase');
+		return c.json(status, 200);
 	});
 
 	const createTarget = createRoute({
@@ -167,42 +160,25 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 		return c.json(target, 201);
 	});
 
-	const updateTarget = createRoute({
+	const updateTargetConfig = createRoute({
 		...base,
-		method: 'patch',
-		path: '/api/v1/backups/targets/{targetId}',
-		operationId: 'backups.updateTarget',
-		summary: 'Rename, pause, change retention or settings; credentials left out keep their value',
-		request: { params: TargetParams, ...body(TargetPatchSchema) },
+		method: 'put',
+		path: '/api/v1/backups/targets/{targetId}/config',
+		operationId: 'backups.updateTargetConfig',
+		summary: 'Change a target’s address or credentials; fields left empty keep their stored value',
+		request: { params: TargetParams, ...body(TargetConfigPatchSchema) },
 		responses: {
 			200: { description: 'Target', ...json(TargetStatusSchema) },
 			...errorResponses,
 		},
 	});
-	app.openapi(updateTarget, async (c) => {
-		requireAdmin(c);
-		return c.json(
-			await backups.updateTarget(c.req.valid('param').targetId, c.req.valid('json')),
-			200,
-		);
-	});
-
-	const deleteTarget = createRoute({
-		...base,
-		method: 'delete',
-		path: '/api/v1/backups/targets/{targetId}',
-		operationId: 'backups.deleteTarget',
-		summary: 'Remove a target (files already uploaded stay where they are)',
-		request: { params: TargetParams },
-		responses: {
-			200: { description: 'Removed', ...json(z.object({ ok: z.literal(true) })) },
-			...errorResponses,
-		},
-	});
-	app.openapi(deleteTarget, async (c) => {
-		requireAdmin(c);
-		await backups.removeTarget(c.req.valid('param').targetId);
-		return c.json({ ok: true as const }, 200);
+	app.openapi(updateTargetConfig, async (c) => {
+		const actor = requireAdmin(c);
+		const { targetId } = c.req.valid('param');
+		const target = await backups.updateTarget(targetId, c.req.valid('json'));
+		// The settings and keys are one sealed credential: the row names the target only.
+		await kernel.audit.record(actor, 'backups.updateTargetConfig', targetId);
+		return c.json(target, 200);
 	});
 
 	const testTarget = createRoute({

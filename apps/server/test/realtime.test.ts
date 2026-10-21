@@ -6,7 +6,6 @@ import { Hono } from 'hono';
 import type { WSContext } from 'hono/ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { hostEvents } from '../src/http/host-events.ts';
 import { createRealtimeHub, realtimeGuard } from '../src/http/realtime.ts';
 import { discoverSourceExtensions } from './support/extensions.ts';
 
@@ -32,7 +31,6 @@ const hubOf = () =>
 		k.access,
 		new Map([
 			...k.registry.events,
-			...hostEvents.map((e) => [e.name, e] as const),
 			[unlistedCalendar.name, unlistedCalendar],
 			[unlistedNowhere.name, unlistedNowhere],
 		]),
@@ -101,8 +99,8 @@ describe('who hears of an event', () => {
 		await k.bus.publish('core.themes.changed', { id: null });
 		await k.bus.publish('core.family.changed', {});
 		await k.bus.publish('core.device.changed', { deviceId: 'dev_other' });
-		await k.bus.publish('telegram.status.changed', {});
-		await k.bus.publish('email.status.changed', {});
+		await k.bus.publish('core.telegram.status.changed', {});
+		await k.bus.publish('core.email.status.changed', {});
 
 		expect(screen.names()).toEqual(['core.themes.changed', 'core.family.changed']);
 		// It hears of its own device changing (it checks again, and a revoked one pairs anew), as the
@@ -118,8 +116,8 @@ describe('who hears of an event', () => {
 			'core.themes.changed',
 			'core.family.changed',
 			'core.device.changed',
-			'telegram.status.changed',
-			'email.status.changed',
+			'core.telegram.status.changed',
+			'core.email.status.changed',
 			'core.device.changed',
 		]);
 	});
@@ -411,7 +409,7 @@ describe('the socket guard', () => {
 
 describe('every event has an audience', () => {
 	it('declares one, so no event falls back to the closed default by accident', () => {
-		const without = [...k.registry.events.values(), ...hostEvents]
+		const without = [...k.registry.events.values()]
 			.filter((event) => event.audience === undefined)
 			.map((event) => event.name);
 		expect(without).toEqual([]);
@@ -424,7 +422,7 @@ describe('every event has an audience', () => {
 			'records.obligation.changed': { recordId: 'r', audience: 'records.view' },
 		};
 		const unknown: string[] = [];
-		for (const event of [...k.registry.events.values(), ...hostEvents]) {
+		for (const event of [...k.registry.events.values()]) {
 			const rule = event.audience;
 			if (rule === undefined) continue;
 			const targets = typeof rule === 'function' ? rule(samples[event.name] ?? {}) : rule;

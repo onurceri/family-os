@@ -10,6 +10,7 @@ import { FamosError, isFamosError } from '@famos/sdk';
 import { Bot, GrammyError, HttpError } from 'grammy';
 import type { CallbackQuery, InlineKeyboardButton, Message, Update } from 'grammy/types';
 import type { SecretBox } from '../secrets/index.ts';
+import { deleteLink } from './admin.ts';
 import type { LinkCode, MemberLink, TelegramStatus } from './schemas.ts';
 import { type TelegramTables, telegramTables } from './tables.ts';
 
@@ -1003,8 +1004,8 @@ export function createTelegram(deps: TelegramDeps) {
 		},
 
 		async unlink(memberId: string): Promise<void> {
-			await removeLink(memberId);
-			await db().deleteFrom('telegram_link_codes').where('member_id', '=', memberId).execute();
+			await deleteLink(deps.db, memberId);
+			linkChanged(memberId);
 		},
 
 		/**

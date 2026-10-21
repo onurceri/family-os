@@ -8,6 +8,7 @@ export * from './api-tokens.ts';
 export * from './apps.ts';
 export * from './audit.ts';
 export * from './changes.ts';
+export * from './channel-actions.ts';
 export * from './core-capabilities.ts';
 export * from './core-events.ts';
 export * from './core-extension.ts';
