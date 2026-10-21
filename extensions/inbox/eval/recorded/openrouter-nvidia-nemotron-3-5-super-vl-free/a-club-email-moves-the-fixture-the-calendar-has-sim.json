@@ -24,8 +24,19 @@
 						"time": "11:00",
 						"timeText": "11:00",
 						"place": "Stadion Bežigrad",
-						"notes": "Bring shin pads and the club shirt. Ivy's team kit bag to the club room.",
-						"quote": "the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad (was 10:00 at Olimpija). Please bring shin pads and the club shirt. Ivy's team kit bag to the club room."
+						"quote": "the fixture for U13 on Saturday 24.10 is moved to 11:00 at Stadion Bežigrad"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Bring shin pads and the club shirt",
+						"detailOf": 0,
+						"quote": "Please bring shin pads and the club shirt"
+					},
+					{
+						"kind": "lists.task",
+						"title": "Take Ivy's team kit bag to the club room",
+						"detailOf": 0,
+						"quote": "Ivy's team kit bag to the club room"
 					}
 				]
 			}

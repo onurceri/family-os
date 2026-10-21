@@ -25,7 +25,7 @@
 							"weekday": 4
 						},
 						"time": "07:30",
-						"timeText": "07:30",
+						"timeText": "17:00",
 						"endTime": "17:00",
 						"place": "School gate",
 						"notes": "Packed lunch. No phones on the bus pls. Ivy must bring her own water bottle",
@@ -33,7 +33,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay the Year 8 trip fee",
+						"title": "Pay the Year 8 trip to Bled",
 						"date": {
 							"text": "Fri 23.10",
 							"day": 23,

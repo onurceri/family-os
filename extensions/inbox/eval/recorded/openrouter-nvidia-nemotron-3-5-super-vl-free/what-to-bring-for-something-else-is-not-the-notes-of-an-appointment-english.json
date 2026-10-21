@@ -8,14 +8,14 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dentist, football kit and groceries",
+				"label": "Dentist, football kit, groceries",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Dentist",
 						"date": {
-							"text": "Thursday",
+							"text": "thurs",
 							"weekday": 4
 						},
 						"quote": "dentist thurs"

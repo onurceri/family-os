@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Shopping on the way back",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",

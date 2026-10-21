@@ -31,7 +31,7 @@
 						"kind": "lists.task",
 						"title": "Cancel dentist appointment",
 						"date": {
-							"text": "12.10.2026",
+							"text": "12.10.2026, 12:00",
 							"day": 12,
 							"month": 10,
 							"year": 2026

@@ -13,7 +13,7 @@ import {
 	unsureFields,
 	whichOne,
 } from '@famos/sdk';
-import { addDays, dateLocale, formatDate, repeatRule, zoned } from '@famos/time';
+import { addDays, clockTimes, dateLocale, formatDate, repeatRule, zoned } from '@famos/time';
 import { MAX_TAG_LENGTH, type Occurrence, tagKey } from '../contract/index.ts';
 import { aiContextEvents } from './context.ts';
 import { startOf } from './moved.ts';
@@ -134,7 +134,19 @@ function endsOnly(ctx: MentionContext, mention: Mention): boolean {
 function startedAt(ctx: MentionContext, mention: Mention) {
 	// An end with no start of its own: the words' clock (`timeText`) is that end, not a start.
 	if (mention.endTime && !mention.time) return null;
-	return endsOnly(ctx, mention) ? null : ctx.time(mention);
+	if (endsOnly(ctx, mention)) return null;
+	const read = ctx.time(mention);
+	// The words' clock that only repeats the end ("bus leaves 07:30, back about 17:00" with the
+	// end copied into `timeText`) is not the start: the start the model gave stands, sure only
+	// when the message holds it.
+	if (read && mention.time && mention.endTime === read.time && mention.time !== read.time)
+		return {
+			time: mention.time,
+			certain: [mention.quote, mention.timeText].some((hay) =>
+				clockTimes(hay ?? '').includes(mention.time as string),
+			),
+		};
+	return read;
 }
 
 const clockOf = (value: string | undefined) =>

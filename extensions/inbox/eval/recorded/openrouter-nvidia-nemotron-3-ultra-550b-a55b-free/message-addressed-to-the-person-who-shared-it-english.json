@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Dentist check-up",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",

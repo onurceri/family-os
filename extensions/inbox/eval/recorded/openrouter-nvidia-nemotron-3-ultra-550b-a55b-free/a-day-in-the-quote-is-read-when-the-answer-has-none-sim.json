@@ -14,10 +14,10 @@
 				"mentions": [
 					{
 						"kind": "lists.task",
-						"title": "Pack swim bag",
+						"title": "Pack swim bag for Thursday",
 						"forMe": true,
 						"date": {
-							"text": "thursday",
+							"text": "Thursday",
 							"weekday": 4
 						},
 						"quote": "swim bag for thursday pls!!"

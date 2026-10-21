@@ -10,6 +10,7 @@
 			"output": {
 				"label": "Football cancelled",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.eventCancel",

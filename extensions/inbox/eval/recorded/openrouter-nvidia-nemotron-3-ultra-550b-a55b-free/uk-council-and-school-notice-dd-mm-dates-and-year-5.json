@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Green bin change and parents' evening",
+				"label": "Green bin and parents' evening",
 				"intent": "actionable",
 				"addressed": [],
 				"mentions": [
@@ -28,6 +28,7 @@
 						"people": [
 							"Oliver"
 						],
+						"peopleGuessed": true,
 						"date": {
 							"text": "15/10",
 							"day": 15,

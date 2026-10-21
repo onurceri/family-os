@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Elif'in doğum günü partisi",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",
@@ -29,6 +28,7 @@
 					{
 						"kind": "lists.task",
 						"title": "Hediye al",
+						"detailOf": 0,
 						"quote": "Hediye almayı unutmayalım"
 					}
 				]

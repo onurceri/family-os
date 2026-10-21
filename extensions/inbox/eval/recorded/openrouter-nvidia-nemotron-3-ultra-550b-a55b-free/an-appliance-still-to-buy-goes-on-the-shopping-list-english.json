@@ -8,14 +8,14 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "New toaster needed",
+				"label": "New toaster",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.shoppingItem",
 						"title": "Toaster",
-						"quote": "can someone pick up a new one when you go into town?"
+						"variant": "household",
+						"quote": "The old toaster finally died, can someone pick up a new one when you go into town?"
 					}
 				]
 			}

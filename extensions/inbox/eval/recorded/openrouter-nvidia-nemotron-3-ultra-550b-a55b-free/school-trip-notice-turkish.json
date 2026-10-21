@@ -29,45 +29,39 @@
 						"timeText": "08:30",
 						"endTime": "15:00",
 						"place": "Gaziantep Hayvanat Bahçesi",
-						"notes": "Beslenme çantası, su şişesi ve yağmurluk getirilecek",
+						"notes": "Öğrencilerin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmaları gerekli.",
 						"quote": "4-B sınıfımız 16 Ekim Cuma günü Gaziantep Hayvanat Bahçesi'ne eğitim gezisine gidecektir. Öğrencilerimiz saat 08:30'da okulda olmalı, dönüş 15:00 civarında olacaktır."
 					},
 					{
 						"kind": "lists.task",
 						"title": "Gezi ücreti ödeme",
+						"people": [
+							"Ayşe"
+						],
+						"forMe": true,
 						"date": {
 							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "150 TL, sınıf öğretmenine elden teslim",
+						"notes": "Ücret: 150 TL. Sınıf öğretmenine elden teslim edilecek.",
 						"quote": "Gezi ücreti 150 TL'dir ve en geç 9 Ekim Perşembe gününe kadar sınıf öğretmenine elden teslim edilmelidir."
 					},
 					{
 						"kind": "lists.task",
 						"title": "İmzalı veli izin formu getir",
+						"people": [
+							"Ayşe"
+						],
+						"forMe": true,
 						"date": {
 							"text": "9 Ekim Perşembe",
 							"day": 9,
 							"month": 10,
 							"weekday": 4
 						},
-						"detailOf": 1,
 						"quote": "İmzalı veli izin formunu da aynı gün getirmeyi unutmayınız."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Beslenme çantası, su şişesi ve yağmurluk hazırla",
-						"forMe": true,
-						"date": {
-							"text": "16 Ekim Cuma",
-							"day": 16,
-							"month": 10,
-							"weekday": 5
-						},
-						"detailOf": 0,
-						"quote": "Öğrencilerimizin yanlarında beslenme çantası, su şişesi ve yağmurluk bulundurmalarını rica ederiz."
 					},
 					{
 						"kind": "calendar.event",

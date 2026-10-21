@@ -35,10 +35,7 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Gezi ücreti öde",
-						"people": [
-							"Deniz"
-						],
+						"title": "Müze gezisi ücretini öde",
 						"date": {
 							"text": "12 Ekim Pazartesi",
 							"day": 12,

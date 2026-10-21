@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Car insurance renewed",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "records.dutyDone",

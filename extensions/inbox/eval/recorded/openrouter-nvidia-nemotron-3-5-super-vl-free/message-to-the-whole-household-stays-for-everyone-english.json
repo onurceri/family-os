@@ -8,12 +8,12 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Family picnic at the lake",
+				"label": "Family picnic",
 				"intent": "actionable",
 				"mentions": [
 					{
 						"kind": "calendar.event",
-						"title": "Family picnic at the lake",
+						"title": "Family picnic",
 						"date": {
 							"text": "Sunday 11 October",
 							"day": 11,

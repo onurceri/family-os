@@ -10,11 +10,12 @@
 			"output": {
 				"label": "Swim course fee paid",
 				"intent": "actionable",
+				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.taskDone",
 						"target": "swim course fee",
-						"quote": "I paid the swim course fee this morning"
+						"quote": "I paid the swim course fee this morning."
 					}
 				]
 			}

@@ -17,7 +17,7 @@
 						"date": {
 							"text": "this Saturday",
 							"weekday": 6,
-							"week": "this"
+							"inDays": 4
 						},
 						"quote": "swim lesson is cancelled this Saturday"
 					}

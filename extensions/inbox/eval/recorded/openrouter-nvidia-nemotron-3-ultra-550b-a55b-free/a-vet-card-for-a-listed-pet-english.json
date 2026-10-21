@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Luna vaccination record",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "pets.treatment",

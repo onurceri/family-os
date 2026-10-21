@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Dentist, football kit, groceries",
+				"label": "Dentist, football kit, shopping",
 				"intent": "actionable",
 				"addressed": [],
 				"mentions": [

@@ -27,8 +27,8 @@
 						},
 						"time": "08:30",
 						"timeText": "08:30",
-						"place": "the club",
-						"notes": "Bring white shirt, shin pads & water",
+						"place": "Club",
+						"notes": "Bring white shirt, shin pads & water. KO 10:00 at Olimpija Park.",
 						"quote": "U13 Eagles away game Sun 25.10 KO 10:00 at Olimpija Park, meet 08:30 at the club. Bring white shirt, shin pads & water."
 					},
 					{
@@ -38,7 +38,7 @@
 							"text": "by Fri",
 							"weekday": 5
 						},
-						"notes": "Bus fee for away game",
+						"notes": "For the bus",
 						"quote": "Pay 10 EUR for the bus by Fri"
 					}
 				]

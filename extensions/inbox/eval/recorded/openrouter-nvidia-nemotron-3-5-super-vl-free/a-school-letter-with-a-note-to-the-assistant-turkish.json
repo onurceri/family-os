@@ -24,6 +24,7 @@
 							"text": "15 Ekim Perşembe",
 							"day": 15,
 							"month": 10,
+							"year": 2026,
 							"weekday": 4
 						},
 						"time": "08:10",
@@ -39,9 +40,10 @@
 							"text": "12 Ekim Pazartesi",
 							"day": 12,
 							"month": 10,
+							"year": 2026,
 							"weekday": 1
 						},
-						"notes": "Ücret: 150 TL, okul idaresine",
+						"notes": "150 TL, okul idaresine",
 						"quote": "Gezi ücreti 150 TL, 12 Ekim Pazartesi’ye kadar okul idaresine ödenmeli."
 					}
 				]

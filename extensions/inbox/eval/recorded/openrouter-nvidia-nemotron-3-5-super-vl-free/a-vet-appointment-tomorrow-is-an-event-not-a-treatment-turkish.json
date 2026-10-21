@@ -14,7 +14,9 @@
 					{
 						"kind": "calendar.event",
 						"title": "Biscuit aşı randevusu",
-						"about": "Biscuit",
+						"people": [
+							"Biscuit"
+						],
 						"date": {
 							"text": "yarın",
 							"inDays": 1
@@ -22,7 +24,7 @@
 						"time": "10:00",
 						"timeText": "10",
 						"place": "veteriner",
-						"quote": "yarın biscuit aşı randevusu saat 10 veteriner, unutma"
+						"quote": "yarın biscuit aşı randevusu saat 10 veteriner"
 					}
 				]
 			}

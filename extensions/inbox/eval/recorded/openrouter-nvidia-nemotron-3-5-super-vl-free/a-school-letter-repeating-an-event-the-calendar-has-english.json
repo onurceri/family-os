@@ -26,11 +26,11 @@
 							"weekday": 4
 						},
 						"time": "07:50",
-						"timeText": "16:30",
+						"timeText": "7:50",
 						"endTime": "16:30",
 						"place": "Postojna Cave",
 						"notes": "Send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. The cost is 14 EUR, payable through the school e-office by 23 October.",
-						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30. Please send a packed lunch, sturdy shoes and a signed permission slip by Monday 26 October. The cost is 14 EUR, payable through the school e-office by 23 October."
+						"quote": "Year 7 class trip to Postojna Cave is on Thursday 29 October. Bus leaves school at 7:50 and returns about 16:30."
 					},
 					{
 						"kind": "lists.task",

@@ -18,8 +18,7 @@
 						"date": {
 							"text": "09/10",
 							"day": 9,
-							"month": 10,
-							"year": 2026
+							"month": 10
 						},
 						"quote": "your green bin collection moves from 08/10 to 09/10 this week"
 					},
@@ -29,8 +28,7 @@
 						"date": {
 							"text": "15/10",
 							"day": 15,
-							"month": 10,
-							"year": 2026
+							"month": 10
 						},
 						"time": "17:30",
 						"timeText": "5.30pm",
@@ -42,8 +40,7 @@
 						"date": {
 							"text": "15/10",
 							"day": 15,
-							"month": 10,
-							"year": 2026
+							"month": 10
 						},
 						"quote": "Please book a slot with the class teacher"
 					}

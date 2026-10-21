@@ -10,7 +10,6 @@
 			"output": {
 				"label": "Picture wire bought",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "lists.bought",

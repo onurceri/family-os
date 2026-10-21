@@ -37,6 +37,7 @@
 				"Moves the event that is already there (English)",
 				"A cancelled date of a weekly activity, in a messy message (English)",
 				"Something to buy that is already on the list (English)",
+				"A school letter repeating an event the calendar has (English)",
 				"A cancellation names the event, not another one with that word on its day (English)",
 				"A cancellation naming another day says which day the event is on (English)",
 				"A cancellation this week takes the date in this week (English)",
@@ -50,7 +51,6 @@
 				"What to bring for something else is not the notes of an appointment (English)",
 				"What to bring to a match is the notes of the match, not the shopping list (English)",
 				"Task notes say what the amount is (English)",
-				"A school letter with a note to the assistant (English)",
 				"A school letter with a note to the assistant (Turkish)",
 				"A vet card for a listed pet (English)",
 				"A garage invoice for a listed car (English)",
@@ -67,7 +67,6 @@
 				"A coach message: the game, what to bring, the bus fee (sim)",
 				"A recital: the rule and what to bring are its notes (sim)",
 				"A club email moves the fixture the calendar has (sim)",
-				"A school trip message for one child (sim)",
 				"A school email changes the time of the trip of class 1B (sim)",
 				"A flat message with nothing installed for it (sim)",
 				"A letter that names nobody marks Who as \"check this\" (sim)",
@@ -77,20 +76,23 @@
 				"An invoice names a car by its plate (sim fixture)",
 				"Ticking off an item names the right one of two lists (sim fixture)",
 				"New items go to the list that fits, or are marked (sim fixture)",
-				"A move this week finds the moved date, not the series (sim fixture)"
+				"A move this week finds the moved date, not the series (sim fixture)",
+				"A day in the quote is read when the answer has none (sim)"
 			],
 			"failing": {
 				"An adult child set it up for their parents": [
 					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma"
 				],
-				"A school letter repeating an event the calendar has (English)": [
-					"calendar.createEvent: the trip on 29 Oct 07:50"
+				"A school letter with a note to the assistant (English)": [
+					"the item was read (failed)",
+					"calendar.createEvent: the trip on 15 Oct 08:10",
+					"lists.addTask: the fee by 12 Oct"
+				],
+				"A school trip message for one child (sim)": [
+					"calendar.createEvent: the trip on Thu 29 Oct 07:30 for Ivy"
 				],
 				"A class email for 4B changes only the trip of 4B (sim)": [
 					"calendar.createEvent: the lake walk on Fri 6 Nov 13:00"
-				],
-				"A day in the quote is read when the answer has none (sim)": [
-					"calendar.createEvent: the dentist on 2 Nov"
 				]
 			},
 			"runs": 1,
@@ -126,7 +128,7 @@
 				"Moves the event that is already there (English)": 1,
 				"A cancelled date of a weekly activity, in a messy message (English)": 1,
 				"Something to buy that is already on the list (English)": 1,
-				"A school letter repeating an event the calendar has (English)": 0,
+				"A school letter repeating an event the calendar has (English)": 1,
 				"A cancellation names the event, not another one with that word on its day (English)": 1,
 				"A cancellation naming another day says which day the event is on (English)": 1,
 				"A cancellation this week takes the date in this week (English)": 1,
@@ -140,7 +142,7 @@
 				"What to bring for something else is not the notes of an appointment (English)": 1,
 				"What to bring to a match is the notes of the match, not the shopping list (English)": 1,
 				"Task notes say what the amount is (English)": 1,
-				"A school letter with a note to the assistant (English)": 1,
+				"A school letter with a note to the assistant (English)": 0,
 				"A school letter with a note to the assistant (Turkish)": 1,
 				"A vet card for a listed pet (English)": 1,
 				"A garage invoice for a listed car (English)": 1,
@@ -157,7 +159,7 @@
 				"A coach message: the game, what to bring, the bus fee (sim)": 1,
 				"A recital: the rule and what to bring are its notes (sim)": 1,
 				"A club email moves the fixture the calendar has (sim)": 1,
-				"A school trip message for one child (sim)": 1,
+				"A school trip message for one child (sim)": 0,
 				"A school email changes the time of the trip of class 1B (sim)": 1,
 				"A flat message with nothing installed for it (sim)": 1,
 				"A class email for 4B changes only the trip of 4B (sim)": 0,
@@ -169,7 +171,12 @@
 				"Ticking off an item names the right one of two lists (sim fixture)": 1,
 				"New items go to the list that fits, or are marked (sim fixture)": 1,
 				"A move this week finds the moved date, not the series (sim fixture)": 1,
-				"A day in the quote is read when the answer has none (sim)": 0
+				"A day in the quote is read when the answer has none (sim)": 1
+			},
+			"harmful": {
+				"A school trip message for one child (sim)": [
+					"calendar.createEvent: the trip on Thu 29 Oct 07:30 for Ivy"
+				]
 			},
 			"cost": 0
 		},
@@ -214,6 +221,8 @@
 				"A cancellation names the event, not another one with that word on its day (English)",
 				"A cancellation naming another day says which day the event is on (English)",
 				"A cancellation this week takes the date in this week (English)",
+				"A cancelled date with another day instead is one move (English)",
+				"A time that only says when it is over is not the start (English)",
 				"A letter a day off an event the calendar has moves it (English)",
 				"Event with a day but no time (English)",
 				"Task nobody is named for is not silently assigned (English)",
@@ -222,7 +231,6 @@
 				"What to bring for something else is not the notes of an appointment (English)",
 				"What to bring to a match is the notes of the match, not the shopping list (English)",
 				"Task notes say what the amount is (English)",
-				"A school letter with a note to the assistant (English)",
 				"A school letter with a note to the assistant (Turkish)",
 				"A vet card for a listed pet (English)",
 				"A garage invoice for a listed car (English)",
@@ -239,7 +247,6 @@
 				"A recital: the rule and what to bring are its notes (sim)",
 				"A club email moves the fixture the calendar has (sim)",
 				"A school trip message for one child (sim)",
-				"A school email changes the time of the trip of class 1B (sim)",
 				"A flat message with nothing installed for it (sim)",
 				"A letter that names nobody marks Who as \"check this\" (sim)",
 				"A move names the swim lesson of Ivy, not Tom (sim fixture)",
@@ -254,15 +261,14 @@
 				"An adult child set it up for their parents": [
 					"calendar.createEvent: check-up on 21 Oct 10:30 for Ali and Fatma"
 				],
-				"A cancelled date with another day instead is one move (English)": [
-					"calendar.changeEvent: the training moved to Thursday 15 Oct at 18:00",
-					"no calendar.deleteEvent"
-				],
-				"A time that only says when it is over is not the start (English)": [
-					"calendar.createEvent: 16:00 (the return) is not the start of the trip"
+				"A school letter with a note to the assistant (English)": [
+					"calendar.createEvent: the trip on 15 Oct 08:10"
 				],
 				"A child: bins tonight is a task for today (sim)": [
 					"lists.addTask: the bins, due today"
+				],
+				"A school email changes the time of the trip of class 1B (sim)": [
+					"lists.addTask: the 25 EUR bus fee by Mon 26 Oct"
 				],
 				"A class email for 4B changes only the trip of 4B (sim)": [
 					"calendar.createEvent: the lake walk on Fri 6 Nov 13:00"
@@ -308,8 +314,8 @@
 				"A cancellation names the event, not another one with that word on its day (English)": 1,
 				"A cancellation naming another day says which day the event is on (English)": 1,
 				"A cancellation this week takes the date in this week (English)": 1,
-				"A cancelled date with another day instead is one move (English)": 0,
-				"A time that only says when it is over is not the start (English)": 0,
+				"A cancelled date with another day instead is one move (English)": 1,
+				"A time that only says when it is over is not the start (English)": 1,
 				"A letter a day off an event the calendar has moves it (English)": 1,
 				"Event with a day but no time (English)": 1,
 				"Task nobody is named for is not silently assigned (English)": 1,
@@ -318,7 +324,7 @@
 				"What to bring for something else is not the notes of an appointment (English)": 1,
 				"What to bring to a match is the notes of the match, not the shopping list (English)": 1,
 				"Task notes say what the amount is (English)": 1,
-				"A school letter with a note to the assistant (English)": 1,
+				"A school letter with a note to the assistant (English)": 0,
 				"A school letter with a note to the assistant (Turkish)": 1,
 				"A vet card for a listed pet (English)": 1,
 				"A garage invoice for a listed car (English)": 1,
@@ -336,7 +342,7 @@
 				"A recital: the rule and what to bring are its notes (sim)": 1,
 				"A club email moves the fixture the calendar has (sim)": 1,
 				"A school trip message for one child (sim)": 1,
-				"A school email changes the time of the trip of class 1B (sim)": 1,
+				"A school email changes the time of the trip of class 1B (sim)": 0,
 				"A flat message with nothing installed for it (sim)": 1,
 				"A class email for 4B changes only the trip of 4B (sim)": 0,
 				"A letter that names nobody marks Who as \"check this\" (sim)": 1,
@@ -350,11 +356,8 @@
 				"A day in the quote is read when the answer has none (sim)": 0
 			},
 			"harmful": {
-				"A cancelled date with another day instead is one move (English)": [
-					"no calendar.deleteEvent"
-				],
-				"A time that only says when it is over is not the start (English)": [
-					"calendar.createEvent: 16:00 (the return) is not the start of the trip"
+				"A school email changes the time of the trip of class 1B (sim)": [
+					"lists.addTask: the 25 EUR bus fee by Mon 26 Oct"
 				]
 			},
 			"cost": 0

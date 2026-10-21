@@ -14,7 +14,7 @@
 				"mentions": [
 					{
 						"kind": "calendar.eventChange",
-						"target": "Parents' evening",
+						"target": "Parents' evening at Ivy's school",
 						"date": {
 							"text": "Tuesday 20 October",
 							"day": 20,

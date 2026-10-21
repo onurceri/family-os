@@ -8,22 +8,20 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Su tesisatçısı geliyor",
+				"label": "Su tesisatçısı randevusu",
 				"intent": "actionable",
-				"addressed": [],
 				"mentions": [
 					{
 						"kind": "calendar.event",
 						"title": "Su tesisatçısı",
 						"date": {
 							"text": "Yarın",
-							"inDays": 1,
-							"weekday": 3
+							"inDays": 1
 						},
 						"time": "09:00",
 						"timeText": "9'da",
 						"notes": "Evde biri olmalı",
-						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı."
+						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı"
 					}
 				]
 			}

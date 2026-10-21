@@ -21,13 +21,12 @@
 						],
 						"date": {
 							"text": "04/10/2026",
-							"numeric": "04/10/2026",
+							"numeric": "04.10.2026",
 							"day": 4,
 							"month": 10,
 							"year": 2026
 						},
 						"amount": "24",
-						"about": "Our house",
 						"quote": "Bosch Serie 4 dishwasher SMS4HVI33G x1. Warranty: 2 years from date of purchase."
 					}
 				]

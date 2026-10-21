@@ -450,6 +450,32 @@ describe('a cancelled date with another day instead', () => {
 	});
 });
 
+describe('a start the words repeat as the end', () => {
+	it('stays the start the model gave when the clock of its words is the end (answer of a free model)', async () => {
+		const outcome = await read('A school trip message for one child (sim)', {
+			label: 'Trip to Bled',
+			intent: 'actionable',
+			mentions: [
+				{
+					kind: 'calendar.event',
+					title: 'Year 8 trip to Bled',
+					people: ['Ivy'],
+					date: { text: 'Thu 29.10', day: 29, month: 10, year: 2026, weekday: 4 },
+					time: '07:30',
+					timeText: '17:00',
+					endTime: '17:00',
+					place: 'School gate',
+					quote:
+						'Year 8 trip to Bled Thu 29.10: bus leaves school gate 07:30, back about 17:00. Packed lunch.',
+				},
+			],
+		});
+		const event = outcome.drafts.find((d) => d.actionId === 'calendar.createEvent');
+		expect(event?.input).toMatchObject({ date: '2026-10-29', startTime: '07:30', endTime: '17:00' });
+		expect(harmfulChecks(outcome)).toEqual([]);
+	});
+});
+
 describe('a time that only says when something is over', () => {
 	const trip = (extra: Record<string, unknown>) =>
 		read('A time that only says when it is over is not the start (English)', {

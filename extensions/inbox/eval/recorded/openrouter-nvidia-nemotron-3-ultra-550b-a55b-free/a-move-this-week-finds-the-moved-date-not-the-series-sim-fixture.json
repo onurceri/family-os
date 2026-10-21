@@ -17,8 +17,7 @@
 						"target": "Leo swimming",
 						"date": {
 							"text": "Thursday",
-							"weekday": 4,
-							"week": "this"
+							"weekday": 4
 						},
 						"time": "17:00",
 						"timeText": "5pm",

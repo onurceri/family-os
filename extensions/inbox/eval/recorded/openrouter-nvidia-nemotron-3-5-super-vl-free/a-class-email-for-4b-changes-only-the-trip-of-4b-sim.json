@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "inbox.extract",
-			"error": "timeout"
-		},
-		{
-			"kind": "object",
-			"feature": "inbox.extract",
 			"output": {
 				"label": "Class trip to Bled",
 				"intent": "actionable",
@@ -38,29 +33,18 @@
 					},
 					{
 						"kind": "lists.task",
-						"title": "Pay the class trip fee",
+						"title": "Pay the trip fee and return the signed permission slip",
 						"date": {
 							"text": "Thursday 29 October",
 							"day": 29,
 							"month": 10,
 							"weekday": 4
 						},
-						"notes": "Fee: 22 EUR, together with the signed permission slip",
+						"notes": "Fee: 22 EUR",
 						"quote": "The trip costs 22 EUR, to be paid together with the signed permission slip by Thursday 29 October."
-					},
-					{
-						"kind": "lists.task",
-						"title": "Return the signed permission slip",
-						"date": {
-							"text": "Thursday 29 October",
-							"day": 29,
-							"month": 10,
-							"weekday": 4
-						},
-						"detailOf": 1,
-						"quote": "to be paid together with the signed permission slip by Thursday 29 October."
 					}
-				]
+				],
+				"addressed": []
 			}
 		}
 	]

@@ -8,7 +8,7 @@
 			"kind": "object",
 			"feature": "inbox.extract",
 			"output": {
-				"label": "Grandma's banana bread recipe",
+				"label": "Grandma's banana bread",
 				"intent": "actionable",
 				"addressed": [],
 				"mentions": [

@@ -16,13 +16,12 @@
 						"title": "Plumber",
 						"date": {
 							"text": "Yarın sabah",
-							"weekday": 3,
 							"inDays": 1
 						},
 						"time": "09:00",
 						"timeText": "9'da",
 						"notes": "Evde biri olmalı",
-						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı."
+						"quote": "Yarın sabah 9'da su tesisatçısı gelecek, evde biri olmalı"
 					}
 				]
 			}

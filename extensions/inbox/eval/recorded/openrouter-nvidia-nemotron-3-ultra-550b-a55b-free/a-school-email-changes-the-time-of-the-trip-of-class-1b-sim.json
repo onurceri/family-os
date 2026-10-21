@@ -35,20 +35,13 @@
 							"month": 10,
 							"weekday": 1
 						},
-						"detailOf": 0,
+						"notes": "For the 1B trip to Bled",
 						"quote": "Please return the signed permission slip by Monday 26 October"
 					},
 					{
 						"kind": "lists.task",
 						"title": "Pay the 25 EUR bus fee",
-						"date": {
-							"text": "Monday 26 October",
-							"day": 26,
-							"month": 10,
-							"weekday": 1
-						},
-						"detailOf": 0,
-						"notes": "Pay in the school app",
+						"notes": "In the school app, for the 1B trip to Bled",
 						"quote": "pay the 25 EUR bus fee in the school app"
 					}
 				]
