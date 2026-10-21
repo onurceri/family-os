@@ -403,6 +403,8 @@
 	"ai_no_key": "Anahtar yok",
 	"ai_key_unreadable": "Anahtar okunamıyor: yeniden gir",
 	"ai_key_dropped_on_move": "Adres değişince kayıtlı anahtar silinir. Kullanmaya devam etmek için yeniden gir.",
+	"ai_key_dropped_now": "Adres değiştiği için kayıtlı anahtar silindi. Yeni adresin anahtarını girip yeniden kaydet.",
+	"ai_key_failed": "Sağlayıcı eklendi ama anahtarı kaydedilemedi. Sağlayıcıyı açıp anahtarı yeniden gir.",
 	"ai_remove_key": "Anahtarı kaldır",
 	"ai_test": "Bağlantıyı dene",
 	"ai_testing": "Deneniyor…",

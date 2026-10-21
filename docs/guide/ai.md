@@ -30,7 +30,7 @@ Tap a provider (or **Add provider**) to open it in a panel, a sheet on phones. T
 
 Under **Monthly limits** a **Budget (USD)** (as reported by the provider) or a number of **Model calls** pauses AI until next month when it is reached. Months follow the family's time zone. Leave a field empty for no limit. Usage for the month, per feature, is shown under **This month**.
 
-Keys are stored encrypted and are never shown again. Changing a provider's address removes its stored key, so a key can never be sent somewhere else by mistake. You enter it again together with the new address.
+Keys are stored encrypted and are never shown again. Changing a provider's address removes its stored key, so a key can never be sent somewhere else by mistake. You enter it again together with the new address; if you save the new address without a key, the panel stays open and asks for it.
 
 ## What the AI sees
 

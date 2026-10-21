@@ -84,6 +84,11 @@ export const aiAreasChanged = defineEvent(
 	{ audience: CORE_CAPABILITIES.aiManage.id },
 );
 
+/** A provider or the model chosen for a job changed: family search brings its index in line. */
+export const aiModelsChanged = defineEvent('core.aiModels.changed', z.object({}), {
+	audience: CORE_CAPABILITIES.aiManage.id,
+});
+
 /** The display itself hears of it too: it checks again and falls back to pairing when revoked. */
 export const deviceChanged = defineEvent(
 	'core.device.changed',
@@ -120,6 +125,7 @@ export const coreEvents = [
 	displayFitChanged,
 	featuresChanged,
 	aiAreasChanged,
+	aiModelsChanged,
 	notificationCreated,
 	notificationRead,
 ];

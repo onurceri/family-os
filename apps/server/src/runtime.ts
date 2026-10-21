@@ -269,6 +269,7 @@ export function openRuntime(
 		secrets: createExtensionSecrets(config.secret),
 		http: options.http ?? createGuardedHttp(),
 		identity: identity.admin,
+		aiSettings: ai,
 		llm,
 		extensions: loaded,
 		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),

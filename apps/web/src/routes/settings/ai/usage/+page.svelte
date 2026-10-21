@@ -36,7 +36,7 @@
 		const num = (s: string) => (s.trim() ? Number(s.replace(',', '.')) : null);
 		try {
 			unwrap(
-				await api.PUT('/api/v1/ai/limits', {
+				await api.POST('/api/v1/actions/core.setAiLimits', {
 					body: { monthlyCostLimit: num(limits.cost), monthlyCallLimit: num(limits.calls) },
 				}),
 			);

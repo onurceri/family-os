@@ -598,9 +598,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 
 	mountExtensionRoutes(app, deps.extensions ?? loadedWeb(deps.kernel));
 	mountDeviceRoutes(app, deps.kernel, deps.secureCookies, clientIp, deps.publicUrl);
-	mountAiRoutes(app, deps.ai, deps.kernel.access, deps.kernel.ctx.family, () =>
-		deps.kernel.reconcileSearch(),
-	);
+	mountAiRoutes(app, deps.ai, deps.kernel);
 	mountPushRoutes(app, deps.webPush, deps.kernel);
 	mountApiTokenRoutes(app, deps.kernel);
 	mountAppRoutes(app, deps.kernel);

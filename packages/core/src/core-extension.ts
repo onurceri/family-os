@@ -1,6 +1,7 @@
 import {
 	type Actor,
 	AI_AREA_ACCESS,
+	type AiSettingsAdmin,
 	type AnyActionDefinition,
 	BUILT_IN_ROLES,
 	type DbExecutor,
@@ -43,6 +44,7 @@ import type { Access } from './access.ts';
 import { type ActionRunner, GONE, SETTLED } from './action-runner.ts';
 import { createAdminActions } from './admin-actions.ts';
 import { type AiAreas, readAiAreas, writeAiAreas } from './ai-areas.ts';
+import { createAiSettingsActions } from './ai-settings-actions.ts';
 import type { ApiTokenService } from './api-tokens.ts';
 import { revokeTokensOf } from './api-tokens.ts';
 import type { AppService } from './apps.ts';
@@ -446,6 +448,7 @@ export interface CoreExtensionDeps {
 	/** Family search: its jobs, the `core.searchFamily` action and routes. */
 	search: Pick<Search, 'jobs' | 'actions' | 'routes'>;
 	identity: IdentityAdmin;
+	aiSettings: AiSettingsAdmin;
 	runner: () => ActionRunner;
 	devices: () => DeviceService;
 	apps: () => AppService;
@@ -1900,6 +1903,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.search.actions,
 			...memory.actions,
 			...admin.actions,
+			...createAiSettingsActions({ settings: deps.aiSettings }),
 			...deps.extensionInstall.actions,
 		],
 		jobs: [

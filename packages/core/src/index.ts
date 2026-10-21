@@ -2,6 +2,7 @@ export * from './access.ts';
 export * from './action-runner.ts';
 export * from './admin-actions.ts';
 export * from './ai-areas.ts';
+export * from './ai-settings-actions.ts';
 export { type ApiOperation, describeField, pathParams, publicPath } from './api-operations.ts';
 export * from './api-tokens.ts';
 export * from './apps.ts';

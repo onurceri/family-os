@@ -3,6 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFsFileStore } from '@famos/adapters/files-fs';
 import {
+	type AiSettingsService,
+	aiMigrations,
+	createAiSettings,
+	createSecretBox,
+} from '@famos/adapters/llm-aisdk';
+import {
 	createSqliteQueue,
 	queueMigrations,
 	type SqliteJobQueue,
@@ -509,6 +515,8 @@ export const TEST_SECRET = 'test-secret';
 export interface TestKernel extends Kernel {
 	readonly clock: TestClock;
 	readonly identity: FakeIdentity;
+	/** The AI settings on the same database (providers, roles, limits, privacy, switches). */
+	readonly ai: AiSettingsService;
 	readonly llm: FakeLlm;
 	readonly http: FakeHttp;
 	readonly queue: SqliteJobQueue;
@@ -559,6 +567,13 @@ export async function createTestKernel(
 	const http = createFakeHttp();
 	const filesDir = await mkdtemp(join(tmpdir(), 'famos-files-'));
 	const queue = createSqliteQueue({ db: handle.db, clock, ids: uuidv7Ids });
+	const ai = createAiSettings({
+		db: handle.db,
+		box: createSecretBox(TEST_SECRET),
+		clock,
+		ids: uuidv7Ids,
+		timeZone: async () => 'UTC',
+	});
 	const kernel = createKernel({
 		db: handle.db,
 		queue,
@@ -569,9 +584,13 @@ export async function createTestKernel(
 		secrets: createExtensionSecrets(TEST_SECRET),
 		http,
 		identity,
+		aiSettings: ai,
 		llm: options.llm ?? llm,
 		extensions: options.extensions ?? [],
-		infrastructureMigrations: [{ scope: 'queue', migrations: queueMigrations }],
+		infrastructureMigrations: [
+			{ scope: 'queue', migrations: queueMigrations },
+			{ scope: 'ai', migrations: aiMigrations },
+		],
 		appVersion: '0.0.0-test',
 		...(options.channels && { channels: options.channels }),
 		...(options.publicUrl && { publicUrl: options.publicUrl }),
@@ -590,6 +609,7 @@ export async function createTestKernel(
 		...kernel,
 		clock,
 		identity,
+		ai,
 		llm,
 		http,
 		queue,

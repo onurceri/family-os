@@ -2,6 +2,7 @@ import type {
 	ActionInvoker,
 	Actor,
 	AiActionInfo,
+	AiSettingsAdmin,
 	AnyActionDefinition,
 	AnyJobDefinition,
 	Clock,
@@ -35,7 +36,13 @@ import { type AppService, createAppService } from './apps.ts';
 import { type AuditTrail, createAuditTrail } from './audit.ts';
 import { DEFAULT_DRAFT_NOTIFY_DELAY_MS } from './auto-approval.ts';
 import { type ChangesReader, createChanges } from './changes.ts';
-import { aiAreasChanged, featuresChanged, memberChanged, roleChanged } from './core-events.ts';
+import {
+	aiAreasChanged,
+	aiModelsChanged,
+	featuresChanged,
+	memberChanged,
+	roleChanged,
+} from './core-events.ts';
 import { createCoreExtension, END_CREDENTIALS_JOB } from './core-extension.ts';
 import { createDeviceService, type DeviceService } from './devices.ts';
 import { createEventBus, type InProcessEventBus } from './event-bus.ts';
@@ -89,6 +96,8 @@ export interface KernelOptions {
 	/** Guarded outbound HTTP for extensions' jobs (SSRF protection, size cap, timeout). */
 	http: ExternalHttp;
 	identity: IdentityAdmin;
+	/** The AI settings the admin actions write, on the unit of work's own connection. */
+	aiSettings: AiSettingsAdmin;
 	/** Model access for background jobs only. */
 	llm: LlmPort;
 	extensions: readonly ExtensionDefinition[];
@@ -310,6 +319,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		themes,
 		search,
 		identity: options.identity,
+		aiSettings: options.aiSettings,
 		appVersion: options.appVersion,
 		...(options.setupCode !== undefined && { setupCode: options.setupCode }),
 		draftNotifyDelayMs: options.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
@@ -357,6 +367,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		await aiAreas.refresh(options.db);
 		await reconcileSearch();
 	});
+	bus.on(aiModelsChanged, () => reconcileSearch());
 	// Archiving a member removes their sign-in. Requests are refused anyway (the actor must be active),
 	// this also removes the stored sessions and credentials. Runs after the commit: identity shares the connection.
 	bus.on(memberChanged, async ({ memberId, endSessions }) => {

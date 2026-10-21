@@ -27,7 +27,7 @@ test('a model that cannot answer leaves a failed item with an explanation and a 
 		'/api/v1/ai/settings',
 	);
 	const none = Object.fromEntries(Object.keys(settings.roles).map((role) => [role, null]));
-	await api(page, 'PUT', '/api/v1/ai/roles', none);
+	await api(page, 'POST', '/api/v1/actions/core.setAiRoles', none);
 
 	const date = nextWeek();
 	model.answer(
@@ -44,7 +44,7 @@ test('a model that cannot answer leaves a failed item with an explanation and a 
 	expect(model.prompts).toHaveLength(0);
 
 	// The admin sets the models up again; "Try again" reads the same item and drafts appear.
-	await api(page, 'PUT', '/api/v1/ai/roles', settings.roles);
+	await api(page, 'POST', '/api/v1/actions/core.setAiRoles', settings.roles);
 	await page.getByRole('button', { name: 'Try again' }).click();
 	const card = draftCard(page, 'Zoo trip');
 	await expect(card).toBeVisible();

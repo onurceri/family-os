@@ -6,6 +6,7 @@
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 	import {
 		DEFAULT_URLS,
 		KINDS,
@@ -38,6 +39,8 @@
 	let baseUrl = $state('');
 	let apiKey = $state('');
 	let error = $state(false);
+	/** The address was changed and the stored key went with it. */
+	let keyDropped = $state(false);
 	let test = $state<ModelList | 'running' | null>(null);
 	let form = $state<HTMLFormElement>();
 
@@ -54,6 +57,7 @@
 		if (shownFor === key) return;
 		shownFor = key;
 		error = false;
+		keyDropped = false;
 		test = null;
 		apiKey = '';
 		if (provider) {
@@ -71,33 +75,55 @@
 		baseUrl = DEFAULT_URLS[kind];
 	}
 
+	async function setKey(providerId: string, value: string | null) {
+		unwrap(
+			await api.PUT('/api/v1/ai/providers/{providerId}/key', {
+				params: { path: { providerId } },
+				body: { apiKey: value },
+			}),
+		);
+	}
+
 	async function save() {
 		error = false;
+		keyDropped = false;
 		try {
 			if (provider) {
-				unwrap(
-					await api.PATCH('/api/v1/ai/providers/{providerId}', {
-						params: { path: { providerId: provider.id } },
-						body: {
-							name,
-							baseUrl,
-							...(apiKey.trim() && { apiKey: apiKey.trim() }),
-						},
+				const result = unwrap(
+					await api.POST('/api/v1/actions/core.updateAiProvider', {
+						body: { providerId: provider.id, name, baseUrl },
 					}),
 				);
+				if (result.status !== 'applied') throw new Error('not applied');
+				if (apiKey.trim()) await setKey(provider.id, apiKey.trim());
+				onchanged();
+				// A new address took the stored key with it: the panel stays to ask for it again.
+				if (result.output.keyDropped && !apiKey.trim()) {
+					keyDropped = true;
+					apiKey = '';
+					return;
+				}
 			} else {
-				unwrap(
-					await api.POST('/api/v1/ai/providers', {
+				const result = unwrap(
+					await api.POST('/api/v1/actions/core.addAiProvider', {
 						body: {
 							name,
 							kind,
 							...(baseUrl.trim() && { baseUrl: baseUrl.trim() }),
-							...(apiKey.trim() && { apiKey: apiKey.trim() }),
 						},
 					}),
 				);
+				if (result.status !== 'applied') throw new Error('not applied');
+				if (apiKey.trim()) {
+					// The provider is there now; if its key cannot be saved it is said once the panel closes.
+					try {
+						await setKey(result.output.id, apiKey.trim());
+					} catch {
+						toasts.show(t('ai_key_failed'));
+					}
+				}
+				onchanged();
 			}
-			onchanged();
 			onclose();
 		} catch {
 			error = true;
@@ -122,20 +148,27 @@
 
 	async function removeKey() {
 		if (!provider) return;
-		await api.PATCH('/api/v1/ai/providers/{providerId}', {
-			params: { path: { providerId: provider.id } },
-			body: { apiKey: null },
-		});
-		onchanged();
+		try {
+			await setKey(provider.id, null);
+			onchanged();
+		} catch {
+			error = true;
+		}
 	}
 
 	async function remove() {
 		if (!provider) return;
-		await api.DELETE('/api/v1/ai/providers/{providerId}', {
-			params: { path: { providerId: provider.id } },
-		});
-		onchanged();
-		onclose();
+		try {
+			unwrap(
+				await api.POST('/api/v1/actions/core.deleteAiProvider', {
+					body: { providerId: provider.id },
+				}),
+			);
+			onchanged();
+			onclose();
+		} catch {
+			error = true;
+		}
 	}
 
 	const managed = $derived(provider?.managed === true);
@@ -236,6 +269,9 @@
 				{/if}
 				{#if provider?.hasKey && baseUrl.trim() !== provider.baseUrl && !apiKey.trim()}
 					<Notice tone="warn">{t('ai_key_dropped_on_move')}</Notice>
+				{/if}
+				{#if keyDropped}
+					<Notice tone="warn">{t('ai_key_dropped_now')}</Notice>
 				{/if}
 				{#if error}<Notice tone="alert">{t('error_generic')}</Notice>{/if}
 			</form>

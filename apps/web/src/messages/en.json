@@ -403,6 +403,8 @@
 	"ai_no_key": "No key",
 	"ai_key_unreadable": "Key unreadable: enter it again",
 	"ai_key_dropped_on_move": "The stored key is removed when the address changes. Enter it again to keep using it.",
+	"ai_key_dropped_now": "The address changed, so the saved key was removed. Enter the key for the new address and save again.",
+	"ai_key_failed": "The provider was added, but its key could not be saved. Open it and enter the key again.",
 	"ai_remove_key": "Remove key",
 	"ai_test": "Test connection",
 	"ai_testing": "Testing…",

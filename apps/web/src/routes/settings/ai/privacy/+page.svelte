@@ -33,7 +33,9 @@
 		error = null;
 		const next = { ...settings.privacy, ...patch };
 		try {
-			settings.privacy = unwrap(await api.PUT('/api/v1/ai/privacy', { body: next }));
+			const result = unwrap(await api.POST('/api/v1/actions/core.setAiPrivacy', { body: next }));
+			if (result.status !== 'applied') throw new Error('not applied');
+			settings.privacy = result.output;
 			toasts.show(t('ai_saved'));
 		} catch {
 			error = t('error_generic');
@@ -51,7 +53,9 @@
 		if (!settings) return;
 		error = null;
 		try {
-			settings.switches = unwrap(await api.PUT('/api/v1/ai/switches', { body: next }));
+			const result = unwrap(await api.POST('/api/v1/actions/core.setAiSwitches', { body: next }));
+			if (result.status !== 'applied') throw new Error('not applied');
+			settings.switches = result.output;
 			toasts.show(t('ai_saved'));
 		} catch {
 			error = t('error_generic');

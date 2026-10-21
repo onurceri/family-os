@@ -468,18 +468,27 @@ describe('HTTP API', () => {
 	it('lets parents manage AI settings without ever returning keys', async () => {
 		expect((await call('GET', '/api/v1/ai/settings')).status).toBe(401);
 		const { cookie } = await setupAndSignIn();
-		const created = await call(
+		const added = await call(
 			'POST',
-			'/api/v1/ai/providers',
-			{ name: 'OpenRouter', kind: 'openrouter', apiKey: 'sk-or-secret' },
+			'/api/v1/actions/core.addAiProvider',
+			{ name: 'OpenRouter', kind: 'openrouter' },
 			cookie,
 		);
-		expect(created.status).toBe(201);
-		expect(created.body).toMatchObject({ kind: 'openrouter', hasKey: true, keyReadable: true });
+		expect(added.status).toBe(200);
+		expect(added.body.output).toMatchObject({ kind: 'openrouter', hasKey: false });
+		const keyed = await call(
+			'PUT',
+			`/api/v1/ai/providers/${added.body.output.id}/key`,
+			{ apiKey: 'sk-or-secret' },
+			cookie,
+		);
+		expect(keyed.status).toBe(200);
+		expect(keyed.body).toMatchObject({ kind: 'openrouter', hasKey: true, keyReadable: true });
+		const created = { body: { id: added.body.output.id as string } };
 		const model = { providerId: created.body.id, model: 'google/gemini-flash' };
 		const roles = await call(
-			'PUT',
-			'/api/v1/ai/roles',
+			'POST',
+			'/api/v1/actions/core.setAiRoles',
 			{ fast: model, vision: model, smart: model },
 			cookie,
 		);
@@ -491,17 +500,92 @@ describe('HTTP API', () => {
 		expect(settings.body.privacy.sendVoice).toBe(true);
 		const speech = { providerId: created.body.id, model: 'whisper-large-v3' };
 		await call(
-			'PUT',
-			'/api/v1/ai/roles',
+			'POST',
+			'/api/v1/actions/core.setAiRoles',
 			{ fast: model, vision: model, smart: model, transcribe: speech },
 			cookie,
 		);
-		await call('PUT', '/api/v1/ai/privacy', { ...settings.body.privacy, sendVoice: false }, cookie);
+		await call(
+			'POST',
+			'/api/v1/actions/core.setAiPrivacy',
+			{ ...settings.body.privacy, sendVoice: false },
+			cookie,
+		);
 		settings = await call('GET', '/api/v1/ai/settings', undefined, cookie);
 		expect(settings.body.roles.transcribe).toEqual(speech);
 		expect(settings.body.privacy.sendVoice).toBe(false);
 		expect(JSON.stringify(settings.body)).not.toContain('sk-or-secret');
 		expect((await call('GET', '/api/v1/ai/usage', undefined, cookie)).body.total.calls).toBe(0);
+	});
+
+	it('keeps a provider key in a route that records itself and never shows the key', async () => {
+		const { cookie } = await setupAndSignIn();
+		const added = await call(
+			'POST',
+			'/api/v1/actions/core.addAiProvider',
+			{ name: 'Home', kind: 'openai-compatible', baseUrl: 'https://llm.example.com/v1' },
+			cookie,
+		);
+		const id = added.body.output.id as string;
+		const key = `/api/v1/ai/providers/${id}/key`;
+		expect((await call('PUT', key, { apiKey: 'sk-secret' })).status).toBe(401);
+		const keyed = await call('PUT', key, { apiKey: 'sk-secret' }, cookie);
+		expect(keyed.status).toBe(200);
+		expect(keyed.body).toMatchObject({ id, hasKey: true });
+		expect(JSON.stringify(keyed.body)).not.toContain('sk-secret');
+
+		// Moving the provider takes the key away; the answer says so.
+		const moved = await call(
+			'POST',
+			'/api/v1/actions/core.updateAiProvider',
+			{ providerId: id, baseUrl: 'https://other.example.com/v1' },
+			cookie,
+		);
+		expect(moved.body.output).toMatchObject({ keyDropped: true, provider: { hasKey: false } });
+		const removed = await call('PUT', key, { apiKey: null }, cookie);
+		expect(removed.body).toMatchObject({ hasKey: false });
+
+		const rows = await runtime.kernel.ctx.db
+			.withTables<{
+				core_audit_log: { action_id: string; target: string | null; outcome: string };
+			}>()
+			.selectFrom('core_audit_log')
+			.select(['action_id', 'target', 'outcome'])
+			.where('action_id', '=', 'ai.setProviderKey')
+			.execute();
+		expect(rows).toEqual([
+			{ action_id: 'ai.setProviderKey', target: id, outcome: 'applied' },
+			{ action_id: 'ai.setProviderKey', target: id, outcome: 'applied' },
+		]);
+		expect(JSON.stringify(rows)).not.toContain('sk-secret');
+	});
+
+	it('keeps the provider key and the AI choices away from a child on a family device', async () => {
+		const { cookie } = await setupAndSignIn();
+		const added = await call(
+			'POST',
+			'/api/v1/actions/core.addAiProvider',
+			{ name: 'Home', kind: 'ollama' },
+			cookie,
+		);
+		const id = added.body.output.id as string;
+		const kid = await addChildWithPin(cookie);
+		const { deviceCookie } = await trustDevice(cookie);
+		const session = (
+			await call('POST', '/api/auth/sign-in/pin', { memberId: kid.id, pin: '2468' }, deviceCookie)
+		).cookie;
+		const key = await call('PUT', `/api/v1/ai/providers/${id}/key`, { apiKey: 'sk-x' }, session);
+		expect(key.status).toBe(403);
+		const change = await call(
+			'POST',
+			'/api/v1/actions/core.setAiSwitches',
+			{ enabled: false, off: [] },
+			session,
+		);
+		expect(change.status).toBe(403);
+		const settings = await call('GET', '/api/v1/ai/settings', undefined, cookie);
+		expect(settings.body.switches.enabled).toBe(true);
+		expect(settings.body.providers[0].hasKey).toBe(false);
 	});
 
 	it('lets admins choose how far the AI may use each area', async () => {

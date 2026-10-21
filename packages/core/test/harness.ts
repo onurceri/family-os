@@ -5,6 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFsFileStore } from '@famos/adapters/files-fs';
 import {
+	type AiSettingsService,
+	aiMigrations,
+	createAiSettings,
+	createSecretBox,
+} from '@famos/adapters/llm-aisdk';
+import {
 	createSqliteQueue,
 	queueMigrations,
 	type SqliteJobQueue,
@@ -44,6 +50,8 @@ export interface TestKernel extends Kernel {
 	readonly clock: TestClock;
 	readonly queue: SqliteJobQueue;
 	readonly passwords: Map<string, string>;
+	/** The AI settings service on the same database. */
+	readonly ai: AiSettingsService;
 	/** Creates a member with a role id (built-in or custom) and returns its Actor. */
 	member(roleId?: string): Promise<{ actor: Actor & { kind: 'member' }; member: Member }>;
 	/** Calls a route handler directly; omitted request fields get neutral defaults. */
@@ -95,6 +103,13 @@ export async function createTestKernel(
 		},
 	};
 	const queue = createSqliteQueue({ db: handle.db, clock, ids: uuidv7Ids });
+	const ai = createAiSettings({
+		db: handle.db,
+		box: createSecretBox('core-test-secret'),
+		clock,
+		ids: uuidv7Ids,
+		timeZone: async () => 'UTC',
+	});
 	const kernel = createKernel({
 		db: handle.db,
 		queue,
@@ -118,6 +133,7 @@ export async function createTestKernel(
 			},
 		},
 		identity,
+		aiSettings: ai,
 		llm: {
 			generateObject: async () => {
 				throw new LlmError('not_configured', 'No model in core tests');
@@ -141,7 +157,10 @@ export async function createTestKernel(
 			}),
 		},
 		extensions: options.extensions ?? [],
-		infrastructureMigrations: [{ scope: 'queue', migrations: queueMigrations }],
+		infrastructureMigrations: [
+			{ scope: 'queue', migrations: queueMigrations },
+			{ scope: 'ai', migrations: aiMigrations },
+		],
 		appVersion: '0.0.0-test',
 		...(options.channels && { channels: options.channels }),
 		...(options.publicUrl && { publicUrl: options.publicUrl }),
@@ -162,6 +181,7 @@ export async function createTestKernel(
 		clock,
 		queue,
 		passwords,
+		ai,
 		async member(roleId = 'admin') {
 			const result = await kernel.runner.invoke<Member>(
 				'core.createMember',

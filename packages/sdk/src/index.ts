@@ -1,6 +1,7 @@
 export * from './actions.ts';
 export * from './actor.ts';
 export * from './agent-tools.ts';
+export * from './ai-settings.ts';
 export * from './api.ts';
 export * from './capabilities.ts';
 export * from './context.ts';

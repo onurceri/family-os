@@ -1,6 +1,14 @@
 import { isIP } from 'node:net';
 import type { DbExecutor } from '@famos/sdk';
-import { type Clock, FamosError, type IdGenerator, MODEL_ROLES } from '@famos/sdk';
+import {
+	type AiSettingsWriter,
+	type Clock,
+	FamosError,
+	type IdGenerator,
+	MODEL_ROLES,
+	type ProviderEdited,
+	type ProviderRecord,
+} from '@famos/sdk';
 import { Temporal } from '@famos/time';
 import { sql } from 'kysely';
 import { defaultResolver, isLocalAddress, type Resolver } from '../http-guard/index.ts';
@@ -156,15 +164,18 @@ export function createAiSettings(deps: AiSettingsDeps) {
 		return local;
 	}
 
-	const toView = async (row: AiTables['ai_providers']): Promise<Provider> => ({
+	const toRecord = (row: AiTables['ai_providers']): ProviderRecord => ({
 		id: row.id,
 		name: row.name,
 		kind: row.kind,
 		baseUrl: row.base_url,
 		hasKey: row.api_key !== null,
 		keyReadable: row.api_key === null || deps.box.open(row.api_key) !== null,
-		local: await isLocal(row.base_url),
 		managed: row.id === ENV_PROVIDER_ID,
+	});
+	const toView = async (row: AiTables['ai_providers']): Promise<Provider> => ({
+		...toRecord(row),
+		local: await isLocal(row.base_url),
 	});
 
 	async function readSetting<T>(
@@ -234,7 +245,7 @@ export function createAiSettings(deps: AiSettingsDeps) {
 			);
 	}
 
-	async function createProvider(input: ProviderInput): Promise<Provider> {
+	async function insertProvider(input: ProviderInput): Promise<AiTables['ai_providers']> {
 		const v = ProviderInputSchema.parse(input);
 		const baseUrl = v.baseUrl ?? DEFAULT_BASE_URLS[v.kind];
 		if (!baseUrl) throw new FamosError('bad_request', 'This provider needs an address');
@@ -249,8 +260,101 @@ export function createAiSettings(deps: AiSettingsDeps) {
 			updated_at: now,
 		};
 		await db().insertInto('ai_providers').values(row).execute();
-		return toView(row);
+		return row;
 	}
+
+	/**
+	 * Applies a change to a provider's name, address or key. A stored key is only ever sent to
+	 * the address it was entered for: pointing the provider somewhere else drops it, unless a new
+	 * key comes with the change.
+	 */
+	async function patchProvider(
+		id: string,
+		patch: ProviderPatch,
+	): Promise<{ row: AiTables['ai_providers']; keyDropped: boolean }> {
+		refuseManaged(id);
+		const v = ProviderPatchSchema.parse(patch);
+		const current = await providerRow(id);
+		const moved = v.baseUrl !== undefined && v.baseUrl !== current.base_url;
+		if (moved && v.apiKey === undefined) v.apiKey = null;
+		await db()
+			.updateTable('ai_providers')
+			.set({
+				...(v.name !== undefined && { name: v.name }),
+				...(v.baseUrl !== undefined && { base_url: v.baseUrl }),
+				...(v.apiKey !== undefined && {
+					api_key: v.apiKey === null ? null : deps.box.seal(v.apiKey),
+				}),
+				updated_at: deps.clock.now(),
+			})
+			.where('id', '=', id)
+			.execute();
+		return {
+			row: await providerRow(id),
+			keyDropped: moved && current.api_key !== null && v.apiKey === null,
+		};
+	}
+
+	async function deleteProvider(id: string): Promise<void> {
+		refuseManaged(id);
+		await providerRow(id);
+		await db().deleteFrom('ai_providers').where('id', '=', id).execute();
+		const current = await roles();
+		const next = Object.fromEntries(
+			Object.entries(current).map(([role, value]) => [
+				role,
+				value?.providerId === id ? null : value,
+			]),
+		);
+		await writeSetting('roles', next);
+	}
+
+	async function setRoles(input: Roles): Promise<Roles> {
+		const next = RolesSchema.parse(input);
+		const ids = new Set(
+			(await db().selectFrom('ai_providers').select('id').execute()).map((r) => r.id),
+		);
+		for (const value of Object.values(next)) {
+			if (value && !ids.has(value.providerId))
+				throw new FamosError('bad_request', `Unknown provider: ${value.providerId}`);
+		}
+		await writeSetting('roles', next);
+		return next;
+	}
+
+	async function setSwitches(input: Switches): Promise<Switches> {
+		const next = SwitchesSchema.parse(input);
+		await writeSetting('switches', { ...next, off: [...new Set(next.off)].sort() });
+		return next;
+	}
+
+	async function setPrivacy(input: Privacy): Promise<Privacy> {
+		const next = PrivacySchema.parse(input);
+		await writeSetting('privacy', next);
+		return next;
+	}
+
+	async function setLimits(input: Limits): Promise<Limits> {
+		const next = LimitsSchema.parse(input);
+		await writeSetting('limits', next);
+		return next;
+	}
+
+	/** The writes an action makes, with nothing about a key in or out of them. */
+	const writer: AiSettingsWriter = {
+		async createProvider(input) {
+			return toRecord(await insertProvider(input));
+		},
+		async updateProvider(id, patch): Promise<ProviderEdited> {
+			const { row, keyDropped } = await patchProvider(id, patch);
+			return { provider: toRecord(row), keyDropped };
+		},
+		deleteProvider,
+		setRoles,
+		setLimits,
+		setPrivacy,
+		setSwitches,
+	};
 
 	return {
 		roles,
@@ -275,76 +379,29 @@ export function createAiSettings(deps: AiSettingsDeps) {
 			};
 		},
 
-		createProvider,
+		async createProvider(input: ProviderInput): Promise<Provider> {
+			return toView(await insertProvider(input));
+		},
 
 		async updateProvider(id: string, patch: ProviderPatch): Promise<Provider> {
-			refuseManaged(id);
-			const v = ProviderPatchSchema.parse(patch);
-			const current = await providerRow(id);
-			// A stored key is only ever sent to the address it was entered for: pointing the provider
-			// somewhere else drops it, unless a new key comes with the change.
-			const moved = v.baseUrl !== undefined && v.baseUrl !== current.base_url;
-			if (moved && v.apiKey === undefined) v.apiKey = null;
-			await db()
-				.updateTable('ai_providers')
-				.set({
-					...(v.name !== undefined && { name: v.name }),
-					...(v.baseUrl !== undefined && { base_url: v.baseUrl }),
-					...(v.apiKey !== undefined && {
-						api_key: v.apiKey === null ? null : deps.box.seal(v.apiKey),
-					}),
-					updated_at: deps.clock.now(),
-				})
-				.where('id', '=', id)
-				.execute();
-			return toView(await providerRow(id));
+			return toView((await patchProvider(id, patch)).row);
 		},
 
-		/** Removes a provider; roles that used it become unset. */
-		async deleteProvider(id: string): Promise<void> {
-			refuseManaged(id);
-			await providerRow(id);
-			await db().deleteFrom('ai_providers').where('id', '=', id).execute();
-			const current = await roles();
-			const next = Object.fromEntries(
-				Object.entries(current).map(([role, value]) => [
-					role,
-					value?.providerId === id ? null : value,
-				]),
-			);
-			await writeSetting('roles', next);
+		/** Stores a provider's key, or removes it with null: the one write that stays a route. */
+		async setApiKey(id: string, apiKey: string | null): Promise<Provider> {
+			return toView((await patchProvider(id, { apiKey })).row);
 		},
 
-		async setRoles(input: Roles): Promise<Roles> {
-			const next = RolesSchema.parse(input);
-			const ids = new Set(
-				(await db().selectFrom('ai_providers').select('id').execute()).map((r) => r.id),
-			);
-			for (const value of Object.values(next)) {
-				if (value && !ids.has(value.providerId))
-					throw new FamosError('bad_request', `Unknown provider: ${value.providerId}`);
-			}
-			await writeSetting('roles', next);
-			return next;
-		},
+		deleteProvider,
+		setRoles,
+		setSwitches,
+		setPrivacy,
+		setLimits,
 
-		async setSwitches(input: Switches): Promise<Switches> {
-			const next = SwitchesSchema.parse(input);
-			await writeSetting('switches', { ...next, off: [...new Set(next.off)].sort() });
-			return next;
-		},
-
-		async setPrivacy(input: Privacy): Promise<Privacy> {
-			const next = PrivacySchema.parse(input);
-			await writeSetting('privacy', next);
-			return next;
-		},
-
-		async setLimits(input: Limits): Promise<Limits> {
-			const next = LimitsSchema.parse(input);
-			await writeSetting('limits', next);
-			return next;
-		},
+		/** The same service on another connection: a unit of work's own (see `AiSettingsAdmin`). */
+		in: (executor: DbExecutor): AiSettingsWriter =>
+			createAiSettings({ ...deps, db: executor }).writer,
+		writer,
 
 		/**
 		 * Lists the provider's models (`GET /models`). This is the connection test: it checks the

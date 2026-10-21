@@ -111,7 +111,7 @@
 			}),
 		) as Roles;
 		try {
-			unwrap(await api.PUT('/api/v1/ai/roles', { body: clean }));
+			unwrap(await api.POST('/api/v1/actions/core.setAiRoles', { body: clean }));
 			toasts.show(t('ai_saved'));
 			await load();
 		} catch {
