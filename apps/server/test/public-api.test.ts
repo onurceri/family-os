@@ -215,6 +215,24 @@ describe('the door', () => {
 		expect(revoked.body.error.reason).toBeUndefined();
 	});
 
+	it('records a use only for a key it let in', async () => {
+		const { cookie } = await setup();
+		const { secret, id } = await addApp(cookie, { roleId: 'admin' });
+		const lastUsed = async () =>
+			(
+				(await request('GET', '/api/v1/apps', { cookie })).body.apps as {
+					id: string;
+					lastUsedAt: number | null;
+				}[]
+			).find((app) => app.id === id)?.lastUsedAt;
+		await request('POST', '/api/v1/actions/core.pauseApp', { cookie, body: { appId: id } });
+		expect((await pub(secret, 'GET', '/')).status).toBe(401);
+		expect(await lastUsed()).toBeNull();
+		await request('POST', '/api/v1/actions/core.resumeApp', { cookie, body: { appId: id } });
+		expect((await pub(secret, 'GET', '/')).status).toBe(200);
+		expect(await lastUsed()).not.toBeNull();
+	});
+
 	it('limits wrong keys per address, and every app’s requests', async () => {
 		const { cookie } = await setup();
 		const { secret } = await addApp(cookie, { roleId: 'admin' });

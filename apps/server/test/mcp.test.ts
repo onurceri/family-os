@@ -377,6 +377,27 @@ describe('the endpoint refuses what it should', () => {
 		const refused = await rpc(null, legacyList);
 		expect(refused.status).toBe(401);
 		expect(refused.headers.get('cache-control')).toBe('no-store');
+		// Every other refusal too: a body the adapter cannot read, too many wrong keys, the door shut.
+		const unreadable = await app.request(`${BASE}/mcp`, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				accept: 'application/json, text/event-stream',
+				authorization: `Bearer ${secret}`,
+			},
+			body: '{nope',
+		});
+		expect(unreadable.status).toBe(400);
+		expect(unreadable.headers.get('cache-control')).toBe('no-store');
+		let limited = refused;
+		for (let i = 0; i < 40 && limited.status !== 429; i++)
+			limited = await rpc('famos_nope', legacyList, { headers: { 'x-forwarded-for': '10.9.7.7' } });
+		expect(limited.status).toBe(429);
+		expect(limited.headers.get('cache-control')).toBe('no-store');
+		await enable(cookie, false);
+		const shut = await rpc(secret, legacyList);
+		expect(shut.status).toBe(404);
+		expect(shut.headers.get('cache-control')).toBe('no-store');
 	});
 
 	it('answers 401 with a JSON-RPC error for missing, unknown, expired and revoked tokens', async () => {

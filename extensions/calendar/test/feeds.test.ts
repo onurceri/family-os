@@ -337,9 +337,15 @@ describe('when a member’s sign-ins end', () => {
 		await expect(fetchFeed(theirs.path)).resolves.toBeDefined();
 	});
 
-	it('answers 404 at once for an archived owner, before any job runs', async () => {
-		const { path } = await feed(mum.actor, { scope: mum.member.id });
+	it('answers 404 at once for an archived owner, before any job runs, and records no use', async () => {
+		const { path, feed: created } = await feed(mum.actor, { scope: mum.member.id });
 		await k.runner.invoke('core.archiveMember', { memberId: mum.member.id }, admin.actor);
 		await expect(fetchFeed(path)).rejects.toMatchObject({ code: 'not_found' });
+		const row = await events(k.ctx.db)
+			.selectFrom('calendar_feeds')
+			.select('last_used_at')
+			.where('id', '=', created.id)
+			.executeTakeFirstOrThrow();
+		expect(row.last_used_at).toBeNull();
 	});
 });
