@@ -158,5 +158,6 @@
 	"card_group": "{{what}} ({{group}})",
 	"card_weekday_slip": "{{date}} is not a {{said}}.",
 	"words_us": "we, us, our, ours, ourselves",
+	"words_pronouns": "he, him, his, she, her, hers, they, them, their, theirs, himself, herself, themselves",
 	"something": "something"
 }

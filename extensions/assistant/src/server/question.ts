@@ -155,11 +155,15 @@ export interface QuestionInput {
 	/** The thread's handles, so a follow-up ("move it") can point at what the card showed. */
 	table: HandleTable;
 	labels: Map<string, string>;
+	/** Members the question's earlier part, or else the thread's previous question, was about: whom a pronoun ("his") stands for. */
+	carried?: readonly string[];
 	jobId: string;
 }
 
 export interface QuestionAnswer {
 	card: AnswerCard;
+	/** The members the question was about, for a later part that says "his". */
+	memberIds: string[];
 	/** The opening words, when they passed the checks; else empty. */
 	lead: string;
 	calls: RecordedCall[];
@@ -187,8 +191,24 @@ export async function answerQuestion(
 		order: input.order,
 		words: input.words,
 	});
+	// A pronoun is no name: it stands for whom the question spoke of before, and with nobody
+	// before it the question is about nobody in particular.
+	const pronouns = new Set(
+		ctx
+			.vocabulary('assistant:words_pronouns')
+			.flatMap((entry) => entry.toLocaleLowerCase(language).split(/[^\p{L}\p{N}]+/u)),
+	);
+	const isPronoun = (said: string) => {
+		const parts = said
+			.toLocaleLowerCase(language)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter(Boolean);
+		return parts.length > 0 && parts.every((part) => pronouns.has(part));
+	};
+	const spoken = question.people.map((p) => p.said);
+	const named = spoken.filter((said) => !isPronoun(said));
 	const people = resolveAskedPeople(
-		question.people.map((p) => p.said),
+		named,
 		input.family,
 		member.id,
 		ctx.vocabulary('assistant:words_self'),
@@ -201,6 +221,8 @@ export async function answerQuestion(
 			locale: language,
 		},
 	);
+	if (named.length < spoken.length && people.ids.length === 0 && !people.everyone)
+		for (const id of input.carried ?? []) people.ids.push(id);
 	const plan = planTopics(question.topics, ctx.actions, actor, input.policy.local);
 	const names = new Map(input.family.map((m) => [m.id, m.displayName]));
 	const calls: RecordedCall[] = [];
@@ -268,7 +290,12 @@ export async function answerQuestion(
 	};
 	const text = cardText(facts, words);
 	const { lead, check } = await wordLead(ctx, input, facts, text, words);
-	return { card: { ...facts, lead: { kept: check === null, check }, text }, lead, calls };
+	return {
+		card: { ...facts, lead: { kept: check === null, check }, text },
+		memberIds: people.ids,
+		lead,
+		calls,
+	};
 }
 
 /**

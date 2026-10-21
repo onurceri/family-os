@@ -760,4 +760,25 @@ export const CASES: Case[] = [
 		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['tasks'], people: ['Leo'] },
 		checks: [says(/practise reading/i, /monday/i)],
 	}),
+	novak({
+		name: 'pronoun: "his" in the second part is Leo, never a name nobody has',
+		as: 'Ivy',
+		asks: ['What is Leo doing this week, and is anything of his still open?'],
+		expect: { from: '2026-10-18', to: '2026-10-24', topics: ['calendar'], people: ['Leo'] },
+		checks: [
+			{
+				label: 'no card calls a pronoun a name, and every card is about Leo',
+				pass: (o) => {
+					const cards = lastTurn(o).cards ?? [];
+					return (
+						cards.length > 0 &&
+						cards.every(
+							(c) => c.understood.unmatched.length === 0 && c.understood.people.includes('Leo'),
+						)
+					);
+				},
+			},
+			neverSays(/called his/i),
+		],
+	}),
 ];

@@ -368,6 +368,13 @@ export const turnJob = defineJob({
 			(compound ? [...(part.about ?? []), ...part.topics].join(', ') || asked : asked);
 		const answers: QuestionAnswer[] = [];
 		let questionsFailed = 0;
+		// Whom "his" in a part stands for: the part before it, else the thread's previous question.
+		const byName = new Map(family.map((m) => [m.displayName, m.id as string]));
+		let carried = (
+			cardOf(history.find((m) => m.role === 'assistant') ?? { card: null })?.understood.people ?? []
+		)
+			.map((name) => byName.get(name))
+			.filter((id): id is string => id !== undefined);
 		for (const question of questions) {
 			try {
 				answers.push(
@@ -386,9 +393,12 @@ export const turnJob = defineJob({
 						order,
 						table,
 						labels,
+						carried,
 						jobId: run.id,
 					}),
 				);
+				const spoken = answers[answers.length - 1]?.memberIds ?? [];
+				if (spoken.length > 0) carried = spoken;
 			} catch (error) {
 				questionsFailed++;
 				ctx.logger.error(

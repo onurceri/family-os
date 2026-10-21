@@ -394,6 +394,57 @@ describe('a message that is not a question', () => {
 	});
 });
 
+describe('a pronoun in a question', () => {
+	const LEO_WEEK = {
+		quote: 'What is Leo doing this week',
+		...THIS_WEEK,
+		people: [{ said: 'Leo' }],
+	};
+	const HIS = {
+		quote: 'is anything of his still open?',
+		intent: 'ask',
+		topics: ['tasks'],
+		people: [],
+		span: THIS_WEEK.span,
+	};
+
+	it('stands for the person of the part before it, and is never an unknown name (real model reading)', async () => {
+		k.llm.respond({ parts: [LEO_WEEK, { ...HIS, people: [{ said: 'his' }] }] });
+		k.llm.respondChat([{ text: 'Leo has swimming.' }]);
+		k.llm.respondChat([{ text: 'Nothing open.' }]);
+		const { reply } = await ask(
+			mara,
+			'What is Leo doing this week, and is anything of his still open?',
+		);
+		expect(reply.cards).toHaveLength(2);
+		const [first, second] = reply.cards;
+		expect(first?.understood.people).toEqual(['Leo']);
+		expect(second?.understood.people).toEqual(['Leo']);
+		expect(second?.understood.unmatched).toEqual([]);
+		expect(JSON.stringify(reply.cards)).not.toMatch(/called his/);
+	});
+
+	it('takes the previous question of the thread when no part comes before it', async () => {
+		k.llm.respond({ parts: [LEO_WEEK] });
+		k.llm.respondChat([{ text: 'Leo has swimming.' }]);
+		const first = await ask(mara, 'What is Leo doing this week?');
+		k.llm.respond({ parts: [{ ...HIS, people: [{ said: 'his' }] }] });
+		k.llm.respondChat([{ text: 'Nothing open.' }]);
+		const { reply } = await ask(mara, 'Is anything of his still open?', first.threadId);
+		expect(cardOf(reply).understood.people).toEqual(['Leo']);
+		expect(cardOf(reply).understood.unmatched).toEqual([]);
+	});
+
+	it('alone, with nobody before it, is dropped quietly', async () => {
+		k.llm.respond({ parts: [{ ...HIS, people: [{ said: 'his' }] }] });
+		k.llm.respondChat([{ text: 'Nothing open.' }]);
+		const { reply } = await ask(mara, 'Is anything of his still open?');
+		expect(cardOf(reply).understood.people).toEqual([]);
+		expect(cardOf(reply).understood.unmatched).toEqual([]);
+		expect(cardOf(reply).text.join('\n')).not.toMatch(/called/);
+	});
+});
+
 describe('a question from a chat outside the app', () => {
 	it('gets the opening words and the card as plain lines, in one sentence', async () => {
 		k.llm.respond(THIS_WEEK);
