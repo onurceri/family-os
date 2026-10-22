@@ -58,6 +58,16 @@ export interface Identity {
 		headers: Headers,
 	): Promise<{ memberId: string; sessionId: string; deviceId: string | null } | null>;
 	readonly admin: IdentityAdmin;
+	/**
+	 * Checks a signed-in member's password again before something only they should do (saving the
+	 * server's key file). Wrong passwords count against the same locks as signing in: this member
+	 * from this address, the account as a whole, and the address across accounts.
+	 */
+	confirmPassword(
+		memberId: string,
+		password: string,
+		address: string,
+	): Promise<{ result: 'ok' | 'wrong' } | { result: 'locked'; retryAfter: number }>;
 	/** The underlying options, used to generate migrations. */
 	readonly options: BetterAuthOptions;
 }
@@ -371,6 +381,34 @@ export function createIdentity(options: IdentityOptions): Identity {
 	};
 
 	return {
+		async confirmPassword(memberId, password, address) {
+			const ctx = await context();
+			const user = await findUser(memberId);
+			const key = addressKey(address);
+			const account = `email:${(user?.email ?? memberId).toLowerCase()}`;
+			const lockKey = `${account}|${key}`;
+			const sender = `email:${key}`;
+			const waitMs = Math.max(
+				lockout.lockedFor(lockKey),
+				backstop.lockedFor(account),
+				addressFailures.waitFor(sender),
+			);
+			if (waitMs > 0) return { result: 'locked', retryAfter: Math.ceil(waitMs / 1000) };
+			const accounts = user ? await ctx.internalAdapter.findAccounts(user.id) : [];
+			const hash = accounts.find((a) => a.providerId === CREDENTIAL_PROVIDER)?.password;
+			// Always run a verification so response time does not reveal whether a password exists.
+			const valid = await ctx.password.verify({
+				password,
+				hash: hash ?? (await ctx.password.hash('dummy-password')),
+			});
+			const ok = valid && Boolean(hash);
+			lockout.record(lockKey, ok);
+			if (!ok) {
+				backstop.record(account, false);
+				addressFailures.fail(sender);
+			}
+			return { result: ok ? 'ok' : 'wrong' };
+		},
 		async handler(request) {
 			const target = await signInTarget(request);
 			if (!target) return auth.handler(request);

@@ -5,12 +5,13 @@
 	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Card, HelpTip, Notice, Page, PageHeader, Pill, Row, Section } from '@famos/ui/famos';
-	import { ChevronRight, DatabaseBackup, KeyRound, Plus } from '@lucide/svelte';
+	import { ChevronRight, DatabaseBackup, FileKey, KeyRound, Plus } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import EncryptionPanel from './EncryptionPanel.svelte';
+	import KeyFileDialog from './KeyFileDialog.svelte';
 	import { reason } from './reason.js';
 	import TargetPanel from './TargetPanel.svelte';
 	import type { BackupsData, Target } from './types.js';
@@ -18,6 +19,7 @@
 	let data = $state<BackupsData | null>(null);
 	let error = $state<string | null>(null);
 	let running = $state(false);
+	let savingKeyFile = $state(false);
 
 	async function load() {
 		data = (await api.GET('/api/v1/backups')).data ?? null;
@@ -149,6 +151,17 @@
 							<ChevronRight size={18} class="text-ink-soft" aria-hidden="true" />
 						{/snippet}
 					</Row>
+					<Row wrap title={t('key_file_row_title')} meta={t('key_file_row_meta')}>
+						{#snippet lead()}<FileKey size={18} aria-hidden="true" />{/snippet}
+						{#snippet trail()}
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => (savingKeyFile = true)}
+								data-testid="key-file-save">{t('key_file_save')}</Button
+							>
+						{/snippet}
+					</Row>
 				</Card>
 				<p class="text-ink-soft flex max-w-prose items-start gap-2 text-[13px]">
 					<span>{t('backups_secret_short')}</span>
@@ -195,6 +208,7 @@
 		onclose={closePanel}
 		onchanged={load}
 	/>
+	<KeyFileDialog open={savingKeyFile} onclose={() => (savingKeyFile = false)} />
 	<TargetPanel
 		open={addingCopy || editing !== null}
 		target={addingCopy ? null : editing}

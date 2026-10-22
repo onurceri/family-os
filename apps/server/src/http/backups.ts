@@ -7,9 +7,10 @@ import {
 	TargetStatusSchema,
 	TestResultSchema,
 } from '@famos/adapters/backup';
+import type { Identity } from '@famos/adapters/identity-betterauth';
 import { CORE_CAPABILITIES, type Kernel } from '@famos/core';
 import { KEEP_BEFORE_UPDATE } from '@famos/db';
-import { FamosError } from '@famos/sdk';
+import { assertFullSignIn, FamosError, personPresent, selfOf } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
@@ -22,6 +23,10 @@ import { errorResponses } from './errors.ts';
  * encryption, a target's name, retention and switch, and removing a target are actions
  * (`core.runBackup` ...). Nothing secret is ever returned. The backup itself is a job: no
  * request writes a backup or talks to a remote store, except the connection test.
+ *
+ * The server's key file is the master key of everything sealed, so saving it is a route too: it
+ * shows a secret. Only a person at a password sign-in who holds the settings capability gets it,
+ * and only after typing their password again.
  */
 const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const body = <S extends z.ZodType>(schema: S) => ({
@@ -57,6 +62,12 @@ const LOCAL_BACKUP = /^famos-.+-(manual|scheduled|pre-migration)\.tar$/;
 
 export interface BackupRoutesDeps {
 	backups: BackupService;
+	identity: Pick<Identity, 'confirmPassword'>;
+	/** The client address for the sign-in locks. */
+	clientIp: (c: Context) => string;
+	/** What the data folder's `secret` file holds (or `FAMOS_SECRET`); none where there is no server. */
+	keyFile?: string;
+
 	kernel: Kernel;
 	dir: string;
 	schedule: { hour: number; keep: number };
@@ -196,5 +207,48 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 	app.openapi(testTarget, async (c) => {
 		requireAdmin(c);
 		return c.json(await backups.testTarget(c.req.valid('param').targetId), 200);
+	});
+
+	const keyFile = createRoute({
+		...base,
+		method: 'post',
+		path: '/api/v1/backups/key-file',
+		operationId: 'backups.downloadKeyFile',
+		summary: 'Save the server’s key file, after typing the password again',
+		request: body(z.object({ password: z.string().min(1).max(200) })),
+		responses: {
+			200: {
+				description: 'The key file, as a download',
+				content: { 'text/plain': { schema: z.string() } },
+			},
+			...errorResponses,
+		},
+	});
+	app.openapi(keyFile, async (c) => {
+		const actor = requireAdmin(c);
+		assertFullSignIn(actor);
+		const memberId = selfOf(actor);
+		if (!memberId || !personPresent(actor))
+			throw new FamosError('unauthenticated', 'Sign in required');
+		if (deps.keyFile === undefined) throw new FamosError('not_found', 'No key file');
+		const check = await deps.identity.confirmPassword(
+			memberId,
+			c.req.valid('json').password,
+			deps.clientIp(c),
+		);
+		if (check.result === 'locked')
+			throw new FamosError('limit_reached', 'Too many wrong passwords. Try again later.', {
+				retryAfter: check.retryAfter,
+			});
+		if (check.result === 'wrong')
+			throw new FamosError('forbidden', 'The password is not right', { reason: 'wrong_password' });
+		// The row says that the file was saved and by whom, never what it holds.
+		await kernel.audit.record(actor, 'core.downloadKeyFile', null);
+		return c.text(`${deps.keyFile}\n`, 200, {
+			'content-type': 'text/plain; charset=utf-8',
+			'content-disposition': 'attachment; filename="familyos-secret"',
+			'cache-control': 'no-store',
+			'x-content-type-options': 'nosniff',
+		});
 	});
 }

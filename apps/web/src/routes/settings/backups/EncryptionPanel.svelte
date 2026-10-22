@@ -6,6 +6,7 @@
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import KeyFileDialog from './KeyFileDialog.svelte';
 	import { LOCK_MODES, type LockMode, lockMismatch, lockReady, MIN_PASSPHRASE } from './lock.js';
 
 	/**
@@ -36,6 +37,7 @@
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	let confirmingNone = $state(false);
+	let savingKeyFile = $state(false);
 
 	$effect(() => {
 		if (!open) return;
@@ -234,6 +236,11 @@
 							</li>
 							<li>{t('backups_enc_keep_key_file')}</li>
 						</ul>
+						<div>
+							<Button variant="outline" size="sm" onclick={() => (savingKeyFile = true)}
+								>{t('key_file_save')}</Button
+							>
+						</div>
 					</div>
 				{/if}
 				<div><Button variant="primary" onclick={onclose}>{t('devices_close')}</Button></div>
@@ -241,6 +248,8 @@
 		</Steps>
 	</div>
 </SidePanel>
+
+<KeyFileDialog open={savingKeyFile} onclose={() => (savingKeyFile = false)} />
 
 <Dialog
 	open={confirmingNone}

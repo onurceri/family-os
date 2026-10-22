@@ -27,7 +27,11 @@ Under **Keep the last** each target keeps the last N copies (7 by default) and d
 
 ### The server's key file
 
-FamilyOS keeps a few passwords and keys for you (AI keys, the Telegram bot token, the mailbox password, the backup passphrase, calendar subscription addresses), locked with **the server's key file**: the file `secret` in the data folder, or `FAMOS_SECRET` if whoever installed FamilyOS set it. Backups leave this file out on purpose, so a stolen backup cannot open them. So keep a copy of it somewhere safe as well, away from the server:
+FamilyOS keeps a few passwords and keys for you (AI keys, the Telegram bot token, the mailbox password, the backup passphrase, calendar subscription addresses), locked with **the server's key file**: the file `secret` in the data folder, or `FAMOS_SECRET` if whoever installed FamilyOS set it. Backups leave this file out on purpose, so a stolen backup cannot open them. So keep a copy of it somewhere safe as well, away from the server, for example in a password manager.
+
+In the app: **Settings → System → Backups**, the row **The server's key file**, then **Save the key file** (the last step of **Lock the copies** has the same button). Only an admin who signed in with a password can do this, and FamilyOS asks for the password again first. The file is saved to the device you are using as `familyos-secret`.
+
+Without a browser, from a terminal:
 
 ```bash
 docker compose cp famos:/data/secret ./familyos-secret
@@ -90,4 +94,10 @@ age -d -o backup.tar backup.tar.age          # asks for the passphrase
 age -d -i key.txt -o backup.tar backup.tar.age   # with a private key
 ```
 
-On **new hardware** you need three things: the backup, the passphrase (or private key), and the server's key file (`secret`, or your `FAMOS_SECRET`).
+On **new hardware** you need three things: the backup, the passphrase (or private key), and the server's key file (`secret`, or your `FAMOS_SECRET`). Put the file you saved with **Save the key file** into the new data folder as `secret` before the first start, and restore as above:
+
+```bash
+docker compose cp ./familyos-secret famos:/data/secret
+```
+
+If you set `FAMOS_SECRET` yourself, use the text inside the file as its value instead.

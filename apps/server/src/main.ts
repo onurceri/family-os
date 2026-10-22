@@ -144,6 +144,7 @@ async function serveCommand(distrust: DistrustResult) {
 			backups: runtime.backups,
 			backupsDir: config.backupsDir,
 			backupSchedule: config.backup,
+			keyFile: config.secret,
 			identity: runtime.identity,
 			knownDevices: runtime.knownDevices,
 			logger,

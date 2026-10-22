@@ -72,7 +72,9 @@ export interface HttpAppDeps {
 	backups: BackupService;
 	backupsDir: string;
 	backupSchedule: { hour: number; keep: number };
-	identity: Pick<Identity, 'handler' | 'resolveMember' | 'admin'>;
+	/** What the server's key file holds, for the admin who saves it. Left out where there is no server. */
+	keyFile?: string;
+	identity: Pick<Identity, 'handler' | 'resolveMember' | 'admin' | 'confirmPassword'>;
 	/** Browsers that signed in to an account before, which the account-wide sign-in lock lets through. */
 	knownDevices: KnownDevices;
 	logger: Logger;
@@ -647,6 +649,9 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		kernel: deps.kernel,
 		dir: deps.backupsDir,
 		schedule: deps.backupSchedule,
+		identity: deps.identity,
+		clientIp,
+		...(deps.keyFile !== undefined && { keyFile: deps.keyFile }),
 	});
 	for (const { extension, route } of deps.kernel.registry.routes)
 		mountRoute(app, deps, extension, route);
