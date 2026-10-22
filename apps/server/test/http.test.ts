@@ -1593,3 +1593,77 @@ describe('asking what you may do', () => {
 		expect(route.body.error).toMatchObject({ reason: 'capability' });
 	});
 });
+
+describe('setup status', () => {
+	it('is for people who manage settings, and counts what the family has set up', async () => {
+		expect((await call('GET', '/api/v1/core/setup-checks')).status).toBe(401);
+		const { admin, cookie } = await setupAndSignIn();
+		expect((await call('GET', '/api/v1/core/setup-checks', undefined, cookie)).body).toEqual({
+			address: 'https://famos.example',
+			aiReading: false,
+			backupTargets: 0,
+			pinMembers: 0,
+			familyDevices: 0,
+			phoneReach: 0,
+		});
+
+		const kid = await addChildWithPin(cookie);
+		const { deviceCookie } = await trustDevice(cookie);
+		const now = Date.now();
+		await runtime.kernel.ctx.db
+			.withTables<{
+				webpush_subscriptions: {
+					id: string;
+					member_id: string;
+					endpoint: string;
+					p256dh: string;
+					auth: string;
+					label: string;
+					created_at: number;
+				};
+			}>()
+			.insertInto('webpush_subscriptions')
+			.values(
+				[1, 2].map((n) => ({
+					id: `sub_${n}`,
+					member_id: admin.id,
+					endpoint: `https://fcm.googleapis.com/${n}`,
+					p256dh: 'p',
+					auth: 'a',
+					label: 'Phone',
+					created_at: now,
+				})),
+			)
+			.execute();
+		const seen = await call('GET', '/api/v1/core/setup-checks', undefined, cookie);
+		expect(seen.body).toMatchObject({ pinMembers: 1, familyDevices: 1, phoneReach: 1 });
+
+		const kidSession = (
+			await call('POST', '/api/auth/sign-in/pin', { memberId: kid.id, pin: '2468' }, deviceCookie)
+		).cookie;
+		expect((await call('GET', '/api/v1/core/setup-checks', undefined, kidSession)).status).toBe(
+			403,
+		);
+	});
+
+	it('reads a model for reading and an enabled backup target from their services', async () => {
+		const { readSetupChecks } = await import('../src/http/setup-checks.ts');
+		const roles = (fast: string | null) => ({ roles: { fast, vision: null, smart: null } });
+		const make = (ai: object, targets: { enabled: boolean }[]) =>
+			readSetupChecks({
+				kernel: runtime.kernel,
+				ai: { get: async () => ai } as never,
+				backups: { listTargets: async () => targets } as never,
+				identity: runtime.identity.admin,
+			});
+		expect(await make(roles(null), [{ enabled: false }])).toMatchObject({
+			address: null,
+			aiReading: false,
+			backupTargets: 0,
+		});
+		expect(await make(roles('m'), [{ enabled: false }, { enabled: true }])).toMatchObject({
+			aiReading: true,
+			backupTargets: 1,
+		});
+	});
+});

@@ -51,6 +51,7 @@ import { mountOAuthEndpoints } from './oauth-endpoints.ts';
 import { MAX_BAD_KEYS_PER_MINUTE, mountPublicApi } from './public/index.ts';
 import { mountPushRoutes } from './push.ts';
 import { createRateLimiter } from './rate-limit.ts';
+import { mountSetupChecksRoute } from './setup-checks.ts';
 import { mountTelegramRoutes } from './telegram.ts';
 import {
 	bodyLimits,
@@ -71,7 +72,7 @@ export interface HttpAppDeps {
 	backups: BackupService;
 	backupsDir: string;
 	backupSchedule: { hour: number; keep: number };
-	identity: Pick<Identity, 'handler' | 'resolveMember'>;
+	identity: Pick<Identity, 'handler' | 'resolveMember' | 'admin'>;
 	/** Browsers that signed in to an account before, which the account-wide sign-in lock lets through. */
 	knownDevices: KnownDevices;
 	logger: Logger;
@@ -602,6 +603,13 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	mountDeviceRoutes(app, deps.kernel, deps.secureCookies, clientIp, deps.publicUrl);
 	mountAiRoutes(app, deps.ai, deps.kernel);
 	mountPushRoutes(app, deps.webPush, deps.kernel);
+	mountSetupChecksRoute(app, {
+		kernel: deps.kernel,
+		ai: deps.ai,
+		backups: deps.backups,
+		identity: deps.identity.admin,
+		publicUrl: deps.publicUrl,
+	});
 	mountApiTokenRoutes(app, deps.kernel);
 	mountOAuthRoutes(app, deps.kernel);
 	mountAppRoutes(app, deps.kernel);

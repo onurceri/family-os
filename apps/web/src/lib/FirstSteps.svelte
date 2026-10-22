@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ArrowRight, Check, X } from '@lucide/svelte';
 	import { t } from '#lib/i18n.svelte.js';
+	import { session } from '#lib/session.svelte.js';
 
 	export interface Step {
 		id: string;
@@ -66,4 +67,11 @@
 			</li>
 		{/each}
 	</ol>
+	{#if session.can('core.settings.manage')}
+		<a
+			href="/settings/setup-status"
+			class="text-info focus-visible:ring-ring inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-1 text-[15px] font-bold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+			>{t('setup_status_see_all')}<ArrowRight class="size-4" aria-hidden="true" /></a
+		>
+	{/if}
 </section>
