@@ -68,6 +68,7 @@ import {
 	type Translate,
 	type Vocabulary,
 } from './notifications.ts';
+import { createOAuthService, type OAuthService } from './oauth.ts';
 import {
 	buildRegistry,
 	ExtensionRefusedError,
@@ -162,6 +163,8 @@ export interface Kernel {
 	readonly devices: DeviceService;
 	/** Personal API tokens for MCP clients. */
 	readonly apiTokens: ApiTokenService;
+	/** Signing in AI apps (OAuth): settings, requests, codes, tokens and registered clients. */
+	readonly oauth: OAuthService;
 	/** Connected apps and their keys. */
 	readonly apps: AppService;
 	/**
@@ -238,6 +241,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		clock: options.clock,
 		ids: options.ids,
 		access: () => access,
+		authenticateOAuth: (secret) => oauth.authenticateAccess(secret),
 	});
 	const apps = createAppService({
 		db: options.db,
@@ -246,6 +250,16 @@ export function createKernel(options: KernelOptions): Kernel {
 		access: () => access,
 	});
 	const audit = createAuditTrail({ db: options.db, clock: options.clock });
+	const oauth = createOAuthService({
+		db: options.db,
+		clock: options.clock,
+		ids: options.ids,
+		access: () => access,
+		audit,
+		publicUrl: options.publicUrl,
+		mcpEnabled: () => apiTokens.isEnabled(),
+		notify: (db, request) => notifications.notifier.enqueue(db, request),
+	});
 	let runner: ActionRunner | undefined;
 	const features = createFeatures();
 	const aiAreas = createAiAreas(
@@ -337,6 +351,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		devices: () => devices,
 		apps: () => apps,
 		apiTokens: () => apiTokens,
+		oauth: () => oauth,
 		audit,
 		access: () => access,
 		features: () => features,
@@ -706,6 +721,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		worker,
 		devices,
 		apiTokens,
+		oauth,
 		apps,
 		audit,
 		access,

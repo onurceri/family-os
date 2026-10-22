@@ -180,6 +180,77 @@ export type ApiTokensTable = {
 	last_used_at: number | null;
 	created_at: number;
 	revoked_at: number | null;
+	/** Set on a grant made by signing in an AI app (`m0010_oauth`); null for a personal key. */
+	oauth_client_id: string | null;
+};
+
+/** An app that may ask to sign in for a member (`m0010_oauth`). */
+export type OAuthClientsTable = {
+	id: string;
+	/** `registered`: set up by a member, with a secret; `dynamic`: registered itself; `metadata`: named by an address. */
+	kind: 'registered' | 'dynamic' | 'metadata';
+	/** What the app sends as `client_id`: this row's id, or for `metadata` the address of its document. */
+	client_id: string;
+	name: string;
+	/** JSON list of the redirect URIs the app may use. */
+	redirect_uris: string;
+	/** SHA-256 (hex) of the client secret; null for a public client. */
+	secret_hash: string | null;
+	/** 0 only for a registered client, which has a secret. */
+	require_pkce: number;
+	/** The member who set a registered client up: the only one who may approve it. */
+	owner_member_id: string | null;
+	created_at: number;
+	last_consented_at: number | null;
+	metadata_fetched_at: number | null;
+	metadata_etag: string | null;
+	revoked_at: number | null;
+};
+
+/** A sign-in the app asked for, waiting for a person's decision. */
+export type OAuthRequestsTable = {
+	/** 128 random bits: it is the address of the consent page. */
+	id: string;
+	client_row_id: string;
+	redirect_uri: string;
+	state: string | null;
+	/** S256 challenge; null only for a registered client that does not require PKCE. */
+	code_challenge: string | null;
+	/** Space separated; the most the person may grant. */
+	scope_requested: string;
+	resource: string;
+	created_at: number;
+	expires_at: number;
+	decided_at: number | null;
+	decision: 'approved' | 'denied' | null;
+};
+
+/** An authorization code: SHA-256 (hex) only, single use. */
+export type OAuthCodesTable = {
+	code_hash: string;
+	request_id: string;
+	grant_id: string;
+	expires_at: number;
+	used_at: number | null;
+	created_at: number;
+};
+
+/** An access or refresh token an app holds: SHA-256 (hex) only. */
+export type OAuthTokensTable = {
+	id: string;
+	grant_id: string;
+	kind: 'access' | 'refresh';
+	token_hash: string;
+	/** The address of the MCP door it was made for. */
+	resource: string;
+	expires_at: number;
+	created_at: number;
+	/** A refresh token: when it was exchanged for the next pair. */
+	used_at: number | null;
+	/** A refresh token: the refresh token that took its place. */
+	replaced_by: string | null;
+	/** The other token of the pair it was issued with. */
+	issued_with: string | null;
 };
 
 /** A connected app: see `m0008_connected_apps`. */
@@ -302,6 +373,10 @@ export type CoreTables = {
 	core_changes: ChangesTable;
 	core_embeddings: EmbeddingsTable;
 	core_api_tokens: ApiTokensTable;
+	core_oauth_clients: OAuthClientsTable;
+	core_oauth_requests: OAuthRequestsTable;
+	core_oauth_codes: OAuthCodesTable;
+	core_oauth_tokens: OAuthTokensTable;
 	core_api_token_handles: ApiTokenHandlesTable;
 	core_members: MembersTable;
 	core_roles: RolesTable;

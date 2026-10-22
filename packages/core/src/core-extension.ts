@@ -84,6 +84,12 @@ import { createMemory } from './memory.ts';
 import { coreMigrations } from './migrations/0001_init.ts';
 import { NextUpModeSchema, readNextUp, setMyNextUp } from './next-up.ts';
 import type { createNotifications } from './notifications.ts';
+import {
+	type OAuthService,
+	oauthCleanup,
+	oauthNotifications,
+	scheduleOAuthCleanup,
+} from './oauth.ts';
 import type { Registry } from './registry.ts';
 import type { Search } from './search.ts';
 import { readStoredInput } from './stored-input.ts';
@@ -460,6 +466,7 @@ export interface CoreExtensionDeps {
 	devices: () => DeviceService;
 	apps: () => AppService;
 	apiTokens: () => ApiTokenService;
+	oauth: () => OAuthService;
 	/** Records what the credential routes did (they run outside actions). */
 	audit: AuditTrail;
 	appVersion: string;
@@ -538,6 +545,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 	const admin = createAdminActions({
 		apps: deps.apps,
 		apiTokens: deps.apiTokens,
+		oauth: deps.oauth,
 		devices: deps.devices,
 		identity: deps.identity,
 	});
@@ -1924,6 +1932,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.notifications.jobs,
 			...autoApproval.jobs,
 			pruneIdempotency,
+			oauthCleanup,
 			pruneChanges,
 			expireDrafts,
 			endCredentials,
@@ -1936,6 +1945,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			draftDecided,
 			backupFailed,
 			backupRestored,
+			...oauthNotifications,
 			...autoApproval.notifications,
 		],
 		capabilities: Object.values(CORE_CAPABILITIES),
@@ -1980,6 +1990,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		register: async (ctx) => {
 			// First pruning a day after start; the job schedules the next one itself.
 			await schedulePrune(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
+			await scheduleOAuthCleanup(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
 			await schedulePruneChanges(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
 			// Suggestions about a day that has passed expire shortly after midnight (family time).
 			await scheduleExpiry(ctx);

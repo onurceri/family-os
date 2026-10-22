@@ -15,6 +15,7 @@ import type { AppService, AppTokenView, AppView } from './apps.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { deviceChanged } from './core-events.ts';
 import { DeviceSchema, type DeviceService, toDevice } from './devices.ts';
+import type { OAuthService } from './oauth.ts';
 
 /**
  * What an admin changes about connected apps, AI-app keys, displays and devices. Minting a key
@@ -117,6 +118,7 @@ export const END_DEVICE_SESSIONS_JOB = 'core.endDeviceSessions';
 export function createAdminActions(deps: {
 	apps: () => AppService;
 	apiTokens: () => ApiTokenService;
+	oauth: () => OAuthService;
 	devices: () => DeviceService;
 	identity: Pick<IdentityAdmin, 'endDeviceSessions'>;
 }) {
@@ -250,6 +252,40 @@ export function createAdminActions(deps: {
 		},
 	});
 
+	const OAuthSettingsSchema = z.object({
+		oauthEnabled: z.boolean(),
+		dcrEnabled: z.boolean(),
+		allowPlainHttp: z.boolean(),
+	});
+
+	const setMcpOAuth = defineAction({
+		id: 'core.setMcpOAuth',
+		title:
+			'Choose whether AI apps may sign in with a family account, register themselves, or use plain http',
+		input: OAuthSettingsSchema.partial(),
+		output: OAuthSettingsSchema,
+		requires: CORE_CAPABILITIES.aiManage.id,
+		approval: 'never',
+		async run(uow, patch) {
+			return deps.oauth().in(uow.db).setSettings(person(uow.actor), patch);
+		},
+	});
+
+	const deleteOAuthClient = defineAction({
+		id: 'core.deleteOAuthClient',
+		title: 'Remove an app set up to sign in, and end every sign-in it holds',
+		input: z.object({ clientId: idSchema('oauth_client') }),
+		output: z.object({ id: z.string(), name: z.string() }),
+		// Like the keys: the member who set it up, or whoever manages AI; never an app.
+		requires: CORE_CAPABILITIES.mcpUse.id,
+		approval: 'never',
+		target: (input) => ({ table: 'core_oauth_clients', id: input.clientId }),
+		async run(uow, { clientId }) {
+			const removed = await deps.oauth().in(uow.db).deleteClient(person(uow.actor), clientId);
+			return { id: removed.id, name: removed.name };
+		},
+	});
+
 	const confirmDisplayPairing = defineAction({
 		id: 'core.confirmDisplayPairing',
 		title: 'Confirm the code a display shows, name it and choose what it may show',
@@ -326,6 +362,8 @@ export function createAdminActions(deps: {
 			revokeAppToken,
 			revokeApiToken,
 			setMcpEnabled,
+			setMcpOAuth,
+			deleteOAuthClient,
 			confirmDisplayPairing,
 			updateDisplay,
 			revokeDevice,

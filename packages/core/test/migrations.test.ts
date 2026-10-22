@@ -159,7 +159,8 @@ it('adds a principal to idempotency answers and keeps the old rows', async () =>
 				name !== '0006_idempotency_principal' &&
 				name !== '0007_changes' &&
 				name !== '0008_connected_apps' &&
-				name !== '0009_audit_target',
+				name !== '0009_audit_target' &&
+				name !== '0010_oauth',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -238,7 +239,8 @@ it('adds connected apps beside the personal keys that already exist', async () =
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
 		Object.entries(coreMigrations).filter(
-			([name]) => name !== '0008_connected_apps' && name !== '0009_audit_target',
+			([name]) =>
+				name !== '0008_connected_apps' && name !== '0009_audit_target' && name !== '0010_oauth',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -282,7 +284,9 @@ it('adds connected apps beside the personal keys that already exist', async () =
 it('lets audit rows name their target and keeps the rows from before', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
-		Object.entries(coreMigrations).filter(([name]) => name !== '0009_audit_target'),
+		Object.entries(coreMigrations).filter(
+			([name]) => name !== '0009_audit_target' && name !== '0010_oauth',
+		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
 	await sql`insert into core_audit_log (at, actor, action_id, draft_id, outcome)
@@ -310,4 +314,86 @@ it('lets audit rows name their target and keeps the rows from before', async () 
 		db,
 	);
 	expect(index.rows.map((r) => r.name)).toContain('core_audit_log_at_idx');
+});
+
+/**
+ * The release before AI apps could sign in keeps its keys as they were; they are not grants of
+ * an app. Rows written after the upgrade link a grant to its app, and a grant takes its
+ * secrets, codes and handles with it when it goes.
+ */
+it('adds sign-in for AI apps and keeps the keys from before', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const before = Object.fromEntries(
+		Object.entries(coreMigrations).filter(([name]) => name !== '0010_oauth'),
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: before }]);
+	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
+		db,
+	);
+	await sql`insert into core_api_tokens (id, member_id, name, token_hash, scope, expires_at, created_at)
+		values ('api_token_old', 'member_a', 'Laptop', 'hash_old', 'read', 99, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+
+	const old = await sql<{
+		id: string;
+		token_hash: string;
+		expires_at: number;
+		oauth_client_id: string | null;
+	}>`select id, token_hash, expires_at, oauth_client_id from core_api_tokens`.execute(db);
+	expect(old.rows).toEqual([
+		{ id: 'api_token_old', token_hash: 'hash_old', expires_at: 99, oauth_client_id: null },
+	]);
+
+	const client = (id: string, kind: string, pkce = 1, clientId = id) =>
+		sql`insert into core_oauth_clients (id, kind, client_id, name, redirect_uris, require_pkce, created_at)
+			values (${id}, ${kind}, ${clientId}, 'App', '[]', ${pkce}, 1)`.execute(db);
+	await client('c1', 'registered', 0);
+	await client('c2', 'dynamic');
+	await expect(client('c3', 'unknown')).rejects.toThrow(/CHECK/);
+	await expect(client('c4', 'metadata', 0)).rejects.toThrow(/CHECK/);
+	await expect(client('c5', 'dynamic', 2)).rejects.toThrow(/CHECK/);
+	await expect(client('c6', 'dynamic', 1, 'c2')).rejects.toThrow(/UNIQUE/);
+
+	await sql`insert into core_api_tokens (id, member_id, name, token_hash, scope, created_at, oauth_client_id)
+		values ('api_token_new', 'member_a', 'App', 'oauth:api_token_new', 'read', 1, 'c2')`.execute(
+		db,
+	);
+	await expect(
+		sql`insert into core_api_tokens (id, member_id, name, token_hash, scope, created_at, oauth_client_id)
+			values ('api_token_bad', 'member_a', 'App', 'oauth:x', 'read', 1, 'nobody')`.execute(db),
+	).rejects.toThrow(/FOREIGN KEY/);
+	await sql`insert into core_oauth_requests (id, client_row_id, redirect_uri, scope_requested, resource, created_at, expires_at)
+		values ('r1', 'c2', 'https://x.example/cb', 'familyos.read', 'https://f.example/mcp', 1, 2)`.execute(
+		db,
+	);
+	await expect(
+		sql`update core_oauth_requests set decision = 'maybe' where id = 'r1'`.execute(db),
+	).rejects.toThrow(/CHECK/);
+	await sql`insert into core_oauth_codes (code_hash, request_id, grant_id, expires_at, created_at)
+		values ('h1', 'r1', 'api_token_new', 2, 1)`.execute(db);
+	await sql`insert into core_oauth_tokens (id, grant_id, kind, token_hash, resource, expires_at, created_at)
+		values ('t1', 'api_token_new', 'access', 'th1', 'https://f.example/mcp', 2, 1)`.execute(db);
+	await expect(
+		sql`insert into core_oauth_tokens (id, grant_id, kind, token_hash, resource, expires_at, created_at)
+			values ('t2', 'api_token_new', 'access', 'th1', 'https://f.example/mcp', 2, 1)`.execute(db),
+	).rejects.toThrow(/UNIQUE/);
+	await expect(
+		sql`insert into core_oauth_tokens (id, grant_id, kind, token_hash, resource, expires_at, created_at)
+			values ('t3', 'api_token_new', 'id', 'th3', 'https://f.example/mcp', 2, 1)`.execute(db),
+	).rejects.toThrow(/CHECK/);
+	await expect(
+		sql`insert into core_oauth_tokens (id, grant_id, kind, token_hash, resource, expires_at, created_at)
+			values ('t4', 'api_token_new', 'access', 'th4', 'https://f.example/mcp', 'soon', 1)`.execute(
+			db,
+		),
+	).rejects.toThrow(/cannot store TEXT/i);
+
+	await sql`delete from core_api_tokens where id = 'api_token_new'`.execute(db);
+	const left = await sql<{
+		n: number;
+	}>`select (select count(*) from core_oauth_tokens) + (select count(*) from core_oauth_codes) as n`.execute(
+		db,
+	);
+	expect(left.rows[0]?.n).toBe(0);
 });

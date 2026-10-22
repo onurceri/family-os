@@ -475,6 +475,122 @@ export const m0009_audit_target: Migration = {
 	},
 };
 
+/**
+ * Sign-in for AI apps (OAuth). A grant is a `core_api_tokens` row (`token_hash` is
+ * `oauth:<grant id>`, which no SHA-256 digest equals), so revoking, signing out everywhere and
+ * restores treat it like a personal key; the secrets an app holds are rows of `core_oauth_tokens`.
+ * Only registered clients may skip PKCE, and the database refuses it for any other kind.
+ */
+export const m0010_oauth: Migration = {
+	async up(db) {
+		await db.schema
+			.createTable('core_oauth_clients')
+			.addColumn('id', 'text', (c) => c.primaryKey())
+			.addColumn('kind', 'text', (c) =>
+				c.notNull().check(sql`kind in ('registered', 'dynamic', 'metadata')`),
+			)
+			.addColumn('client_id', 'text', (c) => c.notNull().unique())
+			.addColumn('name', 'text', (c) => c.notNull())
+			.addColumn('redirect_uris', 'text', (c) => c.notNull())
+			.addColumn('secret_hash', 'text')
+			.addColumn('require_pkce', 'integer', (c) =>
+				c.notNull().defaultTo(1).check(sql`require_pkce in (0, 1)`),
+			)
+			.addColumn('owner_member_id', 'text', (c) => c.references('core_members.id'))
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addColumn('last_consented_at', 'integer')
+			.addColumn('metadata_fetched_at', 'integer')
+			.addColumn('metadata_etag', 'text')
+			.addColumn('revoked_at', 'integer')
+			.addCheckConstraint(
+				'core_oauth_clients_pkce_check',
+				sql`require_pkce = 1 or kind = 'registered'`,
+			)
+			.modifyEnd(sql`strict`)
+			.execute();
+
+		await db.schema
+			.createTable('core_oauth_requests')
+			.addColumn('id', 'text', (c) => c.primaryKey())
+			.addColumn('client_row_id', 'text', (c) =>
+				c.notNull().references('core_oauth_clients.id').onDelete('cascade'),
+			)
+			.addColumn('redirect_uri', 'text', (c) => c.notNull())
+			.addColumn('state', 'text')
+			.addColumn('code_challenge', 'text')
+			.addColumn('scope_requested', 'text', (c) => c.notNull())
+			.addColumn('resource', 'text', (c) => c.notNull())
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addColumn('expires_at', 'integer', (c) => c.notNull())
+			.addColumn('decided_at', 'integer')
+			.addColumn('decision', 'text', (c) => c.check(sql`decision in ('approved', 'denied')`))
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createIndex('core_oauth_requests_expires_idx')
+			.on('core_oauth_requests')
+			.column('expires_at')
+			.execute();
+
+		await db.schema
+			.alterTable('core_api_tokens')
+			.addColumn('oauth_client_id', 'text', (c) => c.references('core_oauth_clients.id'))
+			.execute();
+		await db.schema
+			.createIndex('core_api_tokens_oauth_client_idx')
+			.on('core_api_tokens')
+			.column('oauth_client_id')
+			.execute();
+
+		await db.schema
+			.createTable('core_oauth_codes')
+			.addColumn('code_hash', 'text', (c) => c.primaryKey())
+			.addColumn('request_id', 'text', (c) =>
+				c.notNull().references('core_oauth_requests.id').onDelete('cascade'),
+			)
+			.addColumn('grant_id', 'text', (c) =>
+				c.notNull().references('core_api_tokens.id').onDelete('cascade'),
+			)
+			.addColumn('expires_at', 'integer', (c) => c.notNull())
+			.addColumn('used_at', 'integer')
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createIndex('core_oauth_codes_request_idx')
+			.on('core_oauth_codes')
+			.column('request_id')
+			.execute();
+
+		await db.schema
+			.createTable('core_oauth_tokens')
+			.addColumn('id', 'text', (c) => c.primaryKey())
+			.addColumn('grant_id', 'text', (c) =>
+				c.notNull().references('core_api_tokens.id').onDelete('cascade'),
+			)
+			.addColumn('kind', 'text', (c) => c.notNull().check(sql`kind in ('access', 'refresh')`))
+			.addColumn('token_hash', 'text', (c) => c.notNull().unique())
+			.addColumn('resource', 'text', (c) => c.notNull())
+			.addColumn('expires_at', 'integer', (c) => c.notNull())
+			.addColumn('created_at', 'integer', (c) => c.notNull())
+			.addColumn('used_at', 'integer')
+			.addColumn('replaced_by', 'text')
+			.addColumn('issued_with', 'text')
+			.modifyEnd(sql`strict`)
+			.execute();
+		await db.schema
+			.createIndex('core_oauth_tokens_grant_idx')
+			.on('core_oauth_tokens')
+			.column('grant_id')
+			.execute();
+		await db.schema
+			.createIndex('core_oauth_tokens_expires_idx')
+			.on('core_oauth_tokens')
+			.column('expires_at')
+			.execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
@@ -485,4 +601,5 @@ export const coreMigrations = {
 	'0007_changes': m0007_changes,
 	'0008_connected_apps': m0008_connected_apps,
 	'0009_audit_target': m0009_audit_target,
+	'0010_oauth': m0010_oauth,
 };

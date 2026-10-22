@@ -1431,5 +1431,15 @@
 	"draft_via_app_member": "{{name}}, {{app}} üzerinden",
 	"notify_backup_restored_apps_title": "Bağlı uygulamalar duraklatıldı",
 	"notify_backup_restored_apps_body_one": "Geri yüklemeden sonra {{count}} bağlı uygulama duraklatıldı. Gözden geçirin, güveniyorsanız sürdürün.",
-	"notify_backup_restored_apps_body_other": "Geri yüklemeden sonra {{count}} bağlı uygulama duraklatıldı. Gözden geçirin, güvendiklerinizi sürdürün."
+	"notify_backup_restored_apps_body_other": "Geri yüklemeden sonra {{count}} bağlı uygulama duraklatıldı. Gözden geçirin, güvendiklerinizi sürdürün.",
+	"notify_kind_ai_app_connected": "Hesabınıza bir yapay zekâ uygulaması bağlandı",
+	"notify_kind_ai_app_disconnected": "Bir yapay zekâ uygulamasının bağlantısı kesildi",
+	"notify_ai_app_connected_title": "{{name}} hesabınıza bağlandı",
+	"notify_ai_app_connected_body_read": "Ailenin yapay zekâya açtığı alanlarda sizin görebildiklerinizi okuyabilir. Bu siz değilseniz Bağlı uygulamalar bölümünden kaldırın.",
+	"notify_ai_app_connected_body_suggest": "Ailenin yapay zekâya açtığı alanlarda sizin görebildiklerinizi okuyabilir ve sizin onaylayacağınız değişiklikler önerebilir. Bu siz değilseniz Bağlı uygulamalar bölümünden kaldırın.",
+	"notify_ai_app_disconnected_title": "{{name}} bağlantısı kesildi",
+	"notify_ai_app_disconnected_body": "Oturum açma bilgisi iki kez kullanıldığı için FamilyOS bağlantıyı kesti. Bunu siz yaptıysanız yeniden bağlayın.",
+	"notify_backup_restored_ai_apps_title": "Yapay zekâ uygulamaları yeniden bağlanmalı",
+	"notify_backup_restored_ai_apps_body_one": "Oturum açmış {{count}} yapay zekâ uygulaması geri yüklemeden sonra yeniden bağlanmalı.",
+	"notify_backup_restored_ai_apps_body_other": "Oturum açmış {{count}} yapay zekâ uygulaması geri yüklemeden sonra yeniden bağlanmalı."
 }

@@ -8,13 +8,14 @@ import type { CoreTables } from './tables.ts';
  * the id of what it touched, never the secret and never the input.
  */
 export interface AuditTrail {
-	record(actor: Actor, id: string, target?: string | null): Promise<void>;
+	/** On `db` when given (a transaction), so the row commits with the change it records. */
+	record(actor: Actor, id: string, target?: string | null, db?: DbExecutor): Promise<void>;
 }
 
 export function createAuditTrail(deps: { db: DbExecutor; clock: Clock }): AuditTrail {
 	return {
-		async record(actor, id, target = null) {
-			await deps.db
+		async record(actor, id, target = null, db = deps.db) {
+			await db
 				.withTables<CoreTables>()
 				.insertInto('core_audit_log')
 				.values({

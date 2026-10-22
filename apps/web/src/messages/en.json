@@ -1431,5 +1431,15 @@
 	"draft_via_app_member": "{{name}} via {{app}}",
 	"notify_backup_restored_apps_title": "Connected apps are paused",
 	"notify_backup_restored_apps_body_one": "{{count}} connected app is paused after the restore. Check it, then resume it if you trust it.",
-	"notify_backup_restored_apps_body_other": "{{count}} connected apps are paused after the restore. Check them, then resume the ones you trust."
+	"notify_backup_restored_apps_body_other": "{{count}} connected apps are paused after the restore. Check them, then resume the ones you trust.",
+	"notify_kind_ai_app_connected": "An AI app was connected to your account",
+	"notify_kind_ai_app_disconnected": "An AI app was disconnected",
+	"notify_ai_app_connected_title": "{{name}} was connected to your account",
+	"notify_ai_app_connected_body_read": "It can read what you can see in the areas the family opened to AI. If this was not you, revoke it in Connected apps.",
+	"notify_ai_app_connected_body_suggest": "It can read what you can see in the areas the family opened to AI, and suggest changes that you approve. If this was not you, revoke it in Connected apps.",
+	"notify_ai_app_disconnected_title": "{{name}} was disconnected",
+	"notify_ai_app_disconnected_body": "Its sign-in was used twice, so FamilyOS disconnected it. Connect it again if that was you.",
+	"notify_backup_restored_ai_apps_title": "AI apps must connect again",
+	"notify_backup_restored_ai_apps_body_one": "{{count}} AI app that had signed in must connect again after the restore.",
+	"notify_backup_restored_ai_apps_body_other": "{{count}} AI apps that had signed in must connect again after the restore."
 }

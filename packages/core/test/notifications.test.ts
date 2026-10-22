@@ -335,6 +335,8 @@ describe('delivery', () => {
 			'core.draftDecided',
 			'core.backupFailed',
 			'core.backupRestored',
+			'core.aiAppConnected',
+			'core.aiAppDisconnected',
 			'core.autoApprovalStopped',
 		]);
 	});
@@ -533,6 +535,16 @@ describe('reading and preferences', () => {
 			{
 				id: 'core.backupRestored',
 				label: 'en|app:notify_kind_backup_restored|',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.aiAppConnected',
+				label: 'en|app:notify_kind_ai_app_connected|',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.aiAppDisconnected',
+				label: 'en|app:notify_kind_ai_app_disconnected|',
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{

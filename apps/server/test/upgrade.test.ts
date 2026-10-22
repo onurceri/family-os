@@ -32,6 +32,7 @@ const VERSION_MIGRATIONS = [
 	'core/0007_changes',
 	'core/0008_connected_apps',
 	'core/0009_audit_target',
+	'core/0010_oauth',
 	'calendar/0003_version',
 	'lists/0002_versions',
 	'chores/0002_versions',

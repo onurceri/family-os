@@ -11,10 +11,16 @@ import {
 import { sql } from 'kysely';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
+import { sha256Hex, toBase64Url } from './secret-text.ts';
 import type { ApiTokenRow, CoreTables } from './tables.ts';
 
 /** Every token starts with this, so a leaked one is recognisable (secret scanners, the owner). */
 export const API_TOKEN_PREFIX = 'famos_';
+/** An access token an AI app got by signing in; it is looked up apart from personal keys. */
+export const OAUTH_ACCESS_PREFIX = 'famos_at_';
+export const OAUTH_REFRESH_PREFIX = 'famos_rt_';
+export const OAUTH_CLIENT_SECRET_PREFIX = 'famos_cs_';
+const OAUTH_PREFIXES = [OAUTH_ACCESS_PREFIX, OAUTH_REFRESH_PREFIX, OAUTH_CLIENT_SECRET_PREFIX];
 export const API_TOKEN_DEFAULT_DAYS = 90;
 export const API_TOKEN_MAX_DAYS = 365;
 /** Per member, so a script cannot fill the table. */
@@ -37,6 +43,8 @@ export interface ApiTokenView {
 	lastUsedAt: number | null;
 	createdAt: number;
 	revokedAt: number | null;
+	/** The AI app that signed in, for a grant made by OAuth; null for a personal key. */
+	oauthClientId: string | null;
 }
 
 export interface AuthenticatedToken {
@@ -83,17 +91,6 @@ export interface ApiTokenService {
 	setEnabled(actor: Actor, enabled: boolean): Promise<void>;
 }
 
-function toBase64Url(bytes: Uint8Array): string {
-	let binary = '';
-	for (const b of bytes) binary += String.fromCharCode(b);
-	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256Hex(text: string): Promise<string> {
-	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 const view = (row: ApiTokenRow): ApiTokenView => ({
 	id: row.id,
 	memberId: row.member_id,
@@ -103,6 +100,7 @@ const view = (row: ApiTokenRow): ApiTokenView => ({
 	lastUsedAt: row.last_used_at,
 	createdAt: row.created_at,
 	revokedAt: row.revoked_at,
+	oauthClientId: row.oauth_client_id,
 });
 
 /**
@@ -134,6 +132,8 @@ export function createApiTokenService(deps: {
 	clock: Clock;
 	ids: IdGenerator;
 	access: () => Access;
+	/** Resolves an OAuth access token (`famos_at_…`); personal keys never reach it. */
+	authenticateOAuth?: (secret: string) => Promise<AuthenticatedToken | null>;
 }): ApiTokenService {
 	const tokens = () => deps.db.withTables<CoreTables>();
 	const member = (actor: Actor): string => {
@@ -167,7 +167,10 @@ export function createApiTokenService(deps: {
 			if (Number(active.n) >= MAX_TOKENS_PER_MEMBER)
 				throw new FamosError('limit_reached', 'Too many tokens; revoke one first');
 
-			const secret = `${API_TOKEN_PREFIX}${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+			// Never a secret that starts like an OAuth one: those are looked up elsewhere.
+			let secret: string;
+			do secret = `${API_TOKEN_PREFIX}${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+			while (OAUTH_PREFIXES.some((prefix) => secret.startsWith(prefix)));
 			const now = deps.clock.now();
 			const row: ApiTokenRow = {
 				id: deps.ids.next('api_token'),
@@ -179,6 +182,7 @@ export function createApiTokenService(deps: {
 				last_used_at: null,
 				created_at: now,
 				revoked_at: null,
+				oauth_client_id: null,
 			};
 			await tokens().insertInto('core_api_tokens').values(row).execute();
 			return { secret, token: view(row) };
@@ -225,6 +229,8 @@ export function createApiTokenService(deps: {
 		async authenticate(secret) {
 			if (!secret?.startsWith(API_TOKEN_PREFIX)) return null;
 			if (secret.length > 128) return null;
+			if (secret.startsWith(OAUTH_ACCESS_PREFIX))
+				return (await deps.authenticateOAuth?.(secret)) ?? null;
 			const row = await tokens()
 				.selectFrom('core_api_tokens')
 				.selectAll()

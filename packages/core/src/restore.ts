@@ -25,6 +25,8 @@ export interface RestoreReport {
 	failed: string[];
 	/** Connected apps paused until an admin looks at them again. */
 	appsPaused: number;
+	/** AI apps that had signed in with an account and must connect again. */
+	aiAppsReset: number;
 	/** Access that was narrowed after the backup and stayed narrow. */
 	access: {
 		/** People whose role is the narrower one, or who hold a role that was narrowed. */
@@ -103,11 +105,13 @@ export async function reconcileRestore(
 			);
 		kept += (await carryRevoked(deps.db, previous, 'core_api_tokens', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_devices', now)).length;
+		kept += (await carryRevoked(deps.db, previous, 'core_oauth_clients', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_apps', now)).length;
 		kept += (await carryRevoked(deps.db, previous, 'core_app_tokens', now)).length;
 		kept += await deps.identity.carryNewerLogins(previous);
 		for (const step of hostSteps) kept += await step();
 	}
+	const aiAppsReset = await forgetOAuthSecrets(deps.db);
 	for (const ext of deps.extensions()) {
 		if (!ext.onRestore) continue;
 		try {
@@ -154,7 +158,35 @@ export async function reconcileRestore(
 			url: '/settings/connected-apps',
 			source: { kind: 'restore', id: 'restore-apps' },
 		});
-	return { sessionsEnded: true, kept, failed, appsPaused, access };
+	if (aiAppsReset > 0)
+		await deps.notify({
+			kind: 'core.backupRestored',
+			to: { capability: 'core.ai.manage' },
+			title: { key: 'app:notify_backup_restored_ai_apps_title' },
+			body: { key: 'app:notify_backup_restored_ai_apps_body', params: { count: aiAppsReset } },
+			url: '/settings/connected-apps',
+			source: { kind: 'restore', id: 'restore-ai-apps' },
+		});
+	return { sessionsEnded: true, kept, failed, appsPaused, aiAppsReset, access };
+}
+
+/**
+ * A backup holds refresh tokens that were rotated away since, perhaps ones a thief kept: the
+ * secrets AI apps hold, the codes and the waiting requests are all deleted. The grants stay
+ * listed, so each app signs in again. Returns how many live grants that affects.
+ */
+async function forgetOAuthSecrets(db: DbExecutor): Promise<number> {
+	const tables = db.withTables<CoreTables>();
+	const live = await tables
+		.selectFrom('core_api_tokens')
+		.select((eb) => eb.fn.countAll<number>().as('n'))
+		.where('oauth_client_id', 'is not', null)
+		.where('revoked_at', 'is', null)
+		.executeTakeFirstOrThrow();
+	await tables.deleteFrom('core_oauth_tokens').execute();
+	await tables.deleteFrom('core_oauth_codes').execute();
+	await tables.deleteFrom('core_oauth_requests').execute();
+	return Number(live.n);
 }
 
 /** Members archived since the backup are archived again; returns their ids. */
@@ -183,7 +215,12 @@ async function carryArchivedMembers(db: DbExecutor, previous: DbExecutor): Promi
 async function carryRevoked(
 	db: DbExecutor,
 	previous: DbExecutor,
-	table: 'core_api_tokens' | 'core_devices' | 'core_apps' | 'core_app_tokens',
+	table:
+		| 'core_api_tokens'
+		| 'core_oauth_clients'
+		| 'core_devices'
+		| 'core_apps'
+		| 'core_app_tokens',
 	now: number,
 ): Promise<string[]> {
 	const later = await previous

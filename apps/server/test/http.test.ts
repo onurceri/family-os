@@ -869,6 +869,16 @@ describe('HTTP API', () => {
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{
+				id: 'core.aiAppConnected',
+				label: 'Hesabınıza bir yapay zekâ uygulaması bağlandı',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.aiAppDisconnected',
+				label: 'Bir yapay zekâ uygulamasının bağlantısı kesildi',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
 				id: 'core.autoApprovalStopped',
 				label: 'Otomatik onay durduruldu',
 				defaultChannels: ['webpush', 'telegram'],
