@@ -18,15 +18,20 @@ import { deviceTokenFromHeaders } from './devices.ts';
  *   display's device cookie; a bearer header is refused outright;
  * - `mcp`: the AI agents' endpoint, by a bearer token; cookies are never read;
  * - `api`: connected apps, by an app key as a bearer: the app itself, or a member it acts for
- *   (never a member who signed in), and cookies are never read.
+ *   (never a member who signed in), and cookies are never read;
+ * - `oauth`: the sign-in endpoints for AI apps (`/oauth/*`, `/.well-known/oauth-*`). They read no
+ *   cookie and admit no caller: they recognise the app that is signing in (by its client id and
+ *   secret), never a person, and run nothing as anyone. The one step that needs a person, the
+ *   decision, is a `session` route.
  */
-export type Door = 'session' | 'mcp' | 'api';
+export type Door = 'session' | 'mcp' | 'api' | 'oauth';
 
 /** The kinds of caller each door admits. */
 export const DOOR_KINDS = {
 	session: ['member', 'display'],
 	mcp: ['ai'],
 	api: ['app', 'member'],
+	oauth: [],
 } as const satisfies Record<Door, readonly Actor['kind'][]>;
 
 /**
@@ -118,7 +123,8 @@ export function mcpActor(principal: AuthenticatedToken): Actor {
 
 /**
  * Who calls the MCP endpoint: the `Authorization: Bearer` header only, never a cookie. The
- * token's person must still hold the capability to use tokens.
+ * token is a personal key or an access token an AI app got by signing in; both are the same AI
+ * caller for the same kind of person, who must still hold the capability to use tokens.
  */
 export async function authenticateBearer(kernel: Kernel, headers: Headers): Promise<BearerResult> {
 	const header = /^Bearer\s+(\S+)$/i.exec(headers.get('authorization') ?? '');

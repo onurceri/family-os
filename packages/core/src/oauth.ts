@@ -615,8 +615,6 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 
 		async createRequest(input) {
 			const status = await requireActive();
-			if (input.responseType !== undefined && input.responseType !== 'code')
-				throw new OAuthError('unsupported_response_type', 'Only the code flow is offered');
 			if (!input.clientId || input.clientId.length > MAX_URI_LENGTH)
 				throw new OAuthError('invalid_request', 'The app did not say who it is');
 			const client = await t()
@@ -639,6 +637,8 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 			const fail = (code: OAuthErrorCode, message: string) => new OAuthError(code, message, true);
 			if (input.state !== undefined && input.state.length > MAX_STATE_LENGTH)
 				throw fail('invalid_request', 'The state is too long');
+			if (input.responseType !== undefined && input.responseType !== 'code')
+				throw fail('unsupported_response_type', 'Only the code flow is offered');
 			const challenge = input.codeChallenge || undefined;
 			if (challenge !== undefined) {
 				// Only S256: a missing method is never taken to be `plain`.

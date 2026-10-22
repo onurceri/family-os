@@ -1,5 +1,5 @@
 import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
-import type { AuthenticatedToken, Kernel } from '@famos/core';
+import { type AuthenticatedToken, type Kernel, OAUTH_SCOPES } from '@famos/core';
 import type { Logger } from '@famos/sdk';
 import type { OpenAPIHono } from '@hono/zod-openapi';
 import { createMcpHonoApp } from '@modelcontextprotocol/hono';
@@ -33,9 +33,9 @@ const TOKEN_PARAM = /token|key|auth|secret|password|bearer/i;
 
 /**
  * The MCP endpoint: `/mcp`, stateless (spec 2026-07-28; the older 2025 handshake is
- * served by the SDK's stateless fallback), authenticated by a personal API token in the
- * `Authorization: Bearer` header only. Cookies are never read here, so this is not a CSRF
- * target: a browser cannot attach the token on its own.
+ * served by the SDK's stateless fallback), authenticated by a bearer token in the `Authorization`
+ * header only: a personal API key, or an access token an AI app got by signing in. Cookies are
+ * never read here, so this is not a CSRF target: a browser cannot attach the token on its own.
  */
 export function mountMcp(
 	app: OpenAPIHono<AppEnv>,
@@ -76,15 +76,28 @@ export function mountMcp(
 	app.use('/mcp', async (c, next) => {
 		if (!(await tokens.isEnabled())) return c.json({ error: { code: 'not_found' } }, 404);
 
-		const fail = (status: 401 | 403 | 429, code: number, message: string, retry?: number) => {
-			if (status === 401) c.header('www-authenticate', 'Bearer realm="FamilyOS MCP"');
+		// An app that is not signed in is told where to sign in, when the family allows that.
+		const challenge = async (tokenSent: boolean) => {
+			const oauth = await kernel.oauth.status();
+			return oauth.active && oauth.issuer
+				? `Bearer resource_metadata="${oauth.issuer}/.well-known/oauth-protected-resource/mcp", scope="${OAUTH_SCOPES.join(' ')}"${tokenSent ? ', error="invalid_token"' : ''}`
+				: `Bearer realm="FamilyOS MCP"${tokenSent ? ', error="invalid_token"' : ''}`;
+		};
+		const fail = async (
+			status: 401 | 403 | 429,
+			code: number,
+			message: string,
+			retry?: number,
+			tokenSent = false,
+		) => {
+			if (status === 401) c.header('www-authenticate', await challenge(tokenSent));
 			if (retry) c.header('retry-after', String(retry));
 			return c.json(rpcError(code, message), status);
 		};
-		const unauthorized = (message: string) => {
+		const unauthorized = async (message: string, tokenSent = false) => {
 			if (!badTokens.hit(deps.clientIp(c)))
 				return fail(429, RATE_LIMITED, 'Too many failed attempts', 60);
-			return fail(401, UNAUTHORIZED, message);
+			return fail(401, UNAUTHORIZED, message, undefined, tokenSent);
 		};
 
 		const url = new URL(c.req.url);
@@ -98,7 +111,7 @@ export function mountMcp(
 		if (caller.outcome === 'missing')
 			return unauthorized('Send an Authorization: Bearer header with a FamilyOS token');
 		if (caller.outcome === 'unknown')
-			return unauthorized('The token is unknown, expired or revoked');
+			return unauthorized('The token is unknown, expired or revoked', true);
 		if (caller.outcome === 'forbidden')
 			return fail(403, FORBIDDEN, 'This person may not use API tokens');
 		const principal = caller.principal;

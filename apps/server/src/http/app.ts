@@ -46,6 +46,8 @@ import type { AppEnv } from './env.ts';
 import { errorBody, errorResponses, handleError } from './errors.ts';
 import { mountExtensionRoutes } from './extensions.ts';
 import type { KnownDevices } from './known-devices.ts';
+import { mountOAuthRoutes } from './oauth.ts';
+import { mountOAuthEndpoints } from './oauth-endpoints.ts';
 import { MAX_BAD_KEYS_PER_MINUTE, mountPublicApi } from './public/index.ts';
 import { mountPushRoutes } from './push.ts';
 import { createRateLimiter } from './rate-limit.ts';
@@ -601,6 +603,7 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 	mountAiRoutes(app, deps.ai, deps.kernel);
 	mountPushRoutes(app, deps.webPush, deps.kernel);
 	mountApiTokenRoutes(app, deps.kernel);
+	mountOAuthRoutes(app, deps.kernel);
 	mountAppRoutes(app, deps.kernel);
 	// MCP answers carry family data for a token: never cache them.
 	app.use('/mcp/*', async (c, next) => {
@@ -618,6 +621,9 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		clientIp,
 		badTokens,
 	});
+	// Signing in AI apps: no cookie, no CSRF check; the apps prove themselves with their own
+	// secrets, and a wrong one counts against the same budget as a wrong token at `/mcp`.
+	mountOAuthEndpoints(app, { kernel: deps.kernel, clientIp, badTokens });
 	// Connected apps: a bearer key and nothing else, so no cookie, session or CSRF check applies.
 	mountPublicApi(app, {
 		kernel: deps.kernel,
