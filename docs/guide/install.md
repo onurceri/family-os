@@ -29,7 +29,8 @@ The compose file is the same for every version, so downloading it from `main` is
    ```
 
 2. Use `!override`. A plain `ports:` is merged with the original, and both ports are bound.
-3. Run `docker compose up -d` and open `http://localhost:8080`.
+3. Set `FAMOS_BASE_URL=http://localhost:8080` in a `.env` file next to `docker-compose.yml`, so links FamilyOS writes (the setup link too) use the new port.
+4. Run `docker compose up -d` and open `http://localhost:8080`.
 
 ### Phones and Home Assistant
 
