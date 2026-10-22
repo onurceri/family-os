@@ -220,10 +220,22 @@ export interface ExternalHttpRequest {
 	maxBytes?: number;
 	/** Whole-request limit including redirects. Default 20 s. */
 	timeoutMs?: number;
+	/**
+	 * What to do with a redirect: `same-host` (the default) follows it within the host, `none`
+	 * refuses every one (`redirect_refused`), for a document whose address must be the one it is
+	 * read from.
+	 */
+	redirects?: 'same-host' | 'none';
 }
 
 export type ExternalHttpResponse =
-	| { status: 304; etag: string | null; lastModified: string | null }
+	| {
+			status: 304;
+			etag: string | null;
+			lastModified: string | null;
+			/** The response's `Cache-Control`, if sent. */
+			cacheControl?: string | null;
+	  }
 	| {
 			status: 200;
 			/** Decoded body. */
@@ -232,6 +244,8 @@ export type ExternalHttpResponse =
 			contentType?: string | null;
 			etag: string | null;
 			lastModified: string | null;
+			/** The response's `Cache-Control`, if sent. */
+			cacheControl?: string | null;
 	  };
 
 /** The most a POST may send: a request body is a small JSON document, never a file. */

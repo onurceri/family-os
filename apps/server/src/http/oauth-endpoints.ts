@@ -6,6 +6,7 @@ import {
 	type OAuthErrorCode,
 	type TokenSet,
 } from '@famos/core';
+import { isFamosError } from '@famos/sdk';
 import type { OpenAPIHono } from '@hono/zod-openapi';
 import type { Context, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -21,13 +22,19 @@ import { createRateLimiter, type RateLimiter } from './rate-limit.ts';
  * cookie and run no action: the door admits no caller, it only recognises the app by its own id
  * and secret. Every address in them comes from the family address (`FAMOS_BASE_URL`), never from a
  * request header, so a forged `Host` cannot move the issuer. While signing in is off, or MCP is,
- * each of them answers 404 like `/mcp` does.
+ * each of them answers 404 like `/mcp` does. An app that cannot be set up by a person introduces
+ * itself in one of two ways: by an address its description is read from (handled where the
+ * request is made), or, only while the family allows it, by registering at `/oauth/register`.
  */
 
 /** Large enough for any form an app sends; the rest is refused before it is read. */
 const MAX_BODY_BYTES = 16 * 1024;
 /** Authorization requests per client address per minute: each one stores a pending request. */
 const AUTHORIZE_PER_MINUTE = 60;
+/** Registrations per client address per hour: anyone may call it, and each one stores a row. */
+const REGISTER_PER_HOUR = 10;
+/** A registration is a few addresses and a name. */
+const REGISTER_MAX_BODY_BYTES = 4 * 1024;
 const NOT_FOUND = errorBody('not_found', 'Not found');
 
 /** The parameters of the authorization request that must not be repeated. */
@@ -151,6 +158,7 @@ export function mountOAuthEndpoints(
 	const { kernel } = deps;
 	const oauth = kernel.oauth;
 	const authorizeLimit = createRateLimiter({ max: AUTHORIZE_PER_MINUTE, windowMs: 60_000 });
+	const registerLimit = createRateLimiter({ max: REGISTER_PER_HOUR, windowMs: 60 * 60_000 });
 
 	// Metadata, token and revocation are read by browser-based apps too (an inspector in a web
 	// page). They read no cookie, so any origin may call them without credentials.
@@ -171,6 +179,7 @@ export function mountOAuthEndpoints(
 		'/.well-known/oauth-authorization-server',
 		'/oauth/token',
 		'/oauth/revoke',
+		'/oauth/register',
 	]) {
 		app.use(path, open);
 		app.use(path, crossOrigin);
@@ -179,14 +188,20 @@ export function mountOAuthEndpoints(
 	// ---- metadata -------------------------------------------------------------------------
 
 	const document =
-		(build: (address: { issuer: string; resource: string }) => unknown) =>
+		(build: (address: { issuer: string; resource: string; registration: boolean }) => unknown) =>
 		async (c: Context<AppEnv>) => {
 			const status = await oauth.status();
 			if (!status.active || !status.issuer || !status.resource)
 				return c.json(NOT_FOUND, 404, { 'cache-control': 'no-store' });
-			return c.json(build({ issuer: status.issuer, resource: status.resource }) as object, 200, {
-				'cache-control': 'no-store',
-			});
+			return c.json(
+				build({
+					issuer: status.issuer,
+					resource: status.resource,
+					registration: status.dcrEnabled,
+				}) as object,
+				200,
+				{ 'cache-control': 'no-store' },
+			);
 		};
 
 	const resourceDocument = document(({ issuer, resource }) => ({
@@ -199,11 +214,14 @@ export function mountOAuthEndpoints(
 	app.get('/.well-known/oauth-protected-resource', resourceDocument);
 	app.get(
 		'/.well-known/oauth-authorization-server',
-		document(({ issuer }) => ({
+		document(({ issuer, registration }) => ({
 			issuer,
 			authorization_endpoint: `${issuer}/oauth/authorize`,
 			token_endpoint: `${issuer}/oauth/token`,
 			revocation_endpoint: `${issuer}/oauth/revoke`,
+			// Only while the family allows apps to register themselves: otherwise there is no door.
+			...(registration && { registration_endpoint: `${issuer}/oauth/register` }),
+			client_id_metadata_document_supported: true,
 			response_types_supported: ['code'],
 			grant_types_supported: ['authorization_code', 'refresh_token'],
 			code_challenge_methods_supported: ['S256'],
@@ -274,6 +292,17 @@ export function mountOAuthEndpoints(
 	});
 	app.use('/oauth/token', limited);
 	app.use('/oauth/revoke', limited);
+	app.use(
+		'/oauth/register',
+		bodyLimit({
+			maxSize: REGISTER_MAX_BODY_BYTES,
+			onError: (c) =>
+				c.json(
+					{ error: 'invalid_client_metadata', error_description: 'The request is too large' },
+					413,
+				),
+		}),
+	);
 
 	/** The form an app posted: once per name, as RFC 6749 asks. Null when it is not a form. */
 	async function readForm(c: Context<AppEnv>): Promise<Map<string, string> | null> {
@@ -426,5 +455,74 @@ export function mountOAuthEndpoints(
 			}
 		}
 		return c.body(null, 200);
+	});
+
+	// ---- registration ---------------------------------------------------------------------
+
+	app.post('/oauth/register', async (c) => {
+		const status = await oauth.status();
+		// While registration is off the door does not exist.
+		if (!status.active || !status.dcrEnabled) return c.json(NOT_FOUND, 404);
+		c.header('cache-control', 'no-store');
+		if (!registerLimit.hit(deps.clientIp(c))) {
+			c.header('retry-after', '3600');
+			return c.json(
+				{ error: 'temporarily_unavailable', error_description: 'Too many registrations' },
+				429,
+			);
+		}
+		const bad = (description: string) => oauthJson(c, 'invalid_client_metadata', description);
+		if (c.req.header('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json')
+			return bad('Send the request as application/json');
+		let body: unknown;
+		try {
+			body = await c.req.json();
+		} catch {
+			return bad('The request is not JSON');
+		}
+		if (typeof body !== 'object' || body === null || Array.isArray(body))
+			return bad('The request must be a JSON object');
+		const fields = body as Record<string, unknown>;
+		// Public clients only: there is no secret to hand out or to guard.
+		if (
+			fields.token_endpoint_auth_method !== undefined &&
+			fields.token_endpoint_auth_method !== 'none'
+		)
+			return bad('Only public apps (token_endpoint_auth_method none) can register');
+		const only = (value: unknown, allowed: readonly string[]) =>
+			value === undefined ||
+			(Array.isArray(value) && value.every((v) => typeof v === 'string' && allowed.includes(v)));
+		if (!only(fields.grant_types, ['authorization_code', 'refresh_token']))
+			return bad('Only the authorization_code and refresh_token grants are offered');
+		if (!only(fields.response_types, ['code'])) return bad('Only the code response is offered');
+		try {
+			const client = await oauth.registerClient({
+				name: typeof fields.client_name === 'string' ? fields.client_name : undefined,
+				redirectUris: fields.redirect_uris,
+			});
+			// Only what was stored comes back: a name cleaned up, no logo or links it may have sent.
+			return c.json(
+				{
+					client_id: client.clientId,
+					client_id_issued_at: Math.floor(client.createdAt / 1000),
+					client_name: client.name,
+					redirect_uris: client.redirectUris,
+					token_endpoint_auth_method: 'none',
+					grant_types: ['authorization_code', 'refresh_token'],
+					response_types: ['code'],
+				},
+				201,
+			);
+		} catch (error) {
+			if (isOAuthError(error)) return oauthJson(c, error.code, error.message);
+			if (isFamosError(error) && error.code === 'limit_reached') {
+				c.header('retry-after', '3600');
+				return c.json(
+					{ error: 'temporarily_unavailable', error_description: 'Too many apps are waiting' },
+					429,
+				);
+			}
+			throw error;
+		}
 	});
 }

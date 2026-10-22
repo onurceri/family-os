@@ -109,7 +109,11 @@ describe('guarded get', () => {
 
 	it('fetches over https from the checked address and returns validators', async () => {
 		const { transport, requests } = scripted({
-			headers: { etag: '"abc"', 'last-modified': 'Mon, 05 Oct 2026 08:00:00 GMT' },
+			headers: {
+				etag: '"abc"',
+				'last-modified': 'Mon, 05 Oct 2026 08:00:00 GMT',
+				'cache-control': 'max-age=60',
+			},
 			text: 'BEGIN:VCALENDAR',
 		});
 		const http = createGuardedHttp({ resolve, transport });
@@ -120,6 +124,7 @@ describe('guarded get', () => {
 			contentType: null,
 			etag: '"abc"',
 			lastModified: 'Mon, 05 Oct 2026 08:00:00 GMT',
+			cacheControl: 'max-age=60',
 		});
 		expect(requests[0]?.address).toBe('93.184.216.34');
 		expect(requests[0]?.url.toString()).toBe('https://cal.example.org/a.ics?key=1');
@@ -179,6 +184,18 @@ describe('guarded get', () => {
 		const http = createGuardedHttp({ resolve, transport });
 		expect((await http.get({ url: 'https://cal.example.org/a.ics' })).status).toBe(200);
 		expect(requests.map((r) => r.url.pathname)).toEqual(['/a.ics', '/moved.ics']);
+	});
+
+	it('refuses every redirect, even on the same host, when asked to', async () => {
+		const { transport, requests } = scripted(
+			{ status: 302, headers: { location: '/moved.json' } },
+			{ text: 'never read' },
+		);
+		const http = createGuardedHttp({ resolve, transport });
+		expect(await code(http.get({ url: 'https://cal.example.org/a.json', redirects: 'none' }))).toBe(
+			'redirect_refused',
+		);
+		expect(requests).toHaveLength(1);
 	});
 
 	it('refuses redirects to another host, to http and endless chains', async () => {

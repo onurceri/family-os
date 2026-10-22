@@ -10,7 +10,7 @@
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { type Closed, closedFor, firstScope, scopeChoices } from './outcome.js';
+	import { addressDiffers, type Closed, closedFor, firstScope, scopeChoices } from './outcome.js';
 
 	type Json<P extends keyof paths> = paths[P] extends {
 		get: { responses: { 200: { content: { 'application/json': infer R } } } };
@@ -95,11 +95,7 @@
 		await session.refresh();
 	}
 
-	const differs = $derived(
-		request?.client.kind === 'metadata' &&
-			request.client.clientHost !== null &&
-			request.client.clientHost !== request.redirectHost,
-	);
+	const differs = $derived(request ? addressDiffers(request.client, request.redirectHost) : false);
 </script>
 
 {#snippet stop(title: string, hint: string, signOutToo = false)}

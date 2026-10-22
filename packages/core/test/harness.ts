@@ -29,6 +29,7 @@ import {
 	type ExtensionContext,
 	type ExtensionDefinition,
 	type ExtensionManifestInput,
+	type ExternalHttp,
 	ExternalHttpError,
 	type IdentityAdmin,
 	type JobContext,
@@ -83,6 +84,8 @@ export async function createTestKernel(
 		dbPath?: string;
 		refusable?: readonly string[];
 		extensionPackages?: ExtensionPackagesPort;
+		/** Outbound HTTP (default: unreachable). */
+		http?: ExternalHttp;
 	} = {},
 ): Promise<TestKernel> {
 	const handle = openDatabase({ path: options.dbPath ?? ':memory:' });
@@ -131,7 +134,7 @@ export async function createTestKernel(
 					? sealed.slice(`sealed:${extensionId}:`.length)
 					: null,
 		}),
-		http: {
+		http: options.http ?? {
 			get: async () => {
 				throw new ExternalHttpError('unreachable', 'No network in core tests');
 			},

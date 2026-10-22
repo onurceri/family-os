@@ -46,7 +46,8 @@ Some apps have no place for a key. They send you to a FamilyOS page, ask you to 
 | App | How it connects |
 |---|---|
 | Home Assistant | Set up first as an app of its own (below), then it signs in as the person who set it up. Works on a home network with the http option. |
-| Claude, ChatGPT, Claude Code and other apps that ask for an address | Add the address `https://<your FamilyOS address>/mcp` as a connector. They find the sign-in page by themselves. The address must be https and reachable from the internet, because these apps connect from their own servers. |
+| Claude, ChatGPT, Claude Code and other apps that ask for an address | Add the address `https://<your FamilyOS address>/mcp` as a connector (steps below). They find the sign-in page by themselves and introduce themselves by an address of their own, so **Let AI apps register themselves** can stay off. The family address must be https and reachable from the internet, because Claude and ChatGPT connect from their own servers. |
+| Older apps and editors that can only register themselves | Turn on **Let AI apps register themselves**. They add themselves, and you still decide on each sign-in. |
 | Apps that take only a key | Use an app key, as above. |
 
 **Behind a reverse proxy**, the whole address must reach FamilyOS, not only `/api` and `/mcp`: `/.well-known/` and `/oauth/` too. Apps look for `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` first. An address with a path, such as `example.com/family`, is not supported for signing in.
@@ -56,6 +57,18 @@ Some apps have no place for a key. They send you to a FamilyOS page, ask you to 
 **A password is needed.** A PIN on a shared device sees **Sign in with your password to connect an AI app**, because a connected app keeps working away from the device. Sign out, sign in with your email and password, and you come back to the page. Displays and connected apps can never decide.
 
 **How long it lasts.** A connected app stays connected while it is used. After 90 days without use it is disconnected. It shows under **My AI apps** as "<app>, signed in" with what it may do and when it was last used; **Revoke** ends it at once. You are told in the app when one connects (with a way to revoke it), and when FamilyOS disconnects one because its sign-in was used twice. Connecting the same app again replaces the earlier connection. A restore from a backup disconnects every app that had signed in, and they must connect again. Admins see and revoke everyone's.
+
+### Claude, ChatGPT and Claude Code
+
+Before you start, check that FamilyOS is on, **Let AI apps sign in with a FamilyOS account** is on, and the family address is https and reachable from the internet (for Claude Code on the same computer, any address that works for you will do).
+
+- **Claude** (claude.ai, the desktop and phone apps): open **Settings → Connectors**, choose **Add custom connector**, give it a name and the address `https://<your FamilyOS address>/mcp`, and press **Add**. Claude opens FamilyOS in your browser. Sign in with your password if asked, check the page and press **Connect**.
+- **ChatGPT**: open **Settings → Apps**, turn on developer mode if your plan asks for it, choose **Create app** (or add a connector), give it the same address, and sign in the same way.
+- **Claude Code**: run `claude mcp add --transport http familyos https://<your FamilyOS address>/mcp`, then start `claude` and run `/mcp` to sign in. It opens the page on your computer; the sign-in comes back to `localhost`, which the page points out.
+
+These apps name themselves by an address (a small description that FamilyOS reads from the app's own website, for a moment, to learn where the sign-in may come back to). That shows on the page as **Identified by its address**, with the address. If the sign-in would go back to a different address than the app's own, the page says so: continue only if you expect that. An app that added itself shows **This app registered itself** in a warning colour, because FamilyOS cannot check who made it; continue only if you started connecting it yourself, just now. An app's name is whatever it calls itself, so never decide on the name alone. FamilyOS never loads an app's logo.
+
+Apps that add themselves can be turned off again by switching **Let AI apps register themselves** off. Apps that were added and never approved are forgotten after a day; at most 50 can wait at once, and one network address can add ten an hour.
 
 ### Home Assistant
 

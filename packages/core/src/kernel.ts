@@ -257,6 +257,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		access: () => access,
 		audit,
 		publicUrl: options.publicUrl,
+		http: options.http,
 		mcpEnabled: () => apiTokens.isEnabled(),
 		notify: (db, request) => notifications.notifier.enqueue(db, request),
 	});

@@ -261,6 +261,8 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 					const { status } = response;
 					if (status >= 300 && status < 400 && status !== 304) {
 						await discard(response.body);
+						if (request.redirects === 'none')
+							throw new ExternalHttpError('redirect_refused', 'Redirects are not followed');
 						const location = response.headers.location;
 						if (!location || hop >= MAX_REDIRECTS)
 							throw new ExternalHttpError('redirect_refused', 'Too many or empty redirects');
@@ -272,9 +274,10 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 					}
 					const etag = response.headers.etag ?? null;
 					const lastModified = response.headers['last-modified'] ?? null;
+					const cacheControl = response.headers['cache-control'] ?? null;
 					if (status === 304) {
 						await discard(response.body);
-						return { status: 304, etag, lastModified };
+						return { status: 304, etag, lastModified, cacheControl };
 					}
 					if (status !== 200) {
 						await discard(response.body);
@@ -282,7 +285,7 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 					}
 					const text = await readBody(response, maxBytes);
 					const contentType = response.headers['content-type'] ?? null;
-					return { status: 200, text, contentType, etag, lastModified };
+					return { status: 200, text, contentType, etag, lastModified, cacheControl };
 				}
 			} catch (error) {
 				throw failure(error, signal);

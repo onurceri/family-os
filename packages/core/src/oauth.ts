@@ -6,6 +6,7 @@ import {
 	defineJob,
 	defineNotificationKind,
 	type ExtensionContext,
+	type ExternalHttp,
 	FamosError,
 	hasBrand,
 	type IdGenerator,
@@ -45,7 +46,7 @@ export const OAUTH_CODE_MS = 60 * 1000;
 export const OAUTH_REQUEST_MS = 10 * 60 * 1000;
 /** A refresh token presented again this soon after its use gets a new pair instead of ending the grant. */
 export const OAUTH_REFRESH_GRACE_MS = 30 * 1000;
-const UNAPPROVED_DYNAMIC_MS = DAY_MS;
+const UNAPPROVED_MS = DAY_MS;
 const MAX_ACTIVE_TOKENS_PER_MEMBER = 20;
 const MAX_CLIENTS_PER_MEMBER = 10;
 const MAX_REDIRECT_URIS = 5;
@@ -53,6 +54,15 @@ const MAX_URI_LENGTH = 2000;
 const MAX_STATE_LENGTH = 1024;
 const S256_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
 const PKCE_VERIFIER = /^[A-Za-z0-9._~-]{43,128}$/;
+/** Apps that registered themselves (by request or by address) and no person has approved yet. */
+const MAX_UNAPPROVED_DYNAMIC = 50;
+const MAX_UNAPPROVED_METADATA = 200;
+/** An app's description at its address: small, quick, and kept for a while the server allows. */
+const METADATA_MAX_BYTES = 5 * 1024;
+const METADATA_TIMEOUT_MS = 5000;
+const METADATA_MIN_FRESH_MS = 5 * 60 * 1000;
+const METADATA_MAX_FRESH_MS = DAY_MS;
+const METADATA_REMEMBERED = 500;
 
 export type OAuthErrorCode =
 	| 'invalid_request'
@@ -62,6 +72,8 @@ export type OAuthErrorCode =
 	| 'invalid_target'
 	| 'unsupported_response_type'
 	| 'access_denied'
+	| 'invalid_redirect_uri'
+	| 'invalid_client_metadata'
 	| 'temporarily_unavailable';
 
 const OAUTH_ERROR = Symbol.for('famos.OAuthError');
@@ -232,6 +244,44 @@ export interface ClientAuth {
 	clientSecret?: string | undefined;
 }
 
+/** How long a description fetched from an app's address may be used, from its `Cache-Control`. */
+export function metadataFreshMs(cacheControl: string | null | undefined): number {
+	let seconds = 0;
+	for (const part of (cacheControl ?? '').toLowerCase().split(',')) {
+		const directive = part.trim();
+		if (directive === 'no-store' || directive === 'no-cache') {
+			seconds = 0;
+			break;
+		}
+		const age = /^max-age=(\d{1,9})$/.exec(directive);
+		if (age?.[1]) seconds = Number(age[1]);
+	}
+	return Math.min(METADATA_MAX_FRESH_MS, Math.max(METADATA_MIN_FRESH_MS, seconds * 1000));
+}
+
+/**
+ * Whether a client id is an address of a description of the app (rather than an id we gave out):
+ * https, a path, no login or fragment, and written the way a URL normalises, so there is one way
+ * to spell it.
+ */
+export function isMetadataClientId(clientId: string): boolean {
+	if (!clientId.startsWith('https://')) return false;
+	let url: URL;
+	try {
+		url = new URL(clientId);
+	} catch {
+		return false;
+	}
+	return (
+		url.href === clientId &&
+		url.pathname !== '/' &&
+		!url.hash &&
+		!url.username &&
+		!url.password &&
+		!clientId.includes('#')
+	);
+}
+
 export interface OAuthService {
 	/** The same service on another executor: an action's unit of work, so it commits with it. */
 	in(db: DbExecutor): OAuthService;
@@ -272,6 +322,15 @@ export interface OAuthService {
 	/** The caller an access token stands for, or null (the bearer lookup of `/mcp`). */
 	authenticateAccess(secret: string): Promise<AuthenticatedToken | null>;
 
+	/**
+	 * An app registers itself (while the family allows it): a public client that no one has
+	 * approved yet. Anyone on the network may call it, so it keeps no audit row and is limited.
+	 * Throws `OAuthError`, or `limit_reached` when too many wait for approval.
+	 */
+	registerClient(input: {
+		name?: string | undefined;
+		redirectUris: unknown;
+	}): Promise<OAuthClientView>;
 	/** Sets up a client for the signed-in member; its secret is returned once. */
 	createClient(
 		actor: Actor,
@@ -293,6 +352,8 @@ export interface OAuthDeps {
 	audit: AuditTrail;
 	/** The family's address (`FAMOS_BASE_URL`); issuer and resource come from it and nothing else. */
 	publicUrl?: string | undefined;
+	/** Guarded outbound HTTP, for reading an app's description at its address. */
+	http?: ExternalHttp | undefined;
 	/** Whether the MCP door itself is on. */
 	mcpEnabled: () => Promise<boolean>;
 	/** Queues a notification on `db` (the transaction of the change). */
@@ -331,6 +392,32 @@ const clientName = (name: string) =>
 		.join('')
 		.trim()
 		.slice(0, 60);
+
+/**
+ * The return addresses an app that named itself asks for: a few, each https or on this device
+ * (the port of a device address is the app's to pick), with no login or fragment.
+ */
+function selfRegisteredUris(raw: unknown, code: OAuthErrorCode): string[] {
+	if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_REDIRECT_URIS)
+		throw new OAuthError(code, `An app needs 1 to ${MAX_REDIRECT_URIS} return addresses`);
+	const clean: string[] = [];
+	for (const uri of raw) {
+		if (typeof uri !== 'string' || uri.length > MAX_URI_LENGTH)
+			throw new OAuthError(code, 'A return address is not usable');
+		let url: URL;
+		try {
+			url = new URL(uri);
+		} catch {
+			throw new OAuthError(code, 'A return address is not a web address');
+		}
+		if (url.protocol !== 'https:' && !isLoopbackUri(uri))
+			throw new OAuthError(code, 'A return address must use https');
+		if (url.hash || url.username || url.password)
+			throw new OAuthError(code, 'A return address cannot hold a fragment or a login');
+		if (!clean.includes(uri)) clean.push(uri);
+	}
+	return clean;
+}
 
 /** The most an app asked for. Words it does not know are ignored and never widen the grant. */
 function ceilingOf(scope: string | undefined): ApiTokenScope {
@@ -553,6 +640,150 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 		return clean;
 	};
 
+	/** When each fetched description may be used without asking its address again. */
+	const metadataFreshUntil = new Map<string, number>();
+	const rememberFresh = (clientId: string, until: number) => {
+		metadataFreshUntil.delete(clientId);
+		metadataFreshUntil.set(clientId, until);
+		for (const key of metadataFreshUntil.keys()) {
+			if (metadataFreshUntil.size <= METADATA_REMEMBERED) break;
+			metadataFreshUntil.delete(key);
+		}
+	};
+
+	/**
+	 * The app named by an address: its description is read from there (a route may do this, as a
+	 * bounded read that a person waits for; never inside a transaction), checked, and kept as a
+	 * client row until it goes stale. Nothing in it is trusted beyond the return addresses: the
+	 * name is shown with where the answer goes and who vouches for the app.
+	 */
+	const metadataClient = async (clientId: string): Promise<OAuthClientsTable> => {
+		const unknown = () => new OAuthError('invalid_request', 'This app is not known to FamilyOS');
+		const unreadable = () =>
+			new OAuthError(
+				'invalid_request',
+				'FamilyOS could not read the app’s description at its address',
+			);
+		const wrong = (what: string) =>
+			new OAuthError('invalid_request', `The app’s description at its address is wrong: ${what}`);
+		if (!isMetadataClientId(clientId) || clientId.length > MAX_URI_LENGTH) throw unknown();
+		const known = await t()
+			.selectFrom('core_oauth_clients')
+			.selectAll()
+			.where('client_id', '=', clientId)
+			.executeTakeFirst();
+		if (known && (known.kind !== 'metadata' || known.revoked_at !== null)) throw unknown();
+		const now = deps.clock.now();
+		// After a restart nothing is remembered; the row's own time still covers the shortest stay.
+		const freshUntil =
+			metadataFreshUntil.get(clientId) ?? (known?.metadata_fetched_at ?? 0) + METADATA_MIN_FRESH_MS;
+		if (known && freshUntil > now) return known;
+		if (!deps.http) throw unreadable();
+
+		let answer: Awaited<ReturnType<ExternalHttp['get']>>;
+		try {
+			answer = await deps.http.get({
+				url: clientId,
+				headers: { accept: 'application/json' },
+				maxBytes: METADATA_MAX_BYTES,
+				timeoutMs: METADATA_TIMEOUT_MS,
+				redirects: 'none',
+				...(known?.metadata_etag && { conditional: { etag: known.metadata_etag } }),
+			});
+		} catch {
+			throw unreadable();
+		}
+		const keepUntil = now + metadataFreshMs(answer.cacheControl);
+		if (answer.status === 304) {
+			if (!known) throw unreadable();
+			await t()
+				.updateTable('core_oauth_clients')
+				.set({ metadata_fetched_at: now })
+				.where('id', '=', known.id)
+				.execute();
+			rememberFresh(clientId, keepUntil);
+			return { ...known, metadata_fetched_at: now };
+		}
+
+		let document: unknown;
+		try {
+			document = JSON.parse(answer.text);
+		} catch {
+			throw wrong('it is not JSON');
+		}
+		if (typeof document !== 'object' || document === null || Array.isArray(document))
+			throw wrong('it is not an object');
+		const fields = document as Record<string, unknown>;
+		// The address must name itself, exactly: a description cannot vouch for another address.
+		if (fields.client_id !== clientId) throw wrong('it names another address');
+		// A public client only: there is no secret to keep, so none is accepted.
+		if (
+			(fields.token_endpoint_auth_method !== undefined &&
+				fields.token_endpoint_auth_method !== 'none') ||
+			'client_secret' in fields
+		)
+			throw wrong('it asks for a secret');
+		const redirectUris = selfRegisteredUris(fields.redirect_uris, 'invalid_request');
+		const name =
+			clientName(typeof fields.client_name === 'string' ? fields.client_name : '') ||
+			hostOf(clientId);
+
+		if (known) {
+			await t()
+				.updateTable('core_oauth_clients')
+				.set({
+					name,
+					redirect_uris: JSON.stringify(redirectUris),
+					metadata_fetched_at: now,
+					metadata_etag: answer.etag,
+				})
+				.where('id', '=', known.id)
+				.execute();
+		} else {
+			const waiting = await t()
+				.selectFrom('core_oauth_clients')
+				.select((eb) => eb.fn.countAll<number>().as('n'))
+				.where('kind', '=', 'metadata')
+				.where('last_consented_at', 'is', null)
+				.where('revoked_at', 'is', null)
+				.executeTakeFirstOrThrow();
+			if (Number(waiting.n) >= MAX_UNAPPROVED_METADATA)
+				throw new OAuthError(
+					'temporarily_unavailable',
+					'Too many apps are waiting for approval. Try again later.',
+				);
+			await t()
+				.insertInto('core_oauth_clients')
+				.values({
+					id: deps.ids.next('oauth_client'),
+					kind: 'metadata',
+					client_id: clientId,
+					name,
+					redirect_uris: JSON.stringify(redirectUris),
+					secret_hash: null,
+					require_pkce: 1,
+					owner_member_id: null,
+					created_at: now,
+					last_consented_at: null,
+					metadata_fetched_at: now,
+					metadata_etag: answer.etag,
+					revoked_at: null,
+				})
+				// Two requests for a new app at once: the first one's row stands.
+				.onConflict((oc) => oc.column('client_id').doNothing())
+				.execute();
+		}
+		const stored = await t()
+			.selectFrom('core_oauth_clients')
+			.selectAll()
+			.where('client_id', '=', clientId)
+			.where('revoked_at', 'is', null)
+			.executeTakeFirst();
+		if (!stored) throw unknown();
+		rememberFresh(clientId, keepUntil);
+		return stored;
+	};
+
 	/** Ends one grant after its refresh token was used twice, and tells its member. */
 	const cutOffForReplay = async (db: DbExecutor, grant: ApiTokenRow, now: number) => {
 		await endGrants(db, [grant.id], now);
@@ -617,12 +848,15 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 			const status = await requireActive();
 			if (!input.clientId || input.clientId.length > MAX_URI_LENGTH)
 				throw new OAuthError('invalid_request', 'The app did not say who it is');
-			const client = await t()
-				.selectFrom('core_oauth_clients')
-				.selectAll()
-				.where('client_id', '=', input.clientId)
-				.where('revoked_at', 'is', null)
-				.executeTakeFirst();
+			const client = isMetadataClientId(input.clientId)
+				? await metadataClient(input.clientId)
+				: await t()
+						.selectFrom('core_oauth_clients')
+						.selectAll()
+						.where('client_id', '=', input.clientId)
+						.where('kind', '!=', 'metadata')
+						.where('revoked_at', 'is', null)
+						.executeTakeFirst();
 			if (!client) throw new OAuthError('invalid_request', 'This app is not known to FamilyOS');
 			if (
 				!input.redirectUri ||
@@ -1031,6 +1265,43 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 			};
 		},
 
+		async registerClient(input) {
+			const status = await statusOf();
+			if (!status.active || !status.dcrEnabled)
+				throw new OAuthError('temporarily_unavailable', 'Apps cannot register themselves here');
+			const redirectUris = selfRegisteredUris(input.redirectUris, 'invalid_redirect_uri');
+			const name = clientName(input.name ?? '') || hostOf(redirectUris[0] ?? '');
+			return atomic(async (db) => {
+				const waiting = await t(db)
+					.selectFrom('core_oauth_clients')
+					.select((eb) => eb.fn.countAll<number>().as('n'))
+					.where('kind', '=', 'dynamic')
+					.where('last_consented_at', 'is', null)
+					.where('revoked_at', 'is', null)
+					.executeTakeFirstOrThrow();
+				if (Number(waiting.n) >= MAX_UNAPPROVED_DYNAMIC)
+					throw new FamosError('limit_reached', 'Too many apps are waiting for approval');
+				const id = deps.ids.next('oauth_client');
+				const row: OAuthClientsTable = {
+					id,
+					kind: 'dynamic',
+					client_id: id,
+					name,
+					redirect_uris: JSON.stringify(redirectUris),
+					secret_hash: null,
+					require_pkce: 1,
+					owner_member_id: null,
+					created_at: deps.clock.now(),
+					last_consented_at: null,
+					metadata_fetched_at: null,
+					metadata_etag: null,
+					revoked_at: null,
+				};
+				await t(db).insertInto('core_oauth_clients').values(row).execute();
+				return clientView(row);
+			});
+		},
+
 		async createClient(actor, input) {
 			const member = connector(actor);
 			const name = clientName(input.name);
@@ -1127,7 +1398,10 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 	return service;
 }
 
-/** Deletes expired requests, codes and tokens, and dynamic clients nobody approved in a day. */
+/**
+ * Deletes expired requests, codes and tokens, and the apps that named themselves (by request or
+ * by address) and that nobody approved in a day.
+ */
 export async function cleanupExpired(db: DbExecutor, now: number): Promise<void> {
 	const tables = db.withTables<CoreTables>();
 	await tables.deleteFrom('core_oauth_codes').where('expires_at', '<=', now).execute();
@@ -1135,9 +1409,9 @@ export async function cleanupExpired(db: DbExecutor, now: number): Promise<void>
 	await tables.deleteFrom('core_oauth_tokens').where('expires_at', '<=', now).execute();
 	await tables
 		.deleteFrom('core_oauth_clients')
-		.where('kind', '=', 'dynamic')
+		.where('kind', 'in', ['dynamic', 'metadata'])
 		.where('last_consented_at', 'is', null)
-		.where('created_at', '<=', now - UNAPPROVED_DYNAMIC_MS)
+		.where('created_at', '<=', now - UNAPPROVED_MS)
 		.execute();
 }
 

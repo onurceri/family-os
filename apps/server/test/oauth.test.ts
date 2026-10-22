@@ -2,8 +2,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createGuardedHttp, type Transport } from '@famos/adapters/http-guard';
 import { silentLogger } from '@famos/adapters/runtime';
 import { OAUTH_REFRESH_GRACE_MS } from '@famos/core';
+import type { ExternalHttp } from '@famos/sdk';
 import {
 	auth,
 	type OAuthClientProvider,
@@ -28,7 +30,7 @@ const PASSWORD = 'correct horse battery';
 let runtime: Runtime;
 let app: ReturnType<typeof createHttpApp>;
 
-async function boot() {
+async function boot(http?: ExternalHttp) {
 	const dataDir = await mkdtemp(join(tmpdir(), 'famos-oauth-'));
 	const config = await loadConfig({ FAMOS_DATA_DIR: dataDir, FAMOS_BASE_URL: BASE });
 	runtime = openRuntime(config, {
@@ -36,6 +38,7 @@ async function boot() {
 		quiet: true,
 		passwordHasher: fastPasswordHasher,
 		extensions,
+		...(http && { http }),
 	});
 	await migrate(runtime);
 	await runtime.kernel.start();
@@ -352,6 +355,7 @@ describe('metadata', () => {
 			authorization_endpoint: `${BASE}/oauth/authorize`,
 			token_endpoint: `${BASE}/oauth/token`,
 			revocation_endpoint: `${BASE}/oauth/revoke`,
+			client_id_metadata_document_supported: true,
 			response_types_supported: ['code'],
 			grant_types_supported: ['authorization_code', 'refresh_token'],
 			code_challenge_methods_supported: ['S256'],
@@ -1403,5 +1407,689 @@ describe('what Settings reads', () => {
 		);
 		expect(revoked.body.status).toBe('applied');
 		expect((await rpc(flow.access)).status).toBe(401);
+	});
+});
+
+/** What a page on the internet answers when asked for, for the guarded fetch of an app's description. */
+type Page = {
+	status?: number;
+	headers?: Record<string, string>;
+	body?: string;
+	/** Answer `304` to a request that carries this validator. */
+	etag?: string;
+};
+
+/** The real guard (addresses are still judged), with the network replaced by a few scripted pages. */
+function internet(pages: Record<string, Page>) {
+	const asked: { url: string; ifNoneMatch: string | undefined }[] = [];
+	const transport: Transport = async ({ url, headers }) => {
+		asked.push({ url: url.href, ifNoneMatch: headers['if-none-match'] });
+		const page = pages[url.href];
+		if (!page) return { status: 404, headers: {}, body: (async function* () {})() };
+		const notModified = page.etag !== undefined && headers['if-none-match'] === page.etag;
+		const bytes = new TextEncoder().encode(notModified ? '' : (page.body ?? ''));
+		return {
+			status: notModified ? 304 : (page.status ?? 200),
+			headers: { ...(page.etag && { etag: page.etag }), ...page.headers },
+			body: (async function* () {
+				yield bytes;
+			})(),
+		};
+	};
+	const http = createGuardedHttp({ resolve: async () => ['93.184.216.34'], transport });
+	return { http, asked };
+}
+
+const DOC = 'https://app.example/oauth/client.json';
+const describing = (over: Record<string, unknown> = {}) =>
+	JSON.stringify({
+		client_id: DOC,
+		client_name: 'Notes',
+		redirect_uris: [APP_REDIRECT, 'http://127.0.0.1/callback'],
+		token_endpoint_auth_method: 'none',
+		...over,
+	});
+
+const rowsOf = async (clientId: string) =>
+	runtime.handle.db
+		.selectFrom('core_oauth_clients' as never)
+		.selectAll()
+		.where('client_id' as never, '=', clientId as never)
+		.execute();
+
+async function restartWith(http: ExternalHttp) {
+	await runtime.close();
+	await boot(http);
+}
+
+describe('apps named by an address', () => {
+	const asApp = (clientId: string, over: Params = {}): Params => ({
+		response_type: 'code',
+		client_id: clientId,
+		redirect_uri: APP_REDIRECT,
+		state: 'xyz',
+		code_challenge: pkce().challenge,
+		code_challenge_method: 'S256',
+		resource: MCP,
+		...over,
+	});
+
+	it('signs an app in that the SDK names by the address of its description', async () => {
+		const net = internet({
+			[DOC]: { body: describing(), headers: { 'cache-control': 'max-age=600' } },
+		});
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+
+		let info: StoredOAuthClientInformation | undefined;
+		let verifier = '';
+		let tokens: StoredOAuthTokens | undefined;
+		let opened: URL | undefined;
+		const impl: OAuthClientProvider = {
+			redirectUrl: APP_REDIRECT,
+			clientMetadataUrl: DOC,
+			get clientMetadata() {
+				return {
+					client_name: 'Notes',
+					redirect_uris: [APP_REDIRECT],
+					token_endpoint_auth_method: 'none',
+				};
+			},
+			state: () => 'state-123',
+			clientInformation: () => info,
+			saveClientInformation: (i) => {
+				info = i;
+			},
+			tokens: () => tokens,
+			saveTokens: (t) => {
+				tokens = t;
+			},
+			redirectToAuthorization: (url) => {
+				opened = url;
+			},
+			saveCodeVerifier: (v) => {
+				verifier = v;
+			},
+			codeVerifier: () => verifier,
+		};
+		const fetchFn = async (url: string | URL, init?: RequestInit) => app.request(String(url), init);
+		expect(await auth(impl, { serverUrl: MCP, fetchFn })).toBe('REDIRECT');
+		expect(opened?.searchParams.get('client_id')).toBe(DOC);
+		// The address is the id: nothing was registered with FamilyOS.
+		expect(info?.client_id).toBe(DOC);
+		expect(info?.client_secret).toBeUndefined();
+		expect(await rowsOf(DOC)).toHaveLength(0);
+
+		const page = await app.request(opened as URL, { redirect: 'manual' });
+		expect(page.status).toBe(303);
+		const id = requestIdOf(page.headers.get('location'));
+		const view = await call('GET', `/api/v1/oauth/requests/${id}`, undefined, cookie);
+		expect(view.body).toMatchObject({
+			client: { name: 'Notes', kind: 'metadata', clientHost: 'app.example' },
+			redirectHost: 'app.example',
+		});
+		const decided = await call('POST', `/api/v1/oauth/requests/${id}/approve`, {}, cookie);
+		const back = outcomeOf(decided.body.redirectUrl as string);
+		expect(
+			await auth(impl, { serverUrl: MCP, authorizationCode: back.code, iss: back.iss, fetchFn }),
+		).toBe('AUTHORIZED');
+		expect((await rpc((tokens as StoredOAuthTokens).access_token)).status).toBe(200);
+		expect(net.asked.map((a) => a.url)).toEqual([DOC]);
+		expect(await rowsOf(DOC)).toHaveLength(1);
+	});
+
+	it('shows where the sign-in goes back to when it is not the app’s own address', async () => {
+		const net = internet({
+			[DOC]: { body: describing({ redirect_uris: ['https://elsewhere.example/cb'] }) },
+		});
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const opened = await authorize(asApp(DOC, { redirect_uri: 'https://elsewhere.example/cb' }));
+		const view = await call(
+			'GET',
+			`/api/v1/oauth/requests/${requestIdOf(opened.location)}`,
+			undefined,
+			cookie,
+		);
+		expect(view.body).toMatchObject({
+			client: { kind: 'metadata', clientHost: 'app.example' },
+			redirectHost: 'elsewhere.example',
+		});
+	});
+
+	it('keeps a description for as long as the page allows, between five minutes and a day', async () => {
+		const net = internet({
+			[DOC]: { body: describing(), etag: '"v1"', headers: { 'cache-control': 'max-age=3600' } },
+		});
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const open = async () => (await authorize(asApp(DOC))).status;
+
+		expect(await open()).toBe(303);
+		vi.setSystemTime(Date.now() + 30 * 60 * 1000);
+		expect(await open()).toBe(303);
+		expect(net.asked).toHaveLength(1);
+		// After the hour it asks again, with the validator, and a 304 keeps the stored description.
+		vi.setSystemTime(Date.now() + 31 * 60 * 1000);
+		expect(await open()).toBe(303);
+		expect(net.asked).toHaveLength(2);
+		expect(net.asked[1]?.ifNoneMatch).toBe('"v1"');
+		vi.setSystemTime(Date.now() + 30 * 60 * 1000);
+		expect(await open()).toBe(303);
+		expect(net.asked).toHaveLength(2);
+		expect(await rowsOf(DOC)).toHaveLength(1);
+	});
+
+	it('asks again after five minutes when the page says not to keep it, and never waits past a day', async () => {
+		const net = internet({
+			[DOC]: { body: describing(), headers: { 'cache-control': 'no-store' } },
+		});
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		await authorize(asApp(DOC));
+		vi.setSystemTime(Date.now() + 4 * 60 * 1000);
+		await authorize(asApp(DOC));
+		expect(net.asked).toHaveLength(1);
+		vi.setSystemTime(Date.now() + 2 * 60 * 1000);
+		await authorize(asApp(DOC));
+		expect(net.asked).toHaveLength(2);
+	});
+
+	it('never waits past a day, however long the page says it may be kept', async () => {
+		const long = internet({
+			[DOC]: { body: describing(), headers: { 'cache-control': 'max-age=99999999' } },
+		});
+		await restartWith(long.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		await authorize(asApp(DOC));
+		vi.setSystemTime(Date.now() + 23 * 60 * 60 * 1000);
+		await authorize(asApp(DOC));
+		expect(long.asked).toHaveLength(1);
+		vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000);
+		await authorize(asApp(DOC));
+		expect(long.asked).toHaveLength(2);
+	});
+
+	it('refuses a description that is not right, and tells the app nothing', async () => {
+		const at = (name: string) => `https://app.example/${name}.json`;
+		const doc = (name: string, over: Record<string, unknown> = {}) =>
+			describing({ client_id: at(name), ...over });
+		const cases: Record<string, Page> = {
+			[at('redirects')]: { status: 302, headers: { location: at('other') } },
+			[at('huge')]: { body: doc('huge', { client_name: 'x'.repeat(6000) }) },
+			[at('other-id')]: { body: doc('someone-else') },
+			[at('not-json')]: { body: '<html></html>' },
+			[at('array')]: { body: '[]' },
+			[at('secret')]: {
+				body: doc('secret', { token_endpoint_auth_method: 'client_secret_basic' }),
+			},
+			[at('has-secret')]: { body: doc('has-secret', { client_secret: 'abc' }) },
+			[at('http-return')]: {
+				body: doc('http-return', { redirect_uris: ['http://app.example/cb'] }),
+			},
+			[at('no-return')]: { body: doc('no-return', { redirect_uris: [] }) },
+			[at('missing')]: { status: 404 },
+		};
+		const net = internet(cases);
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		for (const url of Object.keys(cases)) {
+			const res = await authorize(asApp(url));
+			expect(res.status, url).toBe(400);
+			expect(res.location, url).toBeNull();
+			expect(await rowsOf(url), url).toHaveLength(0);
+		}
+		expect(net.asked).toHaveLength(Object.keys(cases).length);
+	});
+
+	it('refuses a return address the description does not list', async () => {
+		const net = internet({ [DOC]: { body: describing() } });
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const refused = await authorize(asApp(DOC, { redirect_uri: 'https://evil.example/cb' }));
+		expect(refused.status).toBe(400);
+		expect(refused.location).toBeNull();
+	});
+
+	it('does not take addresses that are not the one way of writing a description’s address', async () => {
+		const net = internet({});
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		for (const id of [
+			'http://app.example/client.json',
+			'https://app.example',
+			'https://app.example/',
+			'https://app.example/a/../client.json',
+			'https://app.example/client.json#frag',
+			'https://user:pw@app.example/client.json',
+			'https://APP.example/client.json',
+			'https://app.example:443/client.json',
+		]) {
+			const res = await authorize(asApp(id));
+			expect(res.status, id).toBe(400);
+			expect(res.location, id).toBeNull();
+		}
+		expect(net.asked).toEqual([]);
+	});
+
+	it('never reaches a private address: the real guard refuses before any connection', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		for (const id of [
+			'https://127.0.0.1/client.json',
+			'https://10.0.0.5/client.json',
+			'https://192.168.1.2/client.json',
+			'https://169.254.169.254/latest/meta-data/',
+			'https://[::1]/client.json',
+			'https://localhost/client.json',
+		]) {
+			const res = await authorize(asApp(id));
+			expect(res.status, id).toBe(400);
+			expect(res.location, id).toBeNull();
+			expect(await rowsOf(id), id).toHaveLength(0);
+		}
+	});
+
+	it('refuses when the description cannot be read, even if it was known before', async () => {
+		const pages: Record<string, Page> = {
+			[DOC]: { body: describing(), headers: { 'cache-control': 'max-age=60' } },
+		};
+		const net = internet(pages);
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		expect((await authorize(asApp(DOC))).status).toBe(303);
+		delete pages[DOC];
+		vi.setSystemTime(Date.now() + 10 * 60 * 1000);
+		expect((await authorize(asApp(DOC))).status).toBe(400);
+	});
+
+	it('follows a changed description once the old one is stale', async () => {
+		const pages: Record<string, Page> = { [DOC]: { body: describing() } };
+		const net = internet(pages);
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		expect((await authorize(asApp(DOC))).status).toBe(303);
+		pages[DOC] = { body: describing({ redirect_uris: ['https://new.example/cb'] }) };
+		vi.setSystemTime(Date.now() + 10 * 60 * 1000);
+		expect((await authorize(asApp(DOC))).status).toBe(400);
+		expect((await authorize(asApp(DOC, { redirect_uri: 'https://new.example/cb' }))).status).toBe(
+			303,
+		);
+	});
+
+	it('matches an address on this device exactly except the port', async () => {
+		const net = internet({ [DOC]: { body: describing() } });
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const through = (uri: string) =>
+			authorize(asApp(DOC, { redirect_uri: uri })).then((r) => r.status);
+		expect(await through('http://127.0.0.1:51234/callback')).toBe(303);
+		expect(await through('http://127.0.0.1/callback')).toBe(303);
+		expect(await through('http://127.0.0.1:51234/other')).toBe(400);
+		expect(await through('http://localhost:51234/callback')).toBe(400);
+		expect(await through('http://127.0.0.1:51234/callback?x=1')).toBe(400);
+		expect(await through('https://127.0.0.1:51234/callback')).toBe(400);
+		void cookie;
+	});
+
+	it('forgets apps nobody approved after a day, and stops taking new ones when too many wait', async () => {
+		const net = internet({ [DOC]: { body: describing() } });
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		expect((await authorize(asApp(DOC))).status).toBe(303);
+		vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
+		await runtime.kernel.oauth.cleanup();
+		expect(await rowsOf(DOC)).toHaveLength(0);
+
+		const waiting = Array.from({ length: 200 }, (_, i) => ({
+			id: `oauth_client_w${i}`,
+			kind: 'metadata',
+			client_id: `https://w${i}.example/c.json`,
+			name: 'w',
+			redirect_uris: '[]',
+			secret_hash: null,
+			require_pkce: 1,
+			owner_member_id: null,
+			created_at: Date.now(),
+			last_consented_at: null,
+			metadata_fetched_at: null,
+			metadata_etag: null,
+			revoked_at: null,
+		}));
+		await runtime.handle.db
+			.insertInto('core_oauth_clients' as never)
+			.values(waiting as never)
+			.execute();
+		expect((await authorize(asApp(DOC))).status).toBe(400);
+	});
+
+	it('does not let a removed app come back through its address', async () => {
+		const net = internet({ [DOC]: { body: describing() } });
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		expect((await authorize(asApp(DOC))).status).toBe(303);
+		await runtime.handle.db
+			.updateTable('core_oauth_clients' as never)
+			.set({ revoked_at: Date.now() } as never)
+			.where('client_id' as never, '=', DOC as never)
+			.execute();
+		vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
+		expect((await authorize(asApp(DOC))).status).toBe(400);
+	});
+
+	it('needs PKCE: a description cannot ask to go without it', async () => {
+		const net = internet({ [DOC]: { body: describing() } });
+		await restartWith(net.http);
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const res = await authorize(
+			asApp(DOC, { code_challenge: undefined, code_challenge_method: undefined }),
+		);
+		expect(res.status).toBe(303);
+		expect(res.location).toContain('error=invalid_request');
+		void cookie;
+	});
+});
+
+describe('apps that register themselves', () => {
+	const register = async (
+		body: unknown,
+		options: { ip?: string; contentType?: string; raw?: string } = {},
+	) => {
+		const res = await app.request(`${BASE}/oauth/register`, {
+			method: 'POST',
+			headers: {
+				'content-type': options.contentType ?? 'application/json',
+				'x-forwarded-for': options.ip ?? nextIp(),
+			},
+			body: options.raw ?? JSON.stringify(body),
+		});
+		const text = await res.text();
+		return {
+			status: res.status,
+			headers: res.headers,
+			body: text?.startsWith('{') ? JSON.parse(text) : text,
+		};
+	};
+	const mine = {
+		client_name: 'Browser helper',
+		redirect_uris: [APP_REDIRECT],
+		token_endpoint_auth_method: 'none',
+	};
+
+	it('is not there while registration is off, and appears in the metadata when it is on', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const off = await register(mine);
+		expect(off.status).toBe(404);
+		const before = await app.request(`${BASE}/.well-known/oauth-authorization-server`);
+		expect(
+			((await before.json()) as Record<string, unknown>).registration_endpoint,
+		).toBeUndefined();
+		expect((await rowsOf('anything')).length).toBe(0);
+
+		await turnOn(cookie, { dcrEnabled: true });
+		const after = await app.request(`${BASE}/.well-known/oauth-authorization-server`);
+		expect(((await after.json()) as Record<string, unknown>).registration_endpoint).toBe(
+			`${BASE}/oauth/register`,
+		);
+		const preflight = await app.request(`${BASE}/oauth/register`, {
+			method: 'OPTIONS',
+			headers: { origin: 'https://inspector.example', 'access-control-request-method': 'POST' },
+		});
+		expect(preflight.headers.get('access-control-allow-origin')).toBe('*');
+
+		// Turning sign-in off takes the door away again.
+		await call('POST', '/api/v1/actions/core.setMcpOAuth', { oauthEnabled: false }, cookie);
+		expect((await register(mine)).status).toBe(404);
+	});
+
+	it('registers a public client and signs it in with the SDK’s own helper', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		let info: StoredOAuthClientInformation | undefined;
+		let verifier = '';
+		let tokens: StoredOAuthTokens | undefined;
+		let opened: URL | undefined;
+		const impl: OAuthClientProvider = {
+			redirectUrl: APP_REDIRECT,
+			get clientMetadata() {
+				return {
+					client_name: 'Browser helper',
+					redirect_uris: [APP_REDIRECT],
+					grant_types: ['authorization_code', 'refresh_token'],
+					response_types: ['code'],
+					token_endpoint_auth_method: 'none',
+				};
+			},
+			state: () => 'state-123',
+			clientInformation: () => info,
+			saveClientInformation: (i) => {
+				info = i;
+			},
+			tokens: () => tokens,
+			saveTokens: (t) => {
+				tokens = t;
+			},
+			redirectToAuthorization: (url) => {
+				opened = url;
+			},
+			saveCodeVerifier: (v) => {
+				verifier = v;
+			},
+			codeVerifier: () => verifier,
+		};
+		const fetchFn = async (url: string | URL, init?: RequestInit) => app.request(String(url), init);
+		expect(await auth(impl, { serverUrl: MCP, fetchFn })).toBe('REDIRECT');
+		expect(info?.client_id).toMatch(/^oauth_client_/);
+		expect(info?.client_secret).toBeUndefined();
+
+		const page = await app.request(opened as URL, { redirect: 'manual' });
+		const id = requestIdOf(page.headers.get('location'));
+		const view = await call('GET', `/api/v1/oauth/requests/${id}`, undefined, cookie);
+		expect(view.body).toMatchObject({
+			client: { name: 'Browser helper', kind: 'dynamic', clientHost: null },
+			redirectHost: 'app.example',
+		});
+		const decided = await call('POST', `/api/v1/oauth/requests/${id}/approve`, {}, cookie);
+		const back = outcomeOf(decided.body.redirectUrl as string);
+		expect(
+			await auth(impl, { serverUrl: MCP, authorizationCode: back.code, iss: back.iss, fetchFn }),
+		).toBe('AUTHORIZED');
+		expect((await rpc((tokens as StoredOAuthTokens).access_token)).status).toBe(200);
+	});
+
+	it('answers in the shape of RFC 7591 with only what it kept', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const res = await register({
+			...mine,
+			client_name: `  Evil\u0007\n${'x'.repeat(100)}`,
+			logo_uri: 'https://app.example/logo.png',
+			tos_uri: 'https://app.example/tos',
+			policy_uri: 'https://app.example/policy',
+			client_uri: 'https://app.example',
+			scope: 'familyos.read offline_access',
+			grant_types: ['authorization_code', 'refresh_token'],
+			response_types: ['code'],
+		});
+		expect(res.status).toBe(201);
+		expect(res.headers.get('cache-control')).toBe('no-store');
+		expect(Object.keys(res.body).sort()).toEqual([
+			'client_id',
+			'client_id_issued_at',
+			'client_name',
+			'grant_types',
+			'redirect_uris',
+			'response_types',
+			'token_endpoint_auth_method',
+		]);
+		expect(res.body.client_name.length).toBeLessThanOrEqual(60);
+		expect([...res.body.client_name].every((c: string) => (c.codePointAt(0) ?? 0) >= 32)).toBe(
+			true,
+		);
+		expect(res.body.client_name.startsWith('Evil')).toBe(true);
+		expect(res.body.token_endpoint_auth_method).toBe('none');
+		expect(res.body.client_id_issued_at).toBe(Math.floor(Date.now() / 1000));
+		const [row] = (await rowsOf(res.body.client_id)) as Record<string, unknown>[];
+		expect(row).toMatchObject({
+			kind: 'dynamic',
+			secret_hash: null,
+			require_pkce: 1,
+			owner_member_id: null,
+		});
+		expect(JSON.stringify(row)).not.toContain('logo');
+		void cookie;
+	});
+
+	it('names an app by its first return address when it gives no name', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const res = await register({ redirect_uris: [APP_REDIRECT] });
+		expect(res.status).toBe(201);
+		expect(res.body.client_name).toBe('app.example');
+		void cookie;
+	});
+
+	it('refuses what a public app may not be', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const refused = async (body: unknown, error: string, options = {}) => {
+			const res = await register(body, options);
+			expect(res.status, JSON.stringify(body)).toBe(400);
+			expect(res.body.error).toBe(error);
+		};
+		await refused(
+			{ ...mine, token_endpoint_auth_method: 'client_secret_basic' },
+			'invalid_client_metadata',
+		);
+		await refused(
+			{ ...mine, token_endpoint_auth_method: 'private_key_jwt' },
+			'invalid_client_metadata',
+		);
+		await refused({ ...mine, grant_types: ['client_credentials'] }, 'invalid_client_metadata');
+		await refused({ ...mine, grant_types: ['implicit'] }, 'invalid_client_metadata');
+		await refused({ ...mine, response_types: ['token'] }, 'invalid_client_metadata');
+		await refused({ ...mine, redirect_uris: [] }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: undefined }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: 'https://app.example/cb' }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: [7] }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: ['http://app.example/cb'] }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: ['http://192.168.1.4/cb'] }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: ['myapp://callback'] }, 'invalid_redirect_uri');
+		await refused({ ...mine, redirect_uris: ['https://app.example/cb#x'] }, 'invalid_redirect_uri');
+		await refused(
+			{ ...mine, redirect_uris: ['https://u:p@app.example/cb'] },
+			'invalid_redirect_uri',
+		);
+		await refused({ ...mine, redirect_uris: ['not a url'] }, 'invalid_redirect_uri');
+		await refused(
+			{ ...mine, redirect_uris: Array.from({ length: 6 }, (_, i) => `https://a${i}.example/cb`) },
+			'invalid_redirect_uri',
+		);
+		await refused(null, 'invalid_client_metadata', { raw: 'nope' });
+		await refused([], 'invalid_client_metadata');
+		await refused(mine, 'invalid_client_metadata', { contentType: 'text/plain' });
+		const huge = await register({ ...mine, client_name: 'x'.repeat(5000) });
+		expect(huge.status).toBe(413);
+		for (const ok of ['http://127.0.0.1:8123/cb', 'http://localhost/cb', 'http://[::1]:5/cb'])
+			expect((await register({ ...mine, redirect_uris: [ok] })).status, ok).toBe(201);
+		void cookie;
+	});
+
+	it('takes ten registrations an hour from one address, counting a whole /64 as one', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		for (let i = 0; i < 10; i++)
+			expect((await register(mine, { ip: `2001:db8:1:2:${i}::1` })).status).toBe(201);
+		const eleventh = await register(mine, { ip: '2001:db8:1:2:ffff::9' });
+		expect(eleventh.status).toBe(429);
+		expect(eleventh.headers.get('retry-after')).not.toBeNull();
+		// Another network is not held back, and the first one is let in again after the hour.
+		expect((await register(mine, { ip: '2001:db8:1:3::1' })).status).toBe(201);
+		vi.setSystemTime(Date.now() + 61 * 60 * 1000);
+		expect((await register(mine, { ip: '2001:db8:1:2::1' })).status).toBe(201);
+		void cookie;
+	});
+
+	it('stops at fifty apps nobody approved, and forgets them after a day', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const ids: string[] = [];
+		for (let i = 0; i < 50; i++) {
+			const res = await register(mine);
+			expect(res.status).toBe(201);
+			ids.push(res.body.client_id);
+		}
+		const over = await register(mine);
+		expect(over.status).toBe(429);
+		expect(over.body.error).toBe('temporarily_unavailable');
+
+		// One that a person approved stays; the rest go after a day, and room opens up.
+		const kept = ids[0] as string;
+		const back = await connect(cookie, {
+			response_type: 'code',
+			client_id: kept,
+			redirect_uri: APP_REDIRECT,
+			code_challenge: pkce().challenge,
+			code_challenge_method: 'S256',
+			resource: MCP,
+		});
+		expect(back.code).toBeTruthy();
+		vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
+		await runtime.kernel.oauth.cleanup();
+		expect(await rowsOf(kept)).toHaveLength(1);
+		expect(await rowsOf(ids[1] as string)).toHaveLength(0);
+		expect((await register(mine)).status).toBe(201);
+	});
+
+	it('leaves no audit row for an anonymous registration', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const count = async () =>
+			Number(
+				(
+					await runtime.handle.db
+						.selectFrom('core_audit_log' as never)
+						.select((eb) => eb.fn.countAll<number>().as('n'))
+						.executeTakeFirstOrThrow()
+				).n,
+			);
+		const before = await count();
+		expect((await register(mine)).status).toBe(201);
+		expect(await count()).toBe(before);
+		void cookie;
+	});
+
+	it('matches an address on this device exactly except the port', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie, { dcrEnabled: true });
+		const made = await register({ ...mine, redirect_uris: ['http://127.0.0.1/callback'] });
+		const through = (uri: string) =>
+			authorize({
+				response_type: 'code',
+				client_id: made.body.client_id,
+				redirect_uri: uri,
+				code_challenge: pkce().challenge,
+				code_challenge_method: 'S256',
+			}).then((r) => r.status);
+		expect(await through('http://127.0.0.1:40000/callback')).toBe(303);
+		expect(await through('http://127.0.0.1:40000/elsewhere')).toBe(400);
+		expect(await through('http://localhost:40000/callback')).toBe(400);
+		expect(await through(APP_REDIRECT)).toBe(400);
+		void cookie;
 	});
 });

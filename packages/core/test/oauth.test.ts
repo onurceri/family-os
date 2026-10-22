@@ -1,7 +1,13 @@
-import type { Actor, MemberId } from '@famos/sdk';
+import type { Actor, ExternalHttp, MemberId } from '@famos/sdk';
 import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { isOAuthError, type OAuthError, type OAuthStatus } from '../src/oauth.ts';
+import {
+	isMetadataClientId,
+	isOAuthError,
+	metadataFreshMs,
+	type OAuthError,
+	type OAuthStatus,
+} from '../src/oauth.ts';
 import type { CoreTables } from '../src/tables.ts';
 import { createTestKernel, type TestKernel } from './harness.ts';
 
@@ -58,7 +64,7 @@ async function publicClient(
 			owner_member_id: null,
 			created_at: k.clock.now(),
 			last_consented_at: null,
-			metadata_fetched_at: null,
+			metadata_fetched_at: kind === 'metadata' ? k.clock.now() : null,
 			metadata_etag: null,
 			revoked_at: null,
 		})
@@ -1266,7 +1272,7 @@ describe('apps set up by a member', () => {
 });
 
 describe('clearing out', () => {
-	it('removes expired requests, codes and tokens and dynamic apps nobody approved in a day', async () => {
+	it('removes expired requests, codes and tokens and apps that named themselves and nobody approved in a day', async () => {
 		const { tokens, client } = await connect();
 		const stale = await publicClient('dynamic');
 		const kept = await publicClient('metadata');
@@ -1300,9 +1306,10 @@ describe('clearing out', () => {
 		k.clock.advance(DAY);
 		await k.oauth.cleanup();
 		const clients = await tables().selectFrom('core_oauth_clients').select('id').execute();
-		// Approved ones stay (this one has a grant); the unapproved dynamic one goes; an app named
-		// by an address is the later registration path's to purge.
-		expect(clients.map((c) => c.id).sort()).toEqual([client.id, kept.id].sort());
+		// Approved ones stay (this one has a grant); the unapproved ones go, however they named
+		// themselves.
+		expect(clients.map((c) => c.id)).toEqual([client.id]);
+		void kept;
 		expect(await k.apiTokens.authenticate(tokens.accessToken)).toBeNull();
 	});
 
@@ -1420,5 +1427,113 @@ describe('after a restore', () => {
 			.executeTakeFirstOrThrow();
 		expect(grantNow.revoked_at).toBe(6);
 		await later.close();
+	});
+});
+
+describe('apps that name themselves', () => {
+	it('keeps a description for what the page says, between five minutes and a day', () => {
+		const MIN = 60 * 1000;
+		expect(metadataFreshMs(null)).toBe(5 * MIN);
+		expect(metadataFreshMs('no-store')).toBe(5 * MIN);
+		expect(metadataFreshMs('public, max-age=60')).toBe(5 * MIN);
+		expect(metadataFreshMs('public, max-age=3600')).toBe(HOUR);
+		expect(metadataFreshMs('MAX-AGE=3600, must-revalidate')).toBe(HOUR);
+		expect(metadataFreshMs('max-age=3600, no-cache')).toBe(5 * MIN);
+		expect(metadataFreshMs('max-age=999999999')).toBe(DAY);
+		expect(metadataFreshMs('max-age=abc')).toBe(5 * MIN);
+	});
+
+	it('takes only one way of writing the address of a description', () => {
+		expect(isMetadataClientId('https://app.example/oauth/client.json')).toBe(true);
+		expect(isMetadataClientId('https://app.example/client.json?v=2')).toBe(true);
+		for (const bad of [
+			'oauth_client_x',
+			'http://app.example/client.json',
+			'https://app.example',
+			'https://app.example/',
+			'https://app.example/a/../b.json',
+			'https://app.example/b.json#x',
+			'https://u:p@app.example/b.json',
+			'https://APP.example/b.json',
+			'https://app.example:443/b.json',
+			'https://',
+		])
+			expect(isMetadataClientId(bad), bad).toBe(false);
+	});
+
+	it('lets an app register only while the family allows it', async () => {
+		await boot();
+		await expect(
+			k.oauth.registerClient({ name: 'X', redirectUris: [REDIRECT] }),
+		).rejects.toMatchObject({ code: 'temporarily_unavailable' });
+		await k.runner.invoke('core.setMcpOAuth', { dcrEnabled: true }, admin.actor);
+		const client = await k.oauth.registerClient({ name: 'X', redirectUris: [REDIRECT] });
+		expect(client).toMatchObject({
+			kind: 'dynamic',
+			name: 'X',
+			requirePkce: true,
+			ownerMemberId: null,
+		});
+		await k.runner.invoke('core.setMcpOAuth', { oauthEnabled: false }, admin.actor);
+		await expect(
+			k.oauth.registerClient({ name: 'X', redirectUris: [REDIRECT] }),
+		).rejects.toMatchObject({ code: 'temporarily_unavailable' });
+	});
+
+	it('reads a description through the guarded port, without redirects and within five kilobytes', async () => {
+		const url = 'https://claude.example/client.json';
+		const asked: Parameters<ExternalHttp['get']>[0][] = [];
+		const http: ExternalHttp = {
+			get: async (request) => {
+				asked.push(request);
+				return {
+					status: 200,
+					text: JSON.stringify({
+						client_id: url,
+						client_name: 'Claude',
+						redirect_uris: [REDIRECT],
+					}),
+					etag: '"a"',
+					lastModified: null,
+				};
+			},
+			post: async () => {
+				throw new Error('nothing is posted');
+			},
+		};
+		k = await createTestKernel({ publicUrl: BASE, http });
+		admin = await k.member('admin');
+		await k.apiTokens.setEnabled(admin.actor, true);
+		await k.runner.invoke('core.setMcpOAuth', { oauthEnabled: true }, admin.actor);
+		const { requestId } = await k.oauth.createRequest({
+			clientId: url,
+			redirectUri: REDIRECT,
+			codeChallenge: 'a'.repeat(43),
+			codeChallengeMethod: 'S256',
+			resource: RESOURCE,
+		});
+		expect(requestId).toBeTruthy();
+		expect(asked).toHaveLength(1);
+		expect(asked[0]).toMatchObject({ url, redirects: 'none', maxBytes: 5 * 1024, timeoutMs: 5000 });
+		const [row] = await tables()
+			.selectFrom('core_oauth_clients')
+			.selectAll()
+			.where('client_id', '=', url)
+			.execute();
+		expect(row).toMatchObject({
+			kind: 'metadata',
+			name: 'Claude',
+			metadata_etag: '"a"',
+			secret_hash: null,
+		});
+		// A second request within the shortest stay asks nobody.
+		await k.oauth.createRequest({
+			clientId: url,
+			redirectUri: REDIRECT,
+			codeChallenge: 'a'.repeat(43),
+			codeChallengeMethod: 'S256',
+			resource: RESOURCE,
+		});
+		expect(asked).toHaveLength(1);
 	});
 });
