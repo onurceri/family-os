@@ -4,6 +4,9 @@ import { loadPhotoOfToday, loadWeather, photoUrl } from './data.js';
 /** Settings, Photos and weather: where the place, the photos and the slideshow are chosen. */
 export const SETTINGS_PATH = '/settings/photos-weather';
 
+/** Settings, Photos and weather with the place panel already open (what "Set your city" is for). */
+export const PLACE_PATH = `${SETTINGS_PATH}?place=1`;
+
 /** The photo of the day on Today (and a display's Today). */
 export const photoFacet: PhotoFacet = {
 	kind: 'photo',
@@ -39,6 +42,6 @@ export const placeStep: SetupHintFacet = {
 	titleKey: 'ambient:setup_step',
 	textKey: 'ambient:setup_step_text',
 	actionKey: 'ambient:setup_step_action',
-	href: SETTINGS_PATH,
+	href: PLACE_PATH,
 	load: async () => (await loadWeather()).enabled,
 };

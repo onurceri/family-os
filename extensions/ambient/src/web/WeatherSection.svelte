@@ -3,7 +3,7 @@
 	import { MapPin } from '@lucide/svelte';
 	import type { AmbientSettings, Place } from '../contract/index.js';
 	import { saveWeather } from './data.js';
-	import { placeChoice } from './place-rule.js';
+	import { asksForPlace, placeChoice } from './place-rule.js';
 	import { useAmbient } from './i18n.js';
 	import PlacePicker from './PlacePicker.svelte';
 
@@ -16,8 +16,10 @@
 
 	// svelte-ignore state_referenced_locally (the switch starts from the saved value)
 	let enabled = $state(settings.weather.enabled);
-	let picking = $state(false);
-	let draft = $state<Place | null>(null);
+	// "Set your city" on Today comes with the place panel open: one step to choose.
+	let picking = $state(asksForPlace(location.search));
+	// svelte-ignore state_referenced_locally (the panel starts from the saved place)
+	let draft = $state<Place | null>(settings.weather.place);
 	let busy = $state(false);
 	let needPlace = $state(false);
 	let message = $state<string | null>(null);

@@ -12,3 +12,6 @@ export function placeChoice(
 	const firstPlace = current.place === null;
 	return { enabled: firstPlace ? true : current.enabled, place, firstPlace };
 }
+
+/** Whether the address asks for the place panel to be open (what "Set your city" links to). */
+export const asksForPlace = (search: string): boolean => new URLSearchParams(search).has('place');
