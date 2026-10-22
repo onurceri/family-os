@@ -10,9 +10,11 @@ Open **Settings → AI** (admins only). Under **Providers**, press **Add provide
 
 | Provider | Good for | Notes |
 |---|---|---|
-| OpenRouter | Cloud models with no hardware; pay per use | Needs an API key from openrouter.ai. Costs are tracked per call |
+| OpenRouter | Cloud models with no hardware; pay per use | Needs an API key from openrouter.ai. Costs are tracked per call. It also offers free models (see below) |
 | Ollama (local) | Nothing leaves your home | Runs on your own computer; needs a capable machine (a Raspberry Pi is too slow). Start it with `docker compose --profile ollama up -d` and enter `http://ollama:11434/v1` as the **Address** |
 | OpenAI-compatible | Any other server (LM Studio, vLLM, OpenAI, a hosted API) | Enter its **Address** and **API key** |
+
+**Free models on OpenRouter.** After **Test connection**, the model fields list what OpenRouter offers. Type `:free` in a model field to narrow the list to the free models; their names end in `:free`. Free models are slower, are sometimes busy, and may be served by providers that keep what they receive, so read **Only providers that keep no data** below before you pick one. FamilyOS never limits which model you use. As examples, `nvidia/nemotron-3-ultra-550b-a55b:free` and `nvidia/nemotron-3.5-super-vl:free` are the two models FamilyOS is tested against and are known to work for Quick add; any other model you choose is yours to try.
 
 You can also set a provider in the server configuration with the `FAMOS_AI_*` variables (see the README). FamilyOS applies them on every start: change them and restart, and the provider follows. It shows in **Settings → AI → Provider & models** marked as set by the server configuration and cannot be changed there.
 

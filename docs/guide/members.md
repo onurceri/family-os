@@ -70,7 +70,7 @@ The device is now remembered by a cookie in that browser. Clearing the browser's
 
 ### Sign in on a family device
 
-The sign-in page asks **Who's using FamilyOS?** and shows the people who have a PIN. Tap a name, enter the PIN on the number pad and press **Sign in**. Adults press **Sign in with email** below the names. If nobody uses a PIN, only the email form is shown.
+The sign-in page asks **Who's using FamilyOS?** and shows the people who have a PIN. Tap a name, enter the PIN on the number pad and press the check mark button (✓, read out as **Sign in**). Adults press **Sign in with email** below the names. If nobody uses a PIN, only the email form is shown.
 
 A PIN sign-in lasts only as long as the device is a family device and the person's role still allows PINs.
 
