@@ -1,5 +1,7 @@
 # Bring your own agent (MCP)
 
+> This page is about Home Assistant's AI (or another agent) using FamilyOS. For FamilyOS showing Home Assistant's sensors and devices, see [Home Assistant](home-assistant.md).
+
 > Home Assistant, a script or another program that is not an AI agent connects as a [connected app](connected-apps.md) instead, on the same page.
 
 If you already use a personal AI agent, such as Hermes Agent by Nous Research, Claude Desktop, Claude Code or another app that supports the **Model Context Protocol (MCP)**, you can connect it to FamilyOS instead of using the built-in [assistant](assistant.md). Then you can ask your agent "what is on the calendar this week?" or "put milk on the shopping list" from wherever you already talk to it.
@@ -64,7 +66,11 @@ Before you start, check that FamilyOS is on, **Let AI apps sign in with a Family
 
 - **Claude** (claude.ai, the desktop and phone apps): open **Settings → Connectors**, choose **Add custom connector**, give it a name and the address `https://<your FamilyOS address>/mcp`, and press **Add**. Claude opens FamilyOS in your browser. Sign in with your password if asked, check the page and press **Connect**.
 - **ChatGPT**: open **Settings → Apps**, turn on developer mode if your plan asks for it, choose **Create app** (or add a connector), give it the same address, and sign in the same way.
-- **Claude Code**: run `claude mcp add --transport http familyos https://<your FamilyOS address>/mcp`, then start `claude` and run `/mcp` to sign in. It opens the page on your computer; the sign-in comes back to `localhost`, which the page points out.
+- **Claude Code**:
+  1. Run `claude mcp add --transport http --scope user familyos https://<your FamilyOS address>/mcp`. Without `--scope`, the server is kept for the current folder only; `--scope user` makes it work in every folder, and `--scope project` shares it through the folder's `.mcp.json`.
+  2. Start an interactive `claude`. The first run in a folder asks whether to trust it.
+  3. Run `/mcp`, choose **familyos** and authenticate. `claude -p` cannot sign in.
+  4. Claude Code opens the page on your computer; the sign-in comes back to `localhost`, which the page points out.
 
 These apps name themselves by an address (a small description that FamilyOS reads from the app's own website, for a moment, to learn where the sign-in may come back to). That shows on the page as **Identified by its address**, with the address. If the sign-in would go back to a different address than the app's own, the page says so: continue only if you expect that. An app that added itself shows **This app registered itself** in a warning colour, because FamilyOS cannot check who made it; continue only if you started connecting it yourself, just now. An app's name is whatever it calls itself, so never decide on the name alone. FamilyOS never loads an app's logo.
 
@@ -74,13 +80,15 @@ Apps that add themselves can be turned off again by switching **Let AI apps regi
 
 Home Assistant cannot register itself, so you set it up first. If your family address is `http`, turn on **Allow on this home network without https** first (see above); Home Assistant works with it.
 
-1. In FamilyOS, in **Connected apps**, press **Connect an AI app**, then **Home Assistant (sign-in)**. Add Home Assistant's own address only if you open it directly on your network (for example `http://homeassistant.local:8123`); leave it empty if you use its cloud link. Press **Set up**. FamilyOS shows a **client ID**, a **client secret** (once) and the address of FamilyOS.
-2. In Home Assistant open **Settings → Devices & services** and add **Model Context Protocol** with the FamilyOS address.
-3. Home Assistant asks for application credentials: a name, the client ID and the secret. Enter them, and it returns to the address step. Submit the address again and choose the credentials you just saved.
-4. Press **Open website**. It brings you to FamilyOS, where you decide what Home Assistant may do. Press **Connect**.
-5. After that, my.home-assistant.io asks once for your Home Assistant address and to link the account, so the browser needs internet for this step.
+1. In FamilyOS, in **Connected apps**, press **Connect an AI app**, then **Home Assistant (sign-in)**. If the Home Assistant address is prefilled with `http://homeassistant.local:8123`, use the IP address instead (`http://192.168.1.20:8123`), because names ending in `.local` do not work from FamilyOS (see [Home Assistant](home-assistant.md)). Leave the address empty if you use its cloud link. Press **Set up**. FamilyOS shows a **client ID**, a **client secret** (once) and the full address of FamilyOS, ending in `/mcp`.
+2. In Home Assistant open **Settings → Devices & services** and add **Model Context Protocol** (not "Model Context Protocol Server"). In the URL field enter the full FamilyOS address, ending in `/mcp`.
+3. Home Assistant asks for application credentials: a name, the client ID and the secret. Enter them and press **Add**. It returns to the address step.
+4. Submit the address again, choose **Use existing credentials**, then press **Open website**.
+5. FamilyOS shows what Home Assistant may do: **Read only**, or **Read and suggest changes** (preselected when the app asks for both). Press **Connect**.
+6. my.home-assistant.io asks once for your Home Assistant address (use the IP address) and to link the account, so the browser needs internet for this step.
+7. Keep the Home Assistant tab open until it shows **Success**. If you close it, no entry is made.
 
-Only the person who set the app up can connect it, and it works as that person. If the sign-in ends later (revoked, or unused for 90 days), Home Assistant shows a card to sign in again; go through the same steps from **Open website**. The apps you set up are listed under **Apps you set up**, each with **Remove**, which also disconnects it.
+Only the person who set the app up can connect it, and it works as that person. If the sign-in ends later (revoked, or unused for 90 days), Home Assistant shows a card to sign in again; go through the same steps from **Open website**. Connecting again ends the earlier connection, so delete the older **Model Context Protocol** entry in Home Assistant. The apps you set up are listed under **AI apps you set up for sign-in**, each with **Remove**, which also disconnects it.
 
 ## For developers: the settings by hand
 
@@ -179,7 +187,7 @@ Names are given to the app as short references such as `vehicle:3fa9c1b2d4`, nev
 
 | What you see | Why |
 |---|---|
-| 404 | AI apps are not allowed to connect yet (turn the switch on), or, at an address under `/.well-known/` or `/oauth/`, signing in is off |
+| 404, or Claude Code's `ENDPOINT_NOT_FOUND … MCP endpoint not found` | AI apps are not allowed to connect yet (turn the switch on), or, at an address under `/.well-known/` or `/oauth/`, signing in is off |
 | 401 | The app key is wrong, expired or revoked, or was sent in the address instead of the header |
 | 403 | Your role may no longer connect AI apps |
 | 429 | Too many requests, or too many wrong keys from your address: wait a minute |

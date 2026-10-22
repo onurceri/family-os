@@ -1502,7 +1502,7 @@
 	"mcp_http_confirm_on": "Allow",
 	"mcp_signed_in": "Signed in",
 	"mcp_ends_unused": "ends if unused for 90 days",
-	"mcp_clients": "Apps you set up",
+	"mcp_clients": "AI apps you set up for sign-in",
 	"mcp_clients_all": "Other people's apps set up to sign in",
 	"mcp_client_meta": "Set up {{date}}",
 	"mcp_client_meta_owner": "{{owner}} · set up {{date}}",

@@ -1502,7 +1502,7 @@
 	"mcp_http_confirm_on": "İzin ver",
 	"mcp_signed_in": "Giriş yaptı",
 	"mcp_ends_unused": "90 gün kullanılmazsa sona erer",
-	"mcp_clients": "Kurduğun uygulamalar",
+	"mcp_clients": "Giriş için kurduğun yapay zekâ uygulamaları",
 	"mcp_clients_all": "Başkalarının giriş için kurduğu uygulamalar",
 	"mcp_client_meta": "{{date}} tarihinde kuruldu",
 	"mcp_client_meta_owner": "{{owner}} · {{date}} tarihinde kuruldu",

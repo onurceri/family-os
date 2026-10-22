@@ -1,5 +1,7 @@
 # Home Assistant
 
+> This page is about FamilyOS showing Home Assistant's sensors and devices. For Home Assistant's AI using FamilyOS, see [Bring your own agent (MCP)](mcp.md#home-assistant).
+
 If your family uses [Home Assistant](https://www.home-assistant.io), you can show the FamilyOS calendar there: in its calendar panel, on its dashboards, and in automations, such as "turn the porch light on when someone has an evening event". It is read-only: you change events in FamilyOS (see [Everyday use](everyday.md)), and Home Assistant follows.
 
 You need nothing extra installed in FamilyOS. It uses the same calendar address as the calendar on your phone.

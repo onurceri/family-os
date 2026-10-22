@@ -15,6 +15,28 @@ This downloads the compose file and the released FamilyOS image (for ordinary co
 
 The log prints an address ending in `/setup?code=…`. Open it in a browser.
 
+The compose file is the same for every version, so downloading it from `main` is fine. The version is chosen by `FAMOS_VERSION` (see Update).
+
+### Port 3000 is taken
+
+1. Create `docker-compose.override.yml` next to `docker-compose.yml`:
+
+   ```yaml
+   services:
+     famos:
+       ports: !override
+         - "8080:3000"
+   ```
+
+2. Use `!override`. A plain `ports:` is merged with the original, and both ports are bound.
+3. Run `docker compose up -d` and open `http://localhost:8080`.
+
+### Phones and Home Assistant
+
+1. Set `FAMOS_BASE_URL` in a `.env` file next to `docker-compose.yml` to the address those devices use, for example `http://192.168.1.20:3000`.
+2. Restart with `docker compose up -d`. The setup link in the log uses this address.
+3. Installing on phones needs https: see [HTTPS and phones](https.md).
+
 1. Pick the language (**Choose your language**) and press **Continue**. It is preselected from your browser. It becomes the family's language, and everyone can choose their own later (see [Languages](languages.md)).
 2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
 3. Check **Time and region**. The time zone, the region format (date order, numbers, first day of the week), the 12- or 24-hour clock and Celsius or Fahrenheit are guessed from this browser. Correct them if they are wrong, for example on a laptop set up abroad or in a browser in another language: the time zone decides what "today" is and when reminders go off. Choosing another region format also picks its clock and temperature, which you can still change.
