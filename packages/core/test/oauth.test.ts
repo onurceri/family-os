@@ -1015,6 +1015,8 @@ describe('the bearer lookup', () => {
 
 	it('does not count a refused try as a use', async () => {
 		const { tokens, grantId } = await connect();
+		const signedInAt = k.clock.now();
+		k.clock.advance(2 * HOUR);
 		await k.oauth.setSettings(admin.actor, { oauthEnabled: false });
 		await k.apiTokens.authenticate(tokens.accessToken);
 		const grant = await tables()
@@ -1022,7 +1024,8 @@ describe('the bearer lookup', () => {
 			.select('last_used_at')
 			.where('id', '=', grantId)
 			.executeTakeFirstOrThrow();
-		expect(grant.last_used_at).toBeNull();
+		// Signing in counts as the first use; the refused try adds none.
+		expect(grant.last_used_at).toBe(signedInAt);
 		await k.oauth.setSettings(admin.actor, { oauthEnabled: true });
 		await k.apiTokens.touch(grantId);
 		const used = await tables()
@@ -1311,6 +1314,47 @@ describe('clearing out', () => {
 		expect(clients.map((c) => c.id)).toEqual([client.id]);
 		void kept;
 		expect(await k.apiTokens.authenticate(tokens.accessToken)).toBeNull();
+	});
+
+	it('does not list an approval whose code the app never traded, and removes it with its code', async () => {
+		const client = await publicClient();
+		const { requestId } = await ask(client.clientId);
+		const { grantId } = await k.oauth.approve(deniz.actor, requestId);
+		expect(await k.apiTokens.list(deniz.actor)).toEqual([]);
+		expect(await k.apiTokens.list(admin.actor, { all: true })).toEqual([]);
+
+		// Within the code's minute the app may still trade it.
+		await k.oauth.cleanup();
+		expect(await tables().selectFrom('core_api_tokens').select('id').execute()).toHaveLength(1);
+
+		k.clock.advance(2 * 60 * 1000);
+		await k.oauth.cleanup();
+		expect(
+			await tables().selectFrom('core_api_tokens').select('id').where('id', '=', grantId).execute(),
+		).toEqual([]);
+		expect(await tables().selectFrom('core_oauth_codes').select('code_hash').execute()).toEqual([]);
+		// The app itself stays: the person did approve it.
+		expect(
+			await tables()
+				.selectFrom('core_oauth_clients')
+				.select('id')
+				.where('id', '=', client.id)
+				.execute(),
+		).toHaveLength(1);
+	});
+
+	it('keeps and lists a sign-in once its code was traded, and after it is revoked', async () => {
+		const { grantId } = await connect();
+		k.clock.advance(2 * 60 * 1000);
+		await k.oauth.cleanup();
+		const [listed] = await k.apiTokens.list(deniz.actor);
+		expect(listed).toMatchObject({ id: grantId, revokedAt: null });
+		expect(listed?.lastUsedAt).not.toBeNull();
+		await k.apiTokens.revoke(deniz.actor, grantId);
+		await k.oauth.cleanup();
+		const [revoked] = await k.apiTokens.list(deniz.actor);
+		expect(revoked).toMatchObject({ id: grantId });
+		expect(revoked?.revokedAt).not.toBeNull();
 	});
 
 	it('runs from the queue once a day and keeps itself scheduled', async () => {

@@ -11122,6 +11122,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;
@@ -11441,6 +11443,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;
@@ -11624,6 +11628,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;
@@ -11807,6 +11813,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;
@@ -11990,6 +11998,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;
@@ -12173,6 +12183,8 @@ export interface operations {
                         app: {
                             id: string;
                             name: string;
+                            /** @enum {string} */
+                            kind: "connected" | "ai";
                         } | null;
                         sourceKind: string | null;
                         sourceId: string | null;

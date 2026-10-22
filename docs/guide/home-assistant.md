@@ -125,7 +125,7 @@ FamilyOS can send its notifications to the Home Assistant app on a member's phon
 
 ## Not possible yet
 
-- **Home Assistant's assistant (Assist)** cannot connect to FamilyOS's AI door ([MCP](mcp.md)) yet, because Home Assistant connects only with a sign-in method that FamilyOS does not offer. Other AI apps work today; see [Bring your own agent (MCP)](mcp.md).
+- **Home Assistant's assistant (Assist)** reaches FamilyOS's AI door ([MCP](mcp.md)) through the sign-in that Home Assistant's Model Context Protocol integration uses. An admin turns that on and you set it up as described in [Home Assistant](mcp.md#home-assistant); it works as the person who set it up and can only read and suggest.
 - **The assistant cannot know who is home**, not even for people who show it on Today.
 - **A map**: FamilyOS shows a place's name, never a map.
 - **Thermostats and alarm panels** cannot be switched from FamilyOS yet (setting a temperature, arming or disarming). They can be shown.

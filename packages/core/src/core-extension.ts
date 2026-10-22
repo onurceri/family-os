@@ -209,8 +209,11 @@ export const DraftSchema = z.object({
 	/** `expired`: nobody decided it and the day it was about has passed (it never runs). */
 	status: z.enum(DRAFT_STATUSES),
 	proposedBy: z.unknown(),
-	/** The connected app it came through (its current name), or null. */
-	app: z.object({ id: z.string(), name: z.string() }).nullable(),
+	/**
+	 * The app it came through, by its current name, or null: a connected app (`connected`), or an
+	 * AI app working through an app key or a sign-in (`ai`, named for the sign-in's app or the key).
+	 */
+	app: z.object({ id: z.string(), name: z.string(), kind: z.enum(['connected', 'ai']) }).nullable(),
 	sourceKind: z.string().nullable(),
 	sourceId: z.string().nullable(),
 	summary: z.string().nullable(),
@@ -322,7 +325,7 @@ const toDraft = (
 	read: (json: string) => unknown = JSON.parse,
 	unavailable: z.infer<typeof DraftSchema>['unavailable'] = null,
 	waitingGone = false,
-	app: { id: string; name: string } | null = null,
+	app: { id: string; name: string; kind: 'connected' | 'ai' } | null = null,
 ): z.infer<typeof DraftSchema> => ({
 	id: row.id,
 	actionId: row.action_id,

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Avatar } from '@famos/ui/famos';
 	import { memberBehindDraft } from '@famos/ui/slots';
-	import { Plug, Sparkles, UserRound } from '@lucide/svelte';
+	import { Bot, Plug, Sparkles, UserRound } from '@lucide/svelte';
 	import DraftView from './DraftView.svelte';
 	import { captureTime } from './format.js';
 	import { useInbox } from './i18n.js';
@@ -20,20 +20,29 @@
 	const person = $derived(
 		behind && behind !== app.me()?.id ? app.members().find((m) => m.id === behind) : undefined,
 	);
+	const named = $derived((group.origin === 'app' || group.origin === 'ai_app') && group.app);
 	const Icon = $derived(
-		group.origin === 'assistant' ? Sparkles : group.origin === 'app' ? Plug : UserRound,
+		group.origin === 'assistant'
+			? Sparkles
+			: group.origin === 'app'
+				? Plug
+				: group.origin === 'ai_app'
+					? Bot
+					: UserRound,
 	);
 	const line = $derived.by(() => {
-		if (group.origin === 'app' && group.app)
+		if (named)
 			return person
-				? app.t('app:draft_via_app_member', { name: person.displayName, app: group.app.name })
-				: group.app.name;
+				? app.t('app:draft_via_app_member', { name: person.displayName, app: named.name })
+				: named.name;
 		return t(
 			group.origin === 'assistant'
 				? 'request_from_assistant'
 				: group.origin === 'app'
 					? 'request_from_app'
-					: 'request_from_person',
+					: group.origin === 'ai_app'
+						? 'request_from_ai_app'
+						: 'request_from_person',
 		);
 	});
 </script>
@@ -47,7 +56,7 @@
 			<h3 class="text-[17px] leading-snug font-bold text-balance">{line}</h3>
 			<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
 				<span>{captureTime(app, group.latest)}</span>
-				{#if person && !(group.origin === 'app' && group.app)}
+				{#if person && !named}
 					<span class="flex items-center gap-1.5 font-semibold">
 						<Avatar name={person.displayName} color={person.color} size={18} />
 						{t('from', { name: person.displayName })}

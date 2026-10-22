@@ -28,7 +28,7 @@ const waiting = async () =>
 		actionId: string;
 		subject: string | null;
 		input: { label?: string };
-		app: { id: string; name: string } | null;
+		app: { id: string; name: string; kind: string } | null;
 	}[];
 
 describe('suggestions a connected app makes', () => {
@@ -50,7 +50,7 @@ describe('suggestions a connected app makes', () => {
 			actionId: 'chores.markDone',
 			subject: 'Empty the dishwasher',
 			input: { label: 'Empty the dishwasher' },
-			app: { id: 'app_home', name: 'Home Assistant' },
+			app: { id: 'app_home', name: 'Home Assistant', kind: 'connected' },
 		});
 	});
 

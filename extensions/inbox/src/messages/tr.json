@@ -8,6 +8,7 @@
 	"remove_file": "{{name}} dosyasını kaldır",
 	"request_from_assistant": "Asistandan",
 	"request_from_app": "Bağlı bir uygulamadan",
+	"request_from_ai_app": "Bir yapay zekâ uygulamasından",
 	"request_from_person": "Onaya gönderildi",
 	"status_reading": "Okunuyor…",
 	"status_retrying": "Yeniden deneniyor (deneme {{attempt}}/{{max}})…",

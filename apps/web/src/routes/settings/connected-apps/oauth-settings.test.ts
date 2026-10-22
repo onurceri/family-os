@@ -4,6 +4,8 @@ import {
 	registerBlocked,
 	showsHttpSwitch,
 	signinBlocked,
+	signinBodyKey,
+	signinHintKey,
 } from './oauth-settings.js';
 
 const state = (patch: Partial<OAuthState> = {}): OAuthState => ({
@@ -51,5 +53,27 @@ describe('the switches for signing in AI apps', () => {
 			showsHttpSwitch(state({ allowPlainHttp: true, mcpUrl: 'http://home.lan:3000/mcp' })),
 		).toBe(true);
 		expect(showsHttpSwitch(state({ mcpUrl: 'http://home.lan:3000/mcp' }))).toBe(true);
+	});
+});
+
+describe('what the address wording says as the settings are', () => {
+	const plain = { allowPlainHttp: true, mcpUrl: 'http://home.lan:3000/mcp' };
+
+	it('asks for https until plain http is allowed for an http address', () => {
+		expect(signinHintKey(state())).toBe('mcp_signin_hint');
+		expect(signinBodyKey(state())).toBe('mcp_signin_page_body');
+		expect(signinHintKey(state({ mcpUrl: 'http://home.lan:3000/mcp' }))).toBe('mcp_signin_hint');
+		expect(signinBodyKey(state({ mcpUrl: 'http://home.lan:3000/mcp' }))).toBe(
+			'mcp_signin_page_body',
+		);
+	});
+
+	it('says what is true once http is allowed on an http address', () => {
+		expect(signinHintKey(state(plain))).toBe('mcp_signin_hint_http');
+		expect(signinBodyKey(state(plain))).toBe('mcp_signin_page_body_http');
+	});
+
+	it('keeps the https wording for an https address even with the switch on', () => {
+		expect(signinBodyKey(state({ allowPlainHttp: true }))).toBe('mcp_signin_page_body');
 	});
 });

@@ -21,6 +21,7 @@
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { APP_KINDS, type AppKind, appSettings, mcpAddress } from './app-settings.js';
+	import { signinBodyKey } from './oauth-settings.js';
 
 	/**
 	 * "Connect an AI app" (guided steps): turn AI apps on (once, for the whole family; an
@@ -41,7 +42,7 @@
 		/** Whether AI apps may connect for the family. */
 		enabled: boolean;
 		/** Signing in with a family account: null until read. */
-		oauth: { active: boolean; mcpUrl: string | null } | null;
+		oauth: { active: boolean; mcpUrl: string | null; allowPlainHttp: boolean } | null;
 		/** Setting up an app that signs in shows a secret once, so it needs a password sign-in. */
 		canCreateClients: boolean;
 		isAdmin: boolean;
@@ -248,7 +249,9 @@
 		{#if choice === 'signin'}
 			<div class="grid gap-3" data-testid="signin-address">
 				<h3 class="font-bold">{t('mcp_signin_page_title')}</h3>
-				<p class="text-ink-soft text-sm">{t('mcp_signin_page_body')}</p>
+				<p class="text-ink-soft text-sm">
+					{t(oauth ? signinBodyKey(oauth) : 'mcp_signin_page_body')}
+				</p>
 				<code class="bg-idle rounded-[var(--r-ctl)] px-3 py-2 text-sm break-all"
 					>{oauth?.mcpUrl ?? address}</code
 				>

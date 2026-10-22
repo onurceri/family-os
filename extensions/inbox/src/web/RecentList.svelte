@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Pill, Row, Section } from '@famos/ui/famos';
-	import { Plug, Sparkles, UserRound } from '@lucide/svelte';
+	import { Bot, Plug, Sparkles, UserRound } from '@lucide/svelte';
 	import CaptureIcon from './CaptureIcon.svelte';
 	import type { RecentEntry } from './feed.svelte.js';
 	import { captureTime } from './format.js';
@@ -64,7 +64,14 @@
 						{@const draft = entry.draft}
 						{@const chip = requestChip(draft)}
 						{@const origin = requestOrigin(draft)}
-						{@const Icon = origin === 'assistant' ? Sparkles : origin === 'app' ? Plug : UserRound}
+						{@const Icon =
+							origin === 'assistant'
+								? Sparkles
+								: origin === 'app'
+									? Plug
+									: origin === 'ai_app'
+										? Bot
+										: UserRound}
 						<Row
 							tile
 							data-testid="recent-request"

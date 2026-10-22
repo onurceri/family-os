@@ -90,7 +90,8 @@ export function askedBy(
 
 /**
  * The line above a suggestion card saying who it comes from. A suggestion through a connected app
- * names the app ("Home Assistant", or "Leo via Home Assistant" when it acted for a member); one
+ * or an AI app (a key or a sign-in) names the app ("Home Assistant", or "Leo via Home Assistant"
+ * when it acted for a member); one
  * from a member or an assistant behind someone else names that person (`askedBy`). Undefined when
  * it is the signed-in member's own and no app is behind it.
  */

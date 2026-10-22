@@ -8,6 +8,7 @@
 	"remove_file": "Remove {{name}}",
 	"request_from_assistant": "From the assistant",
 	"request_from_app": "From a connected app",
+	"request_from_ai_app": "From an AI app",
 	"request_from_person": "Sent for approval",
 	"status_reading": "Reading…",
 	"status_retrying": "Trying again (attempt {{attempt}} of {{max}})…",

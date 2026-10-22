@@ -18959,11 +18959,19 @@
 													},
 													"name": {
 														"type": "string"
+													},
+													"kind": {
+														"type": "string",
+														"enum": [
+															"connected",
+															"ai"
+														]
 													}
 												},
 												"required": [
 													"id",
-													"name"
+													"name",
+													"kind"
 												]
 											},
 											"sourceKind": {
@@ -19755,11 +19763,19 @@
 												},
 												"name": {
 													"type": "string"
+												},
+												"kind": {
+													"type": "string",
+													"enum": [
+														"connected",
+														"ai"
+													]
 												}
 											},
 											"required": [
 												"id",
-												"name"
+												"name",
+												"kind"
 											]
 										},
 										"sourceKind": {
@@ -20271,11 +20287,19 @@
 												},
 												"name": {
 													"type": "string"
+												},
+												"kind": {
+													"type": "string",
+													"enum": [
+														"connected",
+														"ai"
+													]
 												}
 											},
 											"required": [
 												"id",
-												"name"
+												"name",
+												"kind"
 											]
 										},
 										"sourceKind": {
@@ -20787,11 +20811,19 @@
 												},
 												"name": {
 													"type": "string"
+												},
+												"kind": {
+													"type": "string",
+													"enum": [
+														"connected",
+														"ai"
+													]
 												}
 											},
 											"required": [
 												"id",
-												"name"
+												"name",
+												"kind"
 											]
 										},
 										"sourceKind": {
@@ -21303,11 +21335,19 @@
 												},
 												"name": {
 													"type": "string"
+												},
+												"kind": {
+													"type": "string",
+													"enum": [
+														"connected",
+														"ai"
+													]
 												}
 											},
 											"required": [
 												"id",
-												"name"
+												"name",
+												"kind"
 											]
 										},
 										"sourceKind": {
@@ -21819,11 +21859,19 @@
 												},
 												"name": {
 													"type": "string"
+												},
+												"kind": {
+													"type": "string",
+													"enum": [
+														"connected",
+														"ai"
+													]
 												}
 											},
 											"required": [
 												"id",
-												"name"
+												"name",
+												"kind"
 											]
 										},
 										"sourceKind": {

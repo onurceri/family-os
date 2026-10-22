@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appIsLive, expiryState, nextWarning } from './apps.js';
+import { appIsLive, expiryState, nextWarning, showsSignedIn } from './apps.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const now = Date.UTC(2026, 0, 1);
@@ -40,5 +40,19 @@ describe('appIsLive', () => {
 		expect(appIsLive({ revokedAt: null, pausedAt: null })).toBe(true);
 		expect(appIsLive({ revokedAt: null, pausedAt: 1 })).toBe(false);
 		expect(appIsLive({ revokedAt: 1, pausedAt: null })).toBe(false);
+	});
+});
+
+describe('showsSignedIn', () => {
+	const grant = { signedIn: true, expiresAt: now + DAY, revokedAt: null };
+	it('labels a sign-in that works', () => {
+		expect(showsSignedIn(grant, now)).toBe(true);
+	});
+	it('reads a revoked or ended sign-in like a revoked key, without the label', () => {
+		expect(showsSignedIn({ ...grant, revokedAt: now - 1 }, now)).toBe(false);
+		expect(showsSignedIn({ ...grant, expiresAt: now - 1 }, now)).toBe(false);
+	});
+	it('never labels a key', () => {
+		expect(showsSignedIn({ ...grant, signedIn: false }, now)).toBe(false);
 	});
 });

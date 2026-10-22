@@ -39,3 +39,22 @@ export const showsHttpSwitch = (state: OAuthState): boolean =>
 	state.addressProblem === 'plain_http' ||
 	state.allowPlainHttp ||
 	(state.mcpUrl?.startsWith('http://') ?? false);
+
+/**
+ * Whether the family address is plain http and the admin has allowed that: apps then reach it
+ * without https, so what the screens say about the address must say so too.
+ */
+export const plainHttpInUse = (state: Pick<OAuthState, 'allowPlainHttp' | 'mcpUrl'>): boolean =>
+	state.allowPlainHttp && (state.mcpUrl?.startsWith('http://') ?? false);
+
+/** The hint under the sign-in switch: what the address needs, as the settings are now. */
+export const signinHintKey = (
+	state: Pick<OAuthState, 'allowPlainHttp' | 'mcpUrl'>,
+): 'mcp_signin_hint' | 'mcp_signin_hint_http' =>
+	plainHttpInUse(state) ? 'mcp_signin_hint_http' : 'mcp_signin_hint';
+
+/** What the panel for an app that signs in says about the address and which apps can use it. */
+export const signinBodyKey = (
+	state: Pick<OAuthState, 'allowPlainHttp' | 'mcpUrl'>,
+): 'mcp_signin_page_body' | 'mcp_signin_page_body_http' =>
+	plainHttpInUse(state) ? 'mcp_signin_page_body_http' : 'mcp_signin_page_body';

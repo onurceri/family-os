@@ -38,3 +38,13 @@ export function nextWarning(
 	}
 	return soonest;
 }
+
+/**
+ * Whether a row says "Signed in": only while the sign-in still works. A revoked or ended one reads
+ * like a revoked key (its scope, that it was revoked, when it was last used).
+ */
+export const showsSignedIn = (
+	token: { signedIn: boolean; expiresAt: number | null; revokedAt: number | null },
+	now: number,
+): boolean =>
+	token.signedIn && token.revokedAt === null && (token.expiresAt === null || token.expiresAt > now);

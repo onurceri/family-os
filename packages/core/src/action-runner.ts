@@ -178,8 +178,10 @@ export interface ActionRunner {
 	suggestAgain(draftId: string, actor: Actor): Promise<DraftRow>;
 	/** Whether an undone draft was suggested again already. */
 	suggestedAgain(draft: DraftRow): Promise<boolean>;
-	/** The connected app a draft came through, by its current name, or null. */
-	appBehind(draft: DraftRow): Promise<{ id: string; name: string } | null>;
+	/** The connected app or AI app a draft came through, by its current name, or null. */
+	appBehind(
+		draft: DraftRow,
+	): Promise<{ id: string; name: string; kind: 'connected' | 'ai' } | null>;
 	/** The inverse step of an applied draft, or null when it cannot be undone. */
 	undoStep(draft: DraftRow): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
@@ -847,9 +849,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// into one.
 			const who =
 				actor.kind === 'ai'
-					? facts.proposerMemberId === null
-						? undefined
-						: (await uow.family.members()).find((m) => m.id === facts.proposerMemberId)?.displayName
+					? await aiProposerLabel(uow, facts.proposerMemberId, meta)
 					: await proposerLabel(uow, actor);
 			await uow.notify(
 				waitingNotice(
@@ -1544,15 +1544,58 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return deps.translate(locale, 'app:draft_via_app_member', { name, app: app.name });
 	}
 
+	/**
+	 * The AI app an MCP caller works through, by its current name: the OAuth client's name for a
+	 * sign-in, the key's own name for a personal key. Null when the source is not an app key or the
+	 * key is gone.
+	 */
+	async function aiAppNamed(
+		db: DbExecutor,
+		source: { kind: string | null; id: string | null },
+	): Promise<{ id: string; name: string } | null> {
+		if (source.kind !== 'mcp' || !source.id) return null;
+		const row = await db
+			.withTables<CoreTables>()
+			.selectFrom('core_api_tokens as k')
+			.leftJoin('core_oauth_clients as c', 'c.id', 'k.oauth_client_id')
+			.select(['k.id as id', 'k.name as keyName', 'c.name as clientName'])
+			.where('k.id', '=', source.id)
+			.executeTakeFirst();
+		return row ? { id: row.id, name: row.clientName ?? row.keyName } : null;
+	}
+
+	/** "Ada via Claude" for an AI app working for a member; the member alone for any other AI. */
+	async function aiProposerLabel(
+		uow: UnitOfWork,
+		memberId: string | null,
+		source: { sourceKind?: string | null; sourceId?: string | null },
+	): Promise<string | undefined> {
+		const name =
+			memberId === null
+				? undefined
+				: (await uow.family.members()).find((m) => m.id === memberId)?.displayName;
+		const ai = await aiAppNamed(uow.db, {
+			kind: source.sourceKind ?? null,
+			id: source.sourceId ?? null,
+		});
+		if (!ai) return name;
+		if (!name) return ai.name;
+		const { locale } = await uow.family.settings();
+		return deps.translate(locale, 'app:draft_via_app_member', { name, app: ai.name });
+	}
+
 	async function appBehind(draft: DraftRow) {
 		const app = appOf(JSON.parse(draft.proposed_by) as Actor);
-		if (!app) return null;
+		if (!app) {
+			const ai = await aiAppNamed(deps.db, { kind: draft.source_kind, id: draft.source_id });
+			return ai ? { ...ai, kind: 'ai' as const } : null;
+		}
 		const row = await coreDb()
 			.selectFrom('core_apps')
 			.select(['id', 'name'])
 			.where('id', '=', app.appId)
 			.executeTakeFirst();
-		return row ?? null;
+		return row ? { ...row, kind: 'connected' as const } : null;
 	}
 
 	async function suggestedAgain(draft: DraftRow): Promise<boolean> {

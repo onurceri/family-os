@@ -225,9 +225,12 @@ export const approveSelectedKey = (
 		: 'apply_selected';
 
 /** Where a suggestion that is not from a capture came from. */
-export type RequestOrigin = 'assistant' | 'app' | 'person';
+export type RequestOrigin = 'assistant' | 'app' | 'ai_app' | 'person';
 
-/** Suggestions from one place: one assistant answer, one connected app, or one person's requests. */
+/**
+ * Suggestions from one place: one assistant answer, one connected app, one AI app (a key or a
+ * sign-in), or one person's requests.
+ */
 export interface RequestGroup {
 	key: string;
 	origin: RequestOrigin;
@@ -235,8 +238,8 @@ export interface RequestGroup {
 	drafts: Draft[];
 	/** When the newest of them was made. */
 	latest: number;
-	/** The connected app behind an app group (its current name), when the server names it. */
-	app: { id: string; name: string } | null;
+	/** The connected app or AI app behind an app group (its current name), when the server names it. */
+	app: { id: string; name: string; kind: 'connected' | 'ai' } | null;
 }
 
 /** The member behind a suggestion: who made it, or who an agent made it for. */
@@ -246,8 +249,11 @@ function personBehind(draft: Draft): string {
 
 export function requestOrigin(draft: Draft): RequestOrigin {
 	if (draft.sourceKind === 'assistant') return 'assistant';
+	// An AI app (an app key or a sign-in) reaches the MCP door; its name comes from the server,
+	// unless the key is gone.
+	if (draft.sourceKind === 'mcp' || draft.app?.kind === 'ai') return 'ai_app';
 	// Suggestions through the public API carry no source kind; the app behind them is named.
-	if (draft.sourceKind === 'mcp' || draft.app) return 'app';
+	if (draft.app) return 'app';
 	return 'person';
 }
 

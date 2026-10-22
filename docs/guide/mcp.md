@@ -39,14 +39,14 @@ Some apps have no place for a key. They send you to a FamilyOS page, ask you to 
 
 - **Let AI apps sign in with a FamilyOS account** is off until an admin turns it on. **Allow AI apps to connect** must be on too. It needs the family's web address (the `FAMOS_BASE_URL` setting of the server) to be a host with nothing after it, such as `https://family.example.com`; with an address like `family.example.com/home` the switch stays off and says why.
 - **Let AI apps register themselves** is off by default. Some apps cannot sign in unless they may add themselves. FamilyOS cannot check who made such an app, so every person still decides on every sign-in, and the page says so.
-- **Allow on this home network without https** is for a family address that is plain `http`, such as `http://homeassistant.local:3000`. Without https the sign-in tokens cross your network in clear text, so anyone on it could read them, and apps in the cloud (Claude, ChatGPT) cannot reach the address anyway. FamilyOS asks you to confirm and keeps a warning on the page while it is on. Leave it off unless you need it for an app on the same network.
+- **Allow on this home network without https** is for a family address that is plain `http`, such as `http://homeassistant.local:3000`. Without https the sign-in tokens cross your network in clear text, so anyone on it could read them, and apps in the cloud (Claude, ChatGPT) cannot reach the address anyway. FamilyOS asks you to confirm and keeps a warning on the page while it is on. Leave it off unless you need it for an app on the same network. **With an http address, turn this on before** **Let AI apps sign in with a FamilyOS account**: the sign-in switch stays off, and says why, until it is. The option works for Home Assistant and for other clients that accept an http address. Apps built on the official MCP software kit (Claude Code and the MCP Inspector among them) refuse a token address that is not https, unless it is `localhost`, so they need an https address.
 
 **Which apps work how**
 
 | App | How it connects |
 |---|---|
-| Home Assistant | Set up first as an app of its own (below), then it signs in as the person who set it up. Works on a home network with the http option. |
-| Claude, ChatGPT, Claude Code and other apps that ask for an address | Add the address `https://<your FamilyOS address>/mcp` as a connector (steps below). They find the sign-in page by themselves and introduce themselves by an address of their own, so **Let AI apps register themselves** can stay off. The family address must be https and reachable from the internet, because Claude and ChatGPT connect from their own servers. |
+| Home Assistant | Set up first as an app of its own (below), then it signs in as the person who set it up. Works on a home network with the http option (see below). |
+| Claude, ChatGPT, Claude Code and other apps that ask for an address | Add the address `https://<your FamilyOS address>/mcp` as a connector (steps below). They find the sign-in page by themselves and introduce themselves by an address of their own, so **Let AI apps register themselves** can stay off. The family address must be https and reachable from the internet, because Claude and ChatGPT connect from their own servers. Claude Code and other apps built on the official MCP software kit need https too, except on the same computer (`localhost`). |
 | Older apps and editors that can only register themselves | Turn on **Let AI apps register themselves**. They add themselves, and you still decide on each sign-in. |
 | Apps that take only a key | Use an app key, as above. |
 
@@ -56,7 +56,7 @@ Some apps have no place for a key. They send you to a FamilyOS page, ask you to 
 
 **A password is needed.** A PIN on a shared device sees **Sign in with your password to connect an AI app**, because a connected app keeps working away from the device. Sign out, sign in with your email and password, and you come back to the page. Displays and connected apps can never decide.
 
-**How long it lasts.** A connected app stays connected while it is used. After 90 days without use it is disconnected. It shows under **My AI apps** as "<app>, signed in" with what it may do and when it was last used; **Revoke** ends it at once. You are told in the app when one connects (with a way to revoke it), and when FamilyOS disconnects one because its sign-in was used twice. Connecting the same app again replaces the earlier connection. A restore from a backup disconnects every app that had signed in, and they must connect again. Admins see and revoke everyone's.
+**How long it lasts.** A connected app stays connected while it is used. After 90 days without use it is disconnected. It shows under **My AI apps** as "<app>" marked **Signed in**, with what it may do and when it was last used; **Revoke** ends it at once, and the row then reads like a revoked key (what it could do, **revoked**, when it was last used). An approval the app never completes, because you closed the app or it failed, is not listed and is cleared away within a day. You are told in the app when one connects (with a way to revoke it), and when FamilyOS disconnects one because its sign-in was used twice. Connecting the same app again replaces the earlier connection. A restore from a backup disconnects every app that had signed in, and they must connect again. Admins see and revoke everyone's.
 
 ### Claude, ChatGPT and Claude Code
 
@@ -72,7 +72,15 @@ Apps that add themselves can be turned off again by switching **Let AI apps regi
 
 ### Home Assistant
 
-Home Assistant cannot register itself, so you set it up first. In **Connected apps**, press **Connect an AI app**, then **Home Assistant (sign-in)**. Add Home Assistant's own address only if you open it directly on your network (for example `http://homeassistant.local:8123`); leave it empty if you use its cloud link. Press **Set up**. FamilyOS shows a **client ID**, a **client secret** (once) and the address of FamilyOS. In Home Assistant open **Settings → Devices & services**, add the **Model Context Protocol** integration with that address, and paste the client ID and secret when it asks for application credentials. Home Assistant then opens FamilyOS for you to decide. Only the person who set the app up can connect it, and it works as that person. The apps you set up are listed under **Apps you set up**, each with **Remove**, which also disconnects it.
+Home Assistant cannot register itself, so you set it up first. If your family address is `http`, turn on **Allow on this home network without https** first (see above); Home Assistant works with it.
+
+1. In FamilyOS, in **Connected apps**, press **Connect an AI app**, then **Home Assistant (sign-in)**. Add Home Assistant's own address only if you open it directly on your network (for example `http://homeassistant.local:8123`); leave it empty if you use its cloud link. Press **Set up**. FamilyOS shows a **client ID**, a **client secret** (once) and the address of FamilyOS.
+2. In Home Assistant open **Settings → Devices & services** and add **Model Context Protocol** with the FamilyOS address.
+3. Home Assistant asks for application credentials: a name, the client ID and the secret. Enter them, and it returns to the address step. Submit the address again and choose the credentials you just saved.
+4. Press **Open website**. It brings you to FamilyOS, where you decide what Home Assistant may do. Press **Connect**.
+5. After that, my.home-assistant.io asks once for your Home Assistant address and to link the account, so the browser needs internet for this step.
+
+Only the person who set the app up can connect it, and it works as that person. If the sign-in ends later (revoked, or unused for 90 days), Home Assistant shows a card to sign in again; go through the same steps from **Open website**. The apps you set up are listed under **Apps you set up**, each with **Remove**, which also disconnects it.
 
 ## For developers: the settings by hand
 
@@ -154,7 +162,7 @@ A hosted agent may keep its MCP settings somewhere other than a config file you 
 
 - **Read tools**: the calendar, open tasks, the shopping list, what is due, the records of vehicles, pets and the home, and [Search](search.md) when it is set up.
 - **Today**: the date, the weekday, the time, this week's first and last day and the weekday of each day from a week ago to two weeks ahead, in the family's time zone, so an agent never has to guess what "tomorrow" is or which day 20 October falls on. The instructions an agent gets when it connects say the date at that moment and tell it to ask for today again, because a connection can stay open past midnight.
-- **Suggest tools** (app keys that may suggest): add an event, a task, shopping items and so on. Each creates a suggestion that waits in Quick add under **Waiting for you**, in a group **From a connected app**, where you approve or reject it; it is counted on Quick add in the side bar like every suggestion.
+- **Suggest tools** (app keys that may suggest): add an event, a task, shopping items and so on. Each creates a suggestion that waits in Quick add under **Waiting for you**, in a group named for the app ("Claude", or "Ada via Claude" when it works for someone other than you), where you approve or reject it; the notice that it waits names the app too; it is counted on Quick add in the side bar like every suggestion.
 - **Its suggestions**: what became of the suggestions made through this app key (waiting, approved, turned down, taken back) and who decided each, by name ("approved by Sofia"). Suggestions made elsewhere (in Quick add, in the assistant or through another app key) are not listed, so the app never reports them as its own.
 - Areas you switched **off** for the AI are not available. Areas set to **local only** are not available either, because an agent on another computer would take the data out of the house. See [AI and privacy](ai.md).
 - People: the app can ask who is in the family only if **Send names and descriptions** is on in Settings → AI.

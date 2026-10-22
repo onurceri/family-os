@@ -248,13 +248,13 @@ describe('requests that are not from a capture', () => {
 		expect(groups.map((g) => [g.origin, g.drafts.map((d) => d.id)])).toEqual([
 			['assistant', ['salad']],
 			['person', ['asked']],
-			['app', ['delft', 'plasters']],
-			['app', ['other app']],
+			['ai_app', ['delft', 'plasters']],
+			['ai_app', ['other app']],
 		]);
 	});
 
 	it('groups what a program made through the public API by the app, and keeps its name', () => {
-		const home = { id: 'app_home', name: 'Home Assistant' };
+		const home = { id: 'app_home', name: 'Home Assistant', kind: 'connected' as const };
 		const viaApp = (id: string, memberId: string, at: number) =>
 			request({
 				id,
@@ -278,6 +278,32 @@ describe('requests that are not from a capture', () => {
 			['app', 'Home Assistant', ['yoghurt', 'bread']],
 		]);
 		expect(requestOrigin(viaApp('x', 'tom', 1))).toBe('app');
+	});
+
+	it('groups what an AI app made by the app, apart from connected apps', () => {
+		const claude = { id: 'api_token_grant', name: 'Claude', kind: 'ai' as const };
+		const key = { id: 'api_token_hermes', name: 'Hermes', kind: 'ai' as const };
+		const viaAi = (id: string, at: number, named: Draft['app'], sourceId: string) =>
+			request({
+				id,
+				createdAt: at,
+				app: named,
+				sourceKind: 'mcp',
+				sourceId,
+				proposedBy: { kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: 'ada' },
+			});
+		const groups = requestGroups([
+			viaAi('tea', 1, claude, claude.id),
+			viaAi('milk', 2, claude, claude.id),
+			viaAi('soap', 3, key, key.id),
+			viaAi('gone', 4, null, 'api_token_removed'),
+		]);
+		expect(groups.map((g) => [g.origin, g.app?.name ?? null, g.drafts.map((d) => d.id)])).toEqual([
+			['ai_app', null, ['gone']],
+			['ai_app', 'Hermes', ['soap']],
+			['ai_app', 'Claude', ['tea', 'milk']],
+		]);
+		expect(requestOrigin(viaAi('x', 1, claude, claude.id))).toBe('ai_app');
 	});
 
 	it('leaves out what is decided', () => {

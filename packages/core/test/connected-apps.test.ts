@@ -356,9 +356,9 @@ describe('the app kind and the member through an app', () => {
 			(d: { proposedBy: { kind: string } }) => d.proposedBy.kind === 'member',
 		);
 		expect(viaMember.proposedBy.via).toMatchObject({ appId: app.id, mode: 'suggest' });
-		expect(viaMember.app).toEqual({ id: app.id, name: 'Home Assistant' });
+		expect(viaMember.app).toEqual({ id: app.id, name: 'Home Assistant', kind: 'connected' });
 		const alone = drafts.find((d: { proposedBy: { kind: string } }) => d.proposedBy.kind === 'app');
-		expect(alone.app).toEqual({ id: app.id, name: 'Home Assistant' });
+		expect(alone.app).toEqual({ id: app.id, name: 'Home Assistant', kind: 'connected' });
 		const approved = await k.runner.approveDraft(viaMember.id, leo.actor);
 		expect(approved.status).toBe('applied');
 	});

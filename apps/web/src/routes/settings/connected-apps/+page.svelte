@@ -22,7 +22,7 @@
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { appSettings, mcpAddress } from './app-settings.js';
-	import { appIsLive, nextWarning } from './apps.js';
+	import { appIsLive, nextWarning, showsSignedIn } from './apps.js';
 	import AppPanel, { type ConnectedApp } from './AppPanel.svelte';
 	import ConnectApp from './ConnectApp.svelte';
 	import {
@@ -30,6 +30,7 @@
 		type OAuthState,
 		showsHttpSwitch,
 		signinBlocked,
+		signinHintKey,
 	} from './oauth-settings.js';
 
 	type Json<P extends keyof paths> = paths[P] extends {
@@ -332,7 +333,7 @@
 							<SwitchRow
 								id="mcp-signin"
 								label={t('mcp_signin_switch')}
-								hint={signinReason ? reasonText(signinReason) : t('mcp_signin_hint')}
+								hint={signinReason ? reasonText(signinReason) : t(signinHintKey(oauth))}
 								checked={oauth.oauthEnabled}
 								disabled={signinReason !== null}
 								onchange={switchSignin}
@@ -384,7 +385,9 @@
 								wrap
 								title={token.name}
 								idle={!live(token)}
-								meta="{token.signedIn ? `${t('mcp_signed_in')} · ` : ''}{token.scope === 'read'
+								meta="{showsSignedIn(token, Date.now())
+									? `${t('mcp_signed_in')} · `
+									: ''}{token.scope === 'read'
 									? t('mcp_scope_read_short')
 									: t('mcp_scope_read_write_short')} · {status(token)} · {token.lastUsedAt
 									? t('mcp_last_used', { date: when(token.lastUsedAt) })

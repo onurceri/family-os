@@ -59,6 +59,17 @@ describe('draftByline', () => {
 		);
 	});
 
+	it('names an AI app, a key or a sign-in, the same way', () => {
+		const by = { kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: 'member_b' };
+		const claude = { name: 'Claude' };
+		expect(draftByline({ proposedBy: by, app: claude }, 'member_a', people, say)).toBe(
+			'app:draft_via_app_member{"name":"Bo","app":"Claude"}',
+		);
+		expect(draftByline({ proposedBy: by, app: claude }, 'member_b', people, say)).toBe(
+			'app:draft_via_app{"app":"Claude"}',
+		);
+	});
+
 	it('is the old asked-by line without an app', () => {
 		const by = { kind: 'ai', source: 'mcp', onBehalfOf: 'member_b' };
 		expect(draftByline({ proposedBy: by, app: null }, 'member_a', people, say)).toBe(

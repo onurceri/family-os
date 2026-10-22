@@ -1096,7 +1096,9 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 				);
 				await t(db)
 					.updateTable('core_api_tokens')
-					.set({ expires_at: grantExpiry(now) })
+					// The first exchange is what makes it a sign-in: until then it is only an approval
+					// whose code the app may never bring back.
+					.set({ expires_at: grantExpiry(now), last_used_at: grant.last_used_at ?? now })
 					.where('id', '=', grant.id)
 					.execute();
 				return {
@@ -1399,11 +1401,30 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 }
 
 /**
- * Deletes expired requests, codes and tokens, and the apps that named themselves (by request or
- * by address) and that nobody approved in a day.
+ * Deletes expired requests, codes and tokens, the approvals whose code ran out without the app
+ * ever exchanging it, and the apps that named themselves (by request or by address) and that
+ * nobody approved in a day.
  */
 export async function cleanupExpired(db: DbExecutor, now: number): Promise<void> {
 	const tables = db.withTables<CoreTables>();
+	// A grant is made when the person approves; one whose code ended unused was never a sign-in.
+	// Its code is still here when it is deleted (same pass), so the order matters.
+	const abandoned = await tables
+		.selectFrom('core_api_tokens as g')
+		.innerJoin('core_oauth_codes as c', 'c.grant_id', 'g.id')
+		.select('g.id as id')
+		.where('g.oauth_client_id', 'is not', null)
+		.where('g.last_used_at', 'is', null)
+		.where('c.used_at', 'is', null)
+		.where('c.expires_at', '<=', now)
+		.execute();
+	if (abandoned.length > 0) {
+		const ids = abandoned.map((g) => g.id);
+		await tables.deleteFrom('core_oauth_codes').where('grant_id', 'in', ids).execute();
+		await tables.deleteFrom('core_api_token_handles').where('token_id', 'in', ids).execute();
+		await tables.deleteFrom('core_oauth_tokens').where('grant_id', 'in', ids).execute();
+		await tables.deleteFrom('core_api_tokens').where('id', 'in', ids).execute();
+	}
 	await tables.deleteFrom('core_oauth_codes').where('expires_at', '<=', now).execute();
 	await tables.deleteFrom('core_oauth_requests').where('expires_at', '<=', now).execute();
 	await tables.deleteFrom('core_oauth_tokens').where('expires_at', '<=', now).execute();

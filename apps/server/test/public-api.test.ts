@@ -1805,7 +1805,7 @@ describe('chores and the board', () => {
 			expect.objectContaining({
 				actionId: 'chores.markDone',
 				subject: 'Empty the dishwasher',
-				app: { id: expect.any(String), name: 'Home Assistant' },
+				app: { id: expect.any(String), name: 'Home Assistant', kind: 'connected' },
 			}),
 		]);
 	});

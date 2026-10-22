@@ -192,7 +192,14 @@ export function createApiTokenService(deps: {
 			const memberId = member(actor);
 			if (options?.all && !deps.access().can(actor, CORE_CAPABILITIES.aiManage.id))
 				throw new FamosError('forbidden', 'Not allowed to see everyone’s tokens');
-			let query = tokens().selectFrom('core_api_tokens').selectAll();
+			// A sign-in is listed once the app has exchanged its code; an approval the app never
+			// came back for is not a sign-in.
+			let query = tokens()
+				.selectFrom('core_api_tokens')
+				.selectAll()
+				.where((eb) =>
+					eb.or([eb('oauth_client_id', 'is', null), eb('last_used_at', 'is not', null)]),
+				);
 			if (!options?.all) query = query.where('member_id', '=', memberId);
 			const rows = await query.orderBy('created_at', 'desc').orderBy('id', 'desc').execute();
 			return rows.map(view);
