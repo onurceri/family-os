@@ -2,7 +2,7 @@
 
 A connected app is a program that works with your family's data by itself: Home Assistant showing the calendar on a dashboard, a script that adds a task, a shortcut on a phone. Each one has a **key of its own**, a **role** that limits what it may do, and a **mode** that says whether its changes happen at once or wait for a person.
 
-Only admins add and look after apps, in **Settings → You → Connected apps**, under **Apps and scripts**. Everyone else sees only their own [AI app keys](mcp.md) there.
+Only admins add and look after apps, in **Settings → You → Connected apps**, under **Apps and scripts**. Everyone else sees only their own [AI apps](mcp.md) there.
 
 An app is never a person. Whatever role you give it, an app **cannot** manage people, roles, devices or keys, cannot install extensions, cannot turn on auto-approval and **can never approve a suggestion**. Those stay with people who are present.
 

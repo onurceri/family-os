@@ -6178,6 +6178,9 @@
 															"null"
 														]
 													},
+													"signedIn": {
+														"type": "boolean"
+													},
 													"member": {
 														"type": [
 															"string",
@@ -6193,6 +6196,7 @@
 													"lastUsedAt",
 													"createdAt",
 													"revokedAt",
+													"signedIn",
 													"member"
 												]
 											}
@@ -6532,6 +6536,9 @@
 														"null"
 													]
 												},
+												"signedIn": {
+													"type": "boolean"
+												},
 												"member": {
 													"type": [
 														"string",
@@ -6547,6 +6554,7 @@
 												"lastUsedAt",
 												"createdAt",
 												"revokedAt",
+												"signedIn",
 												"member"
 											]
 										}
@@ -7969,7 +7977,647 @@
 				}
 			}
 		},
+		"/api/v1/mcp/oauth": {
+			"get": {
+				"tags": [
+					"mcp"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"operationId": "mcp.getOAuth",
+				"summary": "Whether AI apps may sign in with a family account, and whether the address allows it",
+				"responses": {
+					"200": {
+						"description": "Status",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"oauthEnabled": {
+											"type": "boolean"
+										},
+										"dcrEnabled": {
+											"type": "boolean"
+										},
+										"allowPlainHttp": {
+											"type": "boolean"
+										},
+										"active": {
+											"type": "boolean"
+										},
+										"mcpUrl": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"areas": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										},
+										"addressProblem": {
+											"type": [
+												"string",
+												"null"
+											],
+											"enum": [
+												"no_address",
+												"has_path",
+												"plain_http",
+												null
+											]
+										}
+									},
+									"required": [
+										"oauthEnabled",
+										"dcrEnabled",
+										"allowPlainHttp",
+										"active",
+										"mcpUrl",
+										"areas",
+										"addressProblem"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/api/v1/mcp/oauth-clients": {
+			"get": {
+				"tags": [
+					"mcp"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"operationId": "mcp.listOAuthClients",
+				"summary": "The AI apps I set up to sign in (never their secrets); admins can list everyone’s with all=true",
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"enum": [
+								"true",
+								"false"
+							]
+						},
+						"required": false,
+						"name": "all",
+						"in": "query"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Apps",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"clients": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"id": {
+														"type": "string"
+													},
+													"clientId": {
+														"type": "string"
+													},
+													"kind": {
+														"type": "string",
+														"enum": [
+															"registered",
+															"dynamic",
+															"metadata"
+														]
+													},
+													"name": {
+														"type": "string"
+													},
+													"redirectUris": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														}
+													},
+													"requirePkce": {
+														"type": "boolean"
+													},
+													"createdAt": {
+														"type": "number"
+													},
+													"owner": {
+														"type": [
+															"string",
+															"null"
+														]
+													},
+													"lastConsentedAt": {
+														"type": [
+															"number",
+															"null"
+														]
+													}
+												},
+												"required": [
+													"id",
+													"clientId",
+													"kind",
+													"name",
+													"redirectUris",
+													"requirePkce",
+													"createdAt",
+													"owner",
+													"lastConsentedAt"
+												]
+											}
+										}
+									},
+									"required": [
+										"clients"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			},
 			"post": {
 				"tags": [
 					"mcp"
@@ -46473,6 +47121,9 @@
 																"null"
 															]
 														},
+														"signedIn": {
+															"type": "boolean"
+														},
 														"member": {
 															"type": [
 																"string",
@@ -46488,6 +47139,7 @@
 														"lastUsedAt",
 														"createdAt",
 														"revokedAt",
+														"signedIn",
 														"member"
 													]
 												}

@@ -24,6 +24,7 @@
 	import SettingsSidebar from '#lib/SettingsSidebar.svelte';
 	import { settingsOrigin } from '#lib/settings-origin.svelte.js';
 	import { signOut } from '#lib/auth.js';
+	import { rememberReturn, takeReturn } from '#lib/return-to.js';
 	import {
 		APP_SETTINGS,
 		appPageFor,
@@ -360,9 +361,12 @@
 		if (session.status === 'setup' && path !== '/setup')
 			// Keep `?code=` from the setup address printed in the server log.
 			void goto(`/setup${page.url.search}`, { replace: true });
-		else if (session.status === 'anonymous' && path !== '/login')
+		else if (session.status === 'anonymous' && path !== '/login') {
+			// An AI app's sign-in link is picked up again once the person has signed in.
+			rememberReturn(path);
 			void goto('/login', { replace: true });
-		else if (session.status === 'ready' && PUBLIC.has(path)) void goto('/', { replace: true });
+		} else if (session.status === 'ready' && PUBLIC.has(path))
+			void goto(takeReturn() ?? '/', { replace: true });
 	});
 
 	// A session that ended (signed out elsewhere, expired) leaves no member's reads cached.

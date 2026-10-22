@@ -29,9 +29,37 @@ Each app gets its own **app key**: like a password only for that app, which you 
 
    Then press **I have copied it**.
 
-Your keys are listed under **My AI app keys**, with what each may do, until when it is valid and when it was last used. Each person can have up to 20 working app keys. Press **Revoke**, then **Revoke now**, and a key stops working at once. Admins can also see and revoke other people's keys, under **Other people's AI app keys**. Keys end by themselves when you are archived. A key starts with `famos_`, so it is easy to recognise if it ends up somewhere it should not.
+Your keys and the apps you let sign in are listed under **My AI apps**, with what each may do, until when it is valid and when it was last used. Each person can have up to 20 working app keys. Press **Revoke**, then **Revoke now**, and a key stops working at once. Admins can also see and revoke other people's keys, under **Other people's AI apps**. Keys end by themselves when you are archived. A key starts with `famos_`, so it is easy to recognise if it ends up somewhere it should not.
 
 Treat it like a password. It shows whoever holds it what you could see, in the areas open to the AI.
+
+## Sign in with a family account
+
+Some apps have no place for a key. They send you to a FamilyOS page, ask you to decide there, and keep working on their own afterwards. FamilyOS supports this next to app keys, and an admin turns it on in **Settings → You → Connected apps**, under **AI apps, for the whole family**:
+
+- **Let AI apps sign in with a FamilyOS account** is off until an admin turns it on. **Allow AI apps to connect** must be on too. It needs the family's web address (the `FAMOS_BASE_URL` setting of the server) to be a host with nothing after it, such as `https://family.example.com`; with an address like `family.example.com/home` the switch stays off and says why.
+- **Let AI apps register themselves** is off by default. Some apps cannot sign in unless they may add themselves. FamilyOS cannot check who made such an app, so every person still decides on every sign-in, and the page says so.
+- **Allow on this home network without https** is for a family address that is plain `http`, such as `http://homeassistant.local:3000`. Without https the sign-in tokens cross your network in clear text, so anyone on it could read them, and apps in the cloud (Claude, ChatGPT) cannot reach the address anyway. FamilyOS asks you to confirm and keeps a warning on the page while it is on. Leave it off unless you need it for an app on the same network.
+
+**Which apps work how**
+
+| App | How it connects |
+|---|---|
+| Home Assistant | Set up first as an app of its own (below), then it signs in as the person who set it up. Works on a home network with the http option. |
+| Claude, ChatGPT, Claude Code and other apps that ask for an address | Add the address `https://<your FamilyOS address>/mcp` as a connector. They find the sign-in page by themselves. The address must be https and reachable from the internet, because these apps connect from their own servers. |
+| Apps that take only a key | Use an app key, as above. |
+
+**Behind a reverse proxy**, the whole address must reach FamilyOS, not only `/api` and `/mcp`: `/.well-known/` and `/oauth/` too. Apps look for `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` first. An address with a path, such as `example.com/family`, is not supported for signing in.
+
+**What you see when an app asks.** The app opens a page that says **Connect <app> to FamilyOS?**. It shows who it works for (always you: there is no way to pick someone else, and **Not you? Sign out** switches account), the address the sign-in comes back to in bold, who the app is (an app you set up shows the date), what it can do (what you can see, in the areas the family opened to the AI), and a choice of **Read only** or **Read and suggest changes**. You can give less than the app asked for, never more. A suggestion still waits for a family member to approve it. **Connect** lets it in; **Cancel** turns it away. An app on this computer (`localhost`) gets a warning, because any program on the computer can claim to be any app. A request ends after ten minutes.
+
+**A password is needed.** A PIN on a shared device sees **Sign in with your password to connect an AI app**, because a connected app keeps working away from the device. Sign out, sign in with your email and password, and you come back to the page. Displays and connected apps can never decide.
+
+**How long it lasts.** A connected app stays connected while it is used. After 90 days without use it is disconnected. It shows under **My AI apps** as "<app>, signed in" with what it may do and when it was last used; **Revoke** ends it at once. You are told in the app when one connects (with a way to revoke it), and when FamilyOS disconnects one because its sign-in was used twice. Connecting the same app again replaces the earlier connection. A restore from a backup disconnects every app that had signed in, and they must connect again. Admins see and revoke everyone's.
+
+### Home Assistant
+
+Home Assistant cannot register itself, so you set it up first. In **Connected apps**, press **Connect an AI app**, then **Home Assistant (sign-in)**. Add Home Assistant's own address only if you open it directly on your network (for example `http://homeassistant.local:8123`); leave it empty if you use its cloud link. Press **Set up**. FamilyOS shows a **client ID**, a **client secret** (once) and the address of FamilyOS. In Home Assistant open **Settings → Devices & services**, add the **Model Context Protocol** integration with that address, and paste the client ID and secret when it asks for application credentials. Home Assistant then opens FamilyOS for you to decide. Only the person who set the app up can connect it, and it works as that person. The apps you set up are listed under **Apps you set up**, each with **Remove**, which also disconnects it.
 
 ## For developers: the settings by hand
 
@@ -107,7 +135,7 @@ Once `/mcp` is on the internet, the app key is the only key, so:
 
 A hosted agent may keep its MCP settings somewhere other than a config file you edit (a settings screen, or a file inside its instance); look for "MCP servers" in its own settings.
 
-**Which apps work.** Apps that accept a custom bearer header work. Apps that can *only* sign in through OAuth (a "Sign in with…" window) cannot connect yet: FamilyOS uses personal tokens, as Home Assistant does, and does not implement the OAuth flow. Tokens in the address (`?token=…`) are refused on purpose, because addresses end up in logs and history.
+**Which apps work.** Apps that accept a custom bearer header work with an app key. Apps that sign in through OAuth work too once an admin lets them, see [Sign in with a family account](#sign-in-with-a-family-account). Tokens in the address (`?token=…`) are refused on purpose, because addresses end up in logs and history.
 
 ## What the app can do
 
@@ -130,7 +158,7 @@ Names are given to the app as short references such as `vehicle:3fa9c1b2d4`, nev
 
 | What you see | Why |
 |---|---|
-| 404 | AI apps are not allowed to connect yet (turn the switch on) |
+| 404 | AI apps are not allowed to connect yet (turn the switch on), or, at an address under `/.well-known/` or `/oauth/`, signing in is off |
 | 401 | The app key is wrong, expired or revoked, or was sent in the address instead of the header |
 | 403 | Your role may no longer connect AI apps |
 | 429 | Too many requests, or too many wrong keys from your address: wait a minute |

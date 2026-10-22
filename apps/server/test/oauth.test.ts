@@ -1324,3 +1324,84 @@ describe('the door to /mcp', () => {
 		expect((await rpc(flow.refresh)).status).toBe(401);
 	});
 });
+
+describe('what Settings reads', () => {
+	it('tells the switches and whether the address allows signing in', async () => {
+		const { cookie } = await setupFamily();
+		const off = await call('GET', '/api/v1/mcp/oauth', undefined, cookie);
+		expect(off.status).toBe(200);
+		expect(off.body).toMatchObject({
+			oauthEnabled: false,
+			active: false,
+			addressProblem: 'plain_http',
+		});
+		await turnOn(cookie, { dcrEnabled: true });
+		const on = await call('GET', '/api/v1/mcp/oauth', undefined, cookie);
+		expect(on.body).toMatchObject({
+			oauthEnabled: true,
+			dcrEnabled: true,
+			allowPlainHttp: true,
+			active: true,
+			mcpUrl: MCP,
+		});
+		// Areas open to any provider are the ones an outside app reads from.
+		expect(on.body.areas).toContain('calendar');
+		const closed = await call(
+			'POST',
+			'/api/v1/actions/core.setAiAreaAccess',
+			{ extensionId: 'calendar', access: 'off' },
+			cookie,
+		);
+		expect(closed.body.status).toBe('applied');
+		const after = await call('GET', '/api/v1/mcp/oauth', undefined, cookie);
+		expect(after.body.areas).not.toContain('calendar');
+		expect((await call('GET', '/api/v1/mcp/oauth')).status).toBe(401);
+	});
+
+	it('lists the apps a member set up and a sign-in as a sign-in, never a secret', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const made = await registerApp(cookie);
+		await codeFlow(cookie, made.secret, made.clientId);
+		const clients = await call('GET', '/api/v1/mcp/oauth-clients', undefined, cookie);
+		expect(clients.body.clients).toHaveLength(1);
+		expect(clients.body.clients[0]).toMatchObject({ name: 'Notes', owner: 'Parent' });
+		expect(JSON.stringify(clients.body)).not.toContain(made.secret);
+		const tokens = await call('GET', '/api/v1/mcp/tokens', undefined, cookie);
+		expect(tokens.body.tokens).toHaveLength(1);
+		expect(tokens.body.tokens[0]).toMatchObject({ name: 'Notes', signedIn: true });
+	});
+
+	it('shows a member only their own apps, and everyone’s to whoever manages AI', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		await registerApp(cookie);
+		await addMember(cookie, 'Kid');
+		const kid = await signInAs('Kid');
+		const own = await call('GET', '/api/v1/mcp/oauth-clients', undefined, kid);
+		expect(own.status).toBe(200);
+		expect(own.body.clients).toHaveLength(0);
+		expect((await call('GET', '/api/v1/mcp/oauth-clients?all=true', undefined, kid)).status).toBe(
+			403,
+		);
+		const all = await call('GET', '/api/v1/mcp/oauth-clients?all=true', undefined, cookie);
+		expect(all.body.clients).toHaveLength(1);
+	});
+
+	it('ends a sign-in when the member revokes it in Settings', async () => {
+		const { cookie } = await setupFamily();
+		await turnOn(cookie);
+		const made = await registerApp(cookie);
+		const flow = await codeFlow(cookie, made.secret, made.clientId);
+		expect((await rpc(flow.access)).status).toBe(200);
+		const tokens = await call('GET', '/api/v1/mcp/tokens', undefined, cookie);
+		const revoked = await call(
+			'POST',
+			'/api/v1/actions/core.revokeApiToken',
+			{ tokenId: tokens.body.tokens[0].id },
+			cookie,
+		);
+		expect(revoked.body.status).toBe('applied');
+		expect((await rpc(flow.access)).status).toBe(401);
+	});
+});

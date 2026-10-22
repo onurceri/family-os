@@ -398,6 +398,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp/oauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether AI apps may sign in with a family account, and whether the address allows it */
+        get: operations["mcp.getOAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mcp/oauth-clients": {
         parameters: {
             query?: never;
@@ -405,7 +422,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The AI apps I set up to sign in (never their secrets); admins can list everyone’s with all=true */
+        get: operations["mcp.listOAuthClients"];
         put?: never;
         /** Set up an AI app that cannot register itself; its secret is shown once */
         post: operations["mcp.createOAuthClient"];
@@ -5422,6 +5440,7 @@ export interface operations {
                             lastUsedAt: number | null;
                             createdAt: number;
                             revokedAt: number | null;
+                            signedIn: boolean;
                             member: string | null;
                         }[];
                     };
@@ -5573,6 +5592,7 @@ export interface operations {
                             lastUsedAt: number | null;
                             createdAt: number;
                             revokedAt: number | null;
+                            signedIn: boolean;
                             member: string | null;
                         };
                     };
@@ -6121,6 +6141,286 @@ export interface operations {
                 content: {
                     "application/json": {
                         redirectUrl: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "mcp.getOAuth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        oauthEnabled: boolean;
+                        dcrEnabled: boolean;
+                        allowPlainHttp: boolean;
+                        active: boolean;
+                        mcpUrl: string | null;
+                        areas: string[];
+                        /** @enum {string|null} */
+                        addressProblem: "no_address" | "has_path" | "plain_http" | null;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    "mcp.listOAuthClients": {
+        parameters: {
+            query?: {
+                all?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Apps */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        clients: {
+                            id: string;
+                            clientId: string;
+                            /** @enum {string} */
+                            kind: "registered" | "dynamic" | "metadata";
+                            name: string;
+                            redirectUris: string[];
+                            requirePkce: boolean;
+                            createdAt: number;
+                            owner: string | null;
+                            lastConsentedAt: number | null;
+                        }[];
                     };
                 };
             };
@@ -22511,6 +22811,7 @@ export interface operations {
                             lastUsedAt: number | null;
                             createdAt: number;
                             revokedAt: number | null;
+                            signedIn: boolean;
                             member: string | null;
                         };
                     } | {

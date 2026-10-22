@@ -14,7 +14,7 @@
 		Section,
 		SwitchRow,
 	} from '@famos/ui/famos';
-	import { ChevronRight, KeyRound, Plug, Plus } from '@lucide/svelte';
+	import { ChevronRight, KeyRound, Plug, Plus, UserCheck } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
@@ -25,6 +25,12 @@
 	import { appIsLive, nextWarning } from './apps.js';
 	import AppPanel, { type ConnectedApp } from './AppPanel.svelte';
 	import ConnectApp from './ConnectApp.svelte';
+	import {
+		registerBlocked,
+		type OAuthState,
+		showsHttpSwitch,
+		signinBlocked,
+	} from './oauth-settings.js';
 
 	type Json<P extends keyof paths> = paths[P] extends {
 		get: { responses: { 200: { content: { 'application/json': infer R } } } };
@@ -33,6 +39,8 @@
 		: never;
 	type Token = Json<'/api/v1/mcp/tokens'>['tokens'][number];
 	type Roles = Json<'/api/v1/core/roles'>;
+	type OAuth = Json<'/api/v1/mcp/oauth'>;
+	type Client = Json<'/api/v1/mcp/oauth-clients'>['clients'][number];
 
 	/** Personal app keys (API tokens) for AI apps that speak MCP; "Connect an AI app" walks
 	 * through turning it on, creating a key and copying the settings into the app. */
@@ -44,6 +52,14 @@
 	/** Turning AI apps on asks first; the switch stays where it was until the answer. */
 	let confirmingOn = $state(false);
 	let switchKey = $state(0);
+
+	/** AI apps signing in with a family account: the admin's switches, and the apps set up for it. */
+	let oauth = $state<OAuth | null>(null);
+	let myClients = $state<Client[]>([]);
+	let allClients = $state<Client[]>([]);
+	/** Allowing plain http asks first, with its warning. */
+	let confirmingHttp = $state(false);
+	let oauthKey = $state(0);
 
 	/** Programs with a key of their own (Home Assistant, scripts): an admin's to look after. */
 	let apps = $state<ConnectedApp[]>([]);
@@ -69,13 +85,21 @@
 	const others = $derived(
 		isAdmin ? everyone.filter((token) => live(token) && !mine.some((m) => m.id === token.id)) : [],
 	);
+	const otherClients = $derived(
+		isAdmin ? allClients.filter((c) => !myClients.some((m) => m.id === c.id)) : [],
+	);
+	const oauthState = $derived<OAuthState | null>(oauth);
+	const signinReason = $derived(oauthState ? signinBlocked(oauthState, enabled === true) : null);
+	const registerReason = $derived(oauthState ? registerBlocked(oauthState) : null);
 	const when = (ms: number) => dateTimeFormat({ dateStyle: 'medium' }).format(ms);
 	const status = (token: Token) =>
 		token.revokedAt !== null
 			? t('mcp_revoked')
 			: token.expiresAt !== null && token.expiresAt <= Date.now()
 				? t('mcp_expired')
-				: t('mcp_expires', { date: token.expiresAt ? when(token.expiresAt) : '-' });
+				: token.signedIn
+					? t('mcp_ends_unused')
+					: t('mcp_expires', { date: token.expiresAt ? when(token.expiresAt) : '-' });
 	const live = (token: Token) =>
 		token.revokedAt === null && (token.expiresAt === null || token.expiresAt > Date.now());
 
@@ -90,6 +114,20 @@
 			everyone =
 				(await api.GET('/api/v1/mcp/tokens', { params: { query: { all: 'true' } } })).data
 					?.tokens ?? [];
+		await loadOAuth();
+	}
+
+	async function loadOAuth() {
+		const [status, own] = await Promise.all([
+			api.GET('/api/v1/mcp/oauth'),
+			api.GET('/api/v1/mcp/oauth-clients'),
+		]);
+		oauth = status.data ?? null;
+		myClients = own.data?.clients ?? [];
+		if (isAdmin)
+			allClients =
+				(await api.GET('/api/v1/mcp/oauth-clients', { params: { query: { all: 'true' } } })).data
+					?.clients ?? [];
 	}
 	$effect(() => {
 		if (session.can('core.mcp.use')) void load();
@@ -160,6 +198,51 @@
 		} else void switchTo(false);
 	}
 
+	async function setOAuth(patch: {
+		oauthEnabled?: boolean;
+		dcrEnabled?: boolean;
+		allowPlainHttp?: boolean;
+	}): Promise<boolean> {
+		error = null;
+		try {
+			unwrap(await api.POST('/api/v1/actions/core.setMcpOAuth', { body: patch }));
+			await loadOAuth();
+			return true;
+		} catch {
+			error = t('error_generic');
+			oauthKey += 1;
+			return false;
+		}
+	}
+
+	async function switchSignin(on: boolean) {
+		if (await setOAuth({ oauthEnabled: on }))
+			toasts.show(t(on ? 'mcp_signin_turned_on' : 'mcp_signin_turned_off'));
+	}
+
+	function onHttp(on: boolean) {
+		if (on) {
+			confirmingHttp = true;
+			// Put the switch back until the answer.
+			oauthKey += 1;
+		} else void setOAuth({ allowPlainHttp: false });
+	}
+
+	async function removeClient(client: Client) {
+		error = null;
+		try {
+			unwrap(
+				await api.POST('/api/v1/actions/core.deleteOAuthClient', { body: { clientId: client.id } }),
+			);
+			toasts.show(t('mcp_client_removed', { name: client.name }));
+			await load();
+		} catch {
+			error = t('error_generic');
+		}
+	}
+
+	const reasonText = (reason: string) => tDynamic(`app:${reason}`);
+
 	async function revoke(id: string) {
 		error = null;
 		try {
@@ -170,6 +253,27 @@
 		}
 	}
 </script>
+
+{#snippet clientRow(client: Client, withOwner: boolean)}
+	<Row
+		wrap
+		title={client.name}
+		meta="{withOwner && client.owner
+			? t('mcp_client_meta_owner', { owner: client.owner, date: when(client.createdAt) })
+			: t('mcp_client_meta', { date: when(client.createdAt) })} · {client.lastConsentedAt
+			? t('mcp_client_last', { date: when(client.lastConsentedAt) })
+			: t('mcp_client_never')}"
+	>
+		{#snippet lead()}<Plug class="size-5" aria-hidden="true" />{/snippet}
+		{#snippet trail()}
+			<ConfirmButton
+				label={t('mcp_client_remove')}
+				confirmLabel={t('mcp_client_remove_confirm')}
+				onconfirm={() => removeClient(client)}
+			/>
+		{/snippet}
+	</Row>
+{/snippet}
 
 <Page template="settings">
 	<PageHeader title={t('nav_connected_apps')} subtitle={t('mcp_intro')}>
@@ -223,7 +327,41 @@
 							onchange={onSwitch}
 						/>
 					{/key}
+					{#if oauth}
+						{#key oauthKey}
+							<SwitchRow
+								id="mcp-signin"
+								label={t('mcp_signin_switch')}
+								hint={signinReason ? reasonText(signinReason) : t('mcp_signin_hint')}
+								checked={oauth.oauthEnabled}
+								disabled={signinReason !== null}
+								onchange={switchSignin}
+							/>
+							<SwitchRow
+								id="mcp-register"
+								label={t('mcp_register_switch')}
+								hint={registerReason ? reasonText(registerReason) : t('mcp_register_hint')}
+								checked={oauth.dcrEnabled}
+								disabled={registerReason !== null}
+								onchange={(on) => void setOAuth({ dcrEnabled: on })}
+							/>
+							{#if showsHttpSwitch(oauth)}
+								<SwitchRow
+									id="mcp-http"
+									label={t('mcp_http_switch')}
+									hint={t('mcp_http_hint')}
+									checked={oauth.allowPlainHttp}
+									onchange={onHttp}
+								/>
+							{/if}
+						{/key}
+					{/if}
 				</Card>
+				{#if oauth?.allowPlainHttp}
+					<div class="mt-3" data-testid="mcp-http-warning">
+						<Notice tone="warn">{t('mcp_http_warning')}</Notice>
+					</div>
+				{/if}
 			</Section>
 		{/if}
 		{#if usable && !mayCreate}
@@ -246,13 +384,18 @@
 								wrap
 								title={token.name}
 								idle={!live(token)}
-								meta="{token.scope === 'read'
+								meta="{token.signedIn ? `${t('mcp_signed_in')} · ` : ''}{token.scope === 'read'
 									? t('mcp_scope_read_short')
 									: t('mcp_scope_read_write_short')} · {status(token)} · {token.lastUsedAt
 									? t('mcp_last_used', { date: when(token.lastUsedAt) })
 									: t('mcp_never_used')}"
 							>
-								{#snippet lead()}<KeyRound class="size-5" aria-hidden="true" />{/snippet}
+								{#snippet lead()}
+									{#if token.signedIn}<UserCheck
+											class="size-5"
+											aria-hidden="true"
+										/>{:else}<KeyRound class="size-5" aria-hidden="true" />{/if}
+								{/snippet}
 								{#snippet trail()}
 									{#if live(token)}
 										<ConfirmButton
@@ -285,6 +428,25 @@
 								/>
 							{/snippet}
 						</Row>
+					{/each}
+				</Card>
+			</Section>
+		{/if}
+
+		{#if myClients.length > 0}
+			<Section label={t('mcp_clients')} count={myClients.length}>
+				<Card rows>
+					{#each myClients as client (client.id)}
+						{@render clientRow(client, false)}
+					{/each}
+				</Card>
+			</Section>
+		{/if}
+		{#if otherClients.length > 0}
+			<Section label={t('mcp_clients_all')} count={otherClients.length}>
+				<Card rows>
+					{#each otherClients as client (client.id)}
+						{@render clientRow(client, true)}
 					{/each}
 				</Card>
 			</Section>
@@ -339,11 +501,33 @@
 	<ConnectApp
 		open={connecting}
 		enabled={enabled === true}
+		{oauth}
+		canCreateClients={mayCreate}
 		{isAdmin}
 		onenable={() => setEnabled(true)}
 		onclose={() => (connecting = false)}
 		onchanged={load}
 	/>
+
+	<Dialog
+		open={confirmingHttp}
+		title={t('mcp_http_confirm_title')}
+		description={t('mcp_http_confirm_body')}
+		onclose={() => (confirmingHttp = false)}
+	>
+		{#snippet actions()}
+			<Button variant="ghost" data-autofocus onclick={() => (confirmingHttp = false)}
+				>{t('cancel')}</Button
+			>
+			<Button
+				variant="primary"
+				onclick={() => {
+					confirmingHttp = false;
+					void setOAuth({ allowPlainHttp: true });
+				}}>{t('mcp_http_confirm_on')}</Button
+			>
+		{/snippet}
+	</Dialog>
 
 	<Dialog
 		open={confirmingOn}

@@ -81,6 +81,8 @@ export const ApiTokenSchema = z.object({
 	lastUsedAt: z.number().int().nullable(),
 	createdAt: z.number().int(),
 	revokedAt: z.number().int().nullable(),
+	/** An AI app that signed in with a family account, not a key the member made. */
+	signedIn: z.boolean(),
 	/** Whose token it is (the list of everyone's only; null for the caller's own). */
 	member: z.string().nullable(),
 });
@@ -96,6 +98,7 @@ export const presentApiToken = (
 	lastUsedAt: token.lastUsedAt,
 	createdAt: token.createdAt,
 	revokedAt: token.revokedAt,
+	signedIn: token.oauthClientId !== null,
 	member: names ? (names.get(token.memberId) ?? null) : null,
 });
 

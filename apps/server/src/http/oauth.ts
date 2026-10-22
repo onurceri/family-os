@@ -66,6 +66,25 @@ const CreateClientInputSchema = z.object({
 	/** With the `ha` preset: the address Home Assistant is reached at on the home network. */
 	homeAssistantUrl: z.string().max(2000).optional(),
 });
+const OAuthStatusSchema = z.object({
+	/** The three admin switches. */
+	oauthEnabled: z.boolean(),
+	dcrEnabled: z.boolean(),
+	allowPlainHttp: z.boolean(),
+	/** Whether the sign-in endpoints answer right now. */
+	active: z.boolean(),
+	/** What to give an app as the address of FamilyOS's AI door; null while the family address is not usable. */
+	mcpUrl: z.string().nullable(),
+	/** The areas (extension ids) an app outside the house can read from: open to any AI provider. */
+	areas: z.array(z.string()),
+	/** Why the family address cannot carry a sign-in, if it cannot. */
+	addressProblem: z.enum(['no_address', 'has_path', 'plain_http']).nullable(),
+});
+const ListedClientSchema = ClientSchema.extend({
+	/** The member who set it up. */
+	owner: z.string().nullable(),
+	lastConsentedAt: z.number().nullable(),
+});
 const CreatedClientSchema = z.object({
 	client: ClientSchema,
 	/** The app's secret. Shown once; only its hash is kept. */
@@ -155,6 +174,78 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 					'access_denied',
 					denied.state,
 				),
+			},
+			200,
+		);
+	});
+
+	const getStatus = createRoute({
+		...base,
+		tags: ['mcp'],
+		method: 'get',
+		path: '/api/v1/mcp/oauth',
+		operationId: 'mcp.getOAuth',
+		summary: 'Whether AI apps may sign in with a family account, and whether the address allows it',
+		responses: { 200: { description: 'Status', ...json(OAuthStatusSchema) }, ...errorResponses },
+	});
+	app.openapi(getStatus, async (c) => {
+		me(c);
+		const status = await oauth.status();
+		return c.json(
+			{
+				oauthEnabled: status.oauthEnabled,
+				dcrEnabled: status.dcrEnabled,
+				allowPlainHttp: status.allowPlainHttp,
+				active: status.active,
+				mcpUrl: status.resource,
+				addressProblem: status.addressProblem,
+				areas: kernel.registry.extensions
+					.filter(
+						(e) =>
+							e.id !== 'core' &&
+							(e.sensitive || e.actions.some((a) => a.ai !== undefined)) &&
+							kernel.features.isOn(e.id) &&
+							kernel.aiAreas.access(e.id) === 'any',
+					)
+					.map((e) => e.id),
+			},
+			200,
+		);
+	});
+
+	const listClients = createRoute({
+		...base,
+		tags: ['mcp'],
+		method: 'get',
+		path: '/api/v1/mcp/oauth-clients',
+		operationId: 'mcp.listOAuthClients',
+		summary:
+			'The AI apps I set up to sign in (never their secrets); admins can list everyone’s with all=true',
+		request: { query: z.object({ all: z.enum(['true', 'false']).optional() }) },
+		responses: {
+			200: { description: 'Apps', ...json(z.object({ clients: z.array(ListedClientSchema) })) },
+			...errorResponses,
+		},
+	});
+	app.openapi(listClients, async (c) => {
+		const all = c.req.valid('query').all === 'true';
+		const clients = await oauth.listClients(me(c), { all });
+		const names = new Map(
+			(await kernel.ctx.family.members()).map((m) => [m.id as string, m.displayName]),
+		);
+		return c.json(
+			{
+				clients: clients.map((client) => ({
+					id: client.id,
+					clientId: client.clientId,
+					kind: client.kind,
+					name: client.name,
+					redirectUris: client.redirectUris,
+					requirePkce: client.requirePkce,
+					createdAt: client.createdAt,
+					lastConsentedAt: client.lastConsentedAt,
+					owner: client.ownerMemberId ? (names.get(client.ownerMemberId) ?? null) : null,
+				})),
 			},
 			200,
 		);
