@@ -58,15 +58,6 @@ async function save(name: string, take: (path: string) => Promise<unknown>) {
 	}
 }
 
-/** A picture of `name` cut out of the page: `x` and `y` are its top left corner. */
-const card = (
-	page: Page,
-	name: string,
-	x: number,
-	y: number,
-	size: { width: number; height: number },
-) => save(name, (path) => page.screenshot({ path, clip: { x, y, ...size } }));
-
 async function open(page: Page, path: string, time = '15:20') {
 	await standAt(page, time);
 	await page.goto(path);
