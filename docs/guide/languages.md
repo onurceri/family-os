@@ -24,7 +24,7 @@ English is built in. Every other language is a **language pack**: text files you
 - Unusable strings (unknown keys, mismatched `{{placeholders}}`, text over 4 KB) are skipped and counted.
 - A pack missing a feature still installs; that feature shows in English or its own translation. Files for features you lack are ignored.
 - Limits: 2 MB per pack, 40 installed packs.
-- A pack with an included code (`tr`) replaces it; removing it brings the included one back. With none included, the family falls back to English.
+- A pack with an included code (`tr`) replaces it; removing it brings the included one back. With none included, the family falls back to English and people who used it follow the family language.
 - Stored in `<data>/languages/<code>/`, part of backups.
 
 ## Making a pack

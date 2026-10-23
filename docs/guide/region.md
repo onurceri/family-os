@@ -22,6 +22,7 @@ The **[language](languages.md)** chooses words (including day and month names). 
 - Changing the region format moves week start, clock and temperature to that region's usual; adjust before **Save**.
 - Names stay in each reader's language: with Slovenia picked, English readers see "Thu, 22 Oct", Slovenian readers "čet., 22. okt.".
 - Setup guesses time zone and region from the browser and shows them under **Time and region** before the account is created.
+- Other open screens update by themselves when these settings change.
 
 ## Where it applies
 
