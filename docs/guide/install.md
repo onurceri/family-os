@@ -4,18 +4,18 @@ FamilyOS runs as one Docker container. A Raspberry Pi 4 is enough.
 
 ## Start it
 
-```bash
-mkdir familyos && cd familyos
-curl -fsSLO https://raw.githubusercontent.com/onurceri/family-os/main/docker-compose.yml
-docker compose up -d
-docker compose logs famos
-```
+1. Download the compose file and start FamilyOS:
 
-This downloads the compose file and the released FamilyOS image (for ordinary computers and for a Raspberry Pi). The folder holds only that file; the family's data lives in a Docker volume.
+   ```bash
+   mkdir familyos && cd familyos
+   curl -fsSLO https://raw.githubusercontent.com/onurceri/family-os/main/docker-compose.yml
+   docker compose up -d
+   docker compose logs famos
+   ```
 
-The log prints an address ending in `/setup?code=…`. Open it in a browser.
+2. Open the address in the log that ends in `/setup?code=…`.
 
-The compose file is the same for every version, so downloading it from `main` is fine. The version is chosen by `FAMOS_VERSION` (see Update).
+The image is the released one, for ordinary computers and for a Raspberry Pi. The compose file is the same for every version, so downloading it from `main` is fine; `FAMOS_VERSION` chooses the version (see Update). The folder holds only that file; the family's data lives in a Docker volume.
 
 ### Port 3000 is taken
 
@@ -38,16 +38,21 @@ The compose file is the same for every version, so downloading it from `main` is
 2. Restart with `docker compose up -d`. The setup link in the log uses this address.
 3. Installing on phones needs https: see [HTTPS and phones](https.md).
 
-1. Pick the language (**Choose your language**) and press **Continue**. It is preselected from your browser. It becomes the family's language, and everyone can choose their own later (see [Languages](languages.md)).
+## Set up the account
+
+1. Pick the language (**Choose your language**) and press **Continue**. It is preselected from your browser and becomes the family's language; everyone can choose their own later (see [Languages](languages.md)).
 2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
-3. Check **Time and region**. The time zone, the region format (date order, numbers, first day of the week), the 12- or 24-hour clock and Celsius or Fahrenheit are guessed from this browser. Correct them if they are wrong, for example on a laptop set up abroad or in a browser in another language: the time zone decides what "today" is and when reminders go off. Choosing another region format also picks its clock and temperature, which you can still change.
+3. Check **Time and region**. The time zone, the region format (date order, numbers, first day of the week), the 12- or 24-hour clock and Celsius or Fahrenheit are guessed from this browser. Correct them if they are wrong (a laptop set up abroad, a browser in another language): the time zone decides what "today" is and when reminders go off. Choosing another region format also picks its clock and temperature, which you can still change.
 4. Tick **This device is shared at home (people with a PIN can sign in here)** if you are on the family tablet (see [Family members, roles and devices](members.md)).
 5. Press **Create account**. That account is an **admin**.
-6. Optionally, **Where do you live?**: search for your city to show the weather on Today and on displays, or press **Skip**; the same step can also be done later from Today's checklist. Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. You can change it later under **Settings → Family → Photos and weather**; changing the place later leaves the weather switch as it is. If you reload the page after creating the account, the step is not shown again.
+6. Optionally, **Where do you live?**: search for your city to show the weather on Today and on displays, or press **Skip** (the same step is on Today's checklist later). Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. If you reload the page after creating the account, the step is not shown again.
 
-You can change the time zone and the formats later under **Settings → Family → Language & region** (see [Region and formats](region.md)). **Settings** itself opens **Profile & sign-in** on a wide screen and **More** on a phone, for everyone.
+### Good to know
 
-The code makes sure that only you can set up a new instance, even if it is reachable from the internet before you get to it. It is also stored in the data volume as `setup-code`. To choose it yourself, set `FAMOS_SETUP_CODE` (at least 8 characters).
+- Change the time zone and formats later under **Settings → Family → Language & region** (see [Region and formats](region.md)), and the weather place under **Settings → Family → Photos and weather** (changing the place leaves the weather switch as it is).
+- **Settings** opens **Profile & sign-in** on a wide screen and **More** on a phone, for everyone.
+- The setup code makes sure only you can set up a new instance, even if it is reachable from the internet first. It is stored in the data volume as `setup-code`. To choose it yourself, set `FAMOS_SETUP_CODE` (at least 8 characters).
+- Settings that are not in the app are environment variables. The table is in the README.
 
 Everything lives in the `famos-data` volume (`/data` in the container):
 
@@ -60,11 +65,18 @@ Everything lives in the `famos-data` volume (`/data` in the container):
 | `secret` | Signs sessions and encrypts saved keys and passwords; see [Backups](backups.md) |
 | `setup-code` | The setup code |
 
-Settings that are not in the app are environment variables. The table is in the README.
-
 ## Add the family
 
-Open **Settings → Family → Members** and add each person with a role. **Admin** can do everything, **Member** is for adults, **Supervised** is for children and anyone whose changes should be checked, **Guest** can only look. Who can do what, how people sign in and how to set up the kitchen tablet is on [Family members, roles and devices](members.md).
+Open **Settings → Family → Members** and add each person with a role.
+
+| Role | For |
+|---|---|
+| **Admin** | Can do everything |
+| **Member** | Adults |
+| **Supervised** | Children, and anyone whose changes should be checked |
+| **Guest** | Can only look |
+
+Who can do what, how people sign in and the kitchen tablet: [Family members, roles and devices](members.md).
 
 ## Choose what FamilyOS does
 
@@ -78,7 +90,7 @@ In the folder with `docker-compose.yml`:
 docker compose pull && docker compose up -d
 ```
 
-FamilyOS writes a backup before any update that changes the database, and keeps people signed in. To stay on a version instead of the newest one, set `FAMOS_VERSION` (for example `FAMOS_VERSION=0.1`, which still gets that version's fixes) in a `.env` file next to `docker-compose.yml`. What each version brings is on the [releases page](https://github.com/onurceri/family-os/releases).
+FamilyOS writes a backup before any update that changes the database, and keeps people signed in. To stay on a version, set `FAMOS_VERSION` (for example `FAMOS_VERSION=0.1`, which still gets that version's fixes) in a `.env` file next to `docker-compose.yml`. What each version brings is on the [releases page](https://github.com/onurceri/family-os/releases).
 
 ### Building from source
 
