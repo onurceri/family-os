@@ -40,6 +40,8 @@ Files for a vehicle, pet, home, thing or service: policy, invoice, vet card, war
 
 ## Archiving
 
+A duty or paper of a vehicle, pet or home is shown only to people who may see that area: someone without access to pets sees no pet duty or paper in lists, "Coming up" or search.
+
 Archiving a vehicle, pet or home hides it and stops its reminders; papers and history stay. Unneeded duties: **Remove** (tap again).
 
 ## And the AI?

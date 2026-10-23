@@ -1,4 +1,5 @@
 import type { AiIndex } from '@famos/sdk';
+import { paperAudience } from './area.ts';
 import { recordsView } from './capabilities.ts';
 import { tables } from './store.ts';
 
@@ -45,15 +46,23 @@ export const searchIndex: AiIndex = {
 					.where('archived_at', 'is', null)
 					.executeTakeFirst();
 				if (!row) return null;
+				// The record's name and page live on its duties, and a rename reaches all of them
+				// (archived ones too), so any one is current.
 				const record = await tables(ctx.db)
 					.selectFrom('records_obligations')
 					.select(['record_name', 'record_url'])
 					.where('record_id', '=', row.record_id)
+					.orderBy('id', 'desc')
 					.executeTakeFirst();
 				const text = [row.label, record?.record_name].filter((part): part is string =>
 					Boolean(part),
 				);
-				return { title: row.name, text: text.join('\n'), href: record?.record_url ?? '/' };
+				return {
+					title: row.name,
+					text: text.join('\n'),
+					href: record?.record_url ?? '/',
+					capability: await paperAudience(tables(ctx.db), row.record_id, row.record_kind),
+				};
 			},
 		},
 	},

@@ -308,7 +308,11 @@ export type RecordDocument = z.infer<typeof RecordDocumentSchema>;
 
 /** `audience`: the capability of the area the duty belongs to; only its holders hear of it. */
 export const obligationChangedPayload = z.object({ recordId: z.string(), audience: z.string() });
-export const documentChangedPayload = z.object({ recordId: z.string() });
+/** `audience`: the capability of the area the record's papers belong to; records.view when left out. */
+export const documentChangedPayload = z.object({
+	recordId: z.string(),
+	audience: z.string().optional(),
+});
 
 /** What a record's page passes to the sections of its `record.section` slot. */
 export interface RecordSectionProps {

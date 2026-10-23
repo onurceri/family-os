@@ -1,8 +1,10 @@
 import {
+	type Actor,
 	AiContextSchema,
 	defineAction,
 	defineEvent,
 	defineRoute,
+	type ExtensionContext,
 	FamosError,
 	selfOf,
 	type UnitOfWork,
@@ -25,8 +27,9 @@ import {
 	UndoCompletionSchema,
 	UpdateObligationSchema,
 } from '../contract/index.ts';
+import { knownAudience, mayRead } from './area.ts';
 import { recordsEdit, recordsView } from './capabilities.ts';
-import { documentChanged } from './documents.ts';
+import { emitDocumentChanged } from './documents.ts';
 import { fromRule, nextDue, toRule } from './recurrence.ts';
 import { scheduleObligationReminders } from './reminders.ts';
 import { OBLIGATION_KIND, PAPER_KIND } from './search.ts';
@@ -56,13 +59,17 @@ export const obligationChanged = defineEvent(
  * The capability to tell about a duty of this audience: its own while that area is installed,
  * otherwise the records' own, as a duty of a missing area is listed.
  */
-function areaOf(uow: UnitOfWork, audience: string) {
-	try {
-		uow.can(audience);
-		return audience;
-	} catch {
-		return DEFAULT_AUDIENCE;
-	}
+const areaOf = knownAudience;
+
+/** A record's papers follow the area its duties name, so search reads it again when that changes. */
+async function reindexPapers(uow: UnitOfWork, recordId: string) {
+	const papers = await tables(uow.db)
+		.selectFrom('records_documents')
+		.select('id')
+		.where('record_id', '=', recordId)
+		.where('archived_at', 'is', null)
+		.execute();
+	for (const { id } of papers) await uow.ai.reindex(PAPER_KIND, id);
 }
 
 /** Tells each area among `audiences` that something on the record changed. */
@@ -175,6 +182,7 @@ export const addObligation = defineAction({
 		};
 		await tables(uow.db).insertInto('records_obligations').values(row).execute();
 		await uow.ai.reindex(OBLIGATION_KIND, row.id);
+		await reindexPapers(uow, row.record_id);
 		await scheduleReminders(uow, row.id);
 		emitChanged(uow, row.record_id, [row.audience]);
 		return toObligation(row);
@@ -420,7 +428,7 @@ export const archiveForRecord = defineAction({
 			.execute();
 		const gonePapers = await db
 			.selectFrom('records_documents')
-			.select('id')
+			.select(['id', 'record_kind'])
 			.where('record_id', '=', recordId)
 			.where('archived_at', 'is', null)
 			.execute();
@@ -443,7 +451,7 @@ export const archiveForRecord = defineAction({
 			recordId,
 			goneObligations.map((o) => o.audience),
 		);
-		if (gonePapers.length > 0) uow.emit(documentChanged, { recordId });
+		if (gonePapers[0]) await emitDocumentChanged(uow, recordId, gonePapers[0].record_kind);
 		return {
 			obligations: Number(obligations.numUpdatedRows),
 			documents: Number(documents.numUpdatedRows),
@@ -477,7 +485,7 @@ export const renameRecord = defineAction({
 			.execute();
 		const papers = await db
 			.selectFrom('records_documents')
-			.select('id')
+			.select(['id', 'record_kind'])
 			.where('record_id', '=', recordId)
 			.where('archived_at', 'is', null)
 			.execute();
@@ -488,7 +496,7 @@ export const renameRecord = defineAction({
 			recordId,
 			duties.map((d) => d.audience),
 		);
-		if (papers.length > 0) uow.emit(documentChanged, { recordId });
+		if (papers[0]) await emitDocumentChanged(uow, recordId, papers[0].record_kind);
 		return { obligations: Number(result.numUpdatedRows) };
 	},
 });
@@ -507,19 +515,13 @@ export const openUntil = (db: ReturnType<typeof tables>, today: string) =>
 		.where((eb) => eb.or([eb('lapses', '=', 0), eb('due_date', '>=', today)]));
 
 /**
- * An obligation belongs to the area of its `audience` capability (a vehicle's, say). The AI sees
- * it only when it may use that area (and the member it asks for may): a locked area's
- * capabilities are gone for it, so its duties, names and dates never reach a prompt.
+ * An obligation belongs to the area of its `audience` capability (a vehicle's, say). Whoever asks
+ * (a person, a display, the AI) sees it only when they may use that area: a locked area's
+ * capabilities are gone for the AI, so its duties, names and dates never reach a prompt.
  * Unknown audience: records.view.
  */
-export const aiMayRead = (uow: UnitOfWork, audience: string) => {
-	if (uow.actor.kind !== 'ai') return true;
-	try {
-		return uow.can(audience);
-	} catch {
-		return uow.can(DEFAULT_AUDIENCE);
-	}
-};
+export const aiMayRead = (uow: UnitOfWork, audience: string) =>
+	mayRead((capability) => uow.can(capability), audience);
 
 /**
  * What the AI may know about open obligations, so a shared policy or invoice can complete the
@@ -644,6 +646,10 @@ export const upcoming = defineAction({
 	},
 });
 
+/** Whether the person or display behind a route call may see a duty of this audience. */
+const mayReadAs = (ctx: ExtensionContext, actor: Actor, audience: string) =>
+	mayRead((capability) => ctx.access.can(actor, capability), audience);
+
 export const listObligations = defineRoute({
 	method: 'get',
 	path: '/obligations',
@@ -655,7 +661,7 @@ export const listObligations = defineRoute({
 		status: z.enum(['open', 'archived']).default('open'),
 	}),
 	response: z.array(ObligationSchema),
-	async handle(ctx, { query }) {
+	async handle(ctx, { query, actor }) {
 		let q = tables(ctx.db)
 			.selectFrom('records_obligations')
 			.selectAll()
@@ -664,7 +670,8 @@ export const listObligations = defineRoute({
 			query.status === 'open'
 				? q.where('archived_at', 'is', null).orderBy('due_date')
 				: q.where('archived_at', 'is not', null).orderBy('archived_at', 'desc');
-		return (await q.orderBy('created_at').execute()).map(toObligation);
+		const rows = await q.orderBy('created_at').execute();
+		return rows.filter((r) => mayReadAs(ctx, actor, r.audience)).map(toObligation);
 	},
 });
 
@@ -676,7 +683,14 @@ export const getObligationHistory = defineRoute({
 	requires: recordsView.id,
 	params: z.object({ obligationId: ObligationIdSchema }),
 	response: z.array(HistoryEntrySchema),
-	async handle(ctx, { params }) {
+	async handle(ctx, { params, actor }) {
+		const duty = await tables(ctx.db)
+			.selectFrom('records_obligations')
+			.select('audience')
+			.where('id', '=', params.obligationId)
+			.executeTakeFirst();
+		// A duty of an area the caller may not see answers like one that does not exist.
+		if (!duty || !mayReadAs(ctx, actor, duty.audience)) return [];
 		const rows = await tables(ctx.db)
 			.selectFrom('records_obligation_history')
 			.selectAll()
@@ -696,15 +710,17 @@ export const listUpcoming = defineRoute({
 	requires: recordsView.id,
 	query: z.object({ days: z.coerce.number().int().min(0).max(366).default(30) }),
 	response: z.array(ObligationSchema),
-	async handle(ctx, { query }) {
+	async handle(ctx, { query, actor }) {
 		const { timeZone } = await ctx.family.settings();
 		const today = todayIn(timeZone, ctx.clock.now());
 		const rows = await openUntil(tables(ctx.db), today)
 			.where('due_date', '<=', addDays(today, query.days))
 			.orderBy('due_date')
 			.orderBy('created_at')
-			.limit(200)
 			.execute();
-		return rows.map(toObligation);
+		return rows
+			.filter((r) => mayReadAs(ctx, actor, r.audience))
+			.slice(0, 200)
+			.map(toObligation);
 	},
 });

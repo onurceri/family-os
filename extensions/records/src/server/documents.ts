@@ -5,23 +5,32 @@ import {
 	FamosError,
 	FileResponseSchema,
 	selfOf,
+	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
 	AttachDocumentSchema,
+	DEFAULT_AUDIENCE,
 	documentChangedPayload,
 	RecordDocIdSchema,
 	RecordDocumentSchema,
 	RecordIdSchema,
 	UpdateDocumentSchema,
 } from '../contract/index.ts';
+import { knownAudience, mayRead, paperAudience } from './area.ts';
 import { recordsEdit, recordsView } from './capabilities.ts';
 import { PAPER_KIND } from './search.ts';
 import { type DocumentRow, tables, toDocument } from './store.ts';
 
 export const documentChanged = defineEvent('records.document.changed', documentChangedPayload, {
-	audience: 'records.view',
+	audience: (payload) => payload.audience ?? DEFAULT_AUDIENCE,
 });
+
+/** Tells the people who may see a record's papers that they changed. */
+export async function emitDocumentChanged(uow: UnitOfWork, recordId: string, recordKind: string) {
+	const audience = await paperAudience(tables(uow.db), recordId, recordKind);
+	uow.emit(documentChanged, { recordId, audience: knownAudience(uow, audience) });
+}
 
 /**
  * Links files that arrived through the Inbox to a record. The file stays where the
@@ -82,7 +91,7 @@ export const attachDocument = defineAction({
 			await uow.ai.reindex(PAPER_KIND, row.id);
 			result.push(row);
 		}
-		uow.emit(documentChanged, { recordId: input.recordId });
+		await emitDocumentChanged(uow, input.recordId, input.recordKind);
 		return result.map(toDocument);
 	},
 });
@@ -112,7 +121,7 @@ export const updateDocument = defineAction({
 		};
 		await db.updateTable('records_documents').set(patch).where('id', '=', id).execute();
 		await uow.ai.reindex(PAPER_KIND, id);
-		uow.emit(documentChanged, { recordId: row.record_id });
+		await emitDocumentChanged(uow, row.record_id, row.record_kind);
 		return toDocument({ ...row, ...patch });
 	},
 });
@@ -130,13 +139,13 @@ export const detachDocument = defineAction({
 		const db = tables(uow.db);
 		const row = await db
 			.selectFrom('records_documents')
-			.select('record_id')
+			.select(['record_id', 'record_kind'])
 			.where('id', '=', id)
 			.executeTakeFirst();
 		if (!row) throw new FamosError('not_found', 'Document not found');
 		await db.deleteFrom('records_documents').where('id', '=', id).execute();
 		await uow.ai.remove(PAPER_KIND, id);
-		uow.emit(documentChanged, { recordId: row.record_id });
+		await emitDocumentChanged(uow, row.record_id, row.record_kind);
 		return { ok: true as const };
 	},
 });
@@ -149,7 +158,7 @@ export const listDocuments = defineRoute({
 	requires: recordsView.id,
 	query: z.object({ recordId: RecordIdSchema }),
 	response: z.array(RecordDocumentSchema),
-	async handle(ctx, { query }) {
+	async handle(ctx, { query, actor }) {
 		const rows = await tables(ctx.db)
 			.selectFrom('records_documents')
 			.selectAll()
@@ -158,6 +167,10 @@ export const listDocuments = defineRoute({
 			.orderBy('created_at', 'desc')
 			.orderBy('id', 'desc')
 			.execute();
+		const first = rows[0];
+		if (!first) return [];
+		const audience = await paperAudience(tables(ctx.db), query.recordId, first.record_kind);
+		if (!mayRead((c) => ctx.access.can(actor, c), audience)) return [];
 		return rows.map(toDocument);
 	},
 });
@@ -171,14 +184,21 @@ export const getDocumentFile = defineRoute({
 	requires: recordsView.id,
 	params: z.object({ documentId: RecordDocIdSchema }),
 	response: FileResponseSchema,
-	async handle(ctx, { params }) {
+	async handle(ctx, { params, actor }) {
 		const row = await tables(ctx.db)
 			.selectFrom('records_documents')
 			.selectAll()
 			.where('id', '=', params.documentId)
 			.where('archived_at', 'is', null)
 			.executeTakeFirst();
-		const stored = row ? await ctx.files.get(row.file_key) : null;
+		// A paper of an area the caller may not see answers like one that does not exist.
+		const audience = row
+			? await paperAudience(tables(ctx.db), row.record_id, row.record_kind)
+			: DEFAULT_AUDIENCE;
+		const stored =
+			row && mayRead((c) => ctx.access.can(actor, c), audience)
+				? await ctx.files.get(row.file_key)
+				: null;
 		if (!row || !stored) throw new FamosError('not_found', 'File not found');
 		return {
 			stream: stored.stream,
