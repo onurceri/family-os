@@ -15,7 +15,7 @@ FamilyOS runs as one Docker container. A Raspberry Pi 4 is enough.
 
 2. Open the address in the log that ends in `/setup?code=…`.
 
-The image is the released one, for ordinary computers and for a Raspberry Pi. The compose file is the same for every version, so downloading it from `main` is fine; `FAMOS_VERSION` chooses the version (see Update). The folder holds only that file; the family's data lives in a Docker volume.
+The image is the released one (computers and Raspberry Pi). The compose file is the same for every version; `FAMOS_VERSION` chooses the version (see Update). The family's data lives in a Docker volume, not the folder.
 
 ### Port 3000 is taken
 
@@ -40,18 +40,18 @@ The image is the released one, for ordinary computers and for a Raspberry Pi. Th
 
 ## Set up the account
 
-1. Pick the language (**Choose your language**) and press **Continue**. It is preselected from your browser and becomes the family's language; everyone can choose their own later (see [Languages](languages.md)).
+1. Pick **Choose your language** (preselected from your browser) and press **Continue**. It becomes the family's language; everyone can choose their own later ([Languages](languages.md)).
 2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
-3. Check **Time and region**. The time zone, the region format (date order, numbers, first day of the week), the 12- or 24-hour clock and Celsius or Fahrenheit are guessed from this browser. Correct them if they are wrong (a laptop set up abroad, a browser in another language): the time zone decides what "today" is and when reminders go off. Choosing another region format also picks its clock and temperature, which you can still change.
+3. Check **Time and region**: time zone, region format (date order, numbers, first weekday), 12- or 24-hour clock, Celsius or Fahrenheit, all guessed from this browser. Correct them if wrong: the time zone decides what "today" is and when reminders go off. Another region format also picks its clock and temperature, which you can still change.
 4. Tick **This device is shared at home (people with a PIN can sign in here)** if you are on the family tablet (see [Family members, roles and devices](members.md)).
 5. Press **Create account**. That account is an **admin**.
-6. Optionally, **Where do you live?**: search for your city to show the weather on Today and on displays, or press **Skip** (the same step is on Today's checklist later). Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. If you reload the page after creating the account, the step is not shown again.
+6. Optionally, **Where do you live?**: search for your city to show the weather on Today and displays, or **Skip** (it is on Today's checklist later). Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. After a reload the step is not shown again.
 
 ### Good to know
 
 - Change the time zone and formats later under **Settings → Family → Language & region** (see [Region and formats](region.md)), and the weather place under **Settings → Family → Photos and weather** (changing the place leaves the weather switch as it is).
 - **Settings** opens **Profile & sign-in** on a wide screen and **More** on a phone, for everyone.
-- The setup code makes sure only you can set up a new instance, even if it is reachable from the internet first. It is stored in the data volume as `setup-code`. To choose it yourself, set `FAMOS_SETUP_CODE` (at least 8 characters).
+- The setup code stops anyone else setting up a new instance reachable from the internet. It is stored as `setup-code`; to choose it, set `FAMOS_SETUP_CODE` (at least 8 characters).
 - Settings that are not in the app are environment variables. The table is in the README.
 
 Everything lives in the `famos-data` volume (`/data` in the container):
@@ -80,7 +80,7 @@ Who can do what, how people sign in and the kitchen tablet: [Family members, rol
 
 ## Choose what FamilyOS does
 
-A new family starts with the calendar, lists, Quick add, the assistant, the board, chores, records, and photos & weather. **Settings → Family → Extensions** installs the others (the kitchen, pets, vehicles, home) and switches any of them off for everyone. See [Extensions](extensions.md).
+A new family starts with the calendar, lists, Quick add, the assistant, the board, chores, records, and photos & weather. **Settings → Family → Extensions** installs the others (kitchen, pets, vehicles, home) and switches any off for everyone. See [Extensions](extensions.md).
 
 ## Update
 
