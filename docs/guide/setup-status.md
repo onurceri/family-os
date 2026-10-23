@@ -1,8 +1,8 @@
 # Setup status
 
-Some things only work once they are set up, and FamilyOS cannot always tell you when they are not: on a plain `http` address a phone cannot install the app, notifications and sharing do not work; with no AI provider Quick add cannot read what you share; with no off-site backup a broken or lost device takes everything with it.
+**Settings → System → Setup status** (admins) lists what must be set up for FamilyOS to work fully. Each row says what it is, whether it is **Done** or **Missing**, and, while missing, what stops working. A missing row has a button to the page where you put it right.
 
-**Settings → System → Setup status** (admins) lists these checks, each as a row that says what it is, whether it is **Done** or **Missing**, and, while it is missing, what stops working. A missing row has a button that goes to the page where you put it right. The page only reads; nothing on it changes by itself. When you are a new family, Today's first steps card links to it too.
+The page only reads; nothing on it changes by itself. For a new family, Today's first steps card links to it too.
 
 | Check | Done when | While missing |
 |---|---|---|
@@ -12,4 +12,7 @@ Some things only work once they are set up, and FamilyOS cannot always tell you 
 | A trusted device for PINs | At least one family device is trusted. Shown only when someone has a PIN | No one can sign in with a PIN |
 | Notifications on phones | At least one person has a phone or a [Telegram](telegram.md) account linked. Shown only with a secure address | Reminders reach no one's phone |
 
-Extensions add their own rows, the same ones Today's first steps show (for example choosing a place for the weather). A row's button appears only if your role may open the page it goes to.
+### Good to know
+
+- Extensions add their own rows, the same ones Today's first steps show (for example choosing a place for the weather).
+- A row's button appears only if your role may open the page it goes to.
