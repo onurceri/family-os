@@ -41,14 +41,15 @@ jobs:
       group: extension-index
       cancel-in-progress: false
     env:
-      FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
       TAG: ${{ inputs.tag }}
       TITLE: ${{ inputs.title }}
       IDS: ${{ inputs.ids }}
+    # The signing key is set only on the steps that use it: installing and building run
+    # dependency and repository code, which must never be able to read it.
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -56,12 +57,16 @@ jobs:
 
       # A key servers do not trust would publish packages every server refuses.
       - name: The signing key is one the server trusts
+        env:
+          FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
         run: node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY
 
       - name: Build the packages
         run: pnpm exec turbo run build --filter="./extensions/*"
 
       - name: Pack and sign
+        env:
+          FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
         # Every package must have the version the tag names (v0.2.0, ext-<id>-v1.0.0). IDS is a
         # space-separated list of ids, split on purpose.
         run: |
@@ -85,7 +90,7 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.pages.outputs.exists == 'true'
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: gh-pages
           path: pages
@@ -94,6 +99,8 @@ jobs:
         run: git init -q -b gh-pages pages
 
       - name: Add the packages to the index and sign it
+        env:
+          FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
         run: |
           node scripts/extensions.mjs index pages/extensions --add famext/*.famext
           node scripts/extensions.mjs sign pages/extensions/index.json --key-env FAMOS_EXTENSION_SIGNING_KEY
