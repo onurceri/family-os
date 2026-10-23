@@ -1,98 +1,103 @@
 # Family members, roles and devices
 
-Everyone in the household gets a place in FamilyOS with a role. The role decides what they can do. How they sign in is up to you, whatever their role: with an email and a password (on any device), with a PIN (only on a tablet or phone you have marked as a family device), or both.
-
-Only admins can do what is on this page.
+Each person has a **role** that sets what they can do. Sign-in is separate: email and password (any device), PIN (only on a family device), or both. Admins only.
 
 ## Add people
 
-Open **Settings → Family → Members** press **Add a member** and fill in the panel:
+1. **Settings → Family → Members** → **Add a member**.
+2. Fill in:
+   - **Name**: up to 60 characters. A name already in use asks "Someone in the family is already called Nina. Add anyway?"; press again to save. The AI asks which one rather than guess, so give them a short **About**.
+   - **Role**: see [Roles](#roles).
+   - **About (optional)**: up to 300 characters ("9 years old, at primary school"); helps the AI decide whom something is for. Hide it with **Send names and descriptions** ([AI and privacy](ai.md)).
+   - **Sign-in**: **Email** and **Password** (10+ characters), **PIN** (4-6 digits), or both. Empty: add later.
+3. **Save**. The page confirms; a later sign-in change says "Sign-in saved.".
 
-- **Name**: up to 60 characters. Two people may have the same name; when you save a name someone already has, the panel asks "Someone in the family is already called Nina. Add anyway?" and saves on the second press. The AI never guesses between two people of the same name: it asks which one, so give them a short **About** to tell them apart.
-- **Role**: see below. A short note under the field says what the role is for.
-- **About (optional)**: a few words such as "9 years old, at primary school" or "Deniz's partner". It helps the AI decide whom a school notice or an appointment is for. You can stop the AI from seeing it with **Send names and descriptions** (see [AI and privacy](ai.md)). Up to 300 characters.
+Rows say how each person signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", "No sign-in yet".
 
-- **Sign-in**: how this person signs in. Give an **Email** and a **Password** (at least 10 characters), a **PIN** (4 to 6 digits), or both. A teenager with their own phone gets an email and password; a young child on the kitchen tablet gets a PIN. Leave them empty to add a sign-in later.
+**Edit** changes name, role, **About** and sign-in; empty fields keep the current value.
 
-Press **Save**. The page says the person was added (and that they can sign in, when you gave a sign-in). When you only change a sign-in later, it says "Sign-in saved.". Each row says how that person really signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", or "No sign-in yet".
-
-**Edit** (on a row) changes a person's name (up to 60 characters), role and **About** text, and their sign-in: the panel says what they have now, and fields you leave empty keep it. Setting a new PIN or password signs that person out on every device, so they sign in again with the new one. An admin who changes their own password stays signed in. If another member already uses that email, the page says so (a new person is then kept, and you can try another email). At least one admin must stay: the last admin cannot be given another role, and the page says "There must always be one admin."
+**Good to know**
+- A new PIN or password signs that person out everywhere (an admin changing their own stays signed in).
+- An email used by another member is refused (a new person is kept; try another email).
+- The last admin cannot change role or be removed ("There must always be one admin.").
+- Everyone picks their language under **Settings → You → Profile & sign-in** ([Languages](languages.md)).
 
 ### Remove a member
 
-Press **Edit** on their row, then **Remove from the family** and tap again to confirm. They cannot sign in any more: their password or PIN, sessions, access tokens and Telegram link end, they disappear from the list and the sign-in page, and their email can be used again. What they added (events, tasks, records) stays. The last admin cannot be removed. There is no undo; add them again as a new member if needed.
-
-Everyone chooses their own language under **Settings → You → Profile & sign-in**. See [Languages](languages.md).
+**Edit** → **Remove from the family** → tap again. Their password or PIN, sessions, access tokens and Telegram link end; they leave the list and sign-in page; the email is free again. What they added stays. No undo: add them again as new.
 
 ## Roles
 
-| Role | For | What they can do |
+| Role | For | Can do |
 |---|---|---|
-| Admin | Whoever runs FamilyOS (there can be several) | Everything. Only admins manage members, roles, devices, features, AI, auto-approval, backups, Telegram, email, languages and region, calendar subscriptions, display content. |
-| Member | Adults | See and change everything else, approve suggestions, ask the assistant and connect their own [AI apps](mcp.md). |
-| Supervised | Children, or anyone whose changes should be checked | See everything. Use the everyday things directly: add shopping items and tick them off, tick off tasks and their own chores, post on the board, share to Quick add and ask the assistant, which can keep notes for them. They cannot connect outside AI apps with an app key (an admin can allow that in **Roles**). What they added themselves they can also change or remove directly: their own shopping items, the tasks they made for themselves, their own board notes, and their own tick on a chore that day. Changing or removing other people's things, or a new event, becomes a suggestion that someone who may approve suggestions (Admins and Members by default) decides. The form says so right under its title ("After you save, someone has to approve this."), its button reads **Send for approval**, and after saving the page says "Sent for approval". |
-| Guest | A babysitter, grandparents visiting | Look only: the calendar, lists, chores, recipes, records, vehicles, home and pets. No sharing, suggesting or assistant. |
+| Admin | Whoever runs FamilyOS (several allowed) | Everything. Only admins manage members, roles, devices, features, AI, auto-approval, backups, Telegram, email, languages, region, calendar subscriptions, display content |
+| Member | Adults | See and change all else, approve suggestions, ask the assistant, connect own [AI apps](mcp.md) |
+| Supervised | Children, or anyone to be checked | See everything. Directly: add and tick off shopping items, tick off tasks and own chores, post on the board, share to Quick add, ask the assistant (can keep notes for them). No app-key AI apps unless an admin allows it in **Roles**. Own things (shopping items, tasks made for themselves, board notes, own chore tick that day) they can also change or remove. Other people's things, and new events, become suggestions for someone who may approve (Admins and Members by default): the form says "After you save, someone has to approve this.", the button reads **Send for approval**, then "Sent for approval" |
+| Guest | Babysitter, visiting grandparents | Look only: calendar, lists, chores, recipes, records, vehicles, home, pets. No sharing, suggesting or assistant |
 
-Everyone also sees their own notifications and the other members.
+Everyone sees their own notifications and the other members.
 
-A button is there only when you may use it. A role that can look but not change a page (a Guest on the board, the calendar or a list) sees the page with a quiet **View only** mark at the top instead of the add button, and check circles that would not work are plain marks. Tapping **View only** says why, and whom to ask: "Your role lets you see this. Mara and Tom can change what your role may do." (the people whose role may change roles). An empty page does not invite someone who may not add to it: it says only that there is nothing yet. Links to Quick add (on a record's papers, under an assistant's answer) appear only for people who may use Quick add.
-
-Menus show only the pages your role may open. If you follow a link or a bookmark to one that is not for you, the page says so ("This page is for people who may use Members") and offers the way back to Today.
-
-If something is refused anyway (your role changed while the page was open), a notice says why in plain words: "Your role does not allow this. Ask someone who looks after it in your family." or "This needs someone's approval, and your role cannot send suggestions. Ask someone who looks after it in your family to do it." or, on a display, that a display only shows things.
-
-Any role can sign in with an email and password, a PIN, or both. Someone who signs in with a PIN can do everything their role allows except what only admins may do: an admin signed in with a PIN cannot manage people, roles, devices, features, AI or settings. For that, they sign in with their email and password.
-
-**Settings → Family → Roles** (or **What can each role do?** on the members page) shows every permission and which role has it. A lock marks what only admins can have.
+**Good to know**
+- **Settings → Family → Roles** (or **What can each role do?**) lists permissions per role; a lock marks admin-only ones.
+- Buttons appear only when allowed. Look-only pages show a **View only** mark instead of the add button, and non-working check circles are plain marks. Tapping it says: "Your role lets you see this. Mara and Tom can change what your role may do." Empty pages do not invite adding. Quick add links appear only for people who may use it.
+- Menus list only pages your role may open. Another page says "This page is for people who may use Members" with a way back to Today.
+- Refusals (role changed while open) say: "Your role does not allow this. Ask someone who looks after it in your family.", "This needs someone's approval, and your role cannot send suggestions. Ask someone who looks after it in your family to do it.", or, on a display, that it only shows things.
+- A PIN sign-in can do all its role allows except admin-only things (people, roles, devices, features, AI, settings); admins use email and password for those.
 
 ### Your own roles
 
-Need something in between? On **Settings → Family → Roles**, under **Your own roles**, press **New role from Member**, **New role from Supervised** or **New role from Guest**. Give it a **Name**, tick or untick single permissions and press **Create role**. To change a role later, press its name at the top of the table, then **Save**.
+1. **Settings → Family → Roles** → **Your own roles** → **New role from Member**, **Supervised** or **Guest**.
+2. Set a **Name**; tick or untick permissions.
+3. **Create role**. Edit later: press its name at the top of the table, then **Save**.
 
-- Things added to FamilyOS later follow the role you started from.
-- Admin-only permissions cannot be given to a custom role.
-- What a role may add directly, its people may also take back when they added it themselves, even without **Suggest changes for approval**: a Guest role with **Add and tick off shopping items** can delete the shopping items its member added, but not other people's.
-- **Sign in with a PIN on family devices** is one of the permissions. Every built-in role has it. Untick it for a custom role whose people should only use an email and password: their PINs then stop working, and the members page offers no PIN for them.
-- Example: a teenager who uses everything like a Member but should not approve other people's suggestions. Press **New role from Member**, give it a name, untick **Approve suggestions** and press **Create role**.
-- **Delete role** needs a second tap (**Tap again to delete**). It only works when nobody has the role.
+Example: a Member who cannot approve others' suggestions: **New role from Member**, untick **Approve suggestions**.
+
+**Good to know**
+- Features added later follow the role you started from.
+- Admin-only permissions cannot be given.
+- Whatever a role may add, its people can take back when they added it, even without **Suggest changes for approval** (a Guest role with **Add and tick off shopping items** can delete its own items, not others').
+- **Sign in with a PIN on family devices** is a permission (all built-in roles have it). Unticked: their PINs stop working and no PIN is offered.
+- **Delete role**: tap again (**Tap again to delete**); only when nobody has it.
 
 ## Family devices and PINs
 
-A PIN is short, so it only works where nobody can try it from the internet: on a **family device**. That is a tablet or phone that an admin marked. On every other device only the email and password work, and the sign-in page never shows names.
+PINs work only on a **family device**, a tablet or phone an admin marked. Elsewhere only email and password work, and the sign-in page shows no names.
 
 ### Mark a device
 
-1. Open FamilyOS in the browser of the tablet or phone and sign in as an admin. (On first setup you can tick **This device is shared at home** instead.)
-2. Open **Settings → Family → Devices**, press **Add a device** and choose **A tablet or phone the family shares**. At the step **Make it a family device**, give it a **Device name** such as "Kitchen tablet" and press **Make this a family device**. (The **Make this a family device** button under **This device** at the top of the page opens the same step.)
+1. Open FamilyOS on the device and sign in as admin (on first setup tick **This device is shared at home** instead).
+2. **Settings → Family → Devices** → **Add a device** → **A tablet or phone the family shares**. At **Make it a family device**, enter a **Device name** ("Kitchen tablet") and press **Make this a family device** (also under **This device** at the top).
 3. Sign out.
 
-The device is now remembered by a cookie in that browser. Clearing the browser's site data forgets it, and you mark it again.
+A browser cookie remembers it; clearing site data forgets it.
 
 ### Sign in on a family device
 
-The sign-in page asks **Who's using FamilyOS?** and shows the people who have a PIN. Tap a name, enter the PIN on the number pad and press the check mark button (✓, read out as **Sign in**). Adults press **Sign in with email** below the names. If nobody uses a PIN, only the email form is shown.
+1. **Who's using FamilyOS?** lists people with a PIN. Tap a name.
+2. Enter the PIN, press the check mark (✓, read as **Sign in**).
+3. Adults: **Sign in with email** below the names (only form shown if nobody has a PIN).
 
-A PIN sign-in lasts only as long as the device is a family device and the person's role still allows PINs.
-
-### Wrong PINs
-
-After 5 wrong PINs for one person, that person cannot sign in for 15 minutes, even with the right PIN, on any device. The screen says "Too many wrong PINs. Try again in 15 minutes." (the wait comes from the server). Only a wrong PIN counts: signing in with the right one, or a refusal on a device that is not a family device, does not. Restarting FamilyOS clears the lock.
-
-### Wrong passwords
-
-After 5 wrong passwords for one person from the same place (the same internet address), that place must wait 15 minutes before it can sign in as that person again. The screen says "Too many wrong attempts. Try again in 15 minutes." Everyone else, and the same person from anywhere else, signs in as usual.
-
-Wrong passwords from elsewhere cannot lock you out of a device you have signed in on before. If someone on the internet keeps guessing a person's password from many places (20 wrong passwords in an hour), FamilyOS stops accepting that person's password for an hour on devices it does not know, but the browsers where they signed in before and the family devices still let them in. Restarting FamilyOS clears these locks too.
-
-One device can also send at most 10 wrong PINs a minute, for anyone. After that the screen says "Too many tries from this device. Wait 1 minute and try again." Children switching profiles on the kitchen tablet never reach it, because right PINs do not count.
+A PIN sign-in lasts while the device is a family device and the role allows PINs.
 
 ### Stop a device
 
-- On the device itself, **Settings → Family → Devices**, then **Stop using** under **This device**, revokes the device and removes the mark from this browser, the same as **Remove** below: it leaves the list, and everyone who signed in there with a PIN is signed out. The sign-in page then shows only the email form.
-- From any admin's device, tap it under **The family's devices** and press **Remove**, then **Tap again to remove**. It stops working at once and everyone who signed in there with a PIN is signed out. Do this when a tablet is lost, sold or given away.
+- On the device: **Settings → Family → Devices** → **Stop using** under **This device**. Like **Remove**: it leaves the list, everyone signed in there with a PIN is signed out, the sign-in page shows only email.
+- From an admin's device: tap it under **The family's devices** → **Remove** → **Tap again to remove**. Stops at once. Do this for lost, sold or given-away tablets.
 
-**Sign out** (in the person menu at the foot of the side bar, or under **More** on a phone) ends your sign-in on this device. **Sign out everywhere** ends it on every phone, tablet and browser, and also stops the app keys and calendar addresses you made. A new password for you or archiving you does the same.
+**Sign out** (person menu at the side bar's foot, or **More** on phones) ends this device's sign-in. **Sign out everywhere** ends all devices and also stops your app keys and calendar addresses. A new password or archiving you does the same.
+
+### Sign-in limits
+
+| What | Limit | Then |
+|---|---|---|
+| Wrong PINs, one person | 5 | Locked 15 minutes on any device, even with the right PIN: "Too many wrong PINs. Try again in 15 minutes." Only wrong PINs count (not right ones or refusals on non-family devices) |
+| Wrong passwords, one person, same internet address | 5 | That address waits 15 minutes: "Too many wrong attempts. Try again in 15 minutes." Others, and the person elsewhere, unaffected |
+| Wrong passwords, one person, many places | 20 per hour | Password refused for an hour on unknown devices; previously signed-in browsers and family devices still work |
+| Wrong PINs, one device, anyone | 10 per minute | "Too many tries from this device. Wait 1 minute and try again." Right PINs do not count |
+
+- Wrong passwords from elsewhere cannot lock you out of a device you signed in on before.
+- A restart clears all locks. Waits shown come from the server.
 
 ## Displays
 
-A wall display is a device too, but it cannot sign anyone in and cannot change anything. It is added (**Add a device**, then **A screen for the wall or a TV**) and managed on the same **Settings → Family → Devices** page. See [Family displays](displays.md).
+A wall display cannot sign anyone in or change anything. **Add a device** → **A screen for the wall or a TV**; manage on **Settings → Family → Devices**. See [Family displays](displays.md).
