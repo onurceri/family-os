@@ -1,7 +1,8 @@
-import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sql } from 'kysely';
+import * as tar from 'tar';
 import { describe, expect, it } from 'vitest';
 import {
 	clearRestoreMarker,
@@ -131,5 +132,50 @@ describe('backup', () => {
 		expect(deleted.map((p) => p.split('/').at(-1)).sort()).toEqual(before.slice(0, 2));
 		const left = await readdir(dir);
 		for (const n of nightly) expect(left).toContain(n);
+	});
+
+	describe('a crafted archive', () => {
+		async function backupOf(
+			dir: string,
+			filesDir: string,
+			handle: Awaited<ReturnType<typeof setup>>['handle'],
+		) {
+			const { path } = await createBackup({
+				sqlite: handle.sqlite,
+				filesDir,
+				backupsDir: join(dir, 'backups'),
+				appVersion: '0.0.0-test',
+				schema: { core: ['0001_init'] },
+				reason: 'manual',
+			});
+			return path;
+		}
+
+		it('is refused when it holds a symbolic link, and the data stays as it was', async () => {
+			const { dir, dbPath, filesDir, handle } = await setup();
+			await symlink(dir, join(filesDir, 'inbox', 'out'));
+			const path = await backupOf(dir, filesDir, handle);
+			await handle.close();
+			await rm(join(filesDir, 'inbox', 'out'));
+			await writeFile(join(filesDir, 'inbox', 'flyer.txt'), 'kept');
+
+			await expect(restoreBackup({ file: path, dbPath, filesDir })).rejects.toThrow(/SymbolicLink/);
+			expect(await readFile(join(filesDir, 'inbox', 'flyer.txt'), 'utf8')).toBe('kept');
+			expect((await readdir(dir)).filter((n) => n.includes('pre-restore'))).toEqual([]);
+		});
+
+		it('is refused when a path climbs out of the target, and nothing is written outside', async () => {
+			const { dir, dbPath, filesDir, handle } = await setup();
+			const path = await backupOf(dir, filesDir, handle);
+			await handle.close();
+			const inner = join(dir, 'inner');
+			await mkdir(inner);
+			await writeFile(join(dir, 'escape.txt'), 'x');
+			await tar.r({ file: path, cwd: inner, preservePaths: true }, ['../escape.txt']);
+			await rm(join(dir, 'escape.txt'));
+
+			await expect(restoreBackup({ file: path, dbPath, filesDir })).rejects.toThrow(/unsafe path/);
+			expect(await readdir(dir)).not.toContain('escape.txt');
+		});
 	});
 });

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -23,5 +23,44 @@ describe('public address', () => {
 			FAMOS_BASE_URL: 'http://192.168.1.20:3000/',
 		});
 		expect(config.publicURL).toBe('http://192.168.1.20:3000');
+	});
+});
+
+describe('the persisted secret', () => {
+	it('is created once, then reused', async () => {
+		const first = await loadConfig({ FAMOS_DATA_DIR: dir });
+		expect(first.secret.length).toBeGreaterThanOrEqual(32);
+		const second = await loadConfig({ FAMOS_DATA_DIR: dir });
+		expect(second.secret).toBe(first.secret);
+		expect((await readFile(join(dir, 'secret'), 'utf8')).trim()).toBe(first.secret);
+	});
+
+	it('is created by only one of two starts at once', async () => {
+		const [a, b] = await Promise.all([
+			loadConfig({ FAMOS_DATA_DIR: dir }),
+			loadConfig({ FAMOS_DATA_DIR: dir }),
+		]);
+		expect(a.secret).toBe(b.secret);
+		expect((await readFile(join(dir, 'secret'), 'utf8')).trim()).toBe(a.secret);
+	});
+
+	it('keeps a hand-placed secret of the length FAMOS_SECRET accepts', async () => {
+		const own = 's'.repeat(32);
+		await writeFile(join(dir, 'secret'), own);
+		expect((await loadConfig({ FAMOS_DATA_DIR: dir })).secret).toBe(own);
+	});
+
+	it('stops the start on a file that is too short and leaves it untouched', async () => {
+		await writeFile(join(dir, 'secret'), 'too-short\n');
+		await expect(loadConfig({ FAMOS_DATA_DIR: dir })).rejects.toThrow(
+			/fewer than 32 characters.*will not replace/s,
+		);
+		expect(await readFile(join(dir, 'secret'), 'utf8')).toBe('too-short\n');
+	});
+
+	it('stops the start on an empty file', async () => {
+		await writeFile(join(dir, 'secret'), '');
+		await expect(loadConfig({ FAMOS_DATA_DIR: dir })).rejects.toThrow(/fewer than 32/);
+		expect(await readFile(join(dir, 'secret'), 'utf8')).toBe('');
 	});
 });

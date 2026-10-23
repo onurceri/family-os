@@ -5,7 +5,7 @@ Most settings live in the app. The rest are environment variables the server rea
 | Variable | Default | Purpose |
 |---|---|---|
 | `FAMOS_BASE_URL` | `http://localhost:<PORT>` | The public address of this instance (cookies, origin checks, links). Must be HTTPS for phones |
-| `FAMOS_SECRET` | generated into `/data/secret` | At least 32 characters. Signs sessions and encrypts saved keys and passwords. It is never inside a backup: keep a copy to restore on new hardware. Changing it signs everyone out and saved keys must be entered again |
+| `FAMOS_SECRET` | generated into `/data/secret` | At least 32 characters. Signs sessions and encrypts saved keys and passwords. It is never inside a backup: keep a copy to restore on new hardware. Changing it signs everyone out and saved keys must be entered again. FamilyOS never overwrites an existing `secret` file: if it is shorter than 32 characters or unreadable, it refuses to start and tells you to restore the original, set `FAMOS_SECRET`, or move the file away |
 | `FAMOS_SETUP_CODE` | generated into `/data/setup-code` | The one-time code first-run setup asks for (8 to 100 characters) |
 | `FAMOS_TRUSTED_ORIGINS` | – | Extra allowed origins, comma-separated |
 | `FAMOS_TRUSTED_PROXIES` | – | Reverse proxies (IPs or CIDRs, comma-separated) whose `X-Forwarded-For` is believed, for sign-in rate limits. Set it behind Caddy, Traefik or nginx |

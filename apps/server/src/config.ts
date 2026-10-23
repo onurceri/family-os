@@ -124,7 +124,7 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 				.map((p) => p.trim())
 				.filter(Boolean) ?? [],
 		secret: e.FAMOS_SECRET ?? (await persistedSecret(dataDir)),
-		setupCode: e.FAMOS_SETUP_CODE ?? (await persistedSecret(dataDir, 'setup-code', 9)),
+		setupCode: e.FAMOS_SETUP_CODE ?? (await persistedSecret(dataDir, 'setup-code', 9, 8)),
 		roles: { api: roles.has('api'), worker: roles.has('worker') },
 		backup: { hour: e.FAMOS_BACKUP_HOUR, keep: e.FAMOS_BACKUP_KEEP },
 		logLevel: e.LOG_LEVEL,
@@ -156,18 +156,50 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 	};
 }
 
-/** A random value stored once in the data directory (mode 0600) and reused on every start. */
-async function persistedSecret(dataDir: string, name = 'secret', bytes = 32): Promise<string> {
+/**
+ * A random value stored once in the data directory (mode 0600) and reused on every start.
+ *
+ * An existing file is never replaced: the secret seals saved keys and passwords, so a
+ * regenerated one would silently make them unreadable. A file that cannot be used stops the
+ * start with the way out. A missing one is created exclusively, so two processes starting at
+ * once cannot both write one; the loser reads the winner's.
+ */
+async function persistedSecret(
+	dataDir: string,
+	name = 'secret',
+	bytes = 32,
+	minLength = 32,
+): Promise<string> {
 	const path = join(dataDir, name);
-	const minLength = Math.ceil((bytes * 4) / 3);
-	try {
-		const existing = (await readFile(path, 'utf8')).trim();
-		if (existing.length >= minLength) return existing;
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-	}
+	const unusable = (why: string) =>
+		new Error(
+			`${path} ${why}. FamilyOS will not replace it, because everything sealed with it ` +
+				`(saved keys and passwords) would become unreadable. Restore the original file, ` +
+				`set the value in the environment, or move the file away to start with a new one.`,
+		);
+	const read = async (): Promise<string | undefined> => {
+		let text: string;
+		try {
+			text = (await readFile(path, 'utf8')).trim();
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			if (code === 'ENOENT') return undefined;
+			throw unusable(`cannot be read (${code ?? 'error'})`);
+		}
+		if (text.length < minLength) throw unusable(`holds fewer than ${minLength} characters`);
+		return text;
+	};
+	const existing = await read();
+	if (existing) return existing;
 	const secret = randomBytes(bytes).toString('base64url');
-	await writeFile(path, `${secret}\n`, { mode: 0o600 });
+	try {
+		await writeFile(path, `${secret}\n`, { mode: 0o600, flag: 'wx' });
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+		const winner = await read();
+		if (winner) return winner;
+		throw unusable('vanished while starting');
+	}
 	await chmod(path, 0o600);
 	return secret;
 }

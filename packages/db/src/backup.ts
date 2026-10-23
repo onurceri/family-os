@@ -172,6 +172,39 @@ export async function readBackupExtensions(file: string): Promise<string[]> {
 	return [...ids].sort();
 }
 
+/**
+ * Unpacks a backup into `cwd`, accepting only plain files and directories at relative paths
+ * inside it. A link, a device or a path that is absolute or climbs out would let a crafted
+ * archive plant or follow something outside the restore (the file store later follows links),
+ * so any such entry refuses the whole backup before anything is used.
+ */
+async function extractBackup(file: string, cwd: string): Promise<void> {
+	let refused: string | undefined;
+	await tar.x({
+		file,
+		cwd,
+		filter: (path, entry) => {
+			if (refused) return false;
+			const type = 'type' in entry ? entry.type : 'File';
+			const unsafe =
+				path.startsWith('/') ||
+				// biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what is refused.
+				/^[A-Za-z]:|[\u0000-\u001f\u007f]/.test(path) ||
+				path.split('/').includes('..');
+			if (type !== 'File' && type !== 'OldFile' && type !== 'Directory')
+				refused = `a ${type} entry (${printable(path)})`;
+			else if (unsafe) refused = `an unsafe path (${printable(path)})`;
+			return !refused;
+		},
+	});
+	if (refused) throw new Error(`The backup holds ${refused}; only files and folders are allowed`);
+}
+
+function printable(path: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what is replaced.
+	return JSON.stringify(path.replace(/[\u0000-\u001f\u007f]/g, '?').slice(0, 120));
+}
+
 export interface RestoreBackupOptions {
 	file: string;
 	/** Target database file, e.g. /data/famos.db. The server must be stopped. */
@@ -195,7 +228,7 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 	const manifest = await readBackupManifest(options.file);
 	const staging = await mkdtemp(join(tmpdir(), 'famos-restore-'));
 	try {
-		await tar.x({ file: options.file, cwd: staging });
+		await extractBackup(options.file, staging);
 		const restoredDb = join(staging, DB_ENTRY);
 		if ((await sha256(restoredDb)) !== manifest.db.sha256)
 			throw new Error('Backup database checksum mismatch');
