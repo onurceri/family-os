@@ -1,56 +1,53 @@
 # Kitchen
 
-**Household → Kitchen** keeps the family's recipes and a simple meal plan, in two tabs: **Recipes** and **Meal plan**. There are no units or conversions; ingredients are lines of text, as on a note.
+**Household → Kitchen**: recipes and a simple meal plan, in tabs **Recipes** and **Meal plan**. No units or conversions; ingredients are lines of text.
 
 ## Recipes
 
-1. Choose **Add recipe**.
-2. Fill in **Name** (the only required field), **Servings** (as you write it, such as 4 or 4–6), **Total time in minutes**, **Ingredients** (one per line), **Steps** (one per line), **Notes**, **Source (web address)** and **Labels** separated by commas.
+1. **Add recipe.**
+2. Fill in **Name** (only required), **Servings** (as written, 4 or 4–6), **Total time in minutes**, **Ingredients** and **Steps** (one per line), **Notes**, **Source (web address)** (kept as a link only; nothing is fetched), **Labels** (comma-separated).
 
 **Good to know**
-- **Source (web address)** is only kept as a link; nothing is fetched from it.
-- On a recipe's page: **Edit**, **Add photo** (JPEG, PNG or WebP under 8 MB) or **Archive recipe** (tap again to confirm).
-- **Search recipes** and the label filter on the Recipes tab find a recipe again.
+- On a recipe: **Edit**, **Add photo** (JPEG, PNG or WebP under 8 MB), **Archive recipe** (tap again).
+- **Search recipes** and the label filter find recipes.
 
 ### Ingredients to the shopping list
 
-1. On a recipe's page, tick the ingredients you need (**Select all** ticks every line).
-2. Choose **Add selected to shopping list**. If you have several shopping lists you can choose which one.
+1. Tick ingredients on a recipe (**Select all** ticks all).
+2. **Add selected to shopping list** (choose the list if you have several; needs Lists on).
 
 **Good to know**
-- Each is added with the product as the name and the amount as the quantity; a preparation note after a comma ("Lemon, zest and juice") is left out of the name.
-- Items already on the list are not added twice and are left as they are.
-- A message and a short list under the ingredients say what was added, what was already there ("Chicken breast is already on the list (500 g; the recipe needs 600 g)") and what was not added.
-- This needs Lists to be switched on.
+- Product becomes the name, amount the quantity; a preparation note after a comma ("Lemon, zest and juice") is dropped from the name.
+- Items already on the list are left alone, not added twice.
+- A message and list say what was added, what was there ("Chicken breast is already on the list (500 g; the recipe needs 600 g)") and what was not.
 
 ## Meal plan
 
-The **Meal plan** tab shows one week at a time. Each day shows **Breakfast**, **Lunch** and **Dinner**.
+One week at a time; each day has **Breakfast**, **Lunch**, **Dinner**.
 
-1. Tap an empty slot (or the **+** on a day, which adds a meal to any slot, **Other** included).
-2. In the panel pick a recipe, or choose **Something else (write it)** and write what is cooked.
+1. Tap an empty slot, or **+** on a day (any slot, **Other** included).
+2. Pick a recipe, or **Something else (write it)** and type the meal.
 
 **Good to know**
-- Several meals can share a slot. The **×** beside a meal takes it off the plan.
-- The arrows step through the weeks; **This week** comes back to now.
-- Today's meals also appear on the Today screen.
+- Slots can hold several meals; **×** removes one.
+- Arrows change week; **This week** returns.
+- Today's meals show on Today.
 
 ### A recipe onto the plan
 
-1. On a recipe's page press **Put it on the meal plan** beside its name, or use the calendar button on the recipe in the **Recipes** tab.
-2. Choose the **Day** and the **Meal** and press **Add**.
-3. A message says **Added to the meal plan**, with **See the plan**.
+1. Recipe page: **Put it on the meal plan** (or the calendar button on its card in **Recipes**).
+2. Choose **Day** and **Meal**, **Add**; the message **Added to the meal plan** has **See the plan**.
 
-If the same dish is already planned for that meal and day, the panel says so and asks you to tick **Add it anyway**.
+The same dish already planned for that meal and day asks you to tick **Add it anyway**.
 
 ## What the AI does here
 
-If you share a photo of a recipe, a page of text or a message with a recipe to Quick add, the AI suggests a recipe with the ingredients as separate lines, in the original language, and you approve it. It can also suggest a meal for a day ("pasta on Friday"). The assistant answers "what is for dinner" and "what recipes do we have". Every change is a suggestion you approve.
+A recipe shared to Quick add (photo, text, message) becomes a suggested recipe with one ingredient per line, in the original language; it can also suggest a meal ("pasta on Friday"). The assistant answers "what is for dinner" and "what recipes do we have". You approve every change.
 
-To keep the kitchen away from the AI, set **Kitchen** to **Off** under **Settings → AI → What the AI may read**.
+To exclude the kitchen, set **Kitchen** to **Off** in **Settings → AI → What the AI may read**.
 
 ## Who can do what
 
 - Members who may edit the kitchen change things directly.
-- Supervised members can look; their changes to recipes and the meal plan wait for approval. Only members who may edit can add a photo.
-- Archiving a recipe hides it; meals on the plan that use it stay.
+- Supervised members can look; their recipe and meal plan changes wait for approval. Only editors add photos.
+- Archiving a recipe hides it; planned meals using it stay.
