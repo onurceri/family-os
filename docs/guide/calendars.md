@@ -1,67 +1,67 @@
 # Calendars
 
-Show your family calendar in the calendar app on your phone, and show other calendars (school, holidays, Google, iCloud) inside FamilyOS. Both are read-only: change events in FamilyOS (see [Everyday use](everyday.md)) or in the original calendar.
+Show the family calendar in your phone's calendar app, and bring other calendars (school, holidays, Google, iCloud) into FamilyOS. Both are read-only: change events in FamilyOS ([Everyday use](everyday.md)) or in the original.
 
 ## The calendar on your phone
 
-Addresses can only be made after signing in with your password, not with a PIN on a shared family device. An address stops working when the person who made it signs out everywhere, gets a new password, is archived or loses the right to see the calendar (for a whole-family address, to manage it).
+Needs a password sign-in, not a PIN. An address stops when its maker signs out everywhere, gets a new password, is archived or loses calendar access (whole-family: loses manage).
 
-1. Open **Settings → You → Calendar on my phone**, section **Calendar on your phone**.
-2. **What to show:** **My events** or **The whole family**. Only admins see this choice; for everyone else the address shows their own events.
-3. Turn on **Include notes** to get event notes too. Titles, times and places are always included.
-4. Optionally write **Where will you use it?** (for example "Mum's phone") to tell addresses apart later.
-5. Press **Create address**.
-6. The address is shown **only once**. Press **Copy address**, or **Open in the calendar app** on a phone. Then press **I have saved it**.
-7. Add it to your phone:
+1. **Settings → You → Calendar on my phone**, section **Calendar on your phone**.
+2. **What to show:** **My events** or **The whole family** (admins only choose; others get their own events).
+3. **Include notes** adds event notes (titles, times, places are always included).
+4. Optionally **Where will you use it?** ("Mum's phone").
+5. **Create address.**
+6. It is shown **once**: **Copy address**, or **Open in the calendar app** on a phone; then **I have saved it**.
+7. Add it:
    - **iPhone:** Settings, Calendar, Accounts, Add account, Other, Add subscribed calendar.
-   - **Android with Google Calendar:** open calendar.google.com on a computer, Other calendars, From URL.
+   - **Android with Google Calendar:** calendar.google.com on a computer, Other calendars, From URL.
 
 **Good to know**
-- Your phone refreshes the calendar by itself, usually every few hours.
-- **Anyone who has the address can read these events, without signing in.** Treat it like a password. If it gets out, press **Remove** (twice) in **Your addresses** and make a new one. A removed address stops working at once. The list shows when each address was last used.
-- This page sends the family calendar out. Bringing one in is done under **Settings → Family → Calendars & tags** by whoever manages the family's calendars (admins by default); this page links there for those who may use it.
-- The address carries tags as categories.
+- Phones refresh by themselves, usually every few hours.
+- **Anyone with the address reads these events without signing in.** Treat it like a password. If it leaks, **Remove** (twice) in **Your addresses** and make a new one; removal works at once. The list shows last use.
+- Tags go out as categories.
+- Bringing calendars in is under **Settings → Family → Calendars & tags**, for whoever manages calendars (admins by default); this page links there.
 
 ## Subscribe to other calendars
 
-You need the permission to manage the calendar (admins have it). Any calendar with an ICS or webcal address works:
+Needs permission to manage the calendar (admins have it). Any ICS or webcal address works:
 
-| Calendar | Where to get the address |
+| Calendar | Address from |
 |---|---|
-| School or club | Ask for the "ICS" or "iCal" link. |
+| School, club | Ask for the "ICS" or "iCal" link. |
 | Public holidays | Many countries publish one. |
-| Google Calendar | On a computer: the calendar's settings, **Integrate calendar**, copy the **Secret address in iCal format**. |
-| iCloud | In the Calendar app share the calendar, turn on **Public Calendar**, copy the link. |
+| Google | Computer: calendar settings, **Integrate calendar**, **Secret address in iCal format**. |
+| iCloud | Share the calendar, turn on **Public Calendar**, copy the link. |
 
-1. Open **Settings → Family → Calendars & tags**, section **Calendar subscriptions**.
-2. Enter a **Name** and the **Calendar address**, choose a **Colour**, and optionally **Whose is it?** (**Whole family**, the first choice, until you pick someone).
-3. Press **Add subscription**.
+1. **Settings → Family → Calendars & tags → Calendar subscriptions.**
+2. Enter **Name** and **Calendar address**, choose **Colour**, optionally **Whose is it?** (**Whole family** until you pick someone).
+3. **Add subscription.**
 
 **Good to know**
-- Addresses from Google and iCloud are secret: FamilyOS keeps them encrypted and never shows them again.
-- Subscribed events show in the color you chose and cannot be edited. Tags from the subscribed calendar show on its events.
-- **Edit** renames, recolors, changes the people or options, or gives a new address (leave **New calendar address (optional)** empty to keep the current one).
-- FamilyOS fetches the calendar every 6 hours; **Refresh now** does it immediately.
-- If a calendar cannot be reached, earlier events stay and the reason is shown on the subscription. If it says the address cannot be used, press **Edit** and enter the address again.
-- **Remind about its events** sends the usual reminders for that calendar. Leave it off for calendars you only look at.
-- **Calendar on my home network** is for a calendar inside your own network, such as on a NAS. Normally addresses into private networks are refused, so an address cannot be used to reach other devices at home. Leave it off for anything on the internet.
-- **Remove** (twice) deletes a subscription and its events disappear from FamilyOS.
+- Google and iCloud addresses are secret: stored encrypted, never shown again.
+- Events show in your color, cannot be edited, and keep their tags.
+- **Edit** changes name, color, people, options or address (empty **New calendar address (optional)** keeps the current one).
+- Fetched every 6 hours; **Refresh now** at once.
+- If unreachable, old events stay and the subscription shows why. If it says the address cannot be used, **Edit** and re-enter it.
+- **Remind about its events** sends usual reminders; leave off for look-only calendars.
+- **Calendar on my home network** allows an address inside your network (a NAS). Otherwise private addresses are refused so addresses cannot probe your home devices. Off for internet calendars.
+- **Remove** (twice) deletes the subscription and its events.
 
 ## Tags
 
-Give an event up to 5 tags, such as school, health or car: **Tags** in the event form (press Enter or a comma to add one, or pick one you used before). Tags are colored and every event shows them.
+Up to 5 per event (school, health, car): **Tags** in the event form, Enter or comma to add, or pick an earlier one. Tags are colored and shown on every event.
 
 **Good to know**
-- On the calendar, tap one or more tags to show only those events; **All** shows everything again. The choice is remembered on that device.
-- People who can change events can rename, recolor or delete tags under **Phone and other calendars**, then **Tags**. Renaming or deleting changes every event with the tag; renaming to an existing name merges the two.
+- On the calendar tap tags to filter; **All** resets. Remembered per device.
+- Editors rename, recolor or delete under **Phone and other calendars → Tags**. This changes every event with the tag; renaming to an existing name merges.
 
 ## Reminders
 
-Every event has a **Reminder** field. Default: 30 minutes before a timed event, 09:00 on the day for an all-day event.
+Each event has a **Reminder**; default 30 minutes before (timed) or 09:00 on the day (all-day).
 
 | Event | Choices |
 |---|---|
-| Any | **No reminder**, at the start, 5, 10, 15 or 30 minutes, 1 or 2 hours or 1 day before |
-| All-day | Also 09:00 on the day or 21:00 the evening before |
+| Any | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
+| All-day | Also 09:00 that day or 21:00 the evening before |
 
-Repeating events remind before each occurrence. Reminders arrive as notifications to the people chosen under **Who**, or to everyone who can see the calendar if you chose nobody; see [Notifications](notifications.md).
+Repeating events remind before each occurrence. They go to the people under **Who**, or everyone who sees the calendar if none ([Notifications](notifications.md)).
