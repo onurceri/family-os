@@ -1,17 +1,11 @@
 {
-	"client": "opencode",
-	"model": "opencode/deepseek-v4.1-flash-free",
+	"client": "hermes-agent",
+	"model": "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
 	"question": "What's for dinner tomorrow? And put milk and eggs on the shopping list.",
 	"calls": [
 		{
-			"tool": "core_today",
-			"input": {}
-		},
-		{
 			"tool": "kitchen_mealPlan",
-			"input": {
-				"days": 2
-			}
+			"input": {}
 		},
 		{
 			"tool": "lists_addShoppingItems",
@@ -19,19 +13,15 @@
 				"items": [
 					{
 						"title": "Milk",
-						"category": "dairy"
+						"quantity": "1"
 					},
 					{
 						"title": "Eggs",
-						"category": "dairy"
+						"quantity": "12"
 					}
 				]
 			}
-		},
-		{
-			"tool": "lists_shoppingList",
-			"input": {}
 		}
 	],
-	"answer": "Tomorrow (Saturday) dinner is lentil soup. Milk (2) is already on the shopping list, so I've suggested adding eggs (the last eggs were marked bought) — both changes are waiting for approval."
+	"answer": "**Tomorrow's dinner (Saturday, Oct 24):** Lentil soup\n\n**Shopping list:** Milk (1) and Eggs (12) have been suggested — they'll appear on the list once someone in the household approves the suggestion."
 }

@@ -241,3 +241,18 @@ async function answered(page: Page, threadId: string) {
 	}
 	throw new Error(`The assistant did not answer in ${threadId}`);
 }
+
+/**
+ * Takes the named things off every shopping list, so a request to add them is a plain new
+ * suggestion (no "already on the list" note). The README's AI card starts from this.
+ */
+export async function clearFromShoppingLists(page: Page, titles: string[]) {
+	type List = { id: string };
+	type Item = { id: string; title: string };
+	const lists = await api<List[]>(page, 'GET', '/api/v1/lists/shopping/lists');
+	for (const list of lists) {
+		const items = await api<Item[]>(page, 'GET', `/api/v1/lists/shopping/lists/${list.id}/items`);
+		for (const item of items.filter((i) => titles.includes(i.title)))
+			await api(page, 'POST', '/api/v1/actions/lists.deleteShoppingItem', { id: item.id });
+	}
+}

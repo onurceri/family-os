@@ -38,9 +38,9 @@ A shared calendar with a colour per person, repeats and reminders.
 Share a message, photo or voice note. Tick the suggestions; undo anything.
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/readme-your-ai.webp" width="100%" alt="The OpenCode terminal asked what is for dinner tomorrow and to put milk and eggs on the shopping list; FamilyOS shows the suggestion, Milk and Eggs, waiting with an Add to list button"><br>
+<img src="docs/images/readme-your-ai.webp" width="100%" alt="Left: the Hermes Agent chat, asked what is for dinner tomorrow and to put milk and eggs on the shopping list, shows its FamilyOS tool calls and the answer, lentil soup, with the shopping change waiting for approval. Right: FamilyOS shows that suggestion from Hermes Agent, Milk and Eggs, waiting with Reject, Edit and Add to list buttons"><br>
 <b>Your own AI</b><br>
-Connect Claude, Hermes Agent, OpenCode or any MCP client. Its changes wait for your approval.
+Ask Hermes Agent, Claude or any MCP app about your family. Its changes wait for your approval.
 </td>
 </tr>
 <tr>

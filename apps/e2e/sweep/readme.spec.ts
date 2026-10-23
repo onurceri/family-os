@@ -9,7 +9,7 @@ import { PRELOAD, startFakeOpenMeteo } from '../support/fake-open-meteo.ts';
 import { api, expect, setUpAndSignIn, test } from '../support/fixtures.ts';
 import { callTool, createAiAppKey } from '../support/mcp-app.ts';
 import { signInAs } from '../support/members.ts';
-import { seedSampleFamily } from '../support/sample-data.ts';
+import { clearFromShoppingLists, seedSampleFamily } from '../support/sample-data.ts';
 import { day, standAt } from '../support/today.ts';
 
 /**
@@ -26,7 +26,7 @@ import { day, standAt } from '../support/today.ts';
  * (extensions/homeassistant/dist) next to the others and lists it as offered, in dist/extensions
  * (build output, rewritten by the next `pnpm build`). The weather comes from a fake Open-Meteo
  * (support/fake-open-meteo.ts). "Your own AI" replays what a real MCP client did
- * (readme-agent.json, recorded with OpenCode in a sandbox against readme-agent-server.spec.ts)
+ * (readme-agent.json, recorded with Hermes Agent in Docker against readme-agent-server.spec.ts)
  * against the sample family, so FamilyOS holds the suggestions it made.
  */
 
@@ -361,57 +361,49 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 			await save('readme-styles', (path) => row.screenshot({ path }));
 			await row.close();
 		}
-		// Your own AI: what a real MCP client did (sweep/readme-agent.json, recorded with OpenCode in
-		// a sandbox) is replayed against the sample family, so FamilyOS holds the same suggestions;
-		// the picture sets the client's lines above FamilyOS's own cards.
+		// Your own AI: what a real Hermes Agent did (sweep/readme-agent.json, recorded in Docker
+		// against readme-agent-server.spec.ts; its chat is the committed readme-hermes.png, since Hermes
+		// cannot be re-run here) is replayed against the sample family, so FamilyOS holds the same
+		// suggestion; the card puts the two side by side.
 		if (wanted('readme-your-ai')) {
 			const recorded = JSON.parse(
 				await readFile(join(import.meta.dirname, 'readme-agent.json'), 'utf8'),
-			) as {
-				client: string;
-				question: string;
-				calls: { tool: string; input: unknown }[];
-				answer: string;
-			};
-			const secret = await createAiAppKey(page, 'OpenCode');
+			) as { calls: { tool: string; input: unknown }[] };
+			const hermes = await readFile(join(import.meta.dirname, 'readme-hermes.png'));
+			// As in the recording: milk and eggs are not on the list yet.
+			await clearFromShoppingLists(page, ['Milk', 'Eggs']);
+			const secret = await createAiAppKey(page, 'Hermes Agent');
 			for (const call of recorded.calls) await callTool(family.url, secret, call.tool, call.input);
-			// The card at its own width (a phone-sized window), from its title to its buttons.
-			await page.setViewportSize({ width: 596, height: 1200 });
+			// The suggestion at a phone-sized width, from its app's title to its buttons.
+			await page.setViewportSize({ width: 340, height: 1200 });
 			await open(page, '/add');
-			const group = page.getByRole('article', { name: 'OpenCode' }).first();
+			const group = page.getByRole('article', { name: 'Hermes Agent' }).first();
 			await group.scrollIntoViewIfNeeded();
-			const suggestion = group.locator('article').first();
-			const box = await suggestion.boundingBox();
-			const title = await group.getByRole('heading', { name: '2 items' }).boundingBox();
-			if (!box || !title) throw new Error('the suggestion is not on the page');
-			const top = title.y - 4;
+			const box = await group.boundingBox();
+			if (!box) throw new Error('the suggestion is not on the page');
 			const shot = await page.screenshot({
-				clip: { x: box.x, y: top, width: box.width, height: box.y + box.height - top },
+				clip: { x: box.x + 2, y: box.y + 2, width: box.width - 4, height: box.height - 4 },
 			});
-			const html = (text: string) =>
-				text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			const canvas = await browser.newContext({
-				viewport: { width: 592, height: 370 },
-				deviceScaleFactor: 3,
+				viewport: { width: 864, height: 540 },
+				deviceScaleFactor: 2,
 			});
 			const view = await canvas.newPage();
+			const png = (data: Buffer) => `data:image/png;base64,${data.toString('base64')}`;
 			await view.setContent(`<!doctype html><html><head><style>
-				html, body { margin: 0; height: 370px; width: 592px; overflow: hidden; background: #ecebe6; }
-				body { display: flex; flex-direction: column; }
-				.terminal { background: #17181a; color: #e8e8e6; padding: 8px 14px 8px; font: 15px/20px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
-				.terminal .name { color: #8f9399; }
-				.terminal .tool { color: #8f9399; }
-				.terminal .answer { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
-				.suggestion { flex: 1; overflow: hidden; padding: 6px 14px 0; box-sizing: border-box; }
-				.suggestion img { width: 96%; display: block; margin: 0 auto; }
-			</style></head><body>
-				<div class="terminal">
-					<div><span class="name">${html(recorded.client)}</span> &gt; ${html(recorded.question)}</div>
-					${recorded.calls.map((c) => `<div class="tool">familyos · ${html(c.tool)}</div>`).join('')}
-					<div class="answer">${html(recorded.answer)}</div>
-				</div>
-				<div class="suggestion"><img src="data:image/png;base64,${shot.toString('base64')}"></div>
-			</body></html>`);
+				html, body { margin: 0; width: 864px; height: 540px; overflow: hidden; background: #ecebe6; font: 600 17px/1.2 system-ui, sans-serif; color: #2b2a27; }
+				main { display: flex; align-items: flex-start; justify-content: space-between; padding: 40px 16px 0; height: 100%; box-sizing: border-box; }
+				figure { margin: 0; }
+				figure:first-child { width: 480px; }
+				figure:last-child { width: 344px; }
+				figcaption { text-align: center; padding-bottom: 12px; white-space: nowrap; }
+				img { width: 100%; display: block; border-radius: 10px; }
+				.arrow { align-self: center; font-size: 40px; color: #6b6a64; }
+			</style></head><body><main>
+				<figure><figcaption>1 · Ask Hermes Agent (or any MCP app)</figcaption><img src="${png(hermes)}"></figure>
+				<div class="arrow">&rsaquo;</div>
+				<figure><figcaption>2 · FamilyOS waits for your approval</figcaption><img src="${png(shot)}" style="border:1px solid #d8d6d0"></figure>
+			</main></body></html>`);
 			await save('readme-your-ai', (path) => view.screenshot({ path }));
 			await canvas.close();
 		}
