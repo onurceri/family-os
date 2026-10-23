@@ -6,6 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
 	testDir: './sweep',
+	// The README's pictures have their own config (readme.config.ts).
+	testIgnore: 'readme.spec.ts',
 	fullyParallel: true,
 	reporter: 'list',
 	timeout: 1_200_000,

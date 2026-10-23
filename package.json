@@ -19,6 +19,7 @@
 		"test:all": "pnpm lint && pnpm typecheck && pnpm test",
 		"e2e": "pnpm build && pnpm --filter @famos/e2e e2e",
 		"sweep": "pnpm build && pnpm --filter @famos/e2e sweep",
+		"sweep:readme": "pnpm build && pnpm --filter @famos/e2e sweep:readme",
 		"release": "node scripts/release.mjs",
 		"lang:template": "node scripts/lang.ts template",
 		"lang:check": "node scripts/lang.ts check",
