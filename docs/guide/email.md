@@ -37,7 +37,7 @@ Mail from addresses not listed is ignored.
 - Items are added as that person: theirs alone, a supervised member's suggestions wait for approval, the daily upload limit counts. They are notified when suggestions are ready.
 - Add the school's address (`office@school.example`) for a parent's Quick add; add each parent's address so they can forward.
 - Unallowed mail stays untouched; the page counts it ("3 messages from unknown senders are waiting in the mailbox"). Adding the address gets it read at the next check.
-- If an `Authentication-Results` header says SPF or DKIM **failed**, the message is refused (counted under "messages refused") and stays in the mailbox. No header: accepted if the sender is listed.
+- Anyone can write any address in the From line. If an `Authentication-Results` header says SPF or DKIM **failed**, the message is refused (counted under "messages refused") and stays in the mailbox. No header: accepted if the sender is listed.
 
 ## Forwarding from Gmail, Outlook and school portals
 
