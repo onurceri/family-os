@@ -2,163 +2,218 @@
 
 The pages you will use every day: Today, Quick add, the calendar, tasks and shopping lists, the board and the meal plan.
 
-On a phone the bottom bar has **Today**, **Quick add**, **Calendar**, **Lists** and **More**. Everything else is under **More**: the Household pages and your settings. On a wide screen the same pages are in a bar on the side (Household can be folded away), with **More** at its foot. Inside Household the pages are listed alphabetically, in your language, on the side bar and under **More**. The settings list is ordered the same way inside each group (You, Family, AI, System), with **Profile & sign-in** kept at the top of You because Settings opens there.
+Phone bottom bar: **Today**, **Quick add**, **Calendar**, **Lists**, **More** (Household pages and settings are under **More**). A wide screen has the same in a side bar (Household can be folded away) with **More** at its foot. Household pages and each settings group (You, Family, AI, System) are alphabetical in your language; **Profile & sign-in** stays first in You because Settings opens there.
 
 ## Today
 
-**Today** is the page you can read from the door. How it is arranged depends on the style (**Broadsheet**, **Lanes** or **Wall**, see [Appearance](appearance.md)); what it says is the same in each.
+**Today** is readable from the door. The style (**Broadsheet**, **Lanes**, **Wall**; [Appearance](appearance.md)) sets its arrangement, not its content. [Family displays](displays.md) show it without a person.
 
-- **The head:** the clock, the date and a sentence about the day ("Good morning, Amy. 2 things need you, 4 on the plan, Swimming tonight.").
-- **Next up:** the next thing of the day on the one coloured card of the page. Its countdown is the biggest number there: the minutes under an hour (**25 min**), then how long until it starts (**1 h 55 min to go**), and from two hours the start time (**starts 17:00**); once it has started it says **now** and until when. Beside the title, **At** the place or **Starts** and the time.
-- **Family | Me** on the card picks whose next thing it shows. **Family** (the first choice) is the family's next thing; **Me** is the next thing you are part of, or that is for everyone. Your choice is remembered on every device. When nothing more is yours today, it says **Nothing more for you today.**
-- **The family:** the rest of the day per person (a column, a lane or a row each, **+2 more** when there is more), and in a line each person's status: their next thing ("Piano lesson in 25 min", "Football 17:00"), else something all day ("Working from home"), else the chores they have left, else **Nothing planned**. On a phone the people with something come first, one under the other, and the rest share one line ("Nothing planned for Deniz and Amy.").
-- **Chores** are rings, one per person, filling as the day's chores are done ("Sam: 1 of 3 done"); someone with no chores today has an empty ring ("Leo: no chores today"). **Shopping** is a number you can read from across the room, with the first few things named.
-- **The weather**, when it is set up: the temperature, the next hours, and one sentence that links the weather to the day ("Rain from 15:00, during Football practice.", "Dry all day, 21° by 15:00."). Behind it, the sky shows the weather: sun, clouds, rain, snow, a storm, fog, or a clear night with the moon and stars. The sky only sets the mood; the temperature and the sentence say what you need to know. It moves gently, and stays still when your device asks for less motion (the "reduce motion" setting).
-- **A photo of the day** from the family's photos (the same one all day), for those allowed to see the display photos.
-- **Needs you** comes first when something waits for a decision (suggestions to approve); decide it right there, or open **Quick add**. A suggestion that offers to move an event you already have is decided in **Quick add**, where the move is offered; Needs you only lets you reject it. The **board**, **Coming up** and the kitchen follow.
+| Part | What it shows |
+|---|---|
+| **The head** | The clock, the date and a sentence about the day ("Good morning, Amy. 2 things need you, 4 on the plan, Swimming tonight.") |
+| **Next up** | The next thing of the day on the one coloured card. Countdown: **25 min** under an hour, **1 h 55 min to go**, from two hours **starts 17:00**; once started **now** and until when. Beside the title: **At** the place or **Starts** and the time |
+| **Family \| Me** | On the card: **Family** (first choice) is the family's next thing; **Me** is the next thing you are part of or that is for everyone. Remembered on every device; if nothing more is yours: **Nothing more for you today.** |
+| **The family** | Per person, the rest of the day (**+2 more**) and a status: next thing ("Piano lesson in 25 min"), else all-day thing ("Working from home"), else chores left, else **Nothing planned**. On a phone, people with something come first |
+| **Chores** | One ring per person, filling as chores are done ("Sam: 1 of 3 done"); empty for no chores today ("Leo: no chores today") |
+| **Shopping** | A number readable across the room, with the first few things named |
+| **The weather** | When set up: temperature, next hours and a sentence tying weather to the day ("Rain from 15:00, during Football practice."). The sky behind it only sets the mood and stays still when your device asks for less motion |
+| **A photo of the day** | From the family's photos (the same all day), for those allowed to see display photos |
+| **Needs you** | First when something waits for a decision. Decide it there, or open **Quick add**. A suggestion to move an event you already have is decided in **Quick add**; here you can only reject it. The **board**, **Coming up** and the kitchen follow |
 
-It changes with the time of day and with how full the day is:
-
-- **Evening:** the plan for today is folded into one calm line ("The day is done."), and **Tomorrow** moves to the top.
-- **A quiet day:** a sentence says so, and **Next days** shows what is coming in the week.
+- **Evening:** the plan folds into one line ("The day is done."), and **Tomorrow** moves to the top.
+- **A quiet day:** a sentence says so; **Next days** shows the week.
 - **A new home:** a short list of first steps (add the family, put something on the calendar, set your city, connect an AI model) that goes away by itself.
-
-Tap a section's title to open its page. The **bell** at the top (the side bar on a computer, the top of Today on a phone) shows what you have not read: press it for the latest notifications, or open the full list. On a wide screen there is a search box at the top.
-
-A family display in the kitchen or hallway shows the same page without a person on it: see [Family displays](displays.md).
+- Tap a section's title to open its page. The **bell** (side bar on a computer, top of Today on a phone) shows what you have not read: press it for the latest notifications or the full list. A wide screen has a search box at the top.
 
 ## Quick add
 
-Quick add is where you give FamilyOS a message, a photo, a document or a voice note, check what it found, and add it. It is a tool for you, not a shared mailbox and not a chat. The AI reads what you give it and lists what it found (an event, a task, shopping items…). Nothing is added until a person ticks it and presses **Add selected**. How the AI is chosen and what it sees: [AI and privacy](ai.md). It also sees what is still open on your shopping lists and task list, so a message like "got the light bulbs already" can suggest ticking that item off (or completing that task) instead of adding it again. A suggestion that changes an existing item is kept only when your message names that item (every word of its name, in any order); a near match such as "Picture hooks" for a message about "picture wire" is dropped. It also sees the calendar's events of the next four weeks, so "football on Thursday is cancelled" suggests removing that Thursday's training rather than adding an event called "Football cancelled", and news that an event moved suggests changing it. The event is found by its name: the day the message gives only decides between events named alike, so "football on Thursday" never removes "Pick Ivy up after football" just because that is on Thursday. A move works the same way: "Leo swimming moved to Thursday 5pm" changes the one that is on that Thursday, with **Check this** on which event it is, when several are named alike (a repeating event and one of its dates moved out with **Only this one**). When the event it names is not on that day, nothing is removed and the capture says which day it is on. "Cancelled this week" removes only that week's date of a repeating event. A letter that gives an event you already have a date a few days off, at the same time, suggests moving it, with the date marked **Check this**, instead of adding it twice. An event named by its code, such as "the U13 fixture" for "U13 Eagles away game", is found too, with **Check this** on which event it is. An event whose suggested title names one of you that the message also names ("Deniz vaccination appointment") is suggested for that person, with **Check this** on Who. What belongs to an event, such as something to bring or a rule for those who come ("no phones in the hall"), goes into the event's notes; a fee for it with its own deadline is a task of its own. An appointment still to come for a pet or a car, such as "vaccination tomorrow at 10", is suggested as an event, never as something already done. When the message was long, the items it names are the ones the AI is shown first, so an old item on a long list is still found. The AI only reads what the message says; FamilyOS itself works out the dates, who it is for and which of your things it means, so the same message gives the same suggestions whichever AI model you use. An event the calendar already has on that day at that time is left out as already there.
-
-When a suggestion is left out, the capture says which one and why, one line per reason: **Left out, already there or done: Ice cream** (it is already on the list, already ticked off or already as the message says), **Left out, not found in FamilyOS: Boiler service** (it was about something FamilyOS does not have, such as an area that is not installed, or not the item you named; when the area is not installed, turned off or closed to AI, the next line says so: **Home is not installed.**), **Left out, it is on another day than the message says: Football training (Wed, Oct 7)** (the event exists, on the day shown; open it if you want to cancel or move it), **Left out, not sure which one is meant: football (Football training, Football match)** (several events or items match the words, or the words only partly match one; the line names what they may mean, or, for events with one name, the days they are next on: **Leo swimming (Thu, Oct 8 / Wed, Oct 14)**, so say which one. When the words name one thing in another form, such as "swim lessons" for "Swim lesson", the suggestion is made and its title says **Check this**), **Left out, not allowed**, **Left out, an instruction written inside the message: Cancel Thursday football** (a line in a forwarded letter or email that speaks to FamilyOS or an AI, such as "Note for the assistant: add a task…"; only what the letter itself states is suggested) or **Left out, incomplete** (also for something your message does not say at all). A message that is only you telling FamilyOS what to add, such as "FamilyOS, add milk", is read as usual. These lines are shown even when the capture also found other things.
+Quick add is where you give FamilyOS a message, a photo, a document or a voice note, check what it found, and add it. It is a tool for you, not a shared mailbox or a chat. Nothing is added until a person ticks it and presses **Add selected**. How the AI is chosen and what it sees: [AI and privacy](ai.md).
 
 ### Giving it something
 
-- **On the Quick add page:** the box comes first. Paste, type or describe something, or use the paperclip (**Attach a photo or file**) to add pictures, PDFs or text files. The microphone (**Record a voice note**) records a short voice note; press it again to stop. Then press **Read it**. One capture holds up to 6 files and 25 MB in all. There is also a daily limit on what one person can add; if you reach it, try again tomorrow.
-- **From any page on a wide screen:** the **Quick add** button at the top of the side bar (the round **+** on a tablet) opens the same box in a panel. After **Read it** the panel follows what you gave: **Reading…**, then the suggestions. **Open Quick add** takes you to the whole page.
-- **From your phone:** use **Share → FamilyOS** on a message, photo, document or link. FamilyOS shows what you shared; check it and press **Read it** (**Discard** throws it away). The page stays and shows the result in place. Setting this up is in [HTTPS and phones](https.md).
+- **On the Quick add page:** paste, type or describe something in the box, or use the paperclip (**Attach a photo or file**) for pictures, PDFs or text files. The microphone (**Record a voice note**) records; press again to stop. Press **Read it**. One capture holds up to 6 files and 25 MB in all. There is a daily limit per person.
+- **From any page on a wide screen:** the **Quick add** button at the top of the side bar (round **+** on a tablet) opens a panel; **Open Quick add** goes to the page.
+- **From your phone:** **Share → FamilyOS** on a message, photo, document or link; press **Read it** (or **Discard**). Setup: [HTTPS and phones](https.md).
 - **By mail or Telegram:** see [Email](email.md) and [Telegram](telegram.md).
 
-A file you want to keep with a vehicle, pet or home, without the AI reading it, can be filed directly: see **Add to…** in [What needs doing and Papers](records.md).
+A file to keep with a vehicle, pet or home, without the AI reading it, can be filed directly: see **Add to…** in [What needs doing and Papers](records.md).
 
-What you give is yours. You see your own captures, and nobody else does. The one exception is a suggestion someone else has to decide: when a supervised member gives something, the adults who may approve it see that capture (and its photos) until it is decided, and then it is only the member's again. Suggestions from your own captures are for you to decide; other adults are not told about them and cannot see or decide them.
+### How it reads
 
-When you give something from outside the app (the phone's share sheet, [Telegram](telegram.md) or [email](email.md)), you get one notification when the AI has read it and has suggestions, so you do not have to open the app to find out. Giving something in the app sends no notification: you are looking at it.
+The AI only reads the message; FamilyOS works out dates, people and which of your things it means, so any model gives the same suggestions.
+
+- **Open items:** it sees your open shopping and task items, so "got the light bulbs already" ticks the item off instead of adding it. A change to an existing item is kept only when the message names it (every word of its name, any order); "Picture hooks" for "picture wire" is dropped.
+- **Calendar:** it sees the next four weeks. "Football on Thursday is cancelled" suggests removing that training; news that an event moved suggests changing it.
+- **Finding an event:** by name; the day only decides between events named alike, so "football on Thursday" never removes "Pick Ivy up after football". A code ("the U13 fixture") works too, with **Check this** on which event.
+- **Moves:** "Leo swimming moved to Thursday 5pm" changes the one on that Thursday (**Check this** when several are named alike, including a date moved out with **Only this one**). If the event is not on that day, nothing is removed and the capture says which day it is on. "Cancelled this week" removes only that week's date of a repeating event. A letter giving an existing event a date a few days off at the same time suggests moving it (date marked **Check this**), not adding it.
+- **People:** a message written to you ("your lesson is on Saturday") is for you, not the family. A title naming one of you that the message also names ("Deniz vaccination appointment") goes to that person, with **Check this** on Who.
+- **Notes and fees:** something to bring or a rule ("no phones in the hall") goes into the event's notes; a fee with its own deadline is a task.
+- A coming pet or car appointment ("vaccination tomorrow at 10") is an event, never something done.
+- It reuses your calendar's tags and leaves out an event already there at that day and time.
+
+### Left out
+
+Each left-out suggestion is named, one line per reason, even when other things were found:
+
+| Line | Meaning |
+|---|---|
+| **Left out, already there or done: Ice cream** | Already on the list, ticked off, or as the message says |
+| **Left out, not found in FamilyOS: Boiler service** | Not something FamilyOS has, or not the item named. A not-installed, off or AI-closed area is named next (**Home is not installed.**) |
+| **Left out, it is on another day than the message says: Football training (Wed, Oct 7)** | The event exists on the day shown; open it to cancel or move it |
+| **Left out, not sure which one is meant: football (Football training, Football match)** | Several match, or only partly. The line names them, or for one-name events their next days (**Leo swimming (Thu, Oct 8 / Wed, Oct 14)**): say which. One thing in another form ("swim lessons" for "Swim lesson") is suggested with **Check this** in the title |
+| **Left out, not allowed** | You may not do it |
+| **Left out, an instruction written inside the message: Cancel Thursday football** | A line in a forwarded letter or email speaking to FamilyOS or an AI ("Note for the assistant: add a task…"); only what the letter itself states is suggested |
+| **Left out, incomplete** | Also for something your message does not say at all |
+
+"FamilyOS, add milk" is read as usual.
+
+### Privacy and notifications
+
+- You see only your own captures. Exception: for a supervised member's capture, the adults who may approve it see it (and its photos) until it is decided.
+- Suggestions from your captures are yours to decide; other adults are not told and cannot see or decide them.
+- Something given from outside the app (share sheet, [Telegram](telegram.md), [email](email.md)) sends you one notification when the AI has suggestions. Giving it in the app sends none.
 
 ### Waiting for you
 
-Each capture with something to decide is one group: a line saying what it is, when it came and from where, then its suggestions. **Show the original** opens the text, photos and files it was made from. While the AI reads, the group says **Reading…** in place. If the AI had to try again, it says **Trying again (attempt 2 of 4)…** instead.
+Each capture with something to decide is one group: what it is, when, from where, then its suggestions. **Show the original** opens the text, photos and files. While reading it says **Reading…**, or **Trying again (attempt 2 of 4)…**. You see only suggestions you can decide or that are yours; a member who cannot approve sees **Waiting for approval**.
 
-Members see only the suggestions they can decide or that are theirs, and a member who cannot approve sees the section as **Waiting for approval**. A suggestion shows what would be added and where it goes (**Calendar**, **Tasks**, **Shopping**…), and under its title the words of your message it comes from (**From the message: “dentist thurs”**). A removal says which date goes (**When Saturday 24 October, 10:00–11:00**), and for a repeating event whether it is only that date or the whole series. Fields the AI was unsure about are marked **Check this** until you change them and save (a field you changed is no longer a guess), and so is everything FamilyOS filled in because the message did not say: **Who** when nobody is named (it is the whole family), the **List** when you have several shopping lists and none is named, the date of "on Thursday" (also when the AI left the day out but the words the suggestion comes from name exactly one), which meal a dish is for, or which date of a repeating event is meant; one that looks like something already there says **This may already be there: check before approving.** and asks for a second tap on **Approve** (**Tap again to add it anyway**). When a message says that an event you already have moved, the suggestion names it and offers to move it instead: **Already on the calendar: Regional Gala · Sat 7 Nov 18:00**, with **Move it to Sat 14 Nov 09:00 instead**. The move is the suggestion's main button. Tap it and the suggestion becomes a change of that event, which you then approve like any change (and can undo). For a repeating event only the date nearest the new day moves. **Add as new** still adds a second event, and asks for a second tap.
+A card shows:
 
-A change shows what it changes from: **When Sat 7 Nov 07:45 → Sat 14 Nov 09:00**, **Where Main St → Harbour clinic**, a new title or a new person the same way. When one date of a repeating event moves on the same day, only the new time is repeated: **Sun 25 Oct 20:00 → 18:00**. This is the same for changes from Quick add, the assistant, a connected AI app or a person's own request, and for changes to tasks. The assistant and connected AI apps tell you when what they suggest is already on the calendar, but only you can choose to move it. A suggestion made for someone else, for example by a child's assistant request, says who asked (**Asked by Noah**), and notifications for waiting suggestions name the thing, such as **Remove a shopping item: Cheddar**. When a message names a day but no time, the event is suggested as an all-day event with **Check this** on it; set the time before you add it. The AI knows who shared the capture, so a message written to you ("your lesson is on Saturday") is suggested for you rather than for the whole family, and it reuses the tags your calendar already has.
+- what is added and where (**Calendar**, **Tasks**, **Shopping**…), and its source words (**From the message: “dentist thurs”**);
+- a removal's date (**When Saturday 24 October, 10:00–11:00**) and, for a repeating event, only that date or the series;
+- a change as old → new: **When Sat 7 Nov 07:45 → Sat 14 Nov 09:00**, **Where Main St → Harbour clinic**; on the same day only the new time repeats (**Sun 25 Oct 20:00 → 18:00**); same for tasks and other sources;
+- who asked, if for someone else (**Asked by Noah**); notifications name the thing (**Remove a shopping item: Cheddar**);
+- **Check this** on fields the AI was unsure about (until you change and save them) and on what FamilyOS filled in because the message did not say: **Who** (whole family when nobody is named), the **List** (several lists, none named), the date of "on Thursday" (also when the AI left the day out but the source words name exactly one), the meal of a dish, the date of a repeating event;
+- an all-day event with **Check this** when the message gives a day but no time; set the time first;
+- **This may already be there: check before approving.**, needing a second tap on **Approve** (**Tap again to add it anyway**).
 
-- **Tick what is right.** Every suggestion is ticked at first, except one that would add something you already have: one that offers to move an event already on the calendar, or one that says **This may already be there**. Those go in only if you tick them, or after you tap **Move it to … instead**, which ticks the change. Untick the ones you do not want.
-- **Add selected (n):** adds the ticked ones, one by one. A message says how many were added, with **Undo**, which takes all of them back.
-- **Dismiss the rest:** press it, then **Tap again to dismiss**. The unticked suggestions are declined and nothing is added for them.
-- **Edit:** for events, tasks and shopping items you can correct a suggestion first. Press **Edit**, change the fields, then **Save changes**. The card shows your change, and **Add selected** adds it as you changed it. On a wide screen the card takes the whole row while you edit.
-- **Undo:** after an approval a message with **Undo** shows for a few seconds, and decided suggestions keep an **Undo** button. Taken back, a suggestion says **Taken back**, and it cannot be approved again: the person who suggested it gets **Suggest again**, which sends the same suggestion once more, to be decided like a new one. Suggestions that were approved automatically say **Approved automatically** and can be undone the same way (see [Auto-approval](auto-approval.md)).
-- If adding fails, the suggestion says so; **Add selected** tries it again.
+**Moving an event you already have.** The suggestion shows **Already on the calendar: Regional Gala · Sat 7 Nov 18:00** with **Move it to Sat 14 Nov 09:00 instead** as its main button. It becomes a change of that event, approved (and undone) like any; for a repeating event only the date nearest the new day moves. **Add as new** adds a second event, with a second tap. The assistant and connected apps flag duplicates, but only you choose to move.
 
-When every suggestion of a capture is decided, the group leaves **Waiting for you** by itself. A capture the AI found nothing in says **Nothing to add was found.** with **Remove**. A capture whose every suggestion was left out says only why, and offers **Read again**: once you have installed the area it was about, or added what it named, the AI reads it again.
+**Deciding**
 
-If you are not allowed to approve (a supervised member, for example), you see your suggestions with **Waiting for approval** instead of ticks; an adult decides them. Changed your mind? Press **Withdraw** under your own suggestion and it is taken back. A suggestion about something that has been removed meanwhile (an event that was deleted, a pet that was archived) leaves **Waiting for you** and the count at once, and Quick add lists it as **Can no longer be done: it no longer exists**. One that asks for what is already so, such as ticking off an item someone already bought, closes and says **Already done**; nothing is changed and there is no **Undo**, so it never reverses what someone really did. You can also remove your own capture, which takes back its waiting suggestions. The number of suggestions waiting counts only those you can decide, and everything one message or photo made counts once, because you decide it together. When someone who may not change things directly adds or changes something by hand, for example an event, the form says **After you save, someone has to approve this.** above **Save**, the message **Sent for approval** has a **Show** button that opens Quick add, and the change appears under **Waiting for you** for an approver to decide. Until then the task, event, chore, shopping item or record they changed says **Waiting for approval** and what it will become (**Waiting for approval · Due: Tue 20 Oct**), so the old value on screen is not taken for a lost change. It stays where it is until the change is approved. The people who may approve it see the same mark with who asked (**Suggested by Leo · Title: Piano lesson**), and on the calendar's week and day such an event carries a small hourglass. A new event that waits shows on the calendar (week, day, month and the phone's agenda) as a quiet dashed chip with an hourglass, for the person who asked and for those who may approve it; tapping it opens what was asked for, read-only. A removal that waits says so: **Waiting for approval to remove** (**Suggested by Leo: remove** for the people who decide). Something new that waits, such as a pet's treatment or a shopping item, is listed as a quiet row marked **Waiting for approval**, followed by what a saved row shows (a treatment's product, day and vet; a service entry's day and place; a task's or chore's due day), so two waiting entries can be told apart and a list never says it is empty while one waits. The mark on a task, chore, shopping item or record starts with the same hourglass and wraps onto another line on a narrow screen rather than being cut. Tapping an event, a chore or a task opens its details first, with **Suggest a change**; the form comes on that button and saves with **Send for approval**. On record pages the **Edit** button reads **Suggest a change**. For people who change things directly, a tap opens the form as before. Every waiting card names the thing it changes and lists only what changes, as old → new (**Title: Piano lesson → Piano lesson at 5**). Once someone decides, the person who asked gets a notification (**Mara approved your suggestion** or **Mara said no to your suggestion**, with what it was), and the answer stays under **Recent** for a week (**Approved** or **Rejected**); tap it to see the card.
+- **Tick what is right.** All start ticked except moves of existing events and **This may already be there** ones, which go in only if ticked or via **Move it to … instead**.
+- **Add selected (n):** adds the ticked ones; a message says how many, with **Undo** for all. If adding fails, the suggestion says so; press again to retry.
+- **Dismiss the rest:** then **Tap again to dismiss**; unticked ones are declined.
+- **Edit** (events, tasks, shopping items): **Edit**, change, **Save changes**; **Add selected** adds your version. FamilyOS keeps it, so other devices and adults see it.
+- **Undo:** for a few seconds after approval, then as a button on decided suggestions. A taken-back one says **Taken back** and cannot be approved again; its author gets **Suggest again**, sending it as new. **Approved automatically** ones undo the same way ([Auto-approval](auto-approval.md)).
 
-When you change a suggestion on its card and press **Save changes**, the change is kept by FamilyOS, not by the page you are looking at: reload, open Quick add on your phone, or let another adult approve it, and they see and add your version. Each card in a group is titled by what it is about (**No phones in the hall**), and the buttons of each group name the group they belong to, so a screen reader hears which one **Add selected** adds. On Today, what one message made is a single line under **Needs you** (**Tom shared something · 3 suggestions to check**) that opens its group. A suggestion for an extension that is not installed, or is switched off, says so on its card (**Pets is not installed: this suggestion waits until it is back.**) to everyone who would have decided it. It cannot be added meanwhile and is not counted; whoever asked for it can still withdraw it, and when the extension is back it is an ordinary waiting suggestion again.
+A fully decided capture leaves by itself. Nothing found: **Nothing to add was found.** with **Remove**. All left out: it says why and offers **Read again** (after you install the area or add what it named).
 
-Suggestions that did not come from a capture wait here too, next to the captures and newest first, grouped by where they came from: **From the assistant** (one answer's suggestions), **From a connected app** (an AI app you connected with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when it acted for Tom), and **Sent for approval** (from a person), with who it is for when that is someone else. The rows on Today and the notice about a waiting suggestion name the app the same way. Each card is approved or rejected on its own. Every suggestion you may decide is on this page: the number on **Quick add** in the side bar, the number next to **Waiting for you** and **Needs you** on Today count exactly these, and a notification about a waiting suggestion opens this page.
+**When you may not approve.** Your suggestions are marked **Waiting for approval** for an adult to decide. **Withdraw** takes one back; removing your capture takes back its waiting suggestions. When you add or change something by hand:
+
+- The form says **After you save, someone has to approve this.** above **Save**; **Sent for approval** has a **Show** button to Quick add.
+- Tapping an event, chore or task opens details with **Suggest a change** (saves with **Send for approval**); on records **Edit** reads **Suggest a change**.
+- The item says **Waiting for approval** and what it becomes (**Waiting for approval · Due: Tue 20 Oct**); the old value stays until approval. Approvers see who asked (**Suggested by Leo · Title: Piano lesson**).
+- A waiting new event is a dashed hourglass chip on the calendar (week, day, month, agenda), read-only, for the asker and approvers; a waiting change has a small hourglass on week and day.
+- A waiting removal: **Waiting for approval to remove** (**Suggested by Leo: remove** for approvers).
+- A waiting new thing (a pet's treatment, a shopping item) is a quiet row marked **Waiting for approval** with a saved row's details (treatment product, day, vet; service day, place; due day).
+- Waiting cards show only changes, old → new (**Title: Piano lesson → Piano lesson at 5**).
+- On a decision the asker is notified (**Mara approved your suggestion** / **Mara said no to your suggestion**) and the answer stays under **Recent** for a week (**Approved** or **Rejected**).
+
+**Good to know**
+
+- A suggestion about something removed meanwhile (deleted event, archived pet) leaves **Waiting for you** and the count, and shows as **Can no longer be done: it no longer exists**.
+- One asking for what is already so (ticking an item already bought) closes as **Already done**, with no **Undo**.
+- The count includes only what you can decide; one message or photo counts once.
+- If the extension is not installed or is off, the card says so to all who would decide it (**Pets is not installed: this suggestion waits until it is back.**); it cannot be added and is not counted. Its author can withdraw it; when the extension is back it waits as usual.
+- Today shows one message's suggestions as one line under **Needs you** (**Tom shared something · 3 suggestions to check**) that opens the group.
+
+**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **Waiting for you** and **Needs you** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
 
 ### Recent
 
-**Recent** lists your last captures with how each went: **1 added**, **Nothing to add**, **2 left out**, **Filed**, **Rejected** or **Could not read**. Open one to see the original, the suggestions that were decided (with **Undo** while that is possible), **File into…** for papers you want on a record, **Try again** and **Remove**. On a wide screen Recent is a column on the right; on a phone it is a list below the groups.
+**Recent** lists your last captures and how each went: **1 added**, **Nothing to add**, **2 left out**, **Filed**, **Rejected**, **Could not read**. Open one for the original, decided suggestions (**Undo** while possible), **File into…** (papers for a record), **Try again**, **Remove**. Right column on wide screens, list below the groups on phones.
 
 ### When reading fails
 
-If the AI could not read a capture, it says why, for example **AI is not set up yet.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.** or **This is too long for the AI to read in one go. Share it in smaller parts.** Admins also get a link to the AI settings. Fix the cause, then press **Try again** to read the same capture again. If the AI is switched off for this kind of capture, it is kept and says **AI is off. Kept here unread.**; press **Read now** to read it.
+The capture says why: **AI is not set up yet.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.**, **This is too long for the AI to read in one go. Share it in smaller parts.** Admins get a link to the AI settings. Fix the cause, then **Try again**. If AI is off for this kind of capture: **AI is off. Kept here unread.**; press **Read now**.
 
-**Remove** (then **Tap again to remove**) takes a capture away and declines any suggestions from it that are still waiting. Only the person who made a capture can remove it, read it again or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
+**Remove** (then **Tap again to remove**) takes a capture away and declines its waiting suggestions. Only the person who made a capture can remove, re-read or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
 
 ## The calendar
 
-Open **Calendar**. Pick **Day**, **Week** or **Month** at the top; the arrows move by that much and **Today** comes back. When you look at another day, **Back to today** sits beside that day's date. On a computer or tablet the day and week are an hour grid that fills the screen, with a line for now; events of the same time sit side by side, and a long block (six hours or more, such as someone at work) is drawn hollow behind the others so it does not hide the day. Click an empty hour to add an event at that time. On a phone the week is a strip of days with dots, and under it a list of the chosen day. If events have tags, tap a tag to show only those; **All** shows everything again. The people pills filter by person.
+Open **Calendar** and pick **Day**, **Week** or **Month**; arrows move by that much, **Today** returns (**Back to today** beside another day's date). Tap a tag to show only those events (**All** resets); the people pills filter by person.
+
+- Computer or tablet: day and week are an hour grid with a line for now. Same-time events sit side by side; a block of six hours or more (work) is drawn hollow behind the others. Click an empty hour to add an event there.
+- Phone: the week is a strip of days with dots, and a list of the chosen day.
 
 ### Add and change events
 
-1. Press **Add event** (or click an empty hour in the grid) and fill in the **Title**. The form opens in a panel at the side, and as a sheet on a phone.
-2. Pick the **Date**, **Starts** and **Ends**. For a whole day, turn on **All day**, and use **Until (last day)** for several days. An end time earlier than the start (22:00 to 07:00) means the next morning, and the form says **(next day)**.
-3. Under **Who**, pick the people it is for, or **Whole family** (the first choice, picked until you pick someone).
-4. Optionally add **Repeats**, **Reminder**, **Tags**, **Where** and **Notes**, then press **Save**.
+1. Press **Add event** (or click an empty hour) and fill in the **Title**. The form is a side panel, a sheet on a phone.
+2. Pick **Date**, **Starts** and **Ends**. **All day** for a whole day; **Until (last day)** for several. An end earlier than the start (22:00 to 07:00) means next morning (**(next day)**).
+3. Under **Who**, pick people or **Whole family** (first choice).
+4. Optionally add **Repeats**, **Reminder**, **Tags**, **Where**, **Notes**; press **Save**.
 
-Tap an event to change it, or to **Delete** it (then **Tap again to delete**). Events from a subscribed calendar open read-only, marked **From** and the calendar's name.
+Tap an event to change it or **Delete** it (then **Tap again to delete**). Subscribed-calendar events are read-only, marked **From** and the calendar's name. If you may not change the calendar directly, **Save** sends the event for approval.
 
 ### Repeating events
 
-**Repeats** is **Does not repeat**, **Every day**, **Every week** (pick the days) or **Every month**. Set **Until** if it should end. A change to a repeating event changes the whole series. To remove it, choose:
+**Repeats**: **Does not repeat**, **Every day**, **Every week** (pick days), **Every month**; **Until** ends it. A change changes the whole series. To remove:
 
-- **Delete only this one** (then **Tap again to skip this one**): skips that day; the rest stay.
-- **Delete whole series** (then **Tap again to delete all**). The days you moved out of it with **Only this one** go with it, and bringing the series back (**Undo**) brings them back too.
+- **Delete only this one** (then **Tap again to skip this one**) skips that day.
+- **Delete whole series** (then **Tap again to delete all**) also removes days moved out with **Only this one**; **Undo** restores them.
 
-A day moved with **Only this one** stays that series' day: FamilyOS remembers which day it replaced, so putting it back returns the original day, and "football is cancelled on Thursday" finds it even after it moved. In a calendar address (an `.ics` feed) it is sent as a changed date of the series, so a phone's calendar shows one repeating event with one day moved, not a second event. Days moved before this was kept, and moves from a member's address whose series that member does not see, appear as events of their own.
+Good to know:
 
-Saving a change to the whole series keeps the days you skipped and the days you moved with **Only this one**. If you move the series to another day or time, skipped days that the new repeat still has stay skipped, and the others are forgotten. A repeat the form cannot show (shown as **Custom rule**, for example from an imported calendar) stays when you save other changes, and **Does not repeat** stops it. The event's own time zone stay as they were unless you change its date or time.
+- A day moved with **Only this one** stays that series' day: putting it back returns the original, and "football is cancelled on Thursday" finds it. In an `.ics` calendar address it is a changed date of the series. Days moved before this was kept, and moves from a member's address whose series that member cannot see, appear as separate events.
+- Saving the series keeps skipped and moved days. Moving the series to another day or time keeps skipped days the new repeat still has and forgets the rest.
+- A repeat the form cannot show (**Custom rule**, e.g. imported) survives other changes; **Does not repeat** stops it. The event's time zone stays unless you change its date or time.
 
 ### Reminders and tags
 
-A timed event reminds you 30 minutes before, an all-day event at 09:00 on the day. Change it under **Reminder**, or choose **No reminder**. Up to 5 **Tags** can go on an event, such as school or health. Reminders, tags, and the calendar on your phone or other calendars are in [Calendars](calendars.md).
-
-If you may not change the calendar directly, **Save** sends your event for approval.
+Timed events remind 30 minutes before; all-day events at 09:00 that day. Change under **Reminder** or choose **No reminder**. Up to 5 **Tags** per event (school, health). Phone calendars and more: [Calendars](calendars.md).
 
 ## Shopping lists and tasks
 
-**Lists** has two pages, **Tasks** and **Shopping**. On a wide screen both are in the side bar under **Lists**. On a phone the **Lists** tab opens the one you used last; tap the other name at the top (**Tasks** or **Shopping**) to switch.
+**Lists** has **Tasks** and **Shopping**: both in the side bar on a wide screen; on a phone the **Lists** tab opens the one you used last and the name at the top switches.
 
 ### Shopping
 
-The first list is called **Groceries**. With one list its name stands at the top; once you have more, your lists are the buttons there: tap one to open it. **+** makes a new list, and **⋯** has **Rename list** and **Remove list** (there when you have more than one).
+The first list is **Groceries**. With several lists they are buttons at the top; **+** makes one; **⋯** has **Rename list** and **Remove list** (with more than one).
 
-- **Add items:** type in the box (at the bottom on a phone, at the top on a wide screen) and press Enter. Separate items with commas, for example `2 kg tomatoes, bread, milk`. When a line will become more than one item, a quiet line under the box lists them before you press Enter (**3 items will be added: …**). A number at the start becomes the quantity (`2 kg`), and what is left starts with a capital (`2 L oat milk` is Oat milk, 2 L); an item typed without a number keeps exactly what you typed. The new row scrolls into view above the add box. A number and a unit after an item belong to that item (`sandpaper, 2 sheets` is Sandpaper with quantity `2 sheets`). An item already on the list is not added twice: the page says so (**Milk is already on the list**, or **…, now 2 l** when the quantity changed) and outlines the row that was there. A new quantity replaces the old one when both count in the same unit; in another unit the two sit side by side (`2 L` and a new `2` become `2 L + 2`), so a unit is never lost. An add without a quantity leaves the old one alone. A shopping suggestion in Quick add that would change a quantity says so (**Rice: 1 kg → 1 kg + a bag**). Names and quantities have a length limit (120 and 40 characters for shopping, 160 for a task); near the limit a counter shows, and past it the field says **Too long** and nothing is saved until it is shorter. Nothing is ever cut for you, and other long text fields (names, titles) work the same way. In every form, a field that keeps **Save** from working says why right under it (**Give it a name**, **Choose at least one day**), and the cursor goes to the first one.
-- **Sections:** items are sorted into sections such as **Fruit & vegetables** or **Dairy & breakfast**. FamilyOS remembers the section you last gave a product.
-- **Tick:** tap an item when it is in your cart. It moves to **In the cart** at the bottom (beside the list on a wide screen); tap it again to put it back.
-- **Clear:** **Clear the cart** (then **Tap again to clear**) removes everything in the cart.
-- **Change or delete:** the **⋯** of an item has **Edit item** (title, quantity and section) and **Delete item**, which removes it at once; **Undo** shows for a few seconds.
+- **Add items:** type in the box (bottom on a phone, top on wide) and press Enter, separated by commas: `2 kg tomatoes, bread, milk`. A line under the box previews (**3 items will be added: …**). A leading number is the quantity and the rest gets a capital (`2 L oat milk` is Oat milk, 2 L); without a number your text is kept. A number and unit after an item belong to it (`sandpaper, 2 sheets`).
+- **Duplicates:** an existing item is not added twice; the page says so (**Milk is already on the list**, or **…, now 2 l** when quantity changed) and outlines the row. A new quantity replaces the old in the same unit; another unit sits beside it (`2 L` and `2` become `2 L + 2`). An add without quantity leaves the old one. Quick add shows such a change as **Rice: 1 kg → 1 kg + a bag**.
+- **Limits:** shopping names 120 and quantities 40 characters, task titles 160. A counter shows near the limit; past it the field says **Too long** and nothing saves. Nothing is cut for you; other long fields work the same. In every form a field that blocks **Save** says why under it (**Give it a name**, **Choose at least one day**) and the cursor goes to the first.
+- **Sections:** items sort into sections (**Fruit & vegetables**, **Dairy & breakfast**); FamilyOS remembers the section you last gave a product.
+- **Tick:** tap an item in your cart; it moves to **In the cart** (below, or beside the list on wide); tap again to put back. **Clear the cart** (then **Tap again to clear**) removes all.
+- **Change or delete:** an item's **⋯** has **Edit item** (title, quantity, section) and **Delete item** (at once; **Undo** for a few seconds).
 
 ### Tasks
 
-A task is one person's to-do with an optional date: "sign the school form". Shared rotating housework belongs in [Chores](chores.md).
+A task is one person's to-do with an optional date ("sign the school form"). Shared rotating housework is [Chores](chores.md).
 
-- **Add:** type the title in the box at the top and press Enter. It goes under **Anyone**. For more, press **Add details** after typing: **Who** (the person it is for), **Due date**, **Time**, **Repeats** (a repeating task needs a due date) and **Notes**, then **Save**. If you may not add tasks for others, a quick task is given to you.
-- **Groups:** tasks are grouped by when they are due: **Overdue**, **Today**, **This week** (up to the last day of the family's week, see [Region](region.md)), **Next week**, **Later** and **No date**. Each shows the face of the person it is for. **Everyone | Mine** at the top shows all tasks or only yours.
-- **Tick:** tap the circle. A message with **Undo** shows. A repeating task moves to its next date (**Done. Next: …**). Finished tasks are listed under **Done**; tap the circle again to put one back.
-- **Change or delete:** tap a task to change it in the panel (a sheet on a phone), or **Delete** it there (then **Tap again to delete**).
-- **Reminders:** a task with a date reminds the person it is for (everyone when it is for **Anyone**) at its time, or at 09:00.
+- **Add:** type a title in the top box and press Enter (goes under **Anyone**). **Add details** gives **Who**, **Due date**, **Time**, **Repeats** (needs a due date) and **Notes**, then **Save**. If you may not add tasks for others, a quick task is yours.
+- **Groups:** **Overdue**, **Today**, **This week** (to the last day of the family's week, see [Region](region.md)), **Next week**, **Later**, **No date**, each with the face of whom it is for. **Everyone | Mine** filters.
+- **Tick:** tap the circle (**Undo** shows). A repeating task moves to its next date (**Done. Next: …**). Finished tasks are under **Done**; tap the circle to put one back.
+- **Change or delete:** tap a task to change it in the panel (sheet on a phone) or **Delete** it (then **Tap again to delete**).
+- **Reminders:** a dated task reminds whom it is for (everyone for **Anyone**) at its time, or 09:00.
 
-Shopping and tasks keep working without a connection; see [Using it offline](offline.md).
+Both work offline: [Using it offline](offline.md).
 
 ## The board
 
-The **Board** is the family's fridge door: short notes on paper for everyone. Tap **Write a note…**, write it, and pick its paper from the five large swatches (the note turns that colour); **Put it up**. **Edit** in the note's **…** menu changes the text or the paper later.
+The **Board** is the family's fridge door: short notes for everyone. Tap **Write a note…**, write it, pick its paper from the five swatches, then **Put it up**. **Edit** in the note's **…** menu changes text or paper later.
 
-- **Seen by:** a line at the foot of a note says who has read it, such as "Seen by Ayşe and Ece", or "Seen by 4" when more have.
-- **Moving notes:** drag a note to a new place (on a touch screen, hold it for a moment first), or use **Move earlier** and **Move later** in its **…** menu. Pinned notes always stay first. Today shows the board's first notes in the same order.
+- **Seen by:** a line at the foot says who has read it ("Seen by Ayşe and Ece", or "Seen by 4").
+- **Moving notes:** drag a note (on a touch screen hold it a moment first), or use **Move earlier** and **Move later** in its **…** menu. Pinned notes stay first. Today shows the first notes in the same order.
 
 More in [The family board](board.md).
 
 ## Recipes onto the meal plan
 
-Under **Household → Kitchen**, a recipe's page has **Put it on the meal plan** beside its name, and each recipe in the list has a calendar button that does the same: choose the day and the meal, then **Add**. On the **Meal plan** each day shows **Breakfast**, **Lunch** and **Dinner**; tap an empty one to pick a recipe for it. More in [Kitchen](kitchen.md).
+Under **Household → Kitchen**, a recipe's page has **Put it on the meal plan** beside its name, and each recipe in the list has a calendar button that does the same: choose the day and the meal, then **Add**. On the **Meal plan** each day shows **Breakfast**, **Lunch** and **Dinner**; tap an empty one to pick a recipe. More in [Kitchen](kitchen.md).
 
 ## Words used in FamilyOS
 
-FamilyOS tries to say things in plain words. A few words stay because you may need them when you talk to someone else, or because another app uses them:
-
-- **Passphrase:** a long password made of a few words. It locks the backup copies FamilyOS sends somewhere else, and you need it to bring a backup back. Write it down and keep it away from the server. See [Backups](backups.md).
-- **Encryption, locked:** a locked copy can only be opened with its passphrase or key: not by the storage company, and not by anyone who finds the file. Saved passwords and keys are kept locked on the server too.
-- **The server's key file:** a file on the server (`secret`; `FAMOS_SECRET` for whoever installed FamilyOS) that unlocks the passwords and keys FamilyOS keeps. Backups leave it out on purpose, so keep a copy of it somewhere safe as well.
-- **AI service (provider):** the company or program that does the AI's work, such as OpenRouter, or Ollama on your own computer. Set it in **Settings → AI → Provider & models**.
-- **Model:** the AI that does the work at that service. Each service offers several: faster ones answer sooner and cost less, larger ones understand more. You pick one by its name at the service.
-- **API key:** a password for an AI service, made on the service's website and pasted into FamilyOS.
-- **App key:** a key you create for an AI app (Claude, or your own agent) so it can read FamilyOS and suggest changes. Developers call it a token. See [Bring your own agent](mcp.md).
-- **MCP:** the way AI apps talk to FamilyOS (the Model Context Protocol). You only meet it in the settings you copy into such an app.
-- **Address:** a web address, such as the one a wall screen opens or the one a calendar is followed from. Developers say URL.
-- **Family device:** a tablet or phone the family shares, where people pick their profile and sign in with a PIN. See [Family displays](displays.md).
+| Word | Meaning |
+|---|---|
+| **Passphrase** | A long password of a few words; locks backup copies sent elsewhere and is needed to restore. Write it down, keep it away from the server. See [Backups](backups.md) |
+| **Encryption, locked** | Opens only with its passphrase or key, not by the storage company or anyone who finds the file. Saved passwords and keys are locked on the server too |
+| **The server's key file** | `secret` on the server (`FAMOS_SECRET` for the installer); unlocks saved passwords and keys. Backups leave it out on purpose, so keep a copy safe |
+| **AI service (provider)** | Who does the AI's work: OpenRouter, or Ollama on your own computer. **Settings → AI → Provider & models** |
+| **Model** | The AI at that service: faster ones answer sooner and cost less, larger ones understand more. Picked by its name there |
+| **API key** | A password for an AI service, made on its website and pasted into FamilyOS |
+| **App key** | A key for an AI app (Claude, your own agent) to read FamilyOS and suggest changes; developers say token. See [Bring your own agent](mcp.md) |
+| **MCP** | How AI apps talk to FamilyOS (Model Context Protocol); you meet it only in settings you copy into such an app |
+| **Address** | A web address (a wall screen's, a calendar's); developers say URL |
+| **Family device** | A shared tablet or phone where people pick a profile and sign in with a PIN. See [Family displays](displays.md) |
