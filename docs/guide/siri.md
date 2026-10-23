@@ -53,7 +53,7 @@ Name it **Add a task**. **Ask for Input**, then **Get Contents of URL**: `ADDRES
 
 ## Safety
 
-- A **Member** key can add to lists and calendar, never manage people, keys or settings, or approve a suggestion.
+- The key does only what the app's role allows. A **Member** key can add to lists and calendar, never manage people, keys or settings, or approve a suggestion.
 - The key is inside the shortcut: sharing the shortcut shares the key. Use a separate app per person or phone.
 - Lost phone: **Settings → You → Connected apps** → **Revoke** the key (or **Pause** the app); the shortcut stops at once. A paused app answers "This app is paused in FamilyOS" (spoken); **Resume** restores the same key.
 - With **Changes wait for approval**, or a supervised person, a spoken item becomes a suggestion a person approves; the answer says `drafted`.
