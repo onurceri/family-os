@@ -1,98 +1,91 @@
 # The assistant
 
-The assistant answers questions in plain language and turns requests into suggestions that a person approves. Open it from **Ask the assistant** on the Today screen, from **Assistant** in the side bar (on phones it may sit under **More**), or at `/assistant`.
+Answers questions in plain language and turns requests into suggestions a person approves. Open it from **Ask the assistant** on Today, **Assistant** in the side bar (phones: maybe under **More**), or `/assistant`.
 
-People with the permission **Ask the assistant** can use it. Admins, members and supervised members have it by default; guests do not. You can change this per role in **Settings → Family → Roles**.
+Needs the permission **Ask the assistant**: Admins, Members and Supervised by default, not guests (**Settings → Family → Roles**).
 
-## What it can do
+- **Look up** what you may see: calendar, tasks, shopping lists and more.
+- **Find by meaning** when [Search](search.md) is set up.
+- **Suggest changes**: "add milk and bread to the shopping list" gives a suggestion under the answer; nothing changes until someone approves.
 
-- **Look things up** in the parts of FamilyOS you may see: the calendar, tasks, shopping lists and more.
-- **Find things by meaning** when Search is set up: "which paper is about the boiler warranty?" (see [Search](search.md)).
-- **Suggest changes**: "add milk and bread to the shopping list" creates a suggestion under the answer. Nothing changes until someone approves it.
+Try: "What's on the calendar this week?", "Which tasks are still open?", "What is on the shopping list?"
 
 ## Questions
 
-When you ask what there is ("what is on this week?", "do I need to pick up Leo on Thursday?", "what is for dinner on Friday?", "is anything waiting for me?"), FamilyOS answers from the facts themselves:
+Asked what there is ("what is on this week?", "do I need to pick up Leo on Thursday?", "what is for dinner on Friday?", "is anything waiting for me?"), FamilyOS answers from the facts:
 
-- The first line says what it understood: the parts it looked in, the people and the days, such as "Calendar · Leo · Thursday, 22 October". If that is not what you meant, ask again in other words.
-- Under it come the facts of each part, written by FamilyOS from what is there, with their notes (what to bring, where to pick someone up). Tap an event, a task, a chore, a meal or a duty to open it on its own page (the event or task opens in its details); what has no page of its own stays plain. When a part has nothing in those days, it says so and names the next thing: "Nothing this weekend; next: Saturday, 31 October, 19:00: Date night".
-- A question about someone ("do I have anything on Thursday?") shows what is for them and for the whole family. When those days hold more for other people, a line says how many ("2 more are for other people.") without showing them; the calendar has them.
-- A question about dinner also shows the calendar of that day, so a dinner somewhere else is there even when the meal plan is empty.
-- A part that is not installed, closed to the assistant, or that you may not see gets a line saying so ("Pets: not installed here").
-- Above the facts, the assistant writes a sentence or two. FamilyOS checks them against the facts first: a date written as numbers, a weekday that does not fit its date, a day or a name that is not in the facts, or "nothing" said about something that is there, and the sentence is left out. The facts below it are always shown.
+- **First line:** what it understood: parts, people, days ("Calendar · Leo · Thursday, 22 October"). Wrong? Rephrase.
+- **Facts:** per part, with notes. Tap an event, task, chore, meal or duty to open it. An empty part says so and names the next thing: "Nothing this weekend; next: Saturday, 31 October, 19:00: Date night".
+- **Sentence above:** one or two sentences, checked against the facts first; dropped if it has a numeric date, a weekday that doesn't fit its date, a day or name not in the facts, or "nothing" where there is something. Facts always show.
+- **Missing parts:** not installed, closed to the assistant or not yours: "Pets: not installed here".
 
-The sentence is written for the person asking, as their description in the family says: someone described as a young child ("6 years old") gets one short sentence. In [Telegram](telegram.md) the sentence is one line, and the facts follow as plain lines.
+**Good to know**
+- The sentence suits the asker's description: a young child ("6 years old") gets one short sentence. [Telegram](telegram.md): one line, then plain fact lines.
+- About a person: their items plus the family's; a line counts the rest ("2 more are for other people.") without showing them.
+- Dinner questions also show that day's calendar.
+- One message can hold several requests; questions about different days get a card each, in order. If one part fails, the rest is done and the reply says what was missed.
+- A name nobody has ("Biscuit"): "No family member is called Biscuit". Only people; pets and things have their own parts.
+- No part named: calendar and tasks. No days named: next 7 days.
+- Overviews ("overview of this week", "open tasks") cover the whole family; it narrows to one person for "my calendar", "what do I have", "am I free", "Noah's tasks". A person's tasks include tasks anyone may do; their calendar includes family events.
+- A name lookup for one person that finds nothing also shows what others have under that name.
+- A span with nothing in it ("this weekend"): it says so, notes other open things fall outside, and names what comes next.
+- To change or remove, name the item as before; no match means "not there", never a similar item.
+- Move one date of a repeating event ("move this Sunday's planning to 18:00"): it becomes its own event and the series skips it. **Undo** reverts.
 
-A message can hold more than one thing. "Do I have anything on Thursday? I also want to remember to pack my football kit" gets the facts for Thursday and, under them, a suggestion for the kit, in one reply; "Add milk and what is for dinner tonight?" does the same the other way round. Two questions about different days ("what is on Thursday? And on Saturday?") get a card each, in the order you asked. If one part cannot be done, the other still is, and the reply tells you what was missed.
+### Days and dates
 
-A question about someone that names a name nobody in the family has ("Biscuit") says so: "No family member is called Biscuit". The line only speaks of people: a pet or a thing is kept in its own part.
+FamilyOS works days out before the assistant answers (same words, same days), from a calendar around today in the family time zone.
 
-A question that names no part ("anything on Friday?") gets the calendar and the tasks of those days. A question that names no days covers the coming seven days.
+| You say | Means |
+|---|---|
+| Weekday only ("Thursday") | The coming one. On that weekday: today while the time is ahead or unstated, else next week. The assistant states the date. Say "next week" for the later one |
+| "This week" | Today to your week's last day (region sets the first day). On the last day: next 7 days, today included, and it says so |
+| "Next week" | The whole week after this one |
+| "This weekend" on Sunday | Today |
 
-When you ask it to change or remove something, it must name the item the way you did. If nothing on the calendar or the lists matches your words, it tells you it is not there instead of changing a similar item. You can also ask it to move a single date of a repeating event ("move this Sunday's planning to 18:00"): that date becomes its own event and the repeating series skips it. **Undo** puts it back.
-
-It reads weekdays from a calendar of the days around today in the family's time zone instead of working them out. When a weekday and a date you give do not match ("Wednesday 20 October" when the 20th is a Tuesday), FamilyOS itself checks your message for this before the assistant answers (in every installed language, with numeric dates read in your region's order), so the assistant says so and asks which one you mean. Its own answers are checked the same way: dates reach it with their weekday, and if it still writes a weekday that does not fit its date, FamilyOS puts in the right one. A date it writes as numbers ("2026-10-20") is written out in words in your date format ("Tuesday 20 October"), unless you wrote it that way yourself.
-
-A weekday without a date ("remind me on Thursday", "what is on Saturday?") means the coming one. When it is today's own weekday, it means today while the time you mean is still ahead (or you give no time), and the same day next week once that time has passed. FamilyOS works the date out before the assistant answers, so the same words give the same date every time, and the assistant says which date it used. Say "next week" when you mean the later one.
-
-"This week" runs from today to the last day of your week (the day your region starts the week on decides which). On that last day nothing of the week is left, so the assistant takes "this week" as the coming seven days, today included, and says so. "Next week" is always the whole week after this one, and "this weekend" on a Sunday means today. FamilyOS works these days out before the assistant answers, so the same words give the same days every time.
-
-When you ask about a span ("this weekend", "this month") and nothing falls in it, the assistant says so. If it mentions other open things, it says that they fall outside that span. When the calendar or the household's dates have nothing in the span, the assistant is told what comes next, so it can say "nothing this weekend; the next is Date night on Saturday 24 October".
-
-An overview ("give me an overview of this week", "show me the open tasks") covers the whole family. The assistant narrows to one person only when you ask about whose things they are: "my calendar", "what do I have", "am I free" or "Noah's tasks". One person's tasks come with the tasks anyone may do, as their calendar comes with the family's events. When the assistant looks something up by name for one person and finds nothing, FamilyOS also shows it what other family members have under that name, so "when is the swimming?" is not answered with "nothing" because someone else swims.
-
-Examples to try:
-
-- What's on the calendar this week?
-- Add milk and bread to the shopping list.
-- Which tasks are still open?
-- What is on the shopping list?
+- Weekday/date mismatch ("Wednesday 20 October", a Tuesday) is caught before it answers (all installed languages; numeric dates in your region's order); it says so and asks which you mean.
+- A wrong weekday in its answer is corrected. Numeric dates ("2026-10-20") become words in your format ("Tuesday 20 October") unless you wrote them so.
 
 ## What it sees
 
-The assistant sees only what the person asking may see, and only in the areas the family allows for AI (**Settings → AI → What the AI may read**). Areas that are off are never offered to it. An area set to **Local only** is available only when the model runs on your own network.
-
-When you ask about something none of its areas covers, for example your home after the Home extension was removed, the assistant says plainly that it cannot see anything about it in FamilyOS. FamilyOS tells it which areas are not here and why (not installed, turned off, or closed to the AI), so it can say "Home is not installed here". It does not ask you for details it could not look up anyway.
-
-It is told people's names and descriptions only when **Send names and descriptions** is on in Settings → AI. Otherwise it cannot refer to anyone by name.
-
-Conversations are private: each person sees only their own.
+- Only what the asker may see, in areas allowed for AI (**Settings → AI → What the AI may read**). Off areas are never offered; **Local only** areas only with a model on your network.
+- For an uncovered area it says it cannot see it, told why (not installed, off, closed to the AI): "Home is not installed here". It does not ask for details it can't look up.
+- Names and descriptions only with **Send names and descriptions** on (Settings → AI); otherwise it can't name anyone.
+- Conversations are private to each person.
 
 ## Suggestions
 
-Suggestions appear as the same cards as in Quick add, right under the answer. People who may approve can approve, edit or reject them there. They also wait in Quick add under **Waiting for you** (**From the assistant**), so they are not lost when you leave the conversation. Others, such as a supervised member, see **Waiting for approval**; an adult decides in Quick add, and the assistant says so. A card always shows the real name of the item it changes. When [auto-approval](auto-approval.md) is on for the kind of change, the assistant says it will be added automatically in a moment. An approved suggestion can be taken back with **Undo**.
+Cards appear under the answer, as in Quick add: those who may approve can approve, edit or reject. They also wait in Quick add under **Waiting for you** (**From the assistant**). Supervised members see **Waiting for approval**; an adult decides in Quick add, and the assistant says so. Cards show the real item name. With [auto-approval](auto-approval.md) on for the kind, the assistant says it will be added in a moment. **Undo** takes back an approval.
 
-Ask "was it approved?" and the assistant looks up the suggestions it made in this conversation, with what became of each and who decided it ("approved by Sofia"). Suggestions made elsewhere, in Quick add, another conversation or a connected app, are not its own and it does not report them.
-
-For each suggestion, the app also keeps a fixed line written from the suggestion itself, such as "Suggested, not added yet: Add shopping items: Milk, Oat milk" (or "Suggested, not added yet: Add a task: Pack my football kit for Thursday, 22 October" when it is about a day) (or "Added automatically: …" when auto-approval adds it), so it is right even if the assistant's wording is not. In the app the card stands for that line, so each suggestion is shown once; the line itself appears only when the cards cannot be shown, and in [Telegram](telegram.md) it comes under the answer. It is there even when the assistant wrote no answer. An assistant that keeps looking things up is stopped in time to answer with what it found, rather than running out of time.
-
-When it suggests an event, the assistant uses the calendar tags your family already has, and adds no new tag unless you name one. To add something to a particular shopping list, name the list ("add picture wire to the Hardware store list"); without a name, the first list is used. If the name matches none of your lists, the assistant says so and names the lists you have.
-
-A follow-up such as "yes, move it to 18:00" refers to what the conversation was just about; the assistant remembers the events and items it looked at earlier in the same conversation. This works after a question too: ask what is on, then say "yes, move it". When it changes something that is already there, it changes who it is for only when your message names them ("move it to 18:00 for Noah", "me", or "for the whole family"); otherwise the people stay as they are.
+**Good to know**
+- "Was it approved?" lists this conversation's suggestions, outcome and decider ("approved by Sofia"). Others (Quick add, other conversations, connected apps) are not reported.
+- Each suggestion gets a fixed line from the suggestion itself: "Suggested, not added yet: Add shopping items: Milk, Oat milk", "Suggested, not added yet: Add a task: Pack my football kit for Thursday, 22 October", "Added automatically: …". The app shows the card instead; the line shows when cards can't, and in Telegram under the answer, even with no answer text.
+- An assistant that keeps looking things up is stopped in time to answer with what it found.
+- Events use existing calendar tags; new ones only if you name them.
+- Name the shopping list ("add picture wire to the Hardware store list"); otherwise the first. An unknown name gets your list names.
+- Follow-ups ("yes, move it to 18:00") use the events and items looked at earlier in the conversation, also after a question.
+- Changing something existing changes who it is for only if you name them ("for Noah", "me", "for the whole family").
 
 ## What it remembers
 
-Tell the assistant to remember something ("remember that I'm vegetarian") and it suggests a short note, as a card with **Remember this**. Only you can see and approve that card; nobody else, not even an admin, can decide it. The note must say what you said: one the assistant made up is never suggested.
+"Remember that I'm vegetarian" gives a card with **Remember this**, visible and decidable only by you (not even admins). The note must say what you said; invented notes are never suggested.
 
-Notes are kept on **Settings → You → Assistant memory**. Open it from the link on the Assistant page. There you can add a note, **Edit** it, or **Forget** it (tap twice). A note is at most 280 characters, and you can keep up to 100.
-
-The assistant reads your notes only in your own conversations, and only when **Send names and descriptions** is on in Settings → AI. Notes are not shared with other people, and not with an agent you connect yourself.
+- Notes: **Settings → You → Assistant memory** (linked from the Assistant page): add, **Edit**, **Forget** (tap twice). Max 280 characters each, 100 notes.
+- Read only in your own conversations, and only with **Send names and descriptions** on.
+- Not shared with others or with your own connected agent.
 
 ## Using the page
 
-- Conversations are listed under **Conversations** on phones and in a column on wide screens. Use **New conversation** to start one. The pencil renames a conversation. **Delete this conversation** appears under the open one; tap twice.
-- On a computer, Enter sends (Shift+Enter makes a new line). On a touch screen, use the send button.
-- While an answer is being written you can **Stop waiting**. This only hides the indicator; the answer still arrives.
-- If something goes wrong, the answer says why (turned off, no model, limit reached, key refused, local model needed, too slow, no answer, not allowed), and **Ask again** sends your last question again.
+- **Conversations**: list on phones, column on wide screens. **New conversation**; pencil renames; **Delete this conversation** under the open one (tap twice).
+- Enter sends, Shift+Enter new line (computer); send button on touch.
+- **Stop waiting** only hides the indicator; the answer still arrives.
+- Failures say why (off, no model, limit reached, key refused, local model needed, too slow, no answer, not allowed); **Ask again** resends your last question.
+- Answers are plain text; app paths like `/calendar` become links; web addresses stay text.
 
-Answers are plain text. Paths inside the app, such as `/calendar`, become links; web addresses stay text and are never opened for you.
+## Your own agent
 
-## If you have your own agent
-
-Members who already use a personal AI agent can connect it to FamilyOS instead. It sees the same things and its changes are suggestions in the same way. See [Bring your own agent](mcp.md).
+Members with a personal AI agent can connect it: same visibility, changes as suggestions ([Bring your own agent](mcp.md)).
 
 ## Turning it off
 
-An admin can turn the assistant off with the **Assistant chat** switch in Settings → AI. It then answers "The assistant is turned off." and nothing is sent to a model.
-
-To hide it completely, turn **Assistant** off in **Settings → Family → Extensions**.
+Admin: **Assistant chat** switch in Settings → AI. It then answers "The assistant is turned off." and sends nothing to a model. To hide it entirely, turn **Assistant** off in **Settings → Family → Extensions**.
