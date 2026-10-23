@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLoopbackHost, screenAddress } from './screen-address.js';
+import { isLoopbackAddress, isLoopbackHost, screenAddress } from './screen-address.js';
 
 describe('isLoopbackHost', () => {
 	it.each([
@@ -42,5 +42,15 @@ describe('screenAddress', () => {
 		expect(screenAddress('http://192.168.1.20:3000', 'https://famos.example').url).toBe(
 			'http://192.168.1.20:3000',
 		);
+	});
+});
+
+describe('isLoopbackAddress', () => {
+	it('tells an address that only reaches this computer', () => {
+		expect(isLoopbackAddress('http://localhost:3000/mcp')).toBe(true);
+		expect(isLoopbackAddress('http://127.0.0.1:3000')).toBe(true);
+		expect(isLoopbackAddress('https://family.example')).toBe(false);
+		expect(isLoopbackAddress('http://192.168.1.5:3000')).toBe(false);
+		expect(isLoopbackAddress('')).toBe(false);
 	});
 });

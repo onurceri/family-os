@@ -82,7 +82,7 @@
 			? tDynamic(`app:role_${id}_hint`)
 			: t('role_custom_hint', { base: tDynamic(`app:role_${role.base}`) });
 	};
-	const address = typeof location === 'undefined' ? '' : location.origin;
+	const address = $derived(family.familyAddress);
 	const live = $derived(app !== null && app.revokedAt === null);
 	const paused = $derived(app?.pausedAt != null);
 	const dirty = $derived(

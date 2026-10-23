@@ -21,6 +21,12 @@ export interface AppContext {
 	weekStart(): number;
 	hourCycle(): 'h12' | 'h23';
 	temperatureUnit(): 'celsius' | 'fahrenheit';
+	/**
+	 * The address another device or program must use to reach FamilyOS: the one the admin
+	 * configured (`FAMOS_BASE_URL`), else the address this browser is on. For anything a person
+	 * copies away from this device (a calendar subscription, an app's address).
+	 */
+	familyAddress(): string;
 	/** Active family members (refreshed on changes). */
 	members(): readonly PresenterMember[];
 	/**

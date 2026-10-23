@@ -277,11 +277,6 @@ function mountDisplayRoutes(
 		const actor = c.get('actor');
 		if (!actor || !personPresent(actor))
 			throw new FamosError('unauthenticated', 'Sign in required');
-		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
-			throw new FamosError('forbidden', 'Your role does not allow this', {
-				reason: 'capability',
-				capability: CORE_CAPABILITIES.devicesManage.id,
-			});
 		return c.json({ url: publicUrl ?? null }, 200);
 	});
 

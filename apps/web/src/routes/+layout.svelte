@@ -153,6 +153,7 @@
 					}
 				: null,
 		timeZone: () => family.timeZone,
+		familyAddress: () => family.familyAddress,
 		onEvent,
 		draftPresenter: (actionId) => contributions.presenters.get(actionId),
 		fullSignIn: () => session.me?.fullSignIn === true,

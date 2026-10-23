@@ -21,6 +21,7 @@
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
+	import { isLoopbackAddress } from '../devices/screen-address.js';
 	import { appSettings, mcpAddress } from './app-settings.js';
 	import { appIsLive, nextWarning, showsSignedIn } from './apps.js';
 	import AppPanel, { type ConnectedApp } from './AppPanel.svelte';
@@ -80,8 +81,9 @@
 	const usable = $derived(enabled === true || (enabled === false && isAdmin));
 	/** A key works away from this device for months, so a PIN sign-in cannot make one. */
 	const mayCreate = $derived(session.me?.fullSignIn === true);
-	const endpoint = mcpAddress(window.location.origin);
-	const example = appSettings('other', endpoint, null);
+	const endpoint = $derived(mcpAddress(family.familyAddress));
+	const onlyHere = $derived(isLoopbackAddress(endpoint));
+	const example = $derived(appSettings('other', endpoint, null));
 	/** Other people's tokens that still work (an admin can revoke them). */
 	const others = $derived(
 		isAdmin ? everyone.filter((token) => live(token) && !mine.some((m) => m.id === token.id)) : [],
@@ -475,6 +477,9 @@
 						<code class="bg-idle rounded-[var(--r-ctl)] px-3 py-2 text-sm break-all"
 							>{endpoint}</code
 						>
+						{#if onlyHere}
+							<small class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</small>
+						{/if}
 					</div>
 					<div class="grid gap-1">
 						<span class="text-sm font-semibold">{t('mcp_example')}</span>

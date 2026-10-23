@@ -89,6 +89,7 @@
 		access: () => 'no',
 		accessFor: () => 'no',
 		approval: () => undefined,
+		familyAddress: () => location.origin,
 		timeZone: () => me?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
 		onEvent,
 		draftPresenter: () => undefined,

@@ -916,6 +916,7 @@
 	"mcp_howto": "For developers",
 	"mcp_howto_intro": "FamilyOS speaks MCP (the Model Context Protocol) over HTTP. In an app that supports MCP servers with a custom header, add a server with this address and send the app key as a Bearer token in the Authorization header.",
 	"mcp_endpoint": "Address",
+	"address_only_here": "This address only works on this computer. To use it from another device, set the server's FAMOS_BASE_URL to the address the family uses.",
 	"mcp_example": "Example settings",
 	"mcp_howto_safety": "Treat an app key like a password. It sees what you see, in the areas you allow the AI to use. Revoke it here if it leaks.",
 	"mcp_howto_oauth": "Apps that sign in with a FamilyOS account need no key. The family settings above turn that on, and the guide tells which apps work how.",

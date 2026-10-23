@@ -70,7 +70,7 @@
 				includeNotes,
 				...(label.trim() && { label: label.trim() }),
 			});
-			const url = new URL(result.path, location.origin);
+			const url = new URL(result.path, app.familyAddress());
 			fresh = {
 				id: result.feed.id,
 				url: url.toString(),

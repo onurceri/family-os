@@ -1428,8 +1428,11 @@ describe('family displays', () => {
 		expect(
 			(await call('GET', '/api/v1/core/displays/capabilities', undefined, kidSession)).status,
 		).toBe(403);
-		expect((await call('GET', '/api/v1/core/devices/address', undefined, kidSession)).status).toBe(
-			403,
+		// The address is not a secret of the family: any signed-in person reads it, a display does not.
+		expect((await call('GET', '/api/v1/core/devices/address', undefined, kidSession)).body).toEqual(
+			{
+				url: 'https://famos.example',
+			},
 		);
 		expect(
 			(await call('GET', '/api/v1/core/devices/address', undefined, displayCookie)).status,

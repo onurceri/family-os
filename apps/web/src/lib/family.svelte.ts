@@ -1,6 +1,7 @@
 import type { paths } from '@famos/api-client';
 import { defaultHourCycle, defaultTemperatureUnit, defaultWeekStart } from '@famos/time';
 import { api } from './api';
+import { familyAddress } from './family-address';
 import { regionFormatLocale } from './region';
 
 type Member =
@@ -32,6 +33,16 @@ class Family {
 	weekStart = $state(defaultWeekStart(browserFormatLocale()));
 	hourCycle = $state<'h12' | 'h23'>(defaultHourCycle(browserFormatLocale()));
 	temperatureUnit = $state<'celsius' | 'fahrenheit'>(defaultTemperatureUnit(browserFormatLocale()));
+	/** The address the server was told the family uses (`FAMOS_BASE_URL`); null when none is set. */
+	configuredAddress = $state<string | null>(null);
+
+	/** What to copy for another device or program: the configured address, else this browser's. */
+	get familyAddress(): string {
+		return familyAddress(
+			this.configuredAddress,
+			typeof location === 'undefined' ? '' : location.origin,
+		);
+	}
 
 	/** Takes the region formats of the family settings. */
 	apply(settings: {
@@ -47,10 +58,12 @@ class Family {
 	}
 
 	async refresh(): Promise<void> {
-		const [members, settings] = await Promise.all([
+		const [members, settings, address] = await Promise.all([
 			api.GET('/api/v1/core/members'),
 			api.GET('/api/v1/core/settings/family'),
+			api.GET('/api/v1/core/devices/address'),
 		]);
+		if (address.data) this.configuredAddress = address.data.url;
 		// The same members again keep the same array, so nothing that reads them runs again.
 		const next = members.data ?? [];
 		if (JSON.stringify(next) !== JSON.stringify(this.members)) this.members = next;

@@ -10,6 +10,11 @@ export function isLoopbackHost(hostname: string): boolean {
 	);
 }
 
+/** Whether an address (`http://localhost:3000`) only reaches the computer it is typed on. */
+export function isLoopbackAddress(url: string): boolean {
+	return isLoopbackHost(hostOf(url));
+}
+
 export interface ScreenAddress {
 	/** The address a screen should open, or null when none this page knows can be reached from another device. */
 	url: string | null;

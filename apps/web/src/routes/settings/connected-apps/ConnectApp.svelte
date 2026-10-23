@@ -18,8 +18,10 @@
 	import { ChevronLeft, ChevronRight, Check, Copy, KeyRound, Link, Plug } from '@lucide/svelte';
 	import { untrack } from 'svelte';
 	import { api } from '#lib/api.js';
+	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
+	import { isLoopbackAddress } from '../devices/screen-address.js';
 	import { APP_KINDS, type AppKind, appSettings, mcpAddress } from './app-settings.js';
 	import { signinBodyKey } from './oauth-settings.js';
 
@@ -70,7 +72,8 @@
 	let tried = $state(false);
 	const nameError = $derived(tried && !name.trim() ? FIELD_REASON.name : undefined);
 
-	const address = mcpAddress(typeof location === 'undefined' ? '' : location.origin);
+	const address = $derived(mcpAddress(family.familyAddress));
+	const onlyHere = $derived(isLoopbackAddress(address));
 	const settings = $derived(appSettings(kind, address, made?.secret ?? null));
 
 	// Each opening starts fresh; the first step is done when AI apps are already on. Only the
@@ -255,6 +258,9 @@
 				<code class="bg-idle rounded-[var(--r-ctl)] px-3 py-2 text-sm break-all"
 					>{oauth?.mcpUrl ?? address}</code
 				>
+				{#if onlyHere && !oauth?.mcpUrl}
+					<small class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</small>
+				{/if}
 				<div>{@render copyButton(oauth?.mcpUrl ?? address, 'address')}</div>
 				<div><Button variant="primary" onclick={onclose}>{t('mcp_done')}</Button></div>
 			</div>
@@ -411,6 +417,9 @@
 						{t('mcp_endpoint')}:
 						<code class="break-all" data-testid="mcp-endpoint">{address}</code>
 					</p>
+					{#if onlyHere}
+						<p class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</p>
+					{/if}
 					<div><Button variant="primary" onclick={onclose}>{t('mcp_done')}</Button></div>
 				</Step>
 			</Steps>

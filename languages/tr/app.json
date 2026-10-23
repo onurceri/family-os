@@ -916,6 +916,7 @@
 	"mcp_howto": "Geliştiriciler için",
 	"mcp_howto_intro": "FamilyOS, HTTP üzerinden MCP (Model Context Protocol) konuşur. MCP sunucularını özel başlıkla destekleyen bir uygulamada bu adresle bir sunucu ekle ve uygulama anahtarını Authorization başlığında Bearer token olarak gönder.",
 	"mcp_endpoint": "Adres",
+	"address_only_here": "Bu adres yalnızca bu bilgisayarda çalışır. Başka bir cihazdan kullanmak için sunucunun FAMOS_BASE_URL ayarını ailenin kullandığı adrese getir.",
 	"mcp_example": "Örnek ayar",
 	"mcp_howto_safety": "Uygulama anahtarına bir parola gibi davran. Yapay zekânın kullanmasına izin verdiğin alanlarda senin gördüklerini görür. Sızarsa buradan iptal et.",
 	"mcp_howto_oauth": "FamilyOS hesabıyla giriş yapan uygulamalar anahtara ihtiyaç duymaz. Bunu yukarıdaki aile ayarları açar; hangi uygulamanın nasıl çalıştığını kılavuz anlatır.",
