@@ -329,7 +329,11 @@ export const refreshJob = defineJob({
 				await record({ last_fetched_at: now, last_error: null });
 			} else {
 				const { timeZone } = await ctx.family.settings();
-				const parsed = parseCalendar(response.text, timeZone, now);
+				let skipped = 0;
+				const parsed = parseCalendar(response.text, timeZone, now, () => skipped++);
+				if (skipped > 0) {
+					log.warn({ reason: 'rule_too_dense', series: skipped }, 'calendar feed series skipped');
+				}
 				const rows: ExternalEventRow[] = parsed.map((e) => ({
 					subscription_id: sub.id,
 					uid: e.uid,

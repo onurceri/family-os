@@ -79,6 +79,16 @@ export const MAX_EVENTS = 5000;
 const EXPAND_PAST_DAYS = 31;
 const EXPAND_AHEAD_DAYS = 400;
 const EXPAND_MAX = 800;
+/**
+ * Steps one series may take through ical.js, counting the ones before the window. A daily event
+ * since 1990 needs about 13,000; a rule finer than that (every second from 1970) would take
+ * millions and is the shape of an attack, not a calendar.
+ */
+const EXPAND_MAX_STEPS = 30_000;
+/** Seconds in one step of each rule frequency finer than a day; coarser ones cannot run away. */
+const FINE_STEP_SECONDS: Record<string, number> = { SECONDLY: 1, MINUTELY: 60, HOURLY: 3600 };
+/** Wall time one series may take. The process is single-threaded, so nothing else can run meanwhile. */
+const EXPAND_MAX_MS = 3000;
 const DAY = 86_400_000;
 
 const clip = (value: string | null | undefined, max: number) => {
@@ -253,7 +263,16 @@ function representable(row: Omit<ParsedEvent, 'fingerprint'>): boolean {
 	}
 }
 
-export function parseCalendar(text: string, familyZone: string, now: number): ParsedEvent[] {
+/**
+ * `onSkipped` hears of each series left out because its rule cannot be expanded within bounds; the
+ * rest of the feed is still read.
+ */
+export function parseCalendar(
+	text: string,
+	familyZone: string,
+	now: number,
+	onSkipped: (uid: string, reason: 'rule_too_dense') => void = () => {},
+): ParsedEvent[] {
 	let root: Component;
 	try {
 		root = new ICAL.Component(ICAL.parse(text));
@@ -263,13 +282,18 @@ export function parseCalendar(text: string, familyZone: string, now: number): Pa
 	if (root.name !== 'vcalendar') throw new NotCalendarError();
 	try {
 		for (const vtz of root.getAllSubcomponents('vtimezone')) ICAL.TimezoneService.register(vtz);
-		return readEvents(root, familyZone, now);
+		return readEvents(root, familyZone, now, onSkipped);
 	} finally {
 		ICAL.TimezoneService.reset();
 	}
 }
 
-function readEvents(root: Component, familyZone: string, now: number): ParsedEvent[] {
+function readEvents(
+	root: Component,
+	familyZone: string,
+	now: number,
+	onSkipped: (uid: string, reason: 'rule_too_dense') => void,
+): ParsedEvent[] {
 	const masters = new Map<string, Source>();
 	const overrides = new Map<string, Source[]>();
 	for (const component of root.getAllSubcomponents('vevent')) {
@@ -405,9 +429,26 @@ function readEvents(root: Component, familyZone: string, now: number): ParsedEve
 				return [{ key, over: isCancelled(o.component) ? null : over }];
 			})
 			.sort((a, b) => (a.key < b.key ? -1 : 1));
+		// Counting the steps to the window beforehand skips a hopeless rule without spending any.
+		const rule = s.component.getFirstPropertyValue('rrule');
+		const stepSeconds = FINE_STEP_SECONDS[String((rule as { freq?: string } | null)?.freq)];
+		const interval = Number((rule as { interval?: number } | null)?.interval) || 1;
+		const first = s.event.startDate.toUnixTime() * 1000;
+		if (stepSeconds && (from - first) / 1000 / (stepSeconds * interval) > EXPAND_MAX_STEPS) {
+			onSkipped(s.event.uid, 'rule_too_dense');
+			return;
+		}
 		const iterator = s.event.iterator();
+		const started = performance.now();
+		const found: Omit<ParsedEvent, 'fingerprint'>[] = [];
 		let count = 0;
+		let steps = 0;
 		for (let next = iterator.next(); next && count < EXPAND_MAX; next = iterator.next()) {
+			// A rule that cannot reach the window in bounds is unrepresentable: none of it is kept.
+			if (++steps > EXPAND_MAX_STEPS || performance.now() - started > EXPAND_MAX_MS) {
+				onSkipped(s.event.uid, 'rule_too_dense');
+				return;
+			}
 			const m = moment(next, familyZone);
 			const at = m.date ? Date.parse(m.date) : (m.ms as number);
 			if (at > to) break;
@@ -445,15 +486,16 @@ function readEvents(root: Component, familyZone: string, now: number): ParsedEve
 								DAY,
 						)
 					: spanDays;
-				add({ ...single, startDate: first, endDate: addDays(first, days) });
+				found.push({ ...single, startDate: first, endDate: addDays(first, days) });
 			} else {
 				const first = changed
 					? (m.ms as number) + ((changed.startsAt as number) - (change?.key as number))
 					: (m.ms as number);
 				const span = changed ? (changed.endsAt as number) - (changed.startsAt as number) : spanMs;
-				add({ ...single, startsAt: first, endsAt: first + span });
+				found.push({ ...single, startsAt: first, endsAt: first + span });
 			}
 		}
+		for (const r of found) add(r);
 	}
 
 	for (const [uid, s] of masters) {
