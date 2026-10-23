@@ -4,7 +4,7 @@ On your home network, `http://<server>:3000` works in any browser. To **install 
 
 1. Pick option A or B below.
 2. Set `FAMOS_BASE_URL` to the address people will use and restart (`docker compose up -d`).
-3. If people also reach FamilyOS by another address (for example the server's IP address at home), list it in `FAMOS_TRUSTED_ORIGINS`, separated by commas. FamilyOS checks where requests come from against these addresses.
+3. If people also use another address (e.g. the server's IP at home), list it in `FAMOS_TRUSTED_ORIGINS`, comma-separated. Request origins are checked against these.
 
 ## Option A: Tailscale (no open ports)
 
