@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/readme-today.webp" width="100%" alt="Today: the clock, a sentence about the day, who is home, and the next thing with a countdown"><br>
+<img src="docs/images/readme-today.webp" width="100%" alt="Today: the clock, a sentence about the day, the weather by the hour, and the next thing with a countdown"><br>
 <b>Today</b><br>
 The next thing, everyone's day, chores and what needs you.
 </td>
@@ -38,9 +38,9 @@ A shared calendar with a colour per person, repeats and reminders.
 Share a message, photo or voice note. Tick the suggestions; undo anything.
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/hermes-side-by-side.webp" width="100%" alt="Hermes Agent answering from FamilyOS's shopping list and meal plan, next to FamilyOS"><br>
+<img src="docs/images/readme-your-ai.webp" width="100%" alt="The OpenCode terminal asked what is for dinner tomorrow and to put milk and eggs on the shopping list; FamilyOS shows the suggestion, Milk and Eggs, waiting with an Add to list button"><br>
 <b>Your own AI</b><br>
-Connect Claude, Hermes Agent or any MCP client. Its changes are suggestions too.
+Connect Claude, Hermes Agent, OpenCode or any MCP client. Its changes wait for your approval.
 </td>
 </tr>
 <tr>
@@ -50,7 +50,7 @@ Connect Claude, Hermes Agent or any MCP client. Its changes are suggestions too.
 A wall tablet or an old TV shows the day. It can never change anything.
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/readme-home-assistant.webp" width="100%" alt="Home Assistant settings: the sensors and doors chosen for Today and the people who share being home"><br>
+<img src="docs/images/readme-home-assistant.webp" width="100%" alt="Today with Home Assistant: who is home or away, and the house's temperature, humidity, doors and a kitchen light switch"><br>
 <b>Home Assistant</b><br>
 Sensors and who is home on Today; switch only what you allow.
 </td>

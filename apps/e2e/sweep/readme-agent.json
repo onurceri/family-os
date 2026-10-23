@@ -1,0 +1,37 @@
+{
+	"client": "opencode",
+	"model": "opencode/deepseek-v4.1-flash-free",
+	"question": "What's for dinner tomorrow? And put milk and eggs on the shopping list.",
+	"calls": [
+		{
+			"tool": "core_today",
+			"input": {}
+		},
+		{
+			"tool": "kitchen_mealPlan",
+			"input": {
+				"days": 2
+			}
+		},
+		{
+			"tool": "lists_addShoppingItems",
+			"input": {
+				"items": [
+					{
+						"title": "Milk",
+						"category": "dairy"
+					},
+					{
+						"title": "Eggs",
+						"category": "dairy"
+					}
+				]
+			}
+		},
+		{
+			"tool": "lists_shoppingList",
+			"input": {}
+		}
+	],
+	"answer": "Tomorrow (Saturday) dinner is lentil soup. Milk (2) is already on the shopping list, so I've suggested adding eggs (the last eggs were marked bought) — both changes are waiting for approval."
+}

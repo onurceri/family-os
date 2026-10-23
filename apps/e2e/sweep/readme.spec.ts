@@ -1,12 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { pairDisplay } from '../support/display.ts';
 import { startFakeHomeAssistant } from '../support/fake-ha.ts';
 import { PRELOAD, startFakeOpenMeteo } from '../support/fake-open-meteo.ts';
 import { api, expect, setUpAndSignIn, test } from '../support/fixtures.ts';
+import { callTool, createAiAppKey } from '../support/mcp-app.ts';
 import { signInAs } from '../support/members.ts';
 import { seedSampleFamily } from '../support/sample-data.ts';
 import { day, standAt } from '../support/today.ts';
@@ -23,7 +24,10 @@ import { day, standAt } from '../support/today.ts';
  * The six cards share one aspect (16:10) and are cropped to what their line says. Home Assistant
  * is released on its own and is not in the built image, so the script places the package it built
  * (extensions/homeassistant/dist) next to the others and lists it as offered, in dist/extensions
- * (build output, rewritten by the next `pnpm build`).
+ * (build output, rewritten by the next `pnpm build`). The weather comes from a fake Open-Meteo
+ * (support/fake-open-meteo.ts). "Your own AI" replays what a real MCP client did
+ * (readme-agent.json, recorded with OpenCode in a sandbox against readme-agent-server.spec.ts)
+ * against the sample family, so FamilyOS holds the suggestions it made.
  */
 
 const ROOT = resolve(import.meta.dirname, '../../..');
@@ -32,8 +36,8 @@ const OUT = process.env.FAMOS_README_OUT ?? join(ROOT, 'docs/images');
 const ONLY = process.env.FAMOS_README_ONLY?.split(',').map((s) => s.trim());
 const wanted = (name: string) => !ONLY || ONLY.includes(name);
 
-/** A card is 16:10: Today is shot in a 1280 x 800 window, the other pages in this one. */
-const WINDOW = { width: 1100, height: 688 };
+/** A window narrow enough for the icon sidebar, so a card is not mostly sidebar. */
+const TABLET = { width: 920, height: 600 };
 const TOKEN = 'readme-token';
 const MAX_BYTES = 150_000;
 
@@ -58,6 +62,15 @@ async function save(name: string, take: (path: string) => Promise<unknown>) {
 	}
 }
 
+/** A cut of the page, 16:10, from `x` and `y` (by default the page without the icon sidebar of a 920 px window). */
+const main = (page: Page, name: string, y = 0, width = 836, x = 84) =>
+	save(name, (path) =>
+		page.screenshot({
+			path,
+			clip: { x, y, width, height: Math.round(width / 1.6) },
+		}),
+	);
+
 async function open(page: Page, path: string, time = '15:20') {
 	await standAt(page, time);
 	await page.goto(path);
@@ -65,8 +78,18 @@ async function open(page: Page, path: string, time = '15:20') {
 	await page.waitForTimeout(400);
 }
 
+/** Today's blocks that are not in `keep`: what a picture of part of Today hides. */
+async function blockIds(page: Page, keep: string[]) {
+	await open(page, '/settings/appearance');
+	const all = await page
+		.locator('#today-blocks input[role="switch"]')
+		.evaluateAll((inputs) => inputs.map((i) => i.id.replace(/^my-blocks-/, '')));
+	return all.filter((id) => !keep.includes(id));
+}
+
 test('the pictures of the README', async ({ page, browser, family, model }) => {
 	test.setTimeout(300_000);
+	page.setDefaultTimeout(20_000);
 	await page.setViewportSize({ width: 1440, height: 900 });
 	await setUpAndSignIn(page);
 
@@ -208,19 +231,18 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 
 		const hide = (hidden: string[] | null) =>
 			api(page, 'POST', '/api/v1/actions/core.setMyTodayBlocks', { hidden });
-		// Today: the whole window, with the parts that make it tall left out, so every card ends
-		// inside the frame.
+		// Today: the clock, the day in a sentence, the weather and the next thing, without the sidebar.
 		if (wanted('readme-today')) {
-			await page.setViewportSize({ width: 1600, height: 1000 });
-			await hide(['photo', 'board.today', 'nextDays', 'homeassistant.values']);
+			await page.setViewportSize({ width: 1160, height: 760 });
+			await hide(await blockIds(page, ['clock', 'greeting', 'weather', 'next']));
 			await open(page, '/');
-			await save('readme-today', (path) => page.screenshot({ path }));
+			await main(page, 'readme-today', 10, 890, 270);
 			await hide(null);
 		}
 
 		// Calendar: a week, from the morning on.
 		if (wanted('readme-calendar')) {
-			await page.setViewportSize(WINDOW);
+			await page.setViewportSize({ width: 1100, height: 520 });
 			await open(page, '/calendar');
 			// The week from 10 AM, just under the day headers, so no event is cut at the top.
 			await page.evaluate(() => {
@@ -240,7 +262,7 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 						hour.getBoundingClientRect().top - header.getBoundingClientRect().bottom - 6;
 			});
 			await page.waitForTimeout(300);
-			await save('readme-calendar', (path) => page.screenshot({ path }));
+			await main(page, 'readme-calendar', 0, 806, 270);
 		}
 
 		// Quick add: one whole capture group, from its header to its Add selected row.
@@ -267,16 +289,12 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 
 		// Home Assistant as the family sees it: who is home, and the house's values and a switch.
 		if (wanted('readme-home-assistant')) {
-			await page.setViewportSize(WINDOW);
-			await open(page, '/settings/appearance');
-			const all = await page
-				.locator('#today-blocks input[role="switch"]')
-				.evaluateAll((inputs) => inputs.map((i) => i.id.replace(/^my-blocks-/, '')));
+			await page.setViewportSize(TABLET);
 			await hide(
-				all.filter((id) => !['clock', 'family'].includes(id) && !id.startsWith('homeassistant')),
+				await blockIds(page, ['family', 'homeassistant.presence', 'homeassistant.values']),
 			);
 			await open(page, '/');
-			await save('readme-home-assistant', (path) => page.screenshot({ path }));
+			await main(page, 'readme-home-assistant', 12);
 			await hide(null);
 		}
 
@@ -342,6 +360,60 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 			);
 			await save('readme-styles', (path) => row.screenshot({ path }));
 			await row.close();
+		}
+		// Your own AI: what a real MCP client did (sweep/readme-agent.json, recorded with OpenCode in
+		// a sandbox) is replayed against the sample family, so FamilyOS holds the same suggestions;
+		// the picture sets the client's lines above FamilyOS's own cards.
+		if (wanted('readme-your-ai')) {
+			const recorded = JSON.parse(
+				await readFile(join(import.meta.dirname, 'readme-agent.json'), 'utf8'),
+			) as {
+				client: string;
+				question: string;
+				calls: { tool: string; input: unknown }[];
+				answer: string;
+			};
+			const secret = await createAiAppKey(page, 'OpenCode');
+			for (const call of recorded.calls) await callTool(family.url, secret, call.tool, call.input);
+			// The card at its own width (a phone-sized window), from its title to its buttons.
+			await page.setViewportSize({ width: 596, height: 1200 });
+			await open(page, '/add');
+			const group = page.getByRole('article', { name: 'OpenCode' }).first();
+			await group.scrollIntoViewIfNeeded();
+			const suggestion = group.locator('article').first();
+			const box = await suggestion.boundingBox();
+			const title = await group.getByRole('heading', { name: '2 items' }).boundingBox();
+			if (!box || !title) throw new Error('the suggestion is not on the page');
+			const top = title.y - 4;
+			const shot = await page.screenshot({
+				clip: { x: box.x, y: top, width: box.width, height: box.y + box.height - top },
+			});
+			const html = (text: string) =>
+				text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			const canvas = await browser.newContext({
+				viewport: { width: 592, height: 370 },
+				deviceScaleFactor: 3,
+			});
+			const view = await canvas.newPage();
+			await view.setContent(`<!doctype html><html><head><style>
+				html, body { margin: 0; height: 370px; width: 592px; overflow: hidden; background: #ecebe6; }
+				body { display: flex; flex-direction: column; }
+				.terminal { background: #17181a; color: #e8e8e6; padding: 8px 14px 8px; font: 15px/20px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+				.terminal .name { color: #8f9399; }
+				.terminal .tool { color: #8f9399; }
+				.terminal .answer { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px; }
+				.suggestion { flex: 1; overflow: hidden; padding: 6px 14px 0; box-sizing: border-box; }
+				.suggestion img { width: 96%; display: block; margin: 0 auto; }
+			</style></head><body>
+				<div class="terminal">
+					<div><span class="name">${html(recorded.client)}</span> &gt; ${html(recorded.question)}</div>
+					${recorded.calls.map((c) => `<div class="tool">familyos · ${html(c.tool)}</div>`).join('')}
+					<div class="answer">${html(recorded.answer)}</div>
+				</div>
+				<div class="suggestion"><img src="data:image/png;base64,${shot.toString('base64')}"></div>
+			</body></html>`);
+			await save('readme-your-ai', (path) => view.screenshot({ path }));
+			await canvas.close();
 		}
 	} finally {
 		await ha.close();

@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
 	testDir: './sweep',
-	testMatch: 'readme.spec.ts',
+	testMatch: /readme(-agent-server)?\.spec\.ts/,
 	reporter: 'list',
 	timeout: 300_000,
 	globalSetup: './support/sweep-setup.ts',

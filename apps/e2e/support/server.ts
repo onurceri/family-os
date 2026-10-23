@@ -50,7 +50,8 @@ export async function startFamilyOS(options: {
 		FAMOS_WEB_DIR: WEB,
 		FAMOS_BASE_URL: url,
 		FAMOS_SETUP_CODE: SETUP_CODE,
-		HOST: '127.0.0.1',
+		// FAMOS_E2E_HOST=0.0.0.0 lets a sandbox reach the server (sweep/readme-agent-server.spec.ts).
+		HOST: process.env.FAMOS_E2E_HOST ?? '127.0.0.1',
 		PORT: String(port),
 		LOG_LEVEL: process.env.FAMOS_E2E_LOG ? 'info' : 'warn',
 		FAMOS_AI_PROVIDER: 'openai-compatible',
