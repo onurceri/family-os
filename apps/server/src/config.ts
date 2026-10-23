@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, link, mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { type ProviderInput, ProviderKindSchema } from '@famos/adapters/llm-aisdk';
 import type { ModelRole } from '@famos/sdk';
@@ -192,14 +192,21 @@ async function persistedSecret(
 	const existing = await read();
 	if (existing) return existing;
 	const secret = randomBytes(bytes).toString('base64url');
+	// Written whole to a file of its own first, then linked into place: a link appears complete or
+	// not at all and fails if the name exists, so a process starting at the same moment never
+	// reads a half-written secret.
+	const draft = `${path}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
+	await writeFile(draft, `${secret}\n`, { mode: 0o600, flag: 'wx' });
+	await chmod(draft, 0o600);
 	try {
-		await writeFile(path, `${secret}\n`, { mode: 0o600, flag: 'wx' });
+		await link(draft, path);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
 		const winner = await read();
 		if (winner) return winner;
 		throw unusable('vanished while starting');
+	} finally {
+		await unlink(draft).catch(() => {});
 	}
-	await chmod(path, 0o600);
 	return secret;
 }
