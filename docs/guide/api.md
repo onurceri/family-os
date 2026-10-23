@@ -1,13 +1,11 @@
 # The API for apps and scripts
 
-Programs can read and change your family's calendar, shopping lists, tasks, chores and board through an API. Home Assistant uses it; so can a script, a shortcut on a phone, or anything you write. This page is for whoever sets such a program up. You do not need it to use FamilyOS.
-
-Every program has a [connected app](connected-apps.md) of its own: a key, a role that limits what it may do, and a mode that says whether its changes happen at once or wait for a person. The API gives a program nothing a person with that role could not do, and never anything only people do (approving suggestions, managing people, keys or devices).
+Programs (Home Assistant, a script, a phone shortcut) read and change your calendar, shopping lists, tasks, chores and board through an API. Each program is a [connected app](connected-apps.md): a key, a role, and a mode (changes apply, or wait for a person). It can do nothing a person with that role could not, and never what only people do (approve suggestions, manage people, keys or devices).
 
 ## Set up
 
-1. As an admin, open **Settings → You → Connected apps** and press **Add an app**. Choose a name, a role and a mode, and copy the key when it appears. It is shown once.
-2. Use your FamilyOS address and the key. The API lives under `/api/public/v1`:
+1. As an admin: **Settings → You → Connected apps → Add an app**. Choose a name, role and mode; copy the key (shown once).
+2. The API lives under `/api/public/v1`:
 
 ```bash
 export FAMOS=https://family.example.com/api/public/v1
@@ -15,9 +13,9 @@ export KEY=famos_...            # the key you copied
 curl -H "Authorization: Bearer $KEY" $FAMOS/
 ```
 
-The key goes in the `Authorization` header and nowhere else: not in the address, and a signed-in browser session does nothing here. (The app's own API under `/api/v1` is the other way round: it takes the session, and refuses a key.) Browsers cannot call the API from another web page; it is meant for programs.
+The key goes only in the `Authorization` header, never the address; a browser session does nothing here (the app's own `/api/v1` takes the session and refuses a key). Other web pages cannot call it from a browser.
 
-The first call, `GET /`, tells you what to expect:
+`GET /` tells you what to expect:
 
 ```json
 {
@@ -36,20 +34,20 @@ The first call, `GET /`, tells you what to expect:
 }
 ```
 
-`actsFor` lists the people this app may act for (only those still in the family), each with the `memberId` to send in `X-FamilyOS-On-Behalf-Of`; it is empty when the app may act for no one. `operations` lists only what **this** key may do now: the app's role decides, and the member it acts for, if it named one. `outcome` is `read`, `apply` (the change is made) or `draft` (it waits for a person to approve it). An extension you switched off in **Settings → Features** shows `"enabled": false` and its operations are gone; calling one answers `404` with the code `feature_off`.
+- `actsFor`: people the app may act for (still in the family), each `memberId` for `X-FamilyOS-On-Behalf-Of`; empty if none.
+- `operations`: only what **this** key may do now. `outcome` is `read`, `apply` or `draft` (waits for a person).
+- An extension switched off in **Settings → Features** shows `"enabled": false`, loses its operations, and answers `404` `feature_off`.
 
-The full description of every operation is the OpenAPI document: `GET /openapi.json` on the same address, and `apps/server/public-openapi.json` in the source. Client libraries are generated from it.
+Every operation is described in the OpenAPI document: `GET /openapi.json`, or `apps/server/public-openapi.json` in the source; generate client libraries from it.
 
 ## The rules every answer follows
 
-- **Time.** The family has one time zone, and every answer carries it as `timeZone`. A moment is an RFC 3339 text with its offset (`2026-10-21T09:00:00+03:00`); a whole day is a plain date (`2026-10-21`). When you add or change something, you send the date and the time as the family writes them (`"date": "2026-10-21", "startTime": "09:00"`); the answer gives both those and the moment (`start`, `end`).
-- **Ids** look like `cal_event_0192…`, `task_…`, `shop_item_…`, `chore_…`, `board_note_…`, `member_…`. Use them as they are.
-- **Lists** answer `{ "items": […], "next": null, "timeZone": … }`. A list has at most 100 items a page (`?limit=` up to 500); when `next` is not null, pass it back as `?cursor=` for the next page.
-- **Changes** answer `{ "status": "applied", "result": …, "timeZone": … }`, or `{ "status": "drafted", "draftId": … }` with status `202` when the change waits for a person.
-- **Names.** The shopping list made when FamilyOS was installed has no name of its own; the API gives it the name in your family's language and says `"isDefault": true`.
-- **Errors** are `{ "error": { "code": …, "message": … } }`. The `code` is one of a short, fixed list ([below](#errors-and-limits)) and is what a program should act on; the `message` is for people. A request that is wrong says which fields: `"fields": [{ "path": "items[0].title", "message": "…" }]`.
-
-What each code means for a program, and the limits that apply, are under [Errors and limits](#errors-and-limits).
+- **Time.** One family time zone, carried as `timeZone` in every answer. A moment is RFC 3339 with offset (`2026-10-21T09:00:00+03:00`); a whole day is a plain date (`2026-10-21`). Send dates and times as the family writes them (`"date": "2026-10-21", "startTime": "09:00"`); answers give those and the moment (`start`, `end`).
+- **Ids** look like `cal_event_0192…`, `task_…`, `shop_item_…`, `chore_…`, `board_note_…`, `member_…`. Use as is.
+- **Lists** answer `{ "items": […], "next": null, "timeZone": … }`, at most 100 items a page (`?limit=` up to 500). Pass a non-null `next` back as `?cursor=` until it is `null`. A cursor belongs to the same question: do not reuse it with other parameters.
+- **Changes** answer `{ "status": "applied", "result": …, "timeZone": … }`, or `202` `{ "status": "drafted", "draftId": … }` when they wait for a person.
+- **Names.** The installation's shopping list has no name of its own; the API names it in the family's language with `"isDefault": true`.
+- **Errors** are `{ "error": { "code": …, "message": … } }` ([below](#errors-and-limits)). Act on `code`; `message` is for people. A wrong request lists `"fields": [{ "path": "items[0].title", "message": "…" }]`.
 
 ## Reading
 
@@ -71,9 +69,9 @@ curl -H "Authorization: Bearer $KEY" $FAMOS/chores
 curl -H "Authorization: Bearer $KEY" $FAMOS/board/notes
 ```
 
-An occurrence is one date of an event: `{ "eventId": …, "recurrenceId": "2026-10-28T16:00:00+03:00", … }`. The `recurrenceId` is the moment (or day) that date was due and does not change when the date is moved. A date moved out of a repeating event is an event of its own; it names the series with `seriesId`, and `seriesRecurrenceId` says when the series had that date start before it was moved (an instant, or a day for an all-day event, written like `recurrenceId`); events and occurrences carry it too.
+An occurrence is one date of an event: `{ "eventId": …, "recurrenceId": "2026-10-28T16:00:00+03:00", … }`. `recurrenceId` is when that date was due and does not change if the date moves. A date moved out of a repeating event is an event of its own: `seriesId` names the series and `seriesRecurrenceId` when the series had it (instant, or day if all-day, like `recurrenceId`). Events and occurrences carry both.
 
-**Ask only when something changed.** Every list answers with an `ETag`. Send it back as `If-None-Match` and an unchanged list answers `304` with no body, which is cheap to poll:
+**Ask only when something changed.** Every list has an `ETag`, which changes when what it shows, the day, the family's settings or the key's role changes. Send it as `If-None-Match`; an unchanged list answers `304` with no body:
 
 ```bash
 curl -i -H "Authorization: Bearer $KEY" -H 'If-None-Match: "1a2b3c"' $FAMOS/lists/tasks
@@ -118,13 +116,13 @@ curl -X PATCH -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json
 curl -X DELETE -H "Authorization: Bearer $KEY" $FAMOS/board/notes/board_note_0192…
 ```
 
-A note may be changed or removed by the person who put it up and by anyone who manages the board, as in the app. A note an app puts up on its own (not acting for a member) is the app's: the app may change or remove it, the board shows the app's name as its author, and `createdByApp` names it in the API; a note put up for a member stays that member's. Send the note's `version` as `If-Match` to change or remove it only if nobody changed it since.
+- A note can be changed or removed by whoever put it up and by anyone who manages the board. A note an app puts up on its own is the app's (the board shows the app's name; the API sets `createdByApp`); one put up for a member stays theirs.
+- Verbs: `POST` adds or does something (`…/complete`, `…/reopen`, `…/uncheck`), `PATCH` changes the fields you send, `PUT` replaces the whole thing, `DELETE` removes it.
+- One date of a repeating event: `DELETE …/calendar/events/{id}?occurrence=<recurrenceId>` (write `+` in an offset as `%2B`); without `occurrence` the whole series goes.
 
-The same words everywhere: `POST` adds or does something (`…/complete`, `…/reopen`, `…/uncheck`), `PATCH` changes the fields you send and keeps the rest, `PUT` replaces the whole thing, `DELETE` removes it. Deleting one date of a repeating event is `DELETE …/calendar/events/{id}?occurrence=<recurrenceId>` (write `+` in an offset as `%2B` in an address); without `occurrence` the whole series goes.
+**Repeat a request safely.** Send `Idempotency-Key: <unique>` (letters, digits, `_`, `-`, up to 100). A repeat of the same request returns the first answer (header `Idempotent-Replayed: true`) and changes nothing twice; the same key with another request is `422`. Keys belong to the sending app and are kept a week.
 
-**Repeat a request safely.** Add `Idempotency-Key: <something unique>` (letters, digits, `_` and `-`, up to 100). If the same request arrives again, for instance after a network error, you get the first answer back (with the header `Idempotent-Replayed: true`) and nothing happens twice. A key is yours alone, and is kept for a week.
-
-**Change only what you saw.** Every thing has a `version` that goes up with each write. Send it as `If-Match` and a change to something that moved on is refused with `412 precondition_failed` (the current version is in `currentVersion`) instead of overwriting what someone else did. Replacing a whole thing with `PUT` always needs `If-Match`; with `PATCH` and the rest it is your choice. Every change answers with the new version in the `ETag` header.
+**Change only what you saw.** Every thing has a `version` that rises with each write. Send it as `If-Match`; a change to something that moved on is refused with `412 precondition_failed` (`currentVersion` has the current one). `PUT` always needs `If-Match`; `PATCH`, `POST` commands and `DELETE` accept it; an operation that cannot compare answers `400`. Every change returns the new version in the `ETag` header.
 
 ```bash
 curl -X PUT -H "Authorization: Bearer $KEY" -H 'If-Match: "v3"' -H 'Content-Type: application/json' \
@@ -133,17 +131,15 @@ curl -X PUT -H "Authorization: Bearer $KEY" -H 'If-Match: "v3"' -H 'Content-Type
 
 ## When a change waits for approval
 
-An app in **Changes wait for approval** mode, or acting for a member whose role may only suggest (a child), does not change anything at once: the answer is `202` with a `draftId`, and the change appears among the suggestions for a person to approve. Follow it:
+An app in **Changes wait for approval** mode, or acting for a member who may only suggest (a child), changes nothing at once: the answer is `202` with a `draftId`, and a person approves it among the suggestions. The API can never approve one.
 
 ```bash
 curl -H "Authorization: Bearer $KEY" $FAMOS/drafts/draft_0192…
 ```
 
-`status` is `waiting`, `applied` (with the `result` the change would have answered), `rejected`, `undone`, `expired` or `failed`. A suggestion can be read by id only by the app (and the member) that made it. The API can never approve one: only a person does.
+`status` is `waiting`, `applied` (with the `result` the change would have answered), `rejected`, `undone`, `expired` or `failed`. A suggestion can be read by id only by the app (and the member) that made it.
 
-### The suggestions that wait
-
-A program that shows what waits for a decision (a counter, a card on a dashboard) lists them:
+**The suggestions that wait.** A program that shows what waits for a decision lists them:
 
 ```bash
 curl -H "Authorization: Bearer $KEY" "$FAMOS/drafts?status=waiting"
@@ -162,16 +158,16 @@ curl -H "Authorization: Bearer $KEY" "$FAMOS/drafts?status=waiting"
 }
 ```
 
-It is the list Quick add shows, as far as this key may see it. An app on its own sees the suggestions it made as itself; the ones it made for a member, it sees when it acts for that member. An app acting for a member (`X-FamilyOS-On-Behalf-Of`) sees what that member would see in the app, their own and those they may decide, and never more than the app's role allows. A suggestion whose day has passed, or whose subject is gone, no longer waits and is not listed.
-
-- `status` is `waiting`, or `failed` for a suggestion that was approved but could not be made and waits to be tried again.
-- `title` is what it suggests, `subject` what it is about by name (when known), `proposedBy` a person's name, an app's name or `Leo via Hall script`, and null when nobody is named. All are in the family's language.
-- `canDecide` is always `false` here: approving and rejecting happen in FamilyOS, by a person.
-- The list pages like the others, newest first, and answers with an `ETag` so a poll costs little.
+- It is Quick add's list as far as this key may see. An app alone sees what it made as itself, and what it made for a member when acting for them. Acting for a member (`X-FamilyOS-On-Behalf-Of`) it sees what that member sees (their own and those they may decide), never more than its role allows.
+- Suggestions whose day passed or whose subject is gone are not listed.
+- `status`: `waiting`, or `failed` (approved, could not be made, will be retried).
+- `title` is the suggestion, `subject` what it is about (when known), `proposedBy` a person, an app or `Leo via Hall script` (null if nobody). All in the family's language.
+- `canDecide` is always `false`: people decide in FamilyOS.
+- Pages like other lists, newest first, with an `ETag`.
 
 ## What changed since I looked
 
-For a program that keeps its own copy (Home Assistant), polling `GET /changes` is cheaper than reading everything again:
+For a program with its own copy, poll `GET /changes` instead of rereading everything:
 
 ```bash
 curl -H "Authorization: Bearer $KEY" $FAMOS/changes                 # {"changes":[],"cursor":812,…}: where "now" is
@@ -179,15 +175,20 @@ curl -H "Authorization: Bearer $KEY" $FAMOS/changes                 # {"changes"
 curl -H "Authorization: Bearer $KEY" "$FAMOS/changes?since=812"
 ```
 
-The answer lists the things that changed since the cursor, once each: `{ "extension": "calendar", "entity": "event", "id": "cal_event_…", "op": "upsert" }`; `upsert` means read it again, `delete` means it is gone for you. A subscribed calendar changes as a whole: a `subscription` that changed or went means read the occurrences again. Suggestions that expired or failed show as `draft` changes. Ignore a kind of thing you do not know. Pass the new `cursor` next time; if `more` is true, ask again at once. You hear only of what this key may see. Changes are kept for 30 days; a cursor older than that answers `410 gone`, and the program reads everything again.
+It lists each thing changed since the cursor once: `{ "extension": "calendar", "entity": "event", "id": "cal_event_…", "op": "upsert" }`. `upsert`: read it again; `delete`: gone for you.
+
+- A changed or removed `subscription` (subscribed calendar): reread the occurrences.
+- Expired or failed suggestions show as `draft`.
+- Ignore kinds you do not know.
+- Send the new `cursor` next time; if `more` is true, ask again at once.
+- Only what this key may see.
+- Kept 30 days; an older cursor answers `410 gone`: reread everything.
 
 ## Acting for a member
 
-If the app may act for Leo, add `X-FamilyOS-On-Behalf-Of: <Leo's id>` and the request is Leo's: what both Leo and the app's role allow, his own things stay his, and the suggestion says "Leo via Hall script". Naming someone the app may not act for is refused (`403`, `reason: on_behalf`).
+Add `X-FamilyOS-On-Behalf-Of: <Leo's id>` and the request is Leo's: only what both Leo and the app's role allow, his things stay his, suggestions say "Leo via Hall script". Someone the app may not act for is refused (`403`, `reason: on_behalf`).
 
 ## Errors and limits
-
-Every error is `{ "error": { "code": …, "message": … } }`, and the status says the same as the code. A program acts on the `code`.
 
 | Code | Status | What it means, and what to do |
 |---|---|---|
@@ -204,18 +205,10 @@ Every error is `{ "error": { "code": …, "message": … } }`, and the status sa
 | `unavailable` | 503 | Try again later. |
 | `internal` | 500 | Something went wrong on the server. Try again later; if it stays, tell whoever runs FamilyOS. |
 
-**Rate limit.** A key may make 300 requests a minute. Beyond that every request answers `429` with `Retry-After` until the minute is over. Wrong keys are counted per address: after 30 a minute, that address is turned away for a while (also `429` with `Retry-After`). A program that polls should send `If-None-Match` (a `304` is cheap) or use `GET /changes`.
-
-**Ranges.** `GET /calendar/occurrences` takes at most 62 days between `from` and `to`; a longer range answers `400` with `fields`.
-
-**Paging.** A list answers at most `limit` items (100 by default, 500 at most) and a `next` cursor when there are more; send it back as `cursor`. A cursor means "the page after this one" for the same question: do not reuse it with other parameters. Following `next` until it is `null` reads the whole list.
-
-**ETags.** A list answers with an `ETag` that changes when something it shows changed, or when the day, the family's settings or the key's role did. Send it as `If-None-Match` for `304`. One thing has the `ETag` of its version, `"v3"`.
-
-**`If-Match`.** Send a thing's version to change it only if it is still that version (`412` otherwise). `PUT` always needs it; `PATCH`, `POST` commands and `DELETE` accept it. Not every operation can compare (it says `400` when it cannot).
-
-**`Idempotency-Key`.** Send a unique key (letters, digits, `_`, `-`, up to 100) with a change you might repeat. The same key with the same request answers the first answer again (header `Idempotent-Replayed: true`) and changes nothing twice; the same key with another request is `422`. Keys are kept for a week and belong to the key of the app.
+**Limits**
+- **Rate.** 300 requests a minute per key; beyond that `429` with `Retry-After` until the minute ends. Wrong keys count per address: after 30 a minute, that address is turned away for a while (`429`, `Retry-After`). Pollers: send `If-None-Match` or use `GET /changes`.
+- **Ranges.** `GET /calendar/occurrences` takes at most 62 days between `from` and `to`; a longer range answers `400` with `fields`.
 
 ## Keeping it working
 
-The API only grows inside version 1: new operations and new fields can appear, nothing is renamed or removed. A program should ignore fields it does not know. A change that would break programs would come as `/api/public/v2`, announced first.
+Version 1 only grows: operations and fields may be added, none renamed or removed. Ignore unknown fields. A breaking change would be `/api/public/v2`, announced first.
