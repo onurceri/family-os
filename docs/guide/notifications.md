@@ -17,7 +17,7 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 | Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |
 
 **Good to know**
-- Never told about your own suggestions; what you share is yours alone to decide.
+- Never told about your own suggestions; what you share is yours alone to decide, so other adults are not told about it.
 - No answer when you take a suggestion back or auto-approval approves it.
 - Quick add page uploads send no "was read" notification.
 - Times follow the family time zone ([Region and formats](region.md)).
