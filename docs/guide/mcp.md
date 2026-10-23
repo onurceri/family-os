@@ -93,7 +93,7 @@ Only the person who set it up can connect it, and it acts as them. When a sign-i
 - Never decide on the name alone: an app names itself. A return address different from the app's own, or `localhost`, gets a warning. FamilyOS never loads an app's logo.
 - A request ends after 10 minutes. An approval the app never completes is not listed and is cleared within a day.
 - A connection ends after 90 days unused, on **Revoke**, when its sign-in is used twice, or on a restore from backup. You are told when one connects and when FamilyOS ends one.
-- Connecting the same app again replaces the earlier connection.
+- Connecting the same app again replaces the earlier connection once the app finishes signing in; until then the earlier one keeps working.
 - Self-registered apps that were never approved are forgotten after a day. At most 50 can wait, and one network address can register 10 an hour.
 - Behind a reverse proxy, pass through `/mcp`, `/.well-known/` and `/oauth/`. An address with a path (`example.com/family`) cannot sign in.
 

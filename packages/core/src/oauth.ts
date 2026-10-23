@@ -295,7 +295,7 @@ export interface OAuthService {
 	createRequest(input: AuthorizeInput): Promise<{ requestId: string }>;
 	/** What the consent page shows; for the signed-in person who may decide it. */
 	getRequest(actor: Actor, requestId: string): Promise<OAuthRequestView>;
-	/** Gives the app a code, for the signed-in person. Replaces their earlier grant to this app. */
+	/** Gives the app a code, for the signed-in person. Their earlier sign-in to this app ends when the code is exchanged. */
 	approve(
 		actor: Actor,
 		requestId: string,
@@ -950,24 +950,31 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 				if (Number(claimed.numUpdatedRows) === 0)
 					throw new FamosError('gone', 'This sign-in request has ended. Start again in the app.');
 
-				// Connecting again replaces the earlier grant: its secrets and handles go.
-				const earlier = await t(db)
+				// An earlier approval the app never came back for is superseded now. A sign-in the app
+				// is using stays until this approval's code is exchanged: an approval abandoned
+				// half way must not leave the person without the connection they had.
+				const unused = await t(db)
 					.selectFrom('core_api_tokens')
 					.select('id')
 					.where('member_id', '=', member.memberId)
 					.where('oauth_client_id', '=', client.id)
 					.where('revoked_at', 'is', null)
+					.where('last_used_at', 'is', null)
 					.execute();
 				await endGrants(
 					db,
-					earlier.map((r) => r.id),
+					unused.map((r) => r.id),
 					now,
 				);
+				// The sign-in this one replaces is not counted: one of the two goes at the exchange.
 				const active = await t(db)
 					.selectFrom('core_api_tokens')
 					.select((eb) => eb.fn.countAll<number>().as('n'))
 					.where('member_id', '=', member.memberId)
 					.where('revoked_at', 'is', null)
+					.where((eb) =>
+						eb.or([eb('oauth_client_id', 'is', null), eb('oauth_client_id', '!=', client.id)]),
+					)
 					.executeTakeFirstOrThrow();
 				if (Number(active.n) >= MAX_ACTIVE_TOKENS_PER_MEMBER)
 					throw new FamosError('limit_reached', 'Too many keys; revoke one first');
@@ -1092,6 +1099,21 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 					db,
 					{ id: grant.id, expiresAt: grantExpiry(now) },
 					status.resource,
+					now,
+				);
+				// Connecting again replaces the earlier sign-in once the new one works: its secrets
+				// and handles go.
+				const earlier = await t(db)
+					.selectFrom('core_api_tokens')
+					.select('id')
+					.where('member_id', '=', grant.member_id)
+					.where('oauth_client_id', '=', client.id)
+					.where('revoked_at', 'is', null)
+					.where('id', '!=', grant.id)
+					.execute();
+				await endGrants(
+					db,
+					earlier.map((r) => r.id),
 					now,
 				);
 				await t(db)

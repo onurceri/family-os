@@ -469,6 +469,42 @@ describe('the person’s decision', () => {
 		expect(await k.apiTokens.authenticate(second.tokens.accessToken)).not.toBeNull();
 	});
 
+	it('keeps the earlier sign-in until the new approval is exchanged', async () => {
+		const client = await publicClient();
+		const first = await ask(client.clientId);
+		const firstApproved = await k.oauth.approve(deniz.actor, first.requestId);
+		const firstTokens = await k.oauth.exchangeCode({
+			client: { clientId: client.clientId },
+			code: firstApproved.code,
+			redirectUri: REDIRECT,
+			codeVerifier: first.verifier,
+		});
+		// Approved again, but the app never comes back with the code: the connection stays.
+		const abandoned = await ask(client.clientId);
+		await k.oauth.approve(deniz.actor, abandoned.requestId);
+		expect(await k.apiTokens.authenticate(firstTokens.accessToken)).not.toBeNull();
+		// A later approval supersedes the abandoned one, and its exchange ends the first sign-in.
+		const second = await ask(client.clientId);
+		const secondApproved = await k.oauth.approve(deniz.actor, second.requestId);
+		expect(await k.apiTokens.authenticate(firstTokens.accessToken)).not.toBeNull();
+		const secondTokens = await k.oauth.exchangeCode({
+			client: { clientId: client.clientId },
+			code: secondApproved.code,
+			redirectUri: REDIRECT,
+			codeVerifier: second.verifier,
+		});
+		expect(await k.apiTokens.authenticate(firstTokens.accessToken)).toBeNull();
+		expect(await k.apiTokens.authenticate(secondTokens.accessToken)).not.toBeNull();
+		const live = await tables()
+			.selectFrom('core_api_tokens')
+			.select('id')
+			.where('oauth_client_id', 'is not', null)
+			.where('member_id', '=', deniz.member.id)
+			.where('revoked_at', 'is', null)
+			.execute();
+		expect(live.map((r) => r.id)).toEqual([secondApproved.grantId]);
+	});
+
 	it('stops at twenty keys for a person', async () => {
 		for (let i = 0; i < 20; i++)
 			await k.apiTokens.create(deniz.actor, { name: `Key ${i}`, scope: 'read' });
