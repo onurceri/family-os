@@ -34,6 +34,7 @@ For whoever runs FamilyOS at home. Start with the first page; the others can wai
 30. [The API for apps and scripts](api.md): read and change the calendar, lists, chores and board from a program, with curl examples.
 31. [Siri and Shortcuts](siri.md): say "Hey Siri, add to FamilyOS" to fill the shopping list, hear today's plans, or add a task, with Apple's Shortcuts app.
 32. [Setup status](setup-status.md): see which of the things that make FamilyOS work well are set up, and what a missing one costs.
+33. [Configuration](configuration.md): the environment variables the server reads, and backups from a terminal.
 
 ## Writing a guide page
 

@@ -31,7 +31,7 @@ Admins only.
 - Tap a provider to edit its name, address or key (sheet on phones). **Remove key** deletes only the key; **Remove** deletes the provider (its roles become unset).
 - Keys are stored encrypted, never shown again. Changing an address removes the stored key; enter it again with the new address (saving without one keeps the panel open and asks).
 - **Monthly limits**: **Budget (USD)** (as the provider reports) or **Model calls**; AI pauses until next month when reached. Months follow the family time zone. Empty means no limit. Usage per feature: **This month**.
-- Providers set with `FAMOS_AI_*` variables (see the README) apply on every start, show as set by the server configuration, and cannot be changed in the app.
+- Providers set with `FAMOS_AI_*` variables (see [Configuration](configuration.md)) apply on every start, show as set by the server configuration, and cannot be changed in the app.
 
 ## What the AI sees
 

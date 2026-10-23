@@ -17,7 +17,7 @@ import { day, standAt } from '../support/today.ts';
  *
  * - PNGs land in test-results/readme/; the .webp files the README shows are written to
  *   `docs/images/` (`FAMOS_README_OUT` replaces that folder);
- * - `FAMOS_README_ONLY=today,calendar` limits the pictures.
+ * - `FAMOS_README_ONLY=readme-today,readme-calendar` limits the pictures.
  *
  * The six cards share one aspect (16:10) and are cropped to what their line says. Home Assistant
  * is released on its own and is not in the built image, so the script places the package it built

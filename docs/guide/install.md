@@ -52,7 +52,7 @@ The image is the released one (computers and Raspberry Pi). The compose file is 
 - Change the time zone and formats later under **Settings → Family → Language & region** (see [Region and formats](region.md)), and the weather place under **Settings → Family → Photos and weather** (changing the place leaves the weather switch as it is).
 - **Settings** opens **Profile & sign-in** on a wide screen and **More** on a phone, for everyone.
 - The setup code stops anyone else setting up a new instance reachable from the internet. It is stored as `setup-code`; to choose it, set `FAMOS_SETUP_CODE` (at least 8 characters).
-- Settings that are not in the app are environment variables. The table is in the README.
+- Settings that are not in the app are environment variables. They are listed in [Configuration](configuration.md).
 
 Everything lives in the `famos-data` volume (`/data` in the container):
 

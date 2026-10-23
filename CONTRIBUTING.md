@@ -22,6 +22,10 @@ pnpm dev          # API on :3000 and web on :5173 (proxies /api)
 ```
 
 Open http://localhost:5173 and follow the setup link printed by the server.
+`pnpm build` builds the web app, the bundled server and the extension packages.
+
+FamilyOS is TypeScript end to end: Hono, Kysely on SQLite and better-auth on Node.js; a SvelteKit
+SPA with Tailwind and shadcn-svelte; i18next; the Vercel AI SDK.
 
 ## Check your change
 
