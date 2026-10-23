@@ -80,7 +80,7 @@ An extension that cannot run is skipped; its row says **Left out: it could not s
 - **Details** in its **⋯** menu shows the server's reason.
 - **Try again** (could not start) retries at the next restart.
 
-## For developers
+## From the command line
 
 The server's command line does the same; changes load at the next restart:
 
