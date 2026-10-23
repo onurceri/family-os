@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { pairDisplay } from '../support/display.ts';
 import { startFakeHomeAssistant } from '../support/fake-ha.ts';
+import { PRELOAD, startFakeOpenMeteo } from '../support/fake-open-meteo.ts';
 import { api, expect, setUpAndSignIn, test } from '../support/fixtures.ts';
 import { signInAs } from '../support/members.ts';
 import { seedSampleFamily } from '../support/sample-data.ts';
@@ -31,9 +32,15 @@ const OUT = process.env.FAMOS_README_OUT ?? join(ROOT, 'docs/images');
 const ONLY = process.env.FAMOS_README_ONLY?.split(',').map((s) => s.trim());
 const wanted = (name: string) => !ONLY || ONLY.includes(name);
 
-/** A card is 16:10; the window of a page shot whole is this size, a crop of Today 800 x 500. */
+/** A card is 16:10: Today is shot in a 1280 x 800 window, the other pages in this one. */
 const WINDOW = { width: 1100, height: 688 };
 const TOKEN = 'readme-token';
+const MAX_BYTES = 150_000;
+
+// The server's weather comes from a fake Open-Meteo: it is told where it is before it starts.
+const weather = await startFakeOpenMeteo();
+process.env.FAMOS_FAKE_OPEN_METEO_PORT = String(weather.port);
+process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS ?? ''} --import ${PRELOAD}`.trim();
 
 test.use({ isMobile: false, hasTouch: false, deviceScaleFactor: 2 });
 
@@ -43,7 +50,12 @@ async function save(name: string, take: (path: string) => Promise<unknown>) {
 	await mkdir(OUT, { recursive: true });
 	const png = join(PNG_DIR, `${name}.png`);
 	await take(png);
-	execFileSync('cwebp', ['-quiet', '-q', '80', png, '-o', join(OUT, `${name}.webp`)]);
+	// Quality steps down until the picture is small enough to load quickly on a README.
+	const webp = join(OUT, `${name}.webp`);
+	for (const quality of ['80', '72', '64', '56']) {
+		execFileSync('cwebp', ['-quiet', '-q', quality, png, '-o', webp]);
+		if (statSync(webp).size < MAX_BYTES) break;
+	}
 }
 
 /** A picture of `name` cut out of the page: `x` and `y` are its top left corner. */
@@ -84,6 +96,11 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 	await family.start();
 
 	await seedSampleFamily(page, model);
+	// A mild, partly cloudy afternoon, from the fake Open-Meteo.
+	await api(page, 'POST', '/api/v1/actions/ambient.updateWeather', {
+		enabled: true,
+		place: { name: 'Riverton', latitude: 52.37, longitude: 4.9 },
+	});
 
 	const ha = await startFakeHomeAssistant(TOKEN, {
 		'sensor.living_room_temperature': {
@@ -106,6 +123,10 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 			state: 'off',
 			attributes: { device_class: 'door', friendly_name: 'Front door' },
 		},
+		'light.kitchen': {
+			state: 'on',
+			attributes: { friendly_name: 'Kitchen light', supported_color_modes: ['onoff'] },
+		},
 		'lock.back_door': { state: 'locked', attributes: { friendly_name: 'Back door' } },
 		'sensor.washing_machine_power': {
 			state: '0',
@@ -122,8 +143,22 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 			['sensor.kitchen_humidity', 'Kitchen humidity'],
 			['binary_sensor.front_door', 'Front door'],
 			['lock.back_door', 'Back door'],
-		])
-			await api(page, 'POST', '/api/v1/actions/homeassistant.addItem', { entityId, label });
+			['light.kitchen', 'Kitchen light'],
+		]) {
+			const added = await api<{ output: { id: string } }>(
+				page,
+				'POST',
+				'/api/v1/actions/homeassistant.addItem',
+				{ entityId, label },
+			);
+			// The family allows switching the kitchen light, and nothing else.
+			if (entityId === 'light.kitchen')
+				await api(page, 'POST', '/api/v1/actions/homeassistant.setItemControl', {
+					id: added.output.id,
+					control: true,
+					confirm: false,
+				});
+		}
 
 		// Who is home: each person chooses to share it, so each signs in and does.
 		const members = await api<{ id: string; displayName: string }[]>(
@@ -164,7 +199,7 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 		for (const [offset, title, startTime, endTime, first] of [
 			[-5, 'Football', '10:00', '11:30', 'Noah'],
 			[-4, 'Piano lesson', '16:00', '17:00', 'Noah'],
-			[-4, 'Team meeting', '09:00', '10:00', 'Deniz'],
+			[-4, 'Team meeting', '10:30', '11:30', 'Deniz'],
 			[-3, 'Swimming', '17:30', '18:30', 'Elif'],
 			[-3, 'Dentist', '14:00', '15:00', 'Amy'],
 			[-2, 'Parent meeting', '17:00', '18:00', 'Amy'],
@@ -180,55 +215,78 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 				memberIds: [idOf(first)],
 			});
 
-		// Today: the clock, the day in a sentence, who is home and the next thing.
+		const hide = (hidden: string[] | null) =>
+			api(page, 'POST', '/api/v1/actions/core.setMyTodayBlocks', { hidden });
+		// Today: the whole window, with the parts that make it tall left out, so every card ends
+		// inside the frame.
 		if (wanted('readme-today')) {
+			await page.setViewportSize({ width: 1600, height: 1000 });
+			await hide(['photo', 'board.today', 'nextDays', 'homeassistant.values']);
 			await open(page, '/');
-			await card(page, 'readme-today', 280, 20, { width: 800, height: 500 });
+			await save('readme-today', (path) => page.screenshot({ path }));
+			await hide(null);
 		}
 
 		// Calendar: a week, from the morning on.
 		if (wanted('readme-calendar')) {
 			await page.setViewportSize(WINDOW);
 			await open(page, '/calendar');
+			// The week from 10 AM, just under the day headers, so no event is cut at the top.
 			await page.evaluate(() => {
-				for (const el of document.querySelectorAll('main *'))
-					if (
-						el.scrollHeight > el.clientHeight + 100 &&
-						getComputedStyle(el).overflowY !== 'visible'
-					)
-						el.scrollTop = 420;
+				const leaf = (text: string) =>
+					[...document.querySelectorAll('main *')].find(
+						(e) =>
+							e.children.length === 0 && e.textContent?.trim().toLowerCase() === text.toLowerCase(),
+					);
+				const hour = leaf('10 AM');
+				const header = leaf('all day')?.parentElement;
+				if (!hour || !header) throw new Error('the week grid was not found');
+				let scroller = hour.parentElement;
+				while (scroller && scroller.scrollHeight <= scroller.clientHeight + 100)
+					scroller = scroller.parentElement;
+				if (scroller)
+					scroller.scrollTop +=
+						hour.getBoundingClientRect().top - header.getBoundingClientRect().bottom - 6;
 			});
 			await page.waitForTimeout(300);
 			await save('readme-calendar', (path) => page.screenshot({ path }));
 		}
 
-		// Quick add: what it found in a shared message, as cards to tick.
+		// Quick add: one whole capture group, from its header to its Add selected row.
 		if (wanted('readme-quick-add')) {
-			await page.setViewportSize(WINDOW);
+			await page.setViewportSize({ width: 1440, height: 1800 });
 			await open(page, '/add');
-			// The newsletter's two cards, under the pending ones.
-			await page
-				.getByText('Class newsletter')
-				.first()
-				.evaluate((el) => {
-					el.scrollIntoView({ block: 'start' });
-				});
+			const group = page.getByTestId('capture-group').filter({ hasText: 'Parent meeting' });
+			await group.scrollIntoViewIfNeeded();
+			const heading = page.getByText('Class newsletter', { exact: true }).first();
+			await heading.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+			await page.evaluate(() => window.scrollBy(0, -40));
 			await page.waitForTimeout(300);
-			await save('readme-quick-add', (path) => page.screenshot({ path }));
+			const top = (await heading.boundingBox())?.y ?? 0;
+			const box = await group.boundingBox();
+			if (!box) throw new Error('the capture group is not on the page');
+			const y = top - 24;
+			const height = box.y + box.height + 32 - y;
+			const width = Math.round(height * 1.6);
+			const x = Math.max(0, box.x + box.width / 2 - width / 2);
+			await save('readme-quick-add', (path) =>
+				page.screenshot({ path, clip: { x, y, width, height } }),
+			);
 		}
 
-		// Home Assistant: what the family chose to show, and who shares being home.
+		// Home Assistant as the family sees it: who is home, and the house's values and a switch.
 		if (wanted('readme-home-assistant')) {
 			await page.setViewportSize(WINDOW);
-			await open(page, '/settings/home-assistant');
-			await page
-				.getByText('What to show', { exact: true })
-				.first()
-				.evaluate((el) => {
-					el.scrollIntoView({ block: 'start' });
-				});
-			await page.waitForTimeout(300);
+			await open(page, '/settings/appearance');
+			const all = await page
+				.locator('#today-blocks input[role="switch"]')
+				.evaluateAll((inputs) => inputs.map((i) => i.id.replace(/^my-blocks-/, '')));
+			await hide(
+				all.filter((id) => !['clock', 'family'].includes(id) && !id.startsWith('homeassistant')),
+			);
+			await open(page, '/');
 			await save('readme-home-assistant', (path) => page.screenshot({ path }));
+			await hide(null);
 		}
 
 		// A wall display in the Wall style, at night, paired like a real one.
@@ -240,10 +298,12 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 					'chores.view',
 					'board.view',
 					'homeassistant.view',
+					'ambient.weather',
 				],
 				showNames: true,
 				name: 'Kitchen',
 				viewport: { width: 1280, height: 800 },
+				deviceScaleFactor: 2,
 			});
 			await api(page, 'POST', '/api/v1/actions/core.setDisplayStyle', {
 				deviceId: wall.deviceId,

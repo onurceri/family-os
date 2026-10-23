@@ -24,13 +24,14 @@ export async function pairDisplay(
 		showNames?: boolean;
 		name?: string;
 		viewport?: { width: number; height: number };
+		deviceScaleFactor?: number;
 	},
 ): Promise<PairedDisplay> {
 	const name = options.name ?? 'Kitchen';
 	const context = await browser.newContext({
 		baseURL: family.url,
 		viewport: options.viewport ?? { width: 1280, height: 800 },
-		deviceScaleFactor: 1,
+		deviceScaleFactor: options.deviceScaleFactor ?? 1,
 		isMobile: false,
 		hasTouch: false,
 		locale: 'en-US',
