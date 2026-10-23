@@ -9,6 +9,7 @@ import {
 	type FamilySettings,
 	FamosError,
 	type IdGenerator,
+	isSameOriginPath,
 	type JobContext,
 	type JobQueue,
 	type Logger,
@@ -200,7 +201,7 @@ function readParams(
 
 /** `path` on the family's public address, or null without one (or for something that is no path). */
 export function absoluteLink(publicUrl: string | undefined, path: string | null): string | null {
-	if (!publicUrl || !path?.startsWith('/') || path.startsWith('//')) return null;
+	if (!publicUrl || !path || !isSameOriginPath(path, publicUrl)) return null;
 	return `${publicUrl.replace(/\/+$/, '')}${path}`;
 }
 

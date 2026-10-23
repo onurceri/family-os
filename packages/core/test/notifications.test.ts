@@ -1,7 +1,7 @@
 import { defineNotificationKind, systemActor } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { notificationCreated } from '../src/core-events.ts';
-import { quietUntil } from '../src/notifications.ts';
+import { absoluteLink, quietUntil } from '../src/notifications.ts';
 import { buildRegistry } from '../src/registry.ts';
 import { notesExtension } from './fixtures.ts';
 import {
@@ -612,5 +612,14 @@ describe('kinds', () => {
 				notifications: [defineNotificationKind({ id: 'mine.thing', label: 'x:y', audience })],
 			});
 		expect(() => buildRegistry([ext('mine.nope')])).toThrow(/unknown capability/);
+	});
+});
+
+describe('absoluteLink', () => {
+	it('joins a path on the family address and refuses anything that leaves it', () => {
+		expect(absoluteLink('https://home.example/', '/tasks')).toBe('https://home.example/tasks');
+		expect(absoluteLink('https://home.example', '/\\evil.example')).toBeNull();
+		expect(absoluteLink('https://home.example', '//evil.example')).toBeNull();
+		expect(absoluteLink(undefined, '/tasks')).toBeNull();
 	});
 });

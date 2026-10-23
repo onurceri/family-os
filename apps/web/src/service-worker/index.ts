@@ -1,3 +1,4 @@
+import { isSameOriginPath } from '@famos/sdk/same-origin-path';
 import { version } from '$app/env';
 import { assets, immutable } from '$app/manifest';
 import { self } from '$app/service-worker';
@@ -236,7 +237,7 @@ self.addEventListener('push', (event) => {
 		if (data?.body) body = data.body;
 		if (data?.tag) tag = data.tag;
 		// Only paths inside the app.
-		if (data?.url?.startsWith('/') && !data.url.startsWith('//')) url = data.url;
+		if (isSameOriginPath(data?.url, self.location.origin) && data?.url) url = data.url;
 	} catch {
 		// Keep the fallback title.
 	}

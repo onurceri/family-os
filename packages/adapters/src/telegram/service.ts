@@ -6,7 +6,7 @@ import type {
 	NotificationChannel,
 	NotificationMessage,
 } from '@famos/sdk';
-import { FamosError, isFamosError } from '@famos/sdk';
+import { FamosError, isFamosError, isSameOriginPath } from '@famos/sdk';
 import { Bot, GrammyError, HttpError } from 'grammy';
 import type { CallbackQuery, InlineKeyboardButton, Message, Update } from 'grammy/types';
 import type { SecretBox } from '../secrets/index.ts';
@@ -777,7 +777,7 @@ export function createTelegram(deps: TelegramDeps) {
 	/* ───────────── Outgoing ───────────── */
 
 	function urlOf(path: string | null): string | null {
-		if (!path?.startsWith('/')) return null;
+		if (!path || !isSameOriginPath(path, deps.baseURL)) return null;
 		return `${deps.baseURL.replace(/\/+$/, '')}${path}`;
 	}
 

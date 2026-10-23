@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { isSameOriginPath } from '@famos/sdk/same-origin-path';
 	import { Bell, Settings, X, Check } from '@lucide/svelte';
 	import { tick } from 'svelte';
 	import { ago } from '#lib/ago.js';
@@ -89,7 +90,7 @@
 	async function choose(item: NotificationItem) {
 		if (!item.read) await notifications.markRead([item.id], LIMIT);
 		close(false);
-		if (item.url) await goto(item.url);
+		if (item.url && isSameOriginPath(item.url, window.location.origin)) await goto(item.url);
 	}
 
 	const box = $derived(size === 44 ? 'size-11' : 'size-9');
