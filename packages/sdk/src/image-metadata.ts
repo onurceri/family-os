@@ -1,3 +1,5 @@
+import { FamosError } from './errors.ts';
+
 /**
  * Removes metadata from photos before they are stored or sent to a model: EXIF (GPS position,
  * camera serial, time), XMP, IPTC and comments. Pure TypeScript segment parsing, no native
@@ -25,9 +27,10 @@ export const STRIPPED_TYPES: ReadonlySet<string> = new Set([
 	'image/webp',
 ]);
 
-export class MalformedImageError extends Error {
+/** A bad request, so an upload route that lets it through answers 400 instead of failing. */
+export class MalformedImageError extends FamosError {
 	constructor(type: string) {
-		super(`Malformed ${type} file`);
+		super('bad_request', `Malformed ${type} file`);
 		this.name = 'MalformedImageError';
 	}
 }

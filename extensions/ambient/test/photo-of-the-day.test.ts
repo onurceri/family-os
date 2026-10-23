@@ -1,5 +1,5 @@
 import { type Actor, systemActor, type UploadedFile } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, samplePhoto, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { PhotoOfTheDay } from '../src/contract/index.ts';
@@ -27,13 +27,7 @@ const display = (capabilities: string[]): Actor => ({
 	showNames: false,
 });
 
-const png = () => {
-	const b = new Uint8Array(33);
-	b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
-	new DataView(b.buffer).setUint32(16, 8);
-	new DataView(b.buffer).setUint32(20, 6);
-	return b;
-};
+const png = () => samplePhoto('image/png');
 const upload = async (): Promise<string> => {
 	const bytes = png();
 	const file: UploadedFile = {

@@ -1,5 +1,5 @@
 import type { UploadedFile } from '@famos/sdk';
-import type { TestKernel } from '@famos/testing';
+import { GPS_MARKER, samplePhoto, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { BoardNote } from '../src/contract/index.ts';
 import { AI, applied, at, createKernel, type Person, person, refused } from './support.ts';
@@ -273,7 +273,7 @@ describe('notifications', () => {
 });
 
 describe('photos', () => {
-	const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+	const jpeg = samplePhoto('image/jpeg');
 	const file = (bytes: Uint8Array, type = 'image/jpeg'): UploadedFile => ({
 		field: 'file',
 		name: 'p.jpg',
@@ -298,9 +298,21 @@ describe('photos', () => {
 		await upload(note.id, file(jpeg));
 		expect((await notes())[0]?.hasPhoto).toBe(true);
 		expect(await read(note.id)).toMatchObject({ type: 'image/jpeg' });
-		const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 9]);
+		const png = samplePhoto('image/png');
 		await upload(note.id, file(png, 'image/jpeg'));
 		expect(await read(note.id)).toMatchObject({ type: 'image/png' });
+	});
+
+	it('stores a photo without its location data, whatever the app did', async () => {
+		const note = await post();
+		for (const type of ['image/jpeg', 'image/png', 'image/webp'] as const) {
+			const withGps = samplePhoto(type, { gps: true });
+			expect(Buffer.from(withGps).includes(GPS_MARKER)).toBe(true);
+			await upload(note.id, file(withGps, type));
+			const stored = await read(note.id);
+			expect(stored.type).toBe(type);
+			expect(stored.bytes.includes(GPS_MARKER)).toBe(false);
+		}
 	});
 
 	it('refuses something that is not an image, and photos on other people’s notes', async () => {
@@ -349,7 +361,7 @@ describe('clean-up', () => {
 		const old = await post({ endsOn: '2026-10-07' });
 		const recent = await post({ endsOn: '2026-10-20' });
 		const forever = await post();
-		const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+		const jpeg = samplePhoto('image/jpeg');
 		await k.route('board.uploadNotePhoto').call({
 			params: { noteId: old.id },
 			actor: bora.actor,

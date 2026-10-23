@@ -103,7 +103,7 @@ Arrows move a page, the cross removes it. Once a page is added:
 1. Under **Photos**, press **Add photos** and choose JPEG, PNG or WebP pictures.
 2. To take one off, press **Remove**, then **Remove for good?**.
 
-- Pictures are shrunk on your device first (longest side 1920 px), so details such as the location are dropped.
+- Pictures are shrunk on your device first (longest side 1920 px), so details such as the location are dropped; the server removes them again, whatever sent the picture.
 - They stay on your FamilyOS. A screen shows them only with **Show family photos on a display**.
 - 500 photos are kept; a screen cycles up to 200 in random order.
 

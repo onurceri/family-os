@@ -1,5 +1,5 @@
 import { FamosError, type UploadedFile } from '@famos/sdk';
-import type { TestKernel } from '@famos/testing';
+import { GPS_MARKER, samplePhoto, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { MealEntry, Recipe, RecipeSummary } from '../src/contract/index.ts';
 import { AI, applied, createKernel, type Person, person } from './support.ts';
@@ -159,7 +159,7 @@ describe('recipes', () => {
 });
 
 describe('recipe photo', () => {
-	const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+	const jpeg = samplePhoto('image/jpeg');
 	const file = (bytes: Uint8Array, type = 'image/jpeg'): UploadedFile => ({
 		field: 'file',
 		name: 'p.jpg',
@@ -184,9 +184,21 @@ describe('recipe photo', () => {
 		await upload(r.id, file(jpeg));
 		expect((await recipes())[0]?.hasPhoto).toBe(true);
 		expect(await read(r.id)).toMatchObject({ type: 'image/jpeg' });
-		const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 9]);
+		const png = samplePhoto('image/png');
 		await upload(r.id, file(png, 'image/jpeg'));
 		expect(await read(r.id)).toMatchObject({ type: 'image/png' });
+	});
+
+	it('stores a photo without its location data, whatever the app did', async () => {
+		const r = await addRecipe();
+		for (const type of ['image/jpeg', 'image/png', 'image/webp'] as const) {
+			const withGps = samplePhoto(type, { gps: true });
+			expect(Buffer.from(withGps).includes(GPS_MARKER)).toBe(true);
+			await upload(r.id, file(withGps, type));
+			const stored = await read(r.id);
+			expect(stored.type).toBe(type);
+			expect(stored.bytes.includes(GPS_MARKER)).toBe(false);
+		}
 	});
 
 	it('refuses something that is not an image, even when it says so', async () => {

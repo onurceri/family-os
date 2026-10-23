@@ -16,7 +16,7 @@ Find it under **Household** in the side bar, or **More → Household** on a phon
 
 **Good to know**
 - Up to 500 characters; line breaks are kept.
-- The photo is shrunk on your device and saved without camera details such as location.
+- The photo is shrunk on your device and saved without camera details such as location. The server removes them again, so a photo sent by any other means loses its location too.
 - Days follow the family time zone and week start ([Region and formats](region.md)). A note leaves the board after its last day.
 - Everyone else who can see the board is told (start of the text). Switch off under **Notifications**.
 

@@ -8,7 +8,7 @@
 2. Fill in **Name** (only required), **Servings** (as written, 4 or 4–6), **Total time in minutes**, **Ingredients** and **Steps** (one per line), **Notes**, **Source (web address)** (kept as a link only; nothing is fetched), **Labels** (comma-separated).
 
 **Good to know**
-- On a recipe: **Edit**, **Add photo** (JPEG, PNG or WebP under 8 MB), **Archive recipe** (tap again).
+- On a recipe: **Edit**, **Add photo** (JPEG, PNG or WebP under 8 MB; its location data is removed), **Archive recipe** (tap again).
 - **Search recipes** and the label filter find recipes.
 
 ### Ingredients to the shopping list

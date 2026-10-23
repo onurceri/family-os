@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { MalformedImageError, stripImageMetadata } from '../src/server/metadata.ts';
+import { MalformedImageError, stripImageMetadata } from '../src/image-metadata.ts';
 
-const text = (s: string) => new TextEncoder().encode(s);
+const text = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0));
+/** Where `needle` first occurs in `data`, or -1. */
+const indexOf = (data: Uint8Array, needle: ArrayLike<number>) => {
+	for (let i = 0; i + needle.length <= data.length; i++)
+		if (Array.from(needle).every((b, j) => data[i + j] === b)) return i;
+	return -1;
+};
 const bytes = (...parts: (number[] | Uint8Array)[]) =>
 	Uint8Array.from(parts.flatMap((p) => [...p]));
 const segment = (marker: number, payload: Uint8Array) =>
 	bytes([0xff, marker, (payload.length + 2) >> 8, (payload.length + 2) & 0xff], payload);
-const has = (data: Uint8Array, needle: string) =>
-	Buffer.from(data).includes(Buffer.from(needle, 'latin1'));
+const has = (data: Uint8Array, needle: string) => indexOf(data, text(needle)) >= 0;
 
 /** A little-endian TIFF block with orientation 6 and a GPS IFD pointer, plus a "GPS" marker. */
 function exif(orientation: number) {
@@ -49,9 +54,9 @@ describe('photo metadata', () => {
 			expect(has(out, secret)).toBe(false);
 		expect(has(out, 'ICC_PROFILE')).toBe(true);
 		expect(has(out, 'JFIF')).toBe(true);
-		expect(Buffer.from(out).includes(Buffer.from([1, 2, 0xff, 0x00, 3, 0xff, 0xd0, 4]))).toBe(true);
+		expect(indexOf(out, [1, 2, 0xff, 0x00, 3, 0xff, 0xd0, 4]) >= 0).toBe(true);
 		// SOI, JFIF, then the minimal EXIF with orientation 6 (big-endian).
-		const exifAt = Buffer.from(out).indexOf(Buffer.from('Exif\0\0MM', 'latin1'));
+		const exifAt = indexOf(out, text('Exif\0\0MM'));
 		expect(exifAt).toBeGreaterThan(0);
 		expect(out[exifAt + 6 + 8 + 2 + 9]).toBe(6);
 		expect([...out.subarray(-2)]).toEqual([0xff, 0xd9]);

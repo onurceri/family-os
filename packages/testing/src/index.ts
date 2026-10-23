@@ -685,5 +685,6 @@ export {
 	slugOf,
 } from './llm-from-env.ts';
 export { mention, resolveMentions, SHARE_AI, understood } from './mentions.ts';
+export { GPS_MARKER, samplePhoto } from './photos.ts';
 export { defineTestExtension } from './test-extension.ts';
 export { repoTranslate, repoVocabulary } from './translate.ts';

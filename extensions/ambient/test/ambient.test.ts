@@ -1,5 +1,5 @@
 import type { UploadedFile } from '@famos/sdk';
-import { createTestKernel, type TestKernel } from '@famos/testing';
+import { createTestKernel, GPS_MARKER, samplePhoto, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ForecastSchema } from '../src/contract/index.ts';
 import { WEATHER_TTL_MS } from '../src/server/caches.ts';
@@ -34,16 +34,19 @@ const display = (caps: string[]) => ({
 
 /** Minimal valid headers: enough for the server to read the type and the size. */
 const png = (width = 8, height = 6) => {
-	const b = new Uint8Array(33);
+	const b = new Uint8Array(45);
 	b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
 	new DataView(b.buffer).setUint32(16, width);
 	new DataView(b.buffer).setUint32(20, height);
+	// IEND, so the whole file is well formed.
+	b.set([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44], 33);
 	return b;
 };
 const jpeg = (width = 40, height = 30) => {
-	const b = new Uint8Array(20);
-	// SOI, APP0 (length 4), SOF0 (length 11, 8 bits, height, width).
+	const b = new Uint8Array(27);
+	// SOI, APP0 (length 4), SOF0 (length 11, 8 bits, height, width), an empty scan and EOI.
 	b.set([0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc0, 0, 11, 8]);
+	b.set([0xff, 0xda, 0, 2, 0xff, 0xd9], 21);
 	new DataView(b.buffer).setUint16(13, height);
 	new DataView(b.buffer).setUint16(15, width);
 	return b;
@@ -54,6 +57,8 @@ const webp = (kind: 'VP8 ' | 'VP8L' | 'VP8X', width = 16, height = 12) => {
 		for (let i = 0; i < s.length; i++) b[at + i] = s.charCodeAt(i);
 	};
 	text(0, 'RIFF');
+	new DataView(b.buffer).setUint32(4, b.length - 8, true);
+	new DataView(b.buffer).setUint32(16, b.length - 20, true);
 	text(8, 'WEBP');
 	text(12, kind);
 	const view = new DataView(b.buffer);
@@ -143,6 +148,18 @@ describe('photo upload', () => {
 			expect(row).toMatchObject({ contentType: type, width, height, size: bytes.length });
 		}
 		expect(await library()).toHaveLength(5);
+	});
+
+	it('stores a photo without its location data, whatever the app did', async () => {
+		for (const type of ['image/jpeg', 'image/png', 'image/webp'] as const) {
+			const withGps = samplePhoto(type, { gps: true });
+			expect(Buffer.from(withGps).includes(GPS_MARKER)).toBe(true);
+			const { id } = await upload(file(withGps, type));
+			const stored = await read(id);
+			expect(stored.bytes.includes(GPS_MARKER)).toBe(false);
+			const row = (await library()).find((p: { id: string }) => p.id === id);
+			expect(row).toMatchObject({ contentType: type, size: stored.bytes.length });
+		}
 	});
 
 	it('records who uploaded it', async () => {

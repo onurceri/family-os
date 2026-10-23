@@ -5,6 +5,7 @@ import {
 	FamosError,
 	FileResponseSchema,
 	selfOf,
+	stripImageMetadata,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -132,8 +133,10 @@ export const uploadPhoto = defineRoute({
 		if (info.width > PHOTO_MAX_SIDE || info.height > PHOTO_MAX_SIDE)
 			throw new FamosError('bad_request', 'The photo is too large');
 		// Files cannot join a transaction: store first, remove again if the action fails.
+		// A direct upload may carry location data; the server strips it whatever the app did.
+		const clean = stripImageMetadata(bytes, info.type);
 		const key = `ambient/photos/${ctx.ids.next('amb_file')}.${EXTENSION[info.type]}`;
-		await ctx.files.put(key, bytes, info.type);
+		await ctx.files.put(key, clean, info.type);
 		try {
 			const result = await ctx.actions.invoke<{ id: z.output<typeof PhotoIdSchema> }>(
 				'ambient.addPhoto',
@@ -142,7 +145,7 @@ export const uploadPhoto = defineRoute({
 					type: info.type,
 					width: info.width,
 					height: info.height,
-					size: bytes.byteLength,
+					size: clean.byteLength,
 				},
 				actor,
 			);

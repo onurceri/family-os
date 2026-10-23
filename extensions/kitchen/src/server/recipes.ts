@@ -5,6 +5,7 @@ import {
 	FileResponseSchema,
 	selfOf,
 	storedAsWhole,
+	stripImageMetadata,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
@@ -289,9 +290,12 @@ export const uploadRecipePhoto = defineRoute({
 		const bytes = await file.bytes();
 		const type = sniffImage(bytes);
 		if (!type) throw new FamosError('bad_request', 'The photo must be a JPEG, PNG or WebP image');
+		// The app strips location data in the browser, but a direct upload may carry it: the
+		// server strips it again, so no stored photo keeps it.
+		const clean = stripImageMetadata(bytes, type);
 		// Files cannot join a transaction: store first, remove again if the action fails.
 		const key = `kitchen/recipes/${params.recipeId}/${ctx.ids.next('photo')}`;
-		await ctx.files.put(key, bytes, type);
+		await ctx.files.put(key, clean, type);
 		let previousKey: string | null;
 		try {
 			const result = await ctx.actions.invoke<{ previousKey: string | null }>(

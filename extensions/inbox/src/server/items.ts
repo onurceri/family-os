@@ -8,9 +8,12 @@ import {
 	FamosError,
 	FileResponseSchema,
 	isFamosError,
+	MalformedImageError,
 	personPresent,
 	type ShareTarget,
+	STRIPPED_TYPES,
 	selfOf,
+	stripImageMetadata,
 	type UnitOfWork,
 	type UploadedFile,
 } from '@famos/sdk';
@@ -26,7 +29,6 @@ import {
 	UPLOAD_LIMITS,
 	UPLOAD_QUOTA,
 } from '../contract/index.ts';
-import { MalformedImageError, STRIPPED_TYPES, stripImageMetadata } from './metadata.ts';
 import { filesOf, ITEM_KIND, type StoredFile, tables, toItem } from './store.ts';
 
 /** An item is its sender's own (others see it only through a suggestion), so only they hear of it. */

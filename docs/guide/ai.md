@@ -44,7 +44,7 @@ Per shared item, FamilyOS sends:
 
 Never sent: your calendar, lists, other shared items, email addresses, PINs, passwords. FamilyOS keeps no prompts or answers, only each call's count, tokens and cost.
 
-JPEG, PNG and WebP photos lose location and other metadata (EXIF, XMP, IPTC, comments) when shared, before storage or sending.
+JPEG, PNG and WebP photos lose location and other metadata (EXIF, XMP, IPTC, comments) before storage or sending. This holds for every photo you upload to FamilyOS, not only those shared to Quick add: recipe photos, board photos and display photos are cleaned on the server as well.
 
 ## Keeping areas away from the AI
 
