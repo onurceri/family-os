@@ -1,42 +1,40 @@
 # The family board
 
-The **Board** is the family's fridge door: short notes on paper, for everyone ("Dinner is at 7", "The plumber comes Friday morning"). It is not a chat: no replies or threads. A note is marked as seen by itself when someone looks at the board.
+The **Board** is the family's fridge door: short notes on paper ("Dinner is at 7"). No replies or threads; a note is marked seen by itself when someone looks at the board.
 
-Find it under **Household** in the side bar on a computer, and under **More → Household** on a phone. The first notes also appear on **Today**, in the same order, and on a [family display](displays.md). The board is as tall as its notes.
+Find it under **Household** in the side bar, or **More → Household** on a phone. The first notes also appear on **Today** in the same order and on a [family display](displays.md).
 
 ## Put up a note
 
-1. Tap the first tile, **Write a note…**.
-2. Write the note, and set:
-   - **Paper**: one of five large swatches; the note turns that colour. Only for looks; it keeps its paper everywhere (Today, a display). Colors come from your theme ([Appearance](appearance.md)).
+1. Tap **Write a note…**.
+2. Write it and set:
+   - **Paper**: one of five swatches; only for looks, kept everywhere. Colors come from your theme ([Appearance](appearance.md)).
    - **Add a photo**: one per note.
    - **Stays on the board**: **Until I take it down**, **Until today**, **Until tomorrow**, **Until the end of the week** or **Until a day I pick…**.
-   - **Pin it to the top**: only for people who can manage the board (admins by default).
-3. Press **Put it up** (or **Cancel** to throw the draft away).
+   - **Pin it to the top**: board managers only (admins by default).
+3. Press **Put it up** (**Cancel** discards).
 
 **Good to know**
-- A note is up to 500 characters; line breaks are kept. A counter shows near the limit.
-- A photo is shrunk on your device first and saved again without hidden camera details such as where it was taken.
-- Days follow your family's time zone and week start ([Region and formats](region.md)). A note leaves the board after its last day.
-- Everyone else who can see the board is told of a new note (the start of its text). Each person can switch this off under **Notifications**.
+- Up to 500 characters; line breaks are kept.
+- The photo is shrunk on your device and saved without camera details such as location.
+- Days follow the family time zone and week start ([Region and formats](region.md)). A note leaves the board after its last day.
+- Everyone else who can see the board is told (start of the text). Switch off under **Notifications**.
 
 ## Read and arrange
 
-- Pinned notes sit first, held by a strip of tape. The others follow in the family's order; a new note goes first.
-- Each note shows who wrote it, how long ago, and **Until Fri** or similar when it ends. At its foot: "Seen by Ayşe and Ece" (up to three names) or "Seen by 4". The writer is not counted. Tap a photo to see it large.
-- To move a note, drag it: with a mouse press and move; on a touch screen hold it a moment, then move. The others make a gap where it will land. The order is the same for everyone and on Today.
-- The **…** menu has **Move earlier** and **Move later** too, for a keyboard or screen reader. Pinned notes always stay first; a note moves among the pinned ones or among the others, and pinning puts it at the top of the pinned.
+- Pinned notes come first, with tape; others follow in the family's order; a new note goes first.
+- A note shows the writer, how long ago, and **Until Fri** when it ends. Its foot says "Seen by Ayşe and Ece" (3 names at most) or "Seen by 4"; the writer is not counted. Tap a photo to enlarge.
+- Drag a note to move it (touch: hold a moment first). The order is the same for everyone and on Today.
+- **…** has **Move earlier** and **Move later** for keyboard and screen readers. Notes move among the pinned or among the others; pinning puts a note at the top of the pinned.
 
-## Change a note
+## The … menu
 
-The **…** button on a note opens:
+- **Edit** (text, paper, end day, photo): the author or a manager.
+- **Move earlier** / **Move later**: your own notes; managers any.
+- **Pin** / **Unpin**: managers.
+- **Take down**, tap again to confirm: the author or a manager. The photo goes with it.
 
-- **Edit**: text, paper, end day or photo. The author or a manager.
-- **Move earlier** / **Move later**: your own notes; a manager (admins by default) can move any.
-- **Pin** / **Unpin**: managers only.
-- **Take down**: tap, then tap again to confirm. The author or a manager; the photo is deleted with it.
-
-A note whose last day has passed is hidden at once. FamilyOS deletes it, with its photo, 30 days later.
+An expired note is hidden at once and deleted with its photo 30 days later.
 
 ## Who can do what
 
@@ -48,9 +46,9 @@ A note whose last day has passed is hidden at once. FamilyOS deletes it, with it
 | Guest | yes | no | no |
 | Family display | yes (if granted) | no | no |
 
-These follow the **Board** permissions of each role (**Settings → Family → Roles**): *See the notes on the board*, *Put up notes, and change or take down your own*, and *Pin notes and take down anyone's note*.
+These are the **Board** permissions of each role (**Settings → Family → Roles**): *See the notes on the board*, *Put up notes, and change or take down your own*, *Pin notes and take down anyone's note*.
 
 ## AI and displays
 
-- If you share something to Quick add meant for the whole family, the AI can suggest a note, which a person approves like any suggestion (and can undo). The assistant can read the board when you ask. To keep the board away from the AI, set **Board** to **Off** under **Settings → AI → What the AI may read**. Nothing is posted without a person approving it.
-- A family display shows the notes in the board's order (pinned first), in their papers and in larger type. There is nothing to touch, and a display never marks a note as seen. Grant it the board permission to show it.
+- Quick add can suggest a note from something shared for the whole family; a person approves it (and can undo). The assistant can read the board. Set **Board** to **Off** under **Settings → AI → What the AI may read** to keep it away. Nothing is posted without approval.
+- A display shows the notes in board order, larger, with nothing to touch, and never marks one seen. Grant it the board permission.
