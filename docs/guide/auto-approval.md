@@ -17,4 +17,4 @@ Applies routine AI suggestions without waiting. Admins only: **Settings â†’ AI â
 - It approves **as the person who turned it on**, under the usual approval rules.
 - A suggestion for one person alone (an assistant note to remember) is always theirs to decide. People, roles and settings never qualify.
 - Approved suggestions stay in Quick add, marked **Approved automatically**, with **Undo** (also from the assistant's answer).
-- It stops by itself, with the notification **Auto-approval stopped**, if the person who turned it on is archived or loses the right to manage it or approve that kind. The notification goes to them, or to the other admins if they are gone. Turn it on again to continue (it then approves as you).
+- It stops by itself, with the notification **Auto-approval stopped**, if the person who turned it on is archived or loses the right to manage it or approve that kind. The notification goes to them, or to the other admins if they are gone. Until then suggestions wait for a person; turn it on again to continue (it then approves as you).
