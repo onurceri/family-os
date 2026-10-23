@@ -336,9 +336,31 @@ export function createTelegram(deps: TelegramDeps) {
 		});
 		if (!res.ok) throw new Error(`file download failed (${res.status})`);
 		const declared = Number(res.headers.get('content-length') ?? 0);
-		if (declared > MAX_FILE_BYTES) throw new FamosError('bad_request', 'File too big');
-		const bytes = new Uint8Array(await res.arrayBuffer());
-		if (bytes.length > MAX_FILE_BYTES) throw new FamosError('bad_request', 'File too big');
+		if (declared > MAX_FILE_BYTES) {
+			await res.body?.cancel().catch(() => undefined);
+			throw new FamosError('bad_request', 'File too big');
+		}
+		// The announced size can be missing or wrong: count what arrives and stop at the cap.
+		const reader = res.body?.getReader();
+		if (!reader) return new Uint8Array();
+		const chunks: Uint8Array[] = [];
+		let size = 0;
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			size += value.byteLength;
+			if (size > MAX_FILE_BYTES) {
+				await reader.cancel().catch(() => undefined);
+				throw new FamosError('bad_request', 'File too big');
+			}
+			chunks.push(value);
+		}
+		const bytes = new Uint8Array(size);
+		let offset = 0;
+		for (const chunk of chunks) {
+			bytes.set(chunk, offset);
+			offset += chunk.byteLength;
+		}
 		return bytes;
 	}
 

@@ -60,16 +60,78 @@ const LOCAL = blockList([
 	['fec0::', 10, 'ipv6'],
 ]);
 
-/** Whether an address may be contacted. IPv4-mapped IPv6 addresses are judged as IPv4. */
+/** The eight 16-bit groups of an IPv6 address, or null when it is not one. */
+function ipv6Groups(address: string): number[] | null {
+	if (isIP(address) !== 6) return null;
+	let text = (address.split('%')[0] as string).toLowerCase();
+	// A dotted IPv4 tail is two more groups.
+	const dotted = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(text);
+	if (dotted) {
+		const [a, b, c, d] = dotted.slice(1).map(Number) as [number, number, number, number];
+		text = `${text.slice(0, dotted.index)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+	}
+	const [head = '', tail, ...extra] = text.split('::');
+	if (extra.length > 0) return null;
+	const left = head === '' ? [] : head.split(':');
+	const right = tail === undefined || tail === '' ? [] : tail.split(':');
+	const fill = tail === undefined ? 0 : 8 - left.length - right.length;
+	if (fill < 0 || (tail === undefined && left.length !== 8)) return null;
+	const groups = [...left, ...Array<string>(fill).fill('0'), ...right].map((g) =>
+		Number.parseInt(g, 16),
+	);
+	return groups.length === 8 && groups.every((g) => g >= 0 && g <= 0xffff) ? groups : null;
+}
+
+const v4 = (a: number, b: number, c: number, d: number) => `${a}.${b}.${c}.${d}`;
+const high = (g: number) => g >> 8;
+const low = (g: number) => g & 0xff;
+
+/**
+ * The IPv4 address an IPv6 address carries, whatever way it is written: IPv4-mapped and
+ * -compatible, NAT64 (64:ff9b::/96 and 64:ff9b:1::/48), 6to4 and Teredo (its client). Such an
+ * address reaches that IPv4 host through a gateway, so it is judged as the IPv4 address.
+ */
+function embeddedIpv4(address: string): string | null {
+	const g = ipv6Groups(address);
+	if (!g) return null;
+	const [g0, g1, g2, g3, g4, g5, g6, g7] = g as [
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+		number,
+	];
+	const zeros = (to: number) => g.slice(0, to).every((x) => x === 0);
+	// ::ffff:a.b.c.d (mapped) and ::a.b.c.d (compatible); ::1 is the IPv6 loopback itself.
+	if (zeros(5) && g5 === 0xffff) return v4(high(g6), low(g6), high(g7), low(g7));
+	if (zeros(6) && !(g6 === 0 && g7 === 1)) return v4(high(g6), low(g6), high(g7), low(g7));
+	if (g0 === 0x64 && g1 === 0xff9b) {
+		if (g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0)
+			return v4(high(g6), low(g6), high(g7), low(g7));
+		// RFC 6052 /48: the address sits around the reserved octet at bits 64 to 71.
+		if (g2 === 1) return v4(high(g3), low(g3), low(g4), high(g5));
+	}
+	if (g0 === 0x2002) return v4(high(g1), low(g1), high(g2), low(g2));
+	// Teredo keeps the client's address inverted in the last 32 bits.
+	if (g0 === 0x2001 && g1 === 0)
+		return v4(high(g6) ^ 0xff, low(g6) ^ 0xff, high(g7) ^ 0xff, low(g7) ^ 0xff);
+	return null;
+}
+
+/** Whether an address may be contacted. IPv6 forms that carry an IPv4 address are judged as that IPv4 address. */
 export function isAllowedAddress(address: string, allowLocal: boolean): boolean {
 	const family = isIP(address);
 	if (family === 0) return false;
+	const embedded = family === 6 ? embeddedIpv4(address) : null;
+	if (embedded) return isAllowedAddress(embedded, allowLocal);
 	const kind = family === 4 ? 'ipv4' : 'ipv6';
-	if (NEVER.check(address, kind)) return false;
-	// NAT64 (64:ff9b::/96) and 6to4 forms embed an IPv4 address: judge the embedded one.
-	const nat64 = /^64:ff9b::(\d+\.\d+\.\d+\.\d+)$/i.exec(address);
-	if (nat64?.[1]) return isAllowedAddress(nat64[1], allowLocal);
-	if (LOCAL.check(address, kind)) return allowLocal;
+	// The bare address, without a zone, so the lists see the same text as the parser.
+	const bare = address.split('%')[0] as string;
+	if (NEVER.check(bare, kind)) return false;
+	if (LOCAL.check(bare, kind)) return allowLocal;
 	return true;
 }
 
@@ -77,9 +139,9 @@ export function isAllowedAddress(address: string, allowLocal: boolean): boolean 
 export function isLocalAddress(address: string): boolean {
 	const family = isIP(address);
 	if (family === 0) return false;
-	const nat64 = /^64:ff9b::(\d+\.\d+\.\d+\.\d+)$/i.exec(address);
-	if (nat64?.[1]) return isLocalAddress(nat64[1]);
-	return LOCAL.check(address, family === 4 ? 'ipv4' : 'ipv6');
+	const embedded = family === 6 ? embeddedIpv4(address) : null;
+	if (embedded) return isLocalAddress(embedded);
+	return LOCAL.check(address.split('%')[0] as string, family === 4 ? 'ipv4' : 'ipv6');
 }
 
 export type Resolver = (host: string) => Promise<string[]>;

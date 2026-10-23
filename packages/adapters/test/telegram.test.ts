@@ -282,6 +282,57 @@ describe('sharing to the Inbox', () => {
 		expect(fake.sent()[0]?.text).toBe('telegram_added');
 	});
 
+	it('stops reading a download that outgrows the cap, whatever size it announced', async () => {
+		let pulled = 0;
+		const chunk = new Uint8Array(1024 * 1024);
+		const tg = make({
+			// A body with no length that never ends: only a streaming count can stop it.
+			fetch: async () =>
+				new Response(
+					new ReadableStream<Uint8Array>({
+						pull(controller) {
+							pulled++;
+							controller.enqueue(chunk);
+						},
+					}),
+				),
+		});
+		await tg.setToken(fake.token);
+		tg.start();
+		await linked(tg);
+		fake.sent().length = 0;
+		fake.sendPhoto(55, new Uint8Array([1]), 'liar');
+		await until(() => fake.sent().length === 1, 'the refusal');
+		expect(fake.sent()[0]?.text).toBe('telegram_file_too_big');
+		expect(shared).toEqual([]);
+		// The cap is 20 MiB; the stream's own read-ahead may add a few chunks, never the whole body.
+		expect(pulled).toBeLessThan(40);
+	});
+
+	it('refuses a download whose content-length is over the cap without reading it', async () => {
+		let pulled = 0;
+		const tg = make({
+			fetch: async () =>
+				new Response(
+					new ReadableStream<Uint8Array>({
+						pull(controller) {
+							pulled++;
+							controller.enqueue(new Uint8Array(1024));
+						},
+					}),
+					{ headers: { 'content-length': String(21 * 1024 * 1024) } },
+				),
+		});
+		await tg.setToken(fake.token);
+		tg.start();
+		await linked(tg);
+		fake.sent().length = 0;
+		fake.sendPhoto(55, new Uint8Array([1]), 'declared');
+		await until(() => fake.sent().length === 1, 'the refusal');
+		expect(fake.sent()[0]?.text).toBe('telegram_file_too_big');
+		expect(pulled).toBeLessThan(5);
+	});
+
 	it('refuses odd file types and big files politely', async () => {
 		const tg = make();
 		await tg.setToken(fake.token);

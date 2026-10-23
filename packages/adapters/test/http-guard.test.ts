@@ -12,6 +12,7 @@ import {
 	createGuardedHttp,
 	createNodeTransport,
 	isAllowedAddress,
+	isLocalAddress,
 	normalizeFeedUrl,
 	type Transport,
 	type TransportRequest,
@@ -83,6 +84,67 @@ describe('addresses', () => {
 		'%s is public',
 		(address) => expect(isAllowedAddress(address, false)).toBe(true),
 	);
+});
+
+describe('addresses that carry an IPv4 address', () => {
+	// [form, private, public], each written in hex and in dotted notation where both exist.
+	const forms: [string, string, string][] = [
+		['mapped hex', '::ffff:a00:1', '::ffff:808:808'],
+		['mapped dotted', '::ffff:10.0.0.1', '::ffff:8.8.8.8'],
+		['mapped, long', '0:0:0:0:0:ffff:c0a8:101', '0:0:0:0:0:ffff:808:808'],
+		['compatible hex', '::a00:1', '::808:808'],
+		['compatible dotted', '::10.0.0.1', '::8.8.8.8'],
+		['NAT64 hex', '64:ff9b::a00:1', '64:ff9b::808:808'],
+		['NAT64 dotted', '64:ff9b::10.0.0.1', '64:ff9b::8.8.8.8'],
+		['NAT64 expanded', '0064:ff9b:0:0:0:0:7f00:1', '0064:ff9b:0:0:0:0:808:808'],
+		['NAT64 local-use /48', '64:ff9b:1:a00:1:0:0:0', '64:ff9b:1:808:8:800:0:0'],
+		['6to4', '2002:a00:1::', '2002:808:808::'],
+		['6to4 with a host part', '2002:c0a8:101:1::1', '2002:808:808:1::1'],
+		['Teredo', '2001:0:4136:e378:8000:63bf:f5ff:fffe', '2001:0:4136:e378:8000:63bf:f7f7:f7f7'],
+		['uppercase', '::FFFF:A00:1', '::FFFF:808:808'],
+	];
+	it.each(forms)('%s: a private client is local', (_name, local) => {
+		expect(isAllowedAddress(local, false)).toBe(false);
+		expect(isAllowedAddress(local, true)).toBe(true);
+		expect(isLocalAddress(local)).toBe(true);
+	});
+	it.each(forms)('%s: a public client is allowed', (_name, _local, pub) => {
+		expect(isAllowedAddress(pub, false)).toBe(true);
+		expect(isLocalAddress(pub)).toBe(false);
+	});
+	it('never allows an embedded address that is never reachable', () => {
+		for (const address of ['::ffff:0:1', '64:ff9b::e000:1', '2002:e000:1::']) {
+			expect(isAllowedAddress(address, true)).toBe(false);
+		}
+	});
+	it('keeps the IPv6 loopback local and judges literal hosts and DNS answers alike', async () => {
+		expect(isAllowedAddress('::1', false)).toBe(false);
+		expect(isAllowedAddress('::1', true)).toBe(true);
+		const transport = async () => ({
+			status: 200,
+			headers: {},
+			body: (async function* () {
+				yield new TextEncoder().encode('ok');
+			})(),
+		});
+		const http = createGuardedHttp({
+			transport,
+			resolve: async (host) =>
+				host === 'sneaky.example' ? ['64:ff9b::a00:1'] : ['2002:808:808::'],
+		});
+		for (const url of [
+			'https://[::ffff:a00:1]/',
+			'https://[64:ff9b::a00:1]/',
+			'https://sneaky.example/',
+		])
+			await expect(http.get({ url })).rejects.toMatchObject({ code: 'blocked_address' });
+		await expect(http.get({ url: 'https://[2002:808:808::]/' })).resolves.toMatchObject({
+			status: 200,
+		});
+		await expect(http.get({ url: 'https://public.example/' })).resolves.toMatchObject({
+			status: 200,
+		});
+	});
 });
 
 describe('urls', () => {
