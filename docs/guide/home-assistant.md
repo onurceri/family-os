@@ -1,20 +1,21 @@
 # Home Assistant
 
-Show the FamilyOS calendar in [Home Assistant](https://www.home-assistant.io), and show Home Assistant's sensors, switches and who is home in FamilyOS.
+Show the FamilyOS calendar in [Home Assistant](https://www.home-assistant.io), and Home Assistant's sensors, switches and who is home in FamilyOS.
 
 > For Home Assistant's AI using FamilyOS, see [Bring your own agent (MCP)](mcp.md#home-assistant).
 
 ## Show the calendar in Home Assistant
 
-Read-only: you change events in FamilyOS (see [Everyday use](everyday.md)), Home Assistant follows. It shows in its calendar panel, on dashboards and in automations ("porch light on when someone has an evening event"). Nothing extra is installed in FamilyOS; it uses the same address as the calendar on your phone.
+Read-only (change events in FamilyOS, see [Everyday use](everyday.md)). Works in its calendar panel, dashboards and automations. Nothing extra is installed in FamilyOS.
 
-1. In FamilyOS, create a calendar address ([Calendars](calendars.md#the-calendar-on-your-phone)): **Settings → You → Calendar on my phone**, choose **What to show**, press **Create address**, then **Copy address**. It is shown only once.
-2. In Home Assistant, open **Settings → Devices & services → Add integration** and choose **Remote Calendar**.
-3. Give the calendar a name, paste the address, and finish. A plain `http://` address works on your home network; `webcal://` is accepted too.
+1. In FamilyOS: **Settings → You → Calendar on my phone**, choose **What to show**, press **Create address**, then **Copy address** ([Calendars](calendars.md#the-calendar-on-your-phone)). It is shown only once.
+2. In Home Assistant: **Settings → Devices & services → Add integration → Remote Calendar**.
+3. Name it, paste the address, finish.
 
-Repeating events, summer time changes, all-day and multi-day events, events past midnight and the place of an event come through correctly.
-
-**Keep it up to date.** Home Assistant reads the address once a day, so a new event can take up to a day to show. Add an automation that reads it again, for example every 15 minutes (automation editor, or YAML):
+**Good to know**
+- Plain `http://` works on your home network; `webcal://` is accepted.
+- Repeating, summer-time, all-day, multi-day, past-midnight events and places come through correctly.
+- Home Assistant reads the address once a day, so a new event can take a day to show. To refresh every 15 minutes, add this automation (replace the entity with your calendar's **Entity ID**, under **Settings → Devices & services → Entities**):
 
 ```yaml
 alias: Refresh the FamilyOS calendar
@@ -27,100 +28,115 @@ actions:
       entity_id: calendar.your_calendar_name
 ```
 
-Replace `calendar.your_calendar_name` with the **Entity ID** under **Settings → Devices & services → Entities** (search for the name you gave the calendar).
-
-**Keep it safe.** The address works like a password: anyone who has it can read the calendar without signing in. Home Assistant keeps it in its settings and so in its backups. If it gets out, press **Remove** (twice) next to it under **Your addresses** in FamilyOS, make a new one and put it into Home Assistant. The old one stops at once.
+- The address works like a password: anyone with it reads the calendar without signing in. Home Assistant keeps it in its settings and backups.
+- If it leaks: **Remove** (twice) next to it under **Your addresses**, make a new one, put it into Home Assistant. The old one stops at once.
 
 ## Connect FamilyOS to Home Assistant
 
-FamilyOS reads what you chose to show on Today and on the family display. It **never switches anything you did not allow**: a light, a lock or a cover is switched only after you turned that on for it, and only by people allowed to. Home Assistant cannot limit a token, so this is kept by what FamilyOS sends, not enforced by Home Assistant.
+FamilyOS **never switches anything you did not allow**: a light, lock or cover is switched only after you turn that on for it, and only by allowed people. Home Assistant cannot limit a token, so FamilyOS keeps this by what it sends.
 
-1. Install the extension: **Settings → Family → Extensions**, **⋯** menu → **Look for more**, download **Home Assistant** and install it ([Extensions](extensions.md)). It works after FamilyOS restarts. Only admins can connect it.
-2. In Home Assistant, create a separate user, for example "FamilyOS", that is not an administrator, and sign in as it.
-3. Open that user's **Profile → Security**, scroll to **Long-lived access tokens**, press **Create token** and copy it. It is shown only once.
-4. In FamilyOS open **Settings → Family → Home Assistant**, press **Connect**, and fill in:
-   - **Address**: for example `http://192.168.1.20:8123` or `https://ha.example.net`. Use the **IP address**: names ending in `.local` do not work from FamilyOS. A trailing `/` or `/api` is removed.
+1. Install the extension: **Settings → Family → Extensions**, **⋯** → **Look for more**, download **Home Assistant**, install ([Extensions](extensions.md)); it works after a restart. Only admins can connect it.
+2. In Home Assistant, create a separate non-administrator user (say "FamilyOS") and sign in as it.
+3. Open **Profile → Security → Long-lived access tokens**, press **Create token**, copy it. It is shown once.
+4. In FamilyOS open **Settings → Family → Home Assistant**, press **Connect**:
+   - **Address**: `http://192.168.1.20:8123` or `https://ha.example.net`. Use the **IP address**; `.local` names do not work. A trailing `/` or `/api` is removed.
    - **Token**: the one you copied.
-5. Press **Test connection**. It tries the address and token without saving and says "Connected to Home, version 2026.10.2", or what is wrong. After a good test press **Save**. After a failed one, fix the details and **Test again**, or **Save anyway** (for example when Home Assistant is off for now). Changing the address or token clears the result.
+5. Press **Test connection** (nothing saved). After a good test press **Save**; after a failed one fix it and **Test again**, or **Save anyway** (say, Home Assistant is off). Editing the address or token clears the result.
 
-FamilyOS then checks the connection again and shows the address, Home Assistant's name and version, and the result. The token is kept sealed and never shown again, so **Change** asks for it again. **Disconnect** (**⋯** menu) makes FamilyOS forget the address and token; nothing changes in Home Assistant. If a token was ever exposed, delete it in Home Assistant too.
+**Good to know**
+- After saving, the page shows the address, Home Assistant's name and version, and the result.
+- The token is sealed and never shown again; **Change** asks for it again.
+- **Disconnect** (**⋯**) forgets the address and token; Home Assistant is unchanged. Delete an exposed token in Home Assistant too.
 
 | Result | Meaning and fix |
 |---|---|
 | **Connected** | All is well. |
-| **Token refused** | Home Assistant did not accept the token. Create a new one, choose **Change**. |
-| **Not Home Assistant** | Something else answers there. Check the address and port (usually 8123). |
-| **Address not allowed** | FamilyOS does not connect to that address (for example a special or link-local one). Use Home Assistant's address on your home network. |
-| **Cannot be reached**, **No answer** | Is Home Assistant running, and is the address right? `.local` never works; use the IP address. |
-| **Check failed** | Something else went wrong. **Check again**, or **Change**. |
+| **Token refused** | Create a new token, choose **Change**. |
+| **Not Home Assistant** | Something else answers. Check address and port (usually 8123). |
+| **Address not allowed** | FamilyOS refuses that address (special or link-local). Use Home Assistant's home-network address. |
+| **Cannot be reached**, **No answer** | Is it running, is the address right? Use the IP, not `.local`. |
+| **Check failed** | **Check again**, or **Change**. |
 
 ## Show sensors on Today and on the display
 
-When the connection says **Connected**, **What to show** appears on the same page.
+When the page says **Connected**, use **What to show**:
 
-1. Press **Add**. Search by name or id (such as `sensor.kitchen_temperature`) and choose it. If your home has too many things to list, type the id.
-2. Give it a short name, up to 40 characters. It starts with Home Assistant's name.
+1. Press **Add**, search by name or id (`sensor.kitchen_temperature`) and choose it. If your home has too many things to list, type the id.
+2. Give it a short name (up to 40 characters; it starts with Home Assistant's).
 3. Press **Save**.
 
 **Good to know**
-- Up to 12 things. Tap a row to rename, move up or down, or remove it. Disconnecting keeps the list.
-- You can show sensors, doors and windows, lights, switches, locks, covers, thermostats, scenes and anything with a state. Showing a light or lock only shows its state; switching needs [its own permission](#switch-things-from-familyos).
-- **People, their phones and places** are not offered here: where someone is is [their own choice](#who-is-home).
-- Everyone who may see Home Assistant values sees them on Today, in a small section that can be hidden in **What Today shows**.
-- A family display shows them when allowed in **Settings → Devices**. It can also show a whole screen: add the page **Around the house** under **Pages** in the screen's panel ([Family displays](displays.md#pages)). Two columns on a large screen; it says how many more when they do not all fit.
-- Values are read live and are at most about a minute old. When Home Assistant cannot be reached, nothing is shown (no old value), and Today says nothing about it.
-- Numbers keep Home Assistant's unit and follow your region's format. Doors, windows and covers read **Open** or **Closed**, locks **Locked** or **Unlocked**, motion **Detected** or **Clear**, smoke or a problem **Alert** or **OK**, lights and switches **On** or **Off**, a thermostat its mode and current temperature. A scene or button reads **Last run 22:10** (with the date when it was another day), or **Never run**. Anything else is worded as Home Assistant words it. No value reads **Not available**.
+- Up to 12 things. Tap a row to rename, reorder or remove. Disconnecting keeps the list.
+- Sensors, doors, windows, lights, switches, locks, covers, thermostats, scenes and anything with a state. Lights and locks show state only; [switching](#switch-things-from-familyos) needs its own permission.
+- **People, phones and places** are not offered: see [Who is home](#who-is-home).
+- Everyone who may see Home Assistant values sees them on Today, in a section hideable in **What Today shows**.
+- A family display shows them when allowed in **Settings → Devices**. Add the page **Around the house** under **Pages** in the screen's panel ([Family displays](displays.md#pages)) for a whole screen: two columns on a large one, with a count of those that do not fit.
+- Values are live, at most about a minute old. When Home Assistant is unreachable nothing is shown (never an old value).
+- Numbers keep Home Assistant's unit and your region's format.
+
+| Kind | Reads |
+|---|---|
+| Doors, windows, covers | **Open** / **Closed** |
+| Locks | **Locked** / **Unlocked** |
+| Motion | **Detected** / **Clear** |
+| Smoke, problem | **Alert** / **OK** |
+| Lights, switches | **On** / **Off** |
+| Thermostat | Mode and current temperature |
+| Scene, button | **Last run 22:10** (with the date if another day), **Never run** |
+| No value | **Not available** |
+
+Anything else is worded as Home Assistant words it.
 
 ## Switch things from FamilyOS
 
-Lights, switches, fans, on/off helpers (`input_boolean`), covers (blinds, windows, garage doors), locks, scenes and scripts can be switched from FamilyOS, one by one, when you allow it.
+Lights, switches, fans, on/off helpers (`input_boolean`), covers, locks, scenes and scripts, one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
-2. Turn on **Can be switched from FamilyOS**. It starts off for everything.
-3. Decide whether FamilyOS asks first. **Ask before switching** appears under the first switch and starts **off** for every item. Turn it on for anything that matters, such as a lock or garage door: FamilyOS then asks first, naming the thing and the action ("Unlock Front door?"). Things set up earlier keep their choice.
+2. Turn on **Can be switched from FamilyOS** (off for everything at first).
+3. Optionally turn on **Ask before switching** (off for every item; FamilyOS does not guess). Use it for locks and garage doors: FamilyOS then asks first, e.g. "Unlock Front door?". Earlier items keep their choice.
 4. Press **Save**.
 
-The row on Today and on this page then has a switch (lights, switches, fans), **Open** and **Close** (covers; **Stop** while one moves), **Lock** or **Unlock**, or **Run** (scenes, scripts). The value says **Switching…** until Home Assistant shows the new state, usually within seconds.
+The row on Today and on this page then has a switch (lights, switches, fans), **Open** / **Close** (covers; **Stop** while moving), **Lock** / **Unlock**, or **Run** (scenes, scripts). The value says **Switching…** until the new state shows, usually in seconds.
 
 **Good to know**
-- **Who may switch**: people whose role has **Switch things through Home Assistant**. At first only admins; give it to others under **Settings → Family → Roles**. Others see values but no switches.
-- **Family displays never switch anything.** Neither do FamilyOS's assistant or connected AI apps ([MCP](mcp.md)): they cannot do it or suggest it.
-- **The token can do more than FamilyOS lets anyone do.** Home Assistant has no token that may only switch some things, so it can switch and unlock everything its user can. FamilyOS asks only for what you allowed. Keep the token safe and the separate non-administrator user.
-- **Switched lately** on **Settings → Family → Home Assistant** lists the last ten switches: "Tom turned on Living room light", "Mara ran Movie night", "Tom unlocked Front door". A failure reads "Could not switch Living room light", with who asked beside the time. Entries use the name the thing had then and stay after a rename or removal. Tapping a switchable thing shows its own last five. Entries are kept about three months. Everyone who can open the page sees them. A display not allowed to show names says "Someone".
-- **When it does not work**, the person sees "Could not switch …". If the connection says **Token refused**, create a new token and **Change**. If Home Assistant no longer has the thing, remove it or pick it again. If Home Assistant does not answer, FamilyOS tries once more, then gives up; it never switches later.
+- Needs the role permission **Switch things through Home Assistant**: admins at first; give it under **Settings → Family → Roles**. Others see values, no switches.
+- Family displays, the assistant and connected AI apps ([MCP](mcp.md)) never switch anything and cannot suggest it.
+- The token can do more than FamilyOS allows: Home Assistant has no partial tokens, so it can switch and unlock everything its user can. Keep it safe and the user non-administrator.
+- **Switched lately** (same page) lists the last 10: "Tom turned on Living room light", "Mara ran Movie night", "Tom unlocked Front door"; failures read "Could not switch Living room light" with who asked. Entries keep the name the thing had then, survive rename and removal, are kept about 3 months and are visible to everyone who can open the page. A display not allowed names says "Someone". A switchable thing also shows its own last 5.
+- On failure the person sees "Could not switch …". **Token refused**: new token, **Change**. Thing gone from Home Assistant: remove or re-pick it. No answer: FamilyOS retries once, then gives up; it never switches later.
 
 ## Who is home
 
-FamilyOS can show beside each name on Today whether they are **Home**, **Away** or **At School**, from Home Assistant (its app or the router). Only what each person chooses to show about themselves. Nobody can choose for someone else, an admin included.
+Today can show beside each name **Home**, **Away** or **At School**, from Home Assistant (its app or router). Only what each person chooses to share; nobody, admins included, can choose for another.
 
-1. **An admin links people.** In **Settings → Family → Home Assistant**, **People** lists the family. Tap a member, choose who they are in Home Assistant (its **Settings → People**), then **Save**. **Unlink** in the same panel removes the link. Each row says what that person shares (**Shares nothing yet** at first).
-2. **Each person chooses.** Under **Settings → You → Where I am**, a linked person picks:
-   - **Nothing** (the start): nobody sees where they are.
-   - **Home or away**: only whether they are home.
-   - **Place**: the name of the Home Assistant zone they are in, like School or Work. Anywhere else reads **Away**. Zones are made in Home Assistant under **Settings → Areas, labels & zones**.
+1. **Admin links people.** **Settings → Family → Home Assistant → People**: tap a member, choose who they are in Home Assistant (its **Settings → People**), **Save**. **Unlink** removes it. Each row shows what they share (**Shares nothing yet** at first).
+2. **Each person chooses** under **Settings → You → Where I am**:
+   - **Nothing** (start): nobody sees.
+   - **Home or away**.
+   - **Place**: the Home Assistant zone name (School, Work), else **Away**. Zones: Home Assistant **Settings → Areas, labels & zones**.
 
-   Someone not linked sees: "Not linked to anyone in Home Assistant yet. Ask whoever set up Home Assistant."
-3. **Displays are a choice of their own.** **Show on family displays** starts off. When on, a display allowed to see who is home (**Settings → Devices**) shows that person. When off, displays never show them.
+   Unlinked people see "Not linked to anyone in Home Assistant yet. Ask whoever set up Home Assistant."
+3. **Displays**: **Show on family displays** starts off. When on, a display allowed to see who is home (**Settings → Devices**) shows them; when off, never.
 
 **Good to know**
-- **Who sees it**: roles with **See who is home** (every role at first; change under **Settings → Family → Roles**). It shows on Today beside each name, in every style, as the block **Who is home**, which anyone can hide under **What Today shows**.
-- Read live, at most about a minute old. When Home Assistant cannot be reached, or does not know where someone is, nothing is shown.
-- FamilyOS keeps only who is linked to whom and what each person chose. No history, no places or coordinates: the phone's position in Home Assistant's answer is thrown away before anything else is read. The map stays in Home Assistant.
+- Needs the role permission **See who is home** (every role at first; **Settings → Family → Roles**). Shown on Today in every style as the block **Who is home**, hideable under **What Today shows**.
+- Live, at most about a minute old; nothing when Home Assistant is unreachable or does not know.
+- FamilyOS keeps only who is linked to whom and each choice: no history, no places, no coordinates (discarded before anything else is read). The map stays in Home Assistant.
 - The assistant and connected AI apps ([MCP](mcp.md)) are never told where anyone is.
 
 ## Notifications on your phone
 
-FamilyOS can send notifications to the Home Assistant app on a member's phone, through your Home Assistant with the same token. The app must be set up on that phone first.
+FamilyOS can send notifications to the Home Assistant app on a member's phone, via your Home Assistant with the same token. The app must be set up on the phone first.
 
-1. **An admin picks the phone.** In **Settings → Family → Home Assistant**, tap a linked member in **People**. Under **Notifications**, Home Assistant's phones are listed; the one that looks like theirs is marked **Suggested**. Choose it, or **None**, then **Save**. Only linked members can have a phone.
-2. **Send a test.** **Send a test** in the same panel sends a short text and shows the result: "Sent: check the phone", "This phone is no longer in Home Assistant" (choose another), "Home Assistant refused the token" or "Could not reach Home Assistant".
-3. **Each member switches it on** under **Settings → Notifications**, kind by kind; it is off until then. Quiet hours and the other choices there apply. A member not linked yet sees **Home Assistant app** there with a note that an admin can link them.
+1. **Admin picks the phone.** **Settings → Family → Home Assistant → People**, tap a linked member. Under **Notifications**, choose a phone (the likely one is marked **Suggested**) or **None**, **Save**. Only linked members.
+2. **Send a test** (same panel). Results: "Sent: check the phone", "This phone is no longer in Home Assistant" (choose another), "Home Assistant refused the token", "Could not reach Home Assistant".
+3. **Each member turns it on** kind by kind under **Settings → Notifications** (off until then). Quiet hours and the other choices apply. Unlinked members see **Home Assistant app** there with a note that an admin can link them.
 
-The texts go to your Home Assistant and from there through its own push service to the phone, nowhere else. Home Assistant's address must be the **IP address** or an `https` address (not `homeassistant.local`).
+Texts go only to your Home Assistant, then through its push service to the phone. Its address must be the **IP address** or an `https` address.
 
 ## Not possible yet
 
-- **Home Assistant's assistant (Assist)** reaches FamilyOS through [MCP](mcp.md#home-assistant); it acts as the person who set it up and can only read and suggest.
-- The assistant cannot know who is home, nor switch anything.
-- **A map**: FamilyOS shows a place's name, never a map.
-- **Thermostats and alarm panels** can be shown but not switched (no setting a temperature, arming or disarming).
+- Home Assistant's Assist reaches FamilyOS through [MCP](mcp.md#home-assistant), as the person who set it up, read and suggest only.
+- The assistant cannot know who is home or switch anything.
+- No map, only a place's name.
+- Thermostats and alarm panels can be shown, not switched (no temperature setting, arming, disarming).
