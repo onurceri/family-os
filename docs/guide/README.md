@@ -34,3 +34,24 @@ For whoever runs FamilyOS at home. Start with the first page; the others can wai
 30. [The API for apps and scripts](api.md): read and change the calendar, lists, chores and board from a program, with curl examples.
 31. [Siri and Shortcuts](siri.md): say "Hey Siri, add to FamilyOS" to fill the shopping list, hear today's plans, or add a task, with Apple's Shortcuts app.
 32. [Setup status](setup-status.md): see which of the things that make FamilyOS work well are set up, and what a missing one costs.
+
+## Writing a guide page
+
+A page is read by someone in the middle of setting something up. Help them find the step, the setting or the limit
+they need, and stop.
+
+- **Start with what it is for**, in one or two sentences. Send readers looking for something else to the right page in
+  a short quote.
+- **Steps are numbered** and name the exact place and words on screen (**Settings → Family → Extensions**). One action
+  per step.
+- **Use a table** when several things are compared on the same points: switches and their defaults, which apps work
+  how, symptoms and fixes.
+- **Collect the rest in "Good to know"**: one short line per fact (a limit, who may do it, when something stops).
+- **Keep every concrete fact**: names of settings and buttons, numbers and limits, who may do what, what is kept or
+  sent where, commands, and every warning about data or privacy. Shorten the sentence, not the fact.
+- **Leave out** reasons why the software is built a certain way (they belong in
+  [architecture.md](../architecture.md)), repeats of a warning that has its own page (link to it), and introductions
+  or summaries of what the page is about to say or just said.
+- **Say it once.** If two pages need the same explanation, one page explains it and the other links there.
+- Write plain English for someone who is not a developer. Developer details go last, under **For developers**.
+- Keep the headings that other pages link to (`page.md#heading`), or update those links in the same change.
