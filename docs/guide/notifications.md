@@ -1,57 +1,57 @@
 # Notifications
 
-FamilyOS tells people when something needs them. Everything is listed in the app; phone notifications and [Telegram](telegram.md) (same notifications, with approve and reject buttons) are optional copies.
+Everything is listed in the app; phone notifications and [Telegram](telegram.md) (with approve and reject buttons) are optional copies.
 
 ## What you are told about
 
-| Kind | Who | When and what |
+| Kind | Who | When |
 |---|---|---|
-| Suggestions waiting for approval | The people who may approve | A supervised member shares to Quick add and the AI proposes changes, or suggests a change by hand. You see who asked and what (**Leo: Change an event: Piano lesson**). Suggestions from one shared item arrive as one notification after about half a minute. Opening it goes to Quick add. |
-| Answers to your suggestions | The one who suggested | Someone else approves or rejects it (**Mara said no to your suggestion**, **Change an event: Piano lesson**). Suggestions from one item decided together arrive as one. |
-| Something you shared has been read | The one who shared | You shared from outside the app (share sheet, Telegram or email) and the AI has suggestions. Telegram adds approve and reject buttons. |
-| Event reminders | The people the event is for (everyone who can see the calendar when it is for nobody in particular) | A timed event 30 minutes before, an all-day event at 09:00 on the day. Change it per event in the **Reminder** field. See [Calendars](calendars.md). |
-| Task due dates | The assignee (everyone who can see lists when nobody is) | At the due time, or 09:00 when it has no time. |
-| Chores | The person whose turn it is | At 09:00 on the day a chore is due. A chore anyone may do reminds nobody. See [Chores](chores.md). |
-| Duties (a renewal, a service) | The assignee, or everyone who can see records when nobody is | A number of days before and again on the due day, at 09:00. See [What needs doing and Papers](records.md). |
-| A backup could not be sent off the server | Admins only | See [Backups](backups.md). |
-| Auto-approval stopped | Admins only | See [Auto-approval](auto-approval.md). |
+| Suggestions waiting | People who may approve | A supervised member's share or hand-made suggestion: who and what (**Leo: Change an event: Piano lesson**). One item's suggestions arrive as one, after about 30 seconds. Opens Quick add. |
+| Answers to your suggestions | The suggester | Someone else approves or rejects (**Mara said no to your suggestion**). Decided together = one notification. |
+| Something you shared was read | The sharer | Shared from outside the app (share sheet, Telegram, email) and the AI has suggestions. Telegram adds buttons. |
+| Event reminders | The event's people (all who see the calendar if none) | Timed: 30 min before. All-day: 09:00 that day. Set per event in **Reminder** ([Calendars](calendars.md)). |
+| Task due dates | Assignee (all who see lists if none) | At due time, or 09:00 without one. |
+| Chores | Whose turn it is | 09:00 on the due day. Anyone-may-do chores remind nobody ([Chores](chores.md)). |
+| Duties | Assignee (all who see records if none) | Days before, and on the due day at 09:00 ([What needs doing and Papers](records.md)). |
+| Backup could not be sent off | Admins | [Backups](backups.md) |
+| Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |
 
 **Good to know**
-- You are never told about your own suggestions, and what you share yourself is for you alone to decide, so other adults are not told about it.
-- No answer comes when you take a suggestion back yourself, or when auto-approval approves it.
-- Using the Quick add page sends no "has been read" notification.
-- Reminder times follow the family's time zone (see [Region and formats](region.md)).
+- Never told about your own suggestions; what you share is yours alone to decide.
+- No answer when you take a suggestion back or auto-approval approves it.
+- Quick add page uploads send no "was read" notification.
+- Times follow the family time zone ([Region and formats](region.md)).
 
 ## The list in the app
 
-- **Computer or tablet:** the **bell** at the top of the navigation shows how many you have not read. Press it for the latest ones, **Mark all read**, or to open one.
-- **Phone:** the bell is at the top of **Today** and opens the full list (also under **Settings → You → Notifications**, where the number on **More** counts unread ones).
-- Tap a notification to mark it read and go to the thing it is about. **Mark all as read** clears the count.
-- A "suggestion to review" notification leaves the list once someone has decided the suggestion.
-- Each person has their own list, in their own language.
+- **Computer/tablet:** the **bell** in the navigation shows the unread count; press it for the latest, **Mark all read**, or to open one.
+- **Phone:** the bell is on **Today** and opens the full list (also **Settings → You → Notifications**; the number on **More** counts unread).
+- Tapping marks read and goes to the thing. **Mark all as read** clears the count.
+- A "suggestion to review" leaves the list once decided.
+- Each person has their own list, in their language.
 
 ## Notifications on a phone or computer
 
-1. Open **Settings → You → Notifications → This device** (the **Settings** link in the bell's popover leads there too).
-2. Press **Turn on notifications on this device** and allow it when the browser asks. The device then gets notifications even when FamilyOS is closed.
-3. Press **Send a test notification** to check.
+1. **Settings → You → Notifications → This device** (also via **Settings** in the bell popover).
+2. Press **Turn on notifications on this device** and allow it in the browser. They arrive even when FamilyOS is closed.
+3. **Send a test notification** to check.
 
-**Turn off notifications on this device** stops them on this device only. **Devices with notifications** lists your devices.
+**Turn off notifications on this device** affects only this device; **Devices with notifications** lists yours.
 
 | Device | How |
 |---|---|
-| iPhone and iPad | Only from the app on the Home Screen: in Safari tap Share, **Add to Home Screen**, open FamilyOS from there, turn them on. Needs iOS 16.4 or newer. |
-| Android, Windows, macOS, Linux | Chrome, Edge, Firefox and Safari work. Use the installed app if you installed it. |
+| iPhone, iPad | Only from the Home Screen app: Safari Share → **Add to Home Screen**, open from there, turn on. iOS 16.4+. |
+| Android, Windows, macOS, Linux | Chrome, Edge, Firefox, Safari. Use the installed app if you have it. |
 
 **Good to know**
-- Browsers only allow this over HTTPS; see [HTTPS and phones](https.md).
-- If you pressed "Block" once, allow notifications for the site in your browser or system settings, then reload.
-- A notification you already read in the app is not sent to your phone.
+- Needs HTTPS ([HTTPS and phones](https.md)).
+- If you pressed "Block", allow the site in browser or system settings, then reload.
+- A notification already read in the app is not sent to the phone.
 
 ## Quiet hours
 
-Switch on **Quiet hours** and choose **From** and **Until** (default 22:00 to 07:00). In that time nothing is sent to phones or Telegram. Notifications still appear in the list, and anything unread when quiet hours end is sent then. Quiet hours may cross midnight and follow the family's time zone.
+Switch on **Quiet hours**, set **From** and **Until** (default 22:00–07:00; may cross midnight; family time zone). Nothing goes to phones or Telegram then; the list still fills, and unread ones are sent when quiet hours end.
 
 ## What goes where
 
-Under the quiet hours, every kind has a switch for each way of receiving it: **Phone notifications** (once a device has them on) and **Telegram** (once linked). Turn off what you do not want; the choices are yours alone. Without either, the page only says that notifications appear here in the app. Kinds you can never receive (the backup message for non-admins) are not listed.
+Under quiet hours each kind has a switch per channel: **Phone notifications** (once a device is on) and **Telegram** (once linked). Choices are yours alone. Without a channel the page says notifications appear in the app. Kinds you can never get (backup message for non-admins) are not listed.
