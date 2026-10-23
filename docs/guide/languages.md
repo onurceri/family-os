@@ -1,26 +1,34 @@
 # Languages
 
-English is built into FamilyOS. Every other language is a **language pack**: a folder of text files that you can add (or remove) without updating the app. Turkish is included. A string a pack does not translate shows in English, so a half-finished pack is still usable.
+English is built into FamilyOS. Every other language is a **language pack**: a folder of text files you can add or remove without updating the app. Turkish is included. A string a pack does not translate shows in English, so a half-finished pack is still usable.
 
-A language only chooses words. Dates, times, numbers and weeks follow your [region](region.md), which is a separate setting.
+A language only chooses words. Dates, times, numbers and weeks follow your [region](region.md), a separate setting.
 
 ## Choosing a language
 
-- **First run.** The very first setup screen is the language. It is preselected from your browser's languages; pick another and the rest of setup continues in it. It becomes the family's language and the first admin's own.
-- **Family language.** **Settings → Family → Language & region**, **Family language** (you need the permission to change family settings, which admins have). It is used for people who have not chosen their own, for notifications to them, on family displays, and for the titles the AI writes for Quick add.
-- **My language.** **Settings → You → Profile & sign-in**. Everyone can pick their own, or "Same as the family". The app, notifications, Telegram messages and the assistant follow it.
-- **Sign-in page.** A small switcher changes the language on this device until you sign in. It appears when more than one language is available.
+| Where | What it sets |
+|---|---|
+| **First run** | The first setup screen is the language, preselected from your browser's languages. It becomes the family's language and the first admin's own. |
+| **Settings → Family → Language & region → Family language** | For people who have not chosen their own, notifications to them, family displays, and the titles the AI writes for Quick add. Needs the permission to change family settings (admins have it). |
+| **Settings → You → Profile & sign-in** | Your own, or "Same as the family". The app, notifications, Telegram messages and the assistant follow it. |
+| **Sign-in page** | A small switcher changes the language on this device until you sign in. Shown when more than one language is available. |
 
 ## Adding a pack
 
-**Settings → Family → Language & region** lists the **Available languages**: English is **Built in**, others are **Included** or **Installed**, each with how much of the app it translates. To add one, use **Add a language**:
+**Settings → Family → Language & region** lists the **Available languages**: English is **Built in**, others are **Included** or **Installed**, each with how much of the app it translates. Under **Add a language**:
 
 - **From a file.** Choose a pack as one `.json` file (see below).
-- **From an address.** Enter an `https` address that returns the pack as JSON and press **Install**. FamilyOS fetches it in the background (with the same protections as other outbound requests: https only, no private addresses, a size limit). You typed the address, so this is not a call you did not configure. The page says if it could not be fetched.
+- **From an address.** Enter an `https` address that returns the pack as JSON and press **Install**. FamilyOS fetches it in the background (https only, no private addresses, a size limit). The page says if it could not be fetched.
 
-Strings that cannot be used (unknown keys, mismatched `{{placeholders}}`, text longer than 4 KB) are skipped and counted on the page; the rest of the pack still works. A pack is checked against the features this FamilyOS has: one that leaves a feature out still installs (that feature shows in English, or in its own translation, and the pack's share goes down), and a pack's file for a feature you do not have is simply not used. A pack is limited to 2 MB, and up to 40 installed packs. Installing a pack with the code of an included one (for example `tr`) replaces it, so newer translations do not wait for an app release. Removing an installed pack (**Remove**, then confirm) brings the included one back. Without an included pack of that code, the family language falls back to English and people who used it follow the family language.
+To remove an installed pack press **Remove**, then confirm.
 
-Installed packs are stored in `<data>/languages/<code>/` and are part of backups.
+**Good to know**
+- Strings that cannot be used (unknown keys, mismatched `{{placeholders}}`, text longer than 4 KB) are skipped and counted on the page; the rest still works.
+- A pack that leaves a feature out still installs: that feature shows in English, or in its own translation, and the pack's share goes down. A file for a feature you do not have is not used.
+- Limits: 2 MB per pack, up to 40 installed packs.
+- A pack with the code of an included one (for example `tr`) replaces it, so newer translations do not wait for an app release. Removing it brings the included one back.
+- Without an included pack of that code, the family language falls back to English and people who used it follow the family language.
+- Installed packs are stored in `<data>/languages/<code>/` and are part of backups.
 
 ## Making a pack
 
@@ -34,7 +42,7 @@ languages/de/
   ...               show in that feature's own translation if it has one, else in English
 ```
 
-Features can bring their own translations with them (`extensions/<id>/src/messages/<code>.json`). Where both have a string, the pack's wins, so a pack can correct a feature's translation; where the pack has none, the feature's own is used.
+Features bring their own translations (`extensions/<id>/src/messages/<code>.json`). Where both have a string, the pack's wins; where the pack has none, the feature's own is used.
 
 `manifest.json`:
 
@@ -62,7 +70,7 @@ pnpm lang:check languages/de --complete   # also fails when strings are missing
 pnpm lang:check extensions/calendar       # the translations one feature ships
 ```
 
-`lang:template` fills every file with the English text, so you translate each value in place and an untranslated string reads as English meanwhile. `lang:check` on a pack counts the features' own translations of the same language too, as the app shows them, and counts how many strings are still identical to English (many are fine, such as names). Included languages must be 100% complete and valid; CI enforces it.
+`lang:template` fills every file with the English text, so you translate each value in place. `lang:check` on a pack counts the features' own translations of the same language too, and how many strings are still identical to English (many are fine, such as names). Included languages must be 100% complete and valid; CI enforces it.
 
 ### Sharing a single file
 
