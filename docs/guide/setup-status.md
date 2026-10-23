@@ -2,7 +2,7 @@
 
 **Settings → System → Setup status** (admins) lists what must be set up for FamilyOS to work fully. Each row says what it is, whether it is **Done** or **Missing**, and, while missing, what stops working. A missing row has a button to the page where you put it right.
 
-The page only reads; nothing on it changes by itself. For a new family, Today's first steps card links to it too.
+The page only reads; nothing changes by itself. Today's first steps card links to it for a new family.
 
 | Check | Done when | While missing |
 |---|---|---|
