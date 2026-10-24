@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.36",
+	"sdk": "0.8.37",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -324,6 +324,7 @@
 			"Facts",
 			"FamilyList",
 			"FieldError",
+			"FileTargetChoices",
 			"HelpTip",
 			"HourlyStrip",
 			"IconButton",

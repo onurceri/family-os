@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { FileTarget } from '@famos/ext-inbox/contract';
+	import { FileTargetChoices } from '@famos/ui/famos';
 	import { Car } from '@lucide/svelte';
-	import { RECORD_KIND, type Vehicle } from '../contract/index.js';
+	import { type Vehicle, RECORD_KIND } from '../contract/index.js';
 	import { loadVehicles } from './data.js';
 	import { useVehicles } from './i18n.js';
 
@@ -28,34 +29,11 @@
 	const allowed = $derived(
 		app.can('vehicles.view') && app.access('records.attachDocument') === 'apply',
 	);
-	const target = (v: Vehicle): FileTarget => ({
-		recordId: v.id,
-		recordKind: RECORD_KIND,
-		name: v.name,
-	});
+	const choices = $derived(
+		allowed
+			? vehicles.map((r) => ({ recordId: r.id, recordKind: RECORD_KIND, name: r.name, icon: Car }))
+			: [],
+	);
 </script>
 
-{#if allowed && vehicles.length > 0}
-	<div class="grid gap-2" role="group" aria-label={t('file_target_title')}>
-		<p class="text-ink-soft text-xs font-semibold tracking-widest uppercase">
-			{t('file_target_title')}
-		</p>
-		<ul class="flex flex-wrap gap-2">
-			{#each vehicles as v (v.id)}
-				{@const on = selected?.recordId === v.id}
-				<li>
-					<button
-						type="button"
-						aria-pressed={on}
-						onclick={() => onselect(on ? null : target(v))}
-						class="flex min-h-11 items-center gap-2 rounded-full px-3.5 text-sm font-bold transition-colors {on
-							? 'bg-surface text-ink shadow-lit ring-2'
-							: 'bg-idle text-ink-soft'}"
-					>
-						<Car class="size-4" aria-hidden="true" />{v.name}
-					</button>
-				</li>
-			{/each}
-		</ul>
-	</div>
-{/if}
+<FileTargetChoices title={t('file_target_title')} {choices} {selected} {onselect} />

@@ -40,6 +40,7 @@ export { default as Fab } from './Fab.svelte';
 export { default as Facts } from './Facts.svelte';
 export { default as FamilyList, type FamilyStatus } from './FamilyList.svelte';
 export { default as FieldError } from './FieldError.svelte';
+export { default as FileTargetChoices } from './FileTargetChoices.svelte';
 export {
 	FIELD_REASON,
 	type FieldErrors,
