@@ -74,18 +74,23 @@ export interface CheckResult {
 	name: string | null;
 }
 
-/** Asks Home Assistant who it is. Reads only; says nothing about the answer except what it means. */
+/**
+ * Asks Home Assistant who it is. Reads only; says nothing about the answer except what it means.
+ * Each read may take `CALL_TIMEOUT_MS`, or, with `deadlineMs`, both reads share that one deadline.
+ */
 export async function checkHomeAssistant(
 	http: ExternalHttp,
 	baseUrl: string,
 	token: string,
-	timeoutMs = CALL_TIMEOUT_MS,
+	deadlineMs?: number,
 ): Promise<CheckResult> {
+	const started = Date.now();
 	const request = (path: string) => ({
 		url: `${baseUrl}${path}`,
 		allowLocal: true,
 		headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-		timeoutMs,
+		timeoutMs:
+			deadlineMs === undefined ? CALL_TIMEOUT_MS : Math.max(1, deadlineMs - (Date.now() - started)),
 		maxBytes: CALL_MAX_BYTES,
 	});
 	try {

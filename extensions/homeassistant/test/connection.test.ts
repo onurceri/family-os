@@ -463,7 +463,22 @@ describe('test the connection before saving', () => {
 		expect(await everythingStored()).not.toContain('sentinel');
 		// Only reads, and a short wait: a person is waiting.
 		expect(k.http.requests.map((r) => r.url)).toEqual([`${BASE}/api/`, `${BASE}/api/config`]);
-		expect(k.http.requests.every((r) => r.timeoutMs === 8_000)).toBe(true);
+	});
+
+	it('gives both reads one shared deadline of 6 seconds', async () => {
+		serveHomeAssistant();
+		const get = k.http.get.bind(k.http);
+		k.http.get = async (request) => {
+			// The first read takes a while; the second may only use what is left.
+			if (request.url.endsWith('/api/')) await new Promise((done) => setTimeout(done, 40));
+			return get(request);
+		};
+		await test();
+		const [first, second] = k.http.requests.map((r) => r.timeoutMs ?? 0);
+		expect(first).toBeLessThanOrEqual(6_000);
+		expect(first).toBeGreaterThan(5_000);
+		expect((first ?? 0) - 1).toBeGreaterThanOrEqual(second ?? 0);
+		expect(second).toBeLessThan((first ?? 0) - 30);
 	});
 
 	it('does not touch a connection that already exists', async () => {
