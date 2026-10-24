@@ -24,6 +24,7 @@ import {
 import { load, recordTokenRefused } from './connection.ts';
 import { recordSwitch } from './history.ts';
 import { findItem, mayControl } from './items.ts';
+import { CALL_MAX_BYTES, CALL_TIMEOUT_MS } from './limits.ts';
 import { tables } from './store.ts';
 import { forgetValues } from './values.ts';
 
@@ -35,8 +36,6 @@ import { forgetValues } from './values.ts';
  * may neither run nor suggest this one, so only a person who holds the capability switches.
  */
 
-const TIMEOUT_MS = 10_000;
-const MAX_BYTES = 64 * 1024;
 /** Taps on the same thing within this long are one switch. */
 const DOUBLE_TAP_MS = 3_000;
 
@@ -92,7 +91,7 @@ const findRow = (ctx: JobContext, id: string) =>
 export const switchJob = defineJob({
 	name: 'homeassistant.switch',
 	payload: SwitchPayload,
-	timeoutMs: 2 * TIMEOUT_MS,
+	timeoutMs: 2 * CALL_TIMEOUT_MS,
 	// One more try when Home Assistant did not answer; never more, a switch is wanted now.
 	maxAttempts: 2,
 	async handle(ctx, { id, operation, memberId, label, entityId }, run) {
@@ -130,8 +129,8 @@ export const switchJob = defineJob({
 				json: { entity_id: row.entity_id },
 				allowLocal: true,
 				headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-				timeoutMs: TIMEOUT_MS,
-				maxBytes: MAX_BYTES,
+				timeoutMs: CALL_TIMEOUT_MS,
+				maxBytes: CALL_MAX_BYTES,
 			});
 		} catch (error) {
 			const code = isExternalHttpError(error) ? error.code : 'failed';

@@ -23,19 +23,10 @@ import {
 	UnlinkPersonInputSchema,
 } from '../contract/index.ts';
 import { homeassistantManage, homeassistantPresence, peopleChanged } from './capabilities.ts';
+import { ENTITY_MAX_BYTES, ENTITY_TIMEOUT_MS } from './limits.ts';
 import { type PersonState, readPerson, toPresence } from './presence.ts';
 import { type HomeAssistantTables, tables } from './store.ts';
-import {
-	AT_ONCE,
-	CACHE_MS,
-	credentials,
-	ENTITY_MAX_BYTES,
-	ENTITY_TIMEOUT_MS,
-	inParallel,
-	memoryOf,
-	once,
-	request,
-} from './values.ts';
+import { AT_ONCE, CACHE_MS, credentials, inParallel, memoryOf, once, request } from './values.ts';
 
 /**
  * Who is home. An admin links a member to a Home Assistant person; nothing is shown until that

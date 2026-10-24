@@ -18,6 +18,7 @@ import {
 import { homeassistantManage, homeassistantView } from './capabilities.ts';
 import { load } from './connection.ts';
 import { loadItems, mayControl } from './items.ts';
+import { ENTITY_MAX_BYTES, ENTITY_TIMEOUT_MS, LIST_MAX_BYTES, LIST_TIMEOUT_MS } from './limits.ts';
 import { pickPerson } from './presence.ts';
 import { type PickedState, pickState, toValue } from './state.ts';
 
@@ -33,11 +34,7 @@ export const CACHE_MS = 60_000;
 export const SETTLING_CACHE_MS = 1_500;
 /** How long after a switch values are kept only briefly. */
 export const SETTLING_MS = 15_000;
-export const ENTITY_TIMEOUT_MS = 5_000;
-export const ENTITY_MAX_BYTES = 64 * 1024;
 export const AT_ONCE = 4;
-const LIST_TIMEOUT_MS = 10_000;
-const LIST_MAX_BYTES = 4 * 1024 * 1024;
 const MAX_ENTITIES = 50;
 
 interface Cached<T> {

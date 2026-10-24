@@ -23,17 +23,17 @@ import {
 } from '../contract/index.ts';
 import { homeassistantManage, peopleChanged } from './capabilities.ts';
 import { load, recordTokenRefused } from './connection.ts';
-import { toLink } from './people.ts';
-import { type HomeAssistantTables, tables } from './store.ts';
 import {
-	CACHE_MS,
-	credentials,
+	CALL_MAX_BYTES,
+	CALL_TIMEOUT_MS,
 	ENTITY_MAX_BYTES,
 	ENTITY_TIMEOUT_MS,
-	memoryOf,
-	once,
-	request,
-} from './values.ts';
+	LIST_MAX_BYTES,
+	LIST_TIMEOUT_MS,
+} from './limits.ts';
+import { toLink } from './people.ts';
+import { type HomeAssistantTables, tables } from './store.ts';
+import { CACHE_MS, credentials, memoryOf, once, request } from './values.ts';
 
 /**
  * Texts in the Home Assistant app. An admin picks, for each linked member, the `notify` service
@@ -45,11 +45,6 @@ import {
 
 type Row = HomeAssistantTables['homeassistant_people'];
 
-const SEND_TIMEOUT_MS = 10_000;
-const SEND_MAX_BYTES = 64 * 1024;
-const LIST_TIMEOUT_MS = 10_000;
-/** Every service of every domain is in the answer, so a big home sends a lot. */
-const LIST_MAX_BYTES = 4 * 1024 * 1024;
 const MAX_TARGETS = 200;
 const MOBILE_APP = 'mobile_app_';
 const TRACKER_PATTERN = /^device_tracker\.([a-z0-9_]+)$/;
@@ -247,8 +242,8 @@ async function post(
 			json: body,
 			allowLocal: true,
 			headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-			timeoutMs: SEND_TIMEOUT_MS,
-			maxBytes: SEND_MAX_BYTES,
+			timeoutMs: CALL_TIMEOUT_MS,
+			maxBytes: CALL_MAX_BYTES,
 		});
 		ctx.logger.info({ status: 'ok' }, 'home assistant text');
 		return 'sent';
@@ -280,7 +275,7 @@ async function remember(ctx: JobContext, memberId: string, service: string, stat
 export const testNotifyJob = defineJob({
 	name: 'homeassistant.testNotify',
 	payload: z.object({ memberId: MemberIdSchema }),
-	timeoutMs: 2 * SEND_TIMEOUT_MS,
+	timeoutMs: 2 * CALL_TIMEOUT_MS,
 	// A person is waiting for the answer: one try, and the row says how it went.
 	maxAttempts: 1,
 	async handle(ctx, { memberId }) {

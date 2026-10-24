@@ -18,6 +18,7 @@ import {
 } from '../contract/index.ts';
 import { connectionChanged, homeassistantManage } from './capabilities.ts';
 import { isApiRoot, readConfig, statusOfError } from './check.ts';
+import { CALL_MAX_BYTES, CALL_TIMEOUT_MS, TEST_TIMEOUT_MS } from './limits.ts';
 import { CONNECTION_ID, type HomeAssistantTables, tables } from './store.ts';
 
 /**
@@ -29,10 +30,6 @@ import { CONNECTION_ID, type HomeAssistantTables, tables } from './store.ts';
 
 type Row = HomeAssistantTables['homeassistant_connection'];
 
-const TIMEOUT_MS = 10_000;
-/** A person is waiting while an address is tried, so it gets less time than a background check. */
-const TEST_TIMEOUT_MS = 8_000;
-const MAX_BYTES = 64 * 1024;
 /** Longer than the check job can run (two attempts of at most 40 s each). */
 const STUCK_AFTER_MS = 2 * 60_000;
 
@@ -81,14 +78,14 @@ export async function checkHomeAssistant(
 	http: ExternalHttp,
 	baseUrl: string,
 	token: string,
-	timeoutMs = TIMEOUT_MS,
+	timeoutMs = CALL_TIMEOUT_MS,
 ): Promise<CheckResult> {
 	const request = (path: string) => ({
 		url: `${baseUrl}${path}`,
 		allowLocal: true,
 		headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
 		timeoutMs,
-		maxBytes: MAX_BYTES,
+		maxBytes: CALL_MAX_BYTES,
 	});
 	try {
 		const root = await http.get(request('/api/'));
