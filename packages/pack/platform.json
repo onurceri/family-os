@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.34",
+	"sdk": "0.8.35",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -98,6 +98,7 @@
 			"appOf",
 			"asAppointment",
 			"asData",
+			"assertActiveMembers",
 			"assertFullSignIn",
 			"assertIdPrefix",
 			"assertRestrictiveDefaults",
