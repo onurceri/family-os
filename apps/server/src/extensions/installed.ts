@@ -10,14 +10,20 @@ import {
 	writeExtensionState,
 } from '@famos/core';
 import { schemaState } from '@famos/db';
-import { type DbExecutor, type ExtensionDefinition, FamosError, tablePrefixOf } from '@famos/sdk';
+import {
+	compareVersions,
+	type DbExecutor,
+	type ExtensionDefinition,
+	FamosError,
+	tablePrefixOf,
+} from '@famos/sdk';
 import {
 	assertSameReach,
 	downloadPackage,
 	fetchIndex,
 	type OfficialIndex,
 } from '../packages/official.ts';
-import { compareVersions, type ExtensionStore } from '../packages/store.ts';
+import type { ExtensionStore } from '../packages/store.ts';
 import { type Available, type LoadReport, summary } from './load.ts';
 import { chooseInstalled, migrationProblem } from './state.ts';
 import type { WebPackage } from './web.ts';

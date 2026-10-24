@@ -130,6 +130,46 @@ export function satisfiesCaret(version: string, range: string): boolean {
 	return patch === rPatch;
 }
 
+const LOOSE_VERSION =
+	/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+
+function comparePre(a: string, b: string): number {
+	const x = a.split('.');
+	const y = b.split('.');
+	for (let i = 0; i < Math.max(x.length, y.length); i++) {
+		const p = x[i];
+		const q = y[i];
+		if (p === undefined) return -1;
+		if (q === undefined) return 1;
+		const pNum = /^\d+$/.test(p);
+		const qNum = /^\d+$/.test(q);
+		if (pNum && qNum) {
+			if (Number(p) !== Number(q)) return Number(p) - Number(q);
+		} else if (pNum !== qNum) return pNum ? -1 : 1;
+		else if (p !== q) return p < q ? -1 : 1;
+	}
+	return 0;
+}
+
+/**
+ * Orders versions as semver does: `major.minor.patch` by number (a missing part counts as 0),
+ * and a pre-release (`1.2.0-rc1`) before the release it leads to. Negative when `a` is older,
+ * positive when newer. A text that is not a version is older than any that is, so it never wins
+ * a "newest" pick and never throws.
+ */
+export function compareVersions(a: string, b: string): number {
+	const x = LOOSE_VERSION.exec(a.trim());
+	const y = LOOSE_VERSION.exec(b.trim());
+	if (!x || !y) return x ? 1 : y ? -1 : 0;
+	for (let i = 1; i <= 3; i++) {
+		const d = Number(x[i] ?? 0) - Number(y[i] ?? 0);
+		if (d !== 0) return d;
+	}
+	if (x[4] === undefined || y[4] === undefined)
+		return x[4] === y[4] ? 0 : x[4] === undefined ? 1 : -1;
+	return comparePre(x[4], y[4]);
+}
+
 /** Reads a manifest, naming the extension and the field when it is malformed. */
 export function parseManifest(input: unknown): ExtensionManifest {
 	const result = ExtensionManifestSchema.safeParse(input);

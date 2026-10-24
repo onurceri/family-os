@@ -10,6 +10,7 @@ import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { compareVersions } from '@famos/sdk';
 import * as tar from 'tar';
 import { ARCHIVE_EXTENSION, keyIdOf, PACKAGE_FILE, SIGNATURE_FILE } from './format.ts';
 
@@ -189,16 +190,6 @@ export async function signFile(file: string, key: KeyObject): Promise<PackageSig
 	return signature;
 }
 
-/** Orders `major.minor.patch` versions newest first. */
-const newerFirst = (a: string, b: string) => {
-	const [x, y] = [a.split('.').map(Number), b.split('.').map(Number)];
-	for (let i = 0; i < 3; i++) {
-		const d = (y[i] ?? 0) - (x[i] ?? 0);
-		if (d !== 0) return d;
-	}
-	return 0;
-};
-
 /**
  * Brings a published folder up to date: copies each new `.famext` to
  * `<dir>/<id>/<id>-<version>.famext`, keeps the newest `keep` versions of each extension (older
@@ -242,7 +233,7 @@ export async function writeIndex(
 			if (description.id !== folder) throw new Error(`${path} holds ${description.id}`);
 			found.push({ name, path, description });
 		}
-		found.sort((a, b) => newerFirst(a.description.version, b.description.version));
+		found.sort((a, b) => compareVersions(b.description.version, a.description.version));
 		for (const old of found.slice(keep)) {
 			await rm(old.path);
 			removed.push(`${folder}/${old.name}`);

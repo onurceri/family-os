@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	compareVersions,
 	type DbExecutor,
 	defineAction,
 	defineEvent,
@@ -112,15 +113,6 @@ export const FoundExtensionSchema = z.object({
 	reach: IndexReachSchema.optional(),
 });
 export type FoundExtension = z.infer<typeof FoundExtensionSchema>;
-
-const compareVersions = (a: string, b: string) => {
-	const [x, y] = [a.split('.').map(Number), b.split('.').map(Number)];
-	for (let i = 0; i < 3; i++) {
-		const d = (x[i] ?? 0) - (y[i] ?? 0);
-		if (d !== 0) return d;
-	}
-	return 0;
-};
 
 /** The newest version of each package this server can run and has no package that new of. */
 export function newerThanHere(

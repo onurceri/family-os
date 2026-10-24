@@ -104,6 +104,7 @@
 			"bumpParentVersion",
 			"compact",
 			"compareThing",
+			"compareVersions",
 			"conversationAnswered",
 			"createHandleTable",
 			"credentialOwner",

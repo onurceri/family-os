@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { StagedPackage } from '@famos/core';
-import { FamosError, type Logger } from '@famos/sdk';
+import { compareVersions, FamosError, type Logger } from '@famos/sdk';
 import { DAY_MS } from '@famos/time';
 import { type Available, type AvailableExtension, readPackage } from '../extensions/load.ts';
 import { readArchive, readPackageFolder } from './archive.ts';
@@ -213,17 +213,6 @@ export function createExtensionStore(options: {
 			return removed;
 		},
 	};
-}
-
-/** Compares `major.minor.patch` versions. */
-export function compareVersions(a: string, b: string): number {
-	const parts = (v: string) => v.split('.').map(Number);
-	const [x, y] = [parts(a), parts(b)];
-	for (let i = 0; i < 3; i++) {
-		const d = (x[i] ?? 0) - (y[i] ?? 0);
-		if (d !== 0) return d;
-	}
-	return 0;
 }
 
 /**

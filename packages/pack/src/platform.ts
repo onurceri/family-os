@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { SDK_VERSION } from '@famos/sdk';
+import { compareVersions, SDK_VERSION } from '@famos/sdk';
 import { build, type Plugin } from 'esbuild';
 import { compile } from 'svelte/compiler';
 import { type ExportTarget, packageJsonOf } from './shared.ts';
@@ -166,17 +166,11 @@ function describeChanges(was: Omit<Platform, 'sdk'>, now: Omit<Platform, 'sdk'>)
 	return changes;
 }
 
-function parts(version: string): [number, number, number] {
-	const [major = 0, minor = 0, patch = 0] = version.split('.').map(Number);
-	return [major, minor, patch];
-}
-
 function minorAbove(version: string, than: string): boolean {
-	const [a, b] = [parts(version), parts(than)];
-	return a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]);
+	const minor = (v: string) => v.split('.').slice(0, 2).join('.');
+	return compareVersions(minor(version), minor(than)) > 0;
 }
 
 function versionAbove(version: string, than: string): boolean {
-	const [a, b] = [parts(version), parts(than)];
-	return a[0] !== b[0] ? a[0] > b[0] : a[1] !== b[1] ? a[1] > b[1] : a[2] > b[2];
+	return compareVersions(version, than) > 0;
 }
