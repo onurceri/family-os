@@ -18,10 +18,32 @@ const shelfManage = defineCapability({
 	level: 'edit',
 });
 const things = new Set(['lamp']);
+// Runs while a decision is still working out whom to tell, before its transaction opens.
+let beforeDecision: (() => Promise<void>) | null = null;
 const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfUse, shelfManage],
 	actions: [
+		// Names its subject from the record only (the input carries an id, not a name).
+		defineAction({
+			id: 'shelf.discard',
+			title: 'Discard a thing',
+			draftTitle: 'shelf:draft_title_remove',
+			input: z.object({ item: z.string().min(1) }),
+			output: z.object({ ok: z.boolean() }),
+			requires: shelfUse.id,
+			approval: { unless: shelfManage.id },
+			async subject(_ctx, input) {
+				const hook = beforeDecision;
+				beforeDecision = null;
+				await hook?.();
+				return input.item;
+			},
+			async run(_uow, input) {
+				if (!things.delete(input.item)) throw new FamosError('not_found', 'Thing not found');
+				return { ok: true };
+			},
+		}),
 		defineAction({
 			id: 'shelf.remove',
 			title: 'Remove a thing',
@@ -45,6 +67,7 @@ let parent: Who;
 let kid: Who;
 let sibling: Who;
 beforeEach(async () => {
+	beforeDecision = null;
 	things.clear();
 	things.add('lamp');
 	k = await createTestKernel({ extensions: [shelf] });
@@ -110,6 +133,28 @@ describe('withdrawing a suggestion', () => {
 		const id = await propose(kid);
 		expect(await code(k.runner.approveDraft(id, kid.actor))).toBe('forbidden');
 		expect((await draftRow(id)).status).toBe('pending');
+	});
+});
+
+describe('two decisions on one draft', () => {
+	it('leaves a draft approved when the approval commits while a rejection is being prepared', async () => {
+		const drafted = await k.runner.invoke('shelf.discard', { item: 'lamp' }, kid.actor);
+		if (drafted.status !== 'drafted') throw new Error('expected a draft');
+		const id = drafted.draftId;
+		// The rejection reads the draft, then works out whom to tell; the approval lands in between.
+		await db()
+			.updateTable('core_drafts')
+			.set({ input: JSON.stringify({ item: 'lamp' }) })
+			.where('id', '=', id)
+			.execute();
+		beforeDecision = async () => {
+			await k.runner.approveDraft(id, admin.actor);
+		};
+		expect(await code(k.runner.rejectDraft(id, admin.actor))).toBe('conflict');
+		expect(await draftRow(id)).toMatchObject({ status: 'applied' });
+		const audit = await db().selectFrom('core_audit_log').selectAll().execute();
+		expect(audit.filter((a) => a.draft_id === id).map((a) => a.outcome)).not.toContain('rejected');
+		expect(things.has('lamp')).toBe(false);
 	});
 });
 

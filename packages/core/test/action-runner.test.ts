@@ -126,6 +126,28 @@ describe('drafts', () => {
 		);
 	});
 
+	it('runs the inverse once when two undos arrive together', async () => {
+		const { actor: admin } = await k.member('admin');
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
+		const drafted = await k.runner.invoke('notes.addNote', { body: 'a' }, ai);
+		if (drafted.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(drafted.draftId, admin);
+		const both = await Promise.all([
+			k.runner.undoDraft(drafted.draftId, admin),
+			k.runner.undoDraft(drafted.draftId, admin),
+		]);
+		expect(both.map((d) => d.status)).toEqual(['undone', 'undone']);
+		expect(await count()).toBe(0);
+		// The inverse ran once: one undo is audited, not two.
+		const audit = await k.ctx.db
+			.withTables<import('../src/tables.ts').CoreTables>()
+			.selectFrom('core_audit_log')
+			.select('outcome')
+			.where('draft_id', '=', drafted.draftId)
+			.execute();
+		expect(audit.filter((a) => a.outcome === 'undone')).toHaveLength(1);
+	});
+
 	it('suggests an undone draft again for the person behind it, once', async () => {
 		const { actor: admin } = await k.member('admin');
 		const { actor: kid } = await k.member('supervised');

@@ -1147,7 +1147,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			// Its own unit of work: the apply was rolled back, and the new state of the draft reaches
 			// the change log with the write.
 			await unitOfWork(systemActor('core'), async (uow) => {
-				await uow.db
+				const failed = await uow.db
 					.withTables<CoreTables>()
 					.updateTable('core_drafts')
 					.set({
@@ -1156,7 +1156,10 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 						updated_at: clock.now(),
 					})
 					.where('id', '=', draftId)
-					.execute();
+					.where('status', 'in', ['pending', 'failed'])
+					.executeTakeFirst();
+				// Somebody decided it meanwhile: their decision stands.
+				if (Number(failed.numUpdatedRows) === 0) return;
 				uow.emit(draftUpdated, { draftId, status: 'failed', forMember: draft.for_member });
 			});
 			throw new FamosError('unavailable', 'Applying the draft failed; it can be retried');
@@ -1215,12 +1218,19 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		const told = def ? await decidedNotice(draft, def, approverId, 'rejected') : null;
 		await unitOfWork(approver, async (uow) => {
 			const now = clock.now();
-			await uow.db
+			// Decided here, not on the earlier read: an approval may have committed in between.
+			const claimed = await uow.db
 				.withTables<CoreTables>()
 				.updateTable('core_drafts')
 				.set({ status: 'rejected', decided_by: approverId, decided_at: now, updated_at: now })
 				.where('id', '=', draftId)
-				.execute();
+				.where('status', 'in', ['pending', 'failed'])
+				.executeTakeFirst();
+			if (Number(claimed.numUpdatedRows) === 0) {
+				const current = await getDraft(uow.db, draftId);
+				if (current.status === 'rejected') return; // idempotent
+				throw new FamosError('conflict', `Draft is ${current.status}`);
+			}
 			await audit(uow, draft.action_id, 'rejected', draftId, draftTargetOf(draft));
 			uow.emit(draftUpdated, { draftId, status: 'rejected', forMember: draft.for_member });
 			await settleNotices(uow, draft);
@@ -1502,13 +1512,20 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		await unitOfWork(
 			approver,
 			async (uow) => {
-				await uow.run(step.actionId, step.input);
-				await uow.db
+				// Claimed before the inverse runs, so two undos never both run it.
+				const claimed = await uow.db
 					.withTables<CoreTables>()
 					.updateTable('core_drafts')
 					.set({ status: 'undone', updated_at: clock.now() })
 					.where('id', '=', draftId)
-					.execute();
+					.where('status', '=', 'applied')
+					.executeTakeFirst();
+				if (Number(claimed.numUpdatedRows) === 0) {
+					const current = await getDraft(uow.db, draftId);
+					if (current.status === 'undone') return; // idempotent
+					throw new FamosError('conflict', `Draft is ${current.status} and cannot be undone`);
+				}
+				await uow.run(step.actionId, step.input);
 				await audit(uow, draft.action_id, 'undone', draftId, draftTargetOf(draft));
 				uow.emit(draftUpdated, { draftId, status: 'undone', forMember: draft.for_member });
 			},
