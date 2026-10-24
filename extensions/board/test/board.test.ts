@@ -324,6 +324,25 @@ describe('photos', () => {
 		expect((await notes())[0]?.hasPhoto).toBe(true);
 	});
 
+	it('refuses another member before reading or storing the photo', async () => {
+		const note = await post();
+		let read = false;
+		const f = file(jpeg);
+		const watched = {
+			...f,
+			bytes: async () => {
+				read = true;
+				return jpeg;
+			},
+			stream: async function* () {
+				read = true;
+				yield jpeg;
+			},
+		};
+		expect(await refused(upload(note.id, watched, elif.actor))).toBe('forbidden');
+		expect(read).toBe(false);
+	});
+
 	it('has no photo to serve for a note without one', async () => {
 		const note = await post();
 		expect(await refused(read(note.id))).toBe('not_found');

@@ -55,12 +55,15 @@ const appAlone = (actor: UnitOfWork['actor']): string | null =>
  * The author (a member, or the app that put it up on its own), or a manager (`board.manage`); the
  * author must still be allowed to post.
  */
-function assertMayChange(uow: UnitOfWork, row: NoteRow): void {
-	if (uow.can(boardManage.id)) return;
-	const me = memberId(uow.actor);
-	if (me !== null && row.created_by === me && uow.can(boardPost.id)) return;
-	const app = appAlone(uow.actor);
-	if (app !== null && row.created_by_app === app && uow.can(boardPost.id)) return;
+function assertMayChange(
+	who: { actor: UnitOfWork['actor']; can(capability: string): boolean },
+	row: NoteRow,
+): void {
+	if (who.can(boardManage.id)) return;
+	const me = memberId(who.actor);
+	if (me !== null && row.created_by === me && who.can(boardPost.id)) return;
+	const app = appAlone(who.actor);
+	if (app !== null && row.created_by_app === app && who.can(boardPost.id)) return;
 	throw new FamosError('forbidden', 'Only the author or a manager can change this note');
 }
 
@@ -546,7 +549,11 @@ export const uploadNotePhoto = defineRoute({
 	},
 	response: z.object({ ok: z.literal(true) }),
 	async handle(ctx, { params, files, actor }) {
-		await loadNote(ctx.db, params.noteId);
+		// Refused before any of the body is read or stored.
+		assertMayChange(
+			{ actor, can: (capability) => ctx.access.can(actor, capability) },
+			await loadNote(ctx.db, params.noteId),
+		);
 		const photo = await readUploadedImage(files, { maxBytes: PHOTO_MAX_BYTES });
 		const key = `board/${params.noteId}/${ctx.ids.next('photo')}`;
 		const { previousKey } = await storeThenRun(
