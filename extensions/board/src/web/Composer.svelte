@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import { Textarea } from '@famos/ui/textarea';
-	import { fieldAria, FIELD_REASON, FieldError, focusFirstInvalid } from '@famos/ui/famos';
+	import {
+		fieldAria,
+		FIELD_REASON,
+		FieldError,
+		focusFirstInvalid,
+		resizeImage,
+	} from '@famos/ui/famos';
 	import { addDays, formatDate, todayIn } from '@famos/time';
 	import { Check, ImagePlus, X } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -9,7 +15,9 @@
 	import { editNote, postNote, uploadPhoto } from './data.js';
 	import { useBoard } from './i18n.js';
 	import { endOfWeek, NOTE_PAPERS, PAPER_CLASS } from './paper.js';
-	import { resizeForNote } from './resize.js';
+
+	/** The longest side of a note photo; a paper on a wall screen needs no more. */
+	const NOTE_PHOTO_SIDE = 1400;
 
 	/**
 	 * The paper being written, in place of the empty tile (or of the note being changed). Putting
@@ -105,7 +113,7 @@
 			}
 			if (photo && noteId) {
 				try {
-					await uploadPhoto(noteId, await resizeForNote(photo));
+					await uploadPhoto(noteId, await resizeImage(photo, NOTE_PHOTO_SIDE));
 				} catch {
 					app.toast(t('photo_failed'));
 					ondone();

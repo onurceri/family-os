@@ -215,6 +215,15 @@ describe('recipe photo', () => {
 		});
 	});
 
+	it('refuses a photo whose bytes are larger than the size the client claimed', async () => {
+		const r = await addRecipe();
+		const big = new Uint8Array(8 * 1024 * 1024 + 1);
+		big.set(jpeg);
+		const liar = { ...file(big), size: jpeg.length };
+		await expect(upload(r.id, liar)).rejects.toMatchObject({ code: 'bad_request' });
+		expect((await recipes())[0]?.hasPhoto).toBe(false);
+	});
+
 	it('refuses an upload for an unknown recipe and from a member who may not edit', async () => {
 		await expect(
 			upload('recipe_00000000-0000-7000-8000-000000000001', file(jpeg)),

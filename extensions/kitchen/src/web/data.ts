@@ -42,14 +42,14 @@ export async function updateRecipe(id: string, recipe: RecipeReplace): Promise<O
 export const archiveRecipe = async (id: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/kitchen.archiveRecipe', { body: { id } })).status;
 
-export async function uploadPhoto(recipeId: string, file: File): Promise<void> {
+export async function uploadPhoto(recipeId: string, photo: Blob): Promise<void> {
 	unwrap(
 		await api.POST('/api/v1/kitchen/recipes/{recipeId}/photo', {
 			params: { path: { recipeId } },
 			body: {},
 			bodySerializer: () => {
 				const form = new FormData();
-				form.append('files', file, file.name);
+				form.append('files', photo, 'photo.jpg');
 				return form;
 			},
 		}),

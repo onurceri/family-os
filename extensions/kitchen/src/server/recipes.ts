@@ -3,10 +3,12 @@ import {
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	readUploadedImage,
 	selfOf,
 	storedAsWhole,
-	stripImageMetadata,
+	storeThenRun,
 	type UnitOfWork,
+	uploadRequestLimit,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -252,23 +254,6 @@ export const getRecipePhoto = defineRoute({
 
 const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
 
-/** The image type from the first bytes; the client's claim is not trusted. */
-function sniffImage(bytes: Uint8Array): 'image/jpeg' | 'image/png' | 'image/webp' | null {
-	if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
-	if (
-		bytes[0] === 0x89 &&
-		bytes[1] === 0x50 &&
-		bytes[2] === 0x4e &&
-		bytes[3] === 0x47 &&
-		bytes[4] === 0x0d &&
-		bytes[5] === 0x0a
-	)
-		return 'image/png';
-	const text = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to));
-	if (text(0, 4) === 'RIFF' && text(8, 12) === 'WEBP') return 'image/webp';
-	return null;
-}
-
 export const uploadRecipePhoto = defineRoute({
 	method: 'post',
 	path: '/recipes/{recipeId}/photo',
@@ -277,38 +262,25 @@ export const uploadRecipePhoto = defineRoute({
 	requires: kitchenEdit.id,
 	params: z.object({ recipeId: RecipeIdSchema }),
 	upload: {
-		maxBytes: PHOTO_MAX_BYTES + 64 * 1024,
+		maxBytes: uploadRequestLimit(PHOTO_MAX_BYTES),
 		maxFiles: 1,
 		accept: ['image/jpeg', 'image/png', 'image/webp'],
 	},
 	response: z.object({ ok: z.literal(true) }),
 	async handle(ctx, { params, files, actor }) {
-		const file = files[0];
-		if (!file) throw new FamosError('bad_request', 'Send one image');
-		if (file.size > PHOTO_MAX_BYTES) throw new FamosError('bad_request', 'The photo is too large');
 		await loadRecipe(ctx.db, params.recipeId);
-		const bytes = await file.bytes();
-		const type = sniffImage(bytes);
-		if (!type) throw new FamosError('bad_request', 'The photo must be a JPEG, PNG or WebP image');
-		// The app strips location data in the browser, but a direct upload may carry it: the
-		// server strips it again, so no stored photo keeps it.
-		const clean = stripImageMetadata(bytes, type);
-		// Files cannot join a transaction: store first, remove again if the action fails.
+		const photo = await readUploadedImage(files, { maxBytes: PHOTO_MAX_BYTES });
 		const key = `kitchen/recipes/${params.recipeId}/${ctx.ids.next('photo')}`;
-		await ctx.files.put(key, clean, type);
-		let previousKey: string | null;
-		try {
-			const result = await ctx.actions.invoke<{ previousKey: string | null }>(
-				'kitchen.setRecipePhoto',
-				{ id: params.recipeId, key, type },
-				actor,
-			);
-			if (result.status !== 'applied') throw new FamosError('conflict', 'The photo was not saved');
-			previousKey = result.output.previousKey;
-		} catch (error) {
-			await ctx.files.delete(key);
-			throw error;
-		}
+		const { previousKey } = await storeThenRun(
+			ctx.files,
+			{ key, bytes: photo.bytes, type: photo.type },
+			() =>
+				ctx.actions.invoke<{ previousKey: string | null }>(
+					'kitchen.setRecipePhoto',
+					{ id: params.recipeId, key, type: photo.type },
+					actor,
+				),
+		);
 		// The new photo is saved; a leftover old file is only wasted space.
 		if (previousKey) await ctx.files.delete(previousKey).catch(() => undefined);
 		return { ok: true as const };

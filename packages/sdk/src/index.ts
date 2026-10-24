@@ -16,6 +16,7 @@ export * from './handles.ts';
 export * from './host-settings.ts';
 export * from './ids.ts';
 export * from './image-metadata.ts';
+export * from './image-upload.ts';
 export * from './jobs.ts';
 export { namedShares, searchFinds, significantWords, type WordOptions } from './label-words.ts';
 export * from './llm.ts';

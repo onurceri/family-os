@@ -4,8 +4,10 @@ import {
 	defineRoute,
 	FamosError,
 	FileResponseSchema,
+	readUploadedImage,
 	selfOf,
-	stripImageMetadata,
+	storeThenRun,
+	uploadRequestLimit,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
@@ -15,7 +17,6 @@ import {
 	StoredPhotoSchema,
 } from '../contract/index.ts';
 import { ambientManage, ambientPhotos } from './capabilities.ts';
-import { inspectImage } from './image.ts';
 import { loadSettings, tables } from './store.ts';
 
 /**
@@ -116,45 +117,34 @@ export const uploadPhoto = defineRoute({
 	summary: 'Add a photo for displays (multipart: one JPEG, PNG or WebP image, at most 5 MB)',
 	requires: ambientManage.id,
 	upload: {
-		maxBytes: PHOTO_MAX_BYTES + 64 * 1024,
+		maxBytes: uploadRequestLimit(PHOTO_MAX_BYTES),
 		maxFiles: 1,
 		accept: ['image/jpeg', 'image/png', 'image/webp'],
 	},
 	response: z.object({ id: PhotoIdSchema }),
 	async handle(ctx, { files, actor }) {
-		const file = files[0];
-		if (!file) throw new FamosError('bad_request', 'Send one image');
-		if (file.size > PHOTO_MAX_BYTES) throw new FamosError('bad_request', 'The photo is too large');
-		const bytes = await file.bytes();
-		if (bytes.byteLength > PHOTO_MAX_BYTES)
-			throw new FamosError('bad_request', 'The photo is too large');
-		const info = inspectImage(bytes);
-		if (!info) throw new FamosError('bad_request', 'The photo must be a JPEG, PNG or WebP image');
-		if (info.width > PHOTO_MAX_SIDE || info.height > PHOTO_MAX_SIDE)
-			throw new FamosError('bad_request', 'The photo is too large');
-		// Files cannot join a transaction: store first, remove again if the action fails.
-		// A direct upload may carry location data; the server strips it whatever the app did.
-		const clean = stripImageMetadata(bytes, info.type);
-		const key = `ambient/photos/${ctx.ids.next('amb_file')}.${EXTENSION[info.type]}`;
-		await ctx.files.put(key, clean, info.type);
-		try {
-			const result = await ctx.actions.invoke<{ id: z.output<typeof PhotoIdSchema> }>(
-				'ambient.addPhoto',
-				{
-					key,
-					type: info.type,
-					width: info.width,
-					height: info.height,
-					size: clean.byteLength,
-				},
-				actor,
-			);
-			if (result.status !== 'applied') throw new FamosError('conflict', 'The photo was not saved');
-			return { id: result.output.id };
-		} catch (error) {
-			await ctx.files.delete(key);
-			throw error;
-		}
+		const photo = await readUploadedImage(files, {
+			maxBytes: PHOTO_MAX_BYTES,
+			maxSide: PHOTO_MAX_SIDE,
+		});
+		const key = `ambient/photos/${ctx.ids.next('amb_file')}.${EXTENSION[photo.type]}`;
+		const { id } = await storeThenRun(
+			ctx.files,
+			{ key, bytes: photo.bytes, type: photo.type },
+			() =>
+				ctx.actions.invoke<{ id: z.output<typeof PhotoIdSchema> }>(
+					'ambient.addPhoto',
+					{
+						key,
+						type: photo.type,
+						width: photo.width,
+						height: photo.height,
+						size: photo.bytes.byteLength,
+					},
+					actor,
+				),
+		);
+		return { id };
 	},
 });
 

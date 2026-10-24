@@ -16,6 +16,7 @@
 		wide,
 		editLabel,
 		openPath,
+		resizeImage,
 	} from '@famos/ui/famos';
 	import {
 		ArrowLeft,
@@ -37,6 +38,9 @@
 		updateRecipe,
 		uploadPhoto,
 	} from './data.js';
+
+	/** The longest side of a recipe photo; a phone or a kitchen screen needs no more. */
+	const RECIPE_PHOTO_SIDE = 1600;
 	import {
 		emptyRecipe,
 		fromRecipe,
@@ -176,7 +180,7 @@
 		if (!file || !recipe) return;
 		uploading = true;
 		try {
-			await uploadPhoto(recipe.id, file);
+			await uploadPhoto(recipe.id, await resizeImage(file, RECIPE_PHOTO_SIDE));
 			app.toast(t('saved'));
 			await load();
 		} catch {

@@ -1,3 +1,18 @@
+import type { ActionResult } from './context.ts';
+import { FamosError } from './errors.ts';
+import { stripImageMetadata } from './image-metadata.ts';
+import type { FileStore } from './ports.ts';
+import type { UploadedFile } from './routes.ts';
+
+/**
+ * Room above a file's size for the multipart framing of an upload request, so a photo exactly at
+ * its limit is not refused as a request before the route can answer with a clear message.
+ */
+export const UPLOAD_ENVELOPE_BYTES = 64 * 1024;
+
+/** The `upload.maxBytes` of a route that takes one file of at most `maxBytes`. */
+export const uploadRequestLimit = (maxBytes: number): number => maxBytes + UPLOAD_ENVELOPE_BYTES;
+
 export type ImageType = 'image/jpeg' | 'image/png' | 'image/webp';
 
 export interface ImageInfo {
@@ -78,4 +93,54 @@ export function inspectImage(bytes: Uint8Array): ImageInfo | null {
 	} else return null;
 	if (!size || size.width < 1 || size.height < 1) return null;
 	return { type, ...size };
+}
+
+export interface ImageLimits {
+	/** The largest file in bytes. */
+	maxBytes: number;
+	/** The largest width or height in pixels; unlimited when left out. */
+	maxSide?: number;
+}
+
+/**
+ * The one image of an upload, checked and cleaned: the size by the client's claim and again by
+ * the bytes actually read, the type and pixel size from the bytes (never the client's claim),
+ * and every kind of camera metadata (location, serial number, time) removed, so no stored photo
+ * keeps it however it was sent. Throws `bad_request` with a message fit to show.
+ */
+export async function readUploadedImage(
+	files: readonly UploadedFile[],
+	limits: ImageLimits,
+): Promise<ImageInfo & { bytes: Uint8Array }> {
+	const file = files[0];
+	if (!file) throw new FamosError('bad_request', 'Send one image');
+	if (file.size > limits.maxBytes) throw new FamosError('bad_request', 'The photo is too large');
+	const bytes = await file.bytes();
+	if (bytes.byteLength > limits.maxBytes)
+		throw new FamosError('bad_request', 'The photo is too large');
+	const info = inspectImage(bytes);
+	if (!info) throw new FamosError('bad_request', 'The photo must be a JPEG, PNG or WebP image');
+	if (limits.maxSide !== undefined && (info.width > limits.maxSide || info.height > limits.maxSide))
+		throw new FamosError('bad_request', 'The photo is too large');
+	return { ...info, bytes: stripImageMetadata(bytes, info.type) };
+}
+
+/**
+ * Stores a file, then runs the action that records it. Files cannot join a transaction, so the
+ * file is removed again when the action throws or is not applied. Returns the applied output.
+ */
+export async function storeThenRun<O>(
+	store: FileStore,
+	file: { key: string; bytes: Uint8Array; type: string },
+	run: () => Promise<ActionResult<O>>,
+): Promise<O> {
+	await store.put(file.key, file.bytes, file.type);
+	try {
+		const result = await run();
+		if (result.status !== 'applied') throw new FamosError('conflict', 'The photo was not saved');
+		return result.output;
+	} catch (error) {
+		await store.delete(file.key);
+		throw error;
+	}
 }

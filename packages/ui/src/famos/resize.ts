@@ -1,9 +1,7 @@
-/** The longest side of a display photo; a wall screen needs no more. */
-export const MAX_SIDE = 1920;
 const QUALITY = 0.85;
 
 /** The size an image of `width` × `height` is shrunk to (never enlarged). */
-export function fitWithin(width: number, height: number, maxSide = MAX_SIDE) {
+export function fitWithin(width: number, height: number, maxSide: number) {
 	const scale = Math.min(1, maxSide / Math.max(width, height));
 	return {
 		width: Math.max(1, Math.round(width * scale)),
@@ -12,13 +10,14 @@ export function fitWithin(width: number, height: number, maxSide = MAX_SIDE) {
 }
 
 /**
- * Shrinks a picture in the browser (canvas, no library) and returns it as a JPEG, which also
- * drops camera metadata such as the location. Throws when the file is not a readable image.
+ * Shrinks a picture so its longest side is at most `maxSide` pixels (browser canvas, no library)
+ * and returns it as a JPEG, which also drops camera metadata such as the location. Throws when
+ * the file is not a readable image.
  */
-export async function resizeForDisplay(file: File): Promise<Blob> {
+export async function resizeImage(file: Blob, maxSide: number): Promise<Blob> {
 	const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
 	try {
-		const { width, height } = fitWithin(bitmap.width, bitmap.height);
+		const { width, height } = fitWithin(bitmap.width, bitmap.height, maxSide);
 		const canvas = document.createElement('canvas');
 		canvas.width = width;
 		canvas.height = height;

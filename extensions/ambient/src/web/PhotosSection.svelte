@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
-	import { Card, ConfirmButton, Section } from '@famos/ui/famos';
+	import { Card, ConfirmButton, resizeImage, Section } from '@famos/ui/famos';
 	import { Camera } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import type { LibraryPhoto } from '../contract/index.js';
 	import { deletePhoto, loadLibrary, photoUrl, uploadPhoto } from './data.js';
 	import { useAmbient } from './i18n.js';
-	import { resizeForDisplay } from './resize.js';
 
 	/** Settings → Photos and weather: the photos displays show in ambient mode. */
 	const { app, t } = useAmbient();
+	/** The longest side of a display photo; a wall screen needs no more. */
+	const DISPLAY_PHOTO_SIDE = 1920;
 
 	let photos = $state<LibraryPhoto[]>([]);
 	let loaded = $state(false);
@@ -37,7 +38,7 @@
 		progress = { done: 0, total: files.length };
 		for (const file of files) {
 			try {
-				const resized = await resizeForDisplay(file);
+				const resized = await resizeImage(file, DISPLAY_PHOTO_SIDE);
 				await uploadPhoto(resized, `${file.name.replace(/\.[^.]*$/, '') || 'photo'}.jpg`);
 			} catch {
 				failed++;

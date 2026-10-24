@@ -88,6 +88,7 @@ export {
 export { default as Ring } from './Ring.svelte';
 export { default as Row } from './Row.svelte';
 export { editLabel, readFirst, removeLabels } from './read-first.js';
+export { fitWithin, resizeImage } from './resize.js';
 export {
 	default as ScheduleFields,
 	type ScheduleLabels,
