@@ -15,7 +15,9 @@ export const mcpAddress = (origin: string): string => `${origin.replace(/\/+$/, 
 export function appSettings(kind: AppKind, address: string, key: string | null): string {
 	const secret = key ?? KEY_PLACEHOLDER;
 	if (kind === 'claude-code')
-		return `claude mcp add --transport http familyos ${address} --header "Authorization: Bearer ${secret}"`;
+		// The key is exported first and the command names the variable, so the `claude mcp add`
+		// line (the one that is long and often pasted around) holds no key.
+		return `export FAMOS_KEY=${secret}\nclaude mcp add --transport http familyos ${address} --header "Authorization: Bearer $FAMOS_KEY"`;
 	if (kind === 'claude-desktop')
 		// Claude Desktop starts local servers only; mcp-remote bridges it to an address with a header.
 		// The header is read from the environment, so the key does not sit in a command line.

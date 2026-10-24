@@ -8,10 +8,13 @@ describe('appSettings', () => {
 		expect(address).toBe('https://family.example/mcp');
 	});
 
-	it('gives Claude Code one command with the key as a Bearer header', () => {
-		expect(appSettings('claude-code', address, 'famos_abc')).toBe(
-			'claude mcp add --transport http familyos https://family.example/mcp --header "Authorization: Bearer famos_abc"',
+	it('gives Claude Code the key in an environment variable, not on the command line', () => {
+		const text = appSettings('claude-code', address, 'famos_abc');
+		expect(text).toBe(
+			'export FAMOS_KEY=famos_abc\nclaude mcp add --transport http familyos https://family.example/mcp --header "Authorization: Bearer $FAMOS_KEY"',
 		);
+		const command = text.split('\n')[1] ?? '';
+		expect(command).not.toContain('famos_abc');
 	});
 
 	it('bridges Claude Desktop through mcp-remote, the key in the environment', () => {
@@ -38,6 +41,6 @@ describe('appSettings', () => {
 
 	it('shows a placeholder once the key is no longer known', () => {
 		for (const kind of APP_KINDS)
-			expect(appSettings(kind, address, null)).toContain(`Bearer ${KEY_PLACEHOLDER}`);
+			expect(appSettings(kind, address, null)).toContain(KEY_PLACEHOLDER);
 	});
 });

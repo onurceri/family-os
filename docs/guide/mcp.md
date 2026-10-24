@@ -23,7 +23,7 @@ There are two ways to connect:
 2. Give it a **Name** ("Claude Desktop on my laptop"), choose **Read only** or **Read and suggest changes**, and **Valid for** (30, 90, 180 or 365 days; 90 by default). Press **Create app key**.
 3. Under **Which app?**, pick the app and press **Copy**. The block holds the address and the key. The key is shown **once**.
    - **Claude Desktop:** Settings → Developer → **Edit config**, add the block, restart Claude. Needs [Node.js](https://nodejs.org) (`npx mcp-remote`).
-   - **Claude Code:** run the command once in a terminal.
+   - **Claude Code:** run the two lines once in a terminal. The first keeps the key in a variable (`FAMOS_KEY`), so the `claude mcp add` command line itself holds no key.
    - **Other apps:** add the block where the app lists MCP servers, or enter the address and header one by one ([by hand](#for-developers)).
 4. Press **I have copied it**.
 
