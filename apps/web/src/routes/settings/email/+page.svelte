@@ -103,7 +103,9 @@
 			else error = t('email_not_saved', { reason: tDynamic(`app:email_test_${result.test.code}`) });
 		} catch (e) {
 			error =
-				isApiError(e) && e.code === 'bad_request' ? t('email_sender_invalid') : t('error_generic');
+				isApiError(e) && e.code === 'bad_request'
+					? t('email_settings_invalid')
+					: t('error_generic');
 		} finally {
 			busy = false;
 		}
@@ -117,6 +119,8 @@
 			host = username = password = '';
 			port = 993;
 			await load();
+		} catch {
+			error = t('error_generic');
 		} finally {
 			busy = false;
 		}
@@ -169,8 +173,13 @@
 	}
 
 	async function removeSender(address: string) {
-		unwrap(await api.POST('/api/v1/actions/core.removeEmailSender', { body: { address } }));
-		await load();
+		error = null;
+		try {
+			unwrap(await api.POST('/api/v1/actions/core.removeEmailSender', { body: { address } }));
+			await load();
+		} catch {
+			error = t('error_generic');
+		}
 	}
 
 	const memberName = (id: string) => family.members.find((m) => m.id === id)?.displayName ?? '';

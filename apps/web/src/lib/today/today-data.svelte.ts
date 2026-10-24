@@ -56,6 +56,7 @@ import {
 } from '#lib/today.js';
 import { type FacetWords, type TodayWords, todayWords } from '#lib/today-words.js';
 import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } from './blocks.js';
+import { LoadSequence, loadKeeping } from './latest.js';
 import { mergeMemberNotes, notesRefreshMs } from './member-notes.js';
 import { quietTextKey } from './quiet-text.js';
 
@@ -654,28 +655,49 @@ export class TodayData {
 	/** A family of one (so far): the first steps may apply. */
 	readonly #alone = $derived(family.members.length <= 1);
 
+	readonly #timelineLoads = new LoadSequence();
+	readonly #aheadLoads = new LoadSequence();
+	readonly #choresLoads = new LoadSequence();
+	readonly #photoLoads = new LoadSequence();
+	readonly #notesLoads = new LoadSequence();
+	/** Each timeline source's last good answer per day, kept when it fails. */
+	readonly #dayKept = new Map<string, readonly TimelineItem[]>();
+	readonly #aheadKept = new Map<string, readonly DayItem[]>();
+
 	async #loadDay(day: string, sources: readonly TimelineContribution[]) {
 		const lists = await Promise.all(
-			sources.map((c) => c.load(day, this.app).catch(() => [] as readonly TimelineItem[])),
+			sources.map((c) =>
+				loadKeeping(this.#dayKept, `${c.id}|${day}`, () => c.load(day, this.app), []),
+			),
 		);
 		return mergeTimeline(lists);
 	}
 
 	async #loadTimeline(day: string, next: string, sources: readonly TimelineContribution[]) {
+		const load = this.#timelineLoads.begin();
 		const [a, b] = await Promise.all([this.#loadDay(day, sources), this.#loadDay(next, sources)]);
+		if (!this.#timelineLoads.isCurrent(load)) return;
 		this.todayItems = this.#forFamily(a);
 		this.tomorrowItems = this.#forFamily(b);
 		this.timelineLoaded = true;
 	}
 
 	async #loadAhead(window: { from: string; to: string }, sources: readonly TimelineContribution[]) {
+		const load = this.#aheadLoads.begin();
 		const lists = await Promise.all(
-			sources.map((c) =>
-				c.loadAhead
-					? c.loadAhead(window.from, window.to, this.app).catch(() => [] as readonly DayItem[])
-					: Promise.resolve([] as readonly DayItem[]),
-			),
+			sources.map((c) => {
+				const { loadAhead } = c;
+				return loadAhead
+					? loadKeeping(
+							this.#aheadKept,
+							`${c.id}|${window.from}|${window.to}`,
+							() => loadAhead.call(c, window.from, window.to, this.app),
+							[],
+						)
+					: Promise.resolve([] as readonly DayItem[]);
+			}),
 		);
+		if (!this.#aheadLoads.isCurrent(load)) return;
 		this.aheadLists = lists.map((list) => this.#forFamily(list));
 		this.aheadLoaded = true;
 	}
@@ -707,13 +729,15 @@ export class TodayData {
 	}
 
 	async #loadChores() {
+		const load = this.#choresLoads.begin();
 		try {
 			const source = this.memberCounts;
 			if (!source) {
 				this.chores = [];
 				return;
 			}
-			this.chores = [...(await source.load(this.app))];
+			const chores = [...(await source.load(this.app))];
+			if (this.#choresLoads.isCurrent(load)) this.chores = chores;
 		} catch {
 			// Keep what is on screen.
 		} finally {
@@ -722,13 +746,15 @@ export class TodayData {
 	}
 
 	async #loadPhoto() {
+		const load = this.#photoLoads.begin();
 		try {
 			const source = this.#photoSource;
 			if (!source) {
 				this.photo = null;
 				return;
 			}
-			this.photo = await source.load(this.app);
+			const photo = await source.load(this.app);
+			if (this.#photoLoads.isCurrent(load)) this.photo = photo;
 		} catch {
 			// Keep what is on screen.
 		} finally {
@@ -737,6 +763,7 @@ export class TodayData {
 	}
 
 	async #loadNotes(sources: readonly MemberStatusFacet[]) {
+		const load = this.#notesLoads.begin();
 		const lists = await Promise.all(
 			sources.map((f) =>
 				f
@@ -746,6 +773,7 @@ export class TodayData {
 					.catch(() => [f.id, this.notesBy[f.id] ?? []] as const),
 			),
 		);
+		if (!this.#notesLoads.isCurrent(load)) return;
 		this.notesBy = Object.fromEntries(lists);
 		this.notesLoaded = true;
 	}

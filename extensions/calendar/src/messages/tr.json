@@ -228,5 +228,7 @@
 	"setup_step_text": "Ya da kullandığın bir takvime abone ol",
 	"setup_step_action": "Etkinlik ekle",
 	"words_everyone": "herkes, herkese, herkesin, hepimiz, hepimize, bütün aile, tüm aile, ailece, bütün aileye, tüm aileye, bütün hane, tüm hane",
-	"words_end_time": "dönüş, dönüş saati, bitiş, bitiş saati, bitişi"
+	"words_end_time": "dönüş, dönüş saati, bitiş, bitiş saati, bitişi",
+	"load_failed": "Bu liste yüklenemedi.",
+	"load_retry": "Tekrar dene"
 }

@@ -153,6 +153,8 @@
 					body: { targetId: target.id, enabled: next },
 				}),
 			);
+		} catch {
+			failed = true;
 		} finally {
 			onchanged();
 		}

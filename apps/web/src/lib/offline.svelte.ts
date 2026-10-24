@@ -1,33 +1,13 @@
 import type { RunActionOptions, RunActionResult, WaitingChange } from '@famos/ui/app';
+import { t } from './i18n.svelte.js';
 import { createBrowserStore } from './offline-idb.js';
-import {
-	type FailedChange,
-	OfflineQueue,
-	type QueuedChange,
-	type SendResult,
-} from './offline-queue.js';
+import { type FailedChange, OfflineQueue, type QueuedChange } from './offline-queue.js';
+import { sendAction } from './offline-send.js';
 import { session } from './session.svelte.js';
+import { toasts } from './toast.svelte.js';
 
 /** Replay waiting changes this often while some wait. */
 const REPLAY_EVERY_MS = 30_000;
-
-async function send(actionId: string, input: unknown, key: string): Promise<SendResult> {
-	// Throws when there is no connection; any answer, even an error, is returned.
-	const response = await fetch(`/api/v1/actions/${actionId}`, {
-		method: 'POST',
-		credentials: 'same-origin',
-		headers: { 'content-type': 'application/json', 'idempotency-key': key },
-		body: JSON.stringify(input),
-	});
-	const text = await response.text();
-	let body: unknown = null;
-	try {
-		body = text ? JSON.parse(text) : null;
-	} catch {
-		// Not JSON (a proxy error page): the status decides.
-	}
-	return { status: response.status, body };
-}
 
 /**
  * Reactive face of the offline queue: what waits, what could not be saved, whether we are
@@ -42,8 +22,8 @@ class Offline {
 	stale = $state(false);
 
 	#queue = new OfflineQueue({
-		store: createBrowserStore(),
-		send,
+		store: createBrowserStore(() => toasts.show(t('offline_not_kept'))),
+		send: (actionId, input, key) => sendAction(actionId, input, key),
 		memberId: () => session.me?.id ?? null,
 		isOnline: () => (typeof navigator === 'undefined' ? true : navigator.onLine),
 		now: () => Date.now(),

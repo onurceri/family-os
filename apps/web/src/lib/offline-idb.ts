@@ -25,7 +25,12 @@ function open(): Promise<IDBDatabase> {
 
 export function createIndexedDbStore(): QueueStore {
 	let db: Promise<IDBDatabase> | null = null;
-	const connection = () => (db ??= open());
+	const connection = () =>
+		(db ??= open().catch((error: unknown) => {
+			// A failed open is tried again by the next call, not remembered.
+			db = null;
+			throw error;
+		}));
 
 	async function run<T>(
 		store: string,
@@ -56,32 +61,88 @@ export function createIndexedDbStore(): QueueStore {
 	};
 }
 
-/** IndexedDB when the browser allows it (not in some private windows), else memory. */
-export function createBrowserStore(): QueueStore {
-	if (typeof indexedDB === 'undefined') return createMemoryStore();
-	const persistent = createIndexedDbStore();
-	const fallback = createMemoryStore();
-	let broken = false;
-	// Every call tries IndexedDB first and falls back to memory for the rest of the session.
-	const guard =
-		<A extends unknown[], R>(pick: (s: QueueStore) => (...a: A) => Promise<R>) =>
-		async (...args: A): Promise<R> => {
-			if (!broken) {
-				try {
-					return await pick(persistent)(...args);
-				} catch {
-					broken = true;
-				}
-			}
-			return pick(fallback)(...args);
-		};
-	return {
-		list: guard((s) => () => s.list()),
-		put: guard((s) => (c: QueuedChange) => s.put(c)),
-		remove: guard((s) => (k: string) => s.remove(k)),
-		listFailed: guard((s) => () => s.listFailed()),
-		putFailed: guard((s) => (f: FailedChange) => s.putFailed(f)),
-		removeFailed: guard((s) => (k: string) => s.removeFailed(k)),
-		clear: guard((s) => () => s.clear()),
+/** How many times a call to the persistent store is tried before the change is kept in memory. */
+export const PERSISTENT_ATTEMPTS = 2;
+
+/**
+ * The persistent store with a memory store beside it. A call that keeps failing is kept in
+ * memory and `onDegraded` hears of it once (those changes are lost when the page closes); the
+ * next call tries the persistent store again, and a list holds both, so nothing kept in memory
+ * is hidden when storage comes back.
+ */
+export function withMemoryFallback(
+	persistent: QueueStore | null,
+	fallback: QueueStore,
+	onDegraded: () => void,
+): QueueStore {
+	let told = false;
+	const degraded = () => {
+		if (told) return;
+		told = true;
+		onDegraded();
 	};
+	async function attempt<R>(call: (s: QueueStore) => Promise<R>): Promise<R | undefined> {
+		if (!persistent) return undefined;
+		for (let i = 0; i < PERSISTENT_ATTEMPTS; i++) {
+			try {
+				return await call(persistent);
+			} catch {
+				// Try again, then give up for this call.
+			}
+		}
+		return undefined;
+	}
+	/** Writes to the persistent store, or to memory when it cannot. */
+	async function write(
+		call: (s: QueueStore) => Promise<void>,
+		dropFromMemory: (s: QueueStore) => Promise<void>,
+	): Promise<void> {
+		const done = await attempt(async (s) => {
+			await call(s);
+			return true;
+		});
+		if (done) return dropFromMemory(fallback);
+		degraded();
+		return call(fallback);
+	}
+	/** Removes from both: an item may sit in either. */
+	async function drop(call: (s: QueueStore) => Promise<void>): Promise<void> {
+		await attempt(call);
+		await call(fallback);
+	}
+	async function merged<T extends { key: string }>(
+		call: (s: QueueStore) => Promise<T[]>,
+	): Promise<T[]> {
+		const stored = (await attempt(call)) ?? [];
+		const kept = await call(fallback);
+		if (kept.length === 0) return stored;
+		const keys = new Set(stored.map((item) => item.key));
+		return [...stored, ...kept.filter((item) => !keys.has(item.key))];
+	}
+	return {
+		list: () => merged((s) => s.list()),
+		put: (c) =>
+			write(
+				(s) => s.put(c),
+				(s) => s.remove(c.key),
+			),
+		remove: (k) => drop((s) => s.remove(k)),
+		listFailed: () => merged((s) => s.listFailed()),
+		putFailed: (f) =>
+			write(
+				(s) => s.putFailed(f),
+				(s) => s.removeFailed(f.key),
+			),
+		removeFailed: (k) => drop((s) => s.removeFailed(k)),
+		clear: () => drop((s) => s.clear()),
+	};
+}
+
+/** IndexedDB when the browser allows it (not in some private windows), else memory. */
+export function createBrowserStore(onDegraded: () => void): QueueStore {
+	return withMemoryFallback(
+		typeof indexedDB === 'undefined' ? null : createIndexedDbStore(),
+		createMemoryStore(),
+		onDegraded,
+	);
 }

@@ -17,6 +17,8 @@
 	import type { Feed } from '../contract/index.js';
 	import { createFeed, loadFeeds, revokeFeed } from './data.js';
 	import { useCalendar } from './i18n.js';
+	import LoadFailed from './LoadFailed.svelte';
+	import { readList } from './reload-list.js';
 
 	/**
 	 * "Calendar on my phone": secret ICS addresses out. The address is shown once, right
@@ -40,13 +42,13 @@
 	/** An address works anywhere for months, so a PIN sign-in cannot make one. */
 	const mayCreate = $derived(app.fullSignIn());
 
+	/** A read that failed keeps the list on screen and is never taken for an empty one. */
+	let loadFailed = $state(false);
 	async function load() {
-		try {
-			feeds = await loadFeeds();
-		} catch {
-			feeds = [];
-		}
-		loaded = true;
+		const read = await readList(loadFeeds, feeds);
+		feeds = read.list;
+		loadFailed = !read.ok;
+		if (read.ok) loaded = true;
 	}
 	onMount(() => void load());
 
@@ -175,6 +177,7 @@
 		</Card>
 	{/if}
 
+	{#if loadFailed}<LoadFailed onretry={load} />{/if}
 	{#if loaded}
 		<Section label={t('feeds_list_title')} count={feeds.length}>
 			{#snippet actions()}

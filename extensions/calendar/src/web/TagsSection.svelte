@@ -18,6 +18,8 @@
 	import ColorChoice from './ColorChoice.svelte';
 	import { deleteTag, loadTags, updateTag } from './data.js';
 	import { useCalendar } from './i18n.js';
+	import LoadFailed from './LoadFailed.svelte';
+	import { readList } from './reload-list.js';
 	import TagChip from './TagChip.svelte';
 
 	/** "Tags": rename, recolour or delete the family's calendar tags. Needs the right to edit events. */
@@ -26,13 +28,13 @@
 	let tags = $state<Tag[]>([]);
 	let loaded = $state(false);
 
+	/** A read that failed keeps the list on screen and is never taken for an empty one. */
+	let loadFailed = $state(false);
 	async function load() {
-		try {
-			tags = await loadTags();
-		} catch {
-			tags = [];
-		}
-		loaded = true;
+		const read = await readList(loadTags, tags);
+		tags = read.list;
+		loadFailed = !read.ok;
+		if (read.ok) loaded = true;
 	}
 	onMount(() => void load());
 
@@ -112,6 +114,7 @@
 			<Card variant="quiet" pad><p class="text-ink-soft text-sm">{t('tags_none')}</p></Card>
 		{/if}
 	{/if}
+	{#if loadFailed}<LoadFailed onretry={load} />{/if}
 	{#if failed && editing === null}<p class="text-attention text-sm font-semibold" role="alert">
 			{t('error')}
 		</p>{/if}

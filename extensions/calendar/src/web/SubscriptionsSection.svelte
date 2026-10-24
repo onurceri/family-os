@@ -28,6 +28,8 @@
 		updateSubscription,
 	} from './data.js';
 	import { useCalendar } from './i18n.js';
+	import LoadFailed from './LoadFailed.svelte';
+	import { readList } from './reload-list.js';
 
 	/**
 	 * "Calendar subscriptions": read-only external calendars in. Managers only. Adding
@@ -50,13 +52,13 @@
 	let failed = $state(false);
 	let formEl = $state<HTMLFormElement>();
 
+	/** A read that failed keeps the list on screen and is never taken for an empty one. */
+	let loadFailed = $state(false);
 	async function load() {
-		try {
-			subs = await loadSubscriptions();
-		} catch {
-			subs = [];
-		}
-		loaded = true;
+		const read = await readList(loadSubscriptions, subs);
+		subs = read.list;
+		loadFailed = !read.ok;
+		if (read.ok) loaded = true;
 	}
 	onMount(() => void load());
 	// A refresh finishes in the background; the list follows.
@@ -229,6 +231,7 @@
 			<Card variant="quiet" pad><p class="text-ink-soft text-sm">{t('subs_none')}</p></Card>
 		{/if}
 	{/if}
+	{#if loadFailed}<LoadFailed onretry={load} />{/if}
 </Section>
 
 <SidePanel

@@ -56,9 +56,13 @@
 	// The component of the matched page, loaded once and kept; the page and its params change
 	// together so a page never sees the params of another one.
 	const loaded = new Map<PageContribution, Component<PageProps>>();
+	// The page's code could not be fetched (the server restarted with other extensions, or the
+	// connection dropped): say so and offer a reload instead of an empty main area.
+	let loadFailed = $state(false);
 	let shown = $state.raw<{ Page: Component<PageProps>; params: Record<string, string> }>();
 	$effect(() => {
 		const target = contribution;
+		loadFailed = false;
 		if (!target) {
 			shown = undefined;
 			return;
@@ -71,11 +75,16 @@
 		}
 		let stale = false;
 		// The page's code counts as work until it has arrived (and asked for its data).
-		void trackWork(entry.component()).then((mod) => {
-			const Page = mod.default as Component<PageProps>;
-			loaded.set(entry, Page);
-			if (!stale) shown = { Page, params };
-		});
+		void trackWork(entry.component()).then(
+			(mod) => {
+				const Page = mod.default as Component<PageProps>;
+				loaded.set(entry, Page);
+				if (!stale) shown = { Page, params };
+			},
+			() => {
+				if (!stale) loadFailed = true;
+			},
+		);
 		return () => {
 			stale = true;
 		};
@@ -83,7 +92,17 @@
 </script>
 
 {#if contribution}
-	{#if shown}
+	{#if loadFailed}
+		<PageGate>
+			<PageFrame template="list">
+				<EmptyState title={t('page_load_failed_title')} hint={t('page_load_failed_hint')}>
+					<Button variant="primary" onclick={() => location.reload()}
+						>{t('extensions_reload')}</Button
+					>
+				</EmptyState>
+			</PageFrame>
+		</PageGate>
+	{:else if shown}
 		<!-- Keyed by the component, not the path: moving between two records of one page keeps it
 	     mounted (the list stays, only the params change); another page mounts fresh. -->
 		{#key shown.Page}

@@ -14,15 +14,21 @@ const listeners = new Set<Listener>();
  */
 const resyncers = new Set<() => void>();
 let socket: WebSocket | undefined;
+/** The pending reconnect, so a disconnect can cancel it. */
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let retry = 0;
 let stopped = true;
 /** Whether the socket has been open since `connectRealtime`. */
 let connectedOnce = false;
 
 function open() {
+	reconnectTimer = undefined;
+	// Never two sockets: one open or opening is the connection.
+	if (stopped || socket) return;
 	const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/v1/ws`;
-	socket = new WebSocket(url);
-	socket.onopen = () => {
+	const own = new WebSocket(url);
+	socket = own;
+	own.onopen = () => {
 		retry = 0;
 		if (connectedOnce) {
 			// Changes may have been missed while the socket was closed: no read may join an old one.
@@ -31,7 +37,7 @@ function open() {
 		}
 		connectedOnce = true;
 	};
-	socket.onmessage = (message) => {
+	own.onmessage = (message) => {
 		try {
 			const data = JSON.parse(String(message.data)) as {
 				type: string;
@@ -47,10 +53,13 @@ function open() {
 			// ignore malformed messages
 		}
 	};
-	socket.onclose = () => {
+	own.onclose = () => {
+		// A socket that was replaced or stopped is not the connection any more.
+		if (socket !== own) return;
+		socket = undefined;
 		if (stopped) return;
 		const delay = Math.min(30_000, 1000 * 2 ** retry++);
-		setTimeout(open, delay);
+		reconnectTimer = setTimeout(open, delay);
 	};
 }
 
@@ -64,8 +73,11 @@ export function connectRealtime(): () => void {
 
 export function disconnectRealtime(): void {
 	stopped = true;
-	socket?.close();
+	clearTimeout(reconnectTimer);
+	reconnectTimer = undefined;
+	const closing = socket;
 	socket = undefined;
+	closing?.close();
 }
 
 /** Subscribes to events whose name starts with `prefix`. Returns an unsubscribe function. */
