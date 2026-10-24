@@ -216,7 +216,7 @@
 	"region_hour_12": "12 saat (2:30 PM)",
 	"region_temperature": "Sıcaklık",
 	"region_reminder_time": "Hatırlatma saati",
-	"region_reminder_time_hint": "Günü olup saati olmayan şeyler için, örneğin bir ev işi ya da tüm gün süren bir etkinlik, hatırlatmanın gönderildiği saat. Daha ileri bir saate alırsanız planlanmış hatırlatmalar da değişikliğe uyar; daha erken bir saat bundan sonra planlanan hatırlatmalar için geçerlidir.",
+	"region_reminder_time_hint": "Ev işleri, tüm gün süren etkinlikler ve saati olmayan diğer şeyler bu saatte hatırlatılır.",
 	"region_preview": "Önizleme",
 	"region_save": "Kaydet",
 	"region_saved": "Bölge biçimleri kaydedildi",
