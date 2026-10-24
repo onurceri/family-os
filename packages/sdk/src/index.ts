@@ -22,6 +22,7 @@ export { namedShares, searchFinds, significantWords, type WordOptions } from './
 export * from './llm.ts';
 export * from './manifest.ts';
 export * from './match-thing.ts';
+export * from './members.ts';
 export * from './mention-kinds.ts';
 export * from './messages.ts';
 export * from './notification-channels.ts';
