@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.33",
+	"sdk": "0.8.34",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -258,7 +258,7 @@
 			"writtenDates",
 			"zoned"
 		],
-		"@famos/api-client": ["createApiClient", "isApiError", "unwrap"],
+		"@famos/api-client": ["createApiClient", "draftClient", "isApiError", "unwrap"],
 		"@famos/ui/styles": ["DEFAULT_STYLE", "STYLES", "STYLE_IDS", "isStyleId"],
 		"@famos/ui/utils": ["cn"],
 		"@famos/ui/slots": [
@@ -306,6 +306,7 @@
 			"DisplayRow",
 			"DisplaySection",
 			"DraftCard",
+			"DraftView",
 			"EMPTY_ART_NAMES",
 			"EmptyArt",
 			"EmptyLine",
@@ -371,6 +372,7 @@
 			"countdown",
 			"countdownName",
 			"counterText",
+			"createDraftFlow",
 			"draftButtons",
 			"durationParts",
 			"editLabel",
