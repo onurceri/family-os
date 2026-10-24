@@ -652,6 +652,26 @@ describe('duplicate hint', () => {
 		expect(hints).toEqual([true, true, true, false]);
 	});
 
+	it('counts a shopping item as there only on the list it is added to', async () => {
+		const { actor } = await k.member('admin');
+		const ai = { kind: 'ai', mode: 'share', source: 'inbox' } as const;
+		const hardware = await applied<{ id: string }>(
+			k.runner.invoke('lists.createShoppingList', { name: 'Hardware' }, actor),
+		);
+		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Milk' }] }, actor);
+		const hint = async (listId?: string) => {
+			const proposed = await k.runner.invoke(
+				'lists.addShoppingItems',
+				{ items: [{ title: 'Milk' }], listId },
+				ai,
+			);
+			if (proposed.status !== 'drafted') throw new Error('expected a draft');
+			return proposed.mayExist ?? false;
+		};
+		expect(await hint()).toBe(true);
+		expect(await hint(hardware.id)).toBe(false);
+	});
+
 	it('meets a task by the words of its title, whatever its due date', async () => {
 		const { actor } = await k.member('admin');
 		const ai = { kind: 'ai', mode: 'conversation', source: 'assistant' } as const;

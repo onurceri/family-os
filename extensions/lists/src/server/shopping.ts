@@ -189,13 +189,23 @@ export const addShoppingItems = defineAction({
 			);
 		return { ...rest, listId: ShoppingListIdSchema.parse(found.id) };
 	},
-	// Every item is already on a list and not bought yet (or only some are).
+	// Every item is already on the list it is added to and not bought yet (or only some are).
 	async alreadyThere(ctx, input) {
 		const { locale } = await ctx.family.settings();
 		const keys = input.items.map((item) => titleKey(item.title, locale));
+		let target = tables(ctx.db)
+			.selectFrom('lists_shopping_lists')
+			.select('id')
+			.where('archived_at', 'is', null);
+		target = input.listId
+			? target.where('id', '=', input.listId)
+			: target.orderBy('sort').orderBy('created_at');
+		const list = await target.executeTakeFirst();
+		if (!list) return false;
 		const open = await tables(ctx.db)
 			.selectFrom('lists_shopping_items')
 			.select('title_key')
+			.where('list_id', '=', list.id)
 			.where('title_key', 'in', keys)
 			.where('done_at', 'is', null)
 			.where('deleted_at', 'is', null)
