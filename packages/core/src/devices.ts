@@ -16,6 +16,7 @@ import { deviceChanged, displayFitChanged } from './core-events.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { type Features, ownerOf } from './features.ts';
 import { randomSecret, sha256Hex } from './secret-text.ts';
+import { shownName } from './shown-name.ts';
 import type { CoreTables, DeviceRow } from './tables.ts';
 
 /**
@@ -264,7 +265,7 @@ export function createDeviceService(deps: {
 		return [...new Set(capabilities)].sort();
 	};
 	const cleanName = (text: string) => {
-		const name = text.trim().slice(0, 60);
+		const name = shownName(text);
 		if (!name) throw new FamosError('bad_request', 'Display name is required');
 		return name;
 	};
@@ -389,7 +390,7 @@ export function createDeviceService(deps: {
 	return {
 		async trust(actor, input) {
 			const createdBy = requireAdmin(actor);
-			const name = input.name.trim().slice(0, 60);
+			const name = shownName(input.name);
 			if (!name) throw new FamosError('bad_request', 'Device name is required');
 			const token = randomSecret();
 			const now = deps.clock.now();

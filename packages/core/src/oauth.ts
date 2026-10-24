@@ -28,6 +28,7 @@ import {
 import type { AuditTrail } from './audit.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { randomSecret, sameText, sha256Bytes, sha256Hex, toBase64Url } from './secret-text.ts';
+import { shownName } from './shown-name.ts';
 import type { ApiTokenRow, CoreTables, OAuthClientsTable } from './tables.ts';
 
 /**
@@ -386,13 +387,8 @@ const hostOf = (uri: string): string => {
 	}
 };
 
-/** A name as shown: no control characters, at most 60 characters. */
-const clientName = (name: string) =>
-	[...name]
-		.filter((c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127)
-		.join('')
-		.trim()
-		.slice(0, 60);
+/** A name as shown: printable text only, at most 60 characters. */
+const clientName = (name: string) => shownName(name);
 
 /**
  * The return addresses an app that named itself asks for: a few, each https or on this device

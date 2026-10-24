@@ -17,6 +17,7 @@ import type { Access } from './access.ts';
 import { API_TOKEN_PREFIX } from './api-tokens.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { randomSecret, sha256Hex } from './secret-text.ts';
+import { shownName } from './shown-name.ts';
 import type { AppRow, AppTokenRow, CoreTables } from './tables.ts';
 
 /** Most keys one app has live at once: a rotation needs two, not twenty. */
@@ -189,7 +190,7 @@ export function createAppService(deps: {
 	}
 
 	function checkName(name: string): string {
-		const clean = name.trim().slice(0, 60);
+		const clean = shownName(name);
 		if (!clean) throw new FamosError('bad_request', 'A name is needed');
 		return clean;
 	}
