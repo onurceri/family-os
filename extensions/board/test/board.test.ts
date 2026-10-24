@@ -416,6 +416,60 @@ describe('clean-up', () => {
 	});
 });
 
+describe('clean-up when a photo cannot be deleted', () => {
+	it('still removes the other notes and plans the next run', async () => {
+		const jpeg = samplePhoto('image/jpeg');
+		const withPhoto = async () => {
+			const note = await post({ endsOn: '2026-10-07' });
+			await k.route('board.uploadNotePhoto').call({
+				params: { noteId: note.id },
+				actor: bora.actor,
+				files: [
+					{
+						field: 'f',
+						name: 'p.jpg',
+						type: 'image/jpeg',
+						size: jpeg.length,
+						stream: async function* () {
+							yield jpeg;
+						},
+						bytes: async () => jpeg,
+					},
+				],
+			});
+			return note;
+		};
+		const stuck = await withPhoto();
+		const plain = await post({ endsOn: '2026-10-07' });
+		// A photo key outside the extension's own folder is refused when the job deletes it.
+		await k.ctx.db
+			.withTables<{ board_notes: { id: string; photo: string | null } }>()
+			.updateTable('board_notes')
+			.set({ photo: 'elsewhere/photo.jpg' })
+			.where('id', '=', stuck.id)
+			.execute();
+		k.clock.set(at('2026-11-08', '12:00'));
+		await k.worker.drain();
+		const left = (
+			await k.ctx.db
+				.withTables<{ board_notes: { id: string } }>()
+				.selectFrom('board_notes')
+				.select('id')
+				.execute()
+		).map((n) => n.id);
+		expect(left).toEqual([stuck.id]);
+		expect(left).not.toContain(plain.id);
+		const pending = await k.ctx.db
+			.withTables<{ queue_jobs: { name: string; status: string } }>()
+			.selectFrom('queue_jobs')
+			.select('name')
+			.where('name', '=', 'board.cleanup')
+			.where('status', '=', 'pending')
+			.execute();
+		expect(pending).toHaveLength(1);
+	});
+});
+
 describe('AI', () => {
 	it('offers posting as a proposal and reading the board as a tool, in its own area', () => {
 		expect(k.ctx.actions.aiCatalog().map((a) => a.id)).toEqual(
