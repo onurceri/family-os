@@ -3,18 +3,16 @@ import {
 	type DbExecutor,
 	defineAction,
 	defineEvent,
-	defineJob,
 	defineRoute,
 	EVERYONE,
 	FamosError,
 	FileResponseSchema,
-	isFamosError,
 	personPresent,
-	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
+import { createPackInstaller } from './pack-installer.ts';
 import { readJson, writeJson } from './settings-json.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -186,15 +184,6 @@ interface HiddenChoices {
 	members: Record<string, unknown>;
 	displays: Record<string, unknown>;
 }
-
-const FetchStateSchema = z.object({
-	status: z.enum(['fetching', 'done', 'failed']),
-	url: z.string(),
-	/** A short reason in plain words when it failed; never the response body. */
-	error: z.string().nullable(),
-	at: z.number(),
-});
-type FetchState = z.infer<typeof FetchStateSchema>;
 
 const AppearanceSchema = z.object({
 	/** The theme this caller sees: a display's own, else the member's, else the family's. */
@@ -425,18 +414,6 @@ export function createThemes(deps: ThemesDeps) {
 		},
 	});
 
-	const fetchState = defineRoute({
-		method: 'get',
-		path: '/themes/fetch',
-		operationId: 'core.getThemeFetch',
-		summary: 'How the last install of a theme pack from an address went',
-		requires: CORE_CAPABILITIES.settingsManage.id,
-		response: FetchStateSchema.nullable(),
-		async handle(ctx) {
-			return readJson<FetchState | null>(ctx.db, FETCH_KEY, null);
-		},
-	});
-
 	const displayChoices = defineRoute({
 		method: 'get',
 		path: '/themes/displays',
@@ -552,82 +529,22 @@ export function createThemes(deps: ThemesDeps) {
 		},
 	});
 
-	const installFromUrl = defineAction({
-		id: 'core.installThemePackFromUrl',
-		title: 'Install a theme pack from an address',
-		input: z.object({ url: z.url().max(2000) }),
-		output: z.object({ queued: z.literal(true) }),
-		requires: CORE_CAPABILITIES.settingsManage.id,
-		approval: 'never',
-		async run(uow, input) {
-			if (new URL(input.url).protocol !== 'https:')
-				throw new FamosError('bad_request', 'Only https addresses are allowed');
-			await writeJson(
-				uow.db,
-				FETCH_KEY,
-				{
-					status: 'fetching',
-					url: input.url,
-					error: null,
-					at: uow.clock.now(),
-				} satisfies FetchState,
-				uow.clock.now(),
-			);
-			// The fetch is network I/O, so it runs as a job (the guarded HTTP port is for jobs).
-			await uow.enqueue(FETCH_THEME_JOB, { url: input.url });
-			uow.emit(themesChanged, { id: null });
-			return { queued: true as const };
+	const { fetchState, installFromUrl, fetchPack } = createPackInstaller({
+		key: FETCH_KEY,
+		job: FETCH_THEME_JOB,
+		installActionId: 'core.installThemePack',
+		schema: ThemePackInputSchema,
+		maxBytes: MAX_PACK_URL_BYTES,
+		noun: 'theme',
+		actionId: 'core.installThemePackFromUrl',
+		actionTitle: 'Install a theme pack from an address',
+		actor: 'core.themes',
+		route: {
+			path: '/themes/fetch',
+			operationId: 'core.getThemeFetch',
+			summary: 'How the last install of a theme pack from an address went',
 		},
-	});
-
-	const fetchPack = defineJob({
-		name: FETCH_THEME_JOB,
-		payload: z.object({ url: z.string() }),
-		maxAttempts: 2,
-		timeoutMs: 60_000,
-		async handle(ctx, payload) {
-			const done = (state: Omit<FetchState, 'at' | 'url'>) =>
-				writeJson(
-					ctx.db,
-					FETCH_KEY,
-					{ ...state, url: payload.url, at: ctx.clock.now() },
-					ctx.clock.now(),
-				).then(() => ctx.events.emit(themesChanged, { id: null }));
-			let text: string;
-			try {
-				const res = await ctx.http.get({ url: payload.url, maxBytes: MAX_PACK_URL_BYTES });
-				if (res.status !== 200) throw new Error('unexpected answer');
-				text = res.text;
-			} catch {
-				await done({ status: 'failed', error: 'The address could not be fetched' });
-				return;
-			}
-			let pack: unknown;
-			try {
-				pack = JSON.parse(text);
-			} catch {
-				await done({ status: 'failed', error: 'The address did not return a theme pack' });
-				return;
-			}
-			const parsed = ThemePackInputSchema.safeParse(pack);
-			if (!parsed.success) {
-				await done({ status: 'failed', error: 'The address did not return a theme pack' });
-				return;
-			}
-			try {
-				const result = await ctx.actions.invoke(
-					'core.installThemePack',
-					{ pack: parsed.data, url: payload.url },
-					systemActor('core.themes'),
-				);
-				if (result.status === 'applied') await done({ status: 'done', error: null });
-				else await done({ status: 'failed', error: 'The pack was refused' });
-			} catch (error) {
-				// A pack that fails validation is final: say why, and do not retry.
-				const reason = isFamosError(error) ? `: ${error.message}` : '';
-				await done({ status: 'failed', error: `The pack was refused${reason}`.slice(0, 500) });
-			}
-		},
+		changed: { event: themesChanged, key: 'id' },
 	});
 
 	const assertKnown = (id: string) => {

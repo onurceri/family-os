@@ -2,18 +2,16 @@ import {
 	type DbExecutor,
 	defineAction,
 	defineEvent,
-	defineJob,
 	defineRoute,
 	EVERYONE,
 	FamosError,
-	isFamosError,
-	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
 import { isFormatLocale } from '@famos/time';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { LanguageCodeSchema, readFamilySettings, writeFamilySettings } from './family.ts';
+import { createPackInstaller } from './pack-installer.ts';
 import { readJson, writeJson } from './settings-json.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -116,15 +114,6 @@ type InstalledMap = Record<string, InstalledRecord>;
 
 const settings = (db: DbExecutor) => db.withTables<CoreTables>();
 
-const FetchStateSchema = z.object({
-	status: z.enum(['fetching', 'done', 'failed']),
-	url: z.string(),
-	/** A short reason in plain words when it failed; never the response body. */
-	error: z.string().nullable(),
-	at: z.number(),
-});
-type FetchState = z.infer<typeof FetchStateSchema>;
-
 const PackInputSchema = z.object({
 	manifest: z.record(z.string(), z.unknown()),
 	catalogs: z.record(z.string(), z.unknown()),
@@ -179,18 +168,6 @@ export function createLanguages(deps: LanguagesDeps) {
 				cacheControl: 'public, max-age=0, must-revalidate',
 				etag: `"${pack.version}"`,
 			};
-		},
-	});
-
-	const fetchState = defineRoute({
-		method: 'get',
-		path: '/languages/fetch',
-		operationId: 'core.getLanguageFetch',
-		summary: 'How the last install of a language pack from an address went',
-		requires: CORE_CAPABILITIES.settingsManage.id,
-		response: FetchStateSchema.nullable(),
-		async handle(ctx) {
-			return readJson<FetchState | null>(ctx.db, FETCH_KEY, null);
 		},
 	});
 
@@ -264,82 +241,22 @@ export function createLanguages(deps: LanguagesDeps) {
 		},
 	});
 
-	const installFromUrl = defineAction({
-		id: 'core.installLanguagePackFromUrl',
-		title: 'Install a language pack from an address',
-		input: z.object({ url: z.url().max(2000) }),
-		output: z.object({ queued: z.literal(true) }),
-		requires: CORE_CAPABILITIES.settingsManage.id,
-		approval: 'never',
-		async run(uow, input) {
-			if (new URL(input.url).protocol !== 'https:')
-				throw new FamosError('bad_request', 'Only https addresses are allowed');
-			await writeJson(
-				uow.db,
-				FETCH_KEY,
-				{
-					status: 'fetching',
-					url: input.url,
-					error: null,
-					at: uow.clock.now(),
-				} satisfies FetchState,
-				uow.clock.now(),
-			);
-			// The fetch is network I/O, so it runs as a job (the guarded HTTP port is for jobs).
-			await uow.enqueue(FETCH_JOB, { url: input.url });
-			uow.emit(languagesChanged, { code: null });
-			return { queued: true as const };
+	const { fetchState, installFromUrl, fetchPack } = createPackInstaller({
+		key: FETCH_KEY,
+		job: FETCH_JOB,
+		installActionId: 'core.installLanguagePack',
+		schema: PackInputSchema,
+		maxBytes: MAX_PACK_URL_BYTES,
+		noun: 'language',
+		actionId: 'core.installLanguagePackFromUrl',
+		actionTitle: 'Install a language pack from an address',
+		actor: 'core.languages',
+		route: {
+			path: '/languages/fetch',
+			operationId: 'core.getLanguageFetch',
+			summary: 'How the last install of a language pack from an address went',
 		},
-	});
-
-	const fetchPack = defineJob({
-		name: FETCH_JOB,
-		payload: z.object({ url: z.string() }),
-		maxAttempts: 2,
-		timeoutMs: 60_000,
-		async handle(ctx, payload) {
-			const done = (state: Omit<FetchState, 'at' | 'url'>) =>
-				writeJson(
-					ctx.db,
-					FETCH_KEY,
-					{ ...state, url: payload.url, at: ctx.clock.now() },
-					ctx.clock.now(),
-				).then(() => ctx.events.emit(languagesChanged, { code: null }));
-			let text: string;
-			try {
-				const res = await ctx.http.get({ url: payload.url, maxBytes: MAX_PACK_URL_BYTES });
-				if (res.status !== 200) throw new Error('unexpected answer');
-				text = res.text;
-			} catch {
-				await done({ status: 'failed', error: 'The address could not be fetched' });
-				return;
-			}
-			let pack: unknown;
-			try {
-				pack = JSON.parse(text);
-			} catch {
-				await done({ status: 'failed', error: 'The address did not return a language pack' });
-				return;
-			}
-			const parsed = PackInputSchema.safeParse(pack);
-			if (!parsed.success) {
-				await done({ status: 'failed', error: 'The address did not return a language pack' });
-				return;
-			}
-			try {
-				const result = await ctx.actions.invoke(
-					'core.installLanguagePack',
-					{ pack: parsed.data, url: payload.url },
-					systemActor('core.languages'),
-				);
-				if (result.status === 'applied') await done({ status: 'done', error: null });
-				else await done({ status: 'failed', error: 'The pack was refused' });
-			} catch (error) {
-				// A pack that fails validation is final: say why, and do not retry.
-				const reason = isFamosError(error) ? `: ${error.message}` : '';
-				await done({ status: 'failed', error: `The pack was refused${reason}`.slice(0, 500) });
-			}
-		},
+		changed: { event: languagesChanged, key: 'code' },
 	});
 
 	return {
