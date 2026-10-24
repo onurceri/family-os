@@ -159,13 +159,23 @@ export const addItem = defineAction({
 			throw new FamosError('conflict', 'This inbox item already exists');
 		}
 		const now = uow.clock.now();
+		// The sizes come from the stored files, never from the caller.
+		const files = await Promise.all(
+			input.files.map(async (f) => ({ ...f, size: (await uow.files.stat(f.key))?.size ?? 0 })),
+		);
+		await assertQuota(
+			uow.db,
+			now,
+			uow.actor,
+			files.reduce((sum, f) => sum + f.size, 0),
+		);
 		const row = {
 			id: input.id,
 			channel: input.channel,
 			title: input.title || null,
 			text: input.text || null,
 			url: input.url ?? null,
-			files: JSON.stringify(input.files),
+			files: JSON.stringify(files),
 			status: input.fileTo ? ('filed' as const) : ('received' as const),
 			filed_to: input.fileTo ? filedTo(input.fileTo) : null,
 			normalized_text: null,
@@ -187,7 +197,7 @@ export const addItem = defineAction({
 		await db.insertInto('inbox_items').values(row).execute();
 		if (input.fileTo) {
 			// Filed by hand: no job, so no model ever reads it.
-			await fileOnRecord(uow, input.id, input.files, input.fileTo);
+			await fileOnRecord(uow, input.id, files, input.fileTo);
 		} else {
 			await uow.enqueue(
 				PROCESS_JOB,
@@ -309,24 +319,24 @@ const safeName = (name: string, i: number) =>
 		.join('')
 		.slice(0, 255) || `file-${i + 1}`;
 
-/** Refuses an upload that would take the member over their 24-hour quota. */
+/** Refuses an item that would take the member over their 24-hour quota. */
 async function assertQuota(
-	ctx: ExtensionContext,
+	db: UnitOfWork['db'],
+	now: number,
 	actor: Actor,
-	files: readonly { size: number }[],
-) {
+	incoming: number,
+): Promise<void> {
 	if (!personPresent(actor)) return;
-	const recent = await tables(ctx.db)
+	const recent = await tables(db)
 		.selectFrom('inbox_items')
 		.select('files')
 		.where('created_by', '=', actor.memberId)
-		.where('created_at', '>', ctx.clock.now() - UPLOAD_QUOTA.windowMs)
+		.where('created_at', '>', now - UPLOAD_QUOTA.windowMs)
 		.execute();
 	const used = recent.reduce(
 		(sum, row) => sum + (JSON.parse(row.files) as StoredFile[]).reduce((s, f) => s + f.size, 0),
 		0,
 	);
-	const incoming = files.reduce((sum, f) => sum + f.size, 0);
 	if (recent.length >= UPLOAD_QUOTA.items || used + incoming > UPLOAD_QUOTA.bytes)
 		throw new FamosError('limit_reached', 'Daily upload limit reached; try again tomorrow');
 }
@@ -381,7 +391,13 @@ async function addUpload(
 					...(fileToRecordName && { recordName: fileToRecordName }),
 				}
 			: undefined;
-	await assertQuota(ctx, actor, files);
+	// Refused before anything is stored; the action checks again against the stored files.
+	await assertQuota(
+		ctx.db,
+		ctx.clock.now(),
+		actor,
+		files.reduce((sum, f) => sum + f.size, 0),
+	);
 	// Files cannot join a transaction: store them first, remove them if the action fails.
 	const id = ctx.ids.next('inbox_item');
 	const stored: z.infer<typeof StoredFileSchema>[] = [];

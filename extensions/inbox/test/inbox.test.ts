@@ -330,6 +330,33 @@ describe('upload quota', () => {
 		// Another member has their own quota.
 		await share({}, [big(UPLOAD_QUOTA.bytes - 1)], kid.actor);
 	});
+
+	it('holds the action itself to the quota, by the size of the stored files', async () => {
+		const item = (n: number) => `inbox_item_0192d3c4-0000-7000-8000-${String(n).padStart(12, '0')}`;
+		const add = (n: number, files: unknown[] = []) =>
+			k.runner.invoke(
+				'inbox.addItem',
+				{ id: item(n), channel: 'upload', text: 'hi', files },
+				kid.actor,
+			);
+		// Text only, called directly: counted like any other item.
+		for (let n = 1; n <= UPLOAD_QUOTA.items; n++) await add(n);
+		await expect(add(UPLOAD_QUOTA.items + 1)).rejects.toMatchObject({ code: 'limit_reached' });
+
+		// A size the caller made up changes nothing: the stored file decides.
+		const id = item(900);
+		await k.ctx.files.put(`inbox/${id}/0`, new TextEncoder().encode('hello'), 'text/plain');
+		const result = await k.runner.invoke(
+			'inbox.addItem',
+			{
+				id,
+				channel: 'upload',
+				files: [{ key: `inbox/${id}/0`, name: 'a.txt', type: 'text/plain', size: 1 }],
+			},
+			parent.actor,
+		);
+		expect(result).toMatchObject({ output: { files: [{ size: 5 }] } });
+	});
 });
 
 describe('shares from outside the app', () => {
