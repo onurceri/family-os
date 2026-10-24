@@ -44,12 +44,18 @@ describe('expanding a subscribed feed', () => {
 			series('dense', '19700101T000000', 'FREQ=SECONDLY'),
 			series('fine', '20260101T080000', 'FREQ=DAILY;COUNT=400'),
 		);
-		const started = performance.now();
 		const parsed = parseCalendar(text, TZ, NOW, (uid, reason) => skipped.push(`${uid}:${reason}`));
-		expect(performance.now() - started).toBeLessThan(1000);
 		expect(skipped).toEqual(['dense:rule_too_dense']);
 		expect(parsed.some((p) => p.uid === 'dense')).toBe(false);
 		expect(parsed.some((p) => p.uid === 'fine')).toBe(true);
+	});
+
+	it('stops a coarse rule that needs too many steps to reach the window', () => {
+		const skipped: string[] = [];
+		const text = feed(series('ancient', '18000101T080000', 'FREQ=DAILY'));
+		const parsed = parseCalendar(text, TZ, NOW, (uid, reason) => skipped.push(`${uid}:${reason}`));
+		expect(skipped).toEqual(['ancient:rule_too_dense']);
+		expect(parsed.some((p) => p.uid === 'ancient')).toBe(false);
 	});
 
 	it('still expands a daily rule that began in 1990', () => {

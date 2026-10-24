@@ -87,8 +87,6 @@ const EXPAND_MAX = 800;
 const EXPAND_MAX_STEPS = 30_000;
 /** Seconds in one step of each rule frequency finer than a day; coarser ones cannot run away. */
 const FINE_STEP_SECONDS: Record<string, number> = { SECONDLY: 1, MINUTELY: 60, HOURLY: 3600 };
-/** Wall time one series may take. The process is single-threaded, so nothing else can run meanwhile. */
-const EXPAND_MAX_MS = 3000;
 const DAY = 86_400_000;
 
 const clip = (value: string | null | undefined, max: number) => {
@@ -439,13 +437,13 @@ function readEvents(
 			return;
 		}
 		const iterator = s.event.iterator();
-		const started = performance.now();
 		const found: Omit<ParsedEvent, 'fingerprint'>[] = [];
 		let count = 0;
 		let steps = 0;
 		for (let next = iterator.next(); next && count < EXPAND_MAX; next = iterator.next()) {
-			// A rule that cannot reach the window in bounds is unrepresentable: none of it is kept.
-			if (++steps > EXPAND_MAX_STEPS || performance.now() - started > EXPAND_MAX_MS) {
+			// A rule that cannot reach the window in bounds is unrepresentable: none of it is kept. The
+			// bound is in steps, not time, so a slow machine keeps exactly the series a fast one keeps.
+			if (++steps > EXPAND_MAX_STEPS) {
 				onSkipped(s.event.uid, 'rule_too_dense');
 				return;
 			}
