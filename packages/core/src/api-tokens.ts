@@ -13,7 +13,7 @@ import {
 import { sql } from 'kysely';
 import type { Access } from './access.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
-import { sha256Hex, toBase64Url } from './secret-text.ts';
+import { randomSecret, sha256Hex } from './secret-text.ts';
 import type { ApiTokenRow, CoreTables } from './tables.ts';
 
 /** Every token starts with this, so a leaked one is recognisable (secret scanners, the owner). */
@@ -170,7 +170,7 @@ export function createApiTokenService(deps: {
 
 			// Never a secret that starts like an OAuth one: those are looked up elsewhere.
 			let secret: string;
-			do secret = `${API_TOKEN_PREFIX}${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+			do secret = `${API_TOKEN_PREFIX}${randomSecret()}`;
 			while (OAUTH_PREFIXES.some((prefix) => secret.startsWith(prefix)));
 			const now = deps.clock.now();
 			const row: ApiTokenRow = {

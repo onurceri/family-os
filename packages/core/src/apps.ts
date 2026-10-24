@@ -15,6 +15,7 @@ import {
 import type { Access } from './access.ts';
 import { API_TOKEN_PREFIX } from './api-tokens.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
+import { randomSecret, sha256Hex } from './secret-text.ts';
 import type { AppRow, AppTokenRow, CoreTables } from './tables.ts';
 
 /** Most keys one app has live at once: a rotation needs two, not twenty. */
@@ -114,17 +115,6 @@ export interface AppService {
 	isPaused(secret: string | null | undefined): Promise<boolean>;
 	/** Records a permitted use (`lastUsedAt`), at most hourly. */
 	touch(tokenId: string): Promise<void>;
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-	let binary = '';
-	for (const b of bytes) binary += String.fromCharCode(b);
-	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256Hex(text: string): Promise<string> {
-	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 const tokenView = (row: AppTokenRow): AppTokenView => ({
@@ -253,7 +243,7 @@ export function createAppService(deps: {
 	}
 
 	async function mint(appId: string, name: string, days: number | null) {
-		const secret = `${API_TOKEN_PREFIX}${toBase64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+		const secret = `${API_TOKEN_PREFIX}${randomSecret()}`;
 		const now = deps.clock.now();
 		const row: AppTokenRow = {
 			id: deps.ids.next('app_token'),

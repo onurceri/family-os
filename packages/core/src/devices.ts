@@ -15,6 +15,7 @@ import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { deviceChanged, displayFitChanged } from './core-events.ts';
 import type { InProcessEventBus } from './event-bus.ts';
 import { type Features, ownerOf } from './features.ts';
+import { randomSecret, sha256Hex } from './secret-text.ts';
 import type { CoreTables, DeviceRow } from './tables.ts';
 
 /**
@@ -228,17 +229,6 @@ function randomUserCode(): string {
 
 const SEEN_RESOLUTION_MS = HOUR_MS;
 
-function toBase64Url(bytes: Uint8Array): string {
-	let binary = '';
-	for (const b of bytes) binary += String.fromCharCode(b);
-	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256Hex(text: string): Promise<string> {
-	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 export function createDeviceService(deps: {
 	db: DbExecutor;
 	clock: Clock;
@@ -401,7 +391,7 @@ export function createDeviceService(deps: {
 			const createdBy = requireAdmin(actor);
 			const name = input.name.trim().slice(0, 60);
 			if (!name) throw new FamosError('bad_request', 'Device name is required');
-			const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+			const token = randomSecret();
 			const now = deps.clock.now();
 			const device: DeviceRow = {
 				id: deps.ids.next('device'),
@@ -513,7 +503,7 @@ export function createDeviceService(deps: {
 					throw new FamosError('limit_reached', 'Too many displays are waiting to be paired here');
 			}
 
-			const deviceCode = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+			const deviceCode = randomSecret();
 			let userCode = randomUserCode();
 			for (let tries = 0; tries < 5; tries++) {
 				const clash = await pairings()
@@ -570,7 +560,7 @@ export function createDeviceService(deps: {
 			if (row.status === 'pending') return { status: 'pending' };
 
 			// Confirmed: exactly one poll wins and receives the token.
-			const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+			const token = randomSecret();
 			const device: DeviceRow = {
 				id: deps.ids.next('device'),
 				name: row.name ?? 'Display',
