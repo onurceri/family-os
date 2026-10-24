@@ -50,14 +50,19 @@ export const UpdateTimingInputSchema = wholeRecord(TimingSchema);
 
 export const PhotoIdSchema = idSchema('amb_photo');
 
+/** After the browser resized it (a 1920 px JPEG is a few hundred KB). */
+export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+/** Larger than this on either side is not a screen photo. */
+export const PHOTO_MAX_SIDE = 8192;
+
 /** What the upload route hands the `ambient.addPhoto` action once the file is stored. */
 export const StoredPhotoSchema = z.object({
 	/** Only keys the upload route makes: the action is also reachable at /actions, and must not point at other files. */
 	key: z.string().regex(/^ambient\/photos\/[A-Za-z0-9_-]+\.(jpg|png|webp)$/),
 	type: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-	width: z.number().int().min(1).max(10_000),
-	height: z.number().int().min(1).max(10_000),
-	size: z.number().int().min(1),
+	width: z.number().int().min(1).max(PHOTO_MAX_SIDE),
+	height: z.number().int().min(1).max(PHOTO_MAX_SIDE),
+	size: z.number().int().min(1).max(PHOTO_MAX_BYTES),
 });
 
 /** A photo in the settings library. */

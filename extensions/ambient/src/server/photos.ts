@@ -12,6 +12,8 @@ import {
 import { z } from 'zod';
 import {
 	LibraryPhotoSchema,
+	PHOTO_MAX_BYTES,
+	PHOTO_MAX_SIDE,
 	PhotoIdSchema,
 	PhotoListSchema,
 	StoredPhotoSchema,
@@ -29,10 +31,7 @@ import { loadSettings, tables } from './store.ts';
 export const MAX_PHOTOS = 200;
 /** The library is capped as well: displays run on modest hardware and disks. */
 export const MAX_LIBRARY = 500;
-/** After the browser resized it (a 1920 px JPEG is a few hundred KB). */
-export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
-/** Larger than this on either side is not a screen photo. */
-export const PHOTO_MAX_SIDE = 8192;
+export { PHOTO_MAX_BYTES, PHOTO_MAX_SIDE };
 
 const EXTENSION = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' } as const;
 
@@ -63,6 +62,13 @@ export const addPhoto = defineAction({
 			.executeTakeFirstOrThrow();
 		if (Number(count) >= MAX_LIBRARY)
 			throw new FamosError('bad_request', `At most ${MAX_LIBRARY} photos are kept`);
+		// A file belongs to one photo: deleting either row would take the file from the other.
+		const taken = await tables(uow.db)
+			.selectFrom('ambient_photos')
+			.select('id')
+			.where('file_key', '=', input.key)
+			.executeTakeFirst();
+		if (taken) throw new FamosError('conflict', 'That file is already a photo');
 		const id = uow.ids.next('amb_photo') as z.output<typeof PhotoIdSchema>;
 		await tables(uow.db)
 			.insertInto('ambient_photos')

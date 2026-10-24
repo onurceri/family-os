@@ -56,6 +56,24 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
+	'0002_photo_file_unique': {
+		async up(db) {
+			// Rows that share a file keep the oldest (the lowest id on a tie); the file stays.
+			await sql`delete from ambient_photos where id in (
+				select id from (
+					select id, row_number() over (
+						partition by file_key order by created_at asc, id asc
+					) as n from ambient_photos
+				) where n > 1
+			)`.execute(db);
+			await db.schema
+				.createIndex('ambient_photos_file_key')
+				.unique()
+				.on('ambient_photos')
+				.column('file_key')
+				.execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<AmbientTables>();

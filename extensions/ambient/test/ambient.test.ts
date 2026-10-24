@@ -4,7 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ForecastSchema } from '../src/contract/index.ts';
 import { WEATHER_TTL_MS } from '../src/server/caches.ts';
 import ambient from '../src/server/index.ts';
-import { MAX_LIBRARY, MAX_PHOTOS, PHOTO_MAX_BYTES, shuffle } from '../src/server/photos.ts';
+import {
+	MAX_LIBRARY,
+	MAX_PHOTOS,
+	PHOTO_MAX_BYTES,
+	PHOTO_MAX_SIDE,
+	shuffle,
+} from '../src/server/photos.ts';
 import { forecastUrl, parseForecast } from '../src/server/weather.ts';
 
 let k: TestKernel;
@@ -507,5 +513,19 @@ describe('photo keys', () => {
 		for (const key of ['inbox/item_1/0', 'kitchen/recipes/r/p', 'ambient/photos/../x.png']) {
 			await expect(run('ambient.addPhoto', { ...stored, key }), key).rejects.toBeTruthy();
 		}
+	});
+
+	it('keeps one photo to a file and to the limits of the upload route', async () => {
+		const stored = { type: 'image/png', width: 8, height: 6, size: 10 };
+		const key = 'ambient/photos/amb_file_1.png';
+		await run('ambient.addPhoto', { ...stored, key });
+		await expect(run('ambient.addPhoto', { ...stored, key })).rejects.toBeTruthy();
+		const other = 'ambient/photos/amb_file_2.png';
+		for (const bad of [
+			{ width: PHOTO_MAX_SIDE + 1 },
+			{ height: PHOTO_MAX_SIDE + 1 },
+			{ size: PHOTO_MAX_BYTES + 1 },
+		])
+			await expect(run('ambient.addPhoto', { ...stored, ...bad, key: other })).rejects.toBeTruthy();
 	});
 });
