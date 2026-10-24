@@ -1,4 +1,11 @@
-import { defineJob, defineNotificationKind } from '@famos/sdk';
+import {
+	DEFAULT_REMINDER_TIME,
+	defineJob,
+	defineNotificationKind,
+	type EnqueueJob,
+	reminderMissed,
+	reminderStale,
+} from '@famos/sdk';
 import { addDays, dayBounds, daysBetween, epochOf, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { DEFAULT_AUDIENCE } from '../contract/index.ts';
@@ -17,10 +24,6 @@ export const obligationDueKind = defineNotificationKind({
 	audience: 'records.view',
 });
 
-const REMIND_TIME = '09:00';
-/** A reminder may be this late at scheduling time (clock drift) and still go out. */
-const LATE_MS = 5 * 60_000;
-
 const RemindPayload = z.object({
 	obligationId: z.string(),
 	dueDate: z.string(),
@@ -28,15 +31,9 @@ const RemindPayload = z.object({
 	version: z.number(),
 });
 
-type Enqueue = (
-	job: string,
-	payload: unknown,
-	options?: { runAt?: number; dedupeKey?: string },
-) => Promise<unknown>;
-
 /** Plans the reminders of an open obligation as it is now. */
 export async function scheduleObligationReminders(
-	enqueue: Enqueue,
+	enqueue: EnqueueJob,
 	row: ObligationRow,
 	now: number,
 	timeZone: string,
@@ -47,8 +44,8 @@ export async function scheduleObligationReminders(
 		stages.push({ stage: 'lead', date: addDays(row.due_date, -row.lead_days) });
 	stages.push({ stage: 'due', date: row.due_date });
 	for (const { stage, date } of stages) {
-		const at = epochOf(date, REMIND_TIME, timeZone);
-		if (at < now - LATE_MS) continue;
+		const at = epochOf(date, DEFAULT_REMINDER_TIME, timeZone);
+		if (reminderMissed(at, now)) continue;
 		await enqueue(
 			'records.remind',
 			{ obligationId: row.id, dueDate: row.due_date, stage, version: row.updated_at },
@@ -70,7 +67,8 @@ export const remindJob = defineJob({
 			.where('id', '=', obligationId)
 			.executeTakeFirst();
 		if (!row || row.archived_at !== null) return;
-		if (row.updated_at !== version || row.due_date !== dueDate) return;
+		if (reminderStale({ version, date: dueDate }, { version: row.updated_at, date: row.due_date }))
+			return;
 
 		const { timeZone } = await ctx.family.settings();
 		const now = ctx.clock.now();

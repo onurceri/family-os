@@ -1,4 +1,11 @@
-import { defineJob, defineNotificationKind } from '@famos/sdk';
+import {
+	DEFAULT_REMINDER_TIME,
+	defineJob,
+	defineNotificationKind,
+	type EnqueueJob,
+	reminderMissed,
+	reminderStale,
+} from '@famos/sdk';
 import { dayBounds, epochOf } from '@famos/time';
 import { z } from 'zod';
 import { CHORES_VIEW } from '../contract/index.ts';
@@ -16,32 +23,22 @@ export const choreDueKind = defineNotificationKind({
 	audience: CHORES_VIEW,
 });
 
-const REMIND_TIME = '09:00';
-/** A reminder may be this late at scheduling time (clock drift) and still go out. */
-const LATE_MS = 5 * 60_000;
-
 const RemindPayload = z.object({
 	choreId: z.string(),
 	dueDate: z.string(),
 	version: z.number(),
 });
 
-type Enqueue = (
-	job: string,
-	payload: unknown,
-	options?: { runAt?: number; dedupeKey?: string },
-) => Promise<unknown>;
-
 /** Plans the reminder of a chore as it is now. */
 export async function scheduleChoreReminder(
-	enqueue: Enqueue,
+	enqueue: EnqueueJob,
 	row: ChoreRow,
 	now: number,
 	timeZone: string,
 ): Promise<void> {
 	if (row.archived_at !== null || !row.next_due || !row.assignee_id) return;
-	const at = epochOf(row.next_due, REMIND_TIME, timeZone);
-	if (at < now - LATE_MS) return;
+	const at = epochOf(row.next_due, DEFAULT_REMINDER_TIME, timeZone);
+	if (reminderMissed(at, now)) return;
 	await enqueue(
 		'chores.remind',
 		{ choreId: row.id, dueDate: row.next_due, version: row.updated_at },
@@ -59,7 +56,8 @@ export const remindJob = defineJob({
 			.where('id', '=', choreId)
 			.executeTakeFirst();
 		if (!row || row.archived_at !== null || !row.assignee_id) return;
-		if (row.updated_at !== version || row.next_due !== dueDate) return;
+		if (reminderStale({ version, date: dueDate }, { version: row.updated_at, date: row.next_due }))
+			return;
 
 		const { timeZone } = await ctx.family.settings();
 		// The job may have waited a long time (server down): do not remind about a past day.

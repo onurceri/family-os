@@ -1,4 +1,13 @@
-import { defineJob, defineNotificationKind, type NotifyRequest } from '@famos/sdk';
+import {
+	DEFAULT_REMINDER_TIME,
+	defineJob,
+	defineNotificationKind,
+	type EnqueueJob,
+	MINUTE_MS,
+	type NotifyRequest,
+	REMINDER_LATE_MS,
+	reminderMissed,
+} from '@famos/sdk';
 import {
 	addDays,
 	DAY_MS,
@@ -23,19 +32,17 @@ export const reminderKind = defineNotificationKind({
 	audience: 'calendar.view',
 });
 
-/** A reminder may be this late at scheduling time (clock drift) and still go out. */
-const LATE_MS = 5 * 60_000;
 /** How far ahead to look for the next occurrence of a series (covers yearly events). */
 const LOOKAHEAD_DAYS = 400;
 /** All-day reminders count back from this local time on the day. */
-const ALL_DAY_ANCHOR = '09:00';
+const ALL_DAY_ANCHOR = DEFAULT_REMINDER_TIME;
 
 const exdatesOf = (row: EventRow): (string | number)[] =>
 	row.exdates ? JSON.parse(row.exdates) : [];
 
 /** The instant a reminder for an occurrence is due. */
 export function reminderInstant(row: EventRow, key: string, lead: number): number {
-	if (!row.all_day) return Number(key) - lead * 60_000;
+	if (!row.all_day) return Number(key) - lead * MINUTE_MS;
 	return Temporal.PlainDateTime.from(`${key}T${ALL_DAY_ANCHOR}`)
 		.subtract({ minutes: lead })
 		.toZonedDateTime(row.time_zone, { disambiguation: 'compatible' })
@@ -88,11 +95,11 @@ export function nextReminder(
 		for (const key of keys) {
 			if (afterKey !== undefined && key <= afterKey) continue;
 			const at = reminderInstant(row, key, lead);
-			if (at >= now - LATE_MS) return { key, at };
+			if (!reminderMissed(at, now)) return { key, at };
 		}
 		return null;
 	}
-	let from = now - LATE_MS + lead * 60_000;
+	let from = now - REMINDER_LATE_MS + lead * MINUTE_MS;
 	if (afterKey !== undefined) from = Math.max(from, Number(afterKey) + 1);
 	const [first] = expandTimed(
 		{
@@ -124,15 +131,9 @@ const RemindPayload = z.object({
 });
 type RemindPayload = z.infer<typeof RemindPayload>;
 
-type Enqueue = (
-	job: string,
-	payload: unknown,
-	options?: { runAt?: number; dedupeKey?: string },
-) => Promise<unknown>;
-
 /** Plans the next reminder of an event (nothing if it has none, or none is left). */
 export async function scheduleReminder(
-	enqueue: Enqueue,
+	enqueue: EnqueueJob,
 	row: EventRow,
 	now: number,
 	afterKey?: string,
@@ -229,7 +230,7 @@ export const remindJob = defineJob({
 
 		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about the past.
-		const over = row.all_day ? dayBounds(key, row.time_zone).end : Number(key) + LATE_MS;
+		const over = row.all_day ? dayBounds(key, row.time_zone).end : Number(key) + REMINDER_LATE_MS;
 		if (now <= over) await ctx.notify(message(row, key, row.time_zone, source));
 		if (row.rrule) {
 			await scheduleReminder(

@@ -27,6 +27,7 @@ export * from './notification-channels.ts';
 export * from './notifications.ts';
 export * from './ports.ts';
 export * from './question.ts';
+export * from './reminders.ts';
 export * from './routes.ts';
 export * from './same-origin-path.ts';
 export * from './share.ts';

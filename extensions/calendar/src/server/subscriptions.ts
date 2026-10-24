@@ -2,6 +2,7 @@ import {
 	defineAction,
 	defineJob,
 	defineRoute,
+	type EnqueueJob,
 	ExternalHttpError,
 	FamosError,
 	isExternalHttpError,
@@ -54,14 +55,8 @@ export function feedHost(raw: string): string | null {
 
 const RefreshPayload = z.object({ subscriptionId: z.string() });
 
-type Enqueue = (
-	job: string,
-	payload: unknown,
-	options?: { runAt?: number; dedupeKey?: string },
-) => Promise<unknown>;
-
 /** Asks for a refresh now (once, however often it is asked). */
-const refreshNow = (enqueue: Enqueue, subscriptionId: string) =>
+const refreshNow = (enqueue: EnqueueJob, subscriptionId: string) =>
 	enqueue(
 		'calendar.refreshSubscription',
 		{ subscriptionId },
@@ -74,7 +69,7 @@ const refreshNow = (enqueue: Enqueue, subscriptionId: string) =>
  * Plans the next scheduled refresh. Slots are fixed six-hour windows, so however many refreshes
  * happen in one window, only one follow-up exists; a small per-subscription offset spreads them.
  */
-async function scheduleNext(enqueue: Enqueue, subscriptionId: string, now: number) {
+async function scheduleNext(enqueue: EnqueueJob, subscriptionId: string, now: number) {
 	const slot = Math.floor(now / REFRESH_EVERY_MS) + 1;
 	let spread = 0;
 	for (const char of subscriptionId) spread = (spread * 31 + char.charCodeAt(0)) % (30 * 60_000);

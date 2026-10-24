@@ -1,4 +1,11 @@
-import { defineJob, defineNotificationKind } from '@famos/sdk';
+import {
+	DEFAULT_REMINDER_TIME,
+	defineJob,
+	defineNotificationKind,
+	type EnqueueJob,
+	reminderMissed,
+	reminderStale,
+} from '@famos/sdk';
 import { dayBounds, epochOf } from '@famos/time';
 import { z } from 'zod';
 import { type TaskRow, tables } from './store.ts';
@@ -16,10 +23,6 @@ export const taskDueKind = defineNotificationKind({
 	audience: 'lists.view',
 });
 
-const DEFAULT_TIME = '09:00';
-/** A reminder may be this late at scheduling time (clock drift) and still go out. */
-const LATE_MS = 5 * 60_000;
-
 const RemindPayload = z.object({
 	taskId: z.string(),
 	dueDate: z.string(),
@@ -27,22 +30,16 @@ const RemindPayload = z.object({
 	version: z.number(),
 });
 
-type Enqueue = (
-	job: string,
-	payload: unknown,
-	options?: { runAt?: number; dedupeKey?: string },
-) => Promise<unknown>;
-
 /** Plans the reminder of an open task with a due date. */
 export async function scheduleTaskReminder(
-	enqueue: Enqueue,
+	enqueue: EnqueueJob,
 	row: TaskRow,
 	now: number,
 	timeZone: string,
 ): Promise<void> {
 	if (!row.due_date || row.done_at !== null || row.deleted_at !== null) return;
-	const at = epochOf(row.due_date, row.due_time ?? DEFAULT_TIME, timeZone);
-	if (at < now - LATE_MS) return;
+	const at = epochOf(row.due_date, row.due_time ?? DEFAULT_REMINDER_TIME, timeZone);
+	if (reminderMissed(at, now)) return;
 	await enqueue(
 		'lists.remind',
 		{ taskId: row.id, dueDate: row.due_date, dueTime: row.due_time, version: row.updated_at },
@@ -61,7 +58,11 @@ export const remindJob = defineJob({
 			.where('deleted_at', 'is', null)
 			.executeTakeFirst();
 		if (!row || row.done_at !== null) return;
-		if (row.updated_at !== version || row.due_date !== dueDate || row.due_time !== dueTime) return;
+		if (
+			reminderStale({ version, date: dueDate }, { version: row.updated_at, date: row.due_date }) ||
+			row.due_time !== dueTime
+		)
+			return;
 
 		const { timeZone } = await ctx.family.settings();
 		// The job may have waited a long time (server down): do not remind about a past day.
