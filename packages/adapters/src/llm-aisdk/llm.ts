@@ -207,6 +207,12 @@ function isGatewayUpstreamFailure(body: string | undefined): boolean {
 	}
 }
 
+/** The call's time limit, and the caller's signal when it has one. */
+function within(timeoutMs: number, signal?: AbortSignal): AbortSignal {
+	const limit = AbortSignal.timeout(timeoutMs);
+	return signal ? AbortSignal.any([limit, signal]) : limit;
+}
+
 function toLlmError(error: unknown, model?: string): LlmError {
 	if (isLlmError(error)) return error;
 	// The AI SDK's own retry gave up: what failed is its last error (a 429 keeps its wait).
@@ -558,7 +564,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					...(request.temperature !== undefined && { temperature: request.temperature }),
 					...(reasoning && !reasoningInBody(provider) && { reasoning: effortOf(reasoning) }),
 					maxRetries: 1,
-					abortSignal: AbortSignal.timeout(request.timeoutMs),
+					abortSignal: within(request.timeoutMs, request.signal),
 				});
 				// A refused answer still cost what it cost; its text stays on the error (never logged)
 				// for an evaluation to show.
@@ -762,7 +768,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 							: {},
 					providerOptions: { openaiCompatible: { strictJsonSchema: false } },
 					maxRetries: 1,
-					abortSignal: AbortSignal.timeout(request.timeoutMs),
+					abortSignal: within(request.timeoutMs, request.signal),
 				});
 				let text = '';
 				let stepStart = true;
@@ -865,7 +871,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					model: embedder(provider, role.model),
 					values: [...request.texts],
 					maxRetries: 1,
-					abortSignal: AbortSignal.timeout(request.timeoutMs),
+					abortSignal: within(request.timeoutMs, request.signal),
 				});
 				tokens = Number.isFinite(result.usage.tokens) ? result.usage.tokens : null;
 				const vectors = result.embeddings.map((e) => Float32Array.from(e));
@@ -967,7 +973,7 @@ export function createAiSdkLlm(deps: AiSdkLlmDeps): LlmPort {
 					method: 'POST',
 					headers: provider.apiKey ? { authorization: `Bearer ${provider.apiKey}` } : {},
 					body: form,
-					signal: AbortSignal.timeout(request.timeoutMs),
+					signal: within(request.timeoutMs, request.signal),
 				});
 				if (!response.ok) throw statusToLlmError(response.status, await response.text());
 				const body = (await response.json().catch(() => null)) as {

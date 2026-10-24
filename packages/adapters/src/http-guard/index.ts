@@ -281,12 +281,13 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 		};
 		for (const [name, value] of Object.entries(request.headers ?? {}))
 			if (name.toLowerCase() !== 'host') headers[name.toLowerCase()] = value;
+		const timeout = AbortSignal.timeout(request.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 		return {
 			url,
 			allowLocal,
 			headers,
 			maxBytes: request.maxBytes ?? DEFAULT_MAX_BYTES,
-			signal: AbortSignal.timeout(request.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+			signal: request.signal ? AbortSignal.any([timeout, request.signal]) : timeout,
 		};
 	}
 

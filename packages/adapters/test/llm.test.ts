@@ -706,6 +706,23 @@ describe('AI SDK LlmPort', () => {
 		expect((await settings.usage()).total).toMatchObject({ calls: 3, errors: 3 });
 	});
 
+	it('ends a call when the caller aborts, long before its own limit', async () => {
+		await useModel('slow');
+		const stop = new AbortController();
+		const call = llm.generateObject({
+			role: 'smart',
+			feature: 'test.extract',
+			areas: ['test'],
+			schema: Trip,
+			prompt: 'School trip Friday',
+			timeoutMs: 60_000,
+			signal: stop.signal,
+			jobId: 'job_1',
+		});
+		setTimeout(() => stop.abort(), 100);
+		await expect(call).rejects.toMatchObject({ code: 'timeout', retryable: true });
+	}, 10_000);
+
 	it('asks once more when the provider answers with nothing, and calls it an outage', async () => {
 		await useModel('glitch-once');
 		await expect(ask()).resolves.toMatchObject({ output: { title: 'Zoo trip' } });

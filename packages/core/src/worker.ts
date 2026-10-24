@@ -58,7 +58,7 @@ export function createWorker(deps: {
 	queue: JobQueue;
 	registry: Registry;
 	/** The context a job's handler gets: its extension's own, by the job's name. */
-	ctxFor: (job: string) => JobContext;
+	ctxFor: (job: string, signal: AbortSignal) => JobContext;
 	clock: Clock;
 	logger: Logger;
 	/** Jobs of turned-off extensions stay queued until it is turned on again. */
@@ -104,7 +104,7 @@ export function createWorker(deps: {
 		let attempt: Promise<void> | undefined;
 		try {
 			const payload = def.payload.parse(job.payload);
-			attempt = def.handle(deps.ctxFor(job.name), payload, {
+			attempt = def.handle(deps.ctxFor(job.name, controller.signal), payload, {
 				id: job.id,
 				attempt: job.attempt,
 				maxAttempts: job.maxAttempts,

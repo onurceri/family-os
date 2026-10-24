@@ -567,3 +567,36 @@ describe('node transport, post', () => {
 		}
 	});
 });
+
+describe('a request that is told to stop', () => {
+	it('ends with a timeout when the caller aborts, whatever its own limit', async () => {
+		const resolve = dns({ 'cal.example.org': ['93.184.216.34'] });
+		let seen: AbortSignal | undefined;
+		// A server that never answers: it ends only with the request's signal.
+		const transport: Transport = (request) =>
+			new Promise((_, reject) => {
+				seen = request.signal;
+				request.signal.addEventListener('abort', () => reject(new Error('aborted')), {
+					once: true,
+				});
+			});
+		const http = createGuardedHttp({ resolve, transport });
+		const stop = new AbortController();
+		const get = code(
+			http.get({ url: 'https://cal.example.org/a.ics', timeoutMs: 60_000, signal: stop.signal }),
+		);
+		const post = code(
+			http.post({
+				url: 'https://cal.example.org/hook',
+				json: {},
+				timeoutMs: 60_000,
+				signal: stop.signal,
+			}),
+		);
+		await new Promise((r) => setTimeout(r, 20));
+		expect(seen?.aborted).toBe(false);
+		stop.abort();
+		expect(await get).toBe('timeout');
+		expect(await post).toBe('timeout');
+	});
+});

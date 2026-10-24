@@ -226,6 +226,8 @@ export interface ExternalHttpRequest {
 	maxBytes?: number;
 	/** Whole-request limit including redirects. Default 20 s. */
 	timeoutMs?: number;
+	/** Ends the request early when it aborts (a job run that timed out); reported as `timeout`. */
+	signal?: AbortSignal;
 	/**
 	 * What to do with a redirect: `same-host` (the default) follows it within the host, `none`
 	 * refuses every one (`redirect_refused`), for a document whose address must be the one it is

@@ -76,6 +76,7 @@ import {
 	type Registry,
 } from './registry.ts';
 import { type RestoreReport, reconcileRestore } from './restore.ts';
+import { httpWithin, llmWithin } from './run-signal.ts';
 import {
 	createSchemaNames,
 	hostFiles,
@@ -666,7 +667,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		return made;
 	}
 	const jobContexts = new Map<string, JobContext>();
-	const jobContextFor = (id: string): JobContext => {
+	const jobContextFor = (id: string, signal?: AbortSignal): JobContext => {
 		const key = isHost(id) ? 'core' : id;
 		let made = jobContexts.get(key);
 		if (!made) {
@@ -677,12 +678,15 @@ export function createKernel(options: KernelOptions): Kernel {
 			};
 			jobContexts.set(key, made);
 		}
+		// A run's own context: its model and web calls end with the run's signal.
+		if (signal)
+			return { ...made, llm: llmWithin(made.llm, signal), http: httpWithin(made.http, signal) };
 		return made;
 	};
 	worker = createWorker({
 		queue: options.queue,
 		registry,
-		ctxFor: (job) => jobContextFor(ownerOf(job)),
+		ctxFor: (job, signal) => jobContextFor(ownerOf(job), signal),
 		clock: options.clock,
 		logger: options.logger,
 		isOn: (id) => features.isOn(id),

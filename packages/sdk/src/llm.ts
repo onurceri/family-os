@@ -56,6 +56,8 @@ export interface LlmObjectRequest<T> {
 	files?: readonly LlmFile[];
 	/** Required: every model call has an explicit time limit. */
 	timeoutMs: number;
+	/** Ends the call early when it aborts (a job run that timed out); reported like `timeoutMs` running out. */
+	signal?: AbortSignal;
 	/**
 	 * The most tokens the model may write, reasoning included on models that count it. A model
 	 * that rambles would otherwise run until the time limit; when the cap cuts the answer off the
@@ -133,6 +135,8 @@ export interface LlmChatRequest {
 	toolsClosed?(): boolean;
 	/** Required: every model call has an explicit time limit (for the whole tool loop). */
 	timeoutMs: number;
+	/** Ends the call early when it aborts (a job run that timed out); reported like `timeoutMs` running out. */
+	signal?: AbortSignal;
 	/**
 	 * How freely the model chooses its words and its tool calls, for every step of the loop (see
 	 * `LlmObjectRequest.temperature`). Left out, the provider's default applies.
@@ -169,6 +173,8 @@ export interface LlmTranscribeRequest {
 	language?: string;
 	/** Required: every model call has an explicit time limit. */
 	timeoutMs: number;
+	/** Ends the call early when it aborts (a job run that timed out); reported like `timeoutMs` running out. */
+	signal?: AbortSignal;
 	memberId?: string | null;
 	jobId?: string | null;
 }
@@ -192,6 +198,8 @@ export interface LlmEmbedRequest {
 	texts: readonly string[];
 	/** Required: every model call has an explicit time limit. */
 	timeoutMs: number;
+	/** Ends the call early when it aborts (a job run that timed out); reported like `timeoutMs` running out. */
+	signal?: AbortSignal;
 	memberId?: string | null;
 	jobId?: string | null;
 }

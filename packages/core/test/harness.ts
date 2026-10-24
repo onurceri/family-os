@@ -34,6 +34,7 @@ import {
 	type IdentityAdmin,
 	type JobContext,
 	LlmError,
+	type LlmPort,
 	type MemberId,
 	type NotificationChannel,
 	type NotificationChannelDefinition,
@@ -87,6 +88,8 @@ export async function createTestKernel(
 		extensionPackages?: ExtensionPackagesPort;
 		/** Outbound HTTP (default: unreachable). */
 		http?: ExternalHttp;
+		/** Model calls to replace (default: no model set). */
+		llm?: Partial<LlmPort>;
 		worker?: WorkerOptions;
 	} = {},
 ): Promise<TestKernel> {
@@ -178,6 +181,7 @@ export async function createTestKernel(
 				local: false,
 				model: null,
 			}),
+			...options.llm,
 		},
 		extensions: options.extensions ?? [],
 		infrastructureMigrations: [

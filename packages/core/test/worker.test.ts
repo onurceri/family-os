@@ -1,4 +1,4 @@
-import { defineJob } from '@famos/sdk';
+import { defineJob, ExternalHttpError, LlmError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { jobLog, notesExtension } from './fixtures.ts';
@@ -196,6 +196,50 @@ describe('a job that runs past its timeout', () => {
 			await kernel.close();
 		}
 	});
+
+	it('stops its model and web calls with the run, without the handler passing anything', async () => {
+		// Fakes that never answer, and end only when the request's signal does.
+		const endsWith = <E extends Error>(signal: AbortSignal | undefined, fail: () => E) =>
+			new Promise<never>((_, reject) => {
+				signal?.addEventListener('abort', () => reject(fail()), { once: true });
+			});
+		const seen: string[] = [];
+		const job = defineJob({
+			name: 'slow.calls',
+			payload: z.object({}),
+			timeoutMs: 50,
+			maxAttempts: 1,
+			async handle(ctx) {
+				const outcomes = await Promise.allSettled([
+					ctx.http.get({ url: 'https://example.org/feed', timeoutMs: 60_000 }),
+					ctx.http.post({ url: 'https://example.org/hook', json: {}, timeoutMs: 60_000 }),
+					ctx.llm.embed({ feature: 'slow.embed', area: 'slow', texts: ['a'], timeoutMs: 60_000 }),
+				]);
+				seen.push(...outcomes.map((o) => o.status));
+			},
+		});
+		const kernel = await createTestKernel({
+			extensions: [defineTestExtension({ id: 'slow', jobs: [job] })],
+			worker: { abortGraceMs: 30_000 },
+			http: {
+				get: ({ signal }) => endsWith(signal, () => new ExternalHttpError('timeout', 'Timed out')),
+				post: ({ signal }) => endsWith(signal, () => new ExternalHttpError('timeout', 'Timed out')),
+			},
+			llm: {
+				embed: ({ signal }) =>
+					endsWith(signal, () => new LlmError('timeout', 'The model did not answer in time')),
+			},
+		});
+		try {
+			await kernel.queue.enqueue(kernel.ctx.db, 'slow.calls', {});
+			const began = Date.now();
+			await kernel.worker.drain();
+			expect(Date.now() - began).toBeLessThan(5_000);
+			expect(seen).toEqual(['rejected', 'rejected', 'rejected']);
+		} finally {
+			await kernel.close();
+		}
+	}, 15_000);
 
 	it('is retried once its grace has passed when it ignores the abort', async () => {
 		const events: string[] = [];
