@@ -5,6 +5,8 @@
  * (scripts/sky-contrast.test.ts), which checks text on the sky in every bundled theme pack.
  */
 
+import { weatherKind } from '@famos/time';
+
 export type SkyKind = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
 
 export interface SkyCondition {
@@ -29,15 +31,8 @@ export const SKY_KINDS: readonly SkyKind[] = [
  * does not know draw an overcast sky: atmosphere, never a wrong promise of sun.
  */
 export function skyCondition(code: number, isDay: boolean): SkyCondition {
-	const night = !isDay;
-	if (code === 0 || code === 1) return { kind: 'clear', night };
-	if (code === 2) return { kind: 'partly', night };
-	if (code === 45 || code === 48) return { kind: 'fog', night };
-	if (code >= 51 && code <= 57) return { kind: 'drizzle', night };
-	if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return { kind: 'rain', night };
-	if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { kind: 'snow', night };
-	if (code >= 95 && code <= 99) return { kind: 'storm', night };
-	return { kind: 'cloudy', night };
+	const kind = weatherKind(code);
+	return { kind: kind === 'cloud' ? 'cloudy' : kind, night: !isDay };
 }
 
 /**

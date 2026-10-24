@@ -6,6 +6,7 @@ import {
 	HOUR_MS,
 	type HourCycle,
 	todayIn,
+	weatherKind,
 } from '@famos/time';
 import type { Forecast, ForecastHour } from './index.ts';
 
@@ -73,11 +74,10 @@ const EVENING_EARLIEST = '17:00';
 /** "Tonight" ends at this hour of the next morning. */
 const NIGHT_UNTIL = '06:00';
 
-const isRain = (code: number) =>
-	(code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82);
-const isSnow = (code: number) => (code >= 71 && code <= 77) || code === 85 || code === 86;
-const isStorm = (code: number) => code >= 95 && code <= 99;
-const isClear = (code: number) => code === 0 || code === 1;
+const isRain = (code: number) => weatherKind(code) === 'drizzle' || weatherKind(code) === 'rain';
+const isSnow = (code: number) => weatherKind(code) === 'snow';
+const isStorm = (code: number) => weatherKind(code) === 'storm';
+const isClear = (code: number) => weatherKind(code) === 'clear';
 const isWet = (h: ForecastHour) =>
 	isRain(h.code) ||
 	isSnow(h.code) ||

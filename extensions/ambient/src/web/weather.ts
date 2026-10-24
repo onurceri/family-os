@@ -1,3 +1,4 @@
+import { weatherKind } from '@famos/time';
 import {
 	Cloud,
 	CloudDrizzle,
@@ -30,16 +31,22 @@ export function describeWeather(
 	code: number,
 	isDay = true,
 ): { icon: Component; label: WeatherLabel } {
-	if (code === 0) return { icon: isDay ? Sun : Moon, label: 'wmo_clear' };
-	if (code === 1) return { icon: isDay ? Sun : Moon, label: 'wmo_mostly_clear' };
-	if (code === 2) return { icon: isDay ? CloudSun : CloudMoon, label: 'wmo_partly_cloudy' };
-	if (code === 3) return { icon: Cloud, label: 'wmo_cloudy' };
-	if (code === 45 || code === 48) return { icon: CloudFog, label: 'wmo_fog' };
-	if (code >= 51 && code <= 57) return { icon: CloudDrizzle, label: 'wmo_drizzle' };
-	if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82))
-		return { icon: CloudRain, label: code >= 80 ? 'wmo_showers' : 'wmo_rain' };
-	if ((code >= 71 && code <= 77) || code === 85 || code === 86)
-		return { icon: CloudSnow, label: 'wmo_snow' };
-	if (code >= 95 && code <= 99) return { icon: CloudLightning, label: 'wmo_thunderstorm' };
-	return { icon: Cloud, label: 'wmo_unknown' };
+	switch (weatherKind(code)) {
+		case 'clear':
+			return { icon: isDay ? Sun : Moon, label: code === 0 ? 'wmo_clear' : 'wmo_mostly_clear' };
+		case 'partly':
+			return { icon: isDay ? CloudSun : CloudMoon, label: 'wmo_partly_cloudy' };
+		case 'fog':
+			return { icon: CloudFog, label: 'wmo_fog' };
+		case 'drizzle':
+			return { icon: CloudDrizzle, label: 'wmo_drizzle' };
+		case 'rain':
+			return { icon: CloudRain, label: code >= 80 ? 'wmo_showers' : 'wmo_rain' };
+		case 'snow':
+			return { icon: CloudSnow, label: 'wmo_snow' };
+		case 'storm':
+			return { icon: CloudLightning, label: 'wmo_thunderstorm' };
+		default:
+			return { icon: Cloud, label: code === 3 ? 'wmo_cloudy' : 'wmo_unknown' };
+	}
 }

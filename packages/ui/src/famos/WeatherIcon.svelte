@@ -1,15 +1,12 @@
 <script lang="ts" module>
+	import { weatherKind } from '@famos/time';
+
 	/** The icon of a WMO weather code (Open-Meteo): the shapes the hourly strip draws. */
 	export type WeatherShape = 'clear' | 'partly' | 'cloud' | 'fog' | 'rain' | 'snow' | 'storm';
 
 	export function weatherShape(code: number): WeatherShape {
-		if (code <= 1) return 'clear';
-		if (code === 2) return 'partly';
-		if (code === 45 || code === 48) return 'fog';
-		if (code >= 95) return 'storm';
-		if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
-		if (code >= 51 && code <= 82) return 'rain';
-		return 'cloud';
+		const kind = weatherKind(code);
+		return kind === 'drizzle' ? 'rain' : kind;
 	}
 </script>
 

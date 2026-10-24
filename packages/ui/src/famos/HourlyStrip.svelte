@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { HOUR_MS } from '@famos/time';
+	import { HOUR_MS, isWetCode } from '@famos/time';
 	/** One hour of the forecast (ambient's `Forecast.hourly`). */
 	export interface HourlyPoint {
 		at: number;
@@ -10,10 +10,7 @@
 
 	/** An hour with a rain, snow or storm code, or at least a 50 % chance of rain. */
 	export const isWetHour = (h: HourlyPoint): boolean =>
-		(h.code >= 51 && h.code <= 82) ||
-		(h.code >= 85 && h.code <= 86) ||
-		h.code >= 95 ||
-		(h.precipitationProbability ?? 0) >= 50;
+		isWetCode(h.code) || (h.precipitationProbability ?? 0) >= 50;
 
 	/** The sun's day at the place: up from `rise` until `set` (epoch ms). */
 	export interface SunDay {

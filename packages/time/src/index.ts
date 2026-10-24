@@ -860,3 +860,4 @@ export {
 	type SpanLabel,
 	type SpanLabelKey,
 } from './resolve-span.ts';
+export { isWetCode, type WeatherKind, weatherKind } from './weather.ts';
