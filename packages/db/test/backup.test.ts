@@ -178,4 +178,83 @@ describe('backup', () => {
 			expect(await readdir(dir)).not.toContain('escape.txt');
 		});
 	});
+
+	describe('a restore that fails part way', () => {
+		/** Every file under a folder with its content, so "unchanged" means byte for byte. */
+		async function snapshot(dir: string, rel = ''): Promise<Record<string, string>> {
+			const out: Record<string, string> = {};
+			for (const entry of await readdir(join(dir, rel), { withFileTypes: true })) {
+				const path = join(rel, entry.name);
+				if (path === 'backups') continue;
+				if (entry.isDirectory()) Object.assign(out, await snapshot(dir, path));
+				else out[path] = (await readFile(join(dir, path))).toString('base64');
+			}
+			return out;
+		}
+
+		async function fixture() {
+			const { dir, dbPath, filesDir, handle } = await setup();
+			const languagesDir = join(dir, 'languages');
+			const themesDir = join(dir, 'themes');
+			const extensionsDir = join(dir, 'extensions');
+			for (const d of [languagesDir, themesDir, extensionsDir]) {
+				await mkdir(d, { recursive: true });
+				await writeFile(join(d, 'pack.json'), 'in the backup');
+			}
+			const { path } = await createBackup({
+				sqlite: handle.sqlite,
+				filesDir,
+				languagesDir,
+				themesDir,
+				extensionsDir,
+				backupsDir: join(dir, 'backups'),
+				appVersion: '0.0.0-test',
+				schema: { core: ['0001_init'] },
+				reason: 'manual',
+			});
+			// The live data has moved on since.
+			await sql`update notes set body = 'live'`.execute(handle.db);
+			await writeFile(join(filesDir, 'inbox', 'flyer.txt'), 'live');
+			for (const d of [languagesDir, themesDir, extensionsDir])
+				await writeFile(join(d, 'pack.json'), 'live');
+			await handle.close();
+			const options = { file: path, dbPath, filesDir, languagesDir, themesDir, extensionsDir };
+			return { dir, options };
+		}
+
+		it('leaves the live data exactly as it was, whichever step fails', async () => {
+			const probe = await fixture();
+			const steps: string[] = [];
+			await restoreBackup({ ...probe.options, beforeStep: (name) => void steps.push(name) });
+			expect(steps).toEqual(
+				expect.arrayContaining(['copy:db', 'copy:files', 'swap:db', 'swap:extensions', 'marker']),
+			);
+
+			for (const failing of steps) {
+				const { dir, options } = await fixture();
+				const before = await snapshot(dir);
+				await expect(
+					restoreBackup({
+						...options,
+						beforeStep: (name) => {
+							if (name === failing) throw new Error(`injected at ${name}`);
+						},
+					}),
+				).rejects.toThrow(`injected at ${failing}`);
+				const after = await snapshot(dir);
+				expect(after, failing).toEqual(before);
+				expect(await readRestoreMarker(options.dbPath), failing).toBeNull();
+			}
+		});
+
+		it('leaves the live data when the marker cannot be written', async () => {
+			const { dir, options } = await fixture();
+			const before = await snapshot(dir);
+			// A folder where the marker file goes makes writing it fail after every swap is done.
+			await mkdir(join(dir, 'restore-pending.json'));
+			await expect(restoreBackup(options)).rejects.toThrow();
+			await rm(join(dir, 'restore-pending.json'), { recursive: true });
+			expect(await snapshot(dir)).toEqual(before);
+		});
+	});
 });

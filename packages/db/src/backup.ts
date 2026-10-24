@@ -217,16 +217,37 @@ export interface RestoreBackupOptions {
 	/** The extension store; restored when the backup carries one. */
 	extensionsDir?: string;
 	now?: Date;
+	/** Called before each step of the restore, with its name; a throw there fails that step. For tests. */
+	beforeStep?: (step: string) => void | Promise<void>;
 }
 
+const exists = (path: string) =>
+	stat(path).then(
+		() => true,
+		() => false,
+	);
+
 /**
- * Restores a backup over the current data. Existing data is moved aside (never deleted) as
- * `*.pre-restore-<timestamp>`. Schema compatibility is checked by the caller against the code's
- * migrations; pending forward migrations run on next start.
+ * Restores a backup over the current data. The backup is first copied next to where it will live
+ * (`*.restoring`), so a full disk or a bad file fails before anything live is touched. Then each
+ * existing item is moved aside (never deleted) as `*.pre-restore-<timestamp>` and its replacement
+ * renamed into place; if any step fails, every rename already done is undone and the data is
+ * exactly as it was. Schema compatibility is checked by the caller against the code's migrations;
+ * pending forward migrations run on next start.
  */
 export async function restoreBackup(options: RestoreBackupOptions): Promise<BackupManifest> {
 	const manifest = await readBackupManifest(options.file);
 	const staging = await mkdtemp(join(tmpdir(), 'famos-restore-'));
+	const step = async (name: string) => options.beforeStep?.(name);
+	/** Incoming copies made, removed when the restore ends (a used one is already renamed away). */
+	const incoming: string[] = [];
+	/** Renames to take back, in the order they were done. */
+	let markerStarted = false;
+	const done: { from: string; to: string }[] = [];
+	const move = async (from: string, to: string) => {
+		await rename(from, to);
+		done.push({ from, to });
+	};
 	try {
 		await extractBackup(options.file, staging);
 		const restoredDb = join(staging, DB_ENTRY);
@@ -234,67 +255,65 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 			throw new Error('Backup database checksum mismatch');
 
 		const suffix = `pre-restore-${stamp(options.now ?? new Date())}`;
+		const copyBeside = async (name: string, source: string | null, target: string) => {
+			await step(`copy:${name}`);
+			const place = `${target}.restoring`;
+			await rm(place, { recursive: true, force: true });
+			incoming.push(place);
+			if (source === null) await mkdir(place, { recursive: true });
+			else await cp(source, place, { recursive: true });
+			return place;
+		};
+
+		// What this backup replaces: the database and files always, a pack folder when it carries one.
+		const plan: { name: string; target: string; place: string; journals: boolean }[] = [];
+		plan.push({
+			name: 'db',
+			target: options.dbPath,
+			place: await copyBeside('db', restoredDb, options.dbPath),
+			journals: true,
+		});
+		const restoredFiles = join(staging, 'files');
+		plan.push({
+			name: 'files',
+			target: options.filesDir,
+			place: await copyBeside(
+				'files',
+				(await exists(restoredFiles)) ? restoredFiles : null,
+				options.filesDir,
+			),
+			journals: false,
+		});
+		// A backup from before the store keeps the store as it is; the server checks every copy
+		// in it again at its next start, and leaves out an installed extension it has no package of.
+		for (const [name, target] of [
+			['languages', options.languagesDir],
+			['themes', options.themesDir],
+			['extensions', options.extensionsDir],
+		] as const) {
+			const restored = join(staging, name);
+			if (target && (await exists(restored)))
+				plan.push({
+					name,
+					target,
+					place: await copyBeside(name, restored, target),
+					journals: false,
+				});
+		}
+
+		const hadDatabase = await exists(options.dbPath);
 		// The journal files are renamed after the database's new name, so SQLite finds them when
 		// the moved-aside copy is opened to read what changed since the backup.
 		const movedAside = `${options.dbPath}.${suffix}`;
-		const hadDatabase = await stat(options.dbPath).then(
-			() => true,
-			() => false,
-		);
-		for (const ext of ['', '-wal', '-shm']) {
-			await rename(`${options.dbPath}${ext}`, `${movedAside}${ext}`).catch(ignoreMissing);
-		}
-		await rename(options.filesDir, `${options.filesDir}.${suffix}`).catch(ignoreMissing);
-
-		await cp(restoredDb, options.dbPath);
-		await cp(join(staging, 'files'), options.filesDir, { recursive: true }).catch(
-			async (error: unknown) => {
-				if (isMissing(error)) await mkdir(options.filesDir, { recursive: true });
-				else throw error;
-			},
-		);
-		if (options.languagesDir) {
-			const restored = join(staging, 'languages');
-			if (
-				await stat(restored).then(
-					() => true,
-					() => false,
-				)
-			) {
-				await rename(options.languagesDir, `${options.languagesDir}.${suffix}`).catch(
-					ignoreMissing,
-				);
-				await cp(restored, options.languagesDir, { recursive: true });
+		for (const item of plan) {
+			await step(`swap:${item.name}`);
+			for (const ext of item.journals ? ['', '-wal', '-shm'] : ['']) {
+				await move(`${item.target}${ext}`, `${item.target}.${suffix}${ext}`).catch(ignoreMissing);
 			}
+			await move(item.place, item.target);
 		}
-		if (options.themesDir) {
-			const restored = join(staging, 'themes');
-			if (
-				await stat(restored).then(
-					() => true,
-					() => false,
-				)
-			) {
-				await rename(options.themesDir, `${options.themesDir}.${suffix}`).catch(ignoreMissing);
-				await cp(restored, options.themesDir, { recursive: true });
-			}
-		}
-		// A backup from before the store keeps the store as it is; the server checks every copy
-		// in it again at its next start, and leaves out an installed extension it has no package of.
-		if (options.extensionsDir) {
-			const restored = join(staging, 'extensions');
-			if (
-				await stat(restored).then(
-					() => true,
-					() => false,
-				)
-			) {
-				await rename(options.extensionsDir, `${options.extensionsDir}.${suffix}`).catch(
-					ignoreMissing,
-				);
-				await cp(restored, options.extensionsDir, { recursive: true });
-			}
-		}
+		await step('marker');
+		markerStarted = true;
 		await writeFile(
 			markerPath(options.dbPath),
 			JSON.stringify({
@@ -303,7 +322,20 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 			} satisfies RestoreMarker),
 		);
 		return manifest;
+	} catch (error) {
+		const stuck: string[] = [];
+		for (const { from, to } of done.reverse()) {
+			await rename(to, from).catch(() => stuck.push(from));
+		}
+		if (markerStarted) await rm(markerPath(options.dbPath), { force: true }).catch(() => undefined);
+		if (stuck.length > 0)
+			throw new Error(
+				`The restore failed and ${stuck.join(', ')} could not be put back; the previous data is in the *.pre-restore-* files beside it. Cause: ${error instanceof Error ? error.message : String(error)}`,
+				{ cause: error },
+			);
+		throw error;
 	} finally {
+		for (const place of incoming) await rm(place, { recursive: true, force: true });
 		await rm(staging, { recursive: true, force: true });
 	}
 }

@@ -72,6 +72,7 @@ docker compose start famos
 
 **Good to know**
 - A copy from elsewhere goes into the volume first: `docker compose cp ./file.tar famos:/data/backups/`.
+- If the restore fails part way (a full disk, say), your current data is put back exactly as it was.
 - Current data is never deleted: it is moved aside as `famos.db.pre-restore-<time>`, `files.pre-restore-<time>` and, if the backup holds them, `languages.pre-restore-<time>`, `themes.pre-restore-<time>`, `extensions.pre-restore-<time>`.
 - A backup from a newer FamilyOS is refused.
 - Extensions installed from a file come back and their signature is checked at start. If an older backup lacks one, it is left out (Settings lists it with the reason) and the rest starts. Install it again; its data was kept.
@@ -85,6 +86,8 @@ At the first start after a restore:
 - **Connected apps are paused**, even on a new server. Admins review them in **Settings → Connected apps** and press **Resume** on trusted ones.
 - Nothing is switched back on: keys, devices, addresses and links made after the backup are gone and must be made again.
 - On a new server, or if you delete the `*.pre-restore-*` files before first start, only the sign-out happens.
+
+If this step fails, the server does not start (otherwise the old sign-ins would work); start it again once the cause is fixed, and the step runs again.
 
 Admins get a notification saying what stayed ended.
 
