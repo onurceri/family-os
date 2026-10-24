@@ -271,7 +271,7 @@ describe('who reads the suggestion list', () => {
 describe('what Quick add shows to decide, and the count of it', () => {
 	const shown = (who: Who) =>
 		k.route('core.listDrafts').call({ actor: who.actor, query: { limit: 50 } }) as Promise<
-			{ id: string; status: string; canDecide: boolean }[]
+			{ id: string; status: string; canDecide: boolean; error: string | null }[]
 		>;
 
 	it('tells each reader whether they may decide a suggestion', async () => {
@@ -279,6 +279,17 @@ describe('what Quick add shows to decide, and the count of it', () => {
 		expect((await shown(parent)).find((d) => d.id === id)?.canDecide).toBe(true);
 		// The child sees their own request, waiting for someone else.
 		expect((await shown(kid)).find((d) => d.id === id)?.canDecide).toBe(false);
+	});
+
+	it('tells a reader only that a suggestion failed, as a code, never the stored message', async () => {
+		things.add('chair');
+		const failed = await propose(kid, 'chair');
+		await db()
+			.updateTable('core_drafts')
+			.set({ status: 'failed', error: 'SQLITE_ERROR: no such table /var/lib/famos' })
+			.where('id', '=', failed)
+			.execute();
+		expect((await shown(parent)).find((d) => d.id === failed)?.error).toBe('failed');
 	});
 
 	it('counts exactly the waiting suggestions a reader may decide, failed ones included', async () => {

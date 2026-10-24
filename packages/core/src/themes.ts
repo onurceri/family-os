@@ -535,7 +535,6 @@ export function createThemes(deps: ThemesDeps) {
 		installActionId: 'core.installThemePack',
 		schema: ThemePackInputSchema,
 		maxBytes: MAX_PACK_URL_BYTES,
-		noun: 'theme',
 		actionId: 'core.installThemePackFromUrl',
 		actionTitle: 'Install a theme pack from an address',
 		actor: 'core.themes',

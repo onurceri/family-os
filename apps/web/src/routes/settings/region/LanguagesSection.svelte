@@ -17,7 +17,20 @@
 	 * adding or removing packs. The language only chooses words; dates, times and numbers follow
 	 * the region. Adding a pack happens in a panel.
 	 */
-	type Fetch = { status: 'fetching' | 'done' | 'failed'; url: string; error: string | null } | null;
+	type Fetch = {
+		status: 'fetching' | 'done' | 'failed';
+		url: string;
+		problem?: { code: 'unreachable' | 'not_a_pack' | 'refused'; detail: string | null } | null;
+	} | null;
+
+	/** Why the last fetch failed, in words; a state kept from before problems were coded has none. */
+	function fetchProblem(state: NonNullable<Fetch>): string {
+		const problem = state.problem;
+		if (!problem) return t('languages_fetch_failed', { reason: t('error_generic') });
+		return problem.code === 'refused' && problem.detail
+			? t('languages_fetch_refused', { reason: problem.detail })
+			: t(`languages_fetch_${problem.code}` as 'languages_fetch_unreachable');
+	}
 
 	let adding = $state(false);
 	let url = $state('');
@@ -189,7 +202,7 @@
 				<p class="text-ink-soft text-sm" role="status">{t('languages_fetching')}</p>
 			{:else if fetchState?.status === 'failed'}
 				<p class="text-attention text-sm font-semibold" role="alert">
-					{t('languages_fetch_failed', { reason: fetchState.error ?? t('error_generic') })}
+					{fetchProblem(fetchState)}
 				</p>
 			{/if}
 			<div>

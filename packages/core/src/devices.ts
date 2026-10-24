@@ -563,7 +563,7 @@ export function createDeviceService(deps: {
 			const token = randomSecret();
 			const device: DeviceRow = {
 				id: deps.ids.next('device'),
-				name: row.name ?? 'Display',
+				name: row.name ?? row.user_code,
 				kind: 'kiosk',
 				token_hash: await sha256Hex(token),
 				created_by: row.confirmed_by ?? '',

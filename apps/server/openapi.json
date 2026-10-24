@@ -19590,6 +19590,9 @@
 												"type": [
 													"string",
 													"null"
+												],
+												"enum": [
+													"failed"
 												]
 											},
 											"forMember": {
@@ -20394,6 +20397,9 @@
 											"type": [
 												"string",
 												"null"
+											],
+											"enum": [
+												"failed"
 											]
 										},
 										"forMember": {
@@ -20918,6 +20924,9 @@
 											"type": [
 												"string",
 												"null"
+											],
+											"enum": [
+												"failed"
 											]
 										},
 										"forMember": {
@@ -21442,6 +21451,9 @@
 											"type": [
 												"string",
 												"null"
+											],
+											"enum": [
+												"failed"
 											]
 										},
 										"forMember": {
@@ -21966,6 +21978,9 @@
 											"type": [
 												"string",
 												"null"
+											],
+											"enum": [
+												"failed"
 											]
 										},
 										"forMember": {
@@ -22490,6 +22505,9 @@
 											"type": [
 												"string",
 												"null"
+											],
+											"enum": [
+												"failed"
 											]
 										},
 										"forMember": {
@@ -23249,6 +23267,32 @@
 											"type": [
 												"string",
 												"null"
+											]
+										},
+										"problem": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"code": {
+													"type": "string",
+													"enum": [
+														"unreachable",
+														"not_a_pack",
+														"refused"
+													]
+												},
+												"detail": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"code",
+												"detail"
 											]
 										},
 										"at": {
@@ -24497,6 +24541,32 @@
 											"type": [
 												"string",
 												"null"
+											]
+										},
+										"problem": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"code": {
+													"type": "string",
+													"enum": [
+														"unreachable",
+														"not_a_pack",
+														"refused"
+													]
+												},
+												"detail": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"code",
+												"detail"
 											]
 										},
 										"at": {

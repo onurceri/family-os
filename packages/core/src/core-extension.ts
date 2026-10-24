@@ -223,7 +223,8 @@ export const DraftSchema = z.object({
 	uncertainFields: z.array(z.string()),
 	/** The words of the shared message it rests on, as the message writes them; null when none. */
 	quote: z.string().nullable(),
-	error: z.string().nullable(),
+	/** `failed` when applying it did not work (the stored message can carry internals), else null. */
+	error: z.literal('failed').nullable(),
 	/** Addressed to this member alone (a memory, a question): only they decide it. */
 	forMember: z.string().nullable(),
 	createdAt: z.number(),
@@ -343,10 +344,7 @@ const toDraft = (
 	uncertainFields: row.uncertain_fields ? (JSON.parse(row.uncertain_fields) as string[]) : [],
 	quote: row.quote,
 	// The stored message can carry internals (SQL, paths); members see only that it failed.
-	error:
-		row.error === null || row.error === GONE || row.error === SETTLED
-			? null
-			: 'Applying this change failed. Try again or ask an admin.',
+	error: row.error === null || row.error === GONE || row.error === SETTLED ? null : 'failed',
 	forMember: row.for_member,
 	createdAt: row.created_at,
 	decidedAt: row.decided_at,
