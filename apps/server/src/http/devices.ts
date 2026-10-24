@@ -269,7 +269,7 @@ function mountDisplayRoutes(
 		security: [{ session: [] }],
 	});
 	app.openapi(address, async (c) => {
-		const _actor = requirePerson(c);
+		requirePerson(c);
 		return c.json({ url: publicUrl ?? null }, 200);
 	});
 
