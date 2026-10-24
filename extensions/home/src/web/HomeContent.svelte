@@ -4,20 +4,21 @@
 		AwaitingRow,
 		Card,
 		Dialog,
+		editLabel,
 		EmptyLine,
 		FIELD_REASON,
 		type FieldErrors,
 		focusFirstInvalid,
 		type MenuItem,
+		openPath,
 		PageHeader,
 		RecordHeader,
+		RecordMenu,
+		removeLabels,
 		Row,
 		Section,
 		SidePanel,
 		wide,
-		editLabel,
-		removeLabels,
-		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import {
@@ -73,7 +74,6 @@
 	import HomeForm from './HomeForm.svelte';
 	import { useHome } from './i18n.js';
 	import ItemForm from './ItemForm.svelte';
-	import RecordMenu from './RecordMenu.svelte';
 	import { type ItemFacts, itemLine, type ServiceFacts, serviceLine } from './row-lines.js';
 	import ServiceForm from './ServiceForm.svelte';
 

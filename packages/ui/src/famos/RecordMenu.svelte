@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { IconButton, Menu, type MenuItem } from '@famos/ui/famos';
+	import IconButton from './IconButton.svelte';
+	import Menu from './Menu.svelte';
+	import type { MenuItem } from './menu-items.js';
 	import { Ellipsis } from '@lucide/svelte';
 
 	/**

@@ -3,16 +3,17 @@
 	import { Button } from '@famos/ui/button';
 	import {
 		Dialog,
+		editLabel,
 		focusFirstInvalid,
 		type MenuItem,
+		openPath,
 		Page,
 		PageHeader,
 		RecordHeader,
+		RecordMenu,
+		removeLabels,
 		SidePanel,
 		wide,
-		editLabel,
-		removeLabels,
-		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Pencil, Refrigerator } from '@lucide/svelte';
@@ -28,7 +29,6 @@
 	import { emptyItem, fromItem, type ItemFormValue, toItemFields, validateItem } from './form.js';
 	import { useHome } from './i18n.js';
 	import ItemForm from './ItemForm.svelte';
-	import RecordMenu from './RecordMenu.svelte';
 
 	/**
 	 * One thing's page (`/home/items/:id`): its head (room, brand, warranty), then what needs doing

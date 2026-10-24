@@ -66,6 +66,7 @@ export { counterText, lengthState } from './length-limit.js';
 export { default as MemberChips } from './MemberChips.svelte';
 export { default as MemberDay, type MemberDayWords } from './MemberDay.svelte';
 export { default as Menu } from './Menu.svelte';
+export { default as RecordMenu } from './RecordMenu.svelte';
 export type { MenuItem } from './menu-items.js';
 export { default as NextUpHero, type NextUpWords } from './NextUpHero.svelte';
 export { default as Notice } from './Notice.svelte';

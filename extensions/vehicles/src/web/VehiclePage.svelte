@@ -3,15 +3,16 @@
 	import {
 		Avatar,
 		Dialog,
+		editLabel,
 		focusFirstInvalid,
 		type MenuItem,
+		openPath,
 		PageHeader,
 		RecordHeader,
+		RecordMenu,
+		removeLabels,
 		SidePanel,
 		wide,
-		editLabel,
-		removeLabels,
-		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Car, Pencil } from '@lucide/svelte';
@@ -24,7 +25,6 @@
 	import { archiveVehicle, loadVehicle, type Outcome, updateVehicle } from './data.js';
 	import { emptyVehicle, fromVehicle, toValues, validate, type VehicleFormValue } from './form.js';
 	import { useVehicles } from './i18n.js';
-	import RecordMenu from './RecordMenu.svelte';
 	import VehicleForm from './VehicleForm.svelte';
 	import VehicleLogs from './VehicleLogs.svelte';
 	import VehiclesShell from './VehiclesShell.svelte';
