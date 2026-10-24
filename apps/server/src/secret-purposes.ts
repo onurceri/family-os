@@ -1,6 +1,5 @@
-import type { Logger } from '@famos/adapters/runtime';
 import { createSecretBox } from '@famos/adapters/secrets';
-import type { Kysely } from 'kysely';
+import type { DbExecutor, Logger } from '@famos/sdk';
 import { sql } from 'kysely';
 
 /** Each credential kind has its own derived key, so a value sealed for one never opens as another. */
@@ -35,7 +34,7 @@ const SEALED = [
  * (without the value). The old key is used here only, never as a fallback for reading.
  */
 export async function resealLegacySecrets(
-	db: Kysely<unknown>,
+	db: DbExecutor,
 	secret: string,
 	logger: Logger,
 ): Promise<void> {

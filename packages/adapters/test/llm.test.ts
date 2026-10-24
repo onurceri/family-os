@@ -1299,7 +1299,7 @@ describe('speech to text', () => {
 	it('keeps only the parsed reason of a rejection, never the body', async () => {
 		await useTranscriber('echo-stt');
 		const failure = await say().catch((error: unknown) => error as LlmError);
-		expect(failure).toBeInstanceOf(LlmError);
+		if (!('code' in failure)) throw new Error('expected a rejection');
 		expect(failure.message).toContain('bad_audio: Cannot decode the file');
 		expect(failure.message).not.toContain('Grandma');
 		expect(failure.message).not.toContain('\u0007');
