@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { LanguagePort, LanguageSummary } from '@famos/core';
@@ -15,14 +14,10 @@ import {
 } from '@famos/i18n';
 import { listPackDirsSync, readPackDirSync, writePackDir } from '@famos/i18n/node';
 import { FamosError, type Logger } from '@famos/sdk';
+import { createPackRegistry, type PackEntry } from './pack-registry.ts';
 
-/** More installed packs than anyone needs; keeps the data directory and the language list sane. */
-const MAX_INSTALLED = 40;
-
-interface Loaded {
+interface Loaded extends PackEntry {
 	pack: LanguagePack;
-	source: 'bundled' | 'installed';
-	overridesBundled: boolean;
 	coverage: number;
 	/** Changes with the content: the version clients cache catalogs by. */
 	version: string;
@@ -75,50 +70,38 @@ export function findBundledLanguages(configured: string | undefined): string | u
 export function createLanguageRegistry(options: LanguageRegistryOptions): LanguageRegistry {
 	const { english, appVersion, logger } = options;
 	const translations = options.translations ?? {};
-	let loaded = new Map<string, Loaded>();
-	let version = 0;
 
-	function readDir(root: string, source: Loaded['source'], into: Map<string, Loaded>) {
-		for (const folder of listPackDirsSync(root)) {
-			try {
-				const result = validatePack(readPackDirSync(join(root, folder)), english, { appVersion });
-				if (!result.ok) throw new Error(result.error);
-				if (result.pack.manifest.code !== folder)
-					throw new Error('the folder is not named after the code');
-				const shown = withOwnTranslations(result.pack, translations[folder] ?? {}, english);
-				const { pack } = shown;
-				const problems = [...result.problems, ...shown.problems];
-				if (problems.length > 0) {
-					logger.warn(
-						{ code: folder, problems: problems.length },
-						'language pack has unusable strings',
-					);
-				}
-				into.set(pack.manifest.code, {
-					pack,
-					source,
-					overridesBundled:
-						source === 'installed' && into.get(pack.manifest.code)?.source === 'bundled',
-					coverage: coverage(english, pack).ratio,
-					version: `${pack.manifest.version}-${packFingerprint(pack)}`,
-				});
-			} catch (error) {
+	const registry = createPackRegistry<Loaded>({
+		noun: 'language',
+		idKey: 'code',
+		logger,
+		bundledDir: options.bundledDir,
+		installedDir: options.installedDir,
+		listFolders: listPackDirsSync,
+		read(root, folder) {
+			const result = validatePack(readPackDirSync(join(root, folder)), english, { appVersion });
+			if (!result.ok) throw new Error(result.error);
+			if (result.pack.manifest.code !== folder)
+				throw new Error('the folder is not named after the code');
+			const shown = withOwnTranslations(result.pack, translations[folder] ?? {}, english);
+			const { pack } = shown;
+			const problems = [...result.problems, ...shown.problems];
+			if (problems.length > 0) {
 				logger.warn(
-					{ code: folder, reason: error instanceof Error ? error.message : 'unreadable' },
-					'language pack skipped',
+					{ code: folder, problems: problems.length },
+					'language pack has unusable strings',
 				);
 			}
-		}
-	}
-
-	function reload() {
-		const next = new Map<string, Loaded>();
-		if (options.bundledDir) readDir(options.bundledDir, 'bundled', next);
-		readDir(options.installedDir, 'installed', next);
-		loaded = next;
-		version++;
-	}
-	reload();
+			return {
+				id: pack.manifest.code,
+				entry: {
+					pack,
+					coverage: coverage(english, pack).ratio,
+					version: `${pack.manifest.version}-${packFingerprint(pack)}`,
+				},
+			};
+		},
+	});
 
 	const summary = (code: string, entry: Loaded): LanguageSummary => ({
 		code,
@@ -133,10 +116,10 @@ export function createLanguageRegistry(options: LanguageRegistryOptions): Langua
 
 	return {
 		get version() {
-			return version;
+			return registry.version;
 		},
 		english,
-		packs: () => [...loaded.values()].map((l) => l.pack),
+		packs: () => [...registry.entries.values()].map((l) => l.pack),
 		list() {
 			const base: LanguageSummary = {
 				code: DEFAULT_LOCALE,
@@ -150,14 +133,14 @@ export function createLanguageRegistry(options: LanguageRegistryOptions): Langua
 			};
 			return [
 				base,
-				...[...loaded.entries()]
+				...[...registry.entries]
 					.sort(([a], [b]) => a.localeCompare(b))
 					.map(([c, e]) => summary(c, e)),
 			];
 		},
-		has: (code) => code === DEFAULT_LOCALE || loaded.has(code),
+		has: (code) => code === DEFAULT_LOCALE || registry.entries.has(code),
 		catalogs(code) {
-			const entry = loaded.get(code);
+			const entry = registry.entries.get(code);
 			if (!entry) return null;
 			return {
 				code,
@@ -171,24 +154,13 @@ export function createLanguageRegistry(options: LanguageRegistryOptions): Langua
 			if (!result.ok) throw new FamosError('bad_request', result.error);
 			const { pack, problems } = result;
 			const code = pack.manifest.code;
-			const installedCount = [...loaded.values()].filter((l) => l.source === 'installed').length;
-			if (installedCount >= MAX_INSTALLED && loaded.get(code)?.source !== 'installed')
-				throw new FamosError('conflict', 'Too many language packs are installed');
-			if (Object.keys(pack.catalogs).length === 0)
-				throw new FamosError('bad_request', 'The pack has no usable strings');
-			await writePackDir(join(options.installedDir, code), pack);
-			reload();
-			const entry = loaded.get(code);
-			if (!entry)
-				throw new FamosError('unavailable', 'The pack could not be loaded after installing');
+			const entry = await registry.install(code, async (folder) => {
+				if (Object.keys(pack.catalogs).length === 0)
+					throw new FamosError('bad_request', 'The pack has no usable strings');
+				await writePackDir(folder, pack);
+			});
 			return { language: summary(code, entry), problems };
 		},
-		async remove(code) {
-			if (loaded.get(code)?.source !== 'installed')
-				throw new FamosError('not_found', 'That pack is not installed');
-			// The code is a pack's own (validated) code, so the folder name cannot leave the directory.
-			await rm(join(options.installedDir, code), { recursive: true, force: true });
-			reload();
-		},
+		remove: (code) => registry.remove(code),
 	};
 }

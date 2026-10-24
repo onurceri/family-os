@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, existsSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STYLE_IDS, type StyleId, type ThemePort, type ThemeSummary } from '@famos/core';
@@ -13,16 +12,13 @@ import {
 	validateThemePack,
 } from '@famos/themes';
 import { listThemeDirsSync, readThemeDirSync, writeThemeDir } from '@famos/themes/node';
+import { createPackRegistry, type PackEntry } from './pack-registry.ts';
 
-/** More installed packs than anyone needs; keeps the data directory and the theme list sane. */
-const MAX_INSTALLED = 40;
 /** The bundled pack every other pack inherits missing tokens from, and the app's default. */
 const DEFAULT_ID = 'ev-isigi';
 
-interface Loaded {
+interface Loaded extends PackEntry {
 	pack: ThemePack;
-	source: 'bundled' | 'installed';
-	overridesBundled: boolean;
 	dir: string;
 	css: string;
 	/** Changes with the content: the stylesheet's ETag and the web app's cache key. */
@@ -72,12 +68,28 @@ function refusal(errors: string[]): FamosError {
  */
 export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 	const { appVersion, logger } = options;
-	let loaded = new Map<string, Loaded>();
 	/** What a pack that leaves tokens out inherits: the bundled default's. */
 	let defaults: ThemeTokens | undefined;
 
-	function load(root: string, folder: string, source: Loaded['source'], into: Map<string, Loaded>) {
-		try {
+	const registry = createPackRegistry<Loaded>({
+		noun: 'theme',
+		idKey: 'id',
+		logger,
+		bundledDir: options.bundledDir,
+		installedDir: options.installedDir,
+		listFolders: listThemeDirsSync,
+		// The default first: the others inherit what they leave out from it.
+		orderBundled: (folders) =>
+			[...folders].sort((a, b) =>
+				a === DEFAULT_ID ? -1 : b === DEFAULT_ID ? 1 : a.localeCompare(b),
+			),
+		beforeReload() {
+			defaults = undefined;
+		},
+		afterBundled(folder, loaded) {
+			if (folder === DEFAULT_ID) defaults = loaded.get(DEFAULT_ID)?.pack.tokens;
+		},
+		read(root, folder) {
 			const dir = join(root, folder);
 			const result = validateThemePack(readThemeDirSync(dir), {
 				appVersion,
@@ -94,43 +106,17 @@ export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 				pack,
 				(file) => `/api/v1/core/themes/${pack.manifest.id}/fonts/${encodeURIComponent(file)}`,
 			);
-			into.set(pack.manifest.id, {
-				pack,
-				source,
-				overridesBundled:
-					source === 'installed' && into.get(pack.manifest.id)?.source === 'bundled',
-				dir,
-				css,
-				version: `${pack.manifest.version}-${sha(css, ...Object.values(pack.fonts))}`,
-			});
-		} catch (error) {
-			logger.warn(
-				{ id: folder, reason: error instanceof Error ? error.message : 'unreadable' },
-				'theme pack skipped',
-			);
-		}
-	}
-
-	function reload() {
-		const next = new Map<string, Loaded>();
-		defaults = undefined;
-		if (options.bundledDir) {
-			// The default first: the others inherit what they leave out from it.
-			const folders = listThemeDirsSync(options.bundledDir).sort((a, b) =>
-				a === DEFAULT_ID ? -1 : b === DEFAULT_ID ? 1 : a.localeCompare(b),
-			);
-			for (const folder of folders) {
-				load(options.bundledDir, folder, 'bundled', next);
-				if (folder === DEFAULT_ID) defaults = next.get(DEFAULT_ID)?.pack.tokens;
-			}
-		}
-		for (const folder of listThemeDirsSync(options.installedDir)) {
-			load(options.installedDir, folder, 'installed', next);
-		}
-		loaded = next;
-	}
-	reload();
-
+			return {
+				id: pack.manifest.id,
+				entry: {
+					pack,
+					dir,
+					css,
+					version: `${pack.manifest.version}-${sha(css, ...Object.values(pack.fonts))}`,
+				},
+			};
+		},
+	});
 	const summary = (entry: Loaded): ThemeSummary => ({
 		id: entry.pack.manifest.id,
 		name: entry.pack.manifest.name,
@@ -145,7 +131,7 @@ export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 
 	return {
 		list: () =>
-			[...loaded.values()]
+			[...registry.entries.values()]
 				// The default first, then by name.
 				.sort((a, b) =>
 					a.pack.manifest.id === DEFAULT_ID
@@ -155,13 +141,13 @@ export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 							: a.pack.manifest.name.localeCompare(b.pack.manifest.name),
 				)
 				.map(summary),
-		has: (id) => loaded.has(id),
+		has: (id) => registry.entries.has(id),
 		stylesheet(id) {
-			const entry = loaded.get(id);
+			const entry = registry.entries.get(id);
 			return entry ? { version: entry.version, css: entry.css } : null;
 		},
 		font(id, file) {
-			const entry = loaded.get(id);
+			const entry = registry.entries.get(id);
 			const bytes =
 				entry && Object.hasOwn(entry.pack.fonts, file) ? entry.pack.fonts[file] : undefined;
 			if (!entry || !bytes) return null;
@@ -177,27 +163,12 @@ export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 			if (!result.ok) throw refusal(result.errors);
 			const { pack, warnings } = result;
 			const id = pack.manifest.id;
-			const installedCount = [...loaded.values()].filter((l) => l.source === 'installed').length;
-			if (installedCount >= MAX_INSTALLED && loaded.get(id)?.source !== 'installed')
-				throw new FamosError('conflict', 'Too many theme packs are installed');
 			const raw = input as { tokens: unknown };
-			await writeThemeDir(join(options.installedDir, id), {
-				manifest: pack.manifest,
-				tokens: raw.tokens,
-				fonts: pack.fonts,
-			});
-			reload();
-			const entry = loaded.get(id);
-			if (entry?.source !== 'installed')
-				throw new FamosError('unavailable', 'The pack could not be loaded after installing');
+			const entry = await registry.install(id, (folder) =>
+				writeThemeDir(folder, { manifest: pack.manifest, tokens: raw.tokens, fonts: pack.fonts }),
+			);
 			return { theme: summary(entry), warnings };
 		},
-		async remove(id) {
-			if (loaded.get(id)?.source !== 'installed')
-				throw new FamosError('not_found', 'That pack is not installed');
-			// The id is a pack's own (validated) id, so the folder name cannot leave the directory.
-			await rm(join(options.installedDir, id), { recursive: true, force: true });
-			reload();
-		},
+		remove: (id) => registry.remove(id),
 	};
 }
