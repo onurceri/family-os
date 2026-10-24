@@ -365,6 +365,37 @@ export function formatDate(
 	);
 }
 
+/** The words of a relative day, in the reader's language. */
+export interface RelativeDayWords {
+	/** More than a day ago: "3 days overdue". */
+	overdue(days: number): string;
+	yesterday: string;
+	today: string;
+	tomorrow: string;
+}
+
+/**
+ * A date against `today` the way a due day reads: yesterday, today and tomorrow in words, earlier
+ * ones as `overdue(days)`, the coming week by weekday and later days as a short date.
+ */
+export function relativeDayLabel(
+	date: string,
+	today: string,
+	locale: string,
+	words: RelativeDayWords,
+): string {
+	const days = daysBetween(today, date);
+	if (days < -1) return words.overdue(-days);
+	if (days === -1) return words.yesterday;
+	if (days === 0) return words.today;
+	if (days === 1) return words.tomorrow;
+	return formatDate(
+		date,
+		locale,
+		days < 7 ? { weekday: 'long' } : { weekday: 'short', day: 'numeric', month: 'short' },
+	);
+}
+
 /** First day of the week as an ISO weekday number: 1 = Monday … 7 = Sunday. */
 export const WeekStartSchema = z.number().int().min(1).max(7);
 

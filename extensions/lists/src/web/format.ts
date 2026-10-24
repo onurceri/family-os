@@ -1,10 +1,9 @@
 import {
 	addDays,
 	compareDates,
-	daysBetween,
 	formatClock,
-	formatDate,
 	type HourCycle,
+	relativeDayLabel,
 	weekOf,
 } from '@famos/time';
 import { draftDate, type PresenterContext } from '@famos/ui/slots';
@@ -63,23 +62,12 @@ export function dueLabel(
 ): string {
 	const { dueDate, dueTime } = task;
 	if (!dueDate) return t('no_due');
-	const days = daysBetween(today, dueDate);
-	const day =
-		days < -1
-			? t('overdue_days', { count: -days })
-			: days === -1
-				? t('due_yesterday')
-				: days === 0
-					? t('due_today')
-					: days === 1
-						? t('due_tomorrow')
-						: formatDate(
-								dueDate,
-								locale,
-								days < 7
-									? { weekday: 'long' }
-									: { weekday: 'short', day: 'numeric', month: 'short' },
-							);
+	const day = relativeDayLabel(dueDate, today, locale, {
+		overdue: (count) => t('overdue_days', { count }),
+		yesterday: t('due_yesterday'),
+		today: t('due_today'),
+		tomorrow: t('due_tomorrow'),
+	});
 	return dueTime ? `${day} · ${formatClock(dueTime, locale, hourCycle)}` : day;
 }
 
