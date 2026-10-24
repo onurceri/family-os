@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { EmptyState, Page, PageHeader, ViewOnly } from '@famos/ui/famos';
+	import { useNow } from '@famos/ui/now';
 	import { PenLine, X } from '@lucide/svelte';
 	import { onDestroy, tick } from 'svelte';
 	import type { BoardNote } from '../contract/index.js';
@@ -22,9 +23,8 @@
 	let notes = $state<BoardNote[]>([]);
 	let loaded = $state(false);
 	let loadError = $state(false);
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 
 	const canView = $derived(app.can('board.view'));
 	// Posting and pinning, as the server decides them for this viewer; editing, moving and removing

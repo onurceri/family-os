@@ -9,7 +9,7 @@ import {
 	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { dayBounds } from '@famos/time';
+import { dayBounds, HOUR_MS } from '@famos/time';
 import { z } from 'zod';
 import {
 	AddSubscriptionInputSchema,
@@ -38,9 +38,8 @@ import {
  * what was there and records an error code.
  */
 
-const HOUR = 3_600_000;
 /** Every subscription is refreshed this often. */
-const REFRESH_EVERY_MS = 6 * HOUR;
+const REFRESH_EVERY_MS = 6 * HOUR_MS;
 
 /** The host of a feed address, or null when it is not an acceptable shape. */
 export function feedHost(raw: string): string | null {

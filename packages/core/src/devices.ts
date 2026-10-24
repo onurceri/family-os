@@ -4,6 +4,7 @@ import {
 	type Clock,
 	type DbExecutor,
 	FamosError,
+	HOUR_MS,
 	type IdentityAdmin,
 	type IdGenerator,
 	personPresent,
@@ -225,7 +226,7 @@ function randomUserCode(): string {
 	return `${chars.slice(0, 4).join('')}-${chars.slice(4).join('')}`;
 }
 
-const SEEN_RESOLUTION_MS = 60 * 60 * 1000;
+const SEEN_RESOLUTION_MS = HOUR_MS;
 
 function toBase64Url(bytes: Uint8Array): string {
 	let binary = '';

@@ -68,6 +68,7 @@ import {
 	schemaState,
 } from '@famos/db';
 import type { ExtensionDefinition, ExternalHttp, Logger } from '@famos/sdk';
+import { DAY_MS } from '@famos/time';
 import pkg from '../package.json' with { type: 'json' };
 import type { Config } from './config.ts';
 import { wireEmail } from './email.ts';
@@ -428,7 +429,7 @@ export function startScheduler(runtime: Runtime): () => void {
 				lastBackupDay = day;
 				const { path } = await backupNow(runtime, 'scheduled');
 				runtime.logger.info({ path }, 'scheduled backup written');
-				await runtime.queue.pruneSucceeded(7 * 24 * 60 * 60 * 1000);
+				await runtime.queue.pruneSucceeded(7 * DAY_MS);
 			}
 		} catch (error) {
 			runtime.logger.error({ err: error }, 'scheduled task failed');

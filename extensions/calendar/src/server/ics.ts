@@ -1,4 +1,4 @@
-import { addDays, Temporal, zoned } from '@famos/time';
+import { addDays, DAY_MS, Temporal, zoned } from '@famos/time';
 import { type EventRow, tagsOf } from './store.ts';
 
 /**
@@ -201,7 +201,7 @@ export function buildCalendar(
 		const start = Math.min(row.starts_at as number, options.now);
 		zones.set(row.time_zone, Math.min(zones.get(row.time_zone) ?? start, start));
 	}
-	const horizon = options.now + 10 * 365 * 86_400_000;
+	const horizon = options.now + 10 * 365 * DAY_MS;
 	for (const [tz, from] of zones) lines.push(...vtimezone(tz, from, horizon));
 	// A moved date is an override only while its series is in the feed too (the feed of one member
 	// may hold the date and not the series); otherwise it is an event of its own.

@@ -1,4 +1,5 @@
 /** Overlap layout of one day's timed events on the hour grid. */
+import { HOUR_MS } from '@famos/time';
 
 export interface Span {
 	id: string;
@@ -276,4 +277,4 @@ export const monthRows = (cellHeight: number): number =>
 export const snapSlot = (minutes: number): number => Math.min(1410, Math.floor(minutes / 30) * 30);
 
 /** A stretch of six hours or more (someone at work): drawn hollow, behind the day's other events. */
-export const isLongBlock = (start: number, end: number): boolean => end - start >= 6 * 3_600_000;
+export const isLongBlock = (start: number, end: number): boolean => end - start >= 6 * HOUR_MS;

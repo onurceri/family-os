@@ -11,6 +11,10 @@ import { z } from 'zod';
  */
 export { Temporal };
 
+export const MINUTE_MS = 60_000;
+export const HOUR_MS = 60 * MINUTE_MS;
+export const DAY_MS = 24 * HOUR_MS;
+
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -67,6 +71,11 @@ export function dayBounds(date: string, timeZone: string): { start: number; end:
 
 export function addDays(date: string, days: number): string {
 	return Temporal.PlainDate.from(date).add({ days }).toString();
+}
+
+/** Whole days from `a` to `b` (plain `YYYY-MM-DD` dates), negative when `b` is earlier. Right across DST. */
+export function daysBetween(a: string, b: string): number {
+	return Temporal.PlainDate.from(a).until(Temporal.PlainDate.from(b), { largestUnit: 'days' }).days;
 }
 
 export function compareDates(a: string, b: string): number {
@@ -394,9 +403,10 @@ export function weekdayNames(
 ): Record<Weekday, string> {
 	const monday = Date.parse('2026-01-05T12:00:00Z'); // a Monday
 	const fmt = new Intl.DateTimeFormat(locale, { weekday: style, timeZone: 'UTC' });
-	return Object.fromEntries(
-		WEEKDAYS.map((w, i) => [w, fmt.format(monday + i * 86_400_000)]),
-	) as Record<Weekday, string>;
+	return Object.fromEntries(WEEKDAYS.map((w, i) => [w, fmt.format(monday + i * DAY_MS)])) as Record<
+		Weekday,
+		string
+	>;
 }
 
 // Region formats: derived from a BCP 47 format locale, never from the UI language. Dates and

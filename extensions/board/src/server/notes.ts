@@ -14,7 +14,7 @@ import {
 	stripImageMetadata,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { compareDates, dayBounds, todayIn, zoned } from '@famos/time';
+import { compareDates, DAY_MS, dayBounds, HOUR_MS, todayIn, zoned } from '@famos/time';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import {
@@ -29,8 +29,6 @@ import {
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
 import { api } from './public.ts';
 import { type NoteRow, tables, toNote } from './store.ts';
-
-const DAY_MS = 86_400_000;
 
 export const memberId = selfOf;
 
@@ -694,7 +692,7 @@ const NEXT_RUN_HOUR_UTC = 3;
 /** The next 03:00 UTC after `now`. */
 export const nextCleanupAt = (now: number): number => {
 	const day = Math.floor(now / DAY_MS) * DAY_MS;
-	const today = day + NEXT_RUN_HOUR_UTC * 3_600_000;
+	const today = day + NEXT_RUN_HOUR_UTC * HOUR_MS;
 	return today > now ? today : today + DAY_MS;
 };
 const cleanupKey = (at: number) => `board.cleanup:${new Date(at).toISOString().slice(0, 10)}`;

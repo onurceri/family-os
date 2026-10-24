@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { todayIn } from '@famos/time';
 	import { Avatar, DisplayRow, DisplaySection } from '@famos/ui/famos';
+	import { useNow } from '@famos/ui/now';
 	import { ListChecks } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { Task } from '../contract/index.js';
 	import { loadTasks } from './data.js';
 	import { dueLabel, urgency } from './format.js';
@@ -16,9 +16,8 @@
 	const MAX = 7;
 	/** Fewer when the display has less room. */
 	const max = $derived(Math.min(MAX, rows ?? MAX));
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 	const names = $derived(app.can('core.members.view'));
 

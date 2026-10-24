@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
+	import { useNow } from '@famos/ui/now';
 	import {
 		AwaitingMark,
 		AwaitingRow,
@@ -21,7 +22,6 @@
 		openPath,
 	} from '@famos/ui/famos';
 	import { Plus } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { Chore } from '../contract/index.js';
 	import ChoreForm from './ChoreForm.svelte';
 	import ChoreRow from './ChoreRow.svelte';
@@ -62,9 +62,8 @@
 	/** The chore open in the form, from the address (`/chores/:id`). */
 	const selectedId = $derived(params.id ?? '');
 
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let chores = $state<Chore[]>([]);

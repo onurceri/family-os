@@ -1,3 +1,4 @@
+import { DAY_MS } from '@famos/time';
 import { memberBehindDraft } from '@famos/ui/slots';
 import { type InboxItem, itemTitle, type Skip, type SkipReason } from '../contract/index.js';
 import type { Draft } from './data.js';
@@ -327,7 +328,7 @@ export function needsEntries(drafts: readonly Draft[]): NeedsEntry[] {
 }
 
 /** How long a decided request of the person's own stays under "Recent". */
-export const DECIDED_RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+export const DECIDED_RECENT_MS = 7 * DAY_MS;
 
 /**
  * The person's own requests (not from a capture) that somebody else decided in the last week,

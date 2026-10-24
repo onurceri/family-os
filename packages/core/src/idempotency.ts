@@ -1,5 +1,6 @@
 import {
 	type Actor,
+	DAY_MS,
 	type DbExecutor,
 	defineJob,
 	ERROR_HTTP_STATUS,
@@ -13,8 +14,7 @@ import { z } from 'zod';
 import type { CoreTables } from './tables.ts';
 
 /** Request keys are kept this long: phones stay offline for days. */
-export const IDEMPOTENCY_KEEP_MS = 7 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const IDEMPOTENCY_KEEP_MS = 7 * DAY_MS;
 
 export const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{1,100}$/;
 

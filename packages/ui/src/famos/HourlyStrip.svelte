@@ -1,4 +1,5 @@
 <script lang="ts" module>
+	import { HOUR_MS } from '@famos/time';
 	/** One hour of the forecast (ambient's `Forecast.hourly`). */
 	export interface HourlyPoint {
 		at: number;
@@ -23,7 +24,7 @@
 	/** Without sunrise and sunset, the hours from 06:00 until 20:00 local are day. */
 	export const DAY_FROM_HOUR = 6;
 	export const NIGHT_FROM_HOUR = 20;
-	const HALF_HOUR_MS = 30 * 60_000;
+	const HALF_HOUR_MS = HOUR_MS / 2;
 
 	/**
 	 * Whether an hour of the forecast is night, so the strip draws a moon, not a sun. Judged at

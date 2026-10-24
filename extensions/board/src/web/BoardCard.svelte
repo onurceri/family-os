@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { TodaySection } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { BoardNote } from '../contract/index.js';
 	import { loadNotes } from './data.js';
 	import { useBoard } from './i18n.js';
@@ -13,9 +13,8 @@
 	 */
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useBoard();
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const allowed = $derived(app.can('board.view'));
 
 	let notes = $state<BoardNote[]>([]);

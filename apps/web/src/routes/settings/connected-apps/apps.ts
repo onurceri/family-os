@@ -1,4 +1,4 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from '@famos/time';
 
 /** Where a key stands: it never ends, ends later, ends soon (warn), has ended, or was revoked. */
 export type ExpiryState =

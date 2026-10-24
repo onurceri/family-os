@@ -2,12 +2,14 @@ import {
 	type Actor,
 	assertFullSignIn,
 	type Clock,
+	DAY_MS,
 	type DbExecutor,
 	defineJob,
 	defineNotificationKind,
 	type ExtensionContext,
 	type ExternalHttp,
 	FamosError,
+	HOUR_MS,
 	hasBrand,
 	type IdGenerator,
 	type NotifyRequest,
@@ -38,8 +40,7 @@ import type { ApiTokenRow, CoreTables, OAuthClientsTable } from './tables.ts';
 
 export const OAUTH_SCOPES = ['familyos.read', 'familyos.suggest'] as const;
 const SETTINGS_KEY = 'mcp.oauth';
-const DAY_MS = 24 * 60 * 60 * 1000;
-export const OAUTH_ACCESS_TOKEN_MS = 60 * 60 * 1000;
+export const OAUTH_ACCESS_TOKEN_MS = HOUR_MS;
 /** A grant ends after this long without being refreshed. */
 export const OAUTH_GRANT_IDLE_DAYS = 90;
 export const OAUTH_CODE_MS = 60 * 1000;

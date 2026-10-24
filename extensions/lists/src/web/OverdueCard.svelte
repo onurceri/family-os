@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { addDays, todayIn } from '@famos/time';
+	import { addDays, daysBetween, todayIn } from '@famos/time';
 	import { TodayRow } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { Task } from '../contract/index.js';
 	import { completeTask, loadTasks, reopenTask, saveTask } from './data.js';
 	import { urgency } from './format.js';
@@ -16,9 +16,8 @@
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useLists();
 	const mayTick = $derived(app.access('lists.completeTask') !== 'no');
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let tasks = $state<Task[]>([]);
@@ -56,8 +55,7 @@
 		if (loaded) report({ count: late.length, quietKey: '', urgent: late.length });
 	});
 
-	const daysLate = (task: Task) =>
-		Math.max(1, Math.round((Date.parse(today) - Date.parse(task.dueDate ?? today)) / 86_400_000));
+	const daysLate = (task: Task) => Math.max(1, daysBetween(task.dueDate ?? today, today));
 	const metaOf = (task: Task) =>
 		[
 			t('overdue_days', { count: daysLate(task) }),

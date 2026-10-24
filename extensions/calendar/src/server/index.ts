@@ -13,6 +13,7 @@ import {
 import {
 	addDays,
 	compareDates,
+	daysBetween,
 	formatDate,
 	fromRRule,
 	IsoDateSchema,
@@ -138,9 +139,7 @@ function occurrenceDetail(row: EventRow, series: EventDetail, key: string): Even
 	if (!day || !isValidDate(day)) throw notThere();
 	if (!expandRow(row, day, day, row.time_zone).some((o) => o.key === key)) throw notThere();
 	if (row.all_day) {
-		const span = Math.round(
-			(Date.parse(series.endDate ?? series.date) - Date.parse(series.date)) / 86_400_000,
-		);
+		const span = daysBetween(series.date, series.endDate ?? series.date);
 		return {
 			...series,
 			date: key,
@@ -839,7 +838,7 @@ export const changeEvent = defineAction({
 		}
 		// A new first day without a new last day keeps a multi-day event as long as it was.
 		if (change.date !== undefined && change.endDate === undefined && was.endDate) {
-			const span = Math.round((Date.parse(was.endDate) - Date.parse(was.date)) / 86_400_000);
+			const span = daysBetween(was.date, was.endDate);
 			before.endDate = was.endDate;
 			merged.endDate = addDays(change.date, span);
 		}
@@ -974,8 +973,7 @@ const MAX_FOUND = 60;
 const UNMATCHED_MAX_DAYS = 7;
 
 /** How many days a range covers, both ends included. */
-const daysIn = (from: string, to: string) =>
-	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+const daysIn = (from: string, to: string) => daysBetween(from, to) + 1;
 
 /** How far past the searched range a search for the next match looks. */
 const NEXT_MATCH_DAYS = 366;
@@ -1104,7 +1102,7 @@ export const findEvents = defineAction({
 		// Looking for one thing by name does not need dates: it is searched for from today on.
 		const from = fromDay ?? today;
 		const to = toDay ?? addDays(from, MAX_RANGE_DAYS);
-		if ((Date.parse(to) - Date.parse(from)) / 86_400_000 > MAX_RANGE_DAYS || to < from) {
+		if (daysBetween(from, to) > MAX_RANGE_DAYS || to < from) {
 			throw new FamosError('bad_request', `The range may span at most ${MAX_RANGE_DAYS} days`);
 		}
 		const wanted = tag?.toLocaleLowerCase();
@@ -1262,7 +1260,7 @@ const listOccurrences = defineRoute({
 	query: RangeQuerySchema,
 	response: z.array(OccurrenceSchema),
 	async handle(ctx, { query }) {
-		if ((Date.parse(query.to) - Date.parse(query.from)) / 86_400_000 > MAX_RANGE_DAYS) {
+		if (daysBetween(query.from, query.to) > MAX_RANGE_DAYS) {
 			throw new FamosError('bad_request', `The range may span at most ${MAX_RANGE_DAYS} days`);
 		}
 		const { timeZone } = await ctx.family.settings();

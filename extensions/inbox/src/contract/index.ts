@@ -1,4 +1,5 @@
 import { idSchema } from '@famos/sdk';
+import { DAY_MS } from '@famos/time';
 import { z } from 'zod';
 
 /**
@@ -192,7 +193,7 @@ export const UPLOAD_LIMITS = {
 export const UPLOAD_QUOTA = {
 	items: 200,
 	bytes: 300 * 1024 * 1024,
-	windowMs: 24 * 60 * 60 * 1000,
+	windowMs: DAY_MS,
 } as const;
 
 /** `memberId`: whose item it is (the only one who hears of it). */

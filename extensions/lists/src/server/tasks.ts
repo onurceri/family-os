@@ -12,6 +12,7 @@ import {
 	type UnitOfWork,
 } from '@famos/sdk';
 import {
+	DAY_MS,
 	formatDate,
 	fromRRule,
 	IsoDateSchema,
@@ -595,7 +596,7 @@ export const restoreTask = defineAction({
 });
 
 /** Done one-off tasks stay visible for a week, then only open tasks are listed. */
-const DONE_VISIBLE_MS = 7 * 86_400_000;
+const DONE_VISIBLE_MS = 7 * DAY_MS;
 
 const MAX_TASKS = 50;
 

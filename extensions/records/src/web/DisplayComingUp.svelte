@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { todayIn } from '@famos/time';
 	import { DisplayRow, DisplaySection } from '@famos/ui/famos';
+	import { useNow } from '@famos/ui/now';
 	import { CalendarClock } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { Obligation } from '../contract/index.js';
 	import { loadUpcoming } from './data.js';
 	import { useRecords } from './i18n.js';
@@ -14,9 +14,8 @@
 	const MAX = 2;
 	/** Fewer when the display has less room. */
 	const max = $derived(Math.max(1, Math.min(MAX, rows ?? MAX)));
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let loadedItems = $state<Obligation[]>([]);

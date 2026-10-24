@@ -1,5 +1,13 @@
 import { defineJob, defineNotificationKind, type NotifyRequest } from '@famos/sdk';
-import { addDays, dayBounds, expandDates, expandTimed, Temporal, todayIn } from '@famos/time';
+import {
+	addDays,
+	DAY_MS,
+	dayBounds,
+	expandDates,
+	expandTimed,
+	Temporal,
+	todayIn,
+} from '@famos/time';
 import { z } from 'zod';
 import { type EventRow, effectiveReminder, events, externalAsEvent } from './store.ts';
 
@@ -19,7 +27,6 @@ export const reminderKind = defineNotificationKind({
 const LATE_MS = 5 * 60_000;
 /** How far ahead to look for the next occurrence of a series (covers yearly events). */
 const LOOKAHEAD_DAYS = 400;
-const DAY_MS = 86_400_000;
 /** All-day reminders count back from this local time on the day. */
 const ALL_DAY_ANCHOR = '09:00';
 

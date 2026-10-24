@@ -1,6 +1,7 @@
 import {
 	addDays,
 	compareDates,
+	daysBetween,
 	formatClock,
 	formatDate,
 	type HourCycle,
@@ -62,7 +63,7 @@ export function dueLabel(
 ): string {
 	const { dueDate, dueTime } = task;
 	if (!dueDate) return t('no_due');
-	const days = Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000);
+	const days = daysBetween(today, dueDate);
 	const day =
 		days < -1
 			? t('overdue_days', { count: -days })

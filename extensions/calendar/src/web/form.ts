@@ -1,5 +1,6 @@
 import {
 	addDays,
+	daysBetween,
 	type RepeatChoices,
 	type RepeatEdit,
 	repeatChoices,
@@ -185,9 +186,6 @@ export function validate(v: EventFormValue): FieldErrors {
 		});
 	return errors;
 }
-
-const daysBetween = (from: string, to: string) =>
-	Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 
 /** The form with its first day moved to `date`; a multi-day event keeps its length. */
 export function onDate(v: EventFormValue, date: string): EventFormValue {

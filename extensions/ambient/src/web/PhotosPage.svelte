@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { useNow } from '@famos/ui/now';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
 	import { DEFAULT_TIMING, type PhotoList } from '../contract/index.js';
 	import { loadPhotos } from './data.js';
 	import { useAmbient } from './i18n.js';
@@ -19,9 +19,8 @@
 	let photos = $state<PhotoList | null>(null);
 	let loaded = $state(false);
 	let photo = $state<string | null>(null);
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 30_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow(30_000);
+	const now = $derived(clock.current);
 
 	async function load() {
 		try {

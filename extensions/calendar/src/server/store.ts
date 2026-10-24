@@ -3,10 +3,12 @@ import {
 	addDays,
 	compareDates,
 	dayBounds,
+	daysBetween,
 	epochOf,
 	expandDates,
 	expandTimed,
 	fromRRule,
+	HOUR_MS,
 	type Recurrence,
 	toRRule,
 	zoned,
@@ -327,8 +329,6 @@ export async function eventExists(
 	);
 }
 
-const HOUR = 3_600_000;
-
 /** Converts validated input to the stored representation, in the family time zone. */
 export function toRow(input: EventInput, timeZone: string) {
 	const v = EventInputSchema.parse(input);
@@ -363,7 +363,7 @@ export function toRow(input: EventInput, timeZone: string) {
 				v.endTime,
 				timeZone,
 			)
-		: startsAt + HOUR;
+		: startsAt + HOUR_MS;
 	return {
 		title: v.title,
 		notes: v.notes ?? null,
@@ -513,7 +513,7 @@ export function expandRow(
 	if (row.all_day) {
 		const startDate = row.start_date as string;
 		const endDate = row.end_date ?? startDate;
-		const spanDays = Math.round((Date.parse(endDate) - Date.parse(startDate)) / 86_400_000);
+		const spanDays = daysBetween(startDate, endDate);
 		// Include series that started before `from` but still cover it.
 		const starts = expandDates(
 			{ date: startDate, rrule: row.rrule, exdates: exdates.map(String) },

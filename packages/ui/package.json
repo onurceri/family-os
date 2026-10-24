@@ -37,7 +37,8 @@
 		},
 		"./timeline": "./src/famos/timeline.ts",
 		"./forms": "./src/famos/forms.ts",
-		"./app": "./src/app-context.ts"
+		"./app": "./src/app-context.ts",
+		"./now": "./src/now.svelte.ts"
 	},
 	"peerDependencies": {
 		"svelte": "5.57.1"

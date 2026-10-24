@@ -3,6 +3,7 @@ import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from 'node:fs/pro
 import { dirname, join } from 'node:path';
 import type { StagedPackage } from '@famos/core';
 import { FamosError, type Logger } from '@famos/sdk';
+import { DAY_MS } from '@famos/time';
 import { type Available, type AvailableExtension, readPackage } from '../extensions/load.ts';
 import { readArchive, readPackageFolder } from './archive.ts';
 import type { TrustRoot } from './trust.ts';
@@ -11,7 +12,7 @@ import { type VerifiedPackage, verifyPackage } from './verify.ts';
 /** Where uploads wait to be installed, inside the store; not a package id (ids have no dot). */
 const STAGING = '.staging';
 /** Staged packages nobody installed are removed after a day. */
-const STAGED_FOR_MS = 24 * 60 * 60 * 1000;
+const STAGED_FOR_MS = DAY_MS;
 const DIGEST = /^[0-9a-f]{32}$/;
 
 /** A package in the store, checked again at this start. */

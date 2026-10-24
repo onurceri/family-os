@@ -2,8 +2,8 @@
 	import { todayIn } from '@famos/time';
 	import { TodayRow } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
+	import { useNow } from '@famos/ui/now';
 	import { CalendarClock } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { Obligation } from '../contract/index.js';
 	import { loadUpcoming } from './data.js';
 	import { useRecords } from './i18n.js';
@@ -12,9 +12,8 @@
 	/** Today, ahead band: obligations due in the next 30 days that are not late yet, across all records. */
 	let { report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useRecords();
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 	const allowed = $derived(app.can('records.view'));
 

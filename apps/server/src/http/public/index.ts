@@ -24,6 +24,7 @@ import {
 	memberBehind,
 	principalOf,
 } from '@famos/sdk';
+import { HOUR_MS } from '@famos/time';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -350,7 +351,7 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 					offset,
 					tz: ctx.timeZone,
 					lang: ctx.language,
-					h: Math.floor(kernel.ctx.clock.now() / 3_600_000),
+					h: Math.floor(kernel.ctx.clock.now() / HOUR_MS),
 				});
 				tag = `"${await kernel.changes.collectionTag(extension, actor, window)}"`;
 				c.header('etag', tag);

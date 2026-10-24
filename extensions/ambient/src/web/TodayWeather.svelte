@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { HOUR_MS } from '@famos/time';
 	import { CloudSun } from '@lucide/svelte';
 	import { WeatherBlock } from '@famos/ui/famos';
+	import { useNow } from '@famos/ui/now';
 	import type { Weather } from '../contract/index.js';
 	import type { SentenceItem } from '../contract/sentence.js';
 	import { loadWeather } from './data.js';
@@ -28,12 +30,12 @@
 		report?: (r: { shown: boolean }) => void;
 	} = $props();
 
-	const HOUR_MS = 60 * 60_000;
 	const { app, t } = useAmbient();
 	let weather = $state<Weather | null>(null);
 	let items = $state<SentenceItem[]>([]);
 	let loaded = $state(false);
-	let now = $state(Date.now());
+	const clock = useNow();
+	const now = $derived(clock.current);
 
 	async function load() {
 		try {
@@ -52,14 +54,12 @@
 	$effect(() => {
 		void load();
 		const refresh = setInterval(() => void load(), 10 * 60_000);
-		const tick = setInterval(() => (now = Date.now()), 60_000);
 		const offs = [
 			app.onEvent('ambient.', () => void load()),
 			app.onEvent('calendar.', () => void load()),
 		];
 		return () => {
 			clearInterval(refresh);
-			clearInterval(tick);
 			for (const off of offs) off();
 		};
 	});

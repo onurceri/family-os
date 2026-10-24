@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { todayIn } from '@famos/time';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { Occurrence } from '../contract/index.js';
 	import { loadRange } from './data.js';
 	import { nextDays } from './display-days.js';
@@ -16,9 +16,8 @@
 	let { shown }: SlotProps['display.page'] = $props();
 	const { app, t } = useCalendar();
 
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 30_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow(30_000);
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 	const week = $derived(nextDays(today));
 	const first = $derived(week[0] as string);

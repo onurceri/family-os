@@ -5,6 +5,7 @@ import {
 	type AnyActionDefinition,
 	type BackupSettingsAdmin,
 	BUILT_IN_ROLES,
+	DAY_MS,
 	type DbExecutor,
 	type DigestItem,
 	type DraftAlternative,
@@ -1992,9 +1993,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		],
 		register: async (ctx) => {
 			// First pruning a day after start; the job schedules the next one itself.
-			await schedulePrune(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
-			await scheduleOAuthCleanup(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
-			await schedulePruneChanges(ctx, ctx.clock.now() + 24 * 60 * 60 * 1000);
+			await schedulePrune(ctx, ctx.clock.now() + DAY_MS);
+			await scheduleOAuthCleanup(ctx, ctx.clock.now() + DAY_MS);
+			await schedulePruneChanges(ctx, ctx.clock.now() + DAY_MS);
 			// Suggestions about a day that has passed expire shortly after midnight (family time).
 			await scheduleExpiry(ctx);
 		},

@@ -2,6 +2,7 @@ import {
 	type Actor,
 	type AudienceTarget,
 	type Clock,
+	DAY_MS,
 	type DbExecutor,
 	defineJob,
 	type EventDefinition,
@@ -16,8 +17,7 @@ import { audienceOf, inAudience } from './event-audience.ts';
 import type { CoreTables } from './tables.ts';
 
 /** The change log is kept this long; a client away for longer starts over with a full read. */
-export const CHANGES_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const CHANGES_KEEP_MS = 30 * DAY_MS;
 /** Rows read at once; a client asks again from the cursor when `more` is set. */
 export const CHANGES_PAGE = 500;
 

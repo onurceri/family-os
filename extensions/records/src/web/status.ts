@@ -1,4 +1,4 @@
-import { addDays, compareDates, formatDate } from '@famos/time';
+import { addDays, compareDates, daysBetween, formatDate } from '@famos/time';
 import type { Obligation } from '../contract/index.js';
 import type { RecordsT } from './i18n.js';
 
@@ -23,7 +23,7 @@ export function dueLabel(
 	t: RecordsT,
 	locale: string,
 ): string {
-	const days = Math.round((Date.parse(o.dueDate) - Date.parse(today)) / 86_400_000);
+	const days = daysBetween(today, o.dueDate);
 	const date = formatDate(o.dueDate, locale, { day: 'numeric', month: 'short', year: 'numeric' });
 	if (days < 0 && o.lapses) return t('ended_on', { date });
 	if (days < -1) return t('overdue_days', { count: -days, date });

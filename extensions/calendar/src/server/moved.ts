@@ -5,7 +5,7 @@ import {
 	matchThing,
 	targetOf,
 } from '@famos/sdk';
-import { addDays, zoned } from '@famos/time';
+import { addDays, daysBetween, zoned } from '@famos/time';
 import type { EventInput, Occurrence } from '../contract/index.ts';
 import { occurrencesBetween, SAME_EVENT_DAYS } from './store.ts';
 
@@ -15,8 +15,6 @@ export function startOf(o: Occurrence, timeZone: string): { date: string; time?:
 	const at = zoned(o.start as number, timeZone);
 	return { date: at.toPlainDate().toString(), time: at.toPlainTime().toString().slice(0, 5) };
 }
-
-const daysBetween = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86_400_000;
 
 /**
  * A new event that is an event already on the calendar at another day or time: news that it moved
@@ -68,8 +66,8 @@ export async function movedEvent(
 		.map((o) => ({ o, at: startOf(o, timeZone) }))
 		.sort(
 			(a, b) =>
-				daysBetween(a.at.date, input.date) - daysBetween(b.at.date, input.date) ||
-				a.at.date.localeCompare(b.at.date),
+				Math.abs(daysBetween(a.at.date, input.date)) -
+					Math.abs(daysBetween(b.at.date, input.date)) || a.at.date.localeCompare(b.at.date),
 		)[0];
 	if (!nearest) return null;
 	const { o, at } = nearest;

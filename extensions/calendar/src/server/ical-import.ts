@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import {
 	addDays,
+	DAY_MS,
+	daysBetween,
 	epochOf,
 	expandDates,
 	expandTimed,
@@ -87,7 +89,6 @@ const EXPAND_MAX = 800;
 const EXPAND_MAX_STEPS = 30_000;
 /** Seconds in one step of each rule frequency finer than a day; coarser ones cannot run away. */
 const FINE_STEP_SECONDS: Record<string, number> = { SECONDLY: 1, MINUTELY: 60, HOURLY: 3600 };
-const DAY = 86_400_000;
 
 const clip = (value: string | null | undefined, max: number) => {
 	const text = (value ?? '').trim();
@@ -252,7 +253,7 @@ function representable(row: Omit<ParsedEvent, 'fingerprint'>): boolean {
 			expandTimed(
 				{ startsAt: start, timeZone: row.timeZone, rrule: row.rrule },
 				start,
-				start + 800 * DAY,
+				start + 800 * DAY_MS,
 			);
 		}
 		return true;
@@ -368,16 +369,11 @@ function readEvents(
 			let dayShift = 0;
 			let clockShift = false;
 			if (row.allDay) {
-				dayShift = Math.round(
-					(Date.parse(over.startDate as string) - Date.parse(key as string)) / DAY,
-				);
+				dayShift = daysBetween(key as string, over.startDate as string);
 			} else {
 				const was = zoned(key as number, row.timeZone);
 				const now = zoned(over.startsAt as number, over.timeZone);
-				dayShift = Math.round(
-					(Date.parse(now.toPlainDate().toString()) - Date.parse(was.toPlainDate().toString())) /
-						DAY,
-				);
+				dayShift = daysBetween(was.toPlainDate().toString(), now.toPlainDate().toString());
 				clockShift = now.toPlainTime().toString() !== was.toPlainTime().toString();
 			}
 			if (ownRule) {
@@ -410,13 +406,11 @@ function readEvents(
 
 	/** The series as single events in the window around `now`. */
 	function expandWithIcal(s: Source, row: Row, future: Source[] = []) {
-		const from = now - EXPAND_PAST_DAYS * DAY;
-		const to = now + EXPAND_AHEAD_DAYS * DAY;
+		const from = now - EXPAND_PAST_DAYS * DAY_MS;
+		const to = now + EXPAND_AHEAD_DAYS * DAY_MS;
 		const skipped = new Set(row.exdates.map(String));
 		const spanMs = row.allDay ? 0 : (row.endsAt as number) - (row.startsAt as number);
-		const spanDays = row.allDay
-			? Math.round((Date.parse(row.endDate as string) - Date.parse(row.startDate as string)) / DAY)
-			: 0;
+		const spanDays = row.allDay ? daysBetween(row.startDate as string, row.endDate as string) : 0;
 		// THISANDFUTURE overrides by the original occurrence they start at, earliest first.
 		const changes = future
 			.flatMap((o) => {
@@ -450,7 +444,7 @@ function readEvents(
 			const m = moment(next, familyZone);
 			const at = m.date ? Date.parse(m.date) : (m.ms as number);
 			if (at > to) break;
-			if (at + spanMs + spanDays * DAY < from) continue;
+			if (at + spanMs + spanDays * DAY_MS < from) continue;
 			const key = occurrenceKey(m, row.allDay, familyZone);
 			if (skipped.has(String(key))) continue;
 			count++;
@@ -472,17 +466,10 @@ function readEvents(
 				exdates: [],
 			};
 			if (row.allDay) {
-				const shift = changed
-					? Math.round(
-							(Date.parse(changed.startDate as string) - Date.parse(change?.key as string)) / DAY,
-						)
-					: 0;
+				const shift = changed ? daysBetween(change?.key as string, changed.startDate as string) : 0;
 				const first = addDays(m.date as string, shift);
 				const days = changed
-					? Math.round(
-							(Date.parse(changed.endDate as string) - Date.parse(changed.startDate as string)) /
-								DAY,
-						)
+					? daysBetween(changed.startDate as string, changed.endDate as string)
 					: spanDays;
 				found.push({ ...single, startDate: first, endDate: addDays(first, days) });
 			} else {

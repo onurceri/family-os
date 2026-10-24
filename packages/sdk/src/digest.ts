@@ -4,6 +4,7 @@ import type { UnitOfWork } from './context.ts';
 import { idSchema } from './ids.ts';
 import { sameStem } from './label-words.ts';
 import type { QuestionTopic } from './question.ts';
+import { DAY_MS } from './time-units.ts';
 
 /*
  * A digest answers one question per topic: "what is there for these people in these days".
@@ -34,7 +35,7 @@ export const DigestHrefSchema = z
 	.max(300)
 	.regex(/^\/(?!\/)[^\s\\]*$/, 'Expected a path inside the app');
 
-const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86_400_000;
+const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / DAY_MS;
 
 export const DigestInputSchema = z
 	.object({

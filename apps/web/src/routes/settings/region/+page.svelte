@@ -2,6 +2,7 @@
 	import {
 		canonicalLocale,
 		dateLocale,
+		DAY_MS,
 		defaultHourCycle,
 		defaultTemperatureUnit,
 		defaultWeekStart,
@@ -107,7 +108,7 @@
 		const fmt = new Intl.DateTimeFormat(shown, { weekday: 'short', timeZone: 'UTC' });
 		const day = (n: number) => ({
 			value: String(n),
-			label: fmt.format(monday + (n - 1) * 86_400_000),
+			label: fmt.format(monday + (n - 1) * DAY_MS),
 		});
 		const days = [1, 6, 7];
 		if (!days.includes(weekStart)) days.push(weekStart);

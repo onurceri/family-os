@@ -6,7 +6,7 @@ import {
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
-import { compareDates, type Recurrence, todayIn } from '@famos/time';
+import { compareDates, DAY_MS, type Recurrence, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	CHORES_EDIT,
@@ -41,7 +41,6 @@ import {
 } from './shared.ts';
 import { type ChoreRow, parseRecurrence, tables } from './store.ts';
 
-const DAY_MS = 86_400_000;
 /** A finished one-off chore stays on the list this long. */
 const DONE_VISIBLE_MS = 7 * DAY_MS;
 const HISTORY = 30;

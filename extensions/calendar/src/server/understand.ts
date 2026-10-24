@@ -13,7 +13,15 @@ import {
 	unsureFields,
 	whichOne,
 } from '@famos/sdk';
-import { addDays, clockTimes, dateLocale, formatDate, repeatRule, zoned } from '@famos/time';
+import {
+	addDays,
+	clockTimes,
+	dateLocale,
+	daysBetween,
+	formatDate,
+	repeatRule,
+	zoned,
+} from '@famos/time';
 import { MAX_TAG_LENGTH, type Occurrence, tagKey } from '../contract/index.ts';
 import { aiContextEvents } from './context.ts';
 import { startOf } from './moved.ts';
@@ -55,8 +63,6 @@ const refuse = (
 	subject: string | null,
 	from: readonly number[],
 ): Resolution => ({ refuse: { reason, subject, from } });
-
-const daysApart = (a: string, b: string) => Math.abs(Date.parse(a) - Date.parse(b)) / 86_400_000;
 
 /** Whether two titles name one event (`eventExists`'s test). */
 const sameEvent = (ctx: MentionContext, a: string, b: string) =>
@@ -625,7 +631,9 @@ function nearest(dates: readonly Occurrence[], day: string, timeZone: string): O
 	return dates
 		.map((o) => ({ o, date: startOf(o, timeZone).date }))
 		.toSorted(
-			(a, b) => daysApart(a.date, day) - daysApart(b.date, day) || a.date.localeCompare(b.date),
+			(a, b) =>
+				Math.abs(daysBetween(a.date, day)) - Math.abs(daysBetween(b.date, day)) ||
+				a.date.localeCompare(b.date),
 		)[0]?.o as Occurrence;
 }
 

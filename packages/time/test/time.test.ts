@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
 	addDays,
+	DAY_MS,
 	dateLocale,
 	dayBounds,
 	daysAround,
+	daysBetween,
 	defaultHourCycle,
 	defaultTemperatureUnit,
 	defaultWeekStart,
@@ -14,8 +16,10 @@ import {
 	expandTimed,
 	formatClock,
 	fromRRule,
+	HOUR_MS,
 	isFormatLocale,
 	isValidDate,
+	MINUTE_MS,
 	nextDate,
 	nextEveryDue,
 	numericDateOrder,
@@ -55,6 +59,26 @@ describe('dates and zones', () => {
 	it('converts local times to instants', () => {
 		expect(epochOf('2026-10-06', '09:00', 'Europe/Istanbul')).toBe(Date.UTC(2026, 9, 6, 6, 0));
 		expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+	});
+});
+
+describe('daysBetween', () => {
+	it('counts whole signed days across year ends and leap days', () => {
+		expect(daysBetween('2026-12-31', '2027-01-01')).toBe(1);
+		expect(daysBetween('2027-01-01', '2026-12-31')).toBe(-1);
+		expect(daysBetween('2028-02-28', '2028-03-01')).toBe(2);
+		expect(daysBetween('2026-10-06', '2026-10-06')).toBe(0);
+	});
+
+	it('is not thrown off by a DST change', () => {
+		expect(daysBetween('2026-03-28', '2026-03-30')).toBe(2);
+		expect(daysBetween('2026-10-24', '2026-10-26')).toBe(2);
+	});
+
+	it('names the unit sizes', () => {
+		expect(MINUTE_MS).toBe(60_000);
+		expect(HOUR_MS).toBe(3_600_000);
+		expect(DAY_MS).toBe(86_400_000);
 	});
 });
 

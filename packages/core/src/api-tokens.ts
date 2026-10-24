@@ -2,8 +2,10 @@ import {
 	type Actor,
 	assertFullSignIn,
 	type Clock,
+	DAY_MS,
 	type DbExecutor,
 	FamosError,
+	HOUR_MS,
 	type IdGenerator,
 	personPresent,
 	type RoleId,
@@ -27,8 +29,7 @@ export const API_TOKEN_MAX_DAYS = 365;
 const MAX_TOKENS_PER_MEMBER = 20;
 /** The handles remembered per token; the oldest go first. */
 export const MAX_HANDLES_PER_TOKEN = 5000;
-const SEEN_RESOLUTION_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const SEEN_RESOLUTION_MS = HOUR_MS;
 const SETTINGS_KEY = 'mcp';
 
 export type ApiTokenScope = ApiTokenRow['scope'];

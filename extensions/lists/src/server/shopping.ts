@@ -10,6 +10,7 @@ import {
 	selfOf,
 	type UnitOfWork,
 } from '@famos/sdk';
+import { DAY_MS } from '@famos/time';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import {
@@ -909,7 +910,7 @@ export const listShoppingLists = defineRoute({
 });
 
 /** Bought items stay visible for a week (or until cleared). */
-export const BOUGHT_VISIBLE_MS = 7 * 86_400_000;
+export const BOUGHT_VISIBLE_MS = 7 * DAY_MS;
 
 export const listShoppingItems = defineRoute({
 	method: 'get',

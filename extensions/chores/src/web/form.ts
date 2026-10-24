@@ -1,5 +1,6 @@
 import {
 	compareDates,
+	daysBetween,
 	formatDate,
 	type RepeatChoices,
 	type RepeatEdit,
@@ -138,7 +139,7 @@ export function dueLabel(
 	locale: string,
 ): string {
 	if (!nextDue) return t('done');
-	const days = Math.round((Date.parse(nextDue) - Date.parse(today)) / 86_400_000);
+	const days = daysBetween(today, nextDue);
 	if (days < -1) return t('overdue_days', { count: -days });
 	if (days === -1) return t('due_yesterday');
 	if (days === 0) return t('due_today');
@@ -161,7 +162,7 @@ export function doneToast(
 	t: ChoresT,
 	locale: string,
 ): string {
-	const days = dueDate ? Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000) : 0;
+	const days = dueDate ? daysBetween(today, dueDate) : 0;
 	if (!dueDate || days <= 0) return t('done_toast', { title });
 	if (days === 1) return t('done_toast_tomorrow', { title });
 	return t('done_toast_ahead', { title, day: dueLabel(dueDate, today, t, locale) });

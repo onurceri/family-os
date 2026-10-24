@@ -19,7 +19,7 @@
 	} from '@famos/ui/famos';
 	import { ChevronLeft, ChevronRight, Plus, Settings2 } from '@lucide/svelte';
 	import type { TimelineItem } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import { MediaQuery } from 'svelte/reactivity';
 	import type { EventDetail, Occurrence, Tag } from '../contract/index.js';
 	import {
@@ -69,9 +69,8 @@
 	const { app, t } = useCalendar();
 	const tz = $derived(app.timeZone());
 
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 30_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow(30_000);
+	const now = $derived(clock.current);
 
 	const today = $derived(todayIn(tz, now));
 	let selected = $state<string | null>(null);

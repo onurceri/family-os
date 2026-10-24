@@ -12,8 +12,8 @@
 		SidePanel,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
+	import { useNow } from '@famos/ui/now';
 	import { Check, Clock, Plus, Repeat } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { HistoryEntry, Obligation, ObligationPreset } from '../contract/index.js';
 	import {
 		addObligation,
@@ -58,9 +58,8 @@
 	} = $props();
 
 	const { app, t } = useRecords();
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let openList = $state<Obligation[]>([]);

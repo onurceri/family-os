@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { BoardNote } from '../contract/index.js';
 	import { loadNotes } from './data.js';
 	import { columnsFor, countFitting } from './display-board.js';
@@ -15,9 +15,8 @@
 	let { shown }: SlotProps['display.page'] = $props();
 	const { app, t } = useBoard();
 
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 
 	let notes = $state<BoardNote[] | null>(null);
 	let failed = $state(false);

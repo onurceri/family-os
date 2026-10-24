@@ -1,4 +1,4 @@
-import { addDays, epochOf } from '@famos/time';
+import { addDays, epochOf, HOUR_MS } from '@famos/time';
 import type { AwaitedChange } from '@famos/ui/app';
 import {
 	type EventDetail,
@@ -13,8 +13,6 @@ export type WaitingOccurrence = Occurrence & { waiting: AwaitedChange };
 /** Whether an occurrence is a waiting new event, not a saved one. */
 export const isWaiting = (occurrence: Occurrence): occurrence is WaitingOccurrence =>
 	'waiting' in occurrence && Boolean((occurrence as { waiting?: unknown }).waiting);
-
-const HOUR = 3_600_000;
 
 /** The action whose waiting suggestions are new events. */
 export const NEW_EVENT_ACTION = 'calendar.createEvent';
@@ -63,7 +61,7 @@ export function waitingOccurrence(
 				v.endTime,
 				timeZone,
 			)
-		: start + HOUR;
+		: start + HOUR_MS;
 	return {
 		...base,
 		key: String(start),

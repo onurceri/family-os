@@ -12,7 +12,7 @@ import {
 	systemActor,
 	TextResponseSchema,
 } from '@famos/sdk';
-import { todayIn } from '@famos/time';
+import { DAY_MS, HOUR_MS, todayIn } from '@famos/time';
 import { z } from 'zod';
 import {
 	CreatedFeedSchema,
@@ -30,11 +30,10 @@ import { type EventRow, events, type FeedRow } from './store.ts';
  * so a copied database cannot reveal working addresses. Whoever has the address sees the events.
  */
 
-const DAY = 86_400_000;
 /** Feeds carry events from this long ago onward. */
 const WINDOW_DAYS = 90;
 /** `last_used_at` is refreshed at most this often. */
-const TOUCH_EVERY_MS = 3_600_000;
+const TOUCH_EVERY_MS = HOUR_MS;
 const HEX = /^[0-9a-f]{64}$/;
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -200,7 +199,7 @@ export const feedRoute = defineRoute({
 			// Bookkeeping by the server itself; the caller is anonymous and may change nothing.
 			await ctx.actions.invoke('calendar.touchFeed', { id: feed.id }, systemActor('calendar.feed'));
 
-		const cutoff = now - WINDOW_DAYS * DAY;
+		const cutoff = now - WINDOW_DAYS * DAY_MS;
 		const { timeZone } = await ctx.family.settings();
 		const cutoffDate = todayIn(timeZone, cutoff);
 		const rows = await events(ctx.db)

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { DisplayRow, DisplaySection } from '@famos/ui/famos';
+	import { useNow } from '@famos/ui/now';
 	import { StickyNote } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import type { BoardNote } from '../contract/index.js';
 	import { loadNotes } from './data.js';
 	import { useBoard } from './i18n.js';
@@ -17,9 +17,8 @@
 	const MAX = 2;
 	/** A paper is about as tall as three rows: one paper when the display has room for fewer than six. */
 	const max = $derived(rows === undefined || rows >= 6 ? MAX : 1);
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 
 	let notes = $state<BoardNote[]>([]);
 	async function load() {

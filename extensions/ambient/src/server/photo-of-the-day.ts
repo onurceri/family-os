@@ -1,11 +1,9 @@
 import { defineRoute } from '@famos/sdk';
-import { todayIn } from '@famos/time';
+import { DAY_MS, todayIn } from '@famos/time';
 import { PhotoOfTheDaySchema } from '../contract/index.ts';
 import { ambientPhotos } from './capabilities.ts';
 import { shuffle } from './photos.ts';
 import { tables } from './store.ts';
-
-const DAY_MS = 86_400_000;
 
 /** A small seeded generator (mulberry32): the same seed gives the same shuffle. */
 function seeded(seed: number): () => number {

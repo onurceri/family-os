@@ -4,8 +4,10 @@ import {
 	type AppMode,
 	assertFullSignIn,
 	type Clock,
+	DAY_MS,
 	type DbExecutor,
 	FamosError,
+	HOUR_MS,
 	type IdGenerator,
 	type MemberId,
 	type RoleId,
@@ -15,12 +17,11 @@ import { API_TOKEN_PREFIX } from './api-tokens.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import type { AppRow, AppTokenRow, CoreTables } from './tables.ts';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** Most keys one app has live at once: a rotation needs two, not twenty. */
 const MAX_TOKENS_PER_APP = 5;
 const MAX_APPS = 50;
 const MAX_ACTS_FOR = 50;
-const SEEN_RESOLUTION_MS = 60 * 60 * 1000;
+const SEEN_RESOLUTION_MS = HOUR_MS;
 /** The header an app names the member it acts for with. */
 export const ON_BEHALF_OF_HEADER = 'x-familyos-on-behalf-of';
 /** Keys are long-lived: no expiry unless the admin sets one, and at most ten years. */

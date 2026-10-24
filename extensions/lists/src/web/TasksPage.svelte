@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { useNow } from '@famos/ui/now';
 	import { describeRecurrence, formatDate, todayIn } from '@famos/time';
 	import {
 		AwaitingMark,
@@ -18,7 +19,6 @@
 		ViewOnly,
 	} from '@famos/ui/famos';
 	import { ChevronRight } from '@lucide/svelte';
-	import { onDestroy } from 'svelte';
 	import { TASK_TITLE_MAX, type Task } from '../contract/index.js';
 	import {
 		addTask,
@@ -56,9 +56,8 @@
 	 */
 	const { app, t } = useLists();
 	let mine = $state(false);
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let tasks = $state<Task[]>([]);

@@ -2,7 +2,7 @@
 	import { todayIn } from '@famos/time';
 	import { Avatar, TodayRow, TodaySection } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { Chore } from '../contract/index.js';
 	import { loadChores, loadTodayByMember, markDone, undoDone } from './data.js';
 	import { doneToast, dueLabel, groupOf } from './form.js';
@@ -15,9 +15,8 @@
 	 */
 	let { size, report, form = 'rows' }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useChores();
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let chores = $state<Chore[]>([]);

@@ -2,7 +2,7 @@
 	import { todayIn } from '@famos/time';
 	import { TodayRow, TodaySection } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
-	import { onDestroy } from 'svelte';
+	import { useNow } from '@famos/ui/now';
 	import type { Task } from '../contract/index.js';
 	import { completeTask, loadTasks, reopenTask } from './data.js';
 	import { dueLabel, urgency } from './format.js';
@@ -15,9 +15,8 @@
 	let { size, report }: SlotProps['dashboard.card'] = $props();
 	const { app, t } = useLists();
 	const mayTick = $derived(app.access('lists.completeTask') !== 'no');
-	let now = $state(Date.now());
-	const clock = setInterval(() => (now = Date.now()), 60_000);
-	onDestroy(() => clearInterval(clock));
+	const clock = useNow();
+	const now = $derived(clock.current);
 	const today = $derived(todayIn(app.timeZone(), now));
 
 	let tasks = $state<Task[]>([]);

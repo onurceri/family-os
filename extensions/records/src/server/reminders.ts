@@ -1,5 +1,5 @@
 import { defineJob, defineNotificationKind } from '@famos/sdk';
-import { addDays, dayBounds, epochOf, todayIn } from '@famos/time';
+import { addDays, dayBounds, daysBetween, epochOf, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { DEFAULT_AUDIENCE } from '../contract/index.ts';
 import { type ObligationRow, tables } from './store.ts';
@@ -78,7 +78,7 @@ export const remindJob = defineJob({
 		if (now >= dayBounds(dueDate, timeZone).end) return;
 
 		const today = todayIn(timeZone, now);
-		const days = Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000);
+		const days = daysBetween(today, dueDate);
 		// A date that only passes "ends"; a duty is "due".
 		const ends = row.lapses === 1;
 		const request = {

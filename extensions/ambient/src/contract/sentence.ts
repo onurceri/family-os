@@ -1,4 +1,12 @@
-import { addDays, dayBounds, epochOf, formatTime, type HourCycle, todayIn } from '@famos/time';
+import {
+	addDays,
+	dayBounds,
+	epochOf,
+	formatTime,
+	HOUR_MS,
+	type HourCycle,
+	todayIn,
+} from '@famos/time';
 import type { Forecast, ForecastHour } from './index.ts';
 
 /**
@@ -54,7 +62,6 @@ export interface SentenceFormat {
 	hourCycle?: HourCycle | undefined;
 }
 
-const HOUR_MS = 60 * 60_000;
 /** A rain window: hours with a rain code or at least this chance of rain. */
 const WET_PROBABILITY = 50;
 /** "Cold morning": before this hour, and the day warms by at least the swing below. */
