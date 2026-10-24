@@ -64,3 +64,29 @@ describe('the persisted secret', () => {
 		expect(await readFile(join(dir, 'secret'), 'utf8')).toBe('');
 	});
 });
+
+describe('FAMOS_ROLES', () => {
+	it('runs both parts when not set', async () => {
+		const config = await loadConfig({ FAMOS_DATA_DIR: dir });
+		expect(config.roles).toEqual({ api: true, worker: true });
+	});
+
+	it('accepts one role or both, with spaces', async () => {
+		expect((await loadConfig({ FAMOS_DATA_DIR: dir, FAMOS_ROLES: 'worker' })).roles).toEqual({
+			api: false,
+			worker: true,
+		});
+		expect(
+			(await loadConfig({ FAMOS_DATA_DIR: dir, FAMOS_ROLES: ' api , worker ' })).roles,
+		).toEqual({
+			api: true,
+			worker: true,
+		});
+	});
+
+	it.each(['apis', 'API', '', ',', 'api,wroker'])('refuses %j before starting', async (value) => {
+		await expect(loadConfig({ FAMOS_DATA_DIR: dir, FAMOS_ROLES: value })).rejects.toThrow(
+			/Invalid configuration: FAMOS_ROLES/,
+		);
+	});
+});

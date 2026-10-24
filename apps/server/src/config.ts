@@ -21,7 +21,18 @@ const EnvSchema = z.object({
 	FAMOS_SETUP_CODE: z.string().min(8).max(100).optional(),
 	/** Reverse proxies (IPs or CIDRs, comma separated) whose X-Forwarded-For is believed. */
 	FAMOS_TRUSTED_PROXIES: z.string().optional(),
-	FAMOS_ROLES: z.string().default('api,worker'),
+	/** Which parts this process runs: `api`, `worker` or both, comma separated. */
+	FAMOS_ROLES: z
+		.string()
+		.default('api,worker')
+		.transform((value) => value.split(',').map((role) => role.trim()))
+		.pipe(
+			z
+				.array(z.enum(['api', 'worker'], { error: 'use only "api" and "worker"' }), {
+					error: 'use "api", "worker" or "api,worker"',
+				})
+				.min(1, 'name at least one role: "api", "worker" or "api,worker"'),
+		),
 	FAMOS_BACKUP_HOUR: z.coerce.number().int().min(0).max(23).default(3),
 	FAMOS_BACKUP_KEEP: z.coerce.number().int().min(1).max(365).default(7),
 	// An AI provider and models from the server configuration, applied on every start.
@@ -93,11 +104,18 @@ export interface Config {
  * works without any configuration.
  */
 export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<Config> {
-	const e = EnvSchema.parse(env);
+	const parsed = EnvSchema.safeParse(env);
+	if (!parsed.success) {
+		const problems = parsed.error.issues.map(
+			(i) => `${i.path.join('.') || 'environment'}: ${i.message}`,
+		);
+		throw new Error(`Invalid configuration: ${problems.join('; ')}`);
+	}
+	const e = parsed.data;
 	const dataDir = resolve(e.FAMOS_DATA_DIR);
 	await mkdir(dataDir, { recursive: true });
 	const baseURL = (e.FAMOS_BASE_URL ?? `http://localhost:${e.PORT}`).replace(/\/+$/, '');
-	const roles = new Set(e.FAMOS_ROLES.split(',').map((r) => r.trim()));
+	const roles = new Set<string>(e.FAMOS_ROLES);
 	return {
 		dataDir,
 		dbPath: join(dataDir, 'famos.db'),
