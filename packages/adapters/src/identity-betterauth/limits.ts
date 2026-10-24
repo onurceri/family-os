@@ -61,6 +61,11 @@ export function createLockout(options: {
 			}
 			remember(failures, key, entry, maxKeys);
 		},
+		/** Takes back one counted failure (an attempt counted ahead of its check that proved nothing, or was right). */
+		forgive(key: string) {
+			const entry = failures.get(key);
+			if (entry && entry.count > 0) entry.count -= 1;
+		},
 		/** How many keys are remembered. */
 		size: () => failures.size,
 	};
@@ -92,6 +97,13 @@ export function createAddressLimit(options: {
 				return;
 			}
 			remember(windows, key, { count: 1, ends: now() + windowMs }, maxKeys);
+		},
+		/** Takes back one counted failure (see the lockout's `forgive`). */
+		forgive(key: string) {
+			const entry = windows.get(key);
+			if (!entry || entry.ends <= now()) return;
+			entry.count -= 1;
+			if (entry.count <= 0) windows.delete(key);
 		},
 		/** How many keys are remembered. */
 		size: () => windows.size,

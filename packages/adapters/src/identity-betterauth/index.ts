@@ -394,18 +394,30 @@ export function createIdentity(options: IdentityOptions): Identity {
 				addressFailures.waitFor(sender),
 			);
 			if (waitMs > 0) return { result: 'locked', retryAfter: Math.ceil(waitMs / 1000) };
-			const accounts = user ? await ctx.internalAdapter.findAccounts(user.id) : [];
-			const hash = accounts.find((a) => a.providerId === CREDENTIAL_PROVIDER)?.password;
-			// Always run a verification so response time does not reveal whether a password exists.
-			const valid = await ctx.password.verify({
-				password,
-				hash: hash ?? (await ctx.password.hash('dummy-password')),
-			});
-			const ok = valid && Boolean(hash);
-			lockout.record(lockKey, ok);
-			if (!ok) {
-				backstop.record(account, false);
-				addressFailures.fail(sender);
+			// The attempt is counted before it is checked, so a burst sent in parallel cannot all pass
+			// the limit; a right password takes its own count back.
+			lockout.record(lockKey, false);
+			backstop.record(account, false);
+			addressFailures.fail(sender);
+			let ok = false;
+			try {
+				const accounts = user ? await ctx.internalAdapter.findAccounts(user.id) : [];
+				const hash = accounts.find((a) => a.providerId === CREDENTIAL_PROVIDER)?.password;
+				// Always run a verification so response time does not reveal whether a password exists.
+				const valid = await ctx.password.verify({
+					password,
+					hash: hash ?? (await ctx.password.hash('dummy-password')),
+				});
+				ok = valid && Boolean(hash);
+			} catch (error) {
+				backstop.forgive(account);
+				addressFailures.forgive(sender);
+				throw error;
+			}
+			if (ok) {
+				lockout.record(lockKey, true);
+				backstop.forgive(account);
+				addressFailures.forgive(sender);
 			}
 			return { result: ok ? 'ok' : 'wrong' };
 		},
@@ -440,16 +452,34 @@ export function createIdentity(options: IdentityOptions): Identity {
 					{ status: 429, headers: { 'retry-after': String(retryAfter) } },
 				);
 			}
-			const response = await auth.handler(request);
+			// The attempt is counted before the secret is checked, so a burst sent in parallel cannot all
+			// pass the limit. Whatever the check proves nothing about gives its count back.
+			lockout.record(lockKey, false);
+			if (target.kind === 'email') backstop.record(account, false);
+			if (sender) addressFailures.fail(sender);
+			const forgive = () => {
+				lockout.forgive(lockKey);
+				if (target.kind === 'email') backstop.forgive(account);
+				if (sender) addressFailures.forgive(sender);
+			};
+			let response: Response;
+			try {
+				response = await auth.handler(request);
+			} catch (error) {
+				forgive();
+				throw error;
+			}
 			// Only a sign-in that checked the secret and found it wrong is a failure. A refusal before
 			// that (a device that is not a family device, a malformed request) says nothing about the
 			// secret, and must not lock a child out of the family tablet.
-			const failed = response.status === 401;
-			if (failed || response.ok) lockout.record(lockKey, response.ok);
+			if (response.status === 401) return response;
 			// The backstop forgets only with time: a right password from one place does not hand a
-			// distributed guesser a fresh budget.
-			if (failed && target.kind === 'email') backstop.record(account, false);
-			if (sender && failed) addressFailures.fail(sender);
+			// distributed guesser a fresh budget, so it takes back just this attempt's count.
+			if (response.ok) {
+				lockout.record(lockKey, true);
+				if (target.kind === 'email') backstop.forgive(account);
+				if (sender) addressFailures.forgive(sender);
+			} else forgive();
 			return response;
 		},
 		async resolveMember(headers) {

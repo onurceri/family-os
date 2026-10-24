@@ -340,6 +340,34 @@ describe('identity-betterauth', () => {
 		).toBe(200);
 	});
 
+	it('lets only five of a parallel burst of wrong PINs reach the check', async () => {
+		await identity.admin.setPin({ memberId: 'member_kid', pin: '1234', displayName: 'Kid' });
+		const burst = await Promise.all(
+			Array.from({ length: 20 }, (_, i) =>
+				post('/sign-in/pin', { memberId: 'member_kid', pin: '0000' }, `10.8.0.${i}`),
+			),
+		);
+		const statuses = burst.map((r) => r.status);
+		expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+		expect(statuses.filter((s) => s === 429)).toHaveLength(15);
+	});
+
+	it('lets only five of a parallel burst of wrong password confirmations reach the check', async () => {
+		await identity.admin.setPasswordLogin({
+			memberId: 'member_a',
+			email: 'a@example.com',
+			password: 'correct horse battery',
+			displayName: 'A',
+		});
+		const results = await Promise.all(
+			Array.from({ length: 20 }, () =>
+				identity.confirmPassword('member_a', 'wrong password!!', '10.8.1.1'),
+			),
+		);
+		expect(results.filter((r) => r.result === 'wrong')).toHaveLength(5);
+		expect(results.filter((r) => r.result === 'locked')).toHaveLength(15);
+	});
+
 	it('rejects an email already used by another member', async () => {
 		await identity.admin.setPasswordLogin({
 			memberId: 'member_a',

@@ -24,6 +24,19 @@ describe('sign-in limits', () => {
 		expect(lock.lockedFor('a')).toBe(0);
 	});
 
+	it('takes back one counted failure', () => {
+		const lock = createLockout({ after: 2, lockMs: 1000, now: () => 0 });
+		lock.record('a', false);
+		lock.forgive('a');
+		lock.record('a', false);
+		expect(lock.lockedFor('a')).toBe(0);
+		const limit = createAddressLimit({ max: 1, windowMs: 1000, now: () => 0 });
+		limit.fail('a');
+		limit.forgive('a');
+		expect(limit.waitFor('a')).toBe(0);
+		expect(limit.size()).toBe(0);
+	});
+
 	it('forgets failures older than its window', () => {
 		let now = 0;
 		const lock = createLockout({ after: 2, lockMs: 1000, windowMs: 100, now: () => now });
