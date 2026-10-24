@@ -4,6 +4,7 @@ import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 import { failureRedirect } from './oauth-endpoints.ts';
+import { OAUTH_PRESET_IDS, presetClient } from './oauth-presets.ts';
 import { json, requirePerson } from './route-kit.ts';
 
 /**
@@ -14,10 +15,6 @@ import { json, requirePerson } from './route-kit.ts';
  * password sign-in may decide: the service refuses a display, an app and a PIN session.
  */
 const base = { tags: ['oauth'], security: [{ session: [] }] };
-
-/** Where Home Assistant's own cloud relay brings a person back after signing in. */
-const HOME_ASSISTANT_REDIRECT = 'https://my.home-assistant.io/redirect/oauth';
-const HOME_ASSISTANT_NAME = 'Home Assistant';
 
 const ScopeSchema = z.enum(['read', 'read_write']);
 
@@ -58,8 +55,8 @@ const ClientSchema = z.object({
 	createdAt: z.number(),
 });
 const CreateClientInputSchema = z.object({
-	/** `ha` sets up Home Assistant: its name, its return addresses, and no PKCE (it cannot do it). */
-	preset: z.enum(['ha']).optional(),
+	/** A known app (`ha` is Home Assistant): its name and return addresses, and no PKCE if it cannot do it. */
+	preset: z.enum(OAUTH_PRESET_IDS).optional(),
 	name: z.string().trim().min(1).max(60).optional(),
 	redirectUris: z.array(z.string().max(2000)).max(5).optional(),
 	/** With the `ha` preset: the address Home Assistant is reached at on the home network. */
@@ -262,28 +259,20 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 	app.openapi(createClient, async (c) => {
 		const actor = requirePerson(c);
 		const input = c.req.valid('json');
-		let name: string;
-		let redirectUris: string[];
-		if (input.preset === 'ha') {
+		let setup: { name: string; redirectUris: string[]; requirePkce: boolean };
+		if (input.preset) {
 			if (input.redirectUris)
-				throw new FamosError('bad_request', 'Home Assistant needs no return addresses');
-			name = input.name ?? HOME_ASSISTANT_NAME;
-			redirectUris = [HOME_ASSISTANT_REDIRECT];
-			if (input.homeAssistantUrl) redirectUris.push(homeAssistantCallback(input.homeAssistantUrl));
+				throw new FamosError('bad_request', 'This app needs no return addresses');
+			setup = presetClient(input.preset, { name: input.name, address: input.homeAssistantUrl });
 		} else {
 			if (input.homeAssistantUrl)
 				throw new FamosError('bad_request', 'The Home Assistant address belongs to its preset');
 			if (!input.name || !input.redirectUris?.length)
 				throw new FamosError('bad_request', 'An app needs a name and a return address');
-			name = input.name;
-			redirectUris = input.redirectUris;
+			setup = { name: input.name, redirectUris: input.redirectUris, requirePkce: true };
 		}
-		// Only Home Assistant's own client may skip PKCE; it cannot send one.
-		const created = await oauth.createClient(actor, {
-			name,
-			redirectUris,
-			requirePkce: input.preset !== 'ha',
-		});
+		// Only a preset that says so may skip PKCE; its app cannot send one.
+		const created = await oauth.createClient(actor, setup);
 		const { client } = created;
 		return c.json(
 			{
@@ -302,17 +291,4 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 			201,
 		);
 	});
-}
-
-/** Where Home Assistant takes a person back to when it is reached directly on the home network. */
-function homeAssistantCallback(address: string): string {
-	let url: URL;
-	try {
-		url = new URL(address);
-	} catch {
-		throw new FamosError('bad_request', 'The Home Assistant address is not a web address');
-	}
-	if (url.protocol !== 'https:' && url.protocol !== 'http:')
-		throw new FamosError('bad_request', 'The Home Assistant address is not a web address');
-	return `${url.origin}${url.pathname.replace(/\/+$/, '')}/auth/external/callback`;
 }
