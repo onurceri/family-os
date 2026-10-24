@@ -6,10 +6,16 @@ import {
 	repeatChoices,
 	repeatEditAsks,
 	Temporal,
-	type Weekday,
 	weekdayOf,
 } from '@famos/time';
-import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
+import {
+	FIELD_REASON,
+	type FieldErrors,
+	issueErrors,
+	type RepeatPreset,
+	recurrenceFromFields,
+	repeatFieldsFrom,
+} from '@famos/ui/forms';
 import {
 	ALL_DAY_REMINDERS,
 	defaultReminder,
@@ -97,10 +103,7 @@ export function formFrom(source: EventInput | EventDetail): EventFormValue {
 		memberIds: [...(source.memberIds ?? [])],
 		location: source.location ?? '',
 		notes: source.notes ?? '',
-		repeat: custom ? 'custom' : (recurrence?.freq ?? 'none'),
-		byDay: recurrence?.freq === 'weekly' ? [...recurrence.byDay] : [weekdayOf(source.date)],
-		interval: recurrence?.interval ?? 1,
-		until: recurrence?.until ?? '',
+		...repeatFieldsFrom(recurrence, source.date, custom),
 		reminder:
 			source.reminder === null
 				? 'none'
@@ -112,18 +115,7 @@ export function formFrom(source: EventInput | EventDetail): EventFormValue {
 /** Form → action input. Empty strings become absent fields. */
 export function inputFrom(v: EventFormValue): EventInput {
 	const text = (s: string) => (s.trim() ? s.trim() : undefined);
-	const until = text(v.until);
-	const recurrence =
-		v.repeat === 'daily' || v.repeat === 'monthly'
-			? { freq: v.repeat, interval: v.interval, ...(until && { until }) }
-			: v.repeat === 'weekly'
-				? {
-						freq: 'weekly' as const,
-						interval: v.interval,
-						byDay: v.byDay as Weekday[],
-						...(until && { until }),
-					}
-				: undefined;
+	const recurrence = recurrenceFromFields(v) ?? undefined;
 	const input: EventInput = {
 		title: v.title,
 		allDay: v.allDay,

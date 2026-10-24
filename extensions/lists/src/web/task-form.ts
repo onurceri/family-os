@@ -1,12 +1,12 @@
+import { type RepeatChoices, type RepeatEdit, repeatChoices, repeatEditAsks } from '@famos/time';
 import {
-	type RepeatChoices,
-	type RepeatEdit,
-	repeatChoices,
-	repeatEditAsks,
-	type Weekday,
-	weekdayOf,
-} from '@famos/time';
-import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
+	FIELD_REASON,
+	type FieldErrors,
+	issueErrors,
+	type RepeatPreset,
+	recurrenceFromFields,
+	repeatFieldsFrom,
+} from '@famos/ui/forms';
 import { type Task, type TaskInput, TaskInputSchema, type TaskReplace } from '../contract/index.js';
 
 /** Editable task form state; plain strings so inputs can bind to them. */
@@ -47,15 +47,7 @@ export function taskFormFrom(source: TaskInput | Task): TaskFormValue {
 		dueDate: source.dueDate ?? '',
 		dueTime: source.dueTime ?? '',
 		notes: source.notes ?? '',
-		repeat: custom ? 'custom' : (recurrence?.freq ?? 'none'),
-		byDay:
-			recurrence?.freq === 'weekly'
-				? [...recurrence.byDay]
-				: source.dueDate
-					? [weekdayOf(source.dueDate)]
-					: [],
-		interval: recurrence?.interval ?? 1,
-		until: recurrence?.until ?? '',
+		...repeatFieldsFrom(recurrence, source.dueDate, custom),
 	};
 }
 
@@ -102,18 +94,7 @@ export function fromThisTask(
 
 export function taskInputFrom(v: TaskFormValue): TaskReplace {
 	const text = (s: string) => s.trim() || null;
-	const until = text(v.until);
-	const recurrence =
-		v.repeat === 'daily' || v.repeat === 'monthly'
-			? { freq: v.repeat, interval: v.interval, ...(until && { until }) }
-			: v.repeat === 'weekly'
-				? {
-						freq: 'weekly' as const,
-						interval: v.interval,
-						byDay: v.byDay as Weekday[],
-						...(until && { until }),
-					}
-				: null;
+	const recurrence = recurrenceFromFields(v);
 	const dueDate = text(v.dueDate);
 	return {
 		title: v.title,

@@ -6,10 +6,16 @@ import {
 	type RepeatEdit,
 	repeatChoices,
 	repeatEditAsks,
-	type Weekday,
 	weekdayOf,
 } from '@famos/time';
-import { FIELD_REASON, type FieldErrors, issueErrors, type RepeatPreset } from '@famos/ui/forms';
+import {
+	FIELD_REASON,
+	type FieldErrors,
+	issueErrors,
+	type RepeatPreset,
+	recurrenceFromFields,
+	repeatFieldsFrom,
+} from '@famos/ui/forms';
 import {
 	type Chore,
 	ChoreDetailsSchema,
@@ -45,33 +51,18 @@ export const emptyChore = (today: string): ChoreFormValue => ({
 });
 
 export function fromChore(chore: Chore): ChoreFormValue {
-	const rec = chore.recurrence;
 	return {
 		title: chore.title,
 		notes: chore.notes ?? '',
 		startDate: chore.startDate,
-		repeat: rec?.freq ?? 'none',
-		byDay: rec?.freq === 'weekly' ? [...rec.byDay] : [weekdayOf(chore.startDate)],
-		interval: rec?.interval ?? 1,
-		until: rec?.until ?? '',
+		...repeatFieldsFrom(chore.recurrence, chore.startDate),
 		assigneeIds: [...chore.assigneeIds],
 		rotation: chore.rotation,
 	};
 }
 
 export function toDetails(v: ChoreFormValue): UpdateChoreInput['chore'] {
-	const until = v.until.trim() || null;
-	const recurrence =
-		v.repeat === 'daily' || v.repeat === 'monthly'
-			? { freq: v.repeat, interval: v.interval, ...(until && { until }) }
-			: v.repeat === 'weekly'
-				? {
-						freq: 'weekly' as const,
-						interval: v.interval,
-						byDay: v.byDay as Weekday[],
-						...(until && { until }),
-					}
-				: null;
+	const recurrence = recurrenceFromFields(v);
 	return {
 		title: v.title,
 		notes: v.notes.trim() || null,
