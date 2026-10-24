@@ -5,6 +5,7 @@
 	import { loadWeather } from './data.js';
 	import { useAmbient } from './i18n.js';
 	import TodayWeather from './TodayWeather.svelte';
+	import { formatDegrees } from './degrees.js';
 	import { describeWeather } from './weather.js';
 
 	/**
@@ -54,7 +55,7 @@
 			aria-hidden="true"
 		/>
 		<span
-			>{Math.round(forecast.temperature)}{forecast.unit === 'fahrenheit' ? '°F' : '°C'} · {t(
+			>{formatDegrees(forecast.temperature, app.formatLocale(), forecast.unit)} · {t(
 				sky.label,
 			)}</span
 		>

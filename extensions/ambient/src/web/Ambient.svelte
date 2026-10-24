@@ -9,6 +9,7 @@
 	import { shouldCover } from './idle.js';
 	import { useAmbient } from './i18n.js';
 	import Slideshow from './Slideshow.svelte';
+	import { formatDegrees, formatWhole } from './degrees.js';
 	import { describeWeather } from './weather.js';
 
 	/**
@@ -178,18 +179,20 @@
 			<div class="flex items-center gap-4">
 				<sky.icon class="size-14 {onPhoto ? '' : 'text-sun'}" aria-hidden="true" />
 				<span class="text-6xl font-extrabold tabular-nums"
-					>{Math.round(forecast.temperature)}{forecast.unit === 'fahrenheit' ? '°F' : '°C'}</span
+					>{formatDegrees(forecast.temperature, app.formatLocale(), forecast.unit)}</span
 				>
 			</div>
 			<p class="text-2xl font-bold">
 				{t(sky.label)} · {t('weather_today_range', {
-					min: Math.round(forecast.min),
-					max: Math.round(forecast.max),
+					min: formatWhole(forecast.min, app.formatLocale()),
+					max: formatWhole(forecast.max, app.formatLocale()),
 				})}
 			</p>
 			{#if forecast.precipitationProbability !== null && forecast.precipitationProbability >= 20}
 				<p class="text-xl font-semibold">
-					{t('weather_rain_chance', { percent: Math.round(forecast.precipitationProbability) })}
+					{t('weather_rain_chance', {
+						percent: formatWhole(forecast.precipitationProbability, app.formatLocale()),
+					})}
 				</p>
 			{/if}
 			<a

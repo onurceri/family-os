@@ -8,6 +8,7 @@
 	import { loadWeather } from './data.js';
 	import { useAmbient } from './i18n.js';
 	import { loadTimedItems, sayWeather } from './sentence.js';
+	import { formatDegrees, formatWhole } from './degrees.js';
 	import { describeWeather } from './weather.js';
 
 	/**
@@ -74,8 +75,7 @@
 		hourCycle: app.hourCycle(),
 		timeZone: app.timeZone(),
 	});
-	const degrees = $derived(new Intl.NumberFormat(app.formatLocale(), { maximumFractionDigits: 0 }));
-	const deg = (value: number) => `${degrees.format(Math.round(value) || 0)}°`;
+	const deg = (value: number) => formatDegrees(value, app.formatLocale());
 	const range = $derived.by(() => {
 		if (!forecast) return '';
 		const rain = forecast.precipitationProbability;
@@ -83,7 +83,7 @@
 			? t('today_range_rain', {
 					max: deg(forecast.max),
 					min: deg(forecast.min),
-					percent: degrees.format(rain),
+					percent: formatWhole(rain, app.formatLocale()),
 				})
 			: t('today_range', { max: deg(forecast.max), min: deg(forecast.min) });
 	});
