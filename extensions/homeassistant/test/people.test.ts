@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { MySharing, PersonLink, Persons, PresenceList } from '../src/contract/index.ts';
 import { SetMySharingInputSchema } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -44,7 +45,7 @@ const personRequests = () =>
 	k.http.requests.filter((r) => r.url.startsWith(`${BASE}/api/states/person.`));
 
 async function connect() {
-	await k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, admin);
+	await connectHomeAssistant(k, admin, BASE, TOKEN);
 }
 const link = (memberId: string, personEntity: string, actor: Actor = admin) =>
 	k.runner.invoke<PersonLink>('homeassistant.linkPerson', { memberId, personEntity }, actor);

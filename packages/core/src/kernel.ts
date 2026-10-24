@@ -618,6 +618,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		logger: options.logger,
 		files: hostFiles(options.files, options.db, options.clock.now),
 		secrets: views.secrets('core'),
+		audit,
 		http: options.http,
 		events: bus,
 		actions: invokerFor(undefined),
@@ -659,6 +660,13 @@ export function createKernel(options: KernelOptions): Kernel {
 				db: views.db(id, options.db),
 				files: views.files(id, options.db),
 				secrets: views.secrets(id),
+				audit: {
+					async record(actor, operationId, target) {
+						if (!operationId.startsWith(`${id}.`))
+							throw new Error(`Extension "${id}" may not record "${operationId}"`);
+						await audit.record(actor, operationId, target);
+					},
+				},
 				http: scopedHttp(options.http, ext.manifest),
 				actions: invokerFor(id),
 			};

@@ -22,7 +22,7 @@ export const loadConnection = async (): Promise<Connection> =>
 
 /** Connects, or changes the connection; the token goes to the server once and is not kept here. */
 export async function connect(input: { url: string; token: string }): Promise<void> {
-	unwrap(await api.POST('/api/v1/actions/homeassistant.connect', { body: input }));
+	unwrap(await api.PUT('/api/v1/homeassistant/connection', { body: input }));
 }
 
 /** Tries an address and a token without saving them. */

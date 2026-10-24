@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Connection } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
 import { tables } from '../src/server/store.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -42,11 +43,16 @@ const serveHomeAssistant = (base = BASE) => {
 	k.http.serve(`${base}/api/config`, { text: CONFIG });
 };
 
-async function connect(url = BASE, token = TOKEN) {
-	const r = await k.runner.invoke<Connection>('homeassistant.connect', { url, token }, admin);
-	if (r.status !== 'applied') throw new Error('expected applied');
-	return r.output;
-}
+const connect = (url = BASE, token = TOKEN, who: Actor = admin) =>
+	connectHomeAssistant(k, who, url, token);
+
+const auditRows = async () =>
+	(
+		await sql<{ action_id: string; outcome: string; target: string | null; actor: string }>`
+			select action_id, outcome, target, actor from core_audit_log where action_id like 'homeassistant.%'`.execute(
+			k.ctx.db,
+		)
+	).rows;
 
 const row = () =>
 	tables(k.ctx.db).selectFrom('homeassistant_connection').selectAll().executeTakeFirst();
@@ -100,14 +106,10 @@ describe('connect', () => {
 			'192.168.1.20',
 			'',
 		]) {
-			await expect(
-				k.runner.invoke('homeassistant.connect', { url, token: TOKEN }, admin),
-			).rejects.toBeDefined();
+			await expect(connect(url, TOKEN)).rejects.toBeDefined();
 		}
 		for (const token of ['', '   ', 'two words', 'a'.repeat(1025)]) {
-			await expect(
-				k.runner.invoke('homeassistant.connect', { url: BASE, token }, admin),
-			).rejects.toBeDefined();
+			await expect(connect(BASE, token)).rejects.toBeDefined();
 		}
 		expect(await row()).toBeUndefined();
 	});
@@ -122,10 +124,14 @@ describe('connect', () => {
 	it('is for people who manage the connection only', async () => {
 		const member = (await k.member('member')).actor;
 		const child = (await k.member('supervised')).actor;
+		const saved = k.registry.routes.find(
+			(r) => r.route.operationId === 'homeassistant.saveConnection',
+		);
+		// The HTTP adapter turns the route's capability into a refusal before the handler runs.
+		expect(saved?.route.requires).toBe('homeassistant.manage');
+		expect(k.access.can(admin, 'homeassistant.manage')).toBe(true);
 		for (const who of [member, child]) {
-			await expect(
-				k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, who),
-			).rejects.toMatchObject({ code: 'forbidden' });
+			expect(k.access.can(who, 'homeassistant.manage')).toBe(false);
 			await expect(k.runner.invoke('homeassistant.check', {}, who)).rejects.toMatchObject({
 				code: 'forbidden',
 			});
@@ -136,17 +142,47 @@ describe('connect', () => {
 		expect(await row()).toBeUndefined();
 	});
 
-	it('is not something the AI can run or propose', async () => {
-		const ai: Actor = { kind: 'ai', source: 'test' } as Actor;
-		const r = await k.runner
-			.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, ai)
-			.catch((e) => e);
-		expect(r).not.toMatchObject({ status: 'applied' });
-		expect(await row()).toBeUndefined();
-		for (const id of ['homeassistant.connect', 'homeassistant.check', 'homeassistant.disconnect']) {
-			const action = k.registry.actions.get(id);
-			expect(action?.ai, id).toBeUndefined();
+	it('needs a person at a password sign-in', async () => {
+		const pin: Actor = { ...admin, pin: true } as Actor;
+		const app: Actor = { kind: 'app', appId: 'app_1' } as unknown as Actor;
+		const ai: Actor = { kind: 'ai', mode: 'agent', source: 'mcp' } as Actor;
+		const display: Actor = { kind: 'display', deviceId: 'dev_1' } as unknown as Actor;
+		for (const who of [pin, app, ai, display]) {
+			await expect(connect(BASE, TOKEN, who)).rejects.toBeDefined();
 		}
+		expect(await row()).toBeUndefined();
+		expect(await auditRows()).toEqual([]);
+	});
+
+	it('may record only its own operations in the audit log', async () => {
+		const audit = k.contextFor('homeassistant').audit;
+		await expect(audit.record(admin, 'core.setMemberPin', 'x')).rejects.toThrow(/may not record/);
+		expect(await auditRows()).toEqual([]);
+	});
+
+	it('is not an action: the token is no input of anything the AI can run or propose', async () => {
+		expect(k.registry.actions.has('homeassistant.connect')).toBe(false);
+		for (const [id, action] of k.registry.actions) {
+			if (!id.startsWith('homeassistant.')) continue;
+			expect(JSON.stringify(action.input.toJSONSchema()), id).not.toContain('token');
+		}
+		for (const id of ['homeassistant.check', 'homeassistant.disconnect']) {
+			expect(k.registry.actions.get(id)?.ai, id).toBeUndefined();
+		}
+	});
+
+	it('records itself in the audit log, without the token', async () => {
+		serveHomeAssistant();
+		await connect();
+		const rows = await auditRows();
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			action_id: 'homeassistant.saveConnection',
+			outcome: 'applied',
+			target: 'home',
+		});
+		expect(JSON.parse(rows[0]?.actor ?? '{}')).toMatchObject({ kind: 'member', roleId: 'admin' });
+		expect(JSON.stringify(rows)).not.toContain('sentinel');
 	});
 
 	it('leaves the token in no stored row and in no event', async () => {

@@ -17,9 +17,9 @@ import {
 import {
 	check,
 	checkJob,
-	connect,
 	disconnect,
 	getConnection,
+	saveConnection,
 	testConnection,
 } from './connection.ts';
 import { getSwitchHistory } from './history.ts';
@@ -56,7 +56,6 @@ export default defineExtension({
 	messages: { en, tr },
 	migrations,
 	actions: [
-		connect,
 		check,
 		disconnect,
 		addItem,
@@ -75,6 +74,7 @@ export default defineExtension({
 	channels: [homeassistantChannel],
 	routes: [
 		getConnection,
+		saveConnection,
 		testConnection,
 		listItems,
 		getValues,
