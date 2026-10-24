@@ -74,6 +74,7 @@ describe('the extensions script', () => {
 		expect(index.status).toBe(0);
 		expect(JSON.parse(readFileSync(join(site, 'index.json'), 'utf8'))).toEqual({
 			format: 1,
+			issuedAt: expect.any(Number),
 			extensions: [],
 		});
 		const signed = spawnSync(

@@ -380,6 +380,7 @@ export function searchProblem(
 	| 'extensions_find_missing'
 	| 'extensions_find_unsigned'
 	| 'extensions_find_invalid'
+	| 'extensions_find_stale'
 	| 'extensions_find_failed'
 > {
 	switch (problem.reason) {
@@ -391,6 +392,9 @@ export function searchProblem(
 			return { key: 'extensions_find_unsigned' };
 		case 'invalid':
 			return { key: 'extensions_find_invalid' };
+		case 'index_older':
+		case 'index_future':
+			return { key: 'extensions_find_stale' };
 		default:
 			return { key: 'extensions_find_failed' };
 	}

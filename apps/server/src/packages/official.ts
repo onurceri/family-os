@@ -61,11 +61,30 @@ const EntrySchema = z.object({
 /** Fields this server does not know are left out, so a later index still reads here. */
 const IndexSchema = z.object({
 	format: z.literal(1),
+	/** Epoch ms the index was written; absent in an index from before it was dated. */
+	issuedAt: z.number().int().positive().optional(),
 	extensions: z.array(EntrySchema).max(5000),
 });
 
+/** How far ahead of this server's clock an index may be dated (clocks differ a little). */
+export const INDEX_FUTURE_MS = 24 * 60 * 60 * 1000;
+
+/** The index's packages and when it was issued (null for an index from before it was dated). */
+export interface FetchedIndex {
+	packages: IndexedPackage[];
+	issuedAt: number | null;
+}
+
 const problem = (
-	reason: 'unreachable' | 'missing' | 'unsigned' | 'invalid' | 'mismatch' | 'reach_changed',
+	reason:
+		| 'unreachable'
+		| 'missing'
+		| 'unsigned'
+		| 'invalid'
+		| 'mismatch'
+		| 'reach_changed'
+		| 'index_older'
+		| 'index_future',
 	message: string,
 ) => new FamosError('bad_request', message, { reason });
 
@@ -150,8 +169,18 @@ function checkSignature(bytes: Uint8Array, signature: Uint8Array, roots: readonl
  * Fetches the official index and its signature and checks it: signed by a trusted key over its
  * exact bytes, and an index this server reads. Each package's address is resolved against the
  * index and must be on the index's own host (https): one elsewhere is left out.
+ *
+ * `newestSeen` is the `issuedAt` of the newest index this server accepted before (null when none
+ * was dated). An older index is refused (`index_older`), so a stale mirror or an attacker cannot
+ * hand back a signed index from before a fix; so is one dated over a day ahead of `now`
+ * (`index_future`), which would otherwise freeze the server on it. An index without a date is
+ * accepted only while no dated one was ever seen.
  */
-export async function fetchIndex(official: OfficialIndex): Promise<IndexedPackage[]> {
+export async function fetchIndex(
+	official: OfficialIndex,
+	newestSeen: number | null,
+	now: number,
+): Promise<FetchedIndex> {
 	const fetchImpl = official.fetch ?? fetch;
 	const url = new URL(official.url);
 	const bytes = await fetchCapped(fetchImpl, url, INDEX_LIMITS.indexBytes, INDEX_LIMITS.indexMs);
@@ -173,7 +202,17 @@ export async function fetchIndex(official: OfficialIndex): Promise<IndexedPackag
 	} catch {
 		throw problem('invalid', 'The index is not one this server reads');
 	}
-	return index.extensions.flatMap((entry) => {
+	const issuedAt = index.issuedAt ?? null;
+	if (issuedAt === null) {
+		if (newestSeen !== null)
+			throw problem('index_older', 'The index has no date, but this server has seen a dated one');
+	} else {
+		if (issuedAt > now + INDEX_FUTURE_MS)
+			throw problem('index_future', 'The index is dated too far ahead of this server clock');
+		if (newestSeen !== null && issuedAt < newestSeen)
+			throw problem('index_older', 'The index is older than one this server already accepted');
+	}
+	const packages = index.extensions.flatMap((entry) => {
 		let at: URL;
 		try {
 			at = new URL(entry.url, url);
@@ -183,6 +222,7 @@ export async function fetchIndex(official: OfficialIndex): Promise<IndexedPackag
 		if (at.protocol !== 'https:' || at.origin !== url.origin) return [];
 		return [{ ...entry, url: at.href }];
 	});
+	return { packages, issuedAt };
 }
 
 /** What a parsed manifest reaches, in the shape the index states it. */

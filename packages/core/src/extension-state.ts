@@ -196,10 +196,14 @@ export interface ExtensionPackagesPort {
 	staged?(digest: string): Promise<StagedPackage | undefined>;
 	/**
 	 * Fetches the official index and checks its signature. Throws a `FamosError` whose
-	 * `details.reason` says why it failed (`unreachable`, `unsigned`, `invalid`). Absent where
+	 * `details.reason` says why it failed (`unreachable`, `unsigned`, `invalid`, `index_older`,
+	 * `index_future`). `newestSeen` is the issue date of the newest index accepted before. Absent where
 	 * the server cannot look online. Network I/O: called from a job only, when a person asked.
 	 */
-	findPackages?(): Promise<IndexedPackage[]>;
+	findPackages?(
+		newestSeen: number | null,
+		now: number,
+	): Promise<{ packages: IndexedPackage[]; issuedAt: number | null }>;
 	/**
 	 * Downloads a package the index lists, checks its size and SHA-256 against the index
 	 * (`details.reason` `mismatch`), then stages it like an uploaded file. Network I/O: called

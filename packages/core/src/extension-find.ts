@@ -35,7 +35,8 @@ export const DOWNLOAD_JOB = 'core.fetchExtensionPackage';
  * Why looking or downloading failed, from the `details` of the error, for a page to say:
  * - looking: `unreachable` (no answer, not 200, a redirect, too slow), `missing` (the host has no
  *   index: 404 or 410), `unsigned` (the index's signature is missing, by an unknown key or wrong),
- *   `invalid` (not an index this server reads);
+ *   `invalid` (not an index this server reads), `index_older` (older than an index accepted
+ *   before: a rollback), `index_future` (dated over a day ahead of this server's clock);
  * - downloading: `unreachable`, `missing` (the index lists a file its host does not have),
  *   `mismatch` (size or SHA-256 differ from the index), `reach_changed` (the package reaches
  *   something other than the index said), `gone` (the
@@ -71,12 +72,14 @@ const StateSchema = z.object({
 	search: ExtensionSearchSchema.nullable(),
 	/** What the index listed at the last search that worked. */
 	packages: z.array(IndexedPackageSchema),
+	/** When the newest index this server accepted was issued: an older one is refused. */
+	newestIssuedAt: z.number().nullable().default(null),
 	/** With the staged package's digest once it is ready. */
 	download: ExtensionDownloadSchema.extend({ digest: z.string().nullable() }).nullable(),
 });
 type State = z.infer<typeof StateSchema>;
 
-const empty = (): State => ({ search: null, packages: [], download: null });
+const empty = (): State => ({ search: null, packages: [], newestIssuedAt: null, download: null });
 
 async function readState(db: DbExecutor): Promise<State> {
 	const parsed = StateSchema.safeParse(await readJson<unknown>(db, KEY, null));
@@ -234,9 +237,12 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 			try {
 				const port = deps.packages();
 				if (!port.findPackages) throw new FamosError('bad_request', 'This server cannot look');
+				const state = await readState(ctx.db);
+				const found = await port.findPackages(state.newestIssuedAt, at);
 				next = {
 					search: { status: 'done', at, problem: null },
-					packages: await port.findPackages(),
+					packages: found.packages,
+					newestIssuedAt: Math.max(state.newestIssuedAt ?? 0, found.issuedAt ?? 0) || null,
 				};
 			} catch (error) {
 				// Said on the page; looking again is the person's choice, so nothing is retried.

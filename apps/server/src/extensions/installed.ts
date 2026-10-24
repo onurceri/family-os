@@ -216,7 +216,7 @@ function packagesPort(
 		}),
 		...(store &&
 			official && {
-				findPackages: () => fetchIndex(official),
+				findPackages: (newestSeen, now) => fetchIndex(official, newestSeen, now),
 				download: async (entry) => {
 					const staged = await stage(await downloadPackage(entry, official));
 					assertSameReach(entry, staged.manifest);

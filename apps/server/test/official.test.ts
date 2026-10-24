@@ -86,6 +86,7 @@ async function publish(
 }
 
 const official = (fetch: Fetch) => ({ url: INDEX_URL, trustRoots: TEST_ROOTS, fetch });
+const find = async (fetch: Fetch) => (await fetchIndex(official(fetch), null, Date.now())).packages;
 
 describe('the official index', () => {
 	it('is at the project address, on https', () => {
@@ -97,7 +98,7 @@ describe('the official index', () => {
 			{ id: 'garden', version: '1.0.0' },
 			{ id: 'garden', version: '1.1.0' },
 		]);
-		const listed = await fetchIndex(official(site.fetch));
+		const listed = await find(site.fetch);
 		expect(listed.map((p) => `${p.id}@${p.version}`)).toEqual(['garden@1.1.0', 'garden@1.0.0']);
 		expect(listed[0]).toMatchObject({
 			url: `${HOST}/extensions/garden/garden-1.1.0.famext`,
@@ -115,7 +116,7 @@ describe('the official index', () => {
 		const site = await publish([{ id: 'garden', version: '1.0.0' }], {
 			signWith: OTHER_KEY.privateKey,
 		});
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			message: expect.stringMatching(/does not trust/),
 			details: { reason: 'unsigned' },
 		});
@@ -125,11 +126,11 @@ describe('the official index', () => {
 		const site = await publish([{ id: 'garden', version: '1.0.0' }]);
 		const index = join(site.dir, 'index.json');
 		writeFileSync(index, readFileSync(index, 'utf8').replace('"garden"', '"meadow"'));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'unsigned' },
 		});
 		rmSync(`${index}.sig`);
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'unsigned' },
 		});
 	});
@@ -140,35 +141,39 @@ describe('the official index', () => {
 			INDEX_URL,
 			() => new Response('', { status: 302, headers: { location: 'https://elsewhere.test/i' } }),
 		);
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			message: expect.stringMatching(/redirect, which is not followed/),
 			details: { reason: 'unreachable' },
 		});
 		site.answers.set(INDEX_URL, () => new Response('', { status: 500 }));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'unreachable' },
 		});
 		// No index published there (yet): the host answered, so it is not this server's connection.
 		site.answers.set(INDEX_URL, () => new Response('', { status: 404 }));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'missing' },
 		});
 		site.answers.set(INDEX_URL, () => new Response('', { status: 410 }));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'missing' },
 		});
 		site.answers.set(INDEX_URL, () => new Response('', { status: 503 }));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'unreachable' },
 		});
 		site.answers.set(INDEX_URL, () => {
 			throw new TypeError('fetch failed');
 		});
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'unreachable' },
 		});
 		await expect(
-			fetchIndex({ ...official(site.fetch), url: 'http://index.test/extensions/index.json' }),
+			fetchIndex(
+				{ ...official(site.fetch), url: 'http://index.test/extensions/index.json' },
+				null,
+				Date.now(),
+			),
 		).rejects.toMatchObject({ details: { reason: 'unreachable' } });
 	});
 
@@ -176,7 +181,7 @@ describe('the official index', () => {
 		const site = await publish([]);
 		const huge = new Uint8Array(INDEX_LIMITS.indexBytes + 1);
 		site.answers.set(INDEX_URL, () => new Response(huge));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'invalid' },
 		});
 		// No length given: it is counted as it arrives.
@@ -191,7 +196,7 @@ describe('the official index', () => {
 					}),
 				),
 		);
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'invalid' },
 		});
 	});
@@ -201,7 +206,7 @@ describe('the official index', () => {
 		const index = join(site.dir, 'index.json');
 		writeFileSync(index, '{"format":2,"extensions":[]}\n');
 		await signFile(index, createPrivateKey(TEST_KEY.privateKey));
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'invalid' },
 		});
 	});
@@ -217,7 +222,7 @@ describe('the official index', () => {
 		});
 		writeFileSync(index, JSON.stringify(parsed));
 		await signFile(index, createPrivateKey(TEST_KEY.privateKey));
-		expect((await fetchIndex(official(site.fetch))).map((p) => p.version)).toEqual(['1.0.0']);
+		expect((await find(site.fetch)).map((p) => p.version)).toEqual(['1.0.0']);
 	});
 });
 
@@ -227,7 +232,7 @@ describe('what the index says a package reaches', () => {
 
 	it('is read with the entry, and an entry without it is read as before', async () => {
 		const site = await publish([{ id: 'garden', version: '1.0.0' }]);
-		const [entry] = await fetchIndex(official(site.fetch));
+		const [entry] = await find(site.fetch);
 		expect(entry?.reach).toEqual({
 			network: { hosts: [], userUrls: false, local: false },
 			capabilities: 0,
@@ -238,8 +243,58 @@ describe('what the index says a package reaches', () => {
 				for (const e of index.extensions) delete e.reach;
 			},
 		});
-		const [plain] = await fetchIndex(official(older.fetch));
+		const [plain] = await find(older.fetch);
 		expect(plain?.reach).toBeUndefined();
+	});
+
+	describe('freshness', () => {
+		const NOW = 1_800_000_000_000;
+		const DAY = 24 * 60 * 60 * 1000;
+		const issued = (issuedAt: number | undefined) =>
+			publish([{ id: 'garden', version: '1.0.0' }], {
+				edit: (index) => {
+					const dated = index as { issuedAt?: number };
+					if (issuedAt === undefined) delete dated.issuedAt;
+					else dated.issuedAt = issuedAt;
+				},
+			});
+		const read = (site: { fetch: Fetch }, seen: number | null) =>
+			fetchIndex(official(site.fetch), seen, NOW);
+
+		it('is dated by the script that writes it, inside the signed bytes', async () => {
+			const site = await publish([{ id: 'garden', version: '1.0.0' }]);
+			const written = JSON.parse(readFileSync(join(site.dir, 'index.json'), 'utf8'));
+			expect(written.issuedAt).toBeGreaterThan(0);
+			expect((await fetchIndex(official(site.fetch), null, Date.now())).issuedAt).toBe(
+				written.issuedAt,
+			);
+		});
+
+		it('is refused when it is older than the newest one accepted before', async () => {
+			const site = await issued(NOW - 2000);
+			await expect(read(site, NOW - 1000)).rejects.toMatchObject({
+				details: { reason: 'index_older' },
+			});
+			// The same index again, or a newer one, is fine.
+			expect((await read(site, NOW - 2000)).issuedAt).toBe(NOW - 2000);
+			expect((await read(site, null)).issuedAt).toBe(NOW - 2000);
+		});
+
+		it('is refused when it is dated more than a day ahead', async () => {
+			const site = await issued(NOW + DAY + 1);
+			await expect(read(site, null)).rejects.toMatchObject({
+				details: { reason: 'index_future' },
+			});
+			expect((await read(await issued(NOW + DAY), null)).issuedAt).toBe(NOW + DAY);
+		});
+
+		it('is read without a date only while no dated one was seen', async () => {
+			const site = await issued(undefined);
+			expect((await read(site, null)).issuedAt).toBeNull();
+			await expect(read(site, NOW - 1000)).rejects.toMatchObject({
+				details: { reason: 'index_older' },
+			});
+		});
 	});
 
 	it('is refused when it is not the shape of a reach', async () => {
@@ -248,7 +303,7 @@ describe('what the index says a package reaches', () => {
 				for (const e of index.extensions) e.reach = { capabilities: 'many' };
 			},
 		});
-		await expect(fetchIndex(official(site.fetch))).rejects.toMatchObject({
+		await expect(find(site.fetch)).rejects.toMatchObject({
 			details: { reason: 'invalid' },
 		});
 	});
@@ -292,7 +347,7 @@ describe('what the index says a package reaches', () => {
 describe('downloading a package the index lists', () => {
 	async function listed() {
 		const site = await publish([{ id: 'garden', version: '1.0.0' }]);
-		const [entry] = await fetchIndex(official(site.fetch));
+		const [entry] = await find(site.fetch);
 		if (!entry) throw new Error('listed');
 		return { site, entry };
 	}

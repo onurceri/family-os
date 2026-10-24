@@ -298,6 +298,7 @@
 	"extensions_find_missing": "FamilyOS eklenti listesini henüz yayımlamadı, bu yüzden indirilecek bir şey yok. FamilyOS ile gelenler Yüklenebilir bölümünde; internet olmadan yüklenir.",
 	"extensions_find_unsigned": "Dizin FamilyOS imzalı değil, bu yüzden içindekilerin hiçbiri sunulmuyor.",
 	"extensions_find_invalid": "Dizin, FamilyOS'un bu sürümünün okuyabildiği bir biçimde değil. FamilyOS'u güncellemek işe yarayabilir.",
+	"extensions_find_stale": "Dizin, bu sunucunun daha önce okuduğundan eski görünüyor ya da tarihi gelecekte. İçindekilerin hiçbiri sunulmuyor. Sunucunun saatini kontrol edip daha sonra tekrar bakın.",
 	"extensions_find_failed": "Arama olmadı. Nedeni sunucunun kaydında yazıyor.",
 	"extensions_download_check": "İndir ve denetle",
 	"extensions_reach_data": "Kaldırdığında verileri durur, yeniden yüklediğinde geri gelir.",

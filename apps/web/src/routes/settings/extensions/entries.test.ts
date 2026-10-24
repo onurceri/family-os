@@ -356,6 +356,8 @@ describe('what the official index found', () => {
 		expect(searchProblem(problem('missing'))).toEqual({ key: 'extensions_find_missing' });
 		expect(searchProblem(problem('unsigned'))).toEqual({ key: 'extensions_find_unsigned' });
 		expect(searchProblem(problem('invalid'))).toEqual({ key: 'extensions_find_invalid' });
+		expect(searchProblem(problem('index_older'))).toEqual({ key: 'extensions_find_stale' });
+		expect(searchProblem(problem('index_future'))).toEqual({ key: 'extensions_find_stale' });
 		expect(searchProblem(problem('failed'))).toEqual({ key: 'extensions_find_failed' });
 	});
 

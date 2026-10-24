@@ -147,6 +147,8 @@ export function reachOfManifest(manifest: Record<string, unknown>): IndexReach {
 /** `index.json`: every published package, by id, newest version first. */
 export interface ExtensionIndex {
 	format: 1;
+	/** When the index was written (epoch ms), inside the signed bytes: servers refuse an older one. */
+	issuedAt: number;
 	extensions: IndexEntry[];
 }
 
@@ -200,7 +202,7 @@ export async function signFile(file: string, key: KeyObject): Promise<PackageSig
  */
 export async function writeIndex(
 	dir: string,
-	options: { add?: readonly string[]; keep?: number } = {},
+	options: { add?: readonly string[]; keep?: number; now?: number } = {},
 ): Promise<{ index: ExtensionIndex; removed: string[] }> {
 	const keep = options.keep ?? 5;
 	if (!Number.isInteger(keep) || keep < 1) throw new Error('keep must be a whole number above 0');
@@ -252,7 +254,7 @@ export async function writeIndex(
 			});
 		}
 	}
-	const index: ExtensionIndex = { format: 1, extensions };
+	const index: ExtensionIndex = { format: 1, issuedAt: options.now ?? Date.now(), extensions };
 	await mkdir(dir, { recursive: true });
 	await writeFile(join(dir, INDEX_FILE), `${JSON.stringify(index, null, '\t')}\n`);
 	return { index, removed };

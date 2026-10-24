@@ -125,6 +125,15 @@ describe('the published index', () => {
 		return out;
 	}
 
+	it('dates the index it writes', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		const { index } = await writeIndex(site, { now: 1_800_000_000_000 });
+		expect(index.issuedAt).toBe(1_800_000_000_000);
+		expect(JSON.parse(readFileSync(join(site, 'index.json'), 'utf8')).issuedAt).toBe(
+			1_800_000_000_000,
+		);
+	});
+
 	it('lists every published file, newest version first, and keeps the newest few', async () => {
 		const site = mkdtempSync(join(scratch, 'site-'));
 		const first = await packed('garden', '1.0.0');

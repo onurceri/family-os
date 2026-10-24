@@ -298,6 +298,7 @@
 	"extensions_find_missing": "FamilyOS has not published its list of extensions yet, so there is nothing to download. What comes with FamilyOS is under Available and installs without the internet.",
 	"extensions_find_unsigned": "The index is not signed by FamilyOS, so nothing in it is offered.",
 	"extensions_find_invalid": "The index is not one this version of FamilyOS can read. Updating FamilyOS may help.",
+	"extensions_find_stale": "The index looks older than one this server already read, or is dated in the future. Nothing in it is offered. Check the server's clock, then look again later.",
 	"extensions_find_failed": "Looking did not work. The server's log says why.",
 	"extensions_download": "Download",
 	"extensions_download_check": "Download and check",

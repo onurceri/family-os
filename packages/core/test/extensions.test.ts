@@ -609,13 +609,19 @@ describe('looking for more in the official index', () => {
 	/** The port of `packages` plus an index: `listed`, or the error `fail` gives. */
 	function online(listed: IndexedPackage[], fail?: () => Error) {
 		const base = packages([{ ext: notes, always: true }], [upload(garden, GARDEN_DIGEST, '1.1.0')]);
-		const calls = { find: 0, download: [] as string[] };
+		const calls = {
+			find: 0,
+			seen: [] as (number | null)[],
+			issuedAt: null as number | null,
+			download: [] as string[],
+		};
 		const port: ExtensionPackagesPort = {
 			...base,
-			async findPackages() {
+			async findPackages(newestSeen) {
 				calls.find++;
+				calls.seen.push(newestSeen);
 				if (fail) throw fail();
-				return listed;
+				return { packages: listed, issuedAt: calls.issuedAt };
 			},
 			async download(pkg) {
 				calls.download.push(`${pkg.id}@${pkg.version}`);
@@ -665,6 +671,23 @@ describe('looking for more in the official index', () => {
 		// Looking again: nothing is offered until the new search is done.
 		await k.runner.invoke('core.findExtensions', {}, admin);
 		expect(await found(k)).toMatchObject({ search: { status: 'looking' }, found: [] });
+	});
+
+	it('hands the newest index date it accepted to the next look, and never lowers it', async () => {
+		const { port, calls } = online([entry('garden', '1.1.0')]);
+		const k = await kernel({ extensions: [notes], extensionPackages: port });
+		const admin = (await k.member('admin')).actor;
+		const look = async () => {
+			await k.runner.invoke('core.findExtensions', {}, admin);
+			await k.worker.drain();
+		};
+		calls.issuedAt = 5000;
+		await look();
+		await look();
+		// An undated index is only accepted while none was dated, so it never lowers the mark.
+		calls.issuedAt = null;
+		await look();
+		expect(calls.seen).toEqual([null, 5000, 5000]);
 	});
 
 	it('downloads a listed package into staging, which installs like a file', async () => {
