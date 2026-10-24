@@ -493,8 +493,8 @@ export interface CoreExtensionDeps {
 		ReturnType<typeof createExtensionInstall>,
 		'actions' | 'routes' | 'events' | 'jobs' | 'namesOf'
 	>;
-	/** The one-time code first-run setup requires, or undefined when none is required (tests). */
-	setupCode?: string;
+	/** The one-time code first-run setup requires; there is no way to open setup without one. */
+	setupCode: string;
 	/** The language packs available; the composition root builds the registry. */
 	languages: () => LanguagePort;
 	/** Theme packs and who chose which theme; the kernel builds it from the composition root's registry. */
@@ -930,7 +930,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				.executeTakeFirst();
 			return {
 				needsSetup: any === undefined,
-				needsCode: deps.setupCode !== undefined,
+				needsCode: true,
 				appVersion: deps.appVersion,
 			};
 		},
@@ -962,7 +962,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		}),
 		response: MemberSchema,
 		async handle(ctx, { body }) {
-			if (deps.setupCode !== undefined && !sameCode(body.setupCode?.trim() ?? '', deps.setupCode))
+			if (!sameCode(body.setupCode?.trim() ?? '', deps.setupCode))
 				throw new FamosError('forbidden', 'The setup code is not correct');
 			languages.assertKnown(body.locale);
 			const row = await ctx.db.transaction().execute(async (trx) => {

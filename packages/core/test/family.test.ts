@@ -2,7 +2,7 @@ import { defineAction } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { anyLanguage, type LanguagePort } from '../src/languages.ts';
-import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
+import { createTestKernel, defineTestExtension, TEST_SETUP_CODE, type TestKernel } from './harness.ts';
 
 // An action that reads family settings inside its transaction (must not deadlock).
 const readZone = defineAction({
@@ -62,6 +62,7 @@ describe('family language', () => {
 						email: 'p@example.com',
 						password: 'correct horse battery',
 						locale: 'fr',
+						setupCode: TEST_SETUP_CODE,
 					},
 				}),
 			).rejects.toMatchObject({ code: 'bad_request' });
@@ -97,6 +98,7 @@ describe('family settings', () => {
 				password: 'correct horse battery',
 				locale: 'tr',
 				timeZone: 'Europe/Istanbul',
+				setupCode: TEST_SETUP_CODE,
 			},
 		});
 		expect(await k.ctx.family.settings()).toEqual({
@@ -155,6 +157,7 @@ describe('family settings', () => {
 					email: 'p@example.com',
 					password: 'correct horse battery',
 					locale: 'en',
+					setupCode: TEST_SETUP_CODE,
 					...extra,
 				},
 			});

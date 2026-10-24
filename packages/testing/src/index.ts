@@ -578,6 +578,7 @@ export async function createTestKernel(
 		timeZone: async () => 'UTC',
 	});
 	const kernel = createKernel({
+		setupCode: 'test-setup-code',
 		db: handle.db,
 		queue,
 		clock,

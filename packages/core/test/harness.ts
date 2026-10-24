@@ -72,6 +72,9 @@ export interface TestKernel extends Kernel {
 	close(): Promise<void>;
 }
 
+/** The code the test kernel requires for first-run setup. */
+export const TEST_SETUP_CODE = 'core-test-setup-code';
+
 export async function createTestKernel(
 	options: {
 		extensions?: ExtensionDefinition[];
@@ -126,6 +129,7 @@ export async function createTestKernel(
 		timeZone: async () => 'UTC',
 	});
 	const kernel = createKernel({
+		setupCode: TEST_SETUP_CODE,
 		db: handle.db,
 		queue,
 		clock,

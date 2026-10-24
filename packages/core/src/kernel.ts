@@ -118,8 +118,8 @@ export interface KernelOptions {
 	 */
 	infrastructureJobs?: readonly AnyJobDefinition[];
 	appVersion: string;
-	/** The one-time code first-run setup requires (the server always sets one). */
-	setupCode?: string;
+	/** The one-time code first-run setup requires. */
+	setupCode: string;
 	worker?: WorkerOptions;
 	/**
 	 * Ways to reach people outside the app that the host brings (Web Push, Telegram). The installed
@@ -227,6 +227,8 @@ export interface Kernel {
 }
 
 export function createKernel(options: KernelOptions): Kernel {
+	// Without a code first-run setup would be open to the first visitor.
+	if (!options.setupCode) throw new Error('A setup code is required');
 	const bus = createEventBus(options.logger);
 	const devices = createDeviceService({
 		db: options.db,
@@ -347,7 +349,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		emailSettings: options.emailSettings,
 		telegramLinks: options.telegramLinks,
 		appVersion: options.appVersion,
-		...(options.setupCode !== undefined && { setupCode: options.setupCode }),
+		setupCode: options.setupCode,
 		draftNotifyDelayMs: options.draftNotifyDelayMs ?? DEFAULT_DRAFT_NOTIFY_DELAY_MS,
 		languages: () => options.languages ?? anyLanguage,
 		devices: () => devices,
@@ -406,7 +408,17 @@ export function createKernel(options: KernelOptions): Kernel {
 
 	const byId = new Map(registry.extensions.map((e) => [e.id, e]));
 	/** Core and the infrastructure adapters are the host: they see everything. */
-	const isHost = (id: string) => id === 'core' || !byId.has(id);
+	const hostScopes = new Set([
+		'core',
+		...options.infrastructureMigrations.map((m) => m.scope),
+		...(options.infrastructureJobs ?? []).map((job) => ownerOf(job.name)),
+	]);
+	/** Any other id that is not a loaded extension is a mistake, never the host. */
+	const isHost = (id: string) => {
+		if (hostScopes.has(id)) return true;
+		if (byId.has(id)) return false;
+		throw new Error(`"${id}" is neither a loaded extension nor a host scope`);
+	};
 	const schemaNames = createSchemaNames();
 	const plugins = new Map<string, KyselyPlugin>();
 	const pluginFor = (id: string) => {

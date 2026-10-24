@@ -1,6 +1,6 @@
 import { FamosError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createTestKernel, type TestKernel } from './harness.ts';
+import { createTestKernel, TEST_SETUP_CODE, type TestKernel } from './harness.ts';
 
 let k: TestKernel;
 beforeEach(async () => {
@@ -16,7 +16,11 @@ describe('members and setup', () => {
 			email: 'sam@example.com',
 			password: 'correct horse battery',
 			locale: 'tr',
+			setupCode: TEST_SETUP_CODE,
 		};
+		await expect(
+			k.route('core.completeSetup').call({ body: { ...body, setupCode: undefined } }),
+		).rejects.toMatchObject({ code: 'forbidden' });
 		const admin = await k.route('core.completeSetup').call({ body });
 		expect(admin).toMatchObject({ roleId: 'admin', displayName: 'Sam', locale: 'tr' });
 		expect(k.passwords.get(admin.id)).toBe('sam@example.com');
