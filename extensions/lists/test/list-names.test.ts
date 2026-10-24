@@ -2,6 +2,7 @@ import { type Actor, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import lists from '../src/server/index.ts';
+import { DEFAULT_LIST_ID } from '../src/server/store.ts';
 
 const AI: Actor = { kind: 'ai', mode: 'conversation', source: 'assistant' };
 let k: TestKernel;
@@ -47,6 +48,19 @@ describe('adding to a list by its name', () => {
 
 		await k.runner.approveDraft(draft?.id ?? '', admin.actor);
 		expect((await itemsOn(hardwareId)).map((i) => i.title)).toEqual(['Picture wire']);
+	});
+
+	it('knows the list without a name by the words of the catalog, in every installed language', async () => {
+		for (const word of ['Shopping list', 'groceries', 'Bakkal']) {
+			const result = await k.runner.invoke(
+				'lists.addShoppingItems',
+				{ list: word, items: [{ title: 'Picture wire' }] },
+				AI,
+			);
+			expect(result.status, word).toBe('drafted');
+		}
+		const drafts = await draftInputs();
+		expect(drafts.map((d) => d.input.listId)).toEqual(Array(3).fill(DEFAULT_LIST_ID));
 	});
 
 	it('refuses a name that is not a list, and names the lists there are', async () => {

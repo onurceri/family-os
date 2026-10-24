@@ -75,6 +75,8 @@ export type ItemRow = Selectable<ListsTables['lists_shopping_items']>;
  * The list created on install, so shopping works before anyone sets lists up. Its name stays
  * empty until someone renames it: screens show a translated default (`default_list`).
  */
+/** What prompts call the shopping list that has no name of its own. */
+export const DEFAULT_LIST_LABEL = 'Shopping list';
 export const DEFAULT_LIST_ID = 'shop_list_00000000-0000-7000-8000-000000000001';
 
 export const migrations: Migrations = {

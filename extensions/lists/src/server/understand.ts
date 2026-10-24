@@ -61,7 +61,9 @@ function listNamed(
 	place: string | undefined,
 ): string | null {
 	if (!place) return null;
-	const names = lists.flatMap((l) => namesOf(l).map((label) => ({ id: l.id, label })));
+	const names = lists.flatMap((l) =>
+		namesOf(l, ctx.vocabulary).map((label) => ({ id: l.id, label })),
+	);
 	const found = ctx.target(place, names);
 	return 'found' in found ? found.found.id : null;
 }

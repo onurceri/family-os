@@ -29,7 +29,7 @@ import {
 	shoppingChangedPayload,
 } from '../contract/index.ts';
 import { api } from './public.ts';
-import { type ItemRow, tables, titleKey, toItem } from './store.ts';
+import { DEFAULT_LIST_LABEL, type ItemRow, tables, titleKey, toItem } from './store.ts';
 import { listsView } from './tasks.ts';
 
 /** A merged amount that no longer fits the field gives way to the one just asked for. */
@@ -63,13 +63,17 @@ export const shoppingManage = defineCapability({
 });
 const memberId = selfOf;
 
-/** What the model calls the list that has no name of its own. */
-const DEFAULT_LIST_LABEL = 'Shopping list';
-/** Names a person or the model may use for that list when asking for it by name. */
-const DEFAULT_LIST_ALIASES = [DEFAULT_LIST_LABEL, 'Groceries', 'Market'];
-
-/** The names a list answers to: its own, or the aliases of the list that has none. */
-export const namesOf = (list: { name: string }) => (list.name ? [list.name] : DEFAULT_LIST_ALIASES);
+/**
+ * The names a list answers to: its own, or the words the catalog gives (`lists:default_list_names`,
+ * in every installed language) for the list that has none.
+ */
+export const namesOf = (
+	list: { name: string },
+	vocabulary: (key: string) => readonly string[],
+): string[] =>
+	list.name
+		? [list.name]
+		: [DEFAULT_LIST_LABEL, ...vocabulary('lists:default_list_names')].filter(Boolean);
 
 async function activeList(uow: UnitOfWork, id: string | undefined) {
 	let query = tables(uow.db)
@@ -181,7 +185,9 @@ export const addShoppingItems = defineAction({
 			.orderBy('created_at')
 			.execute();
 		const wanted = titleKey(list, locale);
-		const found = lists.find((l) => namesOf(l).some((n) => titleKey(n, locale) === wanted));
+		const found = lists.find((l) =>
+			namesOf(l, ctx.vocabulary).some((n) => titleKey(n, locale) === wanted),
+		);
 		if (!found)
 			throw new FamosError(
 				'bad_request',
@@ -814,7 +820,7 @@ export const shoppingList = defineAction({
 		const chosen = lists.filter(
 			(l) =>
 				(!listId || l.id === listId) &&
-				(!wanted || namesOf(l).some((n) => titleKey(n, locale) === wanted)),
+				(!wanted || namesOf(l, uow.vocabulary).some((n) => titleKey(n, locale) === wanted)),
 		);
 		// A name that is no list is said to be one, with the real names: an empty answer would
 		// read as "nothing on the list".

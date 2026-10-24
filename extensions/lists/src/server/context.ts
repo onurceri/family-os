@@ -1,6 +1,6 @@
 import { AiContextSchema, defineAction } from '@famos/sdk';
 import { z } from 'zod';
-import { tables } from './store.ts';
+import { DEFAULT_LIST_LABEL, tables } from './store.ts';
 import { listsView } from './tasks.ts';
 
 /**
@@ -10,8 +10,6 @@ import { listsView } from './tasks.ts';
  */
 const MAX_CONTEXT_ITEMS = 200;
 const MAX_CONTEXT_TASKS = 200;
-/** What a list that has no name of its own is called. */
-const DEFAULT_LIST_LABEL = 'Shopping list';
 
 /**
  * The shopping items still to buy, for the AI: a shared message that says "got the light bulbs"

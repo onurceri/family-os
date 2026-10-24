@@ -602,6 +602,7 @@ export function createKernel(options: KernelOptions): Kernel {
 					db: views.db(ownerOf(id), options.db),
 					family: familyReader(options.db),
 					translate: options.translate ?? defaultTranslate,
+					vocabulary: options.vocabulary ?? noVocabulary,
 					now: options.clock.now(),
 				},
 				parsed.data,
