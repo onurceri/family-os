@@ -128,4 +128,32 @@ describe('photo metadata', () => {
 		).toThrow(MalformedImageError);
 		expect(() => stripImageMetadata(text('nope'), 'image/png')).toThrow(MalformedImageError);
 	});
+
+	it('removes comments, text and application extensions from a GIF, keeping its pixels, timing and loop', () => {
+		const sub = (payload: Uint8Array) => bytes([payload.length], payload, [0]);
+		const extension = (label: number, first: Uint8Array, rest: Uint8Array[] = []) =>
+			bytes([0x21, label], [first.length], first, ...rest.map(sub), rest.length ? [] : [0]);
+		const gif = bytes(
+			text('GIF89a'),
+			[2, 0, 2, 0, 0x80, 0, 0], // 2x2, global colour table of 2 entries
+			[0, 0, 0, 255, 255, 255],
+			extension(0xff, text('NETSCAPE2.0'), [bytes([1, 3, 0])]),
+			extension(0xff, text('XMP DataXMP'), [text('<x:xmpmeta>GPS 52.36</x:xmpmeta>')]),
+			bytes([0x21, 0xfe], sub(text('shot at the clinic'))),
+			bytes([0x21, 0xf9, 4, 0, 10, 0, 0, 0]), // graphic control: 100 ms
+			bytes([0x2c, 0, 0, 0, 0, 2, 0, 2, 0, 0], [2], sub(Uint8Array.of(0x44, 0x01))),
+			[0x3b],
+			text('trailing secret'),
+		);
+		const out = stripImageMetadata(gif, 'image/gif');
+		for (const gone of ['clinic', 'xmpmeta', 'GPS', 'trailing secret'])
+			expect(has(out, gone), gone).toBe(false);
+		expect(has(out, 'NETSCAPE2.0')).toBe(true);
+		expect(out.at(-1)).toBe(0x3b);
+		expect(indexOf(out, [0x21, 0xf9, 4, 0, 10, 0, 0, 0])).toBeGreaterThan(0);
+		expect(indexOf(out, [0x2c, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 2, 0x44, 0x01, 0])).toBeGreaterThan(0);
+		// Stripping twice changes nothing more.
+		expect(stripImageMetadata(out, 'image/gif')).toEqual(out);
+		expect(() => stripImageMetadata(gif.subarray(0, 40), 'image/gif')).toThrow(MalformedImageError);
+	});
 });

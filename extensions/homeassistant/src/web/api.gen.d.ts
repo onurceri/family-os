@@ -1773,7 +1773,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         people: {
-                            memberId: string;
+                            memberId: string | null;
                             presence: {
                                 /** @enum {string} */
                                 kind: "unknown";

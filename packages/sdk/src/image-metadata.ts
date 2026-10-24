@@ -11,6 +11,11 @@ import { FamosError } from './errors.ts';
  *   image (embedded previews, Motion Photo videos) is dropped.
  * - PNG: drops eXIf, tEXt, zTXt, iTXt (XMP) and tIME chunks.
  * - WebP: drops EXIF and XMP chunks.
+ * - GIF: drops comment, plain text and application extensions (XMP lives in one), keeping only
+ *   the loop count of an animation, and anything after the trailer.
+ *
+ * PDF is not handled: its document information and XMP are not removed, so a PDF is stored and
+ * sent as it is.
  *
  * Throws on a malformed file instead of returning it unchanged, so metadata never slips through.
  */
@@ -18,6 +23,7 @@ export function stripImageMetadata(data: Uint8Array, type: string): Uint8Array {
 	if (type === 'image/jpeg') return stripJpeg(data);
 	if (type === 'image/png') return stripPng(data);
 	if (type === 'image/webp') return stripWebp(data);
+	if (type === 'image/gif') return stripGif(data);
 	return data;
 }
 
@@ -25,6 +31,7 @@ export const STRIPPED_TYPES: ReadonlySet<string> = new Set([
 	'image/jpeg',
 	'image/png',
 	'image/webp',
+	'image/gif',
 ]);
 
 /** A bad request, so an upload route that lets it through answers 400 instead of failing. */
@@ -203,4 +210,77 @@ function stripWebp(data: Uint8Array): Uint8Array {
 	header.set(data.subarray(0, 12));
 	new DataView(header.buffer).setUint32(4, body.length + 4, true);
 	return concat([header, body]);
+}
+
+// --- GIF --------------------------------------------------------------------------------------
+
+/** The sub-blocks that end at a zero-length block, from `pos`; the position after them. */
+function endOfSubBlocks(data: Uint8Array, pos: number): number {
+	for (;;) {
+		const size = data[pos];
+		if (size === undefined) throw new MalformedImageError('GIF');
+		pos += 1 + size;
+		if (size === 0) return pos;
+	}
+}
+
+const NETSCAPE_ID = [...'NETSCAPE2.0'].map((c) => c.charCodeAt(0));
+
+function stripGif(data: Uint8Array): Uint8Array {
+	const fail = () => {
+		throw new MalformedImageError('GIF');
+	};
+	const signature = ascii(data, 0, 6);
+	if (signature !== 'GIF87a' && signature !== 'GIF89a') fail();
+	if (data.length < 13) fail();
+	const colorTable = (flags: number) => (flags & 0x80 ? 3 * 2 ** ((flags & 0x07) + 1) : 0);
+	// Header, logical screen descriptor and the global colour table.
+	let pos = 13 + colorTable(data[10] as number);
+	if (pos > data.length) fail();
+	const parts: Uint8Array[] = [data.subarray(0, pos)];
+	for (;;) {
+		const introducer = data[pos];
+		if (introducer === 0x3b) {
+			parts.push(Uint8Array.of(0x3b));
+			return concat(parts);
+		}
+		if (introducer === 0x21) {
+			const label = data[pos + 1];
+			if (label === undefined) fail();
+			const end = endOfSubBlocks(data, pos + 2);
+			if (end > data.length) fail();
+			if (label === 0xf9) parts.push(data.subarray(pos, end));
+			else if (label === 0xff && ascii(data, pos + 3, 11) === 'NETSCAPE2.0') {
+				// Only the loop count of an animation stays, written out afresh.
+				const loops =
+					data[pos + 14] === 3 && data[pos + 15] === 1 ? data.subarray(pos + 16, pos + 18) : null;
+				if (loops?.length === 2)
+					parts.push(
+						Uint8Array.of(
+							0x21,
+							0xff,
+							0x0b,
+							...NETSCAPE_ID,
+							3,
+							1,
+							loops[0] as number,
+							loops[1] as number,
+							0,
+						),
+					);
+			}
+			pos = end;
+			continue;
+		}
+		if (introducer === 0x2c) {
+			if (pos + 10 > data.length) fail();
+			const start = pos;
+			pos += 10 + colorTable(data[pos + 9] as number);
+			pos = endOfSubBlocks(data, pos + 1);
+			if (pos > data.length) fail();
+			parts.push(data.subarray(start, pos));
+			continue;
+		}
+		fail();
+	}
 }
