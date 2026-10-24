@@ -2,7 +2,7 @@
 	import { ConfirmButton, TodayRow } from '@famos/ui/famos';
 	import { draftByline, draftHeadline, namedInput, type PresenterContext } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
-	import { approveDraft, type Draft, rejectDraft, undoDraft } from './data.js';
+	import { type Draft, draftCalls } from './data.js';
 	import { useInbox } from './i18n.js';
 	import { metaLine } from './item-view.js';
 
@@ -75,7 +75,7 @@
 
 	async function undo(id: string) {
 		try {
-			await undoDraft(id);
+			await draftCalls.undo(id);
 		} catch {
 			app.toast(t('error'));
 		}
@@ -85,7 +85,7 @@
 		const id = draft.id;
 		busy = true;
 		try {
-			const result = await approveDraft(id, withInput);
+			const result = await draftCalls.approve(id, withInput);
 			if (result.status === 'applied') {
 				gone = true;
 				app.toast(
@@ -104,7 +104,7 @@
 	async function reject() {
 		busy = true;
 		try {
-			await rejectDraft(draft.id);
+			await draftCalls.reject(draft.id);
 			gone = true;
 		} catch {
 			app.toast(t('error'));

@@ -2,7 +2,7 @@
 	import { Button } from '@famos/ui/button';
 	import { Avatar, ConfirmButton } from '@famos/ui/famos';
 	import { ChevronDown } from '@lucide/svelte';
-	import { approveDraft, dismissItem, rejectDraft, undoDraft } from './data.js';
+	import { dismissItem, draftCalls } from './data.js';
 	import CaptureIcon from './CaptureIcon.svelte';
 	import CaptureSource from './CaptureSource.svelte';
 	import CaptureStatus from './CaptureStatus.svelte';
@@ -79,7 +79,7 @@
 		// An edit saved on a card is stored on the server and is what an approval applies.
 		for (const { id } of picked) {
 			try {
-				const result = await approveDraft(id);
+				const result = await draftCalls.approve(id);
 				if (result.status === 'applied') {
 					added += 1;
 					if (result.undoable) undoable.push(result.id);
@@ -107,7 +107,7 @@
 	}
 
 	async function undoAll(ids: readonly string[]) {
-		const results = await Promise.allSettled(ids.map((id) => undoDraft(id)));
+		const results = await Promise.allSettled(ids.map((id) => draftCalls.undo(id)));
 		onchanged?.();
 		app.toast(
 			results.some((r) => r.status === 'rejected') ? t('error') : app.t('app:draft_undone'),
@@ -119,7 +119,7 @@
 		try {
 			// Nothing is ticked: "the rest" is everything that is left.
 			const targets = rest.length > 0 ? rest : todo;
-			await Promise.all(targets.map((d) => rejectDraft(d.id)));
+			await Promise.all(targets.map((d) => draftCalls.reject(d.id)));
 			app.toast(t('dismissed_n', { count: targets.length }));
 		} catch {
 			app.toast(t('error'));

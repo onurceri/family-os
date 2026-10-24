@@ -1,11 +1,9 @@
-import { type components, type paths, unwrap } from '@famos/api-client';
+import { type components, type Draft, draftClient, unwrap } from '@famos/api-client';
 import type { FileLabel, InboxItem } from '../contract/index.js';
 import { api } from './api.js';
 
 /** Inbox and draft API calls, all through the generated client. */
-export type Draft =
-	paths['/api/v1/core/drafts']['get']['responses'][200]['content']['application/json'][number];
-export type { components };
+export type { components, Draft };
 
 export const loadItems = async (): Promise<InboxItem[]> =>
 	unwrap(await api.GET('/api/v1/inbox/items', { params: { query: { limit: 30 } } }));
@@ -98,46 +96,8 @@ export const fileItem = async (id: string, fileTo: FileChoice) =>
 		}),
 	);
 
-export const approveDraft = async (draftId: string, input?: unknown): Promise<Draft> =>
-	unwrap(
-		await api.POST('/api/v1/core/drafts/{draftId}/approve', {
-			params: { path: { draftId } },
-			body: input === undefined ? {} : { input },
-		}),
-	);
-
-/**
- * Saves a person's change to a waiting suggestion on the server, so it survives a reload and is
- * what anyone who approves it applies. Returns the saved input.
- */
-export async function editDraft(draftId: string, input: unknown): Promise<unknown> {
-	const result = unwrap(
-		await api.POST('/api/v1/actions/core.editDraft', { body: { draftId, input } }),
-	);
-	// Saving needs no approval, so anything but "applied" means it was not saved.
-	if (result.status !== 'applied') throw new Error('The change was not saved');
-	return result.output.editedInput;
-}
-
-export const rejectDraft = async (draftId: string): Promise<Draft> =>
-	unwrap(await api.POST('/api/v1/core/drafts/{draftId}/reject', { params: { path: { draftId } } }));
-
-export const undoDraft = async (draftId: string): Promise<Draft> =>
-	unwrap(await api.POST('/api/v1/core/drafts/{draftId}/undo', { params: { path: { draftId } } }));
-
-/** Sends a suggestion that was taken back again, as a new one waiting for approval. */
-export const suggestDraftAgain = async (draftId: string): Promise<Draft> =>
-	unwrap(
-		await api.POST('/api/v1/core/drafts/{draftId}/suggest-again', {
-			params: { path: { draftId } },
-		}),
-	);
-
-/** Turns a suggestion into the change it offers instead (moving the event already there). */
-export const replaceDraft = async (draftId: string): Promise<Draft> =>
-	unwrap(
-		await api.POST('/api/v1/core/drafts/{draftId}/replace', { params: { path: { draftId } } }),
-	);
+/** The draft calls (approve, reject, undo, edit, suggest again, replace). */
+export const draftCalls = draftClient(api);
 
 export const fileUrl = (itemId: string, index: number) =>
 	`/api/v1/inbox/items/${itemId}/files/${index}`;
