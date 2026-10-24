@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import type { ExtensionProblem } from '@famos/core';
+import { PACKAGE_FILE } from '@famos/pack/format';
 import {
 	type ExtensionDefinition,
 	type ExtensionManifest,
@@ -13,9 +14,7 @@ import { z } from 'zod';
 import { type BundledList, findBundledExtensions, readBundledList } from './bundled.ts';
 import { guardImports, type RootKind } from './hooks.ts';
 import { discoverSourceExtensions } from './source.ts';
-import { PACKAGE_FILE, readWebPackage, type WebPackage } from './web.ts';
-
-export { PACKAGE_FILE };
+import { readWebPackage, type WebPackage } from './web.ts';
 
 const LabelsSchema = z.record(z.string(), z.object({ name: z.string(), description: z.string() }));
 

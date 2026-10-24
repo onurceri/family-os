@@ -1,4 +1,5 @@
-import { createHash, createPublicKey, type KeyObject } from 'node:crypto';
+import { createPublicKey, type KeyObject } from 'node:crypto';
+import { keyIdOf } from '@famos/pack/format';
 
 /**
  * A key whose signature this server accepts on an extension package. `official` is the
@@ -28,12 +29,6 @@ export const TRUST_ROOTS: readonly TrustRoot[] = [
 		publicKey: 'MCowBQYDK2VwAyEANJRBm3GwhX/MjRYmvHg3M7WyHurnbhFiwlFFUlvpJj4=',
 	},
 ];
-
-/** The id of a public key: the first 16 hex digits of the SHA-256 of its SPKI DER. */
-export function keyIdOf(publicKey: KeyObject): string {
-	const der = publicKey.export({ format: 'der', type: 'spki' });
-	return createHash('sha256').update(der).digest('hex').slice(0, 16);
-}
 
 /** A trust root's key, checked: ed25519 and named by its own id. */
 export function publicKeyOf(root: TrustRoot): KeyObject {

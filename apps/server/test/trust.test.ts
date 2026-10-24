@@ -1,6 +1,7 @@
-import { keyIdOf as packKeyIdOf } from '@famos/pack/famext';
+import * as famext from '@famos/pack/famext';
+import * as format from '@famos/pack/format';
 import { describe, expect, it } from 'vitest';
-import { keyIdOf, publicKeyOf, TRUST_ROOTS } from '../src/packages/trust.ts';
+import { publicKeyOf, TRUST_ROOTS } from '../src/packages/trust.ts';
 
 describe('the trust roots the server ships', () => {
 	it('hold the official release key', () => {
@@ -15,9 +16,17 @@ describe('the trust roots the server ships', () => {
 		for (const root of TRUST_ROOTS) {
 			const key = publicKeyOf(root);
 			expect(key.asymmetricKeyType).toBe('ed25519');
-			expect(keyIdOf(key)).toBe(root.keyId);
-			expect(packKeyIdOf(key)).toBe(root.keyId);
+			expect(format.keyIdOf(key)).toBe(root.keyId);
 		}
 		expect(new Set(TRUST_ROOTS.map((root) => root.keyId)).size).toBe(TRUST_ROOTS.length);
+	});
+
+	it("share the signer's package names and key id function", () => {
+		expect(famext.keyIdOf).toBe(format.keyIdOf);
+		expect(famext.SIGNATURE_FILE).toBe(format.SIGNATURE_FILE);
+		expect(famext.ARCHIVE_EXTENSION).toBe(format.ARCHIVE_EXTENSION);
+		expect(format.PACKAGE_FILE).toBe('famos-package.json');
+		expect(format.SIGNATURE_FILE).toBe('famos-package.sig');
+		expect(format.ARCHIVE_EXTENSION).toBe('.famext');
 	});
 });

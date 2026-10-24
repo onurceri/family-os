@@ -1,4 +1,5 @@
 import { createHash, verify } from 'node:crypto';
+import { PACKAGE_FILE, SIGNATURE_FILE } from '@famos/pack/format';
 import {
 	type ExtensionManifest,
 	parseManifest,
@@ -9,12 +10,9 @@ import {
 } from '@famos/sdk';
 import { z } from 'zod';
 import { builtForThisHost } from '../extensions/load.ts';
-import { digestOf, PACKAGE_FILE } from '../extensions/web.ts';
+import { digestOf } from '../extensions/web.ts';
 import { isSafePath, type PackageFiles, refusePackage } from './archive.ts';
 import { publicKeyOf, type TrustRoot } from './trust.ts';
-
-/** The file of an archive that signs `famos-package.json` (written by `@famos/pack`). */
-export const SIGNATURE_FILE = 'famos-package.sig';
 
 export const SignatureSchema = z.object({ keyId: z.string().max(64), sig: z.base64().max(200) });
 

@@ -4,9 +4,6 @@ import { gunzipSync } from 'node:zlib';
 import { FamosError } from '@famos/sdk';
 import * as tar from 'tar';
 
-/** The file name extension of a packed, signed extension package. */
-export const ARCHIVE_EXTENSION = '.famext';
-
 /** The most a `.famext` may weigh, unpack to, and hold. */
 export const ARCHIVE_LIMITS = {
 	compressedBytes: 20 * 1024 * 1024,

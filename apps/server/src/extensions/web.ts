@@ -1,10 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { isAbsolute, normalize } from 'node:path';
+import { PACKAGE_FILE } from '@famos/pack/format';
 import { z } from 'zod';
-
-/** The file that describes a built package (written by `@famos/pack`). */
-export const PACKAGE_FILE = 'famos-package.json';
 
 /** Where the browser loads package files from: `/extensions/<id>/<digest>/<path>`. */
 export const EXTENSION_ASSETS = '/extensions';

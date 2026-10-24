@@ -12,6 +12,7 @@ import {
 	restartRequested,
 } from '@famos/core';
 import { MigrationFailedError, openDatabase } from '@famos/db';
+import { ARCHIVE_EXTENSION } from '@famos/pack/format';
 import { systemActor } from '@famos/sdk';
 import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
@@ -29,7 +30,6 @@ import { publicOpenApiDocument } from './http/public/index.ts';
 import { createRealtimeHub, realtimeGuard } from './http/realtime.ts';
 import { mountSpa } from './http/static.ts';
 import { splitOpenApi } from './openapi.ts';
-import { ARCHIVE_EXTENSION } from './packages/archive.ts';
 import { OFFICIAL_INDEX_URL } from './packages/official.ts';
 import { createExtensionStore, type ExtensionStore, withStore } from './packages/store.ts';
 import { TRUST_ROOTS } from './packages/trust.ts';

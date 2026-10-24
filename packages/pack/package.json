@@ -10,7 +10,8 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./vite": "./src/vite.ts",
-		"./famext": "./src/famext.ts"
+		"./famext": "./src/famext.ts",
+		"./format": "./src/format.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc -p .",

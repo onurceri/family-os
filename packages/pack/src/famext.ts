@@ -11,28 +11,14 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import * as tar from 'tar';
-import { PACKAGE_FILE } from './format.ts';
+import { ARCHIVE_EXTENSION, keyIdOf, PACKAGE_FILE, SIGNATURE_FILE } from './format.ts';
 
-/** The file in a `.famext` archive that holds the signature of `famos-package.json`. */
-export const SIGNATURE_FILE = 'famos-package.sig';
-
-/** The extension of a packed, signed extension package. */
-export const ARCHIVE_EXTENSION = '.famext';
+export { ARCHIVE_EXTENSION, keyIdOf, SIGNATURE_FILE };
 
 /** `famos-package.sig`: which key signed, and its ed25519 signature (base64). */
 export interface PackageSignature {
 	keyId: string;
 	sig: string;
-}
-
-/**
- * A key's id: the first 16 hex digits of the SHA-256 of its public key (SPKI, DER). It is
- * derived, so a signature can never name a key it was not made with; the host computes it the
- * same way for its trust roots.
- */
-export function keyIdOf(publicKey: KeyObject): string {
-	const der = publicKey.export({ format: 'der', type: 'spki' });
-	return createHash('sha256').update(der).digest('hex').slice(0, 16);
 }
 
 /** A new ed25519 key pair: the private key as PEM (PKCS #8), the public one as base64 SPKI DER. */
