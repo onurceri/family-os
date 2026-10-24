@@ -31,6 +31,14 @@ async function loadItem(uow: UnitOfWork, id: string): Promise<ItemRow> {
 }
 
 /**
+ * The one outcome of a call into `records` that is expected here: the duty was finished
+ * (`conflict`) or removed (`not_found`) by hand. Anything else is a real failure.
+ */
+function isDutyGone(error: unknown): boolean {
+	return isFamosError(error) && (error.code === 'not_found' || error.code === 'conflict');
+}
+
+/**
  * Keeps the "Warranty ends" date in step with `warranty_until`: made when a date appears, moved
  * when it changes, removed when it goes. It lapses: a warranty ending asks nothing of anyone, so
  * it is never late and leaves Today once its day has passed. Saving the thing with the same date
@@ -54,7 +62,7 @@ async function syncWarranty(
 			try {
 				await uow.run('records.removeObligation', { id: obligationId });
 			} catch (error) {
-				if (!isFamosError(error)) throw error;
+				if (!isDutyGone(error)) throw error;
 			}
 		}
 		return null;
@@ -78,7 +86,7 @@ async function syncWarranty(
 			});
 			return moved.id;
 		} catch (error) {
-			if (!isFamosError(error)) throw error;
+			if (!isDutyGone(error)) throw error;
 			// Finished or removed since: the new date is a new duty.
 		}
 	}
@@ -108,7 +116,7 @@ async function keepLapsing(uow: UnitOfWork, obligationId: string, until: string)
 			},
 		});
 	} catch (error) {
-		if (!isFamosError(error)) throw error;
+		if (!isDutyGone(error)) throw error;
 	}
 }
 

@@ -1470,6 +1470,43 @@ describe('validators and conditional writes', () => {
 		).toBe(200);
 	});
 
+	it('hands back the version a shopping item write leaves, so the next If-Match holds', async () => {
+		const listId = (await pub(admin, 'GET', '/lists/shopping/lists')).body.items[0].id as string;
+		const added = await pub(admin, 'POST', `/lists/shopping/lists/${listId}/items`, {
+			items: [{ title: 'Milk' }],
+		});
+		const id = added.body.result.items[0].id as string;
+		const stored = async () =>
+			(await pub(admin, 'GET', `/lists/shopping/lists/${listId}/items`)).body.items.find(
+				(i: { id: string }) => i.id === id,
+			).version as number;
+		// Every write answers with the version it left; a write naming that version succeeds.
+		let version = added.body.result.items[0].version as number;
+		const next = async (method: string, path: string, body: unknown = {}) => {
+			const res = await pub(admin, method, `/lists/shopping/items/${id}${path}`, body, {
+				'if-match': `"v${version}"`,
+			});
+			expect(res.status).toBe(200);
+			version = res.body.result.version as number;
+			expect(version).toBe(await stored());
+		};
+		await next('PATCH', '', { quantity: '2' });
+		await next('PATCH', '', { quantity: '3' });
+		await next('POST', '/complete');
+		await next('POST', '/uncheck');
+		// Taking a removal back also answers with the version it left.
+		await pub(admin, 'DELETE', `/lists/shopping/items/${id}`, undefined, {
+			'if-match': `"v${version}"`,
+		});
+		const restored = await request('POST', '/api/v1/actions/lists.restoreShoppingItem', {
+			cookie,
+			body: { id },
+		});
+		expect(restored.body.output.version).toBe(await stored());
+		version = restored.body.output.version as number;
+		await next('PATCH', '', { quantity: '4' });
+	});
+
 	it('refuses a change to something that moved on (412), and a replace that names no version', async () => {
 		const made = await pub(admin, 'POST', '/calendar/events', {
 			title: 'Dentist',

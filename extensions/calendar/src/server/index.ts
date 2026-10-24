@@ -812,8 +812,14 @@ export const changeEvent = defineAction({
 		const before: Record<string, unknown> = {};
 		for (const [key, value] of Object.entries(change) as [keyof EventChange, unknown][]) {
 			if (value === undefined) continue;
-			before[key] = current[key] ?? null;
+			// A start time cannot be null: an all-day event has none, so the undo leaves it out.
+			if (key !== 'startTime' || current[key] !== undefined) before[key] = current[key] ?? null;
 			merged[key] = value === null ? undefined : value;
+		}
+		// Going back from all-day to timed (or the other way) needs the times the other form held.
+		if (change.allDay !== undefined && change.allDay !== was.allDay) {
+			if (was.startTime) before.startTime = was.startTime;
+			if (was.endTime) before.endTime = was.endTime;
 		}
 		// A new start without a new end keeps the event as long as it was.
 		if (

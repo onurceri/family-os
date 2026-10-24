@@ -1,6 +1,7 @@
 import type { Obligation } from '@famos/ext-records/contract';
 import { FamosError } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
+import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
 	HOME_PRESET_IDS,
@@ -720,5 +721,35 @@ describe('a change to a thing sent for approval', () => {
 		expect(change).toMatchObject({ status: 'drafted', subject: 'Washing machine' });
 		const archive = await k.runner.invoke('home.archiveItem', { id: wm.id }, kid.actor);
 		expect(archive).toMatchObject({ status: 'drafted', subject: 'Washing machine' });
+	});
+});
+
+describe('the warranty duty and a real failure in records', () => {
+	it('lets a failure other than finished or removed fail the save', async () => {
+		const flat = await addHome();
+		const wm = await addItem(flat.id, { warrantyUntil: '2028-09-20' });
+		const [duty] = await obligations(wm.id);
+		// The duty now points at a record the saver does not own, so records refuses the change.
+		await sql`update records_obligations set record_id = 'item_other' where id = ${duty?.id}`.execute(
+			k.ctx.db,
+		);
+		const role = await k.runner.invoke<{ id: string }>(
+			'core.createRole',
+			{
+				name: 'Things only',
+				base: 'supervised',
+				overrides: { 'home.edit': true, 'home.view': true, 'records.edit': false },
+			},
+			admin.actor,
+		);
+		if (role.status !== 'applied') throw new Error('expected role');
+		const member = await person(k, role.output.id, 'Deniz');
+		const result = await k.runner
+			.invoke('home.updateItem', { id: wm.id, warrantyUntil: '2029-09-20' }, member.actor)
+			.catch((error: unknown) => error);
+		expect(result).toBeInstanceOf(FamosError);
+		expect((result as FamosError).code).toBe('forbidden');
+		// Nothing was saved.
+		expect((await items(flat.id))[0]).toMatchObject({ warrantyUntil: '2028-09-20' });
 	});
 });

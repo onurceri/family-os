@@ -423,7 +423,8 @@ export const updateShoppingItem = defineAction({
 			.where('id', '=', id)
 			.execute();
 		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
-		return toItem({ ...row, ...patch });
+		// Read again: the write moved the item's version on.
+		return toItem(await loadItem(uow, id));
 	},
 });
 
@@ -487,7 +488,8 @@ export const checkShoppingItem = defineAction({
 			.where('id', '=', id)
 			.execute();
 		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
-		return toItem({ ...row, ...patch });
+		// Read again: the write moved the item's version on.
+		return toItem(await loadItem(uow, id));
 	},
 });
 
@@ -546,7 +548,8 @@ export const restoreShoppingItem = defineAction({
 			.where('id', '=', id)
 			.execute();
 		uow.emit(shoppingChanged, { listId: row.list_id, itemIds: [id] });
-		return toItem({ ...row, ...patch });
+		// Read again: the write moved the item's version on.
+		return toItem(await loadItem(uow, id));
 	},
 });
 
