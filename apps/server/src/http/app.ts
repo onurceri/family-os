@@ -25,6 +25,7 @@ import {
 	selfOf,
 	type TextResponse,
 	TextResponseSchema,
+	type UploadedFile,
 	type UploadSpec,
 } from '@famos/sdk';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
@@ -242,13 +243,32 @@ const INLINE_TYPES = new Set([
 	'audio/flac',
 ]);
 
-/** File responses (FileResponseSchema): streamed, sandboxed, never rendered as HTML or SVG. */
-function mountFileRoute(
+/**
+ * A route whose request or response is not plain JSON, documented in OpenAPI but handled by hand.
+ * Everything a route must do the same way lives here: the feature switch, the caller's access, the
+ * path parameters and the handler's context. What differs is passed in: how the request is
+ * documented, how the body is read, and how the answer is written.
+ */
+type RouteResponses = Parameters<
+	OpenAPIHono<AppEnv>['openAPIRegistry']['registerPath']
+>[0]['responses'];
+
+interface RawRoute {
+	/** The request body as documented; path parameters are always documented. */
+	body?: { content: Record<string, { schema: z.ZodType }>; required: boolean };
+	responses: RouteResponses;
+	/** Reads the request's body and files; none by default. */
+	read?: (c: Context<AppEnv>) => Promise<{ body: unknown; files: UploadedFile[] }>;
+	respond: (c: Context<AppEnv>, result: unknown) => Response | Promise<Response>;
+}
+
+function mountRaw(
 	app: OpenAPIHono<AppEnv>,
 	deps: HttpAppDeps,
 	extension: string,
 	def: AnyRouteDefinition,
 	path: string,
+	raw: RawRoute,
 ) {
 	app.openAPIRegistry.registerPath({
 		method: def.method,
@@ -256,16 +276,8 @@ function mountFileRoute(
 		operationId: def.operationId,
 		summary: def.summary,
 		tags: [extension],
-		request: { ...(def.params && { params: def.params }) },
-		responses: {
-			200: {
-				description: def.summary,
-				content: {
-					'application/octet-stream': { schema: z.string().openapi({ format: 'binary' }) },
-				},
-			},
-			...errorResponses,
-		},
+		request: { ...(def.params && { params: def.params }), ...(raw.body && { body: raw.body }) },
+		responses: { ...raw.responses, ...errorResponses },
 		...(def.requires !== 'public' && { security: [{ session: [] }] }),
 	});
 	const honoPath = path.replace(/\{([^}]+)\}/g, ':$1');
@@ -276,28 +288,53 @@ function mountFileRoute(
 		if (params && !params.success) {
 			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
 		}
-		const file = (await def.handle(deps.kernel.contextFor(extension), {
+		const { body, files } = raw.read ? await raw.read(c) : { body: undefined, files: [] };
+		const result = await def.handle(deps.kernel.contextFor(extension), {
 			params: params?.data,
 			query: undefined,
-			body: undefined,
+			body,
 			actor,
 			device: c.get('device'),
-			files: [],
-		})) as FileResponse;
-		const inline = INLINE_TYPES.has(file.contentType.split(';')[0]?.trim().toLowerCase() ?? '');
-		const name = encodeURIComponent(file.filename);
-		if (file.cacheControl) c.set('ownCaching', true);
-		return new Response(ReadableStream.from(file.stream), {
-			headers: {
-				'content-type': inline ? file.contentType : 'application/octet-stream',
-				'content-length': String(file.size),
-				'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${name}`,
-				'content-security-policy':
-					"sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
-				'x-content-type-options': 'nosniff',
-				'cache-control': file.cacheControl ?? 'private, no-store',
-			},
+			files,
 		});
+		return raw.respond(c, result);
+	});
+}
+
+/** File responses (FileResponseSchema): streamed, sandboxed, never rendered as HTML or SVG. */
+function mountFileRoute(
+	app: OpenAPIHono<AppEnv>,
+	deps: HttpAppDeps,
+	extension: string,
+	def: AnyRouteDefinition,
+	path: string,
+) {
+	mountRaw(app, deps, extension, def, path, {
+		responses: {
+			200: {
+				description: def.summary,
+				content: {
+					'application/octet-stream': { schema: z.string().openapi({ format: 'binary' }) },
+				},
+			},
+		},
+		respond: (c, result) => {
+			const file = result as FileResponse;
+			const inline = INLINE_TYPES.has(file.contentType.split(';')[0]?.trim().toLowerCase() ?? '');
+			const name = encodeURIComponent(file.filename);
+			if (file.cacheControl) c.set('ownCaching', true);
+			return new Response(ReadableStream.from(file.stream), {
+				headers: {
+					'content-type': inline ? file.contentType : 'application/octet-stream',
+					'content-length': String(file.size),
+					'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${name}`,
+					'content-security-policy':
+						"sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
+					'x-content-type-options': 'nosniff',
+					'cache-control': file.cacheControl ?? 'private, no-store',
+				},
+			});
+		},
 	});
 }
 
@@ -309,13 +346,7 @@ function mountTextRoute(
 	def: AnyRouteDefinition,
 	path: string,
 ) {
-	app.openAPIRegistry.registerPath({
-		method: def.method,
-		path,
-		operationId: def.operationId,
-		summary: def.summary,
-		tags: [extension],
-		request: { ...(def.params && { params: def.params }) },
+	mountRaw(app, deps, extension, def, path, {
 		responses: {
 			200: {
 				description: def.summary,
@@ -325,46 +356,30 @@ function mountTextRoute(
 					'application/json': { schema: z.string() },
 				},
 			},
-			...errorResponses,
 		},
-		...(def.requires !== 'public' && { security: [{ session: [] }] }),
-	});
-	const honoPath = path.replace(/\{([^}]+)\}/g, ':$1');
-	app.on(def.method.toUpperCase(), honoPath, async (c) => {
-		assertOn(deps.kernel, extension);
-		const actor = requireActor(c, deps.kernel.access, def.requires);
-		const params = def.params ? def.params.safeParse(c.req.param()) : undefined;
-		if (params && !params.success) {
-			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
-		}
-		const result = (await def.handle(deps.kernel.contextFor(extension), {
-			params: params?.data,
-			query: undefined,
-			body: undefined,
-			actor,
-			device: c.get('device'),
-			files: [],
-		})) as TextResponse;
-		const type = result.contentType.split(';')[0]?.trim().toLowerCase();
-		c.set('ownCaching', true);
-		const headers: Record<string, string> = {
-			'content-type':
-				type === 'text/calendar'
-					? 'text/calendar; charset=utf-8'
-					: type === 'text/css'
-						? 'text/css; charset=utf-8'
-						: type === 'application/json'
-							? 'application/json; charset=utf-8'
-							: 'text/plain; charset=utf-8',
-			'content-security-policy': "sandbox; default-src 'none'",
-			'x-content-type-options': 'nosniff',
-			'cache-control': result.cacheControl ?? 'private, no-store',
-			...(result.etag && { etag: result.etag }),
-		};
-		if (result.etag && c.req.header('if-none-match') === result.etag) {
-			return new Response(null, { status: 304, headers });
-		}
-		return new Response(result.text, { headers });
+		respond: (c, value) => {
+			const result = value as TextResponse;
+			const type = result.contentType.split(';')[0]?.trim().toLowerCase();
+			c.set('ownCaching', true);
+			const headers: Record<string, string> = {
+				'content-type':
+					type === 'text/calendar'
+						? 'text/calendar; charset=utf-8'
+						: type === 'text/css'
+							? 'text/css; charset=utf-8'
+							: type === 'application/json'
+								? 'application/json; charset=utf-8'
+								: 'text/plain; charset=utf-8',
+				'content-security-policy': "sandbox; default-src 'none'",
+				'x-content-type-options': 'nosniff',
+				'cache-control': result.cacheControl ?? 'private, no-store',
+				...(result.etag && { etag: result.etag }),
+			};
+			if (result.etag && c.req.header('if-none-match') === result.etag) {
+				return new Response(null, { status: 304, headers });
+			}
+			return new Response(result.text, { headers });
+		},
 	});
 }
 
@@ -385,37 +400,11 @@ function mountUploadRoute(
 		...fieldsShape,
 		files: z.array(z.string().openapi({ format: 'binary' })).optional(),
 	});
-	app.openAPIRegistry.registerPath({
-		method: def.method,
-		path,
-		operationId: def.operationId,
-		summary: def.summary,
-		tags: [extension],
-		request: {
-			...(def.params && { params: def.params }),
-			body: { content: { 'multipart/form-data': { schema: formSchema } }, required: true },
-		},
-		responses: { [status]: { description: def.summary, ...json(def.response) }, ...errorResponses },
-		...(def.requires !== 'public' && { security: [{ session: [] }] }),
-	});
-	const honoPath = path.replace(/\{([^}]+)\}/g, ':$1');
-	app.on(def.method.toUpperCase(), honoPath, async (c) => {
-		assertOn(deps.kernel, extension);
-		const actor = requireActor(c, deps.kernel.access, def.requires);
-		const params = def.params ? def.params.safeParse(c.req.param()) : undefined;
-		if (params && !params.success) {
-			return c.json(errorBody('bad_request', 'Invalid request', z.treeifyError(params.error)), 400);
-		}
-		const { body, files } = await readUpload(c, def);
-		const result = await def.handle(deps.kernel.contextFor(extension), {
-			params: params?.data,
-			query: undefined,
-			body,
-			actor,
-			device: c.get('device'),
-			files,
-		});
-		return c.json(result, status as 200);
+	mountRaw(app, deps, extension, def, path, {
+		body: { content: { 'multipart/form-data': { schema: formSchema } }, required: true },
+		responses: { [status]: { description: def.summary, ...json(def.response) } },
+		read: (c) => readUpload(c, def),
+		respond: (c, result) => c.json(result, status as 200),
 	});
 }
 
