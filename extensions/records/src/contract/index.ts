@@ -1,4 +1,11 @@
-import { idSchema } from '@famos/sdk';
+import {
+	type DigestOutput,
+	defineDigest,
+	FamosError,
+	idSchema,
+	type QuestionTopic,
+	type UnitOfWork,
+} from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -119,6 +126,70 @@ export function scheduleOfPick(pick: PresetPickState): {
 					: null,
 		leadDays: Math.min(365, Math.max(0, Math.round(pick.leadDays) || 0)),
 	};
+}
+
+/**
+ * The digest of a domain extension that keeps one kind of record (pets, vehicles): the duties of
+ * that kind due in a span, which `records` holds.
+ */
+export function recordDueDigest<const Id extends string>(definition: {
+	id: Id;
+	topic: QuestionTopic;
+	title: string;
+	description: string;
+	requires: string;
+	recordKind: string;
+}) {
+	const { recordKind, ...digest } = definition;
+	return defineDigest({
+		...digest,
+		run: (uow, span) =>
+			uow.run<unknown, DigestOutput>('records.dueBetween', { span, recordKinds: [recordKind] }),
+	});
+}
+
+/** A preset ticked in an add form, as the action input carries it. */
+interface PickedPreset {
+	preset: string;
+	title: string;
+	dueDate: string;
+	every?: { months?: number; years?: number } | null | undefined;
+	leadDays?: number | undefined;
+}
+
+/**
+ * Adds the duties a person ticked when creating a record (what usually needs doing). The repeat
+ * and lead time are the person's; the preset only suggests them. Runs in the caller's unit of
+ * work, so an unknown preset undoes the record too.
+ */
+export async function addPickedObligations(
+	uow: UnitOfWork,
+	record: {
+		id: string;
+		kind: string;
+		name: string;
+		url: string;
+		audience: string;
+		presets: readonly ObligationPreset[];
+	},
+	picks: readonly PickedPreset[],
+): Promise<void> {
+	for (const pick of picks) {
+		const preset = record.presets.find((p) => p.id === pick.preset);
+		if (!preset) throw new FamosError('bad_request', `Unknown preset: ${pick.preset}`);
+		const obligation: AddObligationInput = {
+			recordId: record.id,
+			recordKind: record.kind,
+			recordName: record.name,
+			recordUrl: record.url,
+			kind: preset.id,
+			title: pick.title,
+			dueDate: pick.dueDate,
+			...scheduleOf(preset, pick),
+			audience: record.audience,
+		};
+		await uow.run('records.addObligation', obligation);
+	}
 }
 
 export const DEFAULT_LEAD_DAYS = 14;

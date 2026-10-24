@@ -1,4 +1,4 @@
-import { type AddObligationInput, scheduleOf } from '@famos/ext-records/contract';
+import { addPickedObligations } from '@famos/ext-records/contract';
 import {
 	AiContextSchema,
 	assertActiveMembers,
@@ -91,22 +91,18 @@ export const addVehicle = defineAction({
 		};
 		await tables(uow.db).insertInto('vehicles_vehicles').values(row).execute();
 		// What usually needs doing, as picked: the repeat and lead time are the person's, the preset only suggests them.
-		for (const pick of obligations) {
-			const preset = VEHICLE_PRESETS.find((p) => p.id === pick.preset);
-			if (!preset) throw new FamosError('bad_request', `Unknown preset: ${pick.preset}`);
-			const obligation: AddObligationInput = {
-				recordId: row.id,
-				recordKind: RECORD_KIND,
-				recordName: row.name,
-				recordUrl: vehicleUrl(row.id),
-				kind: preset.id,
-				title: pick.title,
-				dueDate: pick.dueDate,
-				...scheduleOf(preset, pick),
+		await addPickedObligations(
+			uow,
+			{
+				id: row.id,
+				kind: RECORD_KIND,
+				name: row.name,
+				url: vehicleUrl(row.id),
 				audience: VEHICLE_AUDIENCE,
-			};
-			await uow.run('records.addObligation', obligation);
-		}
+				presets: VEHICLE_PRESETS,
+			},
+			obligations,
+		);
 		uow.emit(vehicleChanged, { vehicleId: row.id });
 		return toVehicle(row);
 	},
