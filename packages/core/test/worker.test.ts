@@ -160,3 +160,101 @@ describe('lanes', () => {
 		}
 	});
 });
+
+describe('a job that runs past its timeout', () => {
+	const make = async (jobs: ReturnType<typeof defineJob>[], abortGraceMs = 30_000) =>
+		createTestKernel({
+			extensions: [defineTestExtension({ id: 'slow', jobs })],
+			worker: { abortGraceMs },
+		});
+
+	it('is aborted, and its retry waits until the first attempt has stopped', async () => {
+		const events: string[] = [];
+		const job = defineJob({
+			name: 'slow.work',
+			payload: z.object({}),
+			timeoutMs: 20,
+			maxAttempts: 2,
+			backoff: () => 0,
+			async handle(_ctx, _payload, run) {
+				events.push(`start#${run.attempt}`);
+				if (run.attempt > 1) return;
+				await new Promise<void>((resolve) =>
+					run.signal.addEventListener('abort', () => resolve(), { once: true }),
+				);
+				// Cleaning up after the abort takes a moment; the retry must not begin meanwhile.
+				await new Promise((resolve) => setTimeout(resolve, 60));
+				events.push('stopped#1');
+			},
+		});
+		const kernel = await make([job]);
+		try {
+			await kernel.queue.enqueue(kernel.ctx.db, 'slow.work', {});
+			expect(await kernel.worker.drain()).toBe(2);
+			expect(events).toEqual(['start#1', 'stopped#1', 'start#2']);
+		} finally {
+			await kernel.close();
+		}
+	});
+
+	it('is retried once its grace has passed when it ignores the abort', async () => {
+		const events: string[] = [];
+		const job = defineJob({
+			name: 'slow.stuck',
+			payload: z.object({}),
+			timeoutMs: 20,
+			maxAttempts: 2,
+			backoff: () => 0,
+			async handle(_ctx, _payload, run) {
+				events.push(`start#${run.attempt}`);
+				if (run.attempt === 1) await new Promise(() => {});
+			},
+		});
+		const kernel = await make([job], 30);
+		try {
+			await kernel.queue.enqueue(kernel.ctx.db, 'slow.stuck', {});
+			expect(await kernel.worker.drain()).toBe(2);
+			expect(events).toEqual(['start#1', 'start#2']);
+		} finally {
+			await kernel.close();
+		}
+	});
+
+	it('holds a lease of its own timeout, not of the longest job in the lane', async () => {
+		let started = false;
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const quick = defineJob({
+			name: 'slow.quick',
+			payload: z.object({}),
+			timeoutMs: 1000,
+			async handle() {
+				started = true;
+				await gate;
+			},
+		});
+		const longest = defineJob({
+			name: 'slow.longest',
+			payload: z.object({}),
+			timeoutMs: 600_000,
+			async handle() {},
+		});
+		const kernel = await make([quick, longest], 500);
+		try {
+			await kernel.queue.enqueue(kernel.ctx.db, 'slow.quick', {});
+			const draining = kernel.worker.drain();
+			await vi.waitFor(() => expect(started).toBe(true));
+			kernel.clock.advance(1499);
+			expect(await kernel.queue.recoverExpired()).toBe(0);
+			kernel.clock.advance(2);
+			expect(await kernel.queue.recoverExpired()).toBe(1);
+			release();
+			await draining;
+		} finally {
+			release();
+			await kernel.close();
+		}
+	});
+});

@@ -48,6 +48,7 @@ import type { ExtensionPackagesPort } from '../src/extension-state.ts';
 import { createKernel, type Kernel } from '../src/kernel.ts';
 import type { LanguagePort } from '../src/languages.ts';
 import type { ThemePort } from '../src/themes.ts';
+import type { WorkerOptions } from '../src/worker.ts';
 
 export interface TestClock {
 	now(): number;
@@ -86,6 +87,7 @@ export async function createTestKernel(
 		extensionPackages?: ExtensionPackagesPort;
 		/** Outbound HTTP (default: unreachable). */
 		http?: ExternalHttp;
+		worker?: WorkerOptions;
 	} = {},
 ): Promise<TestKernel> {
 	const handle = openDatabase({ path: options.dbPath ?? ':memory:' });
@@ -194,6 +196,7 @@ export async function createTestKernel(
 		...(options.draftNotifyDelayMs !== undefined && {
 			draftNotifyDelayMs: options.draftNotifyDelayMs,
 		}),
+		...(options.worker && { worker: options.worker }),
 		...(options.refusable && { refusable: options.refusable }),
 		...(options.extensionPackages && { extensionPackages: options.extensionPackages }),
 	});

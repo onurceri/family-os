@@ -122,8 +122,14 @@ export interface JobQueue {
 		payload: unknown,
 		options?: EnqueueOptions,
 	): Promise<string>;
-	/** Atomically leases the next due job among `names`, or returns undefined. */
-	claim(names: readonly string[], leaseMs: number): Promise<ClaimedJob | undefined>;
+	/**
+	 * Atomically leases the next due job among `names`, or returns undefined. The lease is
+	 * `leaseMs` long, or `leaseMs(name)` for the job claimed.
+	 */
+	claim(
+		names: readonly string[],
+		leaseMs: number | ((name: string) => number),
+	): Promise<ClaimedJob | undefined>;
 	complete(id: string): Promise<void>;
 	/** Records a failure; schedules a retry at `retryAt`, or marks the job dead when out of attempts. */
 	fail(id: string, error: string, retryAt: number): Promise<JobState>;

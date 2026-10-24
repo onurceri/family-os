@@ -15,12 +15,26 @@ export interface JobContext extends ExtensionContext {
 	unit<T>(work: (uow: UnitOfWork) => Promise<T>): Promise<T>;
 }
 
+// The SDK compiles without DOM or Node types; this gives `AbortSignal` a name here and merges with
+// the full global type wherever one is loaded.
+declare global {
+	interface AbortSignal {
+		readonly aborted: boolean;
+	}
+}
+
 export type JobLane = 'default' | 'long';
 
 export interface JobRun {
 	readonly id: string;
 	readonly attempt: number;
 	readonly maxAttempts: number;
+	/**
+	 * Aborted when the attempt passes its `timeoutMs`. A handler passes it to what it waits on
+	 * (a model call, a request) and stops writing once it is aborted: the worker starts no retry
+	 * before this attempt has stopped or its lease has run out.
+	 */
+	readonly signal: AbortSignal;
 }
 
 /**

@@ -434,8 +434,12 @@ describe('backup service and upload job', () => {
 			createLocalBackup: async () => ({ name: NAME }),
 		});
 		const attempt = (targetId: string, n: number, name = NAME) =>
-			// biome-ignore lint/suspicious/noExplicitAny: a partial job context is enough here.
-			upload?.handle(ctx as any, { targetId, name }, { id: 'j', attempt: n, maxAttempts: 3 });
+			upload?.handle(
+				// biome-ignore lint/suspicious/noExplicitAny: a partial job context is enough here.
+				ctx as any,
+				{ targetId, name },
+				{ id: 'j', attempt: n, maxAttempts: 3, signal: new AbortController().signal },
+			);
 		return { ctx, notes, enqueued, attempt };
 	}
 

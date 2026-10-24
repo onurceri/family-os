@@ -7,6 +7,11 @@ export interface WorkerOptions {
 	idleMs?: number;
 	/** How often expired leases are returned to the queue. */
 	recoverEveryMs?: number;
+	/**
+	 * How long a handler gets to stop after its timeout aborted it. A job's lease is its timeout
+	 * plus this, and its retry is not scheduled before the first attempt has stopped or this has passed.
+	 */
+	abortGraceMs?: number;
 }
 
 export interface Worker {
@@ -21,10 +26,31 @@ export interface Worker {
 
 const LANES: readonly JobLane[] = ['default', 'long'];
 
+/** The time a handler gets to stop once its timeout aborted it. */
+const ABORT_GRACE_MS = 30_000;
+
 class JobTimeoutError extends Error {
 	constructor(name: string, ms: number) {
 		super(`Job ${name} timed out after ${ms} ms`);
 		this.name = 'JobTimeoutError';
+	}
+}
+
+/** Waits until `work` has settled (either way) or `ms` have passed; true when it settled. */
+async function settledWithin(work: Promise<unknown>, ms: number): Promise<boolean> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			work.then(
+				() => true,
+				() => true,
+			),
+			new Promise<boolean>((resolve) => {
+				timer = setTimeout(() => resolve(false), ms);
+			}),
+		]);
+	} finally {
+		clearTimeout(timer);
 	}
 }
 
@@ -44,7 +70,8 @@ export function createWorker(deps: {
 	const idleMs = deps.options?.idleMs ?? 1000;
 	const recoverEveryMs = deps.options?.recoverEveryMs ?? 30_000;
 	const defs = [...registry.jobs.values()];
-	const maxLease = Math.max(60_000, ...defs.map((j) => j.timeoutMs + 30_000));
+	const abortGraceMs = deps.options?.abortGraceMs ?? ABORT_GRACE_MS;
+	const leaseOf = (name: string) => (registry.jobs.get(name)?.timeoutMs ?? 60_000) + abortGraceMs;
 	const namesOf = (lane: JobLane) => defs.filter((j) => j.lane === lane).map((j) => j.name);
 
 	let running = false;
@@ -63,7 +90,7 @@ export function createWorker(deps: {
 		const isOn = deps.isOn ?? (() => true);
 		const active = namesOf(lane).filter((name) => isOn(ownerOf(name)));
 		if (active.length === 0) return false;
-		const job = await queue.claim(active, maxLease);
+		const job = await queue.claim(active, leaseOf);
 		if (!job) return false;
 
 		const def = registry.jobs.get(job.name);
@@ -73,14 +100,18 @@ export function createWorker(deps: {
 			return true;
 		}
 		let timeout: ReturnType<typeof setTimeout> | undefined;
+		const controller = new AbortController();
+		let attempt: Promise<void> | undefined;
 		try {
 			const payload = def.payload.parse(job.payload);
+			attempt = def.handle(deps.ctxFor(job.name), payload, {
+				id: job.id,
+				attempt: job.attempt,
+				maxAttempts: job.maxAttempts,
+				signal: controller.signal,
+			});
 			await Promise.race([
-				def.handle(deps.ctxFor(job.name), payload, {
-					id: job.id,
-					attempt: job.attempt,
-					maxAttempts: job.maxAttempts,
-				}),
+				attempt,
 				new Promise<never>((_, reject) => {
 					timeout = setTimeout(
 						() => reject(new JobTimeoutError(job.name, def.timeoutMs)),
@@ -91,6 +122,13 @@ export function createWorker(deps: {
 			await queue.complete(job.id);
 			log.debug({}, 'job succeeded');
 		} catch (error) {
+			if (error instanceof JobTimeoutError && attempt) {
+				controller.abort(error);
+				// The retry waits for the first attempt to stop, so two never write side by side; a
+				// handler that ignores the signal is given up on when its lease would run out.
+				const stopped = await settledWithin(attempt, abortGraceMs);
+				if (!stopped) log.warn({}, 'a timed out job did not stop; retrying anyway');
+			}
 			const message = error instanceof Error ? error.message : String(error);
 			const state = await queue.fail(job.id, message, clock.now() + def.backoff(job.attempt));
 			log[state === 'dead' ? 'error' : 'warn']({ err: error, state }, 'job failed');

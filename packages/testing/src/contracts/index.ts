@@ -208,6 +208,19 @@ export function jobQueueContract(name: string, make: () => Promise<QueueHarness>
 			await h.close();
 		});
 
+		it('leases each job for the length its name asks for', async () => {
+			const h = await make();
+			await h.queue.enqueue(h.db, 'test.a', {});
+			await h.queue.enqueue(h.db, 'test.b', {});
+			await h.queue.claim(['test.a', 'test.b'], (name) => (name === 'test.a' ? 1000 : 5000));
+			await h.queue.claim(['test.a', 'test.b'], (name) => (name === 'test.a' ? 1000 : 5000));
+			h.advance(1001);
+			expect(await h.queue.recoverExpired()).toBe(1);
+			h.advance(4000);
+			expect(await h.queue.recoverExpired()).toBe(1);
+			await h.close();
+		});
+
 		it('enqueues inside a transaction that can roll back', async () => {
 			const h = await make();
 			await expect(

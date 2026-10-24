@@ -127,12 +127,19 @@ export function createSqliteQueue(options: SqliteQueueOptions): SqliteJobQueue {
 		async claim(names, leaseMs): Promise<ClaimedJob | undefined> {
 			if (names.length === 0) return undefined;
 			const now = clock.now();
+			const lease =
+				typeof leaseMs === 'number'
+					? sql<number>`${now + leaseMs}`
+					: sql<number>`${now} + case name ${sql.join(
+							names.map((name) => sql`when ${name} then ${leaseMs(name)}`),
+							sql` `,
+						)} end`;
 			const row = await db
 				.updateTable('queue_jobs')
 				.set((eb) => ({
 					status: 'running',
 					attempts: eb('attempts', '+', 1),
-					lease_until: now + leaseMs,
+					lease_until: lease,
 					updated_at: now,
 				}))
 				.where('id', '=', (eb) =>
