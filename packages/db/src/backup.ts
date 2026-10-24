@@ -62,6 +62,13 @@ async function sha256(path: string): Promise<string> {
 	return hash.digest('hex');
 }
 
+/** The folders beside the database a backup carries when given, each archived under its own name. */
+const OPTIONAL_DIRS = [
+	{ name: 'languages', option: 'languagesDir', filter: false },
+	{ name: 'themes', option: 'themesDir', filter: false },
+	{ name: 'extensions', option: 'extensionsDir', filter: true },
+] as const;
+
 const stamp = (d: Date) => d.toISOString().replace(/[:.]/g, '-');
 
 export async function createBackup(
@@ -92,33 +99,22 @@ export async function createBackup(
 		await tar.r({ file: partial, cwd: join(options.filesDir, '..'), portable: true }, [
 			relativeFilesEntry(options.filesDir),
 		]);
-		if (options.languagesDir) {
-			const name = options.languagesDir.replace(/\/+$/, '').split('/').at(-1);
-			if (name !== 'languages')
-				throw new Error(`languagesDir must be named "languages", got ${options.languagesDir}`);
-			await mkdir(options.languagesDir, { recursive: true });
-			await tar.r({ file: partial, cwd: join(options.languagesDir, '..'), portable: true }, [name]);
-		}
-		if (options.themesDir) {
-			const name = options.themesDir.replace(/\/+$/, '').split('/').at(-1);
-			if (name !== 'themes')
-				throw new Error(`themesDir must be named "themes", got ${options.themesDir}`);
-			await mkdir(options.themesDir, { recursive: true });
-			await tar.r({ file: partial, cwd: join(options.themesDir, '..'), portable: true }, [name]);
-		}
-		if (options.extensionsDir) {
-			const name = options.extensionsDir.replace(/\/+$/, '').split('/').at(-1);
-			if (name !== 'extensions')
-				throw new Error(`extensionsDir must be named "extensions", got ${options.extensionsDir}`);
-			await mkdir(options.extensionsDir, { recursive: true });
-			// Uploads waiting to be installed (and folders being written) are not part of the family's
-			// setup; only placed packages are.
+		// Uploads waiting to be installed (and folders being written) are not part of the family's
+		// setup; only placed packages are.
+		const placedOnly = (path: string) =>
+			!/^extensions\/(\.|[^/]+\/[^/]*\.partial(\/|$))/.test(path);
+		for (const { name, option, filter } of OPTIONAL_DIRS) {
+			const dir = options[option];
+			if (!dir) continue;
+			if (dir.replace(/\/+$/, '').split('/').at(-1) !== name)
+				throw new Error(`${option} must be named "${name}", got ${dir}`);
+			await mkdir(dir, { recursive: true });
 			await tar.r(
 				{
 					file: partial,
-					cwd: join(options.extensionsDir, '..'),
+					cwd: join(dir, '..'),
 					portable: true,
-					filter: (path) => !/^extensions\/(\.|[^/]+\/[^/]*\.partial(\/|$))/.test(path),
+					...(filter && { filter: placedOnly }),
 				},
 				[name],
 			);
@@ -221,7 +217,7 @@ export interface RestoreBackupOptions {
 	beforeStep?: (step: string) => void | Promise<void>;
 }
 
-const exists = (path: string) =>
+const pathExists = (path: string) =>
 	stat(path).then(
 		() => true,
 		() => false,
@@ -279,20 +275,17 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 			target: options.filesDir,
 			place: await copyBeside(
 				'files',
-				(await exists(restoredFiles)) ? restoredFiles : null,
+				(await pathExists(restoredFiles)) ? restoredFiles : null,
 				options.filesDir,
 			),
 			journals: false,
 		});
 		// A backup from before the store keeps the store as it is; the server checks every copy
 		// in it again at its next start, and leaves out an installed extension it has no package of.
-		for (const [name, target] of [
-			['languages', options.languagesDir],
-			['themes', options.themesDir],
-			['extensions', options.extensionsDir],
-		] as const) {
+		for (const { name, option } of OPTIONAL_DIRS) {
+			const target = options[option];
 			const restored = join(staging, name);
-			if (target && (await exists(restored)))
+			if (target && (await pathExists(restored)))
 				plan.push({
 					name,
 					target,
@@ -301,7 +294,7 @@ export async function restoreBackup(options: RestoreBackupOptions): Promise<Back
 				});
 		}
 
-		const hadDatabase = await exists(options.dbPath);
+		const hadDatabase = await pathExists(options.dbPath);
 		// The journal files are renamed after the database's new name, so SQLite finds them when
 		// the moved-aside copy is opened to read what changed since the backup.
 		const movedAside = `${options.dbPath}.${suffix}`;
@@ -365,12 +358,7 @@ export async function readRestoreMarker(
 	}
 	const marker = JSON.parse(raw) as RestoreMarker;
 	const previousPath = marker.previousDb ? join(dirname(dbPath), marker.previousDb) : null;
-	const exists =
-		previousPath !== null &&
-		(await stat(previousPath).then(
-			() => true,
-			() => false,
-		));
+	const exists = previousPath !== null && (await pathExists(previousPath));
 	return { ...marker, previousPath: exists ? previousPath : null };
 }
 

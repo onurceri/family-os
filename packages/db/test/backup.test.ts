@@ -56,6 +56,83 @@ describe('backup', () => {
 		await reopened.close();
 	});
 
+	it('carries installed languages, themes and extensions under their own names and restores them', async () => {
+		const { dir, dbPath, filesDir, handle } = await setup();
+		const dirs = {
+			languagesDir: join(dir, 'languages'),
+			themesDir: join(dir, 'themes'),
+			extensionsDir: join(dir, 'extensions'),
+		};
+		for (const d of Object.values(dirs)) {
+			await mkdir(join(d, 'one'), { recursive: true });
+			await writeFile(join(d, 'one', 'pack.json'), `in the backup: ${d}`);
+		}
+		// An upload that is not installed yet is not part of the backup.
+		await mkdir(join(dirs.extensionsDir, 'two', 'x.partial'), { recursive: true });
+		const { path } = await createBackup({
+			sqlite: handle.sqlite,
+			filesDir,
+			...dirs,
+			backupsDir: join(dir, 'backups'),
+			appVersion: '0.0.0-test',
+			schema: { core: ['0001_init'] },
+			reason: 'manual',
+		});
+		const entries: string[] = [];
+		await tar.t({ file: path, onReadEntry: (e) => void entries.push(e.path) });
+		expect(entries).toEqual(
+			expect.arrayContaining([
+				'manifest.json',
+				'db/famos.db',
+				'files/inbox/flyer.txt',
+				'languages/one/pack.json',
+				'themes/one/pack.json',
+				'extensions/one/pack.json',
+			]),
+		);
+		expect(entries.some((e) => e.includes('.partial'))).toBe(false);
+
+		for (const d of Object.values(dirs)) await writeFile(join(d, 'one', 'pack.json'), 'changed');
+		await handle.close();
+		await restoreBackup({ file: path, dbPath, filesDir, ...dirs });
+		for (const d of Object.values(dirs))
+			expect(await readFile(join(d, 'one', 'pack.json'), 'utf8')).toBe(`in the backup: ${d}`);
+	});
+
+	it('refuses a folder that is not named after what it carries', async () => {
+		const { dir, filesDir, handle } = await setup();
+		await expect(
+			createBackup({
+				sqlite: handle.sqlite,
+				filesDir,
+				themesDir: join(dir, 'looks'),
+				backupsDir: join(dir, 'backups'),
+				appVersion: '0.0.0-test',
+				schema: {},
+				reason: 'manual',
+			}),
+		).rejects.toThrow('themesDir must be named "themes"');
+		await handle.close();
+	});
+
+	it('leaves the themes alone when restoring a backup made before they were carried', async () => {
+		const { dir, dbPath, filesDir, handle } = await setup();
+		const themesDir = join(dir, 'themes');
+		await mkdir(themesDir, { recursive: true });
+		await writeFile(join(themesDir, 'live.json'), 'live');
+		const { path } = await createBackup({
+			sqlite: handle.sqlite,
+			filesDir,
+			backupsDir: join(dir, 'backups'),
+			appVersion: '0.0.0-test',
+			schema: {},
+			reason: 'manual',
+		});
+		await handle.close();
+		await restoreBackup({ file: path, dbPath, filesDir, themesDir });
+		expect(await readFile(join(themesDir, 'live.json'), 'utf8')).toBe('live');
+	});
+
 	it('leaves a marker that points at the moved-aside database, with its journal', async () => {
 		const { dir, dbPath, filesDir, handle } = await setup();
 		const { path } = await createBackup({
