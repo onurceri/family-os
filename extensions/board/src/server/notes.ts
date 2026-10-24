@@ -1,4 +1,5 @@
 import {
+	appOf,
 	type DigestItem,
 	type DuplicateContext,
 	defineAction,
@@ -48,7 +49,7 @@ async function loadNote(db: Db, id: string): Promise<NoteRow> {
 
 /** The app that is the actor alone, not one acting for a member (that member is the author). */
 const appAlone = (actor: UnitOfWork['actor']): string | null =>
-	actor.kind === 'app' ? actor.appId : null;
+	selfOf(actor) === null ? (appOf(actor)?.appId ?? null) : null;
 
 /**
  * The author (a member, or the app that put it up on its own), or a manager (`board.manage`); the

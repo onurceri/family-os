@@ -258,6 +258,25 @@ describe('core.suggestionsDigest', () => {
 		expect(forLeo.items[0]?.extra?.waitsFor).toBe('others');
 	});
 
+	it('answers a caller with no member behind it with nothing, and every other kind as before', async () => {
+		k = await createTestKernel({ extensions: [notesExtension] });
+		const mara = await k.member('admin');
+		await propose(QUICK_ADD, 'Parents evening');
+		const nobody = await read('core.suggestionsDigest', QUICK_ADD);
+		expect(nobody.items).toEqual([]);
+		const system = await read('core.suggestionsDigest', systemActor('test'));
+		expect(system.items).toEqual([]);
+		// A person, and an AI working for the same person, both see the waiting card.
+		expect((await read('core.suggestionsDigest', mara.actor)).items).toHaveLength(1);
+		expect((await read('core.suggestionsDigest', aiFor(mara, 'admin'))).items).toHaveLength(1);
+		// An app acting for a member is that member, with the role the member holds.
+		const viaApp: Actor = {
+			...mara.actor,
+			via: { appId: 'app_one', appRoleId: 'member', mode: 'apply' },
+		};
+		expect((await read('core.suggestionsDigest', viaApp)).items).toHaveLength(1);
+	});
+
 	it('keeps every waiting suggestion whatever the span, people and words', async () => {
 		k = await createTestKernel({ extensions: [notesExtension] });
 		const mara = await k.member('admin');

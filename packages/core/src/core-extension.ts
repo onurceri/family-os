@@ -1678,8 +1678,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			if (asker === null) return digestOf([], input);
 			const [settings, people] = await Promise.all([uow.family.settings(), uow.family.members()]);
 			const me = people.find((m) => m.id === asker);
-			const roleId =
-				actor.kind === 'member' ? actor.roleId : actor.kind === 'ai' ? actor.roleId : undefined;
+			// Past the check above the caller is a member or an AI working for one, which both carry
+			// the role they act with.
+			const roleId = 'roleId' in actor ? actor.roleId : undefined;
 			const role =
 				roleId ??
 				(

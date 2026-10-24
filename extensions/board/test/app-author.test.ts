@@ -73,6 +73,19 @@ describe('notes an app puts up alone', () => {
 		await applied(k, 'board.editNote', { id: note.id, text: 'By a manager' }, ayse.actor);
 	});
 
+	it('are not an AI’s or a display’s to change either', async () => {
+		await nameApp('app_home', 'Home Assistant');
+		const note = await post('Door open', homeApp());
+		const edit = (actor: Actor) =>
+			refused(k.runner.invoke('board.editNote', { id: note.id, text: 'x' }, actor));
+		expect(
+			await edit({ kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: bora.id as MemberId }),
+		).toBe('forbidden');
+		expect(
+			await edit({ kind: 'display', deviceId: 'dev_1', capabilities: [], showNames: false }),
+		).not.toBe('ok');
+	});
+
 	it('leave a member’s note with the member when an app speaks for them', async () => {
 		const note = await post('From Bora', boraViaApp());
 		expect(note).toMatchObject({ createdBy: bora.id, createdByApp: null });

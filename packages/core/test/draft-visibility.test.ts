@@ -48,12 +48,12 @@ const aiFor = (who: Who): Actor => ({
 	onBehalfOf: who.member.id as MemberId,
 	roleId: who.actor.roleId,
 });
-const app: Actor = { kind: 'app', appId: 'app_one' as never, mode: 'direct' } as never;
+const app: Actor = { kind: 'app', appId: 'app_one', roleId: 'member', mode: 'apply' };
 const appForKid = (): Actor => ({
 	...kid.actor,
-	via: { appId: 'app_one' as never, mode: 'direct' },
+	via: { appId: 'app_one', appRoleId: 'member', mode: 'apply' },
 });
-const display: Actor = { kind: 'display', deviceId: 'dev_one' } as never;
+const display: Actor = { kind: 'display', deviceId: 'dev_one', capabilities: [], showNames: false };
 
 const ids = async (actor: Actor, options?: Parameters<TestKernel['runner']['waitingFor']>[1]) =>
 	(await k.runner.waitingFor(actor, options)).map((row) => row.id);

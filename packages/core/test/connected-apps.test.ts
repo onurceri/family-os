@@ -4,6 +4,7 @@ import {
 	defineAction,
 	defineCapability,
 	isFamosError,
+	type MemberId,
 	memberBehind,
 	personPresent,
 	principalOf,
@@ -165,6 +166,26 @@ describe('the app kind and the member through an app', () => {
 		const nobody = (await caller(guest.secret)).actor;
 		expect(await codeOf(run('cups.pour', nobody))).toBe('forbidden');
 		expect(await codeOf(run('cups.peek', nobody))).toBe('forbidden');
+	});
+
+	it('records the member who set an app up, and nobody for any other caller', async () => {
+		const input = { name: 'Door', roleId: 'member', mode: 'apply' as const, actsFor: [] };
+		const row = async (id: string) =>
+			k.ctx.db
+				.withTables<CoreTables>()
+				.selectFrom('core_apps')
+				.select('created_by')
+				.where('id', '=', id)
+				.executeTakeFirstOrThrow();
+		const byMember = await k.apps.create(admin.actor, input);
+		expect((await row(byMember.id)).created_by).toBe(admin.member.id);
+		// Only a person manages apps; the other kinds are refused before anything is written.
+		const others: Actor[] = [
+			{ kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: admin.member.id as MemberId },
+			{ kind: 'display', deviceId: 'dev_1', capabilities: [], showNames: false },
+			{ kind: 'system', source: 'test' },
+		];
+		for (const other of others) await expect(k.apps.create(other, input)).rejects.toBeDefined();
 	});
 
 	it('an app alone is nobody: it has no member behind it and no own things', async () => {
