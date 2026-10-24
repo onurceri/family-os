@@ -253,6 +253,12 @@ async function readPresence(
 	};
 }
 
+/** A family display shows no names unless it was granted them. */
+function forReader(list: PresenceList, actor: Actor): PresenceList {
+	if (actor.kind !== 'display' || actor.showNames) return list;
+	return { ...list, people: list.people.map((person) => ({ ...person, memberId: null })) };
+}
+
 export const getPresence = defineRoute({
 	method: 'get',
 	path: '/presence',
@@ -276,7 +282,7 @@ export const getPresence = defineRoute({
 		]);
 		const now = ctx.clock.now();
 		const hit = memory.presence.get(key);
-		if (hit && now - hit.at >= 0 && now - hit.at < CACHE_MS) return hit.value;
+		if (hit && now - hit.at >= 0 && now - hit.at < CACHE_MS) return forReader(hit.value, actor);
 		const { baseUrl, token } = connection;
 		const value = await once(memory, `presence:${key}`, () =>
 			readPresence(ctx, baseUrl, token, rows),
@@ -287,6 +293,6 @@ export const getPresence = defineRoute({
 			if (memory.presence.size <= PRESENCE_KEPT) break;
 			memory.presence.delete(old);
 		}
-		return value;
+		return forReader(value, actor);
 	},
 });

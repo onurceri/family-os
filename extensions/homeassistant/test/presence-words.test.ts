@@ -31,4 +31,13 @@ describe('presence in words', () => {
 			{ memberId: 'deniz', text: 'Home' },
 		]);
 	});
+
+	it('gives no note to someone without a name to sit beside', () => {
+		expect(
+			presenceNotes(
+				{ status: 'ok', people: [{ memberId: null, presence: { kind: 'home' }, since: 1 }] },
+				t,
+			),
+		).toEqual([]);
+	});
 });

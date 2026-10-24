@@ -238,6 +238,18 @@ describe('who is home', () => {
 		expect((await presence(alex)).people).toHaveLength(2);
 	});
 
+	it('names nobody on a display that was not allowed names, cached or not', async () => {
+		await share(alex, 'place', true);
+		const unnamed: Actor = { ...display(), showNames: false } as Actor;
+		const first = await presence(unnamed);
+		expect(first.people).toEqual([
+			{ memberId: null, presence: { kind: 'place', name: 'School' }, since: expect.any(Number) },
+		]);
+		// The same answer is served from memory to a reader who may see names.
+		expect((await presence(display())).people[0]?.memberId).toBe(alex.memberId);
+		expect((await presence(unnamed)).people[0]?.memberId).toBeNull();
+	});
+
 	it('leaves out an archived member', async () => {
 		await share(sam, 'home');
 		await k.runner.invoke('core.archiveMember', { memberId: sam.memberId }, admin);

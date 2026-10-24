@@ -361,7 +361,8 @@ export type Presence = z.infer<typeof PresenceSchema>;
 export const PresenceListSchema = z.object({
 	people: z.array(
 		z.object({
-			memberId: MemberIdSchema,
+			/** Null for a family display that was not granted names. */
+			memberId: MemberIdSchema.nullable(),
 			presence: PresenceSchema,
 			/** When it last changed, in epoch ms (Home Assistant's `last_changed`). */
 			since: z.number().int().nullable(),

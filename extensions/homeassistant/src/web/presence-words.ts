@@ -30,6 +30,7 @@ export function presenceNotes(
 ): { memberId: string; text: string }[] {
 	return list.people.flatMap((person) => {
 		const text = presenceText(person.presence, t);
-		return text ? [{ memberId: person.memberId, text }] : [];
+		// Without a name there is no one to put the note beside.
+		return text && person.memberId ? [{ memberId: person.memberId, text }] : [];
 	});
 }
