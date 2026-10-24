@@ -1,4 +1,5 @@
 import {
+	assertActiveMembers,
 	type DuplicateContext,
 	defineAction,
 	defineCapability,
@@ -59,13 +60,6 @@ export const tasksComplete = defineCapability({
 	level: 'use',
 });
 const memberId = selfOf;
-
-async function assertMember(uow: UnitOfWork, id: string | null | undefined) {
-	if (!id) return;
-	const active = await uow.family.members();
-	if (!active.some((m) => m.id === id))
-		throw new FamosError('bad_request', `Unknown member: ${id}`);
-}
 
 /** Plans the reminder for a task as it is now (after an insert, edit, completion or reopen). */
 async function scheduleReminder(uow: UnitOfWork, id: string) {
@@ -200,7 +194,7 @@ export const addTask = defineAction({
 			'Resolve relative deadlines ("by Thursday") from today\'s date in the family time zone. Assign the member who must act when it is clear (for payments and forms usually an adult, judging from the members\' descriptions); otherwise leave it unassigned. Use recurrence only for chores the text says repeat.',
 	},
 	async run(uow, input) {
-		await assertMember(uow, input.assigneeId);
+		await assertActiveMembers(uow, [input.assigneeId], 'assigneeId');
 		const now = uow.clock.now();
 		const row = {
 			id: uow.ids.next('task'),
@@ -287,7 +281,7 @@ export const updateTask = defineAction({
 	},
 	async run(uow, { id, task, onlyThisDate, keepRule }) {
 		const row = await load(uow, id);
-		await assertMember(uow, task.assigneeId);
+		await assertActiveMembers(uow, [task.assigneeId], 'assigneeId');
 		// Only this one: the due date moves, the repeat and its start stay as they are.
 		const whole = replacementFields(row, task, keepRule);
 		const { rrule: _rule, rrule_start: _start, ...details } = whole;
@@ -375,7 +369,7 @@ export const changeTask = defineAction({
 	},
 	async run(uow, { id, label: _label, ...change }) {
 		const row = await load(uow, id);
-		await assertMember(uow, change.assigneeId);
+		await assertActiveMembers(uow, [change.assigneeId], 'assigneeId');
 		const dueDate = change.dueDate !== undefined ? change.dueDate : row.due_date;
 		const dueTime = change.dueTime !== undefined ? change.dueTime : row.due_time;
 		if (dueTime && !dueDate) throw new FamosError('bad_request', 'A due time needs a due date');

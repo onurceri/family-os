@@ -1,4 +1,5 @@
 import {
+	assertActiveMembers,
 	type DuplicateContext,
 	defineAction,
 	defineRoute,
@@ -31,14 +32,7 @@ import { api } from './public.ts';
 import { scheduleChoreReminder } from './reminders.ts';
 import { nextAssignee } from './rotation.ts';
 import { dueAfterDone, dueFrom } from './schedule.ts';
-import {
-	assertMembers,
-	choresChanged,
-	choreView,
-	choreViews,
-	loadChore,
-	memberIdOf,
-} from './shared.ts';
+import { choresChanged, choreView, choreViews, loadChore, memberIdOf } from './shared.ts';
 import { type ChoreRow, parseRecurrence, tables } from './store.ts';
 
 /** A finished one-off chore stays on the list this long. */
@@ -132,7 +126,7 @@ export const createChore = defineAction({
 		return row !== undefined;
 	},
 	async run(uow, input) {
-		await assertMembers(uow, input.assigneeIds, 'assigneeIds');
+		await assertActiveMembers(uow, input.assigneeIds, 'assigneeIds');
 		const recurrence = input.recurrence ?? null;
 		const nextDue = firstDue(recurrence, input.startDate, input.startDate);
 		const now = uow.clock.now();
@@ -284,7 +278,7 @@ export const setAssignees = defineAction({
 	},
 	async run(uow, { id, memberIds }) {
 		const row = await loadChore(uow.db, id);
-		await assertMembers(uow, memberIds, 'memberIds');
+		await assertActiveMembers(uow, memberIds, 'memberIds');
 		const previous = await assigneeOrder(uow, id);
 		await writeAssignees(uow, id, memberIds);
 		const assignee =
@@ -378,7 +372,7 @@ export const markDone = defineAction({
 				completion: null,
 				reason: taken ? ('already_done' as const) : ('stale' as const),
 			};
-		await assertMembers(uow, [doneBy], 'doneBy');
+		await assertActiveMembers(uow, [doneBy], 'doneBy');
 
 		const completion = {
 			id: uow.ids.next('chore_done'),

@@ -1,4 +1,5 @@
 import {
+	assertActiveMembers,
 	defineAction,
 	defineJob,
 	defineRoute,
@@ -98,13 +99,6 @@ export function toSubscription(row: SubscriptionRow) {
 	};
 }
 
-async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
-	if (ids.length === 0) return;
-	const active = new Set((await uow.family.members()).map((m) => m.id));
-	const missing = ids.filter((id) => !active.has(id));
-	if (missing.length) throw new FamosError('bad_request', `Unknown members: ${missing.join(', ')}`);
-}
-
 async function loadSubscription(db: UnitOfWork['db'], id: string) {
 	const row = await events(db)
 		.selectFrom('calendar_subscriptions')
@@ -125,7 +119,7 @@ export const addSubscription = defineAction({
 	async run(uow, input) {
 		const host = feedHost(input.url);
 		if (!host) throw new FamosError('bad_request', 'The address must be https: or webcal:');
-		await assertMembers(uow, input.memberIds);
+		await assertActiveMembers(uow, input.memberIds, 'memberIds');
 		const db = events(uow.db);
 		const used = await db.selectFrom('calendar_subscriptions').select('color').execute();
 		const color =
@@ -167,7 +161,7 @@ export const updateSubscription = defineAction({
 	approval: 'never',
 	async run(uow, input) {
 		const current = await loadSubscription(uow.db, input.id);
-		await assertMembers(uow, input.memberIds ?? []);
+		await assertActiveMembers(uow, input.memberIds ?? [], 'memberIds');
 		const set: Partial<SubscriptionRow> = { updated_at: uow.clock.now() };
 		if (input.name !== undefined) set.name = input.name;
 		if (input.color !== undefined) set.color = input.color;

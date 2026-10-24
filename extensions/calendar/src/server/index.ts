@@ -1,4 +1,5 @@
 import {
+	assertActiveMembers,
 	type DuplicateContext,
 	defineAction,
 	defineExtension,
@@ -105,13 +106,6 @@ export {
 	subscriptionChanged,
 	tagChanged,
 };
-
-async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
-	if (ids.length === 0) return;
-	const active = new Set((await uow.family.members()).map((m) => m.id));
-	const missing = ids.filter((id) => !active.has(id));
-	if (missing.length) throw new FamosError('bad_request', `Unknown members: ${missing.join(', ')}`);
-}
 
 async function loadEvent(uow: UnitOfWork, id: string) {
 	const row = await events(uow.db)
@@ -279,7 +273,7 @@ export const createEvent = defineAction({
 			'Use the family time zone. Resolve relative dates ("Friday", "tomorrow") from today\'s date. Set allDay only when no time is given. List the members involved; leave empty for the whole family. Use one of the existing family tags when it fits (they are listed when known); add a new short tag only when none does. At most 2. When the person, pet or thing it is for is not a member, name them in the title.',
 	},
 	async run(uow, input) {
-		await assertMembers(uow, input.memberIds ?? []);
+		await assertActiveMembers(uow, input.memberIds ?? [], 'memberIds');
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
 		const id = uow.ids.next('cal_event');
@@ -377,7 +371,7 @@ export const updateEvent = defineAction({
 	async run(uow, { id, event: whole, occurrence: rawOccurrence, scope, keepRule }) {
 		const row = await loadEvent(uow, id);
 		const event = eventFromReplace(whole);
-		await assertMembers(uow, event.memberIds ?? []);
+		await assertActiveMembers(uow, event.memberIds ?? [], 'memberIds');
 		const { timeZone } = await uow.family.settings();
 		const now = uow.clock.now();
 		if (scope && rawOccurrence && row.rrule) {
@@ -797,7 +791,7 @@ export const changeEvent = defineAction({
 		const row = await loadEvent(uow, id);
 		const occurrence =
 			rawOccurrence && row.rrule ? occurrenceKey(row, rawOccurrence) : rawOccurrence;
-		await assertMembers(uow, change.memberIds ?? []);
+		await assertActiveMembers(uow, change.memberIds ?? [], 'memberIds');
 		const { timeZone } = await uow.family.settings();
 		const series = toDetail(row);
 		const split = Boolean(occurrence && row.rrule);

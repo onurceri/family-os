@@ -1,6 +1,7 @@
 import { type AddObligationInput, type Obligation, scheduleOf } from '@famos/ext-records/contract';
 import {
 	AiContextSchema,
+	assertActiveMembers,
 	defineAction,
 	defineEvent,
 	defineRoute,
@@ -33,13 +34,6 @@ export const petChanged = defineEvent('pets.pet.changed', petChangedPayload, {
 });
 
 const memberId = selfOf;
-
-async function assertMembers(uow: UnitOfWork, ids: readonly string[]) {
-	if (ids.length === 0) return;
-	const active = new Set((await uow.family.members()).map((m) => m.id));
-	const unknown = ids.find((id) => !active.has(id));
-	if (unknown) throw new FamosError('bad_request', `Unknown member: ${unknown}`);
-}
 
 async function load(uow: UnitOfWork, id: string): Promise<PetRow> {
 	const row = await tables(uow.db)
@@ -82,7 +76,7 @@ export const addPet = defineAction({
 		return row !== undefined;
 	},
 	async run(uow, { obligations, ...input }) {
-		await assertMembers(uow, input.memberIds);
+		await assertActiveMembers(uow, input.memberIds, 'memberIds');
 		const now = uow.clock.now();
 		const row: PetRow = {
 			id: uow.ids.next('pet'),
@@ -127,7 +121,7 @@ export const updatePet = defineAction({
 	approval: { unless: petsEdit.id },
 	async run(uow, { id, pet }) {
 		const row = await load(uow, id);
-		await assertMembers(uow, pet.memberIds);
+		await assertActiveMembers(uow, pet.memberIds, 'memberIds');
 		const patch = { ...fieldsOf(pet), updated_at: uow.clock.now() };
 		await tables(uow.db).updateTable('pets_pets').set(patch).where('id', '=', id).execute();
 		// Lists that span records ("Coming up", reminders) show the name.

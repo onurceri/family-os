@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	type Actor,
 	appOf,
+	assertActiveMembers,
 	isFullSignIn,
 	type MemberId,
 	memberBehind,
@@ -110,5 +111,27 @@ describe('appOf', () => {
 		expect(appOf(viaApp)).toEqual({ appId: 'app_ha', appRoleId: 'member', mode: 'apply' });
 		for (const other of [member, pinMember, aiForLeo, display, system, fake])
 			expect(appOf(other)).toBeNull();
+	});
+});
+
+describe('assertActiveMembers', () => {
+	const uow = { family: { members: async () => [{ id: leo }] } } as unknown as Parameters<
+		typeof assertActiveMembers
+	>[0];
+
+	it('passes active members and skips empty entries', async () => {
+		await expect(
+			assertActiveMembers(uow, [leo, null, undefined], 'memberIds'),
+		).resolves.toBeUndefined();
+		await expect(assertActiveMembers(uow, [], 'memberIds')).resolves.toBeUndefined();
+	});
+
+	it('refuses an unknown member and names the field', async () => {
+		await expect(
+			assertActiveMembers(uow, [leo, 'member_gone'], 'assigneeIds'),
+		).rejects.toMatchObject({
+			code: 'bad_request',
+			details: { fields: [{ path: 'assigneeIds' }] },
+		});
 	});
 });

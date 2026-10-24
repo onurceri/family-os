@@ -1,6 +1,7 @@
 import {
 	type Actor,
 	AiContextSchema,
+	assertActiveMembers,
 	defineAction,
 	defineEvent,
 	defineRoute,
@@ -80,13 +81,6 @@ function emitChanged(uow: UnitOfWork, recordId: string, audiences: Iterable<stri
 
 const memberId = selfOf;
 
-async function assertMember(uow: UnitOfWork, id: string | null | undefined) {
-	if (!id) return;
-	const active = await uow.family.members();
-	if (!active.some((m) => m.id === id))
-		throw new FamosError('bad_request', `Unknown member: ${id}`);
-}
-
 async function load(uow: UnitOfWork, id: string) {
 	const row = await tables(uow.db)
 		.selectFrom('records_obligations')
@@ -151,7 +145,7 @@ export const addObligation = defineAction({
 	},
 	async run(uow, input) {
 		assertAreaExists(uow, input.audience);
-		await assertMember(uow, input.assigneeId);
+		await assertActiveMembers(uow, [input.assigneeId], 'assigneeId');
 		const now = uow.clock.now();
 		// A date that only passes has nothing to roll forward to.
 		const every = input.lapses ? null : (input.every ?? null);
@@ -204,7 +198,7 @@ export const updateObligation = defineAction({
 		const row = await load(uow, id);
 		if (row.archived_at !== null) throw new FamosError('conflict', 'This obligation is archived');
 		if (obligation.audience !== undefined) assertAreaExists(uow, obligation.audience);
-		await assertMember(uow, obligation.assigneeId);
+		await assertActiveMembers(uow, [obligation.assigneeId], 'assigneeId');
 		const lapses = obligation.lapses ?? row.lapses === 1;
 		// Left out, the repeat stays as it is, like every other field a change may skip.
 		const { every } = obligation;
