@@ -1,5 +1,7 @@
 import { type Recurrence, type Weekday, weekdayOf } from '@famos/time';
-import type { RepeatPreset } from './forms.js';
+
+/** The repeat choices of `RepeatPicker`; `custom` marks a rule outside the presets. */
+export type RepeatPreset = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
 
 /** The repeat fields of a form as the inputs hold them: plain strings and numbers to bind to. */
 export interface RepeatFormFields {

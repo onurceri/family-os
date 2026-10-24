@@ -3,7 +3,4 @@
  * are also checked and tested outside the browser.
  */
 export * from './field-errors.js';
-
-/** The repeat choices of `RepeatPicker`; `custom` marks a rule outside the presets. */
-export type RepeatPreset = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
 export * from './repeat-form.js';
