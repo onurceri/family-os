@@ -8,6 +8,7 @@
 		focusFirstInvalid,
 		Notice,
 		SidePanel,
+		openPath,
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
@@ -20,7 +21,6 @@
 	} from '../contract/index.js';
 	import { addMeal, loadMeals } from './data.js';
 	import { useKitchen } from './i18n.js';
-	import { openPath } from './nav.js';
 	import { planPath } from './plan.js';
 	import { plannedAlready } from './plan-duplicate.js';
 

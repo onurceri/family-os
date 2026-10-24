@@ -17,6 +17,7 @@
 		wide,
 		editLabel,
 		removeLabels,
+		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import {
@@ -72,7 +73,6 @@
 	import HomeForm from './HomeForm.svelte';
 	import { useHome } from './i18n.js';
 	import ItemForm from './ItemForm.svelte';
-	import { openPath } from './nav.js';
 	import RecordMenu from './RecordMenu.svelte';
 	import { type ItemFacts, itemLine, type ServiceFacts, serviceLine } from './row-lines.js';
 	import ServiceForm from './ServiceForm.svelte';

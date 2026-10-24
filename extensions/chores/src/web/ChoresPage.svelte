@@ -18,6 +18,7 @@
 		readFirst,
 		SidePanel,
 		ViewOnly,
+		openPath,
 	} from '@famos/ui/famos';
 	import { Plus } from '@lucide/svelte';
 	import { onDestroy } from 'svelte';
@@ -51,7 +52,6 @@
 	} from './form.js';
 	import { useChores } from './i18n.js';
 	import { hasOpenChore } from './open-chores.js';
-	import { openPath } from './nav.js';
 
 	/**
 	 * The Chores page: what is due today, what is overdue and what is coming, with whose turn it is.

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile, openPath } from '@famos/ui/famos';
 	import { House } from '@lucide/svelte';
 	import { HOME_PRESETS, type Home, type HomePresetId } from '../contract/index.js';
 	import { addHome, loadHomes } from './data.js';
@@ -14,7 +14,6 @@
 	} from './form.js';
 	import HomeForm from './HomeForm.svelte';
 	import { useHome } from './i18n.js';
-	import { openPath } from './nav.js';
 
 	/** The Home page: homes (each opens its page with things and services). */
 	let {

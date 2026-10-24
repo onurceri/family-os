@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { isApiError } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
-	import { firstName, IconButton, Page, SidePanel } from '@famos/ui/famos';
+	import { firstName, IconButton, Page, SidePanel, openPath } from '@famos/ui/famos';
 	import {
 		CalendarDays,
 		List,
@@ -28,7 +28,6 @@
 	} from './data.js';
 	import { greetingKey, hourIn, SUGGESTIONS, type SuggestionArea } from './greeting.js';
 	import { useAssistant } from './i18n.js';
-	import { openPath } from './nav.js';
 	import { reduceStream, type StreamState, settleStream } from './stream.js';
 	import ThreadList from './ThreadList.svelte';
 
@@ -119,7 +118,7 @@
 	const threadInUrl = () => new URLSearchParams(location.search).get('thread');
 	function show(id: string | null) {
 		if (threadInUrl() === id) return;
-		openPath(id ? `/assistant?thread=${id}` : '/assistant');
+		openPath(id ? `/assistant?thread=${id}` : '/assistant', { noScroll: true });
 	}
 	function onpopstate() {
 		const id = threadInUrl();

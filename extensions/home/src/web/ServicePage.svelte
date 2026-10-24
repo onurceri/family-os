@@ -11,6 +11,7 @@
 		wide,
 		editLabel,
 		removeLabels,
+		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Pencil, Zap } from '@lucide/svelte';
@@ -30,7 +31,6 @@
 		validateService,
 	} from './form.js';
 	import { useHome } from './i18n.js';
-	import { openPath } from './nav.js';
 	import RecordMenu from './RecordMenu.svelte';
 	import ServiceForm from './ServiceForm.svelte';
 

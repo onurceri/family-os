@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scheduleOfPick } from '@famos/ext-records/contract';
-	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile, openPath } from '@famos/ui/famos';
 	import { Car } from '@lucide/svelte';
 	import { VEHICLE_PRESETS, type PresetId, type Vehicle } from '../contract/index.js';
 	import { addVehicle, loadVehicles } from './data.js';
@@ -13,7 +13,6 @@
 		type VehicleFormValue,
 	} from './form.js';
 	import { useVehicles } from './i18n.js';
-	import { openPath } from './nav.js';
 	import VehicleForm from './VehicleForm.svelte';
 
 	/** The Vehicles page: the household's vehicles, and a form to add one with its usual duties. */

@@ -12,6 +12,7 @@
 		wide,
 		editLabel,
 		removeLabels,
+		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, PawPrint, Pencil } from '@lucide/svelte';
@@ -19,7 +20,6 @@
 	import { archivePet, loadPet, type Outcome, updatePet } from './data.js';
 	import { emptyPet, fromPet, toValues, validate, type PetFormValue } from './form.js';
 	import { usePets } from './i18n.js';
-	import { openPath } from './nav.js';
 	import RecordMenu from './RecordMenu.svelte';
 	import PetForm from './PetForm.svelte';
 	import PetTreatments from './PetTreatments.svelte';

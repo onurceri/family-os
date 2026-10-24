@@ -10,6 +10,7 @@
 		Row,
 		SidePanel,
 		ViewOnly,
+		openPath,
 	} from '@famos/ui/famos';
 	import { CalendarPlus, CookingPot, Plus, Search } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
@@ -18,7 +19,6 @@
 	import { emptyRecipe, type RecipeFormValue, toFields, validate } from './form.js';
 	import { useKitchen } from './i18n.js';
 	import KitchenFrame from './KitchenFrame.svelte';
-	import { openPath } from './nav.js';
 	import PlanPanel from './PlanPanel.svelte';
 	import RecipeForm from './RecipeForm.svelte';
 

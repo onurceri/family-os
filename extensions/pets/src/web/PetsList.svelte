@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scheduleOfPick } from '@famos/ext-records/contract';
-	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile } from '@famos/ui/famos';
+	import { FIELD_REASON, focusFirstInvalid, SidePanel, Tile, openPath } from '@famos/ui/famos';
 	import { PawPrint } from '@lucide/svelte';
 	import { type Pet, type PresetId, presetsFor } from '../contract/index.js';
 	import { addPet, loadPets } from './data.js';
@@ -13,7 +13,6 @@
 		validate,
 	} from './form.js';
 	import { usePets } from './i18n.js';
-	import { openPath } from './nav.js';
 	import PetForm from './PetForm.svelte';
 
 	/** The Pets page: the household's pets, and a form to add one with its usual duties. */

@@ -12,6 +12,7 @@
 		wide,
 		editLabel,
 		removeLabels,
+		openPath,
 	} from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import { ArrowLeft, Archive, Pencil, Refrigerator } from '@lucide/svelte';
@@ -27,7 +28,6 @@
 	import { emptyItem, fromItem, type ItemFormValue, toItemFields, validateItem } from './form.js';
 	import { useHome } from './i18n.js';
 	import ItemForm from './ItemForm.svelte';
-	import { openPath } from './nav.js';
 	import RecordMenu from './RecordMenu.svelte';
 
 	/**

@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Page, PageHeader, PageTabs } from '@famos/ui/famos';
-	import { openPath } from './nav.js';
+	import { Page, PageHeader, PageTabs, openPath } from '@famos/ui/famos';
 	import type { Snippet } from 'svelte';
 	import { useKitchen } from './i18n.js';
 

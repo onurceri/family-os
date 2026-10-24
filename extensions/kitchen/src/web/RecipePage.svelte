@@ -15,6 +15,7 @@
 		SidePanel,
 		wide,
 		editLabel,
+		openPath,
 	} from '@famos/ui/famos';
 	import {
 		ArrowLeft,
@@ -45,7 +46,6 @@
 		validate,
 	} from './form.js';
 	import { useKitchen } from './i18n.js';
-	import { openPath } from './nav.js';
 	import PlanPanel from './PlanPanel.svelte';
 	import RecipeForm from './RecipeForm.svelte';
 	import RecipesPage from './RecipesPage.svelte';
