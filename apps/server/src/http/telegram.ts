@@ -6,11 +6,12 @@ import {
 	TokenInputSchema,
 } from '@famos/adapters/telegram';
 import { type AuditTrail, CORE_CAPABILITIES } from '@famos/core';
-import { type AccessControl, assertFullSignIn, FamosError, personPresent } from '@famos/sdk';
-import { createRoute, type OpenAPIHono, type z } from '@hono/zod-openapi';
+import { type AccessControl, assertFullSignIn } from '@famos/sdk';
+import { createRoute, type OpenAPIHono } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { body, json, requireCapability, requirePerson } from './route-kit.ts';
 
 /**
  * Telegram settings for admins and linking for members. The bot token and the link code are
@@ -18,10 +19,6 @@ import { errorResponses } from './errors.ts';
  * of going through actions; setting the token and making a link code record themselves in the
  * audit log. Ending a link is an action (`core.unlinkTelegram`). The token is never returned.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-const body = <S extends z.ZodType>(schema: S) => ({
-	body: { content: { 'application/json': { schema } }, required: true as const },
-});
 const base = { tags: ['telegram'], security: [{ session: [] }] };
 
 export function mountTelegramRoutes(
@@ -30,19 +27,14 @@ export function mountTelegramRoutes(
 	access: AccessControl,
 	audit: AuditTrail,
 ): void {
-	const requireAdmin = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
-		if (!access.can(actor, CORE_CAPABILITIES.settingsManage.id))
-			throw new FamosError('forbidden', 'Not allowed to manage Telegram');
-		return actor;
-	};
-	const me = (c: Context<AppEnv>): string => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor.memberId;
-	};
+	const requireAdmin = (c: Context<AppEnv>) =>
+		requireCapability(
+			c,
+			access,
+			CORE_CAPABILITIES.settingsManage.id,
+			'Not allowed to manage Telegram',
+		);
+	const me = (c: Context<AppEnv>): string => requirePerson(c).memberId;
 
 	const getSettings = createRoute({
 		...base,

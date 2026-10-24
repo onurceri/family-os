@@ -3,10 +3,11 @@ import type { AiSettingsService } from '@famos/adapters/llm-aisdk';
 import type { TelegramTables } from '@famos/adapters/telegram';
 import type { WebPushTables } from '@famos/adapters/webpush';
 import { CORE_CAPABILITIES, type CoreTables, type Kernel } from '@famos/core';
-import { FamosError, type IdentityAdmin, personPresent } from '@famos/sdk';
+import { FamosError, type IdentityAdmin } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { requirePerson } from './route-kit.ts';
 
 /**
  * The facts behind Settings → Setup status that no other read gives in one place, as plain
@@ -85,9 +86,7 @@ export function mountSetupChecksRoute(app: OpenAPIHono<AppEnv>, deps: SetupCheck
 		security: [{ session: [] }],
 	});
 	app.openapi(route, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
+		const actor = requirePerson(c);
 		if (!deps.kernel.access.can(actor, CORE_CAPABILITIES.settingsManage.id))
 			throw new FamosError('forbidden', 'Your role does not allow this', {
 				reason: 'capability',

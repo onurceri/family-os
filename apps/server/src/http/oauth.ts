@@ -1,10 +1,10 @@
 import type { Kernel } from '@famos/core';
-import { FamosError, personPresent } from '@famos/sdk';
+import { FamosError } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 import { failureRedirect } from './oauth-endpoints.ts';
+import { json, requirePerson } from './route-kit.ts';
 
 /**
  * What a person does about an AI app signing in, and the setting up of an app that cannot
@@ -13,7 +13,6 @@ import { failureRedirect } from './oauth-endpoints.ts';
  * log in the same transaction. Everything else about these apps is an action. Only a person at a
  * password sign-in may decide: the service refuses a display, an app and a PIN session.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const base = { tags: ['oauth'], security: [{ session: [] }] };
 
 /** Where Home Assistant's own cloud relay brings a person back after signing in. */
@@ -95,12 +94,6 @@ const CreatedClientSchema = z.object({
 
 export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void {
 	const oauth = kernel.oauth;
-	const me = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor;
-	};
 	/** Signing in AI apps is off (or MCP is): these routes are not there, as `/mcp` is not. */
 	const active = async () => {
 		const status = await oauth.status();
@@ -118,7 +111,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 		responses: { 200: { description: 'The request', ...json(RequestSchema) }, ...errorResponses },
 	});
 	app.openapi(getRequest, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		await active();
 		return c.json(await oauth.getRequest(actor, c.req.valid('param').id), 200);
 	});
@@ -139,7 +132,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 		},
 	});
 	app.openapi(approve, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		const status = await active();
 		const { scope } = c.req.valid('json');
 		const given = await oauth.approve(actor, c.req.valid('param').id, scope ? { scope } : {});
@@ -163,7 +156,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 		},
 	});
 	app.openapi(deny, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		const status = await active();
 		const denied = await oauth.deny(actor, c.req.valid('param').id);
 		return c.json(
@@ -189,7 +182,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 		responses: { 200: { description: 'Status', ...json(OAuthStatusSchema) }, ...errorResponses },
 	});
 	app.openapi(getStatus, async (c) => {
-		me(c);
+		requirePerson(c);
 		const status = await oauth.status();
 		return c.json(
 			{
@@ -229,7 +222,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 	});
 	app.openapi(listClients, async (c) => {
 		const all = c.req.valid('query').all === 'true';
-		const clients = await oauth.listClients(me(c), { all });
+		const clients = await oauth.listClients(requirePerson(c), { all });
 		const names = new Map(
 			(await kernel.ctx.family.members()).map((m) => [m.id as string, m.displayName]),
 		);
@@ -267,7 +260,7 @@ export function mountOAuthRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void
 		responses: { 201: { description: 'Created', ...json(CreatedClientSchema) }, ...errorResponses },
 	});
 	app.openapi(createClient, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		const input = c.req.valid('json');
 		let name: string;
 		let redirectUris: string[];

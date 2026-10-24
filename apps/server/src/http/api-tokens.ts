@@ -6,11 +6,10 @@ import {
 	type Kernel,
 	presentApiToken,
 } from '@famos/core';
-import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { json, requirePerson } from './route-kit.ts';
 
 /**
  * Personal API tokens for AI apps. A token's secret is shown once and an action's answer is kept
@@ -19,7 +18,6 @@ import { errorResponses } from './errors.ts';
  * `core.setMcpEnabled`). A member manages their own tokens; an admin can list and revoke
  * everyone's.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const base = { tags: ['mcp'], security: [{ session: [] }] };
 
 const CreateInputSchema = z.object({
@@ -43,12 +41,6 @@ const McpSettingsSchema = z.object({
 export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void {
 	const members = async () =>
 		new Map((await kernel.ctx.family.members()).map((m) => [m.id as string, m.displayName]));
-	const me = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor;
-	};
 	const list = createRoute({
 		...base,
 		method: 'get',
@@ -63,7 +55,7 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 	});
 	app.openapi(list, async (c) => {
 		const all = c.req.valid('query').all === 'true';
-		const tokens = await kernel.apiTokens.list(me(c), { all });
+		const tokens = await kernel.apiTokens.list(requirePerson(c), { all });
 		const names = all ? await members() : null;
 		return c.json({ tokens: tokens.map((t) => presentApiToken(t, names)) }, 200);
 	});
@@ -80,7 +72,7 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		responses: { 201: { description: 'Created', ...json(CreatedSchema) }, ...errorResponses },
 	});
 	app.openapi(create, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		const created = await kernel.apiTokens.create(actor, c.req.valid('json'));
 		await kernel.audit.record(actor, 'mcp.createToken', created.token.id);
 		return c.json({ secret: created.secret, token: presentApiToken(created.token, null) }, 201);
@@ -95,7 +87,7 @@ export function mountApiTokenRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): v
 		responses: { 200: { description: 'Settings', ...json(McpSettingsSchema) }, ...errorResponses },
 	});
 	app.openapi(settings, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		return c.json(
 			{
 				enabled: await kernel.apiTokens.isEnabled(),

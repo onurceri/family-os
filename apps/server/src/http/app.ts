@@ -52,6 +52,7 @@ import { mountOAuthEndpoints } from './oauth-endpoints.ts';
 import { MAX_BAD_KEYS_PER_MINUTE, mountPublicApi } from './public/index.ts';
 import { mountPushRoutes } from './push.ts';
 import { createRateLimiter } from './rate-limit.ts';
+import { json } from './route-kit.ts';
 import { mountSetupChecksRoute } from './setup-checks.ts';
 import { mountTelegramRoutes } from './telegram.ts';
 import {
@@ -157,8 +158,6 @@ function assertOn(kernel: Kernel, extension: string) {
 	if (!kernel.features.isOn(extension))
 		throw new FamosError('feature_off', `${extension} is turned off`);
 }
-
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 
 function mountRoute(
 	app: OpenAPIHono<AppEnv>,

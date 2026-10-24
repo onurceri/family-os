@@ -6,11 +6,11 @@ import {
 	EmailSettingsSchema,
 } from '@famos/adapters/email';
 import { CORE_CAPABILITIES, type Kernel } from '@famos/core';
-import { FamosError } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { body, json, requireCapability, requireSignedIn } from './route-kit.ts';
 
 /**
  * Email settings for admins: what to read, and saving the mailbox. The mailbox password is a
@@ -19,20 +19,16 @@ import { errorResponses } from './errors.ts';
  * audit log. Disconnecting, the allowed senders and checking now are actions
  * (`core.disconnectEmail` ...). The password is never returned.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-const body = <S extends z.ZodType>(schema: S) => ({
-	body: { content: { 'application/json': { schema } }, required: true as const },
-});
 const base = { tags: ['email'], security: [{ session: [] }] };
 
 export function mountEmailRoutes(app: OpenAPIHono<AppEnv>, email: Email, kernel: Kernel): void {
-	const requireAdmin = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
-		if (!kernel.access.can(actor, CORE_CAPABILITIES.settingsManage.id))
-			throw new FamosError('forbidden', 'Not allowed to manage email');
-		return actor;
-	};
+	const requireAdmin = (c: Context<AppEnv>) =>
+		requireCapability(
+			c,
+			kernel.access,
+			CORE_CAPABILITIES.settingsManage.id,
+			'Not allowed to manage email',
+		);
 
 	const getSettings = createRoute({
 		...base,
@@ -66,7 +62,7 @@ export function mountEmailRoutes(app: OpenAPIHono<AppEnv>, email: Email, kernel:
 		},
 	});
 	app.openapi(getAvailability, async (c) => {
-		if (!c.get('actor')) throw new FamosError('unauthenticated', 'Sign in required');
+		requireSignedIn(c);
 		const s = await email.settings();
 		return c.json({ available: s.configured && s.enabled }, 200);
 	});

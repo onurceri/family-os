@@ -7,11 +7,10 @@ import {
 	presentApp,
 	presentAppToken,
 } from '@famos/core';
-import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
-import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { json, requirePerson } from './route-kit.ts';
 
 /**
  * Connected apps (Home Assistant, scripts): an admin registers one with a role, a mode and the
@@ -20,7 +19,6 @@ import { errorResponses } from './errors.ts';
  * is a route that calls the service directly and records itself in the audit log; the service
  * allows only an admin who signed in with a password.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
 const base = { tags: ['apps'], security: [{ session: [] }] };
 
 const ListSchema = z.object({
@@ -43,13 +41,6 @@ const TokenCreatedSchema = z.object({
 const AppParams = z.object({ appId: z.string() });
 
 export function mountAppRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void {
-	const me = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor;
-	};
-
 	const list = createRoute({
 		...base,
 		method: 'get',
@@ -59,7 +50,7 @@ export function mountAppRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void {
 		responses: { 200: { description: 'Apps', ...json(ListSchema) }, ...errorResponses },
 	});
 	app.openapi(list, async (c) => {
-		const apps = await kernel.apps.list(me(c));
+		const apps = await kernel.apps.list(requirePerson(c));
 		return c.json({ apps: apps.map(presentApp), warnDays: APP_TOKEN_WARN_DAYS }, 200);
 	});
 
@@ -76,7 +67,7 @@ export function mountAppRoutes(app: OpenAPIHono<AppEnv>, kernel: Kernel): void {
 		responses: { 201: { description: 'Created', ...json(TokenCreatedSchema) }, ...errorResponses },
 	});
 	app.openapi(createToken, async (c) => {
-		const actor = me(c);
+		const actor = requirePerson(c);
 		const created = await kernel.apps.createToken(
 			actor,
 			c.req.valid('param').appId,

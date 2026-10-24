@@ -8,11 +8,12 @@ import {
 	UsageSummarySchema,
 } from '@famos/adapters/llm-aisdk';
 import { aiModelsChanged, CORE_CAPABILITIES, type Kernel } from '@famos/core';
-import { type Actor, FamosError, personPresent } from '@famos/sdk';
+import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { body, json, requireCapability } from './route-kit.ts';
 
 /**
  * AI settings for admins. A provider's key is a secret, so setting it is a route that calls the
@@ -20,20 +21,8 @@ import { errorResponses } from './errors.ts';
  * action (`core.addAiProvider`, `core.setAiRoles` …). Nothing here runs a model: the connection
  * test only lists models.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-const body = <S extends z.ZodType>(schema: S) => ({
-	body: { content: { 'application/json': { schema } }, required: true as const },
-});
 const ProviderParams = z.object({ providerId: z.string() });
 const base = { tags: ['ai'], security: [{ session: [] }] };
-
-function requireAiManager(c: Context<AppEnv>, kernel: Kernel): Actor {
-	const actor = c.get('actor');
-	if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
-	if (!kernel.access.can(actor, CORE_CAPABILITIES.aiManage.id))
-		throw new FamosError('forbidden', 'Not allowed to manage AI settings');
-	return actor;
-}
 
 export function mountAiRoutes(
 	app: OpenAPIHono<AppEnv>,
@@ -41,7 +30,13 @@ export function mountAiRoutes(
 	kernel: Kernel,
 ): void {
 	const family = kernel.ctx.family;
-	const requireAdmin = (c: Context<AppEnv>) => requireAiManager(c, kernel);
+	const requireAdmin = (c: Context<AppEnv>) =>
+		requireCapability(
+			c,
+			kernel.access,
+			CORE_CAPABILITIES.aiManage.id,
+			'Not allowed to manage AI settings',
+		);
 	const getSettings = createRoute({
 		...base,
 		method: 'get',

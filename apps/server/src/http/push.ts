@@ -7,11 +7,11 @@ import {
 	type WebPush,
 } from '@famos/adapters/webpush';
 import type { CoreTables, Kernel } from '@famos/core';
-import { FamosError, personPresent } from '@famos/sdk';
 import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { body, json, requirePerson } from './route-kit.ts';
 
 /**
  * Web Push devices of the signed-in member. Subscriptions are credentials, so like
@@ -19,22 +19,12 @@ import { errorResponses } from './errors.ts';
  * actions, and record themselves in the audit log. Every route is for the member's own devices
  * only.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-const body = <S extends z.ZodType>(schema: S) => ({
-	body: { content: { 'application/json': { schema } }, required: true as const },
-});
 const base = { tags: ['push'], security: [{ session: [] }] };
 const Ok = z.object({ ok: z.literal(true) });
 
 export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel: Kernel): void {
 	const translate = kernel.translate;
-	const person = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
-		return actor;
-	};
-	const me = (c: Context<AppEnv>): string => person(c).memberId;
+	const me = (c: Context<AppEnv>): string => requirePerson(c).memberId;
 
 	const getKey = createRoute({
 		...base,
@@ -59,7 +49,7 @@ export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel:
 		responses: { 201: { description: 'Registered', ...json(Ok) }, ...errorResponses },
 	});
 	app.openapi(subscribe, async (c) => {
-		const actor = person(c);
+		const actor = requirePerson(c);
 		await push.subscribe(actor.memberId, c.req.valid('json'));
 		// The browser's address is its credential: the row says only that it was registered.
 		await kernel.audit.record(actor, 'push.subscribe');
@@ -76,7 +66,7 @@ export function mountPushRoutes(app: OpenAPIHono<AppEnv>, push: WebPush, kernel:
 		responses: { 200: { description: 'Removed', ...json(Ok) }, ...errorResponses },
 	});
 	app.openapi(unsubscribe, async (c) => {
-		const actor = person(c);
+		const actor = requirePerson(c);
 		await push.unsubscribe(actor.memberId, c.req.valid('json').endpoint);
 		await kernel.audit.record(actor, 'push.unsubscribe');
 		return c.json({ ok: true as const }, 200);

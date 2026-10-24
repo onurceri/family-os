@@ -15,6 +15,7 @@ import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
+import { body, json, requireCapability } from './route-kit.ts';
 
 /**
  * Backups for admins: what to read, and the secrets. The encryption passphrase and the targets'
@@ -28,10 +29,6 @@ import { errorResponses } from './errors.ts';
  * shows a secret. Only a person at a password sign-in who holds the settings capability gets it,
  * and only after typing their password again.
  */
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-const body = <S extends z.ZodType>(schema: S) => ({
-	body: { content: { 'application/json': { schema } }, required: true as const },
-});
 const base = { tags: ['backups'], security: [{ session: [] }] };
 const TargetParams = z.object({ targetId: z.string() });
 const PassphraseInputSchema = z.object({ passphrase: z.string().min(12).max(500) });
@@ -98,13 +95,13 @@ async function localBackups(dir: string) {
 
 export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDeps): void {
 	const { backups, kernel } = deps;
-	const requireAdmin = (c: Context<AppEnv>) => {
-		const actor = c.get('actor');
-		if (!actor) throw new FamosError('unauthenticated', 'Sign in required');
-		if (!kernel.access.can(actor, CORE_CAPABILITIES.settingsManage.id))
-			throw new FamosError('forbidden', 'Not allowed to manage backups');
-		return actor;
-	};
+	const requireAdmin = (c: Context<AppEnv>) =>
+		requireCapability(
+			c,
+			kernel.access,
+			CORE_CAPABILITIES.settingsManage.id,
+			'Not allowed to manage backups',
+		);
 
 	const list = createRoute({
 		...base,

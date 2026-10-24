@@ -16,6 +16,7 @@ import { parse } from 'hono/utils/cookie';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
 import { addressKey, createRateLimiter } from './rate-limit.ts';
+import { json, requirePerson } from './route-kit.ts';
 
 /**
  * Trusted family devices on the HTTP side. Core owns the device records; this module
@@ -61,8 +62,6 @@ function setDeviceCookie(c: any, token: string, secure: boolean) {
 	});
 }
 
-const json = (schema: z.ZodType) => ({ content: { 'application/json': { schema } } });
-
 export function mountDeviceRoutes(
 	app: OpenAPIHono<AppEnv>,
 	kernel: Kernel,
@@ -92,9 +91,7 @@ export function mountDeviceRoutes(
 		security: [{ session: [] }],
 	});
 	app.openapi(trust, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
+		const actor = requirePerson(c);
 		// This browser is a paired display: replacing its cookie would silently unpair it.
 		const current = await devices.verify(getCookie(c, DEVICE_COOKIE));
 		if (current?.kind === 'kiosk')
@@ -252,9 +249,7 @@ function mountDisplayRoutes(
 		security: [{ session: [] }],
 	});
 	app.openapi(pairing, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
+		const actor = requirePerson(c);
 		return c.json(await devices.pairingStatus(actor, c.req.valid('param').pairingId), 200);
 	});
 
@@ -274,9 +269,7 @@ function mountDisplayRoutes(
 		security: [{ session: [] }],
 	});
 	app.openapi(address, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
+		const _actor = requirePerson(c);
 		return c.json({ url: publicUrl ?? null }, 200);
 	});
 
@@ -296,9 +289,7 @@ function mountDisplayRoutes(
 		security: [{ session: [] }],
 	});
 	app.openapi(grantable, async (c) => {
-		const actor = c.get('actor');
-		if (!actor || !personPresent(actor))
-			throw new FamosError('unauthenticated', 'Sign in required');
+		const actor = requirePerson(c);
 		if (!kernel.access.can(actor, CORE_CAPABILITIES.devicesManage.id))
 			throw new FamosError('forbidden', 'Your role does not allow this', {
 				reason: 'capability',
