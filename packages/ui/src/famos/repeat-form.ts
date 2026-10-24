@@ -11,19 +11,31 @@ export interface RepeatFormFields {
 	until: string;
 }
 
+/** A rule as a saved record or an input holds it (the interval may be left to its default). */
+export interface RepeatRule {
+	freq: 'daily' | 'weekly' | 'monthly';
+	interval?: number | undefined;
+	until?: string | undefined;
+	byDay?: readonly string[] | undefined;
+}
+
 /**
  * The repeat fields for a saved rule. `anchor` is the date the rule starts on (a lone weekday
  * follows it; none yet leaves the days empty); `custom` marks a rule outside the presets.
  */
 export function repeatFieldsFrom(
-	recurrence: Recurrence | null | undefined,
+	recurrence: RepeatRule | null | undefined,
 	anchor: string | null | undefined,
 	custom = false,
 ): RepeatFormFields {
 	return {
 		repeat: custom ? 'custom' : (recurrence?.freq ?? 'none'),
 		byDay:
-			recurrence?.freq === 'weekly' ? [...recurrence.byDay] : anchor ? [weekdayOf(anchor)] : [],
+			recurrence?.freq === 'weekly'
+				? [...(recurrence.byDay ?? [])]
+				: anchor
+					? [weekdayOf(anchor)]
+					: [],
 		interval: recurrence?.interval ?? 1,
 		until: recurrence?.until ?? '',
 	};

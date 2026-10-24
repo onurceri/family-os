@@ -2,7 +2,6 @@
 	import IconButton from './IconButton.svelte';
 	import Menu from './Menu.svelte';
 	import type { MenuItem } from './menu-items.js';
-	import { Ellipsis } from '@lucide/svelte';
 
 	/**
 	 * The `...` button of a record's head: a menu from the
@@ -25,6 +24,23 @@
 
 <Menu {label} title={name} {cancelLabel} {items}>
 	{#snippet trigger({ attrs })}
-		<IconButton {label} variant="outline" {...attrs}><Ellipsis class="size-5" /></IconButton>
+		<IconButton {label} variant="outline" {...attrs}
+			><svg
+				class="size-5"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle
+					cx="5"
+					cy="12"
+					r="1"
+				/>
+			</svg></IconButton
+		>
 	{/snippet}
 </Menu>
