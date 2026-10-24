@@ -247,7 +247,6 @@ export function createLanguages(deps: LanguagesDeps) {
 		installActionId: 'core.installLanguagePack',
 		schema: PackInputSchema,
 		maxBytes: MAX_PACK_URL_BYTES,
-		noun: 'language',
 		actionId: 'core.installLanguagePackFromUrl',
 		actionTitle: 'Install a language pack from an address',
 		actor: 'core.languages',

@@ -32,8 +32,21 @@
 	 * theme, the style and theme each display uses, and adding a theme pack from a file or an
 	 * address.
 	 */
-	type Fetch = { status: 'fetching' | 'done' | 'failed'; url: string; error: string | null } | null;
+	type Fetch = {
+		status: 'fetching' | 'done' | 'failed';
+		url: string;
+		problem?: { code: 'unreachable' | 'not_a_pack' | 'refused'; detail: string | null } | null;
+	} | null;
 	type Display = { id: string; name: string };
+
+	/** Why the last fetch failed, in words; a state kept from before problems were coded has none. */
+	function fetchProblem(state: NonNullable<Fetch>): string {
+		const problem = state.problem;
+		if (!problem) return t('appearance_fetch_failed', { reason: t('error_generic') });
+		return problem.code === 'refused' && problem.detail
+			? t('appearance_fetch_refused', { reason: problem.detail })
+			: t(`appearance_fetch_${problem.code}` as 'appearance_fetch_unreachable');
+	}
 
 	let adding = $state(false);
 	let url = $state('');
@@ -458,7 +471,7 @@
 					<p class="text-ink-soft text-sm" role="status">{t('appearance_fetching')}</p>
 				{:else if fetchState?.status === 'failed'}
 					<p class="text-attention text-sm font-semibold" role="alert">
-						{t('appearance_fetch_failed', { reason: fetchState.error ?? t('error_generic') })}
+						{fetchProblem(fetchState)}
 					</p>
 				{/if}
 				<div>

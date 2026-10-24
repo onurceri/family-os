@@ -986,7 +986,7 @@ export function createOAuthService(deps: OAuthDeps): OAuthService {
 					.values({
 						id: grantId,
 						member_id: member.memberId,
-						name: clientName(client.name) || 'AI app',
+						name: clientName(client.name) || client.id,
 						// Never a hash a secret could have: a presented key can not match a grant.
 						token_hash: `oauth:${grantId}`,
 						scope,

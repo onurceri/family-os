@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
 import { createBackup, restoreBackup } from '@famos/db';
 import type { ExternalHttp } from '@famos/sdk';
+import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
@@ -470,6 +471,22 @@ describe('installing from an address', () => {
 		});
 	});
 
+	it('still reads a failure stored as a sentence before problems were coded', async () => {
+		const { cookie } = await setupAdmin();
+		const old = JSON.stringify({
+			status: 'failed',
+			url: 'https://packs.example.com/a.json',
+			error: 'The address could not be fetched',
+			at: 1,
+		});
+		await sql`insert into core_settings (key, value, updated_at)
+			values ('themes.fetch', ${old}, 1)
+			on conflict (key) do update set value = excluded.value`.execute(runtime.handle.db);
+		const state = (await call('GET', '/api/v1/core/themes/fetch', undefined, cookie)).body;
+		expect(state).toMatchObject({ status: 'failed', error: 'The address could not be fetched' });
+		expect((state as { problem?: unknown }).problem ?? null).toBeNull();
+	});
+
 	it('reports a refused or unreadable answer in plain words', async () => {
 		const { cookie } = await setupAdmin();
 		fakeHttp.body = 'not json';
@@ -477,14 +494,19 @@ describe('installing from an address', () => {
 		await runtime.kernel.worker.drain();
 		expect((await call('GET', '/api/v1/core/themes/fetch', undefined, cookie)).body).toMatchObject({
 			status: 'failed',
-			error: 'The address did not return a theme pack',
+			error: null,
+			problem: { code: 'not_a_pack', detail: null },
 		});
 		fakeHttp.body = JSON.stringify(tinyPack('murky', { ink: '#d8cfb4' }));
 		await act('core.installThemePackFromUrl', { url: 'https://packs.example.com/b.json' }, cookie);
 		await runtime.kernel.worker.drain();
 		expect((await call('GET', '/api/v1/core/themes/fetch', undefined, cookie)).body).toMatchObject({
 			status: 'failed',
-			error: expect.stringContaining('The pack was refused: Contrast: ink on wall (day)'),
+			error: null,
+			problem: {
+				code: 'refused',
+				detail: expect.stringContaining('Contrast: ink on wall (day)'),
+			},
 		});
 	});
 });

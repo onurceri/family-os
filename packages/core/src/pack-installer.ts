@@ -11,11 +11,26 @@ import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import { readJson, writeJson } from './settings-json.ts';
 
+/**
+ * Why a fetched pack was not installed, for a page to say in the reader's language:
+ * `unreachable` (no usable answer), `not_a_pack` (the answer is not a pack of this kind) or
+ * `refused` (a pack, but not one that installs; `detail` is the reason it was refused).
+ */
+const FetchProblemSchema = z.object({
+	code: z.enum(['unreachable', 'not_a_pack', 'refused']),
+	detail: z.string().nullable(),
+});
+
 const FetchStateSchema = z.object({
 	status: z.enum(['fetching', 'done', 'failed']),
 	url: z.string(),
-	/** A short reason in plain words when it failed; never the response body. */
+	/**
+	 * A sentence kept from before problems were coded; a state written now leaves it null and a
+	 * page shows its generic failure text for one that still holds it.
+	 */
 	error: z.string().nullable(),
+	/** Why it failed; null while fetching, when done and in a state written before codes. */
+	problem: FetchProblemSchema.nullable().optional(),
 	at: z.number(),
 });
 type FetchState = z.infer<typeof FetchStateSchema>;
@@ -30,8 +45,6 @@ export interface PackInstallerOptions {
 	/** What the fetched JSON must look like before the install action sees it. */
 	schema: z.ZodType;
 	maxBytes: number;
-	/** What the pack is called in answers: `language`, `theme`. */
-	noun: string;
 	/** The action that queues the fetch. */
 	actionId: string;
 	actionTitle: string;
@@ -52,7 +65,7 @@ export interface PackInstallerOptions {
  * for the settings page to show.
  */
 export function createPackInstaller(options: PackInstallerOptions) {
-	const { key, job, installActionId, schema, maxBytes, noun, changed } = options;
+	const { key, job, installActionId, schema, maxBytes, changed } = options;
 
 	const fetchState = defineRoute({
 		method: 'get',
@@ -83,6 +96,7 @@ export function createPackInstaller(options: PackInstallerOptions) {
 					status: 'fetching',
 					url: input.url,
 					error: null,
+					problem: null,
 					at: uow.clock.now(),
 				} satisfies FetchState,
 				uow.clock.now(),
@@ -113,20 +127,24 @@ export function createPackInstaller(options: PackInstallerOptions) {
 				if (res.status !== 200) throw new Error('unexpected answer');
 				text = res.text;
 			} catch {
-				await done({ status: 'failed', error: 'The address could not be fetched' });
+				await done({
+					status: 'failed',
+					error: null,
+					problem: { code: 'unreachable', detail: null },
+				});
 				return;
 			}
-			const notAPack = `The address did not return a ${noun} pack`;
+			const notAPack = { code: 'not_a_pack', detail: null } as const;
 			let pack: unknown;
 			try {
 				pack = JSON.parse(text);
 			} catch {
-				await done({ status: 'failed', error: notAPack });
+				await done({ status: 'failed', error: null, problem: notAPack });
 				return;
 			}
 			const parsed = schema.safeParse(pack);
 			if (!parsed.success) {
-				await done({ status: 'failed', error: notAPack });
+				await done({ status: 'failed', error: null, problem: notAPack });
 				return;
 			}
 			try {
@@ -135,12 +153,13 @@ export function createPackInstaller(options: PackInstallerOptions) {
 					{ pack: parsed.data, url: payload.url },
 					systemActor(options.actor),
 				);
-				if (result.status === 'applied') await done({ status: 'done', error: null });
-				else await done({ status: 'failed', error: 'The pack was refused' });
+				if (result.status === 'applied') await done({ status: 'done', error: null, problem: null });
+				else
+					await done({ status: 'failed', error: null, problem: { code: 'refused', detail: null } });
 			} catch (error) {
 				// A pack that fails validation is final: say why, and do not retry.
-				const reason = isFamosError(error) ? `: ${error.message}` : '';
-				await done({ status: 'failed', error: `The pack was refused${reason}`.slice(0, 500) });
+				const detail = isFamosError(error) ? error.message.slice(0, 500) : null;
+				await done({ status: 'failed', error: null, problem: { code: 'refused', detail } });
 			}
 		},
 	});

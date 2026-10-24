@@ -529,7 +529,8 @@ describe('installing from an address', () => {
 			(await call('GET', '/api/v1/core/languages/fetch', undefined, cookie)).body,
 		).toMatchObject({
 			status: 'failed',
-			error: expect.stringMatching(/^The pack was refused: .+/),
+			error: null,
+			problem: { code: 'refused', detail: expect.stringMatching(/.+/) },
 		});
 		// The job finished (no retry is waiting): draining again changes nothing.
 		await runtime.kernel.worker.drain();
@@ -562,7 +563,11 @@ describe('installing from an address', () => {
 		);
 		await runtime.kernel.worker.drain();
 		const failed = (await call('GET', '/api/v1/core/languages/fetch', undefined, cookie)).body;
-		expect(failed).toMatchObject({ status: 'failed', error: 'The address could not be fetched' });
+		expect(failed).toMatchObject({
+			status: 'failed',
+			error: null,
+			problem: { code: 'unreachable', detail: null },
+		});
 
 		fakeHttp.body = 'this is not json';
 		await call(
@@ -576,7 +581,8 @@ describe('installing from an address', () => {
 			(await call('GET', '/api/v1/core/languages/fetch', undefined, cookie)).body,
 		).toMatchObject({
 			status: 'failed',
-			error: 'The address did not return a language pack',
+			error: null,
+			problem: { code: 'not_a_pack', detail: null },
 		});
 	});
 });

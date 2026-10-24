@@ -223,7 +223,8 @@ export const DraftSchema = z.object({
 	uncertainFields: z.array(z.string()),
 	/** The words of the shared message it rests on, as the message writes them; null when none. */
 	quote: z.string().nullable(),
-	error: z.string().nullable(),
+	/** `failed` when applying it did not work (the stored message can carry internals), else null. */
+	error: z.literal('failed').nullable(),
 	/** Addressed to this member alone (a memory, a question): only they decide it. */
 	forMember: z.string().nullable(),
 	createdAt: z.number(),
@@ -343,10 +344,7 @@ const toDraft = (
 	uncertainFields: row.uncertain_fields ? (JSON.parse(row.uncertain_fields) as string[]) : [],
 	quote: row.quote,
 	// The stored message can carry internals (SQL, paths); members see only that it failed.
-	error:
-		row.error === null || row.error === GONE || row.error === SETTLED
-			? null
-			: 'Applying this change failed. Try again or ask an admin.',
+	error: row.error === null || row.error === GONE || row.error === SETTLED ? null : 'failed',
 	forMember: row.for_member,
 	createdAt: row.created_at,
 	decidedAt: row.decided_at,
@@ -1680,8 +1678,9 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			if (asker === null) return digestOf([], input);
 			const [settings, people] = await Promise.all([uow.family.settings(), uow.family.members()]);
 			const me = people.find((m) => m.id === asker);
-			const roleId =
-				actor.kind === 'member' ? actor.roleId : actor.kind === 'ai' ? actor.roleId : undefined;
+			// Past the check above the caller is a member or an AI working for one, which both carry
+			// the role they act with.
+			const roleId = 'roleId' in actor ? actor.roleId : undefined;
 			const role =
 				roleId ??
 				(

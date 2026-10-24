@@ -11,6 +11,7 @@ import {
 	type IdGenerator,
 	type MemberId,
 	type RoleId,
+	selfOf,
 } from '@famos/sdk';
 import type { Access } from './access.ts';
 import { API_TOKEN_PREFIX } from './api-tokens.ts';
@@ -313,7 +314,7 @@ export function createAppService(deps: {
 					role_id: input.roleId,
 					mode: input.mode,
 					acts_for: JSON.stringify(actsFor),
-					created_by: actor.kind === 'member' ? actor.memberId : null,
+					created_by: selfOf(actor),
 					created_at: now,
 					updated_at: now,
 					revoked_at: null,

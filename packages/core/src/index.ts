@@ -28,6 +28,7 @@ export * from './extension-install.ts';
 export * from './extension-state.ts';
 export * from './family.ts';
 export * from './features.ts';
+export * from './forget-extension.ts';
 export { type ChannelShare, type HostDoors, mimeAccepted } from './host-doors.ts';
 export { IDEMPOTENCY_KEEP_MS, IDEMPOTENCY_KEY } from './idempotency.ts';
 export * from './kernel.ts';

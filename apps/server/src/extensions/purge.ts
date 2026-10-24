@@ -1,6 +1,6 @@
 import { readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { ExtensionPackage, ExtensionState } from '@famos/core';
+import { type ExtensionPackage, type ExtensionState, forgetExtension } from '@famos/core';
 import type { DatabaseHandle } from '@famos/db';
 import { type DbExecutor, RESERVED_TABLE_PREFIXES, tablePrefixOf } from '@famos/sdk';
 import { sql } from 'kysely';
@@ -117,9 +117,6 @@ export interface PurgeSummary {
 	files: number;
 }
 
-/** True for an id the extension owns: itself, or anything in its namespace (`pets.view`). */
-const ownedBy = (id: string) => (name: string) => name === id || name.startsWith(`${id}.`);
-
 /**
  * Removes the extension's data. The database part is one transaction, so it all goes or none of
  * it does; the files go after it commits, since a file removed cannot be put back if the
@@ -132,7 +129,6 @@ export async function purgeExtension(
 	options: { filesDir: string; now: number },
 ): Promise<PurgeSummary> {
 	const { id, tablePrefix } = target;
-	const owned = ownedBy(id);
 	const ns = `${id}.`;
 	const summary: PurgeSummary = {
 		tables: [],
@@ -184,131 +180,11 @@ export async function purgeExtension(
 					or (name = 'core.notify' and json_valid(payload)
 						and substr(json_extract(payload, '$.kind'), 1, ${ns.length}) = ${ns})`.execute(trx),
 			);
-			await count(
-				'drafts',
-				sql`delete from core_drafts where ${prefixed('action_id', ns)}`.execute(trx),
-			);
-			await count(
-				'notifications',
-				sql`delete from core_notifications where ${prefixed('kind', ns)}`.execute(trx),
-			);
-			await count(
-				'answers kept for retried requests',
-				sql`delete from core_idempotency where ${prefixed('action_id', ns)}`.execute(trx),
-			);
-			await count(
-				'search index entries',
-				sql`delete from core_embeddings where extension_id = ${id}`.execute(trx),
-			);
-			await count(
-				'file grants',
-				sql`delete from core_file_grants where grantee = ${id}
-					or ${prefixed('key', `${id}/`)}`.execute(trx),
-			);
-
-			const cleaned = (label: string, changed: boolean) => {
-				if (changed && !summary.settings.includes(label)) summary.settings.push(label);
-			};
-			cleaned(
-				'role permissions',
-				await editColumn(trx, 'core_roles', 'id', 'overrides', (value) =>
-					withoutKeys(value, owned),
-				),
-			);
-			cleaned(
-				'notification preferences',
-				await editColumn(trx, 'core_notification_prefs', 'member_id', 'prefs', (value) => {
-					if (!isRecord(value) || !isRecord(value.kinds)) return value;
-					return { ...value, kinds: withoutKeys(value.kinds, owned) };
-				}),
-			);
-			cleaned(
-				'what displays may show',
-				await editColumn(trx, 'core_devices', 'id', 'display_capabilities', (value) =>
-					withoutItems(value, owned),
-				),
-			);
-			cleaned(
-				'what displays may show',
-				await editColumn(trx, 'core_display_pairings', 'id', 'capabilities', (value) =>
-					withoutItems(value, owned),
-				),
-			);
-			const setting = (key: string, edit: (value: unknown) => unknown) =>
-				editSetting(trx, 'core_settings', key, edit, options.now);
-			cleaned(
-				'features',
-				await setting('features', (value) =>
-					isRecord(value) ? { ...value, disabled: withoutItems(value.disabled, owned) } : value,
-				),
-			);
-			cleaned('AI areas', await setting('ai_areas', (value) => withoutKeys(value, owned)));
-			cleaned(
-				'AI switches',
-				await editSetting(
-					trx,
-					'ai_settings',
-					'switches',
-					(value) => (isRecord(value) ? { ...value, off: withoutItems(value.off, owned) } : value),
-					options.now,
-				),
-			);
-			cleaned(
-				'automatic approvals',
-				await setting('core.autoApproval', (value) => {
-					if (!isRecord(value)) return value;
-					return Object.fromEntries(
-						Object.entries(value).filter(
-							([action, entry]) =>
-								!owned(action) &&
-								!(isRecord(entry) && typeof entry.proposerCapability === 'string'
-									? owned(entry.proposerCapability)
-									: false),
-						),
-					);
-				}),
-			);
-			cleaned(
-				'search index',
-				await setting('search_index', (value) =>
-					isRecord(value) ? { ...value, built: withoutKeys(value.built, (k) => k === id) } : value,
-				),
-			);
-			cleaned(
-				'what Today hides',
-				await setting('today.hidden', (value) => {
-					if (!isRecord(value)) return value;
-					const each = (choices: unknown) =>
-						isRecord(choices)
-							? Object.fromEntries(
-									Object.entries(choices).map(([who, hidden]) => [
-										who,
-										withoutItems(hidden, owned),
-									]),
-								)
-							: choices;
-					return {
-						...value,
-						family: withoutItems(value.family, owned),
-						members: each(value.members),
-						displays: each(value.displays),
-					};
-				}),
-			);
-			cleaned(
-				'installed extensions',
-				await setting('extensions', (value) => {
-					if (!isRecord(value)) return value;
-					return {
-						...value,
-						installed: withoutItems(value.installed, (x) => x === id),
-						known: withoutKeys(value.known, (k) => k === id),
-						failed: Array.isArray(value.failed)
-							? value.failed.filter((f) => !(isRecord(f) && f.id === id))
-							: value.failed,
-					};
-				}),
-			);
+			// What the host's own tables and settings keep about it.
+			const forgotten = await forgetExtension(trx, id, options.now);
+			for (const [label, n] of Object.entries(forgotten.rows))
+				summary.rows[label] = (summary.rows[label] ?? 0) + n;
+			summary.settings.push(...forgotten.settings);
 
 			const broken = await sql`pragma foreign_key_check`.execute(trx);
 			if (broken.rows.length > 0)
@@ -342,72 +218,6 @@ export function describePurge(id: string, summary: PurgeSummary): string[] {
 
 async function deleted(query: Promise<{ numAffectedRows?: bigint }>): Promise<number> {
 	return Number((await query).numAffectedRows ?? 0n);
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-	typeof value === 'object' && value !== null && !Array.isArray(value);
-
-function withoutKeys(value: unknown, drop: (key: string) => boolean): unknown {
-	if (!isRecord(value)) return value;
-	return Object.fromEntries(Object.entries(value).filter(([key]) => !drop(key)));
-}
-
-function withoutItems(value: unknown, drop: (item: string) => boolean): unknown {
-	if (!Array.isArray(value)) return value;
-	return value.filter((item) => !(typeof item === 'string' && drop(item)));
-}
-
-function parse(text: string): { ok: true; value: unknown } | { ok: false } {
-	try {
-		return { ok: true, value: JSON.parse(text) };
-	} catch {
-		return { ok: false };
-	}
-}
-
-/** Rewrites a JSON column in every row where the edit changes it; true when one changed. */
-async function editColumn(
-	db: DbExecutor,
-	table: string,
-	key: string,
-	column: string,
-	edit: (value: unknown) => unknown,
-): Promise<boolean> {
-	const { rows } = await sql<{ k: string; v: string | null }>`select ${sql.ref(key)} as k,
-		${sql.ref(column)} as v from ${sql.table(table)}`.execute(db);
-	let changed = false;
-	for (const row of rows) {
-		if (row.v === null) continue;
-		const parsed = parse(row.v);
-		if (!parsed.ok) continue;
-		const next = JSON.stringify(edit(parsed.value));
-		if (next === JSON.stringify(parsed.value)) continue;
-		await sql`update ${sql.table(table)} set ${sql.ref(column)} = ${next}
-			where ${sql.ref(key)} = ${row.k}`.execute(db);
-		changed = true;
-	}
-	return changed;
-}
-
-/** Rewrites one JSON value of a settings table (`key`, `value`, `updated_at`) when it changes. */
-async function editSetting(
-	db: DbExecutor,
-	table: string,
-	key: string,
-	edit: (value: unknown) => unknown,
-	now: number,
-): Promise<boolean> {
-	const { rows } = await sql<{ value: string }>`select value from ${sql.table(table)}
-		where key = ${key}`.execute(db);
-	const row = rows[0];
-	if (!row) return false;
-	const parsed = parse(row.value);
-	if (!parsed.ok) return false;
-	const next = JSON.stringify(edit(parsed.value));
-	if (next === JSON.stringify(parsed.value)) return false;
-	await sql`update ${sql.table(table)} set value = ${next}, updated_at = ${now}
-		where key = ${key}`.execute(db);
-	return true;
 }
 
 async function countFiles(dir: string): Promise<number> {

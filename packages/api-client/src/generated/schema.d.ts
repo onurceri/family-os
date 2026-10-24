@@ -11435,7 +11435,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -11756,7 +11757,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -11941,7 +11943,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -12126,7 +12129,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -12311,7 +12315,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -12496,7 +12501,8 @@ export interface operations {
                         confidence: number | null;
                         uncertainFields: string[];
                         quote: string | null;
-                        error: string | null;
+                        /** @enum {string|null} */
+                        error: "failed" | null;
                         forMember: string | null;
                         createdAt: number;
                         decidedAt: number | null;
@@ -12805,6 +12811,11 @@ export interface operations {
                         status: "fetching" | "done" | "failed";
                         url: string;
                         error: string | null;
+                        problem?: {
+                            /** @enum {string} */
+                            code: "unreachable" | "not_a_pack" | "refused";
+                            detail: string | null;
+                        } | null;
                         at: number;
                     } | null;
                 };
@@ -13361,6 +13372,11 @@ export interface operations {
                         status: "fetching" | "done" | "failed";
                         url: string;
                         error: string | null;
+                        problem?: {
+                            /** @enum {string} */
+                            code: "unreachable" | "not_a_pack" | "refused";
+                            detail: string | null;
+                        } | null;
                         at: number;
                     } | null;
                 };
