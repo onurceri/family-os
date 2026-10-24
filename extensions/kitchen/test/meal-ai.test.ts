@@ -56,12 +56,16 @@ describe('removing a planned meal as the AI', () => {
 			AI,
 		);
 		expect(ok.status).toBe('drafted');
-		const target = await k.registry.actions
-			.get('kitchen.removeMealPlanEntry')
-			?.targetTitle?.(
-				{ db: k.ctx.db, family: k.ctx.family, translate: repoTranslate(), now: k.clock.now() },
-				{ id: meal.id },
-			);
+		const target = await k.registry.actions.get('kitchen.removeMealPlanEntry')?.targetTitle?.(
+			{
+				db: k.ctx.db,
+				family: k.ctx.family,
+				translate: repoTranslate(),
+				vocabulary: k.ctx.vocabulary,
+				now: k.clock.now(),
+			},
+			{ id: meal.id },
+		);
 		expect(target).toBe('Pancakes · dinner, Thu, Oct 8');
 	});
 

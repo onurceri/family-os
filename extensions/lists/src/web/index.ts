@@ -24,6 +24,7 @@ export default defineWebExtension({
 	messages: en,
 	labelKey: 'lists:feature_name',
 	descriptionKey: 'lists:feature_description',
+	offlineReads: ['/tasks', '/shopping/lists', '/shopping/lists/:listId/items'],
 	nav: [
 		{
 			id: 'lists.nav',

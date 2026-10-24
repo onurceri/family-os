@@ -1507,6 +1507,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				db: deps.extensionDb(ownerOf(def.id), uow.db),
 				family: uow.family,
 				translate: uow.translate,
+				vocabulary: uow.vocabulary,
 				now: uow.clock.now(),
 			};
 			return input.success ? ((await look(ctx, input.data)) ?? undefined)?.slice(0, 80) : undefined;
@@ -1574,6 +1575,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 				db: deps.extensionDb(ownerOf(def.id), uow.db),
 				family: uow.family,
 				translate: uow.translate,
+				vocabulary: uow.vocabulary,
 				now: uow.clock.now(),
 			});
 			const actor = uow.actor;

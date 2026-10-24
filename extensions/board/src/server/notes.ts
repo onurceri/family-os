@@ -689,14 +689,20 @@ export const cleanupJob = defineJob({
 			.where('ends_at', 'is not', null)
 			.where('ends_at', '<', before)
 			.execute();
-		for (const note of due) {
-			if (note.photo) await ctx.files.delete(note.photo);
-			// The removal and its entry in the change log are one transaction.
-			await ctx.unit(async (uow) => {
-				await tables(uow.db).deleteFrom('board_notes').where('id', '=', note.id).execute();
-				uow.emit(boardChanged, { noteId: note.id, op: 'delete' });
-			});
-		}
+		// The next run is planned first so a failing note never stops the schedule.
 		await scheduleCleanup(ctx);
+		for (const note of due) {
+			// A note that fails stays and is tried again at the next run; the others go on.
+			try {
+				if (note.photo) await ctx.files.delete(note.photo);
+				// The removal and its entry in the change log are one transaction.
+				await ctx.unit(async (uow) => {
+					await tables(uow.db).deleteFrom('board_notes').where('id', '=', note.id).execute();
+					uow.emit(boardChanged, { noteId: note.id, op: 'delete' });
+				});
+			} catch (error) {
+				ctx.logger.warn({ noteId: note.id, error }, 'board clean-up could not remove a note');
+			}
+		}
 	},
 });

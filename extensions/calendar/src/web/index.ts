@@ -16,6 +16,7 @@ export default defineWebExtension({
 	messages: en,
 	labelKey: 'calendar:feature_name',
 	descriptionKey: 'calendar:feature_description',
+	offlineReads: ['/occurrences'],
 	nav: [
 		{
 			id: 'calendar.nav',

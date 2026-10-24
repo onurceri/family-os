@@ -148,6 +148,7 @@
 	"kind_shopping_remove": "Listeden çıkar",
 	"draft_approve_delete": "Sil",
 	"quantity_units": "kg, g, gr, mg, l, lt, litre, ml, cl, adet, paket, pk, kutu, şişe, tane, tabaka, rulo, torba, poşet, kavanoz, demet, x",
+	"default_list_names": "Alışveriş listesi, Market, Bakkal",
 	"today_open_one": "{{count}} açık",
 	"today_open_other": "{{count}} açık",
 	"page_more_one": "{{count}} tane daha",

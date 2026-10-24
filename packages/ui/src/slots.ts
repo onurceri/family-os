@@ -652,6 +652,13 @@ export interface WebExtension {
 	drafts?: AnyDraftPresenter[];
 	/** Pages served under their path (matched by the app's catch-all route). */
 	pages?: PageContribution[];
+	/**
+	 * Routes of its own API (paths under `/api/v1/<id>`, a `:name` segment matches one segment)
+	 * whose last answer the app keeps for offline use: the reads a family wants when the network
+	 * is gone (today's events, the shopping list). Only plain reads with nothing private to a
+	 * single device; the copy is dropped on sign-out.
+	 */
+	offlineReads?: string[];
 }
 
 /** What the app passes to a page component: the values of the `:name` segments of its path. */

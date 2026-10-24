@@ -28,6 +28,8 @@ export interface Contributions {
 	blocks: readonly TodayBlockContribution[];
 	/** The entry where things are shared with the family (Quick add), if an extension has one. */
 	share: NavContribution | undefined;
+	/** API reads kept for offline use, as full paths (`/api/v1/<extension>/…`, `:name` segments). */
+	offlineReads: readonly string[];
 }
 
 /** What the app contributes itself (ids `app.<name>`, presenters of core actions). */
@@ -84,6 +86,9 @@ export function collect(
 		facets: extensions.flatMap((e) => e.today ?? []),
 		blocks: extensions.flatMap((e) => e.blocks ?? []),
 		share: shares[0],
+		offlineReads: extensions.flatMap((e) =>
+			(e.offlineReads ?? []).map((path) => `/api/v1/${e.id}${path}`),
+		),
 	};
 }
 

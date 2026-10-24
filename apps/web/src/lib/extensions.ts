@@ -61,14 +61,17 @@ async function fromSource(): Promise<WebExtension[]> {
 
 /**
  * Asks the service worker to keep the packages' files for offline use (and to drop those of
- * packages the server no longer runs), once the app has opened.
+ * packages the server no longer runs), once the app has opened, and tells it which API reads the
+ * installed extensions want kept.
  */
 export function keepExtensionsOffline(): void {
 	if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
 	const files = packageFiles(list);
-	void navigator.serviceWorker.ready.then((reg) =>
-		reg.active?.postMessage({ type: 'CACHE_EXTENSIONS', files }),
-	);
+	const paths = contributions.offlineReads;
+	void navigator.serviceWorker.ready.then((reg) => {
+		reg.active?.postMessage({ type: 'CACHE_EXTENSIONS', files });
+		reg.active?.postMessage({ type: 'OFFLINE_READS', paths });
+	});
 }
 
 export { enabledOnly, ownerOf } from './contributions.js';
