@@ -9,7 +9,6 @@ import {
 	type Kernel,
 	pathParams,
 	publicPath,
-	WAITING_STATUSES,
 } from '@famos/core';
 import {
 	type ActionResult,
@@ -883,7 +882,7 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		if (fields.length > 0) throw badFields(fields);
 
 		const ctx = await contextOf();
-		const rows = await waitingFor(actor);
+		const rows = await kernel.runner.waitingFor(actor);
 		// The ids and states are in the validator too: a suggestion that expires or fails is not
 		// a write the log hears of.
 		const window = JSON.stringify({
@@ -905,68 +904,6 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		const next = offset + size < rows.length ? encodeCursor(offset + size) : null;
 		return c.json({ items, next, timeZone: ctx.timeZone }, 200);
 	});
-
-	/**
-	 * The suggestions still waiting that this caller sees, newest first: what Quick add lists a
-	 * member (their own, and those they may decide). An app alone sees the ones it made; an app
-	 * acting for a member sees that member's view, within the app's own capabilities.
-	 */
-	async function waitingFor(actor: Actor): Promise<DraftRow[]> {
-		const member = memberBehind(actor);
-		const all = await kernel.ctx.db
-			.withTables<CoreTables>()
-			.selectFrom('core_drafts')
-			.selectAll()
-			.where('status', 'in', [...WAITING_STATUSES])
-			.where((eb) =>
-				member !== null
-					? eb.or([eb('for_member', 'is', null), eb('for_member', '=', member)])
-					: eb('for_member', 'is', null),
-			)
-			.orderBy('created_at', 'desc')
-			.orderBy('id', 'desc')
-			.execute();
-		const runner = kernel.runner;
-		const seen = all.filter((row) => draftVisibleTo(actor, row));
-		// One about a day that has passed, or about something that is gone, no longer waits.
-		const passed = await runner.passedCheck();
-		const open = seen.filter((row) => !passed(row));
-		const gone = await runner.goneAmong(open);
-		return open.filter((row) => !gone.has(row.id));
-	}
-
-	/**
-	 * Whether this caller sees a suggestion: a person as they are in the app (theirs, or theirs to
-	 * decide), any other caller only what it made itself.
-	 */
-	function draftVisibleTo(actor: Actor, row: DraftRow): boolean {
-		const member = memberBehind(actor);
-		if (row.for_member !== null && row.for_member !== member) return false;
-		if (actor.kind === 'member') {
-			const runner = kernel.runner;
-			const { via: _via, ...person } = actor;
-			return (
-				runner.mayDecide(row, person) ||
-				runner.isProposer(person, row) ||
-				(runner.unavailable(row) !== null &&
-					kernel.access.can(person, CORE_CAPABILITIES.draftsApprove.id))
-			);
-		}
-		return principalOf(JSON.parse(row.proposed_by) as Actor) === principalOf(actor);
-	}
-
-	/** The ids among these suggestions that this caller sees: the only core things the feed names. */
-	async function visibleDraftIds(actor: Actor, ids: readonly string[]): Promise<Set<string>> {
-		if (ids.length === 0) return new Set();
-		if (!kernel.access.can(actor, CORE_CAPABILITIES.draftsPropose.id)) return new Set();
-		const rows = await kernel.ctx.db
-			.withTables<CoreTables>()
-			.selectFrom('core_drafts')
-			.selectAll()
-			.where('id', 'in', [...ids])
-			.execute();
-		return new Set(rows.filter((row) => draftVisibleTo(actor, row)).map((row) => row.id));
-	}
 
 	async function summaryOf(
 		row: DraftRow,
@@ -1065,7 +1002,7 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 		const page = await kernel.changes.since(since, actor);
 		// Core offers no things of its own here but the suggestions this caller may read, named
 		// by id alone.
-		const drafts = await visibleDraftIds(
+		const drafts = await kernel.runner.visibleDraftIds(
 			actor,
 			page.changes
 				.filter((change) => change.extension === 'core' && change.entity === 'draft')

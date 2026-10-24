@@ -77,22 +77,21 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 		},
 
 		async draftButtons(memberId, source) {
-			// A notification about a single draft points at it by id (kind `draft`).
-			const base = core().selectFrom('core_drafts').selectAll();
-			const rows = await (source.kind === 'draft'
-				? base.where('id', '=', source.id)
-				: base.where('source_kind', '=', source.kind).where('source_id', '=', source.id)
-			)
-				.where('status', '=', 'pending')
-				// Drafts addressed to someone else are not this recipient's to see.
-				.where((eb) => eb.or([eb('for_member', 'is', null), eb('for_member', '=', memberId)]))
-				.orderBy('created_at')
-				.execute();
-			// Only the ones this person may decide: buttons that would be refused are not shown.
-			// One about a day that has passed is expired: no buttons for it.
+			// Only the ones this person may decide: buttons that would be refused are not shown. One
+			// about a day that has passed is expired, and one for someone else is not theirs to see.
 			const actor = await kernel.memberActor(memberId);
-			const passed = await kernel.runner.passedCheck();
-			const gone = await kernel.runner.goneAmong(rows);
+			// A notification about a single draft points at it by id (kind `draft`).
+			const rows = actor
+				? await kernel.runner.waitingFor(actor, {
+						statuses: ['pending'],
+						about:
+							source.kind === 'draft'
+								? { draftId: source.id }
+								: { sourceKind: source.kind, sourceId: source.id },
+						decidableOnly: true,
+						oldestFirst: true,
+					})
+				: [];
 			const { formatLocale, hourCycle } = await kernel.ctx.family.settings();
 			// The reader's words for the day, the family's order and clock.
 			const locale = dateLocale(await languageOf(memberId), formatLocale, hourCycle);
@@ -106,12 +105,7 @@ export function wireTelegram(telegram: Telegram, kernel: Kernel): void {
 			};
 			const t = (key: string, params?: Record<string, unknown>) =>
 				handlers.translate(memberId, key, params);
-			const shown = rows
-				.filter(
-					(r) =>
-						actor !== null && !passed(r) && !gone.has(r.id) && kernel.runner.mayDecide(r, actor),
-				)
-				.slice(0, 5);
+			const shown = rows.slice(0, 5);
 			return Promise.all(
 				shown.map(async (r) => {
 					const def = kernel.registry.actions.get(r.action_id);

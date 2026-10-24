@@ -21,6 +21,7 @@ import {
 	type ProposalRefusal,
 	type ProposalRefusalDetails,
 	personPresent,
+	principalOf,
 	type SecretBox,
 	selfOf,
 	subjectOf,
@@ -186,6 +187,27 @@ export interface ActionRunner {
 	undoStep(draft: DraftRow): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
 	mayDecide(draft: DraftRow, actor: Actor): boolean;
+	/**
+	 * The suggestions still waiting that this caller sees, newest first (oldest first with
+	 * `oldestFirst`): a person as they are in the app sees their own and those they may decide, any
+	 * other caller only what it made itself (an app acting for a member sees that member's view
+	 * within what it may do). One about a day that has passed, or about something that is gone, no
+	 * longer waits. `decidableOnly` keeps only those the actor may decide now, `statuses` narrows
+	 * the waiting states, and `about` narrows to one draft or to the drafts of one source.
+	 */
+	waitingFor(
+		actor: Actor,
+		options?: {
+			statuses?: readonly ('pending' | 'failed')[];
+			about?: { draftId: string } | { sourceKind: string; sourceId: string };
+			decidableOnly?: boolean;
+			oldestFirst?: boolean;
+		},
+	): Promise<DraftRow[]>;
+	/** Whether this caller sees a suggestion (the rule `waitingFor` applies to each row). */
+	draftVisibleTo(actor: Actor, draft: DraftRow): boolean;
+	/** The ids among these suggestions that this caller sees; none when it may not propose. */
+	visibleDraftIds(actor: Actor, ids: readonly string[]): Promise<Set<string>>;
 	/** Whether this actor is the member behind the draft (who proposed it, or who the AI proposed it for). */
 	isProposer(actor: Actor, draft: DraftRow): boolean;
 	/**
@@ -979,6 +1001,63 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			if (isFamosError(error)) return false;
 			throw error;
 		}
+	}
+
+	function draftVisibleTo(actor: Actor, draft: DraftRow): boolean {
+		const member = memberBehind(actor);
+		if (draft.for_member !== null && draft.for_member !== member) return false;
+		if (actor.kind === 'member') {
+			const { via: _via, ...person } = actor;
+			return (
+				mayDecide(draft, person) ||
+				isProposer(person, draft) ||
+				(unavailable(draft) !== null && can(person, 'core.drafts.approve'))
+			);
+		}
+		return principalOf(JSON.parse(draft.proposed_by) as Actor) === principalOf(actor);
+	}
+
+	async function waitingFor(
+		actor: Actor,
+		options: Parameters<ActionRunner['waitingFor']>[1] = {},
+	): Promise<DraftRow[]> {
+		const member = memberBehind(actor);
+		let query = coreDb()
+			.selectFrom('core_drafts')
+			.selectAll()
+			.where('status', 'in', [...(options.statuses ?? WAITING_STATUSES)]);
+		const about = options.about;
+		if (about && 'draftId' in about) query = query.where('id', '=', about.draftId);
+		else if (about)
+			query = query
+				.where('source_kind', '=', about.sourceKind)
+				.where('source_id', '=', about.sourceId);
+		const all = await query
+			.where((eb) =>
+				member !== null
+					? eb.or([eb('for_member', 'is', null), eb('for_member', '=', member)])
+					: eb('for_member', 'is', null),
+			)
+			.orderBy('created_at', options.oldestFirst ? 'asc' : 'desc')
+			.orderBy('id', options.oldestFirst ? 'asc' : 'desc')
+			.execute();
+		const seen = options.decidableOnly
+			? all.filter((row) => mayDecide(row, actor))
+			: all.filter((row) => draftVisibleTo(actor, row));
+		const passed = await passedCheck();
+		const open = seen.filter((row) => !passed(row));
+		const gone = await goneAmong(open);
+		return open.filter((row) => !gone.has(row.id));
+	}
+
+	async function visibleDraftIds(actor: Actor, ids: readonly string[]): Promise<Set<string>> {
+		if (ids.length === 0 || !can(actor, 'core.drafts.propose')) return new Set();
+		const rows = await coreDb()
+			.selectFrom('core_drafts')
+			.selectAll()
+			.where('id', 'in', [...ids])
+			.execute();
+		return new Set(rows.filter((row) => draftVisibleTo(actor, row)).map((row) => row.id));
 	}
 
 	/** The member behind a draft: who proposed it, or who the AI proposed it for. */
@@ -1895,6 +1974,9 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		replaceDraft,
 		mayDecide,
 		isProposer,
+		waitingFor,
+		draftVisibleTo,
+		visibleDraftIds,
 		unavailable,
 		editDraft,
 		passedCheck,
