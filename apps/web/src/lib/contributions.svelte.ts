@@ -49,6 +49,9 @@ class Registry {
 	get share() {
 		return this.#all.share;
 	}
+	get offlineReads() {
+		return this.#all.offlineReads;
+	}
 }
 
 export const contributions = new Registry();

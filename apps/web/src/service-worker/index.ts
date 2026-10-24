@@ -2,6 +2,7 @@ import { isSameOriginPath } from '@famos/sdk/same-origin-path';
 import { version } from '$app/env';
 import { assets, immutable } from '$app/manifest';
 import { self } from '$app/service-worker';
+import { offlinePatternsOf, offlineReadMatcher } from '../lib/offline-reads.js';
 
 /**
  * Offline shell + Web Share Target.
@@ -9,7 +10,9 @@ import { self } from '$app/service-worker';
  * - Caches API calls only for a short allow-list of read routes: network first, and
  *   the last copy when offline, flagged with `x-famos-offline`. Writes, auth, files and every
  *   other route are never cached; the server stays the source of truth. The copy is dropped on
- *   sign-out (message `CLEAR_API_CACHE`).
+ *   sign-out (message `CLEAR_API_CACHE`). The app's own reads are listed here; the extensions'
+ *   come from the app after it opened (message `OFFLINE_READS`, from what each extension declares)
+ *   and are kept for the next start.
  * - Keeps the extension packages' files (`/extensions/<id>/<digest>/…`) once the app names them
  *   after it opened (message `CACHE_EXTENSIONS`), and serves them from that copy first: their
  *   address changes with every build, so a copy is never stale. Files of packages the app no
@@ -25,19 +28,45 @@ const API_CACHE = 'famos-api-reads';
 /** The extension packages' files. Not versioned: addressed by digest, they outlive app updates. */
 const EXTENSIONS_CACHE = 'famos-extensions';
 const EXTENSION_FILES = '/extensions/';
+/** The API paths the installed extensions want kept, as the app last told this worker. */
+const READS_CACHE = 'famos-offline-reads';
+const READS_KEY = '/__offline-reads';
+const API_PREFIX = '/api/v1/';
 /**
  * The only API reads kept for offline use: what the app needs to open (who am I, members,
- * family settings), Today's calendar, the shopping lists and items, tasks and chores. The
- * server marks every API response `no-store` for browsers and proxies; this private copy is
- * the one deliberate exception, limited to these paths.
+ * family settings) and the extensions' declared reads (Today's calendar, the shopping lists and
+ * items, tasks and chores). The server marks every API response `no-store` for browsers and
+ * proxies; this private copy is the one deliberate exception, limited to these paths.
  */
-const OFFLINE_READS = [
-	/^\/api\/v1\/core\/(me|setup|members|settings\/family)$/,
-	/^\/api\/v1\/calendar\/occurrences$/,
-	/^\/api\/v1\/lists\/tasks$/,
-	/^\/api\/v1\/lists\/shopping\/lists(\/[^/]+\/items)?$/,
-	/^\/api\/v1\/chores\/chores$/,
-];
+const APP_READS = [/^\/api\/v1\/core\/(me|setup|members|settings\/family)$/];
+let extensionReads = offlineReadMatcher([]);
+/** Whether the declared reads are known: they load from the cache when the worker starts. */
+let readsKnown = false;
+const readsLoaded = caches
+	.open(READS_CACHE)
+	.then((cache) => cache.match(READS_KEY))
+	.then((found) => found?.json())
+	.then((paths) => {
+		if (!readsKnown) extensionReads = offlineReadMatcher(offlinePatternsOf(paths));
+	})
+	.catch(() => {})
+	.finally(() => {
+		readsKnown = true;
+	});
+const isOfflineRead = (pathname: string) =>
+	APP_READS.some((re) => re.test(pathname)) || extensionReads(pathname);
+
+/** Keeps the declared reads for this and the next start of the worker. */
+async function keepReads(data: unknown): Promise<void> {
+	const paths = offlinePatternsOf(data);
+	readsKnown = true;
+	extensionReads = offlineReadMatcher(paths);
+	const cache = await caches.open(READS_CACHE);
+	await cache.put(
+		READS_KEY,
+		new Response(JSON.stringify(paths), { headers: { 'content-type': 'application/json' } }),
+	);
+}
 /** Without an answer after this long, a cached copy is shown (the network keeps trying). */
 const SLOW_NETWORK_MS = 5000;
 const toPath = (p: string) => new URL(p, self.registration.scope).pathname;
@@ -56,7 +85,12 @@ self.addEventListener('activate', (event) => {
 				Promise.all(
 					keys
 						.filter(
-							(k) => k !== CACHE && k !== SHARE_CACHE && k !== API_CACHE && k !== EXTENSIONS_CACHE,
+							(k) =>
+								k !== CACHE &&
+								k !== SHARE_CACHE &&
+								k !== API_CACHE &&
+								k !== EXTENSIONS_CACHE &&
+								k !== READS_CACHE,
 						)
 						.map((k) => caches.delete(k)),
 				),
@@ -70,6 +104,7 @@ self.addEventListener('message', (event) => {
 	if (event.data?.type === 'VERSION') event.ports[0]?.postMessage(version);
 	if (event.data?.type === 'CLEAR_API_CACHE') event.waitUntil(caches.delete(API_CACHE));
 	if (event.data?.type === 'CACHE_EXTENSIONS') event.waitUntil(keepExtensions(event.data.files));
+	if (event.data?.type === 'OFFLINE_READS') event.waitUntil(keepReads(event.data.paths));
 });
 
 /**
@@ -182,8 +217,17 @@ self.addEventListener('fetch', (event) => {
 		event.respondWith(handleShare(event.request));
 		return;
 	}
-	if (event.request.method === 'GET' && OFFLINE_READS.some((re) => re.test(url.pathname))) {
-		event.respondWith(handleRead(event));
+	if (event.request.method === 'GET' && url.pathname.startsWith(API_PREFIX)) {
+		if (readsKnown) {
+			if (isOfflineRead(url.pathname)) event.respondWith(handleRead(event));
+			return;
+		}
+		// A worker that just started has not read the declared reads yet: it decides when it has.
+		event.respondWith(
+			readsLoaded.then(() =>
+				isOfflineRead(url.pathname) ? handleRead(event) : fetch(event.request),
+			),
+		);
 		return;
 	}
 	if (event.request.method !== 'GET' || url.pathname.startsWith('/api/')) return;

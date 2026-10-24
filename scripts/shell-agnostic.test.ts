@@ -46,8 +46,8 @@ function extensionPaths(): Set<string> {
 
 /**
  * Known exceptions, each with its reason. The service worker is built apart from the app, so it
- * cannot read what extensions contribute: the PWA's share target (declared in the static web
- * manifest) hands what the phone shares to the share page, `/share`.
+ * cannot read what extensions contribute (their offline reads reach it as a message from the app):
+ * the PWA's share target (declared in the static web manifest) hands what the phone shares to the share page, `/share`.
  */
 const EXCEPTIONS = new Set([
 	'apps/web/src/service-worker/index.ts: a page of an extension (/share)',
@@ -59,6 +59,8 @@ function findings(file: string, text: string, paths: ReadonlySet<string>): strin
 	const ids = extensions.join('|');
 	const rules: [RegExp, string][] = [
 		[new RegExp(`/api/v1/(${ids})\\b`, 'g'), 'its API'],
+		// The same path as a regular expression, its slashes escaped (the service worker's allow-list).
+		[new RegExp(`\\\\/api\\\\/v1\\\\/(${ids})\\b`, 'g'), 'its API (escaped)'],
 		[new RegExp(`\\bcan\\(\\s*['"\`](${ids})\\.`, 'g'), 'one of its capabilities'],
 		[new RegExp(`\\bonEvent\\(\\s*['"\`](${ids})\\.`, 'g'), 'its events'],
 	];
@@ -107,7 +109,7 @@ describe('the web shell never names an extension', () => {
 	it('finds an extension named in the ways it looks for', () => {
 		const paths = new Set(['/garden']);
 		const text = `api.GET('/api/v1/calendar/occurrences'); app.can('chores.view');
-			app.onEvent('ambient.', f); goto('/garden');`;
-		expect(findings('x.ts', text, paths)).toHaveLength(4);
+			app.onEvent('ambient.', f); goto('/garden'); /^\\/api\\/v1\\/lists\\/tasks$/`;
+		expect(findings('x.ts', text, paths)).toHaveLength(5);
 	});
 });

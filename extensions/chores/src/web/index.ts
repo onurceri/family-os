@@ -20,6 +20,7 @@ export default defineWebExtension({
 	messages: en,
 	labelKey: 'chores:feature_name',
 	descriptionKey: 'chores:feature_description',
+	offlineReads: ['/chores'],
 	nav: [
 		{
 			id: 'chores.nav',

@@ -73,6 +73,12 @@ describe('collecting what extensions contribute', () => {
 		expect(all.share?.id).toBe('post.nav');
 	});
 
+	it('lists the offline reads of each extension under its own API', () => {
+		const all = collect([{ ...garden, offlineReads: ['/beds', '/beds/:id/water'] }]);
+		expect(all.offlineReads).toEqual(['/api/v1/garden/beds', '/api/v1/garden/beds/:id/water']);
+		expect(collect([garden]).offlineReads).toEqual([]);
+	});
+
 	it('refuses two extensions with one id, two places to share and two pages on one path', () => {
 		expect(() => collect([garden, garden])).toThrow(/garden/);
 		const second = { ...post, id: 'mail', nav: post.nav?.map((n) => ({ ...n, id: 'mail.nav' })) };
