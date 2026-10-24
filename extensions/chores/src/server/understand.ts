@@ -4,6 +4,8 @@ import {
 	type Mention,
 	type MentionContext,
 	type Resolution,
+	refuse,
+	sameText,
 	whichOne,
 } from '@famos/sdk';
 import { type Recurrence, Temporal, WEEKDAYS } from '@famos/time';
@@ -11,16 +13,6 @@ import { tables } from './store.ts';
 
 const MONTHS_IN_YEAR = 12;
 const MAX_MONTHLY = 12;
-
-const refuse = (
-	reason: 'already' | 'unknown' | 'ambiguous' | 'incomplete',
-	subject: string | null,
-	index: number,
-): Resolution => ({ refuse: { reason, subject, from: [index] } });
-
-const same = (a: string, b: string) =>
-	a.trim().replace(/\s+/gu, ' ').toLocaleLowerCase() ===
-	b.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
 
 /**
  * How a chore repeats, from the repeat a mention reads: by days, weeks (on the weekdays it names,
@@ -72,7 +64,7 @@ function resolveChore(
 ): Resolution {
 	const title = mention.title;
 	if (!title) return refuse('incomplete', null, index);
-	if (chores.some((c) => same(c.label, title))) return refuse('already', title, index);
+	if (chores.some((c) => sameText(c.label, title))) return refuse('already', title, index);
 	const start = ctx.day(mention.date, 'future');
 	const startDate = start?.date ?? ctx.today;
 	const until = mention.repeat?.until ? ctx.day(mention.repeat.until, 'future') : null;

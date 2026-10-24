@@ -1,10 +1,6 @@
-import { defineMentionKind, type Resolution } from '@famos/sdk';
+import { defineMentionKind, type Resolution, refuse, sameText } from '@famos/sdk';
 import { compareDates } from '@famos/time';
 import { tables } from './store.ts';
-
-const same = (a: string, b: string) =>
-	a.trim().replace(/\s+/gu, ' ').toLocaleLowerCase() ===
-	b.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
 
 export const noteKind = defineMentionKind({
 	id: 'board.note',
@@ -39,9 +35,8 @@ export const noteKind = defineMentionKind({
 			.execute();
 		return mentions.map(({ index, mention }): Resolution => {
 			const text = mention.notes ?? mention.title;
-			if (!text) return { refuse: { reason: 'incomplete', subject: null, from: [index] } };
-			if (onBoard.some((n) => same(n.text, text)))
-				return { refuse: { reason: 'already', subject: text, from: [index] } };
+			if (!text) return refuse('incomplete', null, index);
+			if (onBoard.some((n) => sameText(n.text, text))) return refuse('already', text, index);
 			const ends = ctx.day(mention.endDate, 'future');
 			// A last day that has passed would hide the note at once.
 			const endsOn = ends && compareDates(ends.date, ctx.today) >= 0 ? ends : null;

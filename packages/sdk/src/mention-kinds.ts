@@ -9,6 +9,7 @@ import {
 	type MentionRecord,
 	MentionSchema,
 	type PeopleResult,
+	type RefusalReason,
 	type Resolution,
 	type ResolvedDay,
 	type ResolvedTime,
@@ -414,3 +415,24 @@ export function addressesEveryone(
 		return words.length > 0 && said.includes(` ${words.join(' ')} `);
 	});
 }
+
+/** The most characters of a mention's notes a resolver keeps. */
+export const MENTION_NOTES_MAX = 2000;
+
+/**
+ * A mention left out, with the words naming what it was about (none: a blank line). `from` is the
+ * mention's index, or every index of a merged resolution.
+ */
+export const refuse = (
+	reason: RefusalReason,
+	subject: string | null | undefined,
+	from: number | readonly number[],
+): Resolution => ({
+	refuse: { reason, subject: subject ?? null, from: typeof from === 'number' ? [from] : from },
+});
+
+/** Whether two texts are the same words: case, edge spaces and runs of spaces do not matter. */
+export const sameText = (a: string, b: string): boolean => {
+	const plain = (s: string) => s.trim().replace(/\s+/gu, ' ').toLocaleLowerCase();
+	return plain(a) === plain(b);
+};

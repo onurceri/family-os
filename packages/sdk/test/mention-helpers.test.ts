@@ -3,10 +3,13 @@ import {
 	asAppointment,
 	type DayRef,
 	endNamed,
+	MENTION_NOTES_MAX,
 	type MentionContext,
 	peopleNamed,
 	type ResolvedDay,
+	refuse,
 	resolvePeople,
+	sameText,
 	stillToCome,
 	unsureFields,
 	withoutAmounts,
@@ -200,5 +203,25 @@ describe('withoutAmounts', () => {
 			'Policy AB-123; renews every year',
 		);
 		expect(withoutAmounts('Total 45,50')).toBe('');
+	});
+});
+
+describe('refuse and sameText', () => {
+	it('refuse names the mention by its index or by every merged index', () => {
+		expect(refuse('already', 'Milk', 2)).toEqual({
+			refuse: { reason: 'already', subject: 'Milk', from: [2] },
+		});
+		expect(refuse('incomplete', undefined, [0, 1])).toEqual({
+			refuse: { reason: 'incomplete', subject: null, from: [0, 1] },
+		});
+	});
+
+	it('sameText ignores case, edge spaces and runs of spaces', () => {
+		expect(sameText('  Take  Out the TRASH ', 'take out the trash')).toBe(true);
+		expect(sameText('Take out', 'Take out trash')).toBe(false);
+	});
+
+	it('keeps the notes limit', () => {
+		expect(MENTION_NOTES_MAX).toBe(2000);
 	});
 });

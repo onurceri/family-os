@@ -5,6 +5,8 @@ import {
 	type Mention,
 	type MentionContext,
 	type Resolution,
+	refuse,
+	sameText,
 	whichOne,
 	withoutAmounts,
 } from '@famos/sdk';
@@ -63,11 +65,8 @@ function resolveChange(
 ): Resolution {
 	const words = mention.target as string;
 	const found = ctx.target(words, things);
-	if ('none' in found) return { refuse: { reason: 'unknown', subject: words, from: [index] } };
-	if ('ambiguous' in found)
-		return {
-			refuse: { reason: 'ambiguous', subject: whichOne(words, found.ambiguous), from: [index] },
-		};
+	if ('none' in found) return refuse('unknown', words, index);
+	if ('ambiguous' in found) return refuse('ambiguous', whichOne(words, found.ambiguous), index);
 	const thing = found.found;
 	const bought = ctx.day(mention.date, 'past');
 	const warranty = warrantyOf(
@@ -85,8 +84,7 @@ function resolveChange(
 		...(bought && bought.date !== thing.purchased_on && { purchasedOn: bought.date }),
 		...(warranty && warranty.date !== thing.warranty_until && { warrantyUntil: warranty.date }),
 	};
-	if (Object.keys(patch).length === 0)
-		return { refuse: { reason: 'already', subject: words, from: [index] } };
+	if (Object.keys(patch).length === 0) return refuse('already', words, index);
 	return {
 		propose: {
 			actionId: 'home.updateItem',
@@ -109,21 +107,20 @@ function resolveNew(
 	things: readonly Thing[],
 ): Resolution {
 	const name = mention.title;
-	if (!name) return { refuse: { reason: 'incomplete', subject: null, from: [index] } };
+	if (!name) return refuse('incomplete', null, index);
 	const home = pickRecord(ctx, mention.about, homes);
-	if ('refuse' in home) return { refuse: { reason: home.refuse, subject: name, from: [index] } };
+	if ('refuse' in home) return refuse(home.refuse, name, index);
 	const [brand = '', model = ''] = (mention.lines ?? []).map((line) => short(line) ?? '');
-	const same = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 	if (
 		things.some(
 			(t) =>
 				t.home_id === home.found.id &&
-				same(t.label, name) &&
-				same(t.brand, brand) &&
-				same(t.model, model),
+				sameText(t.label, name) &&
+				sameText(t.brand, brand) &&
+				sameText(t.model, model),
 		)
 	)
-		return { refuse: { reason: 'already', subject: name, from: [index] } };
+		return refuse('already', name, index);
 	const bought = ctx.day(mention.date, 'past');
 	const warranty = warrantyOf(ctx, mention, bought);
 	const room = short(mention.place);

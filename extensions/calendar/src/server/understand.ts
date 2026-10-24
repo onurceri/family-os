@@ -3,12 +3,14 @@ import {
 	defineMentionKind,
 	endNamed,
 	type FieldDecision,
+	MENTION_NOTES_MAX,
 	type Mention,
 	type MentionContext,
 	namesThing,
 	peopleNamed,
 	type Resolution,
 	type ResolvedDay,
+	refuse,
 	UNSURE_TARGET,
 	unsureFields,
 	whichOne,
@@ -37,7 +39,6 @@ import { aiContext as aiContextTags } from './tags.ts';
 
 const TITLE_MAX = 120;
 const PLACE_MAX = 200;
-const NOTES_MAX = 2000;
 const LABEL_MAX = 200;
 /** Tags a suggested event gets at most; people add more themselves. */
 const TAGS_MAX = 2;
@@ -57,12 +58,6 @@ const EVENT_LIMIT = 6;
 const MOVE_DAYS = 3;
 
 const cut = (text: string, max: number) => [...text.trim()].slice(0, max).join('').trim();
-
-const refuse = (
-	reason: 'already' | 'unknown' | 'other_day' | 'ambiguous' | 'incomplete',
-	subject: string | null,
-	from: readonly number[],
-): Resolution => ({ refuse: { reason, subject, from } });
 
 /** Whether two titles name one event (`eventExists`'s test). */
 const sameEvent = (ctx: MentionContext, a: string, b: string) =>
@@ -339,7 +334,7 @@ async function newEvent(
 	}
 	const tags = tagsOf(mention.tags, known);
 	const place = mention.place ? cut(mention.place, PLACE_MAX) : '';
-	const notes = mention.notes ? cut(mention.notes, NOTES_MAX) : '';
+	const notes = mention.notes ? cut(mention.notes, MENTION_NOTES_MAX) : '';
 	return {
 		propose: {
 			actionId: 'calendar.createEvent',

@@ -3,9 +3,11 @@ import {
 	endNamed,
 	type FieldDecision,
 	type IndexedMention,
+	MENTION_NOTES_MAX,
 	type MentionContext,
 	peopleNamed,
 	type Resolution,
+	refuse,
 	unsureFields,
 	whichOne,
 } from '@famos/sdk';
@@ -32,15 +34,8 @@ import { tables } from './store.ts';
 
 /** The longest label a change of a listed thing carries (`ReviewLabelSchema`). */
 const LABEL_MAX = 200;
-const NOTES_MAX = 2000;
 
 const cut = (text: string, max: number) => [...text.trim()].slice(0, max).join('').trim();
-
-const refuse = (
-	reason: 'already' | 'unknown' | 'ambiguous' | 'incomplete',
-	subject: string | null,
-	from: readonly number[],
-): Resolution => ({ refuse: { reason, subject, from } });
 
 /**
  * A quantity that is a word describing the product ("a new football" read as quantity "new"): one
@@ -481,7 +476,7 @@ export const task = defineMentionKind({
 				out.push(refuse('already', title, [index]));
 				continue;
 			}
-			const notes = mention.notes ? cut(mention.notes, NOTES_MAX) : '';
+			const notes = mention.notes ? cut(mention.notes, MENTION_NOTES_MAX) : '';
 			const proposal = {
 				actionId: 'lists.addTask',
 				input: {

@@ -3,8 +3,10 @@ import {
 	asAppointment,
 	defineMentionKind,
 	type IndexedMention,
+	MENTION_NOTES_MAX,
 	type MentionContext,
 	type Resolution,
+	refuse,
 	stillToCome,
 	withoutAmounts,
 } from '@famos/sdk';
@@ -14,8 +16,6 @@ import { aiContext } from './vehicles.ts';
 
 const isKind = (value: string | undefined): value is LogKind =>
 	(LOG_KINDS as readonly string[]).includes(value ?? '');
-
-const NOTES_MAX = 2000;
 
 /** The calendar's kind for appointments, which work still to come on a car is. */
 const EVENT_KIND = 'calendar.event';
@@ -38,9 +38,8 @@ async function resolveLog(
 			},
 		};
 	}
-	if ('refuse' in vehicle) return { refuse: { reason: vehicle.refuse, subject, from: [index] } };
-	if (!mention.title && !mention.notes)
-		return { refuse: { reason: 'incomplete', subject, from: [index] } };
+	if ('refuse' in vehicle) return refuse(vehicle.refuse, subject, index);
+	if (!mention.title && !mention.notes) return refuse('incomplete', subject, index);
 	const day = ctx.day(mention.date, 'past');
 	const doneOn = day?.date ?? ctx.today;
 	const kind: LogKind = isKind(mention.variant) ? mention.variant : 'service';
@@ -51,10 +50,10 @@ async function resolveLog(
 		.where('done_on', '=', doneOn)
 		.where('kind', '=', kind)
 		.executeTakeFirst();
-	if (twice) return { refuse: { reason: 'already', subject, from: [index] } };
+	if (twice) return refuse('already', subject, index);
 	const notes = withoutAmounts([mention.title, mention.notes].filter(Boolean).join('; ')).slice(
 		0,
-		NOTES_MAX,
+		MENTION_NOTES_MAX,
 	);
 	return {
 		propose: {

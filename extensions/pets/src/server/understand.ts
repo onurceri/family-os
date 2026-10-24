@@ -5,6 +5,7 @@ import {
 	type IndexedMention,
 	type MentionContext,
 	type Resolution,
+	refuse,
 	stillToCome,
 	withoutAmounts,
 } from '@famos/sdk';
@@ -38,7 +39,7 @@ async function resolveTreatment(
 			},
 		};
 	}
-	if ('refuse' in pet) return { refuse: { reason: pet.refuse, subject, from: [index] } };
+	if ('refuse' in pet) return refuse(pet.refuse, subject, index);
 	const given = ctx.day(mention.date, 'past');
 	const givenOn = given?.date ?? ctx.today;
 	const kind: TreatmentKind = isKind(mention.variant) ? mention.variant : 'other';
@@ -51,7 +52,7 @@ async function resolveTreatment(
 		.where('kind', '=', kind)
 		.where('product', '=', product)
 		.executeTakeFirst();
-	if (twice) return { refuse: { reason: 'already', subject, from: [index] } };
+	if (twice) return refuse('already', subject, index);
 	// An open duty of this pet the treatment fulfils ("Rabies" for a rabies vaccine), among those
 	// the reading listed; its own words name it, or else what was given does.
 	const duties = ctx.records.filter(

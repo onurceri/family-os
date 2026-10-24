@@ -6,6 +6,7 @@ import {
 	type MentionRecord,
 	namesThing,
 	type Resolution,
+	refuse,
 	whichOne,
 	withoutAmounts,
 } from '@famos/sdk';
@@ -21,12 +22,6 @@ import {
 } from '../contract/index.ts';
 import { aiContext } from './obligations.ts';
 import { tables } from './store.ts';
-
-const refuse = (
-	reason: 'already' | 'unknown' | 'ambiguous' | 'incomplete',
-	subject: string | undefined,
-	index: number,
-): Resolution => ({ refuse: { reason, subject: subject ?? null, from: [index] } });
 
 /** A repeat by months or years, the only ones a duty has; null when the words give another. */
 function everyOf(repeat: Mention['repeat']): Every | null | undefined {

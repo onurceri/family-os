@@ -3,6 +3,8 @@ import {
 	type IndexedMention,
 	type MentionContext,
 	type Resolution,
+	refuse,
+	sameText,
 	whichOne,
 } from '@famos/sdk';
 import { addDays } from '@famos/time';
@@ -14,9 +16,6 @@ const SERVINGS_MAX = 30;
 const TAG_MAX = 40;
 /** How far ahead a planned meal can be taken off by its name. */
 const PLAN_DAYS = 31;
-
-const same = (a: string, b: string) =>
-	a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
 
 /** A line that starts with its number ("1. Heat the oven", "2) Stir"): a step, not an ingredient. */
 const NUMBERED = /^\s*\d{1,3}[.)]\s+/u;
@@ -58,7 +57,7 @@ async function resolveRecipe(ctx: MentionContext, { index, mention }: IndexedMen
 		.select('title')
 		.where('archived_at', 'is', null)
 		.execute();
-	if (recipes.some((r) => same(r.title, title))) return refuse('already', title, index);
+	if (recipes.some((r) => sameText(r.title, title))) return refuse('already', title, index);
 	const minutes = /^\s*(\d{1,5})\s*$/u.exec(mention.amount ?? '');
 	const totalMinutes = minutes ? Number(minutes[1]) : 0;
 	const servings = mention.quantity?.trim().slice(0, SERVINGS_MAX);
@@ -110,7 +109,7 @@ async function resolveMeal(ctx: MentionContext, { index, mention }: IndexedMenti
 		.where('date', '=', day.date)
 		.where('slot', '=', slot)
 		.execute();
-	if (planned.some((p) => (recipeId ? p.recipe_id === recipeId : same(p.title, dish))))
+	if (planned.some((p) => (recipeId ? p.recipe_id === recipeId : sameText(p.title, dish))))
 		return refuse('already', dish, index);
 	return {
 		propose: {
@@ -159,14 +158,6 @@ async function resolveMealOff(ctx: MentionContext, { index, mention }: IndexedMe
 			from: [index],
 		},
 	} satisfies Resolution;
-}
-
-function refuse(
-	reason: 'already' | 'unknown' | 'ambiguous' | 'incomplete',
-	subject: string | null,
-	index: number,
-): Resolution {
-	return { refuse: { reason, subject, from: [index] } };
 }
 
 const each =
