@@ -13,7 +13,7 @@ import {
 	createSecretBox,
 	monthBounds,
 } from '../src/llm-aisdk/index.ts';
-import { retryAfterOf } from '../src/llm-aisdk/llm.ts';
+import { providerReasonOf, retryAfterOf } from '../src/llm-aisdk/llm.ts';
 import { extractJson, outputModeFor, reasoningFor } from '../src/llm-aisdk/output.ts';
 import { silentLogger, uuidv7Ids } from '../src/runtime/index.ts';
 
@@ -71,6 +71,13 @@ const server = http.createServer((req, res) => {
 			if (model === 'slow-stt') return; // never answers: the client's own timeout ends the call
 			if (model === 'denied-stt') return res.writeHead(401).end('{}');
 			if (model === 'big-stt') return res.writeHead(413).end('{"error":"too big"}');
+			if (model === 'echo-stt')
+				return res.writeHead(422).end(
+					JSON.stringify({
+						error: { code: 'bad_audio', message: 'Cannot decode\u0007 the file' },
+						request: { prompt: 'Grandma Ayse takes insulin at 8' },
+					}),
+				);
 			if (model === 'missing-stt') return res.writeHead(404).end('{}');
 			if (model === 'down-stt') return res.writeHead(503).end('{}');
 			if (model === 'blank-stt') return res.end(JSON.stringify({ usage: { cost: 0.0006 } }));
@@ -1287,6 +1294,18 @@ describe('speech to text', () => {
 		expect(seen).toHaveLength(0);
 		await settings.setPrivacy({ ...(await settings.privacy()), sendVoice: true });
 		await expect(say()).resolves.toMatchObject({ model: 'Speech / plain-stt' });
+	});
+
+	it('keeps only the parsed reason of a rejection, never the body', async () => {
+		await useTranscriber('echo-stt');
+		const failure = await say().catch((error: unknown) => error as LlmError);
+		expect(failure).toBeInstanceOf(LlmError);
+		expect(failure.message).toContain('bad_audio: Cannot decode the file');
+		expect(failure.message).not.toContain('Grandma');
+		expect(failure.message).not.toContain('\u0007');
+		expect(providerReasonOf(`{"error":{"message":"${'x'.repeat(500)}"}}`)).toHaveLength(200);
+		expect(providerReasonOf('plain text with a prompt')).toBeNull();
+		expect(providerReasonOf('{"error":"too big"}')).toBe('too big');
 	});
 
 	it('maps provider errors to codes and records failures', async () => {

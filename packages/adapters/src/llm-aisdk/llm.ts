@@ -145,6 +145,45 @@ export interface AiSdkLlmDeps {
 	fetch?: typeof fetch;
 }
 
+const REASON_MAX = 200;
+
+/** Control characters and runs of whitespace become one space; cut to `REASON_MAX`. */
+const boundedReason = (text: string): string =>
+	text
+		.replace(/[\p{Cc}\p{Cf}\s]+/gu, ' ')
+		.trim()
+		.slice(0, REASON_MAX);
+
+/**
+ * What a provider says went wrong, from the error object of its JSON body (a code and a message,
+ * bounded): never the body itself, which a gateway may fill with the request it refused.
+ */
+export function providerReasonOf(body: string | undefined): string | null {
+	if (!body) return null;
+	try {
+		const parsed: unknown = JSON.parse(body);
+		const error =
+			typeof parsed === 'object' && parsed !== null ? (parsed as { error?: unknown }).error : null;
+		const fields =
+			typeof error === 'object' && error !== null
+				? (error as { code?: unknown; message?: unknown })
+				: typeof error === 'string'
+					? { message: error }
+					: (parsed as { message?: unknown } | null);
+		const code =
+			fields &&
+			'code' in fields &&
+			(typeof fields.code === 'string' || typeof fields.code === 'number')
+				? String(fields.code)
+				: '';
+		const message = typeof fields?.message === 'string' ? fields.message : '';
+		const reason = boundedReason([code, message].filter(Boolean).join(': '));
+		return reason || null;
+	} catch {
+		return null;
+	}
+}
+
 /** Maps an HTTP status of a speech-to-text call to the error codes of the port. */
 function statusToLlmError(status: number, body: string): LlmError {
 	if (status === 401 || status === 403)
@@ -158,7 +197,7 @@ function statusToLlmError(status: number, body: string): LlmError {
 	if (status === 400 || status === 413 || status === 415 || status === 422) {
 		return new LlmError(
 			'rejected',
-			`The provider rejected the audio (HTTP ${status}) ${body.slice(0, 300)}`.trim(),
+			`The provider rejected the audio (HTTP ${status}) ${providerReasonOf(body) ?? ''}`.trim(),
 		);
 	}
 	return new LlmError('unavailable', `The provider is unavailable (HTTP ${status})`);
@@ -278,14 +317,10 @@ function toLlmError(error: unknown, model?: string): LlmError {
 		}
 		if (status === 400 || status === 422) {
 			// Gateways (OpenRouter) put the upstream reason in the body, not in the message.
-			const body = error.responseBody?.slice(0, 400) ?? '';
-			return new LlmError(
-				'rejected',
-				`The provider rejected the request: ${error.message} ${body}`.trim(),
-				{
-					cause: error,
-				},
-			);
+			const reason = providerReasonOf(error.responseBody) ?? boundedReason(error.message);
+			return new LlmError('rejected', `The provider rejected the request: ${reason}`.trim(), {
+				cause: error,
+			});
 		}
 		// Too many calls for now (free models have tight limits): worth asking again later, and
 		// it says nothing about the model.
