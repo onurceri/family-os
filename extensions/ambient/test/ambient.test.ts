@@ -425,6 +425,21 @@ describe('weather', () => {
 		});
 	});
 
+	it('waits at most a few seconds for the service, and remembers a failure for a minute', async () => {
+		await run('ambient.updateWeather', { enabled: true, place });
+		const weather = () => k.route('ambient.getWeather').call();
+		await expect(weather()).rejects.toMatchObject({ code: 'unavailable' });
+		await expect(weather()).rejects.toMatchObject({ code: 'unavailable' });
+		await expect(weather()).rejects.toMatchObject({ code: 'unavailable' });
+		// One call upstream, with a few seconds to answer, not fifteen.
+		expect(k.http.requests).toHaveLength(1);
+		expect(k.http.requests[0]?.timeoutMs).toBe(5_000);
+		k.clock.advance(61_000);
+		k.http.serve(url, { text: JSON.stringify(forecast) });
+		expect(await weather()).toMatchObject({ enabled: true });
+		expect(k.http.requests).toHaveLength(2);
+	});
+
 	it('searches places in the family language', async () => {
 		await k.runner.invoke(
 			'core.updateFamilySettings',

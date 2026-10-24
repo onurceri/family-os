@@ -6,9 +6,17 @@
 
 export const WEATHER_TTL_MS = 30 * 60_000;
 
+/** How long a failed weather read is remembered, so an outage costs one upstream call a minute. */
+export const WEATHER_FAILURE_TTL_MS = 60_000;
+
+/** A request waits at most this long for the weather service. */
+export const WEATHER_TIMEOUT_MS = 5_000;
+
 export interface AmbientCaches {
 	version: number;
 	weather: { at: number; key: string; value: unknown } | null;
+	/** The last failed read of the weather, answered again for a minute. */
+	weatherFailure: { at: number; key: string; error: unknown } | null;
 	/** Requests in flight, so concurrent displays share one upstream call. */
 	inflight: Map<string, Promise<unknown>>;
 }
@@ -18,7 +26,12 @@ const perContext = new WeakMap<object, AmbientCaches>();
 export function cachesFor(owner: object, version: number): AmbientCaches {
 	const existing = perContext.get(owner);
 	if (existing && existing.version === version) return existing;
-	const fresh: AmbientCaches = { version, weather: null, inflight: new Map() };
+	const fresh: AmbientCaches = {
+		version,
+		weather: null,
+		weatherFailure: null,
+		inflight: new Map(),
+	};
 	perContext.set(owner, fresh);
 	return fresh;
 }
