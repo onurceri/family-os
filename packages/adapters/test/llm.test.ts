@@ -317,7 +317,7 @@ beforeEach(async () => {
 	dns = {};
 	({ db } = openDatabase({ path: ':memory:' }));
 	await runMigrations(db, [{ scope: 'ai', migrations: aiMigrations }]);
-	const box = createSecretBox('s'.repeat(32));
+	const box = createSecretBox('s'.repeat(32), 'ai-provider-keys');
 	settings = createAiSettings({
 		db,
 		box,
@@ -425,7 +425,7 @@ describe('AI settings', () => {
 		// With another FAMOS_SECRET the key cannot be read and must be entered again.
 		const other = createAiSettings({
 			db,
-			box: createSecretBox('t'.repeat(32)),
+			box: createSecretBox('t'.repeat(32), 'ai-provider-keys'),
 			clock,
 			ids: uuidv7Ids,
 			timeZone,
@@ -1058,7 +1058,7 @@ describe('AI SDK LlmPort', () => {
 			await runMigrations(db, [{ scope: 'ai', migrations: aiMigrations }]);
 			return createAiSettings({
 				db,
-				box: createSecretBox('s'.repeat(32)),
+				box: createSecretBox('s'.repeat(32), 'ai-provider-keys'),
 				clock,
 				ids: uuidv7Ids,
 				timeZone,

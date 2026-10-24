@@ -43,7 +43,7 @@ const handlers = (): TelegramHandlers => ({
 const make = (overrides: Partial<Parameters<typeof createTelegram>[0]> = {}) => {
 	const telegram = createTelegram({
 		db,
-		box: createSecretBox('s'.repeat(32)),
+		box: createSecretBox('s'.repeat(32), 'telegram'),
 		clock: { now: () => now },
 		logger: silentLogger,
 		baseURL: 'https://family.example',

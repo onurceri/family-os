@@ -2,8 +2,8 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:cr
 import type { SecretBox as ExtensionSecretBox } from '@famos/sdk';
 
 /**
- * Credentials at rest (provider API keys; other purposes get their own derived key): AES-256-GCM with a key derived from FAMOS_SECRET (HKDF), so a
- * copied database or backup alone does not reveal them. Format: `v1.<iv>.<tag>.<ciphertext>`.
+ * Credentials at rest: AES-256-GCM with a key derived from FAMOS_SECRET (HKDF) for each purpose, so a copied
+ * database or backup alone does not reveal them and a value sealed for one purpose never opens as another. Format: `v1.<iv>.<tag>.<ciphertext>`.
  */
 export interface SecretBox {
 	seal(plain: string): string;
@@ -11,7 +11,7 @@ export interface SecretBox {
 	open(sealed: string): string | null;
 }
 
-export function createSecretBox(secret: string, purpose = 'ai-provider-keys'): SecretBox {
+export function createSecretBox(secret: string, purpose: string): SecretBox {
 	const key = Buffer.from(hkdfSync('sha256', secret, 'famos', purpose, 32));
 	return {
 		seal(plain) {

@@ -133,7 +133,7 @@ const message = {
 const make = (overrides: Partial<Parameters<typeof createWebPush>[0]> = {}) =>
 	createWebPush({
 		db,
-		box: createSecretBox('s'.repeat(32)),
+		box: createSecretBox('s'.repeat(32), 'webpush'),
 		clock: { now: () => Date.UTC(2026, 9, 7, 9) },
 		ids: uuidv7Ids,
 		logger: silentLogger,
@@ -163,7 +163,9 @@ describe('Web Push channel', () => {
 			.executeTakeFirstOrThrow();
 		expect(row.private_key.startsWith('v1.')).toBe(true);
 		// Another FAMOS_SECRET cannot open the private key: a clear error, never a new key pair.
-		await expect(make({ box: createSecretBox('x'.repeat(32)) }).publicKey()).rejects.toMatchObject({
+		await expect(
+			make({ box: createSecretBox('x'.repeat(32), 'webpush') }).publicKey(),
+		).rejects.toMatchObject({
 			code: 'unavailable',
 		});
 	});

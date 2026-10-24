@@ -118,7 +118,7 @@ async function envLlm(
 	const timeZone = async () => 'UTC';
 	const settings = createAiSettings({
 		db,
-		box: createSecretBox(randomBytes(32).toString('hex')),
+		box: createSecretBox(randomBytes(32).toString('hex'), 'ai-provider-keys'),
 		clock,
 		ids: uuidv7Ids,
 		timeZone,

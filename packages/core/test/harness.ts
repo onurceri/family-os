@@ -123,7 +123,7 @@ export async function createTestKernel(
 	const queue = createSqliteQueue({ db: handle.db, clock, ids: uuidv7Ids });
 	const ai = createAiSettings({
 		db: handle.db,
-		box: createSecretBox('core-test-secret'),
+		box: createSecretBox('core-test-secret', 'ai-provider-keys'),
 		clock,
 		ids: uuidv7Ids,
 		timeZone: async () => 'UTC',
@@ -158,7 +158,7 @@ export async function createTestKernel(
 		),
 		aiSettings: ai,
 		backupSettings: createBackupSettingsAdmin({
-			box: createSecretBox('core-test-secret'),
+			box: createSecretBox('core-test-secret', 'ai-provider-keys'),
 			clock,
 			logger: silentLogger,
 		}),

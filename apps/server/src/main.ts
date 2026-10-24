@@ -42,6 +42,7 @@ import {
 	migrate,
 	openRuntime,
 	type Runtime,
+	resealSecrets,
 	seedAi,
 	startScheduler,
 } from './runtime.ts';
@@ -92,6 +93,7 @@ async function serveCommand(distrust: DistrustResult) {
 	try {
 		await migrate(runtime);
 		await recordStart(runtime.handle.db, selection, kernel.registry.extensions, Date.now());
+		await resealSecrets(runtime);
 		await seedAi(runtime);
 		await kernel.start();
 	} catch (error) {

@@ -69,7 +69,7 @@ const displayActor: Actor = {
 
 const SECRET_CONFIG = 'dav-password-must-stay-sealed';
 async function newTarget() {
-	const box = createSecretBox('core-test-secret');
+	const box = createSecretBox('core-test-secret', 'ai-provider-keys');
 	await db()
 		.insertInto('backup_targets')
 		.values({
@@ -188,7 +188,9 @@ describe('backups', () => {
 		});
 		// What it connects with is untouched.
 		const row = await db().selectFrom('backup_targets').select('config').executeTakeFirstOrThrow();
-		expect(createSecretBox('core-test-secret').open(row.config)).toContain(SECRET_CONFIG);
+		expect(createSecretBox('core-test-secret', 'ai-provider-keys').open(row.config)).toContain(
+			SECRET_CONFIG,
+		);
 
 		expect(await invoke('core.deleteBackupTarget', { targetId: id })).toMatchObject({
 			status: 'applied',

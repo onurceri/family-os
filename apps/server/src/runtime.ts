@@ -80,6 +80,7 @@ import {
 	findBundledLanguages,
 	type LanguageRegistry,
 } from './languages.ts';
+import { resealLegacySecrets, SECRET_PURPOSES } from './secret-purposes.ts';
 import { wireTelegram } from './telegram.ts';
 import { createThemeRegistry, findBundledThemes } from './themes.ts';
 
@@ -173,7 +174,7 @@ export function openRuntime(
 		kernelRef ? (await kernelRef.ctx.family.settings()).timeZone : 'UTC';
 	const ai = createAiSettings({
 		db: handle.db,
-		box: createSecretBox(config.secret),
+		box: createSecretBox(config.secret, SECRET_PURPOSES.ai),
 		clock: systemClock,
 		ids: uuidv7Ids,
 		timeZone,
@@ -181,7 +182,7 @@ export function openRuntime(
 	// Push needs HTTPS in practice (service workers, push services); the base URL is the VAPID contact.
 	const webPush = createWebPush({
 		db: handle.db,
-		box: createSecretBox(config.secret),
+		box: createSecretBox(config.secret, SECRET_PURPOSES.webPush),
 		clock: systemClock,
 		ids: uuidv7Ids,
 		logger,
@@ -190,7 +191,7 @@ export function openRuntime(
 	// Long polling needs no public address; the base URL only builds the "Open" buttons.
 	const telegram = createTelegram({
 		db: handle.db,
-		box: createSecretBox(config.secret),
+		box: createSecretBox(config.secret, SECRET_PURPOSES.telegram),
 		clock: systemClock,
 		logger,
 		baseURL: config.baseURL,
@@ -371,6 +372,11 @@ export async function migrate(runtime: Runtime): Promise<number> {
 	await runMigrations(handle.db, kernel.migrationScopes);
 	logger.info({ applied: plan.pending.map((p) => `${p.scope}/${p.name}`) }, 'migrations applied');
 	return plan.pending.length;
+}
+
+/** Seals credentials stored under the old shared key with their own keys (idempotent; run after migrating). */
+export async function resealSecrets(runtime: Runtime): Promise<void> {
+	await resealLegacySecrets(runtime.handle.db, runtime.config.secret, runtime.logger);
 }
 
 /**
