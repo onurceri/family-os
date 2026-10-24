@@ -26,6 +26,7 @@ import {
 import { clockTimes, formatDate, todayIn } from '@famos/time';
 import { z } from 'zod';
 import { EXTRACT_FEATURE, type ExtractionKind, type Skip } from '../../contract/index.ts';
+import { EXTRACT_TIMEOUT_MS } from '../budget.ts';
 import { coverage, locate, overlaps, type Span, wordsOf as spanWords } from './evidence.ts';
 import { foldDetails, keepsDetail } from './fold.ts';
 import {
@@ -392,6 +393,11 @@ export interface ReadingInput {
 	jobId: string;
 	/** No try of the reading comes after this one. */
 	lastTry: boolean;
+	/**
+	 * Whether the item may still be drafted from: false once a person has dismissed or filed it
+	 * while it was being read. Asked before every draft; absent, the item is always open.
+	 */
+	open?: () => Promise<boolean>;
 }
 
 export interface Reading {
@@ -423,7 +429,7 @@ async function askModel(
 			system,
 			prompt,
 			files: [...input.files],
-			timeoutMs: 90_000,
+			timeoutMs: EXTRACT_TIMEOUT_MS,
 			maxOutputTokens: EXTRACT_MAX_OUTPUT_TOKENS,
 			// Reading facts out of a message: the same message should give the same mentions.
 			temperature: 0,
@@ -744,6 +750,7 @@ export async function readItem(ctx: JobContext, input: ReadingInput): Promise<Re
 			for (const mention of mentions)
 				for (const field of guessedNamesIn(proposal.input, mention, family, text, locale))
 					uncertain.add(field);
+		if (input.open && !(await input.open())) return reading;
 		const quoted = from.flatMap((at) => [at, ...(carried.get(at) ?? [])]);
 		const quote = [...new Set(quoted.flatMap((at) => quoteOf.get(at) ?? []))].join(' … ');
 		try {

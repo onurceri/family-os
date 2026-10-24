@@ -19,6 +19,7 @@ export const CHAT_FEATURE = 'assistant.chat';
 /** Jobs: one answer per message, and the background summary of long threads. */
 export const TURN_JOB = 'assistant.turn';
 export const SUMMARIZE_JOB = 'assistant.summarize';
+export const SWEEP_JOB = 'assistant.sweep';
 
 export const ThreadIdSchema = idSchema('asst_thread');
 export const MessageIdSchema = idSchema('asst_msg');

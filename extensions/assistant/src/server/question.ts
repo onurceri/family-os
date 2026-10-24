@@ -27,6 +27,7 @@ import {
 	weekdayMismatches,
 } from '@famos/time';
 import { type AnswerCard, CHAT_FEATURE, type LeadCheck } from '../contract/index.ts';
+import { LEAD_TIMEOUT_MS } from './budget.ts';
 import { buildCard, type CardWords, cardText, type Fetched } from './card.ts';
 import { checkLead, firstSentences, leadBudget, leadPrompt, leadSystem } from './lead.ts';
 import type { RecordedCall } from './tools.ts';
@@ -38,7 +39,6 @@ import type { Question } from './understand.ts';
  * the card made of them. A model only words the opening, and code checks it.
  */
 
-export const LEAD_TIMEOUT_MS = 45_000;
 /**
  * The most words an opening keeps for anyone: two sentences that run on through every fact are
  * the card again, not an opening.

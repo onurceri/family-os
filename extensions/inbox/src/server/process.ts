@@ -13,6 +13,7 @@ import {
 	READ_ATTEMPTS,
 	TRANSCRIBE_FEATURE,
 } from '../contract/index.ts';
+import { READ_TIMEOUT_MS, readBackoff, TRANSCRIBE_BUDGET_MS } from './budget.ts';
 import { itemChanged, PROCESS_JOB } from './items.ts';
 import { filesOf, ITEM_KIND, type ItemRow, type StoredFile, tables } from './store.ts';
 import { readItem } from './understand/pipeline.ts';
@@ -64,7 +65,14 @@ async function transcribe(ctx: JobContext, row: ItemRow, run: JobRun): Promise<s
 	if (!policy.enabled || !policy.sendVoice) return [];
 	const { locale } = await ctx.family.settings();
 	const texts: string[] = [];
+	// All the voice notes share one window, so the reading fits its job however many there are.
+	const until = ctx.clock.now() + TRANSCRIBE_BUDGET_MS;
 	for (const file of audio) {
+		const left = until - ctx.clock.now();
+		if (left <= 0) {
+			ctx.logger.info({ itemId: row.id }, 'voice note left unread');
+			continue;
+		}
 		const stored = await ctx.files.get(file.key);
 		if (!stored) continue;
 		try {
@@ -76,7 +84,7 @@ async function transcribe(ctx: JobContext, row: ItemRow, run: JobRun): Promise<s
 				filename: file.name,
 				// Transcription takes the bare language (`pt` for `pt-BR`).
 				language: new Intl.Locale(locale).language,
-				timeoutMs: 120_000,
+				timeoutMs: left,
 				memberId: row.created_by,
 				jobId: run.id,
 			});
@@ -140,25 +148,45 @@ async function modelFiles(
 	return { files: out, unreadable };
 }
 
-async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
-	await tables(ctx.db)
-		.updateTable('inbox_items')
-		.set({ status: 'failed', error_code: code, read_attempt: null, updated_at: ctx.clock.now() })
-		.where('id', '=', row.id)
-		.execute();
+/** An item a person has dismissed or filed is theirs now: a reading never changes its status. */
+const DECIDED: ItemRow['status'][] = ['filed', 'dismissed'];
+
+/** Whether the item may still be read into drafts. */
+const isOpen = async (ctx: JobContext, itemId: string) => {
+	const row = await tables(ctx.db)
+		.selectFrom('inbox_items')
+		.select('status')
+		.where('id', '=', itemId)
+		.executeTakeFirst();
+	return row !== undefined && !DECIDED.includes(row.status);
+};
+
+/** Tells the app the item changed, unless the write was refused because a person decided it. */
+async function announce(ctx: JobContext, row: ItemRow, written: { numUpdatedRows: bigint }) {
+	if (Number(written.numUpdatedRows) === 0) return;
 	await ctx.ai.reindex(ITEM_KIND, row.id);
 	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 }
 
+async function markFailed(ctx: JobContext, row: ItemRow, code: ErrorCode) {
+	const written = await tables(ctx.db)
+		.updateTable('inbox_items')
+		.set({ status: 'failed', error_code: code, read_attempt: null, updated_at: ctx.clock.now() })
+		.where('id', '=', row.id)
+		.where('status', 'not in', DECIDED)
+		.executeTakeFirst();
+	await announce(ctx, row, written);
+}
+
 /** AI is off: keep the item unread (not a failure) until someone reads it again. */
 async function hold(ctx: JobContext, row: ItemRow) {
-	await tables(ctx.db)
+	const written = await tables(ctx.db)
 		.updateTable('inbox_items')
 		.set({ status: 'held', error_code: null, read_attempt: null, updated_at: ctx.clock.now() })
 		.where('id', '=', row.id)
-		.execute();
-	await ctx.ai.reindex(ITEM_KIND, row.id);
-	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
+		.where('status', 'not in', DECIDED)
+		.executeTakeFirst();
+	await announce(ctx, row, written);
 }
 
 /** The person's own notification when what they shared from outside the app has been read. */
@@ -214,22 +242,10 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 		model: policy.model,
 		jobId: run.id,
 		lastTry: run.attempt >= run.maxAttempts,
+		open: () => isOpen(ctx, row.id),
 	});
 
-	// From outside the app the person is not looking at the item: tell them it is ready, once per
-	// reading (the key). Telegram adds the buttons of the suggestions they may decide.
-	if (drafted > 0 && row.created_by && OUTSIDE_CHANNELS.has(row.channel)) {
-		await ctx.notify({
-			kind: itemReady.id,
-			to: { members: [row.created_by] },
-			title: { key: 'inbox:ready_title' },
-			body: { key: 'inbox:ready_body', params: { count: drafted } },
-			url: '/add',
-			source: { kind: 'inbox', id: row.id },
-			dedupeKey: `inbox-ready:${row.id}:${row.extraction}`,
-		});
-	}
-	await db
+	const written = await db
 		.updateTable('inbox_items')
 		.set({
 			status: 'extracted',
@@ -245,11 +261,29 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 			updated_at: ctx.clock.now(),
 		})
 		.where('id', '=', row.id)
-		// A person may have filed the item while the model was reading it: filed stays filed.
-		.where('status', '!=', 'filed')
-		.execute();
-	await ctx.ai.reindex(ITEM_KIND, row.id);
-	await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
+		// A person may have filed or dismissed the item while the model was reading it: that stays.
+		.where('status', 'not in', DECIDED)
+		.executeTakeFirst();
+	if (Number(written.numUpdatedRows) === 0) {
+		// Dismissed in the last moments of the reading: the drafts it made go with the item.
+		if (!(await isOpen(ctx, row.id)) && drafted > 0)
+			await ctx.unit((uow) => uow.rejectDraftsOf({ kind: 'inbox', id: row.id }));
+		return;
+	}
+	// From outside the app the person is not looking at the item: tell them it is ready, once per
+	// reading (the key). Telegram adds the buttons of the suggestions they may decide.
+	if (drafted > 0 && row.created_by && OUTSIDE_CHANNELS.has(row.channel)) {
+		await ctx.notify({
+			kind: itemReady.id,
+			to: { members: [row.created_by] },
+			title: { key: 'inbox:ready_title' },
+			body: { key: 'inbox:ready_body', params: { count: drafted } },
+			url: '/add',
+			source: { kind: 'inbox', id: row.id },
+			dedupeKey: `inbox-ready:${row.id}:${row.extraction}`,
+		});
+	}
+	await announce(ctx, row, written);
 }
 
 /**
@@ -260,9 +294,9 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 export const processItem = defineJob({
 	name: PROCESS_JOB,
 	payload: z.object({ itemId: z.string() }),
-	timeoutMs: 150_000,
+	timeoutMs: READ_TIMEOUT_MS,
 	maxAttempts: READ_ATTEMPTS,
-	backoff: (attempt) => Math.min(30_000 * 2 ** (attempt - 1), 10 * 60_000),
+	backoff: readBackoff,
 	async handle(ctx, { itemId }, run) {
 		const db = tables(ctx.db);
 		let row = await db
@@ -282,7 +316,7 @@ export const processItem = defineJob({
 					return hold(ctx, row);
 				}
 				const { text, transcript } = await normalize(ctx, row, run);
-				await db
+				const saved = await db
 					.updateTable('inbox_items')
 					.set({
 						status: 'normalized',
@@ -291,11 +325,12 @@ export const processItem = defineJob({
 						updated_at: ctx.clock.now(),
 					})
 					.where('id', '=', row.id)
-					.where('status', '!=', 'filed')
-					.execute();
+					.where('status', 'not in', DECIDED)
+					.executeTakeFirst();
+				// Dismissed or filed while the voice notes were being read: nothing more to do.
+				if (Number(saved.numUpdatedRows) === 0) return;
 				row = { ...row, status: 'normalized', normalized_text: text, transcript };
-				await ctx.ai.reindex(ITEM_KIND, row.id);
-				await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
+				await announce(ctx, row, saved);
 			}
 			await extract(ctx, row, run);
 		} catch (error) {
@@ -313,6 +348,7 @@ export const processItem = defineJob({
 				.updateTable('inbox_items')
 				.set({ read_attempt: run.attempt + 1, updated_at: ctx.clock.now() })
 				.where('id', '=', row.id)
+				.where('status', 'not in', DECIDED)
 				.execute();
 			await ctx.events.emit(itemChanged, { itemId: row.id, memberId: row.created_by });
 			throw error;

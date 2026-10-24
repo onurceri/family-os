@@ -6,6 +6,7 @@ import { assistantUse } from './capabilities.ts';
 import { conversation } from './conversation.ts';
 import { migrations } from './store.ts';
 import { summarizeJob } from './summary.ts';
+import { scheduleSweep, sweepJob } from './sweep.ts';
 import { deleteThread, getThread, listThreads, renameThread, sendMessage } from './threads.ts';
 import { assistantDelta, assistantDone, turnJob } from './turn.ts';
 
@@ -22,6 +23,9 @@ export default defineExtension({
 	routes: [listThreads, getThread],
 	events: [assistantDelta, assistantDone],
 	capabilities: [assistantUse],
-	jobs: [turnJob, summarizeJob],
+	jobs: [turnJob, summarizeJob, sweepJob],
+	async register(ctx) {
+		await scheduleSweep(ctx);
+	},
 	conversation,
 });
