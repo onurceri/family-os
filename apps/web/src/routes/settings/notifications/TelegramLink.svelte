@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { dateTimeFormat } from '#lib/format.svelte.js';
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Card, Section } from '@famos/ui/famos';
 	import { untrack } from 'svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { getLocale, t } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
@@ -57,25 +58,24 @@
 	async function createCode() {
 		busy = true;
 		error = null;
-		try {
-			code = unwrap(await api.POST('/api/v1/telegram/link'));
-		} catch {
-			error = t('telegram_link_failed');
-		} finally {
-			busy = false;
-		}
+		const result = await runAction(api.POST('/api/v1/telegram/link'), {
+			onError: () => (error = t('telegram_link_failed')),
+		});
+		if (result.ok) code = result.data;
+		busy = false;
 	}
 
 	async function unlink() {
 		busy = true;
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.unlinkTelegram', { body: {} }));
+		const result = await runAction(api.POST('/api/v1/actions/core.unlinkTelegram', { body: {} }), {
+			onError: (failure) => (error = failure.message),
+		});
+		if (result.ok) {
 			code = null;
 			await load();
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	const until = (ms: number) => dateTimeFormat({ timeStyle: 'short' }).format(ms);

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Step, Steps } from '@famos/ui/famos';
 	import { onDestroy } from 'svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import QrCode from '#lib/QrCode.svelte';
 
@@ -35,15 +35,14 @@
 	async function begin() {
 		clearTimeout(pollTimer);
 		clearTimeout(retryTimer);
-		try {
-			const next = unwrap(await api.POST('/api/v1/core/displays/pair'));
-			if (stopped) return;
-			started = next;
-			intervalMs = next.interval * 1000;
+		const next = await runAction(api.POST('/api/v1/core/displays/pair'), { onError: () => {} });
+		if (stopped) return;
+		if (next.ok) {
+			started = next.data;
+			intervalMs = next.data.interval * 1000;
 			failed = false;
 			pollTimer = setTimeout(poll, intervalMs);
-		} catch {
-			if (stopped) return;
+		} else {
 			// Offline, or too many codes asked for: wait and try again.
 			failed = true;
 			retryTimer = setTimeout(begin, 15_000);
@@ -52,13 +51,15 @@
 
 	async function poll() {
 		if (!started || stopped) return;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/core/displays/pair/poll', {
-					body: { deviceCode: started.deviceCode },
-				}),
-			);
+		const answer = await runAction(
+			api.POST('/api/v1/core/displays/pair/poll', { body: { deviceCode: started.deviceCode } }),
+			{ onError: () => {} },
+		);
+		if (!answer.ok) {
+			failed = true;
+		} else {
 			if (stopped) return;
+			const result = answer.data;
 			if (result.status === 'paired') {
 				stopped = true;
 				onpaired();
@@ -67,8 +68,6 @@
 			if (result.status === 'expired') return void begin();
 			if (result.status === 'slow_down') intervalMs += 5000;
 			failed = false;
-		} catch {
-			failed = true;
 		}
 		pollTimer = setTimeout(poll, intervalMs);
 	}

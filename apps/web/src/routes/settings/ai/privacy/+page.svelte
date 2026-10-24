@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Card, Notice, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -32,15 +32,16 @@
 		if (!settings) return;
 		error = null;
 		const next = { ...settings.privacy, ...patch };
-		try {
-			const result = unwrap(await api.POST('/api/v1/actions/core.setAiPrivacy', { body: next }));
-			if (result.status !== 'applied') throw new Error('not applied');
-			settings.privacy = result.output;
+		const result = await runAction(api.POST('/api/v1/actions/core.setAiPrivacy', { body: next }), {
+			onError: (failure) => (error = failure.message),
+		});
+		if (result.ok && result.data.status === 'applied') {
+			settings.privacy = result.data.output;
 			toasts.show(t('ai_saved'));
-		} catch {
-			error = t('error_generic');
-			await load();
+			return;
 		}
+		if (result.ok) error = t('error_generic');
+		await load();
 	}
 
 	// Switches: AI as a whole, and each AI feature of the extensions that are on.
@@ -52,15 +53,16 @@
 	async function saveSwitches(next: AiSettings['switches']) {
 		if (!settings) return;
 		error = null;
-		try {
-			const result = unwrap(await api.POST('/api/v1/actions/core.setAiSwitches', { body: next }));
-			if (result.status !== 'applied') throw new Error('not applied');
-			settings.switches = result.output;
+		const result = await runAction(api.POST('/api/v1/actions/core.setAiSwitches', { body: next }), {
+			onError: (failure) => (error = failure.message),
+		});
+		if (result.ok && result.data.status === 'applied') {
+			settings.switches = result.data.output;
 			toasts.show(t('ai_saved'));
-		} catch {
-			error = t('error_generic');
-			await load();
+			return;
 		}
+		if (result.ok) error = t('error_generic');
+		await load();
 	}
 	const setFeature = (id: string, on: boolean) => {
 		if (!settings) return;

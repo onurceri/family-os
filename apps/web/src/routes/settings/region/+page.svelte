@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import {
 		canonicalLocale,
 		dateLocale,
@@ -12,11 +11,11 @@
 	import { Input } from '@famos/ui/input';
 	import { Card, Combobox, Notice, Page, PageHeader, Segmented, SettingRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { browserFormatLocale, browserLocales, family } from '#lib/family.svelte.js';
 	import { getLanguages, getLocale, t } from '#lib/i18n.svelte.js';
 	import { regionOptions, startingFormatLocales, timeZoneOptions } from '#lib/region.js';
 	import SelectField from '#lib/SelectField.svelte';
-	import { toasts } from '#lib/toast.svelte.js';
 	import LanguagesSection from './LanguagesSection.svelte';
 
 	/**
@@ -30,21 +29,18 @@
 	let temperatureUnit = $state<'celsius' | 'fahrenheit'>(family.temperatureUnit);
 	let timeZone = $state(family.timeZone);
 	let error = $state<string | null>(null);
+	const showError = (failure: ActionFailure) => (error = failure.message);
 	let familyName = $state(family.name ?? '');
 
 	async function saveName() {
 		error = null;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/actions/core.setFamilyName', { body: { name: familyName } }),
-			);
-			if (result.status === 'applied') {
-				familyName = result.output.name ?? '';
-				family.name = result.output.name;
-			}
-			toasts.show(t('family_name_saved'));
-		} catch {
-			error = t('error_generic');
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setFamilyName', { body: { name: familyName } }),
+			{ saved: t('family_name_saved'), onError: showError },
+		);
+		if (result.ok && result.data.status === 'applied') {
+			familyName = result.data.output.name ?? '';
+			family.name = result.data.output.name;
 		}
 	}
 
@@ -122,34 +118,26 @@
 	async function save() {
 		if (!valid || !zoneValid) return;
 		error = null;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/actions/core.updateFamilySettings', {
-					body: { timeZone, formatLocale: tag, weekStart, hourCycle, temperatureUnit },
-				}),
-			);
-			if (result.status === 'applied') {
-				family.apply(result.output);
-				family.timeZone = result.output.timeZone;
-				formatLocale = result.output.formatLocale;
-			}
-			toasts.show(t('region_saved'));
-		} catch {
-			error = t('error_generic');
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.updateFamilySettings', {
+				body: { timeZone, formatLocale: tag, weekStart, hourCycle, temperatureUnit },
+			}),
+			{ saved: t('region_saved'), onError: showError },
+		);
+		if (result.ok && result.data.status === 'applied') {
+			family.apply(result.data.output);
+			family.timeZone = result.data.output.timeZone;
+			formatLocale = result.data.output.formatLocale;
 		}
 	}
 
 	async function chooseFamilyLanguage(locale: string) {
 		error = null;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/actions/core.updateFamilySettings', { body: { locale } }),
-			);
-			if (result.status === 'applied') family.locale = result.output.locale;
-			toasts.show(t('languages_saved'));
-		} catch {
-			error = t('error_generic');
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.updateFamilySettings', { body: { locale } }),
+			{ saved: t('languages_saved'), onError: showError },
+		);
+		if (result.ok && result.data.status === 'applied') family.locale = result.data.output.locale;
 	}
 
 	function useBrowser() {

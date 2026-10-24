@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { ConfirmButton, Notice, Segmented, SidePanel } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import {
@@ -75,100 +75,92 @@
 		baseUrl = DEFAULT_URLS[kind];
 	}
 
-	async function setKey(providerId: string, value: string | null) {
-		unwrap(
-			await api.PUT('/api/v1/ai/providers/{providerId}/key', {
+	const failed = () => {
+		error = true;
+	};
+
+	function setKey(providerId: string, value: string | null, onError: () => void) {
+		return runAction(
+			api.PUT('/api/v1/ai/providers/{providerId}/key', {
 				params: { path: { providerId } },
 				body: { apiKey: value },
 			}),
+			{ onError },
 		);
 	}
 
 	async function save() {
 		error = false;
 		keyDropped = false;
-		try {
-			if (provider) {
-				const result = unwrap(
-					await api.POST('/api/v1/actions/core.updateAiProvider', {
-						body: { providerId: provider.id, name, baseUrl },
-					}),
-				);
-				if (result.status !== 'applied') throw new Error('not applied');
-				if (apiKey.trim()) await setKey(provider.id, apiKey.trim());
-				onchanged();
-				// A new address took the stored key with it: the panel stays to ask for it again.
-				if (result.output.keyDropped && !apiKey.trim()) {
-					keyDropped = true;
-					apiKey = '';
-					return;
-				}
-			} else {
-				const result = unwrap(
-					await api.POST('/api/v1/actions/core.addAiProvider', {
-						body: {
-							name,
-							kind,
-							...(baseUrl.trim() && { baseUrl: baseUrl.trim() }),
-						},
-					}),
-				);
-				if (result.status !== 'applied') throw new Error('not applied');
-				if (apiKey.trim()) {
-					// The provider is there now; if its key cannot be saved it is said once the panel closes.
-					try {
-						await setKey(result.output.id, apiKey.trim());
-					} catch {
-						toasts.show(t('ai_key_failed'));
-					}
-				}
-				onchanged();
+		const key = apiKey.trim();
+		if (provider) {
+			const result = await runAction(
+				api.POST('/api/v1/actions/core.updateAiProvider', {
+					body: { providerId: provider.id, name, baseUrl },
+				}),
+				{ onError: failed },
+			);
+			if (!result.ok) return;
+			if (result.data.status !== 'applied') return failed();
+			if (key && !(await setKey(provider.id, key, failed)).ok) return;
+			onchanged();
+			// A new address took the stored key with it: the panel stays to ask for it again.
+			if (result.data.output.keyDropped && !key) {
+				keyDropped = true;
+				apiKey = '';
+				return;
 			}
-			onclose();
-		} catch {
-			error = true;
+		} else {
+			const result = await runAction(
+				api.POST('/api/v1/actions/core.addAiProvider', {
+					body: {
+						name,
+						kind,
+						...(baseUrl.trim() && { baseUrl: baseUrl.trim() }),
+					},
+				}),
+				{ onError: failed },
+			);
+			if (!result.ok) return;
+			if (result.data.status !== 'applied') return failed();
+			// The provider is there now; if its key cannot be saved it is said once the panel closes.
+			if (key) await setKey(result.data.output.id, key, () => toasts.show(t('ai_key_failed')));
+			onchanged();
 		}
+		onclose();
 	}
 
 	async function runTest() {
 		if (!provider) return;
 		test = 'running';
-		try {
-			const result = unwrap(
-				await api.GET('/api/v1/ai/providers/{providerId}/models', {
-					params: { path: { providerId: provider.id } },
-				}),
-			);
-			test = result;
-			if (result.ok) onmodels(provider.id, result.models, result.zeroRetentionModels);
-		} catch {
-			test = { ok: false, reason: 'unexpected', message: '' };
+		const result = await runAction(
+			api.GET('/api/v1/ai/providers/{providerId}/models', {
+				params: { path: { providerId: provider.id } },
+			}),
+			{ onError: () => (test = { ok: false, reason: 'unexpected', message: '' }) },
+		);
+		if (!result.ok) return;
+		test = result.data;
+		if (result.data.ok) {
+			onmodels(provider.id, result.data.models, result.data.zeroRetentionModels);
 		}
 	}
 
 	async function removeKey() {
 		if (!provider) return;
-		try {
-			await setKey(provider.id, null);
-			onchanged();
-		} catch {
-			error = true;
-		}
+		const result = await setKey(provider.id, null, failed);
+		if (result.ok) onchanged();
 	}
 
 	async function remove() {
 		if (!provider) return;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.deleteAiProvider', {
-					body: { providerId: provider.id },
-				}),
-			);
-			onchanged();
-			onclose();
-		} catch {
-			error = true;
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.deleteAiProvider', { body: { providerId: provider.id } }),
+			{ onError: failed },
+		);
+		if (!result.ok) return;
+		onchanged();
+		onclose();
 	}
 
 	const managed = $derived(provider?.managed === true);

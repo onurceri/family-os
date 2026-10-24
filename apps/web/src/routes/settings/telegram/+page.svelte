@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isApiError, type paths, unwrap } from '@famos/api-client';
+	import type { paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -16,10 +16,10 @@
 	} from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 
 	type Status =
 		paths['/api/v1/telegram/settings']['get']['responses'][200]['content']['application/json'];
@@ -46,21 +46,18 @@
 	async function save(next: string | null) {
 		busy = true;
 		error = null;
-		try {
-			status = unwrap(await api.PUT('/api/v1/telegram/token', { body: { token: next } }));
+		const result = await runAction(api.PUT('/api/v1/telegram/token', { body: { token: next } }), {
+			saved: t('telegram_saved'),
+			invalid: t('telegram_token_invalid'),
+			onError: (failure) =>
+				(error = failure.reason === 'unavailable' ? t('telegram_unreachable') : failure.message),
+		});
+		if (result.ok) {
+			status = result.data;
 			token = '';
 			replacing = false;
-			toasts.show(t('telegram_saved'));
-		} catch (e) {
-			error =
-				isApiError(e) && e.code === 'unavailable'
-					? t('telegram_unreachable')
-					: isApiError(e) && e.code === 'bad_request'
-						? t('telegram_token_invalid')
-						: t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function connect(event: SubmitEvent) {

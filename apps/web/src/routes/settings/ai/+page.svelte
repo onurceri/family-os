@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { unwrap } from '@famos/api-client';
+
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -18,9 +18,9 @@
 	} from '@famos/ui/famos';
 	import { ChevronRight, Cloud, HardDrive, Plus, Server } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import ProviderPanel from './ProviderPanel.svelte';
 	import {
@@ -110,13 +110,11 @@
 				];
 			}),
 		) as Roles;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.setAiRoles', { body: clean }));
-			toasts.show(t('ai_saved'));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(api.POST('/api/v1/actions/core.setAiRoles', { body: clean }), {
+			saved: t('ai_saved'),
+			onError: (failure) => (error = failure.message),
+			reload: load,
+		});
 	}
 
 	const providerIcon = (p: Provider) =>

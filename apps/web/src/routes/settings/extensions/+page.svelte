@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isApiError, unwrap } from '@famos/api-client';
+	import { isApiError } from '@famos/api-client';
 	import { tick } from 'svelte';
 	import { Button } from '@famos/ui/button';
 	import {
@@ -29,6 +29,7 @@
 	import { api } from '#lib/api.js';
 	import { contributions } from '#lib/extensions.js';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -195,9 +196,9 @@
 	});
 
 	/** What the server said, in words: the reasons it gives for a refusal, else the generic one. */
-	function explain(failure: unknown): string {
-		if (!isApiError(failure)) return t('error_generic');
-		const details = (failure.details ?? {}) as {
+	function explain(failure: ActionFailure): string {
+		if (!isApiError(failure.error)) return failure.message;
+		const details = (failure.error.details ?? {}) as {
 			reason?: string;
 			extensionId?: string;
 			neededBy?: string[];
@@ -212,7 +213,7 @@
 			return t('extensions_uninstall_needed', {
 				names: details.neededBy.map(nameFor).join(', '),
 			});
-		return t('error_generic');
+		return failure.message;
 	}
 
 	/**
@@ -221,12 +222,13 @@
 	 */
 	async function toggle(entry: Entry, enabled: boolean, undoable = true) {
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.setFeatureEnabled', {
-					body: { extensionId: entry.id, enabled },
-				}),
-			);
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setFeatureEnabled', {
+				body: { extensionId: entry.id, enabled },
+			}),
+			{ onError: (failure) => (error = failure.message) },
+		);
+		if (result.ok) {
 			const said = t(enabled ? 'extensions_turned_on' : 'extensions_turned_off', {
 				name: name(entry),
 			});
@@ -236,11 +238,8 @@
 					? { label: t('extensions_switch_undo'), run: () => void toggle(entry, !enabled, false) }
 					: undefined,
 			);
-			await Promise.all([load(), session.refresh()]);
-		} catch {
-			error = t('error_generic');
-			await load();
 		}
+		await Promise.all([load(), result.ok ? session.refresh() : undefined]);
 	}
 
 	async function install(
@@ -251,12 +250,16 @@
 		busy = true;
 		panelError = null;
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.installExtension', {
-					body: { extensionId: entry.id },
-				}),
-			);
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.installExtension', { body: { extensionId: entry.id } }),
+			{
+				onError: (failure) => {
+					if (opened) panelError = explain(failure);
+					else error = explain(failure);
+				},
+			},
+		);
+		if (result.ok) {
 			if (opened) closePanel();
 			toasts.show(
 				toast,
@@ -264,13 +267,9 @@
 					? { label: t('extensions_switch_undo'), run: () => void uninstall(entry, false) }
 					: undefined,
 			);
-		} catch (failure) {
-			if (opened) panelError = explain(failure);
-			else error = explain(failure);
-		} finally {
-			busy = false;
-			await load();
 		}
+		busy = false;
+		await load();
 	}
 
 	/** Sends the chosen file to be checked; nothing is installed until Install in the panel. */
@@ -283,55 +282,56 @@
 		fileError = null;
 		panelError = null;
 		busy = true;
-		try {
-			staged = unwrap(
-				await api.POST('/api/v1/core/extensions/packages', {
-					body: {},
-					bodySerializer: () => {
-						const form = new FormData();
-						form.append('files', file, file.name);
-						return form;
-					},
-				}),
-			);
-		} catch (failure) {
-			const problem: FileProblem = isApiError(failure)
-				? fileProblem(failure)
-				: { headline: { key: 'error_generic' } };
-			fileError = {
-				text: t(problem.headline.key, problem.headline.values),
-				...(problem.detail && { detail: t(problem.detail.key, problem.detail.values) }),
-			};
-		} finally {
-			busy = false;
-		}
+		const result = await runAction(
+			api.POST('/api/v1/core/extensions/packages', {
+				body: {},
+				bodySerializer: () => {
+					const form = new FormData();
+					form.append('files', file, file.name);
+					return form;
+				},
+			}),
+			{
+				onError: (failure) => {
+					const problem: FileProblem = isApiError(failure.error)
+						? fileProblem(failure.error)
+						: { headline: { key: 'error_generic' } };
+					fileError = {
+						text: t(problem.headline.key, problem.headline.values),
+						...(problem.detail && { detail: t(problem.detail.key, problem.detail.values) }),
+					};
+				},
+			},
+		);
+		if (result.ok) staged = result.data;
+		busy = false;
 	}
 
 	async function installStaged(pkg: Staged) {
 		busy = true;
 		panelError = null;
 		const shown = name(stagedEntry(pkg));
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.installExtension', {
-					body: { staged: pkg.digest },
-				}),
-			);
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.installExtension', { body: { staged: pkg.digest } }),
+			{
+				onError: (failure) => {
+					panelError =
+						isApiError(failure.error) && failure.error.status === 404
+							? t('extensions_file_gone')
+							: explain(failure);
+				},
+			},
+		);
+		if (result.ok) {
 			staged = null;
 			toasts.show(
 				updateOf(pkg)
 					? t('extensions_updated_toast', { name: shown })
 					: t('extensions_installed_toast', { name: shown }),
 			);
-		} catch (failure) {
-			panelError =
-				isApiError(failure) && failure.status === 404
-					? t('extensions_file_gone')
-					: explain(failure);
-		} finally {
-			busy = false;
-			await load();
 		}
+		busy = false;
+		await load();
 	}
 
 	/** What the index gives takes focus once someone asks here, so it is announced where it is. */
@@ -340,33 +340,30 @@
 	/** Asks the server to read the official index; what it finds shows with what can be installed. */
 	async function look() {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.findExtensions', { body: {} }));
-		} catch {
-			error = t('error_generic');
-		} finally {
-			await load();
-			await tick();
-			foundBox?.focus();
-		}
+		await runAction(api.POST('/api/v1/actions/core.findExtensions', { body: {} }), {
+			onError: (failure) => (error = failure.message),
+		});
+		await load();
+		await tick();
+		foundBox?.focus();
 	}
 
 	async function downloadFound(pkg: FoundPackage) {
 		foundError = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.downloadExtension', {
-					body: { extensionId: pkg.id, version: pkg.version },
-				}),
-			);
-		} catch (failure) {
-			foundError =
-				isApiError(failure) && failure.status === 404
-					? t('extensions_download_gone')
-					: t('error_generic');
-		} finally {
-			await load();
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.downloadExtension', {
+				body: { extensionId: pkg.id, version: pkg.version },
+			}),
+			{
+				onError: (failure) => {
+					foundError =
+						isApiError(failure.error) && failure.error.status === 404
+							? t('extensions_download_gone')
+							: failure.message;
+				},
+			},
+		);
+		await load();
 	}
 
 	const pageMenu = $derived<MenuItem[]>([
@@ -389,12 +386,11 @@
 	async function uninstall(entry: Entry, undoable = true) {
 		uninstalling = null;
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.uninstallExtension', {
-					body: { extensionId: entry.id },
-				}),
-			);
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.uninstallExtension', { body: { extensionId: entry.id } }),
+			{ onError: (failure) => (error = explain(failure)) },
+		);
+		if (result.ok) {
 			toasts.show(
 				t(undoable ? 'extensions_uninstalled_toast' : 'extensions_install_cancelled_toast', {
 					name: name(entry),
@@ -406,26 +402,26 @@
 						}
 					: undefined,
 			);
-		} catch (failure) {
-			error = explain(failure);
-		} finally {
-			await load();
 		}
+		await load();
 	}
 
 	async function restart() {
 		confirmingRestart = false;
 		error = null;
 		const before = await readBoot();
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.restartServer', { body: {} }));
-		} catch (failure) {
-			// The server may stop before its answer arrives; only a refusal it sent is an error.
-			if (isApiError(failure) && failure.status >= 400 && failure.status < 500) {
-				error = t('error_generic');
-				return;
-			}
-		}
+		let refused = false;
+		await runAction(api.POST('/api/v1/actions/core.restartServer', { body: {} }), {
+			onError: (failure) => {
+				// The server may stop before its answer arrives; only a refusal it sent is an error.
+				const sent = failure.error;
+				if (isApiError(sent) && sent.status >= 400 && sent.status < 500) {
+					refused = true;
+					error = failure.message;
+				}
+			},
+		});
+		if (refused) return;
 		restarting = { before };
 	}
 

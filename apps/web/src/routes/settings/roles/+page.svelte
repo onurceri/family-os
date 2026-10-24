@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -19,6 +19,7 @@
 	import { Check, ChevronRight, Lock, Minus, Pencil, Plus } from '@lucide/svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { orderedGroups } from '#lib/role-groups.js';
@@ -44,6 +45,7 @@
 		start: string;
 	} | null>(null);
 	let error = $state<string | null>(null);
+	const showError = (failure: ActionFailure) => (error = failure.message);
 	let formEl = $state<HTMLFormElement>();
 	/** The role the phone shows. */
 	let shownRole = $state<string | null>(null);
@@ -121,26 +123,20 @@
 		const e = editing;
 		if (!e) return;
 		error = null;
-		try {
-			const changes = overrides(e.base, e.granted);
-			if (e.id) {
-				unwrap(
-					await api.POST('/api/v1/actions/core.updateRole', {
+		const changes = overrides(e.base, e.granted);
+		const result = await runAction<unknown>(
+			e.id
+				? api.POST('/api/v1/actions/core.updateRole', {
 						body: { id: e.id, name: e.name, overrides: changes },
-					}),
-				);
-			} else {
-				unwrap(
-					await api.POST('/api/v1/actions/core.createRole', {
+					})
+				: api.POST('/api/v1/actions/core.createRole', {
 						body: { name: e.name, base: e.base, overrides: changes },
 					}),
-				);
-			}
-			editing = null;
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+			{ onError: showError },
+		);
+		if (!result.ok) return;
+		editing = null;
+		await load();
 	}
 
 	/** On phones a switch of your own role is saved as soon as it is flipped. */
@@ -148,31 +144,26 @@
 		error = null;
 		const granted = new Set(role.capabilities);
 		granted.has(capabilityId) ? granted.delete(capabilityId) : granted.add(capabilityId);
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.updateRole', {
-					body: {
-						id: role.id,
-						name: role.name ?? '',
-						overrides: overrides(role.base as Base, granted),
-					},
-				}),
-			);
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.updateRole', {
+				body: {
+					id: role.id,
+					name: role.name ?? '',
+					overrides: overrides(role.base as Base, granted),
+				},
+			}),
+			{ onError: showError, reload: load },
+		);
 	}
 
 	async function remove(id: string) {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.deleteRole', { body: { id } }));
-			editing = null;
-			await load();
-		} catch {
-			error = t('roles_in_use');
-		}
+		const result = await runAction(api.POST('/api/v1/actions/core.deleteRole', { body: { id } }), {
+			onError: () => (error = t('roles_in_use')),
+		});
+		if (!result.ok) return;
+		editing = null;
+		await load();
 	}
 
 	const baseOptions = $derived(

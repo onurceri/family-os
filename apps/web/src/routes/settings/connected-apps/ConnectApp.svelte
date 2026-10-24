@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		FIELD_REASON,
@@ -18,6 +17,7 @@
 	import { ChevronLeft, ChevronRight, Check, Copy, KeyRound, Link, Plug } from '@lucide/svelte';
 	import { untrack } from 'svelte';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
@@ -67,6 +67,7 @@
 	let kind = $state<AppKind>('claude-desktop');
 	let copied = $state<'key' | 'settings' | 'secret' | 'client' | 'address' | null>(null);
 	let error = $state<string | null>(null);
+	const showError = (failure: ActionFailure) => (error = failure.message);
 	let busy = $state(false);
 	// The name's reason shows from the first refused Create on, and goes once it is typed.
 	let tried = $state(false);
@@ -122,43 +123,39 @@
 		}
 		error = null;
 		busy = true;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/mcp/tokens', { body: { name, scope, expiresInDays: days } }),
-			);
-			made = { name, secret: result.secret };
+		const result = await runAction(
+			api.POST('/api/v1/mcp/tokens', { body: { name, scope, expiresInDays: days } }),
+			{ onError: showError },
+		);
+		if (result.ok) {
+			made = { name, secret: result.data.secret };
 			step = 3;
 			onchanged();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function setUpHomeAssistant(event: SubmitEvent) {
 		event.preventDefault();
 		error = null;
 		busy = true;
-		try {
-			const address = haAddress.trim();
-			const result = unwrap(
-				await api.POST('/api/v1/mcp/oauth-clients', {
-					body: { preset: 'ha', ...(address && { homeAssistantUrl: address }) },
-				}),
-			);
+		const address = haAddress.trim();
+		const result = await runAction(
+			api.POST('/api/v1/mcp/oauth-clients', {
+				body: { preset: 'ha', ...(address && { homeAssistantUrl: address }) },
+			}),
+			{ onError: showError },
+		);
+		if (result.ok) {
 			haMade = {
-				clientId: result.client.clientId,
-				secret: result.clientSecret,
-				mcpUrl: result.mcpUrl,
+				clientId: result.data.client.clientId,
+				secret: result.data.clientSecret,
+				mcpUrl: result.data.mcpUrl,
 			};
 			step = 2;
 			onchanged();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function copy(text: string, what: NonNullable<typeof copied>) {

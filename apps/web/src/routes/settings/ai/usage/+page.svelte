@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { numberFormat } from '#lib/format.svelte.js';
-	import { unwrap } from '@famos/api-client';
+
 	import { Button } from '@famos/ui/button';
 	import { Card, Facts, Notice, Page, PageHeader, Row, Section, SettingRow } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { ChevronRight } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 	import type { AiSettings, Usage } from '../types.js';
 
 	let settings = $state<AiSettings | null>(null);
@@ -34,17 +34,12 @@
 		event.preventDefault();
 		error = null;
 		const num = (s: string) => (s.trim() ? Number(s.replace(',', '.')) : null);
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.setAiLimits', {
-					body: { monthlyCostLimit: num(limits.cost), monthlyCallLimit: num(limits.calls) },
-				}),
-			);
-			toasts.show(t('ai_saved'));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.setAiLimits', {
+				body: { monthlyCostLimit: num(limits.cost), monthlyCallLimit: num(limits.calls) },
+			}),
+			{ saved: t('ai_saved'), onError: (failure) => (error = failure.message), reload: load },
+		);
 	}
 
 	const nf = $derived(numberFormat());

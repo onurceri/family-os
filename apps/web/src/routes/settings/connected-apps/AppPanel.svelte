@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { dateTimeFormat } from '#lib/format.svelte.js';
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		ConfirmButton,
@@ -17,6 +17,7 @@
 	import { Check, Copy } from '@lucide/svelte';
 	import { untrack } from 'svelte';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
@@ -63,6 +64,7 @@
 	/** The member whose id was just copied. */
 	let copiedMember = $state<string | null>(null);
 	let error = $state<string | null>(null);
+	const showError = (failure: ActionFailure) => (error = failure.message);
 	/** A message for the app the panel shows next (it opens again on the app just added). */
 	let carried: string | null = null;
 	let busy = $state(false);
@@ -126,109 +128,104 @@
 		}
 		error = null;
 		busy = true;
-		try {
-			if (app === null) {
-				const result = unwrap(
-					await api.POST('/api/v1/actions/core.createApp', {
-						body: { name, roleId, mode, actsFor },
-					}),
-				);
-				if (result.status !== 'applied') throw new Error('not applied');
-				const created = result.output;
-				// The app is there now; its first key is made right after. If that fails, the app
-				// opens without a key and offers to add one.
-				try {
-					const key = unwrap(
-						await api.POST('/api/v1/apps/{appId}/tokens', {
-							params: { path: { appId: created.id } },
-							body: { name: created.name, ...(days > 0 && { expiresInDays: days }) },
-						}),
-					);
-					made = { label: created.name, secret: key.secret };
-				} catch {
-					carried = t('apps_key_failed');
-					onopen(created.id);
-					return;
-				}
-			} else {
-				unwrap(
-					await api.POST('/api/v1/actions/core.updateApp', {
-						body: { appId: app.id, name, roleId, mode, actsFor },
-					}),
-				);
-				onclose();
+		await commit();
+		busy = false;
+	}
+
+	async function commit() {
+		if (app === null) {
+			const created = await runAction(
+				api.POST('/api/v1/actions/core.createApp', { body: { name, roleId, mode, actsFor } }),
+				{ onError: showError },
+			);
+			if (!created.ok) return;
+			if (created.data.status !== 'applied') {
+				error = t('error_generic');
+				return;
 			}
-			onchanged();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
+			const newApp = created.data.output;
+			// The app is there now; its first key is made right after. If that fails, the app
+			// opens without a key and offers to add one.
+			const key = await runAction(
+				api.POST('/api/v1/apps/{appId}/tokens', {
+					params: { path: { appId: newApp.id } },
+					body: { name: newApp.name, ...(days > 0 && { expiresInDays: days }) },
+				}),
+				{ onError: () => {} },
+			);
+			if (!key.ok) {
+				carried = t('apps_key_failed');
+				onopen(newApp.id);
+				return;
+			}
+			made = { label: newApp.name, secret: key.data.secret };
+		} else {
+			const updated = await runAction(
+				api.POST('/api/v1/actions/core.updateApp', {
+					body: { appId: app.id, name, roleId, mode, actsFor },
+				}),
+				{ onError: showError },
+			);
+			if (!updated.ok) return;
+			onclose();
 		}
+		onchanged();
 	}
 
 	async function addKey() {
 		if (!app) return;
 		error = null;
 		busy = true;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/apps/{appId}/tokens', {
-					params: { path: { appId: app.id } },
-					body: {
-						name: keyName.trim() || t('apps_key_name_default'),
-						...(days > 0 && { expiresInDays: days }),
-					},
-				}),
-			);
-			made = { label: app.name, secret: result.secret };
+		const result = await runAction(
+			api.POST('/api/v1/apps/{appId}/tokens', {
+				params: { path: { appId: app.id } },
+				body: {
+					name: keyName.trim() || t('apps_key_name_default'),
+					...(days > 0 && { expiresInDays: days }),
+				},
+			}),
+			{ onError: showError },
+		);
+		if (result.ok) {
+			made = { label: app.name, secret: result.data.secret };
 			onchanged();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function revokeKey(tokenId: string) {
 		if (!app) return;
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.revokeAppToken', {
-					body: { appId: app.id, tokenId },
-				}),
-			);
-			onchanged();
-		} catch {
-			error = t('error_generic');
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.revokeAppToken', { body: { appId: app.id, tokenId } }),
+			{ onError: showError },
+		);
+		if (result.ok) onchanged();
 	}
 
 	async function setPaused(on: boolean) {
 		if (!app) return;
 		error = null;
-		try {
-			const body = { appId: app.id };
-			unwrap(
-				on
-					? await api.POST('/api/v1/actions/core.pauseApp', { body })
-					: await api.POST('/api/v1/actions/core.resumeApp', { body }),
-			);
-			onchanged();
-		} catch {
-			error = t('error_generic');
-		}
+		const body = { appId: app.id };
+		const result = await runAction(
+			on
+				? api.POST('/api/v1/actions/core.pauseApp', { body })
+				: api.POST('/api/v1/actions/core.resumeApp', { body }),
+			{ onError: showError },
+		);
+		if (result.ok) onchanged();
 	}
 
 	async function revokeApp() {
 		if (!app) return;
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.revokeApp', { body: { appId: app.id } }));
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.revokeApp', { body: { appId: app.id } }),
+			{ onError: showError },
+		);
+		if (result.ok) {
 			onchanged();
 			onclose();
-		} catch {
-			error = t('error_generic');
 		}
 	}
 

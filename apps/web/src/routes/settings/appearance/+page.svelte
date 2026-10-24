@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { unwrap } from '@famos/api-client';
+
 	import { Button } from '@famos/ui/button';
 	import { Card, Page, PageHeader, Pill, Section, Segmented, SettingRow } from '@famos/ui/famos';
 	import { DEFAULT_STYLE, STYLE_IDS, STYLES, type StyleId } from '@famos/ui/styles';
 	import { Check, Eye } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { type Answer, runAction } from '#lib/run-action.js';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t } from '#lib/i18n.svelte.js';
@@ -17,7 +18,6 @@
 	import TodayBlocksList from '#lib/today/TodayBlocksList.svelte';
 	import { availableTodayBlocks } from '#lib/today/today-data.svelte.js';
 	import { dayNight, type Mode } from '#lib/theme.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 
 	/**
 	 * Appearance: only what is yours. First the
@@ -63,15 +63,13 @@
 		return onEvent('core.themes.', () => void appearance.loadThemes());
 	});
 
-	async function save(request: () => Promise<unknown>) {
+	function save<T>(request: Promise<Answer<T>>) {
 		error = null;
-		try {
-			await request();
-			toasts.show(t('appearance_saved'));
-			await Promise.all([appearance.loadThemes(), appearance.refresh()]);
-		} catch {
-			error = t('error_generic');
-		}
+		return runAction(request, {
+			saved: t('appearance_saved'),
+			onError: (failure) => (error = failure.message),
+			reload: () => Promise.all([appearance.loadThemes(), appearance.refresh()]),
+		});
 	}
 
 	/** What Today shows for this person: the blocks they may see, theirs or the family's choice. */
@@ -91,13 +89,9 @@
 	}
 
 	const chooseMine = (theme: string | null) =>
-		save(async () =>
-			unwrap(await api.POST('/api/v1/actions/core.setMyTheme', { body: { theme } })),
-		);
+		save(api.POST('/api/v1/actions/core.setMyTheme', { body: { theme } }));
 	const chooseMyStyle = (style: StyleId | null) =>
-		save(async () =>
-			unwrap(await api.POST('/api/v1/actions/core.setMyStyle', { body: { style } })),
-		);
+		save(api.POST('/api/v1/actions/core.setMyStyle', { body: { style } }));
 </script>
 
 <Page template="settings">

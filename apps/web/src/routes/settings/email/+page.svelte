@@ -2,7 +2,7 @@
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isApiError, type paths, unwrap } from '@famos/api-client';
+	import type { paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -20,6 +20,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -36,6 +37,7 @@
 	let senders = $state<Sender[]>([]);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
+	const showError = (failure: ActionFailure) => (error = failure.message);
 	let checking = $state(false);
 
 	// The form. The password is never loaded back: empty means "keep the saved one".
@@ -82,58 +84,55 @@
 		event.preventDefault();
 		busy = true;
 		error = null;
-		try {
-			const result = unwrap(
-				await api.PUT('/api/v1/email/settings', {
-					body: {
-						host,
-						port,
-						username,
-						...(password && { password }),
-						mailbox,
-						processedFolder,
-						pollMinutes,
-						enabled,
-					},
-				}),
-			);
-			settings = result.settings;
+		const result = await runAction(
+			api.PUT('/api/v1/email/settings', {
+				body: {
+					host,
+					port,
+					username,
+					...(password && { password }),
+					mailbox,
+					processedFolder,
+					pollMinutes,
+					enabled,
+				},
+			}),
+			{ invalid: t('email_settings_invalid'), onError: showError },
+		);
+		if (result.ok) {
+			settings = result.data.settings;
 			password = '';
-			if (result.test.ok) toasts.show(t('email_saved'));
-			else error = t('email_not_saved', { reason: tDynamic(`app:email_test_${result.test.code}`) });
-		} catch (e) {
-			error =
-				isApiError(e) && e.code === 'bad_request'
-					? t('email_settings_invalid')
-					: t('error_generic');
-		} finally {
-			busy = false;
+			if (result.data.test.ok) toasts.show(t('email_saved'));
+			else
+				error = t('email_not_saved', {
+					reason: tDynamic(`app:email_test_${result.data.test.code}`),
+				});
 		}
+		busy = false;
 	}
 
 	async function disconnect() {
 		busy = true;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.disconnectEmail', { body: {} }));
+		const result = await runAction(api.POST('/api/v1/actions/core.disconnectEmail', { body: {} }), {
+			onError: showError,
+		});
+		if (result.ok) {
 			formLoaded = false;
 			host = username = password = '';
 			port = 993;
 			await load();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function checkNow() {
 		checking = true;
 		checkedBefore = settings?.checkedAt ?? null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.checkEmailNow', { body: {} }));
-		} catch {
+		const result = await runAction(api.POST('/api/v1/actions/core.checkEmailNow', { body: {} }), {
+			onError: showError,
+		});
+		if (!result.ok) {
 			checking = false;
-			error = t('error_generic');
 			return;
 		}
 		// The worker answers through a realtime event; do not wait forever if it is not running.
@@ -153,33 +152,28 @@
 
 	async function addSender() {
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.addEmailSender', {
-					body: {
-						address: newAddress,
-						memberId: newMember,
-						...(newLabel.trim() && { label: newLabel.trim() }),
-					},
-				}),
-			);
-			newAddress = newLabel = '';
-			closePanel();
-			await load();
-		} catch (e) {
-			error =
-				isApiError(e) && e.code === 'bad_request' ? t('email_sender_invalid') : t('error_generic');
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.addEmailSender', {
+				body: {
+					address: newAddress,
+					memberId: newMember,
+					...(newLabel.trim() && { label: newLabel.trim() }),
+				},
+			}),
+			{ invalid: t('email_sender_invalid'), onError: showError },
+		);
+		if (!result.ok) return;
+		newAddress = newLabel = '';
+		closePanel();
+		await load();
 	}
 
 	async function removeSender(address: string) {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.removeEmailSender', { body: { address } }));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(api.POST('/api/v1/actions/core.removeEmailSender', { body: { address } }), {
+			onError: showError,
+			reload: load,
+		});
 	}
 
 	const memberName = (id: string) => family.members.find((m) => m.id === id)?.displayName ?? '';

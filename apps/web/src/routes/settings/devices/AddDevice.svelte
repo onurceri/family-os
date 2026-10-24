@@ -4,7 +4,7 @@
 </script>
 
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
+	import { isApiError } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -21,6 +21,7 @@
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight, Monitor, Tablet } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import QrCode from '#lib/QrCode.svelte';
@@ -142,28 +143,31 @@
 	async function connect() {
 		error = null;
 		busy = true;
-		try {
-			const result = unwrap(
-				await api.POST('/api/v1/actions/core.confirmDisplayPairing', {
-					body: { userCode: code.trim(), name, capabilities: caps, showNames },
-				}),
-			);
-			if (result.status !== 'applied') throw new Error('not applied');
-			const done = result.output;
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.confirmDisplayPairing', {
+				body: { userCode: code.trim(), name, capabilities: caps, showNames },
+			}),
+			{
+				onError: (failure) => {
+					const badCode = isApiError(failure.error) && failure.error.status === 404;
+					error = badCode ? t('devices_display_bad_code') : failure.message;
+					// A code typed wrong (or run out): back to the step where it is typed.
+					if (badCode) step = 2;
+				},
+			},
+		);
+		if (result.ok && result.data.status === 'applied') {
+			const done = result.data.output;
 			added = done.name;
 			pairingId = done.pairingId;
 			pairing = 'waiting';
 			answering = true;
 			waitedLong = false;
 			step = 4;
-		} catch (e) {
-			const badCode = typeof e === 'object' && e !== null && 'status' in e && e.status === 404;
-			error = badCode ? t('devices_display_bad_code') : t('error_generic');
-			// A code typed wrong (or run out): back to the step where it is typed.
-			if (badCode) step = 2;
-		} finally {
-			busy = false;
+		} else if (result.ok) {
+			error = t('error_generic');
 		}
+		busy = false;
 	}
 
 	/** Asks whether the screen has claimed the code yet; a new device is the page's to list. */
@@ -206,16 +210,15 @@
 	async function trust() {
 		error = null;
 		busy = true;
-		try {
-			unwrap(await api.POST('/api/v1/core/devices/trust', { body: { name } }));
+		const result = await runAction(api.POST('/api/v1/core/devices/trust', { body: { name } }), {
+			onError: (failure) => (error = failure.message),
+		});
+		if (result.ok) {
 			added = name;
 			step = 4;
 			onchanged();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	const title = $derived(

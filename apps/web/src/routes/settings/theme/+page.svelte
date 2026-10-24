@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -19,6 +18,7 @@
 	import { api } from '#lib/api.js';
 	import { appearance, type Theme } from '#lib/appearance.svelte.js';
 	import { t } from '#lib/i18n.svelte.js';
+	import { type Answer, runAction } from '#lib/run-action.js';
 	import { onEvent } from '#lib/realtime.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { session } from '#lib/session.svelte.js';
@@ -112,70 +112,48 @@
 		};
 	});
 
-	async function run<T>(request: () => Promise<T>, saved?: string) {
+	function run<T>(request: Promise<Answer<T>>, saved?: string) {
 		error = null;
-		try {
-			await request();
-			if (saved) toasts.show(saved);
-			await Promise.all([refresh(), appearance.refresh()]);
-		} catch {
-			error = t('error_generic');
-		}
+		return runAction(request, {
+			...(saved && { saved }),
+			onError: (failure) => (error = failure.message),
+			reload: () => Promise.all([refresh(), appearance.refresh()]),
+		});
 	}
 
 	const chooseFamily = (theme: string) =>
 		run(
-			async () =>
-				unwrap(await api.POST('/api/v1/actions/core.setFamilyTheme', { body: { theme } })),
+			api.POST('/api/v1/actions/core.setFamilyTheme', { body: { theme } }),
 			t('appearance_saved'),
 		);
 
 	const chooseDisplay = (deviceId: string, theme: string) =>
 		run(
-			async () =>
-				unwrap(
-					await api.POST('/api/v1/actions/core.setDisplayTheme', {
-						body: { deviceId, theme: theme === '' ? null : theme },
-					}),
-				),
+			api.POST('/api/v1/actions/core.setDisplayTheme', {
+				body: { deviceId, theme: theme === '' ? null : theme },
+			}),
 			t('appearance_saved'),
 		);
 
 	const chooseFamilyStyle = (style: StyleId) =>
 		run(
-			async () =>
-				unwrap(await api.POST('/api/v1/actions/core.setFamilyStyle', { body: { style } })),
+			api.POST('/api/v1/actions/core.setFamilyStyle', { body: { style } }),
 			t('appearance_saved'),
 		);
 
 	const chooseDisplayStyle = (deviceId: string, style: string) =>
 		run(
-			async () =>
-				unwrap(
-					await api.POST('/api/v1/actions/core.setDisplayStyle', {
-						body: { deviceId, style: style === '' ? null : (style as StyleId) },
-					}),
-				),
+			api.POST('/api/v1/actions/core.setDisplayStyle', {
+				body: { deviceId, style: style === '' ? null : (style as StyleId) },
+			}),
 			t('appearance_saved'),
 		);
 
 	const chooseFamilyBlocks = (hidden: string[] | null) =>
-		run(async () =>
-			unwrap(
-				await api.POST('/api/v1/actions/core.setFamilyTodayBlocks', {
-					body: { hidden: hidden ?? [] },
-				}),
-			),
-		);
+		run(api.POST('/api/v1/actions/core.setFamilyTodayBlocks', { body: { hidden: hidden ?? [] } }));
 
 	const chooseDisplayBlocks = (deviceId: string, hidden: string[] | null) =>
-		run(async () =>
-			unwrap(
-				await api.POST('/api/v1/actions/core.setDisplayTodayBlocks', {
-					body: { deviceId, hidden },
-				}),
-			),
-		);
+		run(api.POST('/api/v1/actions/core.setDisplayTodayBlocks', { body: { deviceId, hidden } }));
 
 	async function install(pack: {
 		manifest: Record<string, unknown>;
@@ -230,22 +208,20 @@
 		event.preventDefault();
 		busy = true;
 		addError = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.installThemePackFromUrl', { body: { url } }));
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.installThemePackFromUrl', { body: { url } }),
+			{ onError: (failure) => (addError = failure.message), reload: refresh },
+		);
+		if (result.ok) {
 			url = '';
 			adding = false;
-			await refresh();
-		} catch {
-			addError = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function remove(theme: Theme) {
 		await run(
-			async () =>
-				unwrap(await api.POST('/api/v1/actions/core.removeThemePack', { body: { id: theme.id } })),
+			api.POST('/api/v1/actions/core.removeThemePack', { body: { id: theme.id } }),
 			t('appearance_removed', { name: theme.name }),
 		);
 	}

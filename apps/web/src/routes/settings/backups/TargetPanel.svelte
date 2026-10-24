@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { ConfirmButton, Notice, Segmented, SidePanel, SwitchRow } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { reason } from './reason.js';
 	import type { Target, TargetKind } from './types.js';
@@ -82,91 +82,91 @@
 	async function save() {
 		busy = true;
 		failed = false;
-		try {
-			const common = { name: name.trim(), keep: Number(keep) };
-			const s3 = {
-				endpoint: endpoint.trim(),
-				region: region.trim(),
-				bucket: bucket.trim(),
-				prefix: prefix.trim(),
-				accessKeyId: accessKeyId.trim(),
-				secretAccessKey,
-				pathStyle,
-			};
-			const dav = { url: url.trim(), username: username.trim(), password };
-			if (target) {
-				const result = unwrap(
-					await api.POST('/api/v1/actions/core.updateBackupTarget', {
-						body: { targetId: target.id, ...common },
-					}),
-				);
-				if (result.status !== 'applied') throw new Error('not applied');
-				// The address and keys are one sealed credential, kept apart from the rest.
-				if (configChanged(target, kind === 's3' ? s3 : dav))
-					unwrap(
-						await api.PUT('/api/v1/backups/targets/{targetId}/config', {
-							params: { path: { targetId: target.id } },
-							body: { config: kind === 's3' ? s3 : dav },
-						}),
-					);
-			} else if (kind === 's3') {
-				unwrap(
-					await api.POST('/api/v1/backups/targets', {
-						body: { kind: 's3', ...common, config: s3 },
-					}),
-				);
-			} else {
-				unwrap(
-					await api.POST('/api/v1/backups/targets', {
-						body: { kind: 'webdav', ...common, config: dav },
-					}),
-				);
-			}
-			onchanged();
-			onclose();
-		} catch {
-			failed = true;
-		} finally {
-			busy = false;
-		}
+		await persist();
+		busy = false;
 	}
+
+	async function persist() {
+		const common = { name: name.trim(), keep: Number(keep) };
+		const s3 = {
+			endpoint: endpoint.trim(),
+			region: region.trim(),
+			bucket: bucket.trim(),
+			prefix: prefix.trim(),
+			accessKeyId: accessKeyId.trim(),
+			secretAccessKey,
+			pathStyle,
+		};
+		const dav = { url: url.trim(), username: username.trim(), password };
+		if (target) {
+			const result = await runAction(
+				api.POST('/api/v1/actions/core.updateBackupTarget', {
+					body: { targetId: target.id, ...common },
+				}),
+				{ onError: fail },
+			);
+			if (!result.ok) return;
+			if (result.data.status !== 'applied') return fail();
+			// The address and keys are one sealed credential, kept apart from the rest.
+			if (configChanged(target, kind === 's3' ? s3 : dav)) {
+				const config = await runAction(
+					api.PUT('/api/v1/backups/targets/{targetId}/config', {
+						params: { path: { targetId: target.id } },
+						body: { config: kind === 's3' ? s3 : dav },
+					}),
+					{ onError: fail },
+				);
+				if (!config.ok) return;
+			}
+		} else {
+			const created = await runAction(
+				kind === 's3'
+					? api.POST('/api/v1/backups/targets', { body: { kind: 's3', ...common, config: s3 } })
+					: api.POST('/api/v1/backups/targets', {
+							body: { kind: 'webdav', ...common, config: dav },
+						}),
+				{ onError: fail },
+			);
+			if (!created.ok) return;
+		}
+		onchanged();
+		onclose();
+	}
+
+	const fail = () => {
+		failed = true;
+	};
 
 	async function runTest() {
 		if (!target) return;
 		test = 'running';
-		try {
-			test = unwrap(
-				await api.POST('/api/v1/backups/targets/{targetId}/test', {
-					params: { path: { targetId: target.id } },
-				}),
-			);
-		} catch {
-			test = { ok: false, code: 'unreachable' };
-		}
+		const result = await runAction(
+			api.POST('/api/v1/backups/targets/{targetId}/test', {
+				params: { path: { targetId: target.id } },
+			}),
+			{ onError: () => (test = { ok: false, code: 'unreachable' }) },
+		);
+		if (result.ok) test = result.data;
 	}
 
 	async function setEnabled(next: boolean) {
 		if (!target) return;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.updateBackupTarget', {
-					body: { targetId: target.id, enabled: next },
-				}),
-			);
-		} catch {
-			failed = true;
-		} finally {
-			onchanged();
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.updateBackupTarget', {
+				body: { targetId: target.id, enabled: next },
+			}),
+			{ onError: fail },
+		);
+		onchanged();
 	}
 
 	async function remove() {
 		if (!target) return;
-		unwrap(
-			await api.POST('/api/v1/actions/core.deleteBackupTarget', {
-				body: { targetId: target.id },
-			}),
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.deleteBackupTarget', { body: { targetId: target.id } }),
+			{ onError: fail },
 		);
+		if (!result.ok) return;
 		onchanged();
 		onclose();
 	}

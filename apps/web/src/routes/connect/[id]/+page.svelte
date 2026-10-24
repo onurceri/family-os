@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Avatar, Card, EmptyState, Notice, Page, Segmented } from '@famos/ui/famos';
 	import { ShieldCheck } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { signOut } from '#lib/auth.js';
 	import { contributions } from '#lib/extensions.js';
 	import { dateTimeFormat } from '#lib/format.svelte.js';
@@ -71,23 +72,23 @@
 		if (!request || busy) return;
 		busy = true;
 		error = null;
-		try {
-			const result = unwrap(
-				answer === 'approve'
-					? await api.POST('/api/v1/oauth/requests/{id}/approve', {
-							params: { path: { id: request.id } },
-							body: { scope },
-						})
-					: await api.POST('/api/v1/oauth/requests/{id}/deny', {
-							params: { path: { id: request.id } },
-						}),
-			);
-			leaving = request.redirectHost;
-			window.location.assign(result.redirectUrl);
-		} catch {
+		const result = await runAction(
+			answer === 'approve'
+				? api.POST('/api/v1/oauth/requests/{id}/approve', {
+						params: { path: { id: request.id } },
+						body: { scope },
+					})
+				: api.POST('/api/v1/oauth/requests/{id}/deny', {
+						params: { path: { id: request.id } },
+					}),
+			{ onError: () => (error = t('connect_failed_hint')) },
+		);
+		if (!result.ok) {
 			busy = false;
-			error = t('connect_failed_hint');
+			return;
 		}
+		leaving = request.redirectHost;
+		window.location.assign(result.data.redirectUrl);
 	}
 
 	async function switchAccount() {

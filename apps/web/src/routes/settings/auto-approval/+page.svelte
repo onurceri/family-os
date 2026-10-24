@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import {
 		Card,
 		EmptyState,
@@ -12,9 +12,9 @@
 		SwitchRow,
 	} from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 
 	type Listed =
 		paths['/api/v1/core/auto-approval']['get']['responses'][200]['content']['application/json'];
@@ -25,7 +25,11 @@
 	let error = $state<string | null>(null);
 
 	async function load() {
-		actions = unwrap(await api.GET('/api/v1/core/auto-approval')).actions;
+		const result = await runAction(api.GET('/api/v1/core/auto-approval'), {
+			onError: (failure) => (error = failure.message),
+		});
+		if (!result.ok) return;
+		actions = result.data.actions;
 		loaded = true;
 	}
 
@@ -36,14 +40,13 @@
 	/** Saves the setting of one action (null turns it off), then shows what is stored. */
 	async function save(actionId: string, setting: { proposerCapability: string } | null) {
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.setAutoApproval', { body: { actionId, setting } }),
-			);
-			toasts.show(t('auto_approval_saved'));
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.setAutoApproval', { body: { actionId, setting } }),
+			{
+				saved: t('auto_approval_saved'),
+				onError: (failure) => (error = failure.message),
+			},
+		);
 		await load();
 	}
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isApiError, type paths, unwrap } from '@famos/api-client';
+	import { isApiError, type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Avatar,
@@ -18,6 +18,7 @@
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight, Pencil, Plus, ShieldCheck } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -120,26 +121,30 @@
 		};
 	});
 
-	/** Sets the sign-in typed in the panel; returns whether anything was saved. */
-	async function saveSignIn(memberId: string, role: string): Promise<boolean> {
+	/** Sets the sign-in typed in the panel; returns whether anything was saved, null when it was refused. */
+	async function saveSignIn(memberId: string, role: string): Promise<boolean | null> {
 		let saved = false;
 		if (email || password) {
-			unwrap(
-				await api.PUT('/api/v1/core/members/{memberId}/password', {
+			const result = await runAction(
+				api.PUT('/api/v1/core/members/{memberId}/password', {
 					params: { path: { memberId } },
 					body: { email, password },
 				}),
+				{ onError: showError },
 			);
+			if (!result.ok) return null;
 			email = password = '';
 			saved = true;
 		}
 		if (pin && mayUsePin(role)) {
-			unwrap(
-				await api.PUT('/api/v1/core/members/{memberId}/pin', {
+			const result = await runAction(
+				api.PUT('/api/v1/core/members/{memberId}/pin', {
 					params: { path: { memberId } },
 					body: { pin },
 				}),
+				{ onError: showError },
 			);
+			if (!result.ok) return null;
 			pin = '';
 			saved = true;
 		}
@@ -147,15 +152,17 @@
 	}
 
 	/** A specific message for the refusals people can run into; anything else is generic. */
-	function errorText(e: unknown) {
+	function errorText(failure: ActionFailure) {
+		const e = failure.error;
 		const reason =
 			isApiError(e) && typeof e.details === 'object' && e.details !== null && 'reason' in e.details
 				? e.details.reason
 				: null;
 		if (reason === 'last_admin') return t('members_err_last_admin');
 		if (reason === 'email_taken') return t('members_err_email_taken');
-		return t('error_generic');
+		return failure.message;
 	}
+	const showError = (failure: ActionFailure) => (error = errorText(failure));
 
 	function openAdd() {
 		name = '';
@@ -186,65 +193,67 @@
 		}
 		saving = true;
 		error = null;
-		try {
-			if (!editing) {
-				const created = unwrap(
-					await api.POST('/api/v1/actions/core.createMember', {
-						body: {
-							displayName: name.trim(),
-							roleId,
-							...(about.trim() && { about: about.trim() }),
-						},
-					}),
-				);
-				if (created.status === 'applied') {
-					// From here on the panel is the new person's: if their sign-in is refused (an email
-					// already used), it stays open on them with the message, and Save tries again.
-					await load();
-					panel = { memberId: created.output.id };
-					const withSignIn = await saveSignIn(created.output.id, roleId);
-					toasts.show(
-						t(withSignIn ? 'members_added_with_signin' : 'members_added', { name: name.trim() }),
-					);
-				}
-			} else {
-				unwrap(
-					await api.POST('/api/v1/actions/core.updateMember', {
-						body: {
-							memberId: editing.id,
-							displayName: name.trim(),
-							roleId,
-							about: about.trim() || null,
-						},
-					}),
-				);
-				// The sign-in is only changed when something was typed for it.
+		await persist();
+		saving = false;
+	}
+
+	/** Saves the panel's person and sign-in; stops, with the error shown, at the first refusal. */
+	async function persist() {
+		if (!editing) {
+			const created = await runAction(
+				api.POST('/api/v1/actions/core.createMember', {
+					body: {
+						displayName: name.trim(),
+						roleId,
+						...(about.trim() && { about: about.trim() }),
+					},
+				}),
+				{ onError: showError },
+			);
+			if (!created.ok) return;
+			if (created.data.status === 'applied') {
+				// From here on the panel is the new person's: if their sign-in is refused (an email
+				// already used), it stays open on them with the message, and Save tries again.
+				await load();
+				panel = { memberId: created.data.output.id };
+				const withSignIn = await saveSignIn(created.data.output.id, roleId);
+				if (withSignIn === null) return;
 				toasts.show(
-					(await saveSignIn(editing.id, roleId))
-						? t('members_login_saved')
-						: t('members_saved', { name: name.trim() }),
+					t(withSignIn ? 'members_added_with_signin' : 'members_added', { name: name.trim() }),
 				);
 			}
-			panel = null;
-			await load();
-		} catch (e) {
-			error = errorText(e);
-		} finally {
-			saving = false;
+		} else {
+			const updated = await runAction(
+				api.POST('/api/v1/actions/core.updateMember', {
+					body: {
+						memberId: editing.id,
+						displayName: name.trim(),
+						roleId,
+						about: about.trim() || null,
+					},
+				}),
+				{ onError: showError },
+			);
+			if (!updated.ok) return;
+			// The sign-in is only changed when something was typed for it.
+			const withSignIn = await saveSignIn(editing.id, roleId);
+			if (withSignIn === null) return;
+			toasts.show(
+				withSignIn ? t('members_login_saved') : t('members_saved', { name: name.trim() }),
+			);
 		}
+		panel = null;
+		await load();
 	}
 
 	async function remove(member: Member) {
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.archiveMember', { body: { memberId: member.id } }),
-			);
-			toasts.show(t('members_removed', { name: member.displayName }));
-			panel = null;
-			await load();
-		} catch (e) {
-			error = errorText(e);
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.archiveMember', { body: { memberId: member.id } }),
+			{ saved: t('members_removed', { name: member.displayName }), onError: showError },
+		);
+		if (!result.ok) return;
+		panel = null;
+		await load();
 	}
 </script>
 

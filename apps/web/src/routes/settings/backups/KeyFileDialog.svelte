@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { isApiError, unwrap } from '@famos/api-client';
+	import { isApiError } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Dialog, Notice } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { KEY_FILE_NAME, keyFileFailure, saveTextFile } from './key-file.js';
@@ -30,27 +31,29 @@
 		if (!password || busy) return;
 		busy = true;
 		error = null;
-		try {
-			const text = unwrap(
-				await api.POST('/api/v1/backups/key-file', { body: { password }, parseAs: 'text' }),
-			);
-			saveTextFile(text, KEY_FILE_NAME);
+		const result = await runAction(
+			api.POST('/api/v1/backups/key-file', { body: { password }, parseAs: 'text' }),
+			{
+				onError: (failure) => {
+					const kind = isApiError(failure.error) ? keyFileFailure(failure.error) : 'other';
+					error =
+						kind === 'wrong_password'
+							? t('key_file_wrong_password')
+							: kind === 'password_sign_in'
+								? t('key_file_needs_password_sign_in')
+								: kind === 'locked'
+									? t('key_file_locked')
+									: failure.message;
+				},
+			},
+		);
+		if (result.ok) {
+			saveTextFile(result.data, KEY_FILE_NAME);
 			toasts.show(t('key_file_saved'));
 			onclose();
-		} catch (e) {
-			const failure = isApiError(e) ? keyFileFailure(e) : 'other';
-			error =
-				failure === 'wrong_password'
-					? t('key_file_wrong_password')
-					: failure === 'password_sign_in'
-						? t('key_file_needs_password_sign_in')
-						: failure === 'locked'
-							? t('key_file_locked')
-							: t('error_generic');
-		} finally {
-			password = '';
-			busy = false;
 		}
+		password = '';
+		busy = false;
 	}
 </script>
 

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { isApiError, unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Dialog, Notice, Segmented, SidePanel, Step, Steps } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import KeyFileDialog from './KeyFileDialog.svelte';
 	import { LOCK_MODES, type LockMode, lockMismatch, lockReady, MIN_PASSPHRASE } from './lock.js';
@@ -58,29 +58,25 @@
 		error = null;
 		confirmingNone = false;
 		busy = true;
-		try {
-			// A passphrase is a secret, so it has a route of its own; the other choices are actions.
-			if (mode === 'passphrase')
-				unwrap(await api.PUT('/api/v1/backups/encryption/passphrase', { body: { passphrase } }));
-			else
-				unwrap(
-					await api.POST('/api/v1/actions/core.setBackupEncryption', {
+		// A passphrase is a secret, so it has a route of its own; the other choices are actions.
+		const result = await runAction<unknown>(
+			mode === 'passphrase'
+				? api.PUT('/api/v1/backups/encryption/passphrase', { body: { passphrase } })
+				: api.POST('/api/v1/actions/core.setBackupEncryption', {
 						body:
 							mode === 'recipient'
 								? { mode: 'recipient' as const, recipient: recipient.trim() }
 								: { mode: 'none' as const },
 					}),
-				);
+			{ invalid: t('backups_enc_invalid'), onError: (failure) => (error = failure.message) },
+		);
+		if (result.ok) {
 			// The passphrase leaves memory as soon as the server has it.
 			passphrase = again = '';
 			step = 3;
 			onchanged();
-		} catch (e) {
-			error =
-				isApiError(e) && e.code === 'bad_request' ? t('backups_enc_invalid') : t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 	function submit() {
 		if (!ready || busy) return;

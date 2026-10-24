@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { unwrap } from '@famos/api-client';
+
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -18,6 +18,7 @@
 	} from '@famos/ui/famos';
 	import { ChevronRight, Monitor, Plus, Smartphone, Tablet } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import Slot from '@famos/ui/slot';
 	import { contributions } from '#lib/extensions.js';
 	import { dateTimeFormat } from '#lib/format.svelte.js';
@@ -194,25 +195,21 @@
 		if (!openId) return;
 		editError = null;
 		const deviceId = openId;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.updateDisplay', {
-					body: { deviceId, name: editName, capabilities: editCaps, showNames: editNames },
-				}),
-			);
-		} catch {
-			editError = t('error_generic');
-			return;
-		}
+		const screen = await runAction(
+			api.POST('/api/v1/actions/core.updateDisplay', {
+				body: { deviceId, name: editName, capabilities: editCaps, showNames: editNames },
+			}),
+			{ onError: (failure) => (editError = failure.message) },
+		);
+		if (!screen.ok) return;
 		// The screen is saved; the pages are the second half of the same Save.
-		try {
-			const rotation = rotationToSave(editChoice);
-			unwrap(
-				await api.POST('/api/v1/actions/core.setDisplayPages', { body: { deviceId, rotation } }),
-			);
-		} catch {
+		const rotation = rotationToSave(editChoice);
+		const pages = await runAction(
+			api.POST('/api/v1/actions/core.setDisplayPages', { body: { deviceId, rotation } }),
+			{ onError: () => (editError = t('devices_pages_error')) },
+		);
+		if (!pages.ok) {
 			await load();
-			editError = t('devices_pages_error');
 			return;
 		}
 		openId = null;
@@ -221,23 +218,21 @@
 
 	async function forget() {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/core/devices/forget'));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(api.POST('/api/v1/core/devices/forget'), {
+			onError: (failure) => (error = failure.message),
+			reload: load,
+		});
 	}
 
 	async function remove(id: string) {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.revokeDevice', { body: { deviceId: id } }));
-			openId = null;
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.revokeDevice', { body: { deviceId: id } }),
+			{ onError: (failure) => (error = failure.message) },
+		);
+		if (!result.ok) return;
+		openId = null;
+		await load();
 	}
 
 	const discard = $derived({

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Card, ConfirmButton, Pill, Row, Section, SidePanel } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Plus } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { getLanguages, loadLanguages, t } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -93,27 +93,24 @@
 		event.preventDefault();
 		busy = true;
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.installLanguagePackFromUrl', { body: { url } }));
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.installLanguagePackFromUrl', { body: { url } }),
+			{ onError: (failure) => (error = failure.message), reload: refresh },
+		);
+		if (result.ok) {
 			url = '';
 			adding = false;
-			await refresh();
-		} catch {
-			error = t('error_generic');
-		} finally {
-			busy = false;
 		}
+		busy = false;
 	}
 
 	async function remove(code: string, name: string) {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.removeLanguagePack', { body: { code } }));
-			toasts.show(t('languages_removed', { name }));
-			await Promise.all([refresh(), family.refresh(), session.refresh()]);
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(api.POST('/api/v1/actions/core.removeLanguagePack', { body: { code } }), {
+			saved: t('languages_removed', { name }),
+			onError: (failure) => (error = failure.message),
+			reload: () => Promise.all([refresh(), family.refresh(), session.refresh()]),
+		});
 	}
 </script>
 

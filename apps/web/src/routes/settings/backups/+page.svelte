@@ -2,14 +2,14 @@
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { unwrap } from '@famos/api-client';
+
 	import { Button } from '@famos/ui/button';
 	import { Card, HelpTip, Notice, Page, PageHeader, Pill, Row, Section } from '@famos/ui/famos';
 	import { ChevronRight, DatabaseBackup, FileKey, KeyRound, Plus } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 	import EncryptionPanel from './EncryptionPanel.svelte';
 	import KeyFileDialog from './KeyFileDialog.svelte';
 	import { reason } from './reason.js';
@@ -48,9 +48,11 @@
 		running = true;
 		error = null;
 		const known = new Set(data?.local.map((b) => b.name));
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.runBackup', { body: {} }));
-			toasts.show(t('backups_run_queued'));
+		const queued = await runAction(api.POST('/api/v1/actions/core.runBackup', { body: {} }), {
+			saved: t('backups_run_queued'),
+			onError: () => (error = t('backups_run_failed')),
+		});
+		if (queued.ok) {
 			// The worker writes the backup in the background: look for it for a little while.
 			for (let i = 0; i < 40; i++) {
 				await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -63,11 +65,8 @@
 				await new Promise((resolve) => setTimeout(resolve, 1500));
 				await load();
 			}
-		} catch {
-			error = t('backups_run_failed');
-		} finally {
-			running = false;
 		}
+		running = false;
 	}
 
 	/** The line under a copy's name: where it stands. `bad` means someone should look. */

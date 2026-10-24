@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { unwrap } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Card, Dialog, Notice, Section, Segmented, SettingRow } from '@famos/ui/famos';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { contributions } from '#lib/extensions.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { session } from '#lib/session.svelte.js';
-	import { toasts } from '#lib/toast.svelte.js';
 	import { AREA_ACCESS, type AiArea, type AiAreaAccess } from './types.js';
 
 	/** Per area (extension): how far the AI may use it. Each choice saves at once. */
@@ -53,17 +52,13 @@
 
 	async function save(area: AiArea, access: AiAreaAccess, confirmSensitive = false) {
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.setAiAreaAccess', {
-					body: { extensionId: area.id, access, ...(confirmSensitive && { confirmSensitive }) },
-				}),
-			);
-			confirming = null;
-			toasts.show(t('ai_saved'));
-		} catch {
-			error = t('error_generic');
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setAiAreaAccess', {
+				body: { extensionId: area.id, access, ...(confirmSensitive && { confirmSensitive }) },
+			}),
+			{ saved: t('ai_saved'), onError: (failure) => (error = failure.message) },
+		);
+		if (result.ok) confirming = null;
 		await load();
 	}
 

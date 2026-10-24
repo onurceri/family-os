@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { dateTimeFormat } from '#lib/format.svelte.js';
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import {
 		Card,
@@ -16,6 +16,7 @@
 	} from '@famos/ui/famos';
 	import { ChevronRight, KeyRound, Plug, Plus, UserCheck } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
+	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
@@ -169,15 +170,15 @@
 		return parts.join(' · ');
 	};
 
+	const showError = (failure: ActionFailure) => (error = failure.message);
+
 	async function setEnabled(on: boolean): Promise<boolean> {
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.setMcpEnabled', { body: { enabled: on } }));
-			enabled = on;
-			return true;
-		} catch {
-			error = t('error_generic');
-			return false;
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setMcpEnabled', { body: { enabled: on } }),
+			{ onError: showError },
+		);
+		if (result.ok) enabled = on;
+		return result.ok;
 	}
 
 	/** One switch for the whole family, so the notice says what it is now and offers Undo. */
@@ -207,15 +208,12 @@
 		allowPlainHttp?: boolean;
 	}): Promise<boolean> {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.setMcpOAuth', { body: patch }));
-			await loadOAuth();
-			return true;
-		} catch {
-			error = t('error_generic');
-			oauthKey += 1;
-			return false;
-		}
+		const result = await runAction(api.POST('/api/v1/actions/core.setMcpOAuth', { body: patch }), {
+			onError: showError,
+			reload: loadOAuth,
+		});
+		if (!result.ok) oauthKey += 1;
+		return result.ok;
 	}
 
 	async function switchSignin(on: boolean) {
@@ -233,27 +231,20 @@
 
 	async function removeClient(client: Client) {
 		error = null;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.deleteOAuthClient', { body: { clientId: client.id } }),
-			);
-			toasts.show(t('mcp_client_removed', { name: client.name }));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.deleteOAuthClient', { body: { clientId: client.id } }),
+			{ saved: t('mcp_client_removed', { name: client.name }), onError: showError, reload: load },
+		);
 	}
 
 	const reasonText = (reason: string) => tDynamic(`app:${reason}`);
 
 	async function revoke(id: string) {
 		error = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.revokeApiToken', { body: { tokenId: id } }));
-			await load();
-		} catch {
-			error = t('error_generic');
-		}
+		await runAction(api.POST('/api/v1/actions/core.revokeApiToken', { body: { tokenId: id } }), {
+			onError: showError,
+			reload: load,
+		});
 	}
 </script>
 

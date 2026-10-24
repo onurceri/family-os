@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { type paths, unwrap } from '@famos/api-client';
+	import type { paths } from '@famos/api-client';
 	import { Card, Composer, ConfirmButton, Page, PageHeader, SidePanel } from '@famos/ui/famos';
 	import { Textarea } from '@famos/ui/textarea';
 	import { ChevronRight } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { t } from '#lib/i18n.svelte.js';
+	import { runAction } from '#lib/run-action.js';
 	import { toasts } from '#lib/toast.svelte.js';
 
 	/**
@@ -23,16 +24,10 @@
 	let editing = $state<Memory | null>(null);
 	let draft = $state('');
 
-	const failed = () => toasts.show(t('error_generic'));
-
 	async function load() {
-		try {
-			memories = unwrap(await api.GET('/api/v1/core/memories'));
-		} catch {
-			failed();
-		} finally {
-			loaded = true;
-		}
+		const result = await runAction(api.GET('/api/v1/core/memories'));
+		if (result.ok) memories = result.data;
+		loaded = true;
 	}
 	$effect(() => {
 		void load();
@@ -47,16 +42,12 @@
 			return false;
 		}
 		busy = true;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.addMemory', { body: { text: note } }));
-			await load();
-			return true;
-		} catch {
-			failed();
-			return false;
-		} finally {
-			busy = false;
-		}
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.addMemory', { body: { text: note } }),
+			{ reload: load },
+		);
+		busy = false;
+		return result.ok;
 	}
 
 	function startEdit(memory: Memory) {
@@ -70,28 +61,18 @@
 		if (!memory || !note || note.length > LIMIT) return;
 		editing = null;
 		if (note === memory.text) return;
-		try {
-			unwrap(
-				await api.POST('/api/v1/actions/core.updateMemory', {
-					body: { id: memory.id, text: note },
-				}),
-			);
-			toasts.show(t('memory_saved'));
-			await load();
-		} catch {
-			failed();
-		}
+		await runAction(
+			api.POST('/api/v1/actions/core.updateMemory', { body: { id: memory.id, text: note } }),
+			{ saved: t('memory_saved'), reload: load },
+		);
 	}
 
 	async function forget(memory: Memory) {
 		editing = null;
-		try {
-			unwrap(await api.POST('/api/v1/actions/core.deleteMemory', { body: { id: memory.id } }));
-			toasts.show(t('memory_deleted'));
-			await load();
-		} catch {
-			failed();
-		}
+		await runAction(api.POST('/api/v1/actions/core.deleteMemory', { body: { id: memory.id } }), {
+			saved: t('memory_deleted'),
+			reload: load,
+		});
 	}
 </script>
 

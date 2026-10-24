@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { dateTimeFormat } from '#lib/format.svelte.js';
-	import { type paths, unwrap } from '@famos/api-client';
+	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
 	import { Card, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { api } from '#lib/api.js';
+	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { push } from '#lib/push.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -77,15 +78,13 @@
 
 	async function save(next: Prefs) {
 		error = null;
-		try {
-			const saved = unwrap(
-				await api.POST('/api/v1/actions/core.setNotificationPreferences', { body: next }),
-			);
-			if (options && saved.status === 'applied') options = { ...options, prefs: saved.output };
-		} catch {
-			error = t('error_generic');
-			await loadPrefs();
-		}
+		const saved = await runAction(
+			api.POST('/api/v1/actions/core.setNotificationPreferences', { body: next }),
+			{ onError: (failure) => (error = failure.message) },
+		);
+		if (!saved.ok) await loadPrefs();
+		else if (options && saved.data.status === 'applied')
+			options = { ...options, prefs: saved.data.output };
 	}
 
 	const isOn = (kind: Preferences['kinds'][number], channelId: string) =>
