@@ -91,6 +91,15 @@ export interface SearchIndexer {
  * what its manifest's `network` declares, and `actions.invoke` runs its own actions and those
  * its manifest's `calls` lists. Members and family settings come from `family`.
  */
+/** Records what a route that sets a secret did (see `ExtensionContext.audit`). */
+export interface AuditRecorder {
+	/**
+	 * One audit row: who did it, the route's operation id (it must start with the extension's id)
+	 * and the id of what it touched. Never the secret and never the input.
+	 */
+	record(actor: Actor, operationId: string, target?: string | null): Promise<void>;
+}
+
 export interface ExtensionContext {
 	/** Only this extension's tables (its `tablePrefix`); anything else throws `forbidden`. */
 	readonly db: DbExecutor;
@@ -100,6 +109,11 @@ export interface ExtensionContext {
 	readonly files: ExtensionFiles;
 	/** Seals and opens credentials at rest (see `SecretBox`), with a key of this extension's own. */
 	readonly secrets: SecretBox;
+	/**
+	 * The audit log for a route that sets a secret, the one change that is not an action (an
+	 * action's change is recorded by the runner). Call it once the route has succeeded.
+	 */
+	readonly audit: AuditRecorder;
 	/**
 	 * Guarded outbound HTTP (see `ExternalHttp`), limited to the manifest's `network`; use it
 	 * from job handlers, or from a route as a bounded read-through (short timeout, size cap,

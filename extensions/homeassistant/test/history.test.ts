@@ -6,6 +6,7 @@ import en from '../src/messages/en.json' with { type: 'json' };
 import tr from '../src/messages/tr.json' with { type: 'json' };
 import homeassistant from '../src/server/index.ts';
 import { describeSwitch, type HistoryDeps, historyKey } from '../src/web/history-words.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -18,7 +19,7 @@ beforeEach(async () => {
 	k = await createTestKernel({ extensions: [homeassistant] });
 	admin = (await k.member('admin', 'Deniz')).actor;
 	alex = (await k.member('member', 'Alex')).actor;
-	await k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, admin);
+	await connectHomeAssistant(k, admin, BASE, TOKEN);
 	await k.worker.drain();
 });
 afterEach(() => k.close());

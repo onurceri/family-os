@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { NotifyTargets, PersonLink } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
 import { notifyServicesOf, orderTargets, trackersOf } from '../src/server/notify.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -57,7 +58,7 @@ const person = (id: string, trackers: string[]) =>
 	});
 
 async function connect() {
-	await k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, admin);
+	await connectHomeAssistant(k, admin, BASE, TOKEN);
 	await k.worker.drain();
 }
 const link = (memberId = alex.memberId, personEntity = 'person.alex') =>

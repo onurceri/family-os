@@ -3,6 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Entities, Values } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -45,7 +46,7 @@ function serveEntity(body: ReturnType<typeof entity>) {
 const stateRequests = () => k.http.requests.filter((r) => r.url.startsWith(`${BASE}/api/states`));
 
 async function connect() {
-	await k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, admin);
+	await connectHomeAssistant(k, admin, BASE, TOKEN);
 }
 async function add(entityId: string, label: string) {
 	await k.runner.invoke('homeassistant.addItem', { entityId, label }, admin);

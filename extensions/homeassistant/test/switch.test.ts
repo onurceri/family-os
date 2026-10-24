@@ -12,6 +12,7 @@ import {
 	type Values,
 } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 const BASE = 'http://192.168.1.20:8123';
 const TOKEN = 'eyJhbGciOiJIUzI1NiJ9.sentinel-payload.sentinel-signature';
@@ -43,7 +44,7 @@ const state = (entityId: string, value: string) =>
 	});
 
 async function connect() {
-	await k.runner.invoke('homeassistant.connect', { url: BASE, token: TOKEN }, admin);
+	await connectHomeAssistant(k, admin, BASE, TOKEN);
 	// The check runs (and finds nothing at the fake address) before anything is switched.
 	await k.worker.drain();
 }

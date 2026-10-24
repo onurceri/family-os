@@ -18,7 +18,13 @@ import {
 	roundCoordinate,
 	WeatherSchema,
 } from '../contract/index.ts';
-import { cachesFor, shared, WEATHER_TTL_MS } from './caches.ts';
+import {
+	cachesFor,
+	shared,
+	WEATHER_FAILURE_TTL_MS,
+	WEATHER_TIMEOUT_MS,
+	WEATHER_TTL_MS,
+} from './caches.ts';
 import { ambientManage, ambientWeather } from './capabilities.ts';
 import { loadSettings } from './store.ts';
 
@@ -121,7 +127,7 @@ async function fetchForecast(
 			url: forecastUrl(place, unit),
 			headers: { accept: 'application/json' },
 			maxBytes: 256 * 1024,
-			timeoutMs: 15_000,
+			timeoutMs: WEATHER_TIMEOUT_MS,
 		});
 		if (response.status !== 200) throw new ExternalHttpError('unreachable');
 		const forecast = parseForecast(response.text, place, unit, ctx.clock.now());
@@ -152,9 +158,21 @@ export const getWeather = defineRoute({
 		// Parsed, not cast: a forecast cached before a field was added still gets its default.
 		if (hit && hit.key === key && ctx.clock.now() - hit.at < WEATHER_TTL_MS)
 			return { enabled: true, timing, forecast: ForecastSchema.parse(hit.value) };
-		const forecast = await shared(caches, `weather:${key}`, () =>
-			fetchForecast(ctx, place, temperatureUnit),
-		);
+		// A read that just failed is not tried again for a minute: during an outage every display
+		// and Today page would otherwise wait on the service in turn.
+		const failure = caches.weatherFailure;
+		if (failure && failure.key === key && ctx.clock.now() - failure.at < WEATHER_FAILURE_TTL_MS)
+			throw failure.error;
+		let forecast: Forecast;
+		try {
+			forecast = await shared(caches, `weather:${key}`, () =>
+				fetchForecast(ctx, place, temperatureUnit),
+			);
+		} catch (error) {
+			caches.weatherFailure = { at: ctx.clock.now(), key, error };
+			throw error;
+		}
+		caches.weatherFailure = null;
 		caches.weather = { at: ctx.clock.now(), key, value: forecast };
 		return { enabled: true, timing, forecast };
 	},
@@ -190,7 +208,7 @@ export const searchPlaces = defineRoute({
 				url: `https://geocoding-api.open-meteo.com/v1/search?${params}`,
 				headers: { accept: 'application/json' },
 				maxBytes: 256 * 1024,
-				timeoutMs: 15_000,
+				timeoutMs: WEATHER_TIMEOUT_MS,
 			});
 			if (response.status !== 200) throw new ExternalHttpError('unreachable');
 			const parsed = Geocoding.safeParse(JSON.parse(response.text));

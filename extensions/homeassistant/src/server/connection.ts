@@ -1,4 +1,5 @@
 import {
+	assertFullSignIn,
 	defineAction,
 	defineJob,
 	defineRoute,
@@ -73,18 +74,23 @@ export interface CheckResult {
 	name: string | null;
 }
 
-/** Asks Home Assistant who it is. Reads only; says nothing about the answer except what it means. */
+/**
+ * Asks Home Assistant who it is. Reads only; says nothing about the answer except what it means.
+ * Each read may take `CALL_TIMEOUT_MS`, or, with `deadlineMs`, both reads share that one deadline.
+ */
 export async function checkHomeAssistant(
 	http: ExternalHttp,
 	baseUrl: string,
 	token: string,
-	timeoutMs = CALL_TIMEOUT_MS,
+	deadlineMs?: number,
 ): Promise<CheckResult> {
+	const started = Date.now();
 	const request = (path: string) => ({
 		url: `${baseUrl}${path}`,
 		allowLocal: true,
 		headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-		timeoutMs,
+		timeoutMs:
+			deadlineMs === undefined ? CALL_TIMEOUT_MS : Math.max(1, deadlineMs - (Date.now() - started)),
 		maxBytes: CALL_MAX_BYTES,
 	});
 	try {
@@ -146,44 +152,49 @@ export async function recordTokenRefused(ctx: ExtensionContext, stamp: number): 
 	if (Number(done.numUpdatedRows) > 0) await ctx.events.emit(connectionChanged, {});
 }
 
-export const connect = defineAction({
-	id: 'homeassistant.connect',
-	title: 'Connect to Home Assistant, or change the connection',
-	input: ConnectInputSchema,
-	output: ConnectionSchema,
+/**
+ * Saves the address and the token. Setting a secret is a route, not an action: an action's input
+ * is kept for drafts and its answer for replays, and the token must be in neither. It records
+ * itself in the audit log (who, never the token) and needs a person at a password sign-in.
+ */
+export const saveConnection = defineRoute({
+	method: 'put',
+	path: '/connection',
+	operationId: 'homeassistant.saveConnection',
+	summary: 'Connect to Home Assistant, or change the connection',
 	requires: homeassistantManage.id,
-	approval: 'never',
-	async run(uow, input) {
-		const base = normalizeBaseUrl(input.url);
+	body: ConnectInputSchema,
+	response: ConnectionSchema,
+	async handle(ctx, { body, actor }) {
+		assertFullSignIn(actor);
+		const base = normalizeBaseUrl(body.url);
 		if (!base) throw new FamosError('bad_request', 'The address is not an http or https address');
-		const db = tables(uow.db);
-		const current = await load(uow.db);
+		const db = tables(ctx.db);
+		const current = await load(ctx.db);
 		// Strictly after the last change, so every change has a stamp of its own.
-		const now = Math.max(uow.clock.now(), (current?.updated_at ?? 0) + 1);
+		const now = Math.max(ctx.clock.now(), (current?.updated_at ?? 0) + 1);
 		const fresh = {
 			base_url: base.url,
-			sealed_token: uow.secrets.seal(input.token),
+			sealed_token: ctx.secrets.seal(body.token),
 			status: 'checking' as const,
 			checked_at: null,
 			ha_version: null,
 			ha_name: null,
 			updated_at: now,
 		};
-		if (current) {
-			await db
-				.updateTable('homeassistant_connection')
-				.set(fresh)
-				.where('id', '=', CONNECTION_ID)
-				.execute();
-		} else {
-			await db
-				.insertInto('homeassistant_connection')
-				.values({ id: CONNECTION_ID, ...fresh, created_at: now })
-				.execute();
-		}
-		await askForCheck(uow, now);
-		uow.emit(connectionChanged, {});
-		return toConnection(await load(uow.db));
+		await db
+			.insertInto('homeassistant_connection')
+			.values({ id: CONNECTION_ID, ...fresh, created_at: now })
+			.onConflict((conflict) => conflict.column('id').doUpdateSet(fresh))
+			.execute();
+		await ctx.audit.record(actor, 'homeassistant.saveConnection', CONNECTION_ID);
+		await ctx.enqueue(
+			'homeassistant.check',
+			{ stamp: now },
+			{ dedupeKey: `homeassistant.check:${now}` },
+		);
+		await ctx.events.emit(connectionChanged, {});
+		return toConnection(await load(ctx.db));
 	},
 });
 

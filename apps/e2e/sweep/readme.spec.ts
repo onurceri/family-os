@@ -151,7 +151,7 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 		'person.elif': { state: 'not_home', attributes: { friendly_name: 'Elif' } },
 	});
 	try {
-		await api(page, 'POST', '/api/v1/actions/homeassistant.connect', { url: ha.url, token: TOKEN });
+		await api(page, 'PUT', '/api/v1/homeassistant/connection', { url: ha.url, token: TOKEN });
 		for (const [entityId, label] of [
 			['sensor.living_room_temperature', 'Living room'],
 			['sensor.kitchen_humidity', 'Kitchen humidity'],

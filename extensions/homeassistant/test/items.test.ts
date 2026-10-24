@@ -3,6 +3,7 @@ import { createTestKernel, type TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Item } from '../src/contract/index.ts';
 import homeassistant from '../src/server/index.ts';
+import { connectHomeAssistant } from './connect.ts';
 
 let k: TestKernel;
 let admin: Actor;
@@ -161,11 +162,7 @@ describe('removeItem', () => {
 
 	it('is kept when Home Assistant is disconnected', async () => {
 		await add('sensor.a');
-		await k.runner.invoke(
-			'homeassistant.connect',
-			{ url: 'http://192.168.1.20:8123', token: 'tok' },
-			admin,
-		);
+		await connectHomeAssistant(k, admin, 'http://192.168.1.20:8123', 'tok');
 		await k.runner.invoke('homeassistant.disconnect', {}, admin);
 		expect(await order()).toEqual(['0:sensor.a']);
 	});
