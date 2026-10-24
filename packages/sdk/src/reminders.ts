@@ -1,3 +1,4 @@
+import type { FamilySettings } from './context.ts';
 import type { EnqueueOptions } from './ports.ts';
 import { MINUTE_MS } from './time-units.ts';
 
@@ -6,6 +7,9 @@ export const REMINDER_LATE_MS = 5 * MINUTE_MS;
 
 /** The local time a reminder for something with a day but no time of day is sent. */
 export const DEFAULT_REMINDER_TIME = '09:00';
+
+/** The family settings a reminder is planned from. */
+export type ReminderSettings = Pick<FamilySettings, 'timeZone' | 'reminderTime'>;
 
 /** What a reminder planner needs of `uow.enqueue` or `ctx.enqueue`. */
 export type EnqueueJob = (

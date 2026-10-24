@@ -100,12 +100,11 @@ async function load(uow: UnitOfWork, id: string) {
 /** Plans the reminders of an obligation as it is now (after an insert, edit or completion). */
 async function scheduleReminders(uow: UnitOfWork, id: string) {
 	const row = await load(uow, id);
-	const { timeZone } = await uow.family.settings();
 	await scheduleObligationReminders(
 		(job, payload, o) => uow.enqueue(job, payload, o),
 		row,
 		uow.clock.now(),
-		timeZone,
+		await uow.family.settings(),
 	);
 }
 

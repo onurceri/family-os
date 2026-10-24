@@ -37,8 +37,11 @@ it('an event saved without a reminder choice gets the default', async () => {
 	expect(toDetail(timed).reminder).toBe(30);
 	expect(toDetail(allDay).reminder).toBe(0);
 	const now = epochOf('2026-10-19', '10:00', TZ);
-	expect(nextReminder(timed, now)).toEqual({ key: String(start), at: start - 30 * 60_000 });
-	expect(nextReminder(allDay, now)).toEqual({
+	expect(nextReminder(timed, now, '09:00')).toEqual({
+		key: String(start),
+		at: start - 30 * 60_000,
+	});
+	expect(nextReminder(allDay, now, '09:00')).toEqual({
 		key: '2026-10-21',
 		at: epochOf('2026-10-21', '09:00', TZ),
 	});

@@ -7,6 +7,7 @@ import {
 	BUILT_IN_ROLES,
 	DAY_MS,
 	type DbExecutor,
+	DEFAULT_REMINDER_TIME,
 	type DigestItem,
 	type DraftAlternative,
 	defineAction,
@@ -981,6 +982,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 					...(body.weekStart !== undefined && { weekStart: body.weekStart }),
 					...(body.hourCycle && { hourCycle: body.hourCycle }),
 					...(body.temperatureUnit && { temperatureUnit: body.temperatureUnit }),
+					reminderTime: DEFAULT_REMINDER_TIME,
 				};
 				await writeFamilySettings(trx, settings, ctx.clock.now());
 				return insertMember(

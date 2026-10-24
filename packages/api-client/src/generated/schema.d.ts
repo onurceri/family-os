@@ -10597,6 +10597,7 @@ export interface operations {
                         hourCycle: "h12" | "h23";
                         /** @enum {string} */
                         temperatureUnit: "celsius" | "fahrenheit";
+                        reminderTime: string;
                     };
                 };
             };
@@ -17694,6 +17695,7 @@ export interface operations {
                     hourCycle?: "h12" | "h23";
                     /** @enum {string} */
                     temperatureUnit?: "celsius" | "fahrenheit";
+                    reminderTime?: string;
                 };
             };
         };
@@ -17717,6 +17719,7 @@ export interface operations {
                             hourCycle: "h12" | "h23";
                             /** @enum {string} */
                             temperatureUnit: "celsius" | "fahrenheit";
+                            reminderTime: string;
                         };
                     } | {
                         /** @enum {string} */

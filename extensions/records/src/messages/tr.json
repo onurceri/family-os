@@ -29,7 +29,7 @@
 	"unit_months": "ay",
 	"unit_years": "yıl",
 	"field_lead_days": "Kaç gün önce hatırlat",
-	"field_lead_days_hint": "Son gün sabah 09:00’da da bir hatırlatma gelir.",
+	"field_lead_days_hint": "Son gün hatırlatma saatinde de bir hatırlatma gelir.",
 	"field_assignee": "Kim",
 	"anyone": "Herkes",
 	"field_notes": "Notlar",

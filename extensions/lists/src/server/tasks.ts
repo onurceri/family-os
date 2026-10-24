@@ -70,12 +70,11 @@ async function assertMember(uow: UnitOfWork, id: string | null | undefined) {
 /** Plans the reminder for a task as it is now (after an insert, edit, completion or reopen). */
 async function scheduleReminder(uow: UnitOfWork, id: string) {
 	const row = await load(uow, id);
-	const { timeZone } = await uow.family.settings();
 	await scheduleTaskReminder(
 		(job, payload, o) => uow.enqueue(job, payload, o),
 		row,
 		uow.clock.now(),
-		timeZone,
+		await uow.family.settings(),
 	);
 }
 

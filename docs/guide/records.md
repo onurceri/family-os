@@ -20,7 +20,7 @@ A duty must happen by a date (renew insurance, vaccinate Luna, service the heati
 
 ### Reminders
 
-**Remind me this many days before** the due date, and again on the due day at 09:00. Suggested duties have their own lead (usually 2–4 weeks); your own default to 14.
+**Remind me this many days before** the due date, and again on the due day, both at the family's [reminder time](region.md) (09:00 unless changed). Suggested duties have their own lead (usually 2–4 weeks); your own default to 14.
 
 **Good to know**
 - With **Who**, only that person is told; otherwise everyone who may see these records ([Notifications](notifications.md)).

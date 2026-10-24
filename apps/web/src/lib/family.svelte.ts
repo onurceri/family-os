@@ -33,6 +33,8 @@ class Family {
 	weekStart = $state(defaultWeekStart(browserFormatLocale()));
 	hourCycle = $state<'h12' | 'h23'>(defaultHourCycle(browserFormatLocale()));
 	temperatureUnit = $state<'celsius' | 'fahrenheit'>(defaultTemperatureUnit(browserFormatLocale()));
+	/** The local time (`HH:MM`) reminders for something with a day but no time are sent. */
+	reminderTime = $state('09:00');
 	/** The address the server was told the family uses (`FAMOS_BASE_URL`); null when none is set. */
 	configuredAddress = $state<string | null>(null);
 
@@ -50,11 +52,13 @@ class Family {
 		weekStart: number;
 		hourCycle: 'h12' | 'h23';
 		temperatureUnit: 'celsius' | 'fahrenheit';
+		reminderTime?: string;
 	}): void {
 		this.formatLocale = settings.formatLocale;
 		this.weekStart = settings.weekStart;
 		this.hourCycle = settings.hourCycle;
 		this.temperatureUnit = settings.temperatureUnit;
+		if (settings.reminderTime) this.reminderTime = settings.reminderTime;
 	}
 
 	async refresh(): Promise<void> {

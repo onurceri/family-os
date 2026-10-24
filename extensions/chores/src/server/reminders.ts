@@ -1,8 +1,8 @@
 import {
-	DEFAULT_REMINDER_TIME,
 	defineJob,
 	defineNotificationKind,
 	type EnqueueJob,
+	type ReminderSettings,
 	reminderMissed,
 	reminderStale,
 } from '@famos/sdk';
@@ -12,7 +12,7 @@ import { CHORES_VIEW } from '../contract/index.ts';
 import { type ChoreRow, tables } from './store.ts';
 
 /**
- * Chore reminders: on the day a chore is due, at 09:00 family time, whoever is up
+ * Chore reminders: on the day a chore is due, at the family's reminder time, whoever is up
  * hears about it. A chore anyone may do reminds nobody. One `chores.remind` job per chore is
  * planned in the transaction of every change; it carries the due date and the `updated_at` it was
  * planned for, so a job that no longer matches (done, edited, handed over, archived) does nothing.
@@ -34,10 +34,10 @@ export async function scheduleChoreReminder(
 	enqueue: EnqueueJob,
 	row: ChoreRow,
 	now: number,
-	timeZone: string,
+	{ timeZone, reminderTime }: ReminderSettings,
 ): Promise<void> {
 	if (row.archived_at !== null || !row.next_due || !row.assignee_id) return;
-	const at = epochOf(row.next_due, DEFAULT_REMINDER_TIME, timeZone);
+	const at = epochOf(row.next_due, reminderTime, timeZone);
 	if (reminderMissed(at, now)) return;
 	await enqueue(
 		'chores.remind',
@@ -59,9 +59,20 @@ export const remindJob = defineJob({
 		if (reminderStale({ version, date: dueDate }, { version: row.updated_at, date: row.next_due }))
 			return;
 
-		const { timeZone } = await ctx.family.settings();
+		const { timeZone, reminderTime } = await ctx.family.settings();
+		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about a past day.
-		if (ctx.clock.now() >= dayBounds(dueDate, timeZone).end) return;
+		if (now >= dayBounds(dueDate, timeZone).end) return;
+		// The family moved the reminder time later since this was planned: wait for it.
+		const at = epochOf(dueDate, reminderTime, timeZone);
+		if (at > now) {
+			await ctx.enqueue(
+				'chores.remind',
+				{ choreId, dueDate, version },
+				{ runAt: at, dedupeKey: `chores.remind:${choreId}:${dueDate}:${version}:${at}` },
+			);
+			return;
+		}
 		await ctx.notify({
 			kind: choreDueKind.id,
 			to: { members: [row.assignee_id] },

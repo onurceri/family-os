@@ -62,7 +62,7 @@ import {
 } from './feeds.ts';
 import { movedEvent } from './moved.ts';
 import { api } from './public.ts';
-import { reminderKind, remindJob, scheduleReminder } from './reminders.ts';
+import { planReminder, reminderKind, remindJob } from './reminders.ts';
 import { EVENT_KIND, searchIndex } from './search.ts';
 import {
 	type EventRow,
@@ -299,7 +299,7 @@ export const createEvent = defineAction({
 		};
 		await events(uow.db).insertInto('calendar_events').values(row).execute();
 		await ensureTags(uow.db, tagsOf(row.tags), now);
-		await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), row, now);
+		await planReminder(uow, row, now);
 		await uow.ai.reindex(EVENT_KIND, id);
 		uow.emit(eventChanged, { eventId: id });
 		return toDetail(row);
@@ -449,8 +449,7 @@ export const updateEvent = defineAction({
 					}
 				}
 				await ensureTags(uow.db, tagsOf(created.tags), now);
-				const schedule = (r: Parameters<typeof scheduleReminder>[1]) =>
-					scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), r, now);
+				const schedule = (r: EventRow) => planReminder(uow, r, now);
 				await schedule(created);
 				await schedule(await loadEvent(uow, id));
 				await uow.ai.reindex(EVENT_KIND, created.id);
@@ -468,7 +467,7 @@ export const updateEvent = defineAction({
 		const updated = await loadEvent(uow, id);
 		await ensureTags(uow.db, tagsOf(updated.tags), now);
 		// The old reminder job sees the new `updated_at` and does nothing.
-		await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), updated, now);
+		await planReminder(uow, updated, now);
 		await uow.ai.reindex(EVENT_KIND, id);
 		uow.emit(eventChanged, { eventId: id });
 		return toDetail(updated);
@@ -537,11 +536,7 @@ export const deleteEvent = defineAction({
 				.set({ exdates: JSON.stringify(list), updated_at: now })
 				.where('id', '=', id)
 				.execute();
-			await scheduleReminder(
-				(job, payload, o) => uow.enqueue(job, payload, o),
-				await loadEvent(uow, id),
-				now,
-			);
+			await planReminder(uow, await loadEvent(uow, id), now);
 		} else {
 			await events(uow.db)
 				.updateTable('calendar_events')
@@ -624,7 +619,7 @@ export const restoreEvent = defineAction({
 			}
 		}
 		const restored = await loadEvent(uow, id);
-		await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), restored, now);
+		await planReminder(uow, restored, now);
 		uow.emit(eventChanged, { eventId: id });
 		return toDetail(restored);
 	},
@@ -873,8 +868,7 @@ export const changeEvent = defineAction({
 				.where('id', '=', id)
 				.execute();
 			await ensureTags(uow.db, tagsOf(created.tags), now);
-			const schedule = (r: Parameters<typeof scheduleReminder>[1]) =>
-				scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), r, now);
+			const schedule = (r: EventRow) => planReminder(uow, r, now);
 			await schedule(created);
 			await schedule(await loadEvent(uow, id));
 			await uow.ai.reindex(EVENT_KIND, newId);
@@ -896,7 +890,7 @@ export const changeEvent = defineAction({
 			.execute();
 		const updated = await loadEvent(uow, id);
 		await ensureTags(uow.db, tagsOf(updated.tags), now);
-		await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), updated, now);
+		await planReminder(uow, updated, now);
 		await uow.ai.reindex(EVENT_KIND, id);
 		uow.emit(eventChanged, { eventId: id });
 		return { event: toDetail(updated), before };
@@ -952,11 +946,7 @@ export const putOccurrenceBack = defineAction({
 			.set({ exdates: kept.length ? JSON.stringify(kept) : null, updated_at: now })
 			.where('id', '=', id)
 			.execute();
-		await scheduleReminder(
-			(job, payload, o) => uow.enqueue(job, payload, o),
-			await loadEvent(uow, id),
-			now,
-		);
+		await planReminder(uow, await loadEvent(uow, id), now);
 		uow.emit(eventChanged, { eventId: id });
 		return { ok: true as const };
 	},

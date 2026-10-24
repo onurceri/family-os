@@ -43,7 +43,7 @@ Tap its circle. The next date is set, the turn passes on, and a notice offers **
 
 ## Reminders
 
-At 09:00 on the due day, the person whose turn it is gets a notification. Anyone-may-do chores remind nobody. Turn off per person in notification preferences.
+At the family's [reminder time](region.md) (09:00 unless changed) on the due day, the person whose turn it is gets a notification. Anyone-may-do chores remind nobody. Turn off per person in notification preferences.
 
 ## What the AI does here
 

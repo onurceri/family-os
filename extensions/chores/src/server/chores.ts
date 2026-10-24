@@ -64,12 +64,11 @@ async function scheduleReminder(uow: UnitOfWork, id: string) {
 		.where('id', '=', id)
 		.executeTakeFirst();
 	if (!row) return;
-	const { timeZone } = await uow.family.settings();
 	await scheduleChoreReminder(
 		(job, payload, o) => uow.enqueue(job, payload, o),
 		row,
 		uow.clock.now(),
-		timeZone,
+		await uow.family.settings(),
 	);
 }
 

@@ -1,8 +1,8 @@
 import {
-	DEFAULT_REMINDER_TIME,
 	defineJob,
 	defineNotificationKind,
 	type EnqueueJob,
+	type ReminderSettings,
 	reminderMissed,
 	reminderStale,
 } from '@famos/sdk';
@@ -12,7 +12,7 @@ import { type TaskRow, tables } from './store.ts';
 
 /**
  * Task reminders: a task with a due date reminds its assignee (everyone who can see lists when
- * nobody is assigned) at the due time, or 09:00 when it has none. One `lists.remind` job per task
+ * nobody is assigned) at the due time, or the family's reminder time when it has none. One `lists.remind` job per task
  * is planned in the transaction of every change; it carries the due date, time and `updated_at`
  * it was planned for, so a job that no longer matches (edited, done, deleted) does nothing.
  * A repeating task is planned again when its completion moves the due date.
@@ -35,10 +35,10 @@ export async function scheduleTaskReminder(
 	enqueue: EnqueueJob,
 	row: TaskRow,
 	now: number,
-	timeZone: string,
+	{ timeZone, reminderTime }: ReminderSettings,
 ): Promise<void> {
 	if (!row.due_date || row.done_at !== null || row.deleted_at !== null) return;
-	const at = epochOf(row.due_date, row.due_time ?? DEFAULT_REMINDER_TIME, timeZone);
+	const at = epochOf(row.due_date, row.due_time ?? reminderTime, timeZone);
 	if (reminderMissed(at, now)) return;
 	await enqueue(
 		'lists.remind',
@@ -64,9 +64,20 @@ export const remindJob = defineJob({
 		)
 			return;
 
-		const { timeZone } = await ctx.family.settings();
+		const { timeZone, reminderTime } = await ctx.family.settings();
+		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about a past day.
-		if (ctx.clock.now() >= dayBounds(dueDate, timeZone).end) return;
+		if (now >= dayBounds(dueDate, timeZone).end) return;
+		// The family moved the reminder time later since this was planned: wait for it.
+		const at = epochOf(dueDate, dueTime ?? reminderTime, timeZone);
+		if (at > now) {
+			await ctx.enqueue(
+				'lists.remind',
+				{ taskId, dueDate, dueTime, version },
+				{ runAt: at, dedupeKey: `lists.remind:${taskId}:${dueDate}:${version}:${at}` },
+			);
+			return;
+		}
 		await ctx.notify({
 			kind: taskDueKind.id,
 			to: row.assignee_id ? { members: [row.assignee_id] } : { capability: 'lists.view' },

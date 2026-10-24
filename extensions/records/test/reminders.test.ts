@@ -75,6 +75,40 @@ describe('obligation reminders', () => {
 		expect(sent().every((s) => s.memberId === bob.id)).toBe(true);
 	});
 
+	it('reminds at the family reminder time', async () => {
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '07:30' },
+			systemActor('test'),
+		);
+		await add({ assigneeId: bob.id, leadDays: 14 });
+		await advanceTo(at('2026-10-16', '07:29'));
+		expect(sent()).toHaveLength(0);
+		await advanceTo(at('2026-10-16', '07:30'));
+		expect(sent()).toHaveLength(1);
+		await advanceTo(at('2026-10-30', '07:30'));
+		expect(sent()).toHaveLength(2);
+	});
+
+	it('waits for a reminder time moved later after the reminders were planned', async () => {
+		await add({ assigneeId: bob.id, leadDays: 14 });
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '11:00' },
+			systemActor('test'),
+		);
+		await advanceTo(at('2026-10-16', '09:00'));
+		expect(sent()).toHaveLength(0);
+		await advanceTo(at('2026-10-16', '11:00'));
+		expect(sent()).toHaveLength(1);
+		await advanceTo(at('2026-10-30', '09:00'));
+		expect(sent()).toHaveLength(1);
+		await advanceTo(at('2026-10-30', '11:00'));
+		expect(sent()).toHaveLength(2);
+		await k.worker.drain();
+		expect(sent()).toHaveLength(2);
+	});
+
 	it('reminds everyone who holds the audience capability when nobody is assigned', async () => {
 		await add({ audience: 'records.edit', leadDays: 0 });
 		await advanceTo(at('2026-10-30', '09:00'));

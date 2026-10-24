@@ -9,10 +9,10 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 | Suggestions waiting | People who may approve | A supervised member's share or hand-made suggestion: who and what (**Leo: Change an event: Piano lesson**). One item's suggestions arrive as one, after about 30 seconds. Opens Quick add. |
 | Answers to your suggestions | The suggester | Someone else approves or rejects (**Mara said no to your suggestion**). Decided together = one notification. |
 | Something you shared was read | The sharer | Shared from outside the app (share sheet, Telegram, email) and the AI has suggestions. Telegram adds buttons. |
-| Event reminders | The event's people (all who see the calendar if none) | Timed: 30 min before. All-day: 09:00 that day. Set per event in **Reminder** ([Calendars](calendars.md)). |
-| Task due dates | Assignee (all who see lists if none) | At due time, or 09:00 without one. |
-| Chores | Whose turn it is | 09:00 on the due day. Anyone-may-do chores remind nobody ([Chores](chores.md)). |
-| Duties | Assignee (all who see records if none) | Days before, and on the due day at 09:00 ([What needs doing and Papers](records.md)). |
+| Event reminders | The event's people (all who see the calendar if none) | Timed: 30 min before. All-day: at the [reminder time](region.md) that day (09:00 unless changed). Set per event in **Reminder** ([Calendars](calendars.md)). |
+| Task due dates | Assignee (all who see lists if none) | At due time, or the [reminder time](region.md) without one. |
+| Chores | Whose turn it is | The [reminder time](region.md) on the due day. Anyone-may-do chores remind nobody ([Chores](chores.md)). |
+| Duties | Assignee (all who see records if none) | Days before, and on the due day, at the [reminder time](region.md) ([What needs doing and Papers](records.md)). |
 | Backup could not be sent off | Admins | [Backups](backups.md) |
 | Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |
 

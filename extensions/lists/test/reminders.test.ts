@@ -100,6 +100,42 @@ describe('task reminders', () => {
 		expect(reminders()[0]?.message.body).toBe('en|lists:task_due_today|{}');
 	});
 
+	it('uses the family reminder time when there is no time, and the task time when there is one', async () => {
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '07:30' },
+			systemActor('test'),
+		);
+		const ann = await person('admin', 'en');
+		await addTask({ title: 'Bins', assigneeId: ann.id, dueDate: '2026-10-08' }, ann.actor);
+		await addTask(
+			{ title: 'Fee', assigneeId: ann.id, dueDate: '2026-10-08', dueTime: '15:30' },
+			ann.actor,
+		);
+		await advanceTo(at('2026-10-08', '07:29'));
+		expect(reminders()).toHaveLength(0);
+		await advanceTo(at('2026-10-08', '07:30'));
+		expect(reminders().map((s) => s.message.body)).toEqual(['en|lists:task_due_today|{}']);
+		await advanceTo(at('2026-10-08', '15:30'));
+		expect(reminders()).toHaveLength(2);
+	});
+
+	it('waits for a reminder time moved later after the reminder was planned', async () => {
+		const ann = await person('admin', 'en');
+		await addTask({ title: 'Bins', assigneeId: ann.id, dueDate: '2026-10-08' }, ann.actor);
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '11:00' },
+			systemActor('test'),
+		);
+		await advanceTo(at('2026-10-08', '09:00'));
+		expect(reminders()).toHaveLength(0);
+		await advanceTo(at('2026-10-08', '11:00'));
+		expect(reminders()).toHaveLength(1);
+		await advanceTo(at('2026-10-08', '14:00'));
+		expect(reminders()).toHaveLength(1);
+	});
+
 	it('sends nothing for a task completed or deleted first, or without a due date', async () => {
 		const ann = await person('admin', 'en');
 		const done = await addTask(

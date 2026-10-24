@@ -1,5 +1,4 @@
 import {
-	DEFAULT_REMINDER_TIME,
 	defineJob,
 	defineNotificationKind,
 	type EnqueueJob,
@@ -7,6 +6,7 @@ import {
 	type NotifyRequest,
 	REMINDER_LATE_MS,
 	reminderMissed,
+	type UnitOfWork,
 } from '@famos/sdk';
 import {
 	addDays,
@@ -34,16 +34,19 @@ export const reminderKind = defineNotificationKind({
 
 /** How far ahead to look for the next occurrence of a series (covers yearly events). */
 const LOOKAHEAD_DAYS = 400;
-/** All-day reminders count back from this local time on the day. */
-const ALL_DAY_ANCHOR = DEFAULT_REMINDER_TIME;
 
 const exdatesOf = (row: EventRow): (string | number)[] =>
 	row.exdates ? JSON.parse(row.exdates) : [];
 
 /** The instant a reminder for an occurrence is due. */
-export function reminderInstant(row: EventRow, key: string, lead: number): number {
+export function reminderInstant(
+	row: EventRow,
+	key: string,
+	lead: number,
+	reminderTime: string,
+): number {
 	if (!row.all_day) return Number(key) - lead * MINUTE_MS;
-	return Temporal.PlainDateTime.from(`${key}T${ALL_DAY_ANCHOR}`)
+	return Temporal.PlainDateTime.from(`${key}T${reminderTime}`)
 		.subtract({ minutes: lead })
 		.toZonedDateTime(row.time_zone, { disambiguation: 'compatible' })
 		.toInstant().epochMilliseconds;
@@ -80,6 +83,7 @@ function occurrenceExists(row: EventRow, key: string): boolean {
 export function nextReminder(
 	row: EventRow,
 	now: number,
+	reminderTime: string,
 	afterKey?: string,
 ): { key: string; at: number } | null {
 	const lead = effectiveReminder(row);
@@ -94,7 +98,7 @@ export function nextReminder(
 		);
 		for (const key of keys) {
 			if (afterKey !== undefined && key <= afterKey) continue;
-			const at = reminderInstant(row, key, lead);
+			const at = reminderInstant(row, key, lead, reminderTime);
 			if (!reminderMissed(at, now)) return { key, at };
 		}
 		return null;
@@ -113,7 +117,7 @@ export function nextReminder(
 	);
 	return first === undefined
 		? null
-		: { key: String(first), at: reminderInstant(row, String(first), lead) };
+		: { key: String(first), at: reminderInstant(row, String(first), lead, reminderTime) };
 }
 
 const RemindPayload = z.object({
@@ -136,10 +140,11 @@ export async function scheduleReminder(
 	enqueue: EnqueueJob,
 	row: EventRow,
 	now: number,
+	reminderTime: string,
 	afterKey?: string,
 	external?: { subscriptionId: string; uid: string; recurrenceKey: string; version: string },
 ): Promise<void> {
-	const next = nextReminder(row, now, afterKey);
+	const next = nextReminder(row, now, reminderTime, afterKey);
 	if (!next) return;
 	const version = external?.version ?? row.updated_at;
 	const payload: RemindPayload = {
@@ -225,10 +230,21 @@ export const remindJob = defineJob({
 		}
 		if (!row) return;
 		const lead = effectiveReminder(row);
-		if (lead === null || !occurrenceExists(row, key) || reminderInstant(row, key, lead) !== at)
-			return;
+		if (lead === null || !occurrenceExists(row, key)) return;
 
 		const now = ctx.clock.now();
+		const { reminderTime } = await ctx.family.settings();
+		// An all-day reminder is due at the family's reminder time. When that moved later since this
+		// was planned, wait for it; moved earlier, it applies to reminders planned from now on.
+		const due = reminderInstant(row, key, lead, reminderTime);
+		if (due !== at && due > now) {
+			await ctx.enqueue(
+				'calendar.remind',
+				{ eventId, key, at: due, version, ...(external && { external }) },
+				{ runAt: due, dedupeKey: `calendar.remind:${row.id}:${key}:${version}:${due}` },
+			);
+			return;
+		}
 		// The job may have waited a long time (server down): do not remind about the past.
 		const over = row.all_day ? dayBounds(key, row.time_zone).end : Number(key) + REMINDER_LATE_MS;
 		if (now <= over) await ctx.notify(message(row, key, row.time_zone, source));
@@ -237,9 +253,16 @@ export const remindJob = defineJob({
 				(job, payload, options) => ctx.enqueue(job, payload, options),
 				row,
 				now,
+				reminderTime,
 				key,
 				external && { ...external, version: String(version) },
 			);
 		}
 	},
 });
+
+/** Plans the next reminder of an event in the unit of work of the change that needs it. */
+export async function planReminder(uow: UnitOfWork, row: EventRow, now: number): Promise<void> {
+	const { reminderTime } = await uow.family.settings();
+	await scheduleReminder((job, payload, o) => uow.enqueue(job, payload, o), row, now, reminderTime);
+}

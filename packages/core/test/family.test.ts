@@ -88,6 +88,7 @@ describe('family settings', () => {
 			weekStart: 1,
 			hourCycle: 'h12',
 			temperatureUnit: 'celsius',
+			reminderTime: '09:00',
 		});
 		await k.route('core.completeSetup').call({
 			body: {
@@ -105,6 +106,7 @@ describe('family settings', () => {
 			weekStart: 1,
 			hourCycle: 'h23',
 			temperatureUnit: 'celsius',
+			reminderTime: '09:00',
 		});
 	});
 
@@ -119,6 +121,21 @@ describe('family settings', () => {
 		await k.runner.invoke('core.updateFamilySettings', { timeZone: 'Europe/Berlin' }, admin);
 		const result = await k.runner.invoke<{ timeZone: string }>('probe.readZone', {}, admin);
 		expect(result).toEqual({ status: 'applied', output: { timeZone: 'Europe/Berlin' } });
+	});
+
+	it('keeps the reminder time, 09:00 until the family changes it, and refuses a bad time', async () => {
+		const { actor: admin } = await k.member('admin');
+		expect((await k.ctx.family.settings()).reminderTime).toBe('09:00');
+		expect(
+			await k.runner.invoke('core.updateFamilySettings', { reminderTime: '07:30' }, admin),
+		).toMatchObject({ status: 'applied', output: { reminderTime: '07:30' } });
+		expect((await k.ctx.family.settings()).reminderTime).toBe('07:30');
+		for (const bad of ['7:30', '24:00', '09:60', 'morning', '']) {
+			await expect(
+				k.runner.invoke('core.updateFamilySettings', { reminderTime: bad }, admin),
+			).rejects.toMatchObject({ code: 'bad_request' });
+		}
+		expect((await k.ctx.family.settings()).reminderTime).toBe('07:30');
 	});
 
 	it('rejects unknown time zones', async () => {

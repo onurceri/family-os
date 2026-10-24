@@ -10,8 +10,8 @@ export const EventIdSchema = idSchema('cal_event');
 export const MemberIdSchema = idSchema('member');
 
 /**
- * Reminder presets, in minutes before the start. For all-day events the reference is 09:00 local
- * time on the day: 0 = 09:00 that day, 720 = 21:00 the evening before.
+ * Reminder presets, in minutes before the start. For all-day events the reference is the family's
+ * reminder time (09:00 by default) on the day: 0 = at that time on the day, 720 = 12 hours before it.
  */
 export const TIMED_REMINDERS = [0, 5, 10, 15, 30, 60, 120, 1440] as const;
 export const ALL_DAY_REMINDERS = [0, 720] as const;

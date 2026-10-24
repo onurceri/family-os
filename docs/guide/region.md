@@ -14,6 +14,7 @@ The **[language](languages.md)** chooses words (including day and month names). 
 | **Region format** | Search a country or region, or type a tag like `en-GB`. Sets day/month/year order, number marks (`1,234.56` or `1.234,56`) and money. **Use this browser's region** fills it in. An invalid tag cannot be saved. |
 | **First day of the week** | Starts calendar and meal plan weeks, **This week** and **Next week** on Tasks, and the day pickers of repeating events, tasks and chores. Never changes the days an event repeats on. |
 | **Clock** | 24-hour (14:30) or 12-hour (2:30 PM). |
+| **Reminder time** | The time of day a reminder goes out for something that has a day but no time, such as a chore, a record's due date or an all-day event (09:00 until you change it). A time moved later also moves reminders already planned; an earlier time applies to reminders planned from then on. |
 | **Temperature** | °C or °F, for the displays' weather. |
 
 3. Check the **Preview** and press **Save**.

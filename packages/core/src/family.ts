@@ -1,10 +1,17 @@
-import type { DbExecutor, FamilyMember, FamilyReader, FamilySettings } from '@famos/sdk';
+import {
+	type DbExecutor,
+	DEFAULT_REMINDER_TIME,
+	type FamilyMember,
+	type FamilyReader,
+	type FamilySettings,
+} from '@famos/sdk';
 import {
 	canonicalLocale,
 	defaultHourCycle,
 	defaultTemperatureUnit,
 	defaultWeekStart,
 	formatLocaleForLanguage,
+	IsoTimeSchema,
 	isFormatLocale,
 	TimeZoneSchema,
 	WeekStartSchema,
@@ -39,6 +46,7 @@ export const FamilySettingsSchema = z.object({
 	weekStart: WeekStartSchema,
 	hourCycle: z.enum(['h12', 'h23']),
 	temperatureUnit: z.enum(['celsius', 'fahrenheit']),
+	reminderTime: IsoTimeSchema,
 });
 
 /** The region formats a region implies: what `Intl` says about the format locale. */
@@ -65,6 +73,7 @@ export const DEFAULT_FAMILY_SETTINGS: FamilySettings = {
 	weekStart: 1,
 	hourCycle: defaultHourCycle(formatLocaleForLanguage('en')),
 	temperatureUnit: 'celsius',
+	reminderTime: DEFAULT_REMINDER_TIME,
 };
 const KEY = 'family';
 

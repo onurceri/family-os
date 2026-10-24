@@ -300,6 +300,44 @@ describe('all-day events', () => {
 		expect(new Date(at('2026-10-12', '09:00')).toISOString()).toBe('2026-10-12T06:00:00.000Z');
 	});
 
+	it('reminds at the family reminder time', async () => {
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '07:30' },
+			systemActor('test'),
+		);
+		const ann = await person('admin', 'en');
+		await create(
+			{ title: 'Holiday', date: '2026-10-12', allDay: true, memberIds: [ann.id] },
+			ann.actor,
+		);
+		await advanceTo(at('2026-10-12', '07:29'));
+		expect(channel.sent).toHaveLength(0);
+		await advanceTo(at('2026-10-12', '07:30'));
+		expect(channel.sent).toHaveLength(1);
+	});
+
+	it('waits for a reminder time moved later after the reminder was planned', async () => {
+		const ann = await person('admin', 'en');
+		await create(
+			{ title: 'Holiday', date: '2026-10-12', allDay: true, memberIds: [ann.id] },
+			ann.actor,
+		);
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '11:00' },
+			systemActor('test'),
+		);
+		await advanceTo(at('2026-10-12', '09:00'));
+		expect(channel.sent).toHaveLength(0);
+		await advanceTo(at('2026-10-12', '10:59'));
+		expect(channel.sent).toHaveLength(0);
+		await advanceTo(at('2026-10-12', '11:00'));
+		expect(channel.sent).toHaveLength(1);
+		await advanceTo(at('2026-10-12', '15:00'));
+		expect(channel.sent).toHaveLength(1);
+	});
+
 	it('can remind at 21:00 the evening before', async () => {
 		const ann = await person('admin', 'en');
 		await create(

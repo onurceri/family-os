@@ -45,7 +45,7 @@ export type CalendarTables = {
 		/** JSON array of member IDs; empty = whole family. */
 		member_ids: string;
 		/**
-		 * Minutes before the start (all-day: before 09:00 local). Meaningful only when
+		 * Minutes before the start (all-day: before the family's reminder time). Meaningful only when
 		 * `reminder_set` is 1; null then means "no reminder".
 		 */
 		reminder_minutes: number | null;

@@ -1,8 +1,8 @@
 import {
-	DEFAULT_REMINDER_TIME,
 	defineJob,
 	defineNotificationKind,
 	type EnqueueJob,
+	type ReminderSettings,
 	reminderMissed,
 	reminderStale,
 } from '@famos/sdk';
@@ -14,7 +14,7 @@ import { type ObligationRow, tables } from './store.ts';
 /**
  * Obligation reminders: the assignee, or everyone who holds the obligation's
  * audience capability when nobody is assigned, hears about it `lead_days` before the due date and
- * again on the due date, at 09:00 family time. Only the current due date is planned; every change
+ * again on the due date, at the family's reminder time. Only the current due date is planned; every change
  * plans afresh in its own transaction, and a job carries the due date and `updated_at` it was
  * planned for, so a job that no longer matches (edited, done, removed, archived) does nothing.
  */
@@ -36,7 +36,7 @@ export async function scheduleObligationReminders(
 	enqueue: EnqueueJob,
 	row: ObligationRow,
 	now: number,
-	timeZone: string,
+	{ timeZone, reminderTime }: ReminderSettings,
 ): Promise<void> {
 	if (row.archived_at !== null) return;
 	const stages: { stage: 'lead' | 'due'; date: string }[] = [];
@@ -44,7 +44,7 @@ export async function scheduleObligationReminders(
 		stages.push({ stage: 'lead', date: addDays(row.due_date, -row.lead_days) });
 	stages.push({ stage: 'due', date: row.due_date });
 	for (const { stage, date } of stages) {
-		const at = epochOf(date, DEFAULT_REMINDER_TIME, timeZone);
+		const at = epochOf(date, reminderTime, timeZone);
 		if (reminderMissed(at, now)) continue;
 		await enqueue(
 			'records.remind',
@@ -70,10 +70,27 @@ export const remindJob = defineJob({
 		if (reminderStale({ version, date: dueDate }, { version: row.updated_at, date: row.due_date }))
 			return;
 
-		const { timeZone } = await ctx.family.settings();
+		const { timeZone, reminderTime } = await ctx.family.settings();
 		const now = ctx.clock.now();
 		// The job may have waited a long time (server down): do not remind about a past day.
 		if (now >= dayBounds(dueDate, timeZone).end) return;
+		// The family moved the reminder time later since this was planned: wait for it.
+		const at = epochOf(
+			stage === 'lead' ? addDays(dueDate, -row.lead_days) : dueDate,
+			reminderTime,
+			timeZone,
+		);
+		if (at > now) {
+			await ctx.enqueue(
+				'records.remind',
+				{ obligationId, dueDate, stage, version },
+				{
+					runAt: at,
+					dedupeKey: `records.remind:${obligationId}:${dueDate}:${stage}:${version}:${at}`,
+				},
+			);
+			return;
+		}
 
 		const today = todayIn(timeZone, now);
 		const days = daysBetween(today, dueDate);

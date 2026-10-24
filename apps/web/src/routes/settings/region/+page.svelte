@@ -28,6 +28,7 @@
 	let weekStart = $state(family.weekStart);
 	let hourCycle = $state<'h12' | 'h23'>(family.hourCycle);
 	let temperatureUnit = $state<'celsius' | 'fahrenheit'>(family.temperatureUnit);
+	let reminderTime = $state(family.reminderTime);
 	let timeZone = $state(family.timeZone);
 	let error = $state<string | null>(null);
 	const showError = (failure: ActionFailure) => (error = failure.message);
@@ -121,7 +122,14 @@
 		error = null;
 		const result = await runAction(
 			api.POST('/api/v1/actions/core.updateFamilySettings', {
-				body: { timeZone, formatLocale: tag, weekStart, hourCycle, temperatureUnit },
+				body: {
+					timeZone,
+					formatLocale: tag,
+					weekStart,
+					hourCycle,
+					temperatureUnit,
+					reminderTime,
+				},
 			}),
 			{ saved: t('region_saved'), onError: showError },
 		);
@@ -271,6 +279,24 @@
 							onchange={(v) => {
 								hourCycle = v as 'h12' | 'h23';
 								void save();
+							}}
+						/>
+					{/snippet}
+				</SettingRow>
+
+				<SettingRow
+					label={t('region_reminder_time')}
+					for="reminder-time"
+					hint={t('region_reminder_time_hint')}
+				>
+					{#snippet control()}
+						<Input
+							id="reminder-time"
+							type="time"
+							class="w-auto"
+							bind:value={reminderTime}
+							onchange={() => {
+								if (reminderTime) void save();
 							}}
 						/>
 					{/snippet}

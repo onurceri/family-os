@@ -264,6 +264,7 @@ const INSERT_BATCH = 100;
 /** Plans the next reminder of every event of a subscription that wants them. */
 async function scheduleReminders(ctx: JobContext, sub: SubscriptionRow, now: number) {
 	if (sub.reminders !== 1) return;
+	const { reminderTime } = await ctx.family.settings();
 	const rows = await events(ctx.db)
 		.selectFrom('calendar_external_events')
 		.selectAll()
@@ -274,6 +275,7 @@ async function scheduleReminders(ctx: JobContext, sub: SubscriptionRow, now: num
 			(job, payload, options) => ctx.enqueue(job, payload, options),
 			externalAsEvent(row, sub),
 			now,
+			reminderTime,
 			undefined,
 			{
 				subscriptionId: sub.id,

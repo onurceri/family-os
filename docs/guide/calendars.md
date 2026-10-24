@@ -57,11 +57,11 @@ Up to 5 per event (school, health, car): **Tags** in the event form, Enter or co
 
 ## Reminders
 
-Each event has a **Reminder**; default 30 minutes before (timed) or 09:00 on the day (all-day).
+Each event has a **Reminder**; default 30 minutes before (timed) or the family's [reminder time](region.md) on the day (all-day, 09:00 unless changed).
 
 | Event | Choices |
 |---|---|
 | Any | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
-| All-day | Also 09:00 that day or 21:00 the evening before |
+| All-day | Also 12 hours before the reminder time |
 
 Repeating events remind before each occurrence. They go to the people under **Who**, or everyone who sees the calendar if none ([Notifications](notifications.md)).

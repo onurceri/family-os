@@ -29,7 +29,7 @@
 	"unit_months": "months",
 	"unit_years": "years",
 	"field_lead_days": "Remind me this many days before",
-	"field_lead_days_hint": "A reminder also comes on the due date, at 09:00.",
+	"field_lead_days_hint": "A reminder also comes on the due date, at the family's reminder time.",
 	"field_assignee": "Who",
 	"anyone": "Anyone",
 	"field_notes": "Notes",

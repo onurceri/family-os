@@ -1,3 +1,4 @@
+import { systemActor } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Chore, ChoreDetail, MarkDoneResult } from '../src/contract/index.ts';
@@ -625,6 +626,36 @@ describe('reminders', () => {
 			body: 'en|chores:chore_due_today|{}',
 			url: '/chores',
 		});
+		await advanceTo(at('2026-10-08', '15:00'));
+		expect(sent()).toHaveLength(1);
+	});
+
+	it('tells whoever is up at the family reminder time', async () => {
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '07:30' },
+			systemActor('test'),
+		);
+		await create({ startDate: '2026-10-08', assigneeIds: [bora.id] });
+		await advanceTo(at('2026-10-08', '07:29'));
+		expect(sent()).toHaveLength(0);
+		await advanceTo(at('2026-10-08', '07:30'));
+		expect(sent().map((s) => s.memberId)).toEqual([bora.id]);
+	});
+
+	it('waits for a reminder time moved later after the reminder was planned', async () => {
+		await create({ startDate: '2026-10-08', assigneeIds: [bora.id] });
+		await k.runner.invoke(
+			'core.updateFamilySettings',
+			{ reminderTime: '11:00' },
+			systemActor('test'),
+		);
+		await advanceTo(at('2026-10-08', '09:00'));
+		expect(sent()).toHaveLength(0);
+		await advanceTo(at('2026-10-08', '10:59'));
+		expect(sent()).toHaveLength(0);
+		await advanceTo(at('2026-10-08', '11:00'));
+		expect(sent().map((s) => s.memberId)).toEqual([bora.id]);
 		await advanceTo(at('2026-10-08', '15:00'));
 		expect(sent()).toHaveLength(1);
 	});

@@ -34,6 +34,8 @@ export interface FamilySettings {
 	/** 12-hour (`h12`) or 24-hour (`h23`) clock. */
 	hourCycle: 'h12' | 'h23';
 	temperatureUnit: 'celsius' | 'fahrenheit';
+	/** The local time (`HH:MM`) a reminder is sent for something with a day but no time of day. */
+	reminderTime: string;
 }
 
 /** An active family member as other modules may see it (no credentials). */
