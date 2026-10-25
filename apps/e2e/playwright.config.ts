@@ -9,7 +9,7 @@ export default defineConfig({
 	fullyParallel: true,
 	workers: process.env.CI ? 2 : 4,
 	forbidOnly: Boolean(process.env.CI),
-	retries: process.env.CI ? 1 : 0,
+	retries: 0,
 	reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
 	timeout: 60_000,
 	globalSetup: './support/global-setup.ts',

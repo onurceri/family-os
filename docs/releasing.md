@@ -13,7 +13,7 @@ FamilyOS ships one product version as a Docker image. The version lives in `apps
 
 ## Steps
 
-1. On `main`, with CI green:
+1. On `main`, with CI green (the Security workflow is advice, not a gate: look at its audit, CodeQL and image-scan results and fix what it reports before a release when you can):
    ```bash
    pnpm release 0.2.0
    ```
