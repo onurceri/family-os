@@ -46,6 +46,8 @@ export async function startFamilyOS(options: {
 	const url = `http://localhost:${port}`;
 	const env = {
 		...process.env,
+		// The test-only settings below are refused under production, whatever the shell has set.
+		NODE_ENV: 'test',
 		FAMOS_DATA_DIR: dataDir,
 		FAMOS_WEB_DIR: WEB,
 		FAMOS_BASE_URL: url,
