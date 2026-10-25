@@ -7,9 +7,10 @@ ARG NODE_VERSION=24
 # instead of under emulation for each target. Only the runtime stage is built per architecture.
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS build
 WORKDIR /repo
-RUN npm install -g pnpm@12.9.1
 # Install dependencies first for better layer caching.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+# The pnpm version is the one package.json's packageManager names, the single place to change it.
+RUN corepack enable
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY apps/e2e/package.json apps/e2e/
@@ -42,9 +43,8 @@ COPY . .
 # The web app, the server, and every extension package gathered into dist/extensions.
 RUN pnpm --filter @famos/web build && pnpm --filter @famos/server build \
   && pnpm --filter "./extensions/*" build && node scripts/collect-extensions.mjs
-# The bundle keeps native better-sqlite3 external; record its exact version for the runtime stage.
-RUN node -e "const v=require('./apps/server/package.json').dependencies['better-sqlite3']; \
-  require('fs').writeFileSync('/repo/runtime-package.json', JSON.stringify({name:'famos-runtime',private:true,type:'module',dependencies:{'better-sqlite3':v}}))"
+# The bundle keeps native better-sqlite3 external: its exact locked version and hash, as an npm lockfile.
+RUN node scripts/runtime-lock.mjs /repo/runtime
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \
@@ -52,9 +52,16 @@ ENV NODE_ENV=production \
     FAMOS_WEB_DIR=/app/web \
     PORT=3000
 WORKDIR /app
-COPY --from=build /repo/runtime-package.json ./package.json
-RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
+# Installed here, per target architecture, from the build stage's lockfile (not from the registry's latest).
+# better-sqlite3 ships its compiled binaries in the package, so no install script runs (npm ci would
+# otherwise try to compile it from source); the module is then opened once so a missing binary fails the build.
+# The server never runs npm, so npm, npx and corepack leave the image with their own dependencies.
+COPY --from=build /repo/runtime/ ./
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force \
+  && node -e "new (require('better-sqlite3'))(':memory:').prepare('select 1').get()" \
+  && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /root/.npm
 COPY --from=build /repo/apps/server/dist ./server
+COPY docker/healthcheck.mjs ./healthcheck.mjs
 COPY --from=build /repo/apps/web/build ./web
 # Extension packages shipped with the app, found next to the server bundle (/app/server → /app/extensions).
 COPY --from=build /repo/dist/extensions ./extensions
@@ -66,8 +73,8 @@ RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Asks /health, or for a worker-only container (FAMOS_ROLES=worker) checks its heartbeat file.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD ["node", "/app/healthcheck.mjs"]
 # The supervisor: runs `serve` and starts it again when it asks to (after installing an extension);
 # other commands run directly. `node /app/server/main.mjs <command>` works as well.
 ENTRYPOINT ["node", "--enable-source-maps", "/app/server/famos.mjs"]

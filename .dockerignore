@@ -10,3 +10,23 @@ data
 docs
 apps/e2e/test-results
 apps/e2e/playwright-report
+# Local-only files and folders: secrets, overrides, agent and editor state never belong in a layer
+# or the builder cache. (.env.example stays.)
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+.claude
+.agents
+.codex
+.cursor
+.vscode
+.idea
+.github
+.DS_Store
+*.pem
+*.key
+*.p12
+*.log
+test-results
+.readme-shots
