@@ -7,13 +7,12 @@ import { createMcpHandler } from '@modelcontextprotocol/server';
 import type { Context } from 'hono';
 import { authenticateBearer } from '../http/authenticate.ts';
 import type { AppEnv } from '../http/env.ts';
+import { PROGRAM_BODY_MAX_BYTES } from '../http/limits.ts';
 import { createRateLimiter, type RateLimiter } from '../http/rate-limit.ts';
 import { createServerFor } from './server.ts';
 
 /** Requests per token per minute. */
 export const MCP_RATE_PER_MINUTE = 60;
-/** Tool calls are small; this bounds what the adapter reads. */
-const MAX_BODY_BYTES = 256 * 1024;
 /** Wrong or missing tokens per client address per minute. */
 const MAX_BAD_TOKENS_PER_MINUTE = 30;
 
@@ -126,7 +125,7 @@ export function mountMcp(
 	// The adapter parses the JSON body for the handler. Host and Origin are not restricted (the
 	// endpoint is meant to be reached from other machines and the token protects it); `host` is
 	// not a bind address here, so the adapter neither enforces nor warns about localhost rules.
-	const mcp = createMcpHonoApp({ host: 'any', maxRequestBodySize: MAX_BODY_BYTES });
+	const mcp = createMcpHonoApp({ host: 'any', maxRequestBodySize: PROGRAM_BODY_MAX_BYTES });
 	mcp.all('/', (c) => {
 		const principal = principals.get(c.req.raw);
 		if (!principal) return c.json(rpcError(UNAUTHORIZED, 'Not authenticated'), 401);

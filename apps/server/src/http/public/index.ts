@@ -31,6 +31,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import { authenticateApp } from '../authenticate.ts';
 import type { AppEnv } from '../env.ts';
+import { PROGRAM_BODY_MAX_BYTES } from '../limits.ts';
 import { createRateLimiter, type RateLimiter } from '../rate-limit.ts';
 import {
 	badFields,
@@ -55,8 +56,6 @@ export const PUBLIC_API_BASE = '/api/public/v1';
 export const PUBLIC_RATE_PER_MINUTE = 300;
 /** Wrong or missing keys per client address per minute (shared with the MCP endpoint). */
 export const MAX_BAD_KEYS_PER_MINUTE = 30;
-/** What the API reads of a change: small JSON, never files. */
-const MAX_BODY_BYTES = 256 * 1024;
 
 export const PUBLIC_OPENAPI_INFO = {
 	openapi: '3.1.0',
@@ -160,10 +159,10 @@ export function createPublicApi(deps: PublicApiDeps): OpenAPIHono<PublicEnv> {
 	api.use(
 		'*',
 		bodyLimit({
-			maxSize: MAX_BODY_BYTES,
+			maxSize: PROGRAM_BODY_MAX_BYTES,
 			onError: (c) => {
 				const { body } = errorResponse(
-					badFields([{ path: 'body', message: `At most ${MAX_BODY_BYTES / 1024} KB` }]),
+					badFields([{ path: 'body', message: `At most ${PROGRAM_BODY_MAX_BYTES / 1024} KB` }]),
 				);
 				return c.json(body, 400);
 			},
