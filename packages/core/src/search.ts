@@ -12,6 +12,7 @@ import {
 	type IdGenerator,
 	isLlmError,
 	type JobContext,
+	type LlmEmbedResult,
 	type LlmPort,
 	type Logger,
 	memberBehind,
@@ -585,84 +586,105 @@ export function createSearch(deps: SearchDeps) {
 
 	const PAGE = 2000;
 
-	/** Scores the stored vectors of the allowed kinds against a question. */
-	async function rank(
-		db: DbExecutor,
-		actor: Actor,
-		query: Float32Array,
-		model: string,
-		limit: number,
-	): Promise<Result[]> {
+	/** What the asker may read of the stored chunks, in SQL: nothing else is ever loaded or scored. */
+	function readableRows(db: DbExecutor, actor: Actor, model: string, dimensions: number) {
 		const { kinds: all, viewAll, capabilities } = allowed(actor);
-		if (all.length === 0 || capabilities.length === 0) return [];
+		if (all.length === 0 || capabilities.length === 0) return null;
 		const me = memberOf(actor);
-		const best = new TopK<{
-			kind: string;
-			id: string;
-			extension: string;
-			title: string;
-			snippet: string;
-			href: string;
-		}>(limit * 5);
-		let last = '';
-		for (;;) {
-			// Filters first, in SQL: nothing the asker may not read is ever loaded or scored.
-			let q = coreDb(db)
-				.selectFrom('core_embeddings')
-				.select([
-					'id',
-					'extension_id',
-					'source_kind',
-					'source_id',
-					'title',
-					'snippet',
-					'href',
-					'vector',
-				])
-				.where('model', '=', model)
-				.where('dimensions', '=', query.length)
-				.where('source_kind', 'in', all)
-				.where('capability', 'in', capabilities)
-				.where('id', '>', last)
-				.orderBy('id')
-				.limit(PAGE);
-			q = q.where((eb) => {
+		return coreDb(db)
+			.selectFrom('core_embeddings')
+			.where('model', '=', model)
+			.where('dimensions', '=', dimensions)
+			.where('source_kind', 'in', all)
+			.where('capability', 'in', capabilities)
+			.where((eb) => {
 				const open = [eb('owner_member_id', 'is', null)];
 				if (me) open.push(eb('owner_member_id', '=', me));
 				if (viewAll.length > 0) open.push(eb('source_kind', 'in', viewAll));
 				return eb.or(open);
 			});
-			const rows = await q.execute();
-			for (const row of rows) {
+	}
+
+	/** The chunks that score best against a question, best first: their row ids. */
+	type Ranked = { id: string; kind: string; sourceId: string }[];
+
+	/**
+	 * Scores the stored vectors the asker may read against a question. It runs before the action's
+	 * transaction, a page at a time with a pause between pages, so a large index never holds the
+	 * one connection that every other request and write waits for.
+	 */
+	async function scan(
+		actor: Actor,
+		query: Float32Array,
+		model: string,
+		limit: number,
+	): Promise<Ranked> {
+		const rows = readableRows(deps.db, actor, model, query.length);
+		if (!rows) return [];
+		const best = new TopK<{ id: string; kind: string; sourceId: string }>(limit * 5);
+		let last = '';
+		for (;;) {
+			const page = await rows
+				.select(['id', 'source_kind', 'source_id', 'vector'])
+				.where('id', '>', last)
+				.orderBy('id')
+				.limit(PAGE)
+				.execute();
+			for (const row of page) {
 				const score = dot(query, fromBlob(row.vector));
 				// Nothing in common with the question is no result, whatever else is stored.
 				if (score <= 0 || !best.wants(score)) continue;
-				best.add(score, {
-					kind: row.source_kind,
-					id: row.source_id,
-					extension: row.extension_id,
-					title: row.title,
-					snippet: row.snippet,
-					href: row.href,
-				});
+				best.add(score, { id: row.id, kind: row.source_kind, sourceId: row.source_id });
 			}
-			if (rows.length < PAGE) break;
-			last = (rows.at(-1) as { id: string }).id;
+			if (page.length < PAGE) break;
+			last = (page.at(-1) as { id: string }).id;
+			await new Promise<void>((resolve) => setImmediate(resolve));
 		}
+		return best.items.map(({ value }) => value);
+	}
+
+	/**
+	 * The results for the chunks that ranked best: read again inside the transaction, with the
+	 * asker's rights applied again, so a chunk removed or closed to them meanwhile is left out.
+	 */
+	async function pick(
+		db: DbExecutor,
+		actor: Actor,
+		ranked: Ranked,
+		model: string,
+		dimensions: number,
+		limit: number,
+	): Promise<Result[]> {
 		// One result per entity (its best chunk).
 		const seen = new Set<string>();
-		const out: Result[] = [];
-		for (const { value } of best.items) {
-			const key = `${value.kind}:${value.id}`;
+		const winners: string[] = [];
+		for (const chunk of ranked) {
+			const key = `${chunk.kind}:${chunk.sourceId}`;
 			if (seen.has(key)) continue;
 			seen.add(key);
+			winners.push(chunk.id);
+		}
+		const rows = winners.length > 0 ? readableRows(db, actor, model, dimensions) : null;
+		if (!rows) return [];
+		const found = new Map(
+			(
+				await rows
+					.select(['id', 'extension_id', 'source_kind', 'source_id', 'title', 'snippet', 'href'])
+					.where('id', 'in', winners)
+					.execute()
+			).map((row) => [row.id, row]),
+		);
+		const out: Result[] = [];
+		for (const id of winners) {
+			const row = found.get(id);
+			if (!row) continue;
 			out.push({
-				id: value.id,
-				kind: value.kind,
-				extension: value.extension,
-				title: value.title,
-				snippet: value.snippet,
-				href: actor.kind === 'ai' ? null : value.href,
+				id: row.source_id,
+				kind: row.source_kind,
+				extension: row.extension_id,
+				title: row.title,
+				snippet: row.snippet,
+				href: actor.kind === 'ai' ? null : row.href,
 			});
 			if (out.length >= limit) break;
 		}
@@ -692,22 +714,22 @@ export function createSearch(deps: SearchDeps) {
 			guidance:
 				'query is a short phrase or question in the language of the records, not a list of keywords. Results are only what this person may see.',
 		},
-		async prepare({ query }, actor) {
+		async prepare({ query, limit }, actor) {
 			// The AI works for a person here; with nobody asking there is nobody whose rights apply.
 			if (actor.kind === 'ai' && actor.onBehalfOf === undefined)
 				throw new FamosError('forbidden', 'Search needs a person to search for');
 			const policy = await deps.llm.policy(QUERY_FEATURE, 'embed');
 			if (!policy.enabled || !policy.model)
 				throw new FamosError('conflict', 'not_configured', { reason: 'not_configured' });
+			let embedded: LlmEmbedResult;
 			try {
-				const result = await deps.llm.embed({
+				embedded = await deps.llm.embed({
 					feature: QUERY_FEATURE,
 					area: 'core',
 					texts: [query],
 					timeoutMs: QUERY_TIMEOUT_MS,
 					memberId: memberOf(actor),
 				});
-				return { vector: normalize(result.vectors[0] as Float32Array), model: result.model };
 			} catch (error) {
 				if (isLlmError(error)) {
 					if (
@@ -722,11 +744,18 @@ export function createSearch(deps: SearchDeps) {
 				}
 				throw error;
 			}
+			const vector = normalize(embedded.vectors[0] as Float32Array);
+			return {
+				model: embedded.model,
+				dimensions: vector.length,
+				ranked: await scan(actor, vector, embedded.model, limit),
+			};
 		},
 		async run(uow, { query: _query, limit }, prepared) {
 			if (!prepared)
 				throw new FamosError('conflict', 'not_configured', { reason: 'not_configured' });
-			return { results: await rank(uow.db, uow.actor, prepared.vector, prepared.model, limit) };
+			const { ranked, model, dimensions } = prepared;
+			return { results: await pick(uow.db, uow.actor, ranked, model, dimensions, limit) };
 		},
 	});
 
