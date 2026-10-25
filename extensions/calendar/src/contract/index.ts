@@ -90,7 +90,7 @@ export const EventInputSchema = z
 			.nullable()
 			.optional()
 			.describe(
-				'Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default',
+				'Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = at the reminder time the family set that day, 720 = 12 hours before it); null for none; omit for the default',
 			),
 		tags: z
 			.array(TagName)

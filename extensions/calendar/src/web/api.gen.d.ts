@@ -1805,7 +1805,7 @@ export interface operations {
                         interval?: number;
                         until?: string;
                     };
-                    /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default */
+                    /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = at the reminder time the family set that day, 720 = 12 hours before it); null for none; omit for the default */
                     reminder?: number | null;
                     /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
                     tags?: string[];
@@ -2029,7 +2029,7 @@ export interface operations {
                             interval?: number;
                             until?: string;
                         } | null;
-                        /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = 09:00 that day, 720 = 21:00 the evening before); null for none; omit for the default */
+                        /** @description Reminder in minutes before the start (timed: 0, 5, 10, 15, 30, 60, 120, 1440; all-day: 0 = at the reminder time the family set that day, 720 = 12 hours before it); null for none; omit for the default */
                         reminder: number | null;
                         /** @description Short labels. Reuse one of the family's existing tags when it fits instead of inventing a new one; at most 2. */
                         tags: string[] | null;
