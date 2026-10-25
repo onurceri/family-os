@@ -93,6 +93,7 @@ import {
 	scheduleOAuthCleanup,
 } from './oauth.ts';
 import type { Registry } from './registry.ts';
+import { createRetention, schedulePruneHistory } from './retention.ts';
 import type { Search } from './search.ts';
 import { readStoredInput } from './stored-input.ts';
 import type { CoreTables, DraftRow, MemberRow } from './tables.ts';
@@ -1811,6 +1812,11 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 		},
 	});
 
+	const retention = createRetention({
+		keepApplied: (draft) =>
+			!deps.registry().actions.has(draft.action_id) || deps.runner().undoStep(draft) !== null,
+	});
+
 	const DraftParams = z.object({ draftId: idSchema('draft') });
 
 	const editDraft = defineAction({
@@ -1972,6 +1978,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			pruneIdempotency,
 			oauthCleanup,
 			pruneChanges,
+			retention.job,
 			expireDrafts,
 			endCredentials,
 			...admin.jobs,
@@ -2030,6 +2037,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			await schedulePrune(ctx, ctx.clock.now() + DAY_MS);
 			await scheduleOAuthCleanup(ctx, ctx.clock.now() + DAY_MS);
 			await schedulePruneChanges(ctx, ctx.clock.now() + DAY_MS);
+			await schedulePruneHistory(ctx, ctx.clock.now() + DAY_MS);
 			// Suggestions about a day that has passed expire shortly after midnight (family time).
 			await scheduleExpiry(ctx);
 		},

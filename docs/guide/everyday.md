@@ -96,6 +96,7 @@ A card shows:
 - **Dismiss the rest:** then **Tap again to dismiss**; unticked ones are declined.
 - **Edit** (events, tasks, shopping items): **Edit**, change, **Save changes**; **Add selected** adds your version. FamilyOS keeps it, so other devices and adults see it.
 - **Undo:** for a few seconds after approval, then as a button on decided suggestions. A taken-back one says **Taken back** and cannot be approved again; its author gets **Suggest again**, sending it as new. **Approved automatically** ones undo the same way ([Auto-approval](auto-approval.md)).
+- **Kept 90 days:** decided suggestions are removed 90 days after the decision; one you can still undo stays. Suggestions still waiting are never removed.
 
 A fully decided capture leaves by itself. Nothing found: **Nothing to add was found.** with **Remove**. All left out: it says why and offers **Read again** (after you install the area or add what it named).
 

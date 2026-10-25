@@ -28,6 +28,7 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 - **Phone:** the bell is on **Today** and opens the full list (also **Settings → You → Notifications**; the number on **More** counts unread).
 - Tapping marks read and goes to the thing. **Mark all as read** clears the count.
 - A "suggestion to review" leaves the list once decided.
+- Notifications are kept 90 days, read or not; older ones leave the list by themselves.
 - Each person has their own list, in their language.
 
 ## Notifications on a phone or computer
