@@ -50,4 +50,5 @@ To exclude homes, set **Home** to **Off** in **Settings → AI → What the AI m
 
 - Members who may edit the home area change it directly.
 - Supervised members get the same forms, marked "After you save, someone has to approve this."; their changes wait.
+- A thing's **Serial number** and a service's **Account or subscriber number** are shown only to members who may edit the home area. Everyone else who can see the home (guests, supervised members, displays, connected apps) sees them empty. The home's address stays visible to all of them.
 - **Archive home**, **Archive thing**, **Archive service** (tap again) hide it and stop reminders; archiving a home hides its things and services. Papers and history stay.

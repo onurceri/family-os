@@ -71,7 +71,7 @@ export const addService = defineAction({
 		await tables(uow.db).insertInto('home_services').values(row).execute();
 		await uow.ai.reindex(SERVICE_SEARCH_KIND, row.id);
 		uow.emit(homeChanged, { homeId });
-		return toService(row);
+		return toService(row, true);
 	},
 });
 
@@ -99,7 +99,7 @@ export const updateService = defineAction({
 			});
 		}
 		uow.emit(homeChanged, { homeId: row.home_id });
-		return toService({ ...row, ...patch });
+		return toService({ ...row, ...patch }, true);
 	},
 });
 
@@ -135,10 +135,12 @@ export const listServices = defineRoute({
 	requires: homeView.id,
 	query: z.object({ homeId: HomeIdSchema.optional() }),
 	response: z.array(ServiceSchema),
-	async handle(ctx, { query }) {
+	async handle(ctx, { query, actor }) {
 		let q = tables(ctx.db).selectFrom('home_services').selectAll().where('archived_at', 'is', null);
 		if (query.homeId) q = q.where('home_id', '=', query.homeId);
-		return (await q.orderBy('created_at').orderBy('id').execute()).map(toService);
+		return (await q.orderBy('created_at').orderBy('id').execute()).map((row) =>
+			toService(row, ctx.access.can(actor, homeEdit.id)),
+		);
 	},
 });
 
@@ -150,7 +152,7 @@ export const getService = defineRoute({
 	requires: homeView.id,
 	params: z.object({ serviceId: ServiceIdSchema }),
 	response: ServiceSchema,
-	async handle(ctx, { params }) {
+	async handle(ctx, { params, actor }) {
 		const row = await tables(ctx.db)
 			.selectFrom('home_services')
 			.selectAll()
@@ -158,6 +160,6 @@ export const getService = defineRoute({
 			.where('archived_at', 'is', null)
 			.executeTakeFirst();
 		if (!row) throw new FamosError('not_found', 'Service not found');
-		return toService(row);
+		return toService(row, ctx.access.can(actor, homeEdit.id));
 	},
 });

@@ -203,7 +203,7 @@ export const addItem = defineAction({
 				.execute();
 		}
 		uow.emit(homeChanged, { homeId: row.home_id });
-		return toItem(row);
+		return toItem(row, true);
 	},
 });
 
@@ -266,13 +266,13 @@ export const updateItem = defineAction({
 			});
 		}
 		uow.emit(homeChanged, { homeId: row.home_id });
-		const old = toItem(row);
+		const old = toItem(row, true);
 		const before = Object.fromEntries(
 			Object.entries(given)
 				.filter(([, value]) => value !== undefined)
 				.map(([key]) => [key, old[key as keyof typeof given]]),
 		);
-		return { ...toItem({ ...row, ...patch, warranty_obligation_id: obligationId }), before };
+		return { ...toItem({ ...row, ...patch, warranty_obligation_id: obligationId }, true), before };
 	},
 });
 
@@ -318,10 +318,12 @@ export const listItems = defineRoute({
 	requires: homeView.id,
 	query: z.object({ homeId: HomeIdSchema.optional() }),
 	response: z.array(ItemSchema),
-	async handle(ctx, { query }) {
+	async handle(ctx, { query, actor }) {
 		let q = tables(ctx.db).selectFrom('home_items').selectAll().where('archived_at', 'is', null);
 		if (query.homeId) q = q.where('home_id', '=', query.homeId);
-		return (await q.orderBy('created_at').orderBy('id').execute()).map(toItem);
+		return (await q.orderBy('created_at').orderBy('id').execute()).map((row) =>
+			toItem(row, ctx.access.can(actor, homeEdit.id)),
+		);
 	},
 });
 
@@ -333,7 +335,7 @@ export const getItem = defineRoute({
 	requires: homeView.id,
 	params: z.object({ itemId: ItemIdSchema }),
 	response: ItemSchema,
-	async handle(ctx, { params }) {
+	async handle(ctx, { params, actor }) {
 		const row = await tables(ctx.db)
 			.selectFrom('home_items')
 			.selectAll()
@@ -341,6 +343,6 @@ export const getItem = defineRoute({
 			.where('archived_at', 'is', null)
 			.executeTakeFirst();
 		if (!row) throw new FamosError('not_found', 'Thing not found');
-		return toItem(row);
+		return toItem(row, ctx.access.can(actor, homeEdit.id));
 	},
 });

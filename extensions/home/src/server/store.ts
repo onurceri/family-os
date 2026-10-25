@@ -141,14 +141,18 @@ export const toHome = (r: HomeRow): Home => ({
 	updatedAt: r.updated_at,
 });
 
-export const toItem = (r: ItemRow): Item => ({
+/**
+ * `seePrivate` is whether the reader may edit the home: only then are the serial and the account
+ * number theirs to see; everyone else with `home.view` gets null for them.
+ */
+export const toItem = (r: ItemRow, seePrivate: boolean): Item => ({
 	id: r.id,
 	homeId: r.home_id,
 	name: r.name,
 	room: r.room,
 	brand: r.brand,
 	model: r.model,
-	serial: r.serial,
+	serial: seePrivate ? r.serial : null,
 	purchasedOn: r.purchased_on,
 	warrantyUntil: r.warranty_until,
 	notes: r.notes,
@@ -156,12 +160,12 @@ export const toItem = (r: ItemRow): Item => ({
 	updatedAt: r.updated_at,
 });
 
-export const toService = (r: ServiceRow): Service => ({
+export const toService = (r: ServiceRow, seePrivate: boolean): Service => ({
 	id: r.id,
 	homeId: r.home_id,
 	kind: r.kind,
 	provider: r.provider,
-	accountNumber: r.account_number,
+	accountNumber: seePrivate ? r.account_number : null,
 	dueDay: r.due_day,
 	notes: r.notes,
 	createdAt: r.created_at,
