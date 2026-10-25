@@ -59,6 +59,26 @@ import { blockOfCard, everythingHidden, shows, type TodayBlock, todayBlocks } fr
 import { LoadSequence, loadKeeping } from './latest.js';
 import { mergeMemberNotes, notesRefreshMs } from './member-notes.js';
 import { quietTextKey } from './quiet-text.js';
+import { extensionLabel, providedFacet, providers } from './today-data/available.js';
+import type {
+	Card,
+	FamilyMember,
+	PhotoOfTheDay,
+	TodayFamilyMode,
+	TodayMe,
+	TodayOptions,
+	TodaySample,
+} from './today-data/types.js';
+
+export { availableTodayBlocks, familyModeCapabilities } from './today-data/available.js';
+export type {
+	Card,
+	PhotoOfTheDay,
+	TodayFamilyMode,
+	TodayMe,
+	TodayOptions,
+	TodaySample,
+} from './today-data/types.js';
 
 /**
  * Everything Today shows, loaded and settled in one place. Every style's
@@ -79,12 +99,7 @@ import { quietTextKey } from './quiet-text.js';
  * one total, no item carries its people and nothing is said about anyone. Nothing in it is a link.
  */
 
-export type Card = SlotContribution<'dashboard.card'>;
 type Atmosphere = SlotContribution<'today.atmosphere'>;
-export interface PhotoOfTheDay {
-	src: string;
-	label: string;
-}
 
 /** How long the page waits for every first report before it shows what it has. */
 const SETTLE_CAP_MS = 1200;
@@ -92,116 +107,6 @@ const SETTLE_CAP_MS = 1200;
 const DEFAULT_MODE: NextUpMode = 'family';
 
 const bandOf = (c: Card): TodayBand => c.band ?? 'notes';
-
-/** What Today needs of a member (a preview's made-up people and a display's have only this). */
-type FamilyMember = Pick<(typeof family.members)[number], 'id' | 'displayName' | 'color'>;
-/** The person Today is for: what the compositions and the sentence need of them. */
-export type TodayMe = Pick<NonNullable<typeof session.me>, 'id' | 'displayName' | 'nextUp'>;
-
-/**
- * A made-up day for a preview (Settings → Appearance): the people, the time and the day's things
- * are given instead of loaded. Nothing is read from the API, no card or extension is mounted and
- * the page is settled at once. The family's time zone and formats still apply.
- */
-export interface TodaySample {
-	now: number;
-	members: readonly FamilyMember[];
-	me: TodayMe | null;
-	todayItems: TimelineItem[];
-	tomorrowItems: TimelineItem[];
-	chores: ChoreCount[];
-}
-
-/**
- * A family display (family mode): who views is the display itself, through the `AppContext` the
- * display page provides (its capabilities, the family's formats and time zone, the members when
- * names are shown). `showNames` is fixed for the data's life: the page makes a new one when it
- * changes, so no name stays behind in an item already loaded.
- */
-export interface TodayFamilyMode {
-	showNames: boolean;
-	/** Extensions turned off for the family (reactive). */
-	disabledExtensions(): readonly string[];
-}
-
-export interface TodayOptions {
-	/** A preview: everything comes from it and nothing is loaded. */
-	sample?: TodaySample;
-	/** A family display: no person, only what the display may read. */
-	familyMode?: TodayFamilyMode;
-	/**
-	 * The blocks this Today hides (the person's or the display's choice; see `blocks.ts`), and
-	 * whether that choice is known yet (the page waits for it, so it composes once).
-	 */
-	hidden?: () => readonly string[];
-	hiddenKnown?: () => boolean;
-	/** Hides a block from this Today (a person's: the `...` of a block's label offers it). */
-	hide?: (block: string) => void;
-}
-
-/**
- * What a display may be granted for Today in family mode, offered when pairing besides what the
- * `display.*` slots name: what the timelines (the day), the facets a display shows (counts per
- * person, the photo, the weather's hours), the weather and the cards with a glance need.
- */
-export function familyModeCapabilities(): string[] {
-	return [
-		...new Set([
-			...contributions.timelines.map((c) => c.requires),
-			...contributions.facets.filter((f) => f.kind !== 'setupHint').map((f) => f.requires),
-			...contributions.slots.flatMap((c) =>
-				c.slot === 'today.atmosphere' || (c.slot === 'dashboard.card' && c.glance === true)
-					? [c.requires]
-					: [],
-			),
-		]),
-	];
-}
-
-/** An extension's name key (Settings → Features), for a card without a `labelKey` of its own. */
-const extensionLabel = (id: string): string | undefined => contributions.extension(id)?.labelKey;
-
-/** The first facet of a kind from an extension that is turned on, whoever views. */
-const providedFacet = <K extends TodayFacet['kind']>(kind: K, off: readonly string[]) =>
-	facetsOf(contributions.facets, kind, { can: () => true, disabledExtensions: off })[0];
-
-/** What the app's own blocks need (the weather, the photo), from extensions that are turned on. */
-const providers = (off: readonly string[]) => ({
-	weather:
-		providedFacet('weather', off) !== undefined ||
-		enabledOnly(
-			contributions.slots.filter((c) => c.slot === 'today.atmosphere'),
-			off,
-		).length > 0,
-	photo: providedFacet('photo', off) !== undefined,
-});
-
-/**
- * The blocks "What Today shows" offers to a viewer: a person (the cards they may see), the
- * family's default (every card that is on: people differ in what they may see) or a display
- * (`familyMode`: only cards with a glance, no person-only blocks).
- */
-export function availableTodayBlocks(viewer: {
-	familyMode?: boolean;
-	can?: (capability: string) => boolean;
-	disabledExtensions: readonly string[];
-}): TodayBlock[] {
-	const cards = enabledOnly(
-		contributions.slots.filter(
-			(c): c is Card =>
-				c.slot === 'dashboard.card' &&
-				(!viewer.familyMode || c.glance === true) &&
-				(!viewer.can || !c.requires || viewer.can(c.requires)),
-		),
-		viewer.disabledExtensions,
-	).toSorted((a, b) => (a.order ?? 0) - (b.order ?? 0));
-	return todayBlocks(cards, {
-		familyMode: viewer.familyMode ?? false,
-		added: enabledOnly(contributions.blocks, viewer.disabledExtensions),
-		provided: providers(viewer.disabledExtensions),
-		extensionLabel,
-	});
-}
 
 export class TodayData {
 	readonly app: AppContext;
