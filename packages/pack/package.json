@@ -29,7 +29,7 @@
 		"svelte": "catalog:",
 		"tailwindcss": "4.3.3",
 		"tar": "7.5.22",
-		"vite": "8.3.2"
+		"vite": "8.3.3"
 	},
 	"devDependencies": {
 		"zod": "catalog:"

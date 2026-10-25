@@ -10,7 +10,7 @@ catalog:
   svelte: 5.57.1
   svelte-check: 4.7.6
   typescript: 6.0.3
-  zod: 4.6.5
+  zod: 4.6.6
 
 allowBuilds:
   esbuild: true
@@ -19,3 +19,7 @@ peerDependencyRules:
   allowedVersions:
     # openapi-typescript 7.13 declares typescript ^5 but works with TS 6 (verified by `pnpm gen`).
     openapi-typescript>typescript: '6'
+
+overrides:
+  # The AI SDK's provider-utils accepts undici ^7.29, which includes versions with a denial-of-service flaw (fixed in 7.30.1).
+  undici: 7.30.1

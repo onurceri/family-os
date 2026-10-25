@@ -32,7 +32,7 @@
 		"grammy": "1.46.0",
 		"imapflow": "2.2.6",
 		"kysely": "catalog:",
-		"postal-mime": "4.0.4",
+		"postal-mime": "4.0.8",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
