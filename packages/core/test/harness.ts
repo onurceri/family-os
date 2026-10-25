@@ -19,7 +19,7 @@ import {
 } from '@famos/adapters/queue-sqlite';
 import { silentLogger, uuidv7Ids } from '@famos/adapters/runtime';
 import { createTelegramLinkAdmin, telegramMigrations } from '@famos/adapters/telegram';
-import { openDatabase, runMigrations } from '@famos/db';
+import { type DatabaseHandle, openDatabase, runMigrations } from '@famos/db';
 import {
 	type Actor,
 	BACKUP_RUN_JOB,
@@ -62,6 +62,8 @@ export interface TestKernel extends Kernel {
 	readonly passwords: Map<string, string>;
 	/** The AI settings service on the same database. */
 	readonly ai: AiSettingsService;
+	/** The one SQLite connection under the kernel, to watch the statements it runs. */
+	readonly sqlite: DatabaseHandle['sqlite'];
 	/** Creates a member with a role id (built-in or custom) and returns its Actor. */
 	member(roleId?: string): Promise<{ actor: Actor & { kind: 'member' }; member: Member }>;
 	/** Calls a route handler directly; omitted request fields get neutral defaults. */
@@ -217,6 +219,7 @@ export async function createTestKernel(
 		queue,
 		passwords,
 		ai,
+		sqlite: handle.sqlite,
 		async member(roleId = 'admin') {
 			const result = await kernel.runner.invoke<Member>(
 				'core.createMember',

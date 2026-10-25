@@ -1324,22 +1324,42 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			else if (query.status) q = q.where('status', '=', query.status);
 			if (query.sourceKind) q = q.where('source_kind', '=', query.sourceKind);
 			if (query.sourceId) q = q.where('source_id', '=', query.sourceId);
-			const all = await q.orderBy('created_at', 'desc').execute();
 			// A member reads the suggestions they may decide or are the person behind, never
 			// another member's (a supervised child's appointment is not for a teenager to see).
 			const runner = deps.runner();
-			const rows = (
-				personPresent(actor)
-					? all.filter(
-							(row) =>
-								runner.mayDecide(row, actor) ||
-								runner.isProposer(actor, row) ||
-								// Whoever would have decided it sees why it waits.
-								(runner.unavailable(row) !== null &&
-									deps.access().can(actor, CORE_CAPABILITIES.draftsApprove.id)),
+			const readable = (row: DraftRow) =>
+				!personPresent(actor) ||
+				runner.mayDecide(row, actor) ||
+				runner.isProposer(actor, row) ||
+				// Whoever would have decided it sees why it waits.
+				(runner.unavailable(row) !== null &&
+					deps.access().can(actor, CORE_CAPABILITIES.draftsApprove.id));
+			// Newest first, a page at a time: only as many drafts are read as it takes to fill the
+			// answer with ones this reader may see.
+			const page = Math.max(50, query.limit * 2);
+			const rows: DraftRow[] = [];
+			let after: { created_at: number; id: string } | null = null;
+			for (;;) {
+				const before = after;
+				const batch: DraftRow[] = await (before
+					? q.where((eb) =>
+							eb.or([
+								eb('created_at', '<', before.created_at),
+								eb.and([eb('created_at', '=', before.created_at), eb('id', '<', before.id)]),
+							]),
 						)
-					: all
-			).slice(0, query.limit);
+					: q
+				)
+					.orderBy('created_at', 'desc')
+					.orderBy('id', 'desc')
+					.limit(page)
+					.execute();
+				for (const row of batch) {
+					if (rows.length < query.limit && readable(row)) rows.push(row);
+				}
+				if (rows.length >= query.limit || batch.length < page) break;
+				after = batch.at(-1) ?? null;
+			}
 			const passed = await runner.passedCheck();
 			// What it is about is gone: it can never be applied, so it is closed like an expired one.
 			const gone = await runner.goneAmong(rows.filter((row) => !passed(row)));
@@ -1366,7 +1386,18 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			const rows = await ctx.db
 				.withTables<CoreTables>()
 				.selectFrom('core_drafts')
-				.selectAll()
+				// Only what deciding, expiry, a gone target and grouping look at: never the texts.
+				.select([
+					'id',
+					'action_id',
+					'status',
+					'input',
+					'edited_input',
+					'for_member',
+					'proposed_by',
+					'source_kind',
+					'source_id',
+				])
 				// A suggestion whose applying failed still waits for someone to try it again.
 				.where('status', 'in', [...WAITING_STATUSES])
 				.where((eb) => {

@@ -184,9 +184,9 @@ export interface ActionRunner {
 		draft: DraftRow,
 	): Promise<{ id: string; name: string; kind: 'connected' | 'ai' } | null>;
 	/** The inverse step of an applied draft, or null when it cannot be undone. */
-	undoStep(draft: DraftRow): UndoStep | null;
+	undoStep(draft: Pick<DraftRow, 'action_id' | 'status' | 'result'>): UndoStep | null;
 	/** Whether this actor could decide the draft: it is theirs, or they are an approver for it. */
-	mayDecide(draft: DraftRow, actor: Actor): boolean;
+	mayDecide(draft: DeciderFacts, actor: Actor): boolean;
 	/**
 	 * The suggestions still waiting that this caller sees, newest first (oldest first with
 	 * `oldestFirst`): a person as they are in the app sees their own and those they may decide, any
@@ -215,7 +215,7 @@ export interface ActionRunner {
 	 * installed, or is turned off. Null when its action runs. The draft is kept: a reinstall (or
 	 * switching the extension on) brings it back as an ordinary waiting suggestion.
 	 */
-	unavailable(draft: DraftRow): DraftUnavailable | null;
+	unavailable(draft: Pick<DraftRow, 'action_id'>): DraftUnavailable | null;
 	/**
 	 * Saves what a person changed on a waiting suggestion (`core.editDraft`), validated by its
 	 * action's input schema. Whoever may decide it, or is the member behind it, may. Approving then
@@ -256,13 +256,17 @@ export interface ActionRunner {
 	 * decision leave them out and show them as closed. One query per table, however many drafts.
 	 * Inside a unit of work pass its `db`.
 	 */
-	goneAmong(drafts: readonly DraftRow[], db?: DbExecutor): Promise<ReadonlySet<string>>;
+	goneAmong(drafts: readonly GoneFacts[], db?: DbExecutor): Promise<ReadonlySet<string>>;
 	/** Marks every waiting draft whose day has passed `expired`. Idempotent; returns how many. */
 	expirePassed(): Promise<number>;
 }
 
 /** What `passedCheck` needs of a draft. */
 export type PassedFacts = Pick<DraftRow, 'action_id' | 'status' | 'input' | 'edited_input'>;
+/** What `mayDecide` needs of a draft. */
+export type DeciderFacts = Pick<DraftRow, 'id' | 'action_id' | 'for_member'>;
+/** What `goneAmong` needs of a draft. */
+export type GoneFacts = PassedFacts & Pick<DraftRow, 'id'>;
 
 /** The value a mark points at: a field of the input, or a part of one (`items.0.title`). */
 function fieldOf(input: unknown, mark: string): unknown {
@@ -962,7 +966,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	 * A draft addressed to a member is theirs alone to see and decide; anyone else does not even
 	 * learn it exists. Checked before anything else, replays included.
 	 */
-	function assertAddressee(approver: Actor, draft: DraftRow): void {
+	function assertAddressee(approver: Actor, draft: Pick<DraftRow, 'id' | 'for_member'>): void {
 		if (draft.for_member !== null && selfOf(approver) !== draft.for_member)
 			throw new FamosError('not_found', `Unknown draft "${draft.id}"`);
 	}
@@ -971,7 +975,11 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	 * Deciding a draft needs `core.drafts.approve` and whatever would have let the approver make
 	 * the change directly.
 	 */
-	function assertApprover(approver: Actor, def: AnyActionDefinition, draft: DraftRow): string {
+	function assertApprover(
+		approver: Actor,
+		def: AnyActionDefinition,
+		draft: Pick<DraftRow, 'id' | 'for_member'>,
+	): string {
 		// The addressee needs no approval capability for a draft that is theirs alone.
 		if (draft.for_member !== null) {
 			assertAddressee(approver, draft);
@@ -988,13 +996,13 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return approver.memberId;
 	}
 
-	function unavailable(draft: DraftRow): DraftUnavailable | null {
+	function unavailable(draft: Pick<DraftRow, 'action_id'>): DraftUnavailable | null {
 		const extension = ownerOf(draft.action_id);
 		if (!registry.actions.has(draft.action_id)) return { reason: 'not_installed', extension };
 		return deps.features.isOn(extension) ? null : { reason: 'turned_off', extension };
 	}
 
-	function mayDecide(draft: DraftRow, actor: Actor): boolean {
+	function mayDecide(draft: DeciderFacts, actor: Actor): boolean {
 		const def = registry.actions.get(draft.action_id);
 		if (!def || unavailable(draft)) return false;
 		try {
@@ -1322,7 +1330,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		return getDraft(deps.db, draftId);
 	}
 
-	function undoStep(draft: DraftRow): UndoStep | null {
+	function undoStep(draft: Pick<DraftRow, 'action_id' | 'status' | 'result'>): UndoStep | null {
 		if (draft.status !== 'applied' || draft.result === null) return null;
 		const def = registry.actions.get(draft.action_id);
 		if (!def?.undo) return null;
@@ -1853,7 +1861,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 	}
 
 	async function goneAmong(
-		drafts: readonly DraftRow[],
+		drafts: readonly GoneFacts[],
 		db: DbExecutor = deps.db,
 	): Promise<ReadonlySet<string>> {
 		// Drafts by the row they work on: one query per table and live column.
