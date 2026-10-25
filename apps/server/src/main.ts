@@ -25,6 +25,7 @@ import {
 } from './extensions/installed.ts';
 import { findAvailable, type LoadedExtensions, loadExtensions } from './extensions/load.ts';
 import { describePurge, previewPurge, purgeExtension, purgeTarget } from './extensions/purge.ts';
+import { beat, HEARTBEAT_MS } from './heartbeat.ts';
 import { createHttpApp, loadedWeb, OPENAPI_INFO } from './http/app.ts';
 import { publicOpenApiDocument } from './http/public/index.ts';
 import { createRealtimeHub, realtimeGuard } from './http/realtime.ts';
@@ -242,6 +243,18 @@ async function serveCommand(distrust: DistrustResult) {
 	if (config.roles.api) {
 		kernel.bus.on(restartRequested, () => void shutdown('restart', RESTART_EXIT_CODE));
 	} else {
+		// No port to ask: the image's health check reads this file instead.
+		const alive = () => {
+			try {
+				beat(config.dataDir);
+			} catch (error) {
+				logger.error({ err: error }, 'writing the heartbeat failed');
+			}
+		};
+		alive();
+		const heartbeat = setInterval(alive, HEARTBEAT_MS);
+		heartbeat.unref();
+		stops.push(() => clearInterval(heartbeat));
 		const timer = setInterval(async () => {
 			try {
 				const at = (await readExtensionState(runtime.handle.db))?.restartRequestedAt ?? null;

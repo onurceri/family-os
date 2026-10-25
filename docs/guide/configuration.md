@@ -9,7 +9,7 @@ Most settings live in the app. The rest are environment variables the server rea
 | `FAMOS_SETUP_CODE` | generated into `/data/setup-code` | The one-time code first-run setup asks for (8 to 100 characters) |
 | `FAMOS_TRUSTED_ORIGINS` | – | Extra allowed origins, comma-separated |
 | `FAMOS_TRUSTED_PROXIES` | – | Reverse proxies (IPs or CIDRs, comma-separated) whose `X-Forwarded-For` is believed, for sign-in rate limits. Set it behind Caddy, Traefik or nginx |
-| `FAMOS_ROLES` | `api,worker` | Run the API (`api`), the background worker (`worker`), or both |
+| `FAMOS_ROLES` | `api,worker` | Run the API (`api`), the background worker (`worker`), or both. A worker-only container listens on nothing, so the image's health check reads a heartbeat file the worker rewrites every 30 s in the data directory (healthy while it is under two minutes old) |
 | `FAMOS_DATA_DIR` | `./data` (`/data` in Docker) | Where the database, files, backups, packs and the generated secret live |
 | `FAMOS_BACKUP_HOUR` / `FAMOS_BACKUP_KEEP` | `3` / `7` | Hour of the nightly backup and how many to keep ([Backups](backups.md)) |
 | `FAMOS_BACKUP_PASSPHRASE` | – | Only for `restore` of an encrypted `.age` backup (otherwise it asks, or use `--identity <file>`) |
