@@ -476,7 +476,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 		 * `decided`: a person already approved what this unit of work does (an approved suggestion
 		 * is applied, or taken back), so an action it runs inside needs no approval of its own.
 		 */
-		{ decided = false }: { decided?: boolean } = {},
+		{ decided = false, proposer = actor }: { decided?: boolean; proposer?: Actor } = {},
 	): Promise<T> {
 		const events: [string, unknown][] = [];
 		let enqueued = 0;
@@ -501,6 +501,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 			const makeView = (owner: string): UnitOfWork => ({
 				db: deps.views.db(owner, trx),
 				actor,
+				proposer,
 				clock,
 				ids,
 				logger,
@@ -511,6 +512,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 				vocabulary: deps.vocabulary,
 				ai: deps.indexer(enqueue, trx),
 				can: (capability) => can(actor, capability),
+				proposerCan: (capability) => can(proposer, capability),
 				emit(event, payload) {
 					events.push([event.name, event.payload.parse(payload)]);
 				},
@@ -1215,7 +1217,7 @@ export function createActionRunner(deps: ActionRunnerDeps): ActionRunner {
 					await settleNotices(uow, draft);
 					if (told) await uow.notify(told);
 				},
-				DECIDED,
+				{ ...DECIDED, proposer: JSON.parse(draft.proposed_by) as Actor },
 			);
 		} catch (error) {
 			// What it is about is gone: the draft can never be applied, so it leaves the queue

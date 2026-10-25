@@ -164,6 +164,11 @@ export interface UnitOfWork extends EventEmitter {
 	 */
 	readonly db: DbExecutor;
 	readonly actor: Actor;
+	/**
+	 * Who asked for this change. It differs from `actor` only when an approved draft is applied:
+	 * `actor` is then the person who approved, `proposer` the one (or the AI) who suggested it.
+	 */
+	readonly proposer: Actor;
 	readonly clock: Clock;
 	readonly ids: IdGenerator;
 	readonly logger: Logger;
@@ -180,6 +185,8 @@ export interface UnitOfWork extends EventEmitter {
 	readonly ai: SearchIndexer;
 	/** Whether this unit of work's actor holds a capability. */
 	can(capability: string): boolean;
+	/** Whether `proposer` holds a capability (the member behind an AI suggestion counts). */
+	proposerCan(capability: string): boolean;
 	/** Enqueues a job in the same transaction (the queue is the outbox). */
 	enqueue(job: string, payload: unknown, options?: EnqueueOptions): Promise<string>;
 	/**

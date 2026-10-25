@@ -1,4 +1,5 @@
 import {
+	type Actor,
 	defineAction,
 	defineCapability,
 	defineEvent,
@@ -128,10 +129,14 @@ export const childNeedsParent = defineAction({
 	output: z.object({ ok: z.boolean() }),
 	// Supervised members propose; members with the capability share directly.
 	approval: { unless: notesEdit.id },
-	async run() {
+	async run(uow) {
+		whoShared.push({ actor: uow.actor, proposer: uow.proposer });
 		return { ok: true };
 	},
 });
+
+/** Who `notes.share` saw as the actor and the proposer, in the order it ran. */
+export const whoShared: { actor: Actor; proposer: Actor }[] = [];
 
 export const conflicting = defineAction({
 	id: 'notes.conflict',
