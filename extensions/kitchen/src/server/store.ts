@@ -20,6 +20,10 @@ export type KitchenTables = {
 		photo_type: string | null;
 		/** JSON array of short labels. */
 		tags: string;
+		/** The title lower-cased in TypeScript (SQLite folds only ASCII): what a search compares. */
+		title_key: string;
+		/** JSON array of the tags lower-cased the same way. */
+		tags_key: string;
 		created_by: string | null;
 		created_at: number;
 		updated_at: number;
@@ -38,6 +42,11 @@ export type KitchenTables = {
 	};
 };
 export type RecipeRow = KitchenTables['kitchen_recipes'];
+/** The columns a list of recipes needs; the ingredients and steps stay in the database. */
+export type RecipeSummaryRow = Pick<
+	RecipeRow,
+	'id' | 'title' | 'servings' | 'total_minutes' | 'photo_key' | 'tags' | 'updated_at'
+>;
 export type MealRow = KitchenTables['kitchen_meal_plan'];
 
 export const migrations: Migrations = {
@@ -88,7 +97,42 @@ export const migrations: Migrations = {
 				.execute();
 		},
 	},
+	// Searching compares the folded title and tags in the database, so it no longer reads every
+	// recipe into memory. Recipes saved before are folded here.
+	'0002_search_keys': {
+		async up(db) {
+			await db.schema
+				.alterTable('kitchen_recipes')
+				.addColumn('title_key', 'text', (c) => c.notNull().defaultTo(''))
+				.execute();
+			await db.schema
+				.alterTable('kitchen_recipes')
+				.addColumn('tags_key', 'text', (c) => c.notNull().defaultTo('[]'))
+				.execute();
+			const rows = await tables(db)
+				.selectFrom('kitchen_recipes')
+				.select(['id', 'title', 'tags'])
+				.execute();
+			for (const row of rows)
+				await tables(db)
+					.updateTable('kitchen_recipes')
+					.set(searchKeys(row.title, JSON.parse(row.tags) as string[]))
+					.where('id', '=', row.id)
+					.execute();
+			await db.schema
+				.createIndex('kitchen_recipes_title_key_idx')
+				.on('kitchen_recipes')
+				.columns(['archived_at', 'title_key'])
+				.execute();
+		},
+	},
 };
+
+/** What a recipe search compares: the title and the tags, lower-cased for any script. */
+export const searchKeys = (title: string, tags: readonly string[]) => ({
+	title_key: title.toLocaleLowerCase(),
+	tags_key: JSON.stringify(tags.map((t) => t.toLocaleLowerCase())),
+});
 
 export const tables = (db: DbExecutor) => db.withTables<KitchenTables>();
 
@@ -112,7 +156,7 @@ export function toRecipe(row: RecipeRow): Recipe {
 	};
 }
 
-export function toRecipeSummary(row: RecipeRow): RecipeSummary {
+export function toRecipeSummary(row: RecipeSummaryRow): RecipeSummary {
 	return {
 		id: row.id,
 		title: row.title,

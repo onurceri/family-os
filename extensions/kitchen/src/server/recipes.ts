@@ -10,6 +10,7 @@ import {
 	type UnitOfWork,
 	uploadRequestLimit,
 } from '@famos/sdk';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import {
 	CreateRecipeSchema,
@@ -21,7 +22,14 @@ import {
 } from '../contract/index.ts';
 import { kitchenChanged, kitchenEdit, kitchenView } from './capabilities.ts';
 import { RECIPE_KIND } from './search.ts';
-import { type RecipeRow, tables, toRecipe, toRecipeSummary } from './store.ts';
+import {
+	type RecipeRow,
+	type RecipeSummaryRow,
+	searchKeys,
+	tables,
+	toRecipe,
+	toRecipeSummary,
+} from './store.ts';
 
 export const memberId = selfOf;
 
@@ -38,6 +46,7 @@ export async function loadRecipe(db: UnitOfWork['db'], id: string): Promise<Reci
 
 const fieldsOf = (r: z.output<typeof CreateRecipeSchema>) => ({
 	title: r.title,
+	...searchKeys(r.title, [...new Set(r.tags)]),
 	servings: r.servings || null,
 	total_minutes: r.totalMinutes ?? null,
 	ingredients: JSON.stringify(r.ingredients),
@@ -177,28 +186,28 @@ export const setRecipePhoto = defineAction({
 	},
 });
 
-/** The recipes shown in a list, optionally narrowed by a title search and a tag. */
+/**
+ * The recipes shown in a list, optionally narrowed by a title search and a tag. The database does
+ * the narrowing, on the case-folded title and tags, so no recipe is missed however many there are.
+ */
 export async function searchRecipes(
 	db: UnitOfWork['db'],
 	options: { q?: string | undefined; tag?: string | undefined; limit?: number },
-): Promise<RecipeRow[]> {
-	const rows = await tables(db)
-		.selectFrom('kitchen_recipes')
-		.selectAll()
-		.where('archived_at', 'is', null)
-		.orderBy('title')
-		.orderBy('id')
-		.limit(1000)
-		.execute();
+): Promise<RecipeSummaryRow[]> {
 	const q = options.q?.trim().toLocaleLowerCase();
 	const tag = options.tag?.trim().toLocaleLowerCase();
-	const found = rows
-		.filter((r) => !q || r.title.toLocaleLowerCase().includes(q))
-		.filter(
-			(r) => !tag || (JSON.parse(r.tags) as string[]).some((t) => t.toLocaleLowerCase() === tag),
-		)
-		.toSorted((a, b) => a.title.localeCompare(b.title));
-	return found.slice(0, options.limit ?? 1000);
+	let query = tables(db)
+		.selectFrom('kitchen_recipes')
+		.select(['id', 'title', 'servings', 'total_minutes', 'photo_key', 'tags', 'updated_at'])
+		.where('archived_at', 'is', null);
+	if (q) query = query.where(sql<boolean>`instr(title_key, ${q}) > 0`);
+	if (tag)
+		query = query.where(
+			sql<boolean>`exists (select 1 from json_each(tags_key) where value = ${tag})`,
+		);
+	query = query.orderBy('title_key').orderBy('id');
+	if (options.limit !== undefined) query = query.limit(options.limit);
+	return (await query.execute()).toSorted((a, b) => a.title.localeCompare(b.title));
 }
 
 export const searchRecipesRoute = defineRoute({
