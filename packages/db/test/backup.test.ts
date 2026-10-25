@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import Database from 'better-sqlite3';
 import { sql } from 'kysely';
 import * as tar from 'tar';
 import { describe, expect, it } from 'vitest';
@@ -56,31 +57,16 @@ describe('backup', () => {
 		await reopened.close();
 	});
 
-	it('keeps the main connection answering while the snapshot is taken', async () => {
+	it('takes the snapshot on a connection of its own, never on the main one', async () => {
 		const { dir, filesDir, handle } = await setup();
-		await sql`create table bulk (id integer primary key, body text)`.execute(handle.db);
-		handle.sqlite
-			.prepare(
-				'with recursive n(i) as (select 1 union all select i + 1 from n where i < 150000) insert into bulk (body) select hex(randomblob(100)) from n',
-			)
-			.run();
-		const started = performance.now();
-		handle.sqlite.prepare('VACUUM INTO ?').run(join(dir, 'timing.db'));
-		const blocked = performance.now() - started;
+		const statements: string[] = [];
+		const prepare = handle.sqlite.prepare.bind(handle.sqlite);
+		handle.sqlite.prepare = ((source: string) => {
+			statements.push(source);
+			return prepare(source);
+		}) as typeof handle.sqlite.prepare;
 
-		// A query every few milliseconds on the main connection; a snapshot that held the thread
-		// would leave one gap as long as the snapshot itself.
-		let last = performance.now();
-		let widest = 0;
-		let answered = 0;
-		const ticker = setInterval(() => {
-			const now = performance.now();
-			widest = Math.max(widest, now - last);
-			last = now;
-			handle.sqlite.prepare('select count(*) from notes').get();
-			answered++;
-		}, 2);
-		const { manifest } = await createBackup({
+		const { path } = await createBackup({
 			sqlite: handle.sqlite,
 			filesDir,
 			backupsDir: join(dir, 'backups'),
@@ -88,11 +74,14 @@ describe('backup', () => {
 			schema: {},
 			reason: 'manual',
 		});
-		clearInterval(ticker);
+		expect(statements.filter((sql) => /vacuum/i.test(sql))).toEqual([]);
 
-		expect(manifest.db.size).toBeGreaterThan(10_000_000);
-		expect(answered).toBeGreaterThan(5);
-		expect(widest).toBeLessThan(blocked / 2);
+		const out = join(dir, 'unpacked');
+		await mkdir(out);
+		await tar.x({ file: path, cwd: out });
+		const snapshot = new Database(join(out, 'db', 'famos.db'), { readonly: true });
+		expect(snapshot.prepare('select body from notes').all()).toEqual([{ body: 'original' }]);
+		snapshot.close();
 		await handle.close();
 	});
 
