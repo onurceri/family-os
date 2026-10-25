@@ -21,6 +21,9 @@ pnpm install
 pnpm dev          # API on :3000 and web on :5173 (proxies /api)
 ```
 
+The web dev server proxies `/api` to `http://localhost:3000`; if you run the server on another port,
+start the web app with `FAMOS_API=http://localhost:<port>`.
+
 Open http://localhost:5173 and follow the setup link printed by the server.
 `pnpm build` builds the web app, the bundled server and the extension packages.
 

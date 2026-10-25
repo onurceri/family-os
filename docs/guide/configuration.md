@@ -16,12 +16,15 @@ Most settings live in the app. The rest are environment variables the server rea
 | `FAMOS_AI_PROVIDER` | – | `openrouter`, `ollama` or `openai-compatible`: one AI provider kept in line with these variables on every start (shown read-only in the app). Providers added in the app are separate |
 | `FAMOS_AI_BASE_URL` / `FAMOS_AI_API_KEY` | the kind's default / – | That provider's address and key (stored encrypted) |
 | `FAMOS_AI_MODEL` (and `_FAST`, `_VISION`, `_SMART`) | – | Its model for every role, or per role. Speech-to-text and search models are chosen in the app |
+| `FAMOS_TELEGRAM_API_ROOT` | `https://api.telegram.org` | Address of the Telegram Bot API, for a family that runs its own Bot API server ([Telegram](telegram.md)) |
+| `FAMOS_EXTENSION_INDEX_URL` | the official index | HTTPS address of a mirror of the official extension index, for a home without direct access to GitHub Pages. The index signature is still checked against FamilyOS's own keys, so a mirror cannot add a source of code |
+| `FAMOS_WEB_DIR` / `FAMOS_LANGUAGES_DIR` / `FAMOS_THEMES_DIR` | set by the image | Where the app, the bundled language packs and the bundled theme packs are. The Docker image sets them; you rarely change them |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Where the server listens |
 | `LOG_LEVEL` | `info` | `trace`, `debug`, `info`, `warn`, `error` or `fatal` |
-| `TZ` | `UTC` (compose) | Time zone of the container. The family's own time zone is set in the app |
+| `TZ` | `UTC` (compose) | Time zone of the container; Node reads it, FamilyOS does not. The family's own time zone is set in the app |
 
 **Good to know**
-- `FAMOS_TELEGRAM_API_ROOT`, `FAMOS_EMAIL_FAKE_DIR` and `FAMOS_NOTIFY_DELAY_MS` exist for tests only; leave them unset.
+- `FAMOS_EMAIL_FAKE_DIR`, `FAMOS_NOTIFY_DELAY_MS` and `FAMOS_DEV_EXTENSIONS` exist for tests and development; the server refuses to start with any of them when `NODE_ENV=production` (the image sets it).
 - Providers set with `FAMOS_AI_*` apply on every start and cannot be changed in the app ([AI and privacy](ai.md)).
 - Everything else lives in the `famos-data` volume ([Install](install.md)).
 
