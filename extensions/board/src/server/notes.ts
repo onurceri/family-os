@@ -433,29 +433,47 @@ export const moveNote = defineAction({
 	},
 });
 
-export const markSeen = defineAction({
-	id: 'board.markSeen',
-	title: 'Mark a note as seen',
-	input: z.object({ id: NoteIdSchema }),
-	output: z.object({ seen: z.boolean() }),
+/** Notes one call may mark; a longer board is marked in several calls. */
+export const MARK_SEEN_MAX = 100;
+
+export const markNotesSeen = defineAction({
+	id: 'board.markNotesSeen',
+	title: 'Mark notes as seen',
+	input: z.object({ ids: z.array(NoteIdSchema).min(1).max(MARK_SEEN_MAX) }),
+	output: z.object({ marked: z.number() }),
 	requires: boardView.id,
 	approval: 'never',
-	async run(uow, { id }) {
+	async run(uow, { ids }) {
 		const me = memberId(uow.actor);
-		const exists = await tables(uow.db)
+		if (!me) return { marked: 0 };
+		const wanted = [...new Set(ids)];
+		// A note taken down meanwhile is no error.
+		const onBoard = await tables(uow.db)
 			.selectFrom('board_notes')
 			.select('id')
-			.where('id', '=', id)
-			.executeTakeFirst();
-		// A note taken down meanwhile is no error.
-		if (!me || !exists) return { seen: false };
-		const inserted = await tables(uow.db)
+			.where('id', 'in', wanted)
+			.execute();
+		const seen = new Set(
+			(
+				await tables(uow.db)
+					.selectFrom('board_note_seen')
+					.select('note_id')
+					.where('member_id', '=', me)
+					.where('note_id', 'in', wanted)
+					.execute()
+			).map((r) => r.note_id),
+		);
+		const fresh = onBoard.map((r) => r.id).filter((id) => !seen.has(id));
+		if (fresh.length === 0) return { marked: 0 };
+		const now = uow.clock.now();
+		await tables(uow.db)
 			.insertInto('board_note_seen')
-			.values({ note_id: id, member_id: me, seen_at: uow.clock.now() })
+			.values(fresh.map((note_id) => ({ note_id, member_id: me, seen_at: now })))
 			.onConflict((oc) => oc.doNothing())
-			.executeTakeFirst();
-		if (Number(inserted.numInsertedOrUpdatedRows ?? 0) > 0) uow.emit(boardChanged, { noteId: id });
-		return { seen: true };
+			.execute();
+		// One event for the whole call, so every open board reloads once.
+		uow.emit(boardChanged, { noteIds: fresh });
+		return { marked: fresh.length };
 	},
 });
 

@@ -39,8 +39,16 @@ export const moveNote = async (id: string, place: Place): Promise<void> => {
 	unwrap(await api.POST('/api/v1/actions/board.moveNote', { body: { id, ...place } }));
 };
 
-export const markSeen = async (id: string): Promise<void> => {
-	unwrap(await api.POST('/api/v1/actions/board.markSeen', { body: { id } }));
+/** Notes one call may mark (the server's limit). */
+const MARK_SEEN_MAX = 100;
+
+export const markSeen = async (ids: readonly string[]): Promise<void> => {
+	for (let i = 0; i < ids.length; i += MARK_SEEN_MAX)
+		unwrap(
+			await api.POST('/api/v1/actions/board.markNotesSeen', {
+				body: { ids: ids.slice(i, i + MARK_SEEN_MAX) },
+			}),
+		);
 };
 
 export async function uploadPhoto(noteId: string, photo: Blob): Promise<void> {

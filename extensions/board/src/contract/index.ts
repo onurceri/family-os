@@ -97,6 +97,8 @@ export type BoardNote = z.infer<typeof BoardNoteSchema>;
 
 export const boardChangedPayload = z.object({
 	noteId: z.string().optional(),
+	/** Several notes changed together (marked seen); each is logged as changed. */
+	noteIds: z.array(z.string()).optional(),
 	/** `delete`: the note is gone for readers. */
 	op: z.enum(['upsert', 'delete']).optional(),
 });

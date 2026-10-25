@@ -2847,10 +2847,10 @@
 				}
 			}
 		},
-		"/api/v1/actions/board.markSeen": {
+		"/api/v1/actions/board.markNotesSeen": {
 			"post": {
-				"operationId": "board.markSeen",
-				"summary": "Mark a note as seen",
+				"operationId": "board.markNotesSeen",
+				"summary": "Mark notes as seen",
 				"tags": [
 					"actions",
 					"board"
@@ -2880,13 +2880,18 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"id": {
-										"type": "string",
-										"pattern": "^board_note_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									"ids": {
+										"type": "array",
+										"items": {
+											"type": "string",
+											"pattern": "^board_note_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+										},
+										"minItems": 1,
+										"maxItems": 100
 									}
 								},
 								"required": [
-									"id"
+									"ids"
 								]
 							}
 						}
@@ -2911,12 +2916,12 @@
 												"output": {
 													"type": "object",
 													"properties": {
-														"seen": {
-															"type": "boolean"
+														"marked": {
+															"type": "number"
 														}
 													},
 													"required": [
-														"seen"
+														"marked"
 													]
 												}
 											},

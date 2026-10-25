@@ -124,7 +124,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/actions/board.markSeen": {
+    "/api/v1/actions/board.markNotesSeen": {
         parameters: {
             query?: never;
             header?: never;
@@ -133,8 +133,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a note as seen */
-        post: operations["board.markSeen"];
+        /** Mark notes as seen */
+        post: operations["board.markNotesSeen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1410,7 +1410,7 @@ export interface operations {
             };
         };
     };
-    "board.markSeen": {
+    "board.markNotesSeen": {
         parameters: {
             query?: never;
             header?: {
@@ -1423,7 +1423,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    id: string;
+                    ids: string[];
                 };
             };
         };
@@ -1438,7 +1438,7 @@ export interface operations {
                         /** @enum {string} */
                         status: "applied";
                         output: {
-                            seen: boolean;
+                            marked: number;
                         };
                     } | {
                         /** @enum {string} */

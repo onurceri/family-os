@@ -53,11 +53,14 @@
 		}
 		// Looking at the board is seeing it; a note someone else wrote is reported once.
 		if (!me || document.visibilityState === 'hidden') return;
-		for (const note of notes) {
-			if (note.seenBy.includes(me) || reported.has(note.id)) continue;
-			reported.add(note.id);
-			void markSeen(note.id).catch(() => reported.delete(note.id));
-		}
+		const unseen = notes
+			.filter((note) => !note.seenBy.includes(me) && !reported.has(note.id))
+			.map((note) => note.id);
+		if (unseen.length === 0) return;
+		for (const id of unseen) reported.add(id);
+		void markSeen(unseen).catch(() => {
+			for (const id of unseen) reported.delete(id);
+		});
 	}
 	$effect(() => {
 		if (!canView || app.offline()) return;

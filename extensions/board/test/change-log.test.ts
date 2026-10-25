@@ -65,7 +65,7 @@ describe('the board in the change log', () => {
 	it('raises the version of a note when someone sees it', async () => {
 		const note = await post();
 		const before = (await row(note.id)).version;
-		await applied(k, 'board.markSeen', { id: note.id }, ayse.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, ayse.actor);
 		expect((await row(note.id)).version).toBeGreaterThan(before);
 	});
 

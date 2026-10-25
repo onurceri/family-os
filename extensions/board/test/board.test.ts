@@ -217,10 +217,10 @@ describe('changing notes', () => {
 describe('seen', () => {
 	it('marks a note seen once per person, in the order they saw it', async () => {
 		const note = await post();
-		await applied(k, 'board.markSeen', { id: note.id }, elif.actor);
-		await applied(k, 'board.markSeen', { id: note.id }, elif.actor);
-		await applied(k, 'board.markSeen', { id: note.id }, bora.actor);
-		await applied(k, 'board.markSeen', { id: note.id }, guest.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, elif.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, elif.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, bora.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, guest.actor);
 		expect((await notes())[0]?.seenBy.toSorted()).toEqual([bora.id, elif.id, guest.id].toSorted());
 		expect((await notes())[0]?.seenBy).toHaveLength(3);
 	});
@@ -228,8 +228,8 @@ describe('seen', () => {
 	it('ignores a note that is gone, and a display cannot mark', async () => {
 		const note = await post();
 		await applied(k, 'board.removeNote', { id: note.id }, bora.actor);
-		expect(await applied(k, 'board.markSeen', { id: note.id }, ayse.actor)).toEqual({
-			seen: false,
+		expect(await applied(k, 'board.markNotesSeen', { ids: [note.id] }, ayse.actor)).toEqual({
+			marked: 0,
 		});
 		const display = {
 			kind: 'display' as const,
@@ -237,8 +237,51 @@ describe('seen', () => {
 			capabilities: ['board.view'],
 			showNames: false,
 		};
-		expect(await refused(k.runner.invoke('board.markSeen', { id: note.id }, display))).toBe(
+		expect(await refused(k.runner.invoke('board.markNotesSeen', { ids: [note.id] }, display))).toBe(
 			'forbidden',
+		);
+	});
+});
+
+describe('marking many notes seen', () => {
+	it('marks the new ones in one call and tells the open boards once', async () => {
+		const a = await post();
+		const b = await post();
+		const c = await post();
+		const gone = await post();
+		await applied(k, 'board.removeNote', { id: gone.id }, bora.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [a.id] }, elif.actor);
+		const events: string[] = [];
+		k.bus.onAny((name) => void events.push(name));
+		const seen = await k.changes.head();
+
+		// `a` was seen before, `b` twice in the list, and one note was taken down.
+		const result = await applied(
+			k,
+			'board.markNotesSeen',
+			{ ids: [a.id, b.id, b.id, c.id, gone.id] },
+			elif.actor,
+		);
+
+		expect(result).toEqual({ marked: 2 });
+		expect(events.filter((n) => n === 'board.changed')).toHaveLength(1);
+		const page = await k.changes.since(seen, elif.actor);
+		expect(new Set(page.changes.map((x) => x.id))).toEqual(new Set([b.id, c.id]));
+		for (const n of await notes()) expect(n.seenBy).toContain(elif.id);
+	});
+
+	it('is quiet when there is nothing new, and keeps its list bounded', async () => {
+		const a = await post();
+		await applied(k, 'board.markNotesSeen', { ids: [a.id] }, elif.actor);
+		const events: string[] = [];
+		k.bus.onAny((name) => void events.push(name));
+		expect(await applied(k, 'board.markNotesSeen', { ids: [a.id] }, elif.actor)).toEqual({
+			marked: 0,
+		});
+		expect(events).not.toContain('board.changed');
+		const many = Array.from({ length: 101 }, () => a.id);
+		expect(await refused(k.runner.invoke('board.markNotesSeen', { ids: many }, elif.actor))).toBe(
+			'bad_request',
 		);
 	});
 });
@@ -266,7 +309,7 @@ describe('notifications', () => {
 		const before = sent().length;
 		await applied(k, 'board.editNote', { id: note.id, text: 'changed' }, bora.actor);
 		await applied(k, 'board.pinNote', { id: note.id, pinned: true }, ayse.actor);
-		await applied(k, 'board.markSeen', { id: note.id }, elif.actor);
+		await applied(k, 'board.markNotesSeen', { ids: [note.id] }, elif.actor);
 		await k.worker.drain();
 		expect(sent()).toHaveLength(before);
 	});
@@ -499,7 +542,7 @@ describe('AI', () => {
 			'board.removeNote',
 			'board.pinNote',
 			'board.moveNote',
-			'board.markSeen',
+			'board.markNotesSeen',
 			'board.setNotePhoto',
 		]) {
 			expect(
