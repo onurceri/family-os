@@ -11,13 +11,44 @@ export function lowerIn(text: string, language?: string): string {
 }
 
 /**
+ * A text with each part in brackets ("(…)" or "[…]", up to the first closing bracket) put as one
+ * space; an opening bracket that is never closed stays. One pass over the text, however many
+ * brackets are left open.
+ */
+export function withoutBrackets(text: string): string {
+	const closing = { '(': ')', '[': ']' } as const;
+	// Where the next closing bracket of each kind is, -1 when none is left.
+	const next = { '(': -2, '[': -2 };
+	let out = '';
+	let from = 0;
+	let i = 0;
+	while (i < text.length) {
+		const ch = text[i];
+		if (ch !== '(' && ch !== '[') {
+			i++;
+			continue;
+		}
+		if (next[ch] !== -1 && next[ch] <= i) next[ch] = text.indexOf(closing[ch], i + 1);
+		const end = next[ch];
+		if (end === -1) {
+			i++;
+			continue;
+		}
+		out += `${text.slice(from, i)} `;
+		i = end + 1;
+		from = i;
+	}
+	return out + text.slice(from);
+}
+
+/**
  * Words of a label or a title that tell things apart: letters and digits only, in any language,
  * lower case (by the rules of `language`, when given). Anything in brackets (a date, a note),
  * numbers, and words of one or two characters say nothing about which thing is meant. The words
  * come from the data; nothing here knows a language.
  */
 export function significantWords(text: string, language?: string): string[] {
-	const bare = text.replace(/\([^)]*\)|\[[^\]]*\]/gu, ' ');
+	const bare = withoutBrackets(text);
 	const words = lowerIn(bare, language).match(/[\p{L}\p{N}]+/gu) ?? [];
 	return words.filter((w) => [...w].length > 2 && !/^\p{N}+$/u.test(w));
 }

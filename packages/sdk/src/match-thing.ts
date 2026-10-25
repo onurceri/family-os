@@ -6,6 +6,7 @@ import {
 	sameWordIn,
 	significantWords,
 	type WordOptions,
+	withoutBrackets,
 } from './label-words.ts';
 
 /*
@@ -102,9 +103,7 @@ const CODE_PARTS =
  * in parts joined into one token, so "34 ABC 123" and "34ABC123" are one plate.
  */
 const compared = (text: string) =>
-	text
-		.replace(/\([^)]*\)|\[[^\]]*\]/gu, ' ')
-		.replace(CODE_PARTS, (code) => code.replace(/[ .-]/gu, ''));
+	withoutBrackets(text).replace(CODE_PARTS, (code) => code.replace(/[ .-]/gu, ''));
 
 /**
  * The codes and numbers of a compared text: every token with a digit in it ("1b", "u13", "10",

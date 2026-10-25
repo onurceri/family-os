@@ -368,12 +368,41 @@ const MONEY = /\p{Sc}|\d[.,]\d{2}(?!\d)|\d\s?[A-Z]{3}(?![\p{L}\p{N}])/u;
  * code ("15 EUR"), so a mileage ("62,300 km") or a batch number stays. Empty when nothing is left.
  */
 export function withoutAmounts(notes: string): string {
-	return notes
-		.split(/(?<=[.;]\s+|\n)(?=\S)/u)
+	const kept = sentencesOf(notes)
 		.filter((part) => !MONEY.test(part))
-		.join('')
-		.replace(/[\s;]+$/u, '')
-		.trim();
+		.join('');
+	let end = kept.length;
+	while (end > 0 && (kept[end - 1] === ';' || SPACE.test(kept[end - 1] as string))) end--;
+	return kept.slice(0, end).trim();
+}
+
+const SPACE = /\s/u;
+
+/**
+ * A text cut before each non-space character that follows a line break, or a full stop or a
+ * semicolon and then spaces. One pass over the text, so a long run of spaces costs no more than
+ * its length.
+ */
+function sentencesOf(text: string): string[] {
+	const parts: string[] = [];
+	let from = 0;
+	// Whether the spaces just read follow a full stop or a semicolon.
+	let afterStop = false;
+	for (let i = 0; i < text.length; i++) {
+		const ch = text[i] as string;
+		if (SPACE.test(ch)) {
+			if (i > 0 && !SPACE.test(text[i - 1] as string))
+				afterStop = text[i - 1] === '.' || text[i - 1] === ';';
+			continue;
+		}
+		const prev = text[i - 1];
+		if (i > 0 && (prev === '\n' || (afterStop && SPACE.test(prev as string)))) {
+			parts.push(text.slice(from, i));
+			from = i;
+		}
+	}
+	parts.push(text.slice(from));
+	return parts;
 }
 
 /**
