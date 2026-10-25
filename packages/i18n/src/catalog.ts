@@ -34,14 +34,19 @@ export function flatten(catalog: Catalog, prefix = ''): Map<string, string> {
 	return out;
 }
 
-/** The inverse of `flatten`: dotted paths back to nested objects (i18next's key separator). */
+/**
+ * The inverse of `flatten`: dotted paths back to nested objects (i18next's key separator). A path
+ * with a `__proto__` part is no key of a catalog and is left out, so a pack can never reach the
+ * prototype of the objects built here (or of every object).
+ */
 export function unflatten(flat: ReadonlyMap<string, string>): Catalog {
 	const root: Catalog = {};
 	for (const [path, text] of flat) {
 		const parts = path.split('.');
+		if (parts.includes('__proto__')) continue;
 		let node = root;
 		for (const part of parts.slice(0, -1)) {
-			const next = node[part];
+			const next = Object.hasOwn(node, part) ? node[part] : undefined;
 			if (typeof next === 'object') node = next;
 			else {
 				const created: Catalog = {};
