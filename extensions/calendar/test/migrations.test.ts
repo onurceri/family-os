@@ -115,3 +115,54 @@ it('upgrades a 0.2.1 database: events stay as they were and gain empty link colu
 	await runMigrations(db, [{ scope: 'calendar', migrations }]);
 	await handle.close();
 });
+
+it('upgrades a 0.7.0 database: repeating events gain their end without being rewritten', async () => {
+	const handle = openDatabase({ path: ':memory:' });
+	const { db } = handle;
+	const released = Object.fromEntries(
+		Object.entries(migrations).filter(([n]) => n !== '0004_series_end'),
+	);
+	await runMigrations(db, [{ scope: 'calendar', migrations: released }]);
+	const TZ = 'Europe/Istanbul';
+	const start = epochOf('2026-10-20', '19:00', TZ);
+	const timed = (id: string, rrule: string | null) =>
+		sql`insert into calendar_events
+			(id, title, all_day, starts_at, ends_at, time_zone, rrule, member_ids, created_at, updated_at)
+			values (${id}, 'Bins', 0, ${start}, ${start + 1_800_000}, ${TZ}, ${rrule}, '[]', 5, 5)`.execute(
+			db,
+		);
+	await timed('cal_event_until', 'FREQ=WEEKLY;UNTIL=20261231T205959Z');
+	await timed('cal_event_count', 'FREQ=WEEKLY;COUNT=3');
+	await timed('cal_event_open', 'FREQ=WEEKLY');
+	await timed('cal_event_once', null);
+	await sql`insert into calendar_subscriptions
+		(id, name, sealed_url, url_host, color, member_ids, reminders, allow_local, created_at, updated_at)
+		values ('cal_sub_a', 'School', 'v1.x', 'school.example', '#3f7fb5', '[]', 0, 0, 1, 1)`.execute(
+		db,
+	);
+	await sql`insert into calendar_external_events
+		(subscription_id, uid, recurrence_key, title, all_day, start_date, end_date, time_zone, rrule, fingerprint)
+		values ('cal_sub_a', 'u1', '', 'Club', 1, '2026-10-20', '2026-10-20', ${TZ}, 'FREQ=DAILY;COUNT=2', 'f')`.execute(
+		db,
+	);
+	const before = (
+		await sql<{ version: number }>`select version from calendar_events order by id`.execute(db)
+	).rows;
+
+	await runMigrations(db, [{ scope: 'calendar', migrations }]);
+
+	const { rows } = await sql<{ id: string; series_end: number | null; version: number }>`
+		select id, series_end, version from calendar_events order by id`.execute(db);
+	expect(rows.map((r) => [r.id, r.series_end])).toEqual([
+		['cal_event_count', epochOf('2026-11-03', '19:30', TZ)],
+		['cal_event_once', null],
+		['cal_event_open', null],
+		['cal_event_until', Date.UTC(2026, 11, 31, 20, 59, 59) + 1_800_000],
+	]);
+	expect(rows.map((r) => r.version)).toEqual(before.map((r) => r.version));
+	const external = await sql<{
+		series_end: number;
+	}>`select series_end from calendar_external_events`.execute(db);
+	expect(external.rows).toEqual([{ series_end: Date.UTC(2026, 9, 21) }]);
+	await handle.close();
+});

@@ -2,6 +2,7 @@ import { addVersion, compareThing, type DbExecutor, type Migrations, namesThing 
 import {
 	addDays,
 	compareDates,
+	DAY_MS,
 	dayBounds,
 	daysBetween,
 	epochOf,
@@ -40,6 +41,12 @@ export type CalendarTables = {
 		end_date: string | null;
 		time_zone: string;
 		rrule: string | null;
+		/**
+		 * The instant after which no occurrence of a repeating event is left (the end of the last one,
+		 * or for all-day the start of its last day, UTC); null for an event that does not repeat or whose
+		 * rule has no known end. Lets a read skip series that ended before its range.
+		 */
+		series_end: number | null;
 		/** JSON array: epoch ms (timed) or YYYY-MM-DD (all-day). */
 		exdates: string | null;
 		/** JSON array of member IDs; empty = whole family. */
@@ -133,6 +140,12 @@ export type CalendarTables = {
 		end_date: string | null;
 		time_zone: string;
 		rrule: string | null;
+		/**
+		 * The instant after which no occurrence of a repeating event is left (the end of the last one,
+		 * or for all-day the start of its last day, UTC); null for an event that does not repeat or whose
+		 * rule has no known end. Lets a read skip series that ended before its range.
+		 */
+		series_end: number | null;
 		/** JSON array: epoch ms (timed) or YYYY-MM-DD (all-day); includes replaced and cancelled occurrences. */
 		exdates: string | null;
 		/** Hash of the content: reminders planned for an unchanged event stay valid across refreshes. */
@@ -281,7 +294,133 @@ export const migrations: Migrations = {
 			await addVersion(db, 'calendar_events');
 		},
 	},
+	// Lets the agenda leave out repeating events that ended before the range it reads.
+	'0004_series_end': {
+		async up(db) {
+			for (const table of ['calendar_events', 'calendar_external_events'] as const) {
+				await sql`alter table ${sql.table(table)} add column series_end integer`.execute(db);
+			}
+			// The backfill is not a change a client should see as a new version of the event.
+			await sql`drop trigger calendar_events_version`.execute(db);
+			const t = events(db);
+			for (const row of await t
+				.selectFrom('calendar_events')
+				.select([
+					'id',
+					'all_day',
+					'starts_at',
+					'ends_at',
+					'start_date',
+					'end_date',
+					'time_zone',
+					'rrule',
+				])
+				.where('rrule', 'is not', null)
+				.execute()) {
+				await t
+					.updateTable('calendar_events')
+					.set({ series_end: seriesEndOf(row) })
+					.where('id', '=', row.id)
+					.execute();
+			}
+			await sql`create trigger calendar_events_version after update on calendar_events
+				when new.version is old.version
+				begin
+					update calendar_events set version = version + 1 where rowid = new.rowid;
+				end`.execute(db);
+			for (const row of await t
+				.selectFrom('calendar_external_events')
+				.select([
+					'subscription_id',
+					'uid',
+					'recurrence_key',
+					'all_day',
+					'starts_at',
+					'ends_at',
+					'start_date',
+					'end_date',
+					'time_zone',
+					'rrule',
+				])
+				.where('rrule', 'is not', null)
+				.execute()) {
+				await t
+					.updateTable('calendar_external_events')
+					.set({ series_end: seriesEndOf(row) })
+					.where('subscription_id', '=', row.subscription_id)
+					.where('uid', '=', row.uid)
+					.where('recurrence_key', '=', row.recurrence_key)
+					.execute();
+			}
+		},
+	},
 };
+
+/** Rules with more repeats than this are treated as having no known end. */
+const COUNT_LIMIT = 5000;
+
+const utcDay = (date: string) => Date.parse(`${date}T00:00:00Z`);
+
+/**
+ * The `series_end` of an event: when its last occurrence is over (all-day: the UTC start of its
+ * last day), or null when it does not repeat or the rule has no end that is cheap to find. A rule
+ * with a count gets its real last occurrence; one with an `UNTIL` is bounded by that moment.
+ */
+export function seriesEndOf(
+	row: Pick<
+		EventRow,
+		'all_day' | 'starts_at' | 'ends_at' | 'start_date' | 'end_date' | 'time_zone' | 'rrule'
+	>,
+): number | null {
+	if (!row.rrule) return null;
+	try {
+		const count = /(?:^|;)COUNT=(\d+)/.exec(row.rrule)?.[1];
+		const until = /(?:^|;)UNTIL=(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/.exec(row.rrule);
+		if (row.all_day) {
+			const first = row.start_date as string;
+			const span = daysBetween(first, row.end_date ?? first);
+			if (count) {
+				if (Number(count) > COUNT_LIMIT) return null;
+				const starts = expandDates({ date: first, rrule: row.rrule }, first, '9999-12-31');
+				const last = starts.at(-1);
+				return last ? utcDay(addDays(last, span)) : null;
+			}
+			if (until) return utcDay(addDays(`${until[1]}-${until[2]}-${until[3]}`, span));
+			return null;
+		}
+		const startsAt = row.starts_at as number;
+		const duration = (row.ends_at ?? startsAt) - startsAt;
+		if (count) {
+			if (Number(count) > COUNT_LIMIT) return null;
+			const starts = expandTimed(
+				{ startsAt, timeZone: row.time_zone, rrule: row.rrule },
+				startsAt,
+				startsAt + 200 * 366 * DAY_MS,
+			);
+			const last = starts.at(-1);
+			return last === undefined ? null : last + duration;
+		}
+		if (until) {
+			// A date without a time reaches to the end of that day.
+			const [y = 0, mo = 1, d = 1, h, mi = 0, sec = 0] = until
+				.slice(1)
+				.map((x) => (x ? Number(x) : undefined));
+			const at =
+				h === undefined ? Date.UTC(y, mo - 1, d) + DAY_MS : Date.UTC(y, mo - 1, d, h, mi, sec);
+			return at + duration;
+		}
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Whether a repeating series can still have an occurrence in the range starting at `rangeStart`
+ * (an instant) and the local date `from`; a series without a known end always can.
+ */
+export const seriesReaches = (from: string, rangeStart: number) =>
+	sql<boolean>`(series_end is null or series_end >= case when all_day = 0 then ${rangeStart} else ${utcDay(from)} end)`;
 
 export const events = (db: DbExecutor) => db.withTables<CalendarTables>();
 
@@ -351,6 +490,15 @@ export function toRow(input: EventInput, timeZone: string) {
 			end_date: v.endDate ?? v.date,
 			time_zone: timeZone,
 			rrule,
+			series_end: seriesEndOf({
+				all_day: 1,
+				starts_at: null,
+				ends_at: null,
+				start_date: v.date,
+				end_date: v.endDate ?? v.date,
+				time_zone: timeZone,
+				rrule,
+			}),
 			member_ids: JSON.stringify(v.memberIds),
 			tags: tags.length ? JSON.stringify(tags) : null,
 			...reminder,
@@ -375,6 +523,15 @@ export function toRow(input: EventInput, timeZone: string) {
 		end_date: null,
 		time_zone: timeZone,
 		rrule,
+		series_end: seriesEndOf({
+			all_day: 0,
+			starts_at: startsAt,
+			ends_at: endsAt,
+			start_date: null,
+			end_date: null,
+			time_zone: timeZone,
+			rrule,
+		}),
 		member_ids: JSON.stringify(v.memberIds),
 		tags: tags.length ? JSON.stringify(tags) : null,
 		...reminder,
@@ -401,8 +558,10 @@ export function replacementRow(
 		own.start_date === row.start_date &&
 		own.end_date === row.end_date;
 	const next = sameWhen ? own : toRow(input, familyTimeZone);
-	if (keepRule && row.rrule && !input.recurrence && !fromRRule(row.rrule, row.time_zone))
+	if (keepRule && row.rrule && !input.recurrence && !fromRRule(row.rrule, row.time_zone)) {
 		next.rrule = row.rrule;
+		next.series_end = seriesEndOf(next);
+	}
 	return next;
 }
 
@@ -574,12 +733,18 @@ export async function occurrencesBetween(
 				eb.and([
 					eb('all_day', '=', 0),
 					eb('starts_at', '<', rangeEnd),
-					eb.or([eb('rrule', 'is not', null), eb('ends_at', '>', rangeStart)]),
+					eb.or([
+						eb.and([eb('rrule', 'is not', null), seriesReaches(from, rangeStart)]),
+						eb('ends_at', '>', rangeStart),
+					]),
 				]),
 				eb.and([
 					eb('all_day', '=', 1),
 					eb('start_date', '<=', to),
-					eb.or([eb('rrule', 'is not', null), eb('end_date', '>=', from)]),
+					eb.or([
+						eb.and([eb('rrule', 'is not', null), seriesReaches(from, rangeStart)]),
+						eb('end_date', '>=', from),
+					]),
 				]),
 			]),
 		)
@@ -627,7 +792,10 @@ export async function occurrencesBetween(
 }
 
 /** A subscription event shaped like a family event, so expansion and reminders are shared. */
-export function externalAsEvent(row: ExternalEventRow, sub: SubscriptionRow): EventRow {
+export function externalAsEvent(
+	row: ExternalEventRow,
+	sub: Pick<SubscriptionRow, 'id' | 'member_ids'>,
+): EventRow {
 	return {
 		id: `${row.subscription_id}:${row.uid}:${row.recurrence_key}`,
 		title: row.title,
@@ -640,6 +808,7 @@ export function externalAsEvent(row: ExternalEventRow, sub: SubscriptionRow): Ev
 		end_date: row.end_date,
 		time_zone: row.time_zone,
 		rrule: row.rrule,
+		series_end: row.series_end,
 		exdates: row.exdates,
 		member_ids: sub.member_ids,
 		tags: row.tags,

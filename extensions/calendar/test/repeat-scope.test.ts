@@ -3,6 +3,7 @@ import { createTestKernel, repoTranslate, type TestKernel } from '@famos/testing
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import calendar from '../src/server/index.ts';
+import { events } from '../src/server/store.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -100,6 +101,45 @@ describe('changing a saved repeating event from one date', () => {
 			epochOf('2026-10-28', '19:00', TZ),
 			epochOf('2026-11-04', '19:00', TZ),
 		]);
+	});
+
+	it('keeps the end of a series current when it is saved, ended and changed', async () => {
+		const ends = async (id: string) =>
+			(
+				await events(k.ctx.db)
+					.selectFrom('calendar_events')
+					.select('series_end')
+					.where('id', '=', id)
+					.executeTakeFirstOrThrow()
+			).series_end;
+		const id = await create({
+			...bins,
+			recurrence: { freq: 'weekly', byDay: ['TU'], until: '2026-12-01' },
+		});
+		const bound = Date.UTC(2026, 11, 1, 20, 59, 59) + 1_800_000;
+		expect(await ends(id)).toBe(bound);
+
+		const [, second] = await range('2026-10-13', '2026-10-27');
+		await k.runner.invoke(
+			'calendar.updateEvent',
+			{ id, occurrence: second.key, scope: 'following', event: whole({ date: '2026-10-21' }) },
+			admin.actor,
+		);
+		// The old series now stops the day before the occurrence the change starts at.
+		expect(await ends(id)).toBeLessThan(epochOf('2026-10-21', '00:00', TZ));
+
+		await k.runner.invoke(
+			'calendar.updateEvent',
+			{
+				id,
+				event: whole({
+					date: '2026-10-13',
+					recurrence: { freq: 'weekly', interval: 1, byDay: ['TU'] },
+				}),
+			},
+			admin.actor,
+		);
+		expect(await ends(id)).toBeNull();
 	});
 
 	it('from the first date, the whole series changes', async () => {

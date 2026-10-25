@@ -30,6 +30,8 @@ import {
 	expandRow,
 	externalAsEvent,
 	type SubscriptionRow,
+	seriesEndOf,
+	seriesReaches,
 	tagsOf,
 } from './store.ts';
 
@@ -338,6 +340,15 @@ export const refreshJob = defineJob({
 					end_date: e.endDate,
 					time_zone: e.timeZone,
 					rrule: e.rrule,
+					series_end: seriesEndOf({
+						all_day: e.allDay ? 1 : 0,
+						starts_at: e.startsAt,
+						ends_at: e.endsAt,
+						start_date: e.startDate,
+						end_date: e.endDate,
+						time_zone: e.timeZone,
+						rrule: e.rrule,
+					}),
 					exdates: e.exdates.length ? JSON.stringify(e.exdates) : null,
 					fingerprint: e.fingerprint,
 					tags: e.tags.length ? JSON.stringify(e.tags) : null,
@@ -387,7 +398,11 @@ export async function externalOccurrencesBetween(
 	to: string,
 	timeZone: string,
 ): Promise<Occurrence[]> {
-	const subs = await events(db).selectFrom('calendar_subscriptions').selectAll().execute();
+	// Never the address (`sealed_url`): a read for the agenda needs only who it belongs to and how it looks.
+	const subs = await events(db)
+		.selectFrom('calendar_subscriptions')
+		.select(['id', 'name', 'color', 'member_ids'])
+		.execute();
 	if (subs.length === 0) return [];
 	const rangeStart = dayBounds(from, timeZone).start;
 	const rangeEnd = dayBounds(to, timeZone).end;
@@ -399,12 +414,18 @@ export async function externalOccurrencesBetween(
 				eb.and([
 					eb('all_day', '=', 0),
 					eb('starts_at', '<', rangeEnd),
-					eb.or([eb('rrule', 'is not', null), eb('ends_at', '>=', rangeStart)]),
+					eb.or([
+						eb.and([eb('rrule', 'is not', null), seriesReaches(from, rangeStart)]),
+						eb('ends_at', '>=', rangeStart),
+					]),
 				]),
 				eb.and([
 					eb('all_day', '=', 1),
 					eb('start_date', '<=', to),
-					eb.or([eb('rrule', 'is not', null), eb('end_date', '>=', from)]),
+					eb.or([
+						eb.and([eb('rrule', 'is not', null), seriesReaches(from, rangeStart)]),
+						eb('end_date', '>=', from),
+					]),
 				]),
 			]),
 		)

@@ -75,6 +75,7 @@ import {
 	migrations,
 	occurrencesBetween,
 	replacementRow,
+	seriesEndOf,
 	skippedAfter,
 	sortOccurrences,
 	tagsOf,
@@ -414,13 +415,15 @@ export const updateEvent = defineAction({
 						);
 					const last = addDays(day, -1);
 					const until = rule.until && compareDates(rule.until, last) < 0 ? rule.until : last;
+					const shortened = toRRule({ ...rule, until }, row.all_day ? null : row.time_zone);
 					const kept = (row.exdates ? (JSON.parse(row.exdates) as (string | number)[]) : []).filter(
 						(e) => (row.all_day ? String(e) < occurrence : Number(e) < Number(occurrence)),
 					);
 					await events(uow.db)
 						.updateTable('calendar_events')
 						.set({
-							rrule: toRRule({ ...rule, until }, row.all_day ? null : row.time_zone),
+							rrule: shortened,
+							series_end: seriesEndOf({ ...row, rrule: shortened }),
 							exdates: kept.length ? JSON.stringify(kept) : null,
 							updated_at: now,
 						})
@@ -875,7 +878,10 @@ export const changeEvent = defineAction({
 			};
 		}
 		// A repeat rule outside the editable presets is kept as it was.
-		if (was.rrule && !was.recurrence) next.rrule = row.rrule;
+		if (was.rrule && !was.recurrence) {
+			next.rrule = row.rrule;
+			next.series_end = seriesEndOf(next);
+		}
 		const now = uow.clock.now();
 		await events(uow.db)
 			.updateTable('calendar_events')
