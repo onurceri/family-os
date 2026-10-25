@@ -2,7 +2,7 @@
 	"case": "not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,7 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I don't see an event called \"Dental cleaning\" on the calendar. There is a **Dentist checkup** for Noah on **Thursday 8 October at 9:30 AM–10:30 AM** (event `cal_event:7`). \n\nIs that the one you want to move to 10:00 AM? If so, I can change its start time to 10:00 (keeping the same duration, so it would end at 11:00).",
+			"text": "I found a \"Dentist checkup\" on Thursday 8 October at 9:30 AM for Noah. Is that the event you want to move to 10:00 AM?",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",

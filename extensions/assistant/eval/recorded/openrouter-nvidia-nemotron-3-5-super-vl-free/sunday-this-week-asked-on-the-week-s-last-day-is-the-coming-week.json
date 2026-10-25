@@ -2,7 +2,7 @@
 	"case": "Sunday: \"this week\" asked on the week's last day is the coming week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -32,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "This week includes Practise reading for Leo on Monday, 19 October, Parents' evening for Mara and Tom on Tuesday, 20 October at 18:00–19:00, Sign the school trip form for Mara on Tuesday, 20 October, Football training for Ivy on Wednesday, 21 October at 17:00–18:00, Swimming lesson for Leo on Thursday, 22 October at 16:30–17:30, Piano lesson for Ivy on Thursday, 22 October at 18:00–19:00, Dinner at Nona Marija's on Friday, 23 October at 18:30–21:00, and U13 match, Olimpija for Ivy on Saturday, 24 October at 10:00–11:00.",
+			"text": "Practise reading is on Monday, 19 October, Parents' evening from 18:00–19:00 and Sign the school trip form are on Tuesday, 20 October, Football training from 17:00–18:00 is on Wednesday, 21 October, Swimming lesson from 16:30–17:30 and Piano lesson from 18:00–19:00 are on Thursday, 22 October, Dinner at Nona Marija's from 18:30–21:00 is on Friday, 23 October, and U13 match, Olimpija from 10:00–11:00 is on Saturday, 24 October. Pick up from the pool at 17:30 on Thursday, 22 October, and bring white shirt, shin pads & water for the U13 match on Saturday, 24 October.",
 			"toolCalls": []
 		}
 	]

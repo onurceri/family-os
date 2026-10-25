@@ -2,7 +2,7 @@
 	"case": "no area: the flat papers when Home is not installed",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -55,13 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing in Records in the coming 7 days. Home is not installed here.",
+			"text": "Records has nothing in the coming 7 days. Home is not installed here.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Home is not installed here. Records show nothing from Tue, Oct 6 to Sat, Oct 31.",
+			"text": "Records shows nothing from Tue, Oct 6 to Sat, Oct 31. Home is not installed here.",
 			"toolCalls": []
 		}
 	]

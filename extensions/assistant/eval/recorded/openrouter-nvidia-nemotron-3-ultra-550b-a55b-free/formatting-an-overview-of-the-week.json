@@ -2,7 +2,7 @@
 	"case": "formatting: an overview of the week",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -33,7 +33,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "This week features Swim training for Ellie on Tuesday, October 6; Early shift for Lukas, Client meeting for Sofia, Piano lesson for Ellie, Football training for Noah, and Work dinner for Lukas on Wednesday, October 7; Dentist checkup and Swimming for Noah on Thursday, October 8; and Sunday planning on Sunday, October 11. Open tasks are buying a birthday present for Mila and booking the car service, and the shopping list includes Bread, Cheddar, Tomatoes, Pasta, and Eggs.",
+			"text": "This week includes Swim training for Ellie on Tuesday, October 6 at 6:00 PM, Early shift for Lukas on Wednesday, October 7 at 6:45 AM, Client meeting for Sofia on Wednesday, October 7 at 11:00 AM, Piano lesson for Ellie on Wednesday, October 7 at 4:00 PM, Football training for Noah on Wednesday, October 7 at 5:00 PM, Work dinner for Lukas on Wednesday, October 7 at 7:30 PM, Dentist checkup for Noah on Thursday, October 8 at 9:30 AM, Swimming for Noah on Thursday, October 8 at 5:00 PM, and Sunday planning on Sunday, October 11 at 7:30 PM. Open tasks are buying a birthday present for Mila and booking the car service, and the shopping list includes Bread, Cheddar, Tomatoes, Pasta, and Eggs.",
 			"toolCalls": []
 		}
 	]

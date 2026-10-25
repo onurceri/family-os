@@ -2,7 +2,7 @@
 	"case": "not there: anchovies on no list",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,7 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Anchovies are not on any of the shopping lists. The current lists are:\n\n- **Shopping list** – empty\n- **Groceries** – Bread, Cheddar (200 g), Tomatoes (6), Pasta, Eggs (10)\n- **Pharmacy** – Plasters\n\nThere’s no anchovies item to remove.",
+			"text": "There are no anchovies on any of the shopping lists. The current lists are:\n\n- **Shopping list** – empty\n- **Groceries** – Bread, Cheddar (200 g), Tomatoes (6), Pasta, Eggs (10)\n- **Pharmacy** – Plasters\n\nNothing to remove.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

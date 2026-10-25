@@ -2,7 +2,7 @@
 	"case": "find: swimming this week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,7 +34,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Swim training is on Tuesday, October 6, 6:00 PM–7:30 PM. Swimming is on Thursday, October 8, 5:00 PM–6:00 PM.",
+			"error": "unavailable",
 			"toolCalls": []
 		}
 	]

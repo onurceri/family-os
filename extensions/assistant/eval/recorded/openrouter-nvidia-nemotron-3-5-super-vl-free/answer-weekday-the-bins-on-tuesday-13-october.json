@@ -2,7 +2,7 @@
 	"case": "answer weekday: the bins on Tuesday 13 October",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",

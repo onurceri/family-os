@@ -2,7 +2,7 @@
 	"case": "span: nothing on this weekend, the next event is the Saturday after",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -18,11 +18,7 @@
 						],
 						"span": {
 							"said": "this weekend",
-							"kind": "weekend",
-							"day": {
-								"text": "this weekend",
-								"week": "this"
-							}
+							"kind": "weekend"
 						},
 						"people": []
 					}
@@ -32,7 +28,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the Calendar this weekend and nothing in Tasks this weekend. The next event is Date night on Saturday, October 17, 7:00 PM–8:00 PM (Sofia and Lukas).",
+			"text": "There is nothing on the calendar this weekend and nothing in tasks this weekend. The next event is Date night on Saturday, October 17.",
 			"toolCalls": []
 		}
 	]

@@ -3,14 +3,12 @@
 		"openrouter-nvidia-nemotron-3-5-super-vl-free": {
 			"label": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 			"version": "assistant.understand/1",
-			"promptHash": "16d32e9dec32b05c",
-			"date": "2026-10-21",
+			"promptHash": "ea3b50e8f16469eb",
+			"date": "2026-10-25",
 			"cases": 39,
 			"passing": [
-				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 				"not there: anchovies on no list",
 				"one date: Sunday planning on 25 October only",
-				"one date: follow-up \"Only this Sunday\"",
 				"follow-up: \"move it\" after a question moves the record the card showed",
 				"tick off: \"the bananas\" on a long list",
 				"tick off: milk already bought, oat milk open",
@@ -44,16 +42,20 @@
 				"waiting: a request from Leo and a Quick add card wait for Mara",
 				"nothing this weekend: the next event is Date night on Saturday 31 October",
 				"child: Leo (6) gets one short sentence",
-				"no ISO dates: when a task of Leo is due",
-				"pronoun: \"his\" in the second part is Leo, never a name nobody has"
+				"pronoun: \"his\" in the second part is Leo, never a name nobody has",
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+				"one date: follow-up \"Only this Sunday\""
 			],
-			"failing": {},
+			"failing": {
+				"no ISO dates: when a task of Leo is due": [
+					"understood: tasks · Leo · 2026-10-18..2026-10-24",
+					"card: every fact of the days asked about is shown"
+				]
+			},
 			"runs": 1,
 			"passCounts": {
-				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": 1,
 				"not there: anchovies on no list": 1,
 				"one date: Sunday planning on 25 October only": 1,
-				"one date: follow-up \"Only this Sunday\"": 1,
 				"follow-up: \"move it\" after a question moves the record the card showed": 1,
 				"tick off: \"the bananas\" on a long list": 1,
 				"tick off: milk already bought, oat milk open": 1,
@@ -87,22 +89,26 @@
 				"waiting: a request from Leo and a Quick add card wait for Mara": 1,
 				"nothing this weekend: the next event is Date night on Saturday 31 October": 1,
 				"child: Leo (6) gets one short sentence": 1,
-				"no ISO dates: when a task of Leo is due": 1,
-				"pronoun: \"his\" in the second part is Leo, never a name nobody has": 1
+				"no ISO dates: when a task of Leo is due": 0,
+				"pronoun: \"his\" in the second part is Leo, never a name nobody has": 1,
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": 1,
+				"one date: follow-up \"Only this Sunday\"": 1
 			},
+			"outages": [
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
+				"one date: follow-up \"Only this Sunday\""
+			],
 			"cost": 0
 		},
 		"openrouter-nvidia-nemotron-3-ultra-550b-a55b-free": {
 			"label": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 			"version": "assistant.understand/1",
-			"promptHash": "16d32e9dec32b05c",
-			"date": "2026-10-21",
+			"promptHash": "ea3b50e8f16469eb",
+			"date": "2026-10-25",
 			"cases": 39,
 			"passing": [
-				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 				"not there: anchovies on no list",
 				"one date: Sunday planning on 25 October only",
-				"one date: follow-up \"Only this Sunday\"",
 				"follow-up: \"move it\" after a question moves the record the card showed",
 				"tick off: \"the bananas\" on a long list",
 				"tick off: milk already bought, oat milk open",
@@ -118,7 +124,6 @@
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)",
 				"duplicate: a present for Mila is already a task",
 				"duplicate: sandpaper is already on the Hardware store list",
-				"remove: the cheddar is on the list (without naming the list)",
 				"honesty: calendar off for the AI, asked to add an appointment",
 				"formatting: an overview of the week",
 				"Turkish: add milk and eggs",
@@ -137,15 +142,23 @@
 				"nothing this weekend: the next event is Date night on Saturday 31 October",
 				"child: Leo (6) gets one short sentence",
 				"no ISO dates: when a task of Leo is due",
-				"pronoun: \"his\" in the second part is Leo, never a name nobody has"
+				"pronoun: \"his\" in the second part is Leo, never a name nobody has",
+				"remove: the cheddar is on the list (without naming the list)"
 			],
-			"failing": {},
+			"failing": {
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": [
+					"reply says /\\b(no|not|isn't|couldn't|can't|cannot|don't|didn't|doesn't)\\b/i"
+				],
+				"one date: follow-up \"Only this Sunday\"": [
+					"drafted calendar.changeEvent: Sunday planning on 2026-10-11 to 18:00"
+				]
+			},
 			"runs": 1,
 			"passCounts": {
-				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": 1,
+				"not there: \"Dental cleaning\" when only \"Dentist checkup\" exists": 0,
 				"not there: anchovies on no list": 1,
 				"one date: Sunday planning on 25 October only": 1,
-				"one date: follow-up \"Only this Sunday\"": 1,
+				"one date: follow-up \"Only this Sunday\"": 0,
 				"follow-up: \"move it\" after a question moves the record the card showed": 1,
 				"tick off: \"the bananas\" on a long list": 1,
 				"tick off: milk already bought, oat milk open": 1,
@@ -161,7 +174,6 @@
 				"weekday: 20 October is a Tuesday (known failure: the model takes the weekday it was given)": 1,
 				"duplicate: a present for Mila is already a task": 1,
 				"duplicate: sandpaper is already on the Hardware store list": 1,
-				"remove: the cheddar is on the list (without naming the list)": 1,
 				"honesty: calendar off for the AI, asked to add an appointment": 1,
 				"formatting: an overview of the week": 1,
 				"Turkish: add milk and eggs": 1,
@@ -180,8 +192,12 @@
 				"nothing this weekend: the next event is Date night on Saturday 31 October": 1,
 				"child: Leo (6) gets one short sentence": 1,
 				"no ISO dates: when a task of Leo is due": 1,
-				"pronoun: \"his\" in the second part is Leo, never a name nobody has": 1
+				"pronoun: \"his\" in the second part is Leo, never a name nobody has": 1,
+				"remove: the cheddar is on the list (without naming the list)": 1
 			},
+			"outages": [
+				"remove: the cheddar is on the list (without naming the list)"
+			],
 			"cost": 0
 		}
 	}

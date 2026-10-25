@@ -2,7 +2,7 @@
 	"case": "span: nothing open for Ellie this weekend",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -35,7 +35,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing open this weekend. The next task is Tuesday, October 13: Fractions worksheet (Ellie).",
+			"text": "Your calendar shows nothing this weekend, and your tasks also show nothing this weekend.",
 			"toolCalls": []
 		}
 	]

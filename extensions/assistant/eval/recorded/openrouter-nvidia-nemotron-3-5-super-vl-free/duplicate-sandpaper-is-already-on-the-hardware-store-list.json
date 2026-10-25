@@ -2,7 +2,7 @@
 	"case": "duplicate: sandpaper is already on the Hardware store list",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,7 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Add shopping items: Sandpaper. It will be added once someone in the household approves it. It may already be on the list.",
+			"text": "Suggested, not added yet: Add shopping items: Sandpaper. It appears once someone in the household approves it. It may already be there (Sandpaper).",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",

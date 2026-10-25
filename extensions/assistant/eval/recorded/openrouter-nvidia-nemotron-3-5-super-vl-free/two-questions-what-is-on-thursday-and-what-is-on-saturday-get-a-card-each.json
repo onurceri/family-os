@@ -2,7 +2,7 @@
 	"case": "two questions: \"What is on Thursday? And what is on Saturday?\" get a card each",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -49,13 +49,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Thursday, Noah has a Dentist checkup from 9:30 AM to 10:30 AM and Swimming from 5:00 PM to 6:00 PM. There are no tasks on Thursday.",
+			"text": "On Thursday, October 8, Noah has a Dentist checkup from 9:30 AM–10:30 AM and Swimming from 5:00 PM–6:00 PM. There are no tasks on Thursday, October 8.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on Saturday, October 10 in Calendar, and nothing on Saturday, October 10 in Tasks.",
+			"text": "There is nothing on Saturday for Calendar. There is nothing on Saturday for Tasks.",
 			"toolCalls": []
 		}
 	]

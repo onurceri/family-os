@@ -2,7 +2,7 @@
 	"case": "bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -27,6 +27,9 @@
 							{
 								"said": "me"
 							}
+						],
+						"about": [
+							"put the bins out"
 						]
 					}
 				]
@@ -35,15 +38,15 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a reminder for **Tuesday, 13 October at 8:00 AM** to put the bins out. The suggestion is waiting for approval in Quick add.",
+			"text": "I've suggested a reminder for you to put the bins out on Tuesday 13 October at 8:00 AM. It's waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
-						"dueDate": "2026-10-13",
+						"title": "Put the bins out",
 						"dueTime": "08:00",
-						"assigneeId": "member:2",
-						"title": "Put the bins out"
+						"dueDate": "2026-10-13",
+						"assigneeId": "member:2"
 					}
 				}
 			]

@@ -2,7 +2,7 @@
 	"case": "reminder: \"Remind me to pack the football kit\" is suggested, not created",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -39,7 +39,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a task: Pack the football kit for Thursday 8 October. It's waiting for someone in the household to approve it before it's added.",
+			"text": "Suggested, not added yet: Add a task: Pack the football kit for 2026-10-08. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
@@ -47,7 +47,7 @@
 						"title": "Pack the football kit",
 						"assigneeId": "member:2",
 						"dueDate": "2026-10-08",
-						"notes": "Reminder for Thursday"
+						"notes": "Reminder to pack Noah's football kit on Thursday"
 					}
 				}
 			]

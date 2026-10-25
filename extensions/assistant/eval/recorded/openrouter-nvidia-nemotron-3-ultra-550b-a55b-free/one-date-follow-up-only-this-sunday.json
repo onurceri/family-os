@@ -2,7 +2,7 @@
 	"case": "one date: follow-up \"Only this Sunday\"",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,24 +34,23 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested moving the \"Sunday planning\" event on Sunday, October 11 from 7:30 PM to 6:00 PM (ending at 6:30 PM). This change is waiting for someone in the household to approve it in Quick add.",
+			"text": "I've suggested moving the \"Sunday planning\" event on Sunday, October 11 to 6:00 PM. This is a suggestion waiting for someone in the household to approve it in Quick add.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"from": "2026-10-11",
 						"text": "planning",
+						"from": "2026-10-11",
 						"to": "2026-10-11"
 					}
 				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
-						"label": "Sunday planning",
-						"id": "cal_event:1",
-						"endTime": "18:30",
+						"occurrence": "1791739800000",
 						"startTime": "18:00",
-						"occurrence": "1791739800000"
+						"id": "cal_event:1",
+						"label": "Sunday planning"
 					}
 				}
 			]
@@ -75,7 +74,10 @@
 								"weekday": 7
 							}
 						},
-						"people": []
+						"people": [],
+						"about": [
+							"planning"
+						]
 					}
 				]
 			}
@@ -83,18 +85,8 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested moving only this Sunday's \"Sunday planning\" (Sunday, October 11) to 6:00 PM. This change is waiting for someone in the household to approve it in Quick add.\n\nSuggested, not added yet: Change an event: Sunday planning",
-			"toolCalls": [
-				{
-					"name": "calendar_changeEvent",
-					"input": {
-						"startTime": "18:00",
-						"occurrence": "2026-10-11",
-						"label": "Sunday planning",
-						"id": "cal_event:1"
-					}
-				}
-			]
+			"text": "Yes, the suggestion I made is for only this Sunday, October 11. The change targets just that one occurrence; the recurring series continues unchanged for other Sundays.\n\nSuggested, not added yet: Change an event: Sunday planning",
+			"toolCalls": []
 		}
 	]
 }

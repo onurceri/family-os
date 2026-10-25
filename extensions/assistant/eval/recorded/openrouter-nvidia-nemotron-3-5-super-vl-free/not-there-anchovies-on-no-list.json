@@ -2,7 +2,7 @@
 	"case": "not there: anchovies on no list",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,32 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "change",
-						"quote": "Remove the anchovies from the shopping list",
-						"topics": [
-							"shopping"
-						],
-						"people": [],
-						"about": [
-							"anchovies"
-						]
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "I checked all the family shopping lists, and anchovies is not on any of them.",
+			"text": "I checked the shopping lists, and anchovies are not on any of them. The lists I can see are:\n\n- Shopping list — empty\n- Groceries — Bread, Cheddar, Tomatoes, Pasta, Eggs\n- Pharmacy — Plasters\n\nSo there's nothing to remove.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",

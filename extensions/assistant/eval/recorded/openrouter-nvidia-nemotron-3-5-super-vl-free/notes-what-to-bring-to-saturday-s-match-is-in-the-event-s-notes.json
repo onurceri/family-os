@@ -2,7 +2,7 @@
 	"case": "notes: what to bring to Saturday's match is in the event's notes",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -39,7 +39,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Bring white shirt, shin pads & water for the U13 match, Olimpija (Ivy) on Saturday.",
+			"text": "For the U13 match, Olimpija (Ivy) on Saturday, bring white shirt, shin pads & water.",
 			"toolCalls": []
 		}
 	]

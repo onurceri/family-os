@@ -2,7 +2,7 @@
 	"case": "pronoun: \"his\" in the second part is Leo, never a name nobody has",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Leo has a Swimming lesson (Leo) on Thursday, 22 October, a Dinner at Nona Marija's on Friday, 23 October, and a Practise reading (Leo) task on Monday, 19 October. The facts do not indicate any open items for Leo.",
+			"error": "timeout",
 			"toolCalls": []
 		}
 	]

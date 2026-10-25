@@ -2,7 +2,7 @@
 	"case": "follow-up: \"move it\" after a question moves the record the card showed",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,7 +34,32 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The Dentist checkup (Noah) is on Thursday, October 8 from 9:30 AM to 10:30 AM.",
+			"text": "The Dentist checkup (Noah) is on Thursday, October 8 from 9:30 AM–10:30 AM.",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Yes, move it to 10:00 please.",
+						"topics": [
+							"calendar"
+						],
+						"people": [],
+						"about": [
+							"dentist"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "unavailable",
 			"toolCalls": []
 		},
 		{

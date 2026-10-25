@@ -2,7 +2,7 @@
 	"case": "request and question: \"Add milk and what is for dinner tonight?\"",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -45,15 +45,14 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I suggested adding milk to the shopping list. It's waiting for someone in the household to approve it.",
+			"text": "I've suggested adding milk to the shopping list. It's waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",
 					"input": {
 						"items": [
 							{
-								"title": "Milk",
-								"category": "dairy"
+								"title": "Milk"
 							}
 						]
 					}

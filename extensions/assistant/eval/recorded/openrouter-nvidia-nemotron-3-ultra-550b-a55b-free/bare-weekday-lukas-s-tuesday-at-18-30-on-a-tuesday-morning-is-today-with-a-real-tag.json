@@ -2,7 +2,7 @@
 	"case": "bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -55,21 +55,21 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The Calendar shows nothing on Saturday, October 10, and the Tasks also show nothing on Saturday, October 10.",
+			"text": "There is nothing on Saturday, October 10.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I suggested a task for you: \"Pick Noah up after football\" on Tuesday 6 October at 6:30 PM. It's waiting for someone in the household to approve it.",
+			"text": "I suggested a reminder for you: \"Pick Noah up after football\" on Tuesday 6 October at 6:30 PM. It’s waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
 						"dueTime": "18:30",
-						"assigneeId": "member:2",
 						"title": "Pick Noah up after football",
-						"dueDate": "2026-10-06"
+						"dueDate": "2026-10-06",
+						"assigneeId": "member:2"
 					}
 				}
 			]

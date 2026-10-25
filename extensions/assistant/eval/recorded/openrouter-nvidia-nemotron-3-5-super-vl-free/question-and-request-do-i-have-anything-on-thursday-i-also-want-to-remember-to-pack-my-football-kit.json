@@ -2,7 +2,7 @@
 	"case": "question and request: \"Do I have anything on Thursday? I also want to remember to pack my football kit\"",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -53,76 +53,18 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "You have a Piano lesson on Thursday, 22 October from 18:00–19:00. You have no tasks on Thursday, 22 October.",
+			"error": "unavailable",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "ask",
-						"quote": "Do I have anything on Thursday?",
-						"topics": [
-							"calendar",
-							"tasks"
-						],
-						"span": {
-							"said": "on Thursday",
-							"kind": "day",
-							"day": {
-								"text": "Thursday",
-								"weekday": 4
-							}
-						},
-						"people": [
-							{
-								"said": "I"
-							}
-						],
-						"about": []
-					},
-					{
-						"intent": "change",
-						"quote": "I also want to remember to pack my football kit",
-						"topics": [
-							"tasks"
-						],
-						"people": [
-							{
-								"said": "I"
-							}
-						],
-						"about": [
-							"pack",
-							"football kit"
-						]
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "You have a Piano lesson on Thursday, 22 October from 18:00–19:00. There are no tasks on Thursday, 22 October.",
-			"toolCalls": []
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "I suggested adding a task to pack your football kit. It's waiting for someone else in the household to approve it before it's added.",
+			"text": "Suggested, not added yet: Add a task: Pack my football kit. It appears once someone else in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
-						"title": "Pack football kit",
+						"title": "Pack my football kit",
 						"assigneeId": "member:3"
 					}
 				}

@@ -2,7 +2,7 @@
 	"case": "no area: the flat papers when Home is not installed",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -15,7 +15,10 @@
 						"topics": [
 							"home"
 						],
-						"people": []
+						"people": [],
+						"about": [
+							"flat papers"
+						]
 					},
 					{
 						"intent": "ask",
@@ -23,7 +26,10 @@
 						"topics": [
 							"records"
 						],
-						"people": []
+						"people": [],
+						"about": [
+							"flat"
+						]
 					}
 				]
 			}
@@ -31,13 +37,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The facts only state that Home is not installed here and do not mention where flat papers are kept.",
+			"text": "Home is not installed here.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The facts only cover the coming 7 days, Tue, Oct 6 – Mon, Oct 12, and show nothing due in that period. There is no information about the rest of the month.",
+			"error": "timeout",
 			"toolCalls": []
 		}
 	]

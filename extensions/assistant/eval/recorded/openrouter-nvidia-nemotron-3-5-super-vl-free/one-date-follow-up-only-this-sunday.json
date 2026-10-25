@@ -2,7 +2,7 @@
 	"case": "one date: follow-up \"Only this Sunday\"",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -34,14 +34,12 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested moving Sunday planning (Sunday 11 October) from 19:30 to 18:00. It's waiting for someone in the household to approve it before it's added to the calendar.",
+			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"text": "planning",
-						"from": "2026-10-06",
-						"to": "2026-10-11"
+						"text": "Sunday planning"
 					}
 				},
 				{
@@ -55,6 +53,11 @@
 					}
 				}
 			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"error": "unavailable"
 		},
 		{
 			"kind": "object",
@@ -84,7 +87,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Change an event: Sunday planning. It appears once someone in the household approves it.",
+			"error": "unavailable",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -92,16 +95,6 @@
 						"text": "Sunday planning",
 						"from": "2026-10-06",
 						"to": "2026-10-11"
-					}
-				},
-				{
-					"name": "calendar_changeEvent",
-					"input": {
-						"id": "cal_event:1",
-						"occurrence": "1791739800000",
-						"startTime": "18:00",
-						"endTime": "19:00",
-						"label": "Sunday planning"
 					}
 				}
 			]

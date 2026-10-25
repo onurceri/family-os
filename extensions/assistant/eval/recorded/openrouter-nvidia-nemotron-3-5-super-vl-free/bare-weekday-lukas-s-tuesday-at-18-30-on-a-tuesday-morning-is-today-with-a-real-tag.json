@@ -2,7 +2,7 @@
 	"case": "bare weekday: Lukas's \"Tuesday at 18:30\" on a Tuesday morning is today, with a real tag",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,14 +26,10 @@
 						"people": [
 							{
 								"said": "me"
-							},
-							{
-								"said": "Noah"
 							}
 						],
 						"about": [
-							"pick up",
-							"football"
+							"pick Noah up after football"
 						]
 					},
 					{
@@ -59,77 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on Saturday, October 10 in Calendar. There is nothing on Saturday, October 10 in Tasks.",
+			"text": "There is nothing on Saturday for Calendar or Tasks.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "change",
-						"quote": "Remind me on Tuesday at 18:30 to pick Noah up after football",
-						"topics": [
-							"tasks"
-						],
-						"span": {
-							"said": "on Tuesday",
-							"kind": "day",
-							"day": {
-								"text": "Tuesday",
-								"weekday": 2
-							}
-						},
-						"people": [
-							{
-								"said": "me"
-							},
-							{
-								"said": "Noah"
-							}
-						],
-						"about": [
-							"pick up",
-							"football"
-						]
-					},
-					{
-						"intent": "ask",
-						"quote": "what is on Saturday?",
-						"topics": [
-							"calendar",
-							"tasks"
-						],
-						"span": {
-							"said": "Saturday",
-							"kind": "day",
-							"day": {
-								"text": "Saturday",
-								"weekday": 6
-							}
-						},
-						"people": []
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "There is nothing on Saturday, October 10 in Calendar. There is nothing on Saturday, October 10 in Tasks.",
-			"toolCalls": []
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Add a task: Pick Noah up after football for 2026-10-06. It appears once someone in the household approves it.",
+			"text": "I suggested a task: Pick Noah up after football for Tuesday 6 October at 6:30 PM. It's waiting for someone in the household to approve it before it's added.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
@@ -138,7 +70,7 @@
 						"assigneeId": "member:2",
 						"dueDate": "2026-10-06",
 						"dueTime": "18:30",
-						"notes": "Reminder to pick Noah up after football"
+						"notes": "Reminder for Tuesday 6 October at 6:30 PM"
 					}
 				}
 			]

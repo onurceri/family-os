@@ -2,7 +2,7 @@
 	"case": "bare weekday: Ellie's \"on Tuesday\" on a Tuesday is today",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -38,20 +38,14 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a reminder for you to pack your swim bag today (Tuesday, October 6). The suggestion is waiting for another family member to approve it — you can't approve your own suggestions. Once approved, it'll appear on your task list.",
+			"text": "I've suggested a reminder for you to pack your swim bag on Tuesday, October 6. The suggestion is waiting for someone else in the household to approve it before it's added.",
 			"toolCalls": [
-				{
-					"name": "lists_openTasks",
-					"input": {
-						"assignee": "member:3"
-					}
-				},
 				{
 					"name": "lists_addTask",
 					"input": {
-						"title": "Pack swim bag",
 						"dueDate": "2026-10-06",
-						"assigneeId": "member:3"
+						"assigneeId": "member:3",
+						"title": "Pack swim bag"
 					}
 				}
 			]

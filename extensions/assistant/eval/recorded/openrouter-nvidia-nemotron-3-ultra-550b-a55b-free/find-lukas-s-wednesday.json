@@ -2,7 +2,7 @@
 	"case": "find: Lukas's Wednesday",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -35,7 +35,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Wednesday, October 7 you have an Early shift from 6:45 AM to 3:15 PM and a Work dinner from 7:30 PM to 9:30 PM.",
+			"text": "On Wednesday, October 7, Lukas has an Early shift from 6:45 AM to 3:15 PM and a Work dinner from 7:30 PM to 9:30 PM.",
 			"toolCalls": []
 		}
 	]

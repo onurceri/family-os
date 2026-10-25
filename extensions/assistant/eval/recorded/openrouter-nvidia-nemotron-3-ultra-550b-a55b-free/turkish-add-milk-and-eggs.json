@@ -2,7 +2,7 @@
 	"case": "Turkish: add milk and eggs",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -23,7 +23,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Süt ve yumurta alışveriş listesine eklenmek üzere öneri oluşturuldu. Bu öneri henüz onaylanmadı; aileden biri onayladığında listeye eklenecek.",
+			"text": "Süt ve yumurta alışveriş listesine eklenmek üzere öneri oluşturuldu. Bu öneri bir aile üyesi onaylayana kadar listeye eklenmeyecek.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",

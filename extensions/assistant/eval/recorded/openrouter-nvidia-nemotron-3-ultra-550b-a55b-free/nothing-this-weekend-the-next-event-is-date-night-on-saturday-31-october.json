@@ -2,7 +2,7 @@
 	"case": "nothing this weekend: the next event is Date night on Saturday 31 October",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The calendar shows nothing this weekend, with the next event being Date night on Saturday, 31 October at 19:00–20:00. Tasks also show nothing this weekend.",
+			"text": "Calendar and tasks show nothing this weekend; the next event is Date night on Saturday, 31 October at 19:00–20:00.",
 			"toolCalls": []
 		}
 	]

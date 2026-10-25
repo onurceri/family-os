@@ -2,7 +2,7 @@
 	"case": "answer weekday: the bins on Tuesday 13 October",
 	"model": "openrouter / nvidia/nemotron-3-ultra-550b-a55b:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -24,10 +24,7 @@
 								"inDays": 0
 							}
 						},
-						"people": [],
-						"about": [
-							"bins going out"
-						]
+						"people": []
 					},
 					{
 						"intent": "ask",
@@ -56,7 +53,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Take out the bins is next Tuesday, October 13.",
+			"text": "The bins go out Tuesday, October 13, not tonight.",
 			"toolCalls": []
 		},
 		{

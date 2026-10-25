@@ -2,7 +2,7 @@
 	"case": "child: Leo (6) gets one short sentence",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "You have Practise reading Monday, Swimming lesson Thursday, Dinner at Nona Marija's Friday.",
+			"text": "You have Practise reading Monday, Swimming lesson Thursday, and Dinner at Nona Marija's Friday.",
 			"toolCalls": []
 		}
 	]

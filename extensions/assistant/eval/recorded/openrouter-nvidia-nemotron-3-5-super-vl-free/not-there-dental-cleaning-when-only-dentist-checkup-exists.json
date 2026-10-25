@@ -2,7 +2,7 @@
 	"case": "not there: \"Dental cleaning\" when only \"Dentist checkup\" exists",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -26,25 +26,37 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I don't see an event called \"Dental cleaning\" on the family calendar. There is a **Dentist checkup** on Thursday 8 October at 9:30 AM for Noah — is that the one you'd like moved to 10:00?",
+			"error": "timeout",
+			"toolCalls": []
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Change Dental cleaning to 10:00",
+						"topics": [
+							"calendar"
+						],
+						"people": [],
+						"about": [
+							"Dental cleaning"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"error": "unavailable",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
 					"input": {
 						"text": "Dental cleaning"
-					}
-				},
-				{
-					"name": "calendar_findEvents",
-					"input": {
-						"text": "Dental"
-					}
-				},
-				{
-					"name": "calendar_findEvents",
-					"input": {
-						"from": "2026-10-06",
-						"to": "2026-10-11"
 					}
 				}
 			]

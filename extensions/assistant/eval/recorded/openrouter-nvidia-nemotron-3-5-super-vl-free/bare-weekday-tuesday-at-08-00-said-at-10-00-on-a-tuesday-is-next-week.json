@@ -2,7 +2,7 @@
 	"case": "bare weekday: \"Tuesday at 08:00\" said at 10:00 on a Tuesday is next week",
 	"model": "openrouter / nvidia/nemotron-3.5-super-vl:free",
 	"version": "assistant.understand/1",
-	"promptHash": "16d32e9dec32b05c",
+	"promptHash": "ea3b50e8f16469eb",
 	"answers": [
 		{
 			"kind": "object",
@@ -38,12 +38,8 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I suggested a task: Put the bins out for Tuesday 13 October at 08:00. It's waiting for someone in the household to approve it before it's added.",
+			"text": "I've suggested a task: \"Put the bins out\" for Tuesday 13 October at 08:00, assigned to you. It's waiting for someone in the household to approve it before it's added.",
 			"toolCalls": [
-				{
-					"name": "lists_openTasks",
-					"input": {}
-				},
 				{
 					"name": "lists_addTask",
 					"input": {
@@ -51,7 +47,7 @@
 						"assigneeId": "member:2",
 						"dueDate": "2026-10-13",
 						"dueTime": "08:00",
-						"notes": "Reminder to put the bins out on Tuesday at 08:00"
+						"notes": "Reminder for Tuesday 08:00"
 					}
 				}
 			]
