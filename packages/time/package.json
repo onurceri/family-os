@@ -13,6 +13,6 @@
 	"dependencies": {
 		"rrule-temporal": "2.2.8",
 		"temporal-polyfill": "1.0.5",
-		"zod": "4.6.5"
+		"zod": "catalog:"
 	}
 }

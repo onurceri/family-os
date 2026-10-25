@@ -162,6 +162,27 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@lucide/svelte':
+      specifier: 1.52.0
+      version: 1.52.0
+    kysely:
+      specifier: 0.29.6
+      version: 0.29.6
+    svelte:
+      specifier: 5.57.1
+      version: 5.57.1
+    svelte-check:
+      specifier: 4.7.6
+      version: 4.7.6
+    typescript:
+      specifier: 6.0.3
+      version: 6.0.3
+    zod:
+      specifier: 4.6.5
+      version: 4.6.5
+
 importers:
 
   .:
@@ -251,7 +272,7 @@ importers:
         specifier: 4.13.13
         version: 4.13.13
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       punycode:
         specifier: 2.3.1
@@ -263,7 +284,7 @@ importers:
         specifier: 8.22.0
         version: 8.22.0
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -306,7 +327,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       i18next:
         specifier: 26.4.2
@@ -315,7 +336,7 @@ importers:
         specifier: 0.1.3
         version: 0.1.3
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -334,16 +355,16 @@ importers:
         specifier: 4.3.3
         version: 4.3.3(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
       vite:
         specifier: 8.3.2
@@ -364,13 +385,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-calendar':
@@ -383,13 +404,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/assistant:
@@ -410,13 +431,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-calendar':
@@ -441,16 +462,16 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       tsx:
         specifier: 4.23.15
         version: 4.23.15
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/board:
@@ -468,13 +489,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -484,13 +505,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/calendar:
@@ -508,16 +529,16 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       ical.js:
         specifier: 2.2.1
         version: 2.2.1
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -527,13 +548,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/chores:
@@ -551,13 +572,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -567,13 +588,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/home:
@@ -594,13 +615,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-inbox':
@@ -613,13 +634,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/homeassistant:
@@ -634,13 +655,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -650,13 +671,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/inbox:
@@ -677,13 +698,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-calendar':
@@ -702,16 +723,16 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       tsx:
         specifier: 4.23.15
         version: 4.23.15
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/kitchen:
@@ -732,13 +753,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -748,13 +769,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/lists:
@@ -772,13 +793,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -788,13 +809,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/pets:
@@ -815,13 +836,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-calendar':
@@ -837,13 +858,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/records:
@@ -861,13 +882,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/pack':
@@ -877,13 +898,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   extensions/vehicles:
@@ -904,13 +925,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@lucide/svelte':
-        specifier: 1.52.0
+        specifier: 'catalog:'
         version: 1.52.0(svelte@5.57.1)
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/ext-calendar':
@@ -926,13 +947,13 @@ importers:
         specifier: workspace:*
         version: link:../../packages/testing
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   packages/adapters:
@@ -965,13 +986,13 @@ importers:
         specifier: 2.2.6
         version: 2.2.6
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       postal-mime:
         specifier: 4.0.4
         version: 4.0.4
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/db':
@@ -997,10 +1018,10 @@ importers:
         specifier: workspace:*
         version: link:../time
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@famos/adapters':
@@ -1019,7 +1040,7 @@ importers:
         specifier: 13.0.3
         version: 13.0.3
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       tar:
         specifier: 7.5.22
@@ -1035,7 +1056,7 @@ importers:
         specifier: 26.4.2
         version: 26.4.2(typescript@6.0.3)
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/pack:
@@ -1065,7 +1086,7 @@ importers:
         specifier: 0.28.2
         version: 0.28.2
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       tailwindcss:
         specifier: 4.3.3
@@ -1078,16 +1099,16 @@ importers:
         version: 8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
     devDependencies:
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/sdk:
     dependencies:
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/testing:
@@ -1108,14 +1129,14 @@ importers:
         specifier: workspace:*
         version: link:../sdk
       kysely:
-        specifier: 0.29.6
+        specifier: 'catalog:'
         version: 0.29.6
       vitest:
         specifier: 5.0.3
         version: 5.0.3(@types/node@26.6.4)(happy-dom@20.14.5)(vite@8.3.2(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
     devDependencies:
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/themes:
@@ -1124,7 +1145,7 @@ importers:
         specifier: workspace:*
         version: link:../i18n
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/time:
@@ -1136,7 +1157,7 @@ importers:
         specifier: 1.0.5
         version: 1.0.5
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
 
   packages/ui:
@@ -1173,13 +1194,13 @@ importers:
         specifier: 1.7.0
         version: 1.7.0(svelte@5.57.1)
       svelte:
-        specifier: 5.57.1
+        specifier: 'catalog:'
         version: 5.57.1
       svelte-check:
-        specifier: 4.7.6
+        specifier: 'catalog:'
         version: 4.7.6(picomatch@4.0.7)(svelte@5.57.1)(typescript@6.0.3)
       typescript:
-        specifier: 6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
       vite:
         specifier: 8.3.2
@@ -1323,24 +1344,28 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@biomejs/cli-linux-arm64@2.5.15':
     resolution: {integrity: sha512-XaG7P7eeSLYETD3K9grfB0mQmpLQZjygdbsxekWBJAg4am79fGAtRpfRyNnTvXB2fZFNnJZG3nXm7HBat0+VUw==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@biomejs/cli-linux-x64-musl@2.5.15':
     resolution: {integrity: sha512-IlxUcyxilVGPsE008x13pWdkTbU3nQpP2i9b5UrbOYj6goBkKsRX1XB7yJLcV+O1H9LBchIIm4adOaVLZBX0ZQ==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@biomejs/cli-linux-x64@2.5.15':
     resolution: {integrity: sha512-xE4iEW/3LqlYj9GFgGrFsFSH51dEEpUbYWBfeOv0q87WkUDxK2o/HhreSb7qMJqck70RVM6Lg96hgedcAYcOkA==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@biomejs/cli-win32-arm64@2.5.15':
     resolution: {integrity: sha512-2kPKzhNlm8C+Ru3GcO0Me2ODkCBLrVOUNuyi84RJyWDVKAA4+Kjj3jMjL938lF6BRfvltC4vB2nPY9SvN51Ovg==}
@@ -1681,36 +1706,42 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@rolldown/binding-linux-arm64-musl@1.2.13':
     resolution: {integrity: sha512-xU+Kvv9N2A3SY35zFh1FWWNjxbadE/BKeqnkXe7vScU4GZsw757BlVmDLITZEq8DPpk6m7uoDYkK7P+x/uU5Ow==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@rolldown/binding-linux-ppc64-gnu@1.2.13':
     resolution: {integrity: sha512-XMk/hnhh25oQ756Lclb1Q11h4ll0xC0Esa5w4Vzp+mAE2S3AGJgeM0SonrIgY8fHhjarb6hcoTuwoFG0VVP2ig==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
+    libc: [glibc]
 
   '@rolldown/binding-linux-s390x-gnu@1.2.13':
     resolution: {integrity: sha512-U1BoTHYmlywE2n3HUWjzZ+8EQsKr+OwpxYuDWaubx42tUL8QSL7nOqRz/NVHanibbFP3M1Rxuprz/wNcbMKjqw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
+    libc: [glibc]
 
   '@rolldown/binding-linux-x64-gnu@1.2.13':
     resolution: {integrity: sha512-J4cm80Pc6wEwV5AZ42o62sIQgDk+Y7R2s646jIwuvO+4V46QB58N4vVuMPWCBaNgursXLpmUWJV//WQAkPvHBQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@rolldown/binding-linux-x64-musl@1.2.13':
     resolution: {integrity: sha512-W0euZS40U4V6JkmEnVCIX9mcsL6cbXQ4X8c2w+MMOIjFg68TXUW+u3RT+2e1t1pv9mg/EP3pDtK3POXdQ7Rxyw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@rolldown/binding-openharmony-arm64@1.2.13':
     resolution: {integrity: sha512-do/AF/4n9MRshia3a5aXoy8xM2c6mgfT6D7H/dY6my5z+hfCIR4ab7mk4IRj++nsEQpKy39kd0DQnDq+r692tw==}
@@ -1814,24 +1845,28 @@ packages:
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@tailwindcss/oxide-linux-arm64-musl@4.3.3':
     resolution: {integrity: sha512-Md44bD6veX/PC5iyF8cDVnw4HBIANZepRZZ7a8DQOvkfo5WUBwcp6iAuCUz23u+4SUkhJlD3eL7hNdW8ezd/kA==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@tailwindcss/oxide-linux-x64-gnu@4.3.3':
     resolution: {integrity: sha512-tx7us1muwOKAKWao2v/GaafFeQboE6aj88vC6ziN2NCGcRm8gWUhwjzg+YdVB1e4boAtdtma4L43onunI6NS4w==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@tailwindcss/oxide-linux-x64-musl@4.3.3':
     resolution: {integrity: sha512-SJxX60smvHgasZoBy11dX6YRjXJFovwWBoedhbQPOBzgFWBHGB+TVPWB9BxzR7TTxU8FQZAI2AyiNCMzFm8Img==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@tailwindcss/oxide-wasm32-wasi@4.3.3':
     resolution: {integrity: sha512-jx1+rPhY/5Ympkktd656HBWEBLxP7dH06losBLjjf5vgCODXvi9KhtftWcMIwTFIDqBr7cRnQkdLnAG+IOlGvQ==}
@@ -2455,48 +2490,56 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   lightningcss-linux-arm64-gnu@1.33.0:
     resolution: {integrity: sha512-j2v/itmy4HlNxlc6voKXYgBqNi0Ng2LShg4z7GufpEgs05P+2suBVyi9I6YHq5uoVFx9ETin3eCEhLVyXGQnKg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   lightningcss-linux-arm64-musl@1.32.0:
     resolution: {integrity: sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   lightningcss-linux-arm64-musl@1.33.0:
     resolution: {integrity: sha512-yiO5ROMuYQgXbC60yjZU5CYSFZGKXL0HFATXt9mHJn1+zW55oCtMI9NfcVhYLMFDL7gV7oBPon/EmMMGg2OvtQ==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   lightningcss-linux-x64-gnu@1.32.0:
     resolution: {integrity: sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   lightningcss-linux-x64-gnu@1.33.0:
     resolution: {integrity: sha512-ar+Ju7LmcN0Jo4FpL4hpFybwNG9/3A/Br5KW2n2jyODg3MEZXaDYADdemoNS+BDNfMgKvylJLj4S5tyRActuAg==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   lightningcss-linux-x64-musl@1.32.0:
     resolution: {integrity: sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   lightningcss-linux-x64-musl@1.33.0:
     resolution: {integrity: sha512-RYiYbkokw0trfKqqzfF55lginwEPrD3OJDfTuJzFs1MK6iFnDenaz1fqLLtX4ITG3OktJQXOeTaw1awrBAlZPw==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   lightningcss-win32-arm64-msvc@1.32.0:
     resolution: {integrity: sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw==}

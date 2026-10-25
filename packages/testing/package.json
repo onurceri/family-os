@@ -17,10 +17,10 @@
 		"@famos/db": "workspace:*",
 		"@famos/i18n": "workspace:*",
 		"@famos/sdk": "workspace:*",
-		"kysely": "0.29.6",
+		"kysely": "catalog:",
 		"vitest": "5.0.3"
 	},
 	"devDependencies": {
-		"zod": "4.6.5"
+		"zod": "catalog:"
 	}
 }

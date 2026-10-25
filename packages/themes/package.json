@@ -13,6 +13,6 @@
 	},
 	"dependencies": {
 		"@famos/i18n": "workspace:*",
-		"zod": "4.6.5"
+		"zod": "catalog:"
 	}
 }

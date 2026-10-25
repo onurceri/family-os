@@ -26,12 +26,12 @@
 		"@tailwindcss/node": "4.3.3",
 		"@tailwindcss/oxide": "4.3.3",
 		"esbuild": "0.28.2",
-		"svelte": "5.57.1",
+		"svelte": "catalog:",
 		"tailwindcss": "4.3.3",
 		"tar": "7.5.22",
 		"vite": "8.3.2"
 	},
 	"devDependencies": {
-		"zod": "4.6.5"
+		"zod": "catalog:"
 	}
 }

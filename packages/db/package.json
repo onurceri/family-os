@@ -13,7 +13,7 @@
 	"dependencies": {
 		"@famos/sdk": "workspace:*",
 		"better-sqlite3": "13.0.3",
-		"kysely": "0.29.6",
+		"kysely": "catalog:",
 		"tar": "7.5.22"
 	},
 	"devDependencies": {

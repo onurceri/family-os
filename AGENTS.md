@@ -164,7 +164,7 @@ Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` an
 - Code, comments, commit messages and docs are in English; the UI is internationalized (English and Turkish).
 - TypeScript 6, strict, with `erasableSyntaxOnly`: no enums, namespaces or parameter properties; no `any` without a comment explaining why.
 - Biome formats and lints TS/JS/JSON/CSS, Prettier only `.svelte`; do not hand-format.
-- Dependencies are pinned to exact versions. Before adding one, check its maintenance status and peer ranges; prefer small, low-churn packages (architecture.md, "Dependency policy").
+- Dependencies are pinned to exact versions; those shared by five or more packages (zod, kysely, svelte, typescript …) are pinned once in the `catalog:` of `pnpm-workspace.yaml`. Before adding one, check its maintenance status and peer ranges; prefer small, low-churn packages (architecture.md, "Dependency policy").
 - Commits follow Conventional Commits (`feat(shopping): …`, `fix(core): …`). Release notes are generated from them, so describe user-visible changes in user terms and mark breaking changes (`feat!:` or a `BREAKING CHANGE:` footer).
 - Keep changes small and scoped to the task; do not refactor unrelated code. Prefer the simplest design that respects the rules above.
 - **Comments explain themselves** and never cite documents, decision records, plans or phases; the reasons behind the rules live in architecture.md.

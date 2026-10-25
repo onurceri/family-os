@@ -3,6 +3,15 @@ packages:
   - packages/*
   - extensions/*
 
+# Versions shared by five or more packages, pinned once. Packages say `catalog:`.
+catalog:
+  '@lucide/svelte': 1.52.0
+  kysely: 0.29.6
+  svelte: 5.57.1
+  svelte-check: 4.7.6
+  typescript: 6.0.3
+  zod: 4.6.5
+
 allowBuilds:
   esbuild: true
 

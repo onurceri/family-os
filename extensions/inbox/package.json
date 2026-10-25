@@ -45,12 +45,12 @@
 		"@famos/sdk": "workspace:*",
 		"@famos/time": "workspace:*",
 		"@famos/ui": "workspace:*",
-		"@lucide/svelte": "1.52.0",
-		"kysely": "0.29.6",
-		"zod": "4.6.5"
+		"@lucide/svelte": "catalog:",
+		"kysely": "catalog:",
+		"zod": "catalog:"
 	},
 	"peerDependencies": {
-		"svelte": "5.57.1"
+		"svelte": "catalog:"
 	},
 	"devDependencies": {
 		"@famos/ext-calendar": "workspace:*",
@@ -58,9 +58,9 @@
 		"@famos/ext-records": "workspace:*",
 		"@famos/pack": "workspace:*",
 		"@famos/testing": "workspace:*",
-		"svelte": "5.57.1",
-		"svelte-check": "4.7.6",
+		"svelte": "catalog:",
+		"svelte-check": "catalog:",
 		"tsx": "4.23.15",
-		"typescript": "6.0.3"
+		"typescript": "catalog:"
 	}
 }

@@ -13,8 +13,8 @@
 	"dependencies": {
 		"@famos/sdk": "workspace:*",
 		"@famos/time": "workspace:*",
-		"kysely": "0.29.6",
-		"zod": "4.6.5"
+		"kysely": "catalog:",
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@famos/adapters": "workspace:*",

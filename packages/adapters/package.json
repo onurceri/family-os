@@ -31,9 +31,9 @@
 		"better-auth": "1.7.7",
 		"grammy": "1.46.0",
 		"imapflow": "2.2.6",
-		"kysely": "0.29.6",
+		"kysely": "catalog:",
 		"postal-mime": "4.0.4",
-		"zod": "4.6.5"
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@famos/db": "workspace:*"

@@ -41,7 +41,7 @@
 		"./now": "./src/now.svelte.ts"
 	},
 	"peerDependencies": {
-		"svelte": "5.57.1"
+		"svelte": "catalog:"
 	},
 	"dependencies": {
 		"@famos/time": "workspace:*",
@@ -56,9 +56,9 @@
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"happy-dom": "20.14.5",
 		"shadcn-svelte": "1.7.0",
-		"svelte": "5.57.1",
-		"svelte-check": "4.7.6",
-		"typescript": "6.0.3",
+		"svelte": "catalog:",
+		"svelte-check": "catalog:",
+		"typescript": "catalog:",
 		"vite": "8.3.2"
 	},
 	"scripts": {
