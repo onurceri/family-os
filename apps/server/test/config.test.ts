@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadConfig } from '../src/config.ts';
+import { loadConfig, parseEnvironment } from '../src/config.ts';
 
 let dir: string;
 beforeEach(async () => {
@@ -88,5 +88,45 @@ describe('FAMOS_ROLES', () => {
 		await expect(loadConfig({ FAMOS_DATA_DIR: dir, FAMOS_ROLES: value })).rejects.toThrow(
 			/Invalid configuration: FAMOS_ROLES/,
 		);
+	});
+});
+
+describe('settings for development and tests', () => {
+	it.each([
+		['FAMOS_DEV_EXTENSIONS', '../../extensions'],
+		['FAMOS_EMAIL_FAKE_DIR', '/tmp/mail'],
+		['FAMOS_NOTIFY_DELAY_MS', '500'],
+	])('%s is refused in production', async (name, value) => {
+		await expect(
+			loadConfig({ FAMOS_DATA_DIR: dir, NODE_ENV: 'production', [name]: value }),
+		).rejects.toThrow(new RegExp(`${name}.*refused when NODE_ENV=production`));
+		expect(await loadConfig({ FAMOS_DATA_DIR: dir, [name]: value })).toBeDefined();
+	});
+
+	it('leaves the Telegram server address and index mirror to the operator', async () => {
+		const config = await loadConfig({
+			FAMOS_DATA_DIR: dir,
+			NODE_ENV: 'production',
+			FAMOS_TELEGRAM_API_ROOT: 'http://telegram.lan:8081',
+			FAMOS_EXTENSION_INDEX_URL: 'https://mirror.example/index.json',
+		});
+		expect(config.telegramApiRoot).toBe('http://telegram.lan:8081');
+		expect(config.extensionIndexUrl).toBe('https://mirror.example/index.json');
+	});
+
+	it('reads the backup passphrase and dev extensions into the config', async () => {
+		const config = await loadConfig({
+			FAMOS_DATA_DIR: dir,
+			FAMOS_BACKUP_PASSPHRASE: 'open sesame',
+			FAMOS_DEV_EXTENSIONS: '../../extensions',
+		});
+		expect(config.backupPassphrase).toBe('open sesame');
+		expect(config.devExtensionsDir).toBe('../../extensions');
+		// Empty is kept: restore then refuses an encrypted backup instead of asking on a terminal.
+		expect(
+			(await loadConfig({ FAMOS_DATA_DIR: dir, FAMOS_BACKUP_PASSPHRASE: '' })).backupPassphrase,
+		).toBe('');
+		expect((await loadConfig({ FAMOS_DATA_DIR: dir })).backupPassphrase).toBeUndefined();
+		expect(parseEnvironment({}).NODE_ENV).toBeUndefined();
 	});
 });

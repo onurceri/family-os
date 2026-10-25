@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SDK_VERSION } from '@famos/sdk';
 import { afterAll, describe, expect, it } from 'vitest';
-import { loadExtensions } from '../src/extensions/load.ts';
+import { parseEnvironment } from '../src/config.ts';
 
 const root = mkdtempSync(join(tmpdir(), 'famos-packages-'));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
@@ -89,9 +89,10 @@ describe('extension packages', () => {
 });
 
 describe('extension source', () => {
-	it('is refused in production', async () => {
-		await expect(
-			loadExtensions({ FAMOS_DEV_EXTENSIONS: root, NODE_ENV: 'production' }),
-		).rejects.toThrow(/refused when NODE_ENV=production/);
+	it('is refused in production', () => {
+		expect(() => parseEnvironment({ FAMOS_DEV_EXTENSIONS: root, NODE_ENV: 'production' })).toThrow(
+			/refused when NODE_ENV=production/,
+		);
+		expect(parseEnvironment({ FAMOS_DEV_EXTENSIONS: root }).FAMOS_DEV_EXTENSIONS).toBe(root);
 	});
 });

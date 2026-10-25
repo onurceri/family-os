@@ -71,20 +71,12 @@ export interface Available {
 }
 
 /**
- * The extensions this server could run. `FAMOS_DEV_EXTENSIONS` names a workspace folder whose
- * source is used as it is (development and tests; refused in production). Otherwise the packages
- * shipped next to the server bundle.
+ * The extensions this server could run. `devExtensionsDir` (`FAMOS_DEV_EXTENSIONS`, which the
+ * configuration refuses in production) names a workspace folder whose source is used as it is.
+ * Otherwise the packages shipped next to the server bundle.
  */
-export function findAvailable(env: NodeJS.ProcessEnv = process.env): Available {
-	const dev = env.FAMOS_DEV_EXTENSIONS;
-	if (dev) {
-		if (env.NODE_ENV === 'production') {
-			throw new Error(
-				'FAMOS_DEV_EXTENSIONS loads unbuilt, unsigned extension source and is refused when NODE_ENV=production',
-			);
-		}
-		return availableSource(dev);
-	}
+export function findAvailable(devExtensionsDir?: string): Available {
+	if (devExtensionsDir) return availableSource(devExtensionsDir);
 	const dir = findBundledExtensions();
 	if (!dir) {
 		throw new Error(
@@ -116,10 +108,8 @@ export function findAvailable(env: NodeJS.ProcessEnv = process.env): Available {
  * Every extension at hand, all loaded: generating the API documents and checking a backup need
  * them all, whatever the family installed.
  */
-export async function loadExtensions(
-	env: NodeJS.ProcessEnv = process.env,
-): Promise<LoadedExtensions> {
-	const available = findAvailable(env);
+export async function loadExtensions(devExtensionsDir?: string): Promise<LoadedExtensions> {
+	const available = findAvailable(devExtensionsDir);
 	const first = available.unreadable[0];
 	if (first) throw new Error(first.reason);
 	return loadAll(available);

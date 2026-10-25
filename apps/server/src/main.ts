@@ -16,7 +16,7 @@ import { ARCHIVE_EXTENSION } from '@famos/pack/format';
 import { systemActor } from '@famos/sdk';
 import { serve, upgradeWebSocket } from '@hono/node-server';
 import { WebSocketServer } from 'ws';
-import { type Config, loadConfig } from './config.ts';
+import { type Config, loadConfig, parseEnvironment } from './config.ts';
 import {
 	type InstalledExtensions,
 	loadInstalled,
@@ -300,7 +300,7 @@ async function openWithExtensions(
 	let selection: InstalledExtensions;
 	try {
 		// Every stored copy is checked again here, before any of its code is imported.
-		const available = withStore(findAvailable(), await store.scan());
+		const available = withStore(findAvailable(config.devExtensionsDir), await store.scan());
 		selection = await loadInstalled(handle.db, available, {
 			store,
 			official: { url: config.extensionIndexUrl ?? OFFICIAL_INDEX_URL, trustRoots: TRUST_ROOTS },
@@ -542,12 +542,12 @@ async function main() {
 		case 'restore': {
 			if (!arg) throw new Error('Usage: famos restore <file> [--identity <file>] [--force]');
 			const config = await loadConfig();
-			const { extensions } = await loadExtensions();
+			const { extensions } = await loadExtensions(config.devExtensionsDir);
 			const manifest = await restoreFile(config, arg, {
 				extensions,
 				...(values.force && { force: true }),
 				...(values.identity && { identity: values.identity }),
-				passphrase: process.env.FAMOS_BACKUP_PASSPHRASE,
+				passphrase: config.backupPassphrase,
 				askPassphrase: () => askSecret('Backup passphrase: '),
 			});
 			console.log(
@@ -558,7 +558,7 @@ async function main() {
 		case 'openapi': {
 			const out = arg ?? 'openapi.json';
 			// Generation needs the registry only: in-memory database, no data directory.
-			const { extensions } = await loadExtensions();
+			const { extensions } = await loadExtensions(parseEnvironment().FAMOS_DEV_EXTENSIONS);
 			const runtime = openRuntime(generationConfig(), {
 				extensions,
 				logger: silentLogger,
@@ -604,7 +604,7 @@ async function main() {
 		}
 		case 'public-openapi': {
 			const out = arg ?? 'public-openapi.json';
-			const { extensions } = await loadExtensions();
+			const { extensions } = await loadExtensions(parseEnvironment().FAMOS_DEV_EXTENSIONS);
 			const runtime = openRuntime(generationConfig(), {
 				extensions,
 				logger: silentLogger,

@@ -6,6 +6,8 @@ import type { ModelRole } from '@famos/sdk';
 import { z } from 'zod';
 
 const EnvSchema = z.object({
+	/** `production` turns on the refusals of settings meant for development and tests. */
+	NODE_ENV: z.string().optional(),
 	FAMOS_DATA_DIR: z.string().default('./data'),
 	FAMOS_WEB_DIR: z.string().optional(),
 	/** Bundled language packs; found next to the server bundle when not set. */
@@ -33,6 +35,10 @@ const EnvSchema = z.object({
 				})
 				.min(1, 'name at least one role: "api", "worker" or "api,worker"'),
 		),
+	/** Unlocks an encrypted backup for `restore` without asking; never logged. */
+	FAMOS_BACKUP_PASSPHRASE: z.string().optional(),
+	/** A workspace `extensions` folder whose source is loaded as it is (development and tests only). */
+	FAMOS_DEV_EXTENSIONS: z.string().min(1).optional(),
 	FAMOS_BACKUP_HOUR: z.coerce.number().int().min(0).max(23).default(3),
 	FAMOS_BACKUP_KEEP: z.coerce.number().int().min(1).max(365).default(7),
 	// An AI provider and models from the server configuration, applied on every start.
@@ -44,11 +50,11 @@ const EnvSchema = z.object({
 	FAMOS_AI_MODEL_FAST: z.string().min(1).optional(),
 	FAMOS_AI_MODEL_VISION: z.string().min(1).optional(),
 	FAMOS_AI_MODEL_SMART: z.string().min(1).optional(),
-	/** For testing: where the Telegram Bot API lives (default https://api.telegram.org). */
+	/** Where the Telegram Bot API lives, for a family running its own server (default https://api.telegram.org). */
 	FAMOS_TELEGRAM_API_ROOT: z.url().optional(),
 	/**
-	 * For testing: where the extension index is (default the official one). Its signature is
-	 * still checked against the server's own trust roots, so this adds no source of code.
+	 * Where the extension index is, for a mirror of the official one (default the official one). Its
+	 * signature is still checked against the server's own trust roots, so this adds no source of code.
 	 */
 	FAMOS_EXTENSION_INDEX_URL: z.url({ protocol: /^https$/ }).optional(),
 	/** For testing only: a directory of .eml files stands in for the IMAP server. */
@@ -87,15 +93,47 @@ export interface Config {
 	roles: { api: boolean; worker: boolean };
 	backup: { hour: number; keep: number };
 	logLevel: string;
-	/** For testing: where the extension index is. Unset means the official one. */
+	/** A mirror of the extension index. Unset means the official one. */
 	extensionIndexUrl?: string;
-	/** For testing: where the Telegram Bot API lives. Unset means api.telegram.org. */
+	/** Where the Telegram Bot API lives. Unset means api.telegram.org. */
 	telegramApiRoot?: string;
 	/** For testing only: a directory of .eml files that stands in for the IMAP server. */
 	emailFakeDir?: string;
 	/** For testing only: milliseconds a suggestion waits before it notifies (default 30000). */
 	notifyDelayMs?: number;
+	/** Workspace extension source to load as it is; never set in production. */
+	devExtensionsDir?: string;
+	/** Passphrase for restoring an encrypted backup; never logged. */
+	backupPassphrase?: string;
 	aiSeed?: ProviderInput & { models: Partial<Record<ModelRole, string>> };
+}
+
+/** Settings that exist for development and tests, refused when the server runs as production. */
+const DEVELOPMENT_ONLY = [
+	['FAMOS_DEV_EXTENSIONS', 'loads unbuilt, unsigned extension source'],
+	['FAMOS_EMAIL_FAKE_DIR', 'replaces the mailbox with a folder of files'],
+	['FAMOS_NOTIFY_DELAY_MS', 'changes how long a suggestion waits before it notifies'],
+] as const;
+
+/** The environment, validated; settings for development and tests are refused in production. */
+export function parseEnvironment(env: NodeJS.ProcessEnv = process.env) {
+	const parsed = EnvSchema.safeParse(env);
+	if (!parsed.success) {
+		const problems = parsed.error.issues.map(
+			(i) => `${i.path.join('.') || 'environment'}: ${i.message}`,
+		);
+		throw new Error(`Invalid configuration: ${problems.join('; ')}`);
+	}
+	if (parsed.data.NODE_ENV === 'production') {
+		for (const [name, effect] of DEVELOPMENT_ONLY) {
+			if (parsed.data[name] !== undefined) {
+				throw new Error(
+					`Invalid configuration: ${name} ${effect} and is refused when NODE_ENV=production`,
+				);
+			}
+		}
+	}
+	return parsed.data;
 }
 
 /**
@@ -104,14 +142,7 @@ export interface Config {
  * works without any configuration.
  */
 export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<Config> {
-	const parsed = EnvSchema.safeParse(env);
-	if (!parsed.success) {
-		const problems = parsed.error.issues.map(
-			(i) => `${i.path.join('.') || 'environment'}: ${i.message}`,
-		);
-		throw new Error(`Invalid configuration: ${problems.join('; ')}`);
-	}
-	const e = parsed.data;
+	const e = parseEnvironment(env);
 	const dataDir = resolve(e.FAMOS_DATA_DIR);
 	await mkdir(dataDir, { recursive: true });
 	const baseURL = (e.FAMOS_BASE_URL ?? `http://localhost:${e.PORT}`).replace(/\/+$/, '');
@@ -150,6 +181,9 @@ export async function loadConfig(env: NodeJS.ProcessEnv = process.env): Promise<
 		...(e.FAMOS_EXTENSION_INDEX_URL && { extensionIndexUrl: e.FAMOS_EXTENSION_INDEX_URL }),
 		...(e.FAMOS_EMAIL_FAKE_DIR && { emailFakeDir: e.FAMOS_EMAIL_FAKE_DIR }),
 		...(e.FAMOS_NOTIFY_DELAY_MS !== undefined && { notifyDelayMs: e.FAMOS_NOTIFY_DELAY_MS }),
+		...(e.FAMOS_DEV_EXTENSIONS && { devExtensionsDir: e.FAMOS_DEV_EXTENSIONS }),
+		// Set but empty means "no passphrase, do not ask": restore then says the backup is encrypted.
+		...(e.FAMOS_BACKUP_PASSPHRASE !== undefined && { backupPassphrase: e.FAMOS_BACKUP_PASSPHRASE }),
 		...(e.FAMOS_AI_PROVIDER && {
 			aiSeed: {
 				name: { openrouter: 'OpenRouter', ollama: 'Ollama', 'openai-compatible': 'AI server' }[
