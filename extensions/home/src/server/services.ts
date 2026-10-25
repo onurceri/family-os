@@ -25,10 +25,18 @@ async function loadService(uow: UnitOfWork, id: string): Promise<ServiceRow> {
 	return row;
 }
 
-const fieldsOf = (s: z.output<typeof ServiceFieldsSchema>) => ({
+/**
+ * The stored fields of a service. `account_number` is what is kept already unless whoever asked
+ * for the change may edit the home: only they can read it, so only they can change it.
+ */
+const fieldsOf = (
+	uow: UnitOfWork,
+	s: z.output<typeof ServiceFieldsSchema>,
+	kept: string | null = null,
+) => ({
 	kind: s.kind,
 	provider: s.provider,
-	account_number: s.accountNumber || null,
+	account_number: uow.proposerCan(homeEdit.id) ? s.accountNumber || null : kept,
 	due_day: s.dueDay ?? null,
 	notes: s.notes || null,
 });
@@ -62,7 +70,7 @@ export const addService = defineAction({
 		const row: ServiceRow = {
 			id: uow.ids.next('home_service'),
 			home_id: homeId,
-			...fieldsOf(input),
+			...fieldsOf(uow, input),
 			created_by: memberId(uow.actor),
 			created_at: now,
 			updated_at: now,
@@ -87,7 +95,7 @@ export const updateService = defineAction({
 	approval: { unless: homeEdit.id },
 	async run(uow, { id, service }) {
 		const row = await loadService(uow, id);
-		const patch = { ...fieldsOf(service), updated_at: uow.clock.now() };
+		const patch = { ...fieldsOf(uow, service, row.account_number), updated_at: uow.clock.now() };
 		await tables(uow.db).updateTable('home_services').set(patch).where('id', '=', id).execute();
 		await uow.ai.reindex(SERVICE_SEARCH_KIND, id);
 		// A service is known by its provider in lists that span records.

@@ -157,7 +157,8 @@ export const addItem = defineAction({
 			room: input.room,
 			brand: input.brand,
 			model: input.model,
-			serial: input.serial || null,
+			// Only someone who may edit the home can set a serial, as only they can read it back.
+			serial: uow.proposerCan(homeEdit.id) ? input.serial || null : null,
 			purchased_on: input.purchasedOn ?? null,
 			warranty_until: input.warrantyUntil ?? null,
 			warranty_obligation_id: null,
@@ -240,7 +241,10 @@ export const updateItem = defineAction({
 			room: given.room ?? row.room,
 			brand: given.brand ?? row.brand,
 			model: given.model ?? row.model,
-			serial: given.serial === undefined ? row.serial : given.serial || null,
+			serial:
+				given.serial === undefined || !uow.proposerCan(homeEdit.id)
+					? row.serial
+					: given.serial || null,
 			purchased_on: given.purchasedOn === undefined ? row.purchased_on : given.purchasedOn,
 			warranty_until: given.warrantyUntil === undefined ? row.warranty_until : given.warrantyUntil,
 			notes: given.notes === undefined ? row.notes : given.notes || null,

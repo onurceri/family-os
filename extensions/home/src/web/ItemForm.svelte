@@ -23,7 +23,7 @@
 		errors?: FieldErrors;
 		idPrefix?: string;
 	} = $props();
-	const { t } = useHome();
+	const { app, t } = useHome();
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
 		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
@@ -58,10 +58,12 @@
 			<Label for={id('model')}>{t('field_model')} {@render optional()}</Label>
 			<Input id={id('model')} bind:value={value.model} maxlength={60} autocomplete="off" />
 		</div>
-		<div class="grid gap-1.5">
-			<Label for={id('serial')}>{t('field_serial')} {@render optional()}</Label>
-			<Input id={id('serial')} bind:value={value.serial} maxlength={60} autocomplete="off" />
-		</div>
+		{#if app.can('home.edit')}
+			<div class="grid gap-1.5">
+				<Label for={id('serial')}>{t('field_serial')} {@render optional()}</Label>
+				<Input id={id('serial')} bind:value={value.serial} maxlength={60} autocomplete="off" />
+			</div>
+		{/if}
 		<div class="grid gap-1.5">
 			<Label for={id('purchased')}>{t('field_purchased_on')} {@render optional()}</Label>
 			<Input id={id('purchased')} type="date" bind:value={value.purchasedOn} />
