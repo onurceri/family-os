@@ -11,8 +11,10 @@ import {
 	stat,
 	writeFile,
 } from 'node:fs/promises';
+import nodeModule from 'node:module';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
+import { Worker } from 'node:worker_threads';
 import type Database from 'better-sqlite3';
 import * as tar from 'tar';
 
@@ -62,6 +64,72 @@ async function sha256(path: string): Promise<string> {
 	return hash.digest('hex');
 }
 
+/** How long a snapshot may take before it is given up on. */
+const SNAPSHOT_TIMEOUT_MS = 10 * 60_000;
+
+/**
+ * Runs inside the worker: opens the same file on a connection of its own and writes the snapshot.
+ * Kept as source text so no separate file has to be found beside the bundled server.
+ */
+const SNAPSHOT_WORKER = `
+const { workerData, parentPort } = require('node:worker_threads');
+try {
+	const Database = require(workerData.driver);
+	const db = new Database(workerData.source, { readonly: true });
+	db.pragma('busy_timeout = 5000');
+	try {
+		db.prepare('VACUUM INTO ?').run(workerData.target);
+	} finally {
+		db.close();
+	}
+	parentPort.postMessage({ ok: true });
+} catch (error) {
+	parentPort.postMessage({
+		ok: false,
+		message: error instanceof Error ? error.message : String(error),
+		code: error && error.code,
+	});
+}
+`;
+
+/**
+ * Writes a consistent copy of the database to `target`. `VACUUM INTO` takes seconds on a large
+ * database and the process has one thread for every request, so a file database is copied by a
+ * worker on its own connection (WAL lets it read beside the main one). An in-memory database
+ * cannot be opened by another connection and is copied in place.
+ */
+async function snapshotInto(sqlite: Database.Database, target: string): Promise<void> {
+	if (sqlite.memory || !sqlite.name) {
+		sqlite.prepare('VACUUM INTO ?').run(target);
+		return;
+	}
+	const driver = nodeModule.createRequire(import.meta.url).resolve('better-sqlite3');
+	const worker = new Worker(SNAPSHOT_WORKER, {
+		eval: true,
+		workerData: { driver, source: sqlite.name, target },
+	});
+	let timer: NodeJS.Timeout | undefined;
+	try {
+		await new Promise<void>((resolve, reject) => {
+			worker.once('error', reject);
+			worker.once('exit', (code) =>
+				reject(new Error(`The backup snapshot stopped unexpectedly (exit ${code})`)),
+			);
+			worker.once('message', (m: { ok: boolean; message?: string; code?: string }) => {
+				if (m.ok) return resolve();
+				reject(Object.assign(new Error(m.message), m.code ? { code: m.code } : {}));
+			});
+			timer = setTimeout(
+				() => reject(new Error('The backup snapshot took too long and was stopped')),
+				SNAPSHOT_TIMEOUT_MS,
+			);
+		});
+	} finally {
+		clearTimeout(timer);
+		await worker.terminate();
+	}
+}
+
 /** The folders beside the database a backup carries when given, each archived under its own name. */
 const OPTIONAL_DIRS = [
 	{ name: 'languages', option: 'languagesDir', filter: false },
@@ -80,7 +148,7 @@ export async function createBackup(
 	try {
 		const dbPath = join(staging, DB_ENTRY);
 		await mkdir(join(staging, 'db'), { recursive: true });
-		options.sqlite.prepare('VACUUM INTO ?').run(dbPath);
+		await snapshotInto(options.sqlite, dbPath);
 
 		const manifest: BackupManifest = {
 			format: BACKUP_FORMAT,

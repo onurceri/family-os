@@ -56,6 +56,62 @@ describe('backup', () => {
 		await reopened.close();
 	});
 
+	it('keeps the main connection answering while the snapshot is taken', async () => {
+		const { dir, filesDir, handle } = await setup();
+		await sql`create table bulk (id integer primary key, body text)`.execute(handle.db);
+		handle.sqlite
+			.prepare(
+				'with recursive n(i) as (select 1 union all select i + 1 from n where i < 150000) insert into bulk (body) select hex(randomblob(100)) from n',
+			)
+			.run();
+		const started = performance.now();
+		handle.sqlite.prepare('VACUUM INTO ?').run(join(dir, 'timing.db'));
+		const blocked = performance.now() - started;
+
+		// A query every few milliseconds on the main connection; a snapshot that held the thread
+		// would leave one gap as long as the snapshot itself.
+		let last = performance.now();
+		let widest = 0;
+		let answered = 0;
+		const ticker = setInterval(() => {
+			const now = performance.now();
+			widest = Math.max(widest, now - last);
+			last = now;
+			handle.sqlite.prepare('select count(*) from notes').get();
+			answered++;
+		}, 2);
+		const { manifest } = await createBackup({
+			sqlite: handle.sqlite,
+			filesDir,
+			backupsDir: join(dir, 'backups'),
+			appVersion: '0.0.0-test',
+			schema: {},
+			reason: 'manual',
+		});
+		clearInterval(ticker);
+
+		expect(manifest.db.size).toBeGreaterThan(10_000_000);
+		expect(answered).toBeGreaterThan(5);
+		expect(widest).toBeLessThan(blocked / 2);
+		await handle.close();
+	});
+
+	it("surfaces the snapshot worker's error", async () => {
+		const { dir, filesDir, handle } = await setup();
+		const missing = { name: join(dir, 'gone', 'famos.db'), memory: false } as unknown;
+		await expect(
+			createBackup({
+				sqlite: missing as typeof handle.sqlite,
+				filesDir,
+				backupsDir: join(dir, 'backups'),
+				appVersion: '0.0.0-test',
+				schema: {},
+				reason: 'manual',
+			}),
+		).rejects.toThrow(/Cannot open database/);
+		await handle.close();
+	});
+
 	it('carries installed languages, themes and extensions under their own names and restores them', async () => {
 		const { dir, dbPath, filesDir, handle } = await setup();
 		const dirs = {
