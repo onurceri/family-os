@@ -61,6 +61,68 @@ describe('line logger', () => {
 		expect(err.stack).toContain('boom');
 	});
 
+	it('redacts names that hold a secret part, and keeps error codes and key lists', () => {
+		const { lines, logger } = capture();
+		logger.warn(
+			{
+				clientSecret: 's',
+				backup_passphrase: 'p',
+				accessToken: 't',
+				setupCode: '123456',
+				key: 'k',
+				code: 'not_found',
+				inputKeys: ['title', 'due'],
+			},
+			'x',
+		);
+		expect(lines[0]).toMatchObject({
+			clientSecret: '[Redacted]',
+			backup_passphrase: '[Redacted]',
+			accessToken: '[Redacted]',
+			setupCode: '[Redacted]',
+			key: '[Redacted]',
+			code: 'not_found',
+			inputKeys: ['title', 'due'],
+		});
+	});
+
+	it('masks secrets inside text, error messages and stacks', () => {
+		const { lines, logger } = capture();
+		const err = new Error('GET https://u:hunter2@cal.example/feed.ics?token=abc&view=week failed', {
+			cause: new Error('header Bearer xyz.123 refused'),
+		});
+		logger.error(
+			{ err, url: 'https://x.example/cb?key=k3y&state=s', note: 'key famos_at_0123456789abcdef' },
+			'with famos_0123456789abcdef',
+		);
+		const line = JSON.stringify(lines[0]);
+		for (const secret of ['hunter2', 'abc&', 'xyz.123', 'k3y', '0123456789abcdef'])
+			expect(line).not.toContain(secret);
+		expect(lines[0]).toMatchObject({
+			url: 'https://x.example/cb?key=[Redacted]&state=s',
+			msg: 'with famos_[Redacted]',
+		});
+		expect(lines[0]).toHaveProperty(
+			'err.message',
+			'GET https://u:[Redacted]@cal.example/feed.ics?token=[Redacted]&view=week failed',
+		);
+	});
+
+	it('keeps the first-run setup address whole, as it is printed for the person setting up', () => {
+		const { lines, logger } = capture();
+		logger.info({ url: 'http://famos.local:3000/setup?code=ABC123' }, 'Open this address');
+		expect(lines[0]).toMatchObject({ url: 'http://famos.local:3000/setup?code=ABC123' });
+	});
+
+	it('serialises errors under any key', () => {
+		const { lines, logger } = capture();
+		logger.warn({ failures: [new RangeError('far')], problem: new Error('near') }, 'x');
+		expect(lines[0]).toMatchObject({
+			failures: [{ type: 'RangeError', message: 'far' }],
+			problem: { type: 'Error', message: 'near' },
+		});
+	});
+
 	it('merges child bindings and does not leak them to the parent', () => {
 		const { lines, logger } = capture();
 		const child = logger.child({ component: 'a' }).child({ job: 'j' });
