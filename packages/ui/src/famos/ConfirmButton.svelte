@@ -66,9 +66,7 @@
 		: [
 				'rounded-[var(--r-ctl)] font-semibold transition-colors outline-none focus-visible:shadow-[0_0_0_2px_var(--wall),0_0_0_4px_var(--info)] disabled:opacity-50 motion-reduce:transition-none',
 				size === 'sm' ? 'min-h-11 px-3 text-sm' : 'min-h-[var(--ctl)] px-4 text-[15px]',
-				armed
-					? 'bg-destructive text-on-color'
-					: 'text-destructive hover:bg-[color-mix(in_oklab,var(--destructive)_10%,transparent)]',
+				armed ? 'bg-destructive text-on-color' : 'text-destructive hover:bg-destructive-wash',
 			]}
 >
 	{armed ? confirmLabel : label}

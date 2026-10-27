@@ -80,7 +80,7 @@
 
 {#snippet check(path: string)}
 	{#if unsure(path)}<span
-			class="bg-attention/15 text-ink ml-2 rounded-full px-2 py-0.5 text-[0.7rem] font-bold normal-case"
+			class="tint-attention/15 text-ink ml-2 rounded-full px-2 py-0.5 text-[0.7rem] font-bold normal-case"
 			>{app.t('app:draft_check_this')}</span
 		>{/if}
 {/snippet}

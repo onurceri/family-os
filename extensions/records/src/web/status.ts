@@ -38,7 +38,7 @@ export const stateTextClass = (status: DueStatus) =>
 	status === 'overdue'
 		? 'text-attention font-bold'
 		: status === 'soon'
-			? 'font-bold text-[color-mix(in_oklab,var(--heat)_50%,var(--ink))]'
+			? 'font-bold text-heat-ink'
 			: '';
 
 export const statusClass = (status: DueStatus) =>

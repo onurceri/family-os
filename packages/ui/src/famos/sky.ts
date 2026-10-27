@@ -183,9 +183,19 @@ export function skyClouds({ kind }: SkyCondition): SkyClouds {
 /** Fog banks: `sky-cloud` drawn at this strength. */
 export const SKY_FOG_OPACITY = 1;
 
+/**
+ * Whether the browser can mix colors in CSS (Chrome 111). Where it cannot (older wall displays),
+ * a paint is its plain ground color. Outside a browser (the server, tests) the mix is kept.
+ */
+export const colorMixSupported =
+	typeof CSS === 'undefined' ||
+	typeof CSS.supports !== 'function' ||
+	CSS.supports('color', 'color-mix(in srgb, red, blue)');
+
 /** CSS for a paint: nested `color-mix(in srgb, …)` that adds up to the shares in `mix`. */
 export function paintCss({ ground, mix }: SkyPaint): string {
 	const [first, ...rest] = mix;
+	if (!colorMixSupported) return `var(--${ground})`;
 	if (!first) return `var(--${ground})`;
 	const [token, share] = first;
 	const left = 100 - share;
@@ -207,4 +217,6 @@ export const SKY_SOFT_INK = 30;
  * the sky and its text, and `--ink-soft: var(--sky-soft)` on that element's children (a custom
  * property cannot refer to itself on one element).
  */
-export const skySoftInk = `color-mix(in srgb, var(--ink-soft) ${SKY_SOFT_INK}%, var(--ink))`;
+export const skySoftInk = colorMixSupported
+	? `color-mix(in srgb, var(--ink-soft) ${SKY_SOFT_INK}%, var(--ink))`
+	: 'var(--ink-soft)';

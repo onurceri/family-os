@@ -1,5 +1,8 @@
 {
 	"loading": "Yükleniyor…",
+	"boot_failed_title": "FamilyOS bu tarayıcıda açılamadı",
+	"boot_failed_hint": "Chrome 106 veya daha yenisi, ya da güncel bir Safari veya Firefox gerekir. Mümkünse tarayıcıyı güncelle, sonra tekrar dene.",
+	"boot_failed_retry": "Tekrar dene",
 	"error_generic": "Bir şeyler ters gitti. Lütfen tekrar dene.",
 	"language": "Dil",
 	"sign_out": "Çıkış yap",

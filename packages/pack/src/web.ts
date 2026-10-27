@@ -4,6 +4,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { build, type Plugin } from 'vite';
 import { SHARED_WEB } from './shared.ts';
 import { buildStyles } from './styles.ts';
+import { BROWSER_TARGETS } from './targets.ts';
 
 /** The web entry and stylesheet of a package, relative to its folder. */
 export const WEB_ENTRY = 'web/index.js';
@@ -31,6 +32,8 @@ export async function buildWeb(root: string, outDir: string): Promise<string[]> 
 			collectImports(imports),
 		],
 		build: {
+			target: BROWSER_TARGETS,
+			cssTarget: BROWSER_TARGETS,
 			outDir: join(outDir, 'web'),
 			emptyOutDir: false,
 			copyPublicDir: false,

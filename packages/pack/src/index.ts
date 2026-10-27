@@ -10,6 +10,7 @@ export {
 export { checkPlatform, currentPlatform, type Platform, type PlatformCheck } from './platform.ts';
 export { SHARED_SERVER, SHARED_WEB } from './shared.ts';
 export { buildStyles, LAYER_ORDER, PACKAGE_LAYER, STYLES_INPUT } from './styles.ts';
+export { BROWSER_TARGETS } from './targets.ts';
 export {
 	chunkName,
 	SHARED_MODULES_FILE,

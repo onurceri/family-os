@@ -90,6 +90,12 @@ To install FamilyOS as an app on phones and share to it, serve it over **HTTPS**
 behind Caddy) with `FAMOS_BASE_URL` set to that address. The [user guide](docs/guide/README.md)
 covers installation, HTTPS and [configuration](docs/guide/configuration.md).
 
+## Supported browsers
+
+Chrome, Edge and Android WebView 106 or newer, Safari and iOS 16.4 or newer, Firefox 114 or newer.
+A wall display can be an older device, such as an Android photo frame or a fridge screen, as long
+as its browser is Chrome 106 or newer.
+
 ## Roadmap
 
 - [x] Extensions are isolated from each other: each one reaches only its own data, files and secrets

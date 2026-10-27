@@ -289,7 +289,7 @@
 					{@const shown = over ? d.lane.slice(0, MAX_LANE - 1) : d.lane}
 					<div
 						class="border-line grid min-w-0 content-start gap-0.5 border-s p-1 {d.date === today
-							? 'bg-now/7'
+							? 'tint-now/7'
 							: ''}"
 						style:min-height="{Math.max(1, laneRows) * 24 + 8}px"
 					>
@@ -338,7 +338,7 @@
 					data-date={d.date}
 					class="border-line relative min-w-0 border-s {onadd ? 'cursor-pointer' : ''} {d.date ===
 					today
-						? 'bg-now/5'
+						? 'tint-now/5'
 						: ''}"
 					style:background-image="linear-gradient(to bottom, var(--line) 1px, transparent 1px)"
 					style:background-size="100% var(--hour)"

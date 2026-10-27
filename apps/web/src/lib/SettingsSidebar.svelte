@@ -77,7 +77,7 @@
 <nav
 	aria-label={t('settings_title')}
 	data-testid="settings-sidebar"
-	class="bg-wall sticky top-0 z-30 hidden h-dvh w-62 flex-col border-r px-3 py-3 lg:flex"
+	class="bg-wall h-viewport sticky top-0 z-30 hidden w-62 flex-col border-r px-3 py-3 lg:flex"
 >
 	<div class="shrink-0">
 		<a

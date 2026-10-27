@@ -407,11 +407,11 @@
 {/snippet}
 
 {#if phase === 'loading'}
-	<main class="bg-wall text-ink-soft grid min-h-dvh place-items-center text-2xl">
+	<main class="bg-wall text-ink-soft min-h-viewport grid place-items-center text-2xl">
 		{unreachable ? t('display_unreachable') : t('display_loading')}
 	</main>
 {:else if phase === 'signedIn'}
-	<main class="bg-wall text-ink grid min-h-dvh place-items-center p-8">
+	<main class="bg-wall text-ink min-h-viewport grid place-items-center p-8">
 		<div class="grid max-w-2xl gap-4 text-center">
 			<h1 class="text-4xl font-extrabold">{t('display_signed_in_title')}</h1>
 			<p class="text-ink-soft text-xl">{t('display_signed_in_text')}</p>
@@ -430,7 +430,7 @@
 {:else}
 	<!-- A wall display is never scrolled: Today fits the screen (FamilyToday), nothing runs past it. -->
 	<main
-		class="bg-wall text-ink relative h-dvh overflow-hidden"
+		class="bg-wall text-ink h-viewport relative overflow-hidden"
 		class:rotating={pages.length > 0}
 		onpointerdown={(event) => {
 			holdOnTouch();

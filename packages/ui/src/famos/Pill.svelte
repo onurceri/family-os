@@ -43,23 +43,33 @@
 		stroke-width: 2.25;
 	}
 	.now {
+		background: transparent;
 		background: color-mix(in oklab, var(--now) 15%, transparent);
+		color: var(--now);
 		color: color-mix(in oklab, var(--now) 65%, var(--ink));
 	}
 	.attention {
+		background: transparent;
 		background: color-mix(in oklab, var(--attention) 15%, transparent);
+		color: var(--attention);
 		color: color-mix(in oklab, var(--attention) 65%, var(--ink));
 	}
 	.info {
+		background: transparent;
 		background: color-mix(in oklab, var(--info) 15%, transparent);
+		color: var(--info);
 		color: color-mix(in oklab, var(--info) 65%, var(--ink));
 	}
 	.heat {
+		background: transparent;
 		background: color-mix(in oklab, var(--heat) 15%, transparent);
+		color: var(--heat);
 		color: color-mix(in oklab, var(--heat) 50%, var(--ink));
 	}
 	.sun {
+		background: transparent;
 		background: color-mix(in oklab, var(--sun) 15%, transparent);
+		color: var(--sun);
 		color: color-mix(in oklab, var(--sun) 50%, var(--ink));
 	}
 	.solid {

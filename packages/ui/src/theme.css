@@ -259,3 +259,85 @@
 		}
 	}
 }
+
+/*
+ * Window heights. Browsers before Chrome 108 have no dynamic viewport unit, so each utility
+ * states the plain `vh` height and then the `dvh` one in an `@supports` rule. (Two lines in a row
+ * would be merged into the second by the stylesheet minifier.)
+ */
+@utility h-viewport {
+	height: 100vh;
+	@supports (height: 100dvh) {
+		height: 100dvh;
+	}
+}
+@utility min-h-viewport {
+	min-height: 100vh;
+	@supports (min-height: 100dvh) {
+		min-height: 100dvh;
+	}
+}
+@utility max-h-viewport-40 {
+	max-height: 40vh;
+	@supports (max-height: 40dvh) {
+		max-height: 40dvh;
+	}
+}
+/* The window less the shell's gutters, for a page that fills it. */
+@utility h-shell-fill {
+	height: calc(100vh - var(--shell-top) - var(--shell-bottom));
+	height: calc(100dvh - var(--shell-top) - var(--shell-bottom));
+}
+
+/*
+ * Mixed colors for hover and emphasis. A browser without `color-mix` (before Chrome 111) keeps
+ * the plain token stated first.
+ */
+@utility bg-ink-pressed {
+	background-color: var(--ink);
+	background-color: color-mix(in oklab, var(--ink) 86%, var(--surface));
+}
+@utility bg-idle-pressed {
+	background-color: var(--idle);
+	background-color: color-mix(in oklab, var(--idle) 90%, var(--ink));
+}
+@utility bg-attention-pressed {
+	background-color: var(--attention);
+	background-color: color-mix(in oklab, var(--attention) 90%, var(--ink));
+}
+@utility bg-destructive-wash {
+	background-color: transparent;
+	background-color: color-mix(in oklab, var(--destructive) 10%, transparent);
+}
+@utility text-heat-ink {
+	color: var(--heat);
+	color: color-mix(in oklab, var(--heat) 50%, var(--ink));
+}
+
+/*
+ * A faint wash of a theme color (`tint-now/5`), for backgrounds below 50 percent. Tailwind's own
+ * `bg-now/5` falls back to the solid color before Chrome 111, a block over the text; this falls
+ * back to no background at all.
+ */
+@utility tint-* {
+	background-color: transparent;
+	@supports (color: color-mix(in oklab, red, red)) {
+		background-color: color-mix(
+			in oklab,
+			--value(--color-*) calc(--modifier(integer) * 1%),
+			transparent
+		);
+	}
+}
+
+/* The same wash for a control that must stay visible (a switch's track): the solid color before Chrome 111. */
+@utility track-* {
+	background-color: --value(--color-*);
+	@supports (color: color-mix(in oklab, red, red)) {
+		background-color: color-mix(
+			in oklab,
+			--value(--color-*) calc(--modifier(integer) * 1%),
+			transparent
+		);
+	}
+}

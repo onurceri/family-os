@@ -208,6 +208,7 @@
 	}
 	@media (hover: hover) {
 		.item:not(.open):hover {
+			background: var(--idle);
 			background: color-mix(in oklab, var(--idle) 55%, transparent);
 		}
 	}

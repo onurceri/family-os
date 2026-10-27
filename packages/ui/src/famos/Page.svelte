@@ -110,6 +110,7 @@
 		position: relative;
 		isolation: isolate;
 		width: auto;
+		min-height: 100vh;
 		min-height: 100dvh;
 		margin: calc(-1 * var(--shell-top, 0px)) calc(-1 * var(--shell-x, 0px))
 			calc(-1 * var(--shell-bottom, 0px));
@@ -128,6 +129,7 @@
 		--chat-dock: calc(4.5rem + env(safe-area-inset-bottom));
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
+		min-height: calc(100vh - var(--shell-top, 0px) - var(--chat-dock));
 		min-height: calc(100dvh - var(--shell-top, 0px) - var(--chat-dock));
 		margin-bottom: calc(var(--chat-dock) - var(--shell-bottom, 0px));
 	}

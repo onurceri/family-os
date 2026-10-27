@@ -348,6 +348,7 @@
 		overflow: hidden;
 		border-inline-start: 3px solid var(--m);
 		border-radius: 8px;
+		background: var(--surface);
 		background: color-mix(in oklab, var(--m) 16%, var(--surface));
 		color: var(--ink);
 		font-size: 12.5px;

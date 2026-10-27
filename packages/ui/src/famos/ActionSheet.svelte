@@ -109,6 +109,7 @@
 		z-index: 61;
 		display: grid;
 		gap: 2px;
+		max-height: 85vh;
 		max-height: 85dvh;
 		overflow: auto;
 		padding: 8px 8px calc(20px + env(safe-area-inset-bottom));

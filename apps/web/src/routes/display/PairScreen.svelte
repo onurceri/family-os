@@ -88,7 +88,7 @@
 	});
 </script>
 
-<main class="bg-wall text-ink grid min-h-dvh place-items-center p-8">
+<main class="bg-wall text-ink min-h-viewport grid place-items-center p-8">
 	<div class="grid w-full max-w-5xl gap-10">
 		<div class="grid gap-2">
 			<h1 class="text-5xl font-extrabold text-balance">{t('display_pair_title')}</h1>

@@ -580,9 +580,7 @@
 		<!-- The side panel is fixed on the right (from 1024 px); the board keeps clear of it. The page is
 	exactly as tall as the window, so the board fills it. -->
 		<div
-			class="flex h-[calc(100dvh-var(--shell-top)-var(--shell-bottom))] min-h-[34rem] flex-col {viewing ||
-			detail ||
-			(editing && form)
+			class="h-shell-fill flex min-h-[34rem] flex-col {viewing || detail || (editing && form)
 				? 'lg:pe-[23.5rem] xl:pe-[27rem]'
 				: ''}"
 		>

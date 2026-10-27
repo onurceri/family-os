@@ -200,7 +200,7 @@
 		placeholder={t('compose_placeholder')}
 		{onkeydown}
 		{onpaste}
-		class="placeholder:text-ink-soft max-h-[40dvh] w-full resize-none bg-transparent px-2 pt-1.5 outline-none placeholder:font-serif placeholder:italic {hero
+		class="placeholder:text-ink-soft max-h-viewport-40 w-full resize-none bg-transparent px-2 pt-1.5 outline-none placeholder:font-serif placeholder:italic {hero
 			? 'min-h-28 text-lg leading-8 placeholder:text-xl sm:text-xl sm:placeholder:text-2xl'
 			: compact
 				? 'min-h-16 text-base leading-7 placeholder:text-lg'
@@ -305,6 +305,7 @@
 		animation: drop-pulse 1.4s ease-in-out infinite;
 	}
 	.drop {
+		background: var(--surface);
 		background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 	}
 	@keyframes drop-pulse {

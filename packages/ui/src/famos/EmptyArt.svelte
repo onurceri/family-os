@@ -140,6 +140,7 @@
 		fill: var(--surface);
 	}
 	.accent {
+		fill: var(--sun);
 		fill: color-mix(in srgb, var(--sun) 70%, var(--surface));
 	}
 	.dot {

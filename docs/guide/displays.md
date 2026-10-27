@@ -116,4 +116,5 @@ Arrows move a page, the cross removes it. Once a page is added:
 - Open `/display`, then full screen (Android Chrome: **Add to Home screen**; iPad: Share, **Add to Home Screen**).
 - Keep it awake and plugged in: turn off auto-lock or sleep, or use guided access or kiosk mode.
 - Lower the brightness at night, or schedule the screen off.
+- An old tablet, Android photo frame or fridge browser works if its browser is Chrome (or Android WebView) 106 or newer, Safari 16.4 or newer, or Firefox 114 or newer. If it says FamilyOS could not open, update the browser or the system, then tap **Try again**.
 - If it shows an old state, reload; it retries by itself when the network returns.

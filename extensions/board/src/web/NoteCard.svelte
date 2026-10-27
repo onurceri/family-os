@@ -194,7 +194,7 @@
 					{#snippet trigger({ attrs })}
 						<button
 							type="button"
-							class="text-note-ink hover:bg-note-ink/10 focus-visible:ring-ring grid size-11 place-items-center rounded-lg focus-visible:ring-2"
+							class="text-note-ink hover:tint-note-ink/10 focus-visible:ring-ring grid size-11 place-items-center rounded-lg focus-visible:ring-2"
 							aria-label={t('note_menu')}
 							data-menu
 							{...attrs}
@@ -244,7 +244,7 @@
 		{/if}
 		<span>{postedLabel(note.createdAt, now, t, app.timeZone(), app.dateLocale())}</span>
 		{#if note.endsOn}
-			<span class="until bg-note-ink/10 text-note-ink flex items-center gap-1 font-bold">
+			<span class="until tint-note-ink/10 text-note-ink flex items-center gap-1 font-bold">
 				<Clock class="size-3" aria-hidden="true" />
 				{untilLabel(note.endsOn, now, t, app.timeZone(), app.dateLocale())}
 			</span>
@@ -262,6 +262,10 @@
 		border-radius: var(--radius-sm);
 		box-shadow:
 			var(--shadow-lit),
+			0 1px 1px transparent,
+			0 10px 16px -9px transparent;
+		box-shadow:
+			var(--shadow-lit),
 			0 1px 1px color-mix(in srgb, var(--backdrop) 10%, transparent),
 			0 10px 16px -9px color-mix(in srgb, var(--backdrop) 38%, transparent);
 		transform: rotate(var(--tilt));
@@ -275,9 +279,11 @@
 		color-scheme: light;
 	}
 	:global(.dark) .board {
+		background-color: var(--paper);
 		background-color: color-mix(in srgb, var(--paper) 84%, var(--lamp, var(--board)));
 	}
 	:global(.dark) .board.polaroid {
+		background-color: var(--surface);
 		background-color: color-mix(
 			in srgb,
 			color-mix(in srgb, var(--surface) 82%, var(--paper)) 84%,
@@ -286,6 +292,7 @@
 	}
 	/* The softer ink leans toward the ink by night, so it keeps 4.5:1 on the dimmed paper. */
 	:global(.dark) .board :global(.text-note-ink-soft) {
+		color: var(--note-ink-soft);
 		color: color-mix(in srgb, var(--note-ink-soft) 60%, var(--note-ink));
 	}
 	/* The menu sits in the paper's top corner, or in a polaroid's caption row. */
@@ -313,6 +320,7 @@
 		width: 1.75rem;
 		height: 1.75rem;
 		border-bottom-right-radius: var(--radius-sm);
+		background: linear-gradient(315deg, transparent 0, transparent 30%, transparent 60%);
 		background: linear-gradient(
 			315deg,
 			color-mix(in srgb, var(--backdrop) 9%, transparent) 0,
@@ -325,6 +333,10 @@
 	.board:hover,
 	.board:focus-within {
 		transform: rotate(0deg) translateY(-2px);
+		box-shadow:
+			var(--shadow-lit),
+			0 2px 3px transparent,
+			0 16px 22px -10px transparent;
 		box-shadow:
 			var(--shadow-lit),
 			0 2px 3px color-mix(in srgb, var(--backdrop) 10%, transparent),
@@ -352,6 +364,7 @@
 		height: 1.2rem;
 		/* Leans against the paper's own tilt, as tape stuck on in a hurry does. */
 		transform: translateX(-50%) rotate(calc(var(--tilt) * -1.5 - 1deg));
+		box-shadow: 0 1px 1px transparent;
 		box-shadow: 0 1px 1px color-mix(in srgb, var(--backdrop) 14%, transparent);
 	}
 	/* A push pin: a round head with a highlight, and its shadow on the paper. */
@@ -365,6 +378,9 @@
 		margin-left: -7px;
 		border-radius: 999px;
 		background:
+			radial-gradient(circle at 34% 30%, var(--surface) 0 1.6px, transparent 3.2px),
+			radial-gradient(circle at 40% 35%, var(--pin) 0 55%, var(--pin) 100%);
+		background:
 			radial-gradient(
 				circle at 34% 30%,
 				color-mix(in srgb, var(--surface) 85%, transparent) 0 1.6px,
@@ -375,6 +391,9 @@
 				var(--pin) 0 55%,
 				color-mix(in srgb, var(--pin) 72%, var(--backdrop)) 100%
 			);
+		box-shadow:
+			0 0 0 0.5px transparent,
+			2px 3px 2px -1px transparent;
 		box-shadow:
 			0 0 0 0.5px color-mix(in srgb, var(--backdrop) 25%, transparent),
 			2px 3px 2px -1px color-mix(in srgb, var(--backdrop) 40%, transparent);
@@ -387,6 +406,11 @@
 		width: 19px;
 		height: 19px;
 		margin-left: -9.5px;
+		box-shadow:
+			0 0 0 2px var(--surface),
+			0 0 0 4px var(--pin),
+			0 0 0 4.5px transparent,
+			2px 4px 3px -1px transparent;
 		box-shadow:
 			0 0 0 2px var(--surface),
 			0 0 0 4px var(--pin),
@@ -407,6 +431,7 @@
 	}
 	/* A photo note is a polaroid: a light frame, a thicker margin below with the words in it. */
 	.polaroid {
+		background-color: var(--surface);
 		background-color: color-mix(in srgb, var(--surface) 82%, var(--paper));
 		padding: 0.55rem 0.55rem 0.9rem;
 	}

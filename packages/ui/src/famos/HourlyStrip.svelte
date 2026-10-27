@@ -159,9 +159,11 @@
 		display: block;
 		width: 100%;
 		border-radius: 6px 6px 3px 3px;
+		background: transparent;
 		background: color-mix(in oklab, var(--ink) 22%, transparent);
 	}
 	.bars .wet .bar {
+		background: var(--info);
 		background: color-mix(in oklab, var(--info) 65%, transparent);
 	}
 	.bars .current .bar {
