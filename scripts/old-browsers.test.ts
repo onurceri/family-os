@@ -47,7 +47,7 @@ function* walk(dir: string): Generator<string> {
 	}
 }
 
-const STYLE = /<style[^>]*>([\s\S]*?)<\/style>/g;
+const STYLE = /<style[^>]*>([\s\S]*?)<\/style>/gi;
 
 /** A file's stylesheet(s): a component's `<style>` blocks, or the whole stylesheet. */
 const cssOf = (path: string, text: string): string =>
@@ -66,14 +66,14 @@ function codeOf(path: string, text: string): string {
 
 /** The script of a file, the rest blanked so positions still line up; a plain script is all script. */
 function scriptOf(code: string): string {
-	return code.includes('<script') ? blankOutsideScript(code) : code;
+	return /<script/i.test(code) ? blankOutsideScript(code) : code;
 }
 
 function blankOutsideScript(code: string): string {
 	const blank = (text: string) => text.replace(/[^\n]/g, ' ');
 	let out = '';
 	let at = 0;
-	for (const match of code.matchAll(/(<script[^>]*>)([\s\S]*?)(<\/script>)/g)) {
+	for (const match of code.matchAll(/(<script[^>]*>)([\s\S]*?)(<\/script>)/gi)) {
 		const start = match.index ?? 0;
 		out +=
 			blank(code.slice(at, start)) +
