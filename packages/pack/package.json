@@ -11,6 +11,8 @@
 		".": "./src/index.ts",
 		"./vite": "./src/vite.ts",
 		"./targets": "./src/targets.ts",
+		"./color-writer": "./src/color-writer.ts",
+		"./component-styles": "./src/component-styles.ts",
 		"./famext": "./src/famext.ts",
 		"./format": "./src/format.ts"
 	},
@@ -21,12 +23,14 @@
 	"dependencies": {
 		"@famos/api-client": "workspace:*",
 		"@famos/sdk": "workspace:*",
+		"@famos/themes": "workspace:*",
 		"@famos/time": "workspace:*",
 		"@famos/ui": "workspace:*",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"@tailwindcss/node": "4.3.3",
 		"@tailwindcss/oxide": "4.3.3",
 		"esbuild": "0.28.2",
+		"lightningcss": "1.32.0",
 		"svelte": "catalog:",
 		"tailwindcss": "4.3.3",
 		"tar": "7.5.22",

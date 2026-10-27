@@ -30,7 +30,15 @@ Wall displays run old system browsers (Chrome 106 is the floor). CI cannot open 
 1. Build and start FamilyOS (`pnpm build`, then `node apps/server/dist/famos.mjs` with a throwaway `FAMOS_DATA_DIR`, `HOST=0.0.0.0`, `FAMOS_BASE_URL=http://host.docker.internal:<port>`) and set it up with an admin.
 2. Run `FAMOS_URL=http://host.docker.internal:<port> FAMOS_EMAIL=<admin> FAMOS_PASSWORD=<password> scripts/old-browser/run.sh`.
 
-It opens `/login`, `/display`, Today and a few other pages and fails on any script or console error; screenshots are written to `scripts/old-browser/screenshots`. `FAMOS_PAGES` (comma-separated paths) changes the pages visited after sign-in. Look at the screenshots too: a page can be error-free and still unpainted.
+It opens `/login`, `/display`, Today and a few other pages and fails on any script or console error; screenshots are written to `scripts/old-browser/screenshots`. `FAMOS_PAGES` (comma-separated paths) changes the pages visited after sign-in. Look at the screenshots too: a page can be error-free and still unpainted. `node scripts/old-browser/mixes.mjs` lists every `color-mix()` of the build with the fallback written for it (JSON).
+
+### Page by page and color by color
+
+Two more checks show how far an older browser is from a modern one. Both need Docker and a build, run by hand and are not part of CI.
+
+**Pictures of every page** (`scripts/old-browser/compare/run.sh`). It starts the design sweep's sample family (members with colors, events, lists, records, weather from a fake Open-Meteo, a paired display) at a fixed time, takes full-page pictures in the repo's Chromium and in Chromium 106 (every page, Today in each style, the display; day and night; 400, 1024 and 1440 px), and compares them with pixelmatch. Once: `pnpm --filter @famos/e2e exec playwright install --only-shell chromium`. A full run takes about half an hour; `FAMOS_STYLES`, `FAMOS_ONLY` (page names) and `FAMOS_WIDTHS` narrow it. Open `test-results/old-browser/report/index.html`: pairs are ranked by changed pixels, each shown modern, 106 and diff. A shade of difference is the color check's business; look for what is not color: a different page height (named in the list), a missing or moved element, unpainted text. Those are bugs, not noise. Two different machines draw text edges a little differently, so small changes along letters are expected.
+
+**Every mix, every theme** (`node scripts/old-browser/colors.mjs <pairs.json>`). The file lists `{ file, selector, mix, fallback }` (`colors.sample.json` shows the shape). Each pair is evaluated under the built-in tokens and under every bundled theme pack, day and night: the `color-mix()` in the repo's Chromium, the fallback in Chromium 106. It prints the pairs by ΔEOK (OKLab distance times 100), worst first, and exits 1 when one is over `FAMOS_COLORS_MAX` (2 by default, about the least a person notices) or when a fallback does not parse in Chromium 106.
 
 ## Extension packages
 

@@ -8,12 +8,12 @@
 		variants: {
 			variant: {
 				// One filled button per view: `primary` (ink) is the view's main action; the rest stay quiet.
-				primary: "bg-ink text-surface hover:bg-ink-pressed",
-				secondary: "bg-idle text-ink hover:bg-idle-pressed",
+				primary: "bg-ink text-surface hover:bg-[color-mix(in_oklab,var(--ink)_86%,var(--surface))]",
+				secondary: "bg-idle text-ink hover:bg-[color-mix(in_oklab,var(--idle)_90%,var(--ink))]",
 				outline: "border-line bg-transparent text-ink hover:bg-idle",
 				ghost: "bg-transparent text-ink-soft hover:bg-idle hover:text-ink aria-expanded:bg-idle aria-expanded:text-ink",
-				go: "bg-attention text-on-color hover:bg-attention-pressed",
-				danger: "bg-transparent text-destructive hover:bg-destructive-wash data-[armed=true]:bg-destructive data-[armed=true]:text-on-color",
+				go: "bg-attention text-on-color hover:bg-[color-mix(in_oklab,var(--attention)_90%,var(--ink))]",
+				danger: "bg-transparent text-destructive hover:bg-[color-mix(in_oklab,var(--destructive)_10%,transparent)] data-[armed=true]:bg-destructive data-[armed=true]:text-on-color",
 				link: "rounded-sm text-info underline underline-offset-3 decoration-1 hover:decoration-2",
 			},
 			size: {

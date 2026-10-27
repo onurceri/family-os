@@ -3,6 +3,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STYLE_IDS, type StyleId, type ThemePort, type ThemeSummary } from '@famos/core';
+import { needsColorMixFallback } from '@famos/pack/targets';
 import { FamosError, type Logger } from '@famos/sdk';
 import {
 	previewOf,
@@ -105,6 +106,7 @@ export function createThemeRegistry(options: ThemeRegistryOptions): ThemePort {
 			const css = renderStylesheet(
 				pack,
 				(file) => `/api/v1/core/themes/${pack.manifest.id}/fonts/${encodeURIComponent(file)}`,
+				{ channels: needsColorMixFallback() },
 			);
 			return {
 				id: pack.manifest.id,

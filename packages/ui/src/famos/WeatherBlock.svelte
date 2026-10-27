@@ -1,6 +1,6 @@
 <script lang="ts">
 	import HourlyStrip, { type HourlyPoint } from './HourlyStrip.svelte';
-	import { skySoftInk } from './sky.js';
+	import { skySoftVars } from './sky.js';
 	import WeatherSky from './WeatherSky.svelte';
 	import type { TodayFormat } from './today-v3.js';
 
@@ -54,7 +54,7 @@
 <div
 	class="weather {variant}"
 	class:has-sky={Boolean(sky)}
-	style:--sky-soft={sky ? skySoftInk : undefined}
+	style={sky ? skySoftVars() : undefined}
 	data-testid="weather-block"
 >
 	{#if sky}<WeatherSky code={sky.code} isDay={sky.isDay} />{/if}

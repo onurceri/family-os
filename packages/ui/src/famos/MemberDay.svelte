@@ -16,6 +16,7 @@
 
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { colorVars } from '../colors.js';
 	import type { TimelineItem } from '../slots.js';
 	import Avatar from './Avatar.svelte';
 	import { formatClock, isTimed, type TodayFormat } from './today-v3.js';
@@ -105,7 +106,7 @@
 {/snippet}
 
 {#if variant === 'row'}
-	<div class="row" style:--member={member.color} data-testid="member-day">
+	<div class="row" style={colorVars('member', member.color)} data-testid="member-day">
 		<span class="who">
 			<span class="ringed"
 				><Avatar
@@ -150,7 +151,7 @@
 	<section
 		class="mday {variant}"
 		class:none={items.length === 0}
-		style:--member={member.color}
+		style={colorVars('member', member.color)}
 		aria-label={member.displayName}
 		data-testid="member-day"
 	>

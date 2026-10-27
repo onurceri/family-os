@@ -5,6 +5,8 @@
 	 * board, two of three on a phone (at most twelve things move). CSS animations only, and none
 	 * for people who ask for less motion.
 	 */
+	import { colorVars } from '@famos/ui/famos';
+
 	type Hang = { left: number; top: number; i: number };
 
 	/** The string's points: `swags` sags, `per` things on each, and where they hang (in px). */
@@ -43,7 +45,7 @@
 				style:top="{hang.top}px"
 				style:--i={hang.i}
 				style:--twinkle="{3 + (hang.i % 3) * 0.8}s"
-				style:--paper="var(--note-{(hang.i % 5) + 1})"
+				style={colorVars('paper', `var(--note-${(hang.i % 5) + 1})`)}
 			>
 				<span class="flag"></span>
 				<span class="bulb"></span>
@@ -86,7 +88,6 @@
 	}
 	.string path {
 		fill: none;
-		stroke: var(--ink-soft);
 		stroke: color-mix(in srgb, var(--ink-soft) 70%, transparent);
 		stroke-width: 1.25px;
 	}
@@ -105,7 +106,6 @@
 		background: var(--paper);
 		clip-path: polygon(0 0, 100% 0, 50% 100%);
 		transform-origin: 50% 0;
-		filter: drop-shadow(0 1px 0 transparent);
 		filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--backdrop) 18%, transparent));
 		animation: sway 3s ease-in-out calc(var(--i) * -0.55s) infinite alternate;
 	}
@@ -124,9 +124,6 @@
 		height: 13px;
 		border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
 		background: var(--sun);
-		box-shadow:
-			0 0 6px 2px var(--sun),
-			0 0 16px 4px transparent;
 		box-shadow:
 			0 0 6px 2px color-mix(in srgb, var(--sun) 55%, transparent),
 			0 0 16px 4px color-mix(in srgb, var(--sun) 22%, transparent);

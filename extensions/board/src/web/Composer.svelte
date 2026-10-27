@@ -2,6 +2,7 @@
 	import { Button } from '@famos/ui/button';
 	import { Textarea } from '@famos/ui/textarea';
 	import {
+		colorVars,
 		fieldAria,
 		FIELD_REASON,
 		FieldError,
@@ -139,7 +140,7 @@
 <form
 	onsubmit={submit}
 	class="paper day {PAPER_CLASS[paper]} text-note-ink grid grid-cols-1 gap-3 p-3"
-	style:--paper="var(--{paper})"
+	style={colorVars('paper', `var(--${paper})`)}
 	aria-label={note ? t('edit') : t('write_tile')}
 	data-testid="composer"
 >
@@ -173,7 +174,7 @@
 						class="peer sr-only"
 					/>
 					<span
-						style:--swatch="var(--{option})"
+						style={colorVars('swatch', `var(--${option})`)}
 						class="swatch {PAPER_CLASS[
 							option
 						]} text-note-ink peer-checked:outline-note-ink peer-focus-visible:ring-ring grid h-12 place-items-center rounded-sm peer-checked:outline-[2.5px] peer-checked:outline-offset-2 peer-focus-visible:ring-2"
@@ -200,7 +201,7 @@
 		/>
 		<button
 			type="button"
-			class="text-note-ink border-note-ink-soft/50 hover:tint-note-ink/10 flex min-h-11 max-w-full items-center gap-2 rounded-lg border px-3 text-sm font-bold"
+			class="text-note-ink border-note-ink-soft/50 hover:bg-note-ink/10 flex min-h-11 max-w-full items-center gap-2 rounded-lg border px-3 text-sm font-bold"
 			onclick={() => fileInput?.click()}
 		>
 			<ImagePlus class="size-4" aria-hidden="true" />
@@ -276,9 +277,6 @@
 	.swatch {
 		box-shadow:
 			var(--shadow-lit),
-			0 4px 8px -5px transparent;
-		box-shadow:
-			var(--shadow-lit),
 			0 4px 8px -5px color-mix(in srgb, var(--note-ink) 45%, transparent);
 		transform: rotate(var(--tilt));
 	}
@@ -293,24 +291,18 @@
 		color-scheme: light;
 	}
 	:global(.dark) .paper {
-		background-color: var(--paper);
 		background-color: color-mix(in srgb, var(--paper) 84%, var(--lamp, var(--board)));
 	}
 	/* The softer ink leans toward the ink by night, so it keeps 4.5:1 on the dimmed paper. */
 	:global(.dark) .paper :global(.text-note-ink-soft),
 	:global(.dark) .paper :global(textarea::placeholder) {
-		color: var(--note-ink-soft);
 		color: color-mix(in srgb, var(--note-ink-soft) 60%, var(--note-ink));
 	}
 	:global(.dark) .swatch {
-		background-color: var(--swatch);
 		background-color: color-mix(in srgb, var(--swatch) 84%, var(--lamp, var(--board)));
 	}
 	.paper {
 		border-radius: var(--radius-sm);
-		box-shadow:
-			var(--shadow-lit),
-			0 6px 12px -7px transparent;
 		box-shadow:
 			var(--shadow-lit),
 			0 6px 12px -7px color-mix(in srgb, var(--note-ink) 45%, transparent);

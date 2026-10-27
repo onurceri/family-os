@@ -75,7 +75,7 @@
 				data-date={date}
 				class="border-line grid min-h-0 min-w-0 content-start gap-0.5 overflow-hidden border-s border-b p-1 {inMonth
 					? ''
-					: 'bg-wall'} {isToday ? 'tint-now/5' : ''}"
+					: 'bg-wall'} {isToday ? 'bg-now/5' : ''}"
 			>
 				<button
 					type="button"

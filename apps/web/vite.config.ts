@@ -1,4 +1,6 @@
 import { fileURLToPath } from 'node:url';
+import { colorFallbackPlugin } from '@famos/pack/color-writer';
+import { componentStylesPreprocessor } from '@famos/pack/component-styles';
 import { BROWSER_TARGETS } from '@famos/pack/targets';
 import { sharedModules } from '@famos/pack/vite';
 import adapter from '@sveltejs/adapter-static';
@@ -17,8 +19,10 @@ const ui = fileURLToPath(new URL('../../packages/ui/src/', import.meta.url));
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		colorFallbackPlugin(BROWSER_TARGETS),
 		sveltekit({
 			adapter: adapter({ fallback: 'index.html' }),
+			preprocess: [componentStylesPreprocessor(BROWSER_TARGETS)],
 			dynamicCompileOptions: ({ filename }) =>
 				filename.startsWith(ui) ? { css: 'injected' } : undefined,
 		}),

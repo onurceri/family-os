@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
 	CONTRAST_RULES,
+	colorChannels,
 	contrastRatio,
 	MAX_FONT_BYTES,
 	MODE_TOKEN_NAMES,
@@ -522,6 +523,32 @@ describe('the stylesheet', () => {
 		expect(css).not.toContain('--font-family-display');
 		expect(css).not.toContain('--font-family-serif');
 		expect(css).toContain('font-display: swap;');
+		// No color channels unless asked for.
+		expect(css).not.toContain('--wall-r');
+	});
+
+	it("writes each color token's channels when asked, equal to the color in both palettes", () => {
+		const valid = check(bundled('ev-isigi'));
+		if (!valid.ok) throw new Error(valid.errors.join('; '));
+		const css = renderStylesheet(valid.pack, (file) => `/fonts/${file}`, { channels: true });
+		const blocks = css.split('html.dark {');
+		for (const [i, values] of [valid.pack.tokens.day, valid.pack.tokens.night].entries()) {
+			const block = blocks[i] as string;
+			for (const name of MODE_TOKEN_NAMES) {
+				const color = MODE_TOKENS[name].kind === 'color' ? parseColor(values[name]) : null;
+				if (!color) {
+					expect(block).not.toContain(`--${name}-r:`);
+					continue;
+				}
+				const c = colorChannels(color);
+				const line = (key: string, value: number) => `--${name}-${key}: ${value};`;
+				expect(block).toContain(`--${name}: ${values[name]};\n\t${line('r', c.r)}`);
+				expect(block).toContain(line('g', c.g));
+				expect(block).toContain(line('b', c.b));
+				expect(block).toContain(line('a', c.a));
+				expect(serializeColor(c)).toBe(serializeColor(color));
+			}
+		}
 	});
 
 	it('sets the display and serif slots a pack names, and blocks on its own display face', () => {

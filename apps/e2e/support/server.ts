@@ -64,6 +64,10 @@ export async function startFamilyOS(options: {
 		...(options.telegramApiRoot && { FAMOS_TELEGRAM_API_ROOT: options.telegramApiRoot }),
 		...(options.emailFakeDir && { FAMOS_EMAIL_FAKE_DIR: options.emailFakeDir }),
 		...(options.behindProxy && { FAMOS_TRUSTED_PROXIES: '127.0.0.1' }),
+		// A container reaches a server on every interface by this name (old-browser/serve.spec.ts).
+		...(process.env.FAMOS_E2E_HOST && {
+			FAMOS_TRUSTED_ORIGINS: `http://host.docker.internal:${port}`,
+		}),
 	} as NodeJS.ProcessEnv;
 
 	let child: ChildProcess | undefined;

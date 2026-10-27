@@ -1,3 +1,16 @@
+export {
+	type ChannelSource,
+	colorChannelsOf,
+	colorMixFallback,
+	type ResolveChannels,
+	resolveByConvention,
+} from './color-fallback.ts';
+export {
+	type ColorFallbackOptions,
+	colorFallbackPlugin,
+	writeColorFallbacks,
+} from './color-writer.ts';
+export { componentStylesPreprocessor, lowerToTargets } from './component-styles.ts';
 export { PACKAGE_FILE, PACKAGE_FORMAT } from './format.ts';
 export {
 	type BuildOptions,
@@ -10,7 +23,7 @@ export {
 export { checkPlatform, currentPlatform, type Platform, type PlatformCheck } from './platform.ts';
 export { SHARED_SERVER, SHARED_WEB } from './shared.ts';
 export { buildStyles, LAYER_ORDER, PACKAGE_LAYER, STYLES_INPUT } from './styles.ts';
-export { BROWSER_TARGETS } from './targets.ts';
+export { BROWSER_TARGETS, needsColorMixFallback } from './targets.ts';
 export {
 	chunkName,
 	SHARED_MODULES_FILE,

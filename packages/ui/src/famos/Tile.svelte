@@ -170,11 +170,9 @@
 	}
 	@media (hover: hover) {
 		.interactive:hover {
-			background: var(--surface);
 			background: color-mix(in oklab, var(--surface) 94%, var(--ink));
 		}
 		.idle.interactive:hover {
-			background: var(--idle);
 			background: color-mix(in oklab, var(--idle) 92%, var(--ink));
 		}
 	}

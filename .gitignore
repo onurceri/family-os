@@ -17,6 +17,8 @@ vite.config.ts.timestamp-*
 .vitest/
 # Playwright
 apps/e2e/test-results/
+# Old-browser comparison pictures and report (scripts/old-browser/compare)
+/test-results/
 apps/e2e/playwright-report/
 # Claude Code agent worktrees
 .claude/worktrees/

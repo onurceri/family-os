@@ -1,7 +1,10 @@
 import { join } from 'node:path';
 import { compile, optimize } from '@tailwindcss/node';
 import { Scanner } from '@tailwindcss/oxide';
+import { writeColorFallbacks } from './color-writer.ts';
+import { lowerToTargets } from './component-styles.ts';
 import { packageJsonOf } from './shared.ts';
+import { BROWSER_TARGETS } from './targets.ts';
 
 /** The cascade layer a package's utilities go in: after the app's components, before its utilities. */
 export const PACKAGE_LAYER = 'ext';
@@ -48,5 +51,7 @@ export async function buildStyles(root: string): Promise<string> {
 	});
 	const scanner = new Scanner({ sources: compiler.sources });
 	const css = optimize(compiler.build(scanner.scan()), { minify: true }).code;
-	return `${LAYER_ORDER}\n${css}`;
+	// Written straight into the package, so lowered to the targets here as Vite would.
+	const written = writeColorFallbacks(css, { targets: BROWSER_TARGETS });
+	return `${LAYER_ORDER}\n${lowerToTargets(written, { targets: BROWSER_TARGETS, minify: true })}`;
 }

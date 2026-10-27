@@ -137,6 +137,20 @@ export function serializeColor(color: Rgba): string {
 	return `rgb(${Math.round(color.r)} ${Math.round(color.g)} ${Math.round(color.b)} / ${a})`;
 }
 
+/**
+ * A color's channels as the stylesheet writes them next to the color (`--ink-r` …), for browsers
+ * without `color-mix()`: the same rounding as `serializeColor`, so both name one color.
+ */
+export function colorChannels(color: Rgba): Rgba {
+	const channel = (v: number) => Math.round(clamp(v, 0, 255));
+	return {
+		r: channel(color.r),
+		g: channel(color.g),
+		b: channel(color.b),
+		a: color.a >= 1 ? 1 : Number(clamp(color.a, 0, 1).toFixed(3)),
+	};
+}
+
 /** WCAG relative luminance of an sRGB color. */
 export function luminance(color: Rgba): number {
 	return (

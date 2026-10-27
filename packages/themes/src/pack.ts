@@ -1,6 +1,6 @@
 import { satisfiesRange } from '@famos/i18n';
 import { z } from 'zod';
-import { contrastRatio, parseColor, type Rgba, serializeColor } from './color.ts';
+import { colorChannels, contrastRatio, parseColor, type Rgba, serializeColor } from './color.ts';
 import {
 	BODY_FONTS,
 	BUNDLED_FONTS,
@@ -457,6 +457,28 @@ function fontStack(font: string, slot: 'font' | 'font-display' | 'font-serif' = 
 	return `"${family}", ${slot === 'font-serif' ? STACKS.serif : STACKS.fallback}`;
 }
 
+export interface StylesheetOptions {
+	/**
+	 * Write each color token's channels next to it (`--ink-r`, `-g`, `-b` 0 to 255, `-a` 0 to 1),
+	 * which the app's mixes fall back to in browsers without `color-mix()`. The server asks for
+	 * them while it supports such browsers.
+	 */
+	channels?: boolean;
+}
+
+/** A token's lines: the value, and its channels when asked for and the token is a color. */
+function tokenLines(name: ModeToken, value: string, channels: boolean): string[] {
+	const lines = [`\t${cssVariable(name)}: ${value};`];
+	const color = channels && MODE_TOKENS[name].kind === 'color' ? parseColor(value) : null;
+	if (color) {
+		const c = colorChannels(color);
+		for (const key of ['r', 'g', 'b', 'a'] as const) {
+			lines.push(`\t${cssVariable(name)}-${key}: ${c[key]};`);
+		}
+	}
+	return lines;
+}
+
 /**
  * The stylesheet for a pack: custom properties for the day palette (`:root`, `.day`) and the
  * night palette (`html.dark`). The selectors are one step more specific than the app's own
@@ -464,10 +486,16 @@ function fontStack(font: string, slot: 'font' | 'font-display' | 'font-serif' = 
  * validated, canonical values, so nothing a pack wrote reaches the browser as text.
  * `fontUrl` turns a font file name into the address it is served from.
  */
-export function renderStylesheet(pack: ThemePack, fontUrl: (file: string) => string): string {
+export function renderStylesheet(
+	pack: ThemePack,
+	fontUrl: (file: string) => string,
+	options: StylesheetOptions = {},
+): string {
 	const { tokens } = pack;
 	const block = (values: Record<ModeToken, string>) =>
-		MODE_TOKEN_NAMES.map((name) => `\t${cssVariable(name)}: ${values[name]};`).join('\n');
+		MODE_TOKEN_NAMES.flatMap((name) =>
+			tokenLines(name, values[name], options.channels ?? false),
+		).join('\n');
 	// An empty display or serif slot is left out: the style's default applies (theme.css).
 	const fonts = (['font', 'font-display', 'font-serif'] as const)
 		.filter((slot) => tokens[slot] !== '')

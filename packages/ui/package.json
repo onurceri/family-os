@@ -10,6 +10,7 @@
 		"./type.css": "./src/type.css",
 		"./styles": "./src/styles.ts",
 		"./utils": "./src/utils.ts",
+		"./colors": "./src/colors.ts",
 		"./slots": "./src/slots.ts",
 		"./slot": {
 			"svelte": "./src/Slot.svelte",

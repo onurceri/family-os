@@ -130,8 +130,13 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		min-height: calc(100vh - var(--shell-top, 0px) - var(--chat-dock));
-		min-height: calc(100dvh - var(--shell-top, 0px) - var(--chat-dock));
 		margin-bottom: calc(var(--chat-dock) - var(--shell-bottom, 0px));
+	}
+	/* With a `var()` in it, a `dvh` line after the `vh` one would win where `dvh` is unknown. */
+	@supports (min-height: 100dvh) {
+		.fill {
+			min-height: calc(100dvh - var(--shell-top, 0px) - var(--chat-dock));
+		}
 	}
 	@media (min-width: 48rem) {
 		.fill {

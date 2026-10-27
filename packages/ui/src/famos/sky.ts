@@ -6,6 +6,13 @@
  */
 
 import { weatherKind } from '@famos/time';
+import {
+	type Channels,
+	channelDeclarations,
+	channelsCss,
+	mixChannels,
+	varChannels,
+} from '../colors.js';
 
 export type SkyKind = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
 
@@ -185,22 +192,39 @@ export const SKY_FOG_OPACITY = 1;
 
 /**
  * Whether the browser can mix colors in CSS (Chrome 111). Where it cannot (older wall displays),
- * a paint is its plain ground color. Outside a browser (the server, tests) the mix is kept.
+ * a paint is computed from the tokens' channels instead (`@famos/ui/colors`). Outside a browser
+ * (the server, tests) the mix is kept.
  */
 export const colorMixSupported =
 	typeof CSS === 'undefined' ||
 	typeof CSS.supports !== 'function' ||
 	CSS.supports('color', 'color-mix(in srgb, red, blue)');
 
-/** CSS for a paint: nested `color-mix(in srgb, …)` that adds up to the shares in `mix`. */
-export function paintCss({ ground, mix }: SkyPaint): string {
-	const [first, ...rest] = mix;
-	if (!colorMixSupported) return `var(--${ground})`;
-	if (!first) return `var(--${ground})`;
+/** A sky token's channels; only `sky-cloud` may be transparent. */
+const tokenChannels = (token: SkyToken) =>
+	varChannels(`--${token}`, undefined, token !== 'sky-cloud');
+
+/** A paint as channels: the same nested mix, for a browser without `color-mix`. */
+export function paintChannels({ ground, mix }: SkyPaint): Channels {
+	return mix.reduceRight<Channels>((inner, [token, share], i) => {
+		const left = 100 - mix.slice(0, i).reduce((sum, [, s]) => sum + s, 0);
+		return mixChannels(tokenChannels(token), (share / left) * 100, inner, null) ?? inner;
+	}, tokenChannels(ground));
+}
+
+/**
+ * CSS for a paint: nested `color-mix(in srgb, …)` that adds up to the shares in `mix`, or the
+ * same color from channels where the browser cannot mix.
+ */
+export function paintCss(paint: SkyPaint, mixSupported = colorMixSupported): string {
+	if (!mixSupported)
+		return paint.mix.length === 0 ? `var(--${paint.ground})` : channelsCss(paintChannels(paint));
+	const [first, ...rest] = paint.mix;
+	if (!first) return `var(--${paint.ground})`;
 	const [token, share] = first;
 	const left = 100 - share;
 	const inner = paintCss({
-		ground,
+		ground: paint.ground,
 		mix: rest.map(([t, s]) => [t, Math.round((s / left) * 10000) / 100] as const),
 	});
 	return `color-mix(in srgb, var(--${token}) ${share}%, ${inner})`;
@@ -212,11 +236,23 @@ export function paintCss({ ground, mix }: SkyPaint): string {
  */
 export const SKY_SOFT_INK = 30;
 
+/** The CSS colour of secondary text on the sky, as a mix. */
+export const skySoftInk = `color-mix(in srgb, var(--ink-soft) ${SKY_SOFT_INK}%, var(--ink))`;
+
 /**
- * The CSS colour of secondary text on the sky. Set it as `--sky-soft` on the element that holds
- * the sky and its text, and `--ink-soft: var(--sky-soft)` on that element's children (a custom
- * property cannot refer to itself on one element).
+ * Inline style that sets `--sky-soft` (with its channels) on the element that holds the sky and
+ * its text; its children get `--ink-soft: var(--sky-soft)` (a custom property cannot refer to
+ * itself on one element).
  */
-export const skySoftInk = colorMixSupported
-	? `color-mix(in srgb, var(--ink-soft) ${SKY_SOFT_INK}%, var(--ink))`
-	: 'var(--ink-soft)';
+export function skySoftVars(mixSupported = colorMixSupported): string {
+	const channels = mixChannels(
+		varChannels('--ink-soft', undefined, true),
+		SKY_SOFT_INK,
+		varChannels('--ink', undefined, true),
+		null,
+	) as Channels;
+	const value = mixSupported ? skySoftInk : channelsCss(channels);
+	return [['--sky-soft', value], ...channelDeclarations('--sky-soft', channels)]
+		.map(([prop, v]) => `${prop}: ${v}`)
+		.join('; ');
+}

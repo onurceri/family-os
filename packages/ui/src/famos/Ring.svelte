@@ -95,7 +95,6 @@
 		stroke-linecap: round;
 	}
 	.on-accent .track {
-		stroke: transparent;
 		stroke: color-mix(in oklab, var(--on-accent) 20%, transparent);
 	}
 	.on-accent .arc {

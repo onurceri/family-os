@@ -69,19 +69,11 @@
 		border-radius: 24px;
 		box-shadow:
 			var(--shadow-lit),
-			0 6px 24px transparent,
-			inset 0 0 0 1px var(--line);
-		box-shadow:
-			var(--shadow-lit),
 			0 6px 24px color-mix(in oklab, var(--ink) 8%, transparent),
 			inset 0 0 0 1px var(--line);
 		transition: box-shadow 150ms ease-out;
 	}
 	.field:focus-within {
-		box-shadow:
-			var(--shadow-lit),
-			0 6px 24px transparent,
-			inset 0 0 0 1.5px var(--line);
 		box-shadow:
 			var(--shadow-lit),
 			0 6px 24px color-mix(in oklab, var(--ink) 10%, transparent),
@@ -120,7 +112,6 @@
 		border: 0;
 		border-radius: 999px;
 		background: var(--idle);
-		color: var(--ink-soft);
 		color: color-mix(in oklab, var(--ink-soft) 70%, var(--idle));
 		cursor: default;
 		outline: none;
@@ -139,7 +130,6 @@
 		cursor: pointer;
 	}
 	.send.ready:hover {
-		background: var(--accent);
 		background: color-mix(in oklab, var(--accent) 88%, var(--ink));
 	}
 	.send:focus-visible {
