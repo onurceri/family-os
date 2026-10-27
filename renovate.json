@@ -38,6 +38,11 @@
 			"matchDepTypes": ["devDependencies"],
 			"matchUpdateTypes": ["patch", "minor"],
 			"groupName": "dev dependencies (non-major)"
+		},
+		{
+			"matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+			"groupName": "playwright",
+			"description": "CI runs e2e in the Playwright image, which must match the test runner's version."
 		}
 	]
 }

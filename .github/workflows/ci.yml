@@ -99,6 +99,11 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # The browser and its system libraries come with the image, so no apt step waits on a slow
+    # Ubuntu mirror. Its version must match @playwright/test in apps/e2e (scripts/ci-playwright.test.ts).
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
     strategy:
       fail-fast: false
       matrix:
@@ -114,16 +119,6 @@ jobs:
             turbo-${{ runner.os }}-build-${{ matrix.shard }}-${{ hashFiles('pnpm-lock.yaml') }}-
             turbo-${{ runner.os }}-build-${{ matrix.shard }}-
       - run: pnpm build
-
-      - id: playwright
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-        working-directory: apps/e2e
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      # Downloads the browser only on a cache miss; the system libraries it needs are always installed.
-      - run: pnpm --filter @famos/e2e exec playwright install --with-deps --only-shell chromium
 
       - run: pnpm --filter @famos/e2e exec playwright test --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
