@@ -177,3 +177,11 @@ describe('writeColorFallbacks', () => {
 		expect(transform('export default 1', '/app/src/a.ts')).toBeUndefined();
 	});
 });
+
+describe('writeColorFallbacks on hostile input', () => {
+	it('answers quickly on a long run of dashes', () => {
+		const started = performance.now();
+		writeColorFallbacks(`.a { color: red; } /* ${'--'.repeat(50_000)} */`);
+		expect(performance.now() - started).toBeLessThan(1000);
+	});
+});

@@ -449,7 +449,7 @@ function readable<T>(value: T): T {
  * Whether a stylesheet may have anything for the writer (a mix, or a custom property that may be
  * a color): a cheap test that spares the parse for most component styles.
  */
-const worthWriting = (css: string) => css.includes('color-mix') || /--[\w-]+\s*:/.test(css);
+const worthWriting = (css: string) => css.includes('color-mix') || css.includes('--');
 
 export interface ColorFallbackOptions {
 	/** The browsers built for; nothing is written when all of them have `color-mix()`. */

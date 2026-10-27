@@ -172,10 +172,16 @@ export function parseColorChannels(text: string): Channels | null {
 
 /** The channels of `var(--x)` or `var(--x, <color>)`, or null. */
 function varColorChannels(text: string): Channels | null {
-	const match = /^var\(\s*(--[\w-]+)\s*(?:,\s*(.+?)\s*)?\)$/.exec(text.trim());
-	const name = match?.[1];
-	if (!name) return null;
-	const fallback = match[2];
+	// Read by hand, not with one pattern: a pattern with an optional, lazy fallback backtracks
+	// badly on long inputs.
+	const trimmed = text.trim();
+	if (!trimmed.startsWith('var(') || !trimmed.endsWith(')')) return null;
+	const args = trimmed.slice(4, -1);
+	const comma = args.indexOf(',');
+	const name = (comma < 0 ? args : args.slice(0, comma)).trim();
+	if (!/^--[\w-]+$/.test(name)) return null;
+	const fallback = comma < 0 ? undefined : args.slice(comma + 1).trim();
+	if (fallback === '') return null;
 	if (fallback === undefined) return varChannels(name);
 	const inner = colorChannels(fallback);
 	return inner ? varChannels(name, inner) : null;

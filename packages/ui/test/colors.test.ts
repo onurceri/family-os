@@ -80,3 +80,19 @@ describe('the sky without color-mix', () => {
 		);
 	});
 });
+
+describe('colorChannels on hostile input', () => {
+	it('reads var() with and without a fallback', () => {
+		expect(colorChannels('var(--ink)')).not.toBeNull();
+		expect(colorChannels(' var( --ink , #ff0000 ) ')).not.toBeNull();
+		expect(colorChannels('var(--ink, )')).toBeNull();
+		expect(colorChannels('var(ink)')).toBeNull();
+	});
+
+	it('answers quickly on long inputs that make a backtracking pattern slow', () => {
+		const started = performance.now();
+		colorChannels(`var(---,${'\t'.repeat(50_000)}`);
+		colorChannels(`var(---,a${'\t'.repeat(50_000)}`);
+		expect(performance.now() - started).toBeLessThan(100);
+	});
+});
