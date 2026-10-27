@@ -118,6 +118,7 @@
 
 <style>
 	.bar {
+		background: linear-gradient(90deg, transparent, var(--info), transparent);
 		background: linear-gradient(
 			90deg,
 			transparent,
@@ -138,6 +139,7 @@
 		.bar {
 			animation: none;
 			width: 100%;
+			background: transparent;
 			background: color-mix(in srgb, var(--info) 30%, transparent);
 		}
 	}

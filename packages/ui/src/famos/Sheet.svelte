@@ -129,6 +129,7 @@
 	}
 	.half {
 		top: auto;
+		max-height: 85vh;
 		max-height: 85dvh;
 		grid-template-rows: auto auto;
 	}

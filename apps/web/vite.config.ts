@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { BROWSER_TARGETS } from '@famos/pack/targets';
 import { sharedModules } from '@famos/pack/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -23,6 +24,7 @@ export default defineConfig({
 		}),
 		sharedModules(),
 	],
+	build: { target: BROWSER_TARGETS, cssTarget: BROWSER_TARGETS },
 	server: {
 		proxy: {
 			'/api': { target: api, changeOrigin: false, ws: true },

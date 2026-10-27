@@ -13,6 +13,8 @@ catalog:
   zod: 4.6.6
 
 allowBuilds:
+  # core-js's install script only prints a funding notice.
+  core-js: false
   esbuild: true
 
 peerDependencyRules:

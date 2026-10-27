@@ -62,7 +62,7 @@
 	/>
 	<span
 		aria-hidden="true"
-		class="bg-ink-soft/35 peer-checked:bg-now peer-focus-visible:ring-ink after:bg-surface after:shadow-lit relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform peer-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
+		class="track-ink-soft/35 peer-checked:bg-now peer-focus-visible:ring-ink after:bg-surface after:shadow-lit relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform peer-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
 	></span>
 {/snippet}
 

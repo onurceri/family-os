@@ -23,6 +23,15 @@ FamilyOS ships one product version as a Docker image. The version lives in `apps
 
 The **Release** workflow then runs every check (lint, typecheck, tests, E2E), verifies the tag matches the version, pushes `ghcr.io/onurceri/familyos` for amd64 and arm64 as `0.2.0`, `0.2` and `latest` (plus `1` from 1.0 on), creates the GitHub release with the notes, and then publishes the extension packages (below).
 
+## Before a release, check older browsers
+
+Wall displays run old system browsers (Chrome 106 is the floor). CI cannot open one, so run the app in Chromium 106 by hand (needs Docker; the image is Playwright 1.26):
+
+1. Build and start FamilyOS (`pnpm build`, then `node apps/server/dist/famos.mjs` with a throwaway `FAMOS_DATA_DIR`, `HOST=0.0.0.0`, `FAMOS_BASE_URL=http://host.docker.internal:<port>`) and set it up with an admin.
+2. Run `FAMOS_URL=http://host.docker.internal:<port> FAMOS_EMAIL=<admin> FAMOS_PASSWORD=<password> scripts/old-browser/run.sh`.
+
+It opens `/login`, `/display`, Today and a few other pages and fails on any script or console error; screenshots are written to `scripts/old-browser/screenshots`. `FAMOS_PAGES` (comma-separated paths) changes the pages visited after sign-in. Look at the screenshots too: a page can be error-free and still unpainted.
+
 ## Extension packages
 
 Every extension is also published as a signed package (`.famext`), so a family can install one the image does not carry, or a newer version, from **Settings → Extensions → Look for more** ([guide](guide/extensions.md)).

@@ -86,6 +86,7 @@
 	dialog {
 		width: min(400px, 90vw);
 		max-width: none;
+		max-height: 90vh;
 		max-height: 90dvh;
 		margin: auto;
 		padding: 0;

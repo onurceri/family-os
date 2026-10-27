@@ -1,5 +1,8 @@
 {
 	"loading": "Loading…",
+	"boot_failed_title": "FamilyOS could not open in this browser",
+	"boot_failed_hint": "It needs Chrome 106 or newer, or a recent Safari or Firefox. Update the browser if you can, then try again.",
+	"boot_failed_retry": "Try again",
 	"error_generic": "Something went wrong. Please try again.",
 	"language": "Language",
 	"sign_out": "Sign out",

@@ -188,7 +188,7 @@
 <nav
 	aria-label={t('nav_label')}
 	data-testid="sidebar"
-	class="bg-wall sticky top-0 z-30 hidden h-dvh w-62 flex-col border-r px-3 py-3 lg:flex"
+	class="bg-wall h-viewport sticky top-0 z-30 hidden w-62 flex-col border-r px-3 py-3 lg:flex"
 >
 	<!-- Head: the mark on the left, the bell and Quick add's + on the right. -->
 	<div class="mb-2 flex min-h-11 shrink-0 items-center gap-1">

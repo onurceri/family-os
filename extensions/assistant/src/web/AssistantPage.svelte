@@ -458,6 +458,7 @@
 	.side {
 		position: sticky;
 		top: var(--shell-top);
+		height: calc(100vh - var(--shell-top) - var(--chat-dock));
 		height: calc(100dvh - var(--shell-top) - var(--chat-dock));
 		overflow-y: auto;
 		/* Room for the focus rings. */
@@ -542,6 +543,9 @@
 		.suggestion:hover {
 			box-shadow:
 				var(--shadow-lit),
+				inset 0 0 0 1px var(--line);
+			box-shadow:
+				var(--shadow-lit),
 				inset 0 0 0 1px color-mix(in oklab, var(--ink) 25%, var(--line));
 		}
 		.suggestion:hover :global(.icon) {
@@ -609,7 +613,9 @@
 		width: 28px;
 		height: 28px;
 		border-radius: 999px;
+		background: transparent;
 		background: color-mix(in oklab, var(--accent) 22%, transparent);
+		color: var(--accent);
 		color: color-mix(in oklab, var(--accent) 70%, var(--ink));
 	}
 	.mark :global(svg) {

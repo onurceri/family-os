@@ -54,6 +54,8 @@
 	} from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
 	import { familyDateLocale } from '#lib/format.svelte.js';
+	import { bootGuard, bootState } from '#lib/boot-failure.svelte.js';
+	import BootFailed from '#lib/BootFailed.svelte';
 	import LoadingMark from '#lib/LoadingMark.svelte';
 	import { netActivity, shellState } from '#lib/net-activity.svelte.js';
 	import PageGate from '#lib/PageGate.svelte';
@@ -248,6 +250,16 @@
 		if (session.status !== 'ready' || untrack(() => shellReady)) return;
 		const timer = setTimeout(() => (shellGaveUp = true), 6000);
 		return () => clearTimeout(timer);
+	});
+	// Errors after this point are not a failed start; one before it is shown instead of the mark.
+	$effect(() => {
+		if (isDisplay) {
+			// The display has no session to wait for: a few seconds of running is its start.
+			const timer = setTimeout(() => bootGuard.up(), 5000);
+			return () => clearTimeout(timer);
+		}
+		const showing = session.status === 'ready' ? shellReady : path === signedOutPage;
+		if (showing && !untrack(() => bootState.failed)) bootGuard.up();
 	});
 	$effect(() => {
 		document.documentElement.lang = getLocale();
@@ -529,13 +541,13 @@
 <svelte:window onkeydown={shortcuts} />
 
 {#if isDisplay}
-	{@render children()}
+	{#if bootState.failed}<BootFailed />{:else}{@render children()}{/if}
 {:else if session.status === 'ready' && session.me && shellReady}
-	<div class="min-h-dvh md:grid md:grid-cols-[5rem_1fr] lg:grid-cols-[15.5rem_1fr]">
+	<div class="min-h-viewport md:grid md:grid-cols-[5rem_1fr] lg:grid-cols-[15.5rem_1fr]">
 		<!-- Tablets: labelled rail -->
 		<nav
 			aria-label={t('nav_label')}
-			class="bg-wall sticky top-0 z-30 hidden h-dvh flex-col items-center gap-1 border-r py-4 md:flex lg:hidden"
+			class="bg-wall h-viewport sticky top-0 z-30 hidden flex-col items-center gap-1 border-r py-4 md:flex lg:hidden"
 		>
 			<a
 				href="/"
@@ -610,7 +622,9 @@
 	</div>
 {:else}
 	<main class="mx-auto max-w-5xl px-4 py-6">
-		{#if session.status === 'loading' || session.status === 'ready'}
+		{#if bootState.failed}
+			<BootFailed />
+		{:else if session.status === 'loading' || session.status === 'ready'}
 			<!-- Nothing until the session, the language and the family's formats are known; the
 			     indicator only shows if this takes long. -->
 			<LoadingMark />
