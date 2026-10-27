@@ -1,12 +1,12 @@
 {
 	"name": "@famos/ext-calendar",
-	"version": "0.8.2",
+	"version": "0.8.3",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"famos": {
 		"id": "calendar",
-		"version": "0.8.2",
+		"version": "0.8.3",
 		"sdk": "^0.8.0",
 		"capabilities": [
 			"calendar.view",
