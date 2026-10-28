@@ -11,7 +11,8 @@ const DESKTOP = { width: 1440, height: 900 };
 const styleOnDocument = (page: Page) =>
 	page.evaluate(() => document.documentElement.dataset.style ?? '');
 /** The page's background: the `--wall` token of the palette on screen (day). */
-const wall = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+const wall = (page: Page) =>
+	page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
 const EV_ISIGI = 'rgb(236, 235, 230)';
 const FOREST = 'rgb(227, 233, 224)';
 
