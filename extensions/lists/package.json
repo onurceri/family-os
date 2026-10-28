@@ -1,12 +1,12 @@
 {
 	"name": "@famos/ext-lists",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"famos": {
 		"id": "lists",
-		"version": "0.8.3",
+		"version": "0.8.4",
 		"sdk": "^0.8.0",
 		"capabilities": [
 			"lists.view",

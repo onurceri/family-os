@@ -1,12 +1,12 @@
 {
 	"name": "@famos/ext-inbox",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"famos": {
 		"id": "inbox",
-		"version": "0.8.3",
+		"version": "0.8.4",
 		"sdk": "^0.8.0",
 		"optional": [
 			"records"
