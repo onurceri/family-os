@@ -1,6 +1,12 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+	colorMixFallback,
+	type ResolveChannels,
+	resolveByConvention,
+} from '../packages/pack/src/color-fallback.ts';
+import { MODE_TOKENS } from '../packages/themes/src/tokens.ts';
 
 /**
  * FamilyOS opens on Chrome (and Android WebView) 106: that is what old Android photo frames and
@@ -13,13 +19,18 @@ import { describe, expect, it } from 'vitest';
  *    installs from core-js. Use a loop or a helper instead of `Object.groupBy`, the Set methods
  *    (`union`, `intersection` ...), `Promise.withResolvers`, iterator helpers and the like.
  * 2. A viewport height in `dvh`, `svh` or `lvh` comes right after the same property in `vh`, so an
- *    older browser keeps the line it understands. In markup use the utilities of
+ *    older browser keeps the line it understands. A value with a `var()` goes inside
+ *    `@supports (height: 100dvh)` instead: such a line is accepted when the sheet is read and
+ *    dropped only when it is computed, so it would win over the `vh` line. In markup use the utilities of
  *    `packages/ui/src/theme.css` (`h-viewport`, `min-h-viewport`, `h-shell-fill` ...), not
  *    Tailwind's `h-dvh`.
- * 3. A `color-mix()` comes right after the same property with a plain token color, for the same
- *    reason. In markup use a named utility from `theme.css` (`bg-ink-pressed` ...), not an
- *    arbitrary `bg-[color-mix(...)]` class. A custom property cannot fall back that way: set it
- *    inside `@supports (color: color-mix(in srgb, red, blue))`.
+ * 3. Every `color-mix()` is one the build can write a fallback for (`@famos/pack`'s
+ *    `colorMixFallback`, applied to every stylesheet and component style): in `srgb` or `oklab`,
+ *    of `transparent`, hex, `rgb()`, nested mixes and variables that carry channels. Those are the
+ *    theme's tokens, custom properties a stylesheet sets to a color (`--lamp: var(--board)`), and
+ *    colors set from script with `colorVars` (`style={colorVars('m', member.color)}`), never with
+ *    a bare `style:--m=` (that sets no channels). Script that writes a mix itself computes its own
+ *    fallback and says so by testing `colorMixSupported`.
  */
 const root = join(import.meta.dirname, '..');
 
@@ -120,7 +131,7 @@ function newApis(code: string): string[] {
 	return found;
 }
 
-/** Tailwind classes and inline styles that cannot carry a fallback line. */
+/** Tailwind classes that cannot carry a fallback line. */
 function classOffenders(code: string): string[] {
 	const found: string[] = [];
 	for (const match of code.matchAll(/[\w:[\]()-]*\d?(?:dvh|svh|lvh)\b[\w\]()-]*/g)) {
@@ -129,22 +140,116 @@ function classOffenders(code: string): string[] {
 			`line ${line}: \`${match[0]}\` has no \`vh\` fallback; use a viewport utility of theme.css`,
 		);
 	}
-	// Tailwind's `bg-now/5` falls back to a solid block over the text before Chrome 111.
-	for (const match of code.matchAll(/(?<![\w-])bg-[a-z][\w-]*\/(\d+(?:\.\d+)?)(?![\w.%])/g)) {
-		if (Number(match[1]) >= 50) continue;
-		const line = code.slice(0, match.index).split('\n').length;
-		found.push(
-			`line ${line}: \`${match[0]}\` falls back to a solid color; use \`tint-<color>/<n>\` (or \`track-\` for a switch track)`,
-		);
+	return found;
+}
+
+/** Each `color-mix(…)` of a text, whole (nested mixes inside). */
+function mixesOf(text: string): string[] {
+	const found: string[] = [];
+	let at = text.indexOf('color-mix(');
+	while (at !== -1) {
+		let depth = 0;
+		let end = at;
+		for (; end < text.length; end++) {
+			if (text[end] === '(') depth++;
+			else if (text[end] === ')' && --depth === 0) break;
+		}
+		found.push(text.slice(at, end + 1));
+		at = text.indexOf('color-mix(', end);
 	}
-	// Code that tests `colorMixSupported` picks its own fallback.
-	const mixes = code.includes('colorMixSupported')
-		? []
-		: [...code.matchAll(/[\w:-]*\[?[^\s"'`]*color-mix\([^\s"'`]*/g)];
-	for (const match of mixes) {
+	return found;
+}
+
+/** The mixes of a file's markup and script: arbitrary Tailwind values (`_` for a space) and strings. */
+function codeMixes(code: string): { line: number; mix: string }[] {
+	const found: { line: number; mix: string }[] = [];
+	for (const mix of mixesOf(code)) {
+		const line = code.slice(0, code.indexOf(mix)).split('\n').length;
+		found.push({ line, mix: mix.replaceAll('_', ' ') });
+	}
+	return found;
+}
+
+const COLOR_TOKENS = Object.entries(MODE_TOKENS)
+	.filter(([, info]) => info.kind === 'color')
+	.map(([name]) => `--${name}`);
+
+/** A custom property's value, read as what it names: another variable, a color, or a mix. */
+const ALIAS = /^var\(\s*(--[\w-]+)\s*(?:,.*)?\)$/s;
+const STATIC_COLOR = /^(?:#[0-9a-f]{3,8}|rgba?\([^()]*\)|transparent)$/i;
+
+/**
+ * The custom properties that carry channels, as the build and `colorVars` write them: the theme's
+ * tokens (and Tailwind's names for them), what a stylesheet sets to a color, a variable that has
+ * channels or a mix it can compute, and what script sets with `colorVars` or `channelDeclarations`.
+ */
+function channelNames(files: { css: string; code: string }[]): Set<string> {
+	const known = new Set([...COLOR_TOKENS, ...COLOR_TOKENS.map((t) => `--color-${t.slice(2)}`)]);
+	const declared: { prop: string; value: string }[] = [];
+	for (const { css, code } of files) {
+		for (const { at } of declarations(css)) if (at.prop.startsWith('--')) declared.push(at);
+		for (const match of code.matchAll(/\bcolorVars\(\s*['"`]([\w-]+)['"`]/g))
+			known.add(`--${match[1]}`);
+		for (const match of code.matchAll(/\bchannelDeclarations\(\s*['"`](--[\w-]+)['"`]/g)) {
+			known.add(match[1] as string);
+		}
+	}
+	const resolve = strictResolve(known);
+	for (let grew = true; grew; ) {
+		grew = false;
+		for (const { prop, value } of declared) {
+			if (known.has(prop)) continue;
+			const target = ALIAS.exec(value)?.[1];
+			const ok =
+				(target !== undefined && known.has(target)) ||
+				STATIC_COLOR.test(value) ||
+				(value.startsWith('color-mix(') && colorMixFallback(value, resolve) !== null);
+			if (ok) {
+				known.add(prop);
+				grew = true;
+			}
+		}
+	}
+	return known;
+}
+
+/** Channels only for the names known to carry them. */
+const strictResolve =
+	(known: Set<string>): ResolveChannels =>
+	(name) =>
+		known.has(name) ? resolveByConvention(name) : null;
+
+/** The mixes the build cannot write a fallback for, and inline colors set without channels. */
+function mixOffenders(
+	{ css, code, script }: { css: string; code: string; script: string },
+	known: Set<string>,
+	mixed: Set<string>,
+): string[] {
+	const found: string[] = [];
+	const resolve = strictResolve(known);
+	for (const { at } of declarations(css)) {
+		for (const mix of mixesOf(at.value)) {
+			if (colorMixFallback(mix, resolve) === null) {
+				found.push(
+					`${at.prop}: ${mix} has no fallback the build can compute; mix theme tokens, transparent, or variables set with colorVars`,
+				);
+			}
+		}
+	}
+	// Script that writes a mix computes its own fallback (`colorMixSupported`).
+	if (!script.includes('colorMixSupported')) {
+		for (const { line, mix } of codeMixes(code)) {
+			if (colorMixFallback(mix, resolve) === null) {
+				found.push(`line ${line}: \`${mix}\` has no fallback the build can compute`);
+			}
+		}
+	}
+	for (const match of code.matchAll(/\bstyle:(--[\w-]+)\s*=/g)) {
+		const name = match[1] as string;
+		if (!mixed.has(name) && !COLOR_TOKENS.includes(name)) continue;
 		const line = code.slice(0, match.index).split('\n').length;
 		found.push(
-			`line ${line}: \`${match[0]}\` has no plain fallback; use a named utility of theme.css`,
+			`line ${line}: \`style:${name}\` sets a color a mix uses without its channels; use style={colorVars('${name.slice(2)}', …)}`,
 		);
 	}
 	return found;
@@ -199,19 +304,15 @@ function cssOffenders(css: string): string[] {
 		const custom = at.prop.startsWith('--');
 		const previous = before.filter((d) => d.prop === at.prop).at(-1);
 		if (VIEWPORT.test(at.value) && !/vh/.test(supports)) {
+			if (at.value.includes('var(')) {
+				found.push(
+					`${shown}: with a var() the line is kept where dvh is unknown; set it inside @supports (height: 100dvh) after the vh line`,
+				);
+				continue;
+			}
 			const ok =
 				!custom && previous && PLAIN_VH.test(previous.value) && !VIEWPORT.test(previous.value);
 			if (!ok) found.push(`${shown}: put the same property in \`vh\` right before it`);
-		}
-		if (at.value.includes('color-mix(') && !supports.includes('color-mix')) {
-			const ok = !custom && previous && !previous.value.includes('color-mix(');
-			if (!ok) {
-				found.push(
-					custom
-						? `${shown}: a custom property cannot fall back; set it inside @supports (color: color-mix(in srgb, red, blue))`
-						: `${shown}: put the same property with a plain token color right before it`,
-				);
-			}
 		}
 	}
 	return found;
@@ -228,40 +329,57 @@ describe('older browsers', () => {
 		expect(newApis('list.toSorted(); list.at(-1);')).toEqual([]);
 	});
 
-	it('finds a viewport unit or color-mix without a fallback line', () => {
+	it('finds a viewport unit without a fallback line', () => {
 		expect(cssOffenders('.a { height: 100dvh; }')).toHaveLength(1);
 		expect(cssOffenders('.a { height: 100vh; height: 100dvh; }')).toEqual([]);
 		expect(cssOffenders('.a { min-height: 100vh; height: 100dvh; }')).toHaveLength(1);
 		expect(cssOffenders('.a { height: calc(100vh - 1rem); height: calc(100dvh - 1rem); }')).toEqual(
 			[],
 		);
-		expect(cssOffenders('.a { background: color-mix(in oklab, red 10%, blue); }')).toHaveLength(1);
-		expect(
-			cssOffenders(
-				'.a { background: var(--idle); background: color-mix(in oklab, var(--idle) 10%, blue); }',
-			),
-		).toEqual([]);
-		expect(cssOffenders('.a { --x: color-mix(in oklab, red, blue); }')).toHaveLength(1);
 		expect(
 			cssOffenders('.a { height: 100vh; @supports (height: 100dvh) { height: 100dvh; } }'),
 		).toEqual([]);
 		expect(
+			cssOffenders('.a { height: calc(100vh - var(--x)); height: calc(100dvh - var(--x)); }'),
+		).toHaveLength(1);
+		expect(
 			cssOffenders(
-				'@supports (color: color-mix(in srgb, red, blue)) { .a { --x: color-mix(in oklab, red, blue); } }',
+				'.a { height: calc(100vh - var(--x)); } @supports (height: 100dvh) { .a { height: calc(100dvh - var(--x)); } }',
 			),
 		).toEqual([]);
+		expect(classOffenders('<div class="h-dvh min-h-dvh max-h-[40dvh]">')).toHaveLength(3);
+		expect(classOffenders('<div class="h-viewport min-h-viewport">')).toEqual([]);
 	});
 
-	it('finds a Tailwind class that cannot carry a fallback', () => {
-		expect(classOffenders('<div class="h-dvh min-h-dvh max-h-[40dvh]">')).toHaveLength(3);
-		expect(classOffenders('<div class="h-viewport hover:bg-ink-pressed">')).toEqual([]);
-		expect(classOffenders('<div class="bg-now/5 hover:bg-idle/60 bg-ink-soft/35">')).toHaveLength(
-			2,
-		);
-		expect(classOffenders('<div class="tint-now/5 bg-idle/55">')).toEqual([]);
+	it('finds a mix the build cannot write a fallback for', () => {
+		const file = (css: string, code = '') => ({ css, code, script: code });
+		const known = channelNames([
+			file(
+				'.b { --lamp: var(--board); --drop: color-mix(in srgb, var(--info) 80%, transparent); }',
+			),
+			file('', "<p style={colorVars('m', color)}></p>"),
+		]);
+		expect([...known]).toEqual(expect.arrayContaining(['--ink', '--lamp', '--drop', '--m']));
+		const offenders = (css: string, code = '') =>
+			mixOffenders(file(css, code), known, new Set(['--m']));
+		expect(offenders('.a { color: color-mix(in oklab, var(--m) 16%, var(--lamp)); }')).toEqual([]);
+		expect(offenders('.a { color: color-mix(in oklab, var(--drop), transparent); }')).toEqual([]);
+		expect(offenders('.a { color: color-mix(in oklab, red 10%, blue); }')).toHaveLength(1);
 		expect(
-			classOffenders('<div class="hover:bg-[color-mix(in_oklab,var(--ink)_86%,red)]">'),
+			offenders('.a { color: color-mix(in srgb, var(--mystery) 10%, var(--ink)); }'),
 		).toHaveLength(1);
+		expect(offenders('.a { color: color-mix(in hsl, var(--ink) 10%, transparent); }')).toHaveLength(
+			1,
+		);
+		expect(
+			offenders('', '<div class="hover:bg-[color-mix(in_oklab,var(--ink)_86%,var(--surface))]">'),
+		).toEqual([]);
+		expect(offenders('', '<div class="bg-[color-mix(in_oklab,var(--ink)_86%,red)]">')).toHaveLength(
+			1,
+		);
+		expect(offenders('', '<li style:--m={color}>')).toHaveLength(1);
+		expect(offenders('', '<li style:--ink-soft="var(--sky-soft)">')).toHaveLength(1);
+		expect(offenders('', "<li style:--o={3} style={colorVars('m', color)}>")).toEqual([]);
 	});
 
 	it('uses no API newer than Chrome 106 in browser code', () => {
@@ -273,13 +391,36 @@ describe('older browsers', () => {
 		expect(offenders).toEqual([]);
 	});
 
-	it('gives every viewport unit and color-mix a line an older browser understands', () => {
+	it('gives every viewport unit a line an older browser understands', () => {
 		const offenders = SOURCES.flatMap((dir) => [...walk(join(root, dir))]).flatMap((path) => {
 			const text = readFileSync(path, 'utf8');
 			return [...cssOffenders(cssOf(path, text)), ...classOffenders(codeOf(path, text))].map(
 				(problem) => `${path.slice(root.length + 1)} ${problem}`,
 			);
 		});
+		expect(offenders).toEqual([]);
+	});
+
+	it('writes only color mixes the build can give a fallback', () => {
+		const files = SOURCES.flatMap((dir) => [...walk(join(root, dir))]).map((path) => {
+			const text = readFileSync(path, 'utf8');
+			const code = codeOf(path, text);
+			return { path, css: cssOf(path, text), code, script: scriptOf(code) };
+		});
+		const known = channelNames(files);
+		// Every variable a mix names: an inline style setting one needs its channels too.
+		const mixed = new Set(
+			files.flatMap(({ css, code }) =>
+				mixesOf(`${css}\n${code}`).flatMap((mix) =>
+					[...mix.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1] as string),
+				),
+			),
+		);
+		const offenders = files.flatMap((file) =>
+			mixOffenders(file, known, mixed).map(
+				(problem) => `${file.path.slice(root.length + 1)} ${problem}`,
+			),
+		);
 		expect(offenders).toEqual([]);
 	});
 });

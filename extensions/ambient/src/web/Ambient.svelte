@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { todayIn } from '@famos/time';
-	import { skySoftInk, WeatherSky } from '@famos/ui/famos';
+	import { colorVars, skySoftVars, WeatherSky } from '@famos/ui/famos';
 	import { onDestroy } from 'svelte';
 	import { DEFAULT_TIMING, type PhotoList, type Weather } from '../contract/index.js';
 	import { type AgendaEvent, nextEvents } from './agenda.js';
@@ -212,7 +212,7 @@
 			: 'bg-wall text-ink'} grid"
 		data-testid="ambient"
 		role="presentation"
-		style:--sky-soft={skyShown ? skySoftInk : undefined}
+		style={skyShown ? skySoftVars() : undefined}
 	>
 		{#if skyShown && forecast}
 			<!-- The weather sky fills the screen behind the clock; text on it uses the sky's soft ink. -->
@@ -227,7 +227,7 @@
 		{/if}
 
 		<div
-			style:--ink-soft={skyShown ? 'var(--sky-soft)' : undefined}
+			style={skyShown ? colorVars('ink-soft', 'var(--sky-soft)') : undefined}
 			class="relative z-10 grid gap-6 p-10 md:grid-cols-[1fr_auto] md:items-end {hasPhoto
 				? 'content-end drop-shadow-lg'
 				: 'content-center'}"

@@ -202,6 +202,15 @@ importers:
       dependency-cruiser:
         specifier: 18.5.0
         version: 18.5.0
+      pixelmatch:
+        specifier: 8.0.0
+        version: 8.0.0
+      playwright-core:
+        specifier: 1.63.0
+        version: 1.63.0
+      pngjs:
+        specifier: 7.0.0
+        version: 7.0.0
       prettier:
         specifier: 3.9.9
         version: 3.9.9
@@ -1073,6 +1082,9 @@ importers:
       '@famos/sdk':
         specifier: workspace:*
         version: link:../sdk
+      '@famos/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@famos/time':
         specifier: workspace:*
         version: link:../time
@@ -1091,6 +1103,9 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      lightningcss:
+        specifier: 1.32.0
+        version: 1.32.0
       svelte:
         specifier: 'catalog:'
         version: 5.57.1
@@ -2693,6 +2708,10 @@ packages:
     resolution: {integrity: sha512-r34yH/GlQpKZbU1BvFFqOjhISRo1MNx1tWYsYvmj6KIRHSPMT2+yHOEb1SG6NMvRoHRF0a07kCOox/9yakl1vg==}
     hasBin: true
 
+  pixelmatch@8.0.0:
+    resolution: {integrity: sha512-cIqOLfh5k52us715qf3B3+kTOxZv+WDv77HN7xokLScYQGYQHi4m/ynoDIPpvF2LvCyUJGyvzY64i0QCXtzu1g==}
+    hasBin: true
+
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
@@ -2710,6 +2729,10 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
+
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
 
   postal-mime@4.0.8:
     resolution: {integrity: sha512-nnAgc4a9hn7zYuQmX4C7LU+fN47kR5S8cE8zvB/vZ2NimNDbaj+ISZJ9qe3CKIfn2uOTwwz4nQeIyljvdFNgOA==}
@@ -4311,6 +4334,10 @@ snapshots:
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
 
+  pixelmatch@8.0.0:
+    dependencies:
+      pngjs: 7.0.0
+
   pkce-challenge@5.0.1: {}
 
   playwright-core@1.63.0: {}
@@ -4320,6 +4347,8 @@ snapshots:
       playwright-core: 1.63.0
 
   pluralize@8.0.0: {}
+
+  pngjs@7.0.0: {}
 
   postal-mime@4.0.8: {}
 

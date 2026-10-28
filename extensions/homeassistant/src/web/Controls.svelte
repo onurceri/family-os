@@ -50,7 +50,7 @@
 		>
 			<span
 				aria-hidden="true"
-				class="track-ink-soft/35 group-aria-checked:bg-now after:bg-surface after:shadow-lit relative h-7 w-12 rounded-full transition-colors after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform group-aria-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
+				class="bg-ink-soft/35 group-aria-checked:bg-now after:bg-surface after:shadow-lit relative h-7 w-12 rounded-full transition-colors after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform group-aria-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
 			></span>
 		</button>
 	{:else}

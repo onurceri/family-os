@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Avatar, formatClock, type TodayFormat } from '@famos/ui/famos';
+	import { Avatar, colorVars, formatClock, type TodayFormat } from '@famos/ui/famos';
 	import {
 		type Axis,
 		foldedScale,
@@ -180,7 +180,7 @@
 >
 	<div><span class="tt probe" bind:this={probe} aria-hidden="true"></span></div>
 	{#each lanes as lane (lane.key)}
-		<div class="mh" class:bare={!avatars} style:--m={lane.color || 'var(--ink-soft)'}>
+		<div class="mh" class:bare={!avatars} style={colorVars('m', lane.color || 'var(--ink-soft)')}>
 			{#if lane.kind === 'others'}
 				<span class="disc" aria-hidden="true">+{lane.people}</span>
 			{:else if avatars}
@@ -200,7 +200,7 @@
 						href={c.item.href || undefined}
 						role={c.item.href ? undefined : 'img'}
 						class="adc"
-						style:--m={c.color || 'var(--ink-soft)'}
+						style={colorVars('m', c.color || 'var(--ink-soft)')}
 						aria-label={blockName(c)}
 						data-testid="chart-block"
 						><i aria-hidden="true"></i><span>{c.item.title}</span></svelte:element
@@ -247,7 +247,7 @@
 							class="vblk {c.kind}"
 							class:past={isEnded(c)}
 							class:next={c.item.id === nextId}
-							style:--m={c.color || 'var(--ink-soft)'}
+							style={colorVars('m', c.color || 'var(--ink-soft)')}
 							style:--lines={Math.max(2, linesFor(c.item.title))}
 							style:top="{b.top}px"
 							style:height="{b.height}px"
@@ -412,7 +412,6 @@
 		overflow: hidden;
 		border-top: 3px solid var(--m);
 		border-radius: 7px;
-		background: var(--surface);
 		background: color-mix(in oklab, var(--m) 16%, var(--surface));
 		color: var(--ink);
 		text-decoration: none;

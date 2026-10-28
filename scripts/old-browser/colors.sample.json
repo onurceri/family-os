@@ -1,0 +1,30 @@
+[
+	{
+		"file": "packages/ui/src/theme.css",
+		"selector": ".bg-ink-pressed",
+		"mix": "color-mix(in oklab, var(--ink) 86%, var(--surface))",
+		"fallback": "var(--ink)"
+	},
+	{
+		"file": "packages/ui/src/theme.css",
+		"selector": ".bg-destructive-wash",
+		"mix": "color-mix(in oklab, var(--destructive) 10%, transparent)",
+		"fallback": "var(--destructive)"
+	},
+	{
+		"file": "apps/web/build",
+		"selector": ".bg-ink-soft\\/55",
+		"mix": "color-mix(in oklab, var(--ink-soft) 55%, transparent)",
+		"fallback": "rgb(100 100 100 / 0.55)"
+	},
+	{
+		"file": "sample",
+		"mix": "color-mix(in oklab, white 50%, black)",
+		"fallback": "rgb(99 99 99)"
+	},
+	{
+		"file": "sample",
+		"mix": "color-mix(in oklab, white 50%, black)",
+		"fallback": "rgb(calc(var(--missing) * 2) 0 0)"
+	}
+]

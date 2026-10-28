@@ -30,6 +30,8 @@ const ALLOWED: Record<string, string> = {
 		"the made-up people of the style previews: a person's color is data (core's member colors), not interface styling",
 	'extensions/calendar/src/contract/index.ts':
 		'the colors people pick for calendars: data they choose, not interface styling',
+	'packages/ui/src/colors.ts':
+		'writes the rgb() an older browser computes for a color mix: arithmetic over the theme tokens, no colors of its own',
 	'packages/ui/src/famos/resize.ts':
 		'flattens a transparent photo onto white when making a JPEG: image processing, not styling',
 };

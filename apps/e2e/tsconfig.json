@@ -4,5 +4,13 @@
 		"lib": ["ES2023", "DOM"],
 		"types": ["node"]
 	},
-	"include": ["support", "tests", "sweep", "playwright.config.ts", "sweep.config.ts"]
+	"include": [
+		"support",
+		"tests",
+		"sweep",
+		"old-browser",
+		"playwright.config.ts",
+		"sweep.config.ts",
+		"old-browser.config.ts"
+	]
 }

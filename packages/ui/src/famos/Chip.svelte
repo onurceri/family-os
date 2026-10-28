@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLButtonAttributes } from 'svelte/elements';
+	import { colorVars } from '../colors.js';
 
 	/**
 	 * A small rounded choice or shortcut. `filter`: idle, an ink ring when on (a toggle, aria-pressed).
@@ -32,7 +33,7 @@
 	type="button"
 	class="chip {variant} {className}"
 	class:on={variant !== 'preset' && on}
-	style:--m={color}
+	style={colorVars('m', color)}
 	aria-pressed={variant === 'preset' ? undefined : on}
 	{...rest}
 >

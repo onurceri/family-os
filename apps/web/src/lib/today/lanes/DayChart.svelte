@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { Avatar, formatClock, type HourlyPoint, Ring, type TodayFormat } from '@famos/ui/famos';
+	import {
+		Avatar,
+		colorVars,
+		formatClock,
+		type HourlyPoint,
+		Ring,
+		type TodayFormat,
+	} from '@famos/ui/famos';
 	import {
 		type Axis,
 		fractionOf,
@@ -189,7 +196,7 @@
 					class:past-side={nowAt !== null && nowAt > 0.6}
 					class:future-side={nowAt !== null && nowAt <= 0.6}
 					style:--n={placed.length}
-					style:--now={nowAt === null ? '' : `${nowAt * 100}%`}
+					style:--now-at={nowAt === null ? '' : `${nowAt * 100}%`}
 					data-testid="quiet-day"
 				>
 					<div>
@@ -209,7 +216,7 @@
 						class="blk {c.kind}"
 						class:past={isEnded(c)}
 						class:next={c.item.id === nextId}
-						style:--m={c.color || 'var(--ink-soft)'}
+						style={colorVars('m', c.color || 'var(--ink-soft)')}
 						style:left="{b.left}px"
 						style:width="{b.width}px"
 						style:top="{8 + b.row * 40}px"
@@ -348,7 +355,6 @@
 		overflow: hidden;
 		border-inline-start: 3px solid var(--m);
 		border-radius: 8px;
-		background: var(--surface);
 		background: color-mix(in oklab, var(--m) 16%, var(--surface));
 		color: var(--ink);
 		font-size: 12.5px;
@@ -408,10 +414,10 @@
 		pointer-events: none;
 	}
 	.quiet.future-side {
-		left: calc(var(--now) + 28px);
+		left: calc(var(--now-at) + 28px);
 	}
 	.quiet.past-side {
-		right: calc(100% - var(--now) + 28px);
+		right: calc(100% - var(--now-at) + 28px);
 		left: 16px;
 	}
 	.quiet > div {

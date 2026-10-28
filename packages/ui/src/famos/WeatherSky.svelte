@@ -115,15 +115,9 @@
 		z-index: -1;
 		overflow: hidden;
 		pointer-events: none;
-		--drop: var(--info);
+		--drop: color-mix(in srgb, var(--info) 80%, transparent);
 		--u: 1rem;
 		--sr: 1px;
-	}
-	/* A custom property cannot fall back to an earlier declaration, so the mix is set only where it works. */
-	@supports (color: color-mix(in srgb, red, blue)) {
-		.sky {
-			--drop: color-mix(in srgb, var(--info) 80%, transparent);
-		}
 	}
 	.screen {
 		--u: clamp(2.6rem, 6vmin, 5rem);
@@ -156,7 +150,6 @@
 		width: 11rem;
 		top: -4.85rem;
 		right: -4.45rem;
-		background: radial-gradient(closest-side, var(--sun), transparent);
 		background: radial-gradient(
 			closest-side,
 			color-mix(in srgb, var(--sun) 60%, transparent),
@@ -182,7 +175,6 @@
 		top: 0.6rem;
 		right: 0.9rem;
 		border-radius: 50%;
-		background: var(--sky-flake);
 		background: color-mix(in srgb, var(--sun) 45%, var(--sky-flake));
 		mask-image: radial-gradient(circle at 70% 36%, transparent 47%, var(--ink) 48%);
 		opacity: 0.9;

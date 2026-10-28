@@ -13,6 +13,7 @@
 </script>
 
 <script lang="ts">
+	import { colorVars } from '../colors.js';
 	import Avatar from './Avatar.svelte';
 
 	/**
@@ -35,7 +36,7 @@
 
 <ul class="family {variant}" aria-label={label} data-testid="family-list">
 	{#each people as p (p.id)}
-		<li style:--member={p.color}>
+		<li style={colorVars('member', p.color)}>
 			<span class="ringed"
 				><Avatar name={p.displayName} color={p.color} size={32} anyone={p.anyone} /></span
 			>

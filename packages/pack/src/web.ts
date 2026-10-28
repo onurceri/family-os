@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { build, type Plugin } from 'vite';
+import { componentStylesPreprocessor } from './component-styles.ts';
 import { SHARED_WEB } from './shared.ts';
 import { buildStyles } from './styles.ts';
 import { BROWSER_TARGETS } from './targets.ts';
@@ -28,7 +29,12 @@ export async function buildWeb(root: string, outDir: string): Promise<string[]> 
 		publicDir: false,
 		envDir: false,
 		plugins: [
-			svelte({ configFile: false, emitCss: false, compilerOptions: { css: 'injected' } }),
+			svelte({
+				configFile: false,
+				emitCss: false,
+				compilerOptions: { css: 'injected' },
+				preprocess: [componentStylesPreprocessor(BROWSER_TARGETS)],
+			}),
 			collectImports(imports),
 		],
 		build: {

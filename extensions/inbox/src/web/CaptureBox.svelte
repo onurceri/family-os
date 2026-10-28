@@ -305,7 +305,6 @@
 		animation: drop-pulse 1.4s ease-in-out infinite;
 	}
 	.drop {
-		background: var(--surface);
 		background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 	}
 	@keyframes drop-pulse {

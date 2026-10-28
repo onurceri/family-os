@@ -495,14 +495,6 @@
 		position: relative;
 		background-color: var(--board);
 		background-image:
-			linear-gradient(135deg, transparent 0, transparent 50%),
-			radial-gradient(ellipse 34% 30% at 22% 28%, var(--board-grain), transparent 70%),
-			radial-gradient(ellipse 30% 36% at 76% 72%, transparent, transparent 70%),
-			radial-gradient(circle at 20% 30%, var(--board-grain) 0 1px, transparent 1.6px),
-			radial-gradient(circle at 70% 60%, var(--board-grain) 0 1.3px, transparent 2.1px),
-			radial-gradient(circle at 42% 88%, var(--board-grain) 0 0.9px, transparent 1.5px),
-			radial-gradient(circle at 88% 12%, var(--board-grain) 0 1.1px, transparent 1.8px);
-		background-image:
 			linear-gradient(
 				135deg,
 				color-mix(in srgb, var(--surface) 40%, transparent) 0,
@@ -531,19 +523,10 @@
 			17px 19px,
 			41px 43px;
 		background-repeat: no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
-		box-shadow: inset 0 0 110px transparent;
 		box-shadow: inset 0 0 110px color-mix(in srgb, var(--backdrop) 13%, transparent);
 	}
 	/* By night the same cork, under a warm lamp near the top. */
 	:global(.dark) .cork {
-		background-image:
-			radial-gradient(ellipse 60% 440px at 50% 0, transparent, transparent 75%),
-			radial-gradient(ellipse 34% 30% at 22% 28%, var(--board-grain), transparent 70%),
-			radial-gradient(ellipse 30% 36% at 76% 72%, transparent, transparent 70%),
-			radial-gradient(circle at 20% 30%, var(--board-grain) 0 1px, transparent 1.6px),
-			radial-gradient(circle at 70% 60%, var(--board-grain) 0 1.3px, transparent 2.1px),
-			radial-gradient(circle at 42% 88%, var(--board-grain) 0 0.9px, transparent 1.5px),
-			radial-gradient(circle at 88% 12%, var(--board-grain) 0 1.1px, transparent 1.8px);
 		background-image:
 			radial-gradient(
 				ellipse 60% 440px at 50% 0,
@@ -564,7 +547,6 @@
 			radial-gradient(circle at 70% 60%, var(--board-grain) 0 1.3px, transparent 2.1px),
 			radial-gradient(circle at 42% 88%, var(--board-grain) 0 0.9px, transparent 1.5px),
 			radial-gradient(circle at 88% 12%, var(--board-grain) 0 1.1px, transparent 1.8px);
-		box-shadow: inset 0 0 120px transparent;
 		box-shadow: inset 0 0 120px color-mix(in srgb, var(--backdrop) 35%, transparent);
 	}
 	/* Masonry columns: two on a phone, up to five on a wide screen (by the board's own width). */
@@ -641,9 +623,6 @@
 		transform: rotate(0deg);
 		box-shadow:
 			var(--shadow-pop),
-			0 22px 30px -12px transparent;
-		box-shadow:
-			var(--shadow-pop),
 			0 22px 30px -12px color-mix(in srgb, var(--backdrop) 45%, transparent);
 	}
 	/* Where the note will land: an empty slot in the gap above (or below) a note. */
@@ -653,9 +632,7 @@
 		right: 0;
 		height: 0.55rem;
 		border-radius: 999px;
-		background: transparent;
 		background: color-mix(in srgb, var(--ink) 22%, transparent);
-		outline: 2px dashed var(--ink);
 		outline: 2px dashed color-mix(in srgb, var(--ink) 55%, transparent);
 		outline-offset: -1px;
 		pointer-events: none;
@@ -680,7 +657,6 @@
 	.under-2 {
 		position: absolute;
 		inset: 0;
-		background: var(--note-1);
 		background: color-mix(in srgb, var(--note-1) 88%, var(--note-ink));
 		box-shadow: var(--shadow-lit);
 	}
@@ -689,7 +665,6 @@
 	}
 	.under-1 {
 		transform: translate(2px, 3px) rotate(1.2deg);
-		background: var(--note-1);
 		background: color-mix(in srgb, var(--note-1) 94%, var(--note-ink));
 	}
 	.top {
@@ -697,19 +672,14 @@
 		transform: rotate(-0.8deg);
 		box-shadow:
 			var(--shadow-lit),
-			0 8px 14px -8px transparent;
-		box-shadow:
-			var(--shadow-lit),
 			0 8px 14px -8px color-mix(in srgb, var(--backdrop) 35%, transparent);
 		transition: transform 150ms ease-out;
 	}
 	/* By night the pale sheets glow a little less, in the lamp's light. */
 	:global(.dark) .top {
-		background-color: var(--note-1);
 		background-color: color-mix(in srgb, var(--note-1) 84%, var(--lamp));
 	}
 	:global(.dark) .under-1 {
-		background: var(--note-1);
 		background: color-mix(
 			in srgb,
 			color-mix(in srgb, var(--note-1) 94%, var(--note-ink)) 84%,
@@ -717,7 +687,6 @@
 		);
 	}
 	:global(.dark) .under-2 {
-		background: var(--note-1);
 		background: color-mix(
 			in srgb,
 			color-mix(in srgb, var(--note-1) 88%, var(--note-ink)) 84%,
@@ -725,7 +694,6 @@
 		);
 	}
 	:global(.dark) .empty-note {
-		background-color: var(--note-2);
 		background-color: color-mix(in srgb, var(--note-2) 84%, var(--lamp));
 	}
 	.pad,
@@ -733,7 +701,6 @@
 		color-scheme: light;
 	}
 	:global(.dark) .empty-note :global(.text-note-ink-soft) {
-		color: var(--note-ink-soft);
 		color: color-mix(in srgb, var(--note-ink-soft) 60%, var(--note-ink));
 	}
 	.pad:hover .top,
@@ -765,7 +732,6 @@
 		display: block;
 		height: 2px;
 		border-radius: 2px;
-		background: transparent;
 		background: color-mix(in srgb, var(--note-ink-soft) 45%, transparent);
 	}
 	/* The one note on an empty board. */
@@ -773,9 +739,6 @@
 		position: relative;
 		border-radius: var(--radius-sm);
 		transform: rotate(1.4deg);
-		box-shadow:
-			var(--shadow-lit),
-			0 10px 16px -9px transparent;
 		box-shadow:
 			var(--shadow-lit),
 			0 10px 16px -9px color-mix(in srgb, var(--backdrop) 38%, transparent);
@@ -800,9 +763,6 @@
 		margin-left: -7px;
 		border-radius: 999px;
 		background:
-			radial-gradient(circle at 34% 30%, var(--surface) 0 1.6px, transparent 3.2px),
-			radial-gradient(circle at 40% 35%, var(--info) 0 55%, var(--info) 100%);
-		background:
 			radial-gradient(
 				circle at 34% 30%,
 				color-mix(in srgb, var(--surface) 85%, transparent) 0 1.6px,
@@ -813,9 +773,6 @@
 				var(--info) 0 55%,
 				color-mix(in srgb, var(--info) 72%, var(--backdrop)) 100%
 			);
-		box-shadow:
-			0 0 0 0.5px transparent,
-			2px 3px 2px -1px transparent;
 		box-shadow:
 			0 0 0 0.5px color-mix(in srgb, var(--backdrop) 25%, transparent),
 			2px 3px 2px -1px color-mix(in srgb, var(--backdrop) 40%, transparent);

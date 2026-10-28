@@ -121,15 +121,37 @@
 		zoom = plan.zoom;
 		shift = plan.shift;
 		flushSync();
+		relayout();
 	}
 
-	/** Everything inside the screen: the page's own padding below, nothing sideways. */
+	/**
+	 * Lays the page out from scratch. Chromium up to at least 120 (wall displays' WebViews) loses
+	 * the layout of a size container (`container-type`: the clock, the next-up hero) when a plan
+	 * moves the block holding it to another grid place in one update (`shift` turns the columns
+	 * into `display: contents`): its content stays at zero size, the clock and the hero's text
+	 * vanish and the measurement that picks the plan is wrong. Taking the page out of the layout
+	 * and back rebuilds every box; it happens within the task, so nothing in between is painted.
+	 */
+	function relayout() {
+		const el = root;
+		if (!el) return;
+		el.style.display = 'none';
+		void el.offsetHeight;
+		el.style.display = '';
+		void el.offsetHeight;
+	}
+
+	/**
+	 * Everything inside the screen: the page's own padding below, nothing sideways. Measured on
+	 * the parent, which has no `zoom`: browsers before Chrome 128 report the zoomed page's own box
+	 * without its zoom, so a page that runs off the screen would seem to fit.
+	 */
 	function fits(el: HTMLElement): boolean {
-		const box = el.getBoundingClientRect();
-		const below = Number.parseFloat(getComputedStyle(el.parentElement ?? el).paddingBottom) || 0;
+		const parent = el.parentElement ?? el;
+		const box = parent.getBoundingClientRect();
 		return (
-			box.bottom <= window.innerHeight - below + 0.5 &&
-			box.right <= window.innerWidth + 0.5 &&
+			box.top + parent.scrollHeight <= window.innerHeight + 0.5 &&
+			box.left + parent.scrollWidth <= window.innerWidth + 0.5 &&
 			el.scrollWidth <= el.clientWidth + 1
 		);
 	}

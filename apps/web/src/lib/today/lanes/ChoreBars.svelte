@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Avatar, type ChoreRing } from '@famos/ui/famos';
+	import { Avatar, type ChoreRing, colorVars } from '@famos/ui/famos';
 
 	/**
 	 * Lanes' chores today: a bar per person in their colour (anyone in `ink-soft`, with the people icon), the count in
@@ -21,7 +21,7 @@
 
 <ul class="bars" aria-label={label} data-testid="chore-bars">
 	{#each rings as r (r.id)}
-		<li role="img" aria-label={name(r)} style:--m={r.color || 'var(--ink-soft)'}>
+		<li role="img" aria-label={name(r)} style={colorVars('m', r.color || 'var(--ink-soft)')}>
 			<Avatar
 				name={r.name}
 				color={r.color || 'var(--ink-soft)'}

@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.40",
+	"sdk": "0.8.41",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -269,6 +269,18 @@
 		"@famos/api-client": ["createApiClient", "draftClient", "isApiError", "unwrap"],
 		"@famos/ui/styles": ["DEFAULT_STYLE", "STYLES", "STYLE_IDS", "isStyleId"],
 		"@famos/ui/utils": ["cn"],
+		"@famos/ui/colors": [
+			"TRANSPARENT",
+			"channelCss",
+			"channelDeclarations",
+			"channelsCss",
+			"colorChannels",
+			"colorVars",
+			"literalChannels",
+			"mixChannels",
+			"parseColorChannels",
+			"varChannels"
+		],
 		"@famos/ui/slots": [
 			"SETTINGS_SECTIONS",
 			"askedBy",
@@ -379,6 +391,7 @@
 			"awaitingRowText",
 			"beginWork",
 			"choresLeft",
+			"colorVars",
 			"countdown",
 			"countdownName",
 			"counterText",
@@ -421,6 +434,7 @@
 			"showCountdown",
 			"skyCondition",
 			"skySoftInk",
+			"skySoftVars",
 			"sortTimeline",
 			"statusOf",
 			"statusText",
