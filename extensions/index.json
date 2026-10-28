@@ -1,6 +1,6 @@
 {
 	"format": 1,
-	"issuedAt": 1793170688642,
+	"issuedAt": 1793221358062,
 	"extensions": [
 		{
 			"id": "ambient",
@@ -835,6 +835,33 @@
 				"dependsOn": [
 					"records"
 				]
+			}
+		},
+		{
+			"id": "homeassistant",
+			"version": "0.3.2",
+			"sdk": "^0.8.12",
+			"url": "homeassistant/homeassistant-0.3.2.famext",
+			"sha256": "ca0033c7cdbafa48b2464ab4917e0f28e437d34784f830aaf23f85c9a1794664",
+			"size": 180284,
+			"labels": {
+				"en": {
+					"name": "Home Assistant",
+					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
+				},
+				"tr": {
+					"name": "Home Assistant",
+					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": true,
+					"local": true
+				},
+				"capabilities": 4,
+				"dependsOn": []
 			}
 		},
 		{
