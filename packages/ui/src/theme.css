@@ -244,19 +244,14 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
-	body {
-		@apply bg-background text-foreground;
-		font-variant-numeric: tabular-nums;
-	}
+	/* The root's background is the whole window's, also below a short page. Night and day switch
+	   at once: a fading window background is left half-painted by some wall displays. */
 	html {
-		@apply font-sans;
+		@apply bg-background font-sans;
 	}
-	@media (prefers-reduced-motion: no-preference) {
-		body {
-			transition:
-				background-color 0.35s ease,
-				color 0.35s ease;
-		}
+	body {
+		@apply text-foreground;
+		font-variant-numeric: tabular-nums;
 	}
 }
 
