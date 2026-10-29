@@ -26,7 +26,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2 } from '@lucide/svelte';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { slide } from 'svelte/transition';
 	import {
@@ -177,7 +177,8 @@
 	const itemReads = latestOnly();
 	async function refreshItems(listId: string) {
 		const stillCurrent = itemReads.begin();
-		const begun = readBegun(adding);
+		// Untracked: effects call this, and reading what it writes would make them rerun forever.
+		const begun = untrack(() => readBegun(adding));
 		adding = begun.state;
 		// An answer that was overtaken, or is for a list no longer shown, must not replace the items.
 		const usable = () => stillCurrent() && list?.id === listId;
