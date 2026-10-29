@@ -205,7 +205,7 @@ describe('statusOf: one clause, in order', () => {
 			timed('football', at(17), at(18), { members: ['elif'] }),
 		];
 		expect(statusOf('elif', items, chores, NOON)).toMatchObject({ kind: 'soon', minutes: 25 });
-		expect(text('elif', items)).toBe('piano in 25 mins');
+		expect(text('elif', items)).toBe('piano in 25 minutes');
 		expect(text('elif', items, at(13))).toBe('football 17:00');
 		expect(text('elif', items, at(12, 40))).toBe('piano until 13:00');
 	});

@@ -10,15 +10,15 @@ Phone bottom bar: **Today**, **Quick add**, **Calendar**, **Lists**, **More** (H
 
 | Part | What it shows |
 |---|---|
-| **The head** | The clock, the date and a sentence about the day ("Good morning, Amy. 2 things for you to check. Planned today: 4. Tonight: Swimming.") |
-| **Next up** | The next thing of the day on the one coloured card. Countdown: **25 min** under an hour, **1 h 55 min to go**, from two hours **starts 17:00**; once started **now** and until when. Beside the title: **At** the place or **Starts** and the time |
+| **The head** | The clock, the date and a sentence about the day ("Good morning, Amy. 2 things for you to check. 4 things planned today. Tonight: Swimming.") |
+| **Next up** | The next thing of the day on the one coloured card. Countdown: **25 minutes** under an hour, **1 h 55 min to go**, from two hours **starts 17:00**; once started **now** and until when. Beside the title: **At** the place or **Starts** and the time |
 | **Family \| Me** | On the card: **Family** (first choice) is the family's next thing; **Me** is the next thing you are part of or that is for everyone. Remembered on every device; if nothing more is yours: **Nothing more for you today.** |
-| **The family** | Per person, the rest of the day (**+2 more**) and a status: next thing ("Piano lesson in 25 min"), else all-day thing ("Working from home"), else the next event for **Everyone**, else chores left, else **Nothing planned**. Things for no one person (events for everyone, tasks anyone may do) have their own column, **Everyone**. On a phone, people with something come first |
+| **The family** | Per person, the rest of the day (**+2 more**) and a status: next thing ("Piano lesson in 25 minutes"), else all-day thing ("Working from home"), else the next event for **Everyone**, else chores left, else **Nothing planned**. Things for no one person (events for everyone, tasks anyone may do) have their own column, **Everyone**. On a phone, people with something come first |
 | **Chores** | One ring per person, filling as chores are done ("Sam: 1 of 3 done"); empty for no chores today ("Leo: no chores today") |
 | **Shopping** | A number readable across the room, with the first few things named |
 | **The weather** | When set up: temperature, next hours and a sentence tying weather to the day ("Rain from 15:00, during Football practice."). The sky behind it only sets the mood and stays still when your device asks for less motion |
 | **A photo of the day** | From the family's photos (the same all day), for those allowed to see display photos |
-| **Needs you** | First when something waits for a decision. Decide it there, or open **Quick add**. A suggestion to move an event you already have is decided in **Quick add**; here you can only reject it. The **board**, **Coming up** and the kitchen follow |
+| **For you to check** | First when something waits for a decision. Decide it there, or open **Quick add** (the link shows when a suggestion is listed, not for the AI setup row alone). A suggestion to move an event you already have is decided in **Quick add**; here you can only reject it. The **board**, **Coming up** and the kitchen follow |
 
 - **Evening:** the plan folds into one line ("The day is done."), and **Tomorrow** moves to the top.
 - **A quiet day:** a sentence says so; **Next days** shows the week.
@@ -118,9 +118,9 @@ A fully decided capture leaves by itself. Nothing found: **Nothing to add was fo
 - One asking for what is already so (ticking an item already bought) closes as **Already done**, with no **Undo**.
 - The count includes only what you can decide; one message or photo counts once.
 - If the extension is not installed or is off, the card says so to all who would decide it (**Pets is not installed: this suggestion waits until it is back.**); it cannot be added and is not counted. Its author can withdraw it; when the extension is back it waits as usual.
-- Today shows one message's suggestions as one line under **Needs you** (**Tom shared something · 3 suggestions to check**) that opens the group.
+- Today shows one message's suggestions as one line under **For you to check** (**Tom shared something · 3 suggestions to check**) that opens the group.
 
-**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **Waiting for you** and **Needs you** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
+**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **Waiting for you** and **For you to check** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
 
 ### Recent
 

@@ -42,14 +42,14 @@ A style sets how **Today** and the [family displays](displays.md) are arranged a
 
 ### What Today shows
 
-Under the style, **What Today shows** lists every part of Today (the time and date, the sentence, the weather, the photo, next up, the rest of the day, where everyone is, chores, Needs you, meals, the next days, done today, and the cards of each feature such as the board, tasks, shopping, coming up and Ask the assistant), each with a switch. A part you turn off is not there, and the style arranges what is left (a column with nothing left gives its room to the others). It is show or hide only; the order stays the style's.
+Under the style, **What Today shows** lists every part of Today (the time and date, the sentence, the weather, the photo, next up, the rest of the day, where everyone is, chores, For you to check, meals, the next days, done today, and the cards of each feature such as the board, tasks, shopping, coming up and Ask the assistant), each with a switch. A part you turn off is not there, and the style arranges what is left (a column with nothing left gives its room to the others). It is show or hide only; the order stays the style's.
 
 - **For yourself:** **Follow the family** or **My own choice**, like the style. Changing a switch makes the choice your own. On Today, the **⋯** at the end of a section's label offers **Hide from Today**, with **Undo**.
 - **For the family:** **Settings → Family → Family look**, **What Today shows**: what everyone sees who has not made their own choice.
 - **For a display:** the same page, under each display, **What Today shows** (or **Same as the family**). The display still leaves out what does not fit its screen.
 
 **Good to know**
-- Hiding **Needs you** never hides what waits for approval: Quick add still shows its count, and notifications still come.
+- Hiding **For you to check** never hides what waits for approval: Quick add still shows its count, and notifications still come.
 - If everything is hidden, Today says so and offers **Choose what Today shows**.
 - A part added later (a new feature) is shown until someone hides it.
 

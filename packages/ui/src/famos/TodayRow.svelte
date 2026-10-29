@@ -21,6 +21,7 @@
 		busy = false,
 		oncheck,
 		uncertain = false,
+		wrap = false,
 		leading,
 		trailing,
 		below,
@@ -42,6 +43,8 @@
 		oncheck?: () => void;
 		/** Dashed `attention` underline under the meta ("check this"). */
 		uncertain?: boolean;
+		/** The meta wraps instead of being cut with "…" (a sentence that must be read whole). */
+		wrap?: boolean;
 		leading?: Snippet;
 		trailing?: Snippet;
 		/** Full-width content under the row (an editor). */
@@ -127,7 +130,7 @@
 			{/if}
 			{#if meta}
 				<small
-					class="truncate text-[13px] leading-snug {tone} {uncertain
+					class="{wrap ? 'text-pretty' : 'truncate'} text-[13px] leading-snug {tone} {uncertain
 						? 'decoration-attention underline decoration-dashed underline-offset-4'
 						: ''}">{meta}</small
 				>

@@ -548,8 +548,9 @@ export class TodayData {
 				this.settled = true;
 		});
 		$effect(() => {
-			// The cap counts from when the person is known: before that nothing can load.
-			if (!this.ready) return;
+			// The cap counts from when the person and the setup state are known: before that
+			// nothing can load, and without the setup state the first steps would appear later.
+			if (!this.ready || !this.setupLoaded) return;
 			const timer = setTimeout(() => (this.settled = true), SETTLE_CAP_MS);
 			return () => clearTimeout(timer);
 		});
@@ -849,7 +850,9 @@ export class TodayData {
 
 	/* ───────────── totals, the sentence and the quiet line ───────────── */
 
-	readonly needsTotal = $derived(this.#countOf(this.needsCards) + (this.showAiRow ? 1 : 0));
+	/** What the cards of Needs you count, without the AI setup row. */
+	readonly needsCardsTotal = $derived(this.#countOf(this.needsCards));
+	readonly needsTotal = $derived(this.needsCardsTotal + (this.showAiRow ? 1 : 0));
 	readonly notesTotal = $derived(this.#countOf(this.notesCards));
 	readonly aheadTotal = $derived(this.#countOf(this.aheadCards));
 
@@ -864,6 +867,9 @@ export class TodayData {
 
 	/** The day head sentence ("Good morning, Deniz. **3 things for you to check**. …") as runs. */
 	readonly sentence = $derived.by(() => {
+		// It says what the day holds and whether the family is new: until both are known it says
+		// nothing, rather than "Nothing is planned yet" that turns into another sentence.
+		if (!this.timelineLoaded || !this.setupLoaded) return [];
 		const last = lastTonight(this.todayItems, this.now, this.timeZone);
 		const firstTomorrow = this.tomorrowItems.find(
 			(i) => i.start !== undefined && !i.nominal && !i.slot,
@@ -880,7 +886,12 @@ export class TodayData {
 			fresh: this.fresh,
 			needsHidden: !this.shows('needs'),
 		});
-		const text = tDynamic(`app:${key}`, { ...params, greeting: t(`home_greeting_${part}`) });
+		// The count of the day's plan is a phrase of its own, so each language words its plural.
+		const text = tDynamic(`app:${key}`, {
+			...params,
+			...(typeof params.plan === 'number' && { plan: t('home_plan', { count: params.plan }) }),
+			greeting: t(`home_greeting_${part}`),
+		});
 		return emphasisRuns(text);
 	});
 
@@ -902,7 +913,11 @@ export class TodayData {
 			planEmpty: this.shows('day') && this.dayItems.length === 0,
 			planKey: 'app:home_quiet_plan',
 		}).map((p) => tDynamic(p.key, p.count === undefined ? {} : { count: p.count }));
-		const line = composeQuietLine(phrases, { fresh: this.fresh, hero: this.nothingAtAll });
+		const line = composeQuietLine(phrases, {
+			fresh: this.fresh,
+			hero: this.nothingAtAll,
+			waiting: this.needsTotal > 0,
+		});
 		return line ? tDynamic(`app:${line.key}`, line.params) : '';
 	});
 
@@ -916,7 +931,7 @@ export class TodayData {
 			? t('home_evening_text_free')
 			: t('home_evening_text', {
 					count: this.todayItems.length,
-					tomorrow: this.tomorrowItems.length,
+					tomorrow: t('home_plan_tomorrow', { count: this.tomorrowItems.length }),
 				}),
 	);
 	readonly doneLine = $derived(
