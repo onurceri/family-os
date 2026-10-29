@@ -57,6 +57,16 @@
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from './latest-only.js';
+	import {
+		addBatch,
+		failed,
+		noPendingAdds,
+		type PendingAdds,
+		pendingItems,
+		readApplied,
+		readBegun,
+		saved,
+	} from './pending-adds.js';
 	import { longestTitle, parseQuickAdd } from './quick-add.js';
 	import { revealRow } from './reveal.js';
 
@@ -146,11 +156,10 @@
 			: [],
 	);
 	// Items just added, shown at once while the server answers (a slow connection takes seconds),
-	// so the list never looks as if Enter did nothing. They go when the list is read again, or
-	// when the add fails (the text then comes back to the field with a message).
-	let sending = $state<{ id: string; listId: string; title: string; quantity?: string }[]>([]);
-	let sendCount = 0;
-	const sendingHere = $derived(sending.filter((item) => item.listId === list?.id));
+	// so the list never looks as if Enter did nothing. They stay until a read of the list that
+	// holds them replaces them, or go when the add fails (the text comes back with a message).
+	let adding = $state.raw<PendingAdds>(noPendingAdds);
+	const sendingHere = $derived(pendingItems(adding, list?.id));
 	const waitingAdds = $derived([
 		...sendingHere.map((item) => ({ ...item, mark: t('adding') })),
 		...queuedAdds.map((item) => ({ ...item, mark: t('waiting_to_send') })),
@@ -168,11 +177,16 @@
 	const itemReads = latestOnly();
 	async function refreshItems(listId: string) {
 		const stillCurrent = itemReads.begin();
+		const begun = readBegun(adding);
+		adding = begun.state;
 		// An answer that was overtaken, or is for a list no longer shown, must not replace the items.
 		const usable = () => stillCurrent() && list?.id === listId;
 		try {
 			const loaded = await loadItems(listId);
-			if (usable()) items = loaded;
+			if (usable()) {
+				items = loaded;
+				adding = readApplied(adding, begun.read);
+			}
 		} catch {
 			if (usable()) loadError = true;
 		} finally {
@@ -291,26 +305,30 @@
 			return false;
 		}
 		const listId = list.id;
-		const batch = `sending-${(sendCount += 1)}`;
-		sending = [
-			...sending,
-			...parsed.map((item, i) => ({
-				id: `${batch}-${i}`,
+		const started = addBatch(
+			adding,
+			parsed.map((item) => ({
 				listId,
 				title: item.title,
 				...(item.quantity && { quantity: item.quantity }),
 			})),
-		];
-		const settle = () => (sending = sending.filter((item) => !item.id.startsWith(`${batch}-`)));
+		);
+		adding = started.state;
+		const { batch } = started;
 		try {
 			const { outcome, already, addedIds } = await addItems(
 				app,
 				{ listId, items: parsed },
 				t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 			);
-			// The real rows replace the shown ones in one step, without a gap.
-			if (outcome === 'applied') await refreshItems(listId);
-			settle();
+			if (outcome === 'applied') {
+				// The shown rows stay until a read that holds the real ones replaces them.
+				adding = saved(adding, batch);
+				void refreshItems(listId);
+			} else {
+				// Kept for later or waiting for approval: those rows show it from now on.
+				adding = failed(adding, batch);
+			}
 			report(outcome);
 			if (already.length) sayAlready(already);
 			// The new row lands at the bottom, behind the add bar on a phone: bring it into view.
@@ -318,7 +336,7 @@
 			if (last) revealRow('data-item-id', last);
 			return true;
 		} catch {
-			settle();
+			adding = failed(adding, batch);
 			app.toast(t('add_failed'));
 			return false;
 		}

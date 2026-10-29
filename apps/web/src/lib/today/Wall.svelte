@@ -240,7 +240,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if share}
+				<!-- The link fits what is listed: none for the AI setup row alone. -->
+				{#if share && data.needsCardsTotal > 0}
 					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
@@ -260,6 +261,7 @@
 						variant="needs"
 						title={t('home_ai_row_title')}
 						meta={t('home_ai_missing_text')}
+						wrap
 						href="/settings/ai"
 					>
 						{#snippet trailing()}

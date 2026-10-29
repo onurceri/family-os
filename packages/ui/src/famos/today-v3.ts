@@ -383,7 +383,10 @@ export function statusText(status: Status, format: TodayFormat, words: StatusWor
 		case 'now':
 			return words.until(status.item.title, formatClock(status.until, format));
 		case 'soon':
-			return words.soon(status.item.title, formatDuration(status.minutes, format.dateLocale));
+			return words.soon(
+				status.item.title,
+				formatDuration(status.minutes, format.dateLocale, 'long'),
+			);
 		case 'at':
 			return words.at(status.item.title, formatClock(status.at, format));
 		case 'allday':

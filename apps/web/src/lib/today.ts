@@ -147,13 +147,14 @@ export const QUIET_LIST_MAX = 3;
 /**
  * The quiet line as one catalog key: a short list of what is not there, or the bare sentence
  * when the list would be longer than `QUIET_LIST_MAX` (six absences are noise, not information).
- * Nothing at all (no phrases, or the page shows the quiet-day hero) gives no line.
+ * Nothing at all (no phrases, or the page shows the quiet-day hero) gives no line, and neither
+ * does something waiting for the person: "That is all" with a tick would read as if all were well.
  */
 export function composeQuietLine(
 	phrases: readonly string[],
-	options: { fresh?: boolean; hero?: boolean } = {},
+	options: { fresh?: boolean; hero?: boolean; waiting?: boolean } = {},
 ): { key: string; params: Record<string, unknown> } | null {
-	if (phrases.length === 0 || options.hero) return null;
+	if (phrases.length === 0 || options.hero || options.waiting) return null;
 	const suffix = options.fresh ? '_new' : '';
 	return phrases.length <= QUIET_LIST_MAX
 		? { key: `home_quiet_prefix${suffix}`, params: { list: phrases.join(', ') } }
