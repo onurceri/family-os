@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { promisify } from 'node:util';
+import { brotliCompress, constants, gzip } from 'node:zlib';
 import { serveStatic } from '@hono/node-server/serve-static';
 import type { Hono } from 'hono';
 import { assetUrl, EXTENSION_ASSETS, type LoadedWeb, type WebPackage } from '../extensions/web.ts';
@@ -14,6 +16,9 @@ export const SHARED_MODULES_FILE = '_app/shared-modules.json';
  * manifest and service worker are always revalidated so updates reach kiosks. Unknown non-API
  * paths fall back to the shell for client routing. The shell is index.html with the extensions
  * this server runs written into it, so `/` and `/index.html` are never served as the raw file.
+ * The web build writes `.br` and `.gz` copies of its scripts and styles beside them
+ * (`apps/web/scripts/compress-build.mjs`); a client that accepts one gets it as it is. The shell is
+ * small, so it is sent plain.
  */
 // biome-ignore lint/suspicious/noExplicitAny: works with any Hono env.
 export function mountSpa(app: Hono<any>, webDir: string, loaded: LoadedWeb): void {
@@ -27,7 +32,7 @@ export function mountSpa(app: Hono<any>, webDir: string, loaded: LoadedWeb): voi
 		if (!c.res.headers.has('cache-control') && !c.req.path.startsWith('/api/'))
 			c.header('cache-control', 'no-cache');
 	});
-	const files = serveStatic({ root: webDir });
+	const files = serveStatic({ root: webDir, precompressed: true });
 	app.use('*', (c, next) => (isShellPath(c.req.path) ? next() : files(c, next)));
 
 	const shared = readSharedModules(webDir, loaded);
@@ -123,10 +128,40 @@ const CONTENT_TYPES: Record<string, string> = {
 	'.json': 'application/json; charset=utf-8',
 };
 
+const gzipAsync = promisify(gzip);
+const brotliAsync = promisify(brotliCompress);
+
+/** The compressed body for each file and encoding, made once: a package's files never change. */
+const compressed = new Map<string, Promise<Uint8Array<ArrayBuffer>>>();
+
+/** The encoding to answer with: the best the client lists, or none. */
+function pickEncoding(acceptEncoding: string | undefined): 'br' | 'gzip' | undefined {
+	const accepted = new Set((acceptEncoding ?? '').split(',').map((e) => e.split(';')[0]?.trim()));
+	return accepted.has('br') ? 'br' : accepted.has('gzip') ? 'gzip' : undefined;
+}
+
+function compressOnce(
+	key: string,
+	encoding: 'br' | 'gzip',
+	body: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer>> {
+	let found = compressed.get(`${encoding}:${key}`);
+	if (!found) {
+		found =
+			encoding === 'br'
+				? brotliAsync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 9 } })
+				: gzipAsync(body, { level: 9 });
+		compressed.set(`${encoding}:${key}`, found);
+	}
+	return found;
+}
+
 /**
  * The files of the extension packages, at `/extensions/<id>/<digest>/<path>`. The digest is of the
  * package description, so an address never changes what it serves and is cached forever. Only
- * the web files a package lists are served, by exact path; anything else is not found.
+ * the web files a package lists are served, by exact path; anything else is not found. Scripts,
+ * styles and data go out compressed to a client that accepts it; the files on disk and the hashes
+ * a package's signature covers are never touched.
  */
 // biome-ignore lint/suspicious/noExplicitAny: works with any Hono env.
 export function mountExtensionAssets(app: Hono<any>, packages: readonly WebPackage[]): void {
@@ -137,12 +172,21 @@ export function mountExtensionAssets(app: Hono<any>, packages: readonly WebPacka
 		const prefix = `${EXTENSION_ASSETS}/${found.pkg.id}/${found.pkg.digest}/`;
 		const path = c.req.path.startsWith(prefix) ? c.req.path.slice(prefix.length) : '';
 		if (!found.files.has(path)) return c.notFound();
-		const body = await readFile(join(found.pkg.dir, path));
-		return c.body(body, 200, {
+		let body: Uint8Array<ArrayBuffer> = await readFile(join(found.pkg.dir, path));
+		const headers: Record<string, string> = {
 			'content-type': CONTENT_TYPES[extname(path)] ?? 'application/octet-stream',
 			'cache-control': 'public, max-age=31536000, immutable',
 			'x-content-type-options': 'nosniff',
-		});
+		};
+		if (extname(path) in CONTENT_TYPES) {
+			headers.vary = 'accept-encoding';
+			const encoding = pickEncoding(c.req.header('accept-encoding'));
+			if (encoding) {
+				body = await compressOnce(`${found.pkg.id}/${found.pkg.digest}/${path}`, encoding, body);
+				headers['content-encoding'] = encoding;
+			}
+		}
+		return c.body(body, 200, headers);
 	});
 }
 

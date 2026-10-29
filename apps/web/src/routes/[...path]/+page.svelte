@@ -5,6 +5,7 @@
 	import type { PageContribution, PageProps } from '@famos/ui/slots';
 	import type { Component } from 'svelte';
 	import { contributions, ownerOf, pageFor } from '#lib/extensions.js';
+	import LoadingMark from '#lib/LoadingMark.svelte';
 	import PageGate from '#lib/PageGate.svelte';
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
@@ -108,6 +109,9 @@
 		{#key shown.Page}
 			<PageGate><shown.Page params={shown.params} /></PageGate>
 		{/key}
+	{:else}
+		<!-- The page's code is still on its way (slow network): the same late, quiet mark. -->
+		<LoadingMark />
 	{/if}
 {:else if switchedOff}
 	<PageGate>

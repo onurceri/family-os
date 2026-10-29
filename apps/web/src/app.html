@@ -36,9 +36,52 @@
 				document.documentElement.dataset.style = 'broadsheet';
 			}
 		</script>
+		<style>
+			/* The same quiet mark as lib/LoadingMark.svelte, for the time before the app has loaded:
+			   invisible for the first 800 ms, so a fast start never flashes it. It uses the theme's
+			   tokens once they exist and the default palette until then; the app removes it when it
+			   takes over (LoadingMark.svelte). */
+			#boot-mark {
+				position: fixed;
+				inset: 0;
+				display: grid;
+				place-items: center;
+				pointer-events: none;
+				opacity: 0;
+				animation: boot-in 240ms ease-out 800ms forwards;
+			}
+			#boot-mark span {
+				width: 24px;
+				height: 24px;
+				border-radius: 50%;
+				border: 2px solid var(--line, #d6d3ca);
+				border-top-color: var(--ink-soft, #65625a);
+				animation: boot-spin 900ms linear infinite;
+			}
+			.dark #boot-mark span {
+				border-color: var(--line, #34353a);
+				border-top-color: var(--ink-soft, #9a978f);
+			}
+			@keyframes boot-in {
+				to {
+					opacity: 1;
+				}
+			}
+			@keyframes boot-spin {
+				to {
+					transform: rotate(360deg);
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				#boot-mark span {
+					animation: none;
+				}
+			}
+		</style>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<div id="boot-mark" aria-hidden="true"><span></span></div>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

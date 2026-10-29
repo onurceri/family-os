@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { brotliDecompressSync, gunzipSync, gzipSync } from 'node:zlib';
 import { Hono } from 'hono';
 import { afterAll, describe, expect, it } from 'vitest';
 import { describeLoaded, readWebPackage, type WebPackage } from '../src/extensions/web.ts';
@@ -176,6 +177,42 @@ describe('serving the shell and the packages', () => {
 		expect(res.headers.get('x-content-type-options')).toBe('nosniff');
 		const css = await app.request(`/extensions/garden/${garden.digest}/web/styles.css`);
 		expect(css.headers.get('content-type')).toBe('text/css; charset=utf-8');
+	});
+
+	it('sends a package file compressed to a client that accepts it', async () => {
+		const url = `/extensions/garden/${garden.digest}/web/index.js`;
+		const br = await app.request(url, { headers: { 'accept-encoding': 'gzip, br' } });
+		expect(br.headers.get('content-encoding')).toBe('br');
+		expect(br.headers.get('vary')).toBe('accept-encoding');
+		expect(br.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+		expect(br.headers.get('x-content-type-options')).toBe('nosniff');
+		expect(brotliDecompressSync(Buffer.from(await br.arrayBuffer())).toString()).toBe(
+			'export default { id: "garden" }',
+		);
+		const gz = await app.request(url, { headers: { 'accept-encoding': 'gzip;q=0.8' } });
+		expect(gz.headers.get('content-encoding')).toBe('gzip');
+		expect(gunzipSync(Buffer.from(await gz.arrayBuffer())).toString()).toContain('garden');
+		const plain = await app.request(url);
+		expect(plain.headers.get('content-encoding')).toBeNull();
+		expect(plain.headers.get('vary')).toBe('accept-encoding');
+	});
+
+	it('sends the precompressed copy of an app file, and the plain file otherwise', async () => {
+		const dir = join(webDir, '_app', 'immutable');
+		mkdirSync(dir, { recursive: true });
+		const source = 'export const x = 1;'.repeat(100);
+		writeFileSync(join(dir, 'a.js'), source);
+		writeFileSync(join(dir, 'a.js.gz'), gzipSync(source));
+		const gz = await app.request('/_app/immutable/a.js', {
+			headers: { 'accept-encoding': 'gzip, deflate' },
+		});
+		expect(gz.headers.get('content-encoding')).toBe('gzip');
+		expect(gz.headers.get('content-type')).toContain('javascript');
+		expect(gz.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+		expect(gunzipSync(Buffer.from(await gz.arrayBuffer())).toString()).toBe(source);
+		const plain = await app.request('/_app/immutable/a.js');
+		expect(plain.headers.get('content-encoding')).toBeNull();
+		expect(await plain.text()).toBe(source);
 	});
 
 	it.each([
