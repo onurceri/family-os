@@ -40,32 +40,32 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	const tomatoes = page.getByRole('button', { name: /^Tomatoes/ });
 	await expect(tomatoes).toBeVisible();
 	await expect(tomatoes).toContainText('2 kg');
-	await expect(page.getByRole('button', { name: /^bread/ })).toBeVisible();
-	await expect(page.getByRole('button', { name: /^milk/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Bread/ })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Milk/ })).toBeVisible();
 	await expect(composer).toHaveValue('');
 	expect((await shoppingItems(page)).map((i) => [i.title, i.quantity])).toEqual(
 		expect.arrayContaining([
 			['Tomatoes', '2 kg'],
-			['bread', null],
-			['milk', null],
+			['Bread', null],
+			['Milk', null],
 		]),
 	);
 
 	// Edit the name and the quantity of one item: the row's menu opens the sheet (panel on desktop).
-	await page.getByRole('button', { name: 'Options for bread' }).click();
+	await page.getByRole('button', { name: 'Options for Bread' }).click();
 	await page.getByRole('button', { name: 'Edit item' }).click();
 	await page.getByLabel('Title').fill('sourdough bread');
 	await page.getByLabel('Quantity').fill('2');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByRole('button', { name: /^sourdough bread/ })).toContainText('2');
-	await expect(page.getByRole('button', { name: /^bread/ })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /^Bread/ })).toHaveCount(0);
 	expect((await shoppingItems(page)).find((i) => i.title === 'sourdough bread')?.quantity).toBe(
 		'2',
 	);
 
 	// Tick two items: they move to "In the cart" (folded) and stay ticked.
 	await page.getByRole('button', { name: /^Tomatoes/ }).click();
-	await page.getByRole('button', { name: /^milk/ }).click();
+	await page.getByRole('button', { name: /^Milk/ }).click();
 	const bought = page.getByRole('region', { name: 'In the cart' });
 	await expect(bought.getByRole('button', { name: /^In the cart/ })).toContainText('2');
 	await expect(bought.getByRole('button', { name: /^Tomatoes/ })).toHaveCount(0);
@@ -74,15 +74,15 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 		'aria-pressed',
 		'true',
 	);
-	await expect(bought.getByRole('button', { name: /^milk/ })).toBeVisible();
+	await expect(bought.getByRole('button', { name: /^Milk/ })).toBeVisible();
 	await expect
 		.poll(async () => (await shoppingItems(page)).filter((i) => i.doneAt !== null).length)
 		.toBe(2);
 
 	// Unticking puts one back.
-	await bought.getByRole('button', { name: /^milk/ }).click();
-	await expect(bought.getByRole('button', { name: /^milk/ })).toHaveCount(0);
-	await expect(page.getByRole('button', { name: /^milk/ })).toHaveAttribute(
+	await bought.getByRole('button', { name: /^Milk/ }).click();
+	await expect(bought.getByRole('button', { name: /^Milk/ })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /^Milk/ })).toHaveAttribute(
 		'aria-pressed',
 		'false',
 	);
@@ -95,16 +95,16 @@ test('shopping: add, edit, tick, clear what was bought, and delete', async ({ pa
 	await expect(page.getByRole('region', { name: 'In the cart' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: /^Tomatoes/ })).toHaveCount(0);
 	expect((await shoppingItems(page)).map((i) => i.title).sort()).toEqual([
-		'milk',
+		'Milk',
 		'sourdough bread',
 	]);
 
 	// Delete an item from its editor (two taps).
-	await page.getByRole('button', { name: 'Options for milk' }).click();
+	await page.getByRole('button', { name: 'Options for Milk' }).click();
 	await page.getByRole('button', { name: 'Edit item' }).click();
 	await page.getByRole('button', { name: 'Delete', exact: true }).click();
 	await page.getByRole('button', { name: 'Tap again to delete' }).click();
-	await expect(page.getByRole('button', { name: /^milk/ })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /^Milk/ })).toHaveCount(0);
 	expect((await shoppingItems(page)).map((i) => i.title)).toEqual(['sourdough bread']);
 
 	// Delete from the row's menu: gone at once, with Undo.
