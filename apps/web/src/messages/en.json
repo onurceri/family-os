@@ -7,7 +7,7 @@
 	"language": "Language",
 	"sign_out": "Sign out",
 	"sign_out_everywhere": "Sign out everywhere",
-	"sign_out_everywhere_hint": "Closes your sign-in on all phones, tablets and browsers, this one too.",
+	"sign_out_everywhere_hint": "Signs you out on all phones, tablets and browsers, this one too. Your app keys and calendar addresses stop working.",
 	"sign_in_password_for_keys": "Sign in with your password to create keys. A PIN on a shared device cannot make keys, app connections or calendar addresses.",
 	"app_name": "FamilyOS",
 	"nav_home": "Today",

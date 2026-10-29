@@ -7,7 +7,7 @@
 	"language": "Dil",
 	"sign_out": "Çıkış yap",
 	"sign_out_everywhere": "Her yerden çıkış yap",
-	"sign_out_everywhere_hint": "Bu cihaz dahil tüm telefon, tablet ve tarayıcılardaki oturumunu kapatır.",
+	"sign_out_everywhere_hint": "Bu cihaz dahil tüm telefon, tablet ve tarayıcılarda oturumunu kapatır. Uygulama anahtarların ve takvim adreslerin de çalışmaz olur.",
 	"sign_in_password_for_keys": "Anahtar oluşturmak için parolanla giriş yap. Ortak bir cihazdaki PIN ile anahtar, uygulama bağlantısı ya da takvim adresi oluşturulamaz.",
 	"app_name": "FamilyOS",
 	"nav_home": "Bugün",
