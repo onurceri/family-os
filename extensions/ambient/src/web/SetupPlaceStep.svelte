@@ -17,11 +17,8 @@
 	let message = $state<string | null>(null);
 
 	async function save() {
+		if (!place || busy) return;
 		message = null;
-		if (!place) {
-			message = t('weather_need_place');
-			return;
-		}
 		busy = true;
 		try {
 			await saveWeather({ enabled: true, place });
@@ -40,13 +37,19 @@
 		</h1>
 		<p class="text-ink-soft">{t('setup_place_intro')}</p>
 	</div>
-	<PlacePicker bind:place {busy} onerror={(m) => (message = m)} />
+	<PlacePicker bind:place {busy} onerror={(m) => (message = m)} onsearch={() => (message = null)} />
 	{#if place}<p class="font-semibold" data-testid="setup-place">
 			{t('weather_place', { name: place.name })}
 		</p>{/if}
 	{#if message}<p class="text-attention text-sm font-semibold" role="alert">{message}</p>{/if}
-	<Button type="button" disabled={busy} onclick={save}>{t('setup_place_save')}</Button>
-	<Button type="button" variant="ghost" disabled={busy} onclick={done}
+	<!-- Save waits for a chosen place; until then Skip is the step's main way on. -->
+	<Button
+		type="button"
+		variant={place ? 'primary' : 'outline'}
+		disabled={busy || !place}
+		onclick={save}>{t('setup_place_save')}</Button
+	>
+	<Button type="button" variant={place ? 'ghost' : 'primary'} disabled={busy} onclick={done}
 		>{t('setup_place_skip')}</Button
 	>
 	<p class="text-ink-soft text-sm">{t('setup_place_later')}</p>

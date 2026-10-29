@@ -37,6 +37,10 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 	await page.getByRole('button', { name: 'Continue' }).click();
 	await expect(page.getByLabel('Setup code')).toHaveValue(SETUP_CODE);
 	// The time zone and region format are this browser's guess, shown to check and correct.
+	const guessed = page.getByTestId('setup-region-summary');
+	await expect(guessed).toContainText(FAMILY_TIME_ZONE.replaceAll('_', ' '));
+	await expect(guessed).toContainText('(en-US)');
+	await page.getByRole('button', { name: 'Change', exact: true }).click();
 	await expect(page.getByLabel('Time zone')).toHaveValue(FAMILY_TIME_ZONE);
 	await expect(page.getByLabel('Region format')).toHaveValue('en-US');
 	await page.getByLabel('Region format').fill('en-GB');

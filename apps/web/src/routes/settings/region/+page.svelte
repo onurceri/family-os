@@ -228,6 +228,7 @@
 								id="format-locale"
 								bind:value={formatLocale}
 								options={regions}
+								named
 								placeholder={t('region_locale_search')}
 								max={300}
 								onpick={() => {

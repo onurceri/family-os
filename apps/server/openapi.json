@@ -15233,6 +15233,10 @@
 										"minLength": 10,
 										"maxLength": 200
 									},
+									"setupCode": {
+										"type": "string",
+										"maxLength": 100
+									},
 									"locale": {
 										"type": "string",
 										"maxLength": 35
@@ -15267,10 +15271,6 @@
 										"type": "string",
 										"minLength": 1,
 										"maxLength": 60
-									},
-									"setupCode": {
-										"type": "string",
-										"maxLength": 100
 									}
 								},
 								"required": [

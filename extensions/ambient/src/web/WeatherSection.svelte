@@ -99,7 +99,12 @@
 	onclose={() => (picking = false)}
 >
 	<div class="grid gap-4">
-		<PlacePicker bind:place={draft} onerror={(m) => (message = m)} {busy} />
+		<PlacePicker
+			bind:place={draft}
+			onerror={(m) => (message = m)}
+			onsearch={() => (message = null)}
+			{busy}
+		/>
 		{#if draft}<p class="font-semibold">{t('weather_place', { name: draft.name })}</p>{/if}
 		{#if needPlace && !draft}
 			<p class="text-attention text-[13px] leading-snug font-semibold" role="alert">

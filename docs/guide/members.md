@@ -65,7 +65,7 @@ PINs work only on a **family device**, a tablet or phone an admin marked. Elsewh
 
 ### Mark a device
 
-1. Open FamilyOS on the device and sign in as admin (on first setup tick **This device is shared at home** instead).
+1. Open FamilyOS on the device and sign in as admin (on first setup tick **This is a shared device at home** instead).
 2. **Settings → Family → Devices** → **Add a device** → **A tablet or phone the family shares**. At **Make it a family device**, enter a **Device name** ("Kitchen tablet") and press **Make this a family device** (also under **This device** at the top).
 3. Sign out.
 

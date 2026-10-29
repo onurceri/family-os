@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.41",
+	"sdk": "0.8.42",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -194,6 +194,7 @@
 			"withoutPaths"
 		],
 		"@famos/sdk/same-origin-path": ["isSameOriginPath"],
+		"@famos/sdk/setup": ["SetupAccountSchema"],
 		"@famos/time": [
 			"DAY_MS",
 			"HOUR_MS",

@@ -14,12 +14,15 @@
 		place = $bindable(null),
 		busy = false,
 		onerror,
+		onsearch,
 	}: {
 		place: Place | null;
 		/** The caller is busy (saving); the search button waits too. */
 		busy?: boolean;
 		/** A failed search; the caller shows the message. */
 		onerror?: (message: string) => void;
+		/** A search started; the caller clears what it showed before. */
+		onsearch?: () => void;
 	} = $props();
 
 	let query = $state('');
@@ -28,8 +31,10 @@
 
 	async function search(event: SubmitEvent) {
 		event.preventDefault();
-		if (query.trim().length < 2) return;
+		// Enter while a search runs would send another one.
+		if (searching || query.trim().length < 2) return;
 		searching = true;
+		onsearch?.();
 		try {
 			results = await searchPlaces(query.trim());
 		} catch {
