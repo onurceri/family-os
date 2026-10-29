@@ -34,7 +34,7 @@ Needs permission to manage the calendar (admins have it). Any ICS or webcal addr
 | iCloud | Share the calendar, turn on **Public Calendar**, copy the link. |
 
 1. **Settings → Family → Calendars & tags → Calendar subscriptions.**
-2. Enter **Name** and **Calendar address**, choose **Colour**, optionally **Whose is it?** (**Whole family** until you pick someone).
+2. Enter **Name** and **Calendar address**, choose **Colour**, optionally **Whose is it?** (**Everyone** until you pick someone).
 3. **Add subscription.**
 
 **Good to know**

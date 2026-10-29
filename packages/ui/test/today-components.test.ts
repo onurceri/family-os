@@ -81,7 +81,7 @@ describe('NextUpHero', () => {
 		const hero = q('[data-testid="next-up"]', el);
 		expect(hero.getAttribute('aria-label')).toBe('Piano lesson, 15:45, in 25 minutes');
 		expect(q('[data-testid="countdown"] .n', el).textContent).toBe('25');
-		expect(q('[data-testid="countdown"] .u', el).textContent).toBe('mins');
+		expect(q('[data-testid="countdown"] .u', el).textContent).toBe('minutes');
 		expect(q('.pill', el).textContent).toBe('At Music school');
 		expect(q('.caps', el).textContent).toBe('Next up · Elif');
 		expect(q('.title a', el).getAttribute('href')).toBe('/calendar');

@@ -145,7 +145,14 @@
 				})
 			: [],
 	);
+	// Items just added, shown at once while the server answers (a slow connection takes seconds),
+	// so the list never looks as if Enter did nothing. They go when the list is read again, or
+	// when the add fails (the text then comes back to the field with a message).
+	let sending = $state<{ id: string; listId: string; title: string; quantity?: string }[]>([]);
+	let sendCount = 0;
+	const sendingHere = $derived(sending.filter((item) => item.listId === list?.id));
 	const waitingAdds = $derived([
+		...sendingHere.map((item) => ({ ...item, mark: t('adding') })),
 		...queuedAdds.map((item) => ({ ...item, mark: t('waiting_to_send') })),
 		...approvalAdds,
 	]);
@@ -208,7 +215,7 @@
 		})).filter((s) => s.items.length),
 	);
 	const catLabel = (c: Category) => t(`cat_${c}`);
-	const toGet = $derived(open.length + queuedAdds.length);
+	const toGet = $derived(open.length + sendingHere.length + queuedAdds.length);
 
 	// A ticked item slides out of the list and into the cart (150 ms; none with reduced motion).
 	// Only the item that was just ticked moves: a list that loads or changes does not animate.
@@ -283,12 +290,27 @@
 			app.toast(t('too_long_item'));
 			return false;
 		}
+		const listId = list.id;
+		const batch = `sending-${(sendCount += 1)}`;
+		sending = [
+			...sending,
+			...parsed.map((item, i) => ({
+				id: `${batch}-${i}`,
+				listId,
+				title: item.title,
+				...(item.quantity && { quantity: item.quantity }),
+			})),
+		];
+		const settle = () => (sending = sending.filter((item) => !item.id.startsWith(`${batch}-`)));
 		try {
 			const { outcome, already, addedIds } = await addItems(
 				app,
-				{ listId: list.id, items: parsed },
+				{ listId, items: parsed },
 				t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 			);
+			// The real rows replace the shown ones in one step, without a gap.
+			if (outcome === 'applied') await refreshItems(listId);
+			settle();
 			report(outcome);
 			if (already.length) sayAlready(already);
 			// The new row lands at the bottom, behind the add bar on a phone: bring it into view.
@@ -296,7 +318,8 @@
 			if (last) revealRow('data-item-id', last);
 			return true;
 		} catch {
-			app.toast(t('error'));
+			settle();
+			app.toast(t('add_failed'));
 			return false;
 		}
 	}
@@ -683,15 +706,14 @@
 						>
 					{/if}
 					{#if mayCreateList}
+						<!-- Written out: a bare "+" beside the list's name reads as "add an item". -->
 						<Chip
 							variant="preset"
-							aria-label={t('new_list')}
-							title={t('new_list')}
 							class="shrink-0"
 							onclick={() => (listForm = { mode: 'new', name: '' })}
 						>
 							{#snippet lead()}<Plus />{/snippet}
-							<span class="sr-only">{t('new_list')}</span>
+							{t('new_list')}
 						</Chip>
 					{/if}
 					{#if list && listItems.length > 0}
@@ -723,7 +745,7 @@
 							placeholder={t('add_item_placeholder')}
 							disabled={!list}
 							limit={SHOPPING_TITLE_MAX}
-							tooLong={(counter) => t('too_long', { counter })}
+							tooLong={(_, { length, max }) => t('too_long', { length, max })}
 							measure={(text) => longestTitle(text, units, app.locale())}
 							note={preview}
 							onsubmit={quickAdd}
@@ -918,7 +940,7 @@
 				<LimitCounter
 					text={editing.title}
 					max={SHOPPING_TITLE_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<div class="grid gap-1.5">
@@ -937,7 +959,7 @@
 				<LimitCounter
 					text={editing.quantity}
 					max={SHOPPING_QUANTITY_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<div class="grid gap-1.5">

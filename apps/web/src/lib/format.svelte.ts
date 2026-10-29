@@ -13,12 +13,15 @@ export function familyDateLocale(): string {
 /**
  * Dates and times in the reader's words and the family's region formats, never the UI language
  * alone. Read these inside `$derived` or the template so they update when the settings change.
+ * A two-digit hour stays two digits on a 24-hour clock only: a 12-hour clock writes "6:52 PM".
  */
 export function dateTimeFormat(options: Intl.DateTimeFormatOptions = {}): Intl.DateTimeFormat {
 	const clock = options.hour !== undefined || options.timeStyle !== undefined;
+	const family12 = options.hour12 === undefined && family.hourCycle === 'h12';
 	return new Intl.DateTimeFormat(familyDateLocale(), {
 		...(clock && options.hour12 === undefined && { hourCycle: family.hourCycle }),
 		...options,
+		...(family12 && options.hour === '2-digit' && { hour: 'numeric' }),
 	});
 }
 

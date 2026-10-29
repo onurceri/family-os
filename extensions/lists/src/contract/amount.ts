@@ -68,10 +68,19 @@ export function capitalize(text: string, language: string): string {
 }
 
 /**
+ * A title as a list entry: a capital first letter in `language` ("bread" becomes "Bread"), as
+ * every item on the list has, however it was typed. A name whose first word has a capital
+ * inside it is written its own way and kept ("iPhone charger", "eBay parcel").
+ */
+export function listEntry(title: string, language: string): string {
+	const firstWord = title.split(/\s/u)[0] ?? '';
+	return /\p{Lu}/u.test(firstWord.slice(1)) ? title : capitalize(title, language);
+}
+
+/**
  * Like `splitAmount`, and also reads an amount with a unit at the end ("Parmesan 150 g"). A
- * leading amount wins when both are there. What is left after a leading amount began in the
- * middle of the person's phrase ("2 L oat milk"), so it starts with a capital in `language`; a
- * title typed without an amount in front is kept exactly as typed.
+ * leading amount wins when both are there. With `language` the title is a list entry
+ * (`listEntry`), so "2 kg tomatoes, bread" gives "Tomatoes" and "Bread" alike.
  */
 export function splitAnyAmount(
 	text: string,
@@ -79,11 +88,13 @@ export function splitAnyAmount(
 	language?: string,
 ): { title: string; quantity?: string } {
 	const line = text.trim();
+	const entry = (item: { title: string; quantity?: string }) =>
+		language ? { ...item, title: listEntry(item.title, language) } : item;
 	const lead = splitAmount(line, amountPattern(units));
-	if (lead.quantity) return language ? { ...lead, title: capitalize(lead.title, language) } : lead;
+	if (lead.quantity) return entry(lead);
 	const tail = trailingAmountPattern(units).exec(line);
-	if (!tail) return lead;
-	return { title: (tail[1] as string).trim(), quantity: (tail[2] as string).trim() };
+	if (!tail) return entry(lead);
+	return entry({ title: (tail[1] as string).trim(), quantity: (tail[2] as string).trim() });
 }
 
 const AMOUNT_START = new RegExp(`^${AMOUNT}`, 'u');

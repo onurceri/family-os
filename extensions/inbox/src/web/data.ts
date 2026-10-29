@@ -125,3 +125,12 @@ export async function loadWays(): Promise<Ways> {
 		email: email.status === 'fulfilled' ? email.value.available : null,
 	};
 }
+
+/** Whether the AI can read what is added (null: not known, as when the answer failed). */
+export async function loadAiReading(): Promise<boolean | null> {
+	try {
+		return unwrap(await api.GET('/api/v1/ai/available')).reading;
+	} catch {
+		return null;
+	}
+}

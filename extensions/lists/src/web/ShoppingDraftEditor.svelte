@@ -55,7 +55,7 @@
 				<LimitCounter
 					text={row.title}
 					max={SHOPPING_TITLE_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<div class="grid gap-1">
@@ -68,7 +68,7 @@
 				<LimitCounter
 					text={row.quantity}
 					max={SHOPPING_QUANTITY_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<select

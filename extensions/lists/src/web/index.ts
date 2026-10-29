@@ -34,12 +34,19 @@ export default defineWebExtension({
 			placement: 'primary',
 			order: 30,
 			children: [
-				{ id: 'lists.nav.tasks', path: '/lists/tasks', labelKey: 'lists:tasks', icon: ListTodo },
+				{
+					id: 'lists.nav.tasks',
+					path: '/lists/tasks',
+					labelKey: 'lists:tasks',
+					icon: ListTodo,
+					adds: 'lists.addTask',
+				},
 				{
 					id: 'lists.nav.shopping',
 					path: '/lists/shopping',
 					labelKey: 'lists:shopping',
 					icon: ShoppingBasket,
+					adds: 'lists.addShoppingItems',
 				},
 			],
 		},

@@ -27,6 +27,7 @@
 	const app: AppContext = Object.assign(Object.create(real) as AppContext, {
 		can: () => false,
 		share: () => undefined,
+		addPlaces: () => [],
 		slots: () => [],
 		onEvent: () => () => {},
 		toast: () => {},

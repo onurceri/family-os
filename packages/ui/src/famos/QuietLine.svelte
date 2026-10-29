@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * The quiet line of Today: what is not there, in one calm sentence with a `now` check.
-	 * Polite live region, so a ticked chore reads as "Nothing else today: no chores".
+	 * Polite live region, so a ticked chore reads as "That is all for today: no chores".
 	 */
 	let { text, testid = 'quiet-line' }: { text: string; testid?: string } = $props();
 </script>

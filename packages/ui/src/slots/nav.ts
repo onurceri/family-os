@@ -31,6 +31,11 @@ export interface NavContribution {
 	 * ("Needs you") and gives it the `n` key. One entry of all extensions at most.
 	 */
 	share?: boolean;
+	/**
+	 * The action a person runs on this page to add something by hand (`calendar.createEvent`).
+	 * Quick add points to such pages when no AI can read what is shared, for whoever may run it.
+	 */
+	adds?: string;
 	/** A key that opens the page after `g` (`c`: `g c` opens the calendar). */
 	shortcut?: string;
 	/**
@@ -49,7 +54,7 @@ export interface NavContribution {
 /** A page under a navigation entry (`NavContribution.children`). */
 export type NavChild = Pick<
 	NavContribution,
-	'id' | 'path' | 'labelKey' | 'icon' | 'requires' | 'badge'
+	'id' | 'path' | 'labelKey' | 'icon' | 'requires' | 'badge' | 'adds'
 >;
 
 /**

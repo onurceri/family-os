@@ -141,7 +141,7 @@ export function quietPhrases(
 	return phrases;
 }
 
-/** The quiet line names at most this many absent things; with more it is "Nothing else today." alone. */
+/** The quiet line names at most this many absent things; with more it is "That is all for today." alone. */
 export const QUIET_LIST_MAX = 3;
 
 /**

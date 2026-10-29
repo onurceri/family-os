@@ -6,6 +6,7 @@ export {
 	amountOnlyPattern,
 	amountPattern,
 	capitalize,
+	listEntry,
 	mergeQuantity,
 	splitAmount,
 	splitAnyAmount,

@@ -95,11 +95,11 @@ export async function setUpAndSignIn(page: Page) {
 	else await setUpThroughTheUi(page);
 }
 
-/** Types text into the Quick add box and presses Read it (the same path as the share target, minus the OS). */
+/** Types text into the Quick add box and presses Send (the same path as the share target, minus the OS). */
 export async function shareText(page: Page, text: string) {
 	await page.goto('/add');
 	await page.getByLabel('Something to add').fill(text);
-	await page.getByRole('button', { name: 'Read it' }).click();
+	await page.getByRole('button', { name: 'Send', exact: true }).click();
 }
 
 /**

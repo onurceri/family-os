@@ -59,6 +59,11 @@ export interface AppContext {
 	 * is turned on offers one (`NavContribution.share`) and the viewer may use it.
 	 */
 	share(): { path: string; labelKey: string } | undefined;
+	/**
+	 * The pages where the viewer may add things by hand (`NavContribution.adds`), in navigation
+	 * order: what Quick add offers when no AI can read.
+	 */
+	addPlaces(): readonly { path: string; labelKey: string }[];
 	/** Show a notice with an optional action (e.g. Undo). */
 	toast(message: string, action?: { label: string; run: () => void }): void;
 	/**
