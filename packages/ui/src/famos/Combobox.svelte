@@ -52,8 +52,12 @@
 	let active = $state(-1);
 	let input: HTMLInputElement | undefined = $state();
 	let focused = $state(false);
-	const picked = $derived(
-		named && !focused ? options.find((o) => o.value === value && o.label) : undefined,
+	const chosen = $derived(named ? options.find((o) => o.value === value && o.label) : undefined);
+	const picked = $derived(focused ? undefined : chosen);
+	// The field's value is the code; its name is read as part of the field's description.
+	const nameId = $derived(`${id}-name`);
+	const description = $derived(
+		[chosen ? nameId : undefined, describedBy].filter(Boolean).join(' ') || undefined,
 	);
 	let list: HTMLUListElement | undefined = $state();
 	const listId = $derived(`${id}-list`);
@@ -138,7 +142,7 @@
 			aria-activedescendant={open && active >= 0 ? `${id}-opt-${active}` : undefined}
 			aria-invalid={invalid ? 'true' : undefined}
 			aria-label={ariaLabel}
-			aria-describedby={describedBy}
+			aria-describedby={description}
 			autocomplete="off"
 			spellcheck={false}
 			{...inputAttributes}
@@ -165,6 +169,7 @@
 			}}
 			{onkeydown}
 		/>
+		{#if chosen}<span id={nameId} class="sr-only">{chosen.label}</span>{/if}
 		{#if picked}
 			<span
 				aria-hidden="true"

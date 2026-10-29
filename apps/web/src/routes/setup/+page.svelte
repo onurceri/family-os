@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { page } from '$app/state';
 	import { isApiError, unwrap } from '@famos/api-client';
 	import {
@@ -48,7 +49,17 @@
 	let email = $state('');
 	let password = $state('');
 	let sharedDevice = $state(false);
-	let setupCode = $state(page.url.searchParams.get('code') ?? '');
+	const linkCode = page.url.searchParams.get('code')?.trim() ?? '';
+	let setupCode = $state(linkCode);
+	// A code that came with the link from the server log needs nothing from the person: it shows
+	// as one line. The field and its help come back when it is opened, emptied or refused.
+	let codeOpen = $state(false);
+	const codeShown = $derived(codeOpen || !linkCode || !setupCode.trim());
+	async function openCode() {
+		codeOpen = true;
+		await tick();
+		document.getElementById(SETUP_INPUTS.setupCode)?.focus();
+	}
 	let busy = $state(false);
 	let error = $state<string | null>(null);
 	/** Why a field was refused, shown under it until the field is changed. */
@@ -74,6 +85,7 @@
 	/** Moves to the first refused field. A refused code is selected, so a paste replaces it. */
 	async function showErrors(refused: FieldErrors) {
 		errors = refused;
+		if (refused.setupCode) codeOpen = true;
 		await focusFirstInvalid(form);
 		const focused = document.activeElement;
 		if (focused instanceof HTMLInputElement && focused.id === SETUP_INPUTS.setupCode)
@@ -109,8 +121,9 @@
 		});
 	}
 
-	// A fixed example (8 October, 14:30), the same whatever the time zone: it shows the format only.
-	const sample = Date.UTC(2026, 9, 8, 14, 30);
+	// A fixed example, the same whatever the time zone: it shows the format only. The day is over
+	// 12, so the order of day and month can be seen.
+	const sample = Date.UTC(2026, 9, 18, 14, 30);
 	const regionPreview = $derived(
 		[
 			dateTimeFormat({ dateStyle: 'full', timeZone: 'UTC' }).format(sample),
@@ -272,7 +285,14 @@
 					</div>
 				</div>
 			{/snippet}
-			{#if session.setupNeedsCode}
+			{#if session.setupNeedsCode && !codeShown}
+				<div class="bg-idle flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm">
+					<span>{t('setup_code_from_link')}</span>
+					<Button type="button" variant="ghost" size="sm" onclick={openCode}
+						>{t('setup_code_change')}</Button
+					>
+				</div>
+			{:else if session.setupNeedsCode}
 				<div class="grid gap-2">
 					<Label for="setup-code">{t('setup_code')}</Label>
 					<Input

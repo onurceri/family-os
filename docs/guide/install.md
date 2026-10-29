@@ -41,7 +41,7 @@ The image is the released one (computers and Raspberry Pi). The compose file is 
 ## Set up the account
 
 1. Pick **Choose your language** (preselected from your browser) and press **Continue**. It becomes the family's language; everyone can choose their own later. More languages can be added later under **Settings → Family → Language & region** ([Languages](languages.md)).
-2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in when you opened the address from the log. A field that is not right shows why under it.
+2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). When you opened the address from the log, the setup code came with it and shows as one line (**Change code** opens it). A field that is not right shows why under it.
 3. Check **Time and region**: time zone, region format (date order, numbers, first weekday), 12- or 24-hour clock, Celsius or Fahrenheit, all guessed from this browser and shown as a short summary. Press **Change** to correct them: the time zone decides what "today" is and when reminders go off. Another region format also picks its clock and temperature, which you can still change.
 4. Tick **This is a shared device at home** if you are on the family tablet, so others can sign in on it with a PIN; leave it off on your own phone or computer (see [Family members, roles and devices](members.md)).
 5. Press **Create account**. That account is an **admin**.
