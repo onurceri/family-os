@@ -43,5 +43,7 @@ export const placeStep: SetupHintFacet = {
 	textKey: 'ambient:setup_step_text',
 	actionKey: 'ambient:setup_step_action',
 	href: PLACE_PATH,
+	// Asked again when the place is saved, as the weather on the same page is.
+	invalidateOn: ['ambient.'],
 	load: async () => (await loadWeather()).enabled,
 };

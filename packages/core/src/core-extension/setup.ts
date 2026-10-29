@@ -1,4 +1,5 @@
 import { DEFAULT_REMINDER_TIME, defineRoute, FamosError, systemActor } from '@famos/sdk';
+import { SetupAccountSchema } from '@famos/sdk/setup';
 import { formatLocaleForLanguage } from '@famos/time';
 import { z } from 'zod';
 import {
@@ -57,10 +58,7 @@ export function createSetup(
 		summary: 'Create the first admin (only while no members exist)',
 		requires: 'public',
 		status: 201,
-		body: z.object({
-			displayName: z.string().trim().min(1).max(60),
-			email: z.email(),
-			password: z.string().min(10).max(200),
+		body: SetupAccountSchema.extend({
 			locale: LocaleSchema,
 			timeZone: FamilySettingsSchema.shape.timeZone.optional(),
 			/** Region formats, as the browser suggests them; anything left out is derived from the format locale. */
@@ -71,8 +69,6 @@ export function createSetup(
 				temperatureUnit: true,
 			}).partial().shape,
 			familyName: FamilyNameSchema.optional(),
-			/** The code from the server log or `data/setup-code`, so a fresh instance cannot be claimed. */
-			setupCode: z.string().max(100).optional(),
 		}),
 		response: MemberSchema,
 		async handle(ctx, { body }) {

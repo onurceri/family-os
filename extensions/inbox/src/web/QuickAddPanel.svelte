@@ -7,10 +7,11 @@
 	import CaptureGroup from './CaptureGroup.svelte';
 	import { CaptureFeed } from './feed.svelte.js';
 	import { useInbox } from './i18n.js';
+	import NoAiNote from './NoAiNote.svelte';
 
 	/**
 	 * The "+" icon button of the sidebar head and the tablet rail (slot `nav.action`): opens the
-	 * capture box in a side panel from any page. After **Read it** the panel follows that
+	 * capture box in a side panel from any page. After **Send** the panel follows that
 	 * capture: Reading…, its suggestions, Add selected. On the Quick add page itself the button
 	 * only moves to the box that is already there.
 	 */
@@ -63,6 +64,7 @@
 <SidePanel {open} title={t('title')} onclose={close} closeLabel={t('close')}>
 	<div class="grid content-start gap-5">
 		<CaptureBox onsent={sent} {id} compact />
+		<NoAiNote />
 		{#each groups as capture (capture.item.id)}
 			<CaptureGroup {capture} onchanged={() => void feed.load()} />
 		{/each}

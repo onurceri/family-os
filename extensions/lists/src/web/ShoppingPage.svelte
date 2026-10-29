@@ -26,7 +26,7 @@
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, ChevronRight, MoreHorizontal, Pencil, Plus, Trash2 } from '@lucide/svelte';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { slide } from 'svelte/transition';
 	import {
@@ -57,6 +57,16 @@
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from './latest-only.js';
+	import {
+		addBatch,
+		failed,
+		noPendingAdds,
+		type PendingAdds,
+		pendingItems,
+		readApplied,
+		readBegun,
+		saved,
+	} from './pending-adds.js';
 	import { longestTitle, parseQuickAdd } from './quick-add.js';
 	import { revealRow } from './reveal.js';
 
@@ -145,7 +155,13 @@
 				})
 			: [],
 	);
+	// Items just added, shown at once while the server answers (a slow connection takes seconds),
+	// so the list never looks as if Enter did nothing. They stay until a read of the list that
+	// holds them replaces them, or go when the add fails (the text comes back with a message).
+	let adding = $state.raw<PendingAdds>(noPendingAdds);
+	const sendingHere = $derived(pendingItems(adding, list?.id));
 	const waitingAdds = $derived([
+		...sendingHere.map((item) => ({ ...item, mark: t('adding') })),
 		...queuedAdds.map((item) => ({ ...item, mark: t('waiting_to_send') })),
 		...approvalAdds,
 	]);
@@ -161,11 +177,17 @@
 	const itemReads = latestOnly();
 	async function refreshItems(listId: string) {
 		const stillCurrent = itemReads.begin();
+		// Untracked: effects call this, and reading what it writes would make them rerun forever.
+		const begun = untrack(() => readBegun(adding));
+		adding = begun.state;
 		// An answer that was overtaken, or is for a list no longer shown, must not replace the items.
 		const usable = () => stillCurrent() && list?.id === listId;
 		try {
 			const loaded = await loadItems(listId);
-			if (usable()) items = loaded;
+			if (usable()) {
+				items = loaded;
+				adding = readApplied(adding, begun.read);
+			}
 		} catch {
 			if (usable()) loadError = true;
 		} finally {
@@ -208,7 +230,7 @@
 		})).filter((s) => s.items.length),
 	);
 	const catLabel = (c: Category) => t(`cat_${c}`);
-	const toGet = $derived(open.length + queuedAdds.length);
+	const toGet = $derived(open.length + sendingHere.length + queuedAdds.length);
 
 	// A ticked item slides out of the list and into the cart (150 ms; none with reduced motion).
 	// Only the item that was just ticked moves: a list that loads or changes does not animate.
@@ -283,12 +305,31 @@
 			app.toast(t('too_long_item'));
 			return false;
 		}
+		const listId = list.id;
+		const started = addBatch(
+			adding,
+			parsed.map((item) => ({
+				listId,
+				title: item.title,
+				...(item.quantity && { quantity: item.quantity }),
+			})),
+		);
+		adding = started.state;
+		const { batch } = started;
 		try {
 			const { outcome, already, addedIds } = await addItems(
 				app,
-				{ listId: list.id, items: parsed },
+				{ listId, items: parsed },
 				t('label_add', { titles: parsed.map((p) => p.title).join(', ') }),
 			);
+			if (outcome === 'applied') {
+				// The shown rows stay until a read that holds the real ones replaces them.
+				adding = saved(adding, batch);
+				void refreshItems(listId);
+			} else {
+				// Kept for later or waiting for approval: those rows show it from now on.
+				adding = failed(adding, batch);
+			}
 			report(outcome);
 			if (already.length) sayAlready(already);
 			// The new row lands at the bottom, behind the add bar on a phone: bring it into view.
@@ -296,7 +337,8 @@
 			if (last) revealRow('data-item-id', last);
 			return true;
 		} catch {
-			app.toast(t('error'));
+			adding = failed(adding, batch);
+			app.toast(t('add_failed'));
 			return false;
 		}
 	}
@@ -683,15 +725,14 @@
 						>
 					{/if}
 					{#if mayCreateList}
+						<!-- Written out: a bare "+" beside the list's name reads as "add an item". -->
 						<Chip
 							variant="preset"
-							aria-label={t('new_list')}
-							title={t('new_list')}
 							class="shrink-0"
 							onclick={() => (listForm = { mode: 'new', name: '' })}
 						>
 							{#snippet lead()}<Plus />{/snippet}
-							<span class="sr-only">{t('new_list')}</span>
+							{t('new_list')}
 						</Chip>
 					{/if}
 					{#if list && listItems.length > 0}
@@ -723,7 +764,7 @@
 							placeholder={t('add_item_placeholder')}
 							disabled={!list}
 							limit={SHOPPING_TITLE_MAX}
-							tooLong={(counter) => t('too_long', { counter })}
+							tooLong={(_, { length, max }) => t('too_long', { length, max })}
 							measure={(text) => longestTitle(text, units, app.locale())}
 							note={preview}
 							onsubmit={quickAdd}
@@ -918,7 +959,7 @@
 				<LimitCounter
 					text={editing.title}
 					max={SHOPPING_TITLE_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<div class="grid gap-1.5">
@@ -937,7 +978,7 @@
 				<LimitCounter
 					text={editing.quantity}
 					max={SHOPPING_QUANTITY_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 				/>
 			</div>
 			<div class="grid gap-1.5">

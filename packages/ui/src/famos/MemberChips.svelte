@@ -5,7 +5,7 @@
 	/**
 	 * Pick family members as avatar chips. `multiple` toggles any number; otherwise one member.
 	 * `noneLabel` makes picking nobody a choice of its own, a first chip that is pressed while
-	 * nobody is picked: "Anyone" for one member, "Whole family" for any number, where picking it
+	 * nobody is picked: "Anyone" for one member, "Everyone" for any number, where picking it
 	 * clears the people and picking a person releases it.
 	 */
 	let {

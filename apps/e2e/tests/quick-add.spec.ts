@@ -35,10 +35,11 @@ test('a model that cannot answer leaves a failed item with an explanation and a 
 	);
 	await shareText(page, `The zoo trip is on ${date}`);
 
-	// It does not hang on "Reading…": the item says what is wrong and offers to try again.
-	await expect(page.getByRole('alert').getByText('AI is not set up yet.')).toBeVisible();
+	// It does not hang on "Reading…": the item says it is kept (the note above says why) and
+	// offers to try again.
+	await expect(page.getByRole('alert').getByText('Kept, not read yet.')).toBeVisible();
 	await expect(
-		page.getByRole('link', { name: 'Choose a model in Settings → AI, then try again.' }),
+		page.getByTestId('capture-group').getByRole('link', { name: 'Set up AI' }),
 	).toBeVisible();
 	await expect(page.getByText('Reading…')).toHaveCount(0);
 	expect(model.prompts).toHaveLength(0);

@@ -76,13 +76,14 @@
 		temperatureUnit = defaultTemperatureUnit(tag);
 	}
 
-	const sample = Date.UTC(2026, 9, 8, 14, 30);
+	// The day is over 12, so the order of day and month can be seen.
+	const sample = Date.UTC(2026, 9, 18, 14, 30);
 	const preview = $derived.by(() => {
 		const date = new Intl.DateTimeFormat(shown, { dateStyle: 'full', timeZone: 'UTC' }).format(
 			sample,
 		);
 		const time = new Intl.DateTimeFormat(shown, {
-			hour: '2-digit',
+			hour: hourCycle === 'h12' ? 'numeric' : '2-digit',
 			minute: '2-digit',
 			hourCycle,
 			timeZone: 'UTC',
@@ -92,7 +93,7 @@
 			style: 'unit',
 			unit: temperatureUnit,
 		}).format(temperatureUnit === 'celsius' ? 21 : 70);
-		return `${date} · ${time} · ${number} · ${temperature}`;
+		return t('region_preview_parts', { date, time, number, temperature });
 	});
 	/** The all-numeric form, where day-month order differs the most between regions. */
 	const numericDate = $derived(
@@ -228,6 +229,7 @@
 								id="format-locale"
 								bind:value={formatLocale}
 								options={regions}
+								named
 								placeholder={t('region_locale_search')}
 								max={300}
 								onpick={() => {

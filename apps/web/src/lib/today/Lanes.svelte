@@ -140,9 +140,11 @@
 	/** A person's one clause; in the evening the chart is tomorrow's, so it names their first thing. */
 	const statusOf = (id: string) => {
 		if (!data.evening) return data.statuses.find((s) => s.id === id)?.status ?? '';
-		const first = charted.find(
-			(c) => (c.kind === 'event' || c.kind === 'long') && (c.item.members ?? []).includes(id),
-		);
+		// Their own first thing, else the first event for everyone (which includes them).
+		const timed = charted.filter((c) => c.kind === 'event' || c.kind === 'long');
+		const first =
+			timed.find((c) => (c.item.members ?? []).includes(id)) ??
+			timed.find((c) => c.item.kind === 'event' && isMine(c.item, id));
 		return first?.item.start !== undefined
 			? words.status.at(first.item.title, data.clock(first.item.start))
 			: words.status.nothing;
@@ -195,7 +197,9 @@
 			lanes.push({
 				key: 'family',
 				kind: 'family',
-				name: words.family,
+				// The things for no one person, named as the calendar names them; on a display with
+				// names off, the family's.
+				name: data.showNames ? words.anyone : words.family,
 				color: '',
 				status: left > 0 ? words.status.choresLeft(left) : '',
 				people: 1,
@@ -461,7 +465,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if share}
+				<!-- The link fits what is listed: none for the AI setup row alone. -->
+				{#if share && data.needsCardsTotal > 0}
 					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
@@ -481,6 +486,7 @@
 						variant="needs"
 						title={t('home_ai_row_title')}
 						meta={t('home_ai_missing_text')}
+						wrap
 						href="/settings/ai"
 					>
 						{#snippet trailing()}

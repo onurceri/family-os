@@ -39,7 +39,7 @@ A **family device** (the kitchen tablet) lets people pick their name and sign in
 
 ## What it shows
 
-A display shows **Today** in **family mode**: no "Needs you", nothing to press, no links, bell or menu. Type is one step larger from tablet width, two on a TV.
+A display shows **Today** in **family mode**: no "For you to check", nothing to press, no links, bell or menu. Type is one step larger from tablet width, two on a TV.
 
 - **Look.** **Settings → Family → Family look → Displays**: each display has a **Style** (Broadsheet, Lanes or Wall, see [Appearance](appearance.md)) and a **Theme**, or **Same as the family**. A person's own choice or trial never changes a display.
 - **Names and colors.** Off by default: one column (or lane, row) for everyone, chores as one total, the next thing without "for whom". **Show names and colors of family members** gives a column per person with name, color and chores. Anyone passing can read the screen.

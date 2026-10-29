@@ -57,7 +57,7 @@ JPEG, PNG, WebP and GIF pictures lose location and other metadata (EXIF, XMP, IP
 | **Any provider** | Any provider you added |
 
 **Good to know**
-- Areas with private records are marked **Private records** and start **Off**; others start **Any provider**. A provider is local when its address resolves only to your machine or home network.
+- An area that declares private records is marked **Private records** and starts **Off**. None of the areas that ship with FamilyOS does, so each starts **Any provider**; until you add a provider, nothing is sent anywhere. Set the areas you want closed (for example Records) before you add a cloud provider. A provider is local when its address resolves only to your machine or home network.
 - Opening a sensitive area to **Any provider** asks you to confirm (**Allow any provider**); **Local only** does not.
 - Only areas on in **Settings → Family → Extensions** and with AI actions are listed (sensitive ones always).
 - **Locking an area hides its duties and papers.** Records' duties and papers belong to their vehicle, pet or home: **Vehicles** **Off** hides "Car insurance (Family car)" and papers under Family car; same for pets and home. Papers you filed yourself with **Add to…** are never shown to the AI. Pages, reminders and papers still work for the family.

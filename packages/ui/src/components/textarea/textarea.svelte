@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HTMLTextareaAttributes } from "svelte/elements";
 	import { findApp } from "../../app-context.js";
-	import { lengthState } from "../../famos/length-limit.js";
+	import { counterText, type LengthState, lengthState } from "../../famos/length-limit.js";
 	import LimitCounter from "../../famos/LimitCounter.svelte";
 
 	let {
@@ -13,15 +13,13 @@
 
 	// Like `Input`: a limit never cuts what is typed or pasted. A counter shows near it, a message
 	// over it, and the field is invalid until the text is shorter.
-	const over = $derived(
-		typeof maxlength === "number" && lengthState(String(value ?? ""), maxlength).over
-	);
+	const usage = $derived(lengthState(String(value ?? ""), maxlength ?? 0));
+	const over = $derived(typeof maxlength === "number" && usage.over);
 	const app = findApp();
-	const tooLong = (counter: string) => app?.t("app:too_long", { counter }) ?? counter;
+	const tooLong = (counter: string, state: LengthState) =>
+		app?.t("app:too_long", { length: state.length, max: state.max }) ?? counter;
 	$effect(() => {
-		ref?.setCustomValidity(
-			over ? tooLong(`${String(value ?? "").trim().length}/${maxlength}`) : ""
-		);
+		ref?.setCustomValidity(over ? tooLong(counterText(usage), usage) : "");
 	});
 </script>
 
@@ -29,6 +27,7 @@
 	bind:this={ref}
 	bind:value
 	{...restProps}
+	data-counted={typeof maxlength === "number" ? "" : undefined}
 	aria-invalid={over ? "true" : restProps["aria-invalid"]}
 ></textarea>
 {#if typeof maxlength === "number"}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { counterText, lengthState } from './length-limit.js';
+	import { counterText, type LengthState, lengthState } from './length-limit.js';
 
 	/**
 	 * Shows how much of a limit a text has used, in the last few characters before it, and a
@@ -13,8 +13,11 @@
 	}: {
 		text: string;
 		max: number;
-		/** The message when over, e.g. "Too long (212/160)"; given the counter text. */
-		tooLong: (counter: string) => string;
+		/**
+		 * The message when over, e.g. "Too long: 212 characters. The limit is 160."; given the
+		 * counter text ("212/160") and the length and limit themselves.
+		 */
+		tooLong: (counter: string, usage: LengthState) => string;
 		id?: string;
 	} = $props();
 
@@ -27,6 +30,6 @@
 		class="text-xs tabular-nums {usage.over ? 'text-attention font-semibold' : 'text-ink-soft'}"
 		role={usage.over ? 'alert' : undefined}
 	>
-		{usage.over ? tooLong(counterText(usage)) : counterText(usage)}
+		{usage.over ? tooLong(counterText(usage), usage) : counterText(usage)}
 	</p>
 {/if}

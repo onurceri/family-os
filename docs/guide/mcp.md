@@ -160,7 +160,7 @@ An agent outside your home network needs [HTTPS](https.md).
 
 - **Read**: calendar, open tasks, shopping list, what is due, vehicle, pet and home records, and [Search](search.md) when it is set up.
 - **Today**: the date, time and weekday in the family's time zone. It also gets this week's first and last day, and the weekday of each day from a week ago to two weeks ahead. The agent is told to ask again, because a connection can stay open past midnight.
-- **Suggest** (with "suggest" access): add events, tasks, shopping items and more. Each suggestion waits in Quick add under **Waiting for you**, grouped by app ("Claude", or "Ada via Claude"). The notice that one waits names the app.
+- **Suggest** (with "suggest" access): add events, tasks, shopping items and more. Each suggestion waits in Quick add under **For you to check**, grouped by app ("Claude", or "Ada via Claude"). The notice that one waits names the app.
 - **Its suggestions**: what became of the ones made through this key (waiting, approved, turned down, taken back) and who decided. Suggestions from anywhere else are not listed.
 - Areas set **off** or **local only** for the AI are unavailable ([AI and privacy](ai.md)).
 - **People**: only when **Send names and descriptions** is on in **Settings → AI**.

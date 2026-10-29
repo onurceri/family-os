@@ -205,7 +205,7 @@ describe('statusOf: one clause, in order', () => {
 			timed('football', at(17), at(18), { members: ['elif'] }),
 		];
 		expect(statusOf('elif', items, chores, NOON)).toMatchObject({ kind: 'soon', minutes: 25 });
-		expect(text('elif', items)).toBe('piano in 25 mins');
+		expect(text('elif', items)).toBe('piano in 25 minutes');
 		expect(text('elif', items, at(13))).toBe('football 17:00');
 		expect(text('elif', items, at(12, 40))).toBe('piano until 13:00');
 	});
@@ -218,7 +218,7 @@ describe('statusOf: one clause, in order', () => {
 		expect(text('amy', [])).toBe('Nothing planned');
 	});
 
-	it('is one clause: chores never join an item, and anyone’s items are not a person’s status', () => {
+	it('is one clause: chores never join an item, and a person’s own things come first', () => {
 		const items = [
 			timed('piano', at(15, 45), at(16, 30), { members: ['elif'] }),
 			timed('bins', at(12, 30)),
@@ -226,7 +226,22 @@ describe('statusOf: one clause, in order', () => {
 		const line = text('elif', items);
 		expect(line).toBe('piano 15:45');
 		expect(line).not.toMatch(/chore/);
-		expect(text('amy', items)).toBe('Nothing planned');
+	});
+
+	it('gives the whole family’s plan to a person with nothing of their own', () => {
+		const dinner = timed('dinner', at(19), at(20));
+		expect(text('amy', [dinner])).toBe('dinner 19:00');
+		// Before their chores: the rings already show those.
+		expect(text('elif', [dinner])).toBe('dinner 19:00');
+		const holiday = item('Holiday', { slot: 'allday' });
+		expect(text('amy', [holiday])).toBe('Holiday');
+		const wfh = item('Working from home', { slot: 'allday', members: ['amy'] });
+		expect(text('amy', [holiday, wfh])).toBe('Working from home');
+		expect(text('amy', [{ ...dinner, done: true }])).toBe('Nothing planned');
+		// A task nobody was given is for whoever does it, not each person's.
+		expect(text('amy', [timed('vet call', at(17), undefined, { kind: 'task' })])).toBe(
+			'Nothing planned',
+		);
 	});
 
 	it('ignores meals, chores as items and past items', () => {
@@ -265,8 +280,9 @@ describe('formatting in the family’s format locale', () => {
 	});
 
 	it('splits minutes into the number and its unit', () => {
-		expect(minuteParts(25, 'en-GB')).toEqual({ value: '25', unit: 'mins' });
-		expect(minuteParts(25, 'tr-TR')).toEqual({ value: '25', unit: 'dk.' });
+		expect(minuteParts(25, 'en-GB')).toEqual({ value: '25', unit: 'minutes' });
+		expect(minuteParts(1, 'en-GB')).toEqual({ value: '1', unit: 'minute' });
+		expect(minuteParts(25, 'tr-TR')).toEqual({ value: '25', unit: 'dakika' });
 	});
 
 	it('writes the clock in the hour cycle and the photo month in the locale', () => {
@@ -283,7 +299,7 @@ describe('formatting in the family’s format locale', () => {
 		expect(showCountdown(countdown(NOON, at(12, 25)), fmt, countdownWords)).toEqual({
 			kind: 'minutes',
 			value: '25',
-			caption: 'mins',
+			caption: 'minutes',
 		});
 		expect(showCountdown(countdown(NOON, at(13, 55)), fmt, countdownWords)).toEqual({
 			kind: 'duration',

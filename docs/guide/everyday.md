@@ -10,19 +10,19 @@ Phone bottom bar: **Today**, **Quick add**, **Calendar**, **Lists**, **More** (H
 
 | Part | What it shows |
 |---|---|
-| **The head** | The clock, the date and a sentence about the day ("Good morning, Amy. 2 things need you, 4 on the plan, Swimming tonight.") |
-| **Next up** | The next thing of the day on the one coloured card. Countdown: **25 min** under an hour, **1 h 55 min to go**, from two hours **starts 17:00**; once started **now** and until when. Beside the title: **At** the place or **Starts** and the time |
+| **The head** | The clock, the date and a sentence about the day ("Good morning, Amy. 2 things for you to check. 4 things planned today. Tonight: Swimming.") |
+| **Next up** | The next thing of the day on the one coloured card. Countdown: **25 minutes** under an hour, **1 h 55 min to go**, from two hours **starts 17:00**; once started **now** and until when. Beside the title: **At** the place or **Starts** and the time |
 | **Family \| Me** | On the card: **Family** (first choice) is the family's next thing; **Me** is the next thing you are part of or that is for everyone. Remembered on every device; if nothing more is yours: **Nothing more for you today.** |
-| **The family** | Per person, the rest of the day (**+2 more**) and a status: next thing ("Piano lesson in 25 min"), else all-day thing ("Working from home"), else chores left, else **Nothing planned**. On a phone, people with something come first |
+| **The family** | Per person, the rest of the day (**+2 more**) and a status: next thing ("Piano lesson in 25 minutes"), else all-day thing ("Working from home"), else the next event for **Everyone**, else chores left, else **Nothing planned**. Things for no one person (events for everyone, tasks anyone may do) have their own column, **Everyone**. On a phone, people with something come first |
 | **Chores** | One ring per person, filling as chores are done ("Sam: 1 of 3 done"); empty for no chores today ("Leo: no chores today") |
 | **Shopping** | A number readable across the room, with the first few things named |
 | **The weather** | When set up: temperature, next hours and a sentence tying weather to the day ("Rain from 15:00, during Football practice."). The sky behind it only sets the mood and stays still when your device asks for less motion |
 | **A photo of the day** | From the family's photos (the same all day), for those allowed to see display photos |
-| **Needs you** | First when something waits for a decision. Decide it there, or open **Quick add**. A suggestion to move an event you already have is decided in **Quick add**; here you can only reject it. The **board**, **Coming up** and the kitchen follow |
+| **For you to check** | First when something waits for a decision. Decide it there, or open **Quick add** (the link shows when a suggestion is listed, not for the AI setup row alone). A suggestion to move an event you already have is decided in **Quick add**; here you can only reject it. The **board**, **Coming up** and the kitchen follow |
 
 - **Evening:** the plan folds into one line ("The day is done."), and **Tomorrow** moves to the top.
 - **A quiet day:** a sentence says so; **Next days** shows the week.
-- **A new home:** a short list of first steps (add the family, put something on the calendar, set your city, connect an AI model) that goes away by itself.
+- **A new home:** a short list of first steps (add the family, put something on the calendar, set your city, connect an AI model). It stays until every step is done or you close it, also after your first event.
 - Tap a section's title to open its page. The **bell** (side bar on a computer, top of Today on a phone) shows what you have not read: press it for the latest notifications or the full list. A wide screen has a search box at the top.
 
 ## Quick add
@@ -31,10 +31,11 @@ Quick add is where you give FamilyOS a message, a photo, a document or a voice n
 
 ### Giving it something
 
-- **On the Quick add page:** paste, type or describe something in the box, or use the paperclip (**Attach a photo or file**) for pictures, PDFs or text files. The microphone (**Record a voice note**) records; press again to stop. Press **Read it**. One capture holds up to 6 files and 25 MB in all. There is a daily limit per person.
+- **On the Quick add page:** paste, type or describe something in the box, or use the paperclip (**Attach a photo or file**) for pictures, PDFs or text files. The microphone (**Record a voice note**) records; press again to stop. Press **Send**. One capture holds up to 6 files and 25 MB in all. There is a daily limit per person.
 - **From any page on a wide screen:** the **Quick add** button at the top of the side bar (round **+** on a tablet) opens a panel; **Open Quick add** goes to the page.
-- **From your phone:** **Share → FamilyOS** on a message, photo, document or link; press **Read it** (or **Discard**). Setup: [HTTPS and phones](https.md).
+- **From your phone:** **Share → FamilyOS** on a message, photo, document or link; press **Send** (or **Discard**). Setup: [HTTPS and phones](https.md).
 - **By mail or Telegram:** see [Email](email.md) and [Telegram](telegram.md).
+- **Without AI:** while AI is off or no model is chosen, a line under the box says so before you type: what you add waits unread. People who may change the AI settings get **Set up AI**; everyone gets links to the pages where they can add things themselves (**Calendar**, **Tasks**, **Shopping**, as far as they may add there). What you send anyway is kept.
 
 A file to keep with a vehicle, pet or home, without the AI reading it, can be filed directly: see **Add to…** in [What needs doing and Papers](records.md).
 
@@ -73,9 +74,9 @@ Each left-out suggestion is named, one line per reason, even when other things w
 - Suggestions from your captures are yours to decide; other adults are not told and cannot see or decide them.
 - Something given from outside the app (share sheet, [Telegram](telegram.md), [email](email.md)) sends you one notification when the AI has suggestions. Giving it in the app sends none.
 
-### Waiting for you
+### For you to check
 
-Each capture with something to decide is one group: what it is, when, from where, then its suggestions. **Show the original** opens the text, photos and files. While reading it says **Reading…**, or **Trying again (attempt 2 of 4)…**. You see only suggestions you can decide or that are yours; a member who cannot approve sees **Waiting for approval**.
+Each capture with something to decide is one group: what it is, when, from where, then its suggestions. **Show what was shared** opens the text, photos and files. While reading it says **Reading…**, or **Trying again (attempt 2 of 4)…**. You see only suggestions you can decide or that are yours; a member who cannot approve sees **Waiting for approval**.
 
 A card shows:
 
@@ -113,13 +114,13 @@ A fully decided capture leaves by itself. Nothing found: **Nothing to add was fo
 
 **Good to know**
 
-- A suggestion about something removed meanwhile (deleted event, archived pet) leaves **Waiting for you** and the count, and shows as **Can no longer be done: it no longer exists**.
+- A suggestion about something removed meanwhile (deleted event, archived pet) leaves **For you to check** and the count, and shows as **Can no longer be done: it no longer exists**.
 - One asking for what is already so (ticking an item already bought) closes as **Already done**, with no **Undo**.
 - The count includes only what you can decide; one message or photo counts once.
 - If the extension is not installed or is off, the card says so to all who would decide it (**Pets is not installed: this suggestion waits until it is back.**); it cannot be added and is not counted. Its author can withdraw it; when the extension is back it waits as usual.
-- Today shows one message's suggestions as one line under **Needs you** (**Tom shared something · 3 suggestions to check**) that opens the group.
+- Today shows one message's suggestions as one line under **For you to check** (**Tom shared something · 3 suggestions to check**) that opens the group.
 
-**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **Waiting for you** and **Needs you** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
+**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **For you to check** and **For you to check** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
 
 ### Recent
 
@@ -127,7 +128,7 @@ A fully decided capture leaves by itself. Nothing found: **Nothing to add was fo
 
 ### When reading fails
 
-The capture says why: **AI is not set up yet.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.**, **This is too long for the AI to read in one go. Share it in smaller parts.** Admins get a link to the AI settings. Fix the cause, then **Try again**. If AI is off for this kind of capture: **AI is off. Kept here unread.**; press **Read now**.
+The capture says why: **AI is not set up yet. What you added is kept here.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.**, **This is too long for the AI to read in one go. Share it in smaller parts.** Admins get a link to the AI settings. Fix the cause, then **Try again**. If AI is off for this kind of capture: **AI is off. Kept here unread.**; press **Read now**.
 
 **Remove** (then **Tap again to remove**) takes a capture away and declines its waiting suggestions. Only the person who made a capture can remove, re-read or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
 
@@ -142,7 +143,7 @@ Open **Calendar** and pick **Day**, **Week** or **Month**; arrows move by that m
 
 1. Press **Add event** (or click an empty hour) and fill in the **Title**. The form is a side panel, a sheet on a phone.
 2. Pick **Date**, **Starts** and **Ends**. **All day** for a whole day; **Until (last day)** for several. An end earlier than the start (22:00 to 07:00) means next morning (**(next day)**).
-3. Under **Who**, pick people or **Whole family** (first choice).
+3. Under **Who**, pick people or **Everyone** (first choice).
 4. Optionally add **Repeats**, **Reminder**, **Tags**, **Where**, **Notes**; press **Save**.
 
 Tap an event to change it or **Delete** it (then **Tap again to delete**). Subscribed-calendar events are read-only, marked **From** and the calendar's name. If you may not change the calendar directly, **Save** sends the event for approval.
@@ -170,11 +171,11 @@ Timed events remind 30 minutes before; all-day events at 09:00 that day. Change 
 
 ### Shopping
 
-The first list is **Groceries**. With several lists they are buttons at the top; **+** makes one; **⋯** has **Rename list** and **Remove list** (with more than one).
+The first list is **Groceries**. With several lists they are buttons at the top; **New list** makes one; **⋯** has **Rename list** and **Remove list** (with more than one).
 
-- **Add items:** type in the box (bottom on a phone, top on wide) and press Enter, separated by commas: `2 kg tomatoes, bread, milk`. A line under the box previews (**3 items will be added: …**). A leading number is the quantity and the rest gets a capital (`2 L oat milk` is Oat milk, 2 L); without a number your text is kept. A number and unit after an item belong to it (`sandpaper, 2 sheets`).
+- **Add items:** type in the box (bottom on a phone, top on wide) and press Enter, separated by commas, semicolons or new lines: `2 kg tomatoes, bread, milk`. A line under the box previews (**3 items will be added: …**). The items show at once, marked **Adding…** until saved; if saving fails they go and your text comes back to the box. A leading number is the quantity (`2 L oat milk` is Oat milk, 2 L). Every item starts with a capital (`bread` is Bread); a name with its own capitals inside stays as typed (`iPhone charger`). A number and unit after an item belong to it (`sandpaper, 2 sheets`).
 - **Duplicates:** an existing item is not added twice; the page says so (**Milk is already on the list**, or **…, now 2 l** when quantity changed) and outlines the row. A new quantity replaces the old in the same unit; another unit sits beside it (`2 L` and `2` become `2 L + 2`). An add without quantity leaves the old one. Quick add shows such a change as **Rice: 1 kg → 1 kg + a bag**.
-- **Limits:** shopping names 120 and quantities 40 characters, task titles 160. A counter shows near the limit; past it the field says **Too long** and nothing saves. Nothing is cut for you; other long fields work the same. In every form a field that blocks **Save** says why under it (**Give it a name**, **Choose at least one day**) and the cursor goes to the first.
+- **Limits:** shopping names 120 and quantities 40 characters, task titles 160. A counter shows near the limit; past it the field says how long the text is and what the limit is (**Too long: 130 characters. The limit is 120.**) and nothing saves. Nothing is cut for you; other long fields work the same. In every form a field that blocks **Save** says why under it (**Give it a name**, **Choose at least one day**) and the cursor goes to the first.
 - **Sections:** items sort into sections (**Fruit & vegetables**, **Dairy & breakfast**); FamilyOS remembers the section you last gave a product.
 - **Tick:** tap an item in your cart; it moves to **In the cart** (below, or beside the list on wide); tap again to put back. **Clear the cart** (then **Tap again to clear**) removes all.
 - **Change or delete:** an item's **⋯** has **Edit item** (title, quantity, section) and **Delete item** (at once; **Undo** for a few seconds).

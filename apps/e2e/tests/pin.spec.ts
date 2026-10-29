@@ -73,7 +73,7 @@ test('a wrong PIN is refused; a PIN session is a member session without admin se
 	// No admin entries, the admin pages say they are not for her, the admin API refuses.
 	await tablet.goto('/more');
 	await expect(tablet.getByRole('heading', { name: 'More' })).toBeVisible();
-	for (const name of ['Members', 'Roles', 'Devices', 'Backups', 'Provider & models'])
+	for (const name of ['Members', 'Roles', 'Devices and displays', 'Backups', 'Provider & models'])
 		await expect(tablet.getByRole('link', { name, exact: true }), name).toHaveCount(0);
 	for (const path of ['/settings/devices', '/settings/members']) {
 		await tablet.goto(path);

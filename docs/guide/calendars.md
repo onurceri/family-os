@@ -34,7 +34,7 @@ Needs permission to manage the calendar (admins have it). Any ICS or webcal addr
 | iCloud | Share the calendar, turn on **Public Calendar**, copy the link. |
 
 1. **Settings → Family → Calendars & tags → Calendar subscriptions.**
-2. Enter **Name** and **Calendar address**, choose **Colour**, optionally **Whose is it?** (**Whole family** until you pick someone).
+2. Enter **Name** and **Calendar address**, choose **Colour**, optionally **Whose is it?** (**Everyone** until you pick someone).
 3. **Add subscription.**
 
 **Good to know**
@@ -53,7 +53,7 @@ Up to 5 per event (school, health, car): **Tags** in the event form, Enter or co
 
 **Good to know**
 - On the calendar tap tags to filter; **All** resets. Remembered per device.
-- Editors rename, recolor or delete under **Phone and other calendars → Tags**. This changes every event with the tag; renaming to an existing name merges.
+- Editors rename, recolor or delete under **Calendars & tags → Tags**. This changes every event with the tag; renaming to an existing name merges.
 
 ## Reminders
 

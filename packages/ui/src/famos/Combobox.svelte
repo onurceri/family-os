@@ -17,6 +17,7 @@
 		class: className,
 		invalid = false,
 		max = 50,
+		named = false,
 		inputAttributes = {},
 		onpick,
 		onchange,
@@ -31,6 +32,11 @@
 		invalid?: boolean;
 		/** Most suggestions shown at once. */
 		max?: number;
+		/**
+		 * While the field is not being edited, it shows the chosen option's name with its code after
+		 * it ("Germany  de-DE"), not the code alone. Editing shows the code again.
+		 */
+		named?: boolean;
 		inputAttributes?: Record<string, string | boolean>;
 		/** After a suggestion was chosen (not on every keystroke). */
 		onpick?: (value: string) => void;
@@ -45,6 +51,14 @@
 	let browsing = $state(false);
 	let active = $state(-1);
 	let input: HTMLInputElement | undefined = $state();
+	let focused = $state(false);
+	const chosen = $derived(named ? options.find((o) => o.value === value && o.label) : undefined);
+	const picked = $derived(focused ? undefined : chosen);
+	// The field's value is the code; its name is read as part of the field's description.
+	const nameId = $derived(`${id}-name`);
+	const description = $derived(
+		[chosen ? nameId : undefined, describedBy].filter(Boolean).join(' ') || undefined,
+	);
 	let list: HTMLUListElement | undefined = $state();
 	const listId = $derived(`${id}-list`);
 
@@ -128,12 +142,18 @@
 			aria-activedescendant={open && active >= 0 ? `${id}-opt-${active}` : undefined}
 			aria-invalid={invalid ? 'true' : undefined}
 			aria-label={ariaLabel}
-			aria-describedby={describedBy}
+			aria-describedby={description}
 			autocomplete="off"
 			spellcheck={false}
 			{...inputAttributes}
-			class="bg-idle text-ink placeholder:text-ink-soft focus-visible:ring-info aria-invalid:ring-attention h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border-0 pr-10 pl-3 text-[15px] outline-none focus-visible:ring-2 aria-invalid:ring-2"
-			onfocus={show}
+			class={cn(
+				'bg-idle text-ink placeholder:text-ink-soft focus-visible:ring-info aria-invalid:ring-attention h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border-0 pr-10 pl-3 text-[15px] outline-none focus-visible:ring-2 aria-invalid:ring-2',
+				picked && 'text-transparent',
+			)}
+			onfocus={() => {
+				focused = true;
+				show();
+			}}
 			oninput={() => {
 				browsing = false;
 				// A code typed in full stays listed, first and active, so its name shows and Enter
@@ -143,11 +163,22 @@
 			}}
 			onchange={() => onchange?.(value)}
 			onblur={() => {
+				focused = false;
 				// Let a click on an option land first.
 				setTimeout(() => (open = false), 120);
 			}}
 			{onkeydown}
 		/>
+		{#if chosen}<span id={nameId} class="sr-only">{chosen.label}</span>{/if}
+		{#if picked}
+			<span
+				aria-hidden="true"
+				class="pointer-events-none absolute inset-y-0 right-10 left-3 flex items-center gap-2 overflow-hidden text-[15px] whitespace-nowrap"
+				><span class="text-ink truncate">{picked.label}</span><span
+					class="text-ink-soft shrink-0 text-[13px]">{picked.value}</span
+				></span
+			>
+		{/if}
 		<button
 			type="button"
 			tabindex="-1"

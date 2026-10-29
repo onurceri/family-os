@@ -3,7 +3,7 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { navigating, page } from '$app/state';
 	import { ChevronLeft, Ellipsis } from '@lucide/svelte';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import {
 		bootLanguage,
 		getDirection,
@@ -44,7 +44,7 @@
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { refusalKey, refusalOfError } from '#lib/refusal.js';
-	import { shareFor } from '#lib/contributions.js';
+	import { addPlacesFor, shareFor } from '#lib/contributions.js';
 	import {
 		contributions,
 		enabledOnly,
@@ -66,6 +66,9 @@
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	// The app has taken over from the shell's own loading mark (app.html).
+	onMount(() => document.getElementById('boot-mark')?.remove());
 
 	// Counts reads in flight, so a page can stay hidden until its first data is in (PageGate).
 	netActivity.install();
@@ -172,6 +175,12 @@
 			shareFor(contributions.share, {
 				can: (capability) => session.can(capability),
 				disabledExtensions: session.disabledExtensions,
+			}),
+		addPlaces: () =>
+			addPlacesFor(contributions.nav, {
+				can: (capability) => session.can(capability),
+				disabledExtensions: session.disabledExtensions,
+				access: (actionId) => accessBook.access(actionId),
 			}),
 		toast: (message, action) => toasts.show(message, action),
 		failureText: (error, fallback) => {
@@ -619,6 +628,8 @@
 		</nav>
 
 		<PreviewBar />
+		<!-- A page's code on its way (slow network): the same late, quiet mark as a slow load. -->
+		{#if navigating.to}<LoadingMark />{/if}
 	</div>
 {:else}
 	<main class="mx-auto max-w-5xl px-4 py-6">

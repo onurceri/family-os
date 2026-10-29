@@ -124,7 +124,7 @@ One empty state per view: an empty page shows its `EmptyState` alone, never a se
 
 A page opens once, whole. It never shows its head first and its body a moment later, and an empty state never stands in for data that has not arrived.
 
-- **The shell** shows nothing while the session loads: the empty wall, no "Loading…" page.
+- **The shell** shows nothing for the first 800 ms while the app and the session load (the empty wall, no "Loading…" page), then the same quiet mark. Before the app has started, `app.html` draws that mark in plain CSS (same size, same delay) and the app removes it when it takes over; the same mark shows while a page's code is still downloading on a slow network (a navigation in flight, an extension page's module).
 - **A page** is mounted at once, so it starts loading, but stays transparent (`opacity: 0`, no pointer events, so layout and focus stay sane) until its first data is in; then the whole page fades in over 120 ms (no fade under `prefers-reduced-motion`). "First data" is every read started while the page opened, plus the family settings and the shell's language, including any capability, list name or setup state that arrives with them.
 - **Slow loads.** After 800 ms a quiet centred indicator fades in; a fast load never shows it. After 6 s the page shows as it is.
 - **Later changes stay in place.** Live events and actions update the page where it stands and never hide it again.
@@ -173,7 +173,7 @@ Rules:
 
 Panel (desktop): 420 px (360 at 1024–1279), full window height, fixed right, `surface`, 1 px `line` left, `shadow-pop`. Header 56 px: title 17/800, close `×` (36 px ghost icon button). Body scrolls, 20 px padding. Sticky footer: `Save` (ink) · `Cancel` (ghost) · a destructive two-tap button at the far right when editing. Focus moves to the first field; Esc closes (asks when dirty); `⌘/Ctrl+Enter` saves.
 
-Sheet (phone/tablet): full height from 12 px below the top, radius 14 at the top, a grab handle, a 52 px bar with `Cancel` (ghost) left, title 16/800 centre, `Save` (ink, small) right; the body scrolls with 16 px padding and 24 px bottom padding plus the keyboard inset. A half sheet (≤ 85 %) is for pickers and action sheets. Swipe down or Cancel closes (asks when dirty).
+Sheet (phone/tablet): full height from 12 px below the top, radius 14 at the top, a grab handle, a 52 px bar with `Cancel` (ghost) left, title 16/800 centre, `Save` (ink, small) right; the body scrolls with 16 px padding and 24 px bottom padding plus the keyboard inset. A half sheet (≤ 85 %) is for pickers and action sheets. Swipe down or Cancel closes (asks when dirty). The browser's Back button closes the open sheet the same way and stays on the page (a sheet holds one history entry while open, `sheet-history.ts`).
 
 Forms: fields 18 px apart; related short fields pair at ≥ 40 rem of container (and in the sheet for date + time, plate + fuel); `optional` in the label in `ink-soft`; hints 13 px under the field; errors 13/600 `attention` under the field with an `attention` border (`FieldError`, linked with `fieldAria`; a validator returns a reason key per field, `FieldErrors`, and a refused Save focuses the first with `focusFirstInvalid`). Save stays enabled: an empty required field is refused with its reason, never by a greyed-out button. Placeholders are examples (`e.g. Hallway`) so they never read as a value. Member pickers are chips; ≤ 4 options are a segmented control; presets with a per-item schedule are a checklist card (the vehicle form).
 

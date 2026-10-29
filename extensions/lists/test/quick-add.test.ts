@@ -1,6 +1,6 @@
 import { repoTranslate } from '@famos/testing';
 import { describe, expect, it } from 'vitest';
-import { capitalize } from '../src/contract/index.ts';
+import { capitalize, listEntry } from '../src/contract/index.ts';
 import { longestTitle, parseQuickAdd } from '../src/web/quick-add.ts';
 
 /** The units of the English catalog and of the bundled Turkish pack, as the page reads them. */
@@ -94,20 +94,34 @@ describe('longestTitle', () => {
 	});
 });
 
-describe('capitals after an amount', () => {
-	it('upper-cases the first letter of what is left after a leading amount only', () => {
+describe('every item a list entry', () => {
+	it('starts every title with a capital, with an amount or without', () => {
+		expect(parseQuickAdd('2 kg tomatoes, bread', en, 'en')).toEqual([
+			{ title: 'Tomatoes', quantity: '2 kg' },
+			{ title: 'Bread' },
+		]);
 		expect(parseQuickAdd('2 L oat milk, bread, parmesan 150 g, hooks, 4', en, 'en')).toEqual([
 			{ title: 'Oat milk', quantity: '2 L' },
-			{ title: 'bread' },
-			{ title: 'parmesan', quantity: '150 g' },
-			{ title: 'hooks', quantity: '4' },
+			{ title: 'Bread' },
+			{ title: 'Parmesan', quantity: '150 g' },
+			{ title: 'Hooks', quantity: '4' },
 		]);
 	});
 
+	it('keeps a name that writes its own capitals', () => {
+		expect(parseQuickAdd('iPhone charger, eBay parcel, 7up', en, 'en')).toEqual([
+			{ title: 'iPhone charger' },
+			{ title: 'eBay parcel' },
+			{ title: '7up' },
+		]);
+		expect(listEntry('oat MILK', 'en')).toBe('Oat MILK');
+	});
+
 	it('follows the rule of the language: the Turkish dotted I', () => {
-		expect(parseQuickAdd('2 kg iğde, 1 L ılık süt', tr, 'tr')).toEqual([
+		expect(parseQuickAdd('2 kg iğde, 1 L ılık süt, ekmek', tr, 'tr')).toEqual([
 			{ title: 'İğde', quantity: '2 kg' },
 			{ title: 'Ilık süt', quantity: '1 L' },
+			{ title: 'Ekmek' },
 		]);
 		expect(parseQuickAdd('2 kg iğde', tr, 'en')).toEqual([{ title: 'Iğde', quantity: '2 kg' }]);
 	});
@@ -126,7 +140,7 @@ describe('capitals after an amount', () => {
 describe('the preview of several items', () => {
 	it('counts the same items Enter adds, so the two cannot disagree', () => {
 		const items = parseQuickAdd('vanilla yoghurt, a large tub of it, 1,5 kg rice', en, 'en');
-		expect(items.map((i) => i.title)).toEqual(['vanilla yoghurt', 'a large tub of it', 'Rice']);
+		expect(items.map((i) => i.title)).toEqual(['Vanilla yoghurt', 'A large tub of it', 'Rice']);
 		expect(parseQuickAdd('2 kg tomatoes', en, 'en')).toHaveLength(1);
 	});
 });

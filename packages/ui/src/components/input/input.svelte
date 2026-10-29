@@ -3,7 +3,7 @@
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 	import { findApp } from "../../app-context.js";
 	import LimitCounter from "../../famos/LimitCounter.svelte";
-	import { lengthState } from "../../famos/length-limit.js";
+	import { counterText, type LengthState, lengthState } from "../../famos/length-limit.js";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
 
@@ -30,14 +30,14 @@
 	const counted = $derived(
 		type !== "file" && typeof maxlength === "number" && maxlength >= COUNTED_FROM
 	);
-	const over = $derived(
-		counted && lengthState(String(value ?? ""), maxlength as number).over
-	);
+	const usage = $derived(lengthState(String(value ?? ""), (maxlength as number) ?? 0));
+	const over = $derived(counted && usage.over);
 	const app = findApp();
-	const tooLong = (counter: string) => app?.t("app:too_long", { counter }) ?? counter;
+	const tooLong = (counter: string, state: LengthState) =>
+		app?.t("app:too_long", { length: state.length, max: state.max }) ?? counter;
 	$effect(() => {
 		(ref as HTMLInputElement | null)?.setCustomValidity(
-			over ? tooLong(`${String(value ?? "").trim().length}/${maxlength}`) : ""
+			over ? tooLong(counterText(usage), usage) : ""
 		);
 	});
 </script>
@@ -66,6 +66,7 @@
 		{type}
 		bind:value
 		maxlength={counted ? undefined : maxlength}
+		data-counted={counted ? "" : undefined}
 		{...restProps}
 		aria-invalid={over ? "true" : restProps["aria-invalid"]}
 	/>

@@ -13,7 +13,7 @@ import { createRoute, type OpenAPIHono, z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import type { AppEnv } from './env.ts';
 import { errorResponses } from './errors.ts';
-import { body, json, requireCapability } from './route-kit.ts';
+import { body, json, requireCapability, requireSignedIn } from './route-kit.ts';
 
 /**
  * AI settings for admins. A provider's key is a secret, so setting it is a route that calls the
@@ -51,6 +51,31 @@ export function mountAiRoutes(
 	app.openapi(getSettings, async (c) => {
 		requireAdmin(c);
 		return c.json(await ai.get(), 200);
+	});
+
+	// For every member: Quick add says before anything is typed whether the AI can read it, and
+	// nothing more (no provider, model or limit).
+	const getAvailability = createRoute({
+		...base,
+		method: 'get',
+		path: '/api/v1/ai/available',
+		operationId: 'ai.getAvailability',
+		summary: 'Whether AI is on and a model that reads shared things is chosen (nothing else)',
+		responses: {
+			200: {
+				description: 'Whether the AI can read what is shared',
+				...json(z.object({ reading: z.boolean() })),
+			},
+			...errorResponses,
+		},
+	});
+	app.openapi(getAvailability, async (c) => {
+		requireSignedIn(c);
+		const { roles, switches } = await ai.get();
+		return c.json(
+			{ reading: switches.enabled && Boolean(roles.fast ?? roles.vision ?? roles.smart) },
+			200,
+		);
 	});
 
 	const setProviderKey = createRoute({

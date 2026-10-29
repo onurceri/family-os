@@ -155,3 +155,21 @@ export const shareFor = (
 	share && enabledOnly([share], viewer.disabledExtensions).length > 0 && held(share, viewer)
 		? { path: share.path, labelKey: share.labelKey }
 		: undefined;
+
+/**
+ * The pages where a viewer may add things by hand: navigation entries and their children that
+ * name an `adds` action the viewer may run (`access` is `no` when it is refused or its extension
+ * is off), in navigation order.
+ */
+export function addPlacesFor(
+	nav: readonly NavContribution[],
+	viewer: Viewer & { access(actionId: string): string },
+): { path: string; labelKey: string }[] {
+	return enabledOnly(nav, viewer.disabledExtensions)
+		.flatMap((entry) => [entry, ...(entry.children ?? [])])
+		.filter(
+			(entry): entry is typeof entry & { adds: string } =>
+				entry.adds !== undefined && held(entry, viewer) && viewer.access(entry.adds) !== 'no',
+		)
+		.map((entry) => ({ path: entry.path, labelKey: entry.labelKey }));
+}

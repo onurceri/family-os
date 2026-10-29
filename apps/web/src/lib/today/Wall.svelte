@@ -83,6 +83,12 @@
 	const dayWords = $derived<MemberDayWords>(
 		data.evening ? { ...words.day, nothingMore: words.day.nothing } : words.day,
 	);
+	// Beside things for everyone, an empty row does not say nothing is planned for the person.
+	const personWords = (name: string): MemberDayWords => {
+		if (data.days.family.length === 0) return dayWords;
+		const own = words.nothingOwn(name);
+		return { ...dayWords, nothing: own, ...(data.evening && { nothingMore: own }) };
+	};
 	// With names off (a display) the rest of the day is one list: all day, then what is to come.
 	const DAY_LIST_MAX = 6;
 	const listMax = $derived(byTightness(fit, [DAY_LIST_MAX, 5, 4, 3]));
@@ -240,7 +246,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if share}
+				<!-- The link fits what is listed: none for the AI setup row alone. -->
+				{#if share && data.needsCardsTotal > 0}
 					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
@@ -260,6 +267,7 @@
 						variant="needs"
 						title={t('home_ai_row_title')}
 						meta={t('home_ai_missing_text')}
+						wrap
 						href="/settings/ai"
 					>
 						{#snippet trailing()}
@@ -335,7 +343,7 @@
 										items={itemsOf(m.id)}
 										now={data.now}
 										format={data.format}
-										words={dayWords}
+										words={personWords(m.displayName)}
 										variant="row"
 										meta={choresMeta(m.id)}
 										note={data.notes[m.id]}

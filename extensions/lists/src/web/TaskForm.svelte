@@ -77,7 +77,7 @@
 			id={id('title-limit')}
 			text={value.title}
 			max={TASK_TITLE_MAX}
-			tooLong={(counter) => t('too_long', { counter })}
+			tooLong={(_, { length, max }) => t('too_long', { length, max })}
 		/>
 	</div>
 

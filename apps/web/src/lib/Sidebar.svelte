@@ -40,6 +40,14 @@
 					? ['n']
 					: undefined;
 
+	const shortcutHint = (keys: string[]) =>
+		keys.length === 1
+			? t('nav_shortcut_one', { key: keys[0]?.toUpperCase() ?? '' })
+			: t('nav_shortcut_two', {
+					first: keys[0]?.toUpperCase() ?? '',
+					second: keys[1]?.toUpperCase() ?? '',
+				});
+
 	// Household is a disclosure. It closes itself when the sidebar would otherwise scroll; a
 	// person's own choice is remembered on this device and wins over that.
 	const STORE = 'famos.sidebar.household';
@@ -154,17 +162,22 @@
 	</div>
 {/snippet}
 
-{#snippet link(item: NavItem)}
+{#snippet link(item: NavItem, name: string = label(item))}
 	{@const active = isActive(item)}
 	{@const count = badge(item)}
 	{@const keys = keysFor(item)}
-	<a href={item.path} aria-current={active ? 'page' : undefined} class={linkClass(active)}>
+	<a
+		href={item.path}
+		aria-current={active ? 'page' : undefined}
+		title={keys ? shortcutHint(keys) : undefined}
+		class={linkClass(active)}
+	>
 		{#if item.icon}<item.icon class="size-[18px] shrink-0" aria-hidden="true" />{/if}
-		<span class="truncate">{label(item)}</span>
+		<span class="truncate">{name}</span>
 		<span class="flex-1"></span>
 		{#if keys}
 			<span
-				class="invisible flex shrink-0 gap-1 group-hover:visible group-focus-visible:visible"
+				class="invisible hidden shrink-0 gap-1 group-hover:visible group-focus-visible:visible [@media(hover:hover)_and_(pointer:fine)]:flex"
 				aria-hidden="true"
 				data-testid="keycap"
 			>
@@ -254,7 +267,7 @@
 	</div>
 
 	<div class="mt-2 grid shrink-0 gap-0.5 border-t pt-2">
-		{@render link(more)}
+		{@render link(more, tDynamic('app:more_group_settings'))}
 		<PersonMenu {onsignout} />
 	</div>
 </nav>

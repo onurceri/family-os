@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { findApp } from '../app-context.js';
-	import { fieldErrorId } from './field-errors.js';
+	import { FIELD_REASON, fieldErrorId } from './field-errors.js';
 
 	/**
 	 * Why a field was refused, under the field: 13/600 in `attention`. `error` is the reason's
@@ -9,9 +9,14 @@
 	 */
 	let { for: inputId, error }: { for: string; error?: string | undefined } = $props();
 	const app = findApp();
+	// A long text field already says "too long" in its counter; a second line would repeat it.
+	const counted = $derived(
+		error === FIELD_REASON.tooLong &&
+			document.getElementById(inputId)?.hasAttribute('data-counted') === true,
+	);
 </script>
 
-{#if error}
+{#if error && !counted}
 	<p
 		id={fieldErrorId(inputId)}
 		class="text-attention text-[13px] leading-snug font-semibold"

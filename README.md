@@ -76,19 +76,37 @@ docker compose up -d
 docker compose logs famos
 ```
 
+**After it starts, open the address that the last command prints.** It looks like
+`http://localhost:3000/setup?code=…` and contains the one-time setup code. If you do not see it
+yet, wait a few seconds and run `docker compose logs famos` again.
+
 The image (`ghcr.io/onurceri/familyos`, amd64 and arm64) runs on a Raspberry Pi too. Update with
 `docker compose pull && docker compose up -d`; to build from source, run
 `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
 
-Open the address the log prints (it ends in `/setup?code=…`), choose a language and create the first
-admin account. The one-time setup code is also stored in the data volume as `setup-code`, so nobody
-else can claim a fresh instance before you do. Then add the family under **Settings → Family →
-Members**. Everything lives in the `famos-data` volume (`/data`): database, files, backups, packs
-and a generated secret.
+On that page, choose a language and create the first admin account. The setup code is also stored
+in the data volume as `setup-code`, so nobody else can claim a fresh instance before you do. Then
+add the family under **Settings → Family → Members**. Everything lives in the `famos-data` volume
+(`/data`): database, files, backups, packs and a generated secret.
 
 To install FamilyOS as an app on phones and share to it, serve it over **HTTPS** (Tailscale, or
 behind Caddy) with `FAMOS_BASE_URL` set to that address. The [user guide](docs/guide/README.md)
 covers installation, HTTPS and [configuration](docs/guide/configuration.md).
+
+## Cost and what leaves your home
+
+FamilyOS is free and open source. The project has no paid tier, no hosted service and no telemetry.
+It makes an outside connection only when you set one up:
+
+- **Weather:** Open-Meteo gets the name you type when you search for your city, and, while the weather is on,
+  your place rounded to about a kilometre.
+- **AI:** only to a provider you add, per area, and you can keep areas **Off** or **Local only**
+  ([AI and privacy](docs/guide/ai.md)).
+- **Extensions:** the signed list is fetched only when you press **Look for more**.
+- **Telegram, email, backup targets, calendar subscriptions, Home Assistant:** only the addresses you enter.
+
+Details: [AI and privacy](docs/guide/ai.md), [extensions](docs/guide/extensions.md),
+[security policy](SECURITY.md).
 
 ## Supported browsers
 

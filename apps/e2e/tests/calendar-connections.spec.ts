@@ -11,7 +11,7 @@ test('a phone calendar address works until it is removed, and a private subscrip
 	});
 
 	await page.goto('/calendar');
-	await page.getByRole('link', { name: 'Phone and other calendars' }).click();
+	await page.getByRole('link', { name: 'Calendars & tags' }).click();
 	await expect(page).toHaveURL(/\/settings\/calendars$/);
 	await page.goto('/settings/calendar-feed');
 	await expect(page.getByRole('heading', { name: 'Calendar on my phone', level: 1 })).toBeVisible();

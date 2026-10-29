@@ -59,7 +59,7 @@
 					<Avatar name={session.me.displayName} color={session.me.color} size={48} />
 					<span class="grid min-w-0 flex-1 gap-0.5">
 						<span class="truncate text-[17px] font-bold">{session.me.displayName}</span>
-						<span class="text-ink-soft truncate text-sm">{hint}</span>
+						<span class="text-ink-soft text-sm">{hint}</span>
 					</span>
 					<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
 				</a>
@@ -102,13 +102,14 @@
 					<ul class="{card} divide-y overflow-hidden">
 						{#each doors as door (door.section)}
 							<li>
+								<!-- What a door holds wraps under its name: a phone is too narrow for one line. -->
 								<a href="/more/{door.section}" class={rowClass}>
-									<span class="text-[15px] font-semibold"
-										>{tDynamic(`app:settings_section_${door.section}`)}</span
-									>
-									<span class="text-ink-soft min-w-0 flex-1 truncate text-end text-[13px]"
-										>{summary(door.items)}</span
-									>
+									<span class="grid min-w-0 flex-1 gap-0.5">
+										<span class="text-[15px] font-semibold"
+											>{tDynamic(`app:settings_section_${door.section}`)}</span
+										>
+										<span class="text-ink-soft text-[13px]">{summary(door.items)}</span>
+									</span>
 									<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
 								</a>
 							</li>

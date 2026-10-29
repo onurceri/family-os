@@ -27,3 +27,37 @@ describe('settings search', () => {
 		expect(found('nothing like this')).toEqual([]);
 	});
 });
+
+describe('settings search words', () => {
+	const words = (key: string) => (key === 'nav_backups' ? 'backup, export, download' : '');
+	const byWord = (query: string) => filterSettings(groups, query, label, words);
+
+	it('finds a page by one of its other words', () => {
+		expect(byWord('Export')).toEqual([{ section: 'system', items: ['nav_backups'] }]);
+		expect(byWord('down')).toEqual([{ section: 'system', items: ['nav_backups'] }]);
+	});
+
+	it('does not match across the commas between words', () => {
+		expect(byWord('export, download')).toEqual([]);
+	});
+
+	it('finds the AI privacy page, Backups and the About block in the real catalog', () => {
+		const catalog = en as Record<string, string>;
+		for (const [query, key] of [
+			['privacy', 'nav_ai_privacy'],
+			['export', 'nav_backups'],
+			['delete', 'nav_backups'],
+			['license', 'nav_profile'],
+			['version', 'nav_profile'],
+			['about', 'nav_profile'],
+		] as const) {
+			const hits = filterSettings(
+				[{ section: 'x', items: [key] }],
+				query,
+				(k) => catalog[k] ?? k,
+				(k) => catalog[`${k}_words`] ?? '',
+			);
+			expect(hits, query).toHaveLength(1);
+		}
+	});
+});

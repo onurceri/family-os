@@ -28,6 +28,11 @@ describe('the quiet line', () => {
 		expect(composeQuietLine([])).toBeNull();
 		expect(composeQuietLine(['a', 'b', 'c', 'd'], { hero: true })).toBeNull();
 	});
+
+	it('is dropped while something waits for the person to check', () => {
+		expect(composeQuietLine(['no tasks'], { waiting: true })).toBeNull();
+		expect(composeQuietLine(['a', 'b', 'c', 'd'], { fresh: true, waiting: true })).toBeNull();
+	});
 });
 
 describe('a light day looks ahead', () => {

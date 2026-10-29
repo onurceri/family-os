@@ -9,12 +9,13 @@
 </script>
 
 <script lang="ts">
-	import { tick, type Snippet } from 'svelte';
+	import { onDestroy, tick, type Snippet } from 'svelte';
 	import type { Approval } from '../app-context.js';
 	import { Button } from '../components/button/index.js';
 	import Dialog from './Dialog.svelte';
 	import { openPath } from './open-path.js';
 	import Sheet from './Sheet.svelte';
+	import { sheetHistory } from './sheet-history.js';
 	import { wide } from './wide.svelte.js';
 
 	/**
@@ -135,10 +136,35 @@
 		if (!open) asking = false;
 	});
 
+	// On a phone the sheet holds a history entry, so Back closes it instead of leaving the page.
+	let closing = false;
+	const hist =
+		typeof window === 'undefined'
+			? null
+			: sheetHistory(window, () => {
+					void requestClose().then(() => {
+						// Kept open (unsaved changes asked about): Back must work again.
+						if (!closing && open) hist?.push();
+					});
+				});
+	onDestroy(() => hist?.dispose());
+	$effect(() => {
+		if (!open || wide.current) return;
+		closing = false;
+		hist?.push();
+		return () => hist?.release();
+	});
+
 	function finish() {
 		asking = false;
-		onclose();
-		if (closeHref) openPath(closeHref, { replace: true });
+		closing = true;
+		const go = () => {
+			onclose();
+			if (closeHref) openPath(closeHref, { replace: true });
+		};
+		// The sheet's history entry goes first, so the address change below is not undone by it.
+		if (hist?.active) hist.release(go);
+		else go();
 	}
 
 	async function requestClose() {

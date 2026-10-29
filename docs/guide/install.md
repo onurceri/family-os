@@ -13,7 +13,7 @@ FamilyOS runs as one Docker container. A Raspberry Pi 4 is enough.
    docker compose logs famos
    ```
 
-2. Open the address in the log that ends in `/setup?code=…`.
+2. Open the address that `docker compose logs famos` prints, for example `http://localhost:3000/setup?code=…`. It contains the one-time setup code. If it is not there yet, wait a few seconds and run the command again.
 
 The image is the released one (computers and Raspberry Pi). The compose file is the same for every version; `FAMOS_VERSION` chooses the version (see Update). The family's data lives in a Docker volume, not the folder.
 
@@ -40,12 +40,12 @@ The image is the released one (computers and Raspberry Pi). The compose file is 
 
 ## Set up the account
 
-1. Pick **Choose your language** (preselected from your browser) and press **Continue**. It becomes the family's language; everyone can choose their own later ([Languages](languages.md)).
-2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). The setup code is already filled in.
-3. Check **Time and region**: time zone, region format (date order, numbers, first weekday), 12- or 24-hour clock, Celsius or Fahrenheit, all guessed from this browser. Correct them if wrong: the time zone decides what "today" is and when reminders go off. Another region format also picks its clock and temperature, which you can still change.
-4. Tick **This device is shared at home (people with a PIN can sign in here)** if you are on the family tablet (see [Family members, roles and devices](members.md)).
+1. Pick **Choose your language** (preselected from your browser) and press **Continue**. It becomes the family's language; everyone can choose their own later. More languages can be added later under **Settings → Family → Language & region** ([Languages](languages.md)).
+2. Optionally, enter a **Family name** the way you say it ("The Novaks"). Then enter your name, an email and a password (at least 10 characters). When you opened the address from the log, the setup code came with it and shows as one line (**Change code** opens it). A field that is not right shows why under it.
+3. Check **Time and region**: time zone, region format (date order, numbers, first weekday), 12- or 24-hour clock, Celsius or Fahrenheit, all guessed from this browser and shown as a short summary. Press **Change** to correct them: the time zone decides what "today" is and when reminders go off. Another region format also picks its clock and temperature, which you can still change.
+4. Tick **This is a shared device at home** if you are on the family tablet, so others can sign in on it with a PIN; leave it off on your own phone or computer (see [Family members, roles and devices](members.md)).
 5. Press **Create account**. That account is an **admin**.
-6. Optionally, **Where do you live?**: search for your city to show the weather on Today and displays, or **Skip** (it is on Today's checklist later). Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. After a reload the step is not shown again.
+6. Optionally, **Your city, for the weather**: search for your city to show the weather on Today and displays, then **Save**, or **Skip** (it is on Today's checklist later). Choosing the first place turns the weather on. Only the name you search for is sent to Open-Meteo.com. After a reload the step is not shown again.
 
 ### Good to know
 

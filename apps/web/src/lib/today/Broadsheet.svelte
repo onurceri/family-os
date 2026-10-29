@@ -114,6 +114,9 @@
 		color: 'var(--ink-soft)',
 		anyone: true,
 	});
+	// Beside things for everyone, an empty person column does not say nothing is planned for them.
+	const personWords = (name: string) =>
+		data.days.family.length > 0 ? { ...words.day, nothing: words.nothingOwn(name) } : words.day;
 	/** One column for everything holds more before "+n more". */
 	const anyoneMax = $derived(data.showNames ? (fit ? perPerson : undefined) : perAnyone);
 	/** What is ahead has one label for its cards: its menu hides the card when it is the only one. */
@@ -313,7 +316,7 @@
 											items={dayOf(person.items, perPerson)}
 											now={data.now}
 											format={data.format}
-											words={words.day}
+											words={personWords(m.displayName)}
 											nextId={data.hero?.id ?? null}
 											meta={choresMeta(m.id)}
 											max={fit ? perPerson : undefined}
@@ -361,7 +364,11 @@
 									/>
 								{/if}
 								{#if free.length > 0}
-									<p class="free font-serif">{words.nothingFor(words.names(free))}</p>
+									<p class="free font-serif">
+										{data.days.family.length > 0
+											? words.nothingOwn(words.names(free))
+											: words.nothingFor(words.names(free))}
+									</p>
 								{/if}
 							</div>
 						{/if}
@@ -436,7 +443,8 @@
 				<h2 id="needs-title" class="label">
 					{t('home_needs_title')}<span class="count">{data.needsTotal}</span>
 				</h2>
-				{#if share}
+				<!-- The link fits what is listed: none for the AI setup row alone. -->
+				{#if share && data.needsCardsTotal > 0}
 					<a href={share.path} class="more">{t('home_needs_link')}</a>
 				{/if}
 				<TodayBlock block={data.menuFor('needs')}><TodayBlockMenu /></TodayBlock>
@@ -450,6 +458,7 @@
 						variant="needs"
 						title={t('home_ai_row_title')}
 						meta={t('home_ai_missing_text')}
+						wrap
 						href="/settings/ai"
 					>
 						{#snippet trailing()}

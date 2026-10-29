@@ -95,11 +95,11 @@ export async function setUpAndSignIn(page: Page) {
 	else await setUpThroughTheUi(page);
 }
 
-/** Types text into the Quick add box and presses Read it (the same path as the share target, minus the OS). */
+/** Types text into the Quick add box and presses Send (the same path as the share target, minus the OS). */
 export async function shareText(page: Page, text: string) {
 	await page.goto('/add');
 	await page.getByLabel('Something to add').fill(text);
-	await page.getByRole('button', { name: 'Read it' }).click();
+	await page.getByRole('button', { name: 'Send', exact: true }).click();
 }
 
 /**
@@ -124,7 +124,7 @@ export async function addAll(page: Page) {
 
 /**
  * Waits until the model has finished reading every capture. Quick add keeps a capture it saw
- * being read under "Waiting for you" (by design), so open the page after this, not before, when
+ * being read under "For you to check" (by design), so open the page after this, not before, when
  * the test then looks for the capture under Recent.
  */
 export async function capturesRead(page: Page) {
