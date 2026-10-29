@@ -95,7 +95,8 @@ covers installation, HTTPS and [configuration](docs/guide/configuration.md).
 FamilyOS is free and open source. The project has no paid tier, no hosted service and no telemetry.
 It makes an outside connection only when you set one up:
 
-- **Weather:** the place name you search for and the rounded place go to Open-Meteo, only when you turn the weather on.
+- **Weather:** Open-Meteo gets the name you type when you search for your city, and, while the weather is on,
+  your place rounded to about a kilometre.
 - **AI:** only to a provider you add, per area, and you can keep areas **Off** or **Local only**
   ([AI and privacy](docs/guide/ai.md)).
 - **Extensions:** the signed list is fetched only when you press **Look for more**.
