@@ -395,6 +395,8 @@ export class TodayData {
 	hintsDone = $state<Record<string, boolean>>({});
 	setupLoaded = $state(false);
 	stepsHidden = $state(false);
+	/** The first steps were shown to this person once: they stay until done or closed. */
+	stepsStarted = $state(false);
 	aiDismissed = $state(false);
 
 	/* ───────────── whose next thing ───────────── */
@@ -509,7 +511,15 @@ export class TodayData {
 			$effect(() => {
 				void session.me?.id;
 				this.stepsHidden = this.#remembered('steps');
+				this.stepsStarted = this.#remembered('steps-started');
 				this.aiDismissed = this.#remembered('ai');
+			});
+			// A new family's first steps, once shown, stay while some are open: they may be done
+			// in any order, so the first event (which ends "new") does not take the rest away.
+			$effect(() => {
+				if (!this.fresh || this.stepsHidden || this.stepsStarted) return;
+				untrack(() => this.#remember('steps-started'));
+				this.stepsStarted = true;
 			});
 
 			// Once the family is known (whether it is one person decides what to ask), and again
@@ -816,10 +826,18 @@ export class TodayData {
 		return list;
 	});
 	readonly showSteps = $derived(
-		this.fresh && !this.stepsHidden && this.steps.some((s) => !s.done && s.href),
+		(this.fresh || this.stepsStarted) &&
+			this.setupLoaded &&
+			!this.stepsHidden &&
+			this.steps.some((s) => !s.done && s.href),
 	);
 	readonly showAiRow = $derived(
-		!this.fresh && this.setupLoaded && this.aiMissing && !this.aiDismissed && this.shows('needs'),
+		!this.fresh &&
+			!this.showSteps &&
+			this.setupLoaded &&
+			this.aiMissing &&
+			!this.aiDismissed &&
+			this.shows('needs'),
 	);
 
 	hideSteps() {

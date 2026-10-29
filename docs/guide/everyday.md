@@ -22,7 +22,7 @@ Phone bottom bar: **Today**, **Quick add**, **Calendar**, **Lists**, **More** (H
 
 - **Evening:** the plan folds into one line ("The day is done."), and **Tomorrow** moves to the top.
 - **A quiet day:** a sentence says so; **Next days** shows the week.
-- **A new home:** a short list of first steps (add the family, put something on the calendar, set your city, connect an AI model) that goes away by itself.
+- **A new home:** a short list of first steps (add the family, put something on the calendar, set your city, connect an AI model). It stays until every step is done or you close it, also after your first event.
 - Tap a section's title to open its page. The **bell** (side bar on a computer, top of Today on a phone) shows what you have not read: press it for the latest notifications or the full list. A wide screen has a search box at the top.
 
 ## Quick add
@@ -74,9 +74,9 @@ Each left-out suggestion is named, one line per reason, even when other things w
 - Suggestions from your captures are yours to decide; other adults are not told and cannot see or decide them.
 - Something given from outside the app (share sheet, [Telegram](telegram.md), [email](email.md)) sends you one notification when the AI has suggestions. Giving it in the app sends none.
 
-### Waiting for you
+### For you to check
 
-Each capture with something to decide is one group: what it is, when, from where, then its suggestions. **Show the original** opens the text, photos and files. While reading it says **Reading…**, or **Trying again (attempt 2 of 4)…**. You see only suggestions you can decide or that are yours; a member who cannot approve sees **Waiting for approval**.
+Each capture with something to decide is one group: what it is, when, from where, then its suggestions. **Show what was shared** opens the text, photos and files. While reading it says **Reading…**, or **Trying again (attempt 2 of 4)…**. You see only suggestions you can decide or that are yours; a member who cannot approve sees **Waiting for approval**.
 
 A card shows:
 
@@ -114,13 +114,13 @@ A fully decided capture leaves by itself. Nothing found: **Nothing to add was fo
 
 **Good to know**
 
-- A suggestion about something removed meanwhile (deleted event, archived pet) leaves **Waiting for you** and the count, and shows as **Can no longer be done: it no longer exists**.
+- A suggestion about something removed meanwhile (deleted event, archived pet) leaves **For you to check** and the count, and shows as **Can no longer be done: it no longer exists**.
 - One asking for what is already so (ticking an item already bought) closes as **Already done**, with no **Undo**.
 - The count includes only what you can decide; one message or photo counts once.
 - If the extension is not installed or is off, the card says so to all who would decide it (**Pets is not installed: this suggestion waits until it is back.**); it cannot be added and is not counted. Its author can withdraw it; when the extension is back it waits as usual.
 - Today shows one message's suggestions as one line under **For you to check** (**Tom shared something · 3 suggestions to check**) that opens the group.
 
-**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **Waiting for you** and **For you to check** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
+**From other sources.** Suggestions not from a capture wait here too, newest first, grouped: **From the assistant**, **From a connected app** (an AI app with an app key, see [Bring your own agent](mcp.md)), a group named for the app when a program such as Home Assistant made them ("Home Assistant", or "Tom via Home Assistant" when acting for Tom), and **Sent for approval** (from a person, with who it is for if someone else). Each card is decided on its own. The number on **Quick add** in the side bar, and next to **For you to check** and **For you to check** on Today, count exactly the suggestions you may decide on this page; a notification about one opens it.
 
 ### Recent
 

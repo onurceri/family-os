@@ -88,7 +88,7 @@
 	"today_source": "Weather: Open-Meteo",
 	"setup_step": "Set your city",
 	"setup_step_text": "For the weather here and on a family display",
-	"setup_step_action": "Weather place",
+	"setup_step_action": "Choose your city",
 	"nav_photos_weather": "Photos and weather",
 	"devices_line": "Photos, the weather and the slideshow on screens have their own page:"
 }

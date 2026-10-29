@@ -124,7 +124,7 @@ export async function addAll(page: Page) {
 
 /**
  * Waits until the model has finished reading every capture. Quick add keeps a capture it saw
- * being read under "Waiting for you" (by design), so open the page after this, not before, when
+ * being read under "For you to check" (by design), so open the page after this, not before, when
  * the test then looks for the capture under Recent.
  */
 export async function capturesRead(page: Page) {

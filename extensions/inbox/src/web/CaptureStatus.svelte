@@ -2,6 +2,7 @@
 	import { Button } from '@famos/ui/button';
 	import { FolderInput, Sparkles } from '@lucide/svelte';
 	import { type InboxItem, READ_ATTEMPTS } from '../contract/index.js';
+	import { loadAiReading } from './ai-reading.js';
 	import { retryItem } from './data.js';
 	import { useInbox } from './i18n.js';
 	import { askAssistantHref, isLeftOut, isQuestionForAssistant, skipLines } from './item-view.js';
@@ -29,6 +30,24 @@
 	const canSetUpAi = $derived(app.can('core.ai.manage'));
 	const isQuestion = $derived(isQuestionForAssistant(item));
 	const leftOut = $derived(isLeftOut(item));
+
+	// While no AI can read, the note under the capture box says so at length: here it is short.
+	let aiReading = $state<boolean | null>(null);
+	$effect(() => {
+		if (item.status !== 'failed' || item.errorCode !== 'not_configured') return;
+		let live = true;
+		void loadAiReading().then((answer) => {
+			if (live) aiReading = answer;
+		});
+		return () => {
+			live = false;
+		};
+	});
+	const failure = $derived(
+		item.errorCode === 'not_configured' && aiReading === false
+			? t('error_not_configured_short')
+			: t(`error_${item.errorCode ?? 'unavailable'}`),
+	);
 
 	async function retry() {
 		try {
@@ -69,7 +88,7 @@
 		</span>
 	{:else if item.status === 'failed'}
 		<span class="text-attention grid gap-0.5 font-semibold" role="alert">
-			{t(`error_${item.errorCode ?? 'unavailable'}`)}
+			{failure}
 			{#if canSetUpAi && item.errorCode && AI_SETTINGS_ERRORS.has(item.errorCode)}
 				<a
 					href={item.errorCode === 'data_policy' ? '/settings/ai/privacy' : '/settings/ai'}
