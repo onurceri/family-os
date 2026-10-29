@@ -411,6 +411,7 @@
 	"ai_api_key": "API key",
 	"ai_api_key_new": "New API key",
 	"ai_api_key_keep": "Leave empty to keep the current key",
+	"ai_add_data_flow": "Once added, the AI can read the areas set to Any provider, with names, photos and voice notes if allowed. To close areas first, go to",
 	"ai_api_key_hint": "The API key is a password for the AI service, made on the service's website. It is kept locked on this server.",
 	"ai_key_stored": "Key stored",
 	"ai_no_key": "No key",

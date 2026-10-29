@@ -411,6 +411,7 @@
 	"ai_api_key": "API anahtarı",
 	"ai_api_key_new": "Yeni API anahtarı",
 	"ai_api_key_keep": "Mevcut anahtarı korumak için boş bırak",
+	"ai_add_data_flow": "Eklendikten sonra yapay zekâ, \"Her sağlayıcı\" olan alanları okuyabilir; izin verilmişse isimleri, fotoğrafları ve sesli notları da. Alanları önce kapatmak için şuraya gidin:",
 	"ai_api_key_hint": "API anahtarı, yapay zekâ hizmetinin kendi sitesinde oluşturulan bir paroladır. Bu sunucuda kilitli saklanır.",
 	"ai_key_stored": "Anahtar kayıtlı",
 	"ai_no_key": "Anahtar yok",

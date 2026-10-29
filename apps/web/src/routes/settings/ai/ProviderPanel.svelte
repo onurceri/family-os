@@ -266,6 +266,15 @@
 					<Notice tone="warn">{t('ai_key_dropped_now')}</Notice>
 				{/if}
 				{#if error}<Notice tone="alert">{t('error_generic')}</Notice>{/if}
+				{#if !provider}
+					<Notice tone="info">
+						{t('ai_add_data_flow')}
+						<a
+							class="text-info font-semibold underline underline-offset-2"
+							href="/settings/ai/privacy">{t('nav_ai_privacy')}</a
+						>
+					</Notice>
+				{/if}
 			</form>
 		{/if}
 
