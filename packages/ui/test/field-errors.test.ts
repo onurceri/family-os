@@ -104,3 +104,15 @@ describe('SwitchRow with onopen', () => {
 		expect(changed).toHaveBeenCalledWith(false);
 	});
 });
+
+describe('FieldError next to a limit counter', () => {
+	it('stays quiet for "too long" when the field shows its own counter', async () => {
+		const input = document.createElement('input');
+		input.id = 't';
+		input.setAttribute('data-counted', '');
+		document.body.append(input);
+		render(FieldError, { for: 't', error: FIELD_REASON.tooLong });
+		await settle();
+		expect(q('[data-testid="field-error"]')).toBeNull();
+	});
+});

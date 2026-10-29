@@ -66,6 +66,7 @@
 		{type}
 		bind:value
 		maxlength={counted ? undefined : maxlength}
+		data-counted={counted ? "" : undefined}
 		{...restProps}
 		aria-invalid={over ? "true" : restProps["aria-invalid"]}
 	/>

@@ -27,6 +27,7 @@
 	bind:this={ref}
 	bind:value
 	{...restProps}
+	data-counted={typeof maxlength === "number" ? "" : undefined}
 	aria-invalid={over ? "true" : restProps["aria-invalid"]}
 ></textarea>
 {#if typeof maxlength === "number"}
