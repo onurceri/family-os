@@ -4,7 +4,7 @@
 	"cap_photos": "Show family photos on a display",
 	"cap_weather": "Show the weather (Today and displays)",
 	"cap_manage": "Set up display photos and weather",
-	"subtitle": "The weather on Today, and the photos and weather that screens on the wall show. The weather is the only thing that comes from the internet; the screens themselves never call anything.",
+	"subtitle": "The weather on Today, and the photos and weather that screens on the wall show. On this page only the weather comes from the internet, and only when you turn it on. The screens themselves never call anything.",
 	"photos_title": "Photos",
 	"photos_intro": "When nobody is using a display, it shows a slideshow of these photos.",
 	"photos_add": "Add photos",

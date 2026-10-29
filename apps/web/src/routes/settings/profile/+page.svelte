@@ -37,6 +37,9 @@
 		if (how?.pin) return t('members_signin_pin_family');
 		return t('members_signin_password');
 	});
+	/** Where the documents live; the links open in a new tab and nothing is fetched from them. */
+	const REPO = 'https://github.com/onurceri/family-os';
+	const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
 	const mayManage = $derived(session.can('core.members.manage'));
 
 	/** "My language": empty follows the family. The layout applies it once saved. */
@@ -116,6 +119,25 @@
 				{:else}
 					<Notice tone="info">{t('profile_change_signin')}</Notice>
 				{/if}
+			</Section>
+
+			<Section label={t('about_title')}>
+				<Card rows>
+					<Row title={t('about_version')} meta={session.appVersion || undefined} />
+					<Row title={t('about_license')} meta={t('about_license_value')} />
+					<Row
+						title={t('about_docs')}
+						href={`${REPO}/blob/main/docs/guide/README.md`}
+						{...external}
+					/>
+					<Row title={t('about_security')} href={`${REPO}/blob/main/SECURITY.md`} {...external} />
+					<Row
+						title={t('about_disclaimer')}
+						href={`${REPO}/blob/main/DISCLAIMER.md`}
+						{...external}
+					/>
+				</Card>
+				<p class="text-ink-soft px-1 text-[13px]">{t('about_beta')}</p>
 			</Section>
 		</div>
 	{/if}

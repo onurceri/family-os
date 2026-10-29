@@ -26,12 +26,18 @@
 
 	const label = (item: NavItem) =>
 		item.labelKey.includes(':') ? tDynamic(item.labelKey) : tDynamic(`app:${item.labelKey}`);
+	/** Other words that find a row, from the catalog (`<label key>_words`); most extensions have none. */
+	const words = (item: NavItem) => {
+		const key = `${item.labelKey.includes(':') ? item.labelKey : `app:${item.labelKey}`}_words`;
+		const found = tDynamic(key);
+		return found === key ? '' : found;
+	};
 	const sectionTitle = (section: string) => tDynamic(`app:settings_section_${section}`);
 
 	let query = $state('');
 	let input = $state<HTMLInputElement>();
 
-	const groups = $derived(filterSettings(nav.settings, query, label));
+	const groups = $derived(filterSettings(nav.settings, query, label, words));
 	const first = $derived(groups[0]?.items[0]);
 
 	/** The row of the open page: the longest path that is the page or a parent of it. */
