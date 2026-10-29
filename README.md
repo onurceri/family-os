@@ -76,15 +76,18 @@ docker compose up -d
 docker compose logs famos
 ```
 
+**After it starts, open the address that the last command prints.** It looks like
+`http://localhost:3000/setup?code=…` and contains the one-time setup code. If you do not see it
+yet, wait a few seconds and run `docker compose logs famos` again.
+
 The image (`ghcr.io/onurceri/familyos`, amd64 and arm64) runs on a Raspberry Pi too. Update with
 `docker compose pull && docker compose up -d`; to build from source, run
 `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
 
-Open the address the log prints (it ends in `/setup?code=…`), choose a language and create the first
-admin account. The one-time setup code is also stored in the data volume as `setup-code`, so nobody
-else can claim a fresh instance before you do. Then add the family under **Settings → Family →
-Members**. Everything lives in the `famos-data` volume (`/data`): database, files, backups, packs
-and a generated secret.
+On that page, choose a language and create the first admin account. The setup code is also stored
+in the data volume as `setup-code`, so nobody else can claim a fresh instance before you do. Then
+add the family under **Settings → Family → Members**. Everything lives in the `famos-data` volume
+(`/data`): database, files, backups, packs and a generated secret.
 
 To install FamilyOS as an app on phones and share to it, serve it over **HTTPS** (Tailscale, or
 behind Caddy) with `FAMOS_BASE_URL` set to that address. The [user guide](docs/guide/README.md)

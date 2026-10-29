@@ -9473,6 +9473,7 @@ export interface operations {
                     /** Format: email */
                     email: string;
                     password: string;
+                    setupCode?: string;
                     locale: string;
                     timeZone?: string;
                     formatLocale?: string;
@@ -9482,7 +9483,6 @@ export interface operations {
                     /** @enum {string} */
                     temperatureUnit?: "celsius" | "fahrenheit";
                     familyName?: string;
-                    setupCode?: string;
                 };
             };
         };
