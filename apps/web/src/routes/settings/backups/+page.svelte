@@ -1,4 +1,8 @@
 <script lang="ts">
+	/** Restoring runs on the server; the published guide says how. Nothing is fetched from it. */
+	const RESTORE_GUIDE_URL =
+		'https://github.com/onurceri/family-os/blob/main/docs/guide/backups.md#restore';
+	const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
 	import { dateTimeFormat, numberFormat } from '#lib/format.svelte.js';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -197,6 +201,12 @@
 				{:else}
 					<Notice>{t('backups_targets_empty')}</Notice>
 				{/if}
+			</Section>
+			<Section label={t('backups_restore_title')}>
+				<p class="text-ink-soft max-w-prose text-sm">{t('backups_restore_text')}</p>
+				<Card rows>
+					<Row title={t('backups_restore_guide')} href={RESTORE_GUIDE_URL} {...external} />
+				</Card>
 			</Section>
 		{/if}
 	</div>

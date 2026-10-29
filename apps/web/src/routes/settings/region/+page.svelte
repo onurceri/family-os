@@ -93,7 +93,7 @@
 			style: 'unit',
 			unit: temperatureUnit,
 		}).format(temperatureUnit === 'celsius' ? 21 : 70);
-		return `${date} · ${time} · ${number} · ${temperature}`;
+		return t('region_preview_parts', { date, time, number, temperature });
 	});
 	/** The all-numeric form, where day-month order differs the most between regions. */
 	const numericDate = $derived(

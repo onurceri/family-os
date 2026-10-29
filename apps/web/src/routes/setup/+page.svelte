@@ -343,9 +343,10 @@
 					required
 					autocomplete="email"
 					oninput={() => changed('email')}
-					{...aria('email')}
+					{...aria('email', 'email-hint')}
 				/>
 				<FieldError for="email" error={errors.email} />
+				<p id="email-hint" class="text-ink-soft text-xs">{t('setup_email_hint')}</p>
 			</div>
 			<div class="grid gap-2">
 				<Label for="password">{t('setup_password')}</Label>
