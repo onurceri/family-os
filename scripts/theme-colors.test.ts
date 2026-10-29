@@ -25,7 +25,7 @@ const EXTENSIONS = /\.(svelte|ts|css|html)$/;
 /** Files that may name colors, and why. Anything else must use a token. */
 const ALLOWED: Record<string, string> = {
 	'packages/ui/src/theme.css': 'the token layer itself (the built-in Ev Işığı values)',
-	'apps/web/src/app.html': 'the theme-color meta fallback before the theme is applied',
+	'apps/web/src/app.html': 'the theme-color meta and the loading mark before the theme is applied',
 	'apps/web/src/lib/today/sample-people.ts':
 		"the made-up people of the style previews: a person's color is data (core's member colors), not interface styling",
 	'extensions/calendar/src/contract/index.ts':

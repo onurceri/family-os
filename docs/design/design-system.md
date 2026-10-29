@@ -124,7 +124,7 @@ One empty state per view: an empty page shows its `EmptyState` alone, never a se
 
 A page opens once, whole. It never shows its head first and its body a moment later, and an empty state never stands in for data that has not arrived.
 
-- **The shell** shows nothing while the session loads: the empty wall, no "Loading…" page.
+- **The shell** shows nothing for the first 800 ms while the app and the session load (the empty wall, no "Loading…" page), then the same quiet mark. Before the app has started, `app.html` draws that mark in plain CSS (same size, same delay) and the app removes it when it takes over; the same mark shows while a page's code is still downloading on a slow network (a navigation in flight, an extension page's module).
 - **A page** is mounted at once, so it starts loading, but stays transparent (`opacity: 0`, no pointer events, so layout and focus stay sane) until its first data is in; then the whole page fades in over 120 ms (no fade under `prefers-reduced-motion`). "First data" is every read started while the page opened, plus the family settings and the shell's language, including any capability, list name or setup state that arrives with them.
 - **Slow loads.** After 800 ms a quiet centred indicator fades in; a fast load never shows it. After 6 s the page shows as it is.
 - **Later changes stay in place.** Live events and actions update the page where it stands and never hide it again.
