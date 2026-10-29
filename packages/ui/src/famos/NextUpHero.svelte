@@ -214,10 +214,18 @@
 		font-size: 15px;
 		font-weight: 600;
 	}
+	.meta > span:first-child {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	/* A long place ends in "…" inside the card; the line above already shows it whole. */
 	.pill {
-		display: inline-flex;
-		align-items: center;
+		display: inline-block;
+		max-width: 100%;
 		height: 28px;
+		line-height: 28px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		padding: 0 12px;
 		border-radius: 999px;
 		background: var(--on-accent);
