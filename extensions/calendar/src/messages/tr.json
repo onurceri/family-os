@@ -82,7 +82,6 @@
 	"reminder_t_120": "2 saat önce",
 	"reminder_t_1440": "1 gün önce",
 	"cap_manage": "Takvim aboneliklerini ve aile bağlantısını yönet",
-	"connections_link": "Telefon ve diğer takvimler",
 	"close": "Kapat",
 	"from_calendar": "{{name}} takviminden",
 	"read_only_hint": "Bu etkinlik abone olunan bir takvimden geliyor ve buradan değiştirilemez.",

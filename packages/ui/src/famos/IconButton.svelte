@@ -5,7 +5,7 @@
 	/**
 	 * A square icon button: 36 px (`sm`), `--ctl` (40 or 44) or
 	 * 44 px (`lg`). On a mouse the hit area grows to 44 px through an invisible margin. `label` is
-	 * the accessible name: name the item (`Options for Clio`).
+	 * the accessible name and the tooltip: name the item (`Options for Clio`).
 	 */
 	let {
 		label,
@@ -28,6 +28,7 @@
 <button
 	type="button"
 	aria-label={label}
+	title={label}
 	class="ib {variant} {size} {className}"
 	class:round
 	{...rest}

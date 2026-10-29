@@ -53,7 +53,7 @@ Up to 5 per event (school, health, car): **Tags** in the event form, Enter or co
 
 **Good to know**
 - On the calendar tap tags to filter; **All** resets. Remembered per device.
-- Editors rename, recolor or delete under **Phone and other calendars → Tags**. This changes every event with the tag; renaming to an existing name merges.
+- Editors rename, recolor or delete under **Calendars & tags → Tags**. This changes every event with the tag; renaming to an existing name merges.
 
 ## Reminders
 

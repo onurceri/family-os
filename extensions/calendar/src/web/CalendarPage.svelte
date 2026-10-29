@@ -75,6 +75,7 @@
 	const today = $derived(todayIn(tz, now));
 	let selected = $state<string | null>(null);
 	const day = $derived(selected ?? today);
+	const settingsLinkLabel = $derived(app.can('calendar.edit') ? t('nav_calendars') : t('nav_feed'));
 	const week = $derived(weekOf(day, app.weekStart()));
 
 	// Tablets and up (768 px): an hour grid for the day or the week (1024 px and up), a month grid,
@@ -660,8 +661,8 @@
 						size="icon-lg"
 						variant="ghost"
 						href={app.can('calendar.edit') ? '/settings/calendars' : '/settings/calendar-feed'}
-						aria-label={t('connections_link')}
-						title={t('connections_link')}
+						aria-label={settingsLinkLabel}
+						title={settingsLinkLabel}
 					>
 						<Settings2 />
 					</Button>
@@ -752,7 +753,7 @@
 					size="icon-lg"
 					variant="ghost"
 					href={app.can('calendar.edit') ? '/settings/calendars' : '/settings/calendar-feed'}
-					aria-label={t('connections_link')}
+					aria-label={settingsLinkLabel}
 				>
 					<Settings2 />
 				</Button>
