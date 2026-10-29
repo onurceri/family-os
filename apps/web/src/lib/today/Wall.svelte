@@ -83,6 +83,12 @@
 	const dayWords = $derived<MemberDayWords>(
 		data.evening ? { ...words.day, nothingMore: words.day.nothing } : words.day,
 	);
+	// Beside things for everyone, an empty row does not say nothing is planned for the person.
+	const personWords = (name: string): MemberDayWords => {
+		if (data.days.family.length === 0) return dayWords;
+		const own = words.nothingOwn(name);
+		return { ...dayWords, nothing: own, ...(data.evening && { nothingMore: own }) };
+	};
 	// With names off (a display) the rest of the day is one list: all day, then what is to come.
 	const DAY_LIST_MAX = 6;
 	const listMax = $derived(byTightness(fit, [DAY_LIST_MAX, 5, 4, 3]));
@@ -337,7 +343,7 @@
 										items={itemsOf(m.id)}
 										now={data.now}
 										format={data.format}
-										words={dayWords}
+										words={personWords(m.displayName)}
 										variant="row"
 										meta={choresMeta(m.id)}
 										note={data.notes[m.id]}

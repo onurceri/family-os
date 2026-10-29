@@ -55,7 +55,7 @@ FamilyOS works days out before the assistant answers (same words, same days), fr
 
 ## Suggestions
 
-Cards appear under the answer, as in Quick add: those who may approve can approve, edit or reject. They also wait in Quick add under **Waiting for you** (**From the assistant**). Supervised members see **Waiting for approval**; an adult decides in Quick add, and the assistant says so. Cards show the real item name. With [auto-approval](auto-approval.md) on for the kind, the assistant says it will be added in a moment. **Undo** takes back an approval.
+Cards appear under the answer, as in Quick add: those who may approve can approve, edit or reject. They also wait in Quick add under **For you to check** (**From the assistant**). Supervised members see **Waiting for approval**; an adult decides in Quick add, and the assistant says so. Cards show the real item name. With [auto-approval](auto-approval.md) on for the kind, the assistant says it will be added in a moment. **Undo** takes back an approval.
 
 **Good to know**
 - "Was it approved?" lists this conversation's suggestions, outcome and decider ("approved by Sofia"). Others (Quick add, other conversations, connected apps) are not reported.

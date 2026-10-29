@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Sparkles } from '@lucide/svelte';
-	import { loadAiReading } from './data.js';
+	import { loadAiReading } from './ai-reading.js';
 	import { useInbox } from './i18n.js';
 
 	/**

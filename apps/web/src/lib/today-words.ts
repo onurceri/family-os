@@ -30,6 +30,8 @@ export interface TodayWords {
 	day: MemberDayWords;
 	/** The phone's one line for the people with nothing: "Nothing planned for Deniz and Amy." */
 	nothingFor(names: string): string;
+	/** A person's empty day while things for everyone are planned: "Nothing just for Deniz." */
+	nothingOwn(names: string): string;
 	family: string;
 	anyone: string;
 	/** The counts per person's short name, and one ring (from the `perMember` facet). */
@@ -89,6 +91,7 @@ export function todayWords(t: Translate, extra: FacetWords = {}): TodayWords {
 			followedBy: (list) => t('today_day_then', { list }),
 		},
 		nothingFor: (names) => t('today_day_nothing_for', { names }),
+		nothingOwn: (names) => t('today_day_nothing_own', { name: names }),
 		family: t('today_family'),
 		anyone: t('today_anyone'),
 		chores: extra.counts?.label ?? '',

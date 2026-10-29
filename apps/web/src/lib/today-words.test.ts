@@ -47,6 +47,7 @@ function exercise(words: ReturnType<typeof todayWords>) {
 		day.more(2),
 		day.followedBy('Football 17:00'),
 		words.nothingFor('Deniz and Amy'),
+		words.nothingOwn('Deniz'),
 		words.choreRing('Elif', 1, 3),
 		words.photo('October 2025'),
 		words.noneForMe,
@@ -65,6 +66,7 @@ describe('Today words', () => {
 		const words = todayWords(translator(en, used), extra);
 		const english = exercise(words);
 		expect(english).toContain('Piano lesson in 25 min');
+		expect(english).toContain('Nothing just for Deniz.');
 		expect(english).toContain('3 left');
 		expect(english).toContain('Elif: 1 of 3 done');
 		expect(words.choreRing('Leo', 0, 0)).toBe('Leo: no chores today');

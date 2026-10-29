@@ -54,7 +54,7 @@
 				<div class="grid min-w-0 flex-1 basis-56 gap-0.5">
 					<b class="text-[15px] leading-snug font-bold">{step.title}</b>
 					<span class="text-ink-soft text-[13px] leading-snug"
-						>{step.done && !step.href ? t('home_step_done') : step.text}</span
+						>{step.done ? t('home_step_done') : step.text}</span
 					>
 				</div>
 				{#if step.href && step.action && !step.done}
