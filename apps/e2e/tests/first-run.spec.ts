@@ -35,6 +35,9 @@ test('setup, share, approve, undo, and a session that survives a restart', async
 		'true',
 	);
 	await page.getByRole('button', { name: 'Continue' }).click();
+	// The code from the link shows as one line; "Change code" opens the field with it filled in.
+	await expect(page.getByText('The setup code came with the link.')).toBeVisible();
+	await page.getByRole('button', { name: 'Change code' }).click();
 	await expect(page.getByLabel('Setup code')).toHaveValue(SETUP_CODE);
 	// The time zone and region format are this browser's guess, shown to check and correct.
 	const guessed = page.getByTestId('setup-region-summary');

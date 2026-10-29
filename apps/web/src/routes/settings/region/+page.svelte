@@ -76,7 +76,8 @@
 		temperatureUnit = defaultTemperatureUnit(tag);
 	}
 
-	const sample = Date.UTC(2026, 9, 8, 14, 30);
+	// The day is over 12, so the order of day and month can be seen.
+	const sample = Date.UTC(2026, 9, 18, 14, 30);
 	const preview = $derived.by(() => {
 		const date = new Intl.DateTimeFormat(shown, { dateStyle: 'full', timeZone: 'UTC' }).format(
 			sample,
