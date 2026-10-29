@@ -44,7 +44,7 @@
 	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { refusalKey, refusalOfError } from '#lib/refusal.js';
-	import { shareFor } from '#lib/contributions.js';
+	import { addPlacesFor, shareFor } from '#lib/contributions.js';
 	import {
 		contributions,
 		enabledOnly,
@@ -175,6 +175,12 @@
 			shareFor(contributions.share, {
 				can: (capability) => session.can(capability),
 				disabledExtensions: session.disabledExtensions,
+			}),
+		addPlaces: () =>
+			addPlacesFor(contributions.nav, {
+				can: (capability) => session.can(capability),
+				disabledExtensions: session.disabledExtensions,
+				access: (actionId) => accessBook.access(actionId),
 			}),
 		toast: (message, action) => toasts.show(message, action),
 		failureText: (error, fallback) => {

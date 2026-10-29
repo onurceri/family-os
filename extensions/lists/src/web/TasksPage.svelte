@@ -502,7 +502,7 @@
 					bind:value={quick}
 					size="lg"
 					limit={TASK_TITLE_MAX}
-					tooLong={(counter) => t('too_long', { counter })}
+					tooLong={(_, { length, max }) => t('too_long', { length, max })}
 					label={t('add_task')}
 					placeholder={t('add_task_placeholder')}
 					moreLabel={t('add_task_details')}

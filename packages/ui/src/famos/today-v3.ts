@@ -145,9 +145,11 @@ export interface ChoreCount {
 }
 
 /**
- * A person's status: one clause, chosen in this order: the next
- * timed item today, else an all-day item, else chores left, else nothing planned. Chores never
- * join another clause; the rings carry them.
+ * A person's status: one clause, chosen in this order: their next timed item today, else their
+ * all-day item, else the same of the events for everyone (events without members, which include
+ * them), else chores left, else nothing planned. So a person is never "nothing planned" while
+ * the family has a plan, and their own things still come first. Chores never join another clause;
+ * the rings carry them.
  */
 export type Status =
 	| { kind: 'now'; item: TimelineItem; until: number }
@@ -157,16 +159,9 @@ export type Status =
 	| { kind: 'chores'; left: number }
 	| { kind: 'nothing' };
 
-export function statusOf(
-	memberId: string,
-	items: readonly TimelineItem[],
-	chores: readonly ChoreCount[],
-	now: number,
-): Status {
-	const own = sortTimeline(items).filter(
-		(item) => isDayItem(item) && !item.done && (item.members ?? []).includes(memberId),
-	);
-	const next = own.find((item) => isTimed(item) && endOf(item) > now);
+/** The next timed item still to end, else the first all-day item, as a status. */
+function itemStatus(items: readonly TimelineItem[], now: number): Status | null {
+	const next = items.find((item) => isTimed(item) && endOf(item) > now);
 	if (next) {
 		const start = next.start as number;
 		// Under way: it has an end after now (an item without an end has ended when it starts).
@@ -175,8 +170,23 @@ export function statusOf(
 		if (minutes < NEXT_UP_DURATION_FROM) return { kind: 'soon', item: next, minutes };
 		return { kind: 'at', item: next, at: start };
 	}
-	const allDay = own.find((item) => groupOf(item) === ALL_DAY);
-	if (allDay) return { kind: 'allday', item: allDay };
+	const allDay = items.find((item) => groupOf(item) === ALL_DAY);
+	return allDay ? { kind: 'allday', item: allDay } : null;
+}
+
+export function statusOf(
+	memberId: string,
+	items: readonly TimelineItem[],
+	chores: readonly ChoreCount[],
+	now: number,
+): Status {
+	const open = sortTimeline(items).filter((item) => isDayItem(item) && !item.done);
+	const own = open.filter((item) => (item.members ?? []).includes(memberId));
+	// An event without members is for everyone; a task without one is for whoever does it, so
+	// it is not each person's.
+	const family = open.filter((item) => item.kind === 'event' && (item.members ?? []).length === 0);
+	const status = itemStatus(own, now) ?? itemStatus(family, now);
+	if (status) return status;
 	const left = choresLeft(memberId, chores);
 	if (left > 0) return { kind: 'chores', left };
 	return { kind: 'nothing' };
@@ -204,12 +214,15 @@ export function formatClock(at: number, format: TodayFormat): string {
 export const formatNumber = (value: number, locale: string): string =>
 	new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 
-/** Minutes as a number and its unit, from `Intl.NumberFormat`'s parts ("25" and "min"). */
+/**
+ * Minutes as a number and its unit, from `Intl.NumberFormat`'s parts ("25" and "minutes"): the
+ * unit written out, as it stands alone under the number where a short form is hard to read.
+ */
 export function minuteParts(minutes: number, locale: string): { value: string; unit: string } {
 	const parts = new Intl.NumberFormat(locale, {
 		style: 'unit',
 		unit: 'minute',
-		unitDisplay: 'short',
+		unitDisplay: 'long',
 	}).formatToParts(minutes);
 	return {
 		value: parts

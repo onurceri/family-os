@@ -11,7 +11,7 @@
 
 	/**
 	 * The one box of Quick add: paste or type, attach (or drop, or paste) photos and files, record
-	 * a voice note, and **Read it**. Not a chat: it sends one capture and clears itself. `hero` is
+	 * a voice note, and **Send**. Not a chat: it sends one capture and clears itself. `hero` is
 	 * the Quick add page's large card; `compact` the side panel's.
 	 */
 	let {
@@ -205,7 +205,11 @@
 			: compact
 				? 'min-h-16 text-base leading-7 placeholder:text-lg'
 				: 'min-h-20 text-[17px] leading-7 placeholder:text-xl'}"></textarea>
-	<LimitCounter {text} max={TEXT_MAX} tooLong={(counter) => app.t('app:too_long', { counter })} />
+	<LimitCounter
+		{text}
+		max={TEXT_MAX}
+		tooLong={(_, { length, max }) => app.t('app:too_long', { length, max })}
+	/>
 	{#if files.length}
 		<ul class="flex flex-wrap gap-2 px-1">
 			{#each files as file, i (i)}

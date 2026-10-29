@@ -5,6 +5,7 @@
 	import CaptureDetail from './CaptureDetail.svelte';
 	import CaptureGroup from './CaptureGroup.svelte';
 	import DraftView from './DraftView.svelte';
+	import NoAiNote from './NoAiNote.svelte';
 	import { CaptureFeed, type RecentEntry } from './feed.svelte.js';
 	import { useInbox } from './i18n.js';
 	import { captureLine } from './item-view.js';
@@ -61,7 +62,10 @@
 <Page template="capture" title={t('title')} subtitle={t('lead')}>
 	<div class="grid content-start gap-10">
 		<div class="grid gap-7">
-			<CaptureBox onsent={sent} hero />
+			<div class="grid gap-4">
+				<CaptureBox onsent={sent} hero />
+				<NoAiNote />
+			</div>
 			<WaysIn />
 		</div>
 

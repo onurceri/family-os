@@ -1,6 +1,14 @@
 import type { TodayFacet, WebExtension } from '@famos/ui/slots';
 import { describe, expect, it } from 'vitest';
-import { collect, enabledOnly, facetsOf, hasDay, matchPage, shareFor } from './contributions.js';
+import {
+	addPlacesFor,
+	collect,
+	enabledOnly,
+	facetsOf,
+	hasDay,
+	matchPage,
+	shareFor,
+} from './contributions.js';
 
 const component = () => Promise.resolve({ default: (() => {}) as never });
 const none = async () => [];
@@ -145,6 +153,42 @@ describe('what a viewer gets', () => {
 		});
 		expect(shareFor(all.share, viewer([]))).toBeUndefined();
 		expect(shareFor(all.share, viewer(['post.share'], ['post']))).toBeUndefined();
+	});
+
+	it('offers the pages to add by hand whose action the viewer may run', () => {
+		const nav = collect([
+			{
+				id: 'diary',
+				nav: [
+					{
+						id: 'diary.nav',
+						path: '/diary',
+						labelKey: 'diary:nav',
+						placement: 'primary',
+						order: 10,
+						adds: 'diary.addEntry',
+						children: [
+							{
+								id: 'diary.notes',
+								path: '/diary/notes',
+								labelKey: 'diary:notes',
+								adds: 'diary.addNote',
+							},
+							{ id: 'diary.old', path: '/diary/old', labelKey: 'diary:old' },
+						],
+					},
+				],
+			},
+			{ id: 'garden', nav: garden.nav ?? [] },
+		]).nav;
+		const places = (refused: string[], off: string[] = []) =>
+			addPlacesFor(nav, {
+				...viewer([], off),
+				access: (id) => (refused.includes(id) ? 'no' : 'apply'),
+			}).map((p) => p.path);
+		expect(places([])).toEqual(['/diary', '/diary/notes']);
+		expect(places(['diary.addEntry'])).toEqual(['/diary/notes']);
+		expect(places([], ['diary'])).toEqual([]);
 	});
 
 	it('keeps the contributions of extensions that are on', () => {

@@ -96,6 +96,7 @@
 		slots: () => [],
 		isAppPath: () => false,
 		share: () => undefined,
+		addPlaces: () => [],
 		toast: () => {},
 		failureText: (_error, fallback) => fallback,
 		sentForApproval: () => {},

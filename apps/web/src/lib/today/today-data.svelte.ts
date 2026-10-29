@@ -862,7 +862,7 @@ export class TodayData {
 		}),
 	);
 
-	/** The day head sentence ("Good morning, Deniz. **3 things need you**, …") as runs. */
+	/** The day head sentence ("Good morning, Deniz. **3 things for you to check**. …") as runs. */
 	readonly sentence = $derived.by(() => {
 		const last = lastTonight(this.todayItems, this.now, this.timeZone);
 		const firstTomorrow = this.tomorrowItems.find(

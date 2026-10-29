@@ -57,7 +57,11 @@
 		<ArrowUp aria-hidden="true" />
 	</button>
 </form>
-<LimitCounter text={value} max={MAX} tooLong={(counter) => app.t('app:too_long', { counter })} />
+<LimitCounter
+	text={value}
+	max={MAX}
+	tooLong={(_, { length, max }) => app.t('app:too_long', { length, max })}
+/>
 
 <style>
 	.field {

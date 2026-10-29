@@ -467,7 +467,10 @@ describe('HTTP API', () => {
 
 	it('lets parents manage AI settings without ever returning keys', async () => {
 		expect((await call('GET', '/api/v1/ai/settings')).status).toBe(401);
+		expect((await call('GET', '/api/v1/ai/available')).status).toBe(401);
 		const { cookie } = await setupAndSignIn();
+		const before = await call('GET', '/api/v1/ai/available', undefined, cookie);
+		expect(before.body).toEqual({ reading: false });
 		const added = await call(
 			'POST',
 			'/api/v1/actions/core.addAiProvider',
@@ -493,6 +496,8 @@ describe('HTTP API', () => {
 			cookie,
 		);
 		expect(roles.status).toBe(200);
+		const after = await call('GET', '/api/v1/ai/available', undefined, cookie);
+		expect(after.body).toEqual({ reading: true });
 		let settings = await call('GET', '/api/v1/ai/settings', undefined, cookie);
 		expect(settings.body.roles.smart).toEqual(model);
 		// Speech to text and voice privacy are new: older clients leave them out.

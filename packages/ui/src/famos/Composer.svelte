@@ -4,7 +4,7 @@
 	 * teaches the syntax. Enter adds and keeps focus, Esc clears. With text, `onmore` shows an
 	 * "Add details" link that opens the panel or sheet pre-filled.
 	 */
-	import { counterText, lengthState } from './length-limit.js';
+	import { counterText, type LengthState, lengthState } from './length-limit.js';
 
 	let {
 		value = $bindable(''),
@@ -35,8 +35,11 @@
 		 * a message over it, and Enter does nothing until the text is short enough.
 		 */
 		limit?: number;
-		/** The message when over, e.g. "Too long (212/160)"; given the counter text. */
-		tooLong?: (counter: string) => string;
+		/**
+		 * The message when over, e.g. "Too long: 212 characters. The limit is 160."; given the
+		 * counter text ("212/160") and the length and limit themselves.
+		 */
+		tooLong?: (counter: string, usage: LengthState) => string;
 		/** The part of the text the limit applies to, when it is not all of it (the longest item of several). */
 		measure?: (text: string) => string;
 		/** A quiet line under the field, e.g. what Enter is about to add; nothing when undefined. */
@@ -117,7 +120,9 @@
 </div>
 {#if limitState?.counting}
 	<p class="limit" class:over={limitState.over} role={limitState.over ? 'alert' : undefined}>
-		{limitState.over && tooLong ? tooLong(counterText(limitState)) : counterText(limitState)}
+		{limitState.over && tooLong
+			? tooLong(counterText(limitState), limitState)
+			: counterText(limitState)}
 	</p>
 {/if}
 {#if note && !limitState?.over}

@@ -82,7 +82,7 @@
 			sample,
 		);
 		const time = new Intl.DateTimeFormat(shown, {
-			hour: '2-digit',
+			hour: hourCycle === 'h12' ? 'numeric' : '2-digit',
 			minute: '2-digit',
 			hourCycle,
 			timeZone: 'UTC',

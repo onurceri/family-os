@@ -26,6 +26,7 @@ export default defineWebExtension({
 			placement: 'primary',
 			order: 20,
 			shortcut: 'c',
+			adds: 'calendar.createEvent',
 		},
 		// Settings: the personal feed addresses (You) and the family's subscriptions and tags (Family).
 		{
