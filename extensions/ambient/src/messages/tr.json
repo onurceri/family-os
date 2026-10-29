@@ -4,7 +4,7 @@
 	"cap_photos": "Ekranda aile fotoğraflarını göstermek",
 	"cap_weather": "Hava durumunu göstermek (Bugün ve ekranlar)",
 	"cap_manage": "Ekran fotoğraflarını ve hava durumunu ayarlamak",
-	"subtitle": "Bugün sayfasında hava durumu; duvardaki ekranların gösterdiği fotoğraflar ve hava durumu. İnternetten gelen tek şey hava durumudur; ekranların kendisi hiçbir yere bağlanmaz.",
+	"subtitle": "Bugün sayfasında hava durumu; duvardaki ekranların gösterdiği fotoğraflar ve hava durumu. Bu sayfada internetten yalnızca hava durumu gelir, o da ancak siz açarsanız. Ekranların kendisi hiçbir yere bağlanmaz.",
 	"photos_title": "Fotoğraflar",
 	"photos_intro": "Kimse kullanmazken ekranlar bu fotoğraflardan slayt gösterisi yapar.",
 	"photos_add": "Fotoğraf ekle",

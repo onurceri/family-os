@@ -90,6 +90,20 @@ To install FamilyOS as an app on phones and share to it, serve it over **HTTPS**
 behind Caddy) with `FAMOS_BASE_URL` set to that address. The [user guide](docs/guide/README.md)
 covers installation, HTTPS and [configuration](docs/guide/configuration.md).
 
+## Cost and what leaves your home
+
+FamilyOS is free and open source. The project has no paid tier, no hosted service and no telemetry.
+It makes an outside connection only when you set one up:
+
+- **Weather:** the place name you search for and the rounded place go to Open-Meteo, only when you turn the weather on.
+- **AI:** only to a provider you add, per area, and you can keep areas **Off** or **Local only**
+  ([AI and privacy](docs/guide/ai.md)).
+- **Extensions:** the signed list is fetched only when you press **Look for more**.
+- **Telegram, email, backup targets, calendar subscriptions, Home Assistant:** only the addresses you enter.
+
+Details: [AI and privacy](docs/guide/ai.md), [extensions](docs/guide/extensions.md),
+[security policy](SECURITY.md).
+
 ## Supported browsers
 
 Chrome, Edge and Android WebView 106 or newer, Safari and iOS 16.4 or newer, Firefox 114 or newer.
