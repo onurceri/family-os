@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
@@ -28,6 +29,10 @@ import { body, json, requireCapability } from './route-kit.ts';
  * The server's key file is the master key of everything sealed, so saving it is a route too: it
  * shows a secret. Only a person at a password sign-in who holds the settings capability gets it,
  * and only after typing their password again.
+ *
+ * A local backup can be saved from the browser. It holds all the family's data unencrypted (only
+ * copies sent elsewhere are locked), so it goes only to a person at a password sign-in who holds
+ * the settings capability, and each download is recorded in the audit log.
  */
 const base = { tags: ['backups'], security: [{ session: [] }] };
 const TargetParams = z.object({ targetId: z.string() });
@@ -56,6 +61,13 @@ const BackupsSchema = z.object({
 });
 
 const LOCAL_BACKUP = /^famos-.+-(manual|scheduled|pre-migration)\.tar$/;
+
+/**
+ * A bare backup file name in the backups folder: plain letters, digits, dots, dashes and
+ * underscores only, so never a path, never one that climbs out, and safe in a header.
+ */
+const isLocalBackupName = (name: string) =>
+	LOCAL_BACKUP.test(name) && /^[\w.-]+$/.test(name) && !name.includes('..');
 
 export interface BackupRoutesDeps {
 	backups: BackupService;
@@ -246,6 +258,44 @@ export function mountBackupRoutes(app: OpenAPIHono<AppEnv>, deps: BackupRoutesDe
 			'content-disposition': 'attachment; filename="familyos-secret"',
 			'cache-control': 'no-store',
 			'x-content-type-options': 'nosniff',
+		});
+	});
+
+	const download = createRoute({
+		...base,
+		method: 'get',
+		path: '/api/v1/backups/local/{name}',
+		operationId: 'backups.downloadBackup',
+		summary: 'Save a local backup from the server’s backups folder, as a download',
+		request: { params: z.object({ name: z.string() }) },
+		responses: {
+			200: {
+				description: 'The backup file, as a download',
+				content: { 'application/x-tar': { schema: z.string().openapi({ format: 'binary' }) } },
+			},
+			...errorResponses,
+		},
+	});
+	app.openapi(download, async (c) => {
+		const actor = requireAdmin(c);
+		assertFullSignIn(actor);
+		if (!personPresent(actor)) throw new FamosError('unauthenticated', 'Sign in required');
+		const { name } = c.req.valid('param');
+		const missing = () => new FamosError('not_found', 'No such backup');
+		if (!isLocalBackupName(name)) throw missing();
+		const path = join(deps.dir, name);
+		const info = await stat(path).catch(() => null);
+		if (!info?.isFile()) throw missing();
+		// The row names the file and who saved it; the file itself is streamed, never held in memory.
+		await kernel.audit.record(actor, 'core.downloadBackup', name);
+		return new Response(ReadableStream.from(createReadStream(path)), {
+			headers: {
+				'content-type': 'application/x-tar',
+				'content-length': String(info.size),
+				'content-disposition': `attachment; filename="${name}"`,
+				'cache-control': 'no-store',
+				'x-content-type-options': 'nosniff',
+			},
 		});
 	});
 }

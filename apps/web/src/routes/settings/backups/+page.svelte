@@ -9,11 +9,12 @@
 
 	import { Button } from '@famos/ui/button';
 	import { Card, HelpTip, Notice, Page, PageHeader, Pill, Row, Section } from '@famos/ui/famos';
-	import { ChevronRight, DatabaseBackup, FileKey, KeyRound, Plus } from '@lucide/svelte';
+	import { ChevronRight, DatabaseBackup, Download, FileKey, KeyRound, Plus } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { runAction } from '#lib/run-action.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { backupDownloadUrl } from './download.js';
 	import EncryptionPanel from './EncryptionPanel.svelte';
 	import KeyFileDialog from './KeyFileDialog.svelte';
 	import { reason } from './reason.js';
@@ -126,10 +127,20 @@
 									<span class="text-ink-soft text-[13px] tabular-nums"
 										>{megabytes(backup.size)}</span
 									>
+									<Button
+										variant="secondary"
+										size="sm"
+										href={backupDownloadUrl(backup.name)}
+										download={backup.name}
+										aria-label={t('backups_download_label', { time: when(backup.createdAt) })}
+										data-testid="backup-download"
+										><Download aria-hidden="true" />{t('backups_download')}</Button
+									>
 								{/snippet}
 							</Row>
 						{/each}
 					</Card>
+					<p class="text-ink-soft max-w-prose text-[13px]">{t('backups_download_hint')}</p>
 				{:else}
 					<Notice>{t('backups_local_empty')}</Notice>
 				{/if}
