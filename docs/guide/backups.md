@@ -1,6 +1,6 @@
 # Backups
 
-A nightly backup, copies sent elsewhere, and how to restore.
+A nightly backup, copies sent elsewhere, a download, and how to restore.
 
 **Good to know**
 - Nightly at 03:00 by default (`FAMOS_BACKUP_HOUR`, server local time; in the container UTC unless you set `TZ` in `docker-compose.yml`). The last 7 are kept (`FAMOS_BACKUP_KEEP`).
@@ -62,6 +62,16 @@ Without it, a restore brings back all data, but everyone signs in again and ever
 docker compose exec famos node /app/server/main.mjs backup
 ```
 
+## Download a backup
+
+Without a place to send copies, you can still keep one away from the server. Under **On this server**, press **Download** on a backup. The browser saves the `.tar` file to your device.
+
+**Good to know**
+- Only an admin signed in with a password can download, not on a PIN. Each download is written to the server's audit log.
+- The file is not locked. It holds all of the family's data, photos and papers included. Keep it somewhere safe, such as an encrypted drive.
+- The server's key file is not in it. Save that too (above).
+- To restore it, put it back into the backups folder and follow **Restore** below.
+
 ## Restore
 
 ```bash
@@ -71,7 +81,7 @@ docker compose start famos
 ```
 
 **Good to know**
-- A copy from elsewhere goes into the volume first: `docker compose cp ./file.tar famos:/data/backups/`.
+- A copy from elsewhere, or one you downloaded, goes into the volume first: `docker compose cp ./file.tar famos:/data/backups/`.
 - If the restore fails part way (a full disk, say), your current data is put back exactly as it was.
 - Current data is never deleted: it is moved aside as `famos.db.pre-restore-<time>`, `files.pre-restore-<time>` and, if the backup holds them, `languages.pre-restore-<time>`, `themes.pre-restore-<time>`, `extensions.pre-restore-<time>`.
 - A backup from a newer FamilyOS is refused.
