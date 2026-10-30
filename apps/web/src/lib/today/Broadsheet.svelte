@@ -4,6 +4,7 @@
 		Clock,
 		DateLine,
 		FamilyList,
+		formatClock,
 		MemberDay,
 		NextUpHero,
 		type NextUpMode,
@@ -73,6 +74,14 @@
 		if (data.settled) fit?.ready();
 	});
 	const gone = (what: FitDrop) => fit?.drop.has(what) ?? false;
+	// The clock's width in em (the display face at 600: a digit ≈ 0.47, the colon ≈ 0.28, each
+	// letter of a small day period ≈ 0.17 plus its gap), so its column can cap its size.
+	const clockEm = $derived.by(() => {
+		const text = formatClock(data.now, data.format);
+		const digits = text.replace(/\D/g, '').length;
+		const letters = text.replace(/[^\p{L}]/gu, '').length;
+		return digits * 0.47 + 0.28 + (letters > 0 ? 0.1 + letters * 0.17 : 0);
+	});
 	/** Cards per person column (3 is MemberDay's own), and in the one column for everyone. */
 	const perPerson = $derived(byTightness(fit, [3, 3, 2, 1]));
 	const perAnyone = $derived(byTightness(fit, [9, 6, 4, 3]));
@@ -201,7 +210,7 @@
 		<header class="head" style:--o="1">
 			<div class="clockrow">
 				{#if data.shows('clock')}
-					<div class="time">
+					<div class="time" style:--clock-em={clockEm}>
 						<Clock now={data.now} format={data.format} />
 						<DateLine now={data.now} format={data.format} heading />
 					</div>
@@ -604,6 +613,15 @@
 	}
 	/* A display's pills: beside the clock when there is room, else under it. The clock keeps its
 	   own width, so a pill that does not fit beside it wraps instead of lying over the digits. */
+	/* The clock never runs out of its column: a 12-hour clock with its day period is wider than
+	   the atmosphere column at the ramp's size, so its width in em caps its size. Not beside a
+	   display's pills, which wrap under the clock instead. */
+	.clockrow:not(:has(.status)) > .time {
+		container-type: inline-size;
+	}
+	.time :global(.clock) {
+		font-size: min(var(--ramp-clock), calc(100cqi / var(--clock-em, 2.6)));
+	}
 	.clockrow:has(.status) {
 		flex-wrap: wrap;
 	}
