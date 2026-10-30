@@ -65,7 +65,7 @@ JPEG, PNG, WebP and GIF pictures lose location and other metadata (EXIF, XMP, IP
 
 ### See what the AI did
 
-**Settings → AI → Usage & limits → See what the AI did** lists every model call, newest first: time, purpose (e.g. **Read shared items**), **which areas it looked at** (a record's area too, e.g. **Finance**, so you can check a locked area stayed out), provider and model, cost, result. Refusals because an area is off show too. Never the shared content or answers. **Show older** loads more.
+**Settings → AI → Usage & limits → See what the AI did** lists every model call, newest first: time, purpose (e.g. **Read shared items**), **which areas it looked at** (a record's area too, e.g. **Vehicles**, so you can check a locked area stayed out), provider and model, cost, result. Refusals because an area is off show too. Never the shared content or answers. **Show older** loads more.
 
 ### When the AI does not answer
 
