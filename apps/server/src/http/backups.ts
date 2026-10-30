@@ -30,9 +30,9 @@ import { body, json, requireCapability } from './route-kit.ts';
  * shows a secret. Only a person at a password sign-in who holds the settings capability gets it,
  * and only after typing their password again.
  *
- * A local backup can be saved from the browser. It holds all the family's data, unencrypted when
- * no encryption is set, so it goes only to a person at a password sign-in who holds the settings
- * capability, and each download is recorded in the audit log.
+ * A local backup can be saved from the browser. It holds all the family's data unencrypted (only
+ * copies sent elsewhere are locked), so it goes only to a person at a password sign-in who holds
+ * the settings capability, and each download is recorded in the audit log.
  */
 const base = { tags: ['backups'], security: [{ session: [] }] };
 const TargetParams = z.object({ targetId: z.string() });
