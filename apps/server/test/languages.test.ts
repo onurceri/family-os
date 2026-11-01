@@ -282,11 +282,30 @@ describe('the bundled Turkish pack', () => {
 	});
 });
 
+describe('the bundled German pack', () => {
+	it('is complete and serves the app and extension translations without an import', async () => {
+		const list = await call('GET', '/api/v1/core/languages');
+		expect(list.body.find((l: { code: string }) => l.code === 'de')).toMatchObject({
+			nativeName: 'Deutsch',
+			name: 'German',
+			dir: 'ltr',
+			source: 'bundled',
+			coverage: 1,
+		});
+		expect(runtime.kernel.translate('de', 'nav_more')).toBe('Mehr');
+		expect(runtime.kernel.translate('de', 'kitchen:feature_name')).toBe('Küche');
+		const catalogs = await call('GET', '/api/v1/core/languages/de/catalogs');
+		expect(catalogs.status).toBe(200);
+		expect(catalogs.body.catalogs.app.nav_more).toBe('Mehr');
+		expect(catalogs.body.catalogs.kitchen.feature_name).toBe('Küche');
+	});
+});
+
 describe('the language routes', () => {
 	it('lists languages without signing in (setup and sign-in need them)', async () => {
 		const list = await call('GET', '/api/v1/core/languages');
 		expect(list.status).toBe(200);
-		expect(list.body.map((l: { code: string }) => l.code)).toEqual(['en', 'tr']);
+		expect(list.body.map((l: { code: string }) => l.code)).toEqual(['en', 'de', 'tr']);
 	});
 
 	it('serves a pack with an ETag, answers 304 to it, and does not serve English', async () => {

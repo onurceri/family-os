@@ -1,0 +1,8 @@
+{
+	"code": "de",
+	"name": "German",
+	"nativeName": "Deutsch",
+	"version": "1.1.0",
+	"famos": ">=0.1.0",
+	"dir": "ltr"
+}

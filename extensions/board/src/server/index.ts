@@ -1,5 +1,6 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
+import de from '../messages/de.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
@@ -30,7 +31,7 @@ import { noteKind } from './understand.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
-	messages: { en, tr },
+	messages: { en, tr, de },
 	migrations,
 	ai: { kinds: [noteKind] },
 	actions: [
