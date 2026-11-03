@@ -1,6 +1,7 @@
 import { defineExtension } from '@famos/sdk';
 import pkg from '../../package.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
+import es from '../messages/es.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { vehiclesEdit, vehiclesView } from './capabilities.ts';
 import { vehiclesDigest } from './digest.ts';
@@ -26,7 +27,7 @@ import {
  */
 export default defineExtension({
 	manifest: pkg.famos,
-	messages: { en, tr },
+	messages: { en, tr, es },
 	migrations,
 	recordIds: ['vehicle'],
 	ai: { context: aiContext.id, kinds: [logKind] },

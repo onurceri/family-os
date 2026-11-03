@@ -286,7 +286,7 @@ describe('the language routes', () => {
 	it('lists languages without signing in (setup and sign-in need them)', async () => {
 		const list = await call('GET', '/api/v1/core/languages');
 		expect(list.status).toBe(200);
-		expect(list.body.map((l: { code: string }) => l.code)).toEqual(['en', 'tr']);
+		expect(list.body.map((l: { code: string }) => l.code)).toEqual(['en', 'es', 'tr']);
 	});
 
 	it('serves a pack with an ETag, answers 304 to it, and does not serve English', async () => {
