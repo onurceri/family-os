@@ -44,7 +44,7 @@ Needs permission to manage the calendar (admins have it). Any ICS or webcal addr
 - Fetched every 6 hours; **Refresh now** at once.
 - If unreachable, old events stay and the subscription shows why. If it says the address cannot be used, **Edit** and re-enter it.
 - **Remind about its events** sends usual reminders; leave off for look-only calendars.
-- **Calendar on my home network** allows an address inside your network (a NAS). Otherwise private addresses are refused so addresses cannot probe your home devices. Off for internet calendars.
+- **Calendar on my home network** allows an address inside your network (a NAS), also a plain `http://` one. Otherwise private addresses are refused so addresses cannot probe your home devices. Off for internet calendars.
 - **Remove** (twice) deletes the subscription and its events.
 
 ## Tags

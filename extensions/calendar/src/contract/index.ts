@@ -276,12 +276,18 @@ export const SUBSCRIPTION_COLORS = [
 
 const SubscriptionName = z.string().trim().min(1).max(80);
 const SubscriptionColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
-/** `https:` or `webcal:`; the address is a credential and is stored sealed. */
+/**
+ * `https:` or `webcal:`, or `http:` on the home network (`allowLocal`, checked by the action);
+ * the address is a credential and is stored sealed.
+ */
 const SubscriptionUrl = z
 	.string()
 	.trim()
 	.max(2000)
-	.refine((v) => /^(https|webcals?):\/\/[^\s/]+/i.test(v), 'Expected an https: or webcal: address');
+	.refine(
+		(v) => /^(https?|webcals?):\/\/[^\s/]+/i.test(v),
+		'Expected an https:, webcal: or http: address',
+	);
 
 export const AddSubscriptionInputSchema = z.object({
 	name: SubscriptionName.describe('Shown next to its events, e.g. "School"'),

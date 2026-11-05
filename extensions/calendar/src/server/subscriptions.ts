@@ -45,16 +45,22 @@ import {
 /** Every subscription is refreshed this often. */
 const REFRESH_EVERY_MS = 6 * HOUR_MS;
 
-/** The host of a feed address, or null when it is not an acceptable shape. */
-export function feedHost(raw: string): string | null {
+/**
+ * The host of a feed address, or null when it is not an acceptable shape. Plain `http:` only
+ * with `allowLocal`; the fetch then keeps it to the home network.
+ */
+export function feedHost(raw: string, allowLocal = false): string | null {
 	try {
 		const url = new URL(raw.trim().replace(/^webcals?:/i, 'https:'));
-		if (url.protocol !== 'https:' || url.username || url.password || !url.hostname) return null;
+		const scheme = url.protocol === 'https:' || (allowLocal && url.protocol === 'http:');
+		if (!scheme || url.username || url.password || !url.hostname) return null;
 		return url.hostname.toLowerCase();
 	} catch {
 		return null;
 	}
 }
+
+const BAD_ADDRESS = 'The address must be https: or webcal:, or http: on the home network';
 
 const RefreshPayload = z.object({ subscriptionId: z.string() });
 
@@ -119,8 +125,8 @@ export const addSubscription = defineAction({
 	requires: calendarManage.id,
 	approval: 'never',
 	async run(uow, input) {
-		const host = feedHost(input.url);
-		if (!host) throw new FamosError('bad_request', 'The address must be https: or webcal:');
+		const host = feedHost(input.url, input.allowLocal);
+		if (!host) throw new FamosError('bad_request', BAD_ADDRESS);
 		await assertActiveMembers(uow, input.memberIds, 'memberIds');
 		const db = events(uow.db);
 		const used = await db.selectFrom('calendar_subscriptions').select('color').execute();
@@ -172,8 +178,8 @@ export const updateSubscription = defineAction({
 		if (input.allowLocal !== undefined) set.allow_local = input.allowLocal ? 1 : 0;
 		let refresh = input.reminders !== undefined || input.memberIds !== undefined;
 		if (input.url !== undefined) {
-			const host = feedHost(input.url);
-			if (!host) throw new FamosError('bad_request', 'The address must be https: or webcal:');
+			const host = feedHost(input.url, input.allowLocal ?? current.allow_local === 1);
+			if (!host) throw new FamosError('bad_request', BAD_ADDRESS);
 			set.sealed_url = uow.secrets.seal(input.url.trim());
 			set.url_host = host;
 			// What was cached belongs to the old address.

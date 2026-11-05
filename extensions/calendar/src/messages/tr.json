@@ -128,7 +128,7 @@
 	"sub_name": "Ad",
 	"sub_name_placeholder": "örn. Okul",
 	"sub_url": "Takvim adresi",
-	"sub_url_hint": "Takip edilecek takvimin adresi. https:// ya da webcal:// ile başlar; takvim uygulamaları buna ICS ya da abonelik bağlantısı diyebilir.",
+	"sub_url_hint": "Takip edilecek takvimin adresi. https:// ya da webcal:// ile başlar (ev ağındaki bir takvim için, o seçenek açıkken http:// da olur); takvim uygulamaları buna ICS ya da abonelik bağlantısı diyebilir.",
 	"sub_color": "Renk",
 	"sub_members": "Kimin takvimi?",
 	"sub_reminders": "Etkinlikleri için hatırlat",
