@@ -18,7 +18,14 @@ import {
 	todayIn,
 } from '@famos/time';
 import { z } from 'zod';
-import { type EventRow, effectiveReminder, events, externalAsEvent } from './store.ts';
+import {
+	type EventRow,
+	effectiveReminder,
+	events,
+	externalAsEvent,
+	externalVersion,
+	subscriptionReminderTime,
+} from './store.ts';
 
 /**
  * Event reminders. Only the next reminder of an event is scheduled (`calendar.remind` with
@@ -200,6 +207,7 @@ export const remindJob = defineJob({
 	payload: RemindPayload,
 	async handle(ctx, { eventId, key, at, version, external }) {
 		let row: EventRow | undefined;
+		let ownTime: string | null = null;
 		let source = { kind: 'calendar.event', id: eventId };
 		if (external) {
 			const ext = await events(ctx.db)
@@ -214,9 +222,10 @@ export const remindJob = defineJob({
 				.selectAll()
 				.where('id', '=', external.subscriptionId)
 				.executeTakeFirst();
-			// Replaced by a refresh, removed, or reminders turned off since: nothing to say.
-			if (!ext || !sub || sub.reminders !== 1 || ext.fingerprint !== version) return;
+			// Replaced by a refresh, removed, reminders turned off or retimed since: nothing to say.
+			if (!ext || !sub || sub.reminders !== 1 || externalVersion(ext, sub) !== version) return;
 			row = externalAsEvent(ext, sub);
+			ownTime = sub.reminder_time;
 			source = { kind: 'calendar.subscription', id: sub.id };
 		} else {
 			row = await events(ctx.db)
@@ -233,7 +242,10 @@ export const remindJob = defineJob({
 		if (lead === null || !occurrenceExists(row, key)) return;
 
 		const now = ctx.clock.now();
-		const { reminderTime } = await ctx.family.settings();
+		const reminderTime = subscriptionReminderTime(
+			{ reminder_time: ownTime },
+			(await ctx.family.settings()).reminderTime,
+		);
 		// An all-day reminder is due at the family's reminder time. When that moved later since this
 		// was planned, wait for it; moved earlier, it applies to reminders planned from now on.
 		const due = reminderInstant(row, key, lead, reminderTime);

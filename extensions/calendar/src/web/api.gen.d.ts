@@ -1170,6 +1170,9 @@ export interface operations {
                         color: string;
                         memberIds: string[];
                         reminders: boolean;
+                        reminderDays: number | null;
+                        reminderTime: string | null;
+                        reminderMinutes: number | null;
                         allowLocal: boolean;
                         lastFetchedAt: number | null;
                         lastError: string | null;
@@ -3856,6 +3859,21 @@ export interface operations {
                     /** @default false */
                     reminders?: boolean;
                     /**
+                     * @description All-day events: days before (0, 1 or 2); null = on the day
+                     * @default null
+                     */
+                    reminderDays?: number | null;
+                    /**
+                     * @description All-day events: at this time; null = the family's reminder time
+                     * @default null
+                     */
+                    reminderTime?: string | null;
+                    /**
+                     * @description Timed events: minutes before the start; null = the default (30)
+                     * @default null
+                     */
+                    reminderMinutes?: number | null;
+                    /**
                      * @description Allow an address on the home network
                      * @default false
                      */
@@ -3880,6 +3898,9 @@ export interface operations {
                             color: string;
                             memberIds: string[];
                             reminders: boolean;
+                            reminderDays: number | null;
+                            reminderTime: string | null;
+                            reminderMinutes: number | null;
                             allowLocal: boolean;
                             lastFetchedAt: number | null;
                             lastError: string | null;
@@ -4021,6 +4042,12 @@ export interface operations {
                     color?: string;
                     memberIds?: string[];
                     reminders?: boolean;
+                    /** @description All-day events: days before (0, 1 or 2); null = on the day */
+                    reminderDays?: number | null;
+                    /** @description All-day events: at this time; null = the family's reminder time */
+                    reminderTime?: string | null;
+                    /** @description Timed events: minutes before the start; null = the default (30) */
+                    reminderMinutes?: number | null;
                     allowLocal?: boolean;
                 };
             };
@@ -4042,6 +4069,9 @@ export interface operations {
                             color: string;
                             memberIds: string[];
                             reminders: boolean;
+                            reminderDays: number | null;
+                            reminderTime: string | null;
+                            reminderMinutes: number | null;
                             allowLocal: boolean;
                             lastFetchedAt: number | null;
                             lastError: string | null;

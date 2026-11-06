@@ -1765,6 +1765,24 @@
 											"reminders": {
 												"type": "boolean"
 											},
+											"reminderDays": {
+												"type": [
+													"number",
+													"null"
+												]
+											},
+											"reminderTime": {
+												"type": [
+													"string",
+													"null"
+												]
+											},
+											"reminderMinutes": {
+												"type": [
+													"number",
+													"null"
+												]
+											},
 											"allowLocal": {
 												"type": "boolean"
 											},
@@ -1791,6 +1809,9 @@
 											"color",
 											"memberIds",
 											"reminders",
+											"reminderDays",
+											"reminderTime",
+											"reminderMinutes",
 											"allowLocal",
 											"lastFetchedAt",
 											"lastError",
@@ -8757,6 +8778,31 @@
 										"type": "boolean",
 										"default": false
 									},
+									"reminderDays": {
+										"type": [
+											"integer",
+											"null"
+										],
+										"default": null,
+										"description": "All-day events: days before (0, 1 or 2); null = on the day"
+									},
+									"reminderTime": {
+										"type": [
+											"string",
+											"null"
+										],
+										"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+										"default": null,
+										"description": "All-day events: at this time; null = the family's reminder time"
+									},
+									"reminderMinutes": {
+										"type": [
+											"integer",
+											"null"
+										],
+										"default": null,
+										"description": "Timed events: minutes before the start; null = the default (30)"
+									},
 									"allowLocal": {
 										"type": "boolean",
 										"default": false,
@@ -8811,6 +8857,24 @@
 														"reminders": {
 															"type": "boolean"
 														},
+														"reminderDays": {
+															"type": [
+																"number",
+																"null"
+															]
+														},
+														"reminderTime": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"reminderMinutes": {
+															"type": [
+																"number",
+																"null"
+															]
+														},
 														"allowLocal": {
 															"type": "boolean"
 														},
@@ -8837,6 +8901,9 @@
 														"color",
 														"memberIds",
 														"reminders",
+														"reminderDays",
+														"reminderTime",
+														"reminderMinutes",
 														"allowLocal",
 														"lastFetchedAt",
 														"lastError",
@@ -9167,6 +9234,28 @@
 									"reminders": {
 										"type": "boolean"
 									},
+									"reminderDays": {
+										"type": [
+											"integer",
+											"null"
+										],
+										"description": "All-day events: days before (0, 1 or 2); null = on the day"
+									},
+									"reminderTime": {
+										"type": [
+											"string",
+											"null"
+										],
+										"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+										"description": "All-day events: at this time; null = the family's reminder time"
+									},
+									"reminderMinutes": {
+										"type": [
+											"integer",
+											"null"
+										],
+										"description": "Timed events: minutes before the start; null = the default (30)"
+									},
 									"allowLocal": {
 										"type": "boolean"
 									}
@@ -9218,6 +9307,24 @@
 														"reminders": {
 															"type": "boolean"
 														},
+														"reminderDays": {
+															"type": [
+																"number",
+																"null"
+															]
+														},
+														"reminderTime": {
+															"type": [
+																"string",
+																"null"
+															]
+														},
+														"reminderMinutes": {
+															"type": [
+																"number",
+																"null"
+															]
+														},
 														"allowLocal": {
 															"type": "boolean"
 														},
@@ -9244,6 +9351,9 @@
 														"color",
 														"memberIds",
 														"reminders",
+														"reminderDays",
+														"reminderTime",
+														"reminderMinutes",
 														"allowLocal",
 														"lastFetchedAt",
 														"lastError",
