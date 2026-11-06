@@ -338,16 +338,16 @@
 		</div>
 		<Card rows>
 			<SwitchRow
-				id="sub-reminders"
-				label={t('sub_reminders')}
-				hint={t('sub_reminders_hint')}
-				bind:checked={reminders}
-			/>
-			<SwitchRow
 				id="sub-local"
 				label={t('sub_allow_local')}
 				hint={t('sub_allow_local_warn')}
 				bind:checked={allowLocal}
+			/>
+			<SwitchRow
+				id="sub-reminders"
+				label={t('sub_reminders')}
+				hint={t('sub_reminders_hint')}
+				bind:checked={reminders}
 			/>
 		</Card>
 		{#if reminders}
