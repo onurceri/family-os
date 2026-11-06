@@ -39,6 +39,7 @@ const VERSION_MIGRATIONS = [
 	'board/0002_versions',
 	'board/0003_app_author',
 	'calendar/0004_series_end',
+	'calendar/0005_subscription_reminder_time',
 ];
 const NEW_MIGRATIONS = new Set([
 	'core/0004_file_grants',
