@@ -3,27 +3,13 @@ import {
 	type DbExecutor,
 	FamosError,
 	idSchema,
+	MEMBER_COLORS,
 	personPresent,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
 import { LanguageCodeSchema } from '../family.ts';
 import type { CoreTables, MemberRow } from '../tables.ts';
-
-/**
- * Member colors. Eight hues kept away from coral/red so a member's
- * color never reads as "attention". Assigned in order; admins can change them.
- */
-export const MEMBER_COLORS = [
-	'#3d7aae',
-	'#c38f22',
-	'#975cbd',
-	'#2f9a94',
-	'#c66591',
-	'#68778b',
-	'#996c46',
-	'#5c923d',
-];
 
 export const MemberIdSchema = idSchema('member');
 export const ColorSchema = z.string().regex(/^#[0-9a-f]{6}$/i);

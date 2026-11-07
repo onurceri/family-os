@@ -14,7 +14,7 @@ Each person has a **role** that sets what they can do. Sign-in is separate: emai
 
 Rows say how each person signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", "No sign-in yet".
 
-**Edit** changes name, role, **About** and sign-in; empty fields keep the current value.
+**Edit** changes name, role, **About**, color and sign-in; empty fields keep the current value.
 
 **Good to know**
 - A new PIN or password signs that person out everywhere (an admin changing their own stays signed in).

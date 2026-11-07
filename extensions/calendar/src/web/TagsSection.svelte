@@ -2,6 +2,7 @@
 	import {
 		Card,
 		ConfirmButton,
+		ColorChoice,
 		FIELD_REASON,
 		FieldError,
 		fieldAria,
@@ -14,8 +15,7 @@
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight } from '@lucide/svelte';
 	import { onMount } from 'svelte';
-	import { MAX_TAG_LENGTH, type Tag } from '../contract/index.js';
-	import ColorChoice from './ColorChoice.svelte';
+	import { MAX_TAG_LENGTH, SUBSCRIPTION_COLORS, type Tag } from '../contract/index.js';
 	import { deleteTag, loadTags, updateTag } from './data.js';
 	import { useCalendar } from './i18n.js';
 	import LoadFailed from './LoadFailed.svelte';
@@ -166,7 +166,12 @@
 			<FieldError for="tag-name" error={showErrors ? nameError : undefined} />
 			<p class="text-ink-soft text-[13px]">{t('tag_rename_hint')}</p>
 		</div>
-		<ColorChoice bind:value={editColor} name="tag-color" legend={t('sub_color')} />
+		<ColorChoice
+			bind:value={editColor}
+			colors={SUBSCRIPTION_COLORS}
+			name="tag-color"
+			legend={t('sub_color')}
+		/>
 		{#if failed}<p class="text-attention text-sm font-semibold" role="alert">{t('error')}</p>{/if}
 	</form>
 </SidePanel>

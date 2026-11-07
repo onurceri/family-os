@@ -1,4 +1,4 @@
-import { idSchema, wholeRecord } from '@famos/sdk';
+import { idSchema, MEMBER_COLORS, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema, IsoTimeSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
@@ -262,17 +262,8 @@ export const CreatedFeedSchema = z.object({
 
 /* ───────────── Subscriptions in: read-only external calendars ───────────── */
 
-/** The colours offered for a subscription: the family's member palette (core's `MEMBER_COLORS`). */
-export const SUBSCRIPTION_COLORS = [
-	'#3d7aae',
-	'#c38f22',
-	'#975cbd',
-	'#2f9a94',
-	'#c66591',
-	'#68778b',
-	'#996c46',
-	'#5c923d',
-] as const;
+/** The colours offered for a subscription: the family's member palette. */
+export const SUBSCRIPTION_COLORS = MEMBER_COLORS;
 
 const SubscriptionName = z.string().trim().min(1).max(80);
 const SubscriptionColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
