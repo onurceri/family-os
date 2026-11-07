@@ -10,7 +10,7 @@
  * - Semantic colors (attention, now, sun, info, heat) only describe state and are never
  *   used for family members. Member colors live in the SDK (MEMBER_COLORS).
  * - shadcn-svelte variable names are kept so vendored components pick up the palette.
- * - Night is the `.dark` class on <html>: phones follow the OS, kiosks follow the sun.
+ * - Night is the `.dark` class on <html>: phones follow the OS, kiosks follow the time of day.
  */
 @import "shadcn-svelte/tailwind.css";
 @import "@fontsource-variable/figtree";

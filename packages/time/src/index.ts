@@ -45,6 +45,7 @@ export {
 	weekdayNames,
 	weekOf,
 } from './display.ts';
+export { DAY_FROM_HOUR, isNightHour, NIGHT_FROM_HOUR, type SunDay } from './night.ts';
 export {
 	type DateSeries,
 	expandDates,
