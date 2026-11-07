@@ -11,15 +11,29 @@ const SERVER = join(ROOT, 'apps/server/dist/famos.mjs');
 const WEB = join(ROOT, 'apps/web/build');
 export const SETUP_CODE = 'e2e-setup-code';
 
-async function freePort(): Promise<number> {
-	return new Promise((done, fail) => {
+/**
+ * Each Playwright worker takes ports from its own block below the ephemeral range (from 32768 on
+ * Linux, 49152 on macOS). A port the system hands out is free only until it is closed again, and in
+ * the moment before the server listens it can go to another worker, a fake service or an outgoing
+ * connection; a block of its own leaves the worker nobody to share it with.
+ */
+const PORTS_PER_WORKER = 400;
+let nextPort = 20_000 + Number(process.env.TEST_PARALLEL_INDEX ?? 0) * PORTS_PER_WORKER;
+
+function isFree(port: number): Promise<boolean> {
+	return new Promise((done) => {
 		const probe = createServer();
-		probe.once('error', fail);
-		probe.listen(0, '127.0.0.1', () => {
-			const { port } = probe.address() as { port: number };
-			probe.close(() => done(port));
-		});
+		probe.once('error', () => done(false));
+		probe.listen(port, '127.0.0.1', () => probe.close(() => done(true)));
 	});
+}
+
+async function freePort(): Promise<number> {
+	for (let tries = 0; tries < PORTS_PER_WORKER; tries++) {
+		const port = nextPort++;
+		if (await isFree(port)) return port;
+	}
+	throw new Error("No free port left in this worker's block");
 }
 
 /**
