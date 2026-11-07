@@ -126,6 +126,8 @@
 	let showDone = $state(false);
 
 	function report(outcome: Outcome, message: string) {
+		// The page shows its own change from its own read, not only when the live update arrives.
+		if (outcome === 'applied') void load();
 		if (outcome === 'queued') app.toast(t('queued_toast'));
 		else if (outcome === 'drafted') app.sentForApproval();
 		else app.toast(message);
