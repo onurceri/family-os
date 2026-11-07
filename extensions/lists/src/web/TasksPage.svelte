@@ -34,6 +34,7 @@
 	import { dueLabel, groupTasks, type Urgency } from './format.js';
 	import { revealRow } from './reveal.js';
 	import { useLists } from './i18n.js';
+	import { latestOnly } from './latest-only.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import TaskForm from './TaskForm.svelte';
 	import TaskRow from './TaskRow.svelte';
@@ -66,12 +67,16 @@
 	/** Optimistic state: ids being toggled, with the done state shown meanwhile. */
 	let pending = $state<Record<string, boolean>>({});
 
+	const reads = latestOnly();
 	async function load() {
+		const current = reads.begin();
 		try {
-			tasks = await loadTasks();
+			const read = await loadTasks();
+			if (!current()) return;
+			tasks = read;
 			loadError = false;
 		} catch {
-			loadError = true;
+			if (current()) loadError = true;
 		} finally {
 			loadedOnce = true;
 		}
