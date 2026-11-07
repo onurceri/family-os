@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.42",
+	"sdk": "0.8.43",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -55,6 +55,7 @@
 			"LimitsSchema",
 			"LlmError",
 			"MAX_RESULT_BYTES",
+			"MEMBER_COLORS",
 			"MENTION_LIMIT",
 			"MENTION_NOTES_MAX",
 			"MINUTE_MS",
@@ -315,6 +316,7 @@
 			"Chip",
 			"ChoreRings",
 			"Clock",
+			"ColorChoice",
 			"Combobox",
 			"Composer",
 			"ConfirmButton",

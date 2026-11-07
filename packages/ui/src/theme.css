@@ -8,7 +8,7 @@
  *
  * - A warm wall color is the page; active, important things are cards; idle things recede.
  * - Semantic colors (attention, now, sun, info, heat) only describe state and are never
- *   used for family members. Member colors live in core (MEMBER_COLORS).
+ *   used for family members. Member colors live in the SDK (MEMBER_COLORS).
  * - shadcn-svelte variable names are kept so vendored components pick up the palette.
  * - Night is the `.dark` class on <html>: phones follow the OS, kiosks follow the sun.
  */
