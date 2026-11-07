@@ -1,6 +1,6 @@
 # Languages
 
-English is built in. Every other language is a **language pack**: text files you add or remove without an app update. Turkish is included. Untranslated strings show in English. A language chooses words only; dates, numbers and weeks follow your [region](region.md).
+English is built in. Every other language is a **language pack**: text files you add or remove without an app update. German and Turkish are included. Untranslated strings show in English. A language chooses words only; dates, numbers and weeks follow your [region](region.md).
 
 ## Choosing a language
 

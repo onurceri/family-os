@@ -162,7 +162,7 @@ Before declaring work done, run `pnpm lint`, `pnpm typecheck` and `pnpm test` an
 
 ## Conventions
 
-- Code, comments, commit messages and docs are in English; the UI is internationalized (English and Turkish).
+- Code, comments, commit messages and docs are in English; the UI is internationalized (English, German and Turkish).
 - TypeScript 6, strict, with `erasableSyntaxOnly`: no enums, namespaces or parameter properties; no `any` without a comment explaining why.
 - Biome formats and lints TS/JS/JSON/CSS, Prettier only `.svelte`; do not hand-format.
 - Dependencies are pinned to exact versions; those shared by five or more packages (zod, kysely, svelte, typescript …) are pinned once in the `catalog:` of `pnpm-workspace.yaml`. Before adding one, check its maintenance status and peer ranges; prefer small, low-churn packages (architecture.md, "Dependency policy").
