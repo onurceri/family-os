@@ -5,6 +5,7 @@
 		ConfirmButton,
 		FIELD_REASON,
 		FieldError,
+		ColorChoice,
 		fieldAria,
 		focusFirstInvalid,
 		MemberChips,
@@ -19,7 +20,6 @@
 	import { ChevronRight, Plus, RefreshCw } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { SUBSCRIPTION_COLORS, type Subscription } from '../contract/index.js';
-	import ColorChoice from './ColorChoice.svelte';
 	import {
 		addSubscription,
 		loadSubscriptions,
@@ -295,7 +295,12 @@
 				{panel?.id ? t('sub_new_url_hint', { host: panel.host }) : t('sub_url_hint')}
 			</p>
 		</div>
-		<ColorChoice bind:value={color} name="sub-color" legend={t('sub_color')} />
+		<ColorChoice
+			bind:value={color}
+			colors={SUBSCRIPTION_COLORS}
+			name="sub-color"
+			legend={t('sub_color')}
+		/>
 		<div class="grid gap-2">
 			<span class="text-sm font-semibold">{t('sub_members')}</span>
 			<MemberChips
