@@ -10,10 +10,18 @@
 		<title>FamilyOS</title>
 		<script>
 			// Apply night before the first paint so the page never flashes the day palette: this
-			// device's choice (lib/theme.svelte.ts), else the system setting.
+			// device's choice (lib/theme.svelte.ts), else the system setting; "time" and a display
+			// without a choice use the device's hour (the family's time zone is not known yet and
+			// corrects it). The hours match DAY_FROM_HOUR and NIGHT_FROM_HOUR in @famos/ui.
 			try {
 				const mode = localStorage.getItem('famos.mode');
-				if (mode === 'night' || (mode !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches))
+				const display = location.pathname === '/display' || location.pathname.indexOf('/display/') === 0;
+				const hour = new Date().getHours();
+				const byTime = hour < 6 || hour >= 20;
+				if (
+					mode === 'night' ||
+					(mode === 'time' || (display && mode !== 'day' && mode !== 'night') ? byTime : mode !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches)
+				)
 					document.documentElement.classList.add('dark');
 			} catch {
 				if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');

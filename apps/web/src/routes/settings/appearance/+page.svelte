@@ -4,11 +4,13 @@
 	import { Button } from '@famos/ui/button';
 	import { Card, Page, PageHeader, Pill, Section, Segmented, SettingRow } from '@famos/ui/famos';
 	import { DEFAULT_STYLE, STYLE_IDS, STYLES, type StyleId } from '@famos/ui/styles';
+	import { DAY_FROM_HOUR, formatClock, NIGHT_FROM_HOUR } from '@famos/time';
 	import { Check, Eye } from '@lucide/svelte';
 	import { api } from '#lib/api.js';
 	import { type Answer, runAction } from '#lib/run-action.js';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { family } from '#lib/family.svelte.js';
+	import { familyDateLocale } from '#lib/format.svelte.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import PaletteSample from '#lib/PaletteSample.svelte';
 	import { onEvent } from '#lib/realtime.js';
@@ -17,6 +19,7 @@
 	import StylePreview from '#lib/today/StylePreview.svelte';
 	import TodayBlocksList from '#lib/today/TodayBlocksList.svelte';
 	import { availableTodayBlocks } from '#lib/today/today-data.svelte.js';
+	import { MODES } from '#lib/day-night.js';
 	import { dayNight, type Mode } from '#lib/theme.svelte.js';
 
 	/**
@@ -29,7 +32,12 @@
 	const manage = $derived(session.can('core.settings.manage'));
 	let error = $state<string | null>(null);
 
-	const MODES: Mode[] = ['system', 'day', 'night'];
+	// The hours "by time of day" switches at, written the family's way.
+	const clockAt = (hour: number) =>
+		formatClock(`${String(hour).padStart(2, '0')}:00`, familyDateLocale(), family.hourCycle);
+	const modeHint = $derived(
+		t('appearance_mode_hint', { from: clockAt(NIGHT_FROM_HOUR), until: clockAt(DAY_FROM_HOUR) }),
+	);
 	const modeOptions = $derived(
 		MODES.map((mode) => ({ value: mode, label: t(`appearance_mode_${mode}`) })),
 	);
@@ -200,7 +208,7 @@
 				{/if}
 			{/snippet}
 			<Card>
-				<SettingRow label={t('appearance_mode')} hint={t('appearance_mode_hint')}>
+				<SettingRow label={t('appearance_mode')} hint={modeHint}>
 					{#snippet control()}
 						<Segmented
 							grow

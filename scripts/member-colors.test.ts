@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MEMBER_COLORS } from '../packages/core/src/core-extension.ts';
+import { MEMBER_COLORS } from '../packages/sdk/src/index.ts';
 import { contrastRatio, parseColor } from '../packages/themes/src/color.ts';
 import { onMemberColor } from '../packages/ui/src/famos/on-member-color.ts';
 

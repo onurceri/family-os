@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { isApiError, type paths } from '@famos/api-client';
+	import { MEMBER_COLORS } from '@famos/sdk';
 	import { Button } from '@famos/ui/button';
 	import {
 		Avatar,
 		Card,
+		ColorChoice,
 		ConfirmButton,
 		IconButton,
 		Page,
@@ -51,6 +53,9 @@
 	let name = $state('');
 	let roleId = $state('member');
 	let about = $state('');
+	let color = $state<string>(MEMBER_COLORS[0]);
+	/** The colour the panel opened with (a new person's is the next one in the palette). */
+	let startColor = $state<string>(MEMBER_COLORS[0]);
 	let pin = $state('');
 	let email = $state('');
 	let password = $state('');
@@ -59,6 +64,12 @@
 	let formEl = $state<HTMLFormElement>();
 
 	const editing = $derived(panel?.memberId ? members.find((m) => m.id === panel?.memberId) : null);
+	/** The palette, plus the person's current colour when it is not on it, so saving never loses it. */
+	const palette = $derived<string[]>(
+		editing && !MEMBER_COLORS.some((c) => c === editing.color)
+			? [editing.color, ...MEMBER_COLORS]
+			: [...MEMBER_COLORS],
+	);
 	// Two people may share a name; the first save only asks, the second saves.
 	let warnedName = $state<string | null>(null);
 	const twin = $derived(nameTwin(members, name, editing));
@@ -92,10 +103,16 @@
 				? name.trim() !== editing.displayName ||
 					roleId !== editing.roleId ||
 					about.trim() !== (editing.about ?? '') ||
+					color !== editing.color ||
 					pin !== '' ||
 					email !== '' ||
 					password !== ''
-				: name !== '' || about !== '' || pin !== '' || email !== '' || password !== ''),
+				: name !== '' ||
+					about !== '' ||
+					color !== startColor ||
+					pin !== '' ||
+					email !== '' ||
+					password !== ''),
 	);
 
 	/** The roles, with how many people hold each one. */
@@ -168,6 +185,7 @@
 		name = '';
 		roleId = 'member';
 		about = '';
+		color = startColor = MEMBER_COLORS[members.length % MEMBER_COLORS.length] as string;
 		pin = email = password = '';
 		error = null;
 		warnedName = null;
@@ -178,6 +196,7 @@
 		name = member.displayName;
 		roleId = member.roleId;
 		about = member.about ?? '';
+		color = startColor = member.color;
 		pin = email = password = '';
 		error = null;
 		warnedName = null;
@@ -205,6 +224,7 @@
 					body: {
 						displayName: name.trim(),
 						roleId,
+						color,
 						...(about.trim() && { about: about.trim() }),
 					},
 				}),
@@ -230,6 +250,7 @@
 						displayName: name.trim(),
 						roleId,
 						about: about.trim() || null,
+						color,
 					},
 				}),
 				{ onError: showError },
@@ -420,6 +441,12 @@
 				<Input id="member-about" bind:value={about} maxlength={300} />
 				<small class="text-ink-soft text-[13px]">{t('members_about_hint')}</small>
 			</div>
+			<ColorChoice
+				bind:value={color}
+				colors={palette}
+				name="member-color"
+				legend={t('members_color')}
+			/>
 
 			<div class="border-line grid gap-4 border-t pt-4" data-testid="member-signin">
 				<div class="grid gap-1">
