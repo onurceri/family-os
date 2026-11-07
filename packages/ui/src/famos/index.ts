@@ -9,6 +9,7 @@ export { default as Card } from './Card.svelte';
 export { default as Chip } from './Chip.svelte';
 export { type ChoreRing, default as ChoreRings } from './ChoreRings.svelte';
 export { default as Clock } from './Clock.svelte';
+export { default as ColorChoice } from './ColorChoice.svelte';
 export { default as Combobox } from './Combobox.svelte';
 export { default as Composer } from './Composer.svelte';
 export { default as ConfirmButton } from './ConfirmButton.svelte';

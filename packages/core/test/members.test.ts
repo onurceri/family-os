@@ -76,6 +76,28 @@ describe('members and setup', () => {
 		expect(ok.status).toBe('applied');
 	});
 
+	it('changes a member color and refuses one that is not #rrggbb', async () => {
+		const { actor } = await k.member('admin');
+		const { member } = await k.member('member');
+		const changed = await k.runner.invoke(
+			'core.updateMember',
+			{ memberId: member.id, color: '#2f9a94' },
+			actor,
+		);
+		expect(changed).toMatchObject({ status: 'applied', output: { color: '#2f9a94' } });
+		for (const color of ['teal', '#fff', 'rgb(0,0,0)']) {
+			await expect(
+				k.runner.invoke('core.updateMember', { memberId: member.id, color }, actor),
+			).rejects.toBeDefined();
+		}
+		const created = await k.runner.invoke(
+			'core.createMember',
+			{ displayName: 'Ece', roleId: 'member', color: '#c66591' },
+			actor,
+		);
+		expect(created).toMatchObject({ status: 'applied', output: { color: '#c66591' } });
+	});
+
 	it('removing a member removes their sign-in and hides them', async () => {
 		const { actor } = await k.member('admin');
 		const { member } = await k.member('member');

@@ -34,7 +34,6 @@ export type { CoreExtensionDeps } from './core-extension/deps.ts';
 export { DraftSchema } from './core-extension/drafts.ts';
 export {
 	END_CREDENTIALS_JOB,
-	MEMBER_COLORS,
 	type Member,
 	MemberSchema,
 	SignInMethodsSchema,

@@ -27,9 +27,7 @@ const ALLOWED: Record<string, string> = {
 	'packages/ui/src/theme.css': 'the token layer itself (the built-in Ev Işığı values)',
 	'apps/web/src/app.html': 'the theme-color meta and the loading mark before the theme is applied',
 	'apps/web/src/lib/today/sample-people.ts':
-		"the made-up people of the style previews: a person's color is data (core's member colors), not interface styling",
-	'extensions/calendar/src/contract/index.ts':
-		'the colors people pick for calendars: data they choose, not interface styling',
+		"the made-up people of the style previews: a person's color is data (the member palette), not interface styling",
 	'packages/ui/src/colors.ts':
 		'writes the rgb() an older browser computes for a color mix: arithmetic over the theme tokens, no colors of its own',
 	'packages/ui/src/famos/resize.ts':
