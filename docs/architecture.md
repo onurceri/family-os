@@ -33,7 +33,7 @@ Versions are pinned exactly (`save-exact` + lockfile) and updated deliberately t
 | Database | SQLite via better-sqlite3 13 (N-API, prebuilt binaries bundled) + Kysely `SqliteDialect`; DB types hand-written next to migrations | better-sqlite3 13.0.x, kysely 0.29.x |
 | Frontend | SvelteKit 3 (Svelte 5) as SPA (`adapter-static`), Vite 8, Tailwind v4, shadcn-svelte components (their few primitives are plain Svelte, no headless-UI library), styled only through design tokens ([design system](design/design-system.md)) | kit 3.0.x, svelte 5.57.x, vite 8.3.x |
 | PWA | Static `manifest.webmanifest` (with `share_target`) + hand-written SvelteKit service worker; no PWA plugin | — |
-| i18n | i18next via `@famos/i18n` (one namespace per extension, typed keys via `ResourceNamespaceMap`, shared by web and server); English in code, other languages as packs (§6); Turkish and Spanish bundled | i18next 26.x |
+| i18n | i18next via `@famos/i18n` (one namespace per extension, typed keys via `ResourceNamespaceMap`, shared by web and server); English in code, other languages as packs (§6); German, Spanish and Turkish bundled | i18next 26.x |
 | Time | Temporal (`temporal-polyfill`) wrapped in `@famos/time`; recurrence as RFC 5545 `RRULE` expanded with `rrule-temporal` (§12) | — |
 | Auth | better-auth (email + password, profile + PIN plugin on trusted family devices); telemetry and runtime schema validation disabled (our migrations own the schema) | better-auth 1.7.x |
 | AI | Vercel AI SDK 7 with one OpenAI-compatible client for OpenRouter, Ollama and other compatible servers | ai 7.0.x |

@@ -2,22 +2,22 @@ import { ADMIN, api, expect, test } from '../support/fixtures.ts';
 import { SETUP_CODE } from '../support/server.ts';
 
 /** A tiny pack: a handful of keys; everything else falls back to English. */
-const GERMAN = {
+const ESPERANTO = {
 	manifest: {
-		code: 'de',
-		name: 'German',
-		nativeName: 'Deutsch',
+		code: 'eo',
+		name: 'Esperanto',
+		nativeName: 'Esperanto',
 		version: '0.1.0',
 		famos: '>=0.1.0',
 	},
 	catalogs: {
 		app: {
-			nav_more: 'Mehr',
-			my_language: 'Meine Sprache',
-			home_greeting_morning: 'Hallo',
-			home_greeting_afternoon: 'Hallo',
-			home_greeting_evening: 'Hallo',
-			languages_title: 'Sprachen',
+			nav_more: 'Pli',
+			my_language: 'Mia lingvo',
+			home_greeting_morning: 'Saluton',
+			home_greeting_afternoon: 'Saluton',
+			home_greeting_evening: 'Saluton',
+			languages_title: 'Lingvoj',
 		},
 	},
 };
@@ -56,35 +56,40 @@ test.describe(() => {
 		expect(family.locale).toBe('tr');
 		expect(family.formatLocale).toBe('en-US');
 
-		// Settings → Languages: Turkish is included; add a German pack from a file.
+		// Settings → Languages: Turkish is included; add an Esperanto pack from a file.
 		await page.goto('/settings/languages');
 		await expect(page).toHaveURL(/\/settings\/region$/);
 		await expect(page.getByRole('heading', { name: 'Dil ve bölge', level: 1 })).toBeVisible();
 		await expect(page.getByTestId('language-tr')).toContainText('Birlikte gelir');
+		await expect(page.getByTestId('language-de')).toContainText('Birlikte gelir');
 		await page.getByRole('button', { name: 'Dil ekle' }).click();
 		await page.locator('#pack-file').setInputFiles({
-			name: 'de.json',
+			name: 'eo.json',
 			mimeType: 'application/json',
-			buffer: Buffer.from(JSON.stringify(GERMAN)),
+			buffer: Buffer.from(JSON.stringify(ESPERANTO)),
 		});
-		await expect(page.getByText('Deutsch yüklendi')).toBeVisible();
-		await expect(page.getByTestId('language-de')).toContainText('Yüklendi');
+		await expect(page.getByText('Esperanto yüklendi')).toBeVisible();
+		await expect(page.getByTestId('language-eo')).toContainText('Yüklendi');
 
 		// "My language" lists it; choosing it translates what the pack has, English fills the rest.
 		await page.goto('/settings/profile');
 		await page.getByLabel('Dilim').selectOption('de');
 		await expect(page.getByLabel('Meine Sprache')).toBeVisible();
-		await expect(page.getByText('Sign out', { exact: true })).toBeVisible();
+		await expect(page.getByText('Abmelden', { exact: true })).toBeVisible();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		await page.getByLabel('Meine Sprache').selectOption('eo');
+		await expect(page.getByLabel('Mia lingvo')).toBeVisible();
+		await expect(page.getByText('Sign out', { exact: true })).toBeVisible();
+		await expect(page.locator('html')).toHaveAttribute('lang', 'eo');
 		await page.goto('/');
-		await expect(page.getByTestId('day-sentence')).toContainText(`Hallo, ${ADMIN.name}`);
+		await expect(page.getByTestId('day-sentence')).toContainText(`Saluton, ${ADMIN.name}`);
 
 		// Remove it: whoever used it falls back to the family's language.
 		await page.goto('/settings/region');
-		const german = page.getByTestId('language-de');
-		await german.getByRole('button', { name: 'Remove' }).click();
-		await german.getByRole('button', { name: 'Tap again to remove' }).click();
-		await expect(page.getByTestId('language-de')).toHaveCount(0);
+		const esperanto = page.getByTestId('language-eo');
+		await esperanto.getByRole('button', { name: 'Remove' }).click();
+		await esperanto.getByRole('button', { name: 'Tap again to remove' }).click();
+		await expect(page.getByTestId('language-eo')).toHaveCount(0);
 		await page.goto('/more');
 		await expect(page.getByRole('heading', { name: 'Daha', level: 1 })).toBeVisible();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'tr');
