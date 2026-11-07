@@ -1,25 +1,36 @@
 /**
- * Day and night: each device chooses to follow the system, or to stay
- * in the day or the night palette of the active theme. Night is the `.dark` class on <html>.
+ * Day and night: each device chooses to follow the system, the time of day, or to stay in the
+ * day or the night palette of the active theme. Night is the `.dark` class on <html>.
  * The choice lives in this browser only (`famos.mode`); app.html applies it before first paint.
+ * Without a choice, family displays follow the time of day and every other device the system.
  */
-export type Mode = 'system' | 'day' | 'night';
-const KEY = 'famos.mode';
+import { defaultMode, isNight, type Mode, parseMode } from './day-night.js';
+import { family } from './family.svelte.js';
 
-function stored(): Mode {
+export type { Mode } from './day-night.js';
+
+const KEY = 'famos.mode';
+const MINUTE_MS = 60_000;
+
+function stored(): Mode | null {
 	try {
-		const value = localStorage.getItem(KEY);
-		return value === 'day' || value === 'night' ? value : 'system';
+		return parseMode(localStorage.getItem(KEY));
 	} catch {
-		return 'system';
+		return null;
 	}
 }
 
 class DayNight {
-	mode = $state<Mode>(typeof localStorage === 'undefined' ? 'system' : stored());
+	/** What this device's person chose, or null for "like the system". */
+	choice = $state<Mode | null>(typeof localStorage === 'undefined' ? null : stored());
+
+	/** The mode shown in settings. */
+	get mode(): Mode {
+		return this.choice ?? 'system';
+	}
 
 	set(mode: Mode): void {
-		this.mode = mode;
+		this.choice = mode === 'system' ? null : mode;
 		try {
 			if (mode === 'system') localStorage.removeItem(KEY);
 			else localStorage.setItem(KEY, mode);
@@ -31,15 +42,28 @@ class DayNight {
 
 export const dayNight = new DayNight();
 
-/** Keeps `.dark` on <html> in line with the device's choice and, for "system", the OS setting. */
-export function followDayNight(): () => void {
+/**
+ * Keeps `.dark` on <html> in line with the device's choice, the OS setting for "system" and the
+ * clock in the family's time zone for "time of day" (checked every minute and when the page is
+ * shown again, so a wall frame switches by itself).
+ */
+export function followDayNight(display = false): () => void {
 	const query = matchMedia('(prefers-color-scheme: dark)');
+	const mode = dayNight.choice ?? defaultMode(display);
 	const apply = () => {
-		const mode = dayNight.mode;
-		const night = mode === 'night' || (mode === 'system' && query.matches);
+		const night = isNight(mode, Date.now(), family.timeZone, query.matches);
 		document.documentElement.classList.toggle('dark', night);
 	};
 	apply();
 	query.addEventListener('change', apply);
-	return () => query.removeEventListener('change', apply);
+	const onVisible = () => {
+		if (document.visibilityState === 'visible') apply();
+	};
+	document.addEventListener('visibilitychange', onVisible);
+	const timer = mode === 'time' ? setInterval(apply, MINUTE_MS) : undefined;
+	return () => {
+		query.removeEventListener('change', apply);
+		document.removeEventListener('visibilitychange', onVisible);
+		clearInterval(timer);
+	};
 }
