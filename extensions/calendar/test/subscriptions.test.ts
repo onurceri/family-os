@@ -319,6 +319,40 @@ describe('subscriptions', () => {
 		expect((await row(sub.id)).name).toBe('Renamed');
 		expect(titles(await range('2026-10-29', '2026-10-29'))).toEqual(['Cumhuriyet Bayramı']);
 	});
+
+	it('takes a plain http address only on the home network', async () => {
+		const url = 'http://192.168.1.20/cal.ics';
+		await expect(
+			k.runner.invoke('calendar.addSubscription', { name: 'NAS', url }, admin.actor),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		k.http.serve(url, { text: floating });
+		const sub = await add(url, { allowLocal: true });
+		expect(sub.host).toBe('192.168.1.20');
+		expect(k.http.requests.at(-1)).toMatchObject({ url, allowLocal: true });
+		// An http address on a subscription that already allows the home network.
+		await k.runner.invoke(
+			'calendar.updateSubscription',
+			{ id: sub.id, url: 'http://192.168.1.20/other.ics' },
+			admin.actor,
+		);
+		// ...but never one that does not.
+		k.http.serve(URL_SCHOOL, { text: school });
+		const https = await add(URL_SCHOOL);
+		await expect(
+			k.runner.invoke(
+				'calendar.updateSubscription',
+				{ id: https.id, url: 'http://192.168.1.20/x.ics' },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+		await expect(
+			k.runner.invoke(
+				'calendar.updateSubscription',
+				{ id: sub.id, url: 'http://192.168.1.20/x.ics', allowLocal: false },
+				admin.actor,
+			),
+		).rejects.toMatchObject({ code: 'bad_request' });
+	});
 });
 
 describe('subscription reminders', () => {
