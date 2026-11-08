@@ -21,7 +21,7 @@
 	"setup_password_hint": "Minstens 10 tekens.",
 	"setup_submit": "Account maken",
 	"setup_code": "Installatiecode",
-	"setup_code_hint": "Als FamilyOS start, schrijft het een adres met deze code in het logboek. Open dat adres en de code wordt hier ingevuld. Om het logboek te zien, voer je docker compose logs famos uit. De code staat ook in het bestand setup-code in de gegevensmap.",
+	"setup_code_hint": "Als FamilyOS start, schrijft het een adres met deze code in het logboek. Open dat adres en de code wordt hier ingevuld. Om het logboek te zien, voer je “docker compose logs famos” uit. De code staat ook in het bestand “setup-code” in de gegevensmap.",
 	"setup_code_from_link": "De installatiecode kwam mee met de link.",
 	"setup_code_change": "Code wijzigen",
 	"setup_code_wrong": "De installatiecode klopt niet. Kopieer hem opnieuw uit het serverlogboek.",
