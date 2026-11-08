@@ -67,3 +67,43 @@ export function followDayNight(display = false): () => void {
 		clearInterval(timer);
 	};
 }
+
+/**
+ * Text size on this device: the root font size, so every size given in rem grows or shrinks
+ * (`data-text-size` on <html>, sizes in theme.css). Kept in this browser only
+ * (`famos.textSize`); app.html applies it before first paint.
+ */
+export const TEXT_SIZES = ['small', 'normal', 'large', 'larger'] as const;
+export type TextSize = (typeof TEXT_SIZES)[number];
+const TEXT_KEY = 'famos.textSize';
+
+function storedTextSize(): TextSize {
+	try {
+		const value = localStorage.getItem(TEXT_KEY);
+		return (TEXT_SIZES as readonly string[]).includes(value ?? '') ? (value as TextSize) : 'normal';
+	} catch {
+		return 'normal';
+	}
+}
+
+class TextSizeChoice {
+	size = $state<TextSize>(typeof localStorage === 'undefined' ? 'normal' : storedTextSize());
+
+	set(size: TextSize): void {
+		this.size = size;
+		try {
+			if (size === 'normal') localStorage.removeItem(TEXT_KEY);
+			else localStorage.setItem(TEXT_KEY, size);
+		} catch {
+			// private mode: the choice lasts until the page is closed
+		}
+	}
+}
+
+export const textSize = new TextSizeChoice();
+
+/** Puts this device's text size on <html>. */
+export function applyTextSize(size: TextSize): void {
+	if (size === 'normal') delete document.documentElement.dataset.textSize;
+	else document.documentElement.dataset.textSize = size;
+}

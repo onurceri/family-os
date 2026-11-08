@@ -158,6 +158,16 @@
 [data-ctl="kiosk"] {
 	--ctl: 52px;
 }
+/* A device's text size (Settings, Appearance): the root font size, so every rem size follows. */
+html[data-text-size="small"] {
+	font-size: 87.5%;
+}
+html[data-text-size="large"] {
+	font-size: 112.5%;
+}
+html[data-text-size="larger"] {
+	font-size: 125%;
+}
 
 @theme inline {
 	--font-sans: var(--font-family);
