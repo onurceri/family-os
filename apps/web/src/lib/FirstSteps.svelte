@@ -35,7 +35,7 @@
 		<X class="size-5" aria-hidden="true" />
 	</button>
 	<div class="grid max-w-prose gap-1.5 pr-8">
-		<h2 id="first-steps-title" class="text-[22px] leading-tight font-extrabold tracking-tight">
+		<h2 id="first-steps-title" class="text-[1.375rem] leading-tight font-extrabold tracking-tight">
 			{t('home_steps_title')}
 		</h2>
 		<p class="text-ink-soft">{t('home_steps_text')}</p>
@@ -52,15 +52,15 @@
 					{#if step.done}<Check class="size-5" strokeWidth={3} />{:else}{i + 1}{/if}
 				</span>
 				<div class="grid min-w-0 flex-1 basis-56 gap-0.5">
-					<b class="text-[15px] leading-snug font-bold">{step.title}</b>
-					<span class="text-ink-soft text-[13px] leading-snug"
+					<b class="text-[0.9375rem] leading-snug font-bold">{step.title}</b>
+					<span class="text-ink-soft text-[0.8125rem] leading-snug"
 						>{step.done ? t('home_step_done') : step.text}</span
 					>
 				</div>
 				{#if step.href && step.action && !step.done}
 					<a
 						href={step.href}
-						class="text-info focus-visible:ring-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-[15px] font-bold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+						class="text-info focus-visible:ring-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-[0.9375rem] font-bold hover:underline focus-visible:ring-2 focus-visible:outline-none"
 						>{step.action}<ArrowRight class="size-4" aria-hidden="true" /></a
 					>
 				{/if}
@@ -70,7 +70,7 @@
 	{#if session.can('core.settings.manage')}
 		<a
 			href="/settings/setup-status"
-			class="text-info focus-visible:ring-ring inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-1 text-[15px] font-bold hover:underline focus-visible:ring-2 focus-visible:outline-none"
+			class="text-info focus-visible:ring-ring inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-1 text-[0.9375rem] font-bold hover:underline focus-visible:ring-2 focus-visible:outline-none"
 			>{t('setup_status_see_all')}<ArrowRight class="size-4" aria-hidden="true" /></a
 		>
 	{/if}

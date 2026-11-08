@@ -54,7 +54,7 @@
 		background: var(--idle);
 		color: var(--ink-soft);
 		font: inherit;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		white-space: nowrap;
 		cursor: pointer;

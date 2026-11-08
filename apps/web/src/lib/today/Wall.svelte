@@ -634,7 +634,7 @@
 	}
 	.sentence {
 		max-width: 40ch;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		line-height: 1.4;
 		color: var(--ink-soft);
@@ -656,7 +656,7 @@
 	.note h2,
 	.note p,
 	.none-for-me p {
-		font-size: 22px;
+		font-size: 1.375rem;
 		font-weight: 600;
 		letter-spacing: -0.01em;
 		line-height: 1.25;
@@ -692,7 +692,7 @@
 		border-top: 1px solid var(--line);
 	}
 	.daylist time {
-		font-size: 26px;
+		font-size: 1.625rem;
 		font-weight: 800;
 		letter-spacing: -0.03em;
 		line-height: 1;
@@ -705,14 +705,14 @@
 	}
 	.daylist b {
 		overflow: hidden;
-		font-size: 17px;
+		font-size: 1.0625rem;
 		font-weight: 700;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.daylist small {
 		overflow: hidden;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -720,7 +720,7 @@
 	.daymore {
 		display: block;
 		padding-top: 6px;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 	}
@@ -766,7 +766,7 @@
 	}
 	.nextdays .d {
 		overflow: hidden;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 800;
 		letter-spacing: 0.02em;
 		text-overflow: ellipsis;
@@ -788,13 +788,13 @@
 	}
 	.nextdays b {
 		overflow: hidden;
-		font-size: 13.5px;
+		font-size: 0.84375rem;
 		font-weight: 600;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.nextdays small {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		white-space: nowrap;
 	}
@@ -815,7 +815,7 @@
 		display: flex;
 		align-items: center;
 		min-height: 34px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--ink);
 		text-decoration: none;
@@ -859,7 +859,7 @@
 	.more {
 		flex: none;
 		margin-inline-start: auto;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 	}
@@ -883,7 +883,7 @@
 		min-height: 44px;
 		padding: 0 12px;
 		border-radius: 8px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 700;
 	}
 	.needs .ghost {

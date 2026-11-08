@@ -634,7 +634,9 @@
 				<Notice tone="alert">
 					{fileError.text}
 					{#if fileError.detail}
-						<span class="text-ink-soft mt-1 block text-[13px] break-words">{fileError.detail}</span>
+						<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words"
+							>{fileError.detail}</span
+						>
 					{/if}
 				</Notice>
 			{/if}
@@ -693,7 +695,7 @@
 
 			{#if shown.available.length === 0}{@render availableSection()}{/if}
 
-			<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('extensions_data_kept')}</p>
+			<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">{t('extensions_data_kept')}</p>
 		</div>
 	{/if}
 
@@ -758,11 +760,11 @@
 	description={t('extensions_restart_hint')}
 	onclose={() => (confirmingRestart = false)}
 >
-	<ul class="grid gap-2 text-[14px]" data-testid="restart-changes">
+	<ul class="grid gap-2 text-[0.875rem]" data-testid="restart-changes">
 		{#each entries.filter((e) => pendingOf(e)) as entry (entry.id)}
 			<li>
 				<span class="font-medium">{name(entry)}</span>
-				<span class="text-ink-soft block text-[13px]">{askedLine(entry) ?? meta(entry)}</span>
+				<span class="text-ink-soft block text-[0.8125rem]">{askedLine(entry) ?? meta(entry)}</span>
 			</li>
 		{/each}
 	</ul>

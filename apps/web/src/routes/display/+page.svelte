@@ -510,14 +510,14 @@
 
 		{#if me?.familyName && onToday}
 			<p
-				class="text-ink-soft absolute start-4 top-1 text-[11px] opacity-70"
+				class="text-ink-soft absolute start-4 top-1 text-[0.6875rem] opacity-70"
 				data-testid="display-family-name"
 			>
 				{me.familyName}
 			</p>
 		{/if}
 
-		<p class="text-ink-soft absolute end-3 bottom-1.5 text-[11px] opacity-60">
+		<p class="text-ink-soft absolute end-3 bottom-1.5 text-[0.6875rem] opacity-60">
 			{me?.name}{unreachable ? ` · ${t('display_unreachable')}` : ''}
 		</p>
 

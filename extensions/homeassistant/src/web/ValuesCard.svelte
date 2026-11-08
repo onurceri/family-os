@@ -62,7 +62,9 @@
 				<TodayRow title={item.label}>
 					{#snippet trailing()}
 						<span
-							class="text-[15px] font-semibold {busy ? 'text-ink-soft' : TONE_CLASS[said.tone]}"
+							class="text-[0.9375rem] font-semibold {busy
+								? 'text-ink-soft'
+								: TONE_CLASS[said.tone]}"
 							aria-live="polite">{busy ? t('switching') : said.text}</span
 						>
 						{#if maySwitch && item.control}
@@ -72,7 +74,7 @@
 				</TodayRow>
 			{/each}
 			{#if !maySwitch && shown.some((item) => item.control)}
-				<p class="text-ink-soft px-1 text-[13px]" data-testid="homeassistant-switch-hint">
+				<p class="text-ink-soft px-1 text-[0.8125rem]" data-testid="homeassistant-switch-hint">
 					{t('switch_hint')}
 				</p>
 			{/if}

@@ -58,7 +58,7 @@
 				>
 					<Avatar name={session.me.displayName} color={session.me.color} size={48} />
 					<span class="grid min-w-0 flex-1 gap-0.5">
-						<span class="truncate text-[17px] font-bold">{session.me.displayName}</span>
+						<span class="truncate text-[1.0625rem] font-bold">{session.me.displayName}</span>
 						<span class="text-ink-soft text-sm">{hint}</span>
 					</span>
 					<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
@@ -105,10 +105,10 @@
 								<!-- What a door holds wraps under its name: a phone is too narrow for one line. -->
 								<a href="/more/{door.section}" class={rowClass}>
 									<span class="grid min-w-0 flex-1 gap-0.5">
-										<span class="text-[15px] font-semibold"
+										<span class="text-[0.9375rem] font-semibold"
 											>{tDynamic(`app:settings_section_${door.section}`)}</span
 										>
-										<span class="text-ink-soft text-[13px]">{summary(door.items)}</span>
+										<span class="text-ink-soft text-[0.8125rem]">{summary(door.items)}</span>
 									</span>
 									<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
 								</a>
@@ -120,7 +120,7 @@
 
 			<button type="button" class="{card} {rowClass}" onclick={logout}>
 				<LogOut class="text-ink-soft size-[18px] shrink-0" aria-hidden="true" />
-				<span class="flex-1 text-[15px] font-semibold">{t('sign_out')}</span>
+				<span class="flex-1 text-[0.9375rem] font-semibold">{t('sign_out')}</span>
 				<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
 			</button>
 		</div>

@@ -276,7 +276,7 @@
 {/snippet}
 
 {#snippet chips()}
-	<span class="text-ink-soft text-[13px]"
+	<span class="text-ink-soft text-[0.8125rem]"
 		>{open.length > 0 ? t('usually_also') : t('suggestions')}</span
 	>
 	{#each suggestions as preset (preset.id)}
@@ -327,8 +327,8 @@
 								{#if o.every}<Repeat class="size-[18px]" />{:else}<Clock class="size-[18px]" />{/if}
 							</span>
 							<span class="grid min-w-0 flex-1 gap-px">
-								<span class="truncate text-[15px] leading-[1.3] font-semibold">{o.title}</span>
-								<span class="text-ink-soft block overflow-hidden text-[13px]">
+								<span class="truncate text-[0.9375rem] leading-[1.3] font-semibold">{o.title}</span>
+								<span class="text-ink-soft block overflow-hidden text-[0.8125rem]">
 									<span class="meta">
 										<span class="fact"
 											><span class="sr-only">{statusLabel(o)}: </span><span

@@ -139,7 +139,7 @@
 		gap: 1px;
 	}
 	.title {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.3;
 		display: -webkit-box;
@@ -155,7 +155,7 @@
 		text-decoration: line-through;
 	}
 	.meta {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		overflow: hidden;
 		text-overflow: ellipsis;

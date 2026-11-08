@@ -107,7 +107,7 @@
 	{#if unread > 0}
 		<span
 			data-testid="bell-count"
-			class="bg-attention text-on-color ring-wall absolute -top-0.5 -right-0.5 min-w-4 rounded-full px-1 text-center text-[10px] leading-4 font-bold tabular-nums ring-2"
+			class="bg-attention text-on-color ring-wall absolute -top-0.5 -right-0.5 min-w-4 rounded-full px-1 text-center text-[0.625rem] leading-4 font-bold tabular-nums ring-2"
 			aria-hidden="true">{unread}</span
 		>
 	{/if}
@@ -150,7 +150,7 @@
 				class="bg-surface shadow-pop fixed z-50 flex w-[380px] max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border"
 			>
 				<header class="flex min-h-14 shrink-0 items-center gap-2 px-5 pt-2">
-					<h2 class="text-[17px] font-extrabold">{t('nav_notifications')}</h2>
+					<h2 class="text-[1.0625rem] font-extrabold">{t('nav_notifications')}</h2>
 					{#if unread > 0}
 						<span class="text-ink-soft text-sm font-semibold">
 							{t('notifications_new', { count: unread })}
@@ -205,10 +205,10 @@
 													>{/if}
 											</span>
 											{#if item.body}
-												<span class="text-ink-soft line-clamp-2 text-[13px]">{item.body}</span>
+												<span class="text-ink-soft line-clamp-2 text-[0.8125rem]">{item.body}</span>
 											{/if}
 										</span>
-										<span class="text-ink-soft shrink-0 pt-0.5 text-[13px]"
+										<span class="text-ink-soft shrink-0 pt-0.5 text-[0.8125rem]"
 											>{ago(item.createdAt)}</span
 										>
 									</button>

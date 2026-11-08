@@ -93,7 +93,7 @@
 				{/snippet}
 			</DisplayRow>
 		{/each}
-		{#if ordered.length > max}<p class="text-ink-soft px-1 text-[13px]">
+		{#if ordered.length > max}<p class="text-ink-soft px-1 text-[0.8125rem]">
 				+{ordered.length - max}
 			</p>{/if}
 	{/if}

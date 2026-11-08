@@ -141,7 +141,7 @@
 			>
 		{/if}
 		<!-- People who come here to add a holiday or school calendar learn where that is done. -->
-		<p class="text-ink-soft max-w-prose px-1 text-[13px]" data-testid="feeds-outside">
+		<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]" data-testid="feeds-outside">
 			{#if mayShareFamily}
 				{t('feeds_outside_manage')}
 				<a class="text-info font-semibold underline underline-offset-2" href="/settings/calendars"

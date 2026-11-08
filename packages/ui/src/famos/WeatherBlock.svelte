@@ -117,14 +117,14 @@
 		min-width: 0;
 	}
 	.caps {
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 700;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--ink-soft);
 	}
 	.plain .caps {
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		letter-spacing: 0;
 		text-transform: none;
@@ -140,12 +140,12 @@
 		font-weight: 400;
 	}
 	.plain .say {
-		font-size: 18px;
+		font-size: 1.125rem;
 		font-weight: 500;
 		line-height: 1.3;
 	}
 	.source {
-		font-size: 10px;
+		font-size: 0.625rem;
 		color: var(--ink-soft);
 	}
 </style>

@@ -221,7 +221,7 @@
 		background: none;
 		color: var(--ink);
 		font: inherit;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		text-align: start;
 		cursor: pointer;
@@ -250,7 +250,7 @@
 		flex: 1;
 	}
 	.kbd {
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 		border: 1px solid var(--line);

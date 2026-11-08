@@ -255,7 +255,7 @@
 >
 	<div class="grid gap-5" data-testid="add-device">
 		{#if kind === null}
-			<p class="text-[17px] font-bold">{t('devices_add_what')}</p>
+			<p class="text-[1.0625rem] font-bold">{t('devices_add_what')}</p>
 			<Card rows>
 				<Row
 					wrap
@@ -304,7 +304,7 @@
 					{#if reach.url}
 						<div class="flex items-center gap-4">
 							<QrCode text={displayAddress} label={t('devices_screen_qr')} class="w-28 shrink-0" />
-							<p class="text-ink-soft text-[13px]">{t('devices_screen_qr_hint')}</p>
+							<p class="text-ink-soft text-[0.8125rem]">{t('devices_screen_qr_hint')}</p>
 						</div>
 					{/if}
 					<div class="flex flex-wrap gap-2">
@@ -337,7 +337,7 @@
 								placeholder="ABCD-EFGH"
 								class="font-mono tracking-widest uppercase"
 							/>
-							<small class="text-ink-soft text-[13px]">{t('devices_display_code_hint')}</small>
+							<small class="text-ink-soft text-[0.8125rem]">{t('devices_display_code_hint')}</small>
 						</div>
 						{#if error}<p class="text-attention text-sm font-semibold" role="alert">{error}</p>{/if}
 						<div><Button type="submit" variant="primary">{t('devices_next')}</Button></div>
@@ -463,7 +463,7 @@
 								>
 							</div>
 						</form>
-						<p class="text-ink-soft text-[13px]">{t('devices_shared_trust_elsewhere')}</p>
+						<p class="text-ink-soft text-[0.8125rem]">{t('devices_shared_trust_elsewhere')}</p>
 					{/if}
 				</Step>
 				<Step n={4} title={t('devices_step_done')}>

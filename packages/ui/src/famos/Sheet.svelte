@@ -168,7 +168,7 @@
 		overflow: hidden;
 		overflow-wrap: anywhere;
 		line-height: 1.25;
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 800;
 		text-align: center;
 	}
@@ -180,7 +180,7 @@
 		padding: 8px 16px;
 		border-bottom: 1px solid var(--line);
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 	}
 	.body {
 		overflow: auto;

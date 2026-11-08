@@ -255,7 +255,7 @@
 		position: absolute;
 		top: 0;
 		transform: translateX(-50%);
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		color: var(--ink-soft);
@@ -280,7 +280,7 @@
 	}
 	.hd b {
 		overflow: hidden;
-		font-size: 13.5px;
+		font-size: 0.84375rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -298,7 +298,7 @@
 		flex: none;
 		max-width: 60%;
 		overflow: hidden;
-		font-size: 11.5px;
+		font-size: 0.71875rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
@@ -306,7 +306,7 @@
 	}
 	.hd small {
 		overflow: hidden;
-		font-size: 11.5px;
+		font-size: 0.71875rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -325,7 +325,7 @@
 		border-radius: 50%;
 		background: var(--idle);
 		color: var(--ink);
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 800;
 	}
 	.lane {
@@ -357,7 +357,7 @@
 		border-radius: 8px;
 		background: color-mix(in oklab, var(--m) 16%, var(--surface));
 		color: var(--ink);
-		font-size: 12.5px;
+		font-size: 0.78125rem;
 		font-weight: 700;
 		text-decoration: none;
 		white-space: nowrap;
@@ -439,7 +439,7 @@
 		color: var(--ink);
 	}
 	.quiet p {
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.4;
 		color: var(--ink-soft);
 	}
@@ -461,7 +461,7 @@
 		border-radius: 999px;
 		background: var(--now);
 		color: var(--on-color);
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 800;
 		white-space: nowrap;
 		transform: translate(-50%, 50%);

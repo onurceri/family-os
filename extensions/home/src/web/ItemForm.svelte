@@ -26,7 +26,7 @@
 	const { app, t } = useHome();
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 </script>
 
 {#snippet optional()}<span class="text-ink-soft font-normal">{t('optional')}</span>{/snippet}
@@ -43,7 +43,7 @@
 			{...fieldAria(errors.name, id('name'))}
 		/>
 		<FieldError for={id('name')} error={errors.name} />
-		<small class="text-ink-soft text-[13px]">{t('item_name_hint')}</small>
+		<small class="text-ink-soft text-[0.8125rem]">{t('item_name_hint')}</small>
 	</div>
 	<div class="grid grid-cols-2 gap-x-3 gap-y-[18px]">
 		<div class="grid gap-1.5">
@@ -78,7 +78,7 @@
 				class="max-w-52"
 			/>
 			<FieldError for={id('warranty')} error={errors.warrantyUntil} />
-			<small class="text-ink-soft text-[13px]">{t('field_warranty_hint')}</small>
+			<small class="text-ink-soft text-[0.8125rem]">{t('field_warranty_hint')}</small>
 		</div>
 	</div>
 	<div class="grid gap-1.5">

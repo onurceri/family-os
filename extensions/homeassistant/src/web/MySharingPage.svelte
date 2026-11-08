@@ -81,10 +81,10 @@
 									class="accent-ink size-5 shrink-0"
 								/>
 								<span class="grid min-w-0 flex-1 gap-0.5">
-									<span id="ha-sharing-{choice.level}-label" class="text-[15px] font-semibold"
+									<span id="ha-sharing-{choice.level}-label" class="text-[0.9375rem] font-semibold"
 										>{t(choice.label)}</span
 									>
-									<small id="ha-sharing-{choice.level}-hint" class="text-ink-soft text-[13px]"
+									<small id="ha-sharing-{choice.level}-hint" class="text-ink-soft text-[0.8125rem]"
 										>{t(choice.hint)}</small
 									>
 								</span>
@@ -105,7 +105,7 @@
 					/>
 				</Card>
 			{/if}
-			<p class="text-ink-soft max-w-prose text-[13px]">{t('mine_who', { capability })}</p>
+			<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('mine_who', { capability })}</p>
 		</div>
 	{/if}
 </Page>

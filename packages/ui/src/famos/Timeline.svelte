@@ -61,7 +61,7 @@
 		class="relative z-10 grid h-5 grid-cols-[76px_22px_minmax(0,1fr)] items-center px-3"
 		aria-hidden="true"
 	>
-		<span class="text-now text-[13px] font-extrabold tabular-nums">{nowTime}</span>
+		<span class="text-now text-[0.8125rem] font-extrabold tabular-nums">{nowTime}</span>
 		<span class="relative flex items-center justify-center self-stretch">
 			<span class="bg-line absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2"></span>
 			<span class="bg-now ring-wall relative size-2.5 rounded-full ring-2"></span>
@@ -101,11 +101,11 @@
 						: 'min-h-12 rounded-lg'}"
 				>
 					<span
-						class="text-ink-soft self-center text-[13px] leading-tight font-semibold whitespace-nowrap tabular-nums {timed
-							? 'text-[15px]'
+						class="text-ink-soft self-center text-[0.8125rem] leading-tight font-semibold whitespace-nowrap tabular-nums {timed
+							? 'text-[0.9375rem]'
 							: ''} {lit ? 'text-ink' : ''}"
 					>
-						{#if timed}{time}{:else}<span class="text-[11px] font-bold tracking-wide uppercase"
+						{#if timed}{time}{:else}<span class="text-[0.6875rem] font-bold tracking-wide uppercase"
 								>{groupLabel(i)}</span
 							>{/if}
 					</span>
@@ -160,15 +160,18 @@
 						<span class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0.5">
 							<span
 								class="truncate leading-snug {lit
-									? 'text-[17px] font-extrabold'
-									: 'text-[15px] font-bold'} {item.done ? 'line-through' : ''}">{item.title}</span
+									? 'text-[1.0625rem] font-extrabold'
+									: 'text-[0.9375rem] font-bold'} {item.done ? 'line-through' : ''}"
+								>{item.title}</span
 							>
 							{#if item.subtitle}
-								<span class="text-ink-soft truncate text-[13px] leading-snug">{item.subtitle}</span>
+								<span class="text-ink-soft truncate text-[0.8125rem] leading-snug"
+									>{item.subtitle}</span
+								>
 							{/if}
 						</span>
 						{#if lit}
-							<span class="text-now shrink-0 self-start pt-2 text-[13px] font-extrabold"
+							<span class="text-now shrink-0 self-start pt-2 text-[0.8125rem] font-extrabold"
 								>{showNow ? labels.until(minutesTo(item)) : labels.first}</span
 							>
 						{:else if who.length > 1}

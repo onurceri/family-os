@@ -286,7 +286,9 @@
 			{/each}
 		</Card>
 	{/if}
-	{#if full}<p class="text-ink-soft text-[13px]">{t('show_limit', { count: MAX_ITEMS })}</p>{/if}
+	{#if full}<p class="text-ink-soft text-[0.8125rem]">
+			{t('show_limit', { count: MAX_ITEMS })}
+		</p>{/if}
 </Section>
 
 <SidePanel
@@ -331,7 +333,7 @@
 					autocapitalize="off"
 					spellcheck={false}
 				/>
-				<p class="text-ink-soft text-[13px]">{t('show_search_hint')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('show_search_hint')}</p>
 			</div>
 			{#if found?.status === 'too_many'}
 				<p class="text-ink-soft text-sm">{t('show_too_many')}</p>
@@ -366,7 +368,7 @@
 					{/each}
 				</Card>
 				{#if found.more}
-					<p class="text-ink-soft text-[13px]">{t('show_more_matches')}</p>
+					<p class="text-ink-soft text-[0.8125rem]">{t('show_more_matches')}</p>
 				{/if}
 				<FieldError
 					for="ha-list"
@@ -385,7 +387,7 @@
 					{...fieldAria(showErrors ? addErrors.label : undefined, 'ha-label')}
 				/>
 				<FieldError for="ha-label" error={showErrors ? addErrors.label : undefined} />
-				<p class="text-ink-soft text-[13px]">{t('show_label_hint')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('show_label_hint')}</p>
 			</div>
 		{/if}
 		{#if failed}
@@ -430,7 +432,7 @@
 					{...fieldAria(showErrors ? editError : undefined, 'ha-edit-label')}
 				/>
 				<FieldError for="ha-edit-label" error={showErrors ? editError : undefined} />
-				<p class="text-ink-soft text-[13px]">{editing.entityId}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{editing.entityId}</p>
 			</div>
 			{#if switchable}
 				<div class="grid gap-1.5">
@@ -445,7 +447,7 @@
 							/>
 						{/if}
 					</Card>
-					<p class="text-ink-soft text-[13px]">
+					<p class="text-ink-soft text-[0.8125rem]">
 						{t('control_hint', { capability: t('cap_control') })}
 					</p>
 				</div>

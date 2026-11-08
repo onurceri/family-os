@@ -363,7 +363,7 @@
 						</Row>
 					{/if}
 				</Card>
-				<p class="text-ink-soft text-[13px]">{t('email_needs_worker')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('email_needs_worker')}</p>
 			</Section>
 		{/if}
 
@@ -396,7 +396,7 @@
 			{/if}
 		</Section>
 
-		<p class="text-ink-soft max-w-prose text-[13px]">{t('email_privacy')}</p>
+		<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('email_privacy')}</p>
 	</div>
 
 	<SidePanel
@@ -432,7 +432,7 @@
 				<Label for="sender-member">{t('email_sender_member')}</Label>
 				<select
 					id="sender-member"
-					class="border-input bg-wall min-h-[var(--ctl)] rounded-[var(--r-ctl)] border px-3 text-[15px]"
+					class="border-input bg-wall min-h-[var(--ctl)] rounded-[var(--r-ctl)] border px-3 text-[0.9375rem]"
 					bind:value={newMember}
 					required
 				>

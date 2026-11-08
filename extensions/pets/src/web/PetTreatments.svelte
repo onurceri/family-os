@@ -183,7 +183,7 @@
 	}
 	const paperName = (id: string | null) => (id ? papers.find((p) => p.id === id)?.name : undefined);
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 	const label = 'text-ink-soft text-xs font-bold tracking-[0.06em] uppercase';
 </script>
 
@@ -239,7 +239,7 @@
 		<div class="grid gap-1.5">
 			<Label for="treatment-product">{t('treatment_product')} {@render optional()}</Label>
 			<Input id="treatment-product" bind:value={product} maxlength={160} autocomplete="off" />
-			<small class="text-ink-soft text-[13px]">{t('treatment_product_hint')}</small>
+			<small class="text-ink-soft text-[0.8125rem]">{t('treatment_product_hint')}</small>
 		</div>
 		<div class="grid grid-cols-2 gap-x-3">
 			<div class="grid content-start gap-1.5">
@@ -294,7 +294,7 @@
 >
 	{#if viewing}
 		{@const item = viewing}
-		<div class="grid gap-4 text-[15px]">
+		<div class="grid gap-4 text-[0.9375rem]">
 			{#if item.product}
 				<div class="grid gap-0.5">
 					<span class={label}>{t('treatment_product')}</span>

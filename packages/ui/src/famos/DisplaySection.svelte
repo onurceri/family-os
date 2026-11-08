@@ -25,8 +25,8 @@
 		{#if icon}<span class="flex shrink-0 items-center [&>svg]:size-5" aria-hidden="true"
 				>{@render icon()}</span
 			>{/if}
-		<h2 class="min-w-0 truncate text-[17px] leading-tight font-extrabold">{title}</h2>
-		{#if count}<span class="text-ink-soft ml-auto shrink-0 text-[13px]">{count}</span>{/if}
+		<h2 class="min-w-0 truncate text-[1.0625rem] leading-tight font-extrabold">{title}</h2>
+		{#if count}<span class="text-ink-soft ml-auto shrink-0 text-[0.8125rem]">{count}</span>{/if}
 	</div>
 	{@render children()}
 </section>

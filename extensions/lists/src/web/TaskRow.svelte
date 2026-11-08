@@ -77,12 +77,13 @@
 		disabled={!onopen}
 		class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] gap-px py-2 pe-2 text-start"
 	>
-		<span class="truncate text-[15px] leading-snug font-semibold {done ? 'line-through' : ''}"
+		<span class="truncate text-[0.9375rem] leading-snug font-semibold {done ? 'line-through' : ''}"
 			>{task.title}</span
 		>
 		{#if due || repeats || waiting || app.awaitsApproval(task.id)}
 			<span
-				class="flex min-w-0 flex-wrap items-center gap-x-1 text-[13px] {!done && level === 'overdue'
+				class="flex min-w-0 flex-wrap items-center gap-x-1 text-[0.8125rem] {!done &&
+				level === 'overdue'
 					? 'text-attention font-semibold'
 					: 'text-ink-soft'}"
 			>

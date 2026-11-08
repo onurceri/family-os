@@ -107,7 +107,7 @@
 		/>
 		{#if draft}<p class="font-semibold">{t('weather_place', { name: draft.name })}</p>{/if}
 		{#if needPlace && !draft}
-			<p class="text-attention text-[13px] leading-snug font-semibold" role="alert">
+			<p class="text-attention text-[0.8125rem] leading-snug font-semibold" role="alert">
 				{t('weather_need_place')}
 			</p>
 		{/if}

@@ -126,7 +126,7 @@
 	}
 
 	const itemClass =
-		'group flex min-h-9 items-center gap-3 rounded-xl px-3 text-[15px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ';
+		'group flex min-h-9 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ';
 	const linkClass = (active: boolean) =>
 		itemClass +
 		(active ? 'bg-surface text-ink shadow-lit font-bold' : 'text-ink-soft hover:text-ink');
@@ -183,7 +183,7 @@
 			>
 				{#each keys as key (key)}
 					<kbd
-						class="text-ink-soft rounded-md border px-1.5 text-[11px] leading-5 font-bold uppercase"
+						class="text-ink-soft rounded-md border px-1.5 text-[0.6875rem] leading-5 font-bold uppercase"
 						>{key}</kbd
 					>
 				{/each}

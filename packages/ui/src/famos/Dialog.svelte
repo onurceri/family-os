@@ -109,12 +109,12 @@
 	}
 	h2 {
 		margin: 0;
-		font-size: 18px;
+		font-size: 1.125rem;
 		font-weight: 800;
 	}
 	p {
 		margin: 0;
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.45;
 		color: var(--ink-soft);
 	}

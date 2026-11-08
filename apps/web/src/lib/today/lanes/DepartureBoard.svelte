@@ -235,7 +235,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 6px 10px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 	}
@@ -248,7 +248,7 @@
 		border-radius: 999px;
 		background: var(--accent);
 		color: var(--on-accent);
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 800;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -275,7 +275,7 @@
 		align-items: center;
 		gap: 8px;
 		min-height: 26px;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink);
 		text-decoration: none;
 	}
@@ -283,7 +283,7 @@
 		text-decoration: underline;
 	}
 	.then time {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 800;
 		font-stretch: 75%;
 		font-variant-numeric: tabular-nums;
@@ -301,7 +301,7 @@
 	}
 	.none {
 		margin: 0;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 	}
 </style>

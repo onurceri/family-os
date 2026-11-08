@@ -53,7 +53,7 @@
 	data-testid="month-board"
 >
 	<div
-		class="border-line text-ink-soft grid shrink-0 grid-cols-7 border-b text-center text-[11px] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase"
+		class="border-line text-ink-soft grid shrink-0 grid-cols-7 border-b text-center text-[0.6875rem] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase"
 	>
 		{#each dates.slice(0, 7) as date (date)}
 			<span class="py-2.5">{formatDate(date, app.dateLocale(), { weekday: 'short' })}</span>
@@ -79,7 +79,7 @@
 			>
 				<button
 					type="button"
-					class="focus-visible:ring-ring font-display grid size-7 place-items-center justify-self-start rounded-full text-[15px] font-bold tabular-nums outline-none focus-visible:ring-2 {isToday
+					class="focus-visible:ring-ring font-display grid size-7 place-items-center justify-self-start rounded-full text-[0.9375rem] font-bold tabular-nums outline-none focus-visible:ring-2 {isToday
 						? 'bg-now text-on-color'
 						: inMonth
 							? 'hover:bg-idle'

@@ -204,7 +204,7 @@
 			? 'min-h-28 text-lg leading-8 placeholder:text-xl sm:text-xl sm:placeholder:text-2xl'
 			: compact
 				? 'min-h-16 text-base leading-7 placeholder:text-lg'
-				: 'min-h-20 text-[17px] leading-7 placeholder:text-xl'}"></textarea>
+				: 'min-h-20 text-[1.0625rem] leading-7 placeholder:text-xl'}"></textarea>
 	<LimitCounter
 		{text}
 		max={TEXT_MAX}
@@ -271,7 +271,7 @@
 			<button
 				type="submit"
 				disabled={sending}
-				class="bg-accent text-on-accent focus-visible:ring-ring ml-auto flex h-11 shrink-0 items-center gap-2 rounded-full pr-5 pl-4 text-[15px] font-bold outline-none focus-visible:ring-2 disabled:opacity-70"
+				class="bg-accent text-on-accent focus-visible:ring-ring ml-auto flex h-11 shrink-0 items-center gap-2 rounded-full pr-5 pl-4 text-[0.9375rem] font-bold outline-none focus-visible:ring-2 disabled:opacity-70"
 			>
 				<ArrowUp class="size-5" aria-hidden="true" />
 				{sendLabel}

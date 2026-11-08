@@ -26,10 +26,10 @@
 		aria-hidden="true"
 	>
 		<div class="bg-accent text-on-accent grid content-start gap-1.5 rounded-[var(--r-card)] p-4">
-			<span class="text-[11px] font-bold tracking-[0.08em] uppercase opacity-80"
+			<span class="text-[0.6875rem] font-bold tracking-[0.08em] uppercase opacity-80"
 				>{t('today_next_up')} · {first.displayName}</span
 			>
-			<span class="font-serif text-[22px] leading-tight font-bold"
+			<span class="font-serif text-[1.375rem] leading-tight font-bold"
 				>{t('appearance_sample_piano')}</span
 			>
 			<span class="text-sm font-semibold opacity-85">{t('appearance_sample_music_school')}</span>

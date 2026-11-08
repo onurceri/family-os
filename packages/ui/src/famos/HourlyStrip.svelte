@@ -104,7 +104,7 @@
 		background: var(--idle);
 	}
 	.hour {
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -112,7 +112,7 @@
 		white-space: nowrap;
 	}
 	.tiles .temp {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 700;
 		color: var(--ink);
 	}
@@ -129,7 +129,7 @@
 		height: 100%;
 	}
 	.bars .temp {
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		color: var(--ink);
 	}

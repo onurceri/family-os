@@ -124,7 +124,7 @@
 								meta={tDynamic(`app:backups_reason_${backup.reason}`)}
 							>
 								{#snippet trail()}
-									<span class="text-ink-soft text-[13px] tabular-nums"
+									<span class="text-ink-soft text-[0.8125rem] tabular-nums"
 										>{megabytes(backup.size)}</span
 									>
 									<Button
@@ -140,7 +140,7 @@
 							</Row>
 						{/each}
 					</Card>
-					<p class="text-ink-soft max-w-prose text-[13px]">{t('backups_download_hint')}</p>
+					<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('backups_download_hint')}</p>
 				{:else}
 					<Notice>{t('backups_local_empty')}</Notice>
 				{/if}
@@ -177,7 +177,7 @@
 						{/snippet}
 					</Row>
 				</Card>
-				<p class="text-ink-soft flex max-w-prose items-start gap-2 text-[13px]">
+				<p class="text-ink-soft flex max-w-prose items-start gap-2 text-[0.8125rem]">
 					<span>{t('backups_secret_short')}</span>
 					<HelpTip text={t('backups_secret_reminder')} label={t('help')} />
 				</p>

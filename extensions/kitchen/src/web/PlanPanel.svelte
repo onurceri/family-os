@@ -171,7 +171,7 @@
 	{#if open}
 		<form bind:this={formEl} onsubmit={submit} class="grid gap-4" aria-label={heading}>
 			{#if recipe}
-				<p class="flex items-center gap-2 text-[15px] font-semibold">
+				<p class="flex items-center gap-2 text-[0.9375rem] font-semibold">
 					<CookingPot class="text-ink-soft size-[18px] shrink-0" aria-hidden="true" />{recipe.title}
 				</p>
 				<div class="grid gap-1.5">
@@ -185,7 +185,7 @@
 					<FieldError for="plan-date" error={showErrors ? errors.day : undefined} />
 				</div>
 			{:else if date}
-				<p class="flex items-center gap-2 text-[15px] font-semibold">
+				<p class="flex items-center gap-2 text-[0.9375rem] font-semibold">
 					<CalendarDays class="text-ink-soft size-[18px] shrink-0" aria-hidden="true" />{longDay(
 						date,
 					)}
@@ -218,7 +218,7 @@
 										bind:group={chosen}
 										class="accent-ink size-5 shrink-0"
 									/>
-									<span class="min-w-0 flex-1 text-[15px] font-semibold">{r.title}</span>
+									<span class="min-w-0 flex-1 text-[0.9375rem] font-semibold">{r.title}</span>
 								</label>
 							{/each}
 							<label class="flex min-h-12 cursor-pointer items-center gap-3 px-3 py-1.5">
@@ -229,7 +229,7 @@
 									bind:group={chosen}
 									class="accent-ink size-5 shrink-0"
 								/>
-								<span class="text-ink-soft flex min-w-0 flex-1 items-center gap-2 text-[15px]"
+								<span class="text-ink-soft flex min-w-0 flex-1 items-center gap-2 text-[0.9375rem]"
 									><PencilLine class="size-4 shrink-0" aria-hidden="true" />{t(
 										'plan_free_text',
 									)}</span
@@ -261,7 +261,7 @@
 						date: longDay(day),
 					})}
 				</Notice>
-				<label class="flex min-h-10 cursor-pointer items-center gap-3 text-[15px]">
+				<label class="flex min-h-10 cursor-pointer items-center gap-3 text-[0.9375rem]">
 					<input
 						type="checkbox"
 						bind:checked={addAnyway}

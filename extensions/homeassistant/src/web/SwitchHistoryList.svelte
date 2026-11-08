@@ -67,9 +67,9 @@
 	{/if}
 {:else if entries.length > 0}
 	<div class="grid gap-1.5">
-		<p class="text-ink-soft text-[13px] font-semibold">{t('history_item_label')}</p>
+		<p class="text-ink-soft text-[0.8125rem] font-semibold">{t('history_item_label')}</p>
 		{@render list()}
 	</div>
 {:else if loaded}
-	<p class="text-ink-soft text-[13px]">{t('history_item_empty')}</p>
+	<p class="text-ink-soft text-[0.8125rem]">{t('history_item_empty')}</p>
 {/if}

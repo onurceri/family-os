@@ -15,7 +15,7 @@
 </script>
 
 <span
-	class="inline-flex items-center gap-1.5 rounded-full px-3 py-[7px] text-[13px] font-bold {alert
+	class="inline-flex items-center gap-1.5 rounded-full px-3 py-[7px] text-[0.8125rem] font-bold {alert
 		? 'bg-attention text-on-color'
 		: 'bg-surface text-ink shadow-lit'}"
 >

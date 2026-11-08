@@ -129,7 +129,7 @@
 					type="search"
 					placeholder={t('search')}
 					autocomplete="off"
-					class="text-ink min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+					class="text-ink min-w-0 flex-1 bg-transparent text-[0.9375rem] outline-none"
 				/>
 			</label>
 			{#if tags.length}

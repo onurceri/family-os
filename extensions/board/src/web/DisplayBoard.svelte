@@ -50,6 +50,8 @@
 				<li><NoteCard {note} {now} variant="display" /></li>
 			{/each}
 		</ul>
-		{#if notes.length > max}<p class="text-ink-soft px-1 text-[13px]">+{notes.length - max}</p>{/if}
+		{#if notes.length > max}<p class="text-ink-soft px-1 text-[0.8125rem]">
+				+{notes.length - max}
+			</p>{/if}
 	{/if}
 </DisplaySection>

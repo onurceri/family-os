@@ -218,7 +218,7 @@
 
 {#snippet dayHead(date: string, isToday: boolean)}
 	<small
-		class="text-[11px] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase {isToday
+		class="text-[0.6875rem] font-bold tracking-[var(--ramp-label-tracking,0.06em)] uppercase {isToday
 			? 'text-now'
 			: 'text-ink-soft'}"
 		>{formatDate(date, app.dateLocale(), { weekday: single ? 'long' : 'short' })}</small
@@ -283,7 +283,7 @@
 				data-testid="all-day-lane"
 			>
 				<span
-					class="text-ink-soft self-center px-1 text-center text-[10px] leading-tight font-bold tracking-wide uppercase"
+					class="text-ink-soft self-center px-1 text-center text-[0.625rem] leading-tight font-bold tracking-wide uppercase"
 					>{t('all_day')}</span
 				>
 				{#each byDay as d (d.date)}
@@ -368,7 +368,7 @@
 						<button
 							type="button"
 							data-testid="more-events"
-							class="border-line bg-idle text-ink-soft focus-visible:ring-ring absolute grid place-items-start overflow-hidden rounded-lg border ps-2 text-start text-[12px] font-bold outline-none focus-visible:ring-2"
+							class="border-line bg-idle text-ink-soft focus-visible:ring-ring absolute grid place-items-start overflow-hidden rounded-lg border ps-2 text-start text-[0.75rem] font-bold outline-none focus-visible:ring-2"
 							style:top="{(o.start / 60) * hour}px"
 							style:height="{blockHeight(o.end - o.start, hour)}px"
 							style:left="calc(100% * {o.column} / {o.columns} + 1px)"
@@ -393,7 +393,7 @@
 								class="bg-now absolute start-0 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
 							></span>
 							<span
-								class="bg-now text-on-color absolute end-0 -translate-y-1/2 rounded-md px-1.5 py-px text-[11px] font-extrabold tabular-nums"
+								class="bg-now text-on-color absolute end-0 -translate-y-1/2 rounded-md px-1.5 py-px text-[0.6875rem] font-extrabold tabular-nums"
 								>{nowTag}</span
 							>
 						</div>

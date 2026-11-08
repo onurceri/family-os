@@ -117,20 +117,20 @@
 			{#if href}
 				<a
 					{href}
-					class="focus-visible:ring-ring truncate rounded-sm text-[15px] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
+					class="focus-visible:ring-ring truncate rounded-sm text-[0.9375rem] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
 						? 'line-through opacity-60'
 						: ''}">{title}</a
 				>
 			{:else}
 				<b
-					class="truncate text-[15px] leading-snug font-semibold {check
+					class="truncate text-[0.9375rem] leading-snug font-semibold {check
 						? 'line-through opacity-60'
 						: ''}">{title}</b
 				>
 			{/if}
 			{#if meta}
 				<small
-					class="{wrap ? 'text-pretty' : 'truncate'} text-[13px] leading-snug {tone} {uncertain
+					class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
 						? 'decoration-attention underline decoration-dashed underline-offset-4'
 						: ''}">{meta}</small
 				>

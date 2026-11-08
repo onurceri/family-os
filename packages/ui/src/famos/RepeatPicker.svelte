@@ -145,7 +145,7 @@
 		</div>
 		<FieldError for="{idPrefix}-days" {error} />
 		{#if first && labels.firstTime && dateLocale}
-			<p class="text-ink-soft text-[13px]" data-testid="repeat-first-time">
+			<p class="text-ink-soft text-[0.8125rem]" data-testid="repeat-first-time">
 				{labels.firstTime(formatDate(first, dateLocale))}
 			</p>
 		{/if}

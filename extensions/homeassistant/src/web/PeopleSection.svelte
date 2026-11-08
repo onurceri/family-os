@@ -238,8 +238,8 @@
 			</Row>
 		{/each}
 	</Card>
-	<p class="text-ink-soft max-w-prose text-[13px]">{t('people_choice_line')}</p>
-	<p class="text-ink-soft max-w-prose text-[13px]">{t('notify_privacy')}</p>
+	<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('people_choice_line')}</p>
+	<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('notify_privacy')}</p>
 </Section>
 
 <SidePanel

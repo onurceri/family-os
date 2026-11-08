@@ -144,7 +144,7 @@
 	}
 	.limit {
 		margin: 4px 14px 0;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-variant-numeric: tabular-nums;
 		color: var(--ink-soft);
 	}
@@ -169,7 +169,7 @@
 		border-radius: 999px;
 	}
 	.lg input {
-		font-size: 16px;
+		font-size: 1rem;
 	}
 	.lg .plus {
 		width: 20px;
@@ -195,7 +195,7 @@
 		background: transparent;
 		color: var(--ink);
 		font: inherit;
-		font-size: 15px;
+		font-size: 0.9375rem;
 	}
 	input::placeholder {
 		color: var(--ink-soft);
@@ -207,7 +207,7 @@
 		padding: 0 4px;
 		min-height: 32px;
 		font: inherit;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 700;
 		color: var(--info);
 		white-space: nowrap;
@@ -220,7 +220,7 @@
 	}
 	.kbd {
 		display: none;
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 		border: 1px solid var(--line);

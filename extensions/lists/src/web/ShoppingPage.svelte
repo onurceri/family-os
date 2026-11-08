@@ -599,7 +599,7 @@
 		<span
 			class="{done
 				? 'bg-surface'
-				: 'bg-idle'} text-ink-soft ms-auto shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-semibold tabular-nums"
+				: 'bg-idle'} text-ink-soft ms-auto shrink-0 rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold tabular-nums"
 			>{item.quantity}</span
 		>
 	{/if}
@@ -787,7 +787,7 @@
 							data-testid="empty-state"
 						>
 							<EmptyArt name="shopping" />
-							<p class="max-w-[34ch] text-[15px] leading-snug text-pretty">
+							<p class="max-w-[34ch] text-[0.9375rem] leading-snug text-pretty">
 								{#if bought.length}
 									<span class="text-ink font-semibold">{t('all_in_cart')}</span>
 								{:else}
@@ -820,7 +820,7 @@
 												>
 												{#if item.quantity}
 													<span
-														class="bg-idle text-ink-soft shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-semibold"
+														class="bg-idle text-ink-soft shrink-0 rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold"
 														>{item.quantity}</span
 													>
 												{/if}
@@ -877,7 +877,7 @@
 							{/if}
 							{#if list && mayClear}
 								{@const listId = list.id}
-								<span class="ms-auto text-[13px]"
+								<span class="ms-auto text-[0.8125rem]"
 									><ConfirmButton
 										{...removal('lists.clearBought', t('clear_cart'), t('clear_bought_confirm'))}
 										onconfirm={() => clear(listId)}

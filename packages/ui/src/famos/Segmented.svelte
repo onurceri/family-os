@@ -111,7 +111,7 @@
 		border-radius: 999px;
 		background: none;
 		font: inherit;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 		white-space: nowrap;
@@ -122,7 +122,7 @@
 	}
 	.sm button {
 		padding: 0 12px;
-		font-size: 13px;
+		font-size: 0.8125rem;
 	}
 	.grow button {
 		flex: 1;

@@ -68,7 +68,7 @@
 <Section label={t('photos_title')} count={loaded ? photos.length : undefined}>
 	{#snippet actions()}
 		<label
-			class="text-ink-soft hover:bg-idle hover:text-ink focus-within:ring-info inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-[var(--r-ctl)] px-2.5 text-[13px] font-semibold focus-within:ring-2 {uploading
+			class="text-ink-soft hover:bg-idle hover:text-ink focus-within:ring-info inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-[var(--r-ctl)] px-2.5 text-[0.8125rem] font-semibold focus-within:ring-2 {uploading
 				? 'opacity-50'
 				: ''}"
 		>
@@ -86,7 +86,7 @@
 			/>
 		</label>
 	{/snippet}
-	<p class="text-ink-soft px-1 text-[13px]">{t('photos_intro')} {t('photos_hint')}</p>
+	<p class="text-ink-soft px-1 text-[0.8125rem]">{t('photos_intro')} {t('photos_hint')}</p>
 	{#if progress}
 		<p class="text-ink-soft px-1 text-sm font-semibold" role="status">
 			{t('photos_uploading', { done: progress.done, total: progress.total })}

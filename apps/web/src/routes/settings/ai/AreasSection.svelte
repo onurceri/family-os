@@ -108,7 +108,7 @@
 				</div>
 			{/each}
 		</Card>
-		<p class="text-ink-soft max-w-prose text-[13px]">{t('ai_area_local_hint')}</p>
+		<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('ai_area_local_hint')}</p>
 		{#if search?.error}<Notice tone="warn">{t('ai_search_error')}</Notice>{/if}
 		{#if error}<Notice tone="alert">{error}</Notice>{/if}
 	</Section>

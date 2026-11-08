@@ -711,14 +711,14 @@
 		line-height: 1;
 	}
 	.when :global(.dateline .weekday) {
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 	}
 	.sentence {
 		max-width: 40ch;
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.4;
 		color: var(--ink-soft);
 	}
@@ -798,7 +798,7 @@
 	.more {
 		flex: none;
 		margin-inline-start: auto;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 	}
@@ -822,7 +822,7 @@
 		min-height: 44px;
 		padding: 0 12px;
 		border-radius: 8px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 700;
 	}
 	.needs .ghost {
@@ -862,7 +862,7 @@
 		text-decoration: underline;
 	}
 	.nextdays .d {
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 800;
 		font-stretch: 75%;
 		letter-spacing: 0.04em;
@@ -883,13 +883,13 @@
 	}
 	.nextdays b {
 		overflow: hidden;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.nextdays small {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		white-space: nowrap;
 	}

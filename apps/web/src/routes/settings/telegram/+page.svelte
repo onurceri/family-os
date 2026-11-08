@@ -99,7 +99,7 @@
 						{/snippet}
 					</Row>
 				</Card>
-				<p class="text-ink-soft max-w-prose text-[13px]">{t('telegram_needs_worker')}</p>
+				<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('telegram_needs_worker')}</p>
 			</Section>
 		{/if}
 
@@ -155,6 +155,6 @@
 			</Section>
 		{/if}
 
-		<p class="text-ink-soft max-w-prose text-[13px]">{t('telegram_privacy')}</p>
+		<p class="text-ink-soft max-w-prose text-[0.8125rem]">{t('telegram_privacy')}</p>
 	</div>
 </Page>

@@ -184,7 +184,7 @@
 				onchange={installFile}
 				class="file:bg-idle file:text-ink text-ink-soft text-sm file:mr-3 file:min-h-10 file:cursor-pointer file:rounded-[var(--r-ctl)] file:border-0 file:px-3 file:font-semibold"
 			/>
-			<p class="text-ink-soft text-[13px]">{t('languages_install_file_hint')}</p>
+			<p class="text-ink-soft text-[0.8125rem]">{t('languages_install_file_hint')}</p>
 		</div>
 		<form class="grid gap-2" onsubmit={installUrl}>
 			<Label for="pack-url">{t('languages_install_url')}</Label>
@@ -197,7 +197,7 @@
 				spellcheck={false}
 				required
 			/>
-			<p class="text-ink-soft text-[13px]">{t('languages_install_url_hint')}</p>
+			<p class="text-ink-soft text-[0.8125rem]">{t('languages_install_url_hint')}</p>
 			{#if fetchState?.status === 'fetching'}
 				<p class="text-ink-soft text-sm" role="status">{t('languages_fetching')}</p>
 			{:else if fetchState?.status === 'failed'}

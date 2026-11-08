@@ -49,7 +49,7 @@
 		color: var(--ink);
 	}
 	.weekday {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 700;
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
@@ -67,7 +67,7 @@
 	}
 	.plain .weekday {
 		order: 2;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		letter-spacing: 0.02em;
 		text-transform: none;

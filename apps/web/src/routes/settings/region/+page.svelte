@@ -322,7 +322,7 @@
 					{/snippet}
 				</SettingRow>
 			</Card>
-			<p class="text-ink-soft px-1 text-[13px]">{t('settings_saved_as_you_go')}</p>
+			<p class="text-ink-soft px-1 text-[0.8125rem]">{t('settings_saved_as_you_go')}</p>
 			{#if error}<p class="text-attention font-semibold" role="alert">{error}</p>{/if}
 		</div>
 

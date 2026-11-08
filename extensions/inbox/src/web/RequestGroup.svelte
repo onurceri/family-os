@@ -53,8 +53,8 @@
 			<Icon class="size-4" aria-hidden="true" />
 		</span>
 		<div class="grid min-w-0 flex-1 gap-0.5">
-			<h3 class="text-[17px] leading-snug font-bold text-balance">{line}</h3>
-			<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
+			<h3 class="text-[1.0625rem] leading-snug font-bold text-balance">{line}</h3>
+			<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8125rem]">
 				<span>{captureTime(app, group.latest)}</span>
 				{#if person && !named}
 					<span class="flex items-center gap-1.5 font-semibold">

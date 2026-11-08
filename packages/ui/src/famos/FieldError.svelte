@@ -19,7 +19,7 @@
 {#if error && !counted}
 	<p
 		id={fieldErrorId(inputId)}
-		class="text-attention text-[13px] leading-snug font-semibold"
+		class="text-attention text-[0.8125rem] leading-snug font-semibold"
 		data-testid="field-error"
 	>
 		{app ? app.t(error) : error}

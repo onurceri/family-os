@@ -4,7 +4,7 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 
 	export const buttonVariants = tv({
-		base: "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--r-ctl)] border border-transparent text-[15px] leading-none font-semibold whitespace-nowrap transition-colors duration-150 ease-out outline-none select-none focus-visible:shadow-[0_0_0_2px_var(--wall),0_0_0_4px_var(--info)] disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45 motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-[18px] [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		base: "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-[var(--r-ctl)] border border-transparent text-[0.9375rem] leading-none font-semibold whitespace-nowrap transition-colors duration-150 ease-out outline-none select-none focus-visible:shadow-[0_0_0_2px_var(--wall),0_0_0_4px_var(--info)] disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45 motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-[18px] [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {
 			variant: {
 				// One filled button per view: `primary` (ink) is the view's main action; the rest stay quiet.
@@ -21,7 +21,7 @@
 				xs: "h-6 gap-1 rounded-lg px-2 text-xs [&_svg:not([class*='size-'])]:size-3",
 				sm: "h-9 px-3 text-sm",
 				lg: "h-11 px-[18px]",
-				kiosk: "h-13 px-[22px] text-[17px]",
+				kiosk: "h-13 px-[22px] text-[1.0625rem]",
 				icon: "size-[var(--ctl)] px-0",
 				"icon-xs": "size-6 rounded-lg px-0 [&_svg:not([class*='size-'])]:size-3",
 				"icon-sm": "size-9 px-0",

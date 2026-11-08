@@ -31,7 +31,7 @@
 
 {#if reading === false}
 	<div
-		class="text-ink-soft flex items-start gap-3 text-[13px] leading-snug"
+		class="text-ink-soft flex items-start gap-3 text-[0.8125rem] leading-snug"
 		role="note"
 		data-testid="quick-add-no-ai"
 	>

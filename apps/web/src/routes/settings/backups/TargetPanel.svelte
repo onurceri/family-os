@@ -228,7 +228,7 @@
 				<div class="grid gap-1.5">
 					<Label for="{idp}-endpoint">{t('backups_f_endpoint')}</Label>
 					<Input id="{idp}-endpoint" type="url" bind:value={endpoint} required spellcheck={false} />
-					<p class="text-ink-soft text-[13px]">{t('backups_f_endpoint_hint')}</p>
+					<p class="text-ink-soft text-[0.8125rem]">{t('backups_f_endpoint_hint')}</p>
 				</div>
 				<div class="grid grid-cols-2 gap-4">
 					<div class="grid gap-1.5">
@@ -263,7 +263,7 @@
 						required={!target}
 						autocomplete="off"
 					/>
-					{#if keepSecret}<p class="text-ink-soft text-[13px]">{keepSecret}</p>{/if}
+					{#if keepSecret}<p class="text-ink-soft text-[0.8125rem]">{keepSecret}</p>{/if}
 				</div>
 				<div class="border-line -mx-5 border-y">
 					<SwitchRow
@@ -297,7 +297,7 @@
 						required={!target}
 						autocomplete="off"
 					/>
-					{#if keepSecret}<p class="text-ink-soft text-[13px]">{keepSecret}</p>{/if}
+					{#if keepSecret}<p class="text-ink-soft text-[0.8125rem]">{keepSecret}</p>{/if}
 				</div>
 			{/if}
 
@@ -312,7 +312,7 @@
 					required
 					class="w-28"
 				/>
-				<p class="text-ink-soft text-[13px]">{t('backups_f_keep_hint')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('backups_f_keep_hint')}</p>
 			</div>
 		</form>
 
@@ -342,7 +342,7 @@
 						</Notice>
 					</div>
 				{/if}
-				<p class="text-ink-soft text-[13px]">{t('backups_target_remove_hint')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('backups_target_remove_hint')}</p>
 			</div>
 		{/if}
 	</div>

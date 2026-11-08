@@ -138,7 +138,7 @@
 	}
 	.title {
 		overflow: hidden;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.3;
 		text-overflow: ellipsis;
@@ -152,7 +152,7 @@
 	.meta {
 		overflow: hidden;
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}

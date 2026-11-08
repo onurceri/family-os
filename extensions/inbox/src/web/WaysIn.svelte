@@ -74,8 +74,8 @@
 				<span class="bg-idle text-ink-soft grid size-9 shrink-0 place-items-center rounded-full">
 					<tile.icon class="size-[18px]" aria-hidden="true" />
 				</span>
-				<div class="grid min-w-0 gap-0.5 text-[13px] leading-snug">
-					<b class="text-[14px] font-bold">{tile.name}</b>
+				<div class="grid min-w-0 gap-0.5 text-[0.8125rem] leading-snug">
+					<b class="text-[0.875rem] font-bold">{tile.name}</b>
 					<span class="text-ink-soft text-pretty">{tile.line}</span>
 					{#if tile.status === 'setup' || tile.status === 'link'}
 						<a

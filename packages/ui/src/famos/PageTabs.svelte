@@ -54,7 +54,7 @@
 			aria-selected={on}
 			tabindex={on ? 0 : -1}
 			onclick={() => onselect(tab.id)}
-			class="focus-visible:ring-ring min-h-11 shrink-0 border-b-2 px-3 text-[15px] font-semibold whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset {on
+			class="focus-visible:ring-ring min-h-11 shrink-0 border-b-2 px-3 text-[0.9375rem] font-semibold whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset {on
 				? 'border-ink text-ink'
 				: 'text-ink-soft hover:text-ink border-transparent'}">{tab.label}</button
 		>

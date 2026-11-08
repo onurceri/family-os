@@ -31,12 +31,14 @@
 <div class="cover" role="alertdialog" aria-modal="true" aria-labelledby="restarting-title">
 	<div class="grid max-w-sm justify-items-center gap-3 px-6 text-center" aria-live="polite">
 		{#if slow}
-			<h2 id="restarting-title" class="text-[17px] font-bold">{t('extensions_restart_slow')}</h2>
+			<h2 id="restarting-title" class="text-[1.0625rem] font-bold">
+				{t('extensions_restart_slow')}
+			</h2>
 			<p class="text-ink-soft text-sm">{t('extensions_restart_slow_hint')}</p>
 			<Button variant="primary" onclick={() => location.reload()}>{t('extensions_reload')}</Button>
 		{:else}
 			<span class="ring" aria-hidden="true"></span>
-			<h2 id="restarting-title" class="text-[17px] font-bold" data-testid="restarting">
+			<h2 id="restarting-title" class="text-[1.0625rem] font-bold" data-testid="restarting">
 				{t('extensions_restarting')}
 			</h2>
 			<p class="text-ink-soft text-sm">{t('extensions_restarting_hint')}</p>

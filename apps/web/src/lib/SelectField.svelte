@@ -19,7 +19,7 @@
 <div class="relative w-full {className}">
 	<select
 		bind:value
-		class="bg-idle text-ink focus-visible:ring-info h-[var(--ctl)] w-full appearance-none rounded-[var(--r-ctl)] border-0 ps-3 pe-9 text-[15px] outline-none focus-visible:ring-2"
+		class="bg-idle text-ink focus-visible:ring-info h-[var(--ctl)] w-full appearance-none rounded-[var(--r-ctl)] border-0 ps-3 pe-9 text-[0.9375rem] outline-none focus-visible:ring-2"
 		{...rest}
 	>
 		{@render children()}

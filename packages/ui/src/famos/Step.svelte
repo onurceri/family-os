@@ -127,14 +127,14 @@
 		width: var(--marker);
 		height: var(--marker);
 		border-radius: 50%;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 800;
 		font-variant-numeric: tabular-nums;
 		background: var(--idle);
 		color: var(--ink-soft);
 	}
 	.large .marker {
-		font-size: 26px;
+		font-size: 1.625rem;
 	}
 	.marker svg {
 		width: 60%;
@@ -157,13 +157,13 @@
 		align-content: center;
 	}
 	.title {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 700;
 		line-height: 1.3;
 		overflow-wrap: anywhere;
 	}
 	.large .title {
-		font-size: 28px;
+		font-size: 1.75rem;
 		line-height: 1.2;
 	}
 	.next .title {
@@ -171,14 +171,14 @@
 		font-weight: 600;
 	}
 	.summary {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.large .summary {
-		font-size: 20px;
+		font-size: 1.25rem;
 	}
 	.body {
 		display: grid;

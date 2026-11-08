@@ -63,7 +63,7 @@
 		<div class="grid gap-6" data-testid="found-panel">
 			<div class="grid gap-1">
 				{#if description}<p class="max-w-prose">{description}</p>{/if}
-				<p class="text-ink-soft text-[13px]">
+				<p class="text-ink-soft text-[0.8125rem]">
 					{update && pkg.current
 						? t('extensions_updates_from', { from: pkg.current, to: pkg.version })
 						: t('extensions_version', { version: pkg.version })}
@@ -101,7 +101,9 @@
 				<Notice tone="alert">
 					{problem.text}
 					{#if problem.detail}
-						<span class="text-ink-soft mt-1 block text-[13px] break-words">{problem.detail}</span>
+						<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words"
+							>{problem.detail}</span
+						>
 					{/if}
 				</Notice>
 			{/if}

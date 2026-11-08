@@ -166,7 +166,7 @@
 								minlength={MIN_PASSPHRASE}
 								maxlength={500}
 							/>
-							<p class="text-ink-soft text-[13px]">{t('backups_enc_passphrase_hint')}</p>
+							<p class="text-ink-soft text-[0.8125rem]">{t('backups_enc_passphrase_hint')}</p>
 						</div>
 						<div class="grid gap-1.5">
 							<Label for="backup-passphrase-again">{t('backups_enc_passphrase_again')}</Label>
@@ -177,7 +177,7 @@
 								autocomplete="new-password"
 							/>
 							{#if mismatch}
-								<p class="text-attention text-[13px] font-semibold" role="alert">
+								<p class="text-attention text-[0.8125rem] font-semibold" role="alert">
 									{t('backups_enc_mismatch')}
 								</p>
 							{/if}
@@ -197,7 +197,7 @@
 								autocomplete="off"
 								placeholder="age1…"
 							/>
-							<p class="text-ink-soft text-[13px]">{t('backups_enc_recipient_hint')}</p>
+							<p class="text-ink-soft text-[0.8125rem]">{t('backups_enc_recipient_hint')}</p>
 						</div>
 					{:else}
 						<Notice tone="warn">{t('backups_enc_none_warning')}</Notice>
