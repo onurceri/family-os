@@ -3,6 +3,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import de from '../messages/de.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import es from '../messages/es.json' with { type: 'json' };
+import nl from '../messages/nl.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import {
 	calendarEdit,
@@ -59,7 +60,7 @@ export {
 
 export default defineExtension({
 	manifest: pkg.famos,
-	messages: { en, tr, de, es },
+	messages: { en, tr, de, es, nl },
 	migrations,
 	ai: { index: searchIndex, context: [aiContext.id, aiContextEvents.id], kinds: calendarKinds },
 	actions: [

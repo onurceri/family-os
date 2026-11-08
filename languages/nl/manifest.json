@@ -1,0 +1,8 @@
+{
+	"code": "nl",
+	"name": "Dutch",
+	"nativeName": "Nederlands",
+	"version": "1.0.0",
+	"famos": ">=0.1.0",
+	"authors": ["FamilyOS contributors"]
+}
