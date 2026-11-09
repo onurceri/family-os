@@ -203,9 +203,9 @@
 	}
 	.mh b {
 		overflow: hidden;
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		font-weight: 800;
-		letter-spacing: 0.12em;
+		letter-spacing: 0.06em;
 		text-overflow: ellipsis;
 		text-transform: uppercase;
 		white-space: nowrap;
@@ -260,7 +260,7 @@
 	.row small {
 		display: block;
 		overflow: hidden;
-		font-size: 0.71875rem;
+		font-size: 0.75rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -312,7 +312,7 @@
 		width: max-content;
 		max-width: 68px;
 		overflow: hidden;
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		line-height: 1.1;
 		color: var(--ink-soft);

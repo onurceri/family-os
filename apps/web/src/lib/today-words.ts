@@ -70,11 +70,6 @@ export function todayWords(t: Translate, extra: FacetWords = {}): TodayWords {
 				inDuration: (duration) => t('today_countdown_in', { duration }),
 				nowUntil: (time) => t('today_countdown_now_until', { time }),
 			},
-			pill: {
-				at: (place) => t('today_pill_at', { place }),
-				starts: (time) => t('today_pill_starts', { time }),
-				until: (time) => t('today_pill_until', { time }),
-			},
 		},
 		status: {
 			soon: (title, duration) => t('today_status_soon', { title, duration }),

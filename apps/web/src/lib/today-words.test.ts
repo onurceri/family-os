@@ -36,9 +36,6 @@ function exercise(words: ReturnType<typeof todayWords>) {
 	return [
 		nextUp.countdown.inDuration('25 minutes'),
 		nextUp.countdown.nowUntil('16:30'),
-		nextUp.pill.at('Music school'),
-		nextUp.pill.starts('15:45'),
-		nextUp.pill.until('16:30'),
 		status.soon('Piano lesson', '25 min'),
 		status.at('Football', '17:00'),
 		status.until('Piano lesson', '16:30'),

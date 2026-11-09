@@ -46,7 +46,7 @@
 		padding: 28px 14px 12px;
 		background: linear-gradient(to top, var(--scrim), transparent);
 		color: var(--on-color);
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		font-weight: 800;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;

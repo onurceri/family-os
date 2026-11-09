@@ -69,9 +69,9 @@
 	small {
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 0.625rem;
+		font-size: 0.75rem;
 		font-weight: 800;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.04em;
 		text-overflow: ellipsis;
 		text-transform: uppercase;
 		white-space: nowrap;

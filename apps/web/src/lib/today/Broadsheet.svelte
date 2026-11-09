@@ -988,8 +988,6 @@
 	/* From 1280 px: three columns, the atmosphere on the left (the design doc's 280 · 1fr · 300). */
 	@media (min-width: 1280px) {
 		.bs {
-			--ramp-clock: 7.75rem;
-			--ramp-date: 2.125rem;
 			--ramp-countdown: 8rem;
 			--ramp-hero: 3.375rem;
 			--ramp-big: 4rem;

@@ -970,7 +970,8 @@
 			display: grid;
 			grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
 			align-items: start;
-			gap: 24px;
+			/* Wide enough between blocks for a section's ⋯, which hangs past its row's end. */
+			gap: 24px 44px;
 		}
 		.band > * {
 			order: var(--o, 50);

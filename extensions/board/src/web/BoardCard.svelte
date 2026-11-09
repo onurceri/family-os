@@ -77,6 +77,7 @@
 	.item {
 		break-inside: avoid;
 		margin-bottom: 0.75rem;
-		padding-top: 0.75rem;
+		/* Room for the tape above the paper, so it never spills into the column before. */
+		padding-top: 1rem;
 	}
 </style>
