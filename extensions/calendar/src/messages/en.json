@@ -139,7 +139,7 @@
 	"sub_reminder_days_1": "1 day before",
 	"sub_reminder_days_2": "2 days before",
 	"sub_reminder_at": "Reminder time for all-day events",
-	"sub_reminder_at_hint": "Empty: the family's reminder time.",
+	"sub_reminder_at_hint": "Empty: the family's reminder time, set in Settings → Family → Language & region.",
 	"sub_reminder_timed": "Events with a time",
 	"sub_allow_local": "Calendar on my home network",
 	"sub_allow_local_warn": "Only for a calendar inside your home network, such as on a NAS. This lets FamilyOS contact devices on your network. Leave it off for anything on the internet.",

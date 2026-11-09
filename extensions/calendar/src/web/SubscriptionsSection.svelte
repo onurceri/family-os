@@ -20,6 +20,7 @@
 	import { ChevronRight, Plus, RefreshCw } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import {
+		defaultReminder,
 		SUBSCRIPTION_COLORS,
 		SUBSCRIPTION_REMINDER_DAYS,
 		type Subscription,
@@ -57,7 +58,8 @@
 	 * minutes before a timed one. Strings, as the fields hold them. */
 	let reminderDays = $state('0');
 	let reminderTime = $state('');
-	let reminderMinutes = $state('30');
+	const DEFAULT_MINUTES = String(defaultReminder(false));
+	let reminderMinutes = $state(DEFAULT_MINUTES);
 	let allowLocal = $state(false);
 	let busy = $state(false);
 	let failed = $state(false);
@@ -86,7 +88,7 @@
 		reminders = allowLocal = false;
 		reminderDays = '0';
 		reminderTime = '';
-		reminderMinutes = '30';
+		reminderMinutes = DEFAULT_MINUTES;
 		failed = false;
 		showErrors = false;
 		panel = { id: null, host: '' };
@@ -101,7 +103,7 @@
 		reminders = sub.reminders;
 		reminderDays = String(sub.reminderDays ?? 0);
 		reminderTime = sub.reminderTime ?? '';
-		reminderMinutes = String(sub.reminderMinutes ?? 30);
+		reminderMinutes = String(sub.reminderMinutes ?? DEFAULT_MINUTES);
 		allowLocal = sub.allowLocal;
 		failed = false;
 		showErrors = false;
@@ -117,11 +119,11 @@
 		...(!panel?.id && !url.trim() ? { url: FIELD_REASON.required } : {}),
 	} as Record<string, string>);
 
-	// The defaults (on the day, at the family's time; 30 minutes) are saved as none chosen.
+	// The defaults (on the day, at the family's time; the default lead) are saved as none chosen.
 	const timing = () => ({
 		reminderDays: Number(reminderDays) || null,
 		reminderTime: reminderTime || null,
-		reminderMinutes: reminderMinutes === '30' ? null : Number(reminderMinutes),
+		reminderMinutes: reminderMinutes === DEFAULT_MINUTES ? null : Number(reminderMinutes),
 	});
 
 	async function submit(event: SubmitEvent) {

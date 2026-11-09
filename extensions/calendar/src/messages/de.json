@@ -139,7 +139,7 @@
 	"sub_reminder_days_1": "1 Tag vorher",
 	"sub_reminder_days_2": "2 Tage vorher",
 	"sub_reminder_at": "Erinnerungszeit für ganztägige Termine",
-	"sub_reminder_at_hint": "Leer: die Erinnerungszeit der Familie.",
+	"sub_reminder_at_hint": "Leer: die Erinnerungszeit der Familie, einstellbar unter Einstellungen → Familie → Sprache und Region.",
 	"sub_reminder_timed": "Termine mit Uhrzeit",
 	"sub_allow_local": "Kalender in meinem Heimnetzwerk",
 	"sub_allow_local_warn": "Nur für einen Kalender in deinem Heimnetzwerk, etwa auf einem NAS. Damit darf FamilyOS Geräte in deinem Netzwerk kontaktieren. Lass die Option für Kalender im Internet ausgeschaltet.",

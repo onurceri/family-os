@@ -420,6 +420,44 @@ describe('subscription reminders', () => {
 		expect(channel.sent).toHaveLength(1);
 	});
 
+	it('remind on the day at the time the subscription chose', async () => {
+		k.http.serve('https://h.example/tr.ics', { text: holiday });
+		await add('https://h.example/tr.ics', { reminders: true, reminderTime: '07:00' });
+		k.clock.set(epochOf('2026-10-29', '06:59', TZ));
+		await k.worker.drain();
+		expect(channel.sent).toHaveLength(0);
+		k.clock.set(epochOf('2026-10-29', '07:00', TZ));
+		await k.worker.drain();
+		expect(channel.sent).toHaveLength(1);
+		// Not again at the family's time.
+		k.clock.set(epochOf('2026-10-29', '09:30', TZ));
+		await k.worker.drain();
+		expect(channel.sent).toHaveLength(1);
+	});
+
+	it("go back to the family's time when the chosen timing is cleared", async () => {
+		k.http.serve('https://h.example/tr.ics', { text: holiday });
+		const sub = await add('https://h.example/tr.ics', {
+			reminders: true,
+			reminderDays: 1,
+			reminderTime: '19:00',
+		});
+		await k.runner.invoke(
+			'calendar.updateSubscription',
+			{ id: sub.id, reminderDays: null, reminderTime: null },
+			admin.actor,
+		);
+		await k.worker.drain();
+		// The evening-before reminder planned first is dropped...
+		k.clock.set(epochOf('2026-10-28', '19:00', TZ));
+		await k.worker.drain();
+		expect(channel.sent).toHaveLength(0);
+		// ...and the usual one on the day is sent instead.
+		k.clock.set(epochOf('2026-10-29', '09:00', TZ));
+		await k.worker.drain();
+		expect(channel.sent).toHaveLength(1);
+	});
+
 	it('remind about timed events the chosen minutes before', async () => {
 		k.http.serve(URL_SCHOOL, { text: school });
 		await add(URL_SCHOOL, { reminders: true, reminderMinutes: 60 });
