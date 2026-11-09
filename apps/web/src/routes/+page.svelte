@@ -52,6 +52,8 @@
 			>
 		</EmptyState>
 	{:else}
-		<Composition {data} />
+		<!-- A container (`today`): the styles step down to a narrower arrangement when larger text
+		     leaves too little room for their columns. -->
+		<div class="@container/today"><Composition {data} /></div>
 	{/if}
 </Page>
