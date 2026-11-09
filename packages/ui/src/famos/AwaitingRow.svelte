@@ -77,7 +77,7 @@
 		gap: 1px;
 	}
 	.title {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.3;
 		overflow: hidden;
@@ -85,7 +85,7 @@
 		white-space: nowrap;
 	}
 	.meta {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		overflow-wrap: anywhere;
 	}

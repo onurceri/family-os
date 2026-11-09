@@ -94,13 +94,13 @@
 	}
 	.understood {
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		line-height: 1.4;
 		overflow-wrap: anywhere;
 	}
 	.quiet {
 		color: var(--ink-soft);
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.45;
 		overflow-wrap: anywhere;
 	}
@@ -143,7 +143,7 @@
 	}
 	.when {
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		overflow-wrap: anywhere;
@@ -154,19 +154,19 @@
 		min-width: 0;
 	}
 	.title {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.35;
 		overflow-wrap: anywhere;
 	}
 	.meta {
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		overflow-wrap: anywhere;
 	}
 	.state {
 		color: var(--attention);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 700;
 		overflow-wrap: anywhere;
 	}
@@ -180,7 +180,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 	}
 	.notes {
@@ -190,7 +190,7 @@
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
 		color: var(--ink-soft);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		line-height: 1.4;
 		overflow-wrap: anywhere;
 	}

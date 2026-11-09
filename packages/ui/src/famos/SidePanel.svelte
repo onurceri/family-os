@@ -234,7 +234,7 @@
 			class="bg-surface shadow-pop border-line fixed inset-y-0 end-0 z-40 flex w-[22.5rem] flex-col border-s outline-none xl:w-[26.25rem]"
 		>
 			<header class="border-line flex h-14 shrink-0 items-center gap-3 border-b ps-5 pe-3">
-				<h2 class="min-w-0 flex-1 truncate text-[17px] font-extrabold">{title}</h2>
+				<h2 class="min-w-0 flex-1 truncate text-[1.0625rem] font-extrabold">{title}</h2>
 				<button
 					type="button"
 					onclick={requestClose}
@@ -254,7 +254,7 @@
 			</header>
 			{#if shownApproval}
 				<p
-					class="text-ink-soft border-line shrink-0 border-b px-5 py-2.5 text-[13px]"
+					class="text-ink-soft border-line shrink-0 border-b px-5 py-2.5 text-[0.8125rem]"
 					data-testid="side-panel-note"
 				>
 					{shownApproval.note}

@@ -94,7 +94,7 @@
 		<IconButton label={t('prev_week')} variant="outline" onclick={() => (offset -= 1)}
 			><ChevronLeft /></IconButton
 		>
-		<b class="min-w-40 text-center text-[15px]" aria-live="polite" data-testid="week-label"
+		<b class="min-w-40 text-center text-[0.9375rem]" aria-live="polite" data-testid="week-label"
 			>{rangeLabel}</b
 		>
 		<IconButton label={t('next_week')} variant="outline" onclick={() => (offset += 1)}
@@ -127,16 +127,17 @@
 							{#each line.meals as m (m.id)}
 								<div class="flex min-h-12 items-center gap-2 px-3 py-1.5">
 									<div class="grid min-w-0 flex-1 gap-px">
-										<span class="text-ink-soft text-[12px] font-bold tracking-[0.04em] uppercase"
+										<span class="text-ink-soft text-[0.75rem] font-bold tracking-[0.04em] uppercase"
 											>{t(`slot_${m.slot}`)}</span
 										>
 										{#if m.recipeId}
 											<a
 												href="/kitchen/recipes/{m.recipeId}"
-												class="text-[15px] leading-snug font-semibold hover:underline">{m.title}</a
+												class="text-[0.9375rem] leading-snug font-semibold hover:underline"
+												>{m.title}</a
 											>
 										{:else}
-											<span class="text-[15px] leading-snug font-semibold">{m.title}</span>
+											<span class="text-[0.9375rem] leading-snug font-semibold">{m.title}</span>
 										{/if}
 									</div>
 									{#if mayUnplan}
@@ -154,7 +155,7 @@
 								{#if mayPlan}
 									<button
 										type="button"
-										class="text-ink-soft hover:text-ink flex min-h-11 w-full items-center gap-2 px-3 py-1.5 text-start text-[14px] font-medium"
+										class="text-ink-soft hover:text-ink flex min-h-11 w-full items-center gap-2 px-3 py-1.5 text-start text-[0.875rem] font-medium"
 										aria-label={t('plan_slot_on', {
 											slot: t(`slot_${line.slot}`),
 											date: label(date),
@@ -165,7 +166,7 @@
 										)}</button
 									>
 								{:else}
-									<p class="text-ink-soft flex min-h-11 items-center px-3 py-1.5 text-[14px]">
+									<p class="text-ink-soft flex min-h-11 items-center px-3 py-1.5 text-[0.875rem]">
 										{t(`slot_${line.slot}`)} · {t('plan_nothing')}
 									</p>
 								{/if}

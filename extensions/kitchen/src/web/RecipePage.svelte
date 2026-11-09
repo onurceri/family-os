@@ -373,12 +373,12 @@
 									bind:checked={picked[line]}
 									class="accent-ink size-5 shrink-0"
 								/>
-								<span class="text-[15px]">{line}</span>
+								<span class="text-[0.9375rem]">{line}</span>
 							</label>
 						{/each}
 						{#if shoppingLists.length > 1}
 							<div class="flex min-h-12 items-center gap-3 px-3 py-1.5">
-								<span class="text-ink-soft text-[13px]">{t('shopping_list_choice')}</span>
+								<span class="text-ink-soft text-[0.8125rem]">{t('shopping_list_choice')}</span>
 								<select
 									bind:value={listId}
 									aria-label={t('shopping_list_choice')}
@@ -392,7 +392,7 @@
 					{#if shoppingDetails.length}
 						<ul class="mt-2 grid gap-1" aria-label={t('shopping_details')}>
 							{#each shoppingDetails as detail, i (i)}
-								<li class="text-ink-soft text-[13px]">{detail}</li>
+								<li class="text-ink-soft text-[0.8125rem]">{detail}</li>
 							{/each}
 						</ul>
 					{/if}
@@ -405,10 +405,10 @@
 						{#each recipe.steps as step, i (i)}
 							<li class="flex gap-3">
 								<span
-									class="bg-idle grid size-7 shrink-0 place-items-center rounded-full text-[13px] font-bold"
+									class="bg-idle grid size-7 shrink-0 place-items-center rounded-full text-[0.8125rem] font-bold"
 									>{i + 1}</span
 								>
-								<span class="pt-0.5 text-[15px] leading-[1.45]">{step}</span>
+								<span class="pt-0.5 text-[0.9375rem] leading-[1.45]">{step}</span>
 							</li>
 						{/each}
 					</ol>
@@ -417,7 +417,9 @@
 
 			{#if recipe.notes}
 				<Section label={t('field_notes')}>
-					<p class="max-w-[62ch] text-[15px] leading-[1.45] whitespace-pre-line">{recipe.notes}</p>
+					<p class="max-w-[62ch] text-[0.9375rem] leading-[1.45] whitespace-pre-line">
+						{recipe.notes}
+					</p>
 				</Section>
 			{/if}
 		</div>
@@ -465,7 +467,7 @@
 	{/snippet}
 	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>
 		<RecipeForm bind:value={form} {errors} idPrefix="edit-recipe" />
-		<small class="text-ink-soft text-[13px]">{t('archive_hint')}</small>
+		<small class="text-ink-soft text-[0.8125rem]">{t('archive_hint')}</small>
 	</form>
 </SidePanel>
 

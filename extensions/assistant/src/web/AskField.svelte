@@ -94,7 +94,7 @@
 		background: transparent;
 		color: var(--ink);
 		font: inherit;
-		font-size: 16px;
+		font-size: 1rem;
 		line-height: 1.5;
 		resize: none;
 		outline: none;

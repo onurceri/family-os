@@ -224,7 +224,7 @@
 						maxlength={60}
 						aria-describedby="provider-name-hint"
 					/>
-					<small id="provider-name-hint" class="text-ink-soft text-[13px] leading-snug"
+					<small id="provider-name-hint" class="text-ink-soft text-[0.8125rem] leading-snug"
 						>{t('ai_name_hint')}</small
 					>
 				</div>
@@ -238,7 +238,7 @@
 						placeholder="https://…/v1"
 						aria-describedby="provider-url-hint"
 					/>
-					<small id="provider-url-hint" class="text-ink-soft text-[13px] leading-snug"
+					<small id="provider-url-hint" class="text-ink-soft text-[0.8125rem] leading-snug"
 						>{t('ai_base_url_hint')}</small
 					>
 				</div>
@@ -254,7 +254,7 @@
 							placeholder={provider ? t('ai_api_key_keep') : undefined}
 							aria-describedby="provider-key-hint"
 						/>
-						<small id="provider-key-hint" class="text-ink-soft text-[13px] leading-snug"
+						<small id="provider-key-hint" class="text-ink-soft text-[0.8125rem] leading-snug"
 							>{t('ai_api_key_hint')}</small
 						>
 					</div>

@@ -149,7 +149,7 @@
 	}
 	const paperName = (id: string | null) => (id ? papers.find((p) => p.id === id)?.name : undefined);
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 </script>
 
 <SidePanel
@@ -200,7 +200,7 @@
 				>{t('log_place')} <span class="text-ink-soft font-normal">{t('optional')}</span></Label
 			>
 			<Input id="log-place" bind:value={place} maxlength={160} autocomplete="off" />
-			<small class="text-ink-soft text-[13px]">{t('log_place_hint')}</small>
+			<small class="text-ink-soft text-[0.8125rem]">{t('log_place_hint')}</small>
 		</div>
 		<div class="grid gap-1.5">
 			<Label for="log-notes"
@@ -213,7 +213,7 @@
 				rows={3}
 				class="{field} min-h-[84px] py-2"
 			></Textarea>
-			<small class="text-ink-soft text-[13px]">{t('log_notes_hint')}</small>
+			<small class="text-ink-soft text-[0.8125rem]">{t('log_notes_hint')}</small>
 		</div>
 		{#if papers.length > 0}
 			<div class="grid gap-1.5">
@@ -237,7 +237,7 @@
 >
 	{#if viewing}
 		{@const log = viewing}
-		<div class="grid gap-4 text-[15px]">
+		<div class="grid gap-4 text-[0.9375rem]">
 			{#if log.place}
 				<div class="grid gap-0.5">
 					<span class="text-ink-soft text-xs font-bold tracking-[0.06em] uppercase"

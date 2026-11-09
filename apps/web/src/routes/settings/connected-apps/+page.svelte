@@ -469,7 +469,9 @@
 							>{endpoint}</code
 						>
 						{#if onlyHere}
-							<small class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</small>
+							<small class="text-ink-soft text-[0.8125rem] leading-snug"
+								>{t('address_only_here')}</small
+							>
 						{/if}
 					</div>
 					<div class="grid gap-1">

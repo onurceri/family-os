@@ -526,7 +526,7 @@
 					data-testid="empty-state"
 				>
 					<EmptyArt name="tasks" />
-					<p class="max-w-[34ch] text-[15px] leading-snug text-pretty">
+					<p class="max-w-[34ch] text-[0.9375rem] leading-snug text-pretty">
 						<span class="text-ink font-semibold">{mine ? t('no_tasks_mine') : t('no_tasks')}</span>
 						{mine || !mayAdd ? '' : t('no_tasks_hint')}
 					</p>
@@ -570,7 +570,7 @@
 				<section class="grid gap-2" aria-label={t('done_group')}>
 					<button
 						type="button"
-						class="text-ink-soft hover:text-ink flex min-h-11 w-fit items-center gap-1.5 text-start text-[13px] font-bold tracking-[0.06em] uppercase"
+						class="text-ink-soft hover:text-ink flex min-h-11 w-fit items-center gap-1.5 text-start text-[0.8125rem] font-bold tracking-[0.06em] uppercase"
 						aria-expanded={showDone}
 						onclick={() => (showDone = !showDone)}
 					>

@@ -64,14 +64,14 @@
 	}
 	h3 {
 		margin: 0;
-		font-size: 17px;
+		font-size: 1.0625rem;
 		font-weight: 700;
 		text-wrap: balance;
 	}
 	p {
 		margin: 0;
 		max-width: 34ch;
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.45;
 		color: var(--ink-soft);
 		text-wrap: pretty;

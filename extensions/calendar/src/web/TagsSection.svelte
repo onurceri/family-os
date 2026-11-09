@@ -90,7 +90,7 @@
 </script>
 
 <Section label={t('tags_title')} count={loaded ? tags.length : undefined}>
-	<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('tags_intro')}</p>
+	<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">{t('tags_intro')}</p>
 	{#if loaded}
 		{#if tags.length > 0}
 			<Card rows>
@@ -164,7 +164,7 @@
 				{...fieldAria(showErrors ? nameError : undefined, 'tag-name')}
 			/>
 			<FieldError for="tag-name" error={showErrors ? nameError : undefined} />
-			<p class="text-ink-soft text-[13px]">{t('tag_rename_hint')}</p>
+			<p class="text-ink-soft text-[0.8125rem]">{t('tag_rename_hint')}</p>
 		</div>
 		<ColorChoice
 			bind:value={editColor}

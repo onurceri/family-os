@@ -103,7 +103,7 @@
 		align-items: center;
 		gap: 4px 10px;
 		margin: 0;
-		font-size: 14px;
+		font-size: 0.875rem;
 		color: var(--ink-soft);
 	}
 	/* Each fact carries the dot before it, and the row of facts is shifted one dot to the start

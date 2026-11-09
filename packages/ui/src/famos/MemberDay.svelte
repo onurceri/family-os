@@ -203,7 +203,7 @@
 	}
 	.mh b {
 		overflow: hidden;
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 800;
 		letter-spacing: 0.12em;
 		text-overflow: ellipsis;
@@ -234,11 +234,11 @@
 		border-radius: 10px;
 		background: var(--surface);
 		box-shadow: var(--shadow-lit);
-		font-size: 13px;
+		font-size: 0.8125rem;
 		line-height: 1.25;
 	}
 	.card time {
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 600;
 		letter-spacing: 0.01em;
 	}
@@ -260,7 +260,7 @@
 	.row small {
 		display: block;
 		overflow: hidden;
-		font-size: 11.5px;
+		font-size: 0.71875rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -276,13 +276,13 @@
 	}
 	.more {
 		padding: 4px 2px;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 	}
 	.free {
 		padding: 4px 2px;
-		font-size: 16px;
+		font-size: 1rem;
 		font-style: italic;
 		line-height: 1.2;
 		color: var(--ink-soft);
@@ -312,7 +312,7 @@
 		width: max-content;
 		max-width: 68px;
 		overflow: hidden;
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 600;
 		line-height: 1.1;
 		color: var(--ink-soft);
@@ -335,7 +335,7 @@
 	}
 	.name b {
 		overflow: hidden;
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 800;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -348,7 +348,7 @@
 		min-width: 0;
 	}
 	.nx time {
-		font-size: 26px;
+		font-size: 1.625rem;
 		font-weight: 800;
 		letter-spacing: -0.03em;
 		line-height: 1;
@@ -361,7 +361,7 @@
 	}
 	.nx .t b {
 		overflow: hidden;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 700;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -370,7 +370,7 @@
 		display: block;
 		font-style: normal;
 		overflow: hidden;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 500;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;

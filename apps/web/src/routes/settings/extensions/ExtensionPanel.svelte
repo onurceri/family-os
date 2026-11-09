@@ -68,7 +68,7 @@
 			<div class="grid gap-1">
 				{#if description(entry)}<p class="max-w-prose">{description(entry)}</p>{/if}
 				{#if entry.version}
-					<p class="text-ink-soft text-[13px]">
+					<p class="text-ink-soft text-[0.8125rem]">
 						{update
 							? t('extensions_updates_from', { from: update.from, to: update.to })
 							: t('extensions_version', { version: entry.version })}
@@ -100,7 +100,7 @@
 							? t('extensions_status_failed')
 							: t('extensions_status_refused')}
 						{#if problem}
-							<span class="text-ink-soft mt-1 block text-[13px] break-words"
+							<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words"
 								>{t(problem.key, problem.values)}</span
 							>
 						{/if}

@@ -51,7 +51,7 @@
 		align-items: center;
 		gap: 10px;
 		min-height: 28px;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink);
 	}
 	.n {
@@ -73,7 +73,7 @@
 	}
 	.f {
 		min-width: 30px;
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 800;
 		font-stretch: 72%;
 		font-variant-numeric: tabular-nums;

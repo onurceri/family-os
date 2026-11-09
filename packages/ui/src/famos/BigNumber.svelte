@@ -53,7 +53,7 @@
 		padding-top: 2px;
 	}
 	b {
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 700;
 	}
 	a {
@@ -64,7 +64,7 @@
 		text-decoration: underline;
 	}
 	small {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		line-height: 1.35;
 		color: var(--ink-soft);
 	}

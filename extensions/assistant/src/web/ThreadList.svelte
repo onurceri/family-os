@@ -113,7 +113,7 @@
 									bind:value={draft}
 									maxlength={80}
 									aria-label={t('rename_thread')}
-									class="bg-surface border-line h-[var(--ctl)] min-w-0 flex-1 rounded-[var(--r-ctl)] border px-3 text-[15px]"
+									class="bg-surface border-line h-[var(--ctl)] min-w-0 flex-1 rounded-[var(--r-ctl)] border px-3 text-[0.9375rem]"
 									onkeydown={(event) => event.key === 'Escape' && (editing = null)}
 								/>
 								<Button type="submit" variant="secondary">{t('save')}</Button>
@@ -240,7 +240,7 @@
 	}
 	.title {
 		overflow: hidden;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1.3;
 		text-overflow: ellipsis;
@@ -250,7 +250,7 @@
 		font-weight: 700;
 	}
 	.when {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 	}
 	.more {
@@ -271,7 +271,7 @@
 		padding: 0 12px;
 		border-radius: var(--r-ctl);
 		color: var(--ink-soft);
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		text-decoration: none;
 		outline: none;

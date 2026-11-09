@@ -44,7 +44,8 @@
 								class="text-ink-soft size-[18px] shrink-0"
 								aria-hidden="true"
 							/>{/if}
-						<span class="min-w-0 flex-1 truncate text-[15px] font-semibold">{label(item)}</span>
+						<span class="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">{label(item)}</span
+						>
 						<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />
 					</a>
 				</li>

@@ -89,7 +89,7 @@
 	}
 	.u {
 		margin-top: 8px;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 800;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -125,6 +125,6 @@
 	.circled .u {
 		position: relative;
 		margin-top: 2px;
-		font-size: 10px;
+		font-size: 0.625rem;
 	}
 </style>

@@ -26,7 +26,8 @@
 			style:color={colors.ink}
 		>
 			<span class="text-sm leading-none font-extrabold">Aa</span>
-			<span class="text-[10px] leading-none font-semibold" style:color={colors['ink-soft']}>Aa</span
+			<span class="text-[0.625rem] leading-none font-semibold" style:color={colors['ink-soft']}
+				>Aa</span
 			>
 			<span class="flex gap-1 pt-0.5">
 				{#each states as state (state)}

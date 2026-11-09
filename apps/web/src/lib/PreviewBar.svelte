@@ -73,7 +73,7 @@
 			role="status"
 			data-testid="theme-preview-bar"
 		>
-			<span class="flex min-w-0 flex-1 basis-48 items-center gap-2 text-[15px] font-bold">
+			<span class="flex min-w-0 flex-1 basis-48 items-center gap-2 text-[0.9375rem] font-bold">
 				<Eye class="text-info size-4 shrink-0" aria-hidden="true" />
 				<span class="truncate">{t('appearance_trying', { name: trying })}</span>
 			</span>

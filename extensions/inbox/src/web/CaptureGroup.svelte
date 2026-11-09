@@ -161,10 +161,10 @@
 				<CaptureIcon {item} />
 			</span>
 			<div class="grid min-w-0 flex-1 gap-0.5">
-				<h3 class="line-clamp-2 text-[17px] leading-snug font-bold text-balance">
+				<h3 class="line-clamp-2 text-[1.0625rem] leading-snug font-bold text-balance">
 					{captureLine(item)}
 				</h3>
-				<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px]">
+				<p class="text-ink-soft flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8125rem]">
 					<span>{t(`channel_${item.channel}`)} · {captureTime(app, item.createdAt)}</span>
 					{#if !mine && author}
 						<span class="flex items-center gap-1.5 font-semibold">
@@ -179,7 +179,7 @@
 					type="button"
 					aria-expanded={original}
 					onclick={() => (original = !original)}
-					class="text-ink-soft hover:text-ink hover:bg-idle -my-1 flex min-h-11 shrink-0 items-center gap-1 rounded-[var(--r-ctl)] px-2.5 text-[13px] font-semibold"
+					class="text-ink-soft hover:text-ink hover:bg-idle -my-1 flex min-h-11 shrink-0 items-center gap-1 rounded-[var(--r-ctl)] px-2.5 text-[0.8125rem] font-semibold"
 				>
 					{original ? t('hide_original') : t('show_original')}
 					<ChevronDown

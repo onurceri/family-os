@@ -31,7 +31,7 @@
 		height: 24px;
 		padding: 0 9px;
 		border-radius: 999px;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		white-space: nowrap;
 		color: var(--ink);

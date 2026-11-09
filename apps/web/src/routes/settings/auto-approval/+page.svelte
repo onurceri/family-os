@@ -86,7 +86,7 @@
 									{#snippet control()}
 										<select
 											id="auto-who-{entry.actionId}"
-											class="border-input bg-wall min-h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px]"
+											class="border-input bg-wall min-h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem]"
 											value={setting.proposerCapability}
 											onchange={(e) =>
 												save(entry.actionId, { proposerCapability: e.currentTarget.value })}

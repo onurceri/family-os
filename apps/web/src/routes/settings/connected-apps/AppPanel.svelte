@@ -345,8 +345,8 @@
 							<option value={role.id}>{roleName(role.id)}</option>
 						{/each}
 					</SelectField>
-					<small class="text-ink-soft text-[13px] leading-snug">{roleHint(roleId)}</small>
-					<small class="text-ink-soft text-[13px] leading-snug">{t('apps_never_hint')}</small>
+					<small class="text-ink-soft text-[0.8125rem] leading-snug">{roleHint(roleId)}</small>
+					<small class="text-ink-soft text-[0.8125rem] leading-snug">{t('apps_never_hint')}</small>
 				</div>
 				<div class="grid gap-1.5">
 					<Segmented
@@ -360,14 +360,16 @@
 							{ value: 'suggest', label: t('apps_mode_suggest') },
 						]}
 					/>
-					<small class="text-ink-soft text-[13px] leading-snug">
+					<small class="text-ink-soft text-[0.8125rem] leading-snug">
 						{mode === 'apply' ? t('apps_mode_apply_hint') : t('apps_mode_suggest_hint')}
 					</small>
 				</div>
 				<div class="grid gap-1.5">
 					<span class="text-sm font-semibold">{t('apps_acts_for_label')}</span>
 					<MemberChips members={family.members} bind:selected={actsFor} multiple />
-					<small class="text-ink-soft text-[13px] leading-snug">{t('apps_acts_for_hint')}</small>
+					<small class="text-ink-soft text-[0.8125rem] leading-snug"
+						>{t('apps_acts_for_hint')}</small
+					>
 					{#if chosen.length > 0}
 						<ul class="grid gap-1" data-testid="app-acts-for-ids">
 							{#each chosen as member (member.id)}
@@ -415,7 +417,7 @@
 							>
 								<span class="grid min-w-0 text-sm">
 									<span class="font-semibold break-words">{token.name}</span>
-									<span class="text-ink-soft text-[13px]"
+									<span class="text-ink-soft text-[0.8125rem]"
 										>{keyStatus(token)} · {token.lastUsedAt
 											? t('apps_key_last_used', { date: when(token.lastUsedAt) })
 											: t('apps_key_unused')}</span
@@ -453,7 +455,7 @@
 								>{paused ? t('apps_resume') : t('apps_pause')}</Button
 							>
 						</div>
-						<small class="text-ink-soft text-[13px] leading-snug"
+						<small class="text-ink-soft text-[0.8125rem] leading-snug"
 							>{t('apps_key_replace_hint')}</small
 						>
 					{/if}

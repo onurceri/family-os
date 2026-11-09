@@ -530,16 +530,16 @@
 		href={item.path}
 		aria-current={active ? 'page' : undefined}
 		class={variant === 'tab'
-			? 'flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ' +
+			? 'flex min-h-12 flex-col items-center justify-center gap-0.5 text-[0.6875rem] font-semibold ' +
 				(active ? 'text-ink' : 'text-ink-soft')
-			: 'flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-semibold ' +
+			: 'flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.6875rem] font-semibold ' +
 				(active ? 'bg-surface text-ink shadow-lit' : 'text-ink-soft hover:text-ink')}
 	>
 		<span class="relative">
 			{#if item.icon}<item.icon class="size-5" aria-hidden="true" />{/if}
 			{#if badgeFor(item)}
 				<span
-					class="bg-attention text-on-color absolute -top-1.5 -right-2.5 min-w-4 rounded-full px-1 text-center text-[10px] leading-4 font-bold tabular-nums"
+					class="bg-attention text-on-color absolute -top-1.5 -right-2.5 min-w-4 rounded-full px-1 text-center text-[0.625rem] leading-4 font-bold tabular-nums"
 					>{badgeFor(item)}<span class="sr-only"> · {t('nav_waiting')}</span></span
 				>
 			{/if}
@@ -574,7 +574,7 @@
 			{@render navLink(MORE, 'rail')}
 			<a
 				href="/more"
-				class="text-ink-soft mt-auto flex flex-col items-center gap-1 text-[11px] font-semibold"
+				class="text-ink-soft mt-auto flex flex-col items-center gap-1 text-[0.6875rem] font-semibold"
 				aria-label={session.me.displayName}
 			>
 				<Avatar name={session.me.displayName} color={session.me.color} size={36} />
@@ -609,7 +609,7 @@
 				<a
 					href={stackBack.href}
 					data-testid="stack-back"
-					class="text-ink-soft hover:text-ink focus-visible:ring-ring -mt-2 mb-3 flex min-h-11 w-fit items-center gap-1 rounded-xl pe-3 text-[15px] font-semibold outline-none focus-visible:ring-2 lg:hidden"
+					class="text-ink-soft hover:text-ink focus-visible:ring-ring -mt-2 mb-3 flex min-h-11 w-fit items-center gap-1 rounded-xl pe-3 text-[0.9375rem] font-semibold outline-none focus-visible:ring-2 lg:hidden"
 				>
 					<ChevronLeft class="size-5" aria-hidden="true" />{stackBack.label}
 				</a>

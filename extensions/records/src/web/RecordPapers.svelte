@@ -167,7 +167,7 @@
 			<select
 				id="paper-label-{recordId}"
 				bind:value={label}
-				class="border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3"
+				class="border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3"
 			>
 				{#each DOCUMENT_LABELS as l (l)}<option value={l}>{t(`label_${l}`)}</option>{/each}
 			</select>
@@ -238,8 +238,8 @@
 							aria-hidden="true"><FileText class="size-[18px]" /></span
 						>
 						<span class="grid min-w-0 flex-1 gap-px">
-							<span class="truncate text-[15px] leading-[1.3] font-semibold">{d.name}</span>
-							<span class="text-ink-soft truncate text-[13px]"
+							<span class="truncate text-[0.9375rem] leading-[1.3] font-semibold">{d.name}</span>
+							<span class="text-ink-soft truncate text-[0.8125rem]"
 								>{t(`label_${d.label}`)}{#if exp && !exp.warn}
 									· {exp.text}{/if}</span
 							>

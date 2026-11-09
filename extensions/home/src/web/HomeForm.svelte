@@ -23,7 +23,7 @@
 	const { t } = useHome();
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 </script>
 
 {#snippet optional()}<span class="text-ink-soft font-normal">{t('optional')}</span>{/snippet}
@@ -40,7 +40,7 @@
 			{...fieldAria(errors.name, id('name'))}
 		/>
 		<FieldError for={id('name')} error={errors.name} />
-		<small class="text-ink-soft text-[13px]">{t('home_name_hint')}</small>
+		<small class="text-ink-soft text-[0.8125rem]">{t('home_name_hint')}</small>
 	</div>
 	<div class="grid gap-1.5">
 		<Label for={id('address')}>{t('field_address')} {@render optional()}</Label>

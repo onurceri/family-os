@@ -41,7 +41,7 @@
 					data-testid="repeat-scope-{option.choice}"
 					onclick={() => onpick(option.choice)}>{option.label}</Button
 				>
-				<p class="text-ink-soft text-[13px]">{option.hint}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{option.hint}</p>
 			</div>
 		{/each}
 	</div>

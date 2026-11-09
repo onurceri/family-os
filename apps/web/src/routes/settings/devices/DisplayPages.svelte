@@ -74,9 +74,9 @@
 {#if listed.length > 0 || addable.length > 0}
 	<div class="grid gap-3" data-testid="display-pages">
 		<Section label={t('devices_pages')}>
-			<p class="text-ink-soft text-[13px]">{t('devices_pages_hint')}</p>
+			<p class="text-ink-soft text-[0.8125rem]">{t('devices_pages_hint')}</p>
 			{#if ambientPage}
-				<p class="text-ink-soft text-[13px]" data-testid="pages-ambient-note">
+				<p class="text-ink-soft text-[0.8125rem]" data-testid="pages-ambient-note">
 					{t('devices_pages_ambient_hint')}
 				</p>
 			{/if}

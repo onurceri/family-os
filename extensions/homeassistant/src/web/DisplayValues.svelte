@@ -45,11 +45,13 @@
 				{@const said = sayValue(app, t, item.value)}
 				<DisplayRow variant="lit" title={item.label}>
 					{#snippet trail()}
-						<span class="text-[17px] font-bold {TONE_CLASS[said.tone]}">{said.text}</span>
+						<span class="text-[1.0625rem] font-bold {TONE_CLASS[said.tone]}">{said.text}</span>
 					{/snippet}
 				</DisplayRow>
 			{/each}
 		</div>
-		{#if shown.length > max}<p class="text-ink-soft px-1 text-[13px]">+{shown.length - max}</p>{/if}
+		{#if shown.length > max}<p class="text-ink-soft px-1 text-[0.8125rem]">
+				+{shown.length - max}
+			</p>{/if}
 	</DisplaySection>
 {/if}

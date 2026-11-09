@@ -159,7 +159,7 @@
 		box-shadow: 0 0 0 2px var(--accent);
 	}
 	.caps {
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 800;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -211,7 +211,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px 12px;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 600;
 	}
 	.meta > span:first-child {
@@ -230,7 +230,7 @@
 		border-radius: 999px;
 		background: var(--on-accent);
 		color: var(--accent);
-		font-size: 11px;
+		font-size: 0.6875rem;
 		font-weight: 800;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;

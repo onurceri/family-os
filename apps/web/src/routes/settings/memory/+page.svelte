@@ -101,11 +101,11 @@
 						class="hover:bg-idle/60 flex min-h-12 w-full items-center gap-3 px-4 py-3 text-start outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--info)]"
 					>
 						<span class="grid min-w-0 flex-1 gap-0.5">
-							<span class="text-[15px] font-semibold break-words whitespace-pre-wrap"
+							<span class="text-[0.9375rem] font-semibold break-words whitespace-pre-wrap"
 								>{memory.text}</span
 							>
 							{#if memory.source === 'ai'}
-								<span class="text-ink-soft text-[13px]">{t('memory_from_assistant')}</span>
+								<span class="text-ink-soft text-[0.8125rem]">{t('memory_from_assistant')}</span>
 							{/if}
 						</span>
 						<ChevronRight class="text-ink-soft size-4 shrink-0" aria-hidden="true" />

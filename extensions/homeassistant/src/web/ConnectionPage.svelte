@@ -346,7 +346,7 @@
 				{...fieldAria(showErrors ? errors.address : undefined, 'ha-address')}
 			/>
 			<FieldError for="ha-address" error={showErrors ? errors.address : undefined} />
-			<p class="text-ink-soft text-[13px]">{t('address_hint')}</p>
+			<p class="text-ink-soft text-[0.8125rem]">{t('address_hint')}</p>
 		</div>
 		<div class="grid gap-1.5">
 			<Label for="ha-token">{t('field_token')}</Label>
@@ -361,8 +361,8 @@
 				{...fieldAria(showErrors ? errors.token : undefined, 'ha-token')}
 			/>
 			<FieldError for="ha-token" error={showErrors ? errors.token : undefined} />
-			<p class="text-ink-soft text-[13px]">{t('token_hint')}</p>
-			{#if connected}<p class="text-ink-soft text-[13px]">{t('token_change_hint')}</p>{/if}
+			<p class="text-ink-soft text-[0.8125rem]">{t('token_hint')}</p>
+			{#if connected}<p class="text-ink-soft text-[0.8125rem]">{t('token_change_hint')}</p>{/if}
 		</div>
 		{#if testedSays}
 			<div class="grid gap-2" aria-live="polite">

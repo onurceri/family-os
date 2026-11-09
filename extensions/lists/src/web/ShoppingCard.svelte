@@ -74,7 +74,9 @@
 	>
 		<ul class="flex flex-wrap gap-2" aria-label={t('shopping')}>
 			{#each titles.slice(0, limit) as title, i (`${i}:${title}`)}
-				<li class="bg-idle min-h-8 rounded-full px-3.5 py-1 text-[15px] font-semibold">{title}</li>
+				<li class="bg-idle min-h-8 rounded-full px-3.5 py-1 text-[0.9375rem] font-semibold">
+					{title}
+				</li>
 			{/each}
 			{#if titles.length > limit}
 				<li class="text-ink-soft flex min-h-8 items-center px-1 text-sm font-semibold">

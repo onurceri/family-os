@@ -70,7 +70,7 @@
 		justify-items: center;
 		align-content: center;
 		gap: 3px;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 		color: var(--ink);

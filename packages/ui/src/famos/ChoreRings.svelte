@@ -69,7 +69,7 @@
 	small {
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-overflow: ellipsis;

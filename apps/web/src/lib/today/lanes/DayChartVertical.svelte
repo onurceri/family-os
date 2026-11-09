@@ -287,7 +287,7 @@
 	.mh .note {
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 10.5px;
+		font-size: 0.65625rem;
 		font-weight: 600;
 		line-height: 1.1;
 		color: var(--ink-soft);
@@ -300,7 +300,7 @@
 	.mh b {
 		max-width: 100%;
 		overflow: hidden;
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-overflow: ellipsis;
@@ -316,7 +316,7 @@
 		border-radius: 50%;
 		background: var(--idle);
 		color: var(--ink);
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 800;
 	}
 	.mh.bare .disc {
@@ -348,7 +348,7 @@
 		border: 1px dashed var(--m);
 		border-radius: 999px;
 		color: var(--ink);
-		font-size: 12.5px;
+		font-size: 0.78125rem;
 		font-weight: 700;
 		text-decoration: none;
 	}
@@ -371,7 +371,7 @@
 		position: absolute;
 		left: 0;
 		transform: translateY(-50%);
-		font-size: 10px;
+		font-size: 0.625rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 		white-space: nowrap;
@@ -382,7 +382,7 @@
 		border-radius: 999px;
 		background: var(--now);
 		color: var(--on-color);
-		font-size: 9px;
+		font-size: 0.5625rem;
 		font-weight: 800;
 	}
 	.vlane {
@@ -421,7 +421,7 @@
 		display: -webkit-box;
 		overflow: hidden;
 		font-family: var(--font-family-display, var(--style-font-display, var(--font-family)));
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 700;
 		font-stretch: condensed;
 		line-height: 15px;
@@ -453,7 +453,7 @@
 		height: 0;
 	}
 	.vblk small {
-		font-size: 10.5px;
+		font-size: 0.65625rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 	}

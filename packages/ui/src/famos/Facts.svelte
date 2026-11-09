@@ -40,7 +40,7 @@
 		min-width: 0;
 	}
 	dt {
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;

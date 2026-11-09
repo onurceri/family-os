@@ -95,7 +95,7 @@
 						{/snippet}
 					</SettingRow>
 				</Card>
-				<p class="text-ink-soft px-1 text-[13px]">{t('settings_saved_as_you_go')}</p>
+				<p class="text-ink-soft px-1 text-[0.8125rem]">{t('settings_saved_as_you_go')}</p>
 			</Section>
 
 			<Section label={t('members_signin_title')}>
@@ -137,7 +137,7 @@
 						{...external}
 					/>
 				</Card>
-				<p class="text-ink-soft px-1 text-[13px]">{t('about_beta')}</p>
+				<p class="text-ink-soft px-1 text-[0.8125rem]">{t('about_beta')}</p>
 			</Section>
 		</div>
 	{/if}

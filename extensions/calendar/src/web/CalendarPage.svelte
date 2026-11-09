@@ -827,7 +827,9 @@
 
 				{#if phoneMonth}
 					<div class="grid gap-1" data-testid="phone-month">
-						<div class="text-ink-soft grid grid-cols-7 text-center text-[11px] font-bold uppercase">
+						<div
+							class="text-ink-soft grid grid-cols-7 text-center text-[0.6875rem] font-bold uppercase"
+						>
 							{#each grid.slice(0, 7) as date (date)}<span>{short(date)}</span>{/each}
 						</div>
 						<ol class="grid grid-cols-7 gap-1">

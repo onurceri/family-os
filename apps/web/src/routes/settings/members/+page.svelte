@@ -341,7 +341,7 @@
 					{/each}
 				</Card>
 			</Section>
-			<p class="text-ink-soft px-1 text-[13px]">
+			<p class="text-ink-soft px-1 text-[0.8125rem]">
 				{t('members_pin_hint')}
 				<a class="text-info font-semibold underline underline-offset-2" href="/settings/devices"
 					>{t('nav_devices_displays')}</a
@@ -370,7 +370,7 @@
 							<ShieldCheck class="size-[18px]" aria-hidden="true" />
 						{/snippet}
 						{#snippet trail()}
-							<span class="text-ink-soft shrink-0 text-[13px] whitespace-nowrap"
+							<span class="text-ink-soft shrink-0 text-[0.8125rem] whitespace-nowrap"
 								>{role.members === 0
 									? t('roles_nobody')
 									: t('roles_people', { count: role.members })}</span
@@ -434,12 +434,12 @@
 						<option value={r.id}>{r.name}</option>
 					{/each}
 				</SelectField>
-				<small class="text-ink-soft text-[13px]">{roleHint(roleId)}</small>
+				<small class="text-ink-soft text-[0.8125rem]">{roleHint(roleId)}</small>
 			</div>
 			<div class="grid gap-1.5">
 				<Label for="member-about">{t('members_about')}</Label>
 				<Input id="member-about" bind:value={about} maxlength={300} />
-				<small class="text-ink-soft text-[13px]">{t('members_about_hint')}</small>
+				<small class="text-ink-soft text-[0.8125rem]">{t('members_about_hint')}</small>
 			</div>
 			<ColorChoice
 				bind:value={color}
@@ -453,9 +453,9 @@
 					<h3 class="text-ink-soft text-xs font-bold tracking-[0.06em] uppercase">
 						{t('members_signin_title')}
 					</h3>
-					<p class="text-ink-soft text-[13px]">{t('members_signin_intro')}</p>
+					<p class="text-ink-soft text-[0.8125rem]">{t('members_signin_intro')}</p>
 					{#if editing && signIn(editing)}
-						<p class="text-[13px] font-semibold">
+						<p class="text-[0.8125rem] font-semibold">
 							{t('members_signin_now', { how: signIn(editing) })}
 						</p>
 					{/if}
@@ -493,20 +493,20 @@
 							pattern={'\\d{4,6}'}
 							bind:value={pin}
 						/>
-						<small class="text-ink-soft text-[13px]">
+						<small class="text-ink-soft text-[0.8125rem]">
 							{t('members_pin_hint')}
 							{#if holds(roleId, ADMINISTERS)}{t('members_pin_admin_hint')}{/if}
 						</small>
 					</div>
 				{:else}
-					<p class="text-ink-soft text-[13px]">{t('members_pin_role_off')}</p>
+					<p class="text-ink-soft text-[0.8125rem]">{t('members_pin_role_off')}</p>
 				{/if}
-				<small class="text-ink-soft text-[13px]"
+				<small class="text-ink-soft text-[0.8125rem]"
 					>{editing ? t('members_signin_leave') : t('members_signin_later')}</small
 				>
 			</div>
 			{#if editing}
-				<p class="text-ink-soft text-[13px]">{t('members_remove_hint')}</p>
+				<p class="text-ink-soft text-[0.8125rem]">{t('members_remove_hint')}</p>
 			{/if}
 			{#if error}<p class="text-destructive text-sm font-semibold" role="alert">{error}</p>{/if}
 		</form>

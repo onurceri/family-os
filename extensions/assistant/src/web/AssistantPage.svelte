@@ -320,7 +320,7 @@
 				<div class="start-body">
 					<div class="grid gap-3 text-center">
 						<p class="type-greeting">{greeting}</p>
-						<p class="text-ink-soft text-[16px]">{t('greeting_hint')}</p>
+						<p class="text-ink-soft text-[1rem]">{t('greeting_hint')}</p>
 					</div>
 					{@render field()}
 					<ul class="suggestions" aria-label={t('examples')}>
@@ -335,8 +335,8 @@
 								>
 									<Icon class="icon" aria-hidden="true" />
 									<span class="grid gap-0.5">
-										<span class="text-[15px] font-bold">{t(suggestion.title)}</span>
-										<span class="text-ink-soft text-[14px] leading-snug"
+										<span class="text-[0.9375rem] font-bold">{t(suggestion.title)}</span>
+										<span class="text-ink-soft text-[0.875rem] leading-snug"
 											>{t(suggestion.question)}</span
 										>
 									</span>
@@ -344,7 +344,7 @@
 							</li>
 						{/each}
 					</ul>
-					<p class="text-ink-soft text-center text-[13px] leading-relaxed">
+					<p class="text-ink-soft text-center text-[0.8125rem] leading-relaxed">
 						{t('privacy_line')}
 						·
 						{#if isAdmin}

@@ -119,7 +119,7 @@
 					>
 				{/if}
 			{/snippet}
-			<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('appearance_styles_hint')}</p>
+			<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">{t('appearance_styles_hint')}</p>
 			<ul class="grid gap-3 @3xl:grid-cols-3">
 				{#each STYLE_IDS as id (id)}
 					{@const inUse = appearance.style === id}
@@ -138,7 +138,7 @@
 							{#key family.timeZone}<StylePreview style={id} />{/key}
 						</div>
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-0.5">
-							<span class="text-[15px] font-bold">{styleName(id)}</span>
+							<span class="text-[0.9375rem] font-bold">{styleName(id)}</span>
 							{#if inUse}
 								<span class="ms-auto" data-testid="style-in-use">
 									<Pill tone="now">
@@ -184,7 +184,7 @@
 
 		<div id="today-blocks" class="scroll-mt-6">
 			<Section label={t('blocks_title')} count={t('appearance_yours_everywhere')}>
-				<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('blocks_hint')}</p>
+				<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">{t('blocks_hint')}</p>
 				<TodayBlocksList
 					id="my-blocks"
 					{blocks}
@@ -264,7 +264,7 @@
 		</Section>
 
 		{#if manage}
-			<p class="text-ink-soft px-1 text-[13px]">
+			<p class="text-ink-soft px-1 text-[0.8125rem]">
 				{t('appearance_family_elsewhere')}
 				<a class="text-info font-semibold underline underline-offset-2" href="/settings/theme"
 					>{t('appearance_family_elsewhere_link')}</a

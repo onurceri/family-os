@@ -55,7 +55,7 @@
 		border-radius: var(--r-item);
 		background: var(--idle);
 		color: var(--ink);
-		font-size: 14px;
+		font-size: 0.875rem;
 		line-height: 1.4;
 	}
 	.ic {

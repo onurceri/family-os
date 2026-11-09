@@ -130,7 +130,7 @@
 	.ttl {
 		margin: 0;
 		padding: 10px 12px 6px;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -151,7 +151,7 @@
 		background: none;
 		color: var(--ink);
 		font: inherit;
-		font-size: 16px;
+		font-size: 1rem;
 		font-weight: 600;
 		text-align: start;
 		cursor: pointer;

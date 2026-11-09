@@ -44,7 +44,7 @@
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 </script>
 
 {#snippet optional()}<span class="text-ink-soft font-normal">{t('optional')}</span>{/snippet}
@@ -61,7 +61,7 @@
 			{...fieldAria(errors.name, id('name'))}
 		/>
 		<FieldError for={id('name')} error={errors.name} />
-		<small class="text-ink-soft text-[13px]">{t('field_name_hint')}</small>
+		<small class="text-ink-soft text-[0.8125rem]">{t('field_name_hint')}</small>
 	</div>
 
 	<div class="grid grid-cols-2 gap-x-3 gap-y-[18px]">
@@ -134,8 +134,9 @@
 								data-testid="preset-{preset.id}"
 							/>
 							<span class="grid gap-0.5">
-								<b class="text-[15px]">{app.t(preset.titleKey)}</b>
-								<small class="text-ink-soft text-[13px] font-normal">{app.t(preset.labelKey)}</small
+								<b class="text-[0.9375rem]">{app.t(preset.titleKey)}</b>
+								<small class="text-ink-soft text-[0.8125rem] font-normal"
+									>{app.t(preset.labelKey)}</small
 								>
 							</span>
 						</label>

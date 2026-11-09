@@ -274,10 +274,10 @@
 						</tbody>
 					</table>
 				</Card>
-				<p class="text-ink-soft flex items-center gap-1.5 px-1 text-[13px]">
+				<p class="text-ink-soft flex items-center gap-1.5 px-1 text-[0.8125rem]">
 					<Lock class="size-3.5" aria-hidden="true" />{t('roles_critical_hint')}
 				</p>
-				<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('roles_custom_intro')}</p>
+				<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">{t('roles_custom_intro')}</p>
 			</div>
 		{:else if phoneRole}
 			{@const role = phoneRole}
@@ -292,7 +292,7 @@
 					{/each}
 				</div>
 				<div class="flex items-center gap-3 px-1">
-					<p class="text-ink-soft min-w-0 flex-1 text-[13px]">
+					<p class="text-ink-soft min-w-0 flex-1 text-[0.8125rem]">
 						{role.builtIn
 							? tDynamic(`app:role_${role.id}_hint`)
 							: t('role_custom_hint', { base: tDynamic(`app:role_${role.base}`) })} · {t(
@@ -339,7 +339,7 @@
 						{/if}
 					</Section>
 				{/each}
-				<p class="text-ink-soft flex items-center gap-1.5 px-1 text-[13px]">
+				<p class="text-ink-soft flex items-center gap-1.5 px-1 text-[0.8125rem]">
 					<Lock class="size-3.5" aria-hidden="true" />{t('roles_critical_hint')}
 				</p>
 			</div>
@@ -399,10 +399,10 @@
 								if (editing) editing.name = typed;
 							}}
 						/>
-						<small class="text-ink-soft text-[13px]">{t('roles_custom_intro')}</small>
+						<small class="text-ink-soft text-[0.8125rem]">{t('roles_custom_intro')}</small>
 					</div>
 				{:else}
-					<small class="text-ink-soft text-[13px]"
+					<small class="text-ink-soft text-[0.8125rem]"
 						>{t('roles_based_on', { base: tDynamic(`app:role_${editing.base}`) })}</small
 					>
 				{/if}

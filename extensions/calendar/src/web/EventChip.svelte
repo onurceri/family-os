@@ -164,15 +164,14 @@
 		{/if}
 		<b
 			bind:this={titleEl}
-			class="text-[13px] font-bold {fit.titleLines === 2 ? 'line-clamp-2' : 'truncate'} {long ||
-			ghost
-				? ''
-				: 'text-ink'}"
+			class="text-[0.8125rem] font-bold {fit.titleLines === 2
+				? 'line-clamp-2'
+				: 'truncate'} {long || ghost ? '' : 'text-ink'}"
 			style:line-height="{BLOCK.title}px">{occurrence.title}</b
 		>
 		{#each meta as line, i (i)}
 			<small
-				class="text-ink-soft truncate text-[11px] font-semibold tabular-nums"
+				class="text-ink-soft truncate text-[0.6875rem] font-semibold tabular-nums"
 				style:line-height="{BLOCK.meta}px">{line}</small
 			>
 		{/each}

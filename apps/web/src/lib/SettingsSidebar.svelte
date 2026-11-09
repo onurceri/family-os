@@ -112,7 +112,7 @@
 			/>
 			{#if !query}
 				<kbd
-					class="text-ink-soft rounded-md border px-1.5 text-[11px] leading-5 font-bold"
+					class="text-ink-soft rounded-md border px-1.5 text-[0.6875rem] leading-5 font-bold"
 					aria-hidden="true">/</kbd
 				>
 			{/if}
@@ -133,7 +133,7 @@
 					<a
 						href={item.path}
 						aria-current={active ? 'page' : undefined}
-						class="focus-visible:ring-ring flex h-9 min-w-0 items-center gap-3 rounded-xl px-3 text-[15px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset {active
+						class="focus-visible:ring-ring flex h-9 min-w-0 items-center gap-3 rounded-xl px-3 text-[0.9375rem] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset {active
 							? 'bg-surface text-ink shadow-lit font-bold'
 							: 'text-ink-soft hover:text-ink'}"
 					>

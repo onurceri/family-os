@@ -38,7 +38,7 @@
 >
 	<ThemeCard {theme} />
 	<div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-0.5">
-		<span class="text-[15px] font-bold">{theme.name}</span>
+		<span class="text-[0.9375rem] font-bold">{theme.name}</span>
 		<span class="text-ink-soft ms-auto text-xs font-semibold"
 			>{t(`appearance_source_${theme.source}` as 'appearance_source_bundled')}</span
 		>

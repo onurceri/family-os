@@ -98,10 +98,10 @@
 		disabled={!onopen}
 		class="focus-visible:ring-ring grid min-h-12 min-w-0 flex-1 grid-cols-[minmax(0,1fr)] content-center gap-px rounded-md py-1.5 text-start outline-none focus-visible:ring-2"
 	>
-		<b class="truncate text-[15px] leading-snug font-semibold {finished ? 'line-through' : ''}"
+		<b class="truncate text-[0.9375rem] leading-snug font-semibold {finished ? 'line-through' : ''}"
 			>{chore.title}</b
 		>
-		<small class="flex flex-wrap items-center gap-x-1 text-[13px] leading-snug">
+		<small class="flex flex-wrap items-center gap-x-1 text-[0.8125rem] leading-snug">
 			{#if chore.recurrence}<Repeat class="size-3 shrink-0" aria-hidden="true" />{/if}
 			<span
 				class="shrink-0 {finished

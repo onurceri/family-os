@@ -195,7 +195,10 @@
 			><Plus class="size-4" aria-hidden="true" />{t('sub_add')}</Button
 		>
 	{/snippet}
-	<p class="text-ink-soft max-w-prose px-1 text-[13px]">{t('subs_intro')} {t('subs_warning')}</p>
+	<p class="text-ink-soft max-w-prose px-1 text-[0.8125rem]">
+		{t('subs_intro')}
+		{t('subs_warning')}
+	</p>
 	{#if loaded}
 		{#if subs.length > 0}
 			<Card rows>
@@ -291,7 +294,7 @@
 				{...fieldAria(showErrors ? errors.url : undefined, 'sub-url')}
 			/>
 			<FieldError for="sub-url" error={showErrors ? errors.url : undefined} />
-			<p class="text-ink-soft text-[13px]">
+			<p class="text-ink-soft text-[0.8125rem]">
 				{panel?.id ? t('sub_new_url_hint', { host: panel.host }) : t('sub_url_hint')}
 			</p>
 		</div>

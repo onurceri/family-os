@@ -87,7 +87,7 @@
 	}
 	b {
 		overflow: hidden;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		font-weight: 700;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -106,7 +106,7 @@
 		flex: none;
 		max-width: 60%;
 		overflow: hidden;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
@@ -114,7 +114,7 @@
 	}
 	small {
 		overflow: hidden;
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -138,10 +138,10 @@
 		max-width: 100%;
 	}
 	.strip b {
-		font-size: 12px;
+		font-size: 0.75rem;
 	}
 	.strip small {
 		max-width: 100%;
-		font-size: 11px;
+		font-size: 0.6875rem;
 	}
 </style>

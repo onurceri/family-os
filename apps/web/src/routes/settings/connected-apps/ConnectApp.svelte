@@ -256,7 +256,8 @@
 					>{oauth?.mcpUrl ?? address}</code
 				>
 				{#if onlyHere && !oauth?.mcpUrl}
-					<small class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</small>
+					<small class="text-ink-soft text-[0.8125rem] leading-snug">{t('address_only_here')}</small
+					>
 				{/if}
 				<div>{@render copyButton(oauth?.mcpUrl ?? address, 'address')}</div>
 				<div><Button variant="primary" onclick={onclose}>{t('mcp_done')}</Button></div>
@@ -276,7 +277,7 @@
 								placeholder="http://homeassistant.local:8123"
 								aria-describedby="ha-address-hint"
 							/>
-							<small id="ha-address-hint" class="text-ink-soft text-[13px] leading-snug"
+							<small id="ha-address-hint" class="text-ink-soft text-[0.8125rem] leading-snug"
 								>{t('mcp_ha_address_hint')}</small
 							>
 						</div>
@@ -349,7 +350,7 @@
 								aria-invalid={nameError ? 'true' : undefined}
 							/>
 							<FieldError for="mcp-name" error={nameError} />
-							<small id="mcp-name-hint" class="text-ink-soft text-[13px] leading-snug"
+							<small id="mcp-name-hint" class="text-ink-soft text-[0.8125rem] leading-snug"
 								>{t('mcp_name_hint')}</small
 							>
 						</div>
@@ -359,7 +360,9 @@
 								<option value="read">{t('mcp_scope_read')}</option>
 								<option value="read_write">{t('mcp_scope_read_write')}</option>
 							</SelectField>
-							<small class="text-ink-soft text-[13px] leading-snug">{t('mcp_scope_hint')}</small>
+							<small class="text-ink-soft text-[0.8125rem] leading-snug"
+								>{t('mcp_scope_hint')}</small
+							>
 						</div>
 						<div class="grid gap-1.5">
 							<Label for="mcp-days">{t('mcp_expiry')}</Label>
@@ -410,12 +413,12 @@
 							data-testid="mcp-settings">{settings}</pre>
 						<div>{@render copyButton(settings, 'settings')}</div>
 					</div>
-					<p class="text-ink-soft text-[13px]">
+					<p class="text-ink-soft text-[0.8125rem]">
 						{t('mcp_endpoint')}:
 						<code class="break-all" data-testid="mcp-endpoint">{address}</code>
 					</p>
 					{#if onlyHere}
-						<p class="text-ink-soft text-[13px] leading-snug">{t('address_only_here')}</p>
+						<p class="text-ink-soft text-[0.8125rem] leading-snug">{t('address_only_here')}</p>
 					{/if}
 					<div><Button variant="primary" onclick={onclose}>{t('mcp_done')}</Button></div>
 				</Step>

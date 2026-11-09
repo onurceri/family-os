@@ -80,7 +80,7 @@
 							{#each usage.byFeature as row (row.key)}
 								<Row title={row.key}>
 									{#snippet trail()}
-										<span class="text-ink-soft text-[13px] tabular-nums"
+										<span class="text-ink-soft text-[0.8125rem] tabular-nums"
 											>{nf.format(row.calls)} · {usd.format(row.cost)}</span
 										>
 									{/snippet}

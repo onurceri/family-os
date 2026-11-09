@@ -24,7 +24,7 @@
 	const { app, t } = useRecords();
 	const id = (name: string) => `${idPrefix}-${name}`;
 	const field =
-		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[15px] outline-none focus-visible:ring-3';
+		'border-line bg-wall text-ink focus-visible:border-info focus-visible:ring-info/25 h-[var(--ctl)] w-full rounded-[var(--r-ctl)] border px-3 text-[0.9375rem] outline-none focus-visible:ring-3';
 </script>
 
 <div class="@container grid gap-[18px]">
@@ -98,7 +98,7 @@
 			bind:value={value.leadDays}
 			class="w-28"
 		/>
-		<small class="text-ink-soft text-[13px]">{t('field_lead_days_hint')}</small>
+		<small class="text-ink-soft text-[0.8125rem]">{t('field_lead_days_hint')}</small>
 	</div>
 
 	<fieldset class="grid gap-2">

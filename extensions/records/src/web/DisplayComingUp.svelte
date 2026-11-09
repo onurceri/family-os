@@ -43,6 +43,8 @@
 				subtitle="{o.recordName} · {dueLabel(o, today, t, app.dateLocale())}"
 			/>
 		{/each}
-		{#if items.length > max}<p class="text-ink-soft px-1 text-[13px]">+{items.length - max}</p>{/if}
+		{#if items.length > max}<p class="text-ink-soft px-1 text-[0.8125rem]">
+				+{items.length - max}
+			</p>{/if}
 	</DisplaySection>
 {/if}

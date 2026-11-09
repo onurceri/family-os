@@ -131,7 +131,7 @@
 			untilError={errors.until}
 		/>
 		{#if value.repeat !== 'none' && !value.dueDate}
-			<small class="text-ink-soft text-[13px]">{t('repeat_hint')}</small>
+			<small class="text-ink-soft text-[0.8125rem]">{t('repeat_hint')}</small>
 		{/if}
 	</fieldset>
 

@@ -48,9 +48,10 @@
 							data-testid="preset-{preset.id}"
 						/>
 						<span class="grid gap-0.5">
-							<b class="text-[15px]">{app.t(preset.titleKey)}</b>
+							<b class="text-[0.9375rem]">{app.t(preset.titleKey)}</b>
 							{#if preset.labelKey}
-								<small class="text-ink-soft text-[13px] font-normal">{app.t(preset.labelKey)}</small
+								<small class="text-ink-soft text-[0.8125rem] font-normal"
+									>{app.t(preset.labelKey)}</small
 								>
 							{/if}
 						</span>

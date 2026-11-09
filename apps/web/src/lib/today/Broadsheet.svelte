@@ -640,7 +640,7 @@
 	}
 	.sentence {
 		max-width: 36ch;
-		font-size: 15px;
+		font-size: 0.9375rem;
 		line-height: 1.4;
 		color: var(--ink-soft);
 	}
@@ -689,7 +689,7 @@
 	.free {
 		padding-inline-start: 15px;
 		border-inline-start: 3px solid var(--line);
-		font-size: 16px;
+		font-size: 1rem;
 		font-style: italic;
 		line-height: 1.25;
 		color: var(--ink-soft);
@@ -718,7 +718,7 @@
 		text-decoration: underline;
 	}
 	.nextdays .d {
-		font-size: 17px;
+		font-size: 1.0625rem;
 		font-weight: 600;
 		letter-spacing: 0.02em;
 		text-transform: uppercase;
@@ -738,13 +738,13 @@
 	}
 	.nextdays b {
 		overflow: hidden;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.nextdays small {
-		font-size: 13px;
+		font-size: 0.8125rem;
 		color: var(--ink-soft);
 		white-space: nowrap;
 	}
@@ -789,7 +789,7 @@
 	.more {
 		flex: none;
 		margin-inline-start: auto;
-		font-size: 12px;
+		font-size: 0.75rem;
 		font-weight: 700;
 		color: var(--ink-soft);
 	}
@@ -813,7 +813,7 @@
 		min-height: 44px;
 		padding: 0 12px;
 		border-radius: 8px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 700;
 	}
 	.needs .ghost {
@@ -840,7 +840,7 @@
 		display: flex;
 		align-items: center;
 		min-height: 36px;
-		font-size: 14px;
+		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--ink);
 		text-decoration: none;
