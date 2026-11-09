@@ -36,7 +36,7 @@
 					document.head.appendChild(style);
 				}
 			} catch {}
-			// This device's text size (lib/theme.svelte.ts), so text never jumps after the first paint.
+			// This device's text size (parseTextSize in lib/text-size.ts), so text never jumps after the first paint.
 			try {
 				const size = localStorage.getItem('famos.textSize');
 				if (size === 'small' || size === 'large' || size === 'larger') document.documentElement.dataset.textSize = size;

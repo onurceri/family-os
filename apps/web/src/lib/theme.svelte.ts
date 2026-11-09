@@ -6,8 +6,10 @@
  */
 import { defaultMode, isNight, type Mode, parseMode } from './day-night.js';
 import { family } from './family.svelte.js';
+import { parseTextSize, type TextSize } from './text-size.js';
 
 export type { Mode } from './day-night.js';
+export { TEXT_SIZES, type TextSize } from './text-size.js';
 
 const KEY = 'famos.mode';
 const MINUTE_MS = 60_000;
@@ -68,19 +70,12 @@ export function followDayNight(display = false): () => void {
 	};
 }
 
-/**
- * Text size on this device: the root font size, so every size given in rem grows or shrinks
- * (`data-text-size` on <html>, sizes in theme.css). Kept in this browser only
- * (`famos.textSize`); app.html applies it before first paint.
- */
-export const TEXT_SIZES = ['small', 'normal', 'large', 'larger'] as const;
-export type TextSize = (typeof TEXT_SIZES)[number];
+/** This device's text size (text-size.ts); app.html applies it before first paint. */
 const TEXT_KEY = 'famos.textSize';
 
 function storedTextSize(): TextSize {
 	try {
-		const value = localStorage.getItem(TEXT_KEY);
-		return (TEXT_SIZES as readonly string[]).includes(value ?? '') ? (value as TextSize) : 'normal';
+		return parseTextSize(localStorage.getItem(TEXT_KEY)) ?? 'normal';
 	} catch {
 		return 'normal';
 	}
