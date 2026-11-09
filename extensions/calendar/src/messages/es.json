@@ -139,7 +139,7 @@
 	"sub_reminder_days_1": "1 día antes",
 	"sub_reminder_days_2": "2 días antes",
 	"sub_reminder_at": "Hora del recordatorio para eventos de todo el día",
-	"sub_reminder_at_hint": "Vacío: la hora de recordatorio de la familia.",
+	"sub_reminder_at_hint": "Vacío: la hora de recordatorio de la familia, que se cambia en Ajustes → Familia → Idioma y región.",
 	"sub_reminder_timed": "Eventos con hora",
 	"sub_allow_local": "Calendario en mi red doméstica",
 	"sub_allow_local_warn": "Solo para un calendario dentro de tu red doméstica, como uno en un NAS. Esto permite que FamilyOS contacte con dispositivos de tu red. Déjalo desactivado para cualquier cosa en internet.",

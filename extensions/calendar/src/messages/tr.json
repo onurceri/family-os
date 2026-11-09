@@ -138,7 +138,7 @@
 	"sub_reminder_days_1": "1 gün önce",
 	"sub_reminder_days_2": "2 gün önce",
 	"sub_reminder_at": "Tüm gün etkinlikleri için hatırlatma saati",
-	"sub_reminder_at_hint": "Boş: ailenin hatırlatma saati.",
+	"sub_reminder_at_hint": "Boş: ailenin hatırlatma saati; Ayarlar → Aile → Dil ve bölge bölümünden değiştirilir.",
 	"sub_reminder_timed": "Saatli etkinlikler",
 	"sub_allow_local": "Ev ağımdaki bir takvim",
 	"sub_allow_local_warn": "Yalnızca ev ağındaki bir takvim için, örneğin bir NAS. Bu, FamilyOS'un ağındaki cihazlara bağlanmasına izin verir. İnternetteki takvimler için kapalı tut.",
