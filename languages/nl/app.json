@@ -1248,7 +1248,7 @@
 	"settings_search_none": "Geen instellingen gevonden.",
 	"more_you_hint": "Profiel, weergave, taal",
 	"more_you_hint_role": "{{role}} · profiel, weergave, taal",
-	"my_language_hint": "De taal waarin FamilyOS met je praat, op elk apparaat: de app, meldingen en de assistent.",
+	"my_language_hint": "De taal waarin FamilyOS wordt weergegeven, op elk apparaat: de app, meldingen en de assistent.",
 	"sign_out_hint": "Alleen op dit apparaat.",
 	"nav_ai_privacy": "Wat de AI mag lezen",
 	"nav_ai_usage": "Gebruik en limieten",
