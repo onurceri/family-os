@@ -1185,6 +1185,8 @@
 	"theme_style_hint": "How Today and the displays are arranged.",
 	"theme_style_suggested": "Not chosen yet: {{theme}} suggests {{style}}.",
 	"theme_display_style": "Style of {{name}}",
+	"theme_display_text_size_label": "Text size",
+	"theme_display_text_size": "Text size of {{name}}",
 	"theme_display_theme": "Theme of {{name}}",
 	"theme_display_style_default": "Same as the family ({{name}})",
 	"theme_display_theme_default": "Same as the family ({{name}})",

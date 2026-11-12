@@ -104,6 +104,44 @@ describe('styles', () => {
 		expect((await look(display('dev_kitchen'))).style).toBe('lanes');
 	});
 
+	it('gives a display its own text size, normal for everyone else', async () => {
+		k = await createTestKernel();
+		const { actor: admin } = await k.member('admin');
+		const { actor: kid } = await k.member('member');
+		await addDisplay('dev_kitchen');
+		await addDisplay('dev_other');
+		expect((await look(display('dev_kitchen'))).textSize).toBe('normal');
+
+		await k.runner.invoke(
+			'core.setDisplayTextSize',
+			{ deviceId: 'dev_kitchen', size: 'larger' },
+			admin,
+		);
+		expect((await look(display('dev_kitchen'))).textSize).toBe('larger');
+		expect(await k.route('core.listDisplayTextSizes').call({ actor: admin })).toEqual({
+			dev_kitchen: 'larger',
+		});
+		// Another display and people are untouched: a person's size is kept on their own device.
+		expect((await look(display('dev_other'))).textSize).toBe('normal');
+		expect((await look(admin)).textSize).toBe('normal');
+
+		// Normal is never stored.
+		await k.runner.invoke(
+			'core.setDisplayTextSize',
+			{ deviceId: 'dev_kitchen', size: 'normal' },
+			admin,
+		);
+		expect((await look(display('dev_kitchen'))).textSize).toBe('normal');
+		expect(await k.route('core.listDisplayTextSizes').call({ actor: admin })).toEqual({});
+
+		await expect(
+			k.runner.invoke('core.setDisplayTextSize', { deviceId: 'dev_nope', size: 'large' }, admin),
+		).rejects.toMatchObject({ code: 'not_found' });
+		await expect(
+			k.runner.invoke('core.setDisplayTextSize', { deviceId: 'dev_kitchen', size: 'large' }, kid),
+		).rejects.toMatchObject({ code: 'forbidden' });
+	});
+
 	it("uses the theme's preferred style only while the family has none", async () => {
 		k = await createTestKernel({ themes: themesWith({ paper: 'wall', coast: null }) });
 		const { actor: admin } = await k.member('admin');

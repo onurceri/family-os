@@ -31,7 +31,7 @@ export const widgetRows = (rows: number): number | undefined =>
 /** One type step larger than on a person's screen from 1024 px, a TV-sized screen one more. */
 export const baseZoom = (width: number): number =>
 	width >= 1800 ? 1.5 : width >= 1024 ? 1.125 : 1;
-/** The zoom comes down in small steps, never below a person's own Today (1). */
+/** The zoom comes down in small steps, never below `floor`: a person's own Today (1) by default. */
 const ZOOM_STEP = 0.0625;
 
 /** What goes first: decoration, then the weather's hours; the granted blocks only later. */
@@ -63,7 +63,7 @@ function leaveOut(items: readonly number[], k: number): number[][] {
  * and last everyone's status. Each is tried as it is, then with the style's widgets and smaller
  * blocks moved where there is room (`shift`).
  */
-export function fitPlans(widgets: readonly number[], zoom: number): FitPlan[] {
+export function fitPlans(widgets: readonly number[], zoom: number, floor = 1): FitPlan[] {
 	const out: Omit<FitPlan, 'shift'>[] = [];
 	const plan = (p: Partial<Omit<FitPlan, 'shift'>>) =>
 		out.push({ tight: 0, rows: 0, drop: [], hide: [], zoom, ...p });
@@ -79,7 +79,7 @@ export function fitPlans(widgets: readonly number[], zoom: number): FitPlan[] {
 		plan({ tight: 3, rows: 3, drop: [...drop] });
 	}
 	let smallest = zoom;
-	for (let z = zoom - ZOOM_STEP; z >= 1 - 1e-6; z -= ZOOM_STEP) {
+	for (let z = zoom - ZOOM_STEP; z >= floor - 1e-6; z -= ZOOM_STEP) {
 		smallest = z;
 		plan({ tight: 3, rows: 3, drop: [...drop], zoom: z });
 	}
@@ -123,8 +123,9 @@ export function chooseFit(
 	widgets: readonly number[],
 	zoom: number,
 	fits: (plan: FitPlan) => boolean,
+	floor = 1,
 ): FitPlan {
-	const plans = fitPlans(widgets, zoom);
+	const plans = fitPlans(widgets, zoom, floor);
 	let pick = plans.find((plan) => fits(plan));
 	if (!pick) return plans.at(-1) as FitPlan;
 	// Each step starts again from what was taken back so far, so it only ever gives back more.
@@ -138,6 +139,26 @@ export function chooseFit(
 		}
 	}
 	return pick;
+}
+
+/**
+ * The largest zoom from `from` down to `to`, in the fit's steps, at which `fitsAt` holds (`to` when
+ * none does). Halving the range, as fitting at a zoom tries a whole round of plans: on a wall
+ * tablet that is a few rounds, not one per step.
+ */
+export function largestZoom(from: number, to: number, fitsAt: (zoom: number) => boolean): number {
+	const zooms: number[] = [];
+	for (let z = from; z > to + 1e-6; z -= ZOOM_STEP) zooms.push(z);
+	zooms.push(to);
+	// Smaller zooms hold more: find the first that fits, everything after it fits too.
+	let lo = 0;
+	let hi = zooms.length - 1;
+	while (lo < hi) {
+		const mid = Math.floor((lo + hi) / 2);
+		if (fitsAt(zooms[mid] as number)) hi = mid;
+		else lo = mid + 1;
+	}
+	return zooms[lo] as number;
 }
 
 /** The plan as `data-fit`, for tests and for reading a screenshot. */

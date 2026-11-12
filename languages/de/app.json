@@ -1185,6 +1185,8 @@
 	"theme_style_hint": "Die Anordnung von Heute und den Displays.",
 	"theme_style_suggested": "Noch nicht gewählt: {{theme}} empfiehlt {{style}}.",
 	"theme_display_style": "Stil von {{name}}",
+	"theme_display_text_size_label": "Textgröße",
+	"theme_display_text_size": "Textgröße von {{name}}",
 	"theme_display_theme": "Design von {{name}}",
 	"theme_display_style_default": "Wie die Familie ({{name}})",
 	"theme_display_theme_default": "Wie die Familie ({{name}})",

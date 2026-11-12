@@ -6,6 +6,7 @@ import {
 	type Kernel,
 	RotationSchema,
 	STYLE_IDS,
+	TEXT_SIZES,
 	toDevice,
 } from '@famos/core';
 import { FamosError, personPresent, systemActor, type TrustedDevice } from '@famos/sdk';
@@ -337,6 +338,8 @@ function mountDisplayRoutes(
 						hidden: z.array(z.string()),
 						/** The pages this display shows between Today's turns; null shows only Today. */
 						rotation: RotationSchema.nullable(),
+						/** This display's text size, chosen in Settings (Theme, Displays). */
+						textSize: z.enum(TEXT_SIZES),
 					}),
 				),
 			},
@@ -375,6 +378,7 @@ function mountDisplayRoutes(
 				theme: look.theme,
 				style: look.style,
 				hidden: look.hidden,
+				textSize: look.textSize,
 				rotation: await kernel.themes.rotationOf(kernel.ctx.db, actor.deviceId),
 			},
 			200,
