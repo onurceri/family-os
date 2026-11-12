@@ -106,6 +106,21 @@ export function buildCard(parts: CardParts): Omit<AnswerCard, 'text' | 'lead'> {
 	};
 }
 
+/** The card's facts naming nobody: for a model the family sends no names to. */
+export function withoutPeople(
+	card: Omit<AnswerCard, 'text' | 'lead'>,
+): Omit<AnswerCard, 'text' | 'lead'> {
+	return {
+		...card,
+		understood: { ...card.understood, people: [], unmatched: [] },
+		sections: card.sections.map((s) => ({
+			...s,
+			items: s.items.map((i) => ({ ...i, people: [] })),
+			...(s.next && { next: { ...s.next, people: [] } }),
+		})),
+	};
+}
+
 /** The card as plain lines: the header, each topic with its facts, then what is not here. */
 export function cardText(card: Omit<AnswerCard, 'text' | 'lead'>, words: CardWords): string[] {
 	const { t } = words;
