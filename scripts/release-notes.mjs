@@ -52,13 +52,25 @@ export function parseCommit(message) {
 
 /**
  * Reads the footers `Release-note-for: <sha prefix>` and `Release-note: <header or none>` of a
- * commit message; returns null when it does not correct another commit.
+ * commit message: each `Release-note-for` goes with the `Release-note` after it, so one commit
+ * can correct several others. Empty when it corrects none.
  */
-export function parseCorrection(message) {
-	const target = /^Release-note-for: *([0-9a-f]{7,40})\s*$/im.exec(message)?.[1];
-	const note = /^Release-note: *(.+?)\s*$/im.exec(message)?.[1];
-	if (!target || !note) return null;
-	return { target: target.toLowerCase(), note };
+export function parseCorrections(message) {
+	const corrections = [];
+	let target = null;
+	for (const line of message.split('\n')) {
+		const named = /^\s*Release-note-for: *([0-9a-f]{7,40})\s*$/i.exec(line)?.[1];
+		if (named) {
+			target = named.toLowerCase();
+			continue;
+		}
+		const note = /^\s*Release-note: *(.+?)\s*$/i.exec(line)?.[1];
+		if (note && target) {
+			corrections.push({ target, note });
+			target = null;
+		}
+	}
+	return corrections;
 }
 
 /**
@@ -67,17 +79,14 @@ export function parseCorrection(message) {
  * changes.
  *
  * Each entry is a message or `{ sha, message }`, newest first (git log order). A later commit
- * can replace an earlier commit's line with `Release-note-for` and `Release-note` footers; the
+ * can replace earlier commits' lines with `Release-note-for` and `Release-note` footers; the
  * newest correction for a commit wins and `Release-note: none` drops the line. Only entries
  * that carry a sha can be corrected.
  */
 export function renderNotes(version, entries, date = new Date(), { first = false } = {}) {
 	const items = entries.map((e) => (typeof e === 'string' ? { sha: null, message: e } : e));
 	const corrections = [];
-	for (const { message } of items) {
-		const correction = parseCorrection(message);
-		if (correction) corrections.push(correction);
-	}
+	for (const { message } of items) corrections.push(...parseCorrections(message));
 	const commits = items
 		.map(({ sha, message }) => {
 			const fix = sha ? corrections.find((c) => sha.toLowerCase().startsWith(c.target)) : undefined;
