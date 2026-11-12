@@ -107,6 +107,9 @@ const BACKSTOP_LOCK_MS = 60 * 60_000;
 const FAILURES_PER_ADDRESS = 10;
 const ADDRESS_WINDOW_MS = 60_000;
 
+/** Where better-auth's endpoints are served. */
+const BASE_PATH = '/api/auth';
+
 const CHILD_EMAIL_DOMAIN = 'child.famos.invalid';
 const PIN_PROVIDER = 'pin';
 const CREDENTIAL_PROVIDER = 'credential';
@@ -165,7 +168,7 @@ export function authOptions(options: IdentityOptions): BetterAuthOptions {
 	return {
 		appName: 'FamilyOS',
 		baseURL: options.baseURL,
-		basePath: '/api/auth',
+		basePath: BASE_PATH,
 		secret: options.secret,
 		trustedOrigins: options.trustedOrigins ?? [options.baseURL],
 		database: { db: options.db, type: 'sqlite', casing: 'snake' },
@@ -422,8 +425,21 @@ export function createIdentity(options: IdentityOptions): Identity {
 			return { result: ok ? 'ok' : 'wrong' };
 		},
 		async handler(request) {
-			const target = await signInTarget(request);
-			if (!target) return auth.handler(request);
+			const path = new URL(request.url).pathname;
+			if (!HTTP_ENDPOINTS.has(`${request.method} ${path}`))
+				return new Response(null, { status: 404 });
+			const kind = signInKind(request);
+			if (!kind) return auth.handler(request);
+			// A sign-in whose account cannot be read could not be counted against the locks, so it never
+			// reaches the secret check.
+			const signIn = await readSignIn(request, kind);
+			if (!signIn) {
+				return Response.json(
+					{ code: 'BAD_REQUEST', message: 'Send the sign-in as a JSON object.' },
+					{ status: 400 },
+				);
+			}
+			const { target } = signIn;
 			const ip = request.headers.get(CLIENT_IP_HEADER);
 			const address = ip ? addressKey(ip) : 'unknown';
 			const account = `${target.kind}:${target.id}`;
@@ -464,7 +480,7 @@ export function createIdentity(options: IdentityOptions): Identity {
 			};
 			let response: Response;
 			try {
-				response = await auth.handler(request);
+				response = await auth.handler(checkedRequest(request, signIn.body));
 			} catch (error) {
 				forgive();
 				throw error;
@@ -494,28 +510,74 @@ export function createIdentity(options: IdentityOptions): Identity {
 	};
 }
 
+const SIGN_IN_PATHS: Record<string, 'email' | 'pin'> = {
+	[`${BASE_PATH}/sign-in/email`]: 'email',
+	[`${BASE_PATH}/sign-in/pin`]: 'pin',
+};
+
+/**
+ * The only better-auth endpoints reachable over HTTP, by method and exact path: the two sign-ins and
+ * signing out. Everything else better-auth offers (listing and unlinking logins, changing a password,
+ * updating or deleting the user, and whatever a later version adds) answers as not found, because
+ * FamilyOS sets and removes credentials only through its own audited actions and routes. Server code
+ * calls `auth.api` directly, which never passes through here.
+ */
+const HTTP_ENDPOINTS = new Set([
+	`POST ${BASE_PATH}/sign-in/email`,
+	`POST ${BASE_PATH}/sign-in/pin`,
+	`POST ${BASE_PATH}/sign-out`,
+]);
+
+/** Which sign-in a request is, by its exact path; null for anything else. */
+function signInKind(request: Request): 'email' | 'pin' | null {
+	if (request.method !== 'POST') return null;
+	return SIGN_IN_PATHS[new URL(request.url).pathname] ?? null;
+}
+
+/**
+ * A sign-in's body and the account it names (an email, lowercased, or a member id for a PIN). Only
+ * a JSON object naming the account as a non-empty string is read; anything else is null, so no
+ * other body format can carry a sign-in past the locks.
+ */
+async function readSignIn(
+	request: Request,
+	kind: 'email' | 'pin',
+): Promise<{ target: { kind: 'email' | 'pin'; id: string }; body: object } | null> {
+	const type = (request.headers.get('content-type') ?? '').split(';')[0]?.trim().toLowerCase();
+	if (type !== 'application/json') return null;
+	let body: unknown;
+	try {
+		body = JSON.parse(await request.clone().text());
+	} catch {
+		return null;
+	}
+	if (typeof body !== 'object' || body === null || Array.isArray(body)) return null;
+	const id = (body as Record<string, unknown>)[kind === 'pin' ? 'memberId' : 'email'];
+	return typeof id === 'string' && id ? { target: { kind, id: id.toLowerCase() }, body } : null;
+}
+
+/**
+ * The request better-auth checks, carrying the body exactly as it was read for the locks: whatever
+ * the original's encoding, repeated keys or content-type parameters, better-auth cannot read a
+ * different account from it.
+ */
+function checkedRequest(request: Request, body: object): Request {
+	const headers = new Headers(request.headers);
+	headers.set('content-type', 'application/json');
+	headers.delete('content-length');
+	return new Request(request.url, { method: 'POST', headers, body: JSON.stringify(body) });
+}
+
 /**
  * The account a sign-in attempt names: an email (lowercased) or a member id for a PIN. Null for
- * anything that is not a sign-in.
+ * anything that is not a sign-in, and for a sign-in whose account cannot be read (which the
+ * handler refuses).
  */
 export async function signInTarget(
 	request: Request,
 ): Promise<{ kind: 'email' | 'pin'; id: string } | null> {
-	if (request.method !== 'POST') return null;
-	const path = new URL(request.url).pathname;
-	const kind = path.endsWith('/sign-in/pin')
-		? 'pin'
-		: path.endsWith('/sign-in/email')
-			? 'email'
-			: null;
-	if (!kind) return null;
-	try {
-		const body = (await request.clone().json()) as { memberId?: unknown; email?: unknown };
-		const id = kind === 'pin' ? body.memberId : body.email;
-		return typeof id === 'string' && id ? { kind, id: id.toLowerCase() } : null;
-	} catch {
-		return null;
-	}
+	const kind = signInKind(request);
+	return kind ? ((await readSignIn(request, kind))?.target ?? null) : null;
 }
 
 export { addressKey } from './address.ts';
