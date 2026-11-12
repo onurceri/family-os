@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { silentLogger } from '@famos/adapters/runtime';
+import type { CoreTables } from '@famos/core';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
@@ -17,7 +18,12 @@ let app: ReturnType<typeof createHttpApp>;
 let cookie: string;
 let ip = 0;
 
-const post = (path: string, body: unknown, withCookie = true) =>
+const post = (
+	path: string,
+	body: unknown,
+	withCookie = true,
+	headers: Record<string, string> = {},
+) =>
 	app.request(`${BASE}${path}`, {
 		method: 'POST',
 		headers: {
@@ -25,6 +31,7 @@ const post = (path: string, body: unknown, withCookie = true) =>
 			origin: BASE,
 			'x-forwarded-for': `10.3.0.${++ip}`,
 			...(withCookie && { cookie }),
+			...headers,
 		},
 		body: JSON.stringify(body),
 	});
@@ -89,12 +96,23 @@ it('serves a feed as text/calendar to anyone with the address, and 404 otherwise
 		date: '2026-10-10',
 		startTime: '10:00',
 	});
-	const created = await post('/api/v1/actions/calendar.createFeed', {
-		scope: memberId,
-		label: 'Phone',
+	// A client that retries safely sends a key; the address must still not be kept anywhere.
+	const created = await post('/api/v1/calendar/feeds', { scope: memberId, label: 'Phone' }, true, {
+		'idempotency-key': 'feed-retry-0001',
 	});
-	expect(created.status).toBeLessThan(300);
-	const { output } = (await created.json()) as { output: { token: string; path: string } };
+	expect(created.status).toBe(201);
+	const output = (await created.json()) as { token: string; path: string };
+	const kept = await runtime.kernel.ctx.db
+		.withTables<CoreTables>()
+		.selectFrom('core_idempotency')
+		.selectAll()
+		.execute();
+	expect(kept).toEqual([]);
+	// The old action address is gone.
+	const old = await post('/api/v1/actions/calendar.createFeed', { scope: memberId }, true, {
+		'idempotency-key': 'feed-retry-0002',
+	});
+	expect(old.status).toBe(404);
 
 	// No cookie: the address is the credential.
 	const res = await app.request(`${BASE}${output.path}`);

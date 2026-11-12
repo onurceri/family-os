@@ -1446,6 +1446,358 @@
 						}
 					}
 				}
+			},
+			"post": {
+				"operationId": "calendar.createFeed",
+				"summary": "Create a secret calendar address for phones and other calendars; shown only in this answer",
+				"tags": [
+					"calendar"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"scope": {
+										"anyOf": [
+											{
+												"type": "string",
+												"enum": [
+													"family"
+												]
+											},
+											{
+												"type": "string",
+												"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+											}
+										]
+									},
+									"includeNotes": {
+										"type": "boolean",
+										"default": false,
+										"description": "Whether event notes appear in the feed"
+									},
+									"label": {
+										"type": "string",
+										"maxLength": 60,
+										"description": "Where it is used, e.g. \"Mum's phone\""
+									}
+								},
+								"required": [
+									"scope"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Create a secret calendar address for phones and other calendars; shown only in this answer",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"feed": {
+											"type": "object",
+											"properties": {
+												"id": {
+													"type": "string"
+												},
+												"scope": {
+													"type": "string"
+												},
+												"includeNotes": {
+													"type": "boolean"
+												},
+												"label": {
+													"type": [
+														"string",
+														"null"
+													]
+												},
+												"createdBy": {
+													"type": [
+														"string",
+														"null"
+													]
+												},
+												"createdAt": {
+													"type": "number"
+												},
+												"lastUsedAt": {
+													"type": [
+														"number",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"id",
+												"scope",
+												"includeNotes",
+												"label",
+												"createdBy",
+												"createdAt",
+												"lastUsedAt"
+											]
+										},
+										"token": {
+											"type": "string"
+										},
+										"path": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"feed",
+										"token",
+										"path"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/api/v1/calendar/feed/{file}": {
@@ -7708,411 +8060,6 @@
 														"kind",
 														"label",
 														"items"
-													]
-												}
-											},
-											"required": [
-												"status",
-												"output"
-											]
-										},
-										{
-											"type": "object",
-											"properties": {
-												"status": {
-													"type": "string",
-													"enum": [
-														"drafted"
-													]
-												},
-												"draftId": {
-													"type": "string"
-												}
-											},
-											"required": [
-												"status",
-												"draftId"
-											]
-										}
-									]
-								}
-							}
-						}
-					},
-					"400": {
-						"description": "Invalid request",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"401": {
-						"description": "Not signed in",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"403": {
-						"description": "Not allowed",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {},
-												"reason": {
-													"type": "string",
-													"enum": [
-														"capability",
-														"approval",
-														"display",
-														"sign_in",
-														"ai",
-														"critical",
-														"area"
-													]
-												},
-												"capability": {
-													"type": "string"
-												}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"404": {
-						"description": "Not found",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"409": {
-						"description": "Conflict",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"422": {
-						"description": "The Idempotency-Key was used for a different action",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					},
-					"429": {
-						"description": "Limit reached",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"error": {
-											"type": "object",
-											"properties": {
-												"code": {
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"details": {}
-											},
-											"required": [
-												"code",
-												"message"
-											]
-										}
-									},
-									"required": [
-										"error"
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"/api/v1/actions/calendar.createFeed": {
-			"post": {
-				"operationId": "calendar.createFeed",
-				"summary": "Create a secret calendar address for phones and other calendars",
-				"tags": [
-					"actions",
-					"calendar"
-				],
-				"security": [
-					{
-						"session": []
-					}
-				],
-				"parameters": [
-					{
-						"schema": {
-							"type": "string",
-							"pattern": "^[A-Za-z0-9_-]{1,100}$",
-							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
-						},
-						"required": false,
-						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
-						"name": "idempotency-key",
-						"in": "header"
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"properties": {
-									"scope": {
-										"anyOf": [
-											{
-												"type": "string",
-												"enum": [
-													"family"
-												]
-											},
-											{
-												"type": "string",
-												"pattern": "^member_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-											}
-										]
-									},
-									"includeNotes": {
-										"type": "boolean",
-										"default": false,
-										"description": "Whether event notes appear in the feed"
-									},
-									"label": {
-										"type": "string",
-										"maxLength": 60,
-										"description": "Where it is used, e.g. \"Mum's phone\""
-									}
-								},
-								"required": [
-									"scope"
-								]
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"description": "Applied, or stored as a draft for approval",
-						"content": {
-							"application/json": {
-								"schema": {
-									"oneOf": [
-										{
-											"type": "object",
-											"properties": {
-												"status": {
-													"type": "string",
-													"enum": [
-														"applied"
-													]
-												},
-												"output": {
-													"type": "object",
-													"properties": {
-														"feed": {
-															"type": "object",
-															"properties": {
-																"id": {
-																	"type": "string"
-																},
-																"scope": {
-																	"type": "string"
-																},
-																"includeNotes": {
-																	"type": "boolean"
-																},
-																"label": {
-																	"type": [
-																		"string",
-																		"null"
-																	]
-																},
-																"createdBy": {
-																	"type": [
-																		"string",
-																		"null"
-																	]
-																},
-																"createdAt": {
-																	"type": "number"
-																},
-																"lastUsedAt": {
-																	"type": [
-																		"number",
-																		"null"
-																	]
-																}
-															},
-															"required": [
-																"id",
-																"scope",
-																"includeNotes",
-																"label",
-																"createdBy",
-																"createdAt",
-																"lastUsedAt"
-															]
-														},
-														"token": {
-															"type": "string"
-														},
-														"path": {
-															"type": "string"
-														}
-													},
-													"required": [
-														"feed",
-														"token",
-														"path"
 													]
 												}
 											},

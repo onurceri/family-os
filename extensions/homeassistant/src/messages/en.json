@@ -28,6 +28,7 @@
 	"field_token": "Token",
 	"token_hint": "Create a separate user in Home Assistant for FamilyOS (not an administrator), sign in as it, and create a long-lived access token under Profile → Security. Home Assistant cannot limit what a token may do, so FamilyOS uses it only to read and to switch what you allow here.",
 	"token_change_hint": "Enter the token again, even if it has not changed: FamilyOS keeps it out of sight and cannot show it.",
+	"password_needed": "Sign in with your password to test or save the connection. A PIN on a shared device cannot.",
 	"token_error": "Enter the token as Home Assistant shows it, without spaces.",
 	"fact_address": "Address",
 	"fact_name": "Home",

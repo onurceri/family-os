@@ -519,4 +519,25 @@ describe('test the connection before saving', () => {
 		);
 		expect(declared?.route.requires).toBe('homeassistant.manage');
 	});
+
+	it('needs a person at a password sign-in, so a PIN cannot probe the home network', async () => {
+		serveHomeAssistant();
+		const pin: Actor = { ...admin, pin: true } as Actor;
+		const app: Actor = { kind: 'app', appId: 'app_1' } as unknown as Actor;
+		const ai: Actor = { kind: 'ai', mode: 'agent', source: 'mcp' } as Actor;
+		await expect(
+			k
+				.route('homeassistant.testConnection')
+				.call({ actor: pin, body: { url: BASE, token: TOKEN } }),
+		).rejects.toMatchObject({ code: 'forbidden', details: { reason: 'full_sign_in' } });
+		for (const who of [app, ai]) {
+			await expect(
+				k
+					.route('homeassistant.testConnection')
+					.call({ actor: who, body: { url: BASE, token: TOKEN } }),
+			).rejects.toMatchObject({ code: 'unauthenticated' });
+		}
+		expect(k.http.requests).toEqual([]);
+		expect((await test()).status).toBe('ok');
+	});
 });

@@ -28,6 +28,7 @@
 	"field_token": "Token",
 	"token_hint": "Erstelle in Home Assistant einen eigenen Benutzer für FamilyOS (ohne Administratorrechte), melde dich damit an und erstelle unter Profil → Sicherheit einen langlebigen Zugriffstoken. Home Assistant kann die Berechtigungen eines Tokens nicht einschränken. FamilyOS verwendet ihn deshalb nur zum Lesen und zum Schalten der hier erlaubten Geräte.",
 	"token_change_hint": "Gib den Token erneut ein, auch wenn er unverändert ist: FamilyOS bewahrt ihn geschützt auf und kann ihn nicht anzeigen.",
+	"password_needed": "Melde dich mit deinem Passwort an, um die Verbindung zu testen oder zu speichern. Eine PIN auf einem gemeinsam genutzten Gerät reicht dafür nicht.",
 	"token_error": "Gib den Token ohne Leerzeichen so ein, wie Home Assistant ihn anzeigt.",
 	"fact_address": "Adresse",
 	"fact_name": "Zuhause",

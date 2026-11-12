@@ -123,9 +123,25 @@ async function enableMcp(cookie: string) {
 }
 
 async function feedOf(cookie: string, scope: string) {
-	const res = await call('POST', '/api/v1/actions/calendar.createFeed', { scope }, cookie);
-	expect(res.body.status).toBe('applied');
-	return res.body.output.path as string;
+	const res = await call('POST', '/api/v1/calendar/feeds', { scope }, cookie);
+	expect(res.status).toBe(201);
+	return res.body.path as string;
+}
+
+/** Creates an address as a member who has no password, through the route's own handler. */
+async function feedFor(actor: ReturnType<typeof actorOf>, scope: string) {
+	const found = runtime.kernel.registry.routes.find(
+		(r) => r.route.operationId === 'calendar.createFeed',
+	);
+	if (!found) throw new Error('calendar.createFeed is missing');
+	return (await found.route.handle(runtime.kernel.contextFor('calendar'), {
+		params: undefined,
+		query: undefined,
+		body: { scope, includeNotes: false },
+		actor,
+		device: null,
+		files: [],
+	})) as { path: string };
 }
 
 const mcpStatus = async (secret: string) =>
@@ -162,12 +178,7 @@ describe('a PIN cannot make a credential that works away from the device', () =>
 		expect(token.status).toBe(403);
 		expect(token.body.error.message).toBe('Sign in with your password to create keys');
 
-		const feed = await call(
-			'POST',
-			'/api/v1/actions/calendar.createFeed',
-			{ scope: 'family' },
-			pin,
-		);
+		const feed = await call('POST', '/api/v1/calendar/feeds', { scope: 'family' }, pin);
 		expect(feed.status).toBe(403);
 		expect(feed.body.error.message).toBe('Sign in with your password to create keys');
 
@@ -182,13 +193,8 @@ describe('a PIN cannot make a credential that works away from the device', () =>
 			(await call('POST', '/api/v1/mcp/tokens', { name: 'Laptop', scope: 'read' }, password))
 				.status,
 		).toBe(201);
-		const ok = await call(
-			'POST',
-			'/api/v1/actions/calendar.createFeed',
-			{ scope: 'family' },
-			password,
-		);
-		expect(ok.body.status).toBe('applied');
+		const ok = await call('POST', '/api/v1/calendar/feeds', { scope: 'family' }, password);
+		expect(ok.status).toBe(201);
 		expect((await call('GET', '/api/v1/core/me', undefined, password)).body.fullSignIn).toBe(true);
 	});
 
@@ -234,15 +240,7 @@ describe('signing out ends what a member made', () => {
 		const token = async (id: string) =>
 			(await runtime.kernel.apiTokens.create(actorOf(id, 'member'), { name: 'k', scope: 'read' }))
 				.secret;
-		const feed = async (id: string) => {
-			const made = await runtime.kernel.runner.invoke<{ path: string }>(
-				'calendar.createFeed',
-				{ scope: id },
-				actorOf(id, 'member'),
-			);
-			if (made.status !== 'applied') throw new Error('feed');
-			return made.output;
-		};
+		const feed = (id: string) => feedFor(actorOf(id, 'member'), id);
 		const kidToken = await token(kid);
 		const otherToken = await token(other);
 		const kidFeed = { status: 'applied', output: await feed(kid) };
@@ -267,13 +265,8 @@ describe('signing out ends what a member made', () => {
 	it('archiving a member ends their calendar addresses as well as their tokens', async () => {
 		const { password } = await household();
 		const kid = await addMember(password, 'Kid');
-		const made = await runtime.kernel.runner.invoke<{ path: string }>(
-			'calendar.createFeed',
-			{ scope: kid },
-			actorOf(kid, 'member'),
-		);
-		if (made.status !== 'applied') throw new Error('feed');
-		expect(await feedStatus(made.output.path)).toBe(200);
+		const made = await feedFor(actorOf(kid, 'member'), kid);
+		expect(await feedStatus(made.path)).toBe(200);
 		const archived = await call(
 			'POST',
 			'/api/v1/actions/core.archiveMember',
@@ -281,7 +274,7 @@ describe('signing out ends what a member made', () => {
 			password,
 		);
 		expect(archived.body.status).toBe('applied');
-		expect(await feedStatus(made.output.path)).toBe(404);
+		expect(await feedStatus(made.path)).toBe(404);
 	});
 });
 
@@ -297,13 +290,8 @@ describe('a calendar address acts for its owner as they are today', () => {
 		expect(role.body.status).toBe('applied');
 		const roleId = role.body.output.id as string;
 		const kid = await addMember(password, 'Kid', roleId);
-		const made = await runtime.kernel.runner.invoke<{ path: string }>(
-			'calendar.createFeed',
-			{ scope: kid },
-			actorOf(kid, roleId),
-		);
-		if (made.status !== 'applied') throw new Error('feed');
-		expect(await feedStatus(made.output.path)).toBe(200);
+		const made = await feedFor(actorOf(kid, roleId), kid);
+		expect(await feedStatus(made.path)).toBe(200);
 		const changed = await call(
 			'POST',
 			'/api/v1/actions/core.updateRole',
@@ -311,7 +299,7 @@ describe('a calendar address acts for its owner as they are today', () => {
 			password,
 		);
 		expect(changed.body.status).toBe('applied');
-		expect(await feedStatus(made.output.path)).toBe(404);
+		expect(await feedStatus(made.path)).toBe(404);
 	});
 
 	it('a whole-family address stops when its owner may no longer manage the calendar', async () => {
@@ -325,15 +313,10 @@ describe('a calendar address acts for its owner as they are today', () => {
 		expect(role.body.status).toBe('applied');
 		const roleId = role.body.output.id as string;
 		const kid = await addMember(password, 'Kid', roleId);
-		const made = await runtime.kernel.runner.invoke<{ path: string }>(
-			'calendar.createFeed',
-			{ scope: 'family' },
-			actorOf(kid, roleId),
-		);
-		if (made.status !== 'applied') throw new Error('feed');
-		expect(await feedStatus(made.output.path)).toBe(200);
+		const made = await feedFor(actorOf(kid, roleId), 'family');
+		expect(await feedStatus(made.path)).toBe(200);
 		await call('POST', '/api/v1/actions/core.updateRole', { id: roleId, overrides: {} }, password);
-		expect(await feedStatus(made.output.path)).toBe(404);
+		expect(await feedStatus(made.path)).toBe(404);
 	});
 });
 

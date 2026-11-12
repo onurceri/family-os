@@ -35,7 +35,7 @@ actions:
 
 FamilyOS **never switches anything you did not allow**: a light, lock or cover is switched only after you turn that on for it, and only by allowed people. Home Assistant cannot limit a token, so FamilyOS keeps this by what it sends.
 
-1. Install the extension: **Settings → Family → Extensions**, **⋯** → **Look for more**, download **Home Assistant**, install ([Extensions](extensions.md)); it works after a restart. Only admins can connect it.
+1. Install the extension: **Settings → Family → Extensions**, **⋯** → **Look for more**, download **Home Assistant**, install ([Extensions](extensions.md)); it works after a restart. Only admins can connect it, signed in with their password (a PIN cannot test or save the connection).
 2. In Home Assistant, create a separate non-administrator user (say "FamilyOS") and sign in as it.
 3. Open **Profile → Security → Long-lived access tokens**, press **Create token**, copy it. It is shown once.
 4. In FamilyOS open **Settings → Family → Home Assistant**, press **Connect**:

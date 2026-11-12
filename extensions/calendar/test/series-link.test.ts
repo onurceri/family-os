@@ -70,9 +70,10 @@ const form = (over: Record<string, unknown>) => ({
 });
 
 async function feedText(scope: string, actor: Actor): Promise<string> {
-	const made = await k.runner.invoke<{ path: string }>('calendar.createFeed', { scope }, actor);
-	if (made.status !== 'applied') throw new Error('expected applied');
-	const file = made.output.path.split('/').pop();
+	const made: { path: string } = await k
+		.route('calendar.createFeed')
+		.call({ actor, body: { scope, includeNotes: false } });
+	const file = made.path.split('/').pop();
 	const out = (await k.route('calendar.getFeed').call({
 		params: { file },
 		actor: { kind: 'system', source: 'anonymous' },

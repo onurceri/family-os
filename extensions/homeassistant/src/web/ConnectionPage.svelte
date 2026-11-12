@@ -54,6 +54,8 @@
 	let tested = $state<Tested | null>(null);
 	let items = $state<{ add(): void }>();
 	let full = $state(false);
+	/** Testing reaches the home network and saving sets the token: both need a password sign-in. */
+	const mayConnect = $derived(app.fullSignIn());
 
 	async function load() {
 		try {
@@ -315,7 +317,7 @@
 			: step === 'failed'
 				? t('test_again')
 				: t('test_button')}
-	saveDisabled={busy || testing}
+	saveDisabled={busy || testing || !mayConnect}
 	onsave={() => formEl?.requestSubmit()}
 	onclose={() => (panelOpen = false)}
 	dirty={panelOpen && (token !== '' || address !== (connected ? addressText(connected) : ''))}
@@ -332,6 +334,9 @@
 		onsubmit={submit}
 		aria-label={connected ? t('change_title') : t('connect_title')}
 	>
+		{#if !mayConnect}
+			<Notice tone="info">{t('password_needed')}</Notice>
+		{/if}
 		<div class="grid gap-1.5">
 			<Label for="ha-address">{t('field_address')}</Label>
 			<Input
@@ -368,7 +373,7 @@
 			<div class="grid gap-2" aria-live="polite">
 				<Notice tone={testedSays.tone}>{testedSays.text}</Notice>
 				{#if step === 'failed'}
-					<Button variant="outline" type="button" disabled={busy} onclick={save}
+					<Button variant="outline" type="button" disabled={busy || !mayConnect} onclick={save}
 						>{t('test_save_anyway')}</Button
 					>
 				{/if}
