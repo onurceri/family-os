@@ -41,7 +41,7 @@
 	import { accessBook } from '#lib/access.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
-	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
+	import { applyTextSize, dayNight, followDayNight, textSize } from '#lib/theme.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { refusalKey, refusalOfError } from '#lib/refusal.js';
 	import { addPlacesFor, shareFor } from '#lib/contributions.js';
@@ -364,6 +364,7 @@
 			: { href: '/more', label: t('nav_more') };
 	});
 
+	$effect(() => applyTextSize(textSize.size));
 	// Re-applied whenever this device's day/night choice or the family's time zone changes.
 	$effect(() => {
 		void dayNight.mode;

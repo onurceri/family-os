@@ -442,7 +442,7 @@
 	>
 		<!-- Today in family mode, one type step larger than on a person's screen (FamilyToday). -->
 		<div
-			class="family"
+			class="family @container/today"
 			class:layer={pages.length > 0}
 			class:off={pages.length > 0 && !onToday}
 			inert={pages.length > 0 && !onToday}
