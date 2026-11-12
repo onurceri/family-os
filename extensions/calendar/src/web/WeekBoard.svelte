@@ -38,6 +38,7 @@
 		onadd,
 		onday,
 		fit = false,
+		wholeDay = false,
 	}: {
 		days: readonly string[];
 		items: readonly Occurrence[];
@@ -56,6 +57,8 @@
 		 * still shows "+N more" in its column.
 		 */
 		fit?: boolean;
+		/** With `fit`: the board always shows all 24 hours, not only the hours worth showing. */
+		wholeDay?: boolean;
 	} = $props();
 	const { app, t } = useCalendar();
 	const tz = $derived(app.timeZone());
@@ -67,9 +70,11 @@
 	let bodyW = $state(0);
 	const bodyH = $derived(Math.max(0, scrollH - headH));
 	// 94 px columns (1024 px windows) show the title only and a narrower gutter.
-	const gutter = $derived(!single && bodyW < 900 ? 44 : 56);
+	const gutter = $derived(!single && bodyW < 900 ? (bodyW < 500 ? 34 : 44) : 56);
 	const colW = $derived((bodyW - gutter) / days.length);
 	const titleOnly = $derived(!single && colW < 112);
+	// A phone's week (about 50 px columns): the day's head stacks, titles wrap in small type.
+	const tiny = $derived(!single && colW < 64);
 
 	type Chip = { occurrence: Occurrence; start: number; end: number };
 	const MAX_LANE = 3;
@@ -126,18 +131,20 @@
 		}),
 	);
 	const win = $derived(
-		fit
-			? fitWindow(
-					byDay.flatMap((d) =>
-						d.chips
-							.filter(
-								({ chip }) =>
-									!isLongBlock(chip.occurrence.start as number, chip.occurrence.end as number),
-							)
-							.map(({ chip }) => chip),
-					),
-				)
-			: null,
+		fit && wholeDay
+			? { from: 0, to: 24 }
+			: fit
+				? fitWindow(
+						byDay.flatMap((d) =>
+							d.chips
+								.filter(
+									({ chip }) =>
+										!isLongBlock(chip.occurrence.start as number, chip.occurrence.end as number),
+								)
+								.map(({ chip }) => chip),
+						),
+					)
+				: null,
 	);
 	const hour = $derived(win ? fitHour(bodyH, win) : hourHeight(bodyH));
 	// The next thing: today's first event still to start, marked in `accent`.
@@ -224,9 +231,9 @@
 		>{formatDate(date, app.dateLocale(), { weekday: single ? 'long' : 'short' })}</small
 	>
 	<b
-		class="type-day grid size-8 shrink-0 place-items-center rounded-full {isToday
-			? 'bg-now text-on-color'
-			: ''}"
+		class="type-day grid {tiny
+			? 'size-7'
+			: 'size-8'} shrink-0 place-items-center rounded-full {isToday ? 'bg-now text-on-color' : ''}"
 		aria-current={isToday ? 'date' : undefined}>{Number(date.slice(8))}</b
 	>
 {/snippet}
@@ -250,23 +257,29 @@
 				{#each days as date (date)}
 					{@const isToday = date === today}
 					<div
-						class="group border-line flex min-w-0 items-center gap-2 border-s px-2 {single
+						class="group border-line flex min-w-0 items-center gap-2 border-s {single
 							? 'px-4'
-							: ''}"
+							: tiny
+								? 'justify-center px-0'
+								: 'px-2'}"
 					>
 						{#if onday && !single}
 							<button
 								type="button"
 								onclick={() => onday(date)}
 								aria-label={t('open_day', { date: formatDate(date, app.dateLocale()) })}
-								class="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-lg outline-none focus-visible:ring-2"
+								class="focus-visible:ring-ring flex min-w-0 items-center rounded-lg outline-none focus-visible:ring-2 {tiny
+									? 'flex-col gap-0'
+									: 'gap-2'}"
 							>
 								{@render dayHead(date, isToday)}
 							</button>
 						{:else}
-							<div class="flex min-w-0 items-center gap-2">{@render dayHead(date, isToday)}</div>
+							<div class="flex min-w-0 items-center {tiny ? 'flex-col gap-0' : 'gap-2'}">
+								{@render dayHead(date, isToday)}
+							</div>
 						{/if}
-						{#if onadd}
+						{#if onadd && !tiny}
 							<button
 								type="button"
 								class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto grid size-7 shrink-0 place-items-center rounded-lg opacity-0 outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2"
@@ -327,7 +340,9 @@
 			<div class="relative" aria-hidden="true">
 				{#each hours as h (h)}
 					<span
-						class="text-ink-soft font-display absolute end-1.5 -translate-y-1/2 text-xs font-semibold whitespace-nowrap tabular-nums"
+						class="text-ink-soft font-display absolute end-1.5 -translate-y-1/2 {tiny
+							? 'text-[0.625rem]'
+							: 'text-xs'} font-semibold whitespace-nowrap tabular-nums"
 						style:top="{h * hour}px">{hourLabel(h)}</span
 					>
 				{/each}
@@ -359,6 +374,7 @@
 								span: place.span,
 							}}
 							{titleOnly}
+							{tiny}
 							next={id === nextId}
 							showDetails={single}
 							onclick={() => onopen(chip.occurrence)}
@@ -392,10 +408,12 @@
 							<span
 								class="bg-now absolute start-0 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
 							></span>
-							<span
-								class="bg-now text-on-color absolute end-0 -translate-y-1/2 rounded-md px-1.5 py-px text-[0.6875rem] font-extrabold tabular-nums"
-								>{nowTag}</span
-							>
+							{#if !tiny}
+								<span
+									class="bg-now text-on-color absolute end-0 -translate-y-1/2 rounded-md px-1.5 py-px text-[0.6875rem] font-extrabold tabular-nums"
+									>{nowTag}</span
+								>
+							{/if}
 						</div>
 					{/if}
 				</div>

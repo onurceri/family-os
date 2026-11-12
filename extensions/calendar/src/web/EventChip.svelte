@@ -21,6 +21,7 @@
 		variant = 'block',
 		place,
 		titleOnly = false,
+		tiny = false,
 		showDetails = false,
 		next = false,
 		onclick,
@@ -33,6 +34,8 @@
 		place?: { top: number; height: number; column: number; columns: number; span?: number };
 		/** Block only: narrow columns show the title and nothing else. */
 		titleOnly?: boolean;
+		/** A phone's week column: the title in small type, wrapping over the block's height. */
+		tiny?: boolean;
 		/** Block only: the day view also names the place and the people on separate lines. */
 		showDetails?: boolean;
 		/** Block only: today's next event, outlined in `accent` (the page's one "next" mark). */
@@ -140,15 +143,19 @@
 		{onclick}
 		style:top="{place.top}px"
 		style:height="{place.height}px"
-		style:padding-block="{fit.tight ? BLOCK.tight : BLOCK.pad}px"
+		style:padding-block="{fit.tight || tiny ? BLOCK.tight : BLOCK.pad}px"
 		style:left="calc(100% * {place.column} / {place.columns} + 1px)"
 		style:width="calc(100% * {place.span ?? 1} / {place.columns} - 2px)"
 		style:outline={next ? '2px solid var(--accent)' : undefined}
 		style:outline-offset={next ? '-2px' : undefined}
 		style:z-index={next ? 1 : undefined}
-		class="focus-visible:ring-ring absolute grid content-start overflow-hidden rounded-lg ps-2.5 {awaiting
+		class="focus-visible:ring-ring absolute grid content-start overflow-hidden {tiny
+			? 'rounded-md ps-1.5'
+			: 'rounded-lg ps-2.5'} {awaiting
 			? 'pe-4'
-			: 'pe-1.5'} text-start outline-none focus-visible:z-10 focus-visible:ring-2 {long || ghost
+			: tiny
+				? 'pe-0.5'
+				: 'pe-1.5'} text-start outline-none focus-visible:z-10 focus-visible:ring-2 {long || ghost
 			? 'border-line text-ink-soft border border-dashed bg-transparent'
 			: occurrence.source
 				? 'bg-idle border-line border'
@@ -164,12 +171,14 @@
 		{/if}
 		<b
 			bind:this={titleEl}
-			class="text-[0.8125rem] font-bold {fit.titleLines === 2
-				? 'line-clamp-2'
-				: 'truncate'} {long || ghost ? '' : 'text-ink'}"
-			style:line-height="{BLOCK.title}px">{occurrence.title}</b
+			class="font-bold {tiny
+				? 'text-[0.625rem] leading-3 [overflow-wrap:anywhere]'
+				: `text-[0.8125rem] ${fit.titleLines === 2 ? 'line-clamp-2' : 'truncate'}`} {long || ghost
+				? ''
+				: 'text-ink'}"
+			style:line-height={tiny ? undefined : `${BLOCK.title}px`}>{occurrence.title}</b
 		>
-		{#each meta as line, i (i)}
+		{#each tiny ? [] : meta as line, i (i)}
 			<small
 				class="text-ink-soft truncate text-[0.6875rem] font-semibold tabular-nums"
 				style:line-height="{BLOCK.meta}px">{line}</small
