@@ -74,7 +74,7 @@
 	"value_open": "Open",
 	"value_closed": "Dicht",
 	"value_detected": "Gedetecteerd",
-	"value_clear": "Niets",
+	"value_clear": "Niet gedetecteerd",
 	"value_wet": "Nat",
 	"value_dry": "Droog",
 	"value_alert": "Alarm",
@@ -223,5 +223,5 @@
 	"history_failed": "Kon {{name}} niet schakelen",
 	"history_someone": "Iemand",
 	"history_item_label": "Hier onlangs geschakeld",
-	"history_item_empty": "Niemand heeft dit al vanuit FamilyOS geschakeld."
+	"history_item_empty": "Niemand heeft dit nog vanuit FamilyOS geschakeld."
 }

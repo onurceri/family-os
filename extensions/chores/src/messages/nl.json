@@ -7,7 +7,7 @@
 	"nav": "Klusjes",
 	"notify_kind_chore_due": "Er staat een klusje gepland en jij bent aan de beurt",
 	"chore_due_title": "Jouw beurt: {{title}}",
-	"chore_due_today": "Het staat voor vandaag.",
+	"chore_due_today": "Het moet vandaag gebeuren.",
 	"title": "Klusjes",
 	"add_chore": "Klusje toevoegen",
 	"suggest_chore": "Een klusje voorstellen",
