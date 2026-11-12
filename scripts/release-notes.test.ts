@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error plain JS script without type declarations
-import { parseCommit, parseCorrection, renderNotes } from './release-notes.mjs';
+import { parseCommit, parseCorrections, renderNotes } from './release-notes.mjs';
 
 describe('release notes', () => {
 	it('parses Conventional Commits, including breaking changes', () => {
@@ -111,7 +111,7 @@ describe('release notes', () => {
 			{ sha: sha('a'), message: 'fix(inbox): wrong claim (#23)' },
 			{ sha: sha('1'), message: 'feat(kitchen): left alone' },
 		];
-		expect(parseCorrection('fix: x')).toBeNull();
+		expect(parseCorrections('fix: x')).toEqual([]);
 		expect(renderNotes('0.2.0', entries, date)).toBe(
 			[
 				'## 0.2.0 (2026-10-07)',
@@ -124,6 +124,49 @@ describe('release notes', () => {
 				'',
 				'- **board:** now a fix',
 				'- **inbox:** right text',
+				'',
+			].join('\n'),
+		);
+	});
+
+	it('lets one commit correct several others, as a squashed message lists them', () => {
+		const sha = (c: string) => c.repeat(40);
+		const message = [
+			'chore(release): name the fixes merged from private forks',
+			'',
+			'Release-note-for: aaaaaaa',
+			'Release-note: fix(security): sign-in locks hold',
+			'Release-note-for: bbbbbbb',
+			'Release-note: fix(calendar)!: the address is made elsewhere',
+			'',
+			'* refactor(server): something else',
+			'',
+			'  Release-note-for: ccccccc',
+			'  Release-note: none',
+			'Release-note: fix(board): belongs to no commit',
+		].join('\n');
+		expect(parseCorrections(message)).toEqual([
+			{ target: 'aaaaaaa', note: 'fix(security): sign-in locks hold' },
+			{ target: 'bbbbbbb', note: 'fix(calendar)!: the address is made elsewhere' },
+			{ target: 'ccccccc', note: 'none' },
+		]);
+		const entries = [
+			{ sha: sha('9'), message },
+			{ sha: sha('c'), message: 'feat(lists): dropped' },
+			{ sha: sha('b'), message: 'Merge commit from fork' },
+			{ sha: sha('a'), message: 'Merge commit from fork' },
+		];
+		expect(renderNotes('0.3.0', entries, new Date('2026-10-07T12:00:00Z'))).toBe(
+			[
+				'## 0.3.0 (2026-10-07)',
+				'',
+				'### Breaking changes',
+				'',
+				'- **calendar:** the address is made elsewhere',
+				'',
+				'### Security',
+				'',
+				'- sign-in locks hold',
 				'',
 			].join('\n'),
 		);

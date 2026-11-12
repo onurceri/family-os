@@ -113,9 +113,8 @@ export const OPENAPI_INFO = {
 	},
 };
 
-/** The identity routes that end a session or replace a credential. */
-const SESSION_ENDING_PATH =
-	/\/(sign-out|revoke-session|revoke-sessions|revoke-other-sessions|change-password|reset-password|set-password)$/;
+/** The identity route that ends a session; the others the identity adapter serves are the two sign-ins. */
+const SESSION_ENDING_PATH = '/api/auth/sign-out';
 
 function actorMiddleware(deps: HttpAppDeps): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
@@ -537,9 +536,9 @@ export function createHttpApp(deps: HttpAppDeps): OpenAPIHono<AppEnv> {
 		const target = await signInTarget(c.req.raw);
 		const email = target?.kind === 'email' ? target.id : null;
 		if (email && (await knownDevice(deps, headers, email))) headers.set(KNOWN_DEVICE_HEADER, '1');
-		// Signing out (or ending sessions, or changing the password) must close the member's open
-		// realtime sockets too: they were opened with the session that is going away.
-		const endsSession = SESSION_ENDING_PATH.test(new URL(c.req.url).pathname);
+		// Signing out must close the member's open realtime sockets too: they were opened with the
+		// session that is going away.
+		const endsSession = new URL(c.req.url).pathname === SESSION_ENDING_PATH;
 		const before = endsSession ? await authenticate(deps, c.req.raw.headers, 'session') : null;
 		const response = await deps.identity.handler(new Request(c.req.raw, { headers }));
 		const self = before ? selfOf(before) : null;
