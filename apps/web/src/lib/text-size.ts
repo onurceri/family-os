@@ -11,3 +11,11 @@ export const TEXT_SIZES: readonly TextSize[] = ['small', 'normal', 'large', 'lar
 export function parseTextSize(value: string | null): TextSize | null {
 	return value === 'small' || value === 'large' || value === 'larger' ? value : null;
 }
+
+/** How much larger each size draws text: the root font sizes in theme.css, and a display's zoom. */
+export const TEXT_SCALE: Readonly<Record<TextSize, number>> = {
+	small: 0.875,
+	normal: 1,
+	large: 1.125,
+	larger: 1.25,
+};

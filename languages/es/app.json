@@ -1205,6 +1205,8 @@
 	"theme_style_hint": "Cómo se organizan Hoy y las pantallas.",
 	"theme_style_suggested": "Sin elegir todavía: {{theme}} sugiere {{style}}.",
 	"theme_display_style": "Estilo de {{name}}",
+	"theme_display_text_size_label": "Tamaño del texto",
+	"theme_display_text_size": "Tamaño del texto de {{name}}",
 	"theme_display_theme": "Tema de {{name}}",
 	"theme_display_style_default": "Igual que la familia ({{name}})",
 	"theme_display_theme_default": "Igual que la familia ({{name}})",

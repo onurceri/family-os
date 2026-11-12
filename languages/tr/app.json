@@ -1185,6 +1185,8 @@
 	"theme_style_hint": "Bugün sayfasının ve ekranların nasıl düzenlendiği.",
 	"theme_style_suggested": "Henüz seçilmedi: {{theme}}, {{style}} stilini öneriyor.",
 	"theme_display_style": "{{name}} stili",
+	"theme_display_text_size_label": "Yazı boyutu",
+	"theme_display_text_size": "{{name}} yazı boyutu",
 	"theme_display_theme": "{{name}} teması",
 	"theme_display_style_default": "Aile ile aynı ({{name}})",
 	"theme_display_theme_default": "Aile ile aynı ({{name}})",
