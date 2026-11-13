@@ -344,6 +344,11 @@ export const undoCompletion = defineAction({
 	input: UndoCompletionSchema,
 	output: ObligationSchema,
 	approval: { unless: recordsEdit.id },
+	// A domain that completed a duty inside its own action takes it back inside the undo of that action.
+	nested: {
+		governedBy: 'owner',
+		record: (ctx, { id }) => recordOfObligation(ctx.db, id),
+	},
 	async run(uow, { id, entryId, dueDate, rruleStart, lastDoneOn }) {
 		const row = await load(uow, id);
 		const db = tables(uow.db);

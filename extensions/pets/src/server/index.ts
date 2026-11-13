@@ -16,6 +16,7 @@ import {
 	listTreatments,
 	petChanged,
 	removeTreatment,
+	undoTreatment,
 	updatePet,
 } from './pets.ts';
 import { migrations } from './store.ts';
@@ -32,7 +33,16 @@ export default defineExtension({
 	migrations,
 	recordIds: ['pet'],
 	ai: { context: aiContext.id, kinds: [treatmentKind] },
-	actions: [addPet, updatePet, archivePet, addTreatment, removeTreatment, aiContext, petsDigest],
+	actions: [
+		addPet,
+		updatePet,
+		archivePet,
+		addTreatment,
+		removeTreatment,
+		undoTreatment,
+		aiContext,
+		petsDigest,
+	],
 	routes: [listPets, getPet, listTreatments],
 	events: [petChanged],
 	capabilities: [petsView, petsEdit],

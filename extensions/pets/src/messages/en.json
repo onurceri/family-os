@@ -106,5 +106,6 @@
 	"draft_title_update_pet": "Change a pet",
 	"draft_title_archive_pet": "Archive a pet",
 	"draft_title_add_treatment": "Add a treatment",
-	"draft_title_remove_treatment": "Remove a treatment"
+	"draft_title_remove_treatment": "Remove a treatment",
+	"draft_title_undo_treatment": "Take back adding a treatment"
 }

@@ -230,6 +230,58 @@ describe('treatments', () => {
 		expect(await treatments(cat.id)).toHaveLength(1);
 	});
 
+	const proposeThenUndo = async (input: Record<string, unknown>) => {
+		const proposed = await k.runner.invoke('pets.addTreatment', input, AI, {
+			draft: { sourceKind: 'assistant', sourceId: 'turn_1' },
+		});
+		if (proposed.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(proposed.draftId, admin.actor);
+		return () => k.runner.undoDraft(proposed.draftId, admin.actor);
+	};
+
+	it('takes the completion back with the treatment when undone', async () => {
+		const cat = await withRabies();
+		const [rabies] = await obligations(cat.id);
+		const undo = await proposeThenUndo({
+			petId: cat.id,
+			givenOn: '2026-10-05',
+			product: 'Nobivac',
+			obligationId: rabies?.id,
+		});
+		expect(await obligations(cat.id)).toMatchObject([{ dueDate: '2027-10-20' }]);
+		await undo();
+		expect(await treatments(cat.id)).toHaveLength(0);
+		expect(await obligations(cat.id)).toMatchObject([
+			{ title: 'Rabies', dueDate: '2026-10-20', lastDoneOn: null },
+		]);
+	});
+
+	it('undoes a treatment without a duty as before', async () => {
+		const cat = await addPet();
+		const undo = await proposeThenUndo({
+			petId: cat.id,
+			givenOn: '2026-10-05',
+			product: 'Drontal',
+		});
+		expect(await treatments(cat.id)).toHaveLength(1);
+		await undo();
+		expect(await treatments(cat.id)).toHaveLength(0);
+	});
+
+	it('still removes the treatment when its duty is gone', async () => {
+		const cat = await withRabies();
+		const [rabies] = await obligations(cat.id);
+		const undo = await proposeThenUndo({
+			petId: cat.id,
+			givenOn: '2026-10-05',
+			product: 'Nobivac',
+			obligationId: rabies?.id,
+		});
+		await applied(k, 'records.removeObligation', { id: rabies?.id }, admin.actor);
+		await undo();
+		expect(await treatments(cat.id)).toHaveLength(0);
+	});
+
 	it('takes the next date from the card when it says so', async () => {
 		const cat = await withRabies();
 		const [rabies] = await obligations(cat.id);

@@ -23,7 +23,8 @@
 			"records.archiveForRecord",
 			"records.dueBetween",
 			"records.completeObligation",
-			"records.renameRecord"
+			"records.renameRecord",
+			"records.undoCompletion"
 		]
 	},
 	"exports": {
