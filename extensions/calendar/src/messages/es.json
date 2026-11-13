@@ -109,6 +109,7 @@
 	"feed_created_hint": "Se muestra solo esta vez. Cópiala ahora y pégala en tu app de calendario como suscripción.",
 	"feed_copy": "Copiar dirección",
 	"feed_copied": "Dirección copiada",
+	"feed_copy_by_hand": "Aquí no se puede copiar. Selecciona la dirección y cópiala a mano.",
 	"feed_open": "Abrir en la app de calendario",
 	"feed_done": "La he guardado",
 	"feed_howto": "En iPhone: Ajustes, Calendario, Cuentas, Añadir cuenta, Otro, Añadir calendario suscrito. En Android con Google Calendar: abre calendar.google.com en un ordenador, Otros calendarios, Desde URL.",

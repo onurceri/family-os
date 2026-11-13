@@ -109,6 +109,7 @@
 	"feed_created_hint": "Sie wird nur dieses eine Mal angezeigt. Kopiere sie jetzt und füge sie dann in deiner Kalender-App als Abonnement ein.",
 	"feed_copy": "Adresse kopieren",
 	"feed_copied": "Adresse kopiert",
+	"feed_copy_by_hand": "Kopieren ist hier nicht möglich. Markiere die Adresse und kopiere sie von Hand.",
 	"feed_open": "In der Kalender-App öffnen",
 	"feed_done": "Ich habe sie gespeichert",
 	"feed_howto": "Auf dem iPhone: Einstellungen, Kalender, Accounts, Account hinzufügen, Andere, Kalenderabo hinzufügen. Unter Android mit Google Kalender: Öffne calendar.google.com am Computer, Weitere Kalender, Per URL.",

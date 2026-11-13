@@ -109,6 +109,7 @@
 	"feed_created_hint": "It is shown only this once. Copy it now, then paste it into your calendar app as a subscription.",
 	"feed_copy": "Copy address",
 	"feed_copied": "Address copied",
+	"feed_copy_by_hand": "Copying is not possible here. Select the address and copy it by hand.",
 	"feed_open": "Open in the calendar app",
 	"feed_done": "I have saved it",
 	"feed_howto": "On iPhone: Settings, Calendar, Accounts, Add account, Other, Add subscribed calendar. On Android with Google Calendar: open calendar.google.com on a computer, Other calendars, From URL.",

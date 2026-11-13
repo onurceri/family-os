@@ -946,6 +946,7 @@
 	"mcp_secret_once": "Copia ahora la clave de aplicación. Solo se muestra una vez y no se puede consultar después.",
 	"mcp_copy": "Copiar",
 	"mcp_copied": "Copiado",
+	"mcp_copy_by_hand": "Aquí no se puede copiar. Selecciona el texto y cópialo a mano.",
 	"mcp_done": "Ya la he copiado",
 	"mcp_mine": "Mis aplicaciones de IA",
 	"mcp_all": "Aplicaciones de IA de otras personas",

@@ -929,6 +929,7 @@
 	"mcp_secret_once": "Copy the app key now. It is shown only once and cannot be looked up later.",
 	"mcp_copy": "Copy",
 	"mcp_copied": "Copied",
+	"mcp_copy_by_hand": "Copying is not possible here. Select the text and copy it by hand.",
 	"mcp_done": "I have copied it",
 	"mcp_mine": "My AI apps",
 	"mcp_all": "Other people's AI apps",

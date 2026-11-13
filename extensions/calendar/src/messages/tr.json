@@ -108,6 +108,7 @@
 	"feed_created_hint": "Yalnızca bu kez gösterilir. Şimdi kopyala, sonra takvim uygulamanda abonelik olarak yapıştır.",
 	"feed_copy": "Adresi kopyala",
 	"feed_copied": "Adres kopyalandı",
+	"feed_copy_by_hand": "Burada kopyalama yapılamıyor. Adresi seçip elle kopyalayın.",
 	"feed_open": "Takvim uygulamasında aç",
 	"feed_done": "Kaydettim",
 	"feed_howto": "iPhone'da: Ayarlar, Takvim, Hesaplar, Hesap Ekle, Diğer, Abone Olunan Takvim Ekle. Android'de Google Takvim için: bilgisayardan calendar.google.com, Diğer takvimler, URL'den.",

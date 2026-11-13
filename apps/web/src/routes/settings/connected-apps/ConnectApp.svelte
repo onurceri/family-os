@@ -12,6 +12,7 @@
 		Step,
 		Steps,
 	} from '@famos/ui/famos';
+	import { copyText } from '@famos/ui/clipboard';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { ChevronLeft, ChevronRight, Check, Copy, KeyRound, Link, Plug } from '@lucide/svelte';
@@ -20,6 +21,7 @@
 	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { isLoopbackAddress } from '../devices/screen-address.js';
 	import { APP_KINDS, type AppKind, appSettings, mcpAddress } from './app-settings.js';
@@ -159,12 +161,8 @@
 	}
 
 	async function copy(text: string, what: NonNullable<typeof copied>) {
-		try {
-			await navigator.clipboard.writeText(text);
-			copied = what;
-		} catch {
-			// The text is selectable; copying by hand still works.
-		}
+		if (await copyText(text)) copied = what;
+		else toasts.show(t('mcp_copy_by_hand'));
 	}
 </script>
 
