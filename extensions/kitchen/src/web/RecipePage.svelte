@@ -141,6 +141,7 @@
 	$effect(() => {
 		void recipeId;
 		shoppingDetails = [];
+		picked = {};
 	});
 	async function toShopping() {
 		if (!recipe || chosen.length === 0) return;

@@ -224,5 +224,7 @@
 	"history_failed": "Could not switch {{name}}",
 	"history_someone": "Someone",
 	"history_item_label": "Switched here lately",
-	"history_item_empty": "Nobody has switched this from FamilyOS yet."
+	"history_item_empty": "Nobody has switched this from FamilyOS yet.",
+	"load_failed": "Could not read the connection.",
+	"load_retry": "Try again"
 }
