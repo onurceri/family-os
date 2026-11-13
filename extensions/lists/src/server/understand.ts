@@ -61,10 +61,12 @@ function listNamed(
 	place: string | undefined,
 ): string | null {
 	if (!place) return null;
-	const names = lists.flatMap((l) =>
-		namesOf(l, ctx.vocabulary).map((label) => ({ id: l.id, label })),
-	);
-	const found = ctx.target(place, names);
+	const label = (l: { id: string; name: string }) =>
+		namesOf(l, ctx.vocabulary).map((name) => ({ id: l.id, label: name }));
+	// A list's own name wins over the words the default list answers to.
+	const own = ctx.target(place, lists.filter((l) => l.name).flatMap(label));
+	if ('found' in own) return own.found.id;
+	const found = ctx.target(place, lists.flatMap(label));
 	return 'found' in found ? found.found.id : null;
 }
 
