@@ -57,6 +57,7 @@
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
 	import { latestOnly } from '@famos/ui/latest-only';
+	import { listChanged } from './shown-list.js';
 	import {
 		addBatch,
 		failed,
@@ -200,8 +201,17 @@
 		void refreshLists();
 		return app.onEvent('lists.shopping.', () => void refreshLists());
 	});
+	let rowsOf: string | undefined;
 	$effect(() => {
 		const id = list?.id;
+		// Untracked: only a change of the shown list drops the rows, never a re-read of the same one.
+		untrack(() => {
+			if (!listChanged(rowsOf, id)) return;
+			rowsOf = id;
+			items = [];
+			itemsLoaded = false;
+			pending = {};
+		});
 		if (!id) return;
 		void app.offline();
 		void refreshItems(id);
