@@ -587,9 +587,17 @@ export function replacementRow(
  * day, all-day and its rule are the same. Otherwise a skipped day stays skipped only if the new
  * rule still has a date on that day (moved to the new time); the others are dropped. Dates moved
  * out with "only this one" are events of their own and are not touched here.
+ *
+ * With `undoable` (a change that can be taken back) the old skipped dates are all kept next to
+ * the moved ones: where the new series has no date they do nothing, and the undo finds them again.
  */
-export function skippedAfter(row: EventRow, next: ReturnType<typeof toRow>): string | null {
-	if (!row.exdates || !next.rrule) return null;
+export function skippedAfter(
+	row: EventRow,
+	next: ReturnType<typeof toRow>,
+	undoable = false,
+): string | null {
+	if (!row.exdates) return null;
+	if (!next.rrule) return undoable ? row.exdates : null;
 	const same =
 		next.all_day === row.all_day &&
 		next.starts_at === row.starts_at &&
@@ -609,6 +617,7 @@ export function skippedAfter(row: EventRow, next: ReturnType<typeof toRow>): str
 	const kept = expandRow({ ...row, ...next, exdates: null }, from, to, next.time_zone)
 		.filter((o) => days.includes(dayOf(o)))
 		.map((o) => (o.allDay ? o.key : Number(o.key)));
+	if (undoable) for (const e of old) if (!kept.includes(e)) kept.push(e);
 	return kept.length ? JSON.stringify(kept) : null;
 }
 

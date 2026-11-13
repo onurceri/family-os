@@ -244,7 +244,7 @@ export const changeEvent = defineAction({
 		const now = uow.clock.now();
 		await events(uow.db)
 			.updateTable('calendar_events')
-			.set({ ...next, exdates: skippedAfter(row, next), updated_at: now })
+			.set({ ...next, exdates: skippedAfter(row, next, true), updated_at: now })
 			.where('id', '=', id)
 			.execute();
 		const updated = await loadEvent(uow, id);
