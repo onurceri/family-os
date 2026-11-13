@@ -1,5 +1,5 @@
 import type { Clock, DbExecutor, Logger } from '@famos/sdk';
-import { FamosError } from '@famos/sdk';
+import { FamosError, STRIPPED_TYPES } from '@famos/sdk';
 import PostalMime, { type Address, type Email as ParsedEmail } from 'postal-mime';
 import type { SecretBox } from '../secrets/index.ts';
 import { deleteSender, disconnectMailbox, saveSender } from './admin.ts';
@@ -59,8 +59,9 @@ const MAX_MESSAGES_PER_CHECK = 40;
 /** The largest message source read (attachments are base64, so about 4/3 of their size). */
 const MAX_SOURCE_BYTES = 40 * 1024 * 1024;
 
-const ACCEPTED_TYPES = ['image/', 'audio/', 'application/pdf', 'text/plain'];
-const accepted = (type: string) => ACCEPTED_TYPES.some((a) => type.startsWith(a));
+const ACCEPTED_TYPES = ['audio/', 'application/pdf', 'text/plain'];
+const accepted = (type: string) =>
+	STRIPPED_TYPES.has(type) || ACCEPTED_TYPES.some((a) => type.startsWith(a));
 const EXTENSIONS: Record<string, string> = {
 	'application/pdf': 'pdf',
 	'image/png': 'png',

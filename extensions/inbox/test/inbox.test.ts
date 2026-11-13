@@ -5,6 +5,7 @@ import {
 	defineCapability,
 	defineMentionKind,
 	LlmError,
+	STRIPPED_TYPES,
 	systemActor,
 	type UploadedFile,
 } from '@famos/sdk';
@@ -28,6 +29,7 @@ import {
 import en from '../src/messages/en.json' with { type: 'json' };
 import inbox from '../src/server/index.ts';
 import { EXTRACT_MAX_OUTPUT_TOKENS, processItem, tidySummary } from '../src/server/process.ts';
+import { accepts } from '../src/web/ways.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -379,6 +381,37 @@ describe('shares from outside the app', () => {
 			k.share(parent.member.id, { channel: 'email', url: 'not a link', files: [] }),
 		).rejects.toMatchObject({ code: 'bad_request' });
 		expect(await items()).toHaveLength(1);
+	});
+});
+
+describe('which photos Quick add takes', () => {
+	const door = (type: string) =>
+		k.share(parent.member.id, {
+			channel: 'telegram',
+			files: [{ name: 'x', type, bytes: new Uint8Array([1, 2, 3, 4]) }],
+		});
+
+	it('refuses the image types that keep their metadata, at the share door', async () => {
+		for (const type of ['image/heic', 'image/heif', 'image/tiff', 'image/svg+xml', 'image/bmp'])
+			await expect(door(type)).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await items()).toHaveLength(0);
+	});
+
+	it('takes exactly the types the SDK strips, and PDFs, audio and text', () => {
+		for (const type of STRIPPED_TYPES) expect(accepts(type, UPLOAD_LIMITS.accept)).toBe(true);
+		for (const type of ['application/pdf', 'audio/ogg', 'text/plain'])
+			expect(accepts(type, UPLOAD_LIMITS.accept)).toBe(true);
+		for (const type of ['image/heic', 'image/tiff', 'image/avif'])
+			expect(accepts(type, UPLOAD_LIMITS.accept)).toBe(false);
+		// The file picker offers the same list.
+		expect(UPLOAD_LIMITS.accept.filter((a) => a.startsWith('image/'))).toEqual([...STRIPPED_TYPES]);
+	});
+
+	it('strips a photo whose type is written in capitals', async () => {
+		const png = pngWith('Location', 'Istanbul');
+		const item = await share({}, [upload('a.png', 'IMAGE/PNG', png)]);
+		const file = await k.route('inbox.getItemFile').call({ params: { itemId: item.id, index: 0 } });
+		expect(file.size).toBe(png.length - 12 - 'Location\0Istanbul'.length);
 	});
 });
 

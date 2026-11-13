@@ -1,4 +1,4 @@
-import { idSchema } from '@famos/sdk';
+import { idSchema, STRIPPED_TYPES } from '@famos/sdk';
 import { DAY_MS } from '@famos/time';
 import { z } from 'zod';
 
@@ -186,8 +186,9 @@ export const NewItemFieldsSchema = z.object({
 export const UPLOAD_LIMITS = {
 	maxBytes: 25 * 1024 * 1024,
 	maxFiles: 6,
-	accept: ['image/*', 'audio/*', 'application/pdf', 'text/plain'],
-} as const;
+	/** Photos only of the types that lose their metadata before they are stored. */
+	accept: [...STRIPPED_TYPES, 'audio/*', 'application/pdf', 'text/plain'],
+} satisfies { maxBytes: number; maxFiles: number; accept: readonly string[] };
 
 /** What one member may add in 24 hours, so a lost phone or a script cannot fill the disk. */
 export const UPLOAD_QUOTA = {

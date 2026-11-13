@@ -46,7 +46,7 @@ Marked Telegram, as if shared in the app:
 | **Forwarded** messages | School group, dentist message. |
 | Links on their own | |
 | Photos | Location data removed. |
-| Documents | PDFs, text, pictures, audio; up to 20 MB. |
+| Documents | PDFs, text, pictures (JPEG, PNG, WebP, GIF), audio; up to 20 MB. |
 | Voice notes | Become text if speech to text is set up ([AI and privacy](ai.md)). |
 | `/share <text>` | A typed note: `/share Parent meeting on Thursday at 17:00`. Language packs add names (Turkish `/paylas`); `/start` lists them. |
 
