@@ -177,7 +177,7 @@ export interface Kernel {
 	readonly access: Access;
 	/** The change log: what changed since a cursor, and a validator for a collection. */
 	readonly changes: ChangesReader;
-	/** Extensions turned on or off (Settings → Features). */
+	/** Extensions turned on or off (Settings → Family → Extensions). */
 	readonly features: Features;
 	/** What the AI may use per area (Settings → AI). */
 	readonly aiAreas: AiAreas;

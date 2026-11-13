@@ -152,7 +152,7 @@ function requireActor(c: Context<AppEnv>, access: AccessControl, requires: Route
 	return actor;
 }
 
-/** Routes of a turned-off extension answer `feature_off` (Settings → Features). */
+/** Routes of a turned-off extension answer `feature_off` (Settings → Family → Extensions). */
 function assertOn(kernel: Kernel, extension: string) {
 	if (!kernel.features.isOn(extension))
 		throw new FamosError('feature_off', `${extension} is turned off`);

@@ -41,7 +41,7 @@ export interface AppContributions {
 /** The extension that owns a namespaced id (`calendar.page` → `calendar`; a block `chores`). */
 export const ownerOf = (id: string) => id.split('.')[0] ?? id;
 
-/** Contributions of extensions that are turned on (Settings → Features). */
+/** Contributions of extensions that are turned on (Settings → Family → Extensions). */
 export const enabledOnly = <T extends { id: string }>(
 	items: readonly T[],
 	off: readonly string[],

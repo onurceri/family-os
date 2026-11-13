@@ -45,7 +45,7 @@ export function createSignIn(deps: CoreExtensionDeps) {
 			signIn: SignInMethodsSchema,
 			/** Signed in with a password (not a PIN): only then may keys, tokens and addresses be made. */
 			fullSignIn: z.boolean(),
-			/** Extensions turned off in Settings → Features; their UI is hidden. */
+			/** Extensions turned off in Settings → Family → Extensions; their UI is hidden. */
 			disabledExtensions: z.array(z.string()),
 			/** Whose next thing the hero on Today shows (`core.setMyNextUp`). */
 			nextUp: NextUpModeSchema,

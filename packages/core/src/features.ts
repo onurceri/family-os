@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { CoreTables } from './tables.ts';
 
 /**
- * Extensions the family turned off (Settings → Features). A turned-off extension keeps its data
+ * Extensions the family turned off (Settings → Family → Extensions). A turned-off extension keeps its data
  * but stops: its routes and actions answer `feature_off`, its actions leave the AI catalog, its
  * jobs pause, its capabilities are inactive and its UI disappears. Core cannot be turned off.
  * Cached in memory like custom roles; refreshed after a change commits.
