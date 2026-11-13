@@ -123,6 +123,11 @@ class Offline {
 		clearCachedReads();
 	}
 
+	/** Sends every waiting change now, ignoring the backoff; what cannot be sent stays queued. */
+	async flushAll(): Promise<void> {
+		await this.#queue.flush({ force: true }).catch(() => {});
+	}
+
 	dismissFailed(key?: string) {
 		void this.#queue.dismissFailed(key);
 	}

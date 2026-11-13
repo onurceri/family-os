@@ -26,6 +26,6 @@ Server-side problems (a restart) drop nothing: the change keeps waiting.
 
 - Waiting changes stay in that device's browser, never a cloud, and hold only what you typed (an item name, which task), no passwords.
 - Each change has a one-time key, so a lost answer or a double tap never applies twice.
-- Changes belong to whoever made them. Signing out removes waiting changes, notices and saved list copies from that browser; another person on the phone never sends them. Sign out online if changes still wait, or they are discarded.
+- Changes belong to whoever made them. Signing out removes waiting changes, notices and saved list copies from that browser; another person on the phone never sends them. When you sign out, waiting changes are sent first. If some still cannot be sent (you are offline, or the server did not take them), FamilyOS asks before discarding them; choose Cancel to keep them and sign out later.
 - Permissions and approval apply when the change reaches the server; one needing approval becomes a suggestion then.
 - Wall displays do not queue anything.
