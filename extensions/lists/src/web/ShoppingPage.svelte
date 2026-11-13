@@ -56,7 +56,7 @@
 	import { movedToHiddenCart } from './format.js';
 	import { useLists } from './i18n.js';
 	import ListsHeader from './ListsHeader.svelte';
-	import { latestOnly } from './latest-only.js';
+	import { latestOnly } from '@famos/ui/latest-only';
 	import {
 		addBatch,
 		failed,

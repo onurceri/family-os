@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.45",
+	"sdk": "0.8.46",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -275,6 +275,7 @@
 		"@famos/ui/styles": ["DEFAULT_STYLE", "STYLES", "STYLE_IDS", "isStyleId"],
 		"@famos/ui/utils": ["cn"],
 		"@famos/ui/clipboard": ["copyText"],
+		"@famos/ui/latest-only": ["latestOnly"],
 		"@famos/ui/colors": [
 			"TRANSPARENT",
 			"channelCss",

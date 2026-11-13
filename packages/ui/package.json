@@ -11,6 +11,7 @@
 		"./styles": "./src/styles.ts",
 		"./utils": "./src/utils.ts",
 		"./clipboard": "./src/clipboard.ts",
+		"./latest-only": "./src/latest-only.ts",
 		"./colors": "./src/colors.ts",
 		"./slots": "./src/slots.ts",
 		"./slot": {
