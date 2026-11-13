@@ -1,6 +1,6 @@
 {
 	"format": 1,
-	"issuedAt": 1794519903989,
+	"issuedAt": 1794581828951,
 	"extensions": [
 		{
 			"id": "ambient",
@@ -887,6 +887,41 @@
 		},
 		{
 			"id": "homeassistant",
+			"version": "0.3.3",
+			"sdk": "^0.8.38",
+			"url": "homeassistant/homeassistant-0.3.3.famext",
+			"sha256": "0fd95601d55ae02e92ce37137a3a61958c3153af9ba9ce28418d30af489bfba3",
+			"size": 202780,
+			"labels": {
+				"de": {
+					"name": "Home Assistant",
+					"description": "Verbindet FamilyOS mit deinem Home Assistant: Zeigt deine Auswahl und schaltet nur, was du erlaubst."
+				},
+				"en": {
+					"name": "Home Assistant",
+					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
+				},
+				"es": {
+					"name": "Home Assistant",
+					"description": "Conecta FamilyOS con tu Home Assistant: muestra lo que elijas y solo cambia lo que permitas."
+				},
+				"tr": {
+					"name": "Home Assistant",
+					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": true,
+					"local": true
+				},
+				"capabilities": 4,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "homeassistant",
 			"version": "0.3.2",
 			"sdk": "^0.8.12",
 			"url": "homeassistant/homeassistant-0.3.2.famext",
@@ -973,33 +1008,6 @@
 			"url": "homeassistant/homeassistant-0.2.0.famext",
 			"sha256": "2c8d0cff4e1b3f7ad40ea540209669b5abaa3855cb83eb3f78a02ce9f7044048",
 			"size": 162750,
-			"labels": {
-				"en": {
-					"name": "Home Assistant",
-					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
-				},
-				"tr": {
-					"name": "Home Assistant",
-					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
-				}
-			},
-			"reach": {
-				"network": {
-					"hosts": [],
-					"userUrls": true,
-					"local": true
-				},
-				"capabilities": 4,
-				"dependsOn": []
-			}
-		},
-		{
-			"id": "homeassistant",
-			"version": "0.1.0",
-			"sdk": "^0.8.0",
-			"url": "homeassistant/homeassistant-0.1.0.famext",
-			"sha256": "31eaa7a965fccf621511267b47239a576bcac1a13f65bd1080651b3dc9365c47",
-			"size": 150796,
 			"labels": {
 				"en": {
 					"name": "Home Assistant",
