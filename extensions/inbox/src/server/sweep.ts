@@ -2,6 +2,7 @@ import { defineJob, type ExtensionContext } from '@famos/sdk';
 import { z } from 'zod';
 import { READ_MAX_LIFE_MS, SWEEP_EVERY_MS } from './budget.ts';
 import { itemChanged } from './items.ts';
+import { dismissedWithFiles, removeItemFiles } from './purge.ts';
 import { ITEM_KIND, tables } from './store.ts';
 
 export const SWEEP_JOB = 'inbox.sweep';
@@ -17,7 +18,8 @@ export async function scheduleSweep(ctx: Pick<ExtensionContext, 'enqueue' | 'clo
 /**
  * Fails the items a reading left `received` or `normalized` past the longest life of its job (the
  * server stopped on the last attempt), so the item shows as failed with a working Retry. Safe to
- * run twice: an item already decided or read is left alone.
+ * run twice: an item already decided or read is left alone. It also deletes the files of items
+ * dismissed before dismissing did, a batch at a time.
  */
 export const sweepJob = defineJob({
 	name: SWEEP_JOB,
@@ -48,6 +50,8 @@ export const sweepJob = defineJob({
 					uow.emit(itemChanged, { itemId: item.id, memberId: item.created_by });
 				});
 			}
+			// Items dismissed before the files went with them.
+			for (const id of await dismissedWithFiles(ctx)) await removeItemFiles(ctx, id);
 		} finally {
 			await scheduleSweep(ctx);
 		}
