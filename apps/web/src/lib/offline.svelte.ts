@@ -3,6 +3,7 @@ import { t } from './i18n.svelte.js';
 import { createBrowserStore } from './offline-idb.js';
 import { type FailedChange, OfflineQueue, type QueuedChange } from './offline-queue.js';
 import { sendAction } from './offline-send.js';
+import { randomId } from './random-id.js';
 import { session } from './session.svelte.js';
 import { toasts } from './toast.svelte.js';
 
@@ -27,7 +28,7 @@ class Offline {
 		memberId: () => session.me?.id ?? null,
 		isOnline: () => (typeof navigator === 'undefined' ? true : navigator.onLine),
 		now: () => Date.now(),
-		newKey: () => crypto.randomUUID(),
+		newKey: () => randomId(),
 		onChange: () => this.#sync(),
 	});
 	#started = false;

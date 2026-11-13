@@ -929,6 +929,7 @@
 	"mcp_secret_once": "Kopiere den App-Schlüssel jetzt. Er wird nur einmal angezeigt und kann später nicht mehr nachgeschlagen werden.",
 	"mcp_copy": "Kopieren",
 	"mcp_copied": "Kopiert",
+	"mcp_copy_by_hand": "Kopieren ist hier nicht möglich. Markiere den Text und kopiere ihn von Hand.",
 	"mcp_done": "Ich habe ihn kopiert",
 	"mcp_mine": "Meine KI-Apps",
 	"mcp_all": "KI-Apps anderer Personen",

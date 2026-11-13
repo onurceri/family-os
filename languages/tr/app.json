@@ -929,6 +929,7 @@
 	"mcp_secret_once": "Uygulama anahtarını şimdi kopyala. Yalnızca bir kez gösterilir, sonra tekrar bakamazsın.",
 	"mcp_copy": "Kopyala",
 	"mcp_copied": "Kopyalandı",
+	"mcp_copy_by_hand": "Burada kopyalama yapılamıyor. Metni seçip elle kopyalayın.",
 	"mcp_done": "Kopyaladım",
 	"mcp_mine": "Yapay zekâ uygulamalarım",
 	"mcp_all": "Başkalarının yapay zekâ uygulamaları",

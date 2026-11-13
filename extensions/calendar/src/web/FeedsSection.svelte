@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
+	import { copyText } from '@famos/ui/clipboard';
 	import {
 		Card,
 		ConfirmButton,
@@ -89,12 +90,7 @@
 
 	async function copy() {
 		if (!fresh) return;
-		try {
-			await navigator.clipboard.writeText(fresh.url);
-			app.toast(t('feed_copied'));
-		} catch {
-			// No clipboard access: the address stays selectable in the field.
-		}
+		app.toast(t((await copyText(fresh.url)) ? 'feed_copied' : 'feed_copy_by_hand'));
 	}
 
 	async function revoke(feed: Feed) {
