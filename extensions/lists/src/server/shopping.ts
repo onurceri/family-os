@@ -621,11 +621,13 @@ export const restoreShoppingItems = defineAction({
 			.selectFrom('lists_shopping_items')
 			.select(['id', 'list_id'])
 			.where('id', 'in', ids)
+			.where('deleted_at', 'is not', null)
 			.execute();
 		const result = await db
 			.updateTable('lists_shopping_items')
 			.set({ deleted_at: null, updated_at: uow.clock.now() })
 			.where('id', 'in', ids)
+			.where('deleted_at', 'is not', null)
 			.executeTakeFirst();
 		for (const listId of new Set(rows.map((r) => r.list_id)))
 			uow.emit(shoppingChanged, {

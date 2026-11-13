@@ -167,9 +167,12 @@
 						: {
 								label: t('undo'),
 								run: () =>
-									void reopenTask(app, task.id, t('label_reopen', { title: task.title })).then(
-										load,
-									),
+									void reopenTask(
+										app,
+										task.id,
+										t('label_reopen', { title: task.title }),
+										after?.completionId,
+									).then(load),
 							},
 				);
 			}

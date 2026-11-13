@@ -70,7 +70,13 @@
 			else
 				app.toast(t('completed'), {
 					label: t('undo'),
-					run: () => void reopenTask(app, task.id, t('label_reopen', { title: task.title })),
+					run: () =>
+						void reopenTask(
+							app,
+							task.id,
+							t('label_reopen', { title: task.title }),
+							after?.completionId,
+						),
 				});
 		} catch {
 			app.toast(t('error'));

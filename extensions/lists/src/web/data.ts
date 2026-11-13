@@ -48,13 +48,16 @@ export async function saveTask(
 	).status;
 }
 
+/** A completed task with the completion made, which Undo names so it takes back that one. */
+export type CompletedTask = Task & { completionId?: string | null };
+
 /** Completes a task; the task after it, 'queued' without a connection, or null (a draft). */
 export async function completeTask(
 	app: Runner,
 	task: Task,
 	label: string,
-): Promise<Task | 'queued' | null> {
-	const result = await app.runAction<Task>(
+): Promise<CompletedTask | 'queued' | null> {
+	const result = await app.runAction<CompletedTask>(
 		'lists.completeTask',
 		{ id: task.id, dueDate: task.dueDate },
 		{ offline: true, label },
@@ -63,8 +66,20 @@ export async function completeTask(
 	return result.status === 'applied' ? result.output : null;
 }
 
-export const reopenTask = async (app: Runner, id: string, label: string): Promise<Outcome> =>
-	outcomeOf(await app.runAction('lists.reopenTask', { id }, { offline: true, label }));
+/** Takes a completion back: the one named, or without one the caller's own latest. */
+export const reopenTask = async (
+	app: Runner,
+	id: string,
+	label: string,
+	completionId?: string | null,
+): Promise<Outcome> =>
+	outcomeOf(
+		await app.runAction(
+			'lists.reopenTask',
+			{ id, ...(completionId && { completionId }) },
+			{ offline: true, label },
+		),
+	);
 
 export const deleteTask = async (id: string): Promise<Outcome> =>
 	unwrap(await api.POST('/api/v1/actions/lists.deleteTask', { body: { id } })).status;
