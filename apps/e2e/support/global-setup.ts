@@ -1,7 +1,24 @@
-import { mkdtemp, realpath, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, realpath, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildTemplate } from './template.ts';
+
+const PREFIX = 'famos-e2e-run-';
+const STALE_MS = 24 * 60 * 60 * 1000;
+
+/** Roots of runs that were stopped before the teardown. A day old, so a run still going is never touched. */
+async function removeStaleRoots(dir: string) {
+	for (const name of await readdir(dir)) {
+		if (!name.startsWith(PREFIX)) continue;
+		const path = join(dir, name);
+		try {
+			if (Date.now() - (await stat(path)).mtimeMs > STALE_MS)
+				await rm(path, { recursive: true, force: true });
+		} catch {
+			// Gone meanwhile, or not ours to remove.
+		}
+	}
+}
 
 /**
  * Prepares the family once and announces it to the workers (what it puts in `process.env`
@@ -12,7 +29,8 @@ import { buildTemplate } from './template.ts';
  * tests fail or the preparation does.
  */
 export async function prepareFamily(leaveOut: readonly string[]) {
-	const root = await realpath(await mkdtemp(join(tmpdir(), 'famos-e2e-run-')));
+	await removeStaleRoots(tmpdir());
+	const root = await realpath(await mkdtemp(join(tmpdir(), PREFIX)));
 	process.env.FAMOS_E2E_RUN_ROOT = root;
 	process.env.TMPDIR = root;
 	process.env.TEMP = root;
