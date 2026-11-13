@@ -7,6 +7,7 @@
 	"language": "Sprache",
 	"sign_out": "Abmelden",
 	"sign_out_everywhere": "Überall abmelden",
+	"sign_out_everywhere_confirm_title": "Auf allen Geräten abmelden?",
 	"sign_out_everywhere_hint": "Meldet dich auf allen Handys, Tablets und in allen Browsern ab, auch hier. Deine App-Schlüssel und Kalenderadressen funktionieren danach nicht mehr.",
 	"sign_in_password_for_keys": "Melde dich mit deinem Passwort an, um Schlüssel zu erstellen. Mit einer PIN auf einem gemeinsam genutzten Gerät lassen sich keine Schlüssel, App-Verbindungen oder Kalenderadressen erstellen.",
 	"app_name": "FamilyOS",

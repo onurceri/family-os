@@ -159,7 +159,8 @@
 	async function remove(id: string) {
 		error = null;
 		const result = await runAction(api.POST('/api/v1/actions/core.deleteRole', { body: { id } }), {
-			onError: () => (error = t('roles_in_use')),
+			onError: (failure) =>
+				(error = failure.reason === 'conflict' ? t('roles_in_use') : failure.message),
 		});
 		if (!result.ok) return;
 		editing = null;
