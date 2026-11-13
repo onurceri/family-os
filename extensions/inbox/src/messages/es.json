@@ -221,5 +221,6 @@
 	"drop_here": "Suelta para añadir",
 	"files_refused_one": "No se pudo añadir {{count}} archivo. Sirven fotos, PDF, notas de voz y archivos de texto, hasta {{max}} a la vez.",
 	"files_refused_other": "No se pudieron añadir {{count}} archivos. Sirven fotos, PDF, notas de voz y archivos de texto, hasta {{max}} a la vez.",
-	"files_refused_many": "No se pudieron añadir {{count}} archivos. Sirven fotos, PDF, notas de voz y archivos de texto, hasta {{max}} a la vez."
+	"files_refused_many": "No se pudieron añadir {{count}} archivos. Sirven fotos, PDF, notas de voz y archivos de texto, hasta {{max}} a la vez.",
+	"share_load_failed": "No se pudo leer lo que se compartió."
 }

@@ -42,6 +42,8 @@
 	const { app, t } = useHomeAssistant();
 
 	let connection = $state<Connection>({ connected: false });
+	// A failed read says so; it never passes for "not connected", whose page offers to connect.
+	let loadError = $state(false);
 	let panelOpen = $state(false);
 	let disconnecting = $state(false);
 	let address = $state('');
@@ -60,8 +62,9 @@
 	async function load() {
 		try {
 			connection = await loadConnection();
+			loadError = false;
 		} catch {
-			connection = { connected: false };
+			loadError = true;
 		}
 	}
 	onMount(() => void load());
@@ -245,7 +248,9 @@
 <Page template="settings">
 	<PageHeader title={t('nav_label')} subtitle={t('subtitle')}>
 		{#snippet actions()}
-			{#if connected}
+			{#if loadError}
+				<!-- Nothing to offer until the connection can be read. -->
+			{:else if connected}
 				{#if working}
 					<Button
 						disabled={full}
@@ -276,7 +281,14 @@
 	</PageHeader>
 
 	<div class="grid gap-5">
-		{#if connected}
+		{#if loadError}
+			<div class="grid gap-2" role="alert">
+				<Notice tone="alert">{t('load_failed')}</Notice>
+				<div>
+					<Button variant="outline" size="sm" onclick={() => void load()}>{t('load_retry')}</Button>
+				</div>
+			</div>
+		{:else if connected}
 			<Card rows>
 				<Row title={addressText(connected)} meta={t('fact_address')} />
 				{#if connected.name}<Row title={connected.name} meta={t('fact_name')} />{/if}

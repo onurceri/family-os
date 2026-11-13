@@ -224,5 +224,7 @@
 	"history_failed": "No se pudo cambiar {{name}}",
 	"history_someone": "Alguien",
 	"history_item_label": "Cambiado aquí hace poco",
-	"history_item_empty": "Nadie ha cambiado esto desde FamilyOS todavía."
+	"history_item_empty": "Nadie ha cambiado esto desde FamilyOS todavía.",
+	"load_failed": "No se pudo leer la conexión.",
+	"load_retry": "Intentar de nuevo"
 }

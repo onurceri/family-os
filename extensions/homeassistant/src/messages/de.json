@@ -224,5 +224,7 @@
 	"history_failed": "{{name}} konnte nicht geschaltet werden",
 	"history_someone": "Jemand",
 	"history_item_label": "Hier zuletzt geschaltet",
-	"history_item_empty": "Dies wurde noch von niemandem über FamilyOS geschaltet."
+	"history_item_empty": "Dies wurde noch von niemandem über FamilyOS geschaltet.",
+	"load_failed": "Die Verbindung konnte nicht gelesen werden.",
+	"load_retry": "Erneut versuchen"
 }

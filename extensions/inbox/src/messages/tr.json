@@ -200,5 +200,6 @@
 	"way_not_set_up": "Henüz kurulmadı",
 	"drop_here": "Eklemek için bırak",
 	"files_refused_one": "{{count}} dosya eklenemedi. Fotoğraf, PDF, sesli not ve metin dosyası olur, bir seferde en çok {{max}} tane.",
-	"files_refused_other": "{{count}} dosya eklenemedi. Fotoğraf, PDF, sesli not ve metin dosyası olur, bir seferde en çok {{max}} tane."
+	"files_refused_other": "{{count}} dosya eklenemedi. Fotoğraf, PDF, sesli not ve metin dosyası olur, bir seferde en çok {{max}} tane.",
+	"share_load_failed": "Paylaşılan içerik okunamadı."
 }

@@ -224,5 +224,7 @@
 	"history_failed": "{{name}} değiştirilemedi",
 	"history_someone": "Biri",
 	"history_item_label": "Burada son açıp kapatılanlar",
-	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı."
+	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı.",
+	"load_failed": "Bağlantı okunamadı.",
+	"load_retry": "Tekrar dene"
 }
