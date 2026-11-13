@@ -194,12 +194,8 @@
 			"withoutAmounts",
 			"withoutPaths"
 		],
-		"@famos/sdk/same-origin-path": [
-			"isSameOriginPath"
-		],
-		"@famos/sdk/setup": [
-			"SetupAccountSchema"
-		],
+		"@famos/sdk/same-origin-path": ["isSameOriginPath"],
+		"@famos/sdk/setup": ["SetupAccountSchema"],
 		"@famos/time": [
 			"DAY_FROM_HOUR",
 			"DAY_MS",
@@ -275,24 +271,10 @@
 			"writtenDates",
 			"zoned"
 		],
-		"@famos/api-client": [
-			"createApiClient",
-			"draftClient",
-			"isApiError",
-			"unwrap"
-		],
-		"@famos/ui/styles": [
-			"DEFAULT_STYLE",
-			"STYLES",
-			"STYLE_IDS",
-			"isStyleId"
-		],
-		"@famos/ui/utils": [
-			"cn"
-		],
-		"@famos/ui/clipboard": [
-			"copyText"
-		],
+		"@famos/api-client": ["createApiClient", "draftClient", "isApiError", "unwrap"],
+		"@famos/ui/styles": ["DEFAULT_STYLE", "STYLES", "STYLE_IDS", "isStyleId"],
+		"@famos/ui/utils": ["cn"],
+		"@famos/ui/clipboard": ["copyText"],
 		"@famos/ui/colors": [
 			"TRANSPARENT",
 			"channelCss",
@@ -323,26 +305,11 @@
 			"removalPresenter",
 			"unavailableLine"
 		],
-		"@famos/ui/slot": [
-			"default"
-		],
-		"@famos/ui/button": [
-			"Button",
-			"Root",
-			"buttonVariants"
-		],
-		"@famos/ui/input": [
-			"Input",
-			"Root"
-		],
-		"@famos/ui/textarea": [
-			"Root",
-			"Textarea"
-		],
-		"@famos/ui/label": [
-			"Label",
-			"Root"
-		],
+		"@famos/ui/slot": ["default"],
+		"@famos/ui/button": ["Button", "Root", "buttonVariants"],
+		"@famos/ui/input": ["Input", "Root"],
+		"@famos/ui/textarea": ["Root", "Textarea"],
+		"@famos/ui/label": ["Label", "Root"],
 		"@famos/ui/famos": [
 			"ActionSheet",
 			"Avatar",
@@ -485,12 +452,7 @@
 			"wide",
 			"withShortNames"
 		],
-		"@famos/ui/timeline": [
-			"groupOf",
-			"hasEnded",
-			"sortTimeline",
-			"viewTimeline"
-		],
+		"@famos/ui/timeline": ["groupOf", "hasEnded", "sortTimeline", "viewTimeline"],
 		"@famos/ui/forms": [
 			"FIELD_REASON",
 			"fieldAria",
@@ -500,14 +462,7 @@
 			"recurrenceFromFields",
 			"repeatFieldsFrom"
 		],
-		"@famos/ui/app": [
-			"findApp",
-			"namespaced",
-			"provideAppContext",
-			"useApp"
-		],
-		"@famos/ui/now": [
-			"useNow"
-		]
+		"@famos/ui/app": ["findApp", "namespaced", "provideAppContext", "useApp"],
+		"@famos/ui/now": ["useNow"]
 	}
 }
