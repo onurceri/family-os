@@ -1,5 +1,6 @@
-import type { UploadedFile } from '@famos/sdk';
+import type { Actor, UploadedFile } from '@famos/sdk';
 import { createTestKernel, GPS_MARKER, samplePhoto, type TestKernel } from '@famos/testing';
+import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ForecastSchema } from '../src/contract/index.ts';
 import { WEATHER_TTL_MS } from '../src/server/caches.ts';
@@ -527,5 +528,143 @@ describe('photo keys', () => {
 			{ size: PHOTO_MAX_BYTES + 1 },
 		])
 			await expect(run('ambient.addPhoto', { ...stored, ...bad, key: other })).rejects.toBeTruthy();
+	});
+});
+
+describe('who may change display content', () => {
+	const stored = {
+		key: 'ambient/photos/amb_file_9.png',
+		type: 'image/png',
+		width: 8,
+		height: 6,
+		size: 10,
+	};
+	const place = { name: 'Istanbul', latitude: 41.01, longitude: 28.95 };
+
+	/** Everything the extension keeps, the queue and the drafts, as one comparable value. */
+	const snapshot = async () => {
+		const names = (
+			await sql<{ name: string }>`select name from sqlite_master
+				where type = 'table' and name like 'ambient\_%' escape '\\' order by name`.execute(k.ctx.db)
+		).rows.map((r) => r.name);
+		const out: Record<string, unknown> = {};
+		for (const name of [...names, 'queue_jobs', 'core_drafts'])
+			out[name] = (await sql.raw(`select * from ${name}`).execute(k.ctx.db)).rows;
+		return out;
+	};
+
+	const callers = async (): Promise<[string, Actor][]> => [
+		['a member', (await k.member('member')).actor],
+		['a supervised member', (await k.member('supervised')).actor],
+		['a guest', (await k.member('guest')).actor],
+		['a display holding every view', display(['ambient.photos', 'ambient.weather'])],
+		['an app with a member role', { kind: 'app', appId: 'app_1', roleId: 'member', mode: 'apply' }],
+		[
+			'an app that only suggests',
+			{ kind: 'app', appId: 'app_1', roleId: 'member', mode: 'suggest' },
+		],
+	];
+
+	it('covers every action the extension changes data with', () => {
+		const ids = [...k.registry.actions.values()]
+			.filter((a) => a.id.startsWith('ambient.') && !a.readOnly && a.expose !== 'internal')
+			.map((a) => a.id)
+			.sort();
+		expect(ids).toEqual([
+			'ambient.addPhoto',
+			'ambient.deletePhoto',
+			'ambient.updateTiming',
+			'ambient.updateWeather',
+		]);
+	});
+
+	it('refuses everyone but those who manage display content, and changes and sends nothing', async () => {
+		const { id } = await run<{ id: string }>('ambient.addPhoto', {
+			...stored,
+			key: 'ambient/photos/amb_file_1.png',
+		});
+		const calls: [string, unknown][] = [
+			['ambient.updateWeather', { enabled: true, place }],
+			['ambient.updateTiming', { idleMinutes: 9, slideSeconds: 99 }],
+			['ambient.addPhoto', stored],
+			['ambient.deletePhoto', { id }],
+		];
+		for (const [actionId, input] of calls)
+			expect(k.registry.actions.get(actionId)?.input.safeParse(input).success, actionId).toBe(true);
+		const before = await snapshot();
+		for (const [who, actor] of await callers())
+			for (const [actionId, input] of calls) {
+				await expect(
+					k.runner.invoke(actionId, input, actor),
+					`${who}: ${actionId}`,
+				).rejects.toBeTruthy();
+				expect(await snapshot(), `${who}: ${actionId}`).toEqual(before);
+			}
+		expect(await library()).toHaveLength(1);
+		expect(await k.route('ambient.getSettings').call()).toMatchObject({
+			weather: { enabled: false },
+			timing: { idleMinutes: 5, slideSeconds: 30 },
+		});
+	});
+
+	it('refuses members, displays and apps with forbidden before it reads the input', async () => {
+		const bad = { nonsense: true };
+		for (const [who, actor] of await callers())
+			for (const actionId of [
+				'ambient.updateWeather',
+				'ambient.updateTiming',
+				'ambient.addPhoto',
+				'ambient.deletePhoto',
+			]) {
+				const outcome = await k.runner.invoke(actionId, bad, actor).catch((e: unknown) => e);
+				expect(outcome, `${who}: ${actionId}`).toMatchObject({ code: 'forbidden' });
+			}
+	});
+
+	it('gives the manager a change that applies at once, never a draft', async () => {
+		const result = await k.runner.invoke(
+			'ambient.updateTiming',
+			{ idleMinutes: 9, slideSeconds: 99 },
+			admin,
+		);
+		expect(result.status).toBe('applied');
+		expect(await k.route('core.listDrafts').call({ actor: admin, query: { limit: 50 } })).toEqual(
+			[],
+		);
+	});
+
+	it('holds an AI proposal as a draft that changes nothing until a manager approves it', async () => {
+		const input = { idleMinutes: 9, slideSeconds: 99 };
+		const before = await snapshot();
+		const proposed = await k.runner.invoke('ambient.updateTiming', input, {
+			kind: 'ai',
+			mode: 'agent',
+			source: 'mcp',
+		});
+		if (proposed.status !== 'drafted') throw new Error('expected a draft');
+		const { queue_jobs: _jobs, core_drafts: _drafts, ...tables } = await snapshot();
+		const { queue_jobs: _j, core_drafts: _d, ...tablesBefore } = before;
+		expect(tables).toEqual(tablesBefore);
+		await k.runner.approveDraft(proposed.draftId, admin);
+		expect((await k.route('ambient.getSettings').call()).timing).toEqual(input);
+	});
+
+	it('refuses the AI acting for a member who may not manage display content', async () => {
+		const child = (await k.member('supervised')).actor;
+		const member = (await k.member('member')).actor;
+		const before = await snapshot();
+		for (const who of [child, member])
+			await expect(
+				k.runner.invoke(
+					'ambient.updateTiming',
+					{ idleMinutes: 9, slideSeconds: 99 },
+					{ kind: 'ai', mode: 'conversation', source: 'assistant', onBehalfOf: who.memberId },
+				),
+			).rejects.toBeTruthy();
+		expect(await snapshot()).toEqual(before);
+	});
+
+	it('offers the AI none of them', () => {
+		expect(k.ctx.actions.aiCatalog().filter((a) => a.id.startsWith('ambient.'))).toEqual([]);
 	});
 });
