@@ -11,23 +11,21 @@
 				"parts": [
 					{
 						"intent": "ask",
-						"quote": "Where do we keep the flat papers",
+						"quote": "Where do we keep the flat papers, and what is due this month for the flat?",
 						"topics": [
-							"home"
-						],
-						"people": [],
-						"about": [
-							"flat papers"
-						]
-					},
-					{
-						"intent": "ask",
-						"quote": "what is due this month for the flat?",
-						"topics": [
+							"home",
 							"records"
 						],
+						"span": {
+							"said": "this month",
+							"kind": "month",
+							"day": {
+								"text": "this month"
+							}
+						},
 						"people": [],
 						"about": [
+							"flat papers",
 							"flat"
 						]
 					}
@@ -37,13 +35,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Home is not installed here.",
-			"toolCalls": []
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "There is nothing in Records from Tue, Oct 6 to Sat, Oct 31, and Home is not installed here.",
 			"toolCalls": []
 		}
 	]

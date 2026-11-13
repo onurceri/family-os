@@ -38,14 +38,20 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a reminder for you to pack your swim bag on Tuesday, October 6. The suggestion is waiting for someone else in the household to approve it before it's added.",
+			"text": "I've suggested a task for you: **Pack swim bag** due today (Tuesday 6 October). It's waiting for someone else in the household to approve it before it's added.",
 			"toolCalls": [
+				{
+					"name": "lists_openTasks",
+					"input": {
+						"assignee": "member:3"
+					}
+				},
 				{
 					"name": "lists_addTask",
 					"input": {
-						"dueDate": "2026-10-06",
+						"title": "Pack swim bag",
 						"assigneeId": "member:3",
-						"title": "Pack swim bag"
+						"dueDate": "2026-10-06"
 					}
 				}
 			]

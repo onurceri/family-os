@@ -31,12 +31,11 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested adding the task \"Buy a present for Mila\" assigned to you. It's waiting for approval in Quick add before it's added to the list. The system also noted that a similar task might already exist.",
+			"text": "I've suggested adding the task \"Buy a present for Mila\". It's waiting for someone in the household to approve it. The system also noted that a similar task might already exist.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
-						"assigneeId": "member:1",
 						"title": "Buy a present for Mila"
 					}
 				}

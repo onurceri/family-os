@@ -38,49 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": [
-				{
-					"name": "core_today",
-					"input": {}
-				}
-			]
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "change",
-						"quote": "Add a dentist appointment for Noah on Friday at 15:00",
-						"topics": [
-							"calendar"
-						],
-						"span": {
-							"said": "on Friday",
-							"kind": "day",
-							"day": {
-								"text": "Friday",
-								"weekday": 5
-							}
-						},
-						"people": [
-							{
-								"said": "Noah"
-							}
-						],
-						"about": [
-							"dentist appointment"
-						]
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"text": "I cannot add a dentist appointment because the Calendar area is not available to me in FamilyOS. I don't have a tool to create calendar events.",
+			"text": "I can't add calendar events because the Calendar area is closed to me in the AI settings. You'll need to add the dentist appointment for Noah on Friday, October 9 at 3:00 PM yourself using Quick add or the family calendar directly.",
 			"toolCalls": []
 		}
 	]

@@ -39,13 +39,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing for dinner tonight. The Meals for today, Tuesday, October 6 show nothing today.",
+			"text": "Meals shows nothing for today, Tuesday, October 6.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested adding milk to the shopping list. It's waiting for someone in the household to approve it.",
+			"text": "I suggested adding milk to the shopping list. It's waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",

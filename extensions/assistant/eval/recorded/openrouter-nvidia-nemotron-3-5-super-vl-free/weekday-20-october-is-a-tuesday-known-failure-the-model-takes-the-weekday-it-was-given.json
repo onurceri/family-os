@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is no Wednesday, October 20. Swim training is on Tuesday, October 20 at City pool.",
+			"error": "timeout",
 			"toolCalls": []
 		}
 	]

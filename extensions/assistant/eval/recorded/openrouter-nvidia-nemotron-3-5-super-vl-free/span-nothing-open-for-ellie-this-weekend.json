@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on your calendar this weekend. There are no tasks this weekend.",
+			"text": "There is nothing on the Calendar and nothing in Tasks this weekend.",
 			"toolCalls": []
 		}
 	]

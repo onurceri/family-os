@@ -38,14 +38,14 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a task for Thursday, 8 October: \"Pack the football kit\". It's waiting for someone in the household to approve it in Quick add.",
+			"text": "I've suggested a reminder for you to pack the football kit on Thursday, 8 October. It's waiting for approval in Quick add.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
 						"title": "Pack the football kit",
-						"dueDate": "2026-10-08",
-						"assigneeId": "member:2"
+						"assigneeId": "member:2",
+						"dueDate": "2026-10-08"
 					}
 				}
 			]

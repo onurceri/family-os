@@ -27,7 +27,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "You have two items waiting for approval: Add a task: Buy a recorder for music class (School letter) and Add an event: Sleepover at Max's, from Leo, for Friday, 30 October.",
+			"text": "Yes, you have two items waiting for approval: Add a task: Buy a recorder for music class (School letter) and Add an event: Sleepover at Max's, from Leo, for Friday, 30 October.",
 			"toolCalls": []
 		}
 	]

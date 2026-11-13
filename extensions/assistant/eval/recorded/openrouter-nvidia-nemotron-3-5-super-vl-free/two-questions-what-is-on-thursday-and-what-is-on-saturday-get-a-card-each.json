@@ -49,13 +49,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Thursday, October 8, Noah has a Dentist checkup from 9:30 AM–10:30 AM and Swimming from 5:00 PM–6:00 PM. There are no tasks on Thursday, October 8.",
+			"text": "On Thursday, October 8, Noah has a Dentist checkup from 9:30 AM to 10:30 AM and Swimming from 5:00 PM to 6:00 PM. There are no tasks on Thursday, October 8.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on Saturday for Calendar. There is nothing on Saturday for Tasks.",
+			"text": "There is nothing on Saturday, October 10 in Calendar. There is nothing on Saturday, October 10 in Tasks.",
 			"toolCalls": []
 		}
 	]

@@ -29,7 +29,8 @@
 							}
 						],
 						"about": [
-							"Pack my football kit"
+							"Pack",
+							"football kit"
 						]
 					}
 				]
@@ -38,8 +39,18 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Add a task: Pack my football kit for 2026-10-08. It appears once someone in the household approves it.",
+			"text": "Suggested, not added yet: Add a task: Pack my football kit for Thursday 8 October. It will be added once someone in the household approves it.",
 			"toolCalls": [
+				{
+					"name": "lists_addTask",
+					"input": {
+						"title": "Pack my football kit",
+						"assigneeId": "member:2",
+						"dueDate": "2026-10-08",
+						"dueTime": "None",
+						"notes": "None"
+					}
+				},
 				{
 					"name": "lists_addTask",
 					"input": {

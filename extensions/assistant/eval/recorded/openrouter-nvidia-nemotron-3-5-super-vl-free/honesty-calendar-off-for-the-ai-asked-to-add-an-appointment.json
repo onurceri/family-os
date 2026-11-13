@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "unavailable"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -43,7 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I can't add a dentist appointment. The family calendar isn't available to me in FamilyOS, so I don't have a tool to create or suggest calendar events.",
+			"text": "I can't add a dentist appointment to the calendar. I don't have access to the calendar or any tool to create appointments.",
 			"toolCalls": []
 		}
 	]
