@@ -229,6 +229,41 @@ describe('expansion', () => {
 			expect(inclusive).toHaveLength(3);
 		});
 
+		it('ends at an UNTIL written as a local time, and never loses an end it cannot read', () => {
+			const zone = 'Europe/Berlin';
+			const start = epochOf('2026-03-27', '02:30', zone);
+			const floating = expandTimed(
+				{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=20260329T023000' },
+				0,
+				4e12,
+			);
+			expect(floating.map((ms) => local(ms, zone))).toEqual([
+				'2026-03-27T02:30',
+				'2026-03-28T02:30',
+				'2026-03-29T03:30',
+			]);
+			const before = expandTimed(
+				{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=20260329T022959' },
+				0,
+				4e12,
+			);
+			expect(before).toHaveLength(2);
+			// A year of days at most: an end in another spelling is never read as "no end".
+			const odd = () =>
+				expandTimed(
+					{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=2026-03-29' },
+					0,
+					start + 365 * 86_400_000,
+				);
+			let count: number;
+			try {
+				count = odd().length;
+			} catch {
+				count = 0;
+			}
+			expect(count).toBeLessThan(10);
+		});
+
 		it('leaves a zone without DST and hourly repeats on instants', () => {
 			const utc = series('2026-03-28', '02:30', 'UTC', 'FREQ=DAILY;COUNT=3');
 			expect(expandTimed(utc, 0, 4e12).map(iso)).toEqual([

@@ -215,9 +215,9 @@ export interface TimedSeries {
 	exdates?: readonly number[];
 }
 
-const SUB_DAILY = /(?:^|;)FREQ=(?:HOURLY|MINUTELY|SECONDLY)(?:;|$)/;
+const SUB_DAILY = /(?:^|;|:)FREQ=(?:HOURLY|MINUTELY|SECONDLY)(?:;|$)/i;
 const UNTIL_PART = /(?:^|;)UNTIL=([^;]*)/;
-const UNTIL_VALUE = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/;
+const UNTIL_VALUE = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/;
 
 /**
  * Occurrence starts of a timed event within [from, to). A non-recurring event yields its start if inside.
@@ -232,7 +232,10 @@ export function expandTimed(series: TimedSeries, from: number, to: number): numb
 	if (!series.rrule)
 		return series.startsAt >= from && series.startsAt < to ? [series.startsAt] : [];
 	const excluded = new Set(series.exdates ?? []);
-	if (SUB_DAILY.test(series.rrule)) {
+	const until = UNTIL_PART.exec(series.rrule)?.[1];
+	const m = until ? UNTIL_VALUE.exec(until) : null;
+	// An end written in a way not read here stays with the rule, on instants, rather than being lost.
+	if (SUB_DAILY.test(series.rrule) || (until !== undefined && !m)) {
 		const rule = new RRuleTemporal({
 			rruleString: series.rrule,
 			dtstart: zoned(series.startsAt, series.timeZone),
@@ -242,12 +245,15 @@ export function expandTimed(series: TimedSeries, from: number, to: number): numb
 			.map((z) => z.toInstant().epochMilliseconds)
 			.filter((ms) => ms >= from && ms < to && !excluded.has(ms));
 	}
-	const until = UNTIL_PART.exec(series.rrule)?.[1];
-	const m = until ? UNTIL_VALUE.exec(until) : null;
-	const untilInstant = m?.[4]
+	const untilInstant = m?.[7]
 		? Temporal.Instant.from(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`).epochMilliseconds
 		: null;
 	const untilDate = m && !m[4] ? `${m[1]}-${m[2]}-${m[3]}` : null;
+	// A time without a zone is a local one: the last wall-clock time the series may have.
+	const untilLocal =
+		m?.[4] && !m[7]
+			? Temporal.PlainDateTime.from(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`)
+			: null;
 	const rule = new RRuleTemporal({
 		rruleString: series.rrule.replace(UNTIL_PART, ''),
 		dtstart: zoned(series.startsAt, series.timeZone).toPlainDateTime().toZonedDateTime('UTC'),
@@ -256,19 +262,22 @@ export function expandTimed(series: TimedSeries, from: number, to: number): numb
 	const wall = (ms: number, days: number) =>
 		zoned(ms, series.timeZone).toPlainDateTime().add({ days }).toZonedDateTime('UTC');
 	// UNTIL is applied below on the placed occurrences; it also caps the window so the rule stops there.
-	const untilWall = untilInstant !== null ? wall(untilInstant, 1) : null;
-	const windowEnd = wall(to - 1, 1);
-	const end =
-		untilWall && Temporal.ZonedDateTime.compare(untilWall, windowEnd) < 0 ? untilWall : windowEnd;
-	const untilDay =
-		untilDate !== null
-			? Temporal.PlainDate.from(untilDate).add({ days: 1 }).toZonedDateTime({ timeZone: 'UTC' })
-			: null;
-	const cap = untilDay && Temporal.ZonedDateTime.compare(untilDay, end) < 0 ? untilDay : end;
+	const caps = [
+		wall(to - 1, 1),
+		...(untilInstant !== null ? [wall(untilInstant, 1)] : []),
+		...(untilDate !== null
+			? [Temporal.PlainDate.from(untilDate).add({ days: 1 }).toZonedDateTime({ timeZone: 'UTC' })]
+			: []),
+		...(untilLocal !== null ? [untilLocal.toZonedDateTime('UTC')] : []),
+	];
+	const cap = caps.reduce((least, c) => (Temporal.ZonedDateTime.compare(c, least) < 0 ? c : least));
 	return rule
 		.between(wall(from, -1), cap, true)
 		.map((z) => z.toPlainDateTime())
 		.filter((local) => untilDate === null || local.toPlainDate().toString() <= untilDate)
+		.filter(
+			(local) => untilLocal === null || Temporal.PlainDateTime.compare(local, untilLocal) <= 0,
+		)
 		.map((local) => local.toZonedDateTime(series.timeZone, { disambiguation: 'compatible' }))
 		.map((z) => z.epochMilliseconds)
 		.filter(
