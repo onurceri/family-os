@@ -1,10 +1,6 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { isExternalHttpError } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
@@ -18,6 +14,7 @@ import {
 	type TransportRequest,
 	type TransportResponse,
 } from '../src/http-guard/index.ts';
+import { TEST_TLS_CERT, TEST_TLS_KEY } from './tls-fixture.ts';
 
 const stream = async function* (text: string): AsyncGenerator<Uint8Array> {
 	yield new TextEncoder().encode(text);
@@ -320,55 +317,20 @@ describe('guarded get', () => {
 });
 
 /** The real transport, against a local TLS server with a throwaway certificate. */
-const hasOpenssl = (() => {
-	try {
-		execFileSync('openssl', ['version'], { stdio: 'ignore' });
-		return true;
-	} catch {
-		return false;
-	}
-})();
-
-describe.skipIf(!hasOpenssl)('node transport', () => {
+describe('node transport', () => {
 	it('connects to the given address, sends the host name, decompresses and caps', async () => {
-		const dir = mkdtempSync(join(tmpdir(), 'famos-tls-'));
-		execFileSync(
-			'openssl',
-			[
-				'req',
-				'-x509',
-				// An EC key generates instantly; RSA key generation takes a random, load-dependent time.
-				'-newkey',
-				'ec',
-				'-pkeyopt',
-				'ec_paramgen_curve:prime256v1',
-				'-nodes',
-				'-days',
-				'1',
-				'-subj',
-				'/CN=cal.example.org',
-				'-keyout',
-				join(dir, 'k.pem'),
-				'-out',
-				join(dir, 'c.pem'),
-			],
-			{ stdio: 'ignore' },
-		);
 		const seen: { host?: string | undefined }[] = [];
-		const server = createServer(
-			{ key: readFileSync(join(dir, 'k.pem')), cert: readFileSync(join(dir, 'c.pem')) },
-			(req, res) => {
-				seen.push({ host: req.headers.host });
-				res.setHeader('etag', '"v1"');
-				if (req.url === '/big.ics') {
-					res.setHeader('content-encoding', 'gzip');
-					res.end(gzipSync('x'.repeat(10_000)));
-				} else {
-					res.setHeader('content-encoding', 'gzip');
-					res.end(gzipSync('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n'));
-				}
-			},
-		);
+		const server = createServer({ key: TEST_TLS_KEY, cert: TEST_TLS_CERT }, (req, res) => {
+			seen.push({ host: req.headers.host });
+			res.setHeader('etag', '"v1"');
+			if (req.url === '/big.ics') {
+				res.setHeader('content-encoding', 'gzip');
+				res.end(gzipSync('x'.repeat(10_000)));
+			} else {
+				res.setHeader('content-encoding', 'gzip');
+				res.end(gzipSync('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n'));
+			}
+		});
 		await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 		const { port } = server.address() as AddressInfo;
 		try {

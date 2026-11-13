@@ -10,6 +10,9 @@ import { join } from 'node:path';
 const ROOT = 'FAMOS_TEST_TMP_ROOT';
 
 export default function setup() {
+	// Every worker inherits this, so a test never depends on the zone of the machine running it
+	// (a developer laptop, a CI runner); tests that need a zone say so explicitly.
+	process.env.TZ = 'UTC';
 	if (process.env[ROOT]) return;
 	const root = realpathSync(mkdtempSync(join(tmpdir(), 'famos-test-run-')));
 	process.env[ROOT] = root;
