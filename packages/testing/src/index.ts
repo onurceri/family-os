@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { backupMigrations, createBackupSettingsAdmin } from '@famos/adapters/backup';
@@ -658,6 +658,8 @@ export async function createTestKernel(
 		async close() {
 			await kernel.stop();
 			await handle.close();
+			// The kernel's own folder goes with it, wherever the test ran.
+			await rm(filesDir, { recursive: true, force: true });
 		},
 	};
 }
