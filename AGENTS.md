@@ -43,7 +43,7 @@ docs/              Architecture, design system, user guide, releasing
 ## Architecture rules (non-negotiable)
 
 1. **Import boundaries** (enforced by dependency-cruiser):
-   - Extensions import only `@famos/sdk`, `@famos/ui` and other extensions' `./contract`.
+   - Extensions import only `@famos/sdk`, `@famos/ui`, `@famos/time`, `@famos/i18n` and other extensions' `./contract`; their `./web` code may also import `@famos/api-client` and the `./api` types of an extension they depend on.
    - `core` imports only `sdk`, never `db` or `adapters`.
    - `web` talks to the server only through `@famos/api-client`.
    - Only `apps/server` imports `db`, `adapters` and concrete libraries.

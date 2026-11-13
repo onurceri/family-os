@@ -23,7 +23,7 @@ export function familyModeCapabilities(): string[] {
 	];
 }
 
-/** An extension's name key (Settings → Features), for a card without a `labelKey` of its own. */
+/** An extension's name key (Settings → Family → Extensions), for a card without a `labelKey` of its own. */
 export const extensionLabel = (id: string): string | undefined =>
 	contributions.extension(id)?.labelKey;
 
