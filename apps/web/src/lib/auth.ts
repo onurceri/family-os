@@ -4,6 +4,7 @@
  */
 import { t } from './i18n.svelte.js';
 import { offline } from './offline.svelte.js';
+import { push } from './push.svelte.js';
 import { signOutConfirm } from './sign-out-confirm.svelte.js';
 import { signOutSafely } from './sign-out-flow.js';
 import { toasts } from './toast.svelte.js';
@@ -62,6 +63,7 @@ export async function signOut(): Promise<boolean> {
 			flush: () => offline.flushAll(),
 			waitingCount: () => offline.waiting.length,
 			confirmDiscard: (count) => signOutConfirm.ask(count),
+			releasePush: () => push.release(),
 			request: async () => {
 				const res = await fetch('/api/auth/sign-out', {
 					method: 'POST',

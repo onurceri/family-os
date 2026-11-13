@@ -5857,6 +5857,9 @@
 									"items": {
 										"type": "object",
 										"properties": {
+											"endpointId": {
+												"type": "string"
+											},
 											"label": {
 												"type": "string"
 											},
@@ -5871,6 +5874,7 @@
 											}
 										},
 										"required": [
+											"endpointId",
 											"label",
 											"createdAt",
 											"lastSuccessAt"
