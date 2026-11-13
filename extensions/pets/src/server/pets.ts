@@ -1,4 +1,4 @@
-import { addPickedObligations, type Obligation } from '@famos/ext-records/contract';
+import { addPickedObligations, type CompletedObligationSchema } from '@famos/ext-records/contract';
 import {
 	AiContextSchema,
 	assertActiveMembers,
@@ -6,12 +6,14 @@ import {
 	defineEvent,
 	defineRoute,
 	FamosError,
+	isFamosError,
 	selfOf,
 	storedAsWhole,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
+	AddedTreatmentSchema,
 	AddPetSchema,
 	AddTreatmentSchema,
 	PET_AUDIENCE,
@@ -24,6 +26,7 @@ import {
 	petChangedPayload,
 	petUrl,
 	RECORD_KIND,
+	TreatmentCompletionSchema,
 	UpdatePetSchema,
 } from '../contract/index.ts';
 import { petsEdit, petsView } from './capabilities.ts';
@@ -160,7 +163,7 @@ export const addTreatment = defineAction({
 	description:
 		'Adds a history entry. With an open duty of the same pet it also marks that duty done on the same day, so its next date moves on.',
 	input: AddTreatmentSchema,
-	output: PetTreatmentSchema,
+	output: AddedTreatmentSchema,
 	approval: { unless: petsEdit.id },
 	// The pet by its name on record: a form sends only its id.
 	async subject(ctx, { petId }) {
@@ -172,7 +175,11 @@ export const addTreatment = defineAction({
 			.executeTakeFirst();
 		return row?.name ?? null;
 	},
-	undo: (treatment) => ({ actionId: 'pets.removeTreatment', input: { id: treatment.id } }),
+	// The completion goes back with the entry, so the duty's next date does not stay moved on.
+	undo: ({ id, completion }) => ({
+		actionId: 'pets.undoTreatment',
+		input: { id, ...(completion && { completion }) },
+	}),
 	ai: {
 		description:
 			'Record a treatment given to a household pet from a vet card, a vet receipt or a message: a vaccination, a parasite treatment, a check-up or a medication, with the date and the product. The pet must be one of the household pets.',
@@ -206,18 +213,23 @@ export const addTreatment = defineAction({
 			created_at: uow.clock.now(),
 		};
 		await tables(uow.db).insertInto('pets_treatments').values(row).execute();
+		let completion: z.infer<typeof TreatmentCompletionSchema> | null = null;
 		if (input.obligationId) {
 			// In the same transaction: a duty that is not this pet's rolls the whole thing back.
-			const done = await uow.run<unknown, Obligation>('records.completeObligation', {
-				id: input.obligationId,
-				doneOn: input.givenOn,
-				...(input.nextDueDate && { nextDueDate: input.nextDueDate }),
-			});
+			const done = await uow.run<unknown, z.infer<typeof CompletedObligationSchema>>(
+				'records.completeObligation',
+				{
+					id: input.obligationId,
+					doneOn: input.givenOn,
+					...(input.nextDueDate && { nextDueDate: input.nextDueDate }),
+				},
+			);
 			if (done.recordId !== input.petId)
 				throw new FamosError('bad_request', 'That duty belongs to another record');
+			if (done.before) completion = { obligationId: input.obligationId, before: done.before };
 		}
 		uow.emit(petChanged, { petId: input.petId });
-		return toTreatment(row);
+		return { ...toTreatment(row), completion };
 	},
 });
 
@@ -238,6 +250,44 @@ export const removeTreatment = defineAction({
 		if (!row) throw new FamosError('not_found', 'Treatment not found');
 		await tables(uow.db).deleteFrom('pets_treatments').where('id', '=', id).execute();
 		uow.emit(petChanged, { petId: row.pet_id });
+		return { ok: true as const };
+	},
+});
+
+/**
+ * The undo of `pets.addTreatment`: the entry goes, and the duty it completed is open again with
+ * the date it had. Taking it back twice changes nothing, and a duty removed since leaves nothing
+ * to restore.
+ */
+export const undoTreatment = defineAction({
+	id: 'pets.undoTreatment',
+	target: ({ id }) => ({ table: 'pets_treatments', id }),
+	title: 'Take back adding a treatment',
+	draftTitle: 'pets:draft_title_undo_treatment',
+	input: z.object({
+		id: PetTreatmentIdSchema,
+		completion: TreatmentCompletionSchema.optional(),
+	}),
+	output: z.object({ ok: z.literal(true) }),
+	approval: { unless: petsEdit.id },
+	async run(uow, { id, completion }) {
+		const row = await tables(uow.db)
+			.selectFrom('pets_treatments')
+			.select('pet_id')
+			.where('id', '=', id)
+			.executeTakeFirst();
+		if (row) await tables(uow.db).deleteFrom('pets_treatments').where('id', '=', id).execute();
+		if (completion) {
+			try {
+				await uow.run('records.undoCompletion', {
+					id: completion.obligationId,
+					...completion.before,
+				});
+			} catch (error) {
+				if (!isFamosError(error) || error.code !== 'not_found') throw error;
+			}
+		}
+		if (row) uow.emit(petChanged, { petId: row.pet_id });
 		return { ok: true as const };
 	},
 });

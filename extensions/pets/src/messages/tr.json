@@ -106,5 +106,6 @@
 	"draft_title_update_pet": "Evcil hayvanı değiştir",
 	"draft_title_archive_pet": "Evcil hayvanı arşivle",
 	"draft_title_add_treatment": "Uygulama ekle",
-	"draft_title_remove_treatment": "Uygulamayı kaldır"
+	"draft_title_remove_treatment": "Uygulamayı kaldır",
+	"draft_title_undo_treatment": "Uygulama eklemeyi geri al"
 }
