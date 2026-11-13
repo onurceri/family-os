@@ -27,6 +27,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0 # tags and history for the release notes
+          persist-credentials: false
 
       - name: The tag matches the product version
         run: |
@@ -34,6 +35,25 @@ jobs:
           actual="$(node -p "require('./apps/server/package.json').version")"
           test "$version" = "$actual" || { echo "Tag $GITHUB_REF_NAME but apps/server is $actual"; exit 1; }
           echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # Nothing is published before the extension signing key is known to work: a wrong secret
+      # would otherwise fail only after the image and `latest` are out. Installing runs
+      # dependency code, so the key is set on the check step alone. A pre-release publishes no
+      # packages and needs no key.
+      - if: ${{ !contains(github.ref_name, '-') }}
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - if: ${{ !contains(github.ref_name, '-') }}
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - if: ${{ !contains(github.ref_name, '-') }}
+        run: pnpm install --frozen-lockfile
+      - if: ${{ !contains(github.ref_name, '-') }}
+        name: The extension signing key is one the server trusts
+        env:
+          FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
+        run: node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY
 
       - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0

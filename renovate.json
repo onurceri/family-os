@@ -4,6 +4,7 @@
 		"config:recommended",
 		"helpers:pinGitHubActionDigests",
 		":pinAllExceptPeerDependencies",
+		"docker:pinDigests",
 		":semanticCommits"
 	],
 	"schedule": ["before 6am on monday"],
