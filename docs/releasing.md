@@ -51,7 +51,7 @@ Every extension is also published as a signed package (`.famext`), so a family c
 
 ### The signing key
 
-Packages and the index are signed with one ed25519 key. Its public half is a trust root in `apps/server/src/packages/trust.ts` (id `3bab2b9c2b26fecd`); servers accept a package or an index only when it is signed by a key listed there. Its private half (PKCS #8 PEM) exists only as the repository's Actions secret `FAMOS_EXTENSION_SIGNING_KEY`, never committed, printed or kept in a shared file. The Release workflow checks it before the image is pushed (a pre-release, which publishes no packages, skips this), and the publishing job checks it again. Each first checks that the secret's key is a trust root (`node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY`), so a wrong secret fails before anything is signed.
+Packages and the index are signed with one ed25519 key. Its public half is a trust root in `apps/server/src/packages/trust.ts` (id `3bab2b9c2b26fecd`); servers accept a package or an index only when it is signed by a key listed there. Its private half (PKCS #8 PEM) exists only as the repository's Actions secret `FAMOS_EXTENSION_SIGNING_KEY`, never committed, printed or kept in a shared file. The Release workflow checks it in a job of its own before the image is pushed, and the publishing job checks it again. Each first checks that the secret's key is a trust root (`node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY`), so a wrong secret fails before anything is signed.
 
 **Rotating it** (because it may have leaked, or as a precaution):
 
