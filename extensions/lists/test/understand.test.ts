@@ -186,6 +186,15 @@ describe('lists.shoppingItem', () => {
 		]);
 	});
 
+	it('puts a product on the list really named like the default list, not on the default one', async () => {
+		const market = await run<{ id: string }>('lists.createShoppingList', { name: 'Market' });
+		const out = await resolve('lists.shoppingItem', [{ title: 'Apples', place: 'Market' }], {
+			text: 'apples from the Market',
+		});
+		const [only] = out;
+		expect(only && 'propose' in only && only.propose.input).toMatchObject({ listId: market.id });
+	});
+
 	it('adds back what was bought, and refuses a mention without a product', async () => {
 		const { items } = await addItems([{ title: 'Bread' }]);
 		await run('lists.checkShoppingItem', { id: items[0]?.id, done: true });

@@ -75,6 +75,22 @@ export const namesOf = (
 		? [list.name]
 		: [DEFAULT_LIST_LABEL, ...vocabulary('lists:default_list_names')].filter(Boolean);
 
+/**
+ * The lists a name points at: those whose own name it is; only when none is, the list that has no
+ * name and answers to the catalog's words. A list really called "Market" is never hidden behind
+ * the default list that also answers to it.
+ */
+export const listsNamed = <L extends { name: string }>(
+	lists: readonly L[],
+	wanted: string,
+	locale: string,
+	vocabulary: (key: string) => readonly string[],
+): L[] => {
+	const is = (l: L) => namesOf(l, vocabulary).some((n) => titleKey(n, locale) === wanted);
+	const own = lists.filter((l) => l.name && is(l));
+	return own.length > 0 ? own : lists.filter(is);
+};
+
 async function activeList(uow: UnitOfWork, id: string | undefined) {
 	let query = tables(uow.db)
 		.selectFrom('lists_shopping_lists')
@@ -185,9 +201,7 @@ export const addShoppingItems = defineAction({
 			.orderBy('created_at')
 			.execute();
 		const wanted = titleKey(list, locale);
-		const found = lists.find((l) =>
-			namesOf(l, ctx.vocabulary).some((n) => titleKey(n, locale) === wanted),
-		);
+		const found = listsNamed(lists, wanted, locale, ctx.vocabulary)[0];
 		if (!found)
 			throw new FamosError(
 				'bad_request',
@@ -819,11 +833,8 @@ export const shoppingList = defineAction({
 			.orderBy('sort')
 			.orderBy('created_at')
 			.execute();
-		const chosen = lists.filter(
-			(l) =>
-				(!listId || l.id === listId) &&
-				(!wanted || namesOf(l, uow.vocabulary).some((n) => titleKey(n, locale) === wanted)),
-		);
+		const named = wanted ? listsNamed(lists, wanted, locale, uow.vocabulary) : lists;
+		const chosen = named.filter((l) => !listId || l.id === listId);
 		// A name that is no list is said to be one, with the real names: an empty answer would
 		// read as "nothing on the list".
 		if (wanted && chosen.length === 0 && !listId)
