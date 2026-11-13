@@ -12,6 +12,7 @@ import {
 } from '@famos/sdk';
 import { roleGrants } from './access.ts';
 import { pauseAllApps } from './apps.ts';
+import { changesHead, skipReplacedChanges } from './changes.ts';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -83,6 +84,7 @@ export async function reconcileRestore(
 	const appsPaused = await pauseAllApps(deps.db, deps.clock.now());
 	if (previous) {
 		const now = deps.clock.now();
+		await skipReplacedChanges(deps.db, await changesHead(previous), now);
 		const archived = await carryArchivedMembers(deps.db, previous);
 		for (const memberId of archived) {
 			// Their keys and extension credentials end as they would have, and their logins go.
