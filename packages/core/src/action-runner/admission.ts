@@ -7,6 +7,7 @@ import {
 	type Decision,
 	decide,
 	needsOwner,
+	proposes,
 	refusalError,
 } from '../decide.ts';
 import { familyReader } from '../family.ts';
@@ -59,9 +60,9 @@ export function createAdmission(deps: ActionRunnerDeps) {
 		return decide(def, actor, env, facts);
 	}
 
-	/** Why an AI's proposal would change nothing (the action's `refuseProposal`), or null. */
+	/** Why a proposal (the AI's, a suggesting app's) would change nothing (the action's `refuseProposal`), or null. */
 	async function settledReason(def: AnyActionDefinition, actor: Actor, input: unknown) {
-		if (actor.kind !== 'ai' || !def.refuseProposal) return null;
+		if (!proposes(actor) || !def.refuseProposal) return null;
 		return def.refuseProposal(readContext(def), input);
 	}
 

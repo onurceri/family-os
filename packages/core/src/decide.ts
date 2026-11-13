@@ -74,7 +74,7 @@ export interface DecideFacts {
 	 * Left out until the decision asks for it (`needsOwner`): reading it costs a query.
 	 */
 	owner?: string | null;
-	/** Why an AI's proposal changes nothing (the action's `refuseProposal`), or null. */
+	/** Why a proposal changes nothing (the action's `refuseProposal`), or null. */
 	settled?: string | null;
 }
 
@@ -185,6 +185,13 @@ const appSuggests = (actor: Actor): boolean =>
 	(actor.kind === 'app' && actor.mode === 'suggest') ||
 	(actor.kind === 'member' && actor.via?.mode === 'suggest');
 
+/**
+ * Whether the actor only proposes: the AI, an app that only suggests and a person acting through
+ * one. What `refuseProposal` judges is a proposal, whoever makes it; a person who is asked for
+ * approval chose the change themselves and is never held to it.
+ */
+export const proposes = (actor: Actor): boolean => actor.kind === 'ai' || appSuggests(actor);
+
 /** Whether and why an actor's change waits for a person's approval. */
 export type Approval =
 	| { needed: false; reason?: 'owner' | 'except' }
@@ -254,8 +261,8 @@ export function decide(
 ): Decision {
 	const refusal = admission(def, actor, env);
 	if (refusal) return { outcome: 'refuse', ...refusal };
-	// An AI proposal that would change nothing is refused; whether it would, only the input says.
-	const proposal = actor.kind === 'ai' && def.refuseProposal !== undefined;
+	// A proposal (the AI's, a suggesting app's) that would change nothing is refused; whether it would, only the input says.
+	const proposal = proposes(actor) && def.refuseProposal !== undefined;
 	if (proposal && facts?.settled) return { outcome: 'refuse', reason: 'settled' };
 	const needs = approval(def, actor, env, facts);
 	if (needs.needed === false)

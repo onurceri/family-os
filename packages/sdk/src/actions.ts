@@ -198,9 +198,12 @@ export interface ActionDefinition<
 	 */
 	readonly target?: (input: z.infer<In>) => ActionTarget | null;
 	/**
-	 * A reason an AI's proposal is pointless (the thing is already in the state it asks for), or
-	 * null. The runner refuses the proposal with that text, so the model tells the person instead
-	 * of filling the review list with changes that change nothing. Only asked of AI actors.
+	 * A reason a proposal is pointless (the thing is already in the state it asks for, or it is
+	 * never something to suggest), or null. The runner refuses the proposal with that text, so the
+	 * caller tells the person instead of filling the review list with changes that change nothing.
+	 * Asked of everyone whose call would only become a draft without a person choosing it: the AI
+	 * and an app that only suggests (or a person through one). Never asked of a person in the app,
+	 * whose own change is applied or sent for approval as they chose it.
 	 * Read-only and cheap.
 	 */
 	readonly refuseProposal?: (ctx: DuplicateContext, input: z.infer<In>) => Promise<string | null>;
