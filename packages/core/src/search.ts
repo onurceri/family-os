@@ -434,6 +434,7 @@ export function createSearch(deps: SearchDeps) {
 	const embedJob = defineJob({
 		name: EMBED_JOB,
 		payload: z.object({ kind: z.string(), id: z.string(), followUp: z.boolean().optional() }),
+		lane: 'long',
 		timeoutMs: 180_000,
 		async handle(ctx, { kind, id, followUp }) {
 			const entry = kinds().get(kind);
