@@ -25,3 +25,5 @@ peerDependencyRules:
 overrides:
   # The AI SDK's provider-utils accepts undici ^7.29, which includes versions with a denial-of-service flaw (fixed in 7.30.1).
   undici: 7.30.1
+  # imapflow > socks accepts ip-address ^10.1.1, which includes versions with a quadratic-time parsing flaw (fixed in 10.7.4).
+  ip-address: 10.7.6
