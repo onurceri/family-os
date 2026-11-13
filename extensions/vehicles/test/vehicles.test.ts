@@ -359,6 +359,66 @@ describe('capabilities', () => {
 		expect(await k.route('vehicles.listVehicles').call({ actor: kid.actor })).toHaveLength(1);
 	});
 
+	it('holds a supervised member’s change, archive and log removal as drafts, and refuses a display', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['vehicles.view'] } as never;
+		const car = await addVehicle();
+		const log = await applied<VehicleLog>(
+			k,
+			'vehicles.addLog',
+			{ vehicleId: car.id, doneOn: '2026-03-01' },
+			admin.actor,
+		);
+		const change = {
+			id: car.id,
+			vehicle: {
+				name: 'Clio',
+				plate: '',
+				make: '',
+				model: '',
+				year: null,
+				fuel: 'other',
+				vin: null,
+				memberIds: [],
+				notes: null,
+			},
+		};
+		const attempts: [string, Record<string, unknown>][] = [
+			['vehicles.updateVehicle', change],
+			['vehicles.archiveVehicle', { id: car.id }],
+			['vehicles.removeLog', { id: log.id }],
+		];
+		for (const [id, input] of attempts) {
+			await expect(k.runner.invoke(id, input, display)).rejects.toMatchObject({
+				code: 'forbidden',
+			});
+		}
+		expect((await vehicles())[0]?.name).toBe(car.name);
+		expect(await logs(car.id)).toHaveLength(1);
+
+		const drafts = [];
+		for (const [id, input] of attempts) {
+			const r = await k.runner.invoke(id, input, kid.actor);
+			expect(r.status, id).toBe('drafted');
+			drafts.push(r);
+		}
+		// Nothing changed until a person approves.
+		expect(await vehicles()).toHaveLength(1);
+		expect((await vehicles())[0]?.name).toBe(car.name);
+		expect(await logs(car.id)).toHaveLength(1);
+
+		const [update, , removal] = drafts;
+		if (update?.status !== 'drafted' || removal?.status !== 'drafted') return;
+		await k.runner.approveDraft(update.draftId, admin.actor);
+		expect((await vehicles())[0]?.name).toBe('Clio');
+		await k.runner.approveDraft(removal.draftId, admin.actor);
+		expect(await logs(car.id)).toHaveLength(0);
+		const archive = drafts[1];
+		if (archive?.status !== 'drafted') return;
+		await k.runner.approveDraft(archive.draftId, admin.actor);
+		expect(await vehicles()).toHaveLength(0);
+	});
+
 	it('lets the AI propose a log entry only as a draft', async () => {
 		const car = await addVehicle();
 		const result = await k.runner.invoke(
