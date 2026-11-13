@@ -20,6 +20,7 @@ const shelfManage = defineCapability({
 const things = new Set(['lamp']);
 // Runs while a decision is still working out whom to tell, before its transaction opens.
 let beforeDecision: (() => Promise<void>) | null = null;
+const noted: string[] = [];
 const shelf = defineTestExtension({
 	id: 'shelf',
 	capabilities: [shelfUse, shelfManage],
@@ -41,6 +42,25 @@ const shelf = defineTestExtension({
 			},
 			async run(_uow, input) {
 				if (!things.delete(input.item)) throw new FamosError('not_found', 'Thing not found');
+				return { ok: true };
+			},
+		}),
+		defineAction({
+			id: 'shelf.note',
+			title: 'Note something',
+			draftTitle: 'shelf:draft_title_remove',
+			input: z.object({ item: z.string().min(1) }),
+			output: z.object({ ok: z.boolean() }),
+			requires: shelfUse.id,
+			approval: { unless: shelfManage.id },
+			async subject(_ctx, input) {
+				const hook = beforeDecision;
+				beforeDecision = null;
+				await hook?.();
+				return input.item;
+			},
+			async run(_uow, input) {
+				noted.push(input.item);
 				return { ok: true };
 			},
 		}),
@@ -68,6 +88,7 @@ let kid: Who;
 let sibling: Who;
 beforeEach(async () => {
 	beforeDecision = null;
+	noted.length = 0;
 	things.clear();
 	things.add('lamp');
 	k = await createTestKernel({ extensions: [shelf] });
@@ -155,6 +176,29 @@ describe('two decisions on one draft', () => {
 		const audit = await db().selectFrom('core_audit_log').selectAll().execute();
 		expect(audit.filter((a) => a.draft_id === id).map((a) => a.outcome)).not.toContain('rejected');
 		expect(things.has('lamp')).toBe(false);
+	});
+});
+
+describe('an edit while the approval is being prepared', () => {
+	it('never runs the old input: the approval is refused and the edit stands', async () => {
+		const drafted = await k.runner.invoke('shelf.note', { item: 'old' }, kid.actor);
+		if (drafted.status !== 'drafted') throw new Error('expected a draft');
+		const id = drafted.draftId;
+		// A draft that names no subject makes the approval look it up before its transaction opens.
+		await db()
+			.updateTable('core_drafts')
+			.set({ input: JSON.stringify({ item: 'old' }) })
+			.where('id', '=', id)
+			.execute();
+		// The approval reads the draft, then works out whom to tell; the edit lands in between.
+		beforeDecision = async () => {
+			await k.runner.invoke('core.editDraft', { draftId: id, input: { item: 'new' } }, admin.actor);
+		};
+		expect(await code(k.runner.approveDraft(id, admin.actor))).toBe('conflict');
+		expect(noted).toEqual([]);
+		expect(await draftRow(id)).toMatchObject({ status: 'pending' });
+		await k.runner.approveDraft(id, admin.actor);
+		expect(noted).toEqual(['new']);
 	});
 });
 
