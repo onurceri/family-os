@@ -54,6 +54,8 @@ export interface ExtensionViews {
 	/** The extension's files, with grants read and written through `db`. */
 	files(extensionId: string, db: DbExecutor): ExtensionFiles;
 	secrets(extensionId: string): SecretBox;
+	/** Throws `forbidden` when `extensionId` may not enqueue `job` (an extension runs its own jobs only). */
+	assertJob(extensionId: string, job: string): void;
 }
 
 export interface ActionRunnerDeps {

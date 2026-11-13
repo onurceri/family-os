@@ -305,6 +305,12 @@ export const setAssignees = defineAction({
 export const markDone = defineAction({
 	id: 'chores.markDone',
 	expose: api.completeChore,
+	target: ({ id }) => ({
+		table: 'chores_chores',
+		id,
+		liveColumn: 'archived_at',
+		versionColumn: 'version',
+	}),
 	offline: true,
 	title: 'Mark a chore done',
 	draftTitle: 'chores:draft_title_mark_done',

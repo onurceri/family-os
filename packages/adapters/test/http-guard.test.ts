@@ -535,6 +535,41 @@ describe('guarded post', () => {
 	});
 });
 
+describe('the deadline and name resolution', () => {
+	// The name answers only long after the request's deadline.
+	const slowName = async () => {
+		await new Promise((done) => setTimeout(done, 300));
+		return ['93.184.216.34'];
+	};
+
+	it('covers the lookup of a GET and of a POST, and nothing is sent afterwards', async () => {
+		const script = scripted({ text: 'late' }, { text: 'late' });
+		const http = createGuardedHttp({ resolve: slowName, transport: script.transport });
+		expect(await code(http.get({ url: 'https://cal.example.org/a.ics', timeoutMs: 20 }))).toBe(
+			'timeout',
+		);
+		expect(
+			await code(http.post({ url: 'https://ha.example.org/x', json: {}, timeoutMs: 20 })),
+		).toBe('timeout');
+		expect(script.requests).toEqual([]);
+	});
+
+	it('ends with a timeout when the caller aborts during the lookup', async () => {
+		const http = createGuardedHttp({ resolve: slowName, transport: scripted().transport });
+		const stop = new AbortController();
+		const get = code(
+			http.get({ url: 'https://cal.example.org/a.ics', timeoutMs: 60_000, signal: stop.signal }),
+		);
+		stop.abort();
+		expect(await get).toBe('timeout');
+	});
+
+	it('still reports a failed lookup as unreachable', async () => {
+		const http = createGuardedHttp({ resolve: dns({}), transport: scripted().transport });
+		expect(await code(http.get({ url: 'https://nowhere.example.org/a.ics' }))).toBe('unreachable');
+	});
+});
+
 describe('node transport, post', () => {
 	it('sends the body and its length to a service on the home network', async () => {
 		const seen: { method?: string; type?: string; body: string }[] = [];

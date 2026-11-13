@@ -136,9 +136,21 @@ export function createApproval(
 						})
 						.where('id', '=', draftId)
 						.where('status', 'in', ['pending', 'failed'])
+						// What runs is what is stored when this commits: an edit saved since the
+						// draft was read means the person has not seen it, unless they sent their own.
+						.$if(editedInput === undefined, (qb) =>
+							qb.where('edited_input', 'is', draft.edited_input),
+						)
 						.executeTakeFirst();
-					if (Number(claimed.numUpdatedRows) === 0)
-						throw new FamosError('conflict', 'Draft was decided concurrently');
+					if (Number(claimed.numUpdatedRows) === 0) {
+						const now = await getDraft(uow.db, draftId);
+						throw new FamosError(
+							'conflict',
+							now.status === 'pending' || now.status === 'failed'
+								? 'Draft was edited meanwhile, so look at it again before approving'
+								: 'Draft was decided concurrently',
+						);
+					}
 
 					// Already so (ticked, done): running it changes nothing, and recording it as
 					// applied would offer an undo that reverses somebody else's real change.
