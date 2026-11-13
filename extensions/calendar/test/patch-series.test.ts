@@ -39,6 +39,36 @@ const change = (id: string, patch: Record<string, unknown>) =>
 	k.runner.invoke('calendar.changeEvent', { id, ...patch }, admin.actor);
 
 describe('changing a repeating event with a patch', () => {
+	it('moves a weekly series to the new weekday and keeps its first date', async () => {
+		const id = await create(bins);
+		await change(id, { date: '2026-10-14' });
+		expect(await starts('2026-10-12', '2026-11-02')).toEqual([
+			epochOf('2026-10-14', '19:00', TZ),
+			epochOf('2026-10-21', '19:00', TZ),
+			epochOf('2026-10-28', '19:00', TZ),
+		]);
+	});
+
+	it('moves every day of a multi-day series and takes the move back', async () => {
+		const id = await create({ ...bins, recurrence: { freq: 'weekly', byDay: ['TU', 'TH'] } });
+		const moved = await change(id, { date: '2026-10-14' });
+		expect(await starts('2026-10-12', '2026-10-24')).toEqual([
+			epochOf('2026-10-14', '19:00', TZ),
+			epochOf('2026-10-16', '19:00', TZ),
+			epochOf('2026-10-21', '19:00', TZ),
+			epochOf('2026-10-23', '19:00', TZ),
+		]);
+		if (moved.status !== 'applied') throw new Error('expected applied');
+		const { before } = moved.output as { before: Record<string, unknown> };
+		await change(id, before);
+		expect(await starts('2026-10-12', '2026-10-24')).toEqual([
+			epochOf('2026-10-13', '19:00', TZ),
+			epochOf('2026-10-15', '19:00', TZ),
+			epochOf('2026-10-20', '19:00', TZ),
+			epochOf('2026-10-22', '19:00', TZ),
+		]);
+	});
+
 	it('keeps a deleted date deleted when date and time are sent unchanged', async () => {
 		const id = await create(bins);
 		const [, second] = await range('2026-10-13', '2026-10-27');
