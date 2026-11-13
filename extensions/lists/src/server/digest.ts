@@ -4,6 +4,7 @@ import {
 	digestForPeople,
 	digestNotes,
 	digestOf,
+	memberBehind,
 	type UnitOfWork,
 } from '@famos/sdk';
 import { addDays, compareDates, expandDates, todayIn } from '@famos/time';
@@ -159,7 +160,7 @@ export const shoppingDigest = defineDigest({
 				: compareDates(today, input.to) > 0
 					? input.to
 					: today;
-		const asker = uow.actor.kind === 'ai' ? uow.actor.onBehalfOf : undefined;
+		const asker = memberBehind(uow.actor);
 		const language =
 			(asker && (await uow.family.members()).find((m) => m.id === asker)?.locale) || locale;
 		const lists = await tables(uow.db)
