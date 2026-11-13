@@ -138,4 +138,22 @@ describe('documents', () => {
 		expect(r.status).toBe('drafted');
 		expect(await list()).toHaveLength(1);
 	});
+
+	it('holds a supervised member’s change to a paper as a draft, and refuses a display', async () => {
+		await store(0, 'policy text');
+		const [doc] = (await attach({ label: 'policy' })) as [RecordDocument];
+		const kid = await person(k, 'supervised', 'Elif');
+		const input = { id: doc.id, label: 'receipt', expiresOn: '2028-02-29' };
+		const r = await k.runner.invoke('records.updateDocument', input, kid.actor);
+		expect(r.status).toBe('drafted');
+		expect((await list())[0]).toMatchObject({ label: 'policy', expiresOn: null });
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['records.view'] } as never;
+		await expect(k.runner.invoke('records.updateDocument', input, display)).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+		expect((await list())[0]?.label).toBe('policy');
+		if (r.status !== 'drafted') return;
+		await k.runner.approveDraft(r.draftId, admin.actor);
+		expect((await list())[0]).toMatchObject({ label: 'receipt', expiresOn: '2028-02-29' });
+	});
 });

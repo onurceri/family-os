@@ -218,6 +218,43 @@ describe('putting a moved date back', () => {
 	});
 });
 
+describe('putting back and restoring without calendar.edit', () => {
+	it('holds a supervised member’s putting a date back as a draft, and refuses a display', async () => {
+		const kid = await k.member('supervised', 'Elif');
+		const id = await create(bins);
+		const { event } = await moveSecond(id);
+		const input = { id, occurrence: String(twentieth) };
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['calendar.view'] } as never;
+		await expect(
+			k.runner.invoke('calendar.putOccurrenceBack', input, display),
+		).rejects.toMatchObject({ code: 'forbidden' });
+		const r = await k.runner.invoke('calendar.putOccurrenceBack', input, kid.actor);
+		expect(r.status).toBe('drafted');
+		let all = await range('2026-10-12', '2026-10-31');
+		expect(all.some((o) => o.eventId === event.id)).toBe(true);
+		if (r.status !== 'drafted') return;
+		await k.runner.approveDraft(r.draftId, admin.actor);
+		all = await range('2026-10-12', '2026-10-31');
+		expect(all.some((o) => o.eventId === event.id)).toBe(false);
+	});
+
+	it('holds a supervised member’s restoring of a deleted event as a draft, and refuses a display', async () => {
+		const kid = await k.member('supervised', 'Elif');
+		const id = await create({ title: 'Doctor', date: '2026-10-21', startTime: '09:00' });
+		await k.runner.invoke('calendar.deleteEvent', { id }, admin.actor);
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['calendar.view'] } as never;
+		await expect(k.runner.invoke('calendar.restoreEvent', { id }, display)).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+		const r = await k.runner.invoke('calendar.restoreEvent', { id }, kid.actor);
+		expect(r.status).toBe('drafted');
+		expect(await range('2026-10-12', '2026-10-31')).toEqual([]);
+		if (r.status !== 'drafted') return;
+		await k.runner.approveDraft(r.draftId, admin.actor);
+		expect((await range('2026-10-12', '2026-10-31')).map((o) => o.eventId)).toEqual([id]);
+	});
+});
+
 describe('deleting a series', () => {
 	it('takes its moved dates with it, and bringing the series back brings them back', async () => {
 		const id = await create(bins);

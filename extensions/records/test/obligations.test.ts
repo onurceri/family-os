@@ -676,3 +676,114 @@ describe('nothing due in the days asked about', () => {
 		expect(await upcoming(30)).toEqual({ obligations: [] });
 	});
 });
+
+describe('changes by people without records.edit', () => {
+	const display = {
+		kind: 'display',
+		deviceId: 'dev_1',
+		capabilities: ['records.view'],
+		showNames: false,
+	} as never;
+
+	it('holds a supervised member’s change, removal, rename and archive as drafts, and an admin’s approval applies each', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const o = await add({ title: 'Car insurance', every: { years: 1 } });
+
+		const change = await k.runner.invoke(
+			'records.updateObligation',
+			{ id: o.id, obligation: { title: 'Road tax', dueDate: '2026-12-01', leadDays: 20 } },
+			kid.actor,
+		);
+		expect(change.status).toBe('drafted');
+		expect((await open())[0]).toMatchObject({ title: 'Car insurance', dueDate: '2026-11-20' });
+		if (change.status !== 'drafted') return;
+		await k.runner.approveDraft(change.draftId, admin.actor);
+		expect((await open())[0]).toMatchObject({ title: 'Road tax', dueDate: '2026-12-01' });
+
+		const rename = await k.runner.invoke(
+			'records.renameRecord',
+			{ recordId: CAR, name: 'Polo' },
+			kid.actor,
+		);
+		expect(rename.status).toBe('drafted');
+		expect((await open())[0]?.recordName).toBe('Golf');
+		if (rename.status !== 'drafted') return;
+		await k.runner.approveDraft(rename.draftId, admin.actor);
+		expect((await open())[0]?.recordName).toBe('Polo');
+
+		const archive = await k.runner.invoke('records.archiveForRecord', { recordId: CAR }, kid.actor);
+		expect(archive.status).toBe('drafted');
+		expect(await open()).toHaveLength(1);
+		if (archive.status !== 'drafted') return;
+		await k.runner.approveDraft(archive.draftId, admin.actor);
+		expect(await open()).toHaveLength(0);
+		expect(await archived()).toHaveLength(1);
+
+		const other = await add({ title: 'Tyres' }, admin.actor, OTHER_CAR);
+		const remove = await k.runner.invoke('records.removeObligation', { id: other.id }, kid.actor);
+		expect(remove.status).toBe('drafted');
+		expect(await open(OTHER_CAR)).toHaveLength(1);
+		if (remove.status !== 'drafted') return;
+		await k.runner.approveDraft(remove.draftId, admin.actor);
+		expect(await open(OTHER_CAR)).toHaveLength(0);
+	});
+
+	it('holds a supervised member’s taking back of a completion as a draft', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const o = await add({ title: 'Warranty ends', dueDate: '2026-10-20' });
+		const done = await applied<Obligation & { before: Record<string, unknown> | null }>(
+			k,
+			'records.completeObligation',
+			{ id: o.id, doneOn: '2026-10-05' },
+			admin.actor,
+		);
+		expect(await open()).toHaveLength(0);
+		const undo = await k.runner.invoke(
+			'records.undoCompletion',
+			{ id: o.id, ...done.before },
+			kid.actor,
+		);
+		expect(undo.status).toBe('drafted');
+		expect(await open()).toHaveLength(0);
+		if (undo.status !== 'drafted') return;
+		await k.runner.approveDraft(undo.draftId, admin.actor);
+		expect(await open()).toHaveLength(1);
+	});
+
+	it('refuses a display, and a guest, and changes nothing', async () => {
+		const guest = await person(k, 'guest');
+		const o = await add({ title: 'Car insurance' });
+		const attempts: [string, Record<string, unknown>][] = [
+			[
+				'records.updateObligation',
+				{ id: o.id, obligation: { title: 'X', dueDate: '2026-12-01', leadDays: 20 } },
+			],
+			['records.removeObligation', { id: o.id }],
+			['records.renameRecord', { recordId: CAR, name: 'Polo' }],
+			['records.archiveForRecord', { recordId: CAR }],
+			['records.undoCompletion', { id: o.id, dueDate: '2026-11-20', lastDoneOn: null }],
+		];
+		for (const [id, input] of attempts) {
+			for (const actor of [display, guest.actor]) {
+				await expect(k.runner.invoke(id, input, actor)).rejects.toMatchObject({
+					code: 'forbidden',
+				});
+			}
+		}
+		expect((await open())[0]).toMatchObject({ title: 'Car insurance', recordName: 'Golf' });
+	});
+
+	it('lets the AI propose a change to an obligation, never apply it', async () => {
+		const o = await add({ title: 'Car insurance' });
+		const ai = { kind: 'ai', mode: 'agent', source: 'mcp' } as never;
+		const change = await k.runner.invoke(
+			'records.updateObligation',
+			{ id: o.id, obligation: { title: 'X', dueDate: '2026-12-01', leadDays: 20 } },
+			ai,
+		);
+		const remove = await k.runner.invoke('records.removeObligation', { id: o.id }, ai);
+		expect(change.status).toBe('drafted');
+		expect(remove.status).toBe('drafted');
+		expect((await open())[0]?.title).toBe('Car insurance');
+	});
+});

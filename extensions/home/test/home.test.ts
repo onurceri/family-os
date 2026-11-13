@@ -753,3 +753,109 @@ describe('the warranty duty and a real failure in records', () => {
 		expect((await items(flat.id))[0]).toMatchObject({ warrantyUntil: '2028-09-20' });
 	});
 });
+
+describe('changes to homes and services without home.edit', () => {
+	const display = {
+		kind: 'display',
+		deviceId: 'dev_1',
+		capabilities: ['home.view'],
+		showNames: false,
+	} as never;
+
+	it('holds a supervised member’s change to a home or a service as a draft until an admin approves it', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const flat = await addHome();
+		const power = await addService(flat.id);
+
+		const rename = await k.runner.invoke(
+			'home.updateHome',
+			{ id: flat.id, home: { name: 'Granny’s', address: '', tenure: 'owner', notes: null } },
+			kid.actor,
+		);
+		expect(rename.status).toBe('drafted');
+		expect((await homes())[0]).toMatchObject({ name: 'Our flat', tenure: 'tenant' });
+		if (rename.status !== 'drafted') return;
+		await k.runner.approveDraft(rename.draftId, admin.actor);
+		expect((await homes())[0]).toMatchObject({ name: 'Granny’s', tenure: 'owner' });
+
+		const change = await k.runner.invoke(
+			'home.updateService',
+			{
+				id: power.id,
+				service: { kind: 'gas', provider: 'Igdaş', accountNumber: null, dueDay: null, notes: null },
+			},
+			kid.actor,
+		);
+		expect(change.status).toBe('drafted');
+		expect((await services(flat.id))[0]).toMatchObject({
+			kind: 'electricity',
+			provider: 'Enerjisa',
+		});
+		if (change.status !== 'drafted') return;
+		await k.runner.approveDraft(change.draftId, admin.actor);
+		expect((await services(flat.id))[0]).toMatchObject({ kind: 'gas', provider: 'Igdaş' });
+
+		const archiveService = await k.runner.invoke(
+			'home.archiveService',
+			{ id: power.id },
+			kid.actor,
+		);
+		expect(archiveService.status).toBe('drafted');
+		expect(await services(flat.id)).toHaveLength(1);
+		if (archiveService.status !== 'drafted') return;
+		await k.runner.approveDraft(archiveService.draftId, admin.actor);
+		expect(await services(flat.id)).toHaveLength(0);
+
+		const archiveHome = await k.runner.invoke('home.archiveHome', { id: flat.id }, kid.actor);
+		expect(archiveHome.status).toBe('drafted');
+		expect(await homes()).toHaveLength(1);
+		if (archiveHome.status !== 'drafted') return;
+		await k.runner.approveDraft(archiveHome.draftId, admin.actor);
+		expect(await homes()).toHaveLength(0);
+	});
+
+	it('refuses a display and a guest, and leaves the data as it was', async () => {
+		const guest = await person(k, 'guest', 'Misafir');
+		const flat = await addHome();
+		const power = await addService(flat.id);
+		const attempts: [string, Record<string, unknown>][] = [
+			[
+				'home.updateHome',
+				{ id: flat.id, home: { name: 'X', address: '', tenure: 'owner', notes: null } },
+			],
+			['home.archiveHome', { id: flat.id }],
+			[
+				'home.updateService',
+				{
+					id: power.id,
+					service: { kind: 'gas', provider: 'X', accountNumber: null, dueDay: null, notes: null },
+				},
+			],
+			['home.archiveService', { id: power.id }],
+		];
+		for (const [id, input] of attempts) {
+			for (const actor of [display, guest.actor]) {
+				await expect(k.runner.invoke(id, input, actor)).rejects.toMatchObject({
+					code: 'forbidden',
+				});
+			}
+		}
+		expect((await homes())[0]).toMatchObject({ name: 'Our flat', tenure: 'tenant' });
+		expect((await services(flat.id))[0]).toMatchObject({ provider: 'Enerjisa' });
+	});
+
+	it('lets the AI only propose a change to a home or a service', async () => {
+		const flat = await addHome();
+		const power = await addService(flat.id);
+		const rename = await k.runner.invoke(
+			'home.updateHome',
+			{ id: flat.id, home: { name: 'X', address: '', tenure: 'owner', notes: null } },
+			AI,
+		);
+		const archive = await k.runner.invoke('home.archiveService', { id: power.id }, AI);
+		expect(rename.status).toBe('drafted');
+		expect(archive.status).toBe('drafted');
+		expect((await homes())[0]?.name).toBe('Our flat');
+		expect(await services(flat.id)).toHaveLength(1);
+	});
+});

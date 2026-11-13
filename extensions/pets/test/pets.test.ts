@@ -418,6 +418,87 @@ describe('capabilities', () => {
 		expect(treatment.status).toBe('drafted');
 	});
 
+	it('holds a supervised member’s change, archive and treatment removal as drafts, and refuses a display', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['pets.view'] } as never;
+		const cat = await addPet({ name: 'Pamuk' });
+		const given = await applied<PetTreatment>(
+			k,
+			'pets.addTreatment',
+			{ petId: cat.id, givenOn: '2026-10-01' },
+			admin.actor,
+		);
+		const attempts: [string, Record<string, unknown>][] = [
+			[
+				'pets.updatePet',
+				{
+					id: cat.id,
+					pet: {
+						name: 'Boncuk',
+						species: 'cat',
+						breed: '',
+						sex: 'female',
+						birthDate: null,
+						chipNumber: null,
+						vet: '',
+						memberIds: [],
+						notes: null,
+					},
+				},
+			],
+			['pets.removeTreatment', { id: given.id }],
+			['pets.undoTreatment', { id: given.id }],
+			['pets.archivePet', { id: cat.id }],
+		];
+		for (const [id, input] of attempts) {
+			await expect(k.runner.invoke(id, input, display)).rejects.toMatchObject({
+				code: 'forbidden',
+			});
+		}
+		const drafts = [];
+		for (const [id, input] of attempts) {
+			const r = await k.runner.invoke(id, input, kid.actor);
+			expect(r.status, id).toBe('drafted');
+			drafts.push(r);
+		}
+		expect((await pets()).map((p) => p.name)).toEqual(['Pamuk']);
+		expect(await treatments(cat.id)).toHaveLength(1);
+
+		const [update, removal, undo, archive] = drafts;
+		if (
+			update?.status !== 'drafted' ||
+			removal?.status !== 'drafted' ||
+			undo?.status !== 'drafted' ||
+			archive?.status !== 'drafted'
+		)
+			return;
+		await k.runner.approveDraft(update.draftId, admin.actor);
+		expect((await pets()).map((p) => p.name)).toEqual(['Boncuk']);
+		await k.runner.approveDraft(removal.draftId, admin.actor);
+		expect(await treatments(cat.id)).toHaveLength(0);
+		// Taking back a treatment that is already gone changes nothing.
+		expect((await k.runner.approveDraft(undo.draftId, admin.actor)).status).toBe('applied');
+		await k.runner.approveDraft(archive.draftId, admin.actor);
+		expect(await pets()).toHaveLength(0);
+	});
+
+	it('applies a supervised member’s taking back of a treatment only once an admin approves', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const cat = await addPet();
+		const given = await applied<PetTreatment>(
+			k,
+			'pets.addTreatment',
+			{ petId: cat.id, givenOn: '2026-10-01' },
+			admin.actor,
+		);
+		const r = await k.runner.invoke('pets.undoTreatment', { id: given.id }, kid.actor);
+		expect(r.status).toBe('drafted');
+		expect(await treatments(cat.id)).toHaveLength(1);
+		if (r.status !== 'drafted') return;
+		await k.runner.approveDraft(r.draftId, admin.actor);
+		expect(await treatments(cat.id)).toHaveLength(0);
+	});
+
 	it('lets the AI propose a treatment only as a draft', async () => {
 		const cat = await addPet();
 		const result = await k.runner.invoke(
