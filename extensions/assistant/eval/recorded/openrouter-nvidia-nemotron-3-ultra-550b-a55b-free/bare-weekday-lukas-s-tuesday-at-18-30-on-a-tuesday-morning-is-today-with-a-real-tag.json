@@ -55,21 +55,21 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on Saturday, October 10.",
+			"text": "The Calendar shows nothing on Saturday, October 10. The Tasks also show nothing on Saturday, October 10.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I suggested a reminder for you: \"Pick Noah up after football\" on Tuesday 6 October at 6:30 PM. It’s waiting for someone in the household to approve it.",
+			"text": "I suggested a reminder for you: \"Pick Noah up after football\" on Tuesday 6 October at 6:30 PM. It's waiting for someone in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
+						"assigneeId": "member:2",
 						"dueTime": "18:30",
 						"title": "Pick Noah up after football",
-						"dueDate": "2026-10-06",
-						"assigneeId": "member:2"
+						"dueDate": "2026-10-06"
 					}
 				}
 			]

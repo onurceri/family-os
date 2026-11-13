@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "You have swimming lesson Thursday, dinner at Nona Marija's Friday, and practise reading Monday.",
+			"text": "Monday Practise reading, Thursday Swimming lesson, Friday Dinner at Nona Marija's",
 			"toolCalls": []
 		}
 	]

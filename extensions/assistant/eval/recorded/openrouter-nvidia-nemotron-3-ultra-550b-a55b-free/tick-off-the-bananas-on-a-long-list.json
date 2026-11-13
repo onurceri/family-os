@@ -15,7 +15,10 @@
 						"topics": [
 							"shopping"
 						],
-						"people": []
+						"people": [],
+						"about": [
+							"bananas"
+						]
 					}
 				]
 			}
@@ -34,8 +37,8 @@
 				{
 					"name": "lists_checkShoppingItem",
 					"input": {
-						"label": "bananas",
 						"id": "shop_item:1",
+						"label": "bananas",
 						"done": true
 					}
 				}

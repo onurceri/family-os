@@ -13,8 +13,7 @@
 						"intent": "ask",
 						"quote": "are the bins going out tonight?",
 						"topics": [
-							"calendar",
-							"tasks"
+							"chores"
 						],
 						"span": {
 							"said": "tonight",
@@ -53,13 +52,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "The bins go out Tuesday, October 13, not tonight.",
+			"text": "No, there are no chores today.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Nothing this week.",
+			"text": "Nothing on Calendar or Tasks this week.",
 			"toolCalls": []
 		}
 	]

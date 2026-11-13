@@ -29,12 +29,15 @@
 								"said": "Leo"
 							}
 						],
-						"about": []
+						"about": [
+							"doing"
+						]
 					},
 					{
 						"intent": "ask",
-						"quote": "is anything of his still open",
+						"quote": "and is anything of his still open",
 						"topics": [
+							"calendar",
 							"tasks"
 						],
 						"people": [
@@ -42,7 +45,9 @@
 								"said": "his"
 							}
 						],
-						"about": []
+						"about": [
+							"open"
+						]
 					}
 				]
 			}
@@ -50,13 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Leo has Practise reading on Monday, 19 October. He also has a Swimming lesson on Thursday, 22 October from 16:30 to 17:30 with pick up from the pool at 17:30, and Dinner at Nona Marija's on Friday, 23 October from 18:30 to 21:00.",
+			"text": "Leo has Practise reading on Monday, a Swimming lesson on Thursday with pick up from the pool at 17:30, and Dinner at Nona Marija's on Friday.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Leo has Practise reading on Monday, 19 October. One more is for someone else.",
+			"text": "Leo still has a Swimming lesson on Thursday and Practise reading on Monday.",
 			"toolCalls": []
 		}
 	]

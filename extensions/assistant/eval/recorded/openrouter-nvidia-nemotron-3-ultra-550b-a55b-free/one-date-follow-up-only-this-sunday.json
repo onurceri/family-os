@@ -34,22 +34,23 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested moving the \"Sunday planning\" event on Sunday, October 11 to 6:00 PM. This is a suggestion waiting for someone in the household to approve it in Quick add.",
+			"text": "I've suggested moving the Sunday planning event on Sunday, October 11 from 7:30 PM to 6:00 PM (18:00). This change is waiting for someone in the household to approve it in Quick add.",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"text": "planning",
 						"from": "2026-10-11",
-						"to": "2026-10-11"
+						"to": "2026-10-11",
+						"text": "planning"
 					}
 				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
-						"occurrence": "1791739800000",
-						"startTime": "18:00",
 						"id": "cal_event:1",
+						"startTime": "18:00",
+						"endTime": "18:30",
+						"occurrence": "1791739800000",
 						"label": "Sunday planning"
 					}
 				}
@@ -71,13 +72,11 @@
 							"kind": "day",
 							"day": {
 								"text": "this Sunday",
-								"weekday": 7
+								"weekday": 7,
+								"week": "this"
 							}
 						},
-						"people": [],
-						"about": [
-							"planning"
-						]
+						"people": []
 					}
 				]
 			}
@@ -85,8 +84,18 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Yes, the suggestion I made is for only this Sunday, October 11. The change targets just that one occurrence; the recurring series continues unchanged for other Sundays.\n\nSuggested, not added yet: Change an event: Sunday planning",
-			"toolCalls": []
+			"text": "I've suggested moving only this Sunday's occurrence (Sunday, October 11) of \"Sunday planning\" to 6:00 PM (18:00). This change is waiting for someone in the household to approve it in Quick add.\n\nSuggested, not added yet: Change an event: Sunday planning",
+			"toolCalls": [
+				{
+					"name": "calendar_changeEvent",
+					"input": {
+						"label": "Sunday planning",
+						"occurrence": "2026-10-11",
+						"id": "cal_event:1",
+						"startTime": "18:00"
+					}
+				}
+			]
 		}
 	]
 }

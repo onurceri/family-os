@@ -16,17 +16,18 @@
 							"calendar"
 						],
 						"span": {
-							"said": "on 25 October",
+							"said": "Sunday planning on 25 October",
 							"kind": "day",
 							"day": {
-								"text": "25 October",
+								"text": "Sunday planning on 25 October",
 								"day": 25,
-								"month": 10
+								"month": 10,
+								"weekday": 7
 							}
 						},
 						"people": [],
 						"about": [
-							"Sunday planning"
+							"planning"
 						]
 					}
 				]
@@ -40,18 +41,18 @@
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"to": "2026-10-30",
 						"text": "planning",
-						"from": "2026-10-20"
+						"from": "2026-10-20",
+						"to": "2026-10-30"
 					}
 				},
 				{
 					"name": "calendar_changeEvent",
 					"input": {
-						"startTime": "18:00",
+						"id": "cal_event:1",
 						"label": "Sunday planning on 25 October",
 						"occurrence": "1792953000000",
-						"id": "cal_event:1"
+						"startTime": "18:00"
 					}
 				}
 			]

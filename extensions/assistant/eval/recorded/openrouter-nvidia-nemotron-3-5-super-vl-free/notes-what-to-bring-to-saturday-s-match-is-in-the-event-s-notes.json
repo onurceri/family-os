@@ -39,7 +39,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "For the U13 match, Olimpija (Ivy) on Saturday, bring white shirt, shin pads & water.",
+			"text": "For the U13 match at Olimpija on Saturday, bring white shirt, shin pads and water.",
 			"toolCalls": []
 		}
 	]
