@@ -190,6 +190,7 @@ describe('Web Push channel', () => {
 			lastSuccessAt: Date.UTC(2026, 9, 7, 9),
 		});
 		expect(JSON.stringify(await push.list('mem_1'))).not.toContain('127.0.0.1');
+		expect(device?.endpointId).toMatch(/^[0-9a-f]{64}$/);
 	});
 
 	it('truncates long messages to stay small', async () => {

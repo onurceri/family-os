@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type {
 	Clock,
 	DbExecutor,
@@ -278,6 +279,7 @@ export function createWebPush(deps: WebPushDeps) {
 		/** The member's devices, without endpoints or keys. */
 		async list(memberId: string): Promise<PushDevice[]> {
 			return (await subscriptionsOf(memberId)).map((s) => ({
+				endpointId: createHash('sha256').update(s.endpoint).digest('hex'),
 				label: s.label,
 				createdAt: s.created_at,
 				lastSuccessAt: s.last_success_at,

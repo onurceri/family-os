@@ -5122,6 +5122,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        endpointId: string;
                         label: string;
                         createdAt: number;
                         lastSuccessAt: number | null;
