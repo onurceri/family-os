@@ -909,7 +909,7 @@ How programs outside the family (Home Assistant first) read and change data: a t
 - **Extension tests**: in-memory SQLite with real migrations; actions and routes tested end to end.
 - **Port contract suites** for queue, files and LLM; every adapter and fake must pass them.
 - **Architecture tests**: dependency-cruiser rules in CI.
-- **Migration tests**: empty DB → current; previous-release fixture DB → current; refuse to start on a newer DB (`SchemaNewerThanCodeError`).
+- **Migration tests**: empty DB → current; previous-release fixture DB (`apps/server/test/fixtures`, refreshed after each release) → current, with the schema a fresh database gets; refuse to start on a newer DB (`SchemaNewerThanCodeError`).
 - **Backup tests**: backup → restore into an empty volume → data and files are equal.
 - **Pipeline tests**: the scripted fake model (`k.llm.respond`) for deterministic extraction; the queue contract recovers expired leases, and handlers are idempotent, so a job cut off mid-run completes without duplicate drafts.
 - **The model evals** (`pnpm --filter @famos/ext-inbox eval`, `@famos/ext-assistant`; not in CI, they call real models) measure what a single pass cannot:

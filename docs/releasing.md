@@ -20,6 +20,7 @@ FamilyOS ships one product version as a Docker image. The version lives in `apps
    This sets the version (the product's and its shipped extensions'), commits `chore(release): 0.2.0`, tags `v0.2.0` and prints the notes. Nothing is pushed.
 2. Read the notes. The notes are the commit messages, so fix one that reads badly before pushing (amend, or drop the tag: `git tag -d v0.2.0`).
 3. Push: `git push origin main --follow-tags`.
+4. Refresh the upgrade fixture: make a database with the code of the tag just released and commit it as `apps/server/test/fixtures/release-<version>.sqlite` (steps in `apps/server/test/fixtures/README.md`). The release-fixture test upgrades it with the code on `main`, so an edit to a migration that is already released fails there.
 
 The **Release** workflow then runs every check (lint, typecheck, tests, E2E), verifies the tag matches the version, pushes `ghcr.io/onurceri/familyos` for amd64 and arm64 as `0.2.0`, `0.2` and `latest` (plus `1` from 1.0 on), creates the GitHub release with the notes, and then publishes the extension packages (below).
 
