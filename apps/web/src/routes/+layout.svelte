@@ -42,6 +42,7 @@
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { applyTextSize, dayNight, followDayNight, textSize } from '#lib/theme.svelte.js';
+	import { signOutConfirm } from '#lib/sign-out-confirm.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { refusalKey, refusalOfError } from '#lib/refusal.js';
 	import { addPlacesFor, shareFor } from '#lib/contributions.js';
@@ -61,7 +62,8 @@
 	import PageGate from '#lib/PageGate.svelte';
 	import PreviewBar from '#lib/PreviewBar.svelte';
 	import { provideAppContext } from '@famos/ui/app';
-	import { Avatar, beginWork, Toast } from '@famos/ui/famos';
+	import { Button } from '@famos/ui/button';
+	import { Avatar, beginWork, Dialog, Toast } from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import type { LayoutProps } from './$types';
 
@@ -648,6 +650,22 @@
 		{/if}
 	</main>
 {/if}
+
+<Dialog
+	open={signOutConfirm.count !== null}
+	title={t('sign_out_discard_title')}
+	description={t('sign_out_discard_hint', { count: signOutConfirm.count ?? 0 })}
+	onclose={() => signOutConfirm.answer(false)}
+>
+	{#snippet actions()}
+		<Button variant="ghost" data-autofocus onclick={() => signOutConfirm.answer(false)}
+			>{t('cancel')}</Button
+		>
+		<Button variant="danger" onclick={() => signOutConfirm.answer(true)}
+			>{t('sign_out_discard_confirm')}</Button
+		>
+	{/snippet}
+</Dialog>
 
 {#if toasts.current}
 	{#key toasts.current.id}
