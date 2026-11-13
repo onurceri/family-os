@@ -7,6 +7,7 @@
 	"language": "Idioma",
 	"sign_out": "Cerrar sesión",
 	"sign_out_everywhere": "Cerrar sesión en todas partes",
+	"sign_out_everywhere_confirm_title": "¿Cerrar sesión en todos los dispositivos?",
 	"sign_out_everywhere_hint": "Te cierra la sesión en todos los teléfonos, tabletas y navegadores, también en este. Tus claves de app y direcciones de calendario dejan de funcionar.",
 	"sign_in_password_for_keys": "Inicia sesión con tu contraseña para crear claves. Un PIN en un dispositivo compartido no puede crear claves, conexiones de app ni direcciones de calendario.",
 	"app_name": "FamilyOS",

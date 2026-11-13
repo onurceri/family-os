@@ -3,6 +3,7 @@
 	import {
 		Avatar,
 		Card,
+		Dialog,
 		Notice,
 		Page,
 		PageHeader,
@@ -15,7 +16,9 @@
 	import { family } from '#lib/family.svelte.js';
 	import { getLanguages, t, tDynamic } from '#lib/i18n.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
+	import { runAction } from '#lib/run-action.js';
 	import { session } from '#lib/session.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 
 	/**
 	 * Profile & sign-in: who you are, how you sign in, your own
@@ -44,21 +47,30 @@
 
 	/** "My language": empty follows the family. The layout applies it once saved. */
 	async function chooseLanguage(code: string) {
-		const res = await api.POST('/api/v1/actions/core.setMyLanguage', {
-			body: { locale: code === '' ? null : code },
-		});
-		if (res.response.ok) await session.refresh();
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setMyLanguage', {
+				body: { locale: code === '' ? null : code },
+			}),
+		);
+		if (result.ok) await session.refresh();
 	}
 
 	async function logout() {
-		await signOut();
-		await session.refresh();
+		try {
+			await signOut();
+			await session.refresh();
+		} catch {
+			toasts.show(t('error_generic'));
+		}
 	}
+
+	let confirmingEverywhere = $state(false);
 
 	/** Ends this member's sessions on every device, this one included. */
 	async function logoutEverywhere() {
-		await api.POST('/api/v1/core/sessions/end');
-		await session.refresh();
+		confirmingEverywhere = false;
+		const result = await runAction(api.POST('/api/v1/core/sessions/end'));
+		if (result.ok) await session.refresh();
 	}
 </script>
 
@@ -105,7 +117,7 @@
 					<Row
 						title={t('sign_out_everywhere')}
 						meta={t('sign_out_everywhere_hint')}
-						onclick={logoutEverywhere}
+						onclick={() => (confirmingEverywhere = true)}
 						class="text-destructive"
 					/>
 				</Card>
@@ -141,4 +153,18 @@
 			</Section>
 		</div>
 	{/if}
+
+	<Dialog
+		open={confirmingEverywhere}
+		title={t('sign_out_everywhere_confirm_title')}
+		description={t('sign_out_everywhere_hint')}
+		onclose={() => (confirmingEverywhere = false)}
+	>
+		{#snippet actions()}
+			<Button variant="ghost" data-autofocus onclick={() => (confirmingEverywhere = false)}
+				>{t('cancel')}</Button
+			>
+			<Button variant="primary" onclick={logoutEverywhere}>{t('sign_out_everywhere')}</Button>
+		{/snippet}
+	</Dialog>
 </Page>
