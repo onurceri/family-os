@@ -49,7 +49,7 @@ function constants(file: string, seen = new Set<string>()): Map<string, string> 
 }
 
 /** The entries of the `nav` and `pages` arrays of an extension's `./web` entry. */
-function declared(ext: string): { nav: Declared[]; pages: Declared[] } {
+function declared(ext: string): { nav: Declared[]; pages: Declared[]; slots: Declared[] } {
 	const file = join(root, 'extensions', ext, 'src/web/index.ts');
 	const known = constants(file);
 	const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest);
@@ -82,6 +82,7 @@ function declared(ext: string): { nav: Declared[]; pages: Declared[] } {
 
 	const nav: Declared[] = [];
 	const pages: Declared[] = [];
+	const slots: Declared[] = [];
 	const visit = (node: ts.Node) => {
 		if (
 			ts.isCallExpression(node) &&
@@ -95,12 +96,17 @@ function declared(ext: string): { nav: Declared[]; pages: Declared[] } {
 					for (const child of objects(property(n, 'children'))) nav.push(entry(child));
 				}
 				for (const p of objects(property(definition, 'pages'))) pages.push(entry(p));
+				for (const o of objects(property(definition, 'slots')))
+					slots.push({
+						...entry(o),
+						id: `${text(property(o, 'slot'))} ${text(property(o, 'id'))}`,
+					});
 			}
 		}
 		ts.forEachChild(node, visit);
 	};
 	visit(source);
-	return { nav, pages };
+	return { nav, pages, slots };
 }
 
 /** The entry a page belongs to: on its path, or the longest one it lies under. */
@@ -129,6 +135,19 @@ describe('page access', () => {
 			});
 		});
 		expect(mismatches).toEqual([]);
+	});
+
+	it('names a capability on every entry, page and slot contribution', () => {
+		// Without `requires` a role that may not read the data still gets the entry, the page or the
+		// card, and every read behind it fails. An entry here has no capability that applies.
+		const exempt = new Map<string, string>();
+		const missing = extensions.flatMap((ext) => {
+			const { nav, pages, slots } = declared(ext);
+			return [...nav, ...pages, ...slots]
+				.filter((d) => d.requires === undefined && !exempt.has(`${ext}: ${d.id}`))
+				.map((d) => `${ext}: ${d.id}`);
+		});
+		expect(missing).toEqual([]);
 	});
 
 	it('leaves keeping people out of an app page to the shell', () => {
