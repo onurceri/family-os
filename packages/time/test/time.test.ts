@@ -142,6 +142,130 @@ describe('expansion', () => {
 		);
 	});
 
+	describe('wall-clock times that DST skips or repeats', () => {
+		const iso = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+		const local = (ms: number, tz: string) =>
+			zoned(ms, tz).toPlainDateTime().toString().slice(0, 16);
+		const series = (date: string, time: string, timeZone: string, rrule: string | null) => ({
+			startsAt: epochOf(date, time, timeZone),
+			timeZone,
+			rrule,
+		});
+
+		it('keeps a daily 02:30 on the spring-forward day and counts it', () => {
+			const s = series('2026-03-28', '02:30', 'Europe/Berlin', 'FREQ=DAILY;COUNT=4');
+			expect(expandTimed(s, 0, 4e12).map(iso)).toEqual([
+				'2026-03-28T01:30',
+				'2026-03-29T01:30', // 03:30 local, after the gap
+				'2026-03-30T00:30',
+				'2026-03-31T00:30',
+			]);
+		});
+
+		it('keeps a weekly Sunday 02:30 across the New York gap', () => {
+			const s = series('2026-03-01', '02:30', 'America/New_York', 'FREQ=WEEKLY;BYDAY=SU;COUNT=3');
+			expect(expandTimed(s, 0, 4e12).map((ms) => local(ms, 'America/New_York'))).toEqual([
+				'2026-03-01T02:30',
+				'2026-03-08T03:30',
+				'2026-03-15T02:30',
+			]);
+		});
+
+		it('keeps a Sydney 02:30 on its October gap day', () => {
+			const s = series('2026-10-03', '02:30', 'Australia/Sydney', 'FREQ=DAILY;COUNT=3');
+			expect(expandTimed(s, 0, 4e12).map((ms) => local(ms, 'Australia/Sydney'))).toEqual([
+				'2026-10-03T02:30',
+				'2026-10-04T03:30',
+				'2026-10-05T02:30',
+			]);
+		});
+
+		it('does not double an autumn fold time', () => {
+			const s = series('2026-10-24', '02:30', 'Europe/Berlin', 'FREQ=DAILY;COUNT=3');
+			const days = expandTimed(s, 0, 4e12);
+			expect(days.map(iso)).toEqual(['2026-10-24T00:30', '2026-10-25T00:30', '2026-10-26T01:30']);
+			expect(expandTimed(s, days[1] as number, (days[1] as number) + DAY).length).toBe(1);
+		});
+
+		it('counts across the gap and finds its occurrences in any window', () => {
+			const s = series('2026-03-27', '02:30', 'Europe/Berlin', 'FREQ=DAILY;COUNT=5');
+			const all = expandTimed(s, 0, 4e12);
+			expect(all.map((ms) => local(ms, 'Europe/Berlin').slice(0, 10))).toEqual([
+				'2026-03-27',
+				'2026-03-28',
+				'2026-03-29',
+				'2026-03-30',
+				'2026-03-31',
+			]);
+			const gapDay = all[2] as number;
+			expect(expandTimed(s, gapDay, gapDay + 1)).toEqual([gapDay]);
+			expect(expandTimed({ ...s, exdates: [gapDay] }, 0, 4e12)).toHaveLength(4);
+		});
+
+		it('ends at UNTIL: an instant by instant, a plain date after its local day', () => {
+			const start = epochOf('2026-03-27', '02:30', 'Europe/Berlin');
+			const zone = 'Europe/Berlin';
+			const byDate = expandTimed(
+				{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=20260329' },
+				0,
+				4e12,
+			);
+			expect(byDate.map((ms) => local(ms, zone))).toEqual([
+				'2026-03-27T02:30',
+				'2026-03-28T02:30',
+				'2026-03-29T03:30',
+			]);
+			const byInstant = expandTimed(
+				{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=20260329T012959Z' },
+				0,
+				4e12,
+			);
+			expect(byInstant).toHaveLength(2);
+			const inclusive = expandTimed(
+				{ startsAt: start, timeZone: zone, rrule: 'FREQ=DAILY;UNTIL=20260329T013000Z' },
+				0,
+				4e12,
+			);
+			expect(inclusive).toHaveLength(3);
+		});
+
+		it('leaves a zone without DST and hourly repeats on instants', () => {
+			const utc = series('2026-03-28', '02:30', 'UTC', 'FREQ=DAILY;COUNT=3');
+			expect(expandTimed(utc, 0, 4e12).map(iso)).toEqual([
+				'2026-03-28T02:30',
+				'2026-03-29T02:30',
+				'2026-03-30T02:30',
+			]);
+			const hourly = series('2026-03-29', '00:30', 'Europe/Berlin', 'FREQ=HOURLY;COUNT=4');
+			expect(expandTimed(hourly, 0, 4e12).map(iso)).toEqual([
+				'2026-03-28T23:30',
+				'2026-03-29T00:30',
+				'2026-03-29T01:30',
+				'2026-03-29T02:30',
+			]);
+		});
+
+		it('gives a daily 02:30 exactly one occurrence per local date all year', () => {
+			for (const zone of [
+				'Europe/Berlin',
+				'America/New_York',
+				'Australia/Sydney',
+				'America/Santiago',
+				'Europe/Istanbul',
+				'UTC',
+			]) {
+				const s = series('2026-01-01', '02:30', zone, 'FREQ=DAILY');
+				const from = epochOf('2026-01-01', '00:00', zone);
+				const to = epochOf('2027-01-01', '00:00', zone);
+				const dates = expandTimed(s, from, to).map((ms) =>
+					zoned(ms, zone).toPlainDate().toString(),
+				);
+				expect(dates).toHaveLength(365);
+				expect(new Set(dates).size).toBe(365);
+			}
+		});
+	});
+
 	it('ends date series on their last day in every time zone', () => {
 		const rrule = toRRule({ freq: 'daily', interval: 1, until: '2026-10-10' }, null);
 		expect(rrule).toBe('FREQ=DAILY;UNTIL=20261010');

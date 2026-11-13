@@ -215,19 +215,66 @@ export interface TimedSeries {
 	exdates?: readonly number[];
 }
 
-/** Occurrence starts of a timed event within [from, to). A non-recurring event yields its start if inside. */
+const SUB_DAILY = /(?:^|;)FREQ=(?:HOURLY|MINUTELY|SECONDLY)(?:;|$)/;
+const UNTIL_PART = /(?:^|;)UNTIL=([^;]*)/;
+const UNTIL_VALUE = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/;
+
+/**
+ * Occurrence starts of a timed event within [from, to). A non-recurring event yields its start if inside.
+ *
+ * Days and longer repeat on the local wall clock: the series is expanded on local date-times and
+ * each one is placed like `epochOf` does, so a time inside a spring-forward gap lands after the
+ * gap, a time in an autumn fold takes its first occurrence, and every local date has exactly one
+ * occurrence (`COUNT` counts them). `UNTIL` keeps its meaning: a UTC time ends the series at that
+ * instant, a plain date ends it after that local day. Hourly and shorter repeats run on instants.
+ */
 export function expandTimed(series: TimedSeries, from: number, to: number): number[] {
 	if (!series.rrule)
 		return series.startsAt >= from && series.startsAt < to ? [series.startsAt] : [];
-	const rule = new RRuleTemporal({
-		rruleString: series.rrule,
-		dtstart: zoned(series.startsAt, series.timeZone),
-	});
 	const excluded = new Set(series.exdates ?? []);
+	if (SUB_DAILY.test(series.rrule)) {
+		const rule = new RRuleTemporal({
+			rruleString: series.rrule,
+			dtstart: zoned(series.startsAt, series.timeZone),
+		});
+		return rule
+			.between(new Date(from), new Date(to - 1), true)
+			.map((z) => z.toInstant().epochMilliseconds)
+			.filter((ms) => ms >= from && ms < to && !excluded.has(ms));
+	}
+	const until = UNTIL_PART.exec(series.rrule)?.[1];
+	const m = until ? UNTIL_VALUE.exec(until) : null;
+	const untilInstant = m?.[4]
+		? Temporal.Instant.from(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`).epochMilliseconds
+		: null;
+	const untilDate = m && !m[4] ? `${m[1]}-${m[2]}-${m[3]}` : null;
+	const rule = new RRuleTemporal({
+		rruleString: series.rrule.replace(UNTIL_PART, ''),
+		dtstart: zoned(series.startsAt, series.timeZone).toPlainDateTime().toZonedDateTime('UTC'),
+	});
+	// A day of margin on both sides: a gap moves an occurrence later, never by a day.
+	const wall = (ms: number, days: number) =>
+		zoned(ms, series.timeZone).toPlainDateTime().add({ days }).toZonedDateTime('UTC');
+	// UNTIL is applied below on the placed occurrences; it also caps the window so the rule stops there.
+	const untilWall = untilInstant !== null ? wall(untilInstant, 1) : null;
+	const windowEnd = wall(to - 1, 1);
+	const end =
+		untilWall && Temporal.ZonedDateTime.compare(untilWall, windowEnd) < 0 ? untilWall : windowEnd;
+	const untilDay =
+		untilDate !== null
+			? Temporal.PlainDate.from(untilDate).add({ days: 1 }).toZonedDateTime({ timeZone: 'UTC' })
+			: null;
+	const cap = untilDay && Temporal.ZonedDateTime.compare(untilDay, end) < 0 ? untilDay : end;
 	return rule
-		.between(new Date(from), new Date(to - 1), true)
-		.map((z) => z.toInstant().epochMilliseconds)
-		.filter((ms) => ms >= from && ms < to && !excluded.has(ms));
+		.between(wall(from, -1), cap, true)
+		.map((z) => z.toPlainDateTime())
+		.filter((local) => untilDate === null || local.toPlainDate().toString() <= untilDate)
+		.map((local) => local.toZonedDateTime(series.timeZone, { disambiguation: 'compatible' }))
+		.map((z) => z.epochMilliseconds)
+		.filter(
+			(ms) =>
+				ms >= from && ms < to && !excluded.has(ms) && (untilInstant === null || ms <= untilInstant),
+		);
 }
 
 export interface DateSeries {
