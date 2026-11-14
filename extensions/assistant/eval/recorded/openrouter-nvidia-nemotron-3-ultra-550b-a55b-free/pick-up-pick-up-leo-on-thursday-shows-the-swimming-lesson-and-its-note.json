@@ -41,7 +41,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
+			"text": "Yes, you need to pick up Leo from the pool at 17:30 on Thursday, 22 October.",
 			"toolCalls": []
 		}
 	]

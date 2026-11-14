@@ -101,6 +101,10 @@ export const TaskSchema = z.object({
 });
 export type Task = z.infer<typeof TaskSchema>;
 
+/** A task as completing it answers: the completion made, which Undo names (null when nothing was recorded). */
+export const TaskCompletedSchema = TaskSchema.extend({ completionId: z.string().nullable() });
+export type TaskCompleted = z.infer<typeof TaskCompletedSchema>;
+
 /** Store-section order: the order categories appear in on the shopping list. */
 export const CATEGORIES = [
 	'produce',

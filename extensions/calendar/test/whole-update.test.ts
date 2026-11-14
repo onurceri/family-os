@@ -190,4 +190,26 @@ describe('saving a whole repeating event', () => {
 			epochOf('2026-10-27', '20:00', TZ),
 		]);
 	});
+
+	it('carries skipped dates from the split on into the new series', async () => {
+		const id = await create(bins);
+		const [, second, third] = await range('2026-10-13', '2026-11-03');
+		await k.runner.invoke('calendar.deleteEvent', { id, occurrence: third.key }, admin.actor);
+		const made = await k.runner.invoke<{ id: string }>(
+			'calendar.updateEvent',
+			{
+				id,
+				occurrence: second.key,
+				scope: 'following',
+				event: whole({ date: '2026-10-20', startTime: '18:00', endTime: '18:30' }),
+			},
+			admin.actor,
+		);
+		if (made.status !== 'applied') throw new Error('expected applied');
+		expect(await starts('2026-10-13', '2026-11-03')).toEqual([
+			epochOf('2026-10-13', '19:00', TZ),
+			epochOf('2026-10-20', '18:00', TZ),
+			epochOf('2026-11-03', '18:00', TZ),
+		]);
+	});
 });

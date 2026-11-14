@@ -68,3 +68,23 @@ const RECORD_HANDLE = /(?<![\p{L}\p{N}_])[a-z][a-z0-9_]*:\d+(?!\d)/gu;
 export function scrubRecordHandles(text: string, name: (handle: string) => string | null): string {
 	return text.replace(RECORD_HANDLE, (handle) => name(handle) ?? handle);
 }
+
+const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Text with each of `names` written as `someone`, whole words only and spelled as the family
+ * writes them: for words the app or a model wrote with names in them, when names may not reach
+ * the model now. Case counts, so a name that is also an everyday word ("Can", "May") leaves
+ * "can" and "may" alone.
+ */
+export function withoutNames(text: string, names: readonly string[], someone: string): string {
+	const words = [...new Set(names.map((n) => n.trim()).filter(Boolean))].sort(
+		(a, b) => b.length - a.length,
+	);
+	if (words.length === 0) return text;
+	const pattern = new RegExp(
+		`(?<![\\p{L}\\p{N}_])(?:${words.map(escaped).join('|')})(?![\\p{L}\\p{N}_])`,
+		'gu',
+	);
+	return text.replace(pattern, () => someone);
+}

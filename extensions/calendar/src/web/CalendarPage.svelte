@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { addDays, formatDate, todayIn, weekOf, zoned } from '@famos/time';
 	import { Button } from '@famos/ui/button';
+	import { latestOnly } from '@famos/ui/latest-only';
 	import {
 		Avatar,
 		awaitingMarkText,
@@ -88,7 +89,8 @@
 	const grid = $derived(monthGrid(day, app.weekStart()));
 	const boardMonth = $derived(shown === 'month');
 	const boardDays = $derived(shown === 'day' ? [day] : week);
-	// The phone's month toggle: a month grid with dots; a tap picks the day, whose agenda follows.
+	// The phone's month toggle: a month grid with up to three titles a day; a tap picks the day,
+	// whose agenda follows.
 	let phoneMonth = $state(false);
 	let memberFilter = $state<string[]>([]);
 	let hiddenSources = $state<string[]>([]);
@@ -128,14 +130,17 @@
 		}
 	}
 
+	const rangeReads = latestOnly();
 	async function load(from: string, to: string) {
+		const current = rangeReads.begin();
 		try {
 			const loaded = await loadRange(from, to);
+			if (!current()) return;
 			occurrences = loaded;
 			loadedRange = `${from}:${to}`;
 			loadError = false;
 		} catch {
-			loadError = true;
+			if (current()) loadError = true;
 		}
 	}
 
@@ -195,6 +200,17 @@
 			);
 		return [...new Set(colors)].slice(0, 4);
 	};
+	const colorOf = (o: Occurrence) =>
+		o.source?.color ??
+		app.members().find((m) => m.id === o.memberIds[0])?.color ??
+		'var(--ink-soft)';
+	// The phone month's cell: at most three titles (12 px, so they read), all-day ones first, then
+	// by time.
+	const MONTH_TITLES = 3;
+	const titlesFor = (date: string) =>
+		visible
+			.filter((o) => onDay(o, date, tz))
+			.sort((a, b) => Number(b.allDay) - Number(a.allDay) || (a.start ?? 0) - (b.start ?? 0));
 
 	// What the viewer may do with events: a control they may not use is not drawn, and an event they
 	// may not change opens as details only. Suggesting counts as being able to: it waits for approval.
@@ -835,13 +851,14 @@
 						<ol class="grid grid-cols-7 gap-1">
 							{#each grid as date (date)}
 								{@const isToday = date === today}
+								{@const events = titlesFor(date)}
 								<li>
 									<button
 										type="button"
 										onclick={() => (selected = date)}
 										aria-label={formatDate(date, app.dateLocale())}
 										aria-pressed={date === day}
-										class="grid min-h-14 w-full content-start justify-items-center gap-1 rounded-lg py-1.5 {sameMonth(
+										class="grid min-h-24 w-full min-w-0 content-start justify-items-center gap-0.5 rounded-lg py-1 {sameMonth(
 											date,
 											day,
 										)
@@ -853,12 +870,17 @@
 												? 'bg-now text-on-color'
 												: ''}">{Number(date.slice(8))}</b
 										>
-										<span class="flex h-1.5 gap-0.5" aria-hidden="true">
-											{#each dotsFor(date) as color (color)}<span
-													class="size-1.5 rounded-full"
-													style:background-color={color}
-												></span>{/each}
-										</span>
+										{#each events.slice(0, MONTH_TITLES) as o (`${o.eventId}:${o.key}`)}
+											<span
+												class="w-full truncate border-s-2 ps-0.5 text-start text-xs leading-tight"
+												style:border-color={colorOf(o)}>{o.title}</span
+											>
+										{/each}
+										{#if events.length > MONTH_TITLES}
+											<span class="text-ink-soft text-xs font-bold"
+												>+{events.length - MONTH_TITLES}</span
+											>
+										{/if}
 									</button>
 								</li>
 							{/each}

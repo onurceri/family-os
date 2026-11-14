@@ -164,14 +164,9 @@ describe('a restore does not bring back what the family ended after the backup',
 		const revokedDevice = await device('Old tablet');
 		const keptDevice = await device('Kitchen');
 		const feed = async () => {
-			const made = await call(
-				'POST',
-				'/api/v1/actions/calendar.createFeed',
-				{ scope: 'family' },
-				admin,
-			);
-			expect(made.body.status).toBe('applied');
-			return { id: made.body.output.feed.id as string, path: made.body.output.path as string };
+			const made = await call('POST', '/api/v1/calendar/feeds', { scope: 'family' }, admin);
+			expect(made.status).toBe(201);
+			return { id: made.body.feed.id as string, path: made.body.path as string };
 		};
 		const revokedFeed = await feed();
 		const keptFeed = await feed();

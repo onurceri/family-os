@@ -90,6 +90,8 @@ export function countdown(now: number, start: number, end?: number | null): Coun
 }
 
 /**
+ * A pill for a next-up item (no longer shown on Today: the time and place line already says it;
+ * kept for packages built against it).
  * The pill on the hero: `Until <end>` once started, `At <place>` when the item has one, else
  * `Starts <time>`, except when the countdown already is the start time (then none).
  */

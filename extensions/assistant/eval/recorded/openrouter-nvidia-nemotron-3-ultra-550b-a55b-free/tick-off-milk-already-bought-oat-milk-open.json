@@ -23,7 +23,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested ticking off **Oat milk** — it's waiting for someone in the household to approve.\n\n**Milk** is already marked as bought on the list.",
+			"text": "Oat milk has been suggested to be ticked off (waiting for approval). \n\nMilk is already marked as bought on the list.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
@@ -32,9 +32,9 @@
 				{
 					"name": "lists_checkShoppingItem",
 					"input": {
-						"label": "oat milk",
 						"id": "shop_item:1",
-						"done": true
+						"done": true,
+						"label": "Oat milk"
 					}
 				}
 			]

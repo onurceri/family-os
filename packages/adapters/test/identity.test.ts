@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { openDatabase, runMigrations } from '@famos/db';
+import { betterAuth } from 'better-auth';
 import { getMigrations } from 'better-auth/db/migration';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -64,6 +65,28 @@ const post = (path: string, body: unknown, ip = '10.0.0.1', trusted = true, know
 			body: JSON.stringify(body),
 		}),
 	);
+
+/** A raw request, for bodies and content types the web app never sends. */
+const send = (
+	path: string,
+	body: string,
+	ip: string,
+	options: { contentType?: string; trusted?: boolean; method?: string; cookie?: string } = {},
+) => {
+	const headers = new Headers({ origin: BASE, 'x-famos-client-ip': ip });
+	const contentType = options.contentType ?? 'application/json';
+	if (contentType) headers.set('content-type', contentType);
+	if (options.trusted) headers.set('x-test-device', 'device_1');
+	if (options.cookie) headers.set('cookie', options.cookie);
+	const method = options.method ?? 'POST';
+	return identity.handler(
+		new Request(`${BASE}/api/auth${path}`, {
+			method,
+			headers,
+			...(method !== 'GET' && { body }),
+		}),
+	);
+};
 
 const cookieOf = (res: Response) =>
 	res.headers
@@ -449,5 +472,232 @@ describe('identity-betterauth', () => {
 			// The password is a separate account key: wrong PINs do not lock it.
 			expect((await signIn(RIGHT, '198.51.100.4')).status).toBe(200);
 		});
+
+		describe('a sign-in the locks cannot read never reaches the secret check', () => {
+			const IP = '203.0.113.50';
+			const form = (password: string) =>
+				`email=${encodeURIComponent('parent@example.com')}&password=${encodeURIComponent(password)}`;
+			const json = (password: string) => JSON.stringify({ email: 'parent@example.com', password });
+
+			it('refuses a password sent as a form, wrong or right, before checking it', async () => {
+				for (let i = 0; i < 8; i++) {
+					const res = await send('/sign-in/email', form(WRONG), IP, {
+						contentType: 'application/x-www-form-urlencoded',
+					});
+					expect(res.status).toBe(400);
+				}
+				const right = await send('/sign-in/email', form(RIGHT), IP, {
+					contentType: 'application/x-www-form-urlencoded',
+				});
+				expect(right.status).toBe(400);
+				expect(right.headers.getSetCookie()).toEqual([]);
+				// None of the refused forms counted, so the person still signs in from there.
+				expect((await signIn(RIGHT, IP)).status).toBe(200);
+			});
+
+			it('does not sign in with a right password as a form while the account is locked', async () => {
+				for (let i = 0; i < 5; i++) expect((await signIn(WRONG, IP)).status).toBe(401);
+				expect((await signIn(RIGHT, IP)).status).toBe(429);
+				for (const contentType of [
+					'application/x-www-form-urlencoded',
+					'multipart/form-data; boundary=x',
+					'text/plain',
+					'application/json-patch+json',
+					'',
+				]) {
+					const body = contentType.startsWith('application/x-www') ? form(RIGHT) : json(RIGHT);
+					const res = await send('/sign-in/email', body, IP, { contentType });
+					expect(res.ok, contentType).toBe(false);
+					expect(res.headers.getSetCookie(), contentType).toEqual([]);
+				}
+			});
+
+			it('refuses a body whose account cannot be read', async () => {
+				for (const body of [
+					'',
+					'[]',
+					'null',
+					'"parent@example.com"',
+					'{not json',
+					JSON.stringify([{ email: 'parent@example.com', password: RIGHT }]),
+					JSON.stringify({ email: ['parent@example.com'], password: RIGHT }),
+					JSON.stringify({ email: 7, password: RIGHT }),
+					JSON.stringify({ email: '', password: RIGHT }),
+					JSON.stringify({ Email: 'parent@example.com', password: RIGHT }),
+				]) {
+					const res = await send('/sign-in/email', body, IP);
+					expect(res.status, body).toBe(400);
+				}
+			});
+
+			it('counts JSON with a charset like plain JSON', async () => {
+				for (let i = 0; i < 5; i++) {
+					const res = await send('/sign-in/email', json(WRONG), IP, {
+						contentType: 'Application/JSON; charset=utf-8',
+					});
+					expect(res.status).toBe(401);
+				}
+				expect((await signIn(RIGHT, IP)).status).toBe(429);
+			});
+
+			it('checks the account the locks counted when a key appears twice', async () => {
+				await identity.admin.setPasswordLogin({
+					memberId: 'member_b',
+					email: 'other@example.com',
+					password: RIGHT,
+					displayName: 'O',
+				});
+				const twice = (password: string) =>
+					`{"email":"other@example.com","email":"parent@example.com","password":"${password}"}`;
+				for (let i = 0; i < 5; i++)
+					expect((await send('/sign-in/email', twice(WRONG), IP)).status).toBe(401);
+				expect((await send('/sign-in/email', twice(RIGHT), IP)).status).toBe(429);
+				expect((await signIn(RIGHT, IP)).status).toBe(429);
+			});
+
+			it('refuses path variants of sign-in that the locks would not see', async () => {
+				for (let i = 0; i < 5; i++) expect((await signIn(WRONG, IP)).status).toBe(401);
+				for (const path of [
+					'/sign-in/email/',
+					'/sign-in//email',
+					'//sign-in/email',
+					'/sign-in/EMAIL',
+					'/Sign-In/email',
+					'/sign-in/%65mail',
+					'/sign-in/email%2F',
+					'/x/sign-in/email',
+				]) {
+					const res = await send(path, json(RIGHT), IP);
+					expect(res.status, path).toBe(404);
+				}
+			});
+
+			it('refuses a PIN the locks cannot read', async () => {
+				await identity.admin.setPin({ memberId: 'member_a', pin: '1234', displayName: 'P' });
+				for (const [body, contentType] of [
+					['memberId=member_a&pin=1234', 'application/x-www-form-urlencoded'],
+					[JSON.stringify({ memberId: 'member_a', pin: '1234' }), 'text/plain'],
+					[JSON.stringify({ memberId: ['member_a'], pin: '1234' }), 'application/json'],
+					[JSON.stringify([{ memberId: 'member_a', pin: '1234' }]), 'application/json'],
+				] as const) {
+					const res = await send('/sign-in/pin', body, IP, { contentType, trusted: true });
+					expect(res.status, body).toBe(400);
+				}
+				for (let i = 0; i < 5; i++)
+					expect(
+						(await post('/sign-in/pin', { memberId: 'member_a', pin: '0000' }, IP)).status,
+					).toBe(401);
+				expect(
+					(
+						await send('/sign-in/pin/', JSON.stringify({ memberId: 'member_a', pin: '1234' }), IP, {
+							trusted: true,
+						})
+					).status,
+				).toBe(404);
+				expect((await post('/sign-in/pin', { memberId: 'member_a', pin: '1234' }, IP)).status).toBe(
+					429,
+				);
+			});
+		});
+	});
+});
+
+describe('the endpoints reachable over HTTP', () => {
+	/** All FamilyOS sends to better-auth: the two sign-ins and signing out. */
+	const ALLOWED = ['POST /sign-in/email', 'POST /sign-in/pin', 'POST /sign-out'];
+	const RIGHT = 'correct horse battery';
+
+	beforeEach(async () => {
+		await identity.admin.setPasswordLogin({
+			memberId: 'member_a',
+			email: 'parent@example.com',
+			password: RIGHT,
+			displayName: 'P',
+		});
+		await identity.admin.setPin({ memberId: 'member_a', pin: '1234', displayName: 'P' });
+	});
+
+	it('answers every other endpoint better-auth registers as not found', async () => {
+		const signedIn = cookieOf(
+			await post('/sign-in/email', { email: 'parent@example.com', password: RIGHT }),
+		);
+		// Taken from the auth instance itself, so an endpoint a newer better-auth adds is walked too.
+		const api = betterAuth(
+			authOptions({
+				db,
+				secret: 's'.repeat(32),
+				baseURL: BASE,
+				trustedDevice: async () => null,
+				mayUsePin: async () => true,
+			}),
+		).api as Record<string, { path?: string; options?: { method?: string | string[] } }>;
+		const endpoints = Object.values(api).flatMap(({ path, options }) => {
+			if (!path) return [];
+			const declared = options?.method ?? 'GET';
+			const methods = (Array.isArray(declared) ? declared : [declared]).flatMap((m) =>
+				m === '*' ? ['GET', 'POST'] : [m],
+			);
+			return methods
+				.filter((m) => m === 'GET' || m === 'POST')
+				.map((method) => `${method} ${path}`);
+		});
+		expect(endpoints.length).toBeGreaterThan(30);
+		for (const endpoint of ALLOWED) expect(endpoints).toContain(endpoint);
+		for (const endpoint of endpoints) {
+			if (ALLOWED.includes(endpoint)) continue;
+			const [method = '', path = ''] = endpoint.split(' ');
+			const res = await send(path.replace(/:\w+/g, 'x'), '{}', '10.0.0.30', {
+				method,
+				cookie: signedIn,
+				trusted: true,
+			});
+			expect(res.status, endpoint).toBe(404);
+		}
+		// Still signed in: nothing above reached the session.
+		expect(await identity.resolveMember(new Headers({ cookie: signedIn }))).not.toBeNull();
+	});
+
+	it('keeps the allowed endpoints working: both sign-ins, the session and signing out', async () => {
+		const byPassword = await post('/sign-in/email', {
+			email: 'parent@example.com',
+			password: RIGHT,
+		});
+		expect(byPassword.status).toBe(200);
+		const byPin = await post('/sign-in/pin', { memberId: 'member_a', pin: '1234' }, '10.0.0.31');
+		expect(byPin.status).toBe(200);
+		const cookie = cookieOf(byPin);
+		expect(await identity.resolveMember(new Headers({ cookie }))).toMatchObject({
+			memberId: 'member_a',
+			deviceId: 'device_1',
+		});
+		const out = await send('/sign-out', '{}', '10.0.0.31', { cookie });
+		expect(out.status).toBe(200);
+		expect(await identity.resolveMember(new Headers({ cookie }))).toBeNull();
+		expect(
+			await identity.resolveMember(new Headers({ cookie: cookieOf(byPassword) })),
+		).not.toBeNull();
+	});
+
+	it('gives a PIN session no way to list or unlink logins or change the password', async () => {
+		const pin = cookieOf(
+			await post('/sign-in/pin', { memberId: 'member_a', pin: '1234' }, '10.0.0.32'),
+		);
+		const as = (method: string, path: string, body: unknown = {}) =>
+			send(path, JSON.stringify(body), '10.0.0.32', { method, cookie: pin, trusted: true });
+		expect((await as('GET', '/list-accounts')).status).toBe(404);
+		expect((await as('POST', '/unlink-account', { providerId: 'credential' })).status).toBe(404);
+		const change = await as('POST', '/change-password', {
+			currentPassword: RIGHT,
+			newPassword: 'another long password',
+			revokeOtherSessions: true,
+		});
+		expect(change.status).toBe(404);
+		expect(change.headers.getSetCookie()).toEqual([]);
+		expect(await identity.admin.signInMethods()).toEqual(
+			new Map([['member_a', { password: true, pin: true }]]),
+		);
+		expect(
+			(await post('/sign-in/email', { email: 'parent@example.com', password: RIGHT })).status,
+		).toBe(200);
 	});
 });

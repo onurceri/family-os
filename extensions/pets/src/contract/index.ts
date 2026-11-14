@@ -1,4 +1,8 @@
-import { type ObligationPreset, PresetScheduleSchema } from '@famos/ext-records/contract';
+import {
+	CompletionBeforeSchema,
+	type ObligationPreset,
+	PresetScheduleSchema,
+} from '@famos/ext-records/contract';
 import { idSchema, wholeRecord } from '@famos/sdk';
 import { IsoDateSchema } from '@famos/time';
 import { z } from 'zod';
@@ -191,5 +195,16 @@ export const PetTreatmentSchema = z.object({
 	createdAt: z.number(),
 });
 export type PetTreatment = z.infer<typeof PetTreatmentSchema>;
+
+/** What a treatment's completion of a duty changed, so taking the treatment back can restore it. */
+export const TreatmentCompletionSchema = z.object({
+	obligationId: ObligationIdSchema,
+	before: CompletionBeforeSchema,
+});
+
+/** A treatment as just added, with the duty it completed (null when it completed none). */
+export const AddedTreatmentSchema = PetTreatmentSchema.extend({
+	completion: TreatmentCompletionSchema.nullable(),
+});
 
 export const petChangedPayload = z.object({ petId: z.string() });

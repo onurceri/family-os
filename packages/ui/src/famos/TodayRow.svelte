@@ -137,7 +137,14 @@
 			{/if}
 		</div>
 		{#if trailing}
-			<div class="ml-auto flex shrink-0 items-center gap-1.5 {variant === 'note' ? 'pr-2' : ''}">
+			<!-- Long labels (German "Zum Speiseplan hinzufügen" beside "Ablehnen") wrap to a second line
+			inside the row instead of running past its edge. -->
+			<div
+				class="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5 {variant ===
+				'note'
+					? 'pr-2'
+					: ''}"
+			>
 				{@render trailing()}
 			</div>
 		{/if}

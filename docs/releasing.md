@@ -20,6 +20,7 @@ FamilyOS ships one product version as a Docker image. The version lives in `apps
    This sets the version (the product's and its shipped extensions'), commits `chore(release): 0.2.0`, tags `v0.2.0` and prints the notes. Nothing is pushed.
 2. Read the notes. The notes are the commit messages, so fix one that reads badly before pushing (amend, or drop the tag: `git tag -d v0.2.0`).
 3. Push: `git push origin main --follow-tags`.
+4. Refresh the upgrade fixture: make a database with the code of the tag just released and commit it as `apps/server/test/fixtures/release-<version>.sqlite` (steps in `apps/server/test/fixtures/README.md`). The release-fixture test upgrades it with the code on `main`, so an edit to a migration that is already released fails there.
 
 The **Release** workflow then runs every check (lint, typecheck, tests, E2E), verifies the tag matches the version, pushes `ghcr.io/onurceri/familyos` for amd64 and arm64 as `0.2.0`, `0.2` and `latest` (plus `1` from 1.0 on), creates the GitHub release with the notes, and then publishes the extension packages (below).
 
@@ -51,7 +52,7 @@ Every extension is also published as a signed package (`.famext`), so a family c
 
 ### The signing key
 
-Packages and the index are signed with one ed25519 key. Its public half is a trust root in `apps/server/src/packages/trust.ts` (id `3bab2b9c2b26fecd`); servers accept a package or an index only when it is signed by a key listed there. Its private half (PKCS #8 PEM) exists only as the repository's Actions secret `FAMOS_EXTENSION_SIGNING_KEY`, never committed, printed or kept in a shared file. The publishing job first checks that the secret's key is a trust root (`node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY`), so a wrong secret fails before anything is signed.
+Packages and the index are signed with one ed25519 key. Its public half is a trust root in `apps/server/src/packages/trust.ts` (id `3bab2b9c2b26fecd`); servers accept a package or an index only when it is signed by a key listed there. Its private half (PKCS #8 PEM) exists only as the repository's Actions secret `FAMOS_EXTENSION_SIGNING_KEY`, never committed, printed or kept in a shared file. The Release workflow checks it in a job of its own before the image is pushed, and the publishing job checks it again. Each first checks that the secret's key is a trust root (`node scripts/extension-key.mjs check --key-env FAMOS_EXTENSION_SIGNING_KEY`), so a wrong secret fails before anything is signed.
 
 **Rotating it** (because it may have leaked, or as a precaution):
 
@@ -74,4 +75,4 @@ Packages and the index are signed with one ed25519 key. Its public half is a tru
 
 Docs, tests, refactors, CI and chores are left out, so write `feat` and `fix` subjects for the people who use FamilyOS.
 
-`main` is never rewritten, so a wrong line is corrected by a later commit of any type, whose body has the footers `Release-note-for: <at least 7 characters of the commit's sha>` and `Release-note: <type(scope): subject>`: that header replaces the earlier commit's line and lands in the section its type picks. `Release-note: none` drops the line, and when a commit has several corrections the latest wins.
+`main` is never rewritten, so a wrong line is corrected by a later commit of any type, whose body has the footers `Release-note-for: <at least 7 characters of the commit's sha>` and `Release-note: <type(scope): subject>`: that header replaces the earlier commit's line and lands in the section its type picks. `Release-note: none` drops the line, and when a commit has several corrections the latest wins. One commit can correct several others: repeat the pair of footers, each `Release-note-for` followed by its `Release-note`. A fix merged from a security advisory's private fork arrives as "Merge commit from fork", which is no Conventional Commit, so it needs such a correction to appear in the notes.

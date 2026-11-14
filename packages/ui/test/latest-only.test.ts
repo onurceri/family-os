@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { latestOnly } from '../src/web/latest-only.ts';
+import { latestOnly } from '../src/latest-only.ts';
 
 describe('latestOnly', () => {
 	it('lets the newest read through and ignores older ones', () => {
@@ -16,5 +16,17 @@ describe('latestOnly', () => {
 		expect(only()).toBe(true);
 		reads.begin();
 		expect(only()).toBe(false);
+	});
+
+	it('drops an older answer that arrives last', async () => {
+		const reads = latestOnly();
+		let shown = '';
+		const read = async (name: string, delay: number) => {
+			const current = reads.begin();
+			await new Promise((r) => setTimeout(r, delay));
+			if (current()) shown = name;
+		};
+		await Promise.all([read('older', 20), read('newer', 1)]);
+		expect(shown).toBe('newer');
 	});
 });

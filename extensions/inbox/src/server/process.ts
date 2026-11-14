@@ -294,6 +294,7 @@ async function extract(ctx: JobContext, row: ItemRow, run: JobRun) {
 export const processItem = defineJob({
 	name: PROCESS_JOB,
 	payload: z.object({ itemId: z.string() }),
+	lane: 'long',
 	timeoutMs: READ_TIMEOUT_MS,
 	maxAttempts: READ_ATTEMPTS,
 	backoff: readBackoff,

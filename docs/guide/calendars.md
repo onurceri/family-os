@@ -61,7 +61,7 @@ Each event has a **Reminder**; default 30 minutes before (timed) or the family's
 
 | Event | Choices |
 |---|---|
-| Any | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
-| All-day | Also 12 hours before the reminder time |
+| Timed | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
+| All-day | **No reminder**, on the day at the reminder time, or 12 hours before it |
 
 Repeating events remind before each occurrence. They go to the people under **Who**, or everyone who sees the calendar if none ([Notifications](notifications.md)).

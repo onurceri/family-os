@@ -285,7 +285,7 @@ Sidebar rows 36 px, active = `surface` + `shadow-lit`; the bell and `+` in the h
 
 ### 5.5 Section label
 
-`t-label` 12/700 uppercase `ink-soft` with 0.06 em tracking; count after it in 12/600 (not uppercase, not a badge); actions at the right as ghost buttons 32 px / 13 px with a 15 px icon. 24 px min height; 10 px to the content. Group labels inside a column (`OVERDUE`, `TODAY`, `FRUIT & VEGETABLES`) use the same style with 10 px top padding, no actions and no colour. On Today the label takes the style's caps (`--ramp-label`, Broadsheet 11/700 at 0.12 em).
+`t-label` 12/700 uppercase `ink-soft` with 0.06 em tracking; count after it in 12/600 (not uppercase, not a badge); actions at the right as ghost buttons 32 px / 13 px with a 15 px icon. 24 px min height; 10 px to the content. Group labels inside a column (`OVERDUE`, `TODAY`, `FRUIT & VEGETABLES`) use the same style with 10 px top padding, no actions and no colour. On Today the label takes the style's caps (`--ramp-label`, Broadsheet 12/700 at 0.06 em).
 
 **Big number**: a glanceable total is a number readable from the door, not a count in a label: the value in the display face at `--ramp-big` (Broadsheet 64 px), a 15/700 title beside it ("items to get") and a 13 px `ink-soft` detail under the title. Only for totals someone acts on at a glance (shopping, the countdown, the temperature); never a badge, never a state colour. A card offers it through `form: 'glance'` of `dashboard.card`.
 
@@ -337,13 +337,13 @@ Three voices, each a font slot a theme pack may fill from the bundled families: 
 
 | Role | Broadsheet at 1440 (1024 · phone) | Lanes at 1440 | Wall at 1440 | Use |
 |---|---|---|---|---|
-| clock | 124 (88 · 56) display | 92 display | 150 | Today's clock |
-| countdown | 128 (104 · 84) display | 84 display | 96 | The hero's minutes; a duration at half, the start time at three quarters (Wall: the ring's size, its minutes at 0.54, so 52) |
+| clock | 88 (88 · 56) display | 92 display | 150 | Today's clock |
+| countdown | 104 (104 · 84) display | 84 display | 96 | The hero's minutes; a duration at half, the start time at three quarters (Wall: the ring's size, its minutes at 0.54, so 52) |
 | big | 64 (52 · 56) display | 56 display | 96 | Temperature, big numbers |
-| hero | 54 (44 · 38) serif | 36 | 44 | The next-up title |
-| date | 34 (28 · 24) serif italic | 26 | 24 | The date under the clock |
+| hero | 44 (44 · 38) serif | 36 | 44 | The next-up title |
+| date | 30 (28 · 24) serif italic | 26 | 24 | The date under the clock |
 | sentence | 20 (18 · 18) serif italic | 16 | 18 | The weather sentence; quiet notes at 1.2× |
-| caps | 11/700, 0.12 em | 11.5/700, 0.16 em | 11/700, 0.14 em | Section labels on Today, the weekday, hero labels |
+| caps | 12/700, 0.06 em | 12/700, 0.06 em | 12/700, 0.06 em | Section labels on Today, the weekday, hero labels |
 
 Fonts per style: Broadsheet, Barlow Condensed (display) and Instrument Serif (serif); Lanes, Archivo at 80 % width (display) and no serif (the body face); Wall, Figtree in every slot. A theme pack's `font-display` and `font-serif` replace the style's choice; the sizes never change. The ramps live in `packages/ui/src/styles.css` under `[data-style]`, with smaller values for the 1024 band and the phone.
 

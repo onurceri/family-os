@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { STRIPPED_TYPES } from '@famos/sdk';
 import { type Bot, GrammyError } from 'grammy';
 
 export const LINK_CODE_TTL_MS = 10 * 60 * 1000;
@@ -8,7 +9,7 @@ const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 /** The Bot API lets bots download files up to this size. */
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 /** Same types as the Inbox accepts (UPLOAD_LIMITS.accept); the server checks again. */
-const ACCEPTED_TYPES = ['image/*', 'audio/*', 'application/pdf', 'text/plain'];
+const ACCEPTED_TYPES = ['audio/*', 'application/pdf', 'text/plain'];
 export const EXTENSION_TYPES: Record<string, string> = {
 	pdf: 'application/pdf',
 	txt: 'text/plain',
@@ -47,6 +48,7 @@ export const answerHtml = (text: string) =>
 export const truncate = (text: string, max: number) =>
 	[...text].length > max ? `${[...text].slice(0, max - 1).join('')}…` : text;
 export const accepted = (type: string) =>
+	STRIPPED_TYPES.has(type) ||
 	ACCEPTED_TYPES.some((a) => (a.endsWith('/*') ? type.startsWith(a.slice(0, -1)) : type === a));
 
 /** What is safe to log about a failure: never the payload (it holds message text) or the URL. */

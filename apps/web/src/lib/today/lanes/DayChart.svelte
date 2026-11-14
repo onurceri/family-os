@@ -255,7 +255,7 @@
 		position: absolute;
 		top: 0;
 		transform: translateX(-50%);
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		color: var(--ink-soft);
@@ -298,7 +298,7 @@
 		flex: none;
 		max-width: 60%;
 		overflow: hidden;
-		font-size: 0.71875rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
@@ -306,7 +306,7 @@
 	}
 	.hd small {
 		overflow: hidden;
-		font-size: 0.71875rem;
+		font-size: 0.75rem;
 		color: var(--ink-soft);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -461,7 +461,7 @@
 		border-radius: 999px;
 		background: var(--now);
 		color: var(--on-color);
-		font-size: 0.625rem;
+		font-size: 0.75rem;
 		font-weight: 800;
 		white-space: nowrap;
 		transform: translate(-50%, 50%);

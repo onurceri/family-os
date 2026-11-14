@@ -29,6 +29,7 @@ import {
 	UPLOAD_LIMITS,
 	UPLOAD_QUOTA,
 } from '../contract/index.ts';
+import { PURGE_FILES_JOB } from './purge.ts';
 import { filesOf, ITEM_KIND, type StoredFile, tables, toItem } from './store.ts';
 
 /** An item is its sender's own (others see it only through a suggestion), so only they hear of it. */
@@ -190,6 +191,7 @@ export const addItem = defineAction({
 			skips: '[]',
 			model: null,
 			extraction: 0,
+			files_removed_at: null,
 			created_by: selfOf(uow.actor),
 			created_at: now,
 			updated_at: now,
@@ -306,6 +308,9 @@ export const dismissItem = defineAction({
 			.where('id', '=', id)
 			.execute();
 		await uow.rejectDraftsOf({ kind: 'inbox', id });
+		// The files go with the item, unless a record keeps them (the job checks that).
+		if (filesOf(row).length > 0)
+			await uow.enqueue(PURGE_FILES_JOB, { itemId: id }, { dedupeKey: `${PURGE_FILES_JOB}:${id}` });
 		await uow.ai.reindex(ITEM_KIND, id);
 		uow.emit(itemChanged, { itemId: id, memberId: row.created_by });
 		return { ok: true as const };
@@ -405,9 +410,10 @@ async function addUpload(
 		for (const [i, file] of files.entries()) {
 			const key = `inbox/${id}/${i}`;
 			// Photos lose their location and other metadata before they are stored (and so before
-			// any model sees them).
-			const data = STRIPPED_TYPES.has(file.type)
-				? stripImageMetadata(await file.bytes(), file.type)
+			// any model sees them). Types are matched in lower case, as the door that let them in did.
+			const type = file.type.toLowerCase();
+			const data = STRIPPED_TYPES.has(type)
+				? stripImageMetadata(await file.bytes(), type)
 				: file.stream();
 			const stat = await ctx.files.put(key, data, file.type);
 			stored.push({ key, name: safeName(file.name, i), type: file.type, size: stat.size });
@@ -479,8 +485,10 @@ export const getItemFile = defineRoute({
 			.where('id', '=', params.itemId)
 			.executeTakeFirst();
 		// Someone else's item looks like a missing one: nothing to learn from the answer.
+		// A dismissed item's files are gone or going: they are not served any more.
 		const visible =
 			row &&
+			row.status !== 'dismissed' &&
 			(mayHandle(actor, row.created_by) || (await decidableItemIds(ctx, actor)).includes(row.id));
 		const file = visible ? filesOf(row)[params.index] : undefined;
 		const stored = file ? await ctx.files.get(file.key) : null;

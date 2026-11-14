@@ -359,7 +359,7 @@ describe('people named in notes', () => {
 describe('items read before the reasons were kept', () => {
 	it('gets an empty list of reasons, and tells its counts as before', async () => {
 		const handle = openDatabase({ path: ':memory:' });
-		const { '0004_skips': _later, ...before } = migrations;
+		const { '0004_skips': _later, '0005_files_removed_at': _last, ...before } = migrations;
 		await runMigrations(handle.db, [{ scope: 'inbox', migrations: before }]);
 		await sql`insert into inbox_items
 			(id, channel, files, status, proposals, skipped, skipped_unknown, created_at, updated_at)
@@ -373,6 +373,21 @@ describe('items read before the reasons were kept', () => {
 			{ reason: 'incomplete', subject: null },
 			{ reason: 'incomplete', subject: null },
 		]);
+		handle.close();
+	});
+
+	it('keeps an item that predates the file cleanup, with its files still to be removed', async () => {
+		const handle = openDatabase({ path: ':memory:' });
+		const { '0005_files_removed_at': _last, ...before } = migrations;
+		await runMigrations(handle.db, [{ scope: 'inbox', migrations: before }]);
+		await sql`insert into inbox_items (id, channel, files, status, created_at, updated_at)
+			values ('inbox_item_1', 'upload', '[{"key":"inbox/inbox_item_1/0"}]', 'dismissed', 1, 1)`.execute(
+			handle.db,
+		);
+		await runMigrations(handle.db, [{ scope: 'inbox', migrations }]);
+		const row = (await sql<ItemRow>`select * from inbox_items`.execute(handle.db))
+			.rows[0] as ItemRow;
+		expect(row.files_removed_at).toBeNull();
 		handle.close();
 	});
 });

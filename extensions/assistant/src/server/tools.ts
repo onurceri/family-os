@@ -82,6 +82,8 @@ export interface ToolEnv {
 	proposals?: Proposal[];
 	/** What the records shown in this turn are called (handle → title). */
 	labels?: Map<string, string>;
+	/** The area each of those records came from (handle → area), for later turns. */
+	origins?: Map<string, string>;
 	/** The words used for each target changed in this turn (see `runAgentTool`). */
 	targets?: Map<string, string>;
 	/**
@@ -318,6 +320,7 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 			);
 		}
 		const given = kind === 'draft' ? withoutUnnamedPeople(raw, schema, env) : raw;
+		const known = new Set(env.labels?.keys());
 		const outcome = await runAgentTool({
 			actions: env.actions,
 			actor: env.actor,
@@ -342,6 +345,8 @@ export function chatTools(tools: readonly AssistantTool[], env: ToolEnv): LlmCha
 			...(env.locale && { locale: env.locale }),
 		});
 		record.ok = outcome.ok;
+		for (const handle of env.labels?.keys() ?? [])
+			if (!known.has(handle)) env.origins?.set(handle, areaOf(actionId));
 		if (env.loop) env.loop.failuresInARow = outcome.ok ? 0 : env.loop.failuresInARow + 1;
 		if (outcome.draftId) {
 			record.draftId = outcome.draftId;

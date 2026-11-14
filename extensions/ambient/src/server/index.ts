@@ -24,7 +24,7 @@ import { getWeather, searchPlaces } from './weather.ts';
  * Ambient extension: what a family display shows when nobody uses it.
  * Photos are images the family uploaded (stored here, served to displays that may see them);
  * weather from Open-Meteo is fetched and cached by the server, so a display never calls anything
- * outside. Turning the extension off in Settings → Features stops every outbound call.
+ * outside. Turning the extension off in Settings → Family → Extensions stops every outbound call.
  */
 export default defineExtension({
 	manifest: pkg.famos,

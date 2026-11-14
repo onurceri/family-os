@@ -334,6 +334,53 @@ describe('changesSince', () => {
 	});
 });
 
+describe('after a restore', () => {
+	/** The database the restore replaced: its log ran on to seq 5. */
+	let replaced: TestKernel;
+	beforeEach(async () => {
+		replaced = await createTestKernel({ extensions: [things] });
+		const actor = (await replaced.member('admin')).actor;
+		for (const id of ['a', 'b', 'c', 'd', 'e'])
+			await replaced.runner.invoke('things.add', { id }, actor, {});
+		expect(await replaced.changes.head()).toBe(5);
+		// The restored backup was taken at seq 2.
+		await run('things.add', { id: 'a' });
+		await run('things.add', { id: 'b' });
+	});
+	afterEach(() => replaced.close());
+
+	it('refuses a cursor from the replaced history and keeps the backup own', async () => {
+		const tagBefore = await k.changes.collectionTag('things', admin);
+		await k.reconcileRestore(replaced.ctx.db);
+		expect(await codeOf(k.changes.since(4, admin))).toBe('gone');
+		expect(await codeOf(k.changes.since(5, admin))).toBe('gone');
+		expect((await k.changes.since(2, admin)).changes).toEqual([]);
+		expect((await k.changes.since(1, admin)).changes.map((c) => c.id)).toEqual(['b']);
+		await run('things.add', { id: 'f' });
+		const rows = await log();
+		expect(rows.map((r) => r.seq)).toEqual([1, 2, 6]);
+		expect(await k.changes.head()).toBe(6);
+		// A client that was at 3 would otherwise have read 4..6 and missed 3.
+		expect(await codeOf(k.changes.since(3, admin))).toBe('gone');
+		expect((await k.changes.since(2, admin)).changes.map((c) => c.id)).toEqual(['f']);
+		expect(await k.changes.collectionTag('things', admin)).not.toBe(tagBefore);
+	});
+
+	it('is the same when the step runs again, and stacks over restores', async () => {
+		await k.reconcileRestore(replaced.ctx.db);
+		await k.reconcileRestore(replaced.ctx.db);
+		expect(await k.changes.head()).toBe(5);
+		expect(await codeOf(k.changes.since(3, admin))).toBe('gone');
+		await run('things.add', { id: 'f' });
+		await run('things.add', { id: 'g' });
+		// A second restore replaces a log that ran to 7 with the same backup state.
+		await k.reconcileRestore(replaced.ctx.db);
+		expect(await codeOf(k.changes.since(3, admin))).toBe('gone');
+		expect(await codeOf(k.changes.since(5, admin))).toBe('gone');
+		expect((await k.changes.since(7, admin)).changes).toEqual([]);
+	});
+});
+
 describe('collectionTag', () => {
 	it('changes with the log, the actor capabilities and the window', async () => {
 		const display = (capabilities: string[]): Actor => ({

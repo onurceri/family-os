@@ -63,7 +63,7 @@
 >
 	{#if scale > 0}
 		<div
-			class="frame absolute start-0 top-0 origin-top-left px-4 pt-6 lg:px-10 lg:pt-8"
+			class="frame @container/today absolute start-0 top-0 origin-top-left px-4 pt-6 lg:px-10 lg:pt-8"
 			data-style={style}
 			inert
 			aria-hidden="true"

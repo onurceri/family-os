@@ -2,6 +2,7 @@
 	import { addDays, formatDate, todayIn, weekOf } from '@famos/time';
 	import { Card, IconButton, Pill, Section } from '@famos/ui/famos';
 	import { Button } from '@famos/ui/button';
+	import { latestOnly } from '@famos/ui/latest-only';
 	import { ChevronLeft, ChevronRight, Plus, X } from '@lucide/svelte';
 	import type { MealEntry, MealSlot, RecipeSummary } from '../contract/index.js';
 	import { loadMeals, loadRecipes, type Outcome, removeMeal } from './data.js';
@@ -30,14 +31,18 @@
 	let meals = $state<MealEntry[]>([]);
 	let recipes = $state<RecipeSummary[]>([]);
 	let loadError = $state(false);
+	const mealReads = latestOnly();
 	async function load() {
 		const [first, last] = [days[0], days[6]];
 		if (!first || !last) return;
+		const current = mealReads.begin();
 		try {
-			meals = await loadMeals(first, last);
+			const loaded = await loadMeals(first, last);
+			if (!current()) return;
+			meals = loaded;
 			loadError = false;
 		} catch {
-			loadError = true;
+			if (current()) loadError = true;
 		}
 	}
 	$effect(() => {

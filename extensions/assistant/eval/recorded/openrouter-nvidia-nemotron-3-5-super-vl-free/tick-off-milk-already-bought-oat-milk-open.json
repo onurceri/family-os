@@ -15,7 +15,11 @@
 						"topics": [
 							"shopping"
 						],
-						"people": []
+						"people": [],
+						"about": [
+							"milk",
+							"oat milk"
+						]
 					}
 				]
 			}

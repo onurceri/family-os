@@ -38,7 +38,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "For the U13 match, Olimpija (Ivy) on Saturday, 24 October you should bring a white shirt, shin pads and water.",
+			"text": "For the U13 match, Olimpija (Ivy) on Saturday, 24 October, bring white shirt, shin pads & water.",
 			"toolCalls": []
 		}
 	]

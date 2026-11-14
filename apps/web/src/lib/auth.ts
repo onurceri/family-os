@@ -2,7 +2,12 @@
  * Thin wrapper over the identity endpoints (/api/auth/*). The web app deliberately does not use
  * the auth library's client, so the identity adapter can change behind the server.
  */
+import { t } from './i18n.svelte.js';
 import { offline } from './offline.svelte.js';
+import { push } from './push.svelte.js';
+import { signOutConfirm } from './sign-out-confirm.svelte.js';
+import { signOutSafely } from './sign-out-flow.js';
+import { toasts } from './toast.svelte.js';
 
 export type SignInResult =
 	| { kind: 'ok' | 'invalid' | 'untrusted' | 'error' }
@@ -47,12 +52,32 @@ export const signInWithPassword = (email: string, password: string) =>
 export const signInWithPin = (memberId: string, pin: string) =>
 	post('/sign-in/pin', { memberId, pin });
 
-export async function signOut(): Promise<void> {
-	// Nothing of this person stays in the browser: waiting changes and cached reads.
-	await offline.reset();
-	await fetch('/api/auth/sign-out', {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		body: '{}',
-	});
+/**
+ * Waiting offline changes are sent first; whatever still waits is discarded only after the person
+ * agrees. Resolves false when they keep it or the request failed (reported with a toast).
+ */
+export async function signOut(): Promise<boolean> {
+	try {
+		const outcome = await signOutSafely({
+			online: () => navigator.onLine,
+			flush: () => offline.flushAll(),
+			waitingCount: () => offline.waiting.length,
+			confirmDiscard: (count) => signOutConfirm.ask(count),
+			releasePush: () => push.release(),
+			request: async () => {
+				const res = await fetch('/api/auth/sign-out', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: '{}',
+				});
+				if (!res.ok) throw new Error(`sign-out ${res.status}`);
+			},
+			// Nothing of this person stays in the browser: waiting changes and cached reads.
+			clear: () => offline.reset(),
+		});
+		return outcome === 'signed-out';
+	} catch {
+		toasts.show(t('error_generic'));
+		return false;
+	}
 }

@@ -15,14 +15,6 @@
 						"topics": [
 							"tasks"
 						],
-						"span": {
-							"said": "my reading homework due",
-							"kind": "day",
-							"day": {
-								"text": "my reading homework due",
-								"inDays": 0
-							}
-						},
 						"people": [
 							{
 								"said": "my"
@@ -38,7 +30,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Practise reading is on Monday, 19 October.",
+			"text": "It is on Monday, 19 October.",
 			"toolCalls": []
 		}
 	]

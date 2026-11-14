@@ -30,7 +30,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Your reading homework is due Monday, 19 October.",
+			"text": "Your reading homework is due on Monday, 19 October.",
 			"toolCalls": []
 		}
 	]

@@ -1,6 +1,6 @@
 // Core cannot depend on @famos/testing (which depends on core), so its tests build the kernel
 // here from the same real adapters. Extensions use createTestKernel from @famos/testing instead.
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { backupMigrations, createBackupSettingsAdmin } from '@famos/adapters/backup';
@@ -130,6 +130,7 @@ export async function createTestKernel(
 		ids: uuidv7Ids,
 		timeZone: async () => 'UTC',
 	});
+	const filesDir = await mkdtemp(join(tmpdir(), 'famos-core-'));
 	const kernel = createKernel({
 		setupCode: TEST_SETUP_CODE,
 		db: handle.db,
@@ -137,7 +138,7 @@ export async function createTestKernel(
 		clock,
 		ids: uuidv7Ids,
 		logger: silentLogger,
-		files: createFsFileStore(await mkdtemp(join(tmpdir(), 'famos-core-'))),
+		files: createFsFileStore(filesDir),
 		secrets: (extensionId) => ({
 			seal: (plain) => `sealed:${extensionId}:${plain}`,
 			open: (sealed) =>
@@ -251,6 +252,8 @@ export async function createTestKernel(
 		async close() {
 			await kernel.stop();
 			await handle.close();
+			// The kernel's own folder goes with it, wherever the test ran.
+			await rm(filesDir, { recursive: true, force: true });
 		},
 	};
 }

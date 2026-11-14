@@ -106,5 +106,6 @@
 	"draft_title_update_pet": "Haustier ändern",
 	"draft_title_archive_pet": "Haustier archivieren",
 	"draft_title_add_treatment": "Behandlung hinzufügen",
-	"draft_title_remove_treatment": "Behandlung entfernen"
+	"draft_title_remove_treatment": "Behandlung entfernen",
+	"draft_title_undo_treatment": "Hinzufügen einer Behandlung zurücknehmen"
 }

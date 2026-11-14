@@ -6,8 +6,10 @@
  */
 import { defaultMode, isNight, type Mode, parseMode } from './day-night.js';
 import { family } from './family.svelte.js';
+import { parseTextSize, type TextSize } from './text-size.js';
 
 export type { Mode } from './day-night.js';
+export { TEXT_SIZES, type TextSize } from './text-size.js';
 
 const KEY = 'famos.mode';
 const MINUTE_MS = 60_000;
@@ -66,4 +68,37 @@ export function followDayNight(display = false): () => void {
 		document.removeEventListener('visibilitychange', onVisible);
 		clearInterval(timer);
 	};
+}
+
+/** This device's text size (text-size.ts); app.html applies it before first paint. */
+const TEXT_KEY = 'famos.textSize';
+
+function storedTextSize(): TextSize {
+	try {
+		return parseTextSize(localStorage.getItem(TEXT_KEY)) ?? 'normal';
+	} catch {
+		return 'normal';
+	}
+}
+
+class TextSizeChoice {
+	size = $state<TextSize>(typeof localStorage === 'undefined' ? 'normal' : storedTextSize());
+
+	set(size: TextSize): void {
+		this.size = size;
+		try {
+			if (size === 'normal') localStorage.removeItem(TEXT_KEY);
+			else localStorage.setItem(TEXT_KEY, size);
+		} catch {
+			// private mode: the choice lasts until the page is closed
+		}
+	}
+}
+
+export const textSize = new TextSizeChoice();
+
+/** Puts this device's text size on <html>. */
+export function applyTextSize(size: TextSize): void {
+	if (size === 'normal') delete document.documentElement.dataset.textSize;
+	else document.documentElement.dataset.textSize = size;
 }

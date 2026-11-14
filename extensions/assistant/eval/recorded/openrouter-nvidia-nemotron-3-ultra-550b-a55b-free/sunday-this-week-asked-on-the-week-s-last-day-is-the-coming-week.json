@@ -7,11 +7,6 @@
 		{
 			"kind": "object",
 			"feature": "assistant.chat",
-			"error": "unavailable"
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
 			"output": {
 				"parts": [
 					{
@@ -37,7 +32,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "This week has Parents' evening on Tuesday, 20 October, Football training on Wednesday, 21 October, Swimming lesson and Piano lesson on Thursday, 22 October, Dinner at Nona Marija's on Friday, 23 October, and U13 match on Saturday, 24 October, while tasks include Practise reading on Monday, 19 October and Sign the school trip form on Tuesday, 20 October.",
+			"text": "This week includes Parents' evening on Tuesday 20 October, Football training on Wednesday 21 October, Swimming lesson and Piano lesson on Thursday 22 October, Dinner at Nona Marija's on Friday 23 October, and U13 match, Olimpija on Saturday 24 October. Tasks are Practise reading on Monday 19 October and Sign the school trip form on Tuesday 20 October.",
 			"toolCalls": []
 		}
 	]

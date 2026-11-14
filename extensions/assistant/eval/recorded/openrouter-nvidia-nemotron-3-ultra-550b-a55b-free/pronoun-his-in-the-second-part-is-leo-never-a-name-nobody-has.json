@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "Leo has a Swimming lesson on Thursday, 22 October at 16:30–17:30 and a Dinner at Nona Marija's on Friday, 23 October at 18:30–21:00. He also has a Practise reading task on Monday, 19 October.",
 			"toolCalls": []
 		}
 	]

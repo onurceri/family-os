@@ -117,7 +117,7 @@
 		min-width: 0;
 	}
 	.caps {
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -145,7 +145,7 @@
 		line-height: 1.3;
 	}
 	.source {
-		font-size: 0.625rem;
+		font-size: 0.75rem;
 		color: var(--ink-soft);
 	}
 </style>

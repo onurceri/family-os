@@ -5,7 +5,7 @@ ARG NODE_VERSION=24
 # The build stage only makes architecture-independent output (the web app, the bundled server and
 # the packs; native better-sqlite3 stays external), so it runs once on the builder's own platform
 # instead of under emulation for each target. Only the runtime stage is built per architecture.
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS build
 WORKDIR /repo
 # Install dependencies first for better layer caching.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
@@ -46,7 +46,7 @@ RUN pnpm --filter @famos/web build && pnpm --filter @famos/server build \
 # The bundle keeps native better-sqlite3 external: its exact locked version and hash, as an npm lockfile.
 RUN node scripts/runtime-lock.mjs /repo/runtime
 
-FROM node:${NODE_VERSION}-bookworm-slim AS runtime
+FROM node:${NODE_VERSION}-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS runtime
 ENV NODE_ENV=production \
     FAMOS_DATA_DIR=/data \
     FAMOS_WEB_DIR=/app/web \

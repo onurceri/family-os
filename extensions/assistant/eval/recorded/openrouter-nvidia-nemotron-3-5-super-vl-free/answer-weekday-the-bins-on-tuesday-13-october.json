@@ -55,13 +55,13 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing for Chores today, Tuesday.",
+			"text": "Nothing today.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Nothing is on your calendar or tasks this week.",
+			"text": "Nothing is on for you this week.",
 			"toolCalls": []
 		}
 	]

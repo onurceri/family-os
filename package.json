@@ -36,9 +36,9 @@
 		"prettier": "3.9.9",
 		"prettier-plugin-svelte": "4.1.1",
 		"prettier-plugin-tailwindcss": "0.8.1",
-		"svelte": "5.57.1",
+		"svelte": "catalog:",
 		"turbo": "2.11.7",
-		"typescript": "6.0.3",
+		"typescript": "catalog:",
 		"vitest": "5.0.3"
 	}
 }

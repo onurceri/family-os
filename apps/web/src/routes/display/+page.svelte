@@ -21,6 +21,7 @@
 		touch,
 	} from '#lib/display/rotation.js';
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
+	import { TEXT_SCALE, type TextSize } from '#lib/text-size.js';
 	import FamilyToday from './FamilyToday.svelte';
 	import PairScreen from './PairScreen.svelte';
 
@@ -50,6 +51,8 @@
 		hidden: string[];
 		/** The pages this display shows between Today's turns; null shows only Today. */
 		rotation: (RotationConfig & { pages: string[] }) | null;
+		/** This display's text size, chosen in Settings (Theme, Displays). */
+		textSize: TextSize;
 	};
 	type Member = { id: string; displayName: string; color: string };
 
@@ -442,15 +445,16 @@
 	>
 		<!-- Today in family mode, one type step larger than on a person's screen (FamilyToday). -->
 		<div
-			class="family"
+			class="family @container/today"
 			class:layer={pages.length > 0}
 			class:off={pages.length > 0 && !onToday}
 			inert={pages.length > 0 && !onToday}
 		>
 			{#if me && membersLoaded}
-				{#key me.showNames}
+				{#key `${me.showNames}:${me.textSize}`}
 					<FamilyToday
 						style={appearance.style}
+						scale={TEXT_SCALE[me.textSize]}
 						showNames={me.showNames}
 						disabledExtensions={() => me?.disabledExtensions ?? []}
 						hidden={() => me?.hidden ?? []}

@@ -122,3 +122,19 @@ describe('a waiting new event as an occurrence', () => {
 		).toBe(false);
 	});
 });
+
+describe('onDay for an event with no length', () => {
+	const instant = (date: string, time: string) => {
+		const at = epochOf(date, time, TZ);
+		return { allDay: false, start: at, end: at } as Parameters<typeof onDay>[0];
+	};
+
+	it('belongs to the day it starts on, at midnight as at any other time', () => {
+		for (const time of ['00:00', '09:00']) {
+			const o = instant('2026-10-20', time);
+			expect(onDay(o, '2026-10-20', TZ)).toBe(true);
+			expect(onDay(o, '2026-10-19', TZ)).toBe(false);
+			expect(onDay(o, '2026-10-21', TZ)).toBe(false);
+		}
+	});
+});

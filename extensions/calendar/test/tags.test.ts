@@ -216,14 +216,12 @@ describe('renaming, recolouring and deleting tags', () => {
 
 describe('tags in ICS', () => {
 	const feedText = async () => {
-		const made = await k.runner.invoke<{ path: string }>(
-			'calendar.createFeed',
-			{ scope: 'family' },
-			admin.actor,
-		);
-		if (made.status !== 'applied') throw new Error('expected applied');
+		const made: { path: string } = await k.route('calendar.createFeed').call({
+			actor: admin.actor,
+			body: { scope: 'family', includeNotes: false },
+		});
 		const out = await k.route('calendar.getFeed').call({
-			params: { file: made.output.path.split('/').pop() },
+			params: { file: made.path.split('/').pop() },
 			actor: { kind: 'system', source: 'anonymous' },
 		});
 		return out.text as string;

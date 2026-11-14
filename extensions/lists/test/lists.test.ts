@@ -1,10 +1,10 @@
-import { systemActor } from '@famos/sdk';
+import { type Actor, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ShoppingItem, Task } from '../src/contract/index.ts';
 import lists from '../src/server/index.ts';
-import { DEFAULT_LIST_ID } from '../src/server/store.ts';
+import { DEFAULT_LIST_ID, tables } from '../src/server/store.ts';
 
 const TZ = 'Europe/Istanbul';
 let k: TestKernel;
@@ -52,6 +52,68 @@ describe('tasks', () => {
 			k.runner.invoke('lists.reopenTask', { id: task.id }, actor),
 		);
 		expect(reopened).toMatchObject({ doneAt: null, dueDate: '2026-10-09' });
+	});
+
+	it('takes back the completion that was undone, not whoever completed last', async () => {
+		const { actor: a } = await k.member('admin', 'Ayşe');
+		const { actor: b } = await k.member('admin', 'Bora');
+		const task = await applied<Task>(
+			k.runner.invoke(
+				'lists.addTask',
+				{ title: 'Çöpü çıkar', dueDate: '2026-10-05', recurrence: { freq: 'daily' } },
+				a,
+			),
+		);
+		const first = await applied<Task & { completionId: string }>(
+			k.runner.invoke('lists.completeTask', { id: task.id, dueDate: '2026-10-05' }, a),
+		);
+		k.clock.advance(60_000);
+		const second = await applied<Task & { completionId: string }>(
+			k.runner.invoke('lists.completeTask', { id: task.id, dueDate: first.dueDate }, b),
+		);
+		const rows = () =>
+			tables(k.ctx.db)
+				.selectFrom('lists_task_completions')
+				.select(['id', 'done_by'])
+				.where('task_id', '=', task.id)
+				.execute();
+		expect(second.completionId).not.toBe(first.completionId);
+		// A taps Undo for her own completion: B's stays.
+		await applied(
+			k.runner.invoke('lists.reopenTask', { id: task.id, completionId: first.completionId }, a),
+		);
+		expect((await rows()).map((r) => r.id)).toEqual([second.completionId]);
+		// The task stays where B's later completion left it.
+		expect((await tasks()).find((t) => t.id === task.id)?.dueDate).toBe(second.dueDate);
+		// B's undo, of the newest completion, moves the task back to the date B completed.
+		const back = await applied<Task>(
+			k.runner.invoke('lists.reopenTask', { id: task.id, completionId: second.completionId }, b),
+		);
+		expect(back.dueDate).toBe(first.dueDate);
+		expect(await rows()).toEqual([]);
+	});
+
+	it("without a named completion, an open repeating task loses only the caller's own", async () => {
+		const { actor: a, member: ma } = await k.member('admin', 'Ayşe');
+		const { actor: b } = await k.member('admin', 'Bora');
+		const task = await applied<Task>(
+			k.runner.invoke(
+				'lists.addTask',
+				{ title: 'Çöpü çıkar', dueDate: '2026-10-05', recurrence: { freq: 'daily' } },
+				a,
+			),
+		);
+		await applied(k.runner.invoke('lists.completeTask', { id: task.id }, a));
+		k.clock.advance(60_000);
+		await applied(k.runner.invoke('lists.completeTask', { id: task.id, dueDate: '2026-10-07' }, b));
+		await applied(k.runner.invoke('lists.reopenTask', { id: task.id }, a));
+		const left = await tables(k.ctx.db)
+			.selectFrom('lists_task_completions')
+			.select('done_by')
+			.where('task_id', '=', task.id)
+			.execute();
+		expect(left).toHaveLength(1);
+		expect(left[0]?.done_by).not.toBe(ma.id);
 	});
 
 	it('changes only the fields given, keeps the rest, and can be changed back', async () => {
@@ -810,6 +872,50 @@ describe('a suggested task whose due date has passed', () => {
 			.route('core.listDrafts')
 			.call({ query: { status: 'pending', limit: 10 } });
 		expect(drafts.map((d) => d.id)).toEqual([result.draftId]);
+	});
+});
+
+describe('putting removed shopping items back', () => {
+	const add = async (actor: Actor, titles: string[]) =>
+		(
+			await applied<{ items: ShoppingItem[] }>(
+				k.runner.invoke(
+					'lists.addShoppingItems',
+					{ items: titles.map((title) => ({ title })) },
+					actor,
+				),
+			)
+		).items.map((i) => i.id);
+
+	it('restores what was removed, counts only those, and leaves live rows alone', async () => {
+		const { actor } = await k.member('admin');
+		const [milk, bread, eggs] = await add(actor, ['Milk', 'Bread', 'Eggs']);
+		await applied(k.runner.invoke('lists.removeShoppingItems', { ids: [milk, bread] }, actor));
+		expect((await items()).map((i) => i.title)).toEqual(['Eggs']);
+		const result = await applied<{ restored: number }>(
+			k.runner.invoke('lists.restoreShoppingItems', { ids: [milk, bread, eggs] }, actor),
+		);
+		expect(result.restored).toBe(2);
+		expect((await items()).map((i) => i.title).sort()).toEqual(['Bread', 'Eggs', 'Milk']);
+		const again = await applied<{ restored: number }>(
+			k.runner.invoke('lists.restoreShoppingItems', { ids: [milk] }, actor),
+		);
+		expect(again.restored).toBe(0);
+	});
+
+	it('is what taking back an approved bulk removal runs', async () => {
+		const { actor } = await k.member('admin');
+		const [milk, bread] = await add(actor, ['Milk', 'Bread']);
+		const result = await k.runner.invoke(
+			'lists.removeShoppingItems',
+			{ ids: [milk, bread] },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
+		);
+		if (result.status !== 'drafted') throw new Error('expected a draft');
+		await k.runner.approveDraft(result.draftId, actor);
+		expect(await items()).toHaveLength(0);
+		await k.runner.undoDraft(result.draftId, actor);
+		expect((await items()).map((i) => i.title).sort()).toEqual(['Bread', 'Milk']);
 	});
 });
 

@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "On Friday, 23 October, the calendar shows Dinner at Nona Marija's from 18:30 to 21:00.",
+			"text": "Dinner at Nona Marija's is scheduled for 18:30–21:00 on Friday, 23 October.",
 			"toolCalls": []
 		}
 	]

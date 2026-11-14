@@ -22,6 +22,7 @@
 	import { onEvent } from '#lib/realtime.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { session } from '#lib/session.svelte.js';
+	import { TEXT_SIZES, type TextSize } from '#lib/text-size.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import ThemeTile from '#lib/ThemeTile.svelte';
 	import TodayBlocksList from '#lib/today/TodayBlocksList.svelte';
@@ -59,6 +60,8 @@
 	let displayThemes = $state<Record<string, string>>({});
 	/** The style chosen per display (display id → style id). */
 	let displayStyles = $state<Record<string, StyleId>>({});
+	/** The text size chosen per display (display id → size); missing is normal. */
+	let displaySizes = $state<Record<string, TextSize>>({});
 	/** What each display's Today hides (display id → block ids); missing follows the family. */
 	let displayHidden = $state<Record<string, string[]>>({});
 	/** The display whose "What it shows" panel is open. */
@@ -101,13 +104,15 @@
 	async function refresh() {
 		await appearance.loadThemes();
 		const devicesManage = session.can('core.devices.manage');
-		const [fetched, chosen, styles, devices, blocks] = await Promise.all([
+		const [fetched, chosen, styles, devices, blocks, sizes] = await Promise.all([
 			api.GET('/api/v1/core/themes/fetch'),
 			api.GET('/api/v1/core/themes/displays'),
 			devicesManage ? api.GET('/api/v1/core/styles/displays') : null,
 			devicesManage ? api.GET('/api/v1/core/devices') : null,
 			devicesManage ? api.GET('/api/v1/core/today/displays') : null,
+			devicesManage ? api.GET('/api/v1/core/displays/text-size') : null,
 		]);
+		displaySizes = sizes?.data ?? {};
 		displayHidden = blocks?.data ?? {};
 		fetchState = fetched.data ?? null;
 		displayThemes = chosen.data ?? {};
@@ -159,6 +164,12 @@
 			api.POST('/api/v1/actions/core.setDisplayStyle', {
 				body: { deviceId, style: style === '' ? null : (style as StyleId) },
 			}),
+			t('appearance_saved'),
+		);
+
+	const chooseDisplaySize = (deviceId: string, size: TextSize) =>
+		run(
+			api.POST('/api/v1/actions/core.setDisplayTextSize', { body: { deviceId, size } }),
 			t('appearance_saved'),
 		);
 
@@ -367,6 +378,20 @@
 										>
 										{#each appearance.themes as theme (theme.id)}
 											<option value={theme.id}>{theme.name}</option>
+										{/each}
+									</SelectField>
+									<span aria-hidden="true" class="text-ink-soft -mb-1 text-xs font-semibold"
+										>{t('theme_display_text_size_label')}</span
+									>
+									<SelectField
+										id="display-text-size-{display.id}"
+										aria-label={t('theme_display_text_size', { name: display.name })}
+										value={displaySizes[display.id] ?? 'normal'}
+										onchange={(e) =>
+											chooseDisplaySize(display.id, e.currentTarget.value as TextSize)}
+									>
+										{#each TEXT_SIZES as size (size)}
+											<option value={size}>{t(`appearance_text_size_${size}`)}</option>
 										{/each}
 									</SelectField>
 									<span aria-hidden="true" class="text-ink-soft -mb-1 text-xs font-semibold"

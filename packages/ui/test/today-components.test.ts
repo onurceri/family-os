@@ -55,7 +55,6 @@ const words: NextUpWords = {
 		inDuration: (d) => `in ${d}`,
 		nowUntil: (t) => `now, until ${t}`,
 	},
-	pill: { at: (p) => `At ${p}`, starts: (t) => `Starts ${t}`, until: (t) => `Until ${t}` },
 };
 
 const dayWords: MemberDayWords = {
@@ -67,7 +66,7 @@ const dayWords: MemberDayWords = {
 };
 
 describe('NextUpHero', () => {
-	it('renders the countdown, the pill and the Family | Me toggle for a person', () => {
+	it('renders the countdown, the time and place, and the Family | Me toggle for a person', () => {
 		const onmode = vi.fn();
 		const el = render(NextUpHero, {
 			item: piano,
@@ -82,7 +81,9 @@ describe('NextUpHero', () => {
 		expect(hero.getAttribute('aria-label')).toBe('Piano lesson, 15:45, in 25 minutes');
 		expect(q('[data-testid="countdown"] .n', el).textContent).toBe('25');
 		expect(q('[data-testid="countdown"] .u', el).textContent).toBe('minutes');
-		expect(q('.pill', el).textContent).toBe('At Music school');
+		// The time and place once, on the line beside the countdown; no pill repeats them.
+		expect(q('.meta', el).textContent).toBe('15:45–16:30 · Music school');
+		expect(q('.pill', el)).toBeNull();
 		expect(q('.caps', el).textContent).toBe('Next up · Elif');
 		expect(q('.title a', el).getAttribute('href')).toBe('/calendar');
 
@@ -125,8 +126,6 @@ describe('NextUpHero', () => {
 		expect(q('[role="radiogroup"]', el)).toBeNull();
 		expect(q('[data-testid="countdown"] .n', el).textContent).toBe('15:45');
 		expect(q('[data-testid="countdown"] .u', el).textContent).toBe('starts');
-		// The countdown is the time, so the pill does not repeat it.
-		expect(q('.pill', el)).toBeNull();
 	});
 
 	it('says now and until once started, in a ring when asked', () => {
@@ -142,7 +141,7 @@ describe('NextUpHero', () => {
 		);
 		expect(q('[data-testid="countdown"] .n', el).textContent).toBe('now');
 		expect(q('[data-testid="countdown"] [data-testid="ring"]', el)).not.toBeNull();
-		expect(q('.pill', el).textContent).toBe('Until 16:30');
+		expect(q('.meta', el).textContent).toBe('15:45–16:30 · Music school');
 	});
 });
 

@@ -142,6 +142,6 @@
 	}
 	.strip small {
 		max-width: 100%;
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 	}
 </style>

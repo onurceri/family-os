@@ -1,10 +1,6 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { isExternalHttpError } from '@famos/sdk';
 import { describe, expect, it } from 'vitest';
@@ -18,6 +14,7 @@ import {
 	type TransportRequest,
 	type TransportResponse,
 } from '../src/http-guard/index.ts';
+import { TEST_TLS_CERT, TEST_TLS_KEY } from './tls-fixture.ts';
 
 const stream = async function* (text: string): AsyncGenerator<Uint8Array> {
 	yield new TextEncoder().encode(text);
@@ -320,55 +317,20 @@ describe('guarded get', () => {
 });
 
 /** The real transport, against a local TLS server with a throwaway certificate. */
-const hasOpenssl = (() => {
-	try {
-		execFileSync('openssl', ['version'], { stdio: 'ignore' });
-		return true;
-	} catch {
-		return false;
-	}
-})();
-
-describe.skipIf(!hasOpenssl)('node transport', () => {
+describe('node transport', () => {
 	it('connects to the given address, sends the host name, decompresses and caps', async () => {
-		const dir = mkdtempSync(join(tmpdir(), 'famos-tls-'));
-		execFileSync(
-			'openssl',
-			[
-				'req',
-				'-x509',
-				// An EC key generates instantly; RSA key generation takes a random, load-dependent time.
-				'-newkey',
-				'ec',
-				'-pkeyopt',
-				'ec_paramgen_curve:prime256v1',
-				'-nodes',
-				'-days',
-				'1',
-				'-subj',
-				'/CN=cal.example.org',
-				'-keyout',
-				join(dir, 'k.pem'),
-				'-out',
-				join(dir, 'c.pem'),
-			],
-			{ stdio: 'ignore' },
-		);
 		const seen: { host?: string | undefined }[] = [];
-		const server = createServer(
-			{ key: readFileSync(join(dir, 'k.pem')), cert: readFileSync(join(dir, 'c.pem')) },
-			(req, res) => {
-				seen.push({ host: req.headers.host });
-				res.setHeader('etag', '"v1"');
-				if (req.url === '/big.ics') {
-					res.setHeader('content-encoding', 'gzip');
-					res.end(gzipSync('x'.repeat(10_000)));
-				} else {
-					res.setHeader('content-encoding', 'gzip');
-					res.end(gzipSync('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n'));
-				}
-			},
-		);
+		const server = createServer({ key: TEST_TLS_KEY, cert: TEST_TLS_CERT }, (req, res) => {
+			seen.push({ host: req.headers.host });
+			res.setHeader('etag', '"v1"');
+			if (req.url === '/big.ics') {
+				res.setHeader('content-encoding', 'gzip');
+				res.end(gzipSync('x'.repeat(10_000)));
+			} else {
+				res.setHeader('content-encoding', 'gzip');
+				res.end(gzipSync('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n'));
+			}
+		});
 		await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 		const { port } = server.address() as AddressInfo;
 		try {
@@ -532,6 +494,41 @@ describe('guarded post', () => {
 		expect(
 			await code(slow.post({ url: 'https://ha.example.org/x', json: {}, timeoutMs: 30 })),
 		).toBe('timeout');
+	});
+});
+
+describe('the deadline and name resolution', () => {
+	// The name answers only long after the request's deadline.
+	const slowName = async () => {
+		await new Promise((done) => setTimeout(done, 300));
+		return ['93.184.216.34'];
+	};
+
+	it('covers the lookup of a GET and of a POST, and nothing is sent afterwards', async () => {
+		const script = scripted({ text: 'late' }, { text: 'late' });
+		const http = createGuardedHttp({ resolve: slowName, transport: script.transport });
+		expect(await code(http.get({ url: 'https://cal.example.org/a.ics', timeoutMs: 20 }))).toBe(
+			'timeout',
+		);
+		expect(
+			await code(http.post({ url: 'https://ha.example.org/x', json: {}, timeoutMs: 20 })),
+		).toBe('timeout');
+		expect(script.requests).toEqual([]);
+	});
+
+	it('ends with a timeout when the caller aborts during the lookup', async () => {
+		const http = createGuardedHttp({ resolve: slowName, transport: scripted().transport });
+		const stop = new AbortController();
+		const get = code(
+			http.get({ url: 'https://cal.example.org/a.ics', timeoutMs: 60_000, signal: stop.signal }),
+		);
+		stop.abort();
+		expect(await get).toBe('timeout');
+	});
+
+	it('still reports a failed lookup as unreachable', async () => {
+		const http = createGuardedHttp({ resolve: dns({}), transport: scripted().transport });
+		expect(await code(http.get({ url: 'https://nowhere.example.org/a.ics' }))).toBe('unreachable');
 	});
 });
 

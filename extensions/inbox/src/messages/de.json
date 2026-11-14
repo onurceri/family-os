@@ -200,5 +200,6 @@
 	"way_not_set_up": "Noch nicht eingerichtet",
 	"drop_here": "Zum Hinzufügen hier ablegen",
 	"files_refused_one": "{{count}} Datei konnte nicht hinzugefügt werden. Möglich sind Fotos, PDFs, Sprachnotizen und Textdateien, bis zu {{max}} gleichzeitig.",
-	"files_refused_other": "{{count}} Dateien konnten nicht hinzugefügt werden. Möglich sind Fotos, PDFs, Sprachnotizen und Textdateien, bis zu {{max}} gleichzeitig."
+	"files_refused_other": "{{count}} Dateien konnten nicht hinzugefügt werden. Möglich sind Fotos, PDFs, Sprachnotizen und Textdateien, bis zu {{max}} gleichzeitig.",
+	"share_load_failed": "Das Geteilte konnte nicht gelesen werden."
 }

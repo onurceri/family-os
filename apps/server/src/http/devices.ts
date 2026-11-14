@@ -6,6 +6,7 @@ import {
 	type Kernel,
 	RotationSchema,
 	STYLE_IDS,
+	TEXT_SIZES,
 	toDevice,
 } from '@famos/core';
 import { FamosError, personPresent, systemActor, type TrustedDevice } from '@famos/sdk';
@@ -327,7 +328,7 @@ function mountDisplayRoutes(
 						weekStart: z.number().int().min(1).max(7),
 						hourCycle: z.enum(['h12', 'h23']),
 						temperatureUnit: z.enum(['celsius', 'fahrenheit']),
-						/** Extensions turned off in Settings → Features; their widgets are hidden. */
+						/** Extensions turned off in Settings → Family → Extensions; their widgets are hidden. */
 						disabledExtensions: z.array(z.string()),
 						/** The theme chosen for this display, else the family's. */
 						theme: z.string().nullable(),
@@ -337,6 +338,8 @@ function mountDisplayRoutes(
 						hidden: z.array(z.string()),
 						/** The pages this display shows between Today's turns; null shows only Today. */
 						rotation: RotationSchema.nullable(),
+						/** This display's text size, chosen in Settings (Theme, Displays). */
+						textSize: z.enum(TEXT_SIZES),
 					}),
 				),
 			},
@@ -375,6 +378,7 @@ function mountDisplayRoutes(
 				theme: look.theme,
 				style: look.style,
 				hidden: look.hidden,
+				textSize: look.textSize,
 				rotation: await kernel.themes.rotationOf(kernel.ctx.db, actor.deviceId),
 			},
 			200,

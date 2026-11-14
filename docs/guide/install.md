@@ -62,6 +62,8 @@ Everything lives in the `famos-data` volume (`/data` in the container):
 | `files/` | Shared photos and documents |
 | `backups/` | Nightly backups |
 | `languages/` | Language packs you installed |
+| `themes/` | Theme packs you installed |
+| `extensions/` | Extensions you installed from the store |
 | `secret` | Signs sessions and encrypts saved keys and passwords; see [Backups](backups.md) |
 | `setup-code` | The setup code |
 
