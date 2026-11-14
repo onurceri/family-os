@@ -35,7 +35,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Your calendar shows nothing this weekend, and your tasks also show nothing this weekend.",
+			"text": "There is nothing open this weekend. The next task is Tuesday, October 13: Fractions worksheet (Ellie).",
 			"toolCalls": []
 		}
 	]

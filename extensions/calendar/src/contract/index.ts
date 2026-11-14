@@ -280,12 +280,34 @@ const SubscriptionUrl = z
 		'Expected an https:, webcal: or http: address',
 	);
 
+/** Days before an all-day event a subscription reminds (0 = on the day). */
+export const SUBSCRIPTION_REMINDER_DAYS = [0, 1, 2] as const;
+
+const SubscriptionReminderDays = z
+	.number()
+	.int()
+	.refine((v) => (SUBSCRIPTION_REMINDER_DAYS as readonly number[]).includes(v), 'Unsupported days')
+	.nullable()
+	.describe('All-day events: days before (0, 1 or 2); null = on the day');
+const SubscriptionReminderTime = IsoTimeSchema.nullable().describe(
+	"All-day events: at this time; null = the family's reminder time",
+);
+const SubscriptionReminderMinutes = z
+	.number()
+	.int()
+	.refine((v) => (TIMED_REMINDERS as readonly number[]).includes(v), 'Unsupported reminder')
+	.nullable()
+	.describe('Timed events: minutes before the start; null = the default (30)');
+
 export const AddSubscriptionInputSchema = z.object({
 	name: SubscriptionName.describe('Shown next to its events, e.g. "School"'),
 	url: SubscriptionUrl,
 	color: SubscriptionColor.optional(),
 	memberIds: z.array(MemberIdSchema).default([]).describe('Whom it concerns; empty = everyone'),
 	reminders: z.boolean().default(false),
+	reminderDays: SubscriptionReminderDays.default(null),
+	reminderTime: SubscriptionReminderTime.default(null),
+	reminderMinutes: SubscriptionReminderMinutes.default(null),
 	allowLocal: z.boolean().default(false).describe('Allow an address on the home network'),
 });
 
@@ -297,6 +319,9 @@ export const UpdateSubscriptionInputSchema = z.object({
 	color: SubscriptionColor.optional(),
 	memberIds: z.array(MemberIdSchema).optional(),
 	reminders: z.boolean().optional(),
+	reminderDays: SubscriptionReminderDays.optional(),
+	reminderTime: SubscriptionReminderTime.optional(),
+	reminderMinutes: SubscriptionReminderMinutes.optional(),
 	allowLocal: z.boolean().optional(),
 });
 
@@ -316,6 +341,9 @@ export const SubscriptionSchema = z.object({
 	color: z.string(),
 	memberIds: z.array(z.string()),
 	reminders: z.boolean(),
+	reminderDays: z.number().nullable(),
+	reminderTime: z.string().nullable(),
+	reminderMinutes: z.number().nullable(),
 	allowLocal: z.boolean(),
 	lastFetchedAt: z.number().nullable(),
 	/** A code (`unreachable`, `too_large`, `not_calendar`, `blocked_address`, `http_<status>`), or null. */

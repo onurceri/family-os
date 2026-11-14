@@ -7,7 +7,9 @@
 		ConfirmButton,
 		removeLabels,
 		EmptyLine,
+		DetailRows,
 		focusFirstInvalid,
+		readFirst,
 		Section,
 		SidePanel,
 	} from '@famos/ui/famos';
@@ -194,6 +196,11 @@
 		}
 	}
 
+	const editingObligation = $derived(
+		editingId && editingId !== 'new'
+			? [...openList, ...done].find((o) => o.id === editingId)
+			: undefined,
+	);
 	const formTitle = $derived(editingId === 'new' ? t('form_title_new') : t('form_title_edit'));
 	const statusLabel = (o: Obligation) => t(`status_${dueStatus(o, today)}`);
 	const everyLabel = (o: Obligation) =>
@@ -206,11 +213,30 @@
 		formatDate(d, app.dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 </script>
 
+{#snippet obligationDetails()}
+	{#if editingObligation}
+		{@const o = editingObligation}
+		{@const assignee = app.members().find((m) => m.id === o.assigneeId)}
+		<DetailRows
+			rows={[
+				{ label: t('field_title'), value: o.title },
+				{ label: t('field_due_date'), value: dateOf(o.dueDate) },
+				{ label: t('field_repeat'), value: everyLabel(o) },
+				{ label: t('field_assignee'), value: assignee?.displayName ?? t('anyone') },
+				{ label: t('field_notes'), value: o.notes },
+			]}
+		/>
+	{/if}
+{/snippet}
+
 <SidePanel
 	approval={app.approval(
 		editingId === 'new' ? 'records.addObligation' : 'records.updateObligation',
 	)}
 	open={editingId !== null}
+	readFirst={editingObligation
+		? readFirst(app, 'records.updateObligation', obligationDetails, { key: editingObligation.id })
+		: undefined}
 	title={formTitle}
 	closeLabel={t('close')}
 	cancelLabel={t('cancel')}

@@ -2,6 +2,7 @@ import { type Actor, systemActor } from '@famos/sdk';
 import { createTestKernel, type TestKernel } from '@famos/testing';
 import { epochOf } from '@famos/time';
 import ICAL from 'ical.js';
+import { sql } from 'kysely';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import type { CreatedFeedSchema } from '../src/contract/index.ts';
@@ -24,11 +25,17 @@ beforeEach(async () => {
 });
 afterEach(() => k.close());
 
-async function feed(actor: Actor, input: Record<string, unknown>): Promise<Created> {
-	const r = await k.runner.invoke<Created>('calendar.createFeed', input, actor);
-	if (r.status !== 'applied') throw new Error('expected applied');
-	return r.output;
-}
+/** Creates a feed the way the settings page does: through the route, as the signed-in person. */
+const feed = (actor: Actor, input: Record<string, unknown>): Promise<Created> =>
+	k.route('calendar.createFeed').call({ actor, body: { includeNotes: false, ...input } });
+
+const auditRows = async () =>
+	(
+		await sql<{ action_id: string; outcome: string; target: string | null; actor: string }>`
+			select action_id, outcome, target, actor from core_audit_log where action_id = 'calendar.createFeed'`.execute(
+			k.ctx.db,
+		)
+	).rows;
 
 const create = (actor: Actor, input: Record<string, unknown>) =>
 	k.runner.invoke('calendar.createEvent', input, actor);
@@ -55,12 +62,58 @@ describe('creating and revoking feeds', () => {
 		expect(own.path).toBe(`/api/v1/calendar/feed/${own.token}.ics`);
 		expect(own.feed).toMatchObject({ scope: mum.member.id, includeNotes: false, label: 'Phone' });
 		await feed(admin.actor, { scope: 'family', includeNotes: true });
-		await expect(
-			k.runner.invoke('calendar.createFeed', { scope: 'family' }, mum.actor),
-		).rejects.toMatchObject({ code: 'forbidden' });
-		await expect(
-			k.runner.invoke('calendar.createFeed', { scope: admin.member.id }, mum.actor),
-		).rejects.toMatchObject({ code: 'forbidden' });
+		await expect(feed(mum.actor, { scope: 'family' })).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+		await expect(feed(mum.actor, { scope: admin.member.id })).rejects.toMatchObject({
+			code: 'forbidden',
+		});
+	});
+
+	it('makes an address that answers, and records itself in the audit log without it', async () => {
+		const made = await feed(mum.actor, { scope: mum.member.id, label: 'Phone' });
+		await expect(fetchFeed(made.path)).resolves.toMatchObject({
+			contentType: 'text/calendar; charset=utf-8',
+		});
+		const rows = await auditRows();
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			action_id: 'calendar.createFeed',
+			outcome: 'applied',
+			target: made.feed.id,
+		});
+		expect(JSON.parse(rows[0]?.actor ?? '{}')).toMatchObject({ memberId: mum.member.id });
+		expect(JSON.stringify(rows)).not.toContain(made.token);
+	});
+
+	it('needs a person at a password sign-in: never a PIN, an app, the AI or a display', async () => {
+		const pin = { ...admin.actor, pin: true } as Actor;
+		await expect(feed(pin, { scope: 'family' })).rejects.toMatchObject({
+			code: 'forbidden',
+			details: { reason: 'full_sign_in' },
+		});
+		const app = { kind: 'app', appId: 'app_1' } as unknown as Actor;
+		const forMember = { ...app, via: admin.member.id } as unknown as Actor;
+		const ai = { kind: 'ai', mode: 'agent', source: 'mcp' } as Actor;
+		const display = { kind: 'display', deviceId: 'dev_1' } as unknown as Actor;
+		for (const who of [app, forMember, ai, display, systemActor('test')]) {
+			await expect(feed(who, { scope: 'family' })).rejects.toMatchObject({
+				code: 'unauthenticated',
+			});
+		}
+		expect(await events(k.ctx.db).selectFrom('calendar_feeds').selectAll().execute()).toEqual([]);
+		expect(await auditRows()).toEqual([]);
+	});
+
+	it('is a route, not an action, so no answer holding the address is kept for replays', () => {
+		expect(k.registry.actions.has('calendar.createFeed')).toBe(false);
+		const route = k.registry.routes.find((r) => r.route.operationId === 'calendar.createFeed');
+		expect(route?.route).toMatchObject({
+			method: 'post',
+			path: '/feeds',
+			requires: 'calendar.view',
+		});
+		expect(route?.route.expose).toBeUndefined();
 	});
 
 	it('stores only a hash of the token', async () => {

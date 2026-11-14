@@ -41,7 +41,8 @@
 	import { accessBook } from '#lib/access.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
-	import { dayNight, followDayNight } from '#lib/theme.svelte.js';
+	import { applyTextSize, dayNight, followDayNight, textSize } from '#lib/theme.svelte.js';
+	import { signOutConfirm } from '#lib/sign-out-confirm.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
 	import { refusalKey, refusalOfError } from '#lib/refusal.js';
 	import { addPlacesFor, shareFor } from '#lib/contributions.js';
@@ -61,7 +62,8 @@
 	import PageGate from '#lib/PageGate.svelte';
 	import PreviewBar from '#lib/PreviewBar.svelte';
 	import { provideAppContext } from '@famos/ui/app';
-	import { Avatar, beginWork, Toast } from '@famos/ui/famos';
+	import { Button } from '@famos/ui/button';
+	import { Avatar, beginWork, Dialog, Toast } from '@famos/ui/famos';
 	import Slot from '@famos/ui/slot';
 	import type { LayoutProps } from './$types';
 
@@ -364,6 +366,7 @@
 			: { href: '/more', label: t('nav_more') };
 	});
 
+	$effect(() => applyTextSize(textSize.size));
 	// Re-applied whenever this device's day/night choice or the family's time zone changes.
 	$effect(() => {
 		void dayNight.mode;
@@ -415,72 +418,77 @@
 	// Live updates while signed in.
 	$effect(() => {
 		if (isDisplay || session.status !== 'ready') return;
-		const disconnect = connectRealtime();
-		void family.refresh();
-		const off = onEvent('core.member.', () => {
-			void session.refresh();
+		// A person signing in on this device is the one change that reopens the socket (its
+		// cookie is theirs); nothing else read below may make the effect run again.
+		void session.me?.id;
+		return untrack(() => {
+			const disconnect = connectRealtime();
 			void family.refresh();
+			const off = onEvent('core.member.', () => {
+				void session.refresh();
+				void family.refresh();
+			});
+			// A role's capabilities changed: what the controls offer follows (me and access).
+			const offRole = onEvent('core.role.', () => void session.refresh());
+			// Family settings (language, region formats, time zone) changed on another device.
+			const offFamily = onEvent('core.family.', () => void family.refresh());
+			// Changes made while the socket was not yet (or no longer) open were missed.
+			const offReconnect = onReconnect(() => {
+				void family.refresh();
+				void appearance.refresh();
+				void awaiting.refresh();
+				void accessBook.load();
+			});
+			// A language pack was installed, updated or removed: reload the list and the active pack.
+			const offLanguages = onEvent('core.languages.', () => {
+				void loadLanguages().then(() => setLocale(getLocale(), { force: true }));
+				void family.refresh();
+			});
+			// A theme was installed, removed or chosen (here or on another device).
+			const offThemes = onEvent('core.themes.', () => {
+				void appearance.loadThemes();
+				void appearance.refresh();
+			});
+			// An extension turned on or off changes navigation and capabilities everywhere.
+			const offFeatures = onEvent('core.features.', () => void session.refresh());
+			// The server restarted with other extensions: this page still runs the old ones. Reloading
+			// is the person's choice, so nothing they are typing is lost.
+			const offChanged = onExtensionsChanged(() =>
+				toasts.show(
+					t('extensions_changed'),
+					{ label: t('extensions_changed_reload'), run: () => location.reload() },
+					CHANGED_TOAST_MS,
+				),
+			);
+			// What the member's own changes wait on: marked where the change was made.
+			let awaitTimer: ReturnType<typeof setTimeout> | undefined;
+			const offAwaiting = onEvent('core.draft.', () => {
+				clearTimeout(awaitTimer);
+				awaitTimer = setTimeout(() => void awaiting.refresh(), 300);
+			});
+			// Nav badges (e.g. suggestions waiting in Quick add) refresh after any change, debounced.
+			void refreshBadges();
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const offBadges = onEvent('', () => {
+				clearTimeout(timer);
+				timer = setTimeout(() => void refreshBadges(), 400);
+			});
+			return () => {
+				off();
+				offRole();
+				offFamily();
+				offReconnect();
+				offLanguages();
+				offThemes();
+				offFeatures();
+				offChanged();
+				offBadges();
+				offAwaiting();
+				clearTimeout(timer);
+				clearTimeout(awaitTimer);
+				disconnect();
+			};
 		});
-		// A role's capabilities changed: what the controls offer follows (me and access).
-		const offRole = onEvent('core.role.', () => void session.refresh());
-		// Family settings (language, region formats, time zone) changed on another device.
-		const offFamily = onEvent('core.family.', () => void family.refresh());
-		// Changes made while the socket was not yet (or no longer) open were missed.
-		const offReconnect = onReconnect(() => {
-			void family.refresh();
-			void appearance.refresh();
-			void awaiting.refresh();
-			void accessBook.load();
-		});
-		// A language pack was installed, updated or removed: reload the list and the active pack.
-		const offLanguages = onEvent('core.languages.', () => {
-			void loadLanguages().then(() => setLocale(getLocale(), { force: true }));
-			void family.refresh();
-		});
-		// A theme was installed, removed or chosen (here or on another device).
-		const offThemes = onEvent('core.themes.', () => {
-			void appearance.loadThemes();
-			void appearance.refresh();
-		});
-		// An extension turned on or off changes navigation and capabilities everywhere.
-		const offFeatures = onEvent('core.features.', () => void session.refresh());
-		// The server restarted with other extensions: this page still runs the old ones. Reloading
-		// is the person's choice, so nothing they are typing is lost.
-		const offChanged = onExtensionsChanged(() =>
-			toasts.show(
-				t('extensions_changed'),
-				{ label: t('extensions_changed_reload'), run: () => location.reload() },
-				CHANGED_TOAST_MS,
-			),
-		);
-		// What the member's own changes wait on: marked where the change was made.
-		let awaitTimer: ReturnType<typeof setTimeout> | undefined;
-		const offAwaiting = onEvent('core.draft.', () => {
-			clearTimeout(awaitTimer);
-			awaitTimer = setTimeout(() => void awaiting.refresh(), 300);
-		});
-		// Nav badges (e.g. suggestions waiting in Quick add) refresh after any change, debounced.
-		void refreshBadges();
-		let timer: ReturnType<typeof setTimeout> | undefined;
-		const offBadges = onEvent('', () => {
-			clearTimeout(timer);
-			timer = setTimeout(() => void refreshBadges(), 400);
-		});
-		return () => {
-			off();
-			offRole();
-			offFamily();
-			offReconnect();
-			offLanguages();
-			offThemes();
-			offFeatures();
-			offChanged();
-			offBadges();
-			offAwaiting();
-			clearTimeout(timer);
-			clearTimeout(awaitTimer);
-			disconnect();
-		};
 	});
 
 	let badges = $state<Record<string, number>>({});
@@ -647,6 +655,22 @@
 		{/if}
 	</main>
 {/if}
+
+<Dialog
+	open={signOutConfirm.count !== null}
+	title={t('sign_out_discard_title')}
+	description={t('sign_out_discard_hint', { count: signOutConfirm.count ?? 0 })}
+	onclose={() => signOutConfirm.answer(false)}
+>
+	{#snippet actions()}
+		<Button variant="ghost" data-autofocus onclick={() => signOutConfirm.answer(false)}
+			>{t('cancel')}</Button
+		>
+		<Button variant="danger" onclick={() => signOutConfirm.answer(true)}
+			>{t('sign_out_discard_confirm')}</Button
+		>
+	{/snippet}
+</Dialog>
 
 {#if toasts.current}
 	{#key toasts.current.id}

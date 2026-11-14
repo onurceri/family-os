@@ -64,9 +64,7 @@ export async function createFeed(input: {
 	includeNotes: boolean;
 	label?: string;
 }): Promise<{ feed: Feed; token: string; path: string }> {
-	const result = unwrap(await api.POST('/api/v1/actions/calendar.createFeed', { body: input }));
-	if (result.status !== 'applied') throw new Error('Feed creation was not applied');
-	return result.output;
+	return unwrap(await api.POST('/api/v1/calendar/feeds', { body: input }));
 }
 
 export async function revokeFeed(id: string): Promise<void> {

@@ -20,7 +20,7 @@ Most settings live in the app. The rest are environment variables the server rea
 | `FAMOS_EXTENSION_INDEX_URL` | the official index | HTTPS address of a mirror of the official extension index, for a home without direct access to GitHub Pages. The index signature is still checked against FamilyOS's own keys, so a mirror cannot add a source of code |
 | `FAMOS_WEB_DIR` / `FAMOS_LANGUAGES_DIR` / `FAMOS_THEMES_DIR` | set by the image | Where the app, the bundled language packs and the bundled theme packs are. The Docker image sets them; you rarely change them |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Where the server listens |
-| `LOG_LEVEL` | `info` | `trace`, `debug`, `info`, `warn`, `error` or `fatal` |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. `trace` and `fatal` are accepted but act as `info`; any other value stops the server from starting |
 | `TZ` | `UTC` (compose) | Time zone of the container; Node reads it, FamilyOS does not. The family's own time zone is set in the app |
 
 **Good to know**

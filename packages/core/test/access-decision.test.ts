@@ -361,6 +361,64 @@ describe('decide: one answer for every rule', () => {
 	});
 });
 
+describe('a proposal that changes nothing, whoever makes it', () => {
+	const suggesting = (): Actor => ({
+		kind: 'app',
+		appId: 'app_s',
+		roleId: 'member',
+		mode: 'suggest',
+	});
+	const applying = (): Actor => ({ kind: 'app', appId: 'app_a', roleId: 'member', mode: 'apply' });
+	const throughApp = (): Actor => ({
+		kind: 'member',
+		memberId: member.member.id as MemberId,
+		roleId: 'member',
+		via: { appId: 'app_s', appRoleId: 'member', mode: 'suggest' },
+	});
+	const drafts = async () =>
+		(
+			await k.ctx.db
+				.withTables<{ core_drafts: { id: string } }>()
+				.selectFrom('core_drafts')
+				.select('id')
+				.execute()
+		).length;
+	const answer = async (actor: Actor) => {
+		try {
+			await k.runner.invoke('jars.stock', { name: 'full' }, actor);
+			return null;
+		} catch (error) {
+			if (!isFamosError(error)) throw error;
+			return { code: error.code, message: error.message, details: error.details };
+		}
+	};
+
+	it('refuses a suggesting app and a person through one, like the AI', () => {
+		const facts = { input: { name: 'full' }, settled: 'full' };
+		for (const actor of [suggesting(), throughApp()])
+			expect(decide(actions.stock, actor, env, facts)).toEqual({
+				outcome: 'refuse',
+				reason: 'settled',
+			});
+	});
+
+	it('gives the same answer as the AI and writes no draft', async () => {
+		const fromAi = await answer(ai);
+		expect(fromAi).toMatchObject({ code: 'conflict' });
+		expect(await answer(suggesting())).toEqual(fromAi);
+		expect(await answer(throughApp())).toEqual(fromAi);
+		expect(await drafts()).toBe(0);
+	});
+
+	it('leaves an app that applies and a person alone', async () => {
+		expect(
+			decide(actions.stock, applying(), env, { input: { name: 'full' }, settled: 'full' }),
+		).toEqual({ outcome: 'apply' });
+		expect(await invoked('jars.stock', { name: 'full' }, applying())).toBe('apply');
+		expect(await invoked('jars.stock', { name: 'full' }, member.actor)).toBe('apply');
+	});
+});
+
 /** What `invoke` really did, in the decision's words. */
 async function invoked(actionId: string, input: unknown, actor: Actor): Promise<string> {
 	try {

@@ -33,6 +33,7 @@ export default defineWebExtension({
 			id: 'records.overdue',
 			band: 'needs',
 			order: 40,
+			requires: 'records.view',
 			component: () => import('./OverdueCard.svelte'),
 		},
 		{
@@ -42,6 +43,7 @@ export default defineWebExtension({
 			labelKey: 'records:today_block',
 			hintKey: 'records:today_block_hint',
 			order: 40,
+			requires: 'records.view',
 			component: () => import('./ComingUpCard.svelte'),
 		},
 		{

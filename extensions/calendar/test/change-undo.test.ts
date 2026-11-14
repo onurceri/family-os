@@ -94,4 +94,29 @@ describe('taking back a change of an event', () => {
 		const { undone } = await changeThenUndo(id, { date: '2026-10-23', endDate: '2026-10-24' });
 		expect(undone).toEqual(before);
 	});
+
+	it('keeps the skipped dates of a series moved to a later date and back', async () => {
+		const id = await create({
+			title: 'Dentist',
+			date: '2026-10-13',
+			startTime: '19:00',
+			recurrence: { freq: 'weekly', byDay: ['TU'] },
+		});
+		const list = (await k
+			.route('calendar.listOccurrences')
+			.call({ query: { from: '2026-10-13', to: '2026-11-03' } })) as { key: string }[];
+		await k.runner.invoke('calendar.deleteEvent', { id, occurrence: list[1]?.key }, admin.actor);
+		const days = async () =>
+			(
+				(await k
+					.route('calendar.listOccurrences')
+					.call({ query: { from: '2026-10-13', to: '2026-11-10' } })) as {
+					startDate?: string;
+					start: number;
+				}[]
+			).map((o) => o.start);
+		const before = await days();
+		await changeThenUndo(id, { date: '2026-10-27' });
+		expect(await days()).toEqual(before);
+	});
 });

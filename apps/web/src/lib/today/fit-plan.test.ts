@@ -5,6 +5,7 @@ import {
 	describeFit,
 	type FitPlan,
 	fitPlans,
+	largestZoom,
 	leftOut,
 	widgetRows,
 } from './fit-plan.js';
@@ -73,6 +74,26 @@ describe('fitPlans', () => {
 		expect(baseZoom(1440)).toBe(1.125);
 		expect(baseZoom(800)).toBe(1);
 		expect(fitPlans([], 1)[0]).toEqual(plan());
+	});
+
+	it('finds the largest zoom that fits in a few tries', () => {
+		let tries = 0;
+		const fitsBelow = (limit: number) => (z: number) => {
+			tries++;
+			return z <= limit;
+		};
+		expect(largestZoom(1.5, 1, fitsBelow(1.3))).toBe(1.25);
+		expect(tries).toBeLessThanOrEqual(4);
+		expect(largestZoom(1.5, 1, fitsBelow(2))).toBe(1.5);
+		// Nothing fits: the floor, which the caller knows holds.
+		expect(largestZoom(1.40625, 1.125, fitsBelow(0))).toBe(1.125);
+	});
+
+	it('never takes the zoom below its floor', () => {
+		const zooms = (zoom: number, floor?: number) => fitPlans([0], zoom, floor).map((p) => p.zoom);
+		expect(Math.min(...zooms(1.5))).toBe(1);
+		// A display's text size holds its zoom: only what is shown gives way.
+		expect(new Set(zooms(1.875, 1.875))).toEqual(new Set([1.875]));
 	});
 });
 

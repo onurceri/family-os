@@ -200,5 +200,6 @@
 	"way_not_set_up": "Not set up yet",
 	"drop_here": "Drop to add",
 	"files_refused_one": "{{count}} file could not be added. Photos, PDFs, voice notes and text files work, up to {{max}} at a time.",
-	"files_refused_other": "{{count}} files could not be added. Photos, PDFs, voice notes and text files work, up to {{max}} at a time."
+	"files_refused_other": "{{count}} files could not be added. Photos, PDFs, voice notes and text files work, up to {{max}} at a time.",
+	"share_load_failed": "Could not read what was shared."
 }

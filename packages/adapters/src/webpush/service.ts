@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type {
 	Clock,
 	DbExecutor,
@@ -24,6 +25,13 @@ export const PUSH_SERVICE_HOSTS: readonly string[] = [
 
 const MAX_PAYLOAD_BYTES = 3_000;
 const MAX_DEVICES_PER_MEMBER = 20;
+
+/** Constant-time equality of two stored secrets. */
+function sameSecret(a: string, b: string): boolean {
+	const x = Buffer.from(a);
+	const y = Buffer.from(b);
+	return x.length === y.length && timingSafeEqual(x, y);
+}
 const SEND_TIMEOUT_MS = 10_000;
 const VAPID_LIFETIME_S = 12 * 60 * 60;
 
@@ -235,11 +243,22 @@ export function createWebPush(deps: WebPushDeps) {
 			const name = (label ?? sub.label ?? '').trim().slice(0, 60);
 			const existing = await db()
 				.selectFrom('webpush_subscriptions')
-				.select(['id', 'label'])
+				.select(['id', 'label', 'member_id', 'p256dh', 'auth'])
 				.where('endpoint', '=', sub.endpoint)
 				.executeTakeFirst();
 			if (existing) {
-				// The same browser signed in as someone else: the subscription moves with it.
+				// The same browser signed in as someone else: the subscription moves with it, but only
+				// for a caller that holds the browser's own keys, never for one who merely knows the
+				// address. A member's own row may take new keys.
+				if (existing.member_id !== memberId) {
+					if (
+						!sameSecret(existing.p256dh, sub.keys.p256dh) ||
+						!sameSecret(existing.auth, sub.keys.auth)
+					)
+						throw new FamosError('forbidden', 'This device is registered for someone else');
+					if ((await subscriptionsOf(memberId)).length >= MAX_DEVICES_PER_MEMBER)
+						throw new FamosError('limit_reached', 'Too many devices; remove one first');
+				}
 				await db()
 					.updateTable('webpush_subscriptions')
 					.set({
@@ -278,6 +297,7 @@ export function createWebPush(deps: WebPushDeps) {
 		/** The member's devices, without endpoints or keys. */
 		async list(memberId: string): Promise<PushDevice[]> {
 			return (await subscriptionsOf(memberId)).map((s) => ({
+				endpointId: createHash('sha256').update(s.endpoint).digest('hex'),
 				label: s.label,
 				createdAt: s.created_at,
 				lastSuccessAt: s.last_success_at,

@@ -28,6 +28,7 @@ import {
 	MemberIdSchema,
 	ReviewLabelSchema,
 	TASK_TITLE_MAX,
+	TaskCompletedSchema,
 	TaskIdSchema,
 	TaskInputSchema,
 	TaskReplaceSchema,
@@ -431,7 +432,7 @@ export const completeTask = defineAction({
 		/** The due date the caller saw; a stale completion (already rolled forward) is ignored. */
 		dueDate: IsoDateSchema.nullable().optional(),
 	}),
-	output: TaskSchema,
+	output: TaskCompletedSchema,
 	requires: tasksComplete.id,
 	approval: 'ai',
 	// Done already, or its due date moved on: running it would change nothing, and its undo
@@ -448,7 +449,10 @@ export const completeTask = defineAction({
 			(row.done_at !== null || (dueDate !== undefined && dueDate !== row.due_date))
 		);
 	},
-	undo: (task) => ({ actionId: 'lists.reopenTask', input: { id: task.id } }),
+	undo: (task) => ({
+		actionId: 'lists.reopenTask',
+		input: { id: task.id, ...(task.completionId && { completionId: task.completionId }) },
+	}),
 	ai: {
 		description:
 			'Marks an open task done (a repeating one moves on to its next date). Find it with lists.openTasks first.',
@@ -456,13 +460,14 @@ export const completeTask = defineAction({
 	async run(uow, { id, dueDate }) {
 		const row = await load(uow, id);
 		const stale = row.done_at !== null || (dueDate !== undefined && dueDate !== row.due_date);
-		if (stale) return toTask(row);
+		if (stale) return { ...toTask(row), completionId: null };
 		const now = uow.clock.now();
 		const by = memberId(uow.actor);
+		const completionId = uow.ids.next('task_done');
 		await tables(uow.db)
 			.insertInto('lists_task_completions')
 			.values({
-				id: uow.ids.next('task_done'),
+				id: completionId,
 				task_id: id,
 				due_date: row.due_date,
 				done_at: now,
@@ -486,7 +491,7 @@ export const completeTask = defineAction({
 			.execute();
 		if (next) await scheduleReminder(uow, id);
 		uow.emit(taskChanged, { taskId: id });
-		return toTask(await load(uow, id));
+		return { ...toTask(await load(uow, id)), completionId };
 	},
 });
 
@@ -501,29 +506,47 @@ export const reopenTask = defineAction({
 		versionColumn: 'version',
 	}),
 	offline: true,
-	title: 'Undo the last completion of a task',
-	input: z.object({ id: TaskIdSchema }),
+	title: 'Undo a completion of a task',
+	description:
+		"Takes back the completion named by completionId; without one, the caller's own latest.",
+	input: z.object({
+		id: TaskIdSchema,
+		/** The completion to take back (the one completing answered with). */
+		completionId: z.string().optional(),
+	}),
 	output: TaskSchema,
 	requires: tasksComplete.id,
 	approval: 'ai',
-	async run(uow, { id }) {
+	async run(uow, { id, completionId }) {
 		const row = await load(uow, id);
 		const db = tables(uow.db);
-		const last = await db
+		const by = memberId(uow.actor);
+		let query = db.selectFrom('lists_task_completions').selectAll().where('task_id', '=', id);
+		// Without a named completion, a task that is done is reopened (its last completion made it
+		// so); an open repeating one only loses the caller's own latest, never somebody else's.
+		if (completionId !== undefined) query = query.where('id', '=', completionId);
+		else if (row.done_at === null)
+			query = by === null ? query.where('done_by', 'is', null) : query.where('done_by', '=', by);
+		const last = await query.orderBy('done_at', 'desc').orderBy('id', 'desc').executeTakeFirst();
+		if (!last) return toTask(row);
+		const newest = await db
 			.selectFrom('lists_task_completions')
-			.selectAll()
+			.select('id')
 			.where('task_id', '=', id)
 			.orderBy('done_at', 'desc')
 			.orderBy('id', 'desc')
 			.executeTakeFirst();
-		if (!last) return toTask(row);
 		await db.deleteFrom('lists_task_completions').where('id', '=', last.id).execute();
-		await db
-			.updateTable('lists_tasks')
-			.set({ done_at: null, done_by: null, due_date: last.due_date, updated_at: uow.clock.now() })
-			.where('id', '=', id)
-			.execute();
-		await scheduleReminder(uow, id);
+		// Only the newest completion moved the task to where it stands; taking back an earlier one
+		// removes its record and leaves the task with the completions made after it.
+		if (newest?.id === last.id) {
+			await db
+				.updateTable('lists_tasks')
+				.set({ done_at: null, done_by: null, due_date: last.due_date, updated_at: uow.clock.now() })
+				.where('id', '=', id)
+				.execute();
+			await scheduleReminder(uow, id);
+		}
 		uow.emit(taskChanged, { taskId: id });
 		return toTask(await load(uow, id));
 	},

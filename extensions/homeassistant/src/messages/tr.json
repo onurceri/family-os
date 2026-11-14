@@ -28,6 +28,7 @@
 	"field_token": "Jeton",
 	"token_hint": "Home Assistant'ta FamilyOS için ayrı bir kullanıcı oluşturun (yönetici olmasın), o kullanıcıyla giriş yapın ve Profil → Güvenlik altında uzun ömürlü bir erişim jetonu oluşturun. Home Assistant bir jetonun neler yapabileceğini sınırlayamaz; bu yüzden FamilyOS onu yalnızca okumak ve burada izin verdiklerinizi açıp kapatmak için kullanır.",
 	"token_change_hint": "Değişmemiş olsa bile jetonu yeniden girin: FamilyOS onu gizli tutar ve gösteremez.",
+	"password_needed": "Bağlantıyı test etmek veya kaydetmek için parolanızla giriş yapın. Ortak bir cihazdaki PIN bunun için yetmez.",
 	"token_error": "Jetonu Home Assistant'ın gösterdiği gibi, boşluksuz yazın.",
 	"fact_address": "Adres",
 	"fact_name": "Ev",
@@ -223,5 +224,7 @@
 	"history_failed": "{{name}} değiştirilemedi",
 	"history_someone": "Biri",
 	"history_item_label": "Burada son açıp kapatılanlar",
-	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı."
+	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı.",
+	"load_failed": "Bağlantı okunamadı.",
+	"load_retry": "Tekrar dene"
 }

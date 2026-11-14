@@ -48,17 +48,18 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "You have a Piano lesson (Ivy) at 18:00–19:00 on Thursday, 22 October, and there is one more event for someone else. Tasks show nothing on Thursday, 22 October.",
+			"text": "You have a Piano lesson (Ivy) at 18:00–19:00 on Thursday, 22 October, and one more event for someone else; there are no tasks on Thursday, 22 October.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I suggested a task for you to pack your football kit. It's waiting for someone else in the household to approve it before it's added.",
+			"text": "I suggested a task for you to pack your football kit on Thursday 22 October. It's waiting for someone else in the household to approve it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
+						"dueDate": "2026-10-22",
 						"title": "Pack football kit",
 						"assigneeId": "member:3"
 					}

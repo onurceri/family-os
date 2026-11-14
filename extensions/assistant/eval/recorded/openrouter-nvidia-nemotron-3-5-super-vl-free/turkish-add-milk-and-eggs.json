@@ -27,19 +27,17 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Süt ve yumurta alışveriş listenize eklenmek için öneri olarak oluşturuldu. Evdeki bir kişinin onaylaması bekleniyor; onaylandığında listeye eklenecek.",
+			"text": "Süt ve yumurta alışveriş listesine eklemek için bir öneri oluşturuldu, ama henüz eklenmedi. Evdeki bir kişinin onaylaması gerekiyor.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",
 					"input": {
 						"items": [
 							{
-								"title": "Süt",
-								"category": "dairy"
+								"title": "Süt"
 							},
 							{
-								"title": "Yumurta",
-								"category": "dairy"
+								"title": "Yumurta"
 							}
 						]
 					}

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./offline.svelte.js', () => ({ offline: { reset: async () => {} } }));
+vi.mock('./i18n.svelte.js', () => ({ t: (key: string) => key }));
+vi.mock('./toast.svelte.js', () => ({ toasts: { show: () => {} } }));
+vi.mock('./push.svelte.js', () => ({ push: { release: async () => {} } }));
+vi.mock('./sign-out-confirm.svelte.js', () => ({ signOutConfirm: { ask: async () => true } }));
 const { signInWithPin } = await import('./auth.js');
 
 function answer(status: number, body: unknown, headers: Record<string, string> = {}) {

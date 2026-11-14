@@ -118,7 +118,7 @@
 				</ul>
 				{#if data.local.length > 0}
 					<Card rows>
-						{#each data.local.slice(0, 8) as backup (backup.name)}
+						{#each data.local as backup (backup.name)}
 							<Row
 								title={when(backup.createdAt)}
 								meta={tDynamic(`app:backups_reason_${backup.reason}`)}

@@ -24,6 +24,7 @@ import {
 	toDetail,
 	toRow,
 } from './store.ts';
+import { weekdaysShiftedWithDate } from './weekdays.ts';
 
 /** What a change may touch; each field left out stays as it is, and null clears it. */
 const EventChangeSchema = z.object({
@@ -183,6 +184,15 @@ export const changeEvent = defineAction({
 			before.endDate = was.endDate;
 			merged.endDate = addDays(change.date, span);
 		}
+		// A weekly series moved to another date moves its days with it (undo moves the date back, and
+		// the days with it); otherwise it would stay on the old weekdays and lose its first date.
+		const rule = was.recurrence;
+		if (!split && change.date !== undefined && rule?.freq === 'weekly') {
+			merged.recurrence = {
+				...rule,
+				byDay: weekdaysShiftedWithDate(rule.byDay, was.date, change.date),
+			};
+		}
 		if (Object.keys(before).length === 0) return { event: series, before };
 		const parsed = EventInputSchema.safeParse(merged);
 		if (!parsed.success)
@@ -234,7 +244,7 @@ export const changeEvent = defineAction({
 		const now = uow.clock.now();
 		await events(uow.db)
 			.updateTable('calendar_events')
-			.set({ ...next, exdates: skippedAfter(row, next), updated_at: now })
+			.set({ ...next, exdates: skippedAfter(row, next, true), updated_at: now })
 			.where('id', '=', id)
 			.execute();
 		const updated = await loadEvent(uow, id);

@@ -95,3 +95,43 @@ describe('adding to a list by its name', () => {
 		expect((await itemsOn(hardwareId)).map((i) => i.title)).toEqual(['Nails']);
 	});
 });
+
+describe('a list really named like the default list', () => {
+	const makeMarket = async () => {
+		const made = await k.runner.invoke<{ id: string }>(
+			'lists.createShoppingList',
+			{ name: 'Market' },
+			admin.actor,
+		);
+		if (made.status !== 'applied') throw new Error('expected the list to be made');
+		return made.output.id;
+	};
+	const addTo = (list: string) =>
+		k.runner.invoke('lists.addShoppingItems', { list, items: [{ title: 'Picture wire' }] }, AI);
+
+	it('is the one a name reaches; the default list answers only when no list has that name', async () => {
+		const marketId = await makeMarket();
+		await addTo('market');
+		await addTo('Groceries');
+		await addTo('Shopping list');
+		const ids = (await draftInputs()).map((d) => d.input.listId);
+		expect(ids.toSorted()).toEqual([marketId, DEFAULT_LIST_ID, DEFAULT_LIST_ID].toSorted());
+		expect(ids.filter((id) => id === marketId)).toHaveLength(1);
+	});
+
+	it('is the only list a read by that name returns', async () => {
+		const marketId = await makeMarket();
+		const read = async (list: string) => {
+			const result = await k.runner.invoke('lists.shoppingList', { list }, AI);
+			if (result.status !== 'applied') throw new Error('expected a read');
+			return (result.output as { lists: { id: string }[] }).lists.map((l) => l.id);
+		};
+		expect(await read('Market')).toEqual([marketId]);
+		expect(await read('Groceries')).toEqual([DEFAULT_LIST_ID]);
+	});
+
+	it('leaves "Market" to the default list when no list is stored under it', async () => {
+		expect((await addTo('Market')).status).toBe('drafted');
+		expect((await draftInputs())[0]?.input).toMatchObject({ listId: DEFAULT_LIST_ID });
+	});
+});

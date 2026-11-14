@@ -38,15 +38,15 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I've suggested a reminder for you to put the bins out on Tuesday 13 October at 8:00 AM. It's waiting for someone in the household to approve it.",
+			"text": "Suggested, not added yet: Add a task: Put the bins out for Tuesday 13 October at 8:00 AM. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
 						"title": "Put the bins out",
+						"assigneeId": "member:2",
 						"dueTime": "08:00",
-						"dueDate": "2026-10-13",
-						"assigneeId": "member:2"
+						"dueDate": "2026-10-13"
 					}
 				}
 			]

@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "timeout",
+			"text": "Dinner at Nona Marija's is on Friday. There is nothing for meals on Friday.",
 			"toolCalls": []
 		}
 	]

@@ -26,7 +26,7 @@ export interface WebExtension {
 	 * `<id>:<key>`. Other languages come from the server with the language's pack.
 	 */
 	messages?: WebMessages;
-	/** Name and one-line description in Settings → Features (`<extension>:<key>`). */
+	/** Name and one-line description in Settings → Family → Extensions (`<extension>:<key>`). */
 	labelKey?: string;
 	descriptionKey?: string;
 	aiFeatures?: AiFeatureContribution[];

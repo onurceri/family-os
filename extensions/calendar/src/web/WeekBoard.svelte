@@ -250,7 +250,7 @@
 				{#each days as date (date)}
 					{@const isToday = date === today}
 					<div
-						class="group border-line flex min-w-0 items-center gap-2 border-s px-2 {single
+						class="border-line @container flex min-w-0 items-center gap-2 border-s px-2 {single
 							? 'px-4'
 							: ''}"
 					>
@@ -259,17 +259,21 @@
 								type="button"
 								onclick={() => onday(date)}
 								aria-label={t('open_day', { date: formatDate(date, app.dateLocale()) })}
-								class="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-lg outline-none focus-visible:ring-2"
+								class="focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-lg outline-none focus-visible:ring-2 @max-[7rem]:flex-col @max-[7rem]:items-start @max-[7rem]:gap-0"
 							>
 								{@render dayHead(date, isToday)}
 							</button>
 						{:else}
-							<div class="flex min-w-0 items-center gap-2">{@render dayHead(date, isToday)}</div>
+							<div
+								class="flex min-w-0 items-center gap-2 @max-[7rem]:flex-col @max-[7rem]:items-start @max-[7rem]:gap-0"
+							>
+								{@render dayHead(date, isToday)}
+							</div>
 						{/if}
 						{#if onadd}
 							<button
 								type="button"
-								class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto grid size-7 shrink-0 place-items-center rounded-lg opacity-0 outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2"
+								class="text-ink-soft hover:bg-idle focus-visible:ring-ring ms-auto -me-2 grid size-11 shrink-0 place-items-center rounded-lg outline-none focus-visible:ring-2"
 								aria-label={t('add_on', { date: formatDate(date, app.dateLocale()) })}
 								onclick={() => onadd(date)}><Plus class="size-4" aria-hidden="true" /></button
 							>

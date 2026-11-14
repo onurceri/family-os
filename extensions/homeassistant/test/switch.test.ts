@@ -322,3 +322,39 @@ describe('the switch job', () => {
 		expect(new Set(OPERATIONS)).toEqual(all);
 	});
 });
+
+describe('an app that only suggests', () => {
+	const suggesting: Actor = {
+		kind: 'app',
+		appId: 'app_suggest',
+		roleId: 'admin',
+		mode: 'suggest',
+	};
+
+	it('is refused what only a person may do: no draft, no job, nothing sent', async () => {
+		await connect();
+		const light = await add('light.ceiling_lights');
+		await allow(light.id);
+		const requests = k.http.requests.length;
+		const posted = k.http.posted.length;
+		const drafts = () => sql<{ id: string }>`select id from core_drafts`.execute(k.ctx.db);
+		const queued = () => sql<{ id: string }>`select id from queue_jobs`.execute(k.ctx.db);
+		const jobsBefore = (await queued()).rows.length;
+
+		const calls: [string, unknown][] = [
+			['homeassistant.switch', { id: light.id, operation: 'turn_on' }],
+			['homeassistant.setItemControl', { id: light.id, control: false, confirm: true }],
+			['homeassistant.setMySharing', { level: 'home', onDisplays: false }],
+			['homeassistant.testNotify', { memberId: alex.memberId }],
+		];
+		for (const [id, input] of calls)
+			await expect(k.runner.invoke(id, input, suggesting), id).rejects.toMatchObject({
+				code: 'conflict',
+			});
+
+		expect((await drafts()).rows).toEqual([]);
+		expect((await queued()).rows).toHaveLength(jobsBefore);
+		expect(k.http.requests).toHaveLength(requests);
+		expect(k.http.posted).toHaveLength(posted);
+	});
+});

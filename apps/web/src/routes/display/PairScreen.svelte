@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Step, Steps } from '@famos/ui/famos';
-	import { onDestroy } from 'svelte';
 	import { api } from '#lib/api.js';
 	import { runAction } from '#lib/run-action.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import QrCode from '#lib/QrCode.svelte';
+	import { createPairing, type Started } from './pairing.js';
 
 	/**
 	 * Pairing by code (RFC 8628): the same numbered steps as "Add a device" in Settings,
@@ -13,14 +13,9 @@
 	 */
 	let { onpaired }: { onpaired: () => void } = $props();
 
-	type Started = { deviceCode: string; userCode: string; expiresAt: number; interval: number };
 	let started = $state<Started | null>(null);
 	let now = $state(Date.now());
 	let failed = $state(false);
-	let intervalMs = 5000;
-	let pollTimer: ReturnType<typeof setTimeout> | undefined;
-	let retryTimer: ReturnType<typeof setTimeout> | undefined;
-	let stopped = false;
 
 	const address = $derived(
 		started
@@ -32,59 +27,28 @@
 		`${Math.floor(remaining / 60_000)}:${String(Math.floor((remaining % 60_000) / 1000)).padStart(2, '0')}`,
 	);
 
-	async function begin() {
-		clearTimeout(pollTimer);
-		clearTimeout(retryTimer);
-		const next = await runAction(api.POST('/api/v1/core/displays/pair'), { onError: () => {} });
-		if (stopped) return;
-		if (next.ok) {
-			started = next.data;
-			intervalMs = next.data.interval * 1000;
-			failed = false;
-			pollTimer = setTimeout(poll, intervalMs);
-		} else {
-			// Offline, or too many codes asked for: wait and try again.
-			failed = true;
-			retryTimer = setTimeout(begin, 15_000);
-		}
-	}
-
-	async function poll() {
-		if (!started || stopped) return;
-		const answer = await runAction(
-			api.POST('/api/v1/core/displays/pair/poll', { body: { deviceCode: started.deviceCode } }),
-			{ onError: () => {} },
-		);
-		if (!answer.ok) {
-			failed = true;
-		} else {
-			if (stopped) return;
-			const result = answer.data;
-			if (result.status === 'paired') {
-				stopped = true;
-				onpaired();
-				return;
-			}
-			if (result.status === 'expired') return void begin();
-			if (result.status === 'slow_down') intervalMs += 5000;
-			failed = false;
-		}
-		pollTimer = setTimeout(poll, intervalMs);
-	}
-
 	$effect(() => {
-		void begin();
-		const tick = setInterval(() => {
-			now = Date.now();
-			// The server would say "expired" too; this just avoids showing a dead code.
-			if (started && started.expiresAt <= now && !failed) void begin();
-		}, 1000);
-		return () => clearInterval(tick);
-	});
-	onDestroy(() => {
-		stopped = true;
-		clearTimeout(pollTimer);
-		clearTimeout(retryTimer);
+		const pairing = createPairing({
+			mint: () => runAction(api.POST('/api/v1/core/displays/pair'), { onError: () => {} }),
+			poll: (deviceCode) =>
+				runAction(api.POST('/api/v1/core/displays/pair/poll', { body: { deviceCode } }), {
+					onError: () => {},
+				}),
+			now: () => Date.now(),
+			setTimeout: (run, ms) => setTimeout(run, ms),
+			clearTimeout: (id) => clearTimeout(id as ReturnType<typeof setTimeout>),
+			setInterval: (run, ms) => setInterval(run, ms),
+			clearInterval: (id) => clearInterval(id as ReturnType<typeof setInterval>),
+			onChange: (view) => {
+				started = view.started;
+				now = view.now;
+				failed = view.failed;
+			},
+			// Read when it happens, so a new handler from the parent never restarts the pairing.
+			onPaired: () => onpaired(),
+		});
+		pairing.start();
+		return () => pairing.stop();
 	});
 </script>
 

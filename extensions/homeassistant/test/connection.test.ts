@@ -519,4 +519,207 @@ describe('test the connection before saving', () => {
 		);
 		expect(declared?.route.requires).toBe('homeassistant.manage');
 	});
+
+	it('needs a person at a password sign-in, so a PIN cannot probe the home network', async () => {
+		serveHomeAssistant();
+		const pin: Actor = { ...admin, pin: true } as Actor;
+		const app: Actor = { kind: 'app', appId: 'app_1' } as unknown as Actor;
+		const ai: Actor = { kind: 'ai', mode: 'agent', source: 'mcp' } as Actor;
+		await expect(
+			k
+				.route('homeassistant.testConnection')
+				.call({ actor: pin, body: { url: BASE, token: TOKEN } }),
+		).rejects.toMatchObject({ code: 'forbidden', details: { reason: 'full_sign_in' } });
+		for (const who of [app, ai]) {
+			await expect(
+				k
+					.route('homeassistant.testConnection')
+					.call({ actor: who, body: { url: BASE, token: TOKEN } }),
+			).rejects.toMatchObject({ code: 'unauthenticated' });
+		}
+		expect(k.http.requests).toEqual([]);
+		expect((await test()).status).toBe('ok');
+	});
+});
+
+describe('who may change what Home Assistant shows and does', () => {
+	let alex: Actor & { kind: 'member' };
+	let light: string;
+
+	const call = (actionId: string, input: unknown, who: Actor) =>
+		k.runner.invoke(actionId, input, who);
+
+	/** What the extension keeps, the queue, the drafts and everything sent out, as one comparable value. */
+	async function snapshot() {
+		const names = await sql<{ name: string }>`select name from sqlite_master
+			where type = 'table' and name like 'homeassistant_%' order by name`.execute(k.ctx.db);
+		const out: Record<string, unknown> = {};
+		for (const { name } of [...names.rows, { name: 'queue_jobs' }, { name: 'core_drafts' }])
+			out[name] = (await sql`select * from ${sql.table(name)}`.execute(k.ctx.db)).rows;
+		out.sent = [k.http.posted.length, k.http.requests.length];
+		return out;
+	}
+
+	beforeEach(async () => {
+		alex = (await k.member('member', 'Alex')).actor;
+		serveHomeAssistant();
+		await connect();
+		await k.worker.drain();
+		const added = await call(
+			'homeassistant.addItem',
+			{ entityId: 'light.ceiling_lights', label: 'Ceiling' },
+			admin,
+		);
+		if (added.status !== 'applied') throw new Error('expected applied');
+		light = (added.output as { id: string }).id;
+		await call('homeassistant.setItemControl', { id: light, control: true, confirm: false }, admin);
+		k.http.serve(`${BASE}/api/states/person.alex`, { text: '{}' });
+		await call(
+			'homeassistant.linkPerson',
+			{ memberId: alex.memberId, personEntity: 'person.alex' },
+			admin,
+		);
+		await call(
+			'homeassistant.setNotifyTarget',
+			{ memberId: alex.memberId, service: 'mobile_app_alex_phone' },
+			admin,
+		);
+		await k.worker.drain();
+	});
+
+	/** Every action that changes data, with an input an admin could run it with. */
+	const calls = (): [string, unknown][] => [
+		['homeassistant.check', {}],
+		['homeassistant.disconnect', {}],
+		['homeassistant.addItem', { entityId: 'sensor.outside', label: 'Outside' }],
+		['homeassistant.renameItem', { id: light, label: 'Renamed' }],
+		['homeassistant.setItemControl', { id: light, control: false, confirm: true }],
+		['homeassistant.removeItem', { id: light }],
+		['homeassistant.moveItem', { id: light, position: 1 }],
+		['homeassistant.switch', { id: light, operation: 'turn_on' }],
+		['homeassistant.linkPerson', { memberId: alex.memberId, personEntity: 'person.other' }],
+		['homeassistant.unlinkPerson', { memberId: alex.memberId }],
+		['homeassistant.setMySharing', { level: 'place', onDisplays: true }],
+		['homeassistant.setNotifyTarget', { memberId: alex.memberId, service: null }],
+		['homeassistant.testNotify', { memberId: alex.memberId }],
+	];
+
+	it('is covered for every action the extension changes data with', () => {
+		const ids = [...k.registry.actions.values()]
+			.filter((a) => a.id.startsWith('homeassistant.') && !a.readOnly && a.expose !== 'internal')
+			.map((a) => a.id)
+			.sort();
+		expect(ids).toEqual(
+			calls()
+				.map(([id]) => id)
+				.sort(),
+		);
+		for (const [id, input] of calls())
+			expect(k.registry.actions.get(id)?.input.safeParse(input).success, id).toBe(true);
+	});
+
+	it('declares what each action asks for, and none is ever offered to the AI', () => {
+		for (const [id] of calls()) {
+			const action = k.registry.actions.get(id);
+			const wanted =
+				id === 'homeassistant.switch'
+					? 'homeassistant.control'
+					: id === 'homeassistant.setMySharing'
+						? 'core.notifications.receive'
+						: 'homeassistant.manage';
+			expect(action?.requires, id).toBe(wanted);
+			expect(action?.approval, id).toBe('never');
+			expect(action?.ai, id).toBeUndefined();
+		}
+		expect(k.ctx.actions.aiCatalog().filter((a) => a.id.startsWith('homeassistant.'))).toEqual([]);
+	});
+
+	it('refuses members without the permission, displays and apps, and changes and sends nothing', async () => {
+		const sam = (await k.member('supervised', 'Sam')).actor;
+		const guest = (await k.member('guest', 'Gus')).actor;
+		const display: Actor = {
+			kind: 'display',
+			deviceId: 'dev',
+			capabilities: ['homeassistant.view', 'homeassistant.presence', 'homeassistant.control'],
+			showNames: true,
+		};
+		const apps: [string, Actor][] = [
+			['an app', { kind: 'app', appId: 'app_1', roleId: 'member', mode: 'apply' }],
+			['an app that suggests', { kind: 'app', appId: 'app_1', roleId: 'member', mode: 'suggest' }],
+		];
+		const people: [string, Actor][] = [
+			['a member', alex],
+			['a supervised member', sam],
+			['a guest', guest],
+		];
+		const before = await snapshot();
+		for (const [who, actor] of [...people, ['a display', display] as [string, Actor], ...apps])
+			for (const [id, input] of calls()) {
+				// Choosing what is shown about oneself is every member's own: only callers with no self are asserted here.
+				if (id === 'homeassistant.setMySharing' && people.some(([, p]) => p === actor)) continue;
+				if (id === 'homeassistant.setMySharing' && actor.kind === 'app' && actor.mode === 'suggest')
+					continue;
+				await expect(call(id, input, actor), `${who}: ${id}`).rejects.toMatchObject({
+					code: 'forbidden',
+				});
+				expect(await snapshot(), `${who}: ${id}`).toEqual(before);
+			}
+	});
+
+	it('refuses the AI acting for a person every one of them, even for an admin, and leaves no draft', async () => {
+		const before = await snapshot();
+		const asAi: Actor[] = [
+			{
+				kind: 'ai',
+				mode: 'conversation',
+				source: 'assistant',
+				onBehalfOf: (admin as Actor & { kind: 'member' }).memberId,
+			},
+			{
+				kind: 'ai',
+				mode: 'agent',
+				source: 'mcp',
+				onBehalfOf: (admin as Actor & { kind: 'member' }).memberId,
+			},
+			{ kind: 'ai', mode: 'conversation', source: 'assistant', onBehalfOf: alex.memberId },
+		];
+		for (const actor of asAi)
+			for (const [id, input] of calls()) {
+				await expect(
+					call(id, input, actor),
+					`${JSON.stringify(actor)}: ${id}`,
+				).rejects.toBeTruthy();
+				expect(await snapshot(), `${JSON.stringify(actor)}: ${id}`).toEqual(before);
+			}
+	});
+
+	it('refuses the AI a suggestion of what only a person does: switching, texting, choosing what is shown', async () => {
+		const before = await snapshot();
+		const personal = [
+			'homeassistant.switch',
+			'homeassistant.setItemControl',
+			'homeassistant.setMySharing',
+			'homeassistant.testNotify',
+		];
+		for (const actor of [
+			{ kind: 'ai', mode: 'agent', source: 'mcp' },
+			{ kind: 'ai', mode: 'share', source: 'inbox' },
+		] satisfies Actor[])
+			for (const [id, input] of calls().filter(([id]) => personal.includes(id))) {
+				await expect(call(id, input, actor), `${actor.mode}: ${id}`).rejects.toBeTruthy();
+				expect(await snapshot(), `${actor.mode}: ${id}`).toEqual(before);
+			}
+	});
+
+	it('lets a manager apply each change at once, never as a draft', async () => {
+		for (const [id, input] of calls()) {
+			// Removing what the later calls use comes last.
+			if (id === 'homeassistant.disconnect') continue;
+			const result = await call(id, input, admin).catch((e: unknown) => e);
+			expect(result, id).not.toMatchObject({ status: 'drafted' });
+		}
+		expect(await k.route('core.listDrafts').call({ actor: admin, query: { limit: 50 } })).toEqual(
+			[],
+		);
+	});
 });

@@ -17,8 +17,10 @@ import {
 	shareTarget,
 } from './items.ts';
 import { itemReady, processItem } from './process.ts';
+import { removeFilesJob } from './purge.ts';
 import { searchIndex } from './search.ts';
 import { migrations } from './store.ts';
+import { scheduleSweep, sweepJob } from './sweep.ts';
 
 /** Family Inbox: shared things become AI-proposed drafts that someone approves. */
 export default defineExtension({
@@ -28,7 +30,10 @@ export default defineExtension({
 	ai: { index: searchIndex },
 	actions: [addItem, retryItem, dismissItem, fileItem],
 	routes: [createItem, listItems, getItemFile],
-	jobs: [processItem],
+	jobs: [processItem, sweepJob, removeFilesJob],
+	async register(ctx) {
+		await scheduleSweep(ctx);
+	},
 	notifications: [itemReady],
 	events: [itemChanged],
 	capabilities: [inboxShare],

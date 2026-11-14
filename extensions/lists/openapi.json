@@ -6168,6 +6168,12 @@
 																"string",
 																"null"
 															]
+														},
+														"completionId": {
+															"type": [
+																"string",
+																"null"
+															]
 														}
 													},
 													"required": [
@@ -6181,7 +6187,8 @@
 														"recurrence",
 														"rrule",
 														"doneAt",
-														"doneBy"
+														"doneBy",
+														"completionId"
 													]
 												}
 											},
@@ -6451,7 +6458,8 @@
 		"/api/v1/actions/lists.reopenTask": {
 			"post": {
 				"operationId": "lists.reopenTask",
-				"summary": "Undo the last completion of a task",
+				"summary": "Undo a completion of a task",
+				"description": "Takes back the completion named by completionId; without one, the caller's own latest.",
 				"tags": [
 					"actions",
 					"lists"
@@ -6484,6 +6492,9 @@
 									"id": {
 										"type": "string",
 										"pattern": "^task_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"completionId": {
+										"type": "string"
 									}
 								},
 								"required": [

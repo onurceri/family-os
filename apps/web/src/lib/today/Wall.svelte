@@ -563,6 +563,18 @@
 			--ramp-big: 3.25rem;
 		}
 	}
+	/* And on a wider screen whose text is too large for the band (Text size). */
+	@media (min-width: 1024px) {
+		@container today (not (min-width: 43.5rem)) {
+			.wall {
+				--ramp-clock: 4.5rem;
+				--ramp-date: 1.125rem;
+				--ramp-countdown: 4.25rem;
+				--ramp-hero: 1.875rem;
+				--ramp-big: 3.25rem;
+			}
+		}
+	}
 	.col {
 		display: contents;
 	}
@@ -934,28 +946,62 @@
 		}
 	}
 
+	/* The wide arrangements also need their room in rem in the `today` container (Today's
+	   page, the style preview, a display): 43.5rem is what a 1024 px window leaves beside the
+	   sidebar, 59.5rem a 1280 px one. At the normal text size they switch with the window; with
+	   larger text (Settings, Appearance) the columns grow, so a window steps down to the
+	   arrangement whose columns still fit. A display has more room than that at every width. */
 	/* From 1024 px: the clock and the weather share a band on top; the rest is one column. */
 	@media (min-width: 1024px) and (max-width: 1279.98px) {
-		.wall {
-			--ramp-clock: 6.5rem;
-			--ramp-date: 1.375rem;
-			--ramp-big: 4.5rem;
-			--ramp-hero: 2.5rem;
-			/* The head's column has a width of its own: the clock is sized by it (a container). */
-			grid-template-columns: minmax(16rem, 2fr) minmax(0, 3fr);
-			gap: 26px 40px;
+		@container today (min-width: 43.5rem) {
+			.wall {
+				--ramp-clock: 6.5rem;
+				--ramp-date: 1.375rem;
+				--ramp-big: 4.5rem;
+				--ramp-hero: 2.5rem;
+				/* The head's column has a width of its own: the clock is sized by it (a container). */
+				grid-template-columns: minmax(16rem, 2fr) minmax(0, 3fr);
+				gap: 26px 40px;
+			}
+			.col > * {
+				grid-column: 1 / -1;
+			}
+			.atm > .head {
+				grid-column: 1;
+			}
+			.atm > .weather {
+				grid-column: 2;
+			}
+			.atm > .photo {
+				max-width: 26rem;
+			}
 		}
-		.col > * {
-			grid-column: 1 / -1;
-		}
-		.atm > .head {
-			grid-column: 1;
-		}
-		.atm > .weather {
-			grid-column: 2;
-		}
-		.atm > .photo {
-			max-width: 26rem;
+	}
+	/* The same band on a wider screen whose text is too large for two columns (Settings,
+	   Appearance, Text size): only a person's Today, a display never has a text size. */
+	@media (min-width: 1280px) {
+		@container today (min-width: 43.5rem) and (not (min-width: 59.5rem)) {
+			.wall {
+				--ramp-clock: 6.5rem;
+				--ramp-date: 1.375rem;
+				--ramp-big: 4.5rem;
+				--ramp-hero: 2.5rem;
+				/* The head's column has a width of its own: the clock is sized by it (a container). */
+				grid-template-columns: minmax(16rem, 2fr) minmax(0, 3fr);
+				gap: 26px 40px;
+			}
+			.col > * {
+				grid-column: 1 / -1;
+			}
+			.atm > .head {
+				grid-column: 1;
+			}
+			.atm > .weather {
+				grid-column: 2;
+			}
+			.atm > .photo {
+				max-width: 26rem;
+			}
 		}
 	}
 
@@ -1038,83 +1084,92 @@
 			display: none;
 		}
 	}
-	@media (min-width: 1024px) and (max-width: 1279.98px) {
-		.wall:not(.fm) .atm:not(:has(> .head :is(.time, .sentence, .status))) > .weather,
-		.wall:not(.fm) .atm:not(:has(> .weather:not(:empty))) > .head {
-			grid-column: 1 / -1;
+	@media (min-width: 1024px) {
+		@container today (min-width: 43.5rem) and (not (min-width: 59.5rem)) {
+			.wall:not(.fm) .atm:not(:has(> .head :is(.time, .sentence, .status))) > .weather,
+			.wall:not(.fm) .atm:not(:has(> .weather:not(:empty))) > .head {
+				grid-column: 1 / -1;
+			}
 		}
 	}
 	@media (min-width: 1280px) {
-		.wall:not(
-			:has(> .atm > .head :is(.time, .sentence, .status), > .atm > .blk:not(.search, .gone, :empty))
-		),
-		.wall:not(
-			:has(
-				> .plan > :not(.hidden, .gone, :empty, .tiles),
-				> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
-			)
-		) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.wall:not(
+		@container today (min-width: 59.5rem) {
+			.wall:not(
 				:has(
 					> .atm > .head :is(.time, .sentence, .status),
 					> .atm > .blk:not(.search, .gone, :empty)
 				)
-			)
-			> .atm,
-		.wall:not(
+			),
+			.wall:not(
 				:has(
 					> .plan > :not(.hidden, .gone, :empty, .tiles),
 					> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
 				)
-			)
-			> .plan {
-			display: none;
-		}
-		.wall:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
+			) {
+				grid-template-columns: minmax(0, 1fr);
+			}
+			.wall:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
 				)
-			)
-			> .plan,
-		.wall:not(
-				:has(
-					> .plan > :not(.hidden, .gone, :empty, .tiles),
-					> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
+				> .atm,
+			.wall:not(
+					:has(
+						> .plan > :not(.hidden, .gone, :empty, .tiles),
+						> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
+					)
 				)
-			)
-			> .atm {
-			grid-column: 1;
+				> .plan {
+				display: none;
+			}
+			.wall:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
+				)
+				> .plan,
+			.wall:not(
+					:has(
+						> .plan > :not(.hidden, .gone, :empty, .tiles),
+						> .plan > .tiles:not(.hidden, .gone) > :not(.hidden, .gone, :empty)
+					)
+				)
+				> .atm {
+				grid-column: 1;
+			}
 		}
 	}
 
 	/* From 1280 px: two columns, the atmosphere on the left (the design doc's 400 · 1fr). */
 	@media (min-width: 1280px) {
-		.wall {
-			grid-template-columns: 25rem minmax(0, 1fr);
-			gap: 40px;
-			align-items: start;
-		}
-		.col {
-			display: grid;
-			grid-template-columns: minmax(0, 1fr);
-			align-content: start;
-			gap: 26px;
-			min-width: 0;
-		}
-		.col > * {
-			order: 0;
-		}
-		.atm {
-			grid-column: 1;
-		}
-		.plan {
-			grid-column: 2;
-		}
-		.search {
-			display: block;
+		@container today (min-width: 59.5rem) {
+			.wall {
+				grid-template-columns: 25rem minmax(0, 1fr);
+				gap: 40px;
+				align-items: start;
+			}
+			.col {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr);
+				align-content: start;
+				gap: 26px;
+				min-width: 0;
+			}
+			.col > * {
+				order: 0;
+			}
+			.atm {
+				grid-column: 1;
+			}
+			.plan {
+				grid-column: 2;
+			}
+			.search {
+				display: block;
+			}
 		}
 	}
 </style>

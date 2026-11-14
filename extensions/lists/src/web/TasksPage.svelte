@@ -34,7 +34,7 @@
 	import { dueLabel, groupTasks, type Urgency } from './format.js';
 	import { revealRow } from './reveal.js';
 	import { useLists } from './i18n.js';
-	import { latestOnly } from './latest-only.js';
+	import { latestOnly } from '@famos/ui/latest-only';
 	import ListsHeader from './ListsHeader.svelte';
 	import TaskForm from './TaskForm.svelte';
 	import TaskRow from './TaskRow.svelte';
@@ -167,9 +167,12 @@
 						: {
 								label: t('undo'),
 								run: () =>
-									void reopenTask(app, task.id, t('label_reopen', { title: task.title })).then(
-										load,
-									),
+									void reopenTask(
+										app,
+										task.id,
+										t('label_reopen', { title: task.title }),
+										after?.completionId,
+									).then(load),
 							},
 				);
 			}

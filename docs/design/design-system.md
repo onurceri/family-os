@@ -337,7 +337,7 @@ Three voices, each a font slot a theme pack may fill from the bundled families: 
 
 | Role | Broadsheet at 1440 (1024 · phone) | Lanes at 1440 | Wall at 1440 | Use |
 |---|---|---|---|---|
-| clock | 88 (88 · 56) display | 88 display | 88 | Today's clock |
+| clock | 88 (88 · 56) display | 92 display | 150 | Today's clock |
 | countdown | 104 (104 · 84) display | 84 display | 96 | The hero's minutes; a duration at half, the start time at three quarters (Wall: the ring's size, its minutes at 0.54, so 52) |
 | big | 64 (52 · 56) display | 56 display | 96 | Temperature, big numbers |
 | hero | 44 (44 · 38) serif | 36 | 44 | The next-up title |

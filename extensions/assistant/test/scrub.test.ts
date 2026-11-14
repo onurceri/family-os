@@ -3,6 +3,7 @@ import {
 	createHandleScrubber,
 	scrubHandles,
 	scrubRecordHandles,
+	withoutNames,
 	withoutToolMarkup,
 } from '../src/server/scrub.ts';
 
@@ -54,5 +55,22 @@ describe('a complete answer', () => {
 			'Tick off Oat milk at 10:30?',
 		);
 		expect(scrubRecordHandles('ratio 3:1 and note:4', title)).toBe('ratio 3:1 and note:4');
+	});
+});
+
+describe('withoutNames', () => {
+	it('writes whole names as the neutral word, as the family spells them, longest first', () => {
+		const names = ['Ayşe', 'Leo', 'Leo Novak', 'A.J.', 'Can'];
+		expect(withoutNames("Leo Novak and Leo's swim; A.J. too", names, 'someone')).toBe(
+			"someone and someone's swim; someone too",
+		);
+		expect(withoutNames('Ayşe and Ayşegül, Leopold', names, 'someone')).toBe(
+			'someone and Ayşegül, Leopold',
+		);
+		// A name that is also an everyday word is taken only as it is written.
+		expect(withoutNames('Can can bring it, if you can', names, 'someone')).toBe(
+			'someone can bring it, if you can',
+		);
+		expect(withoutNames('Nothing here', [], 'someone')).toBe('Nothing here');
 	});
 });

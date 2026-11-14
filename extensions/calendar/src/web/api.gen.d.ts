@@ -65,7 +65,8 @@ export interface paths {
         /** Secret calendar addresses you created (all of them for managers); never the addresses */
         get: operations["calendar.listFeeds"];
         put?: never;
-        post?: never;
+        /** Create a secret calendar address for phones and other calendars; shown only in this answer */
+        post: operations["calendar.createFeed"];
         delete?: never;
         options?: never;
         head?: never;
@@ -307,23 +308,6 @@ export interface paths {
         put?: never;
         /** Upcoming calendar events, for the AI */
         post: operations["calendar.aiContextEvents"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/actions/calendar.createFeed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a secret calendar address for phones and other calendars */
-        post: operations["calendar.createFeed"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1016,6 +1000,159 @@ export interface operations {
             };
         };
     };
+    "calendar.createFeed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    scope: "family" | string;
+                    /**
+                     * @description Whether event notes appear in the feed
+                     * @default false
+                     */
+                    includeNotes?: boolean;
+                    /** @description Where it is used, e.g. "Mum's phone" */
+                    label?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Create a secret calendar address for phones and other calendars; shown only in this answer */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        feed: {
+                            id: string;
+                            scope: string;
+                            includeNotes: boolean;
+                            label: string | null;
+                            createdBy: string | null;
+                            createdAt: number;
+                            lastUsedAt: number | null;
+                        };
+                        token: string;
+                        path: string;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                            /** @enum {string} */
+                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
+                            capability?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description The Idempotency-Key was used for a different action */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Limit reached */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            details?: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
     "calendar.getFeed": {
         parameters: {
             query?: never;
@@ -1170,6 +1307,9 @@ export interface operations {
                         color: string;
                         memberIds: string[];
                         reminders: boolean;
+                        reminderDays: number | null;
+                        reminderTime: string | null;
+                        reminderMinutes: number | null;
                         allowLocal: boolean;
                         lastFetchedAt: number | null;
                         lastError: string | null;
@@ -3519,170 +3659,6 @@ export interface operations {
             };
         };
     };
-    "calendar.createFeed": {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days. */
-                "idempotency-key"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    scope: "family" | string;
-                    /**
-                     * @description Whether event notes appear in the feed
-                     * @default false
-                     */
-                    includeNotes?: boolean;
-                    /** @description Where it is used, e.g. "Mum's phone" */
-                    label?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Applied, or stored as a draft for approval */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "applied";
-                        output: {
-                            feed: {
-                                id: string;
-                                scope: string;
-                                includeNotes: boolean;
-                                label: string | null;
-                                createdBy: string | null;
-                                createdAt: number;
-                                lastUsedAt: number | null;
-                            };
-                            token: string;
-                            path: string;
-                        };
-                    } | {
-                        /** @enum {string} */
-                        status: "drafted";
-                        draftId: string;
-                    };
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description Not signed in */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                            /** @enum {string} */
-                            reason?: "capability" | "approval" | "display" | "sign_in" | "ai" | "critical" | "area";
-                            capability?: string;
-                        };
-                    };
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description The Idempotency-Key was used for a different action */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description Limit reached */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: {
-                            code: string;
-                            message: string;
-                            details?: unknown;
-                        };
-                    };
-                };
-            };
-        };
-    };
     "calendar.revokeFeed": {
         parameters: {
             query?: never;
@@ -3856,6 +3832,21 @@ export interface operations {
                     /** @default false */
                     reminders?: boolean;
                     /**
+                     * @description All-day events: days before (0, 1 or 2); null = on the day
+                     * @default null
+                     */
+                    reminderDays?: number | null;
+                    /**
+                     * @description All-day events: at this time; null = the family's reminder time
+                     * @default null
+                     */
+                    reminderTime?: string | null;
+                    /**
+                     * @description Timed events: minutes before the start; null = the default (30)
+                     * @default null
+                     */
+                    reminderMinutes?: number | null;
+                    /**
                      * @description Allow an address on the home network
                      * @default false
                      */
@@ -3880,6 +3871,9 @@ export interface operations {
                             color: string;
                             memberIds: string[];
                             reminders: boolean;
+                            reminderDays: number | null;
+                            reminderTime: string | null;
+                            reminderMinutes: number | null;
                             allowLocal: boolean;
                             lastFetchedAt: number | null;
                             lastError: string | null;
@@ -4021,6 +4015,12 @@ export interface operations {
                     color?: string;
                     memberIds?: string[];
                     reminders?: boolean;
+                    /** @description All-day events: days before (0, 1 or 2); null = on the day */
+                    reminderDays?: number | null;
+                    /** @description All-day events: at this time; null = the family's reminder time */
+                    reminderTime?: string | null;
+                    /** @description Timed events: minutes before the start; null = the default (30) */
+                    reminderMinutes?: number | null;
                     allowLocal?: boolean;
                 };
             };
@@ -4042,6 +4042,9 @@ export interface operations {
                             color: string;
                             memberIds: string[];
                             reminders: boolean;
+                            reminderDays: number | null;
+                            reminderTime: string | null;
+                            reminderMinutes: number | null;
                             allowLocal: boolean;
                             lastFetchedAt: number | null;
                             lastError: string | null;

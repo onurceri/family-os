@@ -893,43 +893,50 @@
 		}
 	}
 
+	/* The wide arrangements also need their room in rem in the `today` container (Today's
+	   page, the style preview, a display): 43.5rem is what a 1024 px window leaves beside the
+	   sidebar, 59.5rem a 1280 px one. At the normal text size they switch with the window; with
+	   larger text (Settings, Appearance) the columns grow, so a window steps down to the
+	   arrangement whose columns still fit. A display has more room than that at every width. */
 	/* From 1024 px: the atmosphere is a band on top, the day and the family share the width. */
 	@media (min-width: 1024px) {
-		.bs {
-			--ramp-clock: 5.5rem;
-			--ramp-date: 1.75rem;
-			--ramp-countdown: 6.5rem;
-			--ramp-hero: 2.75rem;
-			--ramp-big: 3.25rem;
-			--ramp-sentence: 1.125rem;
-			grid-template-columns: minmax(0, 1fr) 18.75rem;
-			gap: 32px 28px;
-			align-items: start;
-		}
-		.col {
-			display: grid;
-			grid-template-columns: minmax(0, 1fr);
-			align-content: start;
-			gap: 26px;
-			min-width: 0;
-		}
-		.col > * {
-			order: 0;
-		}
-		.atm {
-			grid-column: 1 / -1;
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto;
-			align-items: start;
-			gap: 28px;
-		}
-		.atm .photo {
-			width: 13rem;
-		}
-		.plan {
-			grid-column: 1;
-		}
-		.fam {
-			grid-column: 2;
+		@container today (min-width: 43.5rem) {
+			.bs {
+				--ramp-clock: 5.5rem;
+				--ramp-date: 1.75rem;
+				--ramp-countdown: 6.5rem;
+				--ramp-hero: 2.75rem;
+				--ramp-big: 3.25rem;
+				--ramp-sentence: 1.125rem;
+				grid-template-columns: minmax(0, 1fr) 18.75rem;
+				gap: 32px 28px;
+				align-items: start;
+			}
+			.col {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr);
+				align-content: start;
+				gap: 26px;
+				min-width: 0;
+			}
+			.col > * {
+				order: 0;
+			}
+			.atm {
+				grid-column: 1 / -1;
+				grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto;
+				align-items: start;
+				gap: 28px;
+			}
+			.atm .photo {
+				width: 13rem;
+			}
+			.plan {
+				grid-column: 1;
+			}
+			.fam {
+				grid-column: 2;
+			}
 		}
 	}
 
@@ -942,23 +949,27 @@
 		}
 	}
 	@media (min-width: 1024px) {
-		.bs:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
+		@container today (min-width: 43.5rem) {
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
 				)
-			)
-			> .atm {
-			display: none;
+				> .atm {
+				display: none;
+			}
 		}
 	}
-	@media (min-width: 1024px) and (max-width: 1279.98px) {
-		.bs:not(.fm):not(:has(> .fam > :not(.hidden, .gone, :empty))),
-		.bs:not(.fm):not(:has(> .plan > :not(.hidden, .gone, :empty))) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.bs:not(.fm):not(:has(> .plan > :not(.hidden, .gone, :empty))) > .fam {
-			grid-column: 1;
+	@media (min-width: 1024px) {
+		@container today (min-width: 43.5rem) and (not (min-width: 59.5rem)) {
+			.bs:not(.fm):not(:has(> .fam > :not(.hidden, .gone, :empty))),
+			.bs:not(.fm):not(:has(> .plan > :not(.hidden, .gone, :empty))) {
+				grid-template-columns: minmax(0, 1fr);
+			}
+			.bs:not(.fm):not(:has(> .plan > :not(.hidden, .gone, :empty))) > .fam {
+				grid-column: 1;
+			}
 		}
 	}
 
@@ -988,106 +999,114 @@
 	/* From 1024 px the next-up card is wide enough for the countdown beside the title and the
 	   time: a shorter card that leaves the page its balance. */
 	@media (min-width: 1024px) {
-		.blk.hero > :global(.hero) {
-			grid-template-areas:
-				'lab lab'
-				'title count'
-				'meta count';
+		@container today (min-width: 43.5rem) {
+			.blk.hero > :global(.hero) {
+				grid-template-areas:
+					'lab lab'
+					'title count'
+					'meta count';
+			}
 		}
 	}
 
 	/* From 1280 px: three columns, the atmosphere on the left (the design doc's 280 · 1fr · 300). */
 	@media (min-width: 1280px) {
-		.bs {
-			--ramp-big: 4rem;
-			--ramp-sentence: 1.25rem;
-			grid-template-columns: 17.5rem minmax(0, 1fr) 18.75rem;
-		}
-		.atm {
-			grid-column: 1;
-			grid-template-columns: minmax(0, 1fr);
-			gap: 24px;
-		}
-		.atm .photo {
-			width: auto;
-		}
-		.search {
-			display: block;
-		}
-		.plan {
-			grid-column: 2;
-		}
-		.fam {
-			grid-column: 3;
-		}
+		@container today (min-width: 59.5rem) {
+			.bs {
+				--ramp-date: 1.875rem;
+				--ramp-big: 4rem;
+				--ramp-sentence: 1.25rem;
+				grid-template-columns: 17.5rem minmax(0, 1fr) 18.75rem;
+			}
+			.atm {
+				grid-column: 1;
+				grid-template-columns: minmax(0, 1fr);
+				gap: 24px;
+			}
+			.atm .photo {
+				width: auto;
+			}
+			.search {
+				display: block;
+			}
+			.plan {
+				grid-column: 2;
+			}
+			.fam {
+				grid-column: 3;
+			}
 
-		/* Without the atmosphere, the day and the family take its room. */
-		.bs:not(
-			:has(> .atm > .head :is(.time, .sentence, .status), > .atm > .blk:not(.search, .gone, :empty))
-		) {
-			grid-template-columns: minmax(0, 1fr) 18.75rem;
-		}
-		.bs:not(
+			/* Without the atmosphere, the day and the family take its room. */
+			.bs:not(
 				:has(
 					> .atm > .head :is(.time, .sentence, .status),
 					> .atm > .blk:not(.search, .gone, :empty)
 				)
-			)
-			> .plan {
-			grid-column: 1;
-		}
-		.bs:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
-				)
-			)
-			> .fam {
-			grid-column: 2;
-		}
-		/* Without the family column, the day takes its room. */
-		.bs:not(:has(> .fam > :not(.hidden, .gone, :empty))) {
-			grid-template-columns: 17.5rem minmax(0, 1fr);
-		}
-		/* Without the day, the family column takes its room. */
-		.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))) {
-			grid-template-columns: 17.5rem minmax(0, 1fr);
-		}
-		.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))) > .fam {
-			grid-column: 2;
-		}
-		/* Only one column with something: it takes the whole width. */
-		.bs:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
-				)
-			):not(:has(> .fam > :not(.hidden, .gone, :empty))),
-		.bs:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
-				)
-			):not(:has(> .plan > :not(.hidden, .gone, :empty))),
-		.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))):not(
-				:has(> .fam > :not(.hidden, .gone, :empty))
 			) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.bs:not(
-				:has(
-					> .atm > .head :is(.time, .sentence, .status),
-					> .atm > .blk:not(.search, .gone, :empty)
+				grid-template-columns: minmax(0, 1fr) 18.75rem;
+			}
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
 				)
-			):not(:has(> .plan > :not(.hidden, .gone, :empty)))
-			> .fam {
-			grid-column: 1;
-		}
-		.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))):not(
-				:has(> .fam > :not(.hidden, .gone, :empty))
-			)
-			> .atm {
-			grid-column: 1;
+				> .plan {
+				grid-column: 1;
+			}
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
+				)
+				> .fam {
+				grid-column: 2;
+			}
+			/* Without the family column, the day takes its room. */
+			.bs:not(:has(> .fam > :not(.hidden, .gone, :empty))) {
+				grid-template-columns: 17.5rem minmax(0, 1fr);
+			}
+			/* Without the day, the family column takes its room. */
+			.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))) {
+				grid-template-columns: 17.5rem minmax(0, 1fr);
+			}
+			.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))) > .fam {
+				grid-column: 2;
+			}
+			/* Only one column with something: it takes the whole width. */
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
+				):not(:has(> .fam > :not(.hidden, .gone, :empty))),
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
+				):not(:has(> .plan > :not(.hidden, .gone, :empty))),
+			.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))):not(
+					:has(> .fam > :not(.hidden, .gone, :empty))
+				) {
+				grid-template-columns: minmax(0, 1fr);
+			}
+			.bs:not(
+					:has(
+						> .atm > .head :is(.time, .sentence, .status),
+						> .atm > .blk:not(.search, .gone, :empty)
+					)
+				):not(:has(> .plan > :not(.hidden, .gone, :empty)))
+				> .fam {
+				grid-column: 1;
+			}
+			.bs:not(:has(> .plan > :not(.hidden, .gone, :empty))):not(
+					:has(> .fam > :not(.hidden, .gone, :empty))
+				)
+				> .atm {
+				grid-column: 1;
+			}
 		}
 	}
 

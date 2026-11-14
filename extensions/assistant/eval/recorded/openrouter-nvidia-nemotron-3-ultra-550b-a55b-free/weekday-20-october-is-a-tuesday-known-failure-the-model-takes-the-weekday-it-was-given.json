@@ -36,7 +36,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is no swimming on Wednesday 20 October because Tuesday, October 20 is not a Wednesday. The swim training is on Tuesday, October 20 at 6:00 PM–7:30 PM at City pool for Ellie.",
+			"text": "There is no swimming on Wednesday 20 October because Tuesday, October 20 is not a Wednesday. The only swim training is on Tuesday, October 20 at 6:00 PM–7:30 PM at City pool for Ellie.",
 			"toolCalls": []
 		}
 	]

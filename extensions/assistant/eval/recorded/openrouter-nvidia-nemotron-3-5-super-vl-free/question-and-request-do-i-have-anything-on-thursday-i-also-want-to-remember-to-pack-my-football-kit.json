@@ -53,19 +53,21 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
+			"text": "You have a Piano lesson on Thursday, 22 October. You have no tasks on Thursday, 22 October.",
 			"toolCalls": []
 		},
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Suggested, not added yet: Add a task: Pack my football kit. It appears once someone else in the household approves it.",
+			"text": "I suggested adding a task: Pack football kit. It is waiting for someone else in the household to approve it before it is added.",
 			"toolCalls": [
 				{
 					"name": "lists_addTask",
 					"input": {
-						"title": "Pack my football kit",
-						"assigneeId": "member:3"
+						"title": "Pack football kit",
+						"assigneeId": "member:3",
+						"dueDate": null,
+						"notes": null
 					}
 				}
 			]

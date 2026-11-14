@@ -257,7 +257,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Undo the last completion of a task */
+        /**
+         * Undo a completion of a task
+         * @description Takes back the completion named by completionId; without one, the caller's own latest.
+         */
         post: operations["lists.reopenTask"];
         delete?: never;
         options?: never;
@@ -2808,6 +2811,7 @@ export interface operations {
                             rrule: string | null;
                             doneAt: number | null;
                             doneBy: string | null;
+                            completionId: string | null;
                         };
                     } | {
                         /** @enum {string} */
@@ -2940,6 +2944,7 @@ export interface operations {
             content: {
                 "application/json": {
                     id: string;
+                    completionId?: string;
                 };
             };
         };

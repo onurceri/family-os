@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { initialOf } from './initial.js';
 	import { onMemberColor } from './on-member-color.js';
 
 	/**
@@ -43,6 +44,6 @@
 		style:width="{size}px"
 		style:height="{size}px"
 		style:font-size="{Math.round(size * 0.42)}px"
-		aria-hidden="true">{name.slice(0, 1).toLocaleUpperCase()}</span
+		aria-hidden="true">{initialOf(name)}</span
 	>
 {/if}

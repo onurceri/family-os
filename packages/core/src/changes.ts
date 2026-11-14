@@ -14,12 +14,53 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { Access } from './access.ts';
 import { audienceOf, inAudience } from './event-audience.ts';
+import { readJson, writeJson } from './settings-json.ts';
 import type { CoreTables } from './tables.ts';
 
 /** The change log is kept this long; a client away for longer starts over with a full read. */
 export const CHANGES_KEEP_MS = 30 * DAY_MS;
 /** Rows read at once; a client asks again from the cursor when `more` is set. */
 export const CHANGES_PAGE = 500;
+
+/** Where the stretches of seq numbers that a restore threw away are kept. */
+const GAPS_KEY = 'changes.gaps';
+
+/** Seq numbers after `from` up to and including `to` belonged to a history a restore replaced. */
+type Gap = { from: number; to: number };
+
+/** The newest seq a database's log ever gave out; 0 when none, or when it has no log. */
+export async function changesHead(db: DbExecutor): Promise<number> {
+	// AUTOINCREMENT remembers the highest seq even after every row was pruned.
+	const result = await sql<{
+		seq: number;
+	}>`select seq from sqlite_sequence where name = 'core_changes'`.execute(db);
+	return result.rows[0]?.seq ?? 0;
+}
+
+/**
+ * After a restore the log is the backup's, whose numbers the replaced database had also given
+ * out, to apps that may still hold them. New numbers continue after the replaced log's newest,
+ * and the stretch between the backup's newest and that one is remembered, so a cursor from the
+ * replaced history is `gone` rather than silently valid. Idempotent.
+ */
+export async function skipReplacedChanges(
+	db: DbExecutor,
+	replacedHead: number,
+	now: number,
+): Promise<void> {
+	const head = await changesHead(db);
+	if (replacedHead <= head) return;
+	const gaps = (await readJson<Gap[]>(db, GAPS_KEY, [])).filter((gap) => gap.from !== head);
+	await writeJson(db, GAPS_KEY, [...gaps, { from: head, to: replacedHead }], now);
+	const moved =
+		await sql`update sqlite_sequence set seq = ${replacedHead} where name = 'core_changes'`.execute(
+			db,
+		);
+	if (Number(moved.numAffectedRows ?? 0) === 0)
+		await sql`insert into sqlite_sequence (name, seq) values ('core_changes', ${replacedHead})`.execute(
+			db,
+		);
+}
 
 const table = (db: DbExecutor) => db.withTables<CoreTables>();
 
@@ -147,13 +188,7 @@ export function createChanges(deps: {
 	clock: Clock;
 	access: () => Access;
 }): ChangesReader {
-	async function head(db: DbExecutor = deps.db): Promise<number> {
-		// AUTOINCREMENT remembers the highest seq even after every row was pruned.
-		const result = await sql<{
-			seq: number;
-		}>`select seq from sqlite_sequence where name = 'core_changes'`.execute(db);
-		return result.rows[0]?.seq ?? 0;
-	}
+	const head = (db: DbExecutor = deps.db) => changesHead(db);
 
 	return {
 		head,
@@ -167,9 +202,15 @@ export function createChanges(deps: {
 				head(),
 			]);
 			// Rows between the cursor and the oldest one kept were pruned; a cursor ahead of the
-			// log belongs to another history.
+			// log, or inside a stretch a restore replaced, belongs to another history.
 			const floor = oldest?.seq ?? newest + 1;
-			if (since < 0 || since > newest || since + 1 < floor)
+			const gaps = await readJson<Gap[]>(deps.db, GAPS_KEY, []);
+			if (
+				since < 0 ||
+				since > newest ||
+				since + 1 < floor ||
+				gaps.some((gap) => since > gap.from && since <= gap.to)
+			)
 				throw new FamosError(
 					'gone',
 					'The changes since then are no longer kept. Read everything again.',
