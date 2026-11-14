@@ -28,6 +28,7 @@
 	"field_token": "Token",
 	"token_hint": "Maak in Home Assistant een aparte gebruiker voor FamilyOS (geen beheerder), log daarmee in en maak een langdurig toegangstoken onder Profiel → Beveiliging. Home Assistant kan niet beperken wat een token mag, dus FamilyOS gebruikt het alleen om te lezen en om te schakelen wat je hier toestaat.",
 	"token_change_hint": "Vul het token opnieuw in, ook als het niet veranderd is: FamilyOS houdt het verborgen en kan het niet tonen.",
+	"password_needed": "Log in met je wachtwoord om de verbinding te testen of op te slaan. Met een pincode op een gedeeld apparaat kan dat niet.",
 	"token_error": "Vul het token in zoals Home Assistant het toont, zonder spaties.",
 	"fact_address": "Adres",
 	"fact_name": "Huis",
@@ -223,5 +224,7 @@
 	"history_failed": "Kon {{name}} niet schakelen",
 	"history_someone": "Iemand",
 	"history_item_label": "Hier onlangs geschakeld",
-	"history_item_empty": "Niemand heeft dit nog vanuit FamilyOS geschakeld."
+	"history_item_empty": "Niemand heeft dit nog vanuit FamilyOS geschakeld.",
+	"load_failed": "De verbinding kon niet worden gelezen.",
+	"load_retry": "Opnieuw proberen"
 }

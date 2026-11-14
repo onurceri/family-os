@@ -106,5 +106,6 @@
 	"draft_title_update_pet": "Een huisdier wijzigen",
 	"draft_title_archive_pet": "Een huisdier archiveren",
 	"draft_title_add_treatment": "Een behandeling toevoegen",
-	"draft_title_remove_treatment": "Een behandeling verwijderen"
+	"draft_title_remove_treatment": "Een behandeling verwijderen",
+	"draft_title_undo_treatment": "Toegevoegde behandeling terugdraaien"
 }

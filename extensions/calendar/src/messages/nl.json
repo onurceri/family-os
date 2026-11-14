@@ -109,6 +109,7 @@
 	"feed_created_hint": "Het wordt alleen deze keer getoond. Kopieer het nu en plak het als abonnement in je agenda-app.",
 	"feed_copy": "Adres kopiëren",
 	"feed_copied": "Adres gekopieerd",
+	"feed_copy_by_hand": "Kopiëren is hier niet mogelijk. Selecteer het adres en kopieer het zelf.",
 	"feed_open": "Openen in de agenda-app",
 	"feed_done": "Ik heb het bewaard",
 	"feed_howto": "Op de iPhone: Instellingen, Agenda, Accounts, Voeg account toe, Anders, Voeg agenda-abonnement toe. Op Android met Google Agenda: open calendar.google.com op een computer, Andere agenda’s, Via URL.",

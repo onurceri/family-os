@@ -200,5 +200,6 @@
 	"way_not_set_up": "Nog niet ingesteld",
 	"drop_here": "Loslaten om toe te voegen",
 	"files_refused_one": "{{count}} bestand kon niet worden toegevoegd. Foto’s, pdf’s, spraakberichten en tekstbestanden werken, tot {{max}} tegelijk.",
-	"files_refused_other": "{{count}} bestanden konden niet worden toegevoegd. Foto’s, pdf’s, spraakberichten en tekstbestanden werken, tot {{max}} tegelijk."
+	"files_refused_other": "{{count}} bestanden konden niet worden toegevoegd. Foto’s, pdf’s, spraakberichten en tekstbestanden werken, tot {{max}} tegelijk.",
+	"share_load_failed": "Wat er gedeeld is, kon niet worden gelezen."
 }
