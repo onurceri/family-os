@@ -104,7 +104,7 @@
 		background: var(--idle);
 	}
 	.hour {
-		font-size: 0.625rem;
+		font-size: 0.75rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;

@@ -1000,8 +1000,7 @@
 	@media (min-width: 1280px) {
 		@container today (min-width: 59.5rem) {
 			.bs {
-				--ramp-clock: 7.75rem;
-				--ramp-date: 2.125rem;
+				--ramp-date: 1.875rem;
 				--ramp-countdown: 8rem;
 				--ramp-hero: 3.375rem;
 				--ramp-big: 4rem;

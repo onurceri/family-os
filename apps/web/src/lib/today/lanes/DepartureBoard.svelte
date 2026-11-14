@@ -19,8 +19,6 @@
 		formatClock,
 		type NextUpMode,
 		type NextUpWords,
-		pillOf,
-		pillText,
 		Segmented,
 		type TodayFormat,
 	} from '@famos/ui/famos';
@@ -28,8 +26,7 @@
 
 	/**
 	 * Lanes' next thing as a departure board: the
-	 * countdown on the page's one `accent` surface at the start, the title, the time and place
-	 * with the pill, the **Family | Me** toggle on the label line, and "Then" with what follows.
+	 * countdown on the page's one `accent` surface at the start, the title, the time and place, the **Family | Me** toggle on the label line, and "Then" with what follows.
 	 * On a phone (`compact`) the board loses "Then". The accessible name reads "Piano lesson,
 	 * 15:45, in 25 minutes", as the other styles' hero does.
 	 */
@@ -61,7 +58,6 @@
 
 	const start = $derived(item.start ?? now);
 	const count = $derived(countdown(now, start, item.end));
-	const pill = $derived(pillText(pillOf(item, count), format, words.pill));
 	const name = $derived(countdownName(item, now, format, words.countdown));
 	const range = $derived(
 		item.end !== undefined && item.end - start >= 60_000
@@ -103,7 +99,6 @@
 			</h2>
 			<div class="meta">
 				<span>{meta}</span>
-				{#if pill}<span class="pill">{pill}</span>{/if}
 			</div>
 		</div>
 		{#if !compact}
@@ -238,21 +233,6 @@
 		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--ink-soft);
-	}
-	/* The pill on the surface: a small piece of the accent with its own text colour. */
-	.pill {
-		display: inline-flex;
-		align-items: center;
-		height: 28px;
-		padding: 0 12px;
-		border-radius: 999px;
-		background: var(--accent);
-		color: var(--on-accent);
-		font-size: 0.6875rem;
-		font-weight: 800;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		white-space: nowrap;
 	}
 	.then {
 		display: grid;

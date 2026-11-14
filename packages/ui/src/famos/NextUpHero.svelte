@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { CountdownWords, NextUpMode, PillWords } from './today-v3.js';
+	import type { CountdownWords, NextUpMode } from './today-v3.js';
 
 	/** The hero's words (catalog strings, already translated). */
 	export interface NextUpWords {
@@ -10,7 +10,6 @@
 		family: string;
 		me: string;
 		countdown: CountdownWords;
-		pill: PillWords;
 	}
 	export type { NextUpMode };
 </script>
@@ -20,22 +19,15 @@
 	import Avatar from './Avatar.svelte';
 	import Countdown from './Countdown.svelte';
 	import Segmented from './Segmented.svelte';
-	import {
-		countdown,
-		countdownName,
-		formatClock,
-		pillOf,
-		pillText,
-		type TodayFormat,
-	} from './today-v3.js';
+	import { countdown, countdownName, formatClock, type TodayFormat } from './today-v3.js';
 
 	/**
 	 * The next thing, on the one accent surface of the page: a caps label
 	 * `NEXT UP · <name>` with the person's avatar and the **Family | Me** toggle, the title on the
-	 * card's whole width, then the time and place with the pill beside the countdown, the biggest
+	 * card's whole width, then the time and place beside the countdown, the biggest
 	 * number on the page (it never takes the title's room, so words stay whole). The
 	 * toggle shows only for a person (`onmode`) and never in family mode (displays). Text is
-	 * `on-accent`; the pill inverts the pair. The accessible name reads "Piano lesson, 15:45, in
+	 * `on-accent`. The accessible name reads "Piano lesson, 15:45, in
 	 * 25 minutes".
 	 */
 	let {
@@ -70,7 +62,6 @@
 
 	const start = $derived(item.start ?? now);
 	const count = $derived(countdown(now, start, item.end));
-	const pill = $derived(pillText(pillOf(item, count), format, words.pill));
 	const name = $derived(countdownName(item, now, format, words.countdown));
 	const range = $derived(
 		item.end !== undefined && item.end - start >= 60_000
@@ -108,7 +99,6 @@
 	</h2>
 	<div class="meta">
 		<span>{meta}</span>
-		{#if pill}<span class="pill">{pill}</span>{/if}
 	</div>
 	<Countdown {count} {format} words={words.countdown} variant={countdownVariant} size={ringSize} />
 </section>
@@ -159,9 +149,9 @@
 		box-shadow: 0 0 0 2px var(--accent);
 	}
 	.caps {
-		font-size: 0.6875rem;
+		font-size: var(--ramp-label);
 		font-weight: 800;
-		letter-spacing: 0.14em;
+		letter-spacing: var(--ramp-label-tracking);
 		text-transform: uppercase;
 	}
 	.toggle {
@@ -217,23 +207,5 @@
 	.meta > span:first-child {
 		min-width: 0;
 		overflow-wrap: anywhere;
-	}
-	/* A long place ends in "…" inside the card; the line above already shows it whole. */
-	.pill {
-		display: inline-block;
-		max-width: 100%;
-		height: 28px;
-		line-height: 28px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		padding: 0 12px;
-		border-radius: 999px;
-		background: var(--on-accent);
-		color: var(--accent);
-		font-size: 0.6875rem;
-		font-weight: 800;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		white-space: nowrap;
 	}
 </style>

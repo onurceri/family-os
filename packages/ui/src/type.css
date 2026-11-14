@@ -71,3 +71,10 @@
 		line-height: 1.15;
 	}
 }
+
+/* Tracked caps labels on Today (section labels, the weekday, hero labels): the same in every style,
+   at least 12 px so they read from across a room. */
+:root {
+	--ramp-label: 0.75rem;
+	--ramp-label-tracking: 0.06em;
+}
