@@ -137,7 +137,7 @@ The capture says why: **AI is not set up yet. What you added is kept here.**, **
 Open **Calendar** and pick **Day**, **Week** or **Month**; arrows move by that much, **Today** returns (**Back to today** beside another day's date). Tap a tag to show only those events (**All** resets); the people pills filter by person.
 
 - Computer or tablet: day and week are an hour grid with a line for now. Same-time events sit side by side; a block of six hours or more (work) is drawn hollow behind the others. Click an empty hour to add an event there.
-- Phone: **Week** is the hour grid of all seven days, all 24 hours (scroll the page for the rest); tap an event to open it. **Month** lists up to 5 titles a day (**+N** for the rest); tap a day for its list below.
+- Phone: the week is a strip of days with dots, and a list of the chosen day. **Month** lists up to 3 titles a day (**+N** for the rest); tap a day for its list below.
 
 ### Add and change events
 

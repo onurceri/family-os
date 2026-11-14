@@ -53,9 +53,8 @@ test('create a timed event, edit it, and give it a reminder', async ({ page }) =
 	expect(clockOf(created?.start as number)).toBe('16:00');
 	expect(created?.location).toBe('Music school');
 	const row = page.getByRole('button', { name: /Piano lesson/ });
-	// The phone's week grid shows the title; place and time are in the block's name.
-	await expect(row).toHaveAccessibleName(/Music school/);
-	await expect(row).toHaveAccessibleName(/4:00|16:00/);
+	await expect(row).toContainText('Music school');
+	await expect(row).toContainText(/4:00|16:00/);
 
 	// A timed event has the default reminder (30 minutes); the form shows it.
 	const eventId = created?.eventId as string;
@@ -79,7 +78,7 @@ test('create a timed event, edit it, and give it a reminder', async ({ page }) =
 	expect(clockOf(edited[0]?.start as number)).toBe('17:30');
 	expect(edited[0]?.location).toBe('Room 4');
 	const row2 = page.getByRole('button', { name: /Piano lesson \(grade 3\)/ });
-	await expect(row2).toHaveAccessibleName(/Room 4/);
+	await expect(row2).toContainText('Room 4');
 
 	// The reminder is stored, and the form shows it again after a reload.
 	expect((await api<Detail>(page, 'GET', `/api/v1/calendar/events/${eventId}`)).reminder).toBe(60);

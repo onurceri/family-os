@@ -88,8 +88,8 @@
 	const grid = $derived(monthGrid(day, app.weekStart()));
 	const boardMonth = $derived(shown === 'month');
 	const boardDays = $derived(shown === 'day' ? [day] : week);
-	// The phone's week is the hour grid of the week (the whole 24 hours); the month toggle shows a
-	// grid with up to five titles a day; a tap picks the day, whose agenda follows.
+	// The phone's month toggle: a month grid with up to three titles a day; a tap picks the day,
+	// whose agenda follows.
 	let phoneMonth = $state(false);
 	let memberFilter = $state<string[]>([]);
 	let hiddenSources = $state<string[]>([]);
@@ -184,12 +184,25 @@
 		if (found) void openOnBoard(found);
 	});
 	const dayItems = $derived(visible.filter((o) => onDay(o, day, tz)));
+	const dotsFor = (date: string) => {
+		const colors = visible
+			.filter((o) => onDay(o, date, tz))
+			.flatMap((o) =>
+				o.source
+					? [o.source.color]
+					: (o.memberIds.length ? o.memberIds : ['all']).map(
+							(id) => app.members().find((m) => m.id === id)?.color ?? 'var(--ink-soft)',
+						),
+			);
+		return [...new Set(colors)].slice(0, 4);
+	};
 	const colorOf = (o: Occurrence) =>
 		o.source?.color ??
 		app.members().find((m) => m.id === o.memberIds[0])?.color ??
 		'var(--ink-soft)';
-	// The phone month's cell: at most five titles, all-day ones first, then by time.
-	const MONTH_TITLES = 5;
+	// The phone month's cell: at most three titles (12 px, so they read), all-day ones first, then
+	// by time.
+	const MONTH_TITLES = 3;
 	const titlesFor = (date: string) =>
 		visible
 			.filter((o) => onDay(o, date, tz))
@@ -781,9 +794,40 @@
 						onclick={() => (selected = phoneMonth ? shiftMonth(day, -1) : addDays(day, -7))}
 						><ChevronLeft /></Button
 					>
-					<p class="flex-1 text-center font-bold tabular-nums">
-						{phoneMonth ? monthLabel(day, app.dateLocale()) : weekTitle}
-					</p>
+					{#if phoneMonth}
+						<p class="flex-1 text-center font-bold">{monthLabel(day, app.dateLocale())}</p>
+					{:else}
+						<ol class="grid flex-1 grid-cols-7 gap-1">
+							{#each week as date (date)}
+								{@const isSelected = date === day}
+								{@const isToday = date === today}
+								<li>
+									<button
+										type="button"
+										onclick={() => (selected = date)}
+										aria-current={isToday ? 'date' : undefined}
+										aria-pressed={isSelected}
+										class="grid min-h-16 w-full justify-items-center gap-0.5 rounded-lg py-2 transition-colors {isSelected
+											? 'bg-surface text-ink shadow-lit'
+											: 'text-ink-soft hover:bg-idle'}"
+									>
+										<small class="text-[0.7rem] font-semibold uppercase">{short(date)}</small>
+										<b
+											class="type-day grid size-8 place-items-center rounded-full {isToday
+												? 'bg-now text-on-color'
+												: ''}">{Number(date.slice(8))}</b
+										>
+										<span class="flex h-1.5 gap-0.5" aria-hidden="true">
+											{#each dotsFor(date) as color (color)}<span
+													class="size-1.5 rounded-full"
+													style:background-color={color}
+												></span>{/each}
+										</span>
+									</button>
+								</li>
+							{/each}
+						</ol>
+					{/if}
 					<Button
 						variant="ghost"
 						size="icon-lg"
@@ -824,12 +868,12 @@
 										>
 										{#each events.slice(0, MONTH_TITLES) as o (`${o.eventId}:${o.key}`)}
 											<span
-												class="w-full truncate border-s-2 ps-0.5 text-start text-[0.625rem] leading-tight"
+												class="w-full truncate border-s-2 ps-0.5 text-start text-xs leading-tight"
 												style:border-color={colorOf(o)}>{o.title}</span
 											>
 										{/each}
 										{#if events.length > MONTH_TITLES}
-											<span class="text-ink-soft text-[0.625rem] font-bold"
+											<span class="text-ink-soft text-xs font-bold"
 												>+{events.length - MONTH_TITLES}</span
 											>
 										{/if}
@@ -840,49 +884,28 @@
 					</div>
 				{/if}
 
+				<!-- The picked day's agenda: below the week strip, and below the month grid. -->
 				{@render tagFilterRow()}
 
-				{#if !phoneMonth}
-					{#if loadError}
-						<p class="text-attention font-semibold">{t('error')}</p>
+				<div class="flex items-center gap-3">
+					<h2 class="type-dateline">{formatDate(day, app.dateLocale())}</h2>
+					{#if day !== today}
+						<Button variant="secondary" size="sm" onclick={() => (selected = null)}
+							>{t('back_to_today')}</Button
+						>
 					{/if}
-					<!-- Fitted: all 24 hours, no inner scroll; the page scrolls instead. -->
-					<div class="h-[72rem]">
-						<WeekBoard
-							fit
-							wholeDay
-							days={week}
-							items={visible}
-							{now}
-							{today}
-							ready={loadedRange === `${week[0]}:${week[6]}`}
-							onopen={(o) => void openEdit(o)}
-							onadd={mayAdd ? addOn : undefined}
-						/>
-					</div>
+				</div>
+
+				{#if loadError}
+					<p class="text-attention font-semibold">{t('error')}</p>
+				{:else if agenda.length === 0}
+					<EmptyState
+						art="calendar"
+						title={tagFilter.length ? t('nothing_filtered') : t('nothing')}
+						hint={tagFilter.length || !mayAdd ? undefined : t('nothing_hint')}
+					/>
 				{:else}
-					<!-- The picked day's agenda, below the month grid. -->
-
-					<div class="flex items-center gap-3">
-						<h2 class="type-dateline">{formatDate(day, app.dateLocale())}</h2>
-						{#if day !== today}
-							<Button variant="secondary" size="sm" onclick={() => (selected = null)}
-								>{t('back_to_today')}</Button
-							>
-						{/if}
-					</div>
-
-					{#if loadError}
-						<p class="text-attention font-semibold">{t('error')}</p>
-					{:else if agenda.length === 0}
-						<EmptyState
-							art="calendar"
-							title={tagFilter.length ? t('nothing_filtered') : t('nothing')}
-							hint={tagFilter.length || !mayAdd ? undefined : t('nothing_hint')}
-						/>
-					{:else}
-						<Timeline items={agenda} {now} showNow={day === today} labels={agendaLabels} />
-					{/if}
+					<Timeline items={agenda} {now} showNow={day === today} labels={agendaLabels} />
 				{/if}
 			</section>
 
