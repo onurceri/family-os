@@ -3,6 +3,7 @@ import pkg from '../../package.json' with { type: 'json' };
 import de from '../messages/de.json' with { type: 'json' };
 import en from '../messages/en.json' with { type: 'json' };
 import es from '../messages/es.json' with { type: 'json' };
+import nl from '../messages/nl.json' with { type: 'json' };
 import tr from '../messages/tr.json' with { type: 'json' };
 import { boardChanged, boardManage, boardPost, boardView, postedKind } from './capabilities.ts';
 import {
@@ -32,7 +33,7 @@ import { noteKind } from './understand.ts';
  */
 export default defineExtension({
 	manifest: pkg.famos,
-	messages: { en, tr, de, es },
+	messages: { en, tr, de, es, nl },
 	migrations,
 	ai: { kinds: [noteKind] },
 	actions: [
