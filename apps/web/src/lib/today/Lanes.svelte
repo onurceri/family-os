@@ -711,9 +711,9 @@
 		line-height: 1;
 	}
 	.when :global(.dateline .weekday) {
-		font-size: 0.75rem;
+		font-size: var(--ramp-label);
 		font-weight: 700;
-		letter-spacing: 0.16em;
+		letter-spacing: var(--ramp-label-tracking);
 		text-transform: uppercase;
 	}
 	.sentence {

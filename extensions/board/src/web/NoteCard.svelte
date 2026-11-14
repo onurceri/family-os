@@ -419,7 +419,7 @@
 		padding-inline: 0.15rem;
 	}
 	.meta {
-		font-size: 0.6875rem;
+		font-size: 0.75rem;
 	}
 	.polaroid .meta {
 		padding-inline: 0.15rem;

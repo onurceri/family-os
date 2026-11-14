@@ -113,14 +113,13 @@
 		/>
 		<!-- Open-Meteo's licence (CC BY 4.0) asks for this attribution where the data is shown. -->
 		{#if familyMode}
-			<span class="text-ink-soft justify-self-start text-[0.625rem]">{t('today_source')}</span>
+			<span class="text-ink-soft justify-self-start text-xs">{t('today_source')}</span>
 		{:else}
 			<a
 				href="https://open-meteo.com/"
 				rel="noreferrer"
 				target="_blank"
-				class="text-ink-soft hover:text-ink justify-self-start text-[0.625rem]"
-				>{t('today_source')}</a
+				class="text-ink-soft hover:text-ink justify-self-start text-xs">{t('today_source')}</a
 			>
 		{/if}
 	</div>

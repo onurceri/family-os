@@ -149,9 +149,9 @@
 		box-shadow: 0 0 0 2px var(--accent);
 	}
 	.caps {
-		font-size: 0.75rem;
+		font-size: var(--ramp-label);
 		font-weight: 800;
-		letter-spacing: 0.14em;
+		letter-spacing: var(--ramp-label-tracking);
 		text-transform: uppercase;
 	}
 	.toggle {
