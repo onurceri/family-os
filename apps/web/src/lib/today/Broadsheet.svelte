@@ -996,13 +996,24 @@
 		}
 	}
 
+	/* From 1024 px the next-up card is wide enough for the countdown beside the title and the
+	   time: a shorter card that leaves the page its balance. */
+	@media (min-width: 1024px) {
+		@container today (min-width: 43.5rem) {
+			.blk.hero > :global(.hero) {
+				grid-template-areas:
+					'lab lab'
+					'title count'
+					'meta count';
+			}
+		}
+	}
+
 	/* From 1280 px: three columns, the atmosphere on the left (the design doc's 280 · 1fr · 300). */
 	@media (min-width: 1280px) {
 		@container today (min-width: 59.5rem) {
 			.bs {
 				--ramp-date: 1.875rem;
-				--ramp-countdown: 8rem;
-				--ramp-hero: 3.375rem;
 				--ramp-big: 4rem;
 				--ramp-sentence: 1.25rem;
 				grid-template-columns: 17.5rem minmax(0, 1fr) 18.75rem;
