@@ -71,7 +71,7 @@
 	"today_block": "Vraag het de assistent",
 	"today_block_hint": "Een link onderaan om een vraag te stellen.",
 	"someone": "iemand",
-	"words_self": "ik, mij, me, mijn, m’n, mezelf, mijzelf",
+	"words_self": "ik, mij, me, mijn, m'n, mezelf, mijzelf",
 	"words_everyone": "iedereen, allemaal, het hele gezin, de hele familie, wij allemaal, we allemaal, wie dan ook",
 	"proposed": "Voorgesteld, nog niet toegevoegd: {{what}}",
 	"proposed_for": "{{what}} voor {{date}}",
@@ -150,7 +150,7 @@
 	"words_topic_chores": "klusje, klusjes, huishoudtaak, huishoudtaken",
 	"words_topic_records": "administratie, papieren, document, documenten",
 	"words_topic_pets": "huisdier, huisdieren",
-	"words_topic_vehicles": "auto, auto’s, autos, voertuig, voertuigen",
+	"words_topic_vehicles": "auto, auto's, autos, voertuig, voertuigen",
 	"words_topic_home": "huis, woning, appartement, thuis",
 	"words_topic_board": "prikbord, briefje, briefjes, notitie, notities",
 	"words_topic_suggestions": "voorstel, voorstellen, goedkeuren, goedkeuring, wachten",
@@ -158,6 +158,6 @@
 	"card_group": "{{what}} ({{group}})",
 	"card_weekday_slip": "{{date}} is geen {{said}}.",
 	"words_us": "wij, we, ons, onze, onszelf",
-	"words_pronouns": "hij, hem, zijn, z’n, zij, ze, haar, hen, hun, zichzelf",
+	"words_pronouns": "hij, hem, zijn, z'n, zij, ze, haar, hen, hun, zichzelf",
 	"something": "iets"
 }
