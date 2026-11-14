@@ -27,6 +27,7 @@ export default defineWebExtension({
 			order: 20,
 			shortcut: 'c',
 			adds: 'calendar.createEvent',
+			requires: 'calendar.view',
 		},
 		// Settings: the personal feed addresses (You) and the family's subscriptions and tags (Family).
 		{
@@ -53,7 +54,12 @@ export default defineWebExtension({
 		},
 	],
 	pages: [
-		{ id: 'calendar.page', path: '/calendar', component: () => import('./CalendarPage.svelte') },
+		{
+			id: 'calendar.page',
+			path: '/calendar',
+			requires: 'calendar.view',
+			component: () => import('./CalendarPage.svelte'),
+		},
 		{
 			id: 'calendar.feeds',
 			requires: 'calendar.view',

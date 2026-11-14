@@ -56,4 +56,20 @@ describe('the extensions', () => {
 			await k.close();
 		}
 	});
+
+	// AGENTS.md rule 9: the default lane runs one job at a time, so a job that can run for minutes
+	// there holds reminders and notifications back for as long.
+	it('keep jobs that can run longer than a minute off the default lane', async () => {
+		const k = await createTestKernel({ extensions: [...extensions] });
+		try {
+			const jobs = [...k.registry.jobs.values()];
+			expect(jobs.length).toBeGreaterThan(20);
+			const slow = jobs
+				.filter((job) => job.lane === 'default' && job.timeoutMs > 60_000)
+				.map((job) => `${job.name} (${job.timeoutMs} ms)`);
+			expect(slow).toEqual([]);
+		} finally {
+			await k.close();
+		}
+	});
 });

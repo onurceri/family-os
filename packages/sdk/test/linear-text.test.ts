@@ -28,13 +28,37 @@ const amountsBefore = (notes: string) =>
 		.replace(/[\s;]+$/u, '')
 		.trim();
 
-const quickly = (run: () => unknown) => {
-	const started = Date.now();
-	run();
-	expect(Date.now() - started).toBeLessThan(500);
+/** The fastest of a few runs, in ms: a pause on a busy machine only slows some of them. */
+const fastest = (run: () => unknown, runs = 5) => {
+	let best = Number.POSITIVE_INFINITY;
+	for (let i = 0; i < runs; i++) {
+		const started = Date.now();
+		run();
+		best = Math.min(best, Date.now() - started);
+	}
+	return best;
 };
 
-const LONG = 200_000;
+/**
+ * Sixteen times the text must cost about sixteen times the work. Quadratic work costs 256 times,
+ * so the limit of 64 tells the two apart with room for a busy machine: it compares the code with
+ * itself, never with a clock. The small run counts as at least a millisecond, so timer noise on
+ * a very fast run cannot inflate the ratio.
+ */
+const linear = (make: (size: number) => string, run: (text: string) => unknown) => {
+	const small = make(SMALL);
+	const large = make(SMALL * 16);
+	run(small);
+	const ratio =
+		fastest(() => run(large)) /
+		Math.max(
+			fastest(() => run(small)),
+			1,
+		);
+	expect(ratio).toBeLessThan(64);
+};
+
+const SMALL = 20_000;
 
 describe('withoutBrackets', () => {
 	it('gives what the bracket pattern gave', () => {
@@ -44,10 +68,16 @@ describe('withoutBrackets', () => {
 	});
 
 	it('takes one pass over many brackets left open', () => {
-		quickly(() => withoutBrackets('('.repeat(LONG)));
-		quickly(() => withoutBrackets('['.repeat(LONG)));
-		quickly(() => significantWords(`${'('.repeat(LONG)}${'['.repeat(LONG)} milk`));
-		quickly(() => compareThing(`${'('.repeat(LONG)} milk`, 'Milk'));
+		linear((n) => '('.repeat(n), withoutBrackets);
+		linear((n) => '['.repeat(n), withoutBrackets);
+		linear(
+			(n) => `${'('.repeat(n)}${'['.repeat(n)} milk`,
+			(text) => significantWords(text),
+		);
+		linear(
+			(n) => `${'('.repeat(n)} milk`,
+			(text) => compareThing(text, 'Milk'),
+		);
 	});
 });
 
@@ -59,8 +89,8 @@ describe('withoutAmounts', () => {
 	});
 
 	it('takes one pass over long runs of spaces', () => {
-		quickly(() => withoutAmounts(`${'\t'.repeat(LONG)}x`));
-		quickly(() => withoutAmounts(`a.${' '.repeat(LONG)}x`));
-		quickly(() => withoutAmounts(`${'; '.repeat(LONG)}x`));
+		linear((n) => `${'\t'.repeat(n)}x`, withoutAmounts);
+		linear((n) => `a.${' '.repeat(n)}x`, withoutAmounts);
+		linear((n) => `${'; '.repeat(n)}x`, withoutAmounts);
 	});
 });

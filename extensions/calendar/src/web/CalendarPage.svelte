@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { addDays, formatDate, todayIn, weekOf, zoned } from '@famos/time';
 	import { Button } from '@famos/ui/button';
+	import { latestOnly } from '@famos/ui/latest-only';
 	import {
 		Avatar,
 		awaitingMarkText,
@@ -128,14 +129,17 @@
 		}
 	}
 
+	const rangeReads = latestOnly();
 	async function load(from: string, to: string) {
+		const current = rangeReads.begin();
 		try {
 			const loaded = await loadRange(from, to);
+			if (!current()) return;
 			occurrences = loaded;
 			loadedRange = `${from}:${to}`;
 			loadError = false;
 		} catch {
-			loadError = true;
+			if (current()) loadError = true;
 		}
 	}
 

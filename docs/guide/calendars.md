@@ -43,7 +43,7 @@ Needs permission to manage the calendar (admins have it). Any ICS or webcal addr
 - **Edit** changes name, color, people, options or address (empty **New calendar address (optional)** keeps the current one).
 - Fetched every 6 hours; **Refresh now** at once.
 - If unreachable, old events stay and the subscription shows why. If it says the address cannot be used, **Edit** and re-enter it.
-- **Remind about its events** sends usual reminders; leave off for look-only calendars.
+- **Remind about its events** sends a reminder before each of its events; leave off for look-only calendars. Under it you choose when: for all-day events on the day or 1 or 2 days before, at a time you pick (empty is the family's reminder time), so the bins can be the evening before; for events with a time, how long before (30 minutes unless you choose).
 - **Calendar on my home network** allows an address inside your network (a NAS), also a plain `http://` one. Otherwise private addresses are refused so addresses cannot probe your home devices. Off for internet calendars.
 - **Remove** (twice) deletes the subscription and its events.
 
@@ -61,7 +61,7 @@ Each event has a **Reminder**; default 30 minutes before (timed) or the family's
 
 | Event | Choices |
 |---|---|
-| Any | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
-| All-day | Also 12 hours before the reminder time |
+| Timed | **No reminder**, at start, 5, 10, 15, 30 minutes, 1 or 2 hours, 1 day before |
+| All-day | **No reminder**, on the day at the reminder time, or 12 hours before it |
 
 Repeating events remind before each occurrence. They go to the people under **Who**, or everyone who sees the calendar if none ([Notifications](notifications.md)).

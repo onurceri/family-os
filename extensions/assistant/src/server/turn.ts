@@ -30,7 +30,7 @@ import {
 	UNDERSTAND_TIMEOUT_MS,
 } from './budget.ts';
 import { formatWeekday } from './format.ts';
-import { cardOf, cardsColumn, spokenText } from './messages.ts';
+import { cardOf, cardsColumn, modelSummary, modelText, modelView, spokenText } from './messages.ts';
 import { systemPrompt, weekdayDates, weekdayNotes } from './prompt.ts';
 import { answerQuestion, type QuestionAnswer } from './question.ts';
 import {
@@ -105,7 +105,8 @@ export const SUMMARIZE_AFTER = 30;
 const MAX_REMEMBERED_HANDLES = 150;
 const MAX_RECORDS_IN_PROMPT = 30;
 
-type RememberedHandles = Record<string, { id: string; label: string }>;
+/** `area`: where the record came from; handles kept before it was recorded have none. */
+type RememberedHandles = Record<string, { id: string; label: string; area?: string }>;
 
 const parseHandles = (json: string | null): RememberedHandles => {
 	try {
@@ -291,7 +292,7 @@ async function takeTurn(
 	};
 	const history = await db
 		.selectFrom('assistant_messages')
-		.select(['role', 'content', 'suggested', 'card', 'created_at'])
+		.select(['role', 'content', 'suggested', 'card', 'tool_calls', 'created_at'])
 		.where('thread_id', '=', threadId)
 		.where('status', '=', 'done')
 		.where('created_at', '<', reply.created_at)
@@ -305,11 +306,31 @@ async function takeTurn(
 		.map((m) => ({ role: m.role, content: spokenText(m) }))
 		.filter((m) => m.content !== '')
 		.reverse();
-	const messages: LlmChatMessage[] = kept.map((m) => ({
-		role: m.role === 'assistant' ? 'assistant' : 'user',
-		content: m.content,
-	}));
+	// What the model is told of them, and of the summary, follows the settings in force now, not
+	// those of the day they were written.
+	const view = await modelView(ctx, policy, member.locale);
+	const told = history.map((m) => ({ role: m.role, ...modelText(m, view) })).reverse();
+	const messages: LlmChatMessage[] = told
+		.filter((m) => m.text !== '')
+		.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.text }));
 	while (messages[0]?.role === 'assistant') messages.shift();
+	const summary =
+		thread.summarized_count > 0
+			? modelSummary(
+					thread.summary,
+					await db
+						.selectFrom('assistant_messages')
+						.select(['card', 'tool_calls'])
+						.where('thread_id', '=', threadId)
+						.where('status', '=', 'done')
+						.orderBy('created_at')
+						.orderBy('id')
+						.limit(thread.summarized_count)
+						.execute(),
+					view,
+				)
+			: null;
+	const toldAreas = [...told.flatMap((m) => m.areas), ...(summary?.areas ?? [])];
 	// What the asker may use: their capabilities and the AI sandbox filter the tools.
 	const offered: AssistantTool[] = [
 		...ctx.actions.aiReadTools({ local: policy.local, actor }).map((info) => ({
@@ -335,13 +356,21 @@ async function takeTurn(
 		Object.fromEntries(Object.entries(remembered).map(([handle, r]) => [handle, r.id])),
 	);
 	const labels = new Map(Object.entries(remembered).map(([handle, r]) => [handle, r.label]));
+	const origins = new Map(
+		Object.entries(remembered).flatMap(([handle, r]) =>
+			r.area ? [[handle, r.area] as const] : [],
+		),
+	);
 	const targets = new Map<string, string>();
 	const loop = newLoopState();
 	persistHandles = async () => {
 		const kept = [...table.toId]
 			.filter(([handle]) => !handle.startsWith('member:') && !handle.startsWith('draft:'))
 			.slice(-MAX_REMEMBERED_HANDLES)
-			.map(([handle, id]) => [handle, { id, label: labels.get(handle) ?? '' }] as const);
+			.map(([handle, id]) => {
+				const area = origins.get(handle);
+				return [handle, { id, label: labels.get(handle) ?? '', ...(area && { area }) }] as const;
+			});
 		await db
 			.updateTable('assistant_threads')
 			.set({ handles: JSON.stringify(Object.fromEntries(kept)) })
@@ -443,6 +472,7 @@ async function takeTurn(
 					order,
 					table,
 					labels,
+					origins,
 					carried,
 					jobId: run.id,
 				}),
@@ -539,11 +569,28 @@ async function takeTurn(
 		separate = false;
 	};
 
+	// A record's title is data of its area: one the model may not see now is left out.
+	const records = [...labels]
+		.filter(([handle, label]) => {
+			if (label === '') return false;
+			const area = origins.get(handle);
+			return area === undefined ? view.noneClosed : area === 'core' || view.open(area);
+		})
+		.slice(-MAX_RECORDS_IN_PROMPT)
+		.map(([handle, label]) => ({ handle, label }));
+	const recordAreas = records.flatMap(({ handle }) => {
+		const area = origins.get(handle);
+		return area && area !== 'core' ? [area] : [];
+	});
+
 	try {
 		const result = await ctx.llm.chat({
 			role: 'smart',
 			feature: CHAT_FEATURE,
-			areas: ['assistant', ...new Set(tools.map((t) => areaOf(t.actionId)))],
+			areas: [
+				'assistant',
+				...new Set([...tools.map((t) => areaOf(t.actionId)), ...toldAreas, ...recordAreas]),
+			],
 			system: systemPrompt({
 				today,
 				weekday: formatWeekday(today),
@@ -559,13 +606,10 @@ async function takeTurn(
 				members: policy.sendPeople
 					? handles.map((m) => ({ handle: m.handle, name: m.displayName, about: m.about }))
 					: null,
-				summary: thread.summarized_count > 0 ? thread.summary : null,
+				summary: summary?.text ?? null,
 				hasTools: tools.length > 0,
 				memories,
-				records: [...labels]
-					.filter(([, label]) => label !== '')
-					.slice(-MAX_RECORDS_IN_PROMPT)
-					.map(([handle, label]) => ({ handle, label })),
+				records,
 				notes,
 				days,
 				areas: [...new Set(tools.map((t) => areaOf(t.actionId)))],
@@ -587,6 +631,7 @@ async function takeTurn(
 				calls,
 				proposals,
 				labels,
+				origins,
 				targets,
 				inject,
 				translate: (key) => ctx.translate(member.locale ?? settings.locale, key),

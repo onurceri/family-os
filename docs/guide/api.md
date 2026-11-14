@@ -36,7 +36,7 @@ The key goes only in the `Authorization` header, never the address; a browser se
 
 - `actsFor`: people the app may act for (still in the family), each `memberId` for `X-FamilyOS-On-Behalf-Of`; empty if none.
 - `operations`: only what **this** key may do now. `outcome` is `read`, `apply` or `draft` (waits for a person).
-- An extension switched off in **Settings → Features** shows `"enabled": false`, loses its operations, and answers `404` `feature_off`.
+- An extension switched off in **Settings → Family → Extensions** shows `"enabled": false`, loses its operations, and answers `404` `feature_off`.
 
 Every operation is described in the OpenAPI document: `GET /openapi.json`, or `apps/server/public-openapi.json` in the source; generate client libraries from it.
 
@@ -120,7 +120,7 @@ curl -X DELETE -H "Authorization: Bearer $KEY" $FAMOS/board/notes/board_note_019
 - Verbs: `POST` adds or does something (`…/complete`, `…/reopen`, `…/uncheck`), `PATCH` changes the fields you send, `PUT` replaces the whole thing, `DELETE` removes it.
 - One date of a repeating event: `DELETE …/calendar/events/{id}?occurrence=<recurrenceId>` (write `+` in an offset as `%2B`); without `occurrence` the whole series goes.
 
-**Repeat a request safely.** Send `Idempotency-Key: <unique>` (letters, digits, `_`, `-`, up to 100). A repeat of the same request returns the first answer (header `Idempotent-Replayed: true`) and changes nothing twice; the same key with another request is `422`. Keys belong to the sending app and are kept a week.
+**Repeat a request safely.** Send `Idempotency-Key: <unique>` (letters, digits, `_`, `-`, up to 100). A repeat of the same request returns the first answer (header `Idempotent-Replayed: true`) and changes nothing twice; the same key with another body returns the first answer again, and the same key for another operation is `422`. Keys belong to the sending app and are kept a week.
 
 **Change only what you saw.** Every thing has a `version` that rises with each write. Send it as `If-Match`; a change to something that moved on is refused with `412 precondition_failed` (`currentVersion` has the current one). `PUT` always needs `If-Match`; `PATCH`, `POST` commands and `DELETE` accept it; an operation that cannot compare answers `400`. Every change returns the new version in the `ETag` header.
 
@@ -196,11 +196,11 @@ Add `X-FamilyOS-On-Behalf-Of: <Leo's id>` and the request is Leo's: only what bo
 | `unauthenticated` | 401 | No valid key: missing, wrong, revoked or expired. Do not retry; ask a person for a new key. With `reason: "paused"` the key is right but its app is paused in **Connected apps**: it works again after **Resume**, so retry later (slowly) and do not ask for a new key. |
 | `forbidden` | 403 | The key's role, or the member it acts for, may not do this. `reason` says why: `capability` (the role lacks `capability`), `approval`, `critical`, `on_behalf` (the app may not act for that member). Do not retry. |
 | `not_found` | 404 | There is no such thing, or it is not yours to know of. |
-| `feature_off` | 404 | The extension was switched off in **Settings → Features**. Its operations are gone from `GET /` until it is switched on again. |
+| `feature_off` | 404 | The extension was switched off in **Settings → Family → Extensions**. Its operations are gone from `GET /` until it is switched on again. |
 | `conflict` | 409 | The thing is not in a state that allows this. Read it again, then decide. |
 | `gone` | 410 | The changes since that cursor are no longer kept. Read everything again, then start from a new cursor. |
 | `precondition_failed` | 412 | It changed since the `version` you sent as `If-Match`; `currentVersion` is the version now. Read it again and redo your change on it. |
-| `idempotency_mismatch` | 422 | The `Idempotency-Key` was already used for another request. Use a new key for a new request. |
+| `idempotency_mismatch` | 422 | The `Idempotency-Key` was already used for another operation. Use a new key for a new operation. |
 | `limit_reached` | 429 | Too many requests. Wait the number of seconds in the `Retry-After` header, then go on. |
 | `unavailable` | 503 | Try again later. |
 | `internal` | 500 | Something went wrong on the server. Try again later; if it stays, tell whoever runs FamilyOS. |

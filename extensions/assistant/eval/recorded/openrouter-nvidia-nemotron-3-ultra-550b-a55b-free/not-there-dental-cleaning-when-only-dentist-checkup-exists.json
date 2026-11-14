@@ -26,7 +26,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "I found a \"Dentist checkup\" on Thursday 8 October at 9:30 AM for Noah. Is that the event you want to move to 10:00 AM?",
+			"error": "unavailable",
 			"toolCalls": [
 				{
 					"name": "calendar_findEvents",
@@ -43,8 +43,53 @@
 				{
 					"name": "calendar_findEvents",
 					"input": {
-						"to": "2026-10-20",
-						"from": "2026-10-06"
+						"from": "2026-10-06",
+						"to": "2026-10-20"
+					}
+				}
+			]
+		},
+		{
+			"kind": "object",
+			"feature": "assistant.chat",
+			"output": {
+				"parts": [
+					{
+						"intent": "change",
+						"quote": "Change Dental cleaning to 10:00",
+						"topics": [
+							"calendar"
+						],
+						"people": [],
+						"about": [
+							"Dental cleaning"
+						]
+					}
+				]
+			}
+		},
+		{
+			"kind": "chat",
+			"feature": "assistant.chat",
+			"text": "I don't see an event called \"Dental cleaning\" on the calendar. There is a **Dentist checkup** for Noah on **Thursday 8 October at 9:30 AM–10:30 AM**. Is that the one you want to move to 10:00 AM?",
+			"toolCalls": [
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "Dental cleaning"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"text": "dental"
+					}
+				},
+				{
+					"name": "calendar_findEvents",
+					"input": {
+						"from": "2026-10-06",
+						"to": "2026-10-20"
 					}
 				}
 			]

@@ -110,6 +110,12 @@ export type CalendarTables = {
 		/** JSON array of member IDs; empty = everyone. */
 		member_ids: string;
 		reminders: number;
+		/** All-day events: days before (null = on the day). */
+		reminder_days: number | null;
+		/** All-day events: `HH:MM` (null = the family's reminder time). */
+		reminder_time: string | null;
+		/** Timed events: minutes before (null = the default). */
+		reminder_minutes: number | null;
 		allow_local: number;
 		etag: string | null;
 		last_modified: string | null;
@@ -354,6 +360,17 @@ export const migrations: Migrations = {
 			}
 		},
 	},
+	// When a subscription reminds: days and time for all-day events, minutes for timed ones.
+	'0005_subscription_reminder_time': {
+		async up(db) {
+			for (const column of [
+				'reminder_days integer',
+				'reminder_time text',
+				'reminder_minutes integer',
+			])
+				await sql.raw(`alter table calendar_subscriptions add column ${column}`).execute(db);
+		},
+	},
 };
 
 /** Rules with more repeats than this are treated as having no known end. */
@@ -570,9 +587,17 @@ export function replacementRow(
  * day, all-day and its rule are the same. Otherwise a skipped day stays skipped only if the new
  * rule still has a date on that day (moved to the new time); the others are dropped. Dates moved
  * out with "only this one" are events of their own and are not touched here.
+ *
+ * With `undoable` (a change that can be taken back) the old skipped dates are all kept next to
+ * the moved ones: where the new series has no date they do nothing, and the undo finds them again.
  */
-export function skippedAfter(row: EventRow, next: ReturnType<typeof toRow>): string | null {
-	if (!row.exdates || !next.rrule) return null;
+export function skippedAfter(
+	row: EventRow,
+	next: ReturnType<typeof toRow>,
+	undoable = false,
+): string | null {
+	if (!row.exdates) return null;
+	if (!next.rrule) return undoable ? row.exdates : null;
 	const same =
 		next.all_day === row.all_day &&
 		next.starts_at === row.starts_at &&
@@ -592,6 +617,7 @@ export function skippedAfter(row: EventRow, next: ReturnType<typeof toRow>): str
 	const kept = expandRow({ ...row, ...next, exdates: null }, from, to, next.time_zone)
 		.filter((o) => days.includes(dayOf(o)))
 		.map((o) => (o.allDay ? o.key : Number(o.key)));
+	if (undoable) for (const e of old) if (!kept.includes(e)) kept.push(e);
 	return kept.length ? JSON.stringify(kept) : null;
 }
 
@@ -791,11 +817,39 @@ export async function occurrencesBetween(
 	return sortOccurrences(out, timeZone);
 }
 
+/** The time a subscription's all-day reminders are due: its own, else the family's. */
+export const subscriptionReminderTime = (
+	sub: Pick<SubscriptionRow, 'reminder_time'>,
+	familyTime: string,
+): string => sub.reminder_time ?? familyTime;
+
+/**
+ * What a planned reminder of a subscription event checks before it is sent: the event as fetched
+ * and, once chosen, the subscription's timing, so a change of either drops what was planned before.
+ */
+export function externalVersion(
+	row: Pick<ExternalEventRow, 'fingerprint'>,
+	sub: Pick<SubscriptionRow, 'reminder_days' | 'reminder_time' | 'reminder_minutes'>,
+): string {
+	const timing = [sub.reminder_days, sub.reminder_time, sub.reminder_minutes];
+	return timing.every((v) => v === null)
+		? row.fingerprint
+		: `${row.fingerprint}|${timing.join('|')}`;
+}
+
 /** A subscription event shaped like a family event, so expansion and reminders are shared. */
 export function externalAsEvent(
 	row: ExternalEventRow,
-	sub: Pick<SubscriptionRow, 'id' | 'member_ids'>,
+	sub: Pick<SubscriptionRow, 'id' | 'member_ids'> &
+		Partial<Pick<SubscriptionRow, 'reminder_days' | 'reminder_minutes'>>,
 ): EventRow {
+	// All-day: whole days before the subscription's reminder time (see `subscriptionReminderTime`).
+	const days = sub.reminder_days ?? null;
+	const lead = row.all_day
+		? days === null
+			? null
+			: days * 24 * 60
+		: (sub.reminder_minutes ?? null);
 	return {
 		id: `${row.subscription_id}:${row.uid}:${row.recurrence_key}`,
 		title: row.title,
@@ -814,9 +868,9 @@ export function externalAsEvent(
 		tags: row.tags,
 		series_id: null,
 		recurrence_key: null,
-		// Nobody chose: the default lead time applies.
-		reminder_minutes: null,
-		reminder_set: 0,
+		// Unset: the default lead time applies.
+		reminder_minutes: lead,
+		reminder_set: lead === null ? 0 : 1,
 		created_by: null,
 		source_kind: 'subscription',
 		source_id: sub.id,

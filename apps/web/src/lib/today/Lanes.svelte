@@ -943,45 +943,52 @@
 		}
 	}
 
+	/* The wide arrangements also need their room in rem in the `today` container (Today's
+	   page, the style preview, a display): 43.5rem is what a 1024 px window leaves beside the
+	   sidebar, 59.5rem a 1280 px one. At the normal text size they switch with the window; with
+	   larger text (Settings, Appearance) the columns grow, so a window steps down to the
+	   arrangement whose columns still fit. A display has more room than that at every width. */
 	/* From 1024 px: the head is one row, the board and the chart take the width, the band is a grid. */
 	@media (min-width: 1024px) {
-		.ln {
-			--ramp-clock: 4.5rem;
-			--ramp-countdown: 4.5rem;
-			--ramp-hero: 1.875rem;
-			--ramp-big: 3rem;
-			--ramp-date: 1.375rem;
-			--lanes-head: 9.75rem;
-			gap: 24px;
-		}
-		.ln > * {
-			order: 0;
-		}
-		.top {
-			display: grid;
-			grid-template-columns: auto minmax(0, 1fr);
-			align-items: center;
-			gap: 28px;
-		}
-		.top > * {
-			order: 0;
-		}
-		.band {
-			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-			align-items: start;
-			/* Wide enough between blocks for a section's ⋯, which hangs past its row's end. */
-			gap: 24px 44px;
-		}
-		.band > * {
-			order: var(--o, 50);
-		}
-		.band > .wide {
-			grid-column: 1 / -1;
-		}
-		.band > .two,
-		.band > [data-testid='needs-you'] {
-			grid-column: span 2;
+		@container today (min-width: 43.5rem) {
+			.ln {
+				--ramp-clock: 4.5rem;
+				--ramp-countdown: 4.5rem;
+				--ramp-hero: 1.875rem;
+				--ramp-big: 3rem;
+				--ramp-date: 1.375rem;
+				--lanes-head: 9.75rem;
+				gap: 24px;
+			}
+			.ln > * {
+				order: 0;
+			}
+			.top {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				align-items: center;
+				gap: 28px;
+			}
+			.top > * {
+				order: 0;
+			}
+			.band {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+				align-items: start;
+				/* Wide enough between blocks for a section's ⋯, which hangs past its row's end. */
+				gap: 24px 44px;
+			}
+			.band > * {
+				order: var(--o, 50);
+			}
+			.band > .wide {
+				grid-column: 1 / -1;
+			}
+			.band > .two,
+			.band > [data-testid='needs-you'] {
+				grid-column: span 2;
+			}
 		}
 	}
 
@@ -1045,26 +1052,30 @@
 		}
 	}
 	@media (min-width: 1024px) {
-		.top:not(:has(> .head :is(.when, .sentence, .status), > .blk:not(:empty))) {
-			display: none;
-		}
-		.top:not(:has(> .head :is(.when, .sentence, .status))) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.band:not(:has(> :not(.hidden, .gone, :empty))) {
-			display: none;
+		@container today (min-width: 43.5rem) {
+			.top:not(:has(> .head :is(.when, .sentence, .status), > .blk:not(:empty))) {
+				display: none;
+			}
+			.top:not(:has(> .head :is(.when, .sentence, .status))) {
+				grid-template-columns: minmax(0, 1fr);
+			}
+			.band:not(:has(> :not(.hidden, .gone, :empty))) {
+				display: none;
+			}
 		}
 	}
 
 	/* From 1280 px: the sizes of the design (a 92 px clock, an 84 px countdown, a 36 px title). */
 	@media (min-width: 1280px) {
-		.ln {
-			--ramp-clock: 5.75rem;
-			--ramp-countdown: 5.25rem;
-			--ramp-hero: 2.25rem;
-			--ramp-big: 3.5rem;
-			--ramp-date: 1.625rem;
-			--lanes-head: 10.625rem;
+		@container today (min-width: 59.5rem) {
+			.ln {
+				--ramp-clock: 5.75rem;
+				--ramp-countdown: 5.25rem;
+				--ramp-hero: 2.25rem;
+				--ramp-big: 3.5rem;
+				--ramp-date: 1.625rem;
+				--lanes-head: 10.625rem;
+			}
 		}
 	}
 </style>

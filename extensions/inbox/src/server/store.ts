@@ -43,6 +43,8 @@ export type InboxTables = {
 		model: string | null;
 		/** Incremented on every retry, so drafts from a new extraction get new dedupe keys. */
 		extraction: number;
+		/** When a dismissed item's files were deleted; null while they are still kept. */
+		files_removed_at: number | null;
 		created_by: string | null;
 		created_at: number;
 		updated_at: number;
@@ -107,6 +109,11 @@ export const migrations: Migrations = {
 				.alterTable('inbox_items')
 				.addColumn('skips', 'text', (c) => c.notNull().defaultTo('[]'))
 				.execute();
+		},
+	},
+	'0005_files_removed_at': {
+		async up(db) {
+			await db.schema.alterTable('inbox_items').addColumn('files_removed_at', 'integer').execute();
 		},
 	},
 };

@@ -42,6 +42,8 @@
 	const { app, t } = useHomeAssistant();
 
 	let connection = $state<Connection>({ connected: false });
+	// A failed read says so; it never passes for "not connected", whose page offers to connect.
+	let loadError = $state(false);
 	let panelOpen = $state(false);
 	let disconnecting = $state(false);
 	let address = $state('');
@@ -54,12 +56,15 @@
 	let tested = $state<Tested | null>(null);
 	let items = $state<{ add(): void }>();
 	let full = $state(false);
+	/** Testing reaches the home network and saving sets the token: both need a password sign-in. */
+	const mayConnect = $derived(app.fullSignIn());
 
 	async function load() {
 		try {
 			connection = await loadConnection();
+			loadError = false;
 		} catch {
-			connection = { connected: false };
+			loadError = true;
 		}
 	}
 	onMount(() => void load());
@@ -243,7 +248,9 @@
 <Page template="settings">
 	<PageHeader title={t('nav_label')} subtitle={t('subtitle')}>
 		{#snippet actions()}
-			{#if connected}
+			{#if loadError}
+				<!-- Nothing to offer until the connection can be read. -->
+			{:else if connected}
 				{#if working}
 					<Button
 						disabled={full}
@@ -274,7 +281,14 @@
 	</PageHeader>
 
 	<div class="grid gap-5">
-		{#if connected}
+		{#if loadError}
+			<div class="grid gap-2" role="alert">
+				<Notice tone="alert">{t('load_failed')}</Notice>
+				<div>
+					<Button variant="outline" size="sm" onclick={() => void load()}>{t('load_retry')}</Button>
+				</div>
+			</div>
+		{:else if connected}
 			<Card rows>
 				<Row title={addressText(connected)} meta={t('fact_address')} />
 				{#if connected.name}<Row title={connected.name} meta={t('fact_name')} />{/if}
@@ -315,7 +329,7 @@
 			: step === 'failed'
 				? t('test_again')
 				: t('test_button')}
-	saveDisabled={busy || testing}
+	saveDisabled={busy || testing || !mayConnect}
 	onsave={() => formEl?.requestSubmit()}
 	onclose={() => (panelOpen = false)}
 	dirty={panelOpen && (token !== '' || address !== (connected ? addressText(connected) : ''))}
@@ -332,6 +346,9 @@
 		onsubmit={submit}
 		aria-label={connected ? t('change_title') : t('connect_title')}
 	>
+		{#if !mayConnect}
+			<Notice tone="info">{t('password_needed')}</Notice>
+		{/if}
 		<div class="grid gap-1.5">
 			<Label for="ha-address">{t('field_address')}</Label>
 			<Input
@@ -368,7 +385,7 @@
 			<div class="grid gap-2" aria-live="polite">
 				<Notice tone={testedSays.tone}>{testedSays.text}</Notice>
 				{#if step === 'failed'}
-					<Button variant="outline" type="button" disabled={busy} onclick={save}
+					<Button variant="outline" type="button" disabled={busy || !mayConnect} onclick={save}
 						>{t('test_save_anyway')}</Button
 					>
 				{/if}

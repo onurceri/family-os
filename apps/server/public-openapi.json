@@ -3350,6 +3350,14 @@
 					"timeZone"
 				]
 			},
+			"ListsReopenTaskRequest": {
+				"type": "object",
+				"properties": {
+					"completionId": {
+						"type": "string"
+					}
+				}
+			},
 			"Discovery": {
 				"type": "object",
 				"properties": {
@@ -8091,6 +8099,16 @@
 						"in": "header"
 					}
 				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ListsReopenTaskRequest"
+							}
+						}
+					}
+				},
 				"responses": {
 					"200": {
 						"description": "Applied",

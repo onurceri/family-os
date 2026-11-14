@@ -30,41 +30,19 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"error": "unavailable",
-			"toolCalls": []
-		},
-		{
-			"kind": "object",
-			"feature": "assistant.chat",
-			"output": {
-				"parts": [
-					{
-						"intent": "change",
-						"quote": "take the cheddar off the shopping list, I dont like it",
-						"topics": [
-							"shopping"
-						],
-						"people": [
-							{
-								"said": "I"
-							}
-						],
-						"about": [
-							"cheddar"
-						]
-					}
-				]
-			}
-		},
-		{
-			"kind": "chat",
-			"feature": "assistant.chat",
-			"error": "unavailable",
+			"text": "Suggested, not added yet: Remove a shopping item: Cheddar. It appears once someone in the household approves it.",
 			"toolCalls": [
 				{
 					"name": "lists_shoppingList",
 					"input": {
 						"text": "cheddar"
+					}
+				},
+				{
+					"name": "lists_deleteShoppingItem",
+					"input": {
+						"id": "shop_item:1",
+						"label": "cheddar"
 					}
 				}
 			]

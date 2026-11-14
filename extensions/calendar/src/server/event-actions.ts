@@ -167,10 +167,18 @@ export const updateEvent = defineAction({
 			// The first date of a series has nothing before it to keep: "from here on" is all of it.
 			if (scope === 'this' || compareDates(day, toDetail(row).date) > 0) {
 				const { recurrence: _repeat, ...single } = event;
+				const own = toRow(scope === 'this' ? single : event, timeZone);
+				// Dates skipped from the split on stay skipped in the new series, at its time of day.
+				const later = (row.exdates ? (JSON.parse(row.exdates) as (string | number)[]) : []).filter(
+					(e) => (row.all_day ? String(e) >= occurrence : Number(e) >= Number(occurrence)),
+				);
 				const created = {
 					id: uow.ids.next('cal_event'),
-					...toRow(scope === 'this' ? single : event, timeZone),
-					exdates: null,
+					...own,
+					exdates:
+						scope === 'following' && later.length
+							? skippedAfter({ ...row, exdates: JSON.stringify(later) }, own)
+							: null,
 					series_id: scope === 'this' ? id : null,
 					recurrence_key: scope === 'this' ? occurrence : null,
 					created_by: row.created_by,
@@ -214,14 +222,14 @@ export const updateEvent = defineAction({
 						.where('id', '=', id)
 						.execute();
 					// Dates moved out of the part that now belongs to the new series go with it.
-					const later = (key: string | null) =>
+					const isLater = (key: string | null) =>
 						key !== null && (row.all_day ? key >= occurrence : Number(key) >= Number(occurrence));
 					const linked = await events(uow.db)
 						.selectFrom('calendar_events')
 						.select(['id', 'recurrence_key'])
 						.where('series_id', '=', id)
 						.execute();
-					for (const moved of linked.filter((m) => later(m.recurrence_key))) {
+					for (const moved of linked.filter((m) => isLater(m.recurrence_key))) {
 						await events(uow.db)
 							.updateTable('calendar_events')
 							.set({ series_id: created.id, updated_at: now })

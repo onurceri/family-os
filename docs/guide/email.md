@@ -51,7 +51,7 @@ Mail from addresses not listed is ignored.
 
 Read and kept:
 - Subject (as title) and **plain text**. HTML-only mail is converted on the server: tags dropped, line breaks and lists kept, links written out as text.
-- Attachments that are really PDFs, pictures, audio or plain text: at most 6 per mail, 25 MB together. Pictures lose location data. File content is checked, so a fake `invoice.pdf` is skipped, as are layout pictures (logos, signatures).
+- Attachments that are really PDFs, pictures (JPEG, PNG, WebP or GIF), audio or plain text: at most 6 per mail, 25 MB together. Pictures lose location data. File content is checked, so a fake `invoice.pdf` is skipped, as are layout pictures (logos, signatures).
 
 Never:
 - Loading any picture, link, font or script, so tracking pixels do nothing. HTML mail is never shown.

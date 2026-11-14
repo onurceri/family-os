@@ -28,6 +28,7 @@
 	"field_token": "Token",
 	"token_hint": "Crea un usuario aparte en Home Assistant para FamilyOS (que no sea administrador), inicia sesión con él y crea un token de acceso de larga duración en Perfil → Seguridad. Home Assistant no puede limitar lo que hace un token, así que FamilyOS solo lo usa para leer y para cambiar lo que permitas aquí.",
 	"token_change_hint": "Introduce el token otra vez, aunque no haya cambiado: FamilyOS lo mantiene oculto y no puede mostrarlo.",
+	"password_needed": "Inicia sesión con tu contraseña para probar o guardar la conexión. Un PIN en un dispositivo compartido no basta.",
 	"token_error": "Introduce el token tal como lo muestra Home Assistant, sin espacios.",
 	"fact_address": "Dirección",
 	"fact_name": "Casa",
@@ -223,5 +224,7 @@
 	"history_failed": "No se pudo cambiar {{name}}",
 	"history_someone": "Alguien",
 	"history_item_label": "Cambiado aquí hace poco",
-	"history_item_empty": "Nadie ha cambiado esto desde FamilyOS todavía."
+	"history_item_empty": "Nadie ha cambiado esto desde FamilyOS todavía.",
+	"load_failed": "No se pudo leer la conexión.",
+	"load_retry": "Intentar de nuevo"
 }

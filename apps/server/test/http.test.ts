@@ -773,7 +773,12 @@ describe('HTTP API', () => {
 		expect(created.status).toBe(201);
 		const devices = await call('GET', '/api/v1/push/subscriptions', undefined, cookie);
 		expect(devices.body).toEqual([
-			{ label: 'Pixel · Chrome', createdAt: expect.any(Number), lastSuccessAt: null },
+			{
+				endpointId: expect.stringMatching(/^[0-9a-f]{64}$/),
+				label: 'Pixel · Chrome',
+				createdAt: expect.any(Number),
+				lastSuccessAt: null,
+			},
 		]);
 		expect(JSON.stringify(devices.body)).not.toContain('fcm.googleapis.com');
 

@@ -30,6 +30,7 @@
 	import { useAssistant } from './i18n.js';
 	import { reduceStream, type StreamState, settleStream } from './stream.js';
 	import ThreadList from './ThreadList.svelte';
+	import { threadIsGone } from './thread-gone.js';
 
 	/**
 	 * The Ask page, in the chat template: a conversation column (760 px) and the
@@ -144,9 +145,10 @@
 			if (current !== id) return;
 			messages = detail.messages;
 			streams = settleStream(streams, new Set(detail.messages.filter(isOpen).map((m) => m.id)));
-		} catch {
-			// A deleted thread: back to the empty state.
-			if (current === id) await open(null);
+		} catch (error) {
+			// Only a deleted thread leaves the conversation; any other failure keeps what is shown and
+			// the next refresh (polling or the next event) reads again.
+			if (threadIsGone(error) && current === id) await open(null);
 		}
 	}
 

@@ -106,5 +106,6 @@
 	"draft_title_update_pet": "Cambiar una mascota",
 	"draft_title_archive_pet": "Archivar una mascota",
 	"draft_title_add_treatment": "Añadir un tratamiento",
-	"draft_title_remove_treatment": "Eliminar un tratamiento"
+	"draft_title_remove_treatment": "Eliminar un tratamiento",
+	"draft_title_undo_treatment": "Deshacer añadir un tratamiento"
 }

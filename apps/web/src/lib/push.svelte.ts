@@ -1,9 +1,11 @@
 import { unwrap } from '@famos/api-client';
 import { api } from './api';
+import { endpointId, isRegistered } from './push-endpoint.js';
 
 export type PushSupport = 'ok' | 'ios-home-screen' | 'unsupported';
 
 export interface PushDevice {
+	endpointId: string;
 	label: string;
 	createdAt: number;
 	lastSuccessAt: number | null;
@@ -63,7 +65,7 @@ function readyRegistration(): Promise<ServiceWorkerRegistration> {
 class PushState {
 	support = $state<PushSupport>('ok');
 	permission = $state<NotificationPermission>('default');
-	/** This browser holds a subscription (and the server knows it after `enable`). */
+	/** This browser holds a subscription that is registered for the signed-in member. */
 	subscribed = $state(false);
 	devices = $state<PushDevice[]>([]);
 	busy = $state(false);
@@ -80,14 +82,20 @@ class PushState {
 		}
 		this.support = 'ok';
 		this.permission = Notification.permission;
+		const res = await api.GET('/api/v1/push/subscriptions');
+		if (res.data) this.devices = res.data;
 		try {
 			const registration = await readyRegistration();
-			this.subscribed = (await registration.pushManager.getSubscription()) !== null;
+			const subscription = await registration.pushManager.getSubscription();
+			// A subscription another member registered on this shared browser is not mine: "off
+			// here" until I enable it, which hands the browser's own subscription to me.
+			this.subscribed =
+				subscription !== null &&
+				res.data !== undefined &&
+				isRegistered(res.data, await endpointId(subscription.endpoint));
 		} catch {
 			this.subscribed = false;
 		}
-		const res = await api.GET('/api/v1/push/subscriptions');
-		if (res.data) this.devices = res.data;
 	}
 
 	/**
@@ -139,6 +147,21 @@ class PushState {
 		} finally {
 			this.busy = false;
 		}
+	}
+
+	/**
+	 * Signing out: stops this browser receiving the leaving member's notifications. Removes its
+	 * registration on the server (needs the session) and the browser's subscription. Best effort.
+	 */
+	async release(): Promise<void> {
+		if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+		// Not `ready`: with no service worker there is nothing to release and nothing to wait for.
+		const registration = await navigator.serviceWorker.getRegistration();
+		const subscription = await registration?.pushManager.getSubscription();
+		if (!subscription) return;
+		await api.DELETE('/api/v1/push/subscriptions', { body: { endpoint: subscription.endpoint } });
+		await subscription.unsubscribe();
+		this.subscribed = false;
 	}
 
 	/** Sends a test to all my devices; the number reached. */

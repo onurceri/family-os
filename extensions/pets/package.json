@@ -1,12 +1,12 @@
 {
 	"name": "@famos/ext-pets",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"type": "module",
 	"famos": {
 		"id": "pets",
-		"version": "0.9.0",
+		"version": "0.10.0",
 		"sdk": "^0.8.0",
 		"dependsOn": [
 			"records"
@@ -23,7 +23,8 @@
 			"records.archiveForRecord",
 			"records.dueBetween",
 			"records.completeObligation",
-			"records.renameRecord"
+			"records.renameRecord",
+			"records.undoCompletion"
 		]
 	},
 	"exports": {

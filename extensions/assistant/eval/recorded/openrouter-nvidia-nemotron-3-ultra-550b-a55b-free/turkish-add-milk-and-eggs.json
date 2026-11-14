@@ -23,7 +23,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Süt ve yumurta alışveriş listesine eklenmek üzere öneri oluşturuldu. Bu öneri bir aile üyesi onaylayana kadar listeye eklenmeyecek.",
+			"text": "Süt ve yumurta alışveriş listesine eklenmek üzere önerildi. Bu öneri henüz onaylanmadı; ailedeki bir kişi onayladığında listeye eklenecek.",
 			"toolCalls": [
 				{
 					"name": "lists_addShoppingItems",

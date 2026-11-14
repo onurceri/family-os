@@ -31,7 +31,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "Meals shows nothing for Friday, October 9. Calendar shows Dinner at Nona Marija's on Friday, October 9 from 6:30 PM to 9:00 PM.",
+			"text": "Meals shows nothing for Friday, October 9. The calendar lists Dinner at Nona Marija's from 6:30 PM–9:00 PM.",
 			"toolCalls": []
 		}
 	]

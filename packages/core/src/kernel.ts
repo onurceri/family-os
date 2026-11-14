@@ -26,7 +26,7 @@ import type {
 	SecretBox,
 	TelegramLinkAdmin,
 } from '@famos/sdk';
-import { QUESTION_TOPIC_IDS, type QuestionTopic, tablePrefixOf } from '@famos/sdk';
+import { FamosError, QUESTION_TOPIC_IDS, type QuestionTopic, tablePrefixOf } from '@famos/sdk';
 import type { KyselyPlugin } from 'kysely';
 import { z } from 'zod';
 import { type Access, createAccess } from './access.ts';
@@ -177,7 +177,7 @@ export interface Kernel {
 	readonly access: Access;
 	/** The change log: what changed since a cursor, and a validator for a collection. */
 	readonly changes: ChangesReader;
-	/** Extensions turned on or off (Settings → Features). */
+	/** Extensions turned on or off (Settings → Family → Extensions). */
 	readonly features: Features;
 	/** What the AI may use per area (Settings → AI). */
 	readonly aiAreas: AiAreas;
@@ -431,7 +431,15 @@ export function createKernel(options: KernelOptions): Kernel {
 		return plugin;
 	};
 	const boxes = new Map<string, SecretBox>();
+	const assertJob = (id: string, job: string) => {
+		if (isHost(id) || ownerOf(job) === id) return;
+		throw new FamosError(
+			'forbidden',
+			`Extension "${id}" may not enqueue "${job}": it is not its job`,
+		);
+	};
 	const views: ExtensionViews = {
+		assertJob,
 		db: (id, db) => (isHost(id) ? db : db.withPlugin(pluginFor(id))),
 		files: (id, db) =>
 			isHost(id)
@@ -682,6 +690,10 @@ export function createKernel(options: KernelOptions): Kernel {
 				},
 				http: scopedHttp(options.http, ext.manifest),
 				actions: invokerFor(id),
+				async enqueue(job, payload, enqueueOptions) {
+					assertJob(id, job);
+					return ctx.enqueue(job, payload, enqueueOptions);
+				},
 			};
 			contexts.set(id, made);
 		}

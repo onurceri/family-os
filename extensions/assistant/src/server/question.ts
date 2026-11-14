@@ -28,7 +28,7 @@ import {
 } from '@famos/time';
 import { type AnswerCard, CHAT_FEATURE, type LeadCheck } from '../contract/index.ts';
 import { LEAD_TIMEOUT_MS } from './budget.ts';
-import { buildCard, type CardWords, cardText, type Fetched } from './card.ts';
+import { buildCard, type CardWords, cardText, type Fetched, withoutPeople } from './card.ts';
 import { checkLead, firstSentences, leadBudget, leadPrompt, leadSystem } from './lead.ts';
 import type { RecordedCall } from './tools.ts';
 import type { Question } from './understand.ts';
@@ -155,6 +155,8 @@ export interface QuestionInput {
 	/** The thread's handles, so a follow-up ("move it") can point at what the card showed. */
 	table: HandleTable;
 	labels: Map<string, string>;
+	/** The area each record the card shows came from (handle → area), for later turns. */
+	origins: Map<string, string>;
 	/** Members the question's earlier part, or else the thread's previous question, was about: whom a pronoun ("his") stands for. */
 	carried?: readonly string[];
 	jobId: string;
@@ -261,10 +263,13 @@ export async function answerQuestion(
 		}
 	}
 	// What the card shows keeps its handles, so the next message can point at it.
-	for (const { output } of fetched)
+	for (const { topic, output } of fetched)
 		for (const item of output.items) {
 			const kind = item.handle ? typedIdKind(item.handle) : null;
-			if (item.handle && kind) input.labels.set(input.table.add(kind, item.handle), item.title);
+			if (!item.handle || !kind) continue;
+			const handle = input.table.add(kind, item.handle);
+			input.labels.set(handle, item.title);
+			input.origins.set(handle, QUESTION_TOPICS[topic]);
 		}
 	const facts = buildCard({
 		topics: plan.topics,
@@ -339,20 +344,7 @@ async function wordLead(
 ): Promise<{ lead: string; check: LeadCheck | null }> {
 	const { member, settings, policy } = input;
 	// Without names for the model, the facts it reads name nobody.
-	const shown = policy.sendPeople
-		? text
-		: cardText(
-				{
-					...facts,
-					understood: { ...facts.understood, people: [], unmatched: [] },
-					sections: facts.sections.map((s) => ({
-						...s,
-						items: s.items.map((i) => ({ ...i, people: [] })),
-						...(s.next && { next: { ...s.next, people: [] } }),
-					})),
-				},
-				words,
-			);
+	const shown = policy.sendPeople ? text : cardText(withoutPeople(facts), words);
 	const budget = leadBudget(member.about, input.via, ctx.vocabulary('assistant:words_age'));
 	const areas = [
 		'assistant',

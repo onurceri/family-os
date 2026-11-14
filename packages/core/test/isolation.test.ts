@@ -142,6 +142,14 @@ const notes = defineTestExtension({
 			},
 		}),
 		defineAction({
+			id: 'notes.enqueue',
+			title: 'Enqueue a job',
+			input: z.object({ job: z.string() }),
+			output: z.unknown(),
+			readOnly: true,
+			run: async (uow, { job }) => uow.enqueue(job, {}),
+		}),
+		defineAction({
 			id: 'notes.call',
 			title: 'Run another action',
 			input: z.object({ target: z.string() }),
@@ -186,6 +194,7 @@ const tasks = defineTestExtension({
 	capabilities: [tasksUse],
 	migrations: { '0001_items': { up: table('tasks_items') } },
 	actions: [countTasks, tasksForAi, tasksPrivate, addTask],
+	jobs: [defineJob({ name: 'tasks.sweep', payload: z.object({}), async handle() {} })],
 });
 
 const forbidden = { code: 'forbidden' };
@@ -294,6 +303,22 @@ describe('the database', () => {
 			scope: 'sloppy',
 			cause: forbidden,
 		});
+	});
+});
+
+describe('jobs', () => {
+	it('lets an extension enqueue its own jobs only, from an action and from its context', async () => {
+		await expect(run('notes.enqueue', { job: 'notes.look' })).resolves.toMatchObject({
+			status: 'applied',
+		});
+		const error = await run('notes.enqueue', { job: 'tasks.sweep' }).catch((e: unknown) => e);
+		expect(error).toMatchObject(forbidden);
+		expect(String((error as Error).message)).toContain('tasks.sweep');
+		const { enqueue } = k.contextFor('notes');
+		await expect(enqueue('notes.look', {})).resolves.toEqual(expect.any(String));
+		await expect(enqueue('tasks.sweep', {})).rejects.toMatchObject(forbidden);
+		// The host reaches every job.
+		await expect(k.ctx.enqueue('tasks.sweep', {})).resolves.toEqual(expect.any(String));
 	});
 });
 

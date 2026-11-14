@@ -31,7 +31,7 @@ Quick add is where you give FamilyOS a message, a photo, a document or a voice n
 
 ### Giving it something
 
-- **On the Quick add page:** paste, type or describe something in the box, or use the paperclip (**Attach a photo or file**) for pictures, PDFs or text files. The microphone (**Record a voice note**) records; press again to stop. Press **Send**. One capture holds up to 6 files and 25 MB in all. There is a daily limit per person.
+- **On the Quick add page:** paste, type or describe something in the box, or use the paperclip (**Attach a photo or file**) for pictures (JPEG, PNG, WebP or GIF), PDFs or text files. The microphone (**Record a voice note**) records; press again to stop. Press **Send**. One capture holds up to 6 files and 25 MB in all. There is a daily limit per person.
 - **From any page on a wide screen:** the **Quick add** button at the top of the side bar (round **+** on a tablet) opens a panel; **Open Quick add** goes to the page.
 - **From your phone:** **Share → FamilyOS** on a message, photo, document or link; press **Send** (or **Discard**). Setup: [HTTPS and phones](https.md).
 - **By mail or Telegram:** see [Email](email.md) and [Telegram](telegram.md).
@@ -130,7 +130,7 @@ A fully decided capture leaves by itself. Nothing found: **Nothing to add was fo
 
 The capture says why: **AI is not set up yet. What you added is kept here.**, **The AI service is not answering right now.**, **The AI provider refused the key.**, **This month's AI limit is reached.**, **The model took too long to answer.**, **This kind of file cannot be read.**, **This is too long for the AI to read in one go. Share it in smaller parts.** Admins get a link to the AI settings. Fix the cause, then **Try again**. If AI is off for this kind of capture: **AI is off. Kept here unread.**; press **Read now**.
 
-**Remove** (then **Tap again to remove**) takes a capture away and declines its waiting suggestions. Only the person who made a capture can remove, re-read or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
+**Remove** (then **Tap again to remove**) takes a capture away, declines its waiting suggestions and deletes its photos and files (papers already filed on a record stay there). Only the person who made a capture can remove, re-read or file it; adults who see a supervised member's capture can decide its suggestions but not change the capture.
 
 ## The calendar
 

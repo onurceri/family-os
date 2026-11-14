@@ -161,6 +161,8 @@ const STYLE_CHOICES_KEY = 'styles.choices';
 const TODAY_CHOICES_KEY = 'today.hidden';
 /** The pages each display shows between Today's turns: `{ displays: { <device id>: Rotation } }`. */
 const PAGES_KEY = 'displays.pages';
+/** Each display's text size: `{ displays: { <device id>: TextSize } }`; a missing one is normal. */
+const TEXT_SIZE_KEY = 'displays.textSize';
 const FETCH_KEY = 'themes.fetch';
 export const FETCH_THEME_JOB = 'core.fetchThemePack';
 
@@ -184,6 +186,13 @@ interface HiddenChoices {
 	members: Record<string, unknown>;
 	displays: Record<string, unknown>;
 }
+
+/** How large a display draws its text, the same steps as a person's own device (Appearance). */
+export const TEXT_SIZES = ['small', 'normal', 'large', 'larger'] as const;
+export type TextSize = (typeof TEXT_SIZES)[number];
+const TextSizeSchema = z.enum(TEXT_SIZES);
+const isTextSize = (value: unknown): value is TextSize =>
+	typeof value === 'string' && (TEXT_SIZES as readonly string[]).includes(value);
 
 const AppearanceSchema = z.object({
 	/** The theme this caller sees: a display's own, else the member's, else the family's. */
@@ -209,6 +218,8 @@ const AppearanceSchema = z.object({
 	familyHidden: z.array(z.string()),
 	/** The caller's own choice of what Today hides; null follows the family. */
 	myHidden: z.array(z.string()).nullable(),
+	/** A display's own text size; normal for everyone else, whose size is kept on their device. */
+	textSize: TextSizeSchema,
 });
 
 /** A pack with its fonts is at most 1.5 MB decoded; base64 adds a third. */
@@ -288,6 +299,15 @@ export function createThemes(deps: ThemesDeps) {
 		return { hidden: own ?? familyHidden, familyHidden, myHidden };
 	}
 
+	/** The text size chosen per display; an unknown value is left out, so it reads as normal. */
+	async function readTextSizes(db: DbExecutor): Promise<Record<string, TextSize>> {
+		const stored = await readJson<{ displays?: Record<string, unknown> }>(db, TEXT_SIZE_KEY, {});
+		const out: Record<string, TextSize> = {};
+		for (const [deviceId, size] of Object.entries(stored.displays ?? {}))
+			if (isTextSize(size) && size !== 'normal') out[deviceId] = size;
+		return out;
+	}
+
 	/** The rotations of displays that are still paired; one that is revoked or not a screen is dropped. */
 	async function readRotations(db: DbExecutor): Promise<Record<string, Rotation>> {
 		const stored = await readJson<{ displays?: Record<string, unknown> }>(db, PAGES_KEY, {});
@@ -336,6 +356,10 @@ export function createThemes(deps: ThemesDeps) {
 			mine,
 			...(await effectiveStyle(db, actor, theme)),
 			...(await effectiveHidden(db, actor)),
+			textSize:
+				actor?.kind === 'display'
+					? ((await readTextSizes(db))[actor.deviceId] ?? 'normal')
+					: ('normal' as const),
 		};
 	}
 
@@ -456,6 +480,18 @@ export function createThemes(deps: ThemesDeps) {
 				if (hidden) out[deviceId] = hidden;
 			}
 			return out;
+		},
+	});
+
+	const displayTextSizes = defineRoute({
+		method: 'get',
+		path: '/displays/text-size',
+		operationId: 'core.listDisplayTextSizes',
+		summary: 'The text size chosen for each display (display id → size); missing is normal',
+		requires: CORE_CAPABILITIES.devicesManage.id,
+		response: z.record(z.string(), TextSizeSchema),
+		async handle(ctx) {
+			return readTextSizes(ctx.db);
 		},
 	});
 
@@ -745,6 +781,31 @@ export function createThemes(deps: ThemesDeps) {
 		},
 	});
 
+	const setDisplayTextSize = defineAction({
+		id: 'core.setDisplayTextSize',
+		title: 'Choose the text size of a display',
+		input: z.object({ deviceId: z.string().max(80), size: TextSizeSchema }),
+		output: z.object({ deviceId: z.string(), size: TextSizeSchema }),
+		requires: CORE_CAPABILITIES.devicesManage.id,
+		approval: 'never',
+		async run(uow, input) {
+			const device = await uow.db
+				.withTables<CoreTables>()
+				.selectFrom('core_devices')
+				.select(['kind', 'revoked_at'])
+				.where('id', '=', input.deviceId)
+				.executeTakeFirst();
+			if (device?.kind !== 'kiosk' || device.revoked_at !== null)
+				throw new FamosError('not_found', 'No such display');
+			const displays = { ...(await readTextSizes(uow.db)) };
+			if (input.size === 'normal') delete displays[input.deviceId];
+			else displays[input.deviceId] = input.size;
+			await writeJson(uow.db, TEXT_SIZE_KEY, { displays }, uow.clock.now());
+			uow.emit(themesChanged, { id: null });
+			return { deviceId: input.deviceId, size: input.size };
+		},
+	});
+
 	const setDisplayPages = defineAction({
 		id: 'core.setDisplayPages',
 		title: 'Choose the pages a display shows between the turns of Today',
@@ -786,6 +847,7 @@ export function createThemes(deps: ThemesDeps) {
 			setMyTodayBlocks,
 			setDisplayTodayBlocks,
 			setDisplayPages,
+			setDisplayTextSize,
 		],
 		routes: [
 			list,
@@ -795,6 +857,7 @@ export function createThemes(deps: ThemesDeps) {
 			displayStyles,
 			displayHidden,
 			displayPages,
+			displayTextSizes,
 			stylesheet,
 			font,
 		],

@@ -51,37 +51,45 @@ export function toFeed(row: FeedRow): Feed {
 	};
 }
 
-export const createFeed = defineAction({
-	id: 'calendar.createFeed',
-	title: 'Create a secret calendar address for phones and other calendars',
-	input: CreateFeedInputSchema,
-	output: CreatedFeedSchema,
+/**
+ * Makes a secret address. Minting a secret is a route, not an action: an action's answer is kept
+ * for replays, and the address must not be. It records itself in the audit log (who and which
+ * feed, never the address), and is not offered to the AI or to connected apps.
+ */
+export const createFeed = defineRoute({
+	method: 'post',
+	path: '/feeds',
+	operationId: 'calendar.createFeed',
+	summary:
+		'Create a secret calendar address for phones and other calendars; shown only in this answer',
 	requires: calendarView.id,
-	approval: 'never',
-	// The address shows the household's events to whoever holds it: never for the AI.
-	external: true,
-	async run(uow, input) {
+	status: 201,
+	body: CreateFeedInputSchema,
+	response: CreatedFeedSchema,
+	async handle(ctx, { body, actor }) {
 		// The address works anywhere, for months: only a password sign-in may make one, never a PIN.
-		assertFullSignIn(uow.actor);
+		assertFullSignIn(actor);
 		// Your own events need only the right to see the calendar; the whole family's, the right to manage.
-		if (input.scope === 'family') {
-			if (!uow.can(calendarManage.id)) throw new FamosError('forbidden', 'Not allowed');
-		} else if (input.scope !== uow.actor.memberId) {
+		if (body.scope === 'family') {
+			if (!ctx.access.can(actor, calendarManage.id))
+				throw new FamosError('forbidden', 'Not allowed');
+		} else if (body.scope !== actor.memberId) {
 			throw new FamosError('forbidden', 'A feed can only be for yourself or the whole family');
 		}
 		const token = randomBytes(32).toString('base64url');
 		const row: FeedRow = {
-			id: uow.ids.next('cal_feed'),
+			id: ctx.ids.next('cal_feed'),
 			token_hash: hashToken(token),
-			scope: input.scope,
-			include_notes: input.includeNotes ? 1 : 0,
-			label: input.label || null,
-			created_by: uow.actor.memberId,
-			created_at: uow.clock.now(),
+			scope: body.scope,
+			include_notes: body.includeNotes ? 1 : 0,
+			label: body.label || null,
+			created_by: actor.memberId,
+			created_at: ctx.clock.now(),
 			last_used_at: null,
 			revoked_at: null,
 		};
-		await events(uow.db).insertInto('calendar_feeds').values(row).execute();
+		await events(ctx.db).insertInto('calendar_feeds').values(row).execute();
+		await ctx.audit.record(actor, 'calendar.createFeed', row.id);
 		return { feed: toFeed(row), token, path: feedPath(token) };
 	},
 });

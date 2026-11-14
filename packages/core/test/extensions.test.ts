@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -12,7 +12,7 @@ import {
 	SDK_VERSION,
 	systemActor,
 } from '@famos/sdk';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest';
 import { z } from 'zod';
 import { restartRequested } from '../src/extension-install.ts';
 import {
@@ -538,7 +538,9 @@ describe('an uninstalled extension', () => {
 	});
 
 	it('keeps its drafts, which wait and say why, and break nothing', async () => {
-		const dbPath = join(await mkdtemp(join(tmpdir(), 'famos-uninstall-')), 'famos.db');
+		const dir = await mkdtemp(join(tmpdir(), 'famos-uninstall-'));
+		onTestFinished(() => rm(dir, { recursive: true, force: true }));
+		const dbPath = join(dir, 'famos.db');
 		const before = await createTestKernel({ dbPath, extensions: [things] });
 		const admin = (await before.member('admin')).actor;
 		const proposer = (await before.member('supervised')).actor;

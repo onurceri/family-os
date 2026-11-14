@@ -36,6 +36,11 @@
 					document.head.appendChild(style);
 				}
 			} catch {}
+			// This device's text size (parseTextSize in lib/text-size.ts), so text never jumps after the first paint.
+			try {
+				const size = localStorage.getItem('famos.textSize');
+				if (size === 'small' || size === 'large' || size === 'larger') document.documentElement.dataset.textSize = size;
+			} catch {}
 			// And the last style, so a styled app never draws in the default's type first.
 			try {
 				const style = localStorage.getItem('famos.style');

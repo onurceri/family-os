@@ -253,7 +253,9 @@ export const getConnection = defineRoute({
 /**
  * Tries an address and a token before they are saved, so the form can say what is wrong while the
  * person is still typing them. The same two reads as the check job, answered with the same
- * statuses; nothing is stored and the token is neither kept nor logged.
+ * statuses; nothing is stored and the token is neither kept nor logged. It reaches addresses on the
+ * home network, so it asks for the same password sign-in as saving does: a PIN or a borrowed
+ * session cannot use the server to find out what answers there.
  */
 export const testConnection = defineRoute({
 	method: 'post',
@@ -263,7 +265,8 @@ export const testConnection = defineRoute({
 	requires: homeassistantManage.id,
 	body: ConnectInputSchema,
 	response: TestResultSchema,
-	async handle(ctx, { body }) {
+	async handle(ctx, { body, actor }) {
+		assertFullSignIn(actor);
 		const base = normalizeBaseUrl(body.url);
 		if (!base) throw new FamosError('bad_request', 'The address is not an http or https address');
 		const result = await checkHomeAssistant(ctx.http, base.url, body.token, TEST_TIMEOUT_MS);

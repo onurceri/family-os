@@ -1,4 +1,4 @@
-import type { Actor } from '@famos/sdk';
+import { type Actor, isFamosError } from '@famos/sdk';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Chore } from '../src/contract/index.ts';
 import { tables } from '../src/server/store.ts';
@@ -53,6 +53,25 @@ describe('chores in the change log', () => {
 		expect(afterPeople).toBeGreaterThan(created);
 		await applied(k, 'chores.markDone', { id: chore.id, dueDate: chore.nextDue }, bora.actor);
 		expect(await versionOf(chore.id)).toBeGreaterThan(afterPeople);
+	});
+});
+
+describe('marking a chore done conditionally', () => {
+	it('applies when the version an app read still stands and refuses a stale one', async () => {
+		const chore = await create();
+		const read = await versionOf(chore.id);
+		await applied(k, 'chores.setAssignees', { id: chore.id, memberIds: [bora.id] }, ayse.actor);
+		const stale = await k.runner
+			.invoke('chores.markDone', { id: chore.id, dueDate: chore.nextDue }, ayse.actor, {
+				ifMatch: read,
+			})
+			.catch((e: unknown) => e);
+		expect(isFamosError(stale) && stale.code).toBe('precondition_failed');
+		const current = await versionOf(chore.id);
+		await k.runner.invoke('chores.markDone', { id: chore.id, dueDate: chore.nextDue }, ayse.actor, {
+			ifMatch: current,
+		});
+		expect(await versionOf(chore.id)).toBeGreaterThan(current);
 	});
 });
 

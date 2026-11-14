@@ -508,6 +508,59 @@ describe('AI', () => {
 		expect(await recipes()).toHaveLength(1);
 	});
 
+	it('holds a supervised member’s change to a recipe or a meal as a draft, and refuses a display', async () => {
+		const kid = await person(k, 'supervised', 'Elif');
+		const recipe = await addRecipe();
+		const meal = await applied<MealEntry>(
+			k,
+			'kitchen.addToMealPlan',
+			{ date: '2026-10-07', title: 'Pasta' },
+			admin.actor,
+		);
+		const recipeChange = {
+			id: recipe.id,
+			recipe: {
+				title: 'Red lentil soup',
+				servings: null,
+				totalMinutes: null,
+				ingredients: ['lentils'],
+				steps: [],
+				notes: null,
+				sourceUrl: null,
+				tags: ['soup'],
+			},
+		};
+		const mealChange = {
+			id: meal.id,
+			entry: { date: '2026-10-08', slot: 'lunch', recipeId: null, title: 'Pasta bake', note: null },
+		};
+		const display = { kind: 'display', deviceId: 'd1', capabilities: ['kitchen.view'] } as never;
+		for (const [id, input] of [
+			['kitchen.updateRecipe', recipeChange],
+			['kitchen.updateMealPlanEntry', mealChange],
+		] as const) {
+			await expect(k.runner.invoke(id, input, display)).rejects.toMatchObject({
+				code: 'forbidden',
+			});
+		}
+		expect((await recipes())[0]?.title).toBe('Lentil soup');
+		expect((await meals())[0]).toMatchObject({ date: '2026-10-07', title: 'Pasta' });
+
+		const r = await k.runner.invoke('kitchen.updateRecipe', recipeChange, kid.actor);
+		expect(r.status).toBe('drafted');
+		expect((await recipes())[0]?.title).toBe('Lentil soup');
+		if (r.status !== 'drafted') return;
+		await k.runner.approveDraft(r.draftId, admin.actor);
+		expect((await recipes())[0]?.title).toBe('Red lentil soup');
+
+		const m = await k.runner.invoke('kitchen.updateMealPlanEntry', mealChange, kid.actor);
+		expect(m.status).toBe('drafted');
+		expect((await meals())[0]).toMatchObject({ date: '2026-10-07', title: 'Pasta' });
+		if (m.status !== 'drafted') return;
+		await k.runner.approveDraft(m.draftId, admin.actor);
+		expect((await meals())[0]).toMatchObject({ date: '2026-10-08', title: 'Pasta bake' });
+	});
+
 	it('words the Inbox guidance for recipes', () => {
 		const hints = k.registry.actions.get('kitchen.createRecipe')?.ai;
 		expect(hints?.description).toMatch(/recipe/i);

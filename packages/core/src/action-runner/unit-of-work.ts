@@ -52,15 +52,19 @@ export function createUnitOfWork(
 		const events: [string, unknown][] = [];
 		let enqueued = 0;
 		const result = await deps.db.transaction().execute(async (trx) => {
-			const enqueue: UnitOfWork['enqueue'] = async (job, payload, options) => {
-				const def = registry.jobs.get(job);
-				if (!def) throw new Error(`Unknown job "${job}"`);
-				enqueued++;
-				return deps.queue.enqueue(trx, job, def.payload.parse(payload), {
-					maxAttempts: def.maxAttempts,
-					...options,
-				});
-			};
+			const enqueueFor =
+				(owner: string | null): UnitOfWork['enqueue'] =>
+				async (job, payload, options) => {
+					if (owner !== null) deps.views.assertJob(owner, job);
+					const def = registry.jobs.get(job);
+					if (!def) throw new Error(`Unknown job "${job}"`);
+					enqueued++;
+					return deps.queue.enqueue(trx, job, def.payload.parse(payload), {
+						maxAttempts: def.maxAttempts,
+						...options,
+					});
+				};
+			const enqueue = enqueueFor(null);
 			const views = new Map<string, UnitOfWork>();
 			const view = (owner: string): UnitOfWork => {
 				const known = views.get(owner);
@@ -87,7 +91,7 @@ export function createUnitOfWork(
 				emit(event, payload) {
 					events.push([event.name, event.payload.parse(payload)]);
 				},
-				enqueue,
+				enqueue: enqueueFor(owner),
 				async notify(request) {
 					enqueued++;
 					await deps.notifier.enqueue(trx, request);

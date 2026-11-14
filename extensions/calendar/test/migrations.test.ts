@@ -119,9 +119,7 @@ it('upgrades a 0.2.1 database: events stay as they were and gain empty link colu
 it('upgrades a 0.7.0 database: repeating events gain their end without being rewritten', async () => {
 	const handle = openDatabase({ path: ':memory:' });
 	const { db } = handle;
-	const released = Object.fromEntries(
-		Object.entries(migrations).filter(([n]) => n !== '0004_series_end'),
-	);
+	const released = Object.fromEntries(Object.entries(migrations).filter(([n]) => n < '0004'));
 	await runMigrations(db, [{ scope: 'calendar', migrations: released }]);
 	const TZ = 'Europe/Istanbul';
 	const start = epochOf('2026-10-20', '19:00', TZ);
@@ -164,5 +162,26 @@ it('upgrades a 0.7.0 database: repeating events gain their end without being rew
 		series_end: number;
 	}>`select series_end from calendar_external_events`.execute(db);
 	expect(external.rows).toEqual([{ series_end: Date.UTC(2026, 9, 21) }]);
+	await handle.close();
+});
+
+it('upgrades a 0.8 database: subscriptions keep reminding as before', async () => {
+	const handle = openDatabase({ path: ':memory:' });
+	const { db } = handle;
+	const released = Object.fromEntries(
+		Object.entries(migrations).filter(([n]) => n !== '0005_subscription_reminder_time'),
+	);
+	await runMigrations(db, [{ scope: 'calendar', migrations: released }]);
+	await sql`insert into calendar_subscriptions
+		(id, name, sealed_url, url_host, color, member_ids, reminders, allow_local, created_at, updated_at)
+		values ('cal_sub_a', 'Bins', 'v1.x', 'bins.example', '#3f7fb5', '[]', 1, 0, 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'calendar', migrations }]);
+
+	const { rows } = await sql`select reminders, reminder_days, reminder_time, reminder_minutes
+		from calendar_subscriptions`.execute(db);
+	expect(rows).toEqual([
+		{ reminders: 1, reminder_days: null, reminder_time: null, reminder_minutes: null },
+	]);
 	await handle.close();
 });

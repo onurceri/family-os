@@ -190,6 +190,7 @@ describe('Web Push channel', () => {
 			lastSuccessAt: Date.UTC(2026, 9, 7, 9),
 		});
 		expect(JSON.stringify(await push.list('mem_1'))).not.toContain('127.0.0.1');
+		expect(device?.endpointId).toMatch(/^[0-9a-f]{64}$/);
 	});
 
 	it('truncates long messages to stay small', async () => {
@@ -234,6 +235,60 @@ describe('Web Push channel', () => {
 		await push.subscribe('mem_2', sub('ok'));
 		expect(await push.list('mem_1')).toEqual([]);
 		expect((await push.list('mem_2'))[0]?.label).toBe('Tablet');
+	});
+
+	it('refuses to move an endpoint to another member who sends different keys', async () => {
+		await push.subscribe('mem_1', sub('ok'), 'Tablet');
+		const other = createECDH('prime256v1');
+		other.generateKeys();
+		const otherKeys = {
+			p256dh: other.getPublicKey().toString('base64url'),
+			auth: randomBytes(16).toString('base64url'),
+		};
+		for (const bad of [
+			otherKeys,
+			{ ...keys, auth: otherKeys.auth },
+			{ ...otherKeys, auth: keys.auth },
+		]) {
+			const error = await push
+				.subscribe('mem_2', { endpoint: `${origin}/ok`, keys: bad }, 'Mine')
+				.catch((e: unknown) => e);
+			expect((error as FamosError).code).toBe('forbidden');
+		}
+		const row = await db
+			.withTables<{
+				webpush_subscriptions: { member_id: string; p256dh: string; auth: string; label: string };
+			}>()
+			.selectFrom('webpush_subscriptions')
+			.select(['member_id', 'p256dh', 'auth', 'label'])
+			.executeTakeFirstOrThrow();
+		expect(row).toEqual({ member_id: 'mem_1', ...keys, label: 'Tablet' });
+	});
+
+	it('lets a member renew the keys of their own endpoint', async () => {
+		await push.subscribe('mem_1', sub('ok'), 'Tablet');
+		const renewed = createECDH('prime256v1');
+		renewed.generateKeys();
+		const newKeys = {
+			p256dh: renewed.getPublicKey().toString('base64url'),
+			auth: randomBytes(16).toString('base64url'),
+		};
+		await push.subscribe('mem_1', { endpoint: `${origin}/ok`, keys: newKeys });
+		const row = await db
+			.withTables<{ webpush_subscriptions: { member_id: string; p256dh: string; auth: string } }>()
+			.selectFrom('webpush_subscriptions')
+			.select(['member_id', 'p256dh', 'auth'])
+			.executeTakeFirstOrThrow();
+		expect(row).toEqual({ member_id: 'mem_1', ...newKeys });
+	});
+
+	it('does not let a move take a member over the device limit', async () => {
+		await push.subscribe('mem_1', sub('ok'));
+		for (let i = 0; i < 20; i++) await push.subscribe('mem_2', sub(`dev-${i}`));
+		const error = await push.subscribe('mem_2', sub('ok')).catch((e: unknown) => e);
+		expect((error as FamosError).code).toBe('limit_reached');
+		expect(await push.list('mem_1')).toHaveLength(1);
+		expect(await push.list('mem_2')).toHaveLength(20);
 	});
 
 	it('counts devices reached by a test message', async () => {

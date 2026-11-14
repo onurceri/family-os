@@ -333,6 +333,37 @@ describe('sharing to the Inbox', () => {
 		expect(pulled).toBeLessThan(5);
 	});
 
+	it('refuses pictures that keep their location data, and takes the ones that lose it', async () => {
+		const tg = make();
+		await tg.setToken(fake.token);
+		tg.start();
+		await linked(tg);
+		fake.sent().length = 0;
+		fake.sendDocument(55, 'IMG_1.heic', 'image/heic', new Uint8Array([1]));
+		fake.sendDocument(55, 'scan.tiff', 'image/tiff', new Uint8Array([1]));
+		fake.sendDocument(55, 'IMG_2.heic', '', new Uint8Array([1]));
+		for (const [name, type] of [
+			['a.jpg', 'image/jpeg'],
+			['b.png', 'image/png'],
+			['c.webp', 'image/webp'],
+			['d.gif', 'image/gif'],
+		] as const)
+			fake.sendDocument(55, name, type, new Uint8Array([1]));
+		await until(() => shared.length === 4 && fake.sent().length >= 7, 'every file answered');
+		expect(
+			fake
+				.sent()
+				.slice(0, 3)
+				.map((m) => m.text),
+		).toEqual(Array(3).fill('telegram_file_type_unsupported'));
+		expect(shared.map((s) => s.files[0]?.type)).toEqual([
+			'image/jpeg',
+			'image/png',
+			'image/webp',
+			'image/gif',
+		]);
+	});
+
 	it('refuses odd file types and big files politely', async () => {
 		const tg = make();
 		await tg.setToken(fake.token);

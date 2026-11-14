@@ -10,6 +10,7 @@
 		chooseFit,
 		describeFit,
 		type FitPlan,
+		largestZoom,
 		leftOut,
 		widgetRows,
 	} from '#lib/today/fit-plan.js';
@@ -33,6 +34,7 @@
 	 */
 	let {
 		style,
+		scale = 1,
 		showNames,
 		disabledExtensions,
 		hidden,
@@ -42,6 +44,8 @@
 		onfit,
 	}: {
 		style: StyleId;
+		/** The display's text size as a factor of the zoom that fits at normal (`TEXT_SCALE`). */
+		scale?: number;
 		showNames: boolean;
 		disabledExtensions: () => readonly string[];
 		/** The blocks this display's Today hides (its own choice, else the family's). */
@@ -175,10 +179,21 @@
 		const start = baseZoom(window.innerWidth);
 		apply({ tight: 0, rows: 0, drop: [], hide: [], zoom: start, shift: false });
 		const groups = presentGroups(el);
-		const pick = chooseFit(present, start, (plan) => {
+		const measure = (plan: FitPlan) => {
 			apply(plan);
 			return fits(el);
-		});
+		};
+		let pick = chooseFit(present, start, measure);
+		// A text size other than normal is that much larger (or smaller) than the screen would be at
+		// normal, and stays so: only what is shown gives way, never the size.
+		// A screen too small for even the least at that size takes the largest size that fits.
+		if (scale !== 1) {
+			const normal = pick.zoom;
+			const sized = normal * scale;
+			const at = (z: number) => chooseFit(present, z, measure, z);
+			pick = at(sized);
+			if (scale > 1 && !measure(pick)) pick = at(largestZoom(sized, normal, (z) => measure(at(z))));
+		}
 		apply(pick);
 		chosen = describeFit(pick);
 		onfit?.(

@@ -38,6 +38,14 @@
 	let fileTo = $state<FileChoice | null>(null);
 
 	async function load() {
+		try {
+			await read();
+		} catch {
+			phase = 'failed';
+		}
+	}
+
+	async function read() {
 		const cache = await caches.open(SHARE_CACHE);
 		const meta = await cache.match(META);
 		if (!meta) {
@@ -115,6 +123,11 @@
 			<Button href="/add" variant="outline" class="justify-self-start">{t('open_quick_add')}</Button
 			>
 		</div>
+	{:else if phase === 'failed' && !shared}
+		<p class="text-attention font-semibold" role="alert">{t('share_load_failed')}</p>
+		<Button variant="outline" class="justify-self-start" onclick={cancel}
+			>{t('share_cancel')}</Button
+		>
 	{:else if shared}
 		<section
 			class="bg-surface shadow-lit grid gap-3 rounded-xl p-4"

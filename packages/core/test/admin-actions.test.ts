@@ -126,7 +126,7 @@ describe('admin changes to connected apps are actions', () => {
 	});
 
 	it('refuses a member, a supervised child, an app, the AI and a PIN sign-in', async () => {
-		const { appId } = await newApp();
+		const { appId, tokenId, secret } = await newApp();
 		const child = await k.member('supervised');
 		const pin: Actor = { ...admin.actor, pin: true };
 		const refused = [
@@ -137,6 +137,13 @@ describe('admin changes to connected apps are actions', () => {
 			pin,
 		];
 		for (const actor of refused) {
+			for (const [id, input] of [
+				['core.updateApp', { appId, mode: 'suggest' }],
+				['core.resumeApp', { appId }],
+				['core.revokeAppToken', { appId, tokenId }],
+				['core.revokeApp', { appId }],
+			] as const)
+				expect(await codeOf(invoke(id, input, actor)), id).toBe('forbidden');
 			expect(await codeOf(invoke('core.pauseApp', { appId }, actor))).toBe('forbidden');
 			expect(
 				await codeOf(
@@ -145,8 +152,18 @@ describe('admin changes to connected apps are actions', () => {
 			).toBe('forbidden');
 		}
 		// Nothing was drafted and nothing changed.
-		expect(await k.apps.list(admin.actor)).toMatchObject([{ id: appId, pausedAt: null }]);
-		expect(await auditOf('core.pauseApp')).toEqual([]);
+		expect(await k.apps.list(admin.actor)).toMatchObject([
+			{ id: appId, pausedAt: null, mode: 'apply' },
+		]);
+		expect(await k.apps.authenticate(secret)).not.toBeNull();
+		for (const id of [
+			'core.pauseApp',
+			'core.updateApp',
+			'core.resumeApp',
+			'core.revokeApp',
+			'core.revokeAppToken',
+		])
+			expect(await auditOf(id), id).toEqual([]);
 		expect(
 			await k.ctx.db.withTables<CoreTables>().selectFrom('core_drafts').select('id').execute(),
 		).toEqual([]);
@@ -307,12 +324,22 @@ describe('displays and devices are changed by actions', () => {
 			capabilities: [],
 			showNames: false,
 		};
+		const pairing = await k.devices.startPairing();
 		for (const actor of [
 			member.actor,
 			appActor(),
 			aiFor(admin.member.id as MemberId),
 			displayActor,
 		]) {
+			expect(
+				await codeOf(
+					invoke(
+						'core.confirmDisplayPairing',
+						{ userCode: pairing.userCode, name: 'Mine', capabilities: [], showNames: false },
+						actor,
+					),
+				),
+			).toBe('forbidden');
 			expect(
 				await codeOf(invoke('core.updateDisplay', { deviceId: display.id, name: 'Mine' }, actor)),
 			).toBe('forbidden');
@@ -321,6 +348,9 @@ describe('displays and devices are changed by actions', () => {
 			);
 		}
 		expect((await k.devices.list()).find((d) => d.id === display.id)?.name).toBe('Hallway');
+		// The refused confirmations left the pairing open: no display was added.
+		expect((await k.devices.pollPairing(pairing.deviceCode)).status).not.toBe('paired');
+		expect(await k.devices.list()).toHaveLength(1);
 	});
 });
 

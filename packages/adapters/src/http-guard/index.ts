@@ -248,12 +248,19 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 	const transport = options.transport ?? createNodeTransport();
 
 	/** Resolves a host and returns an address that may be contacted. */
-	async function pick(host: string, allowLocal: boolean, plainHttp = false): Promise<string> {
+	async function pick(
+		host: string,
+		allowLocal: boolean,
+		plainHttp: boolean,
+		signal: AbortSignal,
+	): Promise<string> {
 		const bare = host.replace(/^\[|\]$/g, '');
 		let addresses: string[];
 		try {
-			addresses = isIP(bare) ? [bare] : await resolve(bare);
+			addresses = isIP(bare) ? [bare] : await within(signal, resolve(bare));
 		} catch {
+			// The one deadline covers the lookup too.
+			if (signal.aborted) throw new ExternalHttpError('timeout', 'Timed out');
 			throw new ExternalHttpError('unreachable', 'DNS lookup failed');
 		}
 		if (addresses.length === 0) throw new ExternalHttpError('unreachable', 'DNS lookup failed');
@@ -319,7 +326,7 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 
 			try {
 				for (let hop = 0; ; hop++) {
-					const address = await pick(url.hostname, allowLocal, url.protocol === 'http:');
+					const address = await pick(url.hostname, allowLocal, url.protocol === 'http:', signal);
 					const response = await transport({ url, method: 'GET', address, headers, signal });
 					const { status } = response;
 					if (status >= 300 && status < 400 && status !== 304) {
@@ -370,7 +377,7 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 			headers['content-length'] = String(body.byteLength);
 
 			try {
-				const address = await pick(url.hostname, allowLocal, url.protocol === 'http:');
+				const address = await pick(url.hostname, allowLocal, url.protocol === 'http:', signal);
 				const response = await transport({ url, method: 'POST', address, headers, body, signal });
 				const { status } = response;
 				// Never sent again, to this host or another: the change may already have happened.
@@ -388,6 +395,16 @@ export function createGuardedHttp(options: GuardedHttpOptions = {}): ExternalHtt
 			}
 		},
 	};
+}
+
+/** The promise's answer, or a rejection as soon as the signal ends (the work itself is left to finish). */
+function within<T>(signal: AbortSignal, work: Promise<T>): Promise<T> {
+	if (signal.aborted) return Promise.reject(signal.reason);
+	return new Promise<T>((resolve, reject) => {
+		const stop = () => reject(signal.reason);
+		signal.addEventListener('abort', stop, { once: true });
+		work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
+	});
 }
 
 async function discard(body: AsyncIterable<Uint8Array>): Promise<void> {

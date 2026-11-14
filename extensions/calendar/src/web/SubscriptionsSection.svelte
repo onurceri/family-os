@@ -19,7 +19,14 @@
 	import { Label } from '@famos/ui/label';
 	import { ChevronRight, Plus, RefreshCw } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import { SUBSCRIPTION_COLORS, type Subscription } from '../contract/index.js';
+	import {
+		defaultReminder,
+		SUBSCRIPTION_COLORS,
+		SUBSCRIPTION_REMINDER_DAYS,
+		type Subscription,
+		TIMED_REMINDERS,
+	} from '../contract/index.js';
+	import { reminderKey } from './form.js';
 	import {
 		addSubscription,
 		loadSubscriptions,
@@ -47,6 +54,12 @@
 	let color = $state<string>(SUBSCRIPTION_COLORS[0] as string);
 	let memberIds = $state<string[]>([]);
 	let reminders = $state(false);
+	/** When it reminds: days before an all-day event, at a time (empty: the family's), and
+	 * minutes before a timed one. Strings, as the fields hold them. */
+	let reminderDays = $state('0');
+	let reminderTime = $state('');
+	const DEFAULT_MINUTES = String(defaultReminder(false));
+	let reminderMinutes = $state(DEFAULT_MINUTES);
 	let allowLocal = $state(false);
 	let busy = $state(false);
 	let failed = $state(false);
@@ -73,6 +86,9 @@
 		color = SUBSCRIPTION_COLORS[subs.length % SUBSCRIPTION_COLORS.length] as string;
 		memberIds = [];
 		reminders = allowLocal = false;
+		reminderDays = '0';
+		reminderTime = '';
+		reminderMinutes = DEFAULT_MINUTES;
 		failed = false;
 		showErrors = false;
 		panel = { id: null, host: '' };
@@ -85,6 +101,9 @@
 		color = sub.color;
 		memberIds = [...sub.memberIds];
 		reminders = sub.reminders;
+		reminderDays = String(sub.reminderDays ?? 0);
+		reminderTime = sub.reminderTime ?? '';
+		reminderMinutes = String(sub.reminderMinutes ?? DEFAULT_MINUTES);
 		allowLocal = sub.allowLocal;
 		failed = false;
 		showErrors = false;
@@ -99,6 +118,13 @@
 		...(name.trim() ? {} : { name: FIELD_REASON.name }),
 		...(!panel?.id && !url.trim() ? { url: FIELD_REASON.required } : {}),
 	} as Record<string, string>);
+
+	// The defaults (on the day, at the family's time; the default lead) are saved as none chosen.
+	const timing = () => ({
+		reminderDays: Number(reminderDays) || null,
+		reminderTime: reminderTime || null,
+		reminderMinutes: reminderMinutes === DEFAULT_MINUTES ? null : Number(reminderMinutes),
+	});
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -120,6 +146,7 @@
 					color,
 					memberIds,
 					reminders,
+					...timing(),
 					allowLocal,
 				});
 				app.toast(t('sub_saved'));
@@ -130,6 +157,7 @@
 					color,
 					memberIds,
 					reminders,
+					...timing(),
 					allowLocal,
 				});
 				app.toast(t('sub_added'));
@@ -315,18 +343,59 @@
 		</div>
 		<Card rows>
 			<SwitchRow
-				id="sub-reminders"
-				label={t('sub_reminders')}
-				hint={t('sub_reminders_hint')}
-				bind:checked={reminders}
-			/>
-			<SwitchRow
 				id="sub-local"
 				label={t('sub_allow_local')}
 				hint={t('sub_allow_local_warn')}
 				bind:checked={allowLocal}
 			/>
+			<SwitchRow
+				id="sub-reminders"
+				label={t('sub_reminders')}
+				hint={t('sub_reminders_hint')}
+				bind:checked={reminders}
+			/>
 		</Card>
+		{#if reminders}
+			<div class="grid gap-4" data-testid="sub-reminder-timing">
+				<div class="grid gap-1.5">
+					<Label for="sub-reminder-days">{t('sub_reminder_all_day')}</Label>
+					<div class="flex gap-2">
+						<select
+							id="sub-reminder-days"
+							bind:value={reminderDays}
+							class="border-input h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-base md:text-sm"
+						>
+							{#each SUBSCRIPTION_REMINDER_DAYS as days (days)}
+								<option value={String(days)}>{t(`sub_reminder_days_${days}`)}</option>
+							{/each}
+						</select>
+						<Input
+							id="sub-reminder-time"
+							type="time"
+							class="w-32"
+							aria-label={t('sub_reminder_at')}
+							aria-describedby="sub-reminder-time-hint"
+							bind:value={reminderTime}
+						/>
+					</div>
+					<p id="sub-reminder-time-hint" class="text-ink-soft text-sm">
+						{t('sub_reminder_at_hint')}
+					</p>
+				</div>
+				<div class="grid content-start gap-1.5">
+					<Label for="sub-reminder-minutes">{t('sub_reminder_timed')}</Label>
+					<select
+						id="sub-reminder-minutes"
+						bind:value={reminderMinutes}
+						class="border-input h-9 w-full rounded-md border bg-transparent px-2 text-base md:text-sm"
+					>
+						{#each TIMED_REMINDERS as minutes (minutes)}
+							<option value={String(minutes)}>{t(reminderKey(false, minutes))}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+		{/if}
 		{#if editing}
 			<Button
 				type="button"

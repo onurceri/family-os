@@ -28,7 +28,7 @@
 		{
 			"kind": "chat",
 			"feature": "assistant.chat",
-			"text": "There is nothing on the calendar this weekend and nothing in tasks this weekend. The next event is Date night on Saturday, October 17.",
+			"text": "There is nothing on the Calendar this weekend and nothing in Tasks this weekend. The next item is Date night on Saturday, October 17, 7:00 PM–8:00 PM with Sofia and Lukas.",
 			"toolCalls": []
 		}
 	]

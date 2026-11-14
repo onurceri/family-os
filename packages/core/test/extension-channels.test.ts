@@ -1,9 +1,9 @@
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineNotificationKind, type NotificationChannelDefinition } from '@famos/sdk';
 import { sql } from 'kysely';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest';
 import { buildRegistry } from '../src/registry.ts';
 import { notesExtension } from './fixtures.ts';
 import {
@@ -252,7 +252,9 @@ describe('delivery', () => {
 	});
 
 	it('drops a queued delivery once the extension is gone', async () => {
-		const dbPath = join(await mkdtemp(join(tmpdir(), 'famos-channel-')), 'famos.db');
+		const dir = await mkdtemp(join(tmpdir(), 'famos-channel-'));
+		onTestFinished(() => rm(dir, { recursive: true, force: true }));
+		const dbPath = join(dir, 'famos.db');
 		const channel = fakeExtensionChannel('hub');
 		const before = await createTestKernel({
 			dbPath,

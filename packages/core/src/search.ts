@@ -1,6 +1,7 @@
 import {
 	type ActionResult,
 	type Actor,
+	type AiIndexDocument,
 	type AiIndexKind,
 	type Clock,
 	type DbExecutor,
@@ -50,6 +51,8 @@ const CHUNK_OVERLAP = 100;
 const MAX_CHUNKS = 40;
 const SNIPPET_CHARS = 240;
 const EMBED_BATCH = 32;
+/** Reads of an entity one indexing run gets before it gives up and retries later. */
+const EMBED_ROUNDS = 6;
 const QUERY_TIMEOUT_MS = 10_000;
 const INDEX_TIMEOUT_MS = 90_000;
 const REBUILD_PAGE_PAUSE_MS = 0;
@@ -276,13 +279,26 @@ export function createSearch(deps: SearchDeps) {
 		if (state.lastError) await writeState(deps.db, { ...state, lastError: null }, deps.clock.now());
 	}
 
+	/** Whether two loads of an entity would store the same rows. */
+	const sameStored = (entry: KindEntry, a: AiIndexDocument, b: AiIndexDocument | null) =>
+		b !== null &&
+		a.title === b.title &&
+		a.text === b.text &&
+		a.href === b.href &&
+		(a.capability ?? entry.def.capability) === (b.capability ?? entry.def.capability) &&
+		(a.ownerMemberId ?? null) === (b.ownerMemberId ?? null);
+
 	/**
 	 * Brings one entity's chunks up to date: reads it, embeds the chunks whose text (or model)
-	 * changed, drops the rest. Returns false when the model refused for a reason a retry cannot
-	 * fix (the caller stops; the failure is recorded). Throws on retryable errors.
+	 * changed, drops the rest, and stops only once a fresh read matches every field it stored (a
+	 * change made meanwhile was folded into this job). Returns false when the model refused for a
+	 * reason a retry cannot fix (the caller stops; the failure is recorded). Throws on retryable
+	 * errors, and when the entity kept changing for every round it got.
 	 */
 	async function embedEntity(ctx: JobContext, entry: KindEntry, id: string): Promise<boolean> {
-		for (let round = 0; round < 3; round++) {
+		// Vectors made in this run, by chunk text: a change that leaves the text alone needs no model call.
+		const made = new Map<string, { vector: Float32Array; model: string }>();
+		for (let round = 0; round < EMBED_ROUNDS; round++) {
 			const allowed = await gate(entry.extensionId, ctx.llm);
 			if (!allowed.ok) {
 				if (allowed.reason === 'closed') await deleteEntity(entry.kind, id);
@@ -319,32 +335,36 @@ export function createSearch(deps: SearchDeps) {
 				const row = byIndex.get(i);
 				if (!row || row.text_hash !== hashes[i] || row.model !== allowed.model) stale.push(i);
 			});
+			const missing = stale.filter((i) => made.get(hashes[i] as string)?.model !== allowed.model);
 
-			const fresh = new Map<number, { vector: Float32Array; model: string }>();
-			try {
-				for (let from = 0; from < stale.length; from += EMBED_BATCH) {
-					const batch = stale.slice(from, from + EMBED_BATCH);
-					const result = await ctx.llm.embed({
-						feature: INDEX_FEATURE,
-						area: entry.extensionId,
-						texts: batch.map((i) => texts[i] as string),
-						timeoutMs: INDEX_TIMEOUT_MS,
-					});
-					batch.forEach((chunk, n) => {
-						fresh.set(chunk, {
-							vector: normalize(result.vectors[n] as Float32Array),
-							model: result.model,
+			if (missing.length > 0) {
+				try {
+					for (let from = 0; from < missing.length; from += EMBED_BATCH) {
+						const batch = missing.slice(from, from + EMBED_BATCH);
+						const result = await ctx.llm.embed({
+							feature: INDEX_FEATURE,
+							area: entry.extensionId,
+							texts: batch.map((i) => texts[i] as string),
+							timeoutMs: INDEX_TIMEOUT_MS,
 						});
-					});
+						batch.forEach((chunk, n) => {
+							made.set(hashes[chunk] as string, {
+								vector: normalize(result.vectors[n] as Float32Array),
+								model: result.model,
+							});
+						});
+					}
+				} catch (error) {
+					if (isLlmError(error) && !error.retryable) {
+						// A person must act (no model, bad key, limit): record it, do not retry in a loop.
+						logger.warn({ code: error.code, kind: entry.kind }, 'indexing stopped');
+						await noteFailure(error.code);
+						return false;
+					}
+					throw error;
 				}
-			} catch (error) {
-				if (isLlmError(error) && !error.retryable) {
-					// A person must act (no model, bad key, limit): record it, do not retry in a loop.
-					logger.warn({ code: error.code, kind: entry.kind }, 'indexing stopped');
-					await noteFailure(error.code);
-					return false;
-				}
-				throw error;
+				// The entity may have changed while the model worked: read it again before writing.
+				continue;
 			}
 
 			const now = deps.clock.now();
@@ -369,7 +389,9 @@ export function createSearch(deps: SearchDeps) {
 					.where('source_kind', '=', entry.kind)
 					.where('source_id', '=', id)
 					.execute();
-				for (const [i, item] of fresh) {
+				for (const i of stale) {
+					const item = made.get(hashes[i] as string);
+					if (!item) continue;
 					await t
 						.deleteFrom('core_embeddings')
 						.where('source_kind', '=', entry.kind)
@@ -400,23 +422,31 @@ export function createSearch(deps: SearchDeps) {
 			});
 			await clearFailure();
 
-			// A change that arrived while the model worked was deduplicated into this job: look again.
+			// A change committed while writing was folded into this job: done only if nothing moved.
 			const again = await entry.def.load(deps.contextFor(entry.extensionId), id);
-			if (!again || again.title + again.text === doc.title + doc.text) return true;
+			if (sameStored(entry, doc, again)) return true;
 		}
-		return true;
+		throw new Error(`${entry.kind} kept changing while it was indexed`);
 	}
 
 	/* ── Jobs ── */
 
 	const embedJob = defineJob({
 		name: EMBED_JOB,
-		payload: z.object({ kind: z.string(), id: z.string() }),
+		payload: z.object({ kind: z.string(), id: z.string(), followUp: z.boolean().optional() }),
+		lane: 'long',
 		timeoutMs: 180_000,
-		async handle(ctx, { kind, id }) {
+		async handle(ctx, { kind, id, followUp }) {
 			const entry = kinds().get(kind);
 			if (!entry) return;
-			await embedEntity(ctx, entry, id);
+			if (!(await embedEntity(ctx, entry, id)) || followUp) return;
+			// A change that commits after the last read above is folded into this job, which is still
+			// running: one more look once it has ended (its lane runs one job at a time) catches it.
+			await ctx.enqueue(
+				EMBED_JOB,
+				{ kind, id, followUp: true },
+				{ dedupeKey: `${dedupeKey(kind, id)}:followUp` },
+			);
 		},
 	});
 

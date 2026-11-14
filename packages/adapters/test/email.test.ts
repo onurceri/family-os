@@ -265,6 +265,21 @@ describe('checking the mailbox', () => {
 		]);
 	});
 
+	it('leaves out pictures that keep their location data', async () => {
+		const email = await ready();
+		const HEIC = new Uint8Array([
+			0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, 0, 0, 0, 0,
+		]);
+		await put(1, {
+			attachments: [
+				{ name: 'IMG_1.heic', type: 'image/heic', data: HEIC },
+				{ name: 'map.png', type: 'image/png', data: PNG },
+			],
+		});
+		await email.poll();
+		expect(shared[0]?.files.map((f) => [f.name, f.type])).toEqual([['map.png', 'image/png']]);
+	});
+
 	it('leaves mail from unknown senders alone and counts it', async () => {
 		const email = await ready();
 		await put(1, { from: 'Stranger <spam@evil.example>', subject: 'Win!' });

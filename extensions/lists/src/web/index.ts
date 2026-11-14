@@ -33,6 +33,7 @@ export default defineWebExtension({
 			icon: ListChecks,
 			placement: 'primary',
 			order: 30,
+			requires: 'lists.view',
 			children: [
 				{
 					id: 'lists.nav.tasks',
@@ -40,6 +41,7 @@ export default defineWebExtension({
 					labelKey: 'lists:tasks',
 					icon: ListTodo,
 					adds: 'lists.addTask',
+					requires: 'lists.view',
 				},
 				{
 					id: 'lists.nav.shopping',
@@ -47,16 +49,28 @@ export default defineWebExtension({
 					labelKey: 'lists:shopping',
 					icon: ShoppingBasket,
 					adds: 'lists.addShoppingItems',
+					requires: 'lists.view',
 				},
 			],
 		},
 	],
 	pages: [
-		{ id: 'lists.page', path: '/lists', component: () => import('./ListsHome.svelte') },
-		{ id: 'lists.tasksPage', path: '/lists/tasks', component: () => import('./TasksPage.svelte') },
+		{
+			id: 'lists.page',
+			path: '/lists',
+			requires: 'lists.view',
+			component: () => import('./ListsHome.svelte'),
+		},
+		{
+			id: 'lists.tasksPage',
+			path: '/lists/tasks',
+			requires: 'lists.view',
+			component: () => import('./TasksPage.svelte'),
+		},
 		{
 			id: 'lists.shoppingPage',
 			path: '/lists/shopping',
+			requires: 'lists.view',
 			component: () => import('./ShoppingPage.svelte'),
 		},
 	],
@@ -66,6 +80,7 @@ export default defineWebExtension({
 			id: 'lists.overdue',
 			band: 'needs',
 			order: 20,
+			requires: 'lists.view',
 			component: () => import('./OverdueCard.svelte'),
 		},
 		{
@@ -76,6 +91,7 @@ export default defineWebExtension({
 			hintKey: 'lists:today_block_tasks_hint',
 			order: 20,
 			todo: true,
+			requires: 'lists.view',
 			component: () => import('./TasksCard.svelte'),
 		},
 		{

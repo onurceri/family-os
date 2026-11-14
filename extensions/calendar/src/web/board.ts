@@ -82,5 +82,8 @@ export function filterBoard(
 export function onDay(o: Occurrence, date: string, timeZone: string): boolean {
 	if (o.allDay) return (o.startDate as string) <= date && date <= (o.endDate as string);
 	const { start, end } = dayBounds(date, timeZone);
-	return (o.start as number) < end && (o.end as number) > start;
+	const [from, to] = [o.start as number, o.end as number];
+	// An event with no length (some feeds send one) belongs to the day it starts on only.
+	if (to <= from) return from >= start && from < end;
+	return from < end && to > start;
 }

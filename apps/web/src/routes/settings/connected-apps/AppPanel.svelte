@@ -12,6 +12,7 @@
 		Segmented,
 		SidePanel,
 	} from '@famos/ui/famos';
+	import { copyText } from '@famos/ui/clipboard';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { Check, Copy } from '@lucide/svelte';
@@ -20,6 +21,7 @@
 	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import { toasts } from '#lib/toast.svelte.js';
 	import SelectField from '#lib/SelectField.svelte';
 	import { expiryState } from './apps.js';
 
@@ -230,21 +232,13 @@
 	}
 
 	async function copy(text: string) {
-		try {
-			await navigator.clipboard.writeText(text);
-			copied = true;
-		} catch {
-			// The text is selectable; copying by hand still works.
-		}
+		if (await copyText(text)) copied = true;
+		else toasts.show(t('mcp_copy_by_hand'));
 	}
 
 	async function copyMemberId(id: string) {
-		try {
-			await navigator.clipboard.writeText(id);
-			copiedMember = id;
-		} catch {
-			// Nothing to fall back on here: the id also comes from the API's discovery.
-		}
+		if (await copyText(id)) copiedMember = id;
+		else toasts.show(t('mcp_copy_by_hand'));
 	}
 
 	const chosen = $derived(family.members.filter((m) => actsFor.includes(m.id)));

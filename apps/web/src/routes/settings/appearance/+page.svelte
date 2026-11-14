@@ -20,7 +20,7 @@
 	import TodayBlocksList from '#lib/today/TodayBlocksList.svelte';
 	import { availableTodayBlocks } from '#lib/today/today-data.svelte.js';
 	import { MODES } from '#lib/day-night.js';
-	import { dayNight, type Mode } from '#lib/theme.svelte.js';
+	import { dayNight, type Mode, TEXT_SIZES, type TextSize, textSize } from '#lib/theme.svelte.js';
 
 	/**
 	 * Appearance: only what is yours. First the
@@ -40,6 +40,10 @@
 	);
 	const modeOptions = $derived(
 		MODES.map((mode) => ({ value: mode, label: t(`appearance_mode_${mode}`) })),
+	);
+
+	const textSizeOptions = $derived(
+		TEXT_SIZES.map((size) => ({ value: size, label: t(`appearance_text_size_${size}`) })),
 	);
 
 	const styleName = (id: StyleId) => t(STYLES[id].nameKey);
@@ -216,6 +220,17 @@
 							options={modeOptions}
 							value={dayNight.mode}
 							onchange={(mode) => dayNight.set(mode as Mode)}
+						/>
+					{/snippet}
+				</SettingRow>
+				<SettingRow label={t('appearance_text_size')} hint={t('appearance_text_size_hint')}>
+					{#snippet control()}
+						<Segmented
+							grow
+							label={t('appearance_text_size')}
+							options={textSizeOptions}
+							value={textSize.size}
+							onchange={(size) => textSize.set(size as TextSize)}
 						/>
 					{/snippet}
 				</SettingRow>

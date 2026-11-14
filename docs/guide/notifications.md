@@ -39,6 +39,8 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 
 **Turn off notifications on this device** affects only this device; **Devices with notifications** lists yours.
 
+On a device several people share, signing out turns off the notifications of the person leaving; the next person sees **Turn on notifications on this device** and presses it to receive theirs.
+
 | Device | How |
 |---|---|
 | iPhone, iPad | Only from the Home Screen app: Safari Share → **Add to Home Screen**, open from there, turn on. iOS 16.4+. |

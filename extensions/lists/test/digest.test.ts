@@ -203,6 +203,25 @@ describe('lists.shoppingDigest', () => {
 		]);
 	});
 
+	it('names the default list in the language of the member behind the asker', async () => {
+		await k.runner.invoke(
+			'core.updateMember',
+			{ memberId: leo.member.id, locale: 'tr' },
+			systemActor('test'),
+		);
+		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Milk' }] }, mara.actor);
+		const span = { from: '2026-01-05', to: '2026-01-11' };
+		const asApp: Actor = {
+			...leo.actor,
+			via: { appId: 'app_1', appRoleId: leo.actor.roleId, mode: 'apply' },
+		};
+		for (const actor of [ai(leo), leo.actor, asApp])
+			expect((await digest('lists.shoppingDigest', span, actor)).items[0]?.title).toBe('Market');
+		expect((await digest('lists.shoppingDigest', span, ai(mara))).items[0]?.title).toBe(
+			'Groceries',
+		);
+	});
+
 	it('ranks the list that has the thing asked about first', async () => {
 		await k.runner.invoke('lists.addShoppingItems', { items: [{ title: 'Milk' }] }, mara.actor);
 		const created = await k.runner.invoke<{ id: string }>(
