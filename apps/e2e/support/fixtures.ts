@@ -26,6 +26,8 @@ export const test = base.extend<{
 	freshFamily: boolean;
 	/** The server believes `X-Forwarded-For` from the test, which can then speak from other addresses. */
 	behindProxy: boolean;
+	/** The family is reached as http://famos.test, an insecure origin like a home address; the spec maps the name. */
+	insecureHost: boolean;
 	model: FakeModel;
 	botApi: FakeBotApi;
 	/** A directory standing in for the IMAP server (`FAMOS_EMAIL_FAKE_DIR`, testing only). */
@@ -34,6 +36,7 @@ export const test = base.extend<{
 }>({
 	freshFamily: [false, { option: true }],
 	behindProxy: [false, { option: true }],
+	insecureHost: [false, { option: true }],
 	// biome-ignore lint/correctness/noEmptyPattern: Playwright reads fixture dependencies from this pattern.
 	model: async ({}, use) => {
 		const model = await startFakeModel();
@@ -57,7 +60,7 @@ export const test = base.extend<{
 		await use({ dir, inbox });
 		await rm(dir, { recursive: true, force: true });
 	},
-	family: async ({ model, botApi, mailbox, freshFamily, behindProxy }, use) => {
+	family: async ({ model, botApi, mailbox, freshFamily, behindProxy, insecureHost }, use) => {
 		const from = freshFamily ? undefined : template;
 		const dataDir = from && (await copyTemplate(from));
 		const family = await startFamilyOS({
@@ -66,6 +69,7 @@ export const test = base.extend<{
 			emailFakeDir: mailbox.dir,
 			...(dataDir && { dataDir }),
 			behindProxy,
+			...(insecureHost && { host: 'famos.test' }),
 		});
 		if (from) prepared.add(family.url);
 		await use(family);
