@@ -170,7 +170,8 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 			const word = key ? deps.t(key) : value.state;
 			return {
 				text: value.temperature === null ? word : `${word} · ${deps.number(value.temperature)}°`,
-				tone: value.state === 'jammed' ? 'attention' : 'ink',
+				// A jammed lock or cover, or a vacuum that stopped on an error, needs someone to look.
+				tone: value.state === 'jammed' || value.state === 'error' ? 'attention' : 'ink',
 			};
 		}
 		case 'text':

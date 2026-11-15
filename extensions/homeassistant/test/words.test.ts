@@ -125,6 +125,8 @@ describe('describeValue', () => {
 		expect(state('vacuum', 'cleaning').text).toBe('Cleaning');
 		expect(state('vacuum', 'returning').text).toBe('Going home');
 		expect(state('vacuum', 'docked').text).toBe('Docked');
+		expect(state('vacuum', 'error').tone).toBe('attention');
+		expect(state('vacuum', 'docked').tone).toBe('ink');
 		expect(state('media_player', 'playing').text).toBe('Playing');
 		expect(state('media_player', 'buffering').text).toBe('Loading');
 		expect(state('media_player', 'standby').text).toBe('Standby');
