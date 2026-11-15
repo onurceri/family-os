@@ -94,7 +94,7 @@ Anything else is worded as Home Assistant words it.
 Lights, switches, fans, humidifiers (on and off only), on/off helpers (`input_boolean`), covers, water valves, locks, scenes, scripts, buttons, vacuums and media players (play, pause and power only), one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
-2. Turn on **Can be switched from FamilyOS** (off for everything at first). A thing that can be switched says so on its row: **Can be switched**, then **Switches from FamilyOS** once you allow it.
+2. Turn on **Can be switched from FamilyOS** (off for everything at first). Until you allow it, a thing that can be switched says **Can be switched** on its row.
 3. Optionally turn on **Ask before switching** (off for every item; FamilyOS does not guess). Use it for locks, garage doors and water valves: FamilyOS then asks first, e.g. "Unlock Front door?". Earlier items keep their choice.
 4. Press **Save**.
 

@@ -235,7 +235,6 @@
 	"ask_run": "{{name}} uitvoeren?",
 	"ask_hint": "Home Assistant doet het meteen.",
 	"switching": "Schakelen…",
-	"switches_here": "Schakelt vanuit FamilyOS",
 	"can_switch": "Kan geschakeld worden",
 	"switch_failed": "Kon {{name}} niet schakelen.",
 	"page_empty": "Nu niets uit Home Assistant om te tonen.",

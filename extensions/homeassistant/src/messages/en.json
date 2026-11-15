@@ -235,7 +235,6 @@
 	"ask_run": "Run {{name}}?",
 	"ask_hint": "Home Assistant does it right away.",
 	"switching": "Switching…",
-	"switches_here": "Switches from FamilyOS",
 	"can_switch": "Can be switched",
 	"switch_failed": "Could not switch {{name}}.",
 	"page_empty": "Nothing from Home Assistant to show right now.",

@@ -94,8 +94,9 @@
 			? t('switching')
 			: sayValue(app, t, found?.value ?? { kind: 'unavailable' }).text;
 		const base = found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
-		if (operationsOf(item.entityId).length === 0) return base;
-		return `${base} · ${t(item.control ? 'switches_here' : 'can_switch')}`;
+		// An allowed thing shows its own switch or buttons on the row; one that could be allowed says so.
+		if (item.control || operationsOf(item.entityId).length === 0) return base;
+		return `${base} · ${t('can_switch')}`;
 	}
 
 	// Adding
