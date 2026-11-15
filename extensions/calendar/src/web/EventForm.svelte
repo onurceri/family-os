@@ -54,7 +54,12 @@
 		monthly: t('repeat_monthly'),
 		custom: t('repeat_custom'),
 		until: t('field_until'),
-		every: t('repeat_every'),
+		every: (freq: 'daily' | 'weekly' | 'monthly', count: number) =>
+			freq === 'daily'
+				? t('repeat_lead_days', { count })
+				: freq === 'weekly'
+					? t('repeat_lead_weeks', { count })
+					: t('repeat_lead_months', { count }),
 		unit: (freq: 'daily' | 'weekly' | 'monthly', count: number) =>
 			freq === 'daily'
 				? t('unit_days', { count })
@@ -200,6 +205,7 @@
 				{saved}
 				dateLocale={app.dateLocale()}
 				{idPrefix}
+				intervalError={errors.interval}
 				error={errors.recurrence}
 				untilError={errors.until}
 			/>

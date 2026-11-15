@@ -218,6 +218,7 @@
 	"field_check": "Controleer dit",
 	"field_repeat_choose": "Kies hoe het herhaalt",
 	"field_repeat_days": "Kies minstens één dag",
+	"field_interval": "Kies een getal van 1 tot {{max}}",
 	"field_before_start": "Dit is voor het begin",
 	"nav_ai": "Aanbieder en modellen",
 	"nav_extensions": "Extensies",

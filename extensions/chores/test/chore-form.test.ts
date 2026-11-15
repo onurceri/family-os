@@ -36,6 +36,17 @@ describe('chore form reasons', () => {
 			FIELD_REASON.beforeStart,
 		);
 	});
+
+	it('puts a bad interval on the interval field, not on the repeat', () => {
+		const daily = { ...base(), repeat: 'daily' as const };
+		for (const interval of [500, 0, 2.5, Number.NaN, null as unknown as number]) {
+			expect(known(validate({ ...daily, interval }))).toEqual({ interval: FIELD_REASON.interval });
+		}
+		expect(validate({ ...base(), repeat: 'weekly', byDay: ['MO'], interval: 53 })).toEqual({
+			interval: FIELD_REASON.interval,
+		});
+		expect(validate({ ...daily, interval: 365 })).toEqual({});
+	});
 });
 
 describe('the toast after a tick', () => {

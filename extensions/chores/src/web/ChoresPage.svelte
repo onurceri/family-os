@@ -369,7 +369,13 @@
 			<Button variant="secondary" size="sm" onclick={() => takeBack(done.id)}>{t('undo')}</Button>
 		</div>
 	{/if}
-	<form bind:this={formEl} onsubmit={save} class="grid gap-4" aria-label={t('form_title')}>
+	<form
+		bind:this={formEl}
+		onsubmit={save}
+		class="grid gap-4"
+		aria-label={t('form_title')}
+		novalidate
+	>
 		<ChoreForm bind:value={form} {errors} saved={Boolean(editing?.id)} idPrefix="chore" />
 	</form>
 {/snippet}

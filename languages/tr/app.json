@@ -218,6 +218,7 @@
 	"field_check": "Bunu kontrol et",
 	"field_repeat_choose": "Nasıl tekrarlanacağını seç",
 	"field_repeat_days": "En az bir gün seç",
+	"field_interval": "1 ile {{max}} arasında bir sayı seç",
 	"field_before_start": "Bu, başlangıçtan önce",
 	"nav_ai": "Sağlayıcı ve modeller",
 	"nav_extensions": "Eklentiler",

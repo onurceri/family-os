@@ -230,6 +230,7 @@
 	"field_check": "Revisa esto",
 	"field_repeat_choose": "Elige cómo se repite",
 	"field_repeat_days": "Elige al menos un día",
+	"field_interval": "Elige un número del 1 al {{max}}",
 	"field_before_start": "Esto es antes del inicio",
 	"nav_ai": "Proveedor y modelos",
 	"nav_extensions": "Extensiones",

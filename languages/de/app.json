@@ -218,6 +218,7 @@
 	"field_check": "Bitte prüfen",
 	"field_repeat_choose": "Wähle die Wiederholung",
 	"field_repeat_days": "Wähle mindestens einen Tag",
+	"field_interval": "Wähle eine Zahl von 1 bis {{max}}",
 	"field_before_start": "Das liegt vor dem Beginn",
 	"nav_ai": "Anbieter & Modelle",
 	"nav_extensions": "Erweiterungen",

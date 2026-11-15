@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.47",
+	"sdk": "0.8.48",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -202,6 +202,7 @@
 			"HOUR_MS",
 			"IsoDateSchema",
 			"IsoTimeSchema",
+			"MAX_INTERVAL",
 			"MINUTE_MS",
 			"NIGHT_FROM_HOUR",
 			"RecurrenceSchema",

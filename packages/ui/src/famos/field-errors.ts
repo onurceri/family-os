@@ -18,6 +18,7 @@ export const FIELD_REASON = {
 	tooLong: 'app:field_too_long',
 	repeat: 'app:field_repeat_choose',
 	repeatDays: 'app:field_repeat_days',
+	interval: 'app:field_interval',
 	beforeStart: 'app:field_before_start',
 	check: 'app:field_check',
 } as const;
@@ -39,15 +40,21 @@ export function issueErrors(
 	reasons: Readonly<Record<string, string>> = {},
 ): FieldErrors {
 	for (const issue of issues) {
-		const field = String(issue.path[0] ?? 'form');
+		// The repeat interval has its own field, with its own words.
+		const field =
+			issue.path[0] === 'recurrence' && issue.path[1] === 'interval'
+				? 'interval'
+				: String(issue.path[0] ?? 'form');
 		if (errors[field]) continue;
 		errors[field] =
 			reasons[field] ??
-			(issue.code === 'too_big'
-				? FIELD_REASON.tooLong
-				: issue.code === 'too_small'
-					? FIELD_REASON.required
-					: FIELD_REASON.check);
+			(field === 'interval'
+				? FIELD_REASON.interval
+				: issue.code === 'too_big'
+					? FIELD_REASON.tooLong
+					: issue.code === 'too_small'
+						? FIELD_REASON.required
+						: FIELD_REASON.check);
 	}
 	return errors;
 }
