@@ -28,3 +28,27 @@ export function nextEvents(
 			time: formatTime(e.start, format.timeZone, format.dateLocale, format.hourCycle),
 		}));
 }
+
+/** Most timed events the slideshow lists over a photo. */
+export const SLIDESHOW_ROWS = 3;
+
+/** A viewport smaller than this (high or wide) is a phone or a short frame: one row only. */
+const SHORT_SCREEN_PX = 600;
+
+/**
+ * How much of today's plan the slideshow writes over a photo: up to three rows, a "+N more"
+ * line when there are more, and a taller dark gradient when there are two or more rows. A
+ * short or narrow screen keeps one row and no "+N more".
+ */
+export function slideshowAgenda(
+	remaining: number,
+	viewport: { width: number; height: number },
+): { rows: number; more: number; tallScrim: boolean } {
+	const short = viewport.width < SHORT_SCREEN_PX || viewport.height < SHORT_SCREEN_PX;
+	const rows = Math.min(Math.max(remaining, 0), short ? 1 : SLIDESHOW_ROWS);
+	return {
+		rows,
+		more: short ? 0 : Math.max(remaining - SLIDESHOW_ROWS, 0),
+		tallScrim: rows >= 2,
+	};
+}

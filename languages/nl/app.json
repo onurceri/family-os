@@ -1310,7 +1310,7 @@
 	"devices_kind_screen": "Scherm",
 	"devices_family_about": "Een gezinsapparaat. Mensen kiezen er hun naam op en loggen in met een pincode.",
 	"devices_slideshow": "Foto’s als niemand het gebruikt",
-	"devices_slideshow_hint": "Na een tijdje zonder aanraking toont dit apparaat de foto’s van het gezin. Een aanraking brengt terug wat er op het scherm stond; je blijft ingelogd.",
+	"devices_slideshow_hint": "Na een tijdje zonder aanraking toont dit apparaat een diavoorstelling van de foto’s van het gezin met de klok, het weer en de volgende drie dingen van vandaag. Een aanraking brengt terug wat er op het scherm stond en drukt nergens op; je blijft ingelogd.",
 	"devices_left_out": "Het scherm heeft geen ruimte voor {{parts}}. Een groter scherm, een andere stijl of minder dingen om te tonen maakt ruimte.",
 	"devices_left_out_family": "wie er thuis is en hoe iedereen ervoor staat",
 	"devices_left_out_chores": "de klusjes",

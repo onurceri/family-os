@@ -3,7 +3,7 @@
 	import { colorVars, skySoftVars, WeatherSky } from '@famos/ui/famos';
 	import { onDestroy } from 'svelte';
 	import { DEFAULT_TIMING, type PhotoList, type Weather } from '../contract/index.js';
-	import { type AgendaEvent, nextEvents } from './agenda.js';
+	import { type AgendaEvent, nextEvents, SLIDESHOW_ROWS, slideshowAgenda } from './agenda.js';
 	import { api } from './api.js';
 	import { loadPhotos, loadWeather } from './data.js';
 	import { ACTIVITY_EVENTS, COVER_EVENTS, coverInput, hasCover, shouldCover } from './idle.js';
@@ -190,12 +190,24 @@
 		};
 	});
 
-	const upcoming = $derived(
-		nextEvents(agenda, now, {
-			timeZone: app.timeZone(),
-			dateLocale: app.dateLocale(),
-			hourCycle: app.hourCycle(),
-		}),
+	const remaining = $derived(
+		nextEvents(
+			agenda,
+			now,
+			{
+				timeZone: app.timeZone(),
+				dateLocale: app.dateLocale(),
+				hourCycle: app.hourCycle(),
+			},
+			Number.POSITIVE_INFINITY,
+		),
+	);
+
+	// Follows resizes and turning the device, so a phone held upright keeps one row.
+	let viewportWidth = $state(window.innerWidth);
+	let viewportHeight = $state(window.innerHeight);
+	const plan = $derived(
+		slideshowAgenda(remaining.length, { width: viewportWidth, height: viewportHeight }),
 	);
 
 	/* ───────────── Slideshow ───────────── */
@@ -209,6 +221,7 @@
 	const forecast = $derived(weather?.enabled ? weather.forecast : null);
 	const sky = $derived(forecast ? describeWeather(forecast.weatherCode, forecast.isDay) : null);
 	const hasPhoto = $derived(shown !== null);
+	const upcoming = $derived(remaining.slice(0, hasPhoto ? plan.rows : SLIDESHOW_ROWS));
 	const skyShown = $derived(!hasPhoto && forecast !== null);
 </script>
 
@@ -244,6 +257,8 @@
 	{/if}
 {/snippet}
 
+<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
+
 {#if showable && active}
 	<!-- Above everything the app may have open (a side panel, a dialog, a toast). -->
 	<div
@@ -263,7 +278,11 @@
 		<Slideshow ids={photos?.ids ?? []} seconds={timing.slideSeconds} running={active} bind:shown />
 		{#if hasPhoto}
 			<!-- The scrim keeps white text readable on any photo, in light and dark themes. -->
-			<div class="from-scrim absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t to-transparent"></div>
+			<div
+				class="from-scrim absolute inset-x-0 bottom-0 {plan.tallScrim
+					? 'h-2/3'
+					: 'h-1/2'} bg-linear-to-t to-transparent"
+			></div>
 		{/if}
 
 		<div
@@ -282,15 +301,24 @@
 				<p class="text-3xl font-bold capitalize">{date}</p>
 				{#if upcoming.length > 0}
 					<ul class="mt-2 grid gap-1" data-testid="ambient-agenda">
-						{#each hasPhoto ? upcoming.slice(0, 1) : upcoming as event, i (event.id)}
-							<li class="flex items-baseline gap-3 text-2xl font-semibold">
+						{#each upcoming as event, i (event.id)}
+							<li
+								class="flex items-baseline gap-3 {i === 0
+									? 'text-2xl font-semibold'
+									: 'text-xl font-medium opacity-80'}"
+							>
 								{#if i === 0}<span class="text-lg font-bold opacity-80"
 										>{t('ambient_next_event')}</span
 									>{/if}
 								<span class="tabular-nums">{event.time}</span>
-								<span class="truncate">{event.title}</span>
+								<span class="min-w-0 truncate">{event.title}</span>
 							</li>
 						{/each}
+						{#if hasPhoto && plan.more > 0}
+							<li class="text-lg font-medium opacity-70" data-testid="ambient-more">
+								{t('ambient_more', { count: plan.more })}
+							</li>
+						{/if}
 					</ul>
 				{:else if !hasPhoto && app.can('calendar.view')}
 					<p class="text-ink-soft text-2xl">{t('ambient_nothing')}</p>

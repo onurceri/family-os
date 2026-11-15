@@ -1310,7 +1310,7 @@
 	"devices_kind_screen": "Bildschirm",
 	"devices_family_about": "Ein Familiengerät. Jede Person wählt ihren Namen und meldet sich mit einer PIN an.",
 	"devices_slideshow": "Fotos, wenn niemand es nutzt",
-	"devices_slideshow_hint": "Nach einer Weile ohne Berührung zeigt dieses Gerät die Fotos der Familie. Eine Berührung bringt zurück, was auf dem Bildschirm war; die Anmeldung bleibt bestehen.",
+	"devices_slideshow_hint": "Nach einer Weile ohne Berührung zeigt dieses Gerät eine Diashow der Familienfotos mit Uhr, Wetter und den nächsten drei Terminen von heute. Eine Berührung bringt zurück, was auf dem Bildschirm war, und drückt nichts; die Anmeldung bleibt bestehen.",
 	"devices_left_out": "Auf dem Bildschirm ist kein Platz für {{parts}}. Ein größerer Bildschirm, ein anderer Stil oder weniger Inhalte schaffen Platz.",
 	"devices_left_out_family": "die Anwesenheit und den Status aller Personen",
 	"devices_left_out_chores": "die Haushaltsaufgaben",
