@@ -2,7 +2,7 @@
 	import { Button } from '@famos/ui/button';
 	import { Dialog } from '@famos/ui/famos';
 	import type { Values } from '../contract/index.js';
-	import { answerKey, askKey, controlsFor, type SwitchRequest } from './controls.js';
+	import { answerKey, askKey, controlsFor, isPlain, type SwitchRequest } from './controls.js';
 	import { useHomeAssistant } from './i18n.js';
 	import Switch from './Switch.svelte';
 
@@ -35,9 +35,8 @@
 		asking = null;
 		if (request) onswitch(request);
 	}
-	/** The words of a request that is a plain operation (a speed has its own sheet). */
-	const plain = (request: SwitchRequest) =>
-		request.operation === 'set_percentage' ? null : request.operation;
+	/** The words of a request that is a plain operation (what sets a value has its own sheet). */
+	const plain = (request: SwitchRequest) => (isPlain(request) ? request.operation : null);
 	const asked = $derived(asking ? plain(asking) : null);
 </script>
 

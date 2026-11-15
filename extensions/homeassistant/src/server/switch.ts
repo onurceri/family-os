@@ -8,6 +8,7 @@ import {
 } from '@famos/sdk';
 import { z } from 'zod';
 import {
+	chosenOf,
 	EntityIdSchema,
 	ItemIdSchema,
 	LabelSchema,
@@ -37,7 +38,7 @@ import { forgetValues, request } from './values.ts';
  * (a call to Home Assistant changes something outside, so it happens in a job, after the commit);
  * the job calls the one service the table names for the item's domain and the operation. The
  * address is built from the table, never from the input, and the body holds the entity plus the
- * one number `SERVICE_DATA` allows for that operation, nothing else. Displays cannot run actions and the AI
+ * one field `SERVICE_DATA` allows for that operation, nothing else. Displays cannot run actions and the AI
  * may neither run nor suggest this one, so only a person who holds the capability switches.
  */
 
@@ -47,8 +48,8 @@ const DOUBLE_TAP_MS = 3_000;
 const SwitchPayload = z.object({
 	id: ItemIdSchema,
 	operation: OperationSchema,
-	/** A fan's speed: checked again against the contract's table before it is sent. */
-	percentage: z.number().optional(),
+	/** What it sets: checked again against the contract's table before it is sent. */
+	value: z.union([z.number(), z.string()]).optional(),
 	level: SpeedLevelSchema.optional(),
 	/** Who asked, to tell only them when it could not be done. */
 	memberId: z.string().nullable(),
@@ -72,8 +73,8 @@ export const switchItem = defineAction({
 			throw new FamosError('forbidden', 'This item may not be switched from FamilyOS');
 		if (!serviceFor(row.entity_id, input.operation))
 			throw new FamosError('bad_request', 'That cannot be done to this item');
-		if (!serviceBody(row.entity_id, input.operation, input.percentage))
-			throw new FamosError('bad_request', 'That needs a speed from 0 to 100 percent, or none');
+		if (!serviceBody(row.entity_id, input.operation, input.value))
+			throw new FamosError('bad_request', 'That value is not allowed for this item');
 		// The level only words the history: it goes with a speed and with nothing else.
 		if ((input.level === undefined) === (input.operation === 'set_percentage'))
 			throw new FamosError('bad_request', 'A speed comes with its level, and nothing else does');
@@ -84,14 +85,14 @@ export const switchItem = defineAction({
 			{
 				id: row.id,
 				operation: input.operation,
-				percentage: input.percentage,
+				value: input.value,
 				level: input.level,
 				memberId,
 				label: row.label,
 				entityId: row.entity_id,
 			},
 			{
-				dedupeKey: `homeassistant.switch:${row.id}:${input.operation}:${input.percentage ?? ''}:${bucket}`,
+				dedupeKey: `homeassistant.switch:${row.id}:${input.operation}:${input.value ?? ''}:${bucket}`,
 			},
 		);
 		return { ok: true as const };
@@ -111,7 +112,7 @@ export const switchJob = defineJob({
 	timeoutMs: 2 * CALL_TIMEOUT_MS,
 	// One more try when Home Assistant did not answer; never more, a switch is wanted now.
 	maxAttempts: 2,
-	async handle(ctx, { id, operation, percentage, level, memberId, label, entityId }, run) {
+	async handle(ctx, { id, operation, value, level, memberId, label, entityId }, run) {
 		const row = await findRow(ctx, id);
 		const record = async (ok: boolean) => {
 			const entity = row?.entity_id ?? entityId;
@@ -124,6 +125,7 @@ export const switchJob = defineJob({
 				label: name,
 				operation,
 				level: level ?? null,
+				chosen: chosenOf(operation, value),
 				memberId,
 				ok,
 			});
@@ -161,7 +163,7 @@ export const switchJob = defineJob({
 				attributes = {};
 			}
 		}
-		const body = row ? serviceBody(row.entity_id, operation, percentage, attributes) : null;
+		const body = row ? serviceBody(row.entity_id, operation, value, attributes) : null;
 		if (!row || !service || !body || !connection || token === null) {
 			ctx.logger.info({ status: 'not_sent' }, 'home assistant switch');
 			return failed();

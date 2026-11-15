@@ -5,7 +5,7 @@
 	import { loadHistory } from './data.js';
 	import { describeSwitch } from './history-words.js';
 	import { useHomeAssistant } from './i18n.js';
-	import { timeWords } from './words.js';
+	import { numberWords, optionWords, timeWords } from './words.js';
 
 	/**
 	 * Who switched what, in words, newest first: for the whole home under its own heading on the
@@ -47,6 +47,8 @@
 	const say = (entry: SwitchEntry) =>
 		describeSwitch(entry, {
 			t: (key, params) => t(key, params),
+			percent: (value) => t('value_percent', { value: numberWords(value, app.formatLocale()) }),
+			option: (word) => optionWords(word, (key) => t(key)),
 			member: memberName,
 			time: (at) => timeWords(at, Date.now(), app.dateLocale(), app.hourCycle(), app.timeZone()),
 		});

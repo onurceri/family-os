@@ -46,7 +46,32 @@ export type ValueWord =
 	| 'value_connected'
 	| 'value_disconnected'
 	| 'value_on'
-	| 'value_off';
+	| 'value_off'
+	| 'value_percent'
+	| OptionWord;
+
+/** The words of the modes and presets Home Assistant names most often; any other is shown as it is. */
+const OPTION_WORDS = [
+	'auto',
+	'sleep',
+	'normal',
+	'eco',
+	'boost',
+	'turbo',
+	'away',
+	'home',
+	'comfort',
+	'low',
+	'medium',
+	'high',
+] as const;
+type OptionWord = `option_${(typeof OPTION_WORDS)[number]}`;
+
+/** A mode or preset in words: translated when it is one of the common ones, else as given. */
+export function optionWords(word: string, t: (key: OptionWord) => string): string {
+	const known = (OPTION_WORDS as readonly string[]).includes(word.toLowerCase());
+	return known ? t(`option_${word.toLowerCase()}` as OptionWord) : word;
+}
 
 export interface WordDeps {
 	t(key: ValueWord, params?: Record<string, string>): string;
@@ -140,6 +165,13 @@ const STATE_WORDS: Record<string, Record<string, ValueWord>> = {
 	},
 };
 
+/** A mode is added to a humidifier's line only when it is short enough to fit beside the rest. */
+const MODE_FITS = 8;
+
+/** A whole percentage in words ("60 %"), in the family's region format. */
+export const percentWords = (percent: number, deps: Pick<WordDeps, 't' | 'number'>): string =>
+	deps.t('value_percent', { value: deps.number(percent) });
+
 export function describeValue(value: Value, deps: WordDeps): ValueText {
 	switch (value.kind) {
 		case 'unavailable':
@@ -161,19 +193,36 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 				off: 'value_off' as const,
 			};
 			const level = fanSpeeds(value)?.current;
+			const preset = value.levels?.preset?.current;
+			if (value.on && preset)
+				return { text: optionWords(preset, (key) => deps.t(key)), tone: 'ink' };
 			if (value.on && level)
 				return { text: deps.t('value_speed', { level: String(level) }), tone: 'ink' };
 			const alert = value.on && 'alertWhenOn' in words && words.alertWhenOn === true;
-			return {
-				text: deps.t(value.on ? words.on : words.off),
-				tone: alert ? 'attention' : 'ink',
-			};
+			const parts = [deps.t(value.on ? words.on : words.off)];
+			if (value.on) {
+				const brightness = value.levels?.brightness?.percent;
+				const target = value.levels?.humidity?.target;
+				if (brightness != null) parts.push(percentWords(brightness, deps));
+				if (target != null) {
+					parts.push(percentWords(target, deps));
+					const mode = value.levels?.mode?.current;
+					const said = mode ? optionWords(mode, (key) => deps.t(key)) : null;
+					if (said && said.length <= MODE_FITS) parts.push(said);
+				}
+			}
+			return { text: parts.join(' · '), tone: alert ? 'attention' : 'ink' };
 		}
 		case 'state': {
 			const key = STATE_WORDS[value.domain]?.[value.state];
 			const word = key ? deps.t(key) : value.state;
+			const parts = [word];
+			if (value.temperature !== null) parts.push(`${deps.number(value.temperature)}°`);
+			// A cover or valve that is open says how far.
+			const position = value.levels?.position?.percent;
+			if (value.state === 'open' && position != null) parts.push(percentWords(position, deps));
 			return {
-				text: value.temperature === null ? word : `${word} · ${deps.number(value.temperature)}°`,
+				text: parts.join(' · '),
 				// A jammed lock or cover, or a vacuum that stopped on an error, needs someone to look.
 				tone: value.state === 'jammed' || value.state === 'error' ? 'attention' : 'ink',
 			};

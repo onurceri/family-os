@@ -36,12 +36,14 @@ export function createSwitcher(options: {
 		if (label) app.toast(t('switch_failed', { name: label }));
 	}
 
-	async function run(item: Shown, request: SwitchRequest) {
+	/** Asks for one switch, or for several in turn (a sheet that asked first can change more than one thing). */
+	async function run(item: Shown, request: SwitchRequest | readonly SwitchRequest[]) {
 		if (pending[item.id]) return;
 		pending[item.id] = true;
 		const before = valueKey(item.value);
 		try {
-			await switchItem(item.id, request);
+			for (const one of Array.isArray(request) ? request : [request])
+				await switchItem(item.id, one);
 		} catch {
 			fail(item.id);
 			return;

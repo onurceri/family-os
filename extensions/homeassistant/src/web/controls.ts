@@ -15,49 +15,188 @@ export type Control =
 	| { kind: 'switch'; on: boolean; operation: Operation }
 	| { kind: 'button'; operation: Operation; label: ButtonLabel };
 
-/** What a tap asks for: the operation, and for a fan's speed the percentage and the level. */
+/** What a tap asks for: the operation, what it sets, and for a fan's speed the level for the history. */
 export interface SwitchRequest {
 	operation: Operation;
-	percentage?: number;
+	value?: number | string;
 	level?: number;
+}
+
+/** The operations that set something: they carry a value and have a sheet, never a button. */
+const VALUE_OPERATIONS = [
+	'set_percentage',
+	'set_preset_mode',
+	'set_humidity',
+	'set_mode',
+	'set_cover_position',
+	'set_valve_position',
+	'volume_set',
+] as const satisfies readonly Operation[];
+export type ValueOperation = (typeof VALUE_OPERATIONS)[number];
+export type PlainOperation = Exclude<Operation, ValueOperation>;
+
+/** A request that is a plain operation, as a row's buttons and switch make. */
+export function isPlain(
+	request: SwitchRequest,
+): request is SwitchRequest & { operation: PlainOperation } {
+	return (
+		request.value === undefined &&
+		!(VALUE_OPERATIONS as readonly string[]).includes(request.operation)
+	);
 }
 
 /** The request of a pick in a fan's speeds: the percentage Home Assistant rounds to that level. */
 export function levelRequest(level: number, speeds: number): SwitchRequest {
-	return { operation: 'set_percentage', percentage: percentageForLevel(level, speeds), level };
+	return { operation: 'set_percentage', value: percentageForLevel(level, speeds), level };
 }
 
-/**
- * What "Set" sends in a sheet that asks first: at most one request. `power` and `level` are what
- * was staged (null: not touched); `on` and `current` are what the fan is now. A speed picked
- * while the fan is off needs no turn-on, as the percentage turns it on in Home Assistant; turning
- * it off wins over a speed picked before.
- */
-export function stagedRequest(staged: {
-	on: boolean;
-	current: number | null;
-	power: boolean | null;
-	level: number | null;
-	speeds: number;
-}): SwitchRequest | null {
-	const wantsOn = staged.power ?? (staged.level !== null || staged.on);
-	if (!wantsOn) return staged.on ? { operation: 'turn_off' } : null;
-	if (staged.level !== null && (!staged.on || staged.level !== staged.current))
-		return levelRequest(staged.level, staged.speeds);
-	return staged.on ? null : { operation: 'turn_on' };
-}
+/** The things a number group sets, and the things an option group chooses. */
+export type LevelField = 'brightness' | 'position' | 'humidity' | 'volume';
+export type OptionField = 'mode' | 'preset';
 
 /**
  * What a row offers beyond its own control, in a sheet that opens from the row: how much, where
- * the row only says on or off. Only a fan's speed so far; `current` is 0 when off and null when
- * it is on and Home Assistant does not say how fast.
+ * the row only says on or off. A fan's speed in steps, a number on a slider (a percentage; `min`,
+ * `max` and `step` are what the slider offers), or one of a few options. `current` of a speed is
+ * 0 when off and null when it is on and Home Assistant does not say how fast.
  */
-export type Detail = { kind: 'speed'; speeds: number; current: number | null };
+export type Detail =
+	| { kind: 'speed'; speeds: number; current: number | null }
+	| {
+			kind: 'level';
+			field: LevelField;
+			operation: Operation;
+			percent: number | null;
+			min: number;
+			max: number;
+			step: number;
+	  }
+	| {
+			kind: 'options';
+			field: OptionField;
+			operation: Operation;
+			options: string[];
+			current: string | null;
+	  };
 
-export function detailFor(entityId: string, value: Value): Detail | null {
-	if (controlDomain(entityId) !== 'fan') return null;
-	const speeds = fanSpeeds(value);
-	return speeds ? { kind: 'speed', ...speeds } : null;
+/** The key a detail is staged under. */
+export const detailKey = (detail: Detail): 'speed' | LevelField | OptionField =>
+	detail.kind === 'speed' ? 'speed' : detail.field;
+
+const POSITION_OPERATION = { cover: 'set_cover_position', valve: 'set_valve_position' } as const;
+
+/** The sheet's groups for a thing, in the order they show; none when it offers nothing more. */
+export function detailsFor(entityId: string, value: Value): Detail[] {
+	const domain = controlDomain(entityId);
+	const details: Detail[] = [];
+	if (domain === 'fan') {
+		const speeds = fanSpeeds(value);
+		if (speeds) details.push({ kind: 'speed', ...speeds });
+	}
+	if (value.kind !== 'binary' && value.kind !== 'state') return details;
+	const levels = value.levels;
+	if (!levels) return details;
+	if (domain === 'light' && levels.brightness)
+		details.push({
+			kind: 'level',
+			field: 'brightness',
+			operation: 'turn_on',
+			percent: levels.brightness.percent,
+			min: 1,
+			max: 100,
+			step: 5,
+		});
+	if ((domain === 'cover' || domain === 'valve') && levels.position)
+		details.push({
+			kind: 'level',
+			field: 'position',
+			operation: POSITION_OPERATION[domain],
+			percent: levels.position.percent,
+			min: 0,
+			max: 100,
+			step: 5,
+		});
+	if (domain === 'humidifier' && levels.humidity)
+		details.push({
+			kind: 'level',
+			field: 'humidity',
+			operation: 'set_humidity',
+			percent: levels.humidity.target,
+			min: levels.humidity.min,
+			max: levels.humidity.max,
+			step: 1,
+		});
+	if (domain === 'humidifier' && levels.mode)
+		details.push({ kind: 'options', field: 'mode', operation: 'set_mode', ...levels.mode });
+	if (domain === 'media_player' && levels.volume)
+		details.push({
+			kind: 'level',
+			field: 'volume',
+			operation: 'volume_set',
+			percent: levels.volume.percent,
+			min: 0,
+			max: 100,
+			step: 5,
+		});
+	if (domain === 'fan' && levels.preset)
+		details.push({
+			kind: 'options',
+			field: 'preset',
+			operation: 'set_preset_mode',
+			...levels.preset,
+		});
+	return details;
+}
+
+/** The request that sets a group to what was picked (a volume is sent as a fraction). */
+export function pickRequest(detail: Detail, picked: number | string): SwitchRequest {
+	if (detail.kind === 'speed') return levelRequest(Number(picked), detail.speeds);
+	if (detail.kind === 'level')
+		return {
+			operation: detail.operation,
+			value: detail.field === 'volume' ? Number(picked) / 100 : Number(picked),
+		};
+	return { operation: detail.operation, value: picked };
+}
+
+/** What was staged in a sheet that asks first, per group (absent: not touched). */
+export type Staged = Partial<Record<'speed' | LevelField | OptionField, number | string>>;
+
+/**
+ * What "Set" sends in a sheet that asks first: one request per changed group, and a turn-on when
+ * power was staged on. `on` is what the thing is now and `power` what was staged (null: not
+ * touched). A brightness or a speed picked while it is off needs no turn-on, as it turns the thing
+ * on in Home Assistant; turning it off wins over anything picked before.
+ */
+export function stagedRequests(input: {
+	on: boolean;
+	power: boolean | null;
+	details: Detail[];
+	staged: Staged;
+}): SwitchRequest[] {
+	const { on, power, details, staged } = input;
+	if (power === false) return on ? [{ operation: 'turn_off' }] : [];
+	const requests: SwitchRequest[] = [];
+	let turnsOn = false;
+	for (const detail of details) {
+		const picked = staged[detailKey(detail)];
+		if (picked === undefined) continue;
+		const current =
+			detail.kind === 'speed'
+				? detail.current
+				: detail.kind === 'level'
+					? detail.percent
+					: detail.current;
+		const differs = picked !== current;
+		const setsOn =
+			detail.kind === 'speed' || (detail.kind === 'level' && detail.field === 'brightness');
+		if (setsOn ? !on || differs : differs) {
+			requests.push(pickRequest(detail, picked));
+			if (setsOn) turnsOn = true;
+		}
+	}
+	if (power === true && !on && !turnsOn) requests.unshift({ operation: 'turn_on' });
+	return requests;
 }
 
 /** The words of a button, a key of the extension's catalog. */
@@ -157,14 +296,14 @@ export function controlsFor(entityId: string, value: Value): Control[] {
 }
 
 /** The question a confirm sheet asks ("Unlock {{name}}?"), a key of the extension's catalog. */
-export function askKey(entityId: string, operation: Exclude<Operation, 'set_percentage'>) {
+export function askKey(entityId: string, operation: PlainOperation) {
 	const domain = controlDomain(entityId);
 	if ((domain === 'scene' || domain === 'script') && operation === 'turn_on') return 'ask_run';
 	return `ask_${operation}` as const;
 }
 
 /** The answer button of a confirm sheet: the operation's own word. */
-export function answerKey(entityId: string, operation: Exclude<Operation, 'set_percentage'>) {
+export function answerKey(entityId: string, operation: PlainOperation) {
 	const domain = controlDomain(entityId);
 	if ((domain === 'scene' || domain === 'script') && operation === 'turn_on') return 'op_run';
 	return `op_${operation}` as const;

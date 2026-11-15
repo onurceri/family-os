@@ -3,7 +3,7 @@
 	import type { SlotProps } from '@famos/ui/slots';
 	import type { Values } from '../contract/index.js';
 	import Controls from './Controls.svelte';
-	import { detailFor } from './controls.js';
+	import { detailsFor } from './controls.js';
 	import { loadValues } from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import { sayValue, TONE_CLASS } from './say.js';
@@ -64,7 +64,8 @@
 			{#each shown as item (item.id)}
 				{@const said = sayValue(app, t, item.value)}
 				{@const busy = switcher.busy(item.id)}
-				{@const more = maySwitch && item.control && detailFor(item.entityId, item.value) !== null}
+				{@const more =
+					maySwitch && item.control && detailsFor(item.entityId, item.value).length > 0}
 				{@const controlled = maySwitch && item.control}
 				{#if controlled}
 					<!-- A control is the last item of its row, and the state goes under the name. -->
@@ -105,6 +106,6 @@
 		open
 		busy={switcher.busy(opened.id)}
 		onclose={() => (openId = null)}
-		onswitch={(request) => void switcher.run(opened, request)}
+		onswitch={(requests) => void switcher.run(opened, requests)}
 	/>
 {/if}

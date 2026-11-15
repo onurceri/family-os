@@ -87,18 +87,35 @@ describe('what may be switched', () => {
 			].sort(),
 		);
 		expect(operationsOf('light.kitchen')).toEqual(['turn_on', 'turn_off']);
-		expect(operationsOf('cover.garage')).toEqual(['open_cover', 'close_cover', 'stop_cover']);
+		expect(operationsOf('cover.garage')).toEqual([
+			'open_cover',
+			'close_cover',
+			'stop_cover',
+			'set_cover_position',
+		]);
 		expect(operationsOf('lock.front_door')).toEqual(['lock', 'unlock']);
 		expect(operationsOf('scene.evening')).toEqual(['turn_on']);
 		expect(operationsOf('button.doorbell')).toEqual(['press']);
 		expect(operationsOf('input_button.bell')).toEqual(['press']);
-		expect(operationsOf('valve.garden')).toEqual(['open_valve', 'close_valve', 'stop_valve']);
+		expect(operationsOf('valve.garden')).toEqual([
+			'open_valve',
+			'close_valve',
+			'stop_valve',
+			'set_valve_position',
+		]);
 		expect(operationsOf('vacuum.robot')).toEqual(['start', 'pause', 'return_to_base']);
 		expect(operationsOf('media_player.tv')).toEqual([
 			'media_play',
 			'media_pause',
 			'turn_on',
 			'turn_off',
+			'volume_set',
+		]);
+		expect(operationsOf('humidifier.dehumidifier')).toEqual([
+			'turn_on',
+			'turn_off',
+			'set_humidity',
+			'set_mode',
 		]);
 		for (const id of ['sensor.x', 'climate.living', 'alarm_control_panel.home', 'constructor.x'])
 			expect(operationsOf(id)).toEqual([]);
@@ -294,7 +311,7 @@ describe('the switch job', () => {
 
 		it('posts the percentage and nothing else', async () => {
 			k.http.servePost(`${BASE}/api/services/fan/set_percentage`, {});
-			await flipSpeed(fan.id, { percentage: 25, level: 1 });
+			await flipSpeed(fan.id, { value: 25, level: 1 });
 			await k.worker.drain();
 			expect(k.http.posted.map((p) => [p.url, p.json])).toEqual([
 				[
@@ -310,8 +327,8 @@ describe('the switch job', () => {
 		it('keeps two speeds apart, and turn_on and turn_off carry only the entity', async () => {
 			k.http.servePost(`${BASE}/api/services/fan/set_percentage`, {});
 			k.http.servePost(`${BASE}/api/services/fan/turn_off`, {});
-			await flipSpeed(fan.id, { percentage: 25, level: 1 });
-			await flipSpeed(fan.id, { percentage: 50, level: 2 });
+			await flipSpeed(fan.id, { value: 25, level: 1 });
+			await flipSpeed(fan.id, { value: 50, level: 2 });
 			await k.worker.drain();
 			expect(k.http.posted.map((p) => p.json)).toEqual([
 				{ entity_id: 'fan.winix_play_room', percentage: 25 },
@@ -324,12 +341,13 @@ describe('the switch job', () => {
 
 		it.each([
 			['none', {}],
-			['negative', { percentage: -1, level: 1 }],
-			['over 100', { percentage: 101, level: 1 }],
-			['not whole', { percentage: 12.5, level: 1 }],
-			['text', { percentage: '50', level: 1 }],
-			['no level', { percentage: 50 }],
-			['level 0', { percentage: 50, level: 0 }],
+			['negative', { value: -1, level: 1 }],
+			['over 100', { value: 101, level: 1 }],
+			['not whole', { value: 12.5, level: 1 }],
+			['text', { value: '50', level: 1 }],
+			['not a number', { value: 'fast', level: 1 }],
+			['no level', { value: 50 }],
+			['level 0', { value: 50, level: 0 }],
 		])('refuses a speed that is %s, and sends nothing', async (_name, extra) => {
 			await expect(flipSpeed(fan.id, extra)).rejects.toMatchObject({ code: 'bad_request' });
 			expect(await jobs()).toEqual([]);
@@ -337,16 +355,16 @@ describe('the switch job', () => {
 		});
 
 		it('refuses a percentage for any other operation, or for another domain', async () => {
-			await expect(flipSpeed(fan.id, { percentage: 50 }, 'turn_on')).rejects.toMatchObject({
+			await expect(flipSpeed(fan.id, { value: 50 }, 'turn_on')).rejects.toMatchObject({
 				code: 'bad_request',
 			});
-			await expect(
-				flipSpeed(fan.id, { percentage: 50, level: 2 }, 'turn_off'),
-			).rejects.toMatchObject({ code: 'bad_request' });
-			await expect(flipSpeed(light.id, { percentage: 50, level: 2 })).rejects.toMatchObject({
+			await expect(flipSpeed(fan.id, { value: 50, level: 2 }, 'turn_off')).rejects.toMatchObject({
 				code: 'bad_request',
 			});
-			await expect(flipSpeed(light.id, { percentage: 50 }, 'turn_on')).rejects.toMatchObject({
+			await expect(flipSpeed(light.id, { value: 50, level: 2 })).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			await expect(flipSpeed(light.id, { value: 50 }, 'turn_off')).rejects.toMatchObject({
 				code: 'bad_request',
 			});
 			// No other field passes the input.
@@ -364,7 +382,12 @@ describe('the switch job', () => {
 
 		it('is not offered for a light', () => {
 			expect(operationsOf('light.kitchen')).not.toContain('set_percentage');
-			expect(operationsOf('fan.a')).toEqual(['turn_on', 'turn_off', 'set_percentage']);
+			expect(operationsOf('fan.a')).toEqual([
+				'turn_on',
+				'turn_off',
+				'set_percentage',
+				'set_preset_mode',
+			]);
 		});
 	});
 
@@ -491,5 +514,282 @@ describe('an app that only suggests', () => {
 		expect((await queued()).rows).toHaveLength(jobsBefore);
 		expect(k.http.requests).toHaveLength(requests);
 		expect(k.http.posted).toHaveLength(posted);
+	});
+});
+
+describe('what a switch sets', () => {
+	const serveState = (entityId: string, attributes: Record<string, unknown>, state = 'on') =>
+		k.http.serve(`${BASE}/api/states/${entityId}`, {
+			text: JSON.stringify({ entity_id: entityId, state, attributes }),
+		});
+	const set = (id: string, operation: string, value?: unknown, who: Actor = admin) =>
+		k.runner.invoke('homeassistant.switch', { id, operation, value }, who);
+	const posts = () => k.http.posted.map((p) => [p.url.replace(BASE, ''), p.json]);
+	const history = () =>
+		sql<{ operation: string; chosen: string | null; ok: number }>`
+			select operation, chosen, ok from homeassistant_switches order by at, id`
+			.execute(k.ctx.db)
+			.then((r) => r.rows);
+	async function allowed(entityId: string) {
+		const item = await add(entityId, entityId);
+		await allow(item.id);
+		return item;
+	}
+	beforeEach(connect);
+
+	it.each([
+		['light.lamp', 'turn_on', 60, '/api/services/light/turn_on', { brightness_pct: 60 }, '60'],
+		['light.lamp', 'turn_on', 1, '/api/services/light/turn_on', { brightness_pct: 1 }, '1'],
+		['light.lamp', 'turn_on', 100, '/api/services/light/turn_on', { brightness_pct: 100 }, '100'],
+		[
+			'cover.window',
+			'set_cover_position',
+			40,
+			'/api/services/cover/set_cover_position',
+			{ position: 40 },
+			'40',
+		],
+		[
+			'cover.window',
+			'set_cover_position',
+			0,
+			'/api/services/cover/set_cover_position',
+			{ position: 0 },
+			'0',
+		],
+		[
+			'valve.garden',
+			'set_valve_position',
+			100,
+			'/api/services/valve/set_valve_position',
+			{ position: 100 },
+			'100',
+		],
+		[
+			'media_player.tv',
+			'volume_set',
+			0.3,
+			'/api/services/media_player/volume_set',
+			{ volume_level: 0.3 },
+			'30',
+		],
+		[
+			'media_player.tv',
+			'volume_set',
+			1,
+			'/api/services/media_player/volume_set',
+			{ volume_level: 1 },
+			'100',
+		],
+	])(
+		'%s %s %s posts exactly its one field',
+		async (entityId, operation, value, path, extra, chosen) => {
+			const item = await allowed(entityId);
+			k.http.servePost(`${BASE}${path}`, {});
+			await set(item.id, operation, value);
+			await k.worker.drain();
+			expect(posts()).toEqual([[path, { entity_id: entityId, ...extra }]]);
+			expect(await history()).toEqual([{ operation, chosen, ok: 1 }]);
+		},
+	);
+
+	it.each([
+		['light.lamp', 'turn_on', [0, 101, -5, 50.5, '60', 'bright', Number.NaN, true]],
+		['cover.window', 'set_cover_position', [-1, 101, 40.5, '40', null, undefined]],
+		['valve.garden', 'set_valve_position', [-1, 101, 0.5, '40', null, undefined]],
+		['media_player.tv', 'volume_set', [-0.1, 1.1, 30, '0.3', null, undefined]],
+	])(
+		'%s %s refuses a value that is not allowed, and sends nothing',
+		async (entityId, operation, bad) => {
+			const item = await allowed(entityId);
+			for (const value of bad) {
+				// A light switched on without a value is the plain switch, which is allowed.
+				if (entityId.startsWith('light.') && (value === null || value === undefined)) continue;
+				await expect(set(item.id, operation, value), String(value)).rejects.toMatchObject({
+					code: 'bad_request',
+				});
+			}
+			expect(await jobs()).toEqual([]);
+			expect(k.http.posted).toEqual([]);
+		},
+	);
+
+	it('refuses a value for an operation that takes none, or for a thing that takes another', async () => {
+		const lamp = await allowed('light.lamp');
+		const cover = await allowed('cover.window');
+		const tv = await allowed('media_player.tv');
+		const humidifier = await allowed('humidifier.bedroom');
+		for (const [item, operation] of [
+			[lamp, 'turn_off'],
+			[cover, 'open_cover'],
+			[cover, 'stop_cover'],
+			[tv, 'media_play'],
+			[tv, 'turn_on'],
+			[humidifier, 'turn_on'],
+			[humidifier, 'turn_off'],
+			// Another domain's service is no operation of this one.
+			[lamp, 'set_cover_position'],
+			[cover, 'volume_set'],
+			[tv, 'set_humidity'],
+			[humidifier, 'set_preset_mode'],
+		] as const)
+			await expect(set(item.id, operation, 50), operation).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+		expect(await jobs()).toEqual([]);
+	});
+
+	it('refuses a set operation without its value', async () => {
+		const cover = await allowed('cover.window');
+		const humidifier = await allowed('humidifier.bedroom');
+		await expect(set(cover.id, 'set_cover_position')).rejects.toMatchObject({
+			code: 'bad_request',
+		});
+		await expect(set(humidifier.id, 'set_humidity')).rejects.toMatchObject({
+			code: 'bad_request',
+		});
+		await expect(set(humidifier.id, 'set_mode')).rejects.toMatchObject({ code: 'bad_request' });
+		expect(await jobs()).toEqual([]);
+	});
+
+	it('switches a light on and off with the entity alone, and only a chosen brightness adds a field', async () => {
+		const lamp = await allowed('light.lamp');
+		k.http.servePost(`${BASE}/api/services/light/turn_on`, {});
+		k.http.servePost(`${BASE}/api/services/light/turn_off`, {});
+		await set(lamp.id, 'turn_on');
+		await k.worker.drain();
+		await set(lamp.id, 'turn_off');
+		await k.worker.drain();
+		await set(lamp.id, 'turn_on', 30);
+		await k.worker.drain();
+		expect(posts()).toEqual([
+			['/api/services/light/turn_on', { entity_id: 'light.lamp' }],
+			['/api/services/light/turn_off', { entity_id: 'light.lamp' }],
+			['/api/services/light/turn_on', { entity_id: 'light.lamp', brightness_pct: 30 }],
+		]);
+		expect(Object.keys(k.http.posted[0]?.json as object)).toEqual(['entity_id']);
+		// A plain switch is told apart from a dimmed one in the history.
+		expect((await history()).map((h) => [h.operation, h.chosen])).toEqual([
+			['turn_on', null],
+			['turn_off', null],
+			['turn_on', '30'],
+		]);
+	});
+
+	describe('what depends on the entity itself', () => {
+		const humidifier = {
+			min_humidity: 30,
+			max_humidity: 80,
+			humidity: 45,
+			available_modes: ['normal', 'sleep', 'auto'],
+			mode: 'normal',
+		};
+
+		it('sends a target humidity inside the limits the humidifier reports, and a mode it lists', async () => {
+			const item = await allowed('humidifier.bedroom');
+			serveState('humidifier.bedroom', humidifier);
+			k.http.servePost(`${BASE}/api/services/humidifier/set_humidity`, {});
+			k.http.servePost(`${BASE}/api/services/humidifier/set_mode`, {});
+			await set(item.id, 'set_humidity', 55);
+			await set(item.id, 'set_humidity', 30);
+			await set(item.id, 'set_humidity', 80);
+			await set(item.id, 'set_mode', 'sleep');
+			await k.worker.drain();
+			const sent = (field: string, value: unknown) => ({
+				entity_id: 'humidifier.bedroom',
+				[field]: value,
+			});
+			expect(posts()).toEqual([
+				['/api/services/humidifier/set_humidity', sent('humidity', 55)],
+				['/api/services/humidifier/set_humidity', sent('humidity', 30)],
+				['/api/services/humidifier/set_humidity', sent('humidity', 80)],
+				['/api/services/humidifier/set_mode', sent('mode', 'sleep')],
+			]);
+			expect((await history()).map((h) => [h.operation, h.chosen, h.ok])).toEqual([
+				['set_humidity', '55', 1],
+				['set_humidity', '30', 1],
+				['set_humidity', '80', 1],
+				['set_mode', 'sleep', 1],
+			]);
+		});
+
+		it('refuses a humidity outside the limits, a mode not in the list, and a non-whole humidity', async () => {
+			const item = await allowed('humidifier.bedroom');
+			serveState('humidifier.bedroom', humidifier);
+			// The action cannot tell (it has not read the humidifier); the job does.
+			await set(item.id, 'set_humidity', 29);
+			await set(item.id, 'set_humidity', 81);
+			await set(item.id, 'set_mode', 'turbo');
+			await expect(set(item.id, 'set_humidity', 45.5)).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			await expect(set(item.id, 'set_mode', '')).rejects.toMatchObject({ code: 'bad_request' });
+			await expect(set(item.id, 'set_mode', 5)).rejects.toMatchObject({ code: 'bad_request' });
+			await k.worker.drain();
+			expect(k.http.posted).toEqual([]);
+			expect((await history()).map((h) => h.ok)).toEqual([0, 0, 0]);
+		});
+
+		it('sends nothing when the attribute it depends on is missing, or not what it should be', async () => {
+			const item = await allowed('humidifier.bedroom');
+			serveState('humidifier.bedroom', { friendly_name: 'Bedroom' });
+			await set(item.id, 'set_humidity', 50);
+			await set(item.id, 'set_mode', 'sleep');
+			await k.worker.drain();
+			expect(k.http.posted).toEqual([]);
+			// Limits that are not numbers, and no list of modes.
+			serveState('humidifier.bedroom', {
+				min_humidity: '30',
+				max_humidity: 80,
+				available_modes: 'sleep',
+			});
+			k.clock.advance(10_000);
+			await set(item.id, 'set_humidity', 50);
+			await set(item.id, 'set_mode', 'sleep');
+			await k.worker.drain();
+			expect(k.http.posted).toEqual([]);
+			expect((await history()).every((h) => h.ok === 0)).toBe(true);
+		});
+
+		it('sends a fan preset the fan lists, and no other', async () => {
+			const fan = await allowed('fan.winix_play_room');
+			serveState('fan.winix_play_room', { preset_modes: ['auto', 'sleep'], preset_mode: null });
+			k.http.servePost(`${BASE}/api/services/fan/set_preset_mode`, {});
+			await set(fan.id, 'set_preset_mode', 'sleep');
+			await set(fan.id, 'set_preset_mode', 'turbo');
+			await k.worker.drain();
+			expect(posts()).toEqual([
+				[
+					'/api/services/fan/set_preset_mode',
+					{ entity_id: 'fan.winix_play_room', preset_mode: 'sleep' },
+				],
+			]);
+			expect((await history()).map((h) => [h.chosen, h.ok])).toEqual([
+				['sleep', 1],
+				['turbo', 0],
+			]);
+			serveState('fan.winix_play_room', {});
+			k.clock.advance(10_000);
+			await set(fan.id, 'set_preset_mode', 'auto');
+			await k.worker.drain();
+			expect(k.http.posted).toHaveLength(1);
+		});
+
+		it('refuses a preset or a mode for the wrong kind of thing', async () => {
+			const fan = await allowed('fan.winix_play_room');
+			await expect(set(fan.id, 'set_mode', 'sleep')).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			const humidifierItem = await allowed('humidifier.bedroom');
+			await expect(set(humidifierItem.id, 'set_preset_mode', 'sleep')).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+		});
+	});
+
+	it('is for people who may switch, and nothing else is let through', async () => {
+		const cover = await allowed('cover.window');
+		await expect(set(cover.id, 'set_cover_position', 40, display)).rejects.toBeTruthy();
+		expect(await jobs()).toEqual([]);
 	});
 });

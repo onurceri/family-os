@@ -19,13 +19,29 @@ export type HistoryKey =
 	| 'history_media_pause'
 	| 'history_press'
 	| 'history_set_percentage'
+	| 'history_set_value'
+	| 'history_set_volume'
 	| 'history_run';
 
-/** Scenes and scripts are run, not turned on. */
-export function historyKey(entityId: string, operation: Operation): HistoryKey {
+/** What a switch set to, by kind: a percentage or one of a list of words. */
+const SETS_NUMBER = new Set(['set_cover_position', 'set_valve_position', 'set_humidity']);
+const SETS_WORD = new Set(['set_mode', 'set_preset_mode']);
+
+/**
+ * Scenes and scripts are run, not turned on; a light switched on with a brightness is set to it.
+ * `chosen` is what the switch set, when it set something.
+ */
+export function historyKey(
+	entityId: string,
+	operation: Operation,
+	chosen?: string | null,
+): HistoryKey {
 	const domain = controlDomain(entityId);
 	if ((domain === 'scene' || domain === 'script') && operation === 'turn_on') return 'history_run';
-	return `history_${operation}`;
+	if (operation === 'volume_set') return 'history_set_volume';
+	if (SETS_NUMBER.has(operation) || SETS_WORD.has(operation)) return 'history_set_value';
+	if (operation === 'turn_on' && chosen != null) return 'history_set_value';
+	return `history_${operation}` as HistoryKey;
 }
 
 export interface HistoryDeps {
@@ -33,6 +49,10 @@ export interface HistoryDeps {
 		key: HistoryKey | 'history_failed' | 'history_someone',
 		params?: Record<string, string>,
 	): string;
+	/** A whole percentage in words ("60 %"). */
+	percent(value: number): string;
+	/** A mode or a preset in words. */
+	option(word: string): string;
 	/** The member's name, or null when they are gone or may not be named. */
 	member(memberId: string | null): string | null;
 	time(at: number): string;
@@ -54,11 +74,20 @@ export function describeSwitch(
 			title: deps.t('history_failed', { name: entry.label }),
 			meta: who ? `${who} · ${when}` : when,
 		};
+	const chosen = entry.chosen ?? null;
+	const number = chosen !== null && !SETS_WORD.has(entry.operation) ? Number(chosen) : null;
+	const value =
+		chosen === null
+			? ''
+			: number !== null && Number.isFinite(number)
+				? deps.percent(number)
+				: deps.option(chosen);
 	return {
-		title: deps.t(historyKey(entry.entityId, entry.operation), {
+		title: deps.t(historyKey(entry.entityId, entry.operation, chosen), {
 			who: who ?? deps.t('history_someone'),
 			name: entry.label,
 			level: String(entry.level ?? ''),
+			value,
 		}),
 		meta: when,
 	};

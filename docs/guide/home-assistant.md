@@ -81,7 +81,10 @@ When the page says **Connected**, use **What to show**:
 | Motion | **Detected** / **Clear** |
 | Smoke, problem | **Alert** / **OK** |
 | Lights, switches, humidifiers | **On** / **Off** |
-| Fans with speeds | **Speed 2**, **Off** |
+| Dimmable lights | **On · 60 %** |
+| Humidifiers | **On · 45 %** (the target), with the mode if it is short: **On · 45 % · Sleep** |
+| Covers and valves with a position | **Open · 40 %**, **Closed** |
+| Fans with speeds | **Speed 2**, or the preset when one is active (**Auto**), **Off** |
 | Thermostat | Mode and current temperature |
 | Vacuum | **Cleaning**, **Docked**, **Going home**, **Paused**, **Idle**, **Error** |
 | Media player | **Playing**, **Paused**, **Idle**, **On**, **Off**, **Standby**, **Loading** |
@@ -92,7 +95,7 @@ Anything else is worded as Home Assistant words it.
 
 ## Switch things from FamilyOS
 
-Lights, switches, fans (on and off, and the speed of a fan with a few), humidifiers (on and off only), on/off helpers (`input_boolean`), covers, water valves, locks, scenes, scripts, buttons, vacuums and media players (play, pause and power only), one by one:
+Lights (and their brightness), switches, fans (on and off, the speed of a fan with a few, and its presets), humidifiers (on and off, target humidity and mode), on/off helpers (`input_boolean`), covers and water valves (and their position), locks, scenes, scripts, buttons, vacuums and media players (play, pause, power and volume), one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
 2. Turn on **Can be switched from FamilyOS** (off for everything at first). Until you allow it, a thing that can be switched says **Can be switched** on its row.
@@ -137,7 +140,25 @@ FamilyOS can send notifications to the Home Assistant app on a member's phone, v
 
 Texts go only to your Home Assistant, then through its push service to the phone. Its address must be the **IP address** or an `https` address.
 
-A fan keeps its switch on the row. When Home Assistant reports its speeds (two to six), the row says its state under the name (**On · Speed 2 ›**) and the switch is at the end, in line with every other switch. Tap the name on Today to open a sheet with **Power** and **Speed**, one tile for each speed (**1 2 3 4**); tap the one you want. It is sent at once, the row says **Switching…** until the fan answers, and **Done** closes the sheet. With **Ask before switching** the sheet has **Cancel** and **Set**: the switch and the tiles only choose, nothing changes until you tap **Set**, and choosing a speed on a fan that is off turns it on. Fans with more speeds, or none Home Assistant reports, have just the switch. People who may not switch things, and displays, see the speed but nothing to tap. **Switched lately** says "Tom set Air purifier to speed 2". Speed is the only thing FamilyOS ever sends along with a switch.
+### Levels, positions and modes
+
+A thing that can be set to more than on or off has a sheet. Its row says the state under the name (**On · 60 % ›**), keeps its own control at the end (the switch, or Open, Close, Stop, Play, Pause), and opens the sheet when you tap the name on Today. The sheet is a small form of labelled groups. What it shows comes from what Home Assistant reports for that thing right now:
+
+| Thing | Sheet |
+|---|---|
+| Light that dims | **Power**, **Brightness** (1 to 100 %) |
+| Cover, valve with a position | **Position** (0 to 100 %, **Closed** to **Open**) |
+| Humidifier | **Power**, **Target humidity** (between the lowest and highest it reports), **Mode** |
+| Media player with a volume | **Volume** (0 to 100 %); Play and Pause stay on the row |
+| Fan | **Power**, **Speed** (two to six speeds, one tile each: **1 2 3 4**), **Preset** |
+
+A number is a slider with **−** and **+** at the ends and its value beside them (**60 %**). Moving the slider sends nothing until you let go; **−** and **+** send after a short pause, so five taps are one change. A mode or a preset is a tile for each word Home Assistant lists (up to six, otherwise a list); the common words (Auto, Sleep, Normal, Eco …) are translated, any other is shown as Home Assistant words it. Choosing is sent at once, the row says **Switching…** until the thing answers (and the value goes back if it could not be done), and **Done** closes the sheet.
+
+With **Ask before switching** the sheet has **Cancel** and **Set**: the switch, the sliders and the tiles only choose, nothing changes until you tap **Set**, and then each thing you changed is sent. Choosing a brightness or a speed on something that is off turns it on. People who may not switch things, and displays, see the values but nothing to tap. A thing that reports nothing to set (a light that is only on or off, a fan without speeds) has just its control.
+
+**Switched lately** says "Tom set Kitchen light to 60 %", "Tom set Bedroom humidifier to Sleep" or "Tom set the volume of TV to 30 %".
+
+FamilyOS sends only these settings with a switch, one at a time and only what Home Assistant says the thing allows: a brightness of 1 to 100, a position of 0 to 100, a humidity inside the thing's own limits, a volume of 0 to 100, and a mode or preset the thing lists. Anything else is refused, and nothing is sent.
 
 ## Not possible yet
 
@@ -145,5 +166,7 @@ A fan keeps its switch on the row. When Home Assistant reports its speeds (two t
 - The assistant cannot know who is home or switch anything.
 - No map, only a place's name.
 - Thermostats and alarm panels can be shown, not switched (no temperature setting, arming, disarming).
-- Fans have no presets (auto, sleep) or oscillation, only speeds.
-- Media players have no volume, source or track; choosing from lists or setting numbers in Home Assistant is not possible.
+- Fans have no oscillation or direction, only speeds and presets.
+- Lights have no colour or colour temperature, only brightness.
+- Media players have no source or track, and covers no tilt.
+- Setting a number or choosing from a list in Home Assistant beyond the ones above is not possible.

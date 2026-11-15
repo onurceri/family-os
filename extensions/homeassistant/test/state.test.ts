@@ -32,6 +32,7 @@ describe('parseState', () => {
 			temperature: null,
 			percentage: null,
 			percentageStep: null,
+			levels: null,
 			changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
 		});
 	});
@@ -246,5 +247,157 @@ describe('toValue', () => {
 	it('does not make a number of an odd text', () => {
 		expect(value('sensor.x', '12abc')).toEqual({ kind: 'text', text: '12abc' });
 		expect(value('sensor.x', 'Infinity')).toEqual({ kind: 'text', text: 'Infinity' });
+	});
+});
+
+describe('what a thing can be set to', () => {
+	it('reads a light that dims, as a brightness in percent', () => {
+		const dim = (attributes: Record<string, unknown>, state = 'on') =>
+			value('light.kitchen', state, attributes);
+		expect(dim({ brightness: 153, supported_color_modes: ['brightness'] })).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+			levels: { brightness: { percent: 60 } },
+		});
+		expect(dim({ brightness: 255 })).toMatchObject({ levels: { brightness: { percent: 100 } } });
+		// The dimmest a light can be and still be on is 1 percent, never 0.
+		expect(dim({ brightness: 1 })).toMatchObject({ levels: { brightness: { percent: 1 } } });
+		// Off, the brightness is not reported, and the light still dims.
+		expect(dim({ brightness: null, supported_color_modes: ['hs', 'color_temp'] }, 'off')).toEqual({
+			kind: 'binary',
+			on: false,
+			deviceClass: null,
+			levels: { brightness: { percent: null } },
+		});
+	});
+
+	it('does not offer a brightness to a light that is only on or off', () => {
+		for (const attributes of [
+			{ supported_color_modes: ['onoff'] },
+			{ supported_color_modes: ['onoff'], brightness: null },
+			{},
+			{ supported_color_modes: 'brightness' },
+		])
+			expect(value('light.kitchen', 'on', attributes)).toEqual({
+				kind: 'binary',
+				on: true,
+				deviceClass: null,
+			});
+		// Only a light has a brightness.
+		expect(value('switch.heater', 'on', { brightness: 100 })).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+		});
+	});
+
+	it('reads a position for a cover and for a valve, and none when it is not reported', () => {
+		expect(value('cover.window', 'open', { current_position: 40 })).toEqual({
+			kind: 'state',
+			domain: 'cover',
+			state: 'open',
+			temperature: null,
+			levels: { position: { percent: 40 } },
+		});
+		expect(value('valve.garden', 'closed', { current_position: 0 })).toMatchObject({
+			domain: 'valve',
+			levels: { position: { percent: 0 } },
+		});
+		expect(value('cover.window', 'open', { current_position: 140 })).toMatchObject({
+			levels: { position: { percent: 100 } },
+		});
+		for (const attributes of [{}, { current_position: null }, { current_position: '40' }])
+			expect(value('cover.window', 'open', attributes)).toEqual({
+				kind: 'state',
+				domain: 'cover',
+				state: 'open',
+				temperature: null,
+			});
+	});
+
+	it('reads a humidifier’s target, limits and modes', () => {
+		expect(
+			value('humidifier.bedroom', 'on', {
+				humidity: 45,
+				min_humidity: 30,
+				max_humidity: 80,
+				available_modes: ['normal', 'sleep', 'auto'],
+				mode: 'normal',
+			}),
+		).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+			levels: {
+				humidity: { target: 45, min: 30, max: 80 },
+				mode: { options: ['normal', 'sleep', 'auto'], current: 'normal' },
+			},
+		});
+		// No limits, no target: no slider. No modes: no mode.
+		expect(value('humidifier.bedroom', 'on', { humidity: 45 })).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+		});
+		expect(
+			value('humidifier.bedroom', 'off', { humidity: 45, min_humidity: 80, max_humidity: 30 }),
+		).toEqual({ kind: 'binary', on: false, deviceClass: null });
+		expect(value('humidifier.bedroom', 'on', { available_modes: ['eco'] })).toMatchObject({
+			levels: { mode: { options: ['eco'], current: null } },
+		});
+	});
+
+	it('reads a media player’s volume as a percentage', () => {
+		expect(value('media_player.tv', 'playing', { volume_level: 0.3 })).toEqual({
+			kind: 'state',
+			domain: 'media_player',
+			state: 'playing',
+			temperature: null,
+			levels: { volume: { percent: 30 } },
+		});
+		expect(value('media_player.tv', 'off', { volume_level: 1.5 })).toMatchObject({
+			levels: { volume: { percent: 100 } },
+		});
+		expect(value('media_player.tv', 'playing', {})).not.toHaveProperty('levels');
+	});
+
+	it('reads the presets of a fan, keeping only words', () => {
+		expect(
+			value('fan.winix_play_room', 'on', {
+				percentage: 25,
+				percentage_step: 25,
+				preset_modes: ['auto', 'sleep'],
+				preset_mode: null,
+			}),
+		).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+			speed: { percentage: 25, step: 25 },
+			levels: { preset: { options: ['auto', 'sleep'], current: null } },
+		});
+		expect(
+			value('fan.winix_play_room', 'on', {
+				preset_modes: ['auto', 5, '', '  ', 'x'.repeat(100), 'sleep'],
+				preset_mode: 'sleep',
+			}),
+		).toMatchObject({ levels: { preset: { options: ['auto', 'sleep'], current: 'sleep' } } });
+		expect(value('fan.winix_play_room', 'on', { preset_modes: [] })).not.toHaveProperty('levels');
+		expect(value('fan.winix_play_room', 'on', { preset_modes: 'auto' })).not.toHaveProperty(
+			'levels',
+		);
+	});
+
+	it('keeps no more than a few dozen options', () => {
+		const many = Array.from({ length: 50 }, (_, i) => `mode_${i}`);
+		const read = value('fan.x', 'on', { preset_modes: many });
+		expect(read.kind === 'binary' && read.levels?.preset?.options).toHaveLength(20);
+	});
+
+	it('says nothing of a thing that is not available', () => {
+		expect(value('cover.window', 'unavailable', { current_position: 40 })).toEqual({
+			kind: 'unavailable',
+		});
 	});
 });
