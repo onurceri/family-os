@@ -25,6 +25,7 @@
 			<Avatar
 				name={r.name}
 				color={r.color || 'var(--ink-soft)'}
+				photo={r.photoUrl}
 				size={24}
 				anyone={r.id === 'anyone'}
 			/>

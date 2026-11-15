@@ -155,6 +155,7 @@
 						id: session.me.id,
 						displayName: session.me.displayName,
 						color: session.me.color,
+						photoUrl: session.me.photoUrl,
 						roleId: session.me.roleId,
 						nextUp: session.me.nextUp,
 					}
@@ -585,7 +586,12 @@
 				class="text-ink-soft mt-auto flex flex-col items-center gap-1 text-[0.6875rem] font-semibold"
 				aria-label={session.me.displayName}
 			>
-				<Avatar name={session.me.displayName} color={session.me.color} size={36} />
+				<Avatar
+					name={session.me.displayName}
+					color={session.me.color}
+					photo={session.me.photoUrl}
+					size={36}
+				/>
 				<span class="max-w-16 truncate">{session.me.displayName}</span>
 			</a>
 		</nav>

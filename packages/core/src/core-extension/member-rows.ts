@@ -25,6 +25,11 @@ export const MemberSchema = z.object({
 	about: z.string().nullable(),
 	color: z.string(),
 	locale: LocaleSchema.nullable(),
+	/**
+	 * Identifies the current profile photo (null without one), so a page can ask for a picture
+	 * that changes its address when the photo does. Not the file's key.
+	 */
+	photo: z.string().nullable(),
 	createdAt: z.number(),
 	archived: z.boolean(),
 });
@@ -39,6 +44,9 @@ export const SignInMethodsSchema = z.object({
 });
 export const NO_SIGN_IN = { password: false, pin: false };
 
+/** The photo's id: the last segment of its file key. */
+export const photoToken = (key: string | null): string | null => key?.split('/').at(-1) ?? null;
+
 export const toMember = (row: MemberRow): Member => ({
 	id: row.id,
 	displayName: row.display_name,
@@ -46,6 +54,7 @@ export const toMember = (row: MemberRow): Member => ({
 	about: row.about,
 	color: row.color,
 	locale: row.locale,
+	photo: photoToken(row.photo),
 	createdAt: row.created_at,
 	archived: row.archived_at !== null,
 });
@@ -94,6 +103,8 @@ export async function insertMember(
 		about: input.about?.trim() || null,
 		color: input.color ?? MEMBER_COLORS[Number(count.n) % MEMBER_COLORS.length] ?? '#4b5563',
 		locale: input.locale ?? null,
+		photo: null,
+		photo_type: null,
 		created_at: now,
 		updated_at: now,
 		archived_at: null,

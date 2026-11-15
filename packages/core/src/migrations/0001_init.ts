@@ -591,6 +591,14 @@ export const m0010_oauth: Migration = {
 	},
 };
 
+/** A member may have a profile photo: the file's key and its content type. */
+export const m0011_member_photo: Migration = {
+	async up(db) {
+		await db.schema.alterTable('core_members').addColumn('photo', 'text').execute();
+		await db.schema.alterTable('core_members').addColumn('photo_type', 'text').execute();
+	},
+};
+
 export const coreMigrations = {
 	'0001_init': m0001_init,
 	'0002_draft_replaced': m0002_draft_replaced,
@@ -602,4 +610,5 @@ export const coreMigrations = {
 	'0008_connected_apps': m0008_connected_apps,
 	'0009_audit_target': m0009_audit_target,
 	'0010_oauth': m0010_oauth,
+	'0011_member_photo': m0011_member_photo,
 };

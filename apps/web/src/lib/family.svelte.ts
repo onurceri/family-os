@@ -2,9 +2,11 @@ import type { paths } from '@famos/api-client';
 import { defaultHourCycle, defaultTemperatureUnit, defaultWeekStart } from '@famos/time';
 import { api } from './api';
 import { familyAddress } from './family-address';
+import { withPhotoUrl } from './member-photo';
 import { regionFormatLocale } from './region';
 
-type Member =
+type Member = ApiMember & { photoUrl: string | null };
+type ApiMember =
 	paths['/api/v1/core/members']['get']['responses'][200]['content']['application/json'][number];
 
 /** The browser's preferred languages, most preferred first (`sl-SI`, `en-GB`, `en`). */
@@ -69,7 +71,7 @@ class Family {
 		]);
 		if (address.data) this.configuredAddress = address.data.url;
 		// The same members again keep the same array, so nothing that reads them runs again.
-		const next = members.data ?? [];
+		const next = (members.data ?? []).map(withPhotoUrl);
 		if (JSON.stringify(next) !== JSON.stringify(this.members)) this.members = next;
 		if (settings.data) {
 			this.timeZone = settings.data.timeZone;

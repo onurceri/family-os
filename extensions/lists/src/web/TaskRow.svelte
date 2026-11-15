@@ -101,7 +101,12 @@
 	</button>
 	<span class="shrink-0 {done ? 'opacity-60' : ''}" aria-hidden="true">
 		{#if assignee}
-			<Avatar name={assignee.displayName} color={assignee.color} size={28} />
+			<Avatar
+				name={assignee.displayName}
+				color={assignee.color}
+				photo={assignee.photoUrl}
+				size={28}
+			/>
 		{:else}
 			<Avatar name={t('anyone')} color="" size={28} anyone />
 		{/if}

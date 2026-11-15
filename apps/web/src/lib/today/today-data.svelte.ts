@@ -981,7 +981,7 @@ export class TodayData {
 	readonly heroMember = $derived.by(() => {
 		const id = this.hero?.members?.[0];
 		const m = id ? this.members.find((x) => x.id === id) : undefined;
-		return m ? { displayName: m.displayName, color: m.color } : null;
+		return m ? { displayName: m.displayName, color: m.color, photoUrl: m.photoUrl ?? null } : null;
 	});
 	/** A quiet day: nothing timed to look forward to and nothing on the plan today. */
 	readonly quietDay = $derived(
@@ -1039,6 +1039,7 @@ export class TodayData {
 			id: m.id,
 			displayName: m.displayName,
 			color: m.color,
+			photoUrl: m.photoUrl ?? null,
 			status: statusText(
 				statusOf(m.id, this.todayItems, this.chores, this.now),
 				this.format,
@@ -1071,6 +1072,7 @@ export class TodayData {
 				name: m.displayName,
 				short: m.shortName,
 				color: m.color,
+				photoUrl: m.photoUrl ?? null,
 				done: of(m.id)?.done ?? 0,
 				total: of(m.id)?.total ?? 0,
 			})),

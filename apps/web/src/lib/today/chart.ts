@@ -313,6 +313,7 @@ export interface LaneMember {
 	/** What the lane's head shows (`withShortNames`); `displayName` stays its title. */
 	shortName?: string;
 	color: string;
+	photoUrl?: string | null;
 }
 
 export interface PersonLane<T> {
@@ -463,6 +464,8 @@ export interface LaneView {
 	short?: string;
 	/** The member's colour; empty for "Others" and the family. */
 	color: string;
+	/** The member's photo address, when they have one. */
+	photoUrl?: string | null;
 	/** One clause under the name (the person's status, who is in "Others"). */
 	status: string;
 	/** A word about the person beside the name ("Home"), from an extension. */

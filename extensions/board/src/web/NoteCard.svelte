@@ -238,6 +238,7 @@
 			<Avatar
 				name={author.displayName}
 				color={author.color}
+				photo={author.photoUrl}
 				size={variant === 'display' ? 26 : 18}
 			/>
 			<span class="sr-only">{t('by_author', { name: author.displayName })}</span>

@@ -130,7 +130,12 @@
 					{#each ordered as member, index (member.id)}
 						<li class="bg-idle flex min-h-11 items-center gap-2 rounded-lg pr-1 pl-3">
 							<span class="text-ink-soft w-4 text-sm font-bold">{index + 1}</span>
-							<Avatar name={member.displayName} color={member.color} size={26} />
+							<Avatar
+								name={member.displayName}
+								color={member.color}
+								photo={member.photoUrl}
+								size={26}
+							/>
 							<span class="flex-1 truncate font-semibold">{member.displayName}</span>
 							<button
 								type="button"

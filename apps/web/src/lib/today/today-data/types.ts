@@ -10,7 +10,9 @@ export interface PhotoOfTheDay {
 }
 
 /** What Today needs of a member (a preview's made-up people and a display's have only this). */
-export type FamilyMember = Pick<(typeof family.members)[number], 'id' | 'displayName' | 'color'>;
+export type FamilyMember = Pick<(typeof family.members)[number], 'id' | 'displayName' | 'color'> & {
+	photoUrl?: string | null;
+};
 /** The person Today is for: what the compositions and the sentence need of them. */
 export type TodayMe = Pick<NonNullable<typeof session.me>, 'id' | 'displayName' | 'nextUp'>;
 

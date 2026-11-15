@@ -225,7 +225,12 @@
 						<span class="flex -space-x-2">
 							{#each drivers as m (m.id)}
 								<span class="ring-wall rounded-full ring-2"
-									><Avatar name={m.displayName} color={m.color} size={26} /></span
+									><Avatar
+										name={m.displayName}
+										color={m.color}
+										photo={m.photoUrl}
+										size={26}
+									/></span
 								>
 							{/each}
 						</span>

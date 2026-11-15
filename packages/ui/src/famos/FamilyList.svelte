@@ -4,6 +4,8 @@
 		id: string;
 		displayName: string;
 		color: string;
+		/** Their photo address, when they have one. */
+		photoUrl?: string | null;
 		status: string;
 		/** A word about them beside the name ("Home"), from an extension; never coloured. */
 		note?: string;
@@ -38,7 +40,14 @@
 	{#each people as p (p.id)}
 		<li style={colorVars('member', p.color)}>
 			<span class="ringed"
-				><Avatar name={p.displayName} color={p.color} size={32} anyone={p.anyone} /></span
+				><Avatar
+					name={p.displayName}
+					color={p.color}
+					photo={p.photoUrl}
+					size={32}
+					anyone={p.anyone}
+					ring={false}
+				/></span
 			>
 			<span class="t">
 				{#if variant === 'strip'}

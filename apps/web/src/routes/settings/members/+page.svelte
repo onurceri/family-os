@@ -23,6 +23,7 @@
 	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
 	import { t, tDynamic } from '#lib/i18n.svelte.js';
+	import MemberPhoto from '#lib/MemberPhoto.svelte';
 	import { onEvent } from '#lib/realtime.js';
 	import RowMenu from '#lib/RowMenu.svelte';
 	import SelectField from '#lib/SelectField.svelte';
@@ -35,8 +36,7 @@
 	 * `...` menu; adding, editing and the sign-in live in one panel (a sheet on phones); a roles
 	 * summary sits below, or beside from 80 rem.
 	 */
-	type Member =
-		paths['/api/v1/core/members']['get']['responses'][200]['content']['application/json'][number];
+	type Member = (typeof family.members)[number];
 	type Roles = paths['/api/v1/core/roles']['get']['responses'][200]['content']['application/json'];
 
 	const PIN = 'core.signIn.pin';
@@ -317,6 +317,7 @@
 							{#snippet lead()}<Avatar
 									name={member.displayName}
 									color={member.color}
+									photo={member.photoUrl}
 									size={40}
 								/>{/snippet}
 							{#snippet trail()}
@@ -424,6 +425,12 @@
 					</p>
 				{/if}
 			</div>
+			{#if editing}
+				<div class="grid gap-1.5">
+					<span class="text-sm leading-none font-semibold">{t('member_photo_title')}</span>
+					<MemberPhoto member={editing} />
+				</div>
+			{/if}
 			<div class="grid gap-1.5">
 				<Label for="member-role">{t('members_role')}</Label>
 				<SelectField id="member-role" bind:value={roleId}>

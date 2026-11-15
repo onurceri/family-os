@@ -49,7 +49,13 @@
 		 * `anyone`: the things for no one in particular (a people icon, not a letter). `shortName`
 		 * (`withShortNames`) is what the heading shows; the full name stays its title and label.
 		 */
-		member: { displayName: string; shortName?: string; color: string; anyone?: boolean };
+		member: {
+			displayName: string;
+			shortName?: string;
+			color: string;
+			photoUrl?: string | null;
+			anyone?: boolean;
+		};
 		/** Their all-day and timed items in the day's order (`memberDays`). */
 		items: readonly TimelineItem[];
 		now: number;
@@ -112,8 +118,10 @@
 				><Avatar
 					name={member.displayName}
 					color={member.color}
+					photo={member.photoUrl}
 					size={40}
 					anyone={member.anyone}
+					ring={false}
 				/></span
 			>
 			{#if note && !showName}<small class="note" title={note}>{note}</small>{/if}
@@ -156,7 +164,13 @@
 		data-testid="member-day"
 	>
 		<div class="mh">
-			<Avatar name={member.displayName} color={member.color} size={24} anyone={member.anyone} />
+			<Avatar
+				name={member.displayName}
+				color={member.color}
+				photo={member.photoUrl}
+				size={24}
+				anyone={member.anyone}
+			/>
 			<b title={member.displayName}>{heading}</b>
 		</div>
 		{#if items.length > 0}

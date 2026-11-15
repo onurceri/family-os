@@ -654,7 +654,12 @@
 											? 'opacity-55'
 											: ''}"
 								>
-									<Avatar name={member.displayName} color={member.color} size={36} />
+									<Avatar
+										name={member.displayName}
+										color={member.color}
+										photo={member.photoUrl}
+										size={36}
+									/>
 								</button>
 							{/each}
 						</div>

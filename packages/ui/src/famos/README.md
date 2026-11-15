@@ -7,6 +7,7 @@ Shared Ev Işığı components. Style only through tokens (docs/design/design-sy
 - **Row**: 48 px (56 with `meta`): leading visual, 15/600 title, 13 `ink-soft` meta, trailing content; link, button or div; `tile`, `idle`, `selected`, `done`.
 - **Section**: 12/700 uppercase `ink-soft` label, plain count, ghost actions at the right, then content.
 - **Segmented**: `idle` pill track, chosen option `surface` + `shadow-lit`; `radiogroup`, one tab stop, arrow keys, `sm`, `grow`.
+- **Avatar**: a member's initial on their colour, or with `photo` (an address the app builds; extensions get it as `photoUrl` on `useApp().members()`) the picture, round and `object-cover`, inside a ring of their colour (2 px from 24 px up, 1 px below); a picture that fails to load falls back to the initial. `anyone` stays a neutral people icon. `resizeImage(file, side, { square: true })` cuts the centered square for a profile photo.
 - **Chip**: 36 px pill; `filter` (ink ring when on), `member` (member colour ring), `preset` (outlined, adds something).
 - **Pill**: 24 px 12/700 status; tinted tones are a 15 % tint with the state colour mixed toward `ink` (contrast-tested), `solid` for done.
 - **IconButton**: square ghost/outline/secondary/primary at 36, `--ctl` or 44 px, required `label`, 44 px hit area.

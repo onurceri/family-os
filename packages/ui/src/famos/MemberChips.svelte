@@ -52,7 +52,7 @@
 			class={chip(on)}
 			style:--tw-ring-color={member.color}
 		>
-			<Avatar name={member.displayName} color={member.color} size={30} />
+			<Avatar name={member.displayName} color={member.color} photo={member.photoUrl} size={30} />
 			{member.displayName}
 		</button>
 	{/each}

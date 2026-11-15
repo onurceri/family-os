@@ -75,7 +75,12 @@
 				{#snippet lead()}
 					{@const member = assignee(task)}
 					{#if member}
-						<Avatar name={member.displayName} color={member.color} size={32} />
+						<Avatar
+							name={member.displayName}
+							color={member.color}
+							photo={member.photoUrl}
+							size={32}
+						/>
 					{:else}
 						<span
 							class="size-8 shrink-0 rounded-full border-2 {urgency(

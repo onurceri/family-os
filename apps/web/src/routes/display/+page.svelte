@@ -7,6 +7,7 @@
 	import { api } from '#lib/api.js';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { browserFormatLocale } from '#lib/family.svelte.js';
+	import { memberPhotoUrl } from '#lib/member-photo.js';
 	import { contributions, enabledOnly } from '#lib/extensions.js';
 	import { getLocale, loadLanguages, setLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { connectRealtime, onEvent } from '#lib/realtime.js';
@@ -54,7 +55,7 @@
 		/** This display's text size, chosen in Settings (Theme, Displays). */
 		textSize: TextSize;
 	};
-	type Member = { id: string; displayName: string; color: string };
+	type Member = { id: string; displayName: string; color: string; photoUrl: string | null };
 
 	/** `signedIn`: the family uses this browser (a member's session, or a trusted family device). */
 	let phase = $state<'loading' | 'unpaired' | 'paired' | 'signedIn'>('loading');
@@ -176,6 +177,7 @@
 			id: m.id,
 			displayName: m.displayName,
 			color: m.color,
+			photoUrl: memberPhotoUrl(m.id, m.photo),
 		}));
 		// The same members keep the same array, so nothing that reads them runs again.
 		if (JSON.stringify(next) !== JSON.stringify(members)) members = next;

@@ -111,6 +111,13 @@ it('upgrades the previous release’s database, every migration it applied still
 		title: string;
 	}[];
 	expect(events.map((e) => e.title)).toContain('Dentist');
+	// Members from before profile photos have none.
+	const photos = runtime.handle.sqlite
+		.prepare(
+			'select photo, photo_type from core_members where photo is not null or photo_type is not null',
+		)
+		.all();
+	expect(photos).toEqual([]);
 });
 
 it('ends up with the schema of a database migrated from nothing', async () => {

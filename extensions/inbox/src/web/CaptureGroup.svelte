@@ -168,7 +168,12 @@
 					<span>{t(`channel_${item.channel}`)} · {captureTime(app, item.createdAt)}</span>
 					{#if !mine && author}
 						<span class="flex items-center gap-1.5 font-semibold">
-							<Avatar name={author.displayName} color={author.color} size={18} />
+							<Avatar
+								name={author.displayName}
+								color={author.color}
+								photo={author.photoUrl}
+								size={18}
+							/>
 							{t('from', { name: author.displayName })}
 						</span>
 					{/if}
