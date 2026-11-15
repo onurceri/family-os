@@ -13,7 +13,7 @@ import { MODE_TOKENS } from '../packages/themes/src/tokens.ts';
  * fridge browsers used as wall displays run. A browser that meets something it lacks does not
  * degrade, it stops: a missing method ends the start of the app, a missing unit leaves a page
  * with no height, a missing color function leaves a surface unpainted. So browser code follows
- * three rules, and this test fails on the code that breaks one:
+ * four rules, and this test fails on the code that breaks one:
  *
  * 1. No JavaScript API newer than Chrome 106, except the array copy methods `apps/web/src/compat.ts`
  *    installs from core-js. Use a loop or a helper instead of `Object.groupBy`, the Set methods
@@ -31,6 +31,11 @@ import { MODE_TOKENS } from '../packages/themes/src/tokens.ts';
  *    colors set from script with `colorVars` (`style={colorVars('m', member.color)}`), never with
  *    a bare `style:--m=` (that sets no channels). Script that writes a mix itself computes its own
  *    fallback and says so by testing `colorMixSupported`.
+ * 4. No API that exists only in a secure context: `crypto.randomUUID`, `navigator.clipboard`,
+ *    `crypto.subtle`. Families open FamilyOS over plain http on the home network
+ *    (`http://192.168.…`), which a browser counts as insecure, and there these are missing and
+ *    calling them throws. Use `crypto.getRandomValues` (`apps/web/src/lib/random-id.ts`) or a
+ *    helper that tests for the API first (`packages/ui/src/clipboard.ts`).
  */
 const root = join(import.meta.dirname, '..');
 
@@ -129,6 +134,25 @@ function newApis(code: string): string[] {
 		);
 	}
 	return found;
+}
+
+/** APIs a browser offers only in a secure context (https or localhost), not on a plain-http address. */
+const SECURE_ONLY = /\b(?:crypto\.randomUUID|crypto\.subtle|navigator\.clipboard)\b/g;
+
+/** Files that may use one, each for the reason given. */
+const SECURE_ONLY_ALLOWED: Record<string, string> = {
+	// Tests for the API and falls back when it is missing.
+	'packages/ui/src/clipboard.ts': 'feature-detects and falls back',
+	// Runs only once push is available, which needs a secure context anyway.
+	'apps/web/src/lib/push-endpoint.ts': 'only runs where push exists',
+};
+
+/** The uses of a secure-context-only API in script and markup. */
+function secureOnlyApis(code: string): string[] {
+	return [...code.matchAll(SECURE_ONLY)].map(
+		(match) =>
+			`line ${code.slice(0, match.index).split('\n').length}: \`${match[0]}\` exists only in a secure context, not on a plain-http address`,
+	);
 }
 
 /** Tailwind classes that cannot carry a fallback line. */
@@ -388,6 +412,25 @@ describe('older browsers', () => {
 				(problem) => `${path.slice(root.length + 1)} ${problem}`,
 			),
 		);
+		expect(offenders).toEqual([]);
+	});
+
+	it('finds an API that exists only in a secure context', () => {
+		expect(secureOnlyApis('const id = crypto.randomUUID();')).toHaveLength(1);
+		expect(
+			secureOnlyApis('await navigator.clipboard.writeText(t); crypto.subtle.digest(a, b);'),
+		).toHaveLength(2);
+		expect(secureOnlyApis('crypto.getRandomValues(bytes);')).toEqual([]);
+	});
+
+	it('uses no API that needs a secure context in browser code', () => {
+		const offenders = SOURCES.flatMap((dir) => [...walk(join(root, dir))])
+			.filter((path) => !(path.slice(root.length + 1) in SECURE_ONLY_ALLOWED))
+			.flatMap((path) =>
+				secureOnlyApis(codeOf(path, readFileSync(path, 'utf8'))).map(
+					(problem) => `${path.slice(root.length + 1)} ${problem}`,
+				),
+			);
 		expect(offenders).toEqual([]);
 	});
 

@@ -11,16 +11,19 @@ FamilyOS ships one product version as a Docker image. The version lives in `apps
 - **Major** (1.0.0 → 2.0.0): anything that needs a manual step or breaks expand-only (a removed API field, a renamed column), announced in advance. Before 1.0, a minor version may do this; its notes say so under "Breaking changes".
 - Pre-releases: `1.0.0-rc.1`. They get only their own image tag, never `latest`.
 
+A `fix` that repairs something a family could not do at all (adding, ticking, signing in, reminders) gets a patch release within a few days; it does not wait for the next minor.
+
 ## Steps
 
-1. On `main`, with CI green (the Security workflow is advice, not a gate: look at its audit, CodeQL and image-scan results and fix what it reports before a release when you can):
+1. Look at open bugs first: `gh issue list --label bug --state open`. Do not tag while one breaks something a family does every day (adding, ticking, signing in, reminders); fix it first, or say in the release why it waits.
+2. On `main`, with CI green (the Security workflow is advice, not a gate: look at its audit, CodeQL and image-scan results and fix what it reports before a release when you can):
    ```bash
    pnpm release 0.2.0
    ```
    This sets the version (the product's and its shipped extensions'), commits `chore(release): 0.2.0`, tags `v0.2.0` and prints the notes. Nothing is pushed.
-2. Read the notes. The notes are the commit messages, so fix one that reads badly before pushing (amend, or drop the tag: `git tag -d v0.2.0`).
-3. Push: `git push origin main --follow-tags`.
-4. Refresh the upgrade fixture: make a database with the code of the tag just released and commit it as `apps/server/test/fixtures/release-<version>.sqlite` (steps in `apps/server/test/fixtures/README.md`). The release-fixture test upgrades it with the code on `main`, so an edit to a migration that is already released fails there.
+3. Read the notes. The notes are the commit messages, so fix one that reads badly before pushing (amend, or drop the tag: `git tag -d v0.2.0`).
+4. Push: `git push origin main --follow-tags`.
+5. Refresh the upgrade fixture: make a database with the code of the tag just released and commit it as `apps/server/test/fixtures/release-<version>.sqlite` (steps in `apps/server/test/fixtures/README.md`). The release-fixture test upgrades it with the code on `main`, so an edit to a migration that is already released fails there.
 
 The **Release** workflow then runs every check (lint, typecheck, tests, E2E), verifies the tag matches the version, pushes `ghcr.io/onurceri/familyos` for amd64 and arm64 as `0.2.0`, `0.2` and `latest` (plus `1` from 1.0 on), creates the GitHub release with the notes, and then publishes the extension packages (below).
 

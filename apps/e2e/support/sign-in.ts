@@ -20,6 +20,24 @@ export async function api<T = unknown>(
 	data?: unknown,
 ): Promise<T> {
 	const origin = new URL(page.url()).origin;
+	// A name only the browser can resolve (`insecureHost`): ask through the page itself.
+	if (new URL(origin).hostname !== 'localhost') {
+		const result = await page.evaluate(
+			async ({ method, path, data }) => {
+				const res = await fetch(path, {
+					method,
+					...(data !== undefined && {
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify(data),
+					}),
+				});
+				return { ok: res.ok, status: res.status, text: await res.text() };
+			},
+			{ method, path, data },
+		);
+		if (!result.ok) throw new Error(`${method} ${path} → ${result.status} ${result.text}`);
+		return (result.text ? JSON.parse(result.text) : null) as T;
+	}
 	const res = await page.request.fetch(`${origin}${path}`, {
 		method,
 		headers: { origin },

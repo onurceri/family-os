@@ -48,6 +48,11 @@ export async function startFamilyOS(options: {
 	dataDir?: string;
 	/** Believe `X-Forwarded-For` from this machine, so a test can send requests from other addresses. */
 	behindProxy?: boolean;
+	/**
+	 * The name the family is reached by (default `localhost`). The server still listens on
+	 * 127.0.0.1; a name other than localhost is an insecure origin to a browser, which must map it.
+	 */
+	host?: string;
 }) {
 	if (
 		!existsSync(SERVER) ||
@@ -57,7 +62,9 @@ export async function startFamilyOS(options: {
 		throw new Error('Build first: pnpm build (E2E runs the production bundle)');
 	const dataDir = options.dataDir ?? (await mkdtemp(join(tmpdir(), 'famos-e2e-')));
 	const port = await freePort();
-	const url = `http://localhost:${port}`;
+	// The server's own checks (health, setup) reach it on 127.0.0.1; the browser uses `url`.
+	const url = `http://${options.host ?? 'localhost'}:${port}`;
+	const localUrl = `http://127.0.0.1:${port}`;
 	const env = {
 		...process.env,
 		// The test-only settings below are refused under production, whatever the shell has set.
@@ -94,7 +101,7 @@ export async function startFamilyOS(options: {
 		for (let i = 0; i < 300; i++) {
 			if (child.exitCode !== null) throw new Error(`FamilyOS exited:\n${output}`);
 			try {
-				if ((await fetch(`${url}/health`)).ok) return;
+				if ((await fetch(`${localUrl}/health`)).ok) return;
 			} catch {
 				// not listening yet
 			}
