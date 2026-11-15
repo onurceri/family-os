@@ -1,4 +1,10 @@
-import { controlDomain, type Operation, type Value } from '../contract/index.js';
+import {
+	controlDomain,
+	fanSpeeds,
+	type Operation,
+	percentageForLevel,
+	type Value,
+} from '../contract/index.js';
 
 /**
  * What a row offers for a thing the family allowed switching: one switch for what is on or off,
@@ -8,6 +14,31 @@ import { controlDomain, type Operation, type Value } from '../contract/index.js'
 export type Control =
 	| { kind: 'switch'; on: boolean; operation: Operation }
 	| { kind: 'button'; operation: Operation; label: ButtonLabel };
+
+/** What a tap asks for: the operation, and for a fan's speed the percentage and the level. */
+export interface SwitchRequest {
+	operation: Operation;
+	percentage?: number;
+	level?: number;
+}
+
+/** The request of a pick in a fan's speeds: the percentage Home Assistant rounds to that level. */
+export function levelRequest(level: number, speeds: number): SwitchRequest {
+	return { operation: 'set_percentage', percentage: percentageForLevel(level, speeds), level };
+}
+
+/**
+ * What a row offers beyond its own control, in a sheet that opens from the row: how much, where
+ * the row only says on or off. Only a fan's speed so far; `current` is 0 when off and null when
+ * it is on and Home Assistant does not say how fast.
+ */
+export type Detail = { kind: 'speed'; speeds: number; current: number | null };
+
+export function detailFor(entityId: string, value: Value): Detail | null {
+	if (controlDomain(entityId) !== 'fan') return null;
+	const speeds = fanSpeeds(value);
+	return speeds ? { kind: 'speed', ...speeds } : null;
+}
 
 /** The words of a button, a key of the extension's catalog. */
 export type ButtonLabel =
@@ -106,14 +137,14 @@ export function controlsFor(entityId: string, value: Value): Control[] {
 }
 
 /** The question a confirm sheet asks ("Unlock {{name}}?"), a key of the extension's catalog. */
-export function askKey(entityId: string, operation: Operation) {
+export function askKey(entityId: string, operation: Exclude<Operation, 'set_percentage'>) {
 	const domain = controlDomain(entityId);
 	if ((domain === 'scene' || domain === 'script') && operation === 'turn_on') return 'ask_run';
 	return `ask_${operation}` as const;
 }
 
 /** The answer button of a confirm sheet: the operation's own word. */
-export function answerKey(entityId: string, operation: Operation) {
+export function answerKey(entityId: string, operation: Exclude<Operation, 'set_percentage'>) {
 	const domain = controlDomain(entityId);
 	if ((domain === 'scene' || domain === 'script') && operation === 'turn_on') return 'op_run';
 	return `op_${operation}` as const;

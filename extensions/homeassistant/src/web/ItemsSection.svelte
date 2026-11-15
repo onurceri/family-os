@@ -280,7 +280,7 @@
 						<Controls
 							item={shown}
 							busy={switcher.busy(item.id)}
-							onswitch={(op) => void switcher.run(shown, op)}
+							onswitch={(request) => void switcher.run(shown, request)}
 						/>
 					</div>
 				{:else}

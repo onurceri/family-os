@@ -81,6 +81,7 @@ When the page says **Connected**, use **What to show**:
 | Motion | **Detected** / **Clear** |
 | Smoke, problem | **Alert** / **OK** |
 | Lights, switches, humidifiers | **On** / **Off** |
+| Fans with speeds | **On · Speed 2**, **Off** |
 | Thermostat | Mode and current temperature |
 | Vacuum | **Cleaning**, **Docked**, **Going home**, **Paused**, **Idle**, **Error** |
 | Media player | **Playing**, **Paused**, **Idle**, **On**, **Off**, **Standby**, **Loading** |
@@ -91,7 +92,7 @@ Anything else is worded as Home Assistant words it.
 
 ## Switch things from FamilyOS
 
-Lights, switches, fans, humidifiers (on and off only), on/off helpers (`input_boolean`), covers, water valves, locks, scenes, scripts, buttons, vacuums and media players (play, pause and power only), one by one:
+Lights, switches, fans (on and off, and the speed of a fan with a few), humidifiers (on and off only), on/off helpers (`input_boolean`), covers, water valves, locks, scenes, scripts, buttons, vacuums and media players (play, pause and power only), one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
 2. Turn on **Can be switched from FamilyOS** (off for everything at first). Until you allow it, a thing that can be switched says **Can be switched** on its row.
@@ -136,10 +137,13 @@ FamilyOS can send notifications to the Home Assistant app on a member's phone, v
 
 Texts go only to your Home Assistant, then through its push service to the phone. Its address must be the **IP address** or an `https` address.
 
+A fan keeps its switch on the row. When Home Assistant reports its speeds (two to six), the row says **On · Speed 2** and has a **›** at the end: tap the name on Today to open a sheet with the switch and the speeds (**1 · 2 · 3 · 4**, a list for five or six), and tap the one you want; it is sent at once and the value says **Switching…** until the fan answers. With **Ask before switching** a tap only chooses, and one button says what will happen, e.g. **Set Air purifier to speed 2**; tapping it sends it. Fans with more speeds, or none Home Assistant reports, have just the switch. People who may not switch things, and displays, see the speed but nothing to tap. **Switched lately** says "Tom set Air purifier to speed 2". Speed is the only thing FamilyOS ever sends along with a switch.
+
 ## Not possible yet
 
 - Home Assistant's Assist reaches FamilyOS through [MCP](mcp.md#home-assistant), as the person who set it up, read and suggest only.
 - The assistant cannot know who is home or switch anything.
 - No map, only a place's name.
 - Thermostats and alarm panels can be shown, not switched (no temperature setting, arming, disarming).
+- Fans have no presets (auto, sleep) or oscillation, only speeds.
 - Media players have no volume, source or track; choosing from lists or setting numbers in Home Assistant is not possible.

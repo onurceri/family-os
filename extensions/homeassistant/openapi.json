@@ -1515,6 +1515,27 @@
 																			"string",
 																			"null"
 																		]
+																	},
+																	"speed": {
+																		"type": "object",
+																		"properties": {
+																			"percentage": {
+																				"type": [
+																					"number",
+																					"null"
+																				]
+																			},
+																			"step": {
+																				"type": [
+																					"number",
+																					"null"
+																				]
+																			}
+																		},
+																		"required": [
+																			"percentage",
+																			"step"
+																		]
 																	}
 																},
 																"required": [
@@ -1997,6 +2018,27 @@
 																		"type": [
 																			"string",
 																			"null"
+																		]
+																	},
+																	"speed": {
+																		"type": "object",
+																		"properties": {
+																			"percentage": {
+																				"type": [
+																					"number",
+																					"null"
+																				]
+																			},
+																			"step": {
+																				"type": [
+																					"number",
+																					"null"
+																				]
+																			}
+																		},
+																		"required": [
+																			"percentage",
+																			"step"
 																		]
 																	}
 																},
@@ -3997,8 +4039,17 @@
 															"return_to_base",
 															"media_play",
 															"media_pause",
-															"press"
+															"press",
+															"set_percentage"
 														]
+													},
+													"level": {
+														"type": [
+															"integer",
+															"null"
+														],
+														"minimum": 1,
+														"maximum": 6
 													},
 													"memberId": {
 														"type": [
@@ -6906,8 +6957,19 @@
 											"return_to_base",
 											"media_play",
 											"media_pause",
-											"press"
+											"press",
+											"set_percentage"
 										]
+									},
+									"percentage": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 100
+									},
+									"level": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 6
 									}
 								},
 								"required": [

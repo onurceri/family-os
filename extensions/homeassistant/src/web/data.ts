@@ -5,7 +5,6 @@ import type {
 	Item,
 	MySharing,
 	NotifyTargets,
-	Operation,
 	PersonLink,
 	Persons,
 	PresenceList,
@@ -15,6 +14,7 @@ import type {
 	Values,
 } from '../contract/index.js';
 import { api } from './api.js';
+import type { SwitchRequest } from './controls.js';
 
 /** Home Assistant API calls, all through the generated client. */
 export const loadConnection = async (): Promise<Connection> =>
@@ -98,8 +98,8 @@ export async function setItemControl(input: {
 }
 
 /** Asks for a switch; Home Assistant is called right after, and the next read shows it. */
-export async function switchItem(id: string, operation: Operation): Promise<void> {
-	unwrap(await api.POST('/api/v1/actions/homeassistant.switch', { body: { id, operation } }));
+export async function switchItem(id: string, request: SwitchRequest): Promise<void> {
+	unwrap(await api.POST('/api/v1/actions/homeassistant.switch', { body: { id, ...request } }));
 }
 
 /** The latest switches, newest first; of one item when `itemId` is given. */

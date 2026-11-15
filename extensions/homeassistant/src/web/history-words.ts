@@ -18,6 +18,7 @@ export type HistoryKey =
 	| 'history_media_play'
 	| 'history_media_pause'
 	| 'history_press'
+	| 'history_set_percentage'
 	| 'history_run';
 
 /** Scenes and scripts are run, not turned on. */
@@ -57,6 +58,7 @@ export function describeSwitch(
 		title: deps.t(historyKey(entry.entityId, entry.operation), {
 			who: who ?? deps.t('history_someone'),
 			name: entry.label,
+			level: String(entry.level ?? ''),
 		}),
 		meta: when,
 	};

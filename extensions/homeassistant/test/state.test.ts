@@ -30,6 +30,8 @@ describe('parseState', () => {
 			deviceClass: 'temperature',
 			name: 'Outside Temperature',
 			temperature: null,
+			percentage: null,
+			percentageStep: null,
 			changedAt: Date.parse('2026-10-17T08:30:00+00:00'),
 		});
 	});
@@ -167,6 +169,30 @@ describe('toValue', () => {
 	it('reads a light, a switch and a fan as on or off', () => {
 		expect(value('light.kitchen', 'on')).toEqual({ kind: 'binary', on: true, deviceClass: null });
 		expect(value('switch.heater', 'off')).toEqual({ kind: 'binary', on: false, deviceClass: null });
+	});
+
+	it('reads a fan with its speed, and only a fan', () => {
+		expect(value('fan.winix_play_room', 'on', { percentage: 25, percentage_step: 25 })).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+			speed: { percentage: 25, step: 25 },
+		});
+		expect(value('fan.old', 'off')).toEqual({
+			kind: 'binary',
+			on: false,
+			deviceClass: null,
+			speed: { percentage: null, step: null },
+		});
+		// Only numbers count.
+		expect(value('fan.odd', 'on', { percentage: '50', percentage_step: null })).toMatchObject({
+			speed: { percentage: null, step: null },
+		});
+		expect(value('light.kitchen', 'on', { percentage: 25, percentage_step: 25 })).toEqual({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+		});
 	});
 
 	it('reads a lock and a cover by their state words', () => {

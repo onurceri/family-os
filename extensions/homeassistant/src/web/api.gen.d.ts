@@ -1043,6 +1043,10 @@ export interface operations {
                                 kind: "binary";
                                 on: boolean;
                                 deviceClass: string | null;
+                                speed?: {
+                                    percentage: number | null;
+                                    step: number | null;
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "state";
@@ -1216,6 +1220,10 @@ export interface operations {
                                 kind: "binary";
                                 on: boolean;
                                 deviceClass: string | null;
+                                speed?: {
+                                    percentage: number | null;
+                                    step: number | null;
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "state";
@@ -2067,7 +2075,8 @@ export interface operations {
                             entityId: string;
                             label: string;
                             /** @enum {string} */
-                            operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press";
+                            operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage";
+                            level?: number | null;
                             memberId: string | null;
                             ok: boolean;
                             at: number;
@@ -3270,7 +3279,9 @@ export interface operations {
                 "application/json": {
                     id: string;
                     /** @enum {string} */
-                    operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press";
+                    operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage";
+                    percentage?: number;
+                    level?: number;
                 };
             };
         };

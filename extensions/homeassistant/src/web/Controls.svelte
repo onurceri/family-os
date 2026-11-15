@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Button } from '@famos/ui/button';
 	import { Dialog } from '@famos/ui/famos';
-	import type { Operation, Values } from '../contract/index.js';
-	import { answerKey, askKey, controlsFor } from './controls.js';
+	import type { Values } from '../contract/index.js';
+	import { answerKey, askKey, controlsFor, type SwitchRequest } from './controls.js';
 	import { useHomeAssistant } from './i18n.js';
 
 	/**
@@ -17,23 +17,27 @@
 	}: {
 		item: Values['items'][number];
 		busy?: boolean;
-		onswitch: (operation: Operation) => void;
+		onswitch: (request: SwitchRequest) => void;
 	} = $props();
 	const { t } = useHomeAssistant();
 
 	const controls = $derived(controlsFor(item.entityId, item.value));
-	let asking = $state<Operation | null>(null);
+	let asking = $state<SwitchRequest | null>(null);
 
-	function press(operation: Operation) {
+	function press(request: SwitchRequest) {
 		if (busy) return;
-		if (item.confirm) asking = operation;
-		else onswitch(operation);
+		if (item.confirm) asking = request;
+		else onswitch(request);
 	}
 	function answer() {
-		const operation = asking;
+		const request = asking;
 		asking = null;
-		if (operation) onswitch(operation);
+		if (request) onswitch(request);
 	}
+	/** The words of a request that is a plain operation (a speed has its own sheet). */
+	const plain = (request: SwitchRequest) =>
+		request.operation === 'set_percentage' ? null : request.operation;
+	const asked = $derived(asking ? plain(asking) : null);
 </script>
 
 {#each controls as control (control.operation)}
@@ -44,7 +48,7 @@
 			aria-checked={control.on}
 			aria-label={item.label}
 			disabled={busy}
-			onclick={() => press(control.operation)}
+			onclick={() => press({ operation: control.operation })}
 			class="group focus-visible:ring-ink -my-2 grid min-h-11 shrink-0 cursor-pointer place-items-center rounded-full px-1 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 			data-testid="ha-switch-{item.id}"
 		>
@@ -58,22 +62,22 @@
 			variant="outline"
 			size="sm"
 			disabled={busy}
-			onclick={() => press(control.operation)}
+			onclick={() => press({ operation: control.operation })}
 			aria-label={`${t(control.label)} · ${item.label}`}>{t(control.label)}</Button
 		>
 	{/if}
 {/each}
 
 <Dialog
-	open={asking !== null}
-	title={asking ? t(askKey(item.entityId, asking), { name: item.label }) : ''}
+	open={asked !== null}
+	title={asked ? t(askKey(item.entityId, asked), { name: item.label }) : ''}
 	description={t('ask_hint')}
 	onclose={() => (asking = null)}
 >
 	{#snippet actions()}
 		<Button variant="ghost" data-autofocus onclick={() => (asking = null)}>{t('cancel')}</Button>
 		<Button variant="primary" onclick={answer}
-			>{asking ? t(answerKey(item.entityId, asking)) : ''}</Button
+			>{asked ? t(answerKey(item.entityId, asked)) : ''}</Button
 		>
 	{/snippet}
 </Dialog>

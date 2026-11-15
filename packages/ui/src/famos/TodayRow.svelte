@@ -20,6 +20,7 @@
 		checkLabel,
 		busy = false,
 		oncheck,
+		onopen,
 		uncertain = false,
 		wrap = false,
 		leading,
@@ -41,6 +42,8 @@
 		checkLabel?: string;
 		busy?: boolean;
 		oncheck?: () => void;
+		/** The text opens something (a sheet): the title and meta are one button. */
+		onopen?: () => void;
 		/** Dashed `attention` underline under the meta ("check this"). */
 		uncertain?: boolean;
 		/** The meta wraps instead of being cut with "…" (a sentence that must be read whole). */
@@ -68,6 +71,30 @@
 					: 'text-ink-soft',
 	);
 </script>
+
+{#snippet text()}
+	{#if href}
+		<a
+			{href}
+			class="focus-visible:ring-ring truncate rounded-sm text-[0.9375rem] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
+				? 'line-through opacity-60'
+				: ''}">{title}</a
+		>
+	{:else}
+		<b
+			class="truncate text-[0.9375rem] leading-snug font-semibold {check
+				? 'line-through opacity-60'
+				: ''}">{title}</b
+		>
+	{/if}
+	{#if meta}
+		<small
+			class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
+				? 'decoration-attention underline decoration-dashed underline-offset-4'
+				: ''}">{meta}</small
+		>
+	{/if}
+{/snippet}
 
 <div class="min-w-0">
 	<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 {frame}">
@@ -109,33 +136,26 @@
 		{:else if leading}
 			{@render leading()}
 		{/if}
-		<div
-			class="grid min-w-0 flex-1 basis-40 gap-0.5 {variant === 'note' && check === undefined
-				? 'pl-2.5'
-				: ''}"
-		>
-			{#if href}
-				<a
-					{href}
-					class="focus-visible:ring-ring truncate rounded-sm text-[0.9375rem] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
-						? 'line-through opacity-60'
-						: ''}">{title}</a
-				>
-			{:else}
-				<b
-					class="truncate text-[0.9375rem] leading-snug font-semibold {check
-						? 'line-through opacity-60'
-						: ''}">{title}</b
-				>
-			{/if}
-			{#if meta}
-				<small
-					class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
-						? 'decoration-attention underline decoration-dashed underline-offset-4'
-						: ''}">{meta}</small
-				>
-			{/if}
-		</div>
+		{#if onopen}
+			<button
+				type="button"
+				onclick={onopen}
+				class="focus-visible:ring-ring -my-1 grid min-h-11 min-w-0 flex-1 basis-40 cursor-pointer content-center gap-0.5 rounded-md py-1 text-start focus-visible:ring-2 focus-visible:outline-none {variant ===
+					'note' && check === undefined
+					? 'pl-2.5'
+					: ''}"
+			>
+				{@render text()}
+			</button>
+		{:else}
+			<div
+				class="grid min-w-0 flex-1 basis-40 gap-0.5 {variant === 'note' && check === undefined
+					? 'pl-2.5'
+					: ''}"
+			>
+				{@render text()}
+			</div>
+		{/if}
 		{#if trailing}
 			<!-- Long labels (German "Zum Speiseplan hinzufügen" beside "Ablehnen") wrap to a second line
 			inside the row instead of running past its edge. -->

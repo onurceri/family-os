@@ -263,5 +263,12 @@
 	"history_item_label": "Switched here lately",
 	"history_item_empty": "Nobody has switched this from FamilyOS yet.",
 	"load_failed": "Could not read the connection.",
-	"load_retry": "Try again"
+	"load_retry": "Try again",
+	"value_speed": "On · Speed {{level}}",
+	"speed_level": "Speed {{level}}",
+	"history_set_percentage": "{{who}} set {{name}} to speed {{level}}",
+	"speed_label": "Speed",
+	"speed_set": "Set {{name}} to speed {{level}}",
+	"sheet_done": "Done",
+	"sheet_open": "{{name}}: more"
 }
