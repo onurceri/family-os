@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { type FakeBotApi, startFakeBotApi } from '@famos/adapters/telegram/fake-bot-api';
 import { type CoreTables, telegramLinkChanged } from '@famos/core';
 import type { ExtensionDefinition, Logger } from '@famos/sdk';
+import { addDays, formatDate, todayIn, weekdayOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
@@ -387,24 +388,16 @@ describe('sharing from Telegram', () => {
 	it('says an event is already there and moves it from the chat instead of adding a second', async () => {
 		await connect();
 		await link(55);
-		// Days that are always ahead: the gala on a Saturday two to three weeks from today, moved
-		// to the Saturday after it.
-		const today = new Date();
-		const saturday = (weeksAhead: number) =>
-			new Date(
-				Date.UTC(
-					today.getUTCFullYear(),
-					today.getUTCMonth(),
-					today.getUTCDate() + ((6 - today.getUTCDay() + 7) % 7) + 7 * weeksAhead,
-				),
-			);
-		const iso = (day: Date) => day.toISOString().slice(0, 10);
-		const original = saturday(2);
-		const moved = saturday(3);
-		const movedText = `Sat ${moved.getUTCDate()} ${moved.toLocaleDateString('en', { month: 'short', timeZone: 'UTC' })}`;
+		// Two Saturdays ahead of the day the test runs, so the dates never fall into the past.
+		const today = todayIn('UTC', Date.now());
+		let galaDate = addDays(today, 2);
+		while (weekdayOf(galaDate) !== 'SA') galaDate = addDays(galaDate, 1);
+		const movedDate = addDays(galaDate, 7);
+		const [, movedMonth, movedDay] = movedDate.split('-').map(Number) as [number, number, number];
+		const movedText = `Sat ${formatDate(movedDate, 'en-GB', { day: 'numeric', month: 'short' })}`;
 		const made = await call('POST', '/api/v1/actions/calendar.createEvent', {
 			title: 'Regional Gala',
-			date: iso(original),
+			date: galaDate,
 			startTime: '18:00',
 		});
 		expect(made.body.status).toBe('applied');
@@ -417,12 +410,7 @@ describe('sharing from Telegram', () => {
 				{
 					kind: 'calendar.event',
 					title: 'Regional gala',
-					date: {
-						text: movedText,
-						day: moved.getUTCDate(),
-						month: moved.getUTCMonth() + 1,
-						weekday: 6,
-					},
+					date: { text: movedText, day: movedDay, month: movedMonth, weekday: 6 },
 					time: '09:00',
 					timeText: '09:00',
 				},
@@ -443,9 +431,7 @@ describe('sharing from Telegram', () => {
 			[`a:${draftId}`, `r:${draftId}`],
 			[`m:${draftId}`],
 		]);
-		expect(rows[1]?.[0]?.text).toMatch(
-			new RegExp(`^↪ Move it to .*${moved.getUTCDate()}.* instead$`),
-		);
+		expect(rows[1]?.[0]?.text).toMatch(new RegExp(`^↪ Move it to .*${movedDay}.* instead$`));
 
 		// Moving it: the suggestion becomes the change, still waiting, with its own buttons.
 		fake.press(55, 1, `m:${draftId}`, message?.reply_markup);
@@ -468,12 +454,12 @@ describe('sharing from Telegram', () => {
 			'the move to be applied',
 		);
 		const around = (
-			await call('GET', `/api/v1/calendar/occurrences?from=${iso(today)}&to=${iso(saturday(4))}`)
+			await call('GET', `/api/v1/calendar/occurrences?from=${today}&to=${addDays(movedDate, 7)}`)
 		).body as { eventId: string; startDate: string | null; start: number | null }[];
 		expect(around).toHaveLength(1);
 		expect(around[0]?.eventId).toBe(galaId);
 		expect((await call('GET', `/api/v1/calendar/events/${galaId}`)).body).toMatchObject({
-			date: iso(moved),
+			date: movedDate,
 			startTime: '09:00',
 		});
 	});
