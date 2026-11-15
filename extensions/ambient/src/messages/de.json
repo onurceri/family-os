@@ -6,7 +6,7 @@
 	"cap_manage": "Displayfotos und Wetter einrichten",
 	"subtitle": "Das Wetter auf Heute sowie Fotos und Wetter auf Wanddisplays. Auf dieser Seite kommt nur das Wetter aus dem Internet, und nur, wenn du es einschaltest. Die Displays selbst rufen nichts ab.",
 	"photos_title": "Fotos",
-	"photos_intro": "Wenn niemand ein Display nutzt, zeigt es eine Diashow dieser Fotos.",
+	"photos_intro": "Wenn niemand ein Display oder ein Familiengerät nutzt, zeigt es eine Diashow dieser Fotos.",
 	"photos_add": "Fotos hinzufügen",
 	"photos_input": "Fotos zum Hinzufügen auswählen",
 	"photos_hint": "Fotos werden vor dem Senden auf diesem Gerät verkleinert. Details wie der Standort werden nicht gespeichert. JPEG, PNG und WebP werden unterstützt.",

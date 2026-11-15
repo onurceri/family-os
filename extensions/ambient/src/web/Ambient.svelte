@@ -6,19 +6,20 @@
 	import { type AgendaEvent, nextEvents } from './agenda.js';
 	import { api } from './api.js';
 	import { loadPhotos, loadWeather } from './data.js';
-	import { shouldCover } from './idle.js';
+	import { ACTIVITY_EVENTS, COVER_EVENTS, coverInput, hasCover, shouldCover } from './idle.js';
 	import { useAmbient } from './i18n.js';
 	import Slideshow from './Slideshow.svelte';
 	import { formatDegrees, formatWhole } from './degrees.js';
 	import { describeWeather } from './weather.js';
 
 	/**
-	 * Ambient mode of a family display. After a while without interaction (touch,
-	 * pointer, key) it covers the widgets with a photo slideshow (photos the family uploaded),
-	 * the clock, the next event and the weather. Without photos it is a calm clock and agenda.
-	 * Any interaction takes it away again. It only runs on a display that may see photos or weather.
-	 * A screen that has pages shows the photos as a page of the turn instead (`idle` is false), so
-	 * the cover never hides the pages it was given.
+	 * Ambient mode of a family display or a family device. After a while without interaction
+	 * (touch, pointer, key) it covers the screen with a photo slideshow (photos the family
+	 * uploaded), the clock, the next event and the weather. On a display without photos it is a
+	 * calm clock and agenda; a family device (`photosOnly`) is covered only when there are photos to
+	 * show. The touch or key that takes it away goes to the cover, never to what is under it. It
+	 * only runs where photos or weather may be seen. A screen that has pages shows the photos as a
+	 * page of the turn instead (`idle` is false), so the cover never hides the pages it was given.
 	 */
 	const { app, t } = useAmbient();
 	const {
@@ -26,20 +27,32 @@
 		date,
 		onactive,
 		idle = true,
+		photosOnly = false,
 	}: {
 		time: string;
 		date: string;
 		onactive?: (active: boolean) => void;
 		idle?: boolean;
+		photosOnly?: boolean;
 	} = $props();
 
 	const canPhotos = $derived(app.can('ambient.photos'));
 	const canWeather = $derived(app.can('ambient.weather'));
-	const enabled = $derived(canPhotos || canWeather);
+	const enabled = $derived(photosOnly ? canPhotos : canPhotos || canWeather);
 
 	let photos = $state<PhotoList | null>(null);
 	let weather = $state<Weather | null>(null);
 	const timing = $derived(photos?.timing ?? weather?.timing ?? DEFAULT_TIMING);
+
+	/** Whether there is something to cover the screen with (on a family device: photos). */
+	const showable = $derived(
+		hasCover({
+			photosOnly,
+			canPhotos,
+			canWeather,
+			photoCount: photos ? photos.ids.length : null,
+		}),
+	);
 
 	let active = $state(false);
 	let lastActivity = Date.now();
@@ -48,7 +61,7 @@
 	// of pages meanwhile and starts again from Today).
 	let told = false;
 	$effect(() => {
-		const covering = enabled && active;
+		const covering = showable && active;
 		if (covering === told) return;
 		told = covering;
 		onactive?.(covering);
@@ -67,7 +80,7 @@
 		}
 	}
 
-	// Content and settings: loaded when the display starts, refreshed regularly and on changes.
+	// Content and settings: loaded when the screen starts, refreshed regularly and on changes.
 	$effect(() => {
 		if (!enabled) return;
 		void loadContent();
@@ -84,17 +97,42 @@
 		if (!idle) active = false;
 	});
 
-	// Activity: any interaction ends ambient mode; silence starts it.
+	// Activity: any interaction ends ambient mode; silence starts it. While the cover is up, the
+	// whole tap (or key) that ends it is caught before anything else hears of it, so it never
+	// presses, focuses or closes what is under the cover; the app underneath stays as it was.
 	$effect(() => {
 		if (!enabled) return;
-		const touch = () => {
+		let ending: ReturnType<typeof setTimeout> | undefined;
+		const end = () => {
+			clearTimeout(ending);
+			ending = undefined;
 			lastActivity = Date.now();
 			active = false;
 		};
-		const events = ['pointerdown', 'keydown', 'touchstart'] as const;
-		for (const name of events) window.addEventListener(name, touch, { passive: true });
+		const input = (event: Event) => {
+			const covering = active && showable;
+			if ((ACTIVITY_EVENTS as readonly string[]).includes(event.type)) {
+				lastActivity = Date.now();
+				if (!covering) active = false;
+			}
+			const what = coverInput(event.type, covering);
+			if (what === 'pass') return;
+			event.stopPropagation();
+			if (event.cancelable && !event.type.startsWith('touch')) event.preventDefault();
+			if (what === 'end') end();
+			// A swipe ends without a click: the cover still goes, once the touch is over.
+			else if (what === 'endSoon' && ending === undefined) ending = setTimeout(end, 400);
+		};
+		const options = { capture: true, passive: false };
+		for (const name of COVER_EVENTS)
+			window.addEventListener(
+				name,
+				input,
+				name.startsWith('touch') ? { capture: true, passive: true } : options,
+			);
 		const ticker = setInterval(() => {
 			if (
+				showable &&
 				shouldCover({
 					idle,
 					covering: active,
@@ -106,8 +144,9 @@
 				active = true;
 		}, 1000);
 		return () => {
-			for (const name of events) window.removeEventListener(name, touch);
+			for (const name of COVER_EVENTS) window.removeEventListener(name, input, { capture: true });
 			clearInterval(ticker);
+			clearTimeout(ending);
 		};
 	});
 
@@ -205,9 +244,10 @@
 	{/if}
 {/snippet}
 
-{#if enabled && active}
+{#if showable && active}
+	<!-- Above everything the app may have open (a side panel, a dialog, a toast). -->
 	<div
-		class="fixed inset-0 z-50 overflow-hidden {hasPhoto
+		class="fixed inset-0 z-[60] overflow-hidden {hasPhoto
 			? 'day bg-backdrop text-on-color'
 			: 'bg-wall text-ink'} grid"
 		data-testid="ambient"

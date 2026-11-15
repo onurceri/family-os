@@ -21,6 +21,7 @@ import { createSetup } from './core-extension/setup.ts';
 import { createSignIn } from './core-extension/sign-in.ts';
 import { createSuggestions } from './core-extension/suggestions.ts';
 import { today } from './core-extension/today.ts';
+import { listDeviceSlideshow, setDeviceSlideshow } from './device-slideshow.ts';
 import { scheduleExpiry } from './draft-expiry.ts';
 import { pruneIdempotency, schedulePrune } from './idempotency.ts';
 import { createLanguages } from './languages.ts';
@@ -114,6 +115,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...deps.search.actions,
 			...memory.actions,
 			...admin.actions,
+			setDeviceSlideshow,
 			...createAiSettingsActions({ settings: deps.aiSettings }),
 			...createChannelActions({
 				backups: deps.backupSettings,
@@ -164,6 +166,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			settings.familySettings,
 			signIn.listDevices,
 			signIn.currentDevice,
+			listDeviceSlideshow,
 			signIn.setPin,
 			signIn.setPassword,
 			signIn.signOutEverywhere,

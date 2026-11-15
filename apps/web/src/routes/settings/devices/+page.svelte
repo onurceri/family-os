@@ -14,6 +14,7 @@
 		Row,
 		Section,
 		SidePanel,
+		SwitchRow,
 		wide,
 	} from '@famos/ui/famos';
 	import { ChevronRight, Monitor, Plus, Smartphone, Tablet } from '@lucide/svelte';
@@ -60,6 +61,9 @@
 	let current = $state<{ id: string; name: string } | null>(null);
 	/** The pages each screen shows between Today's turns (screen id → pages and durations). */
 	let rotations = $state<Record<string, Rotation>>({});
+	/** The family devices that show no photos when nobody is using them (on for all others). */
+	let slideshowOff = $state<string[]>([]);
+	let slideshowError = $state<string | null>(null);
 	let loaded = $state(false);
 	let error = $state<string | null>(null);
 
@@ -91,7 +95,8 @@
 		if (linkCode !== null) void goto('/settings/devices', { replace: true });
 	}
 
-	// The device panels: a screen is edited, a family device is only read and removed.
+	// The device panels: a screen is edited; a family device is read, its photos switched, and
+	// removed.
 	let openId = $state<string | null>(null);
 	let editName = $state('');
 	let editCaps = $state<string[]>([]);
@@ -151,13 +156,15 @@
 	};
 
 	async function load() {
-		const [list, mine, pages] = await Promise.all([
+		const [list, mine, pages, slideshow] = await Promise.all([
 			api.GET('/api/v1/core/devices'),
 			api.GET('/api/v1/core/devices/current'),
 			api.GET('/api/v1/core/displays/pages'),
+			api.GET('/api/v1/core/devices/slideshow'),
 		]);
 		devices = list.data ?? [];
 		rotations = pages.data?.displays ?? {};
+		slideshowOff = slideshow.data?.off ?? [];
 		current = mine.data?.device ?? null;
 		if (!optionsLoaded) {
 			const caps = await api.GET('/api/v1/core/displays/capabilities');
@@ -180,6 +187,7 @@
 
 	function openDevice(device: Device) {
 		openId = device.id;
+		slideshowError = null;
 		editName = device.name;
 		editCaps = [...(device.display?.capabilities ?? [])];
 		editNames = device.display?.showNames ?? false;
@@ -214,6 +222,17 @@
 		}
 		openId = null;
 		await load();
+	}
+
+	async function setSlideshow(deviceId: string, on: boolean) {
+		slideshowError = null;
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setDeviceSlideshow', { body: { deviceId, on } }),
+			{ onError: (failure) => (slideshowError = failure.message) },
+		);
+		await load();
+		// Changed on this very device: it follows at once.
+		if (result.ok && deviceId === current?.id) await session.refresh();
 	}
 
 	async function forget() {
@@ -339,7 +358,8 @@
 		onchanged={() => void load()}
 	/>
 
-	<!-- A screen is edited (Save, Cancel, Remove); a family device is only read and removed. -->
+	<!-- A screen is edited (Save, Cancel, Remove); a family device is read, its photos switched
+	     (at once), and removed. -->
 	<SidePanel
 		open={opened !== undefined}
 		title={opened?.name ?? ''}
@@ -385,6 +405,22 @@
 					{t('devices_added', { when: when(opened.createdAt) })}<br />
 					{t('devices_last_used', { when: when(opened.lastSeenAt) })}
 				</p>
+			</div>
+			<div class="mt-5">
+				<Card rows>
+					{#key `${opened.id}:${slideshowOff.includes(opened.id)}`}
+						<SwitchRow
+							id="device-slideshow"
+							label={t('devices_slideshow')}
+							hint={t('devices_slideshow_hint')}
+							checked={!slideshowOff.includes(opened.id)}
+							onchange={(on) => void setSlideshow(opened.id, on)}
+						/>
+					{/key}
+				</Card>
+				{#if slideshowError}
+					<p class="text-attention mt-2 text-sm font-semibold" role="alert">{slideshowError}</p>
+				{/if}
 			</div>
 		{/if}
 	</SidePanel>

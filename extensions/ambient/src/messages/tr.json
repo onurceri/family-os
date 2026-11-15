@@ -6,7 +6,7 @@
 	"cap_manage": "Ekran fotoğraflarını ve hava durumunu ayarlamak",
 	"subtitle": "Bugün sayfasında hava durumu; duvardaki ekranların gösterdiği fotoğraflar ve hava durumu. Bu sayfada internetten yalnızca hava durumu gelir, o da ancak siz açarsanız. Ekranların kendisi hiçbir yere bağlanmaz.",
 	"photos_title": "Fotoğraflar",
-	"photos_intro": "Kimse kullanmazken ekranlar bu fotoğraflardan slayt gösterisi yapar.",
+	"photos_intro": "Kimse kullanmazken ekranlar ve aile cihazları bu fotoğraflardan slayt gösterisi yapar.",
 	"photos_add": "Fotoğraf ekle",
 	"photos_input": "Eklenecek fotoğrafları seç",
 	"photos_hint": "Fotoğraflar gönderilmeden önce bu cihazda küçültülür; konum gibi ayrıntılar saklanmaz. JPEG, PNG ve WebP olur.",

@@ -40,6 +40,7 @@
 	import { onExtensionsChanged } from '#lib/server-changes.js';
 	import { accessBook } from '#lib/access.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { offersDeviceCover } from '#lib/device-cover.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { applyTextSize, dayNight, followDayNight, textSize } from '#lib/theme.svelte.js';
 	import { signOutConfirm } from '#lib/sign-out-confirm.svelte.js';
@@ -643,6 +644,9 @@
 		</nav>
 
 		<PreviewBar />
+		<!-- On a family device, what covers the app when nobody has touched it for a while. The app
+		     stays mounted underneath, so a touch brings it back exactly as it was. -->
+		{#if offersDeviceCover(session.me)}<Slot name="device.ambient" />{/if}
 		<!-- A page's code on its way (slow network): the same late, quiet mark as a slow load. -->
 		{#if navigating.to}<LoadingMark />{/if}
 	</div>

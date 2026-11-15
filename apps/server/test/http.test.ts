@@ -273,6 +273,41 @@ describe('HTTP API', () => {
 		expect((await call('GET', '/api/v1/core/me', undefined, kidSession)).status).toBe(401);
 	});
 
+	it('tells a session on a family device whether it shows the photos when nobody uses it', async () => {
+		const { cookie } = await setupAndSignIn();
+		const device = async (session: string) =>
+			(await call('GET', '/api/v1/core/me', undefined, session)).body.device;
+
+		// No device cookie, or one nobody knows: not a family device.
+		expect(await device(cookie)).toBeNull();
+		expect(await device(`${cookie}; famos_device=${'x'.repeat(43)}`)).toBeNull();
+
+		// On a family device it is on by default, and an admin can turn it off and on again.
+		const { device: tablet, deviceCookie } = await trustDevice(cookie);
+		const onTablet = `${cookie}; ${deviceCookie}`;
+		expect(await device(onTablet)).toEqual({ slideshow: true });
+		const off = await call(
+			'POST',
+			'/api/v1/actions/core.setDeviceSlideshow',
+			{ deviceId: tablet.id, on: false },
+			onTablet,
+		);
+		expect(off.status).toBe(200);
+		expect(await device(onTablet)).toEqual({ slideshow: false });
+		expect((await call('GET', '/api/v1/core/devices/slideshow', undefined, cookie)).body).toEqual({
+			off: [tablet.id],
+		});
+		await call(
+			'POST',
+			'/api/v1/actions/core.setDeviceSlideshow',
+			{ deviceId: tablet.id, on: true },
+			cookie,
+		);
+		expect(await device(onTablet)).toEqual({ slideshow: true });
+		// The device cookie alone is no session.
+		expect((await call('GET', '/api/v1/core/me', undefined, deviceCookie)).status).toBe(401);
+	});
+
 	it('forgetting a device removes its cookie instead of refreshing it', async () => {
 		const { cookie } = await setupAndSignIn();
 		const { deviceCookie } = await trustDevice(cookie);
@@ -1137,6 +1172,25 @@ describe('family displays', () => {
 			);
 			expect((await call('GET', '/api/v1/core/displays/me', undefined, browser)).status).toBe(409);
 		}
+	});
+
+	it('a session in a browser that is a display is not on a family device', async () => {
+		const { cookie } = await setupAndSignIn();
+		const { displayCookie, deviceId } = await pairDisplay(cookie);
+		const me = await call('GET', '/api/v1/core/me', undefined, `${cookie}; ${displayCookie}`);
+		expect(me.status).toBe(200);
+		expect(me.body.device).toBeNull();
+		// Its photos are its own ambient mode, not a family device's switch.
+		expect(
+			(
+				await call(
+					'POST',
+					'/api/v1/actions/core.setDeviceSlideshow',
+					{ deviceId, on: false },
+					cookie,
+				)
+			).status,
+		).toBe(404);
 	});
 
 	it('counts waiting suggestions for a display that may, and lists none', async () => {

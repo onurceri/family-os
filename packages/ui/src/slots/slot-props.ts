@@ -126,6 +126,14 @@ export interface SlotProps extends FamosExtensionSlots {
 		idle?: boolean;
 	};
 	/**
+	 * Covers the app on a trusted family device (a kitchen tablet, a photo frame) when nobody has
+	 * touched it for a while. The app renders it only in a session on a family device whose
+	 * slideshow is on; the contribution decides itself when to show (only when it has something
+	 * to show, never an empty clock screen). The touch that takes it away must not reach what is
+	 * under it: the app stays mounted underneath and is exactly as it was.
+	 */
+	'device.ambient': Record<string, never>;
+	/**
 	 * A full-screen page a family display can show between Today's turns, chosen per display in
 	 * Settings → Devices. Read-only (no links, no buttons): it runs as the display, so it may only
 	 * call routes of view capabilities the display was granted. It must fit its box without

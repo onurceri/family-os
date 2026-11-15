@@ -31,9 +31,11 @@ A **family device** (the kitchen tablet) lets people pick their name and sign in
 
 **This device** at the top of **Devices** says whether you are on a family device; **Stop using** makes it ordinary again.
 
+**Photos when nobody is using it.** A family device left untouched for a while shows the family's photos full screen, with the clock, the next event and the weather, the same as a screen's [ambient mode](#photos-and-weather). A touch brings back the page exactly as it was; that touch presses nothing, and whoever was signed in stays signed in. It starts after **Start after (minutes)** from **Photos and weather**, only when the family has photos and the signed-in person may see them. It is on for every family device; turn it off in the device's panel under **The family's devices** (**Photos when nobody is using it**). Personal phones and computers never show it.
+
 ## The list of devices
 
-**The family's devices** has a row per device: **Screen** or **Family device**, name, last used. Tap a row to rename it or (screens) change what it may show, its look and its pages, then **Save**.
+**The family's devices** has a row per device: **Screen** or **Family device**, name, last used. Tap a row to rename it or (screens) change what it may show, its look and its pages, then **Save**. A family device's panel has the **Photos when nobody is using it** switch, which applies at once.
 
 **Remove**, then **Tap again to remove**: the device stops working at once (a screen shows a new code). Do this when a device is lost or sold.
 
@@ -97,7 +99,7 @@ Arrows move a page, the cross removes it. Once a page is added:
 
 **Settings → Family → Photos and weather** (admins; **Devices** links to it).
 
-**Ambient mode.** A screen without [pages](#pages) and without a touch for a while shows a slideshow, the clock, the weather and the next event; a touch returns Today. **Start after (minutes)**: 1–240, 5 at first. **Each photo stays (seconds)**: 5–600, 30 at first. Saved when you leave the field.
+**Ambient mode.** A screen without [pages](#pages) and without a touch for a while shows a slideshow, the clock, the weather and the next event; a touch returns Today. A [family device](#add-a-tablet-or-phone-the-family-shares) does the same over the app, with photos only. **Start after (minutes)**: 1–240, 5 at first. **Each photo stays (seconds)**: 5–600, 30 at first. Saved when you leave the field.
 
 **Photos.**
 1. Under **Photos**, press **Add photos** and choose JPEG, PNG or WebP pictures.

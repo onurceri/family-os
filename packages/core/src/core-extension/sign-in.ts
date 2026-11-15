@@ -13,6 +13,7 @@ import { revokeTokensOf } from '../api-tokens.ts';
 import { CORE_CAPABILITIES } from '../core-capabilities.ts';
 import { sessionEnded } from '../core-events.ts';
 import { DecisionSchema } from '../decide.ts';
+import { slideshowOn } from '../device-slideshow.ts';
 import { DeviceSchema, toDevice } from '../devices.ts';
 import { NextUpModeSchema, readNextUp } from '../next-up.ts';
 import type { CoreExtensionDeps } from './deps.ts';
@@ -49,8 +50,13 @@ export function createSignIn(deps: CoreExtensionDeps) {
 			disabledExtensions: z.array(z.string()),
 			/** Whose next thing the hero on Today shows (`core.setMyNextUp`). */
 			nextUp: NextUpModeSchema,
+			/**
+			 * The trusted family device this session is on, and whether it shows the family's photos
+			 * after a while without a touch; null on any other browser (a display, a personal phone).
+			 */
+			device: z.object({ slideshow: z.boolean() }).nullable(),
 		}),
-		async handle(ctx, { actor }) {
+		async handle(ctx, { actor, device }) {
 			const row = await findMember(ctx.db, requireMember(actor).memberId);
 			const access = deps.access();
 			const signIn = (await deps.identity.signInMethods()).get(row.id) ?? NO_SIGN_IN;
@@ -61,6 +67,7 @@ export function createSignIn(deps: CoreExtensionDeps) {
 				fullSignIn: isFullSignIn(actor),
 				disabledExtensions: [...deps.features().disabled()],
 				nextUp: await readNextUp(ctx.db, row.id),
+				device: device ? { slideshow: await slideshowOn(ctx.db, device.id) } : null,
 			};
 		},
 	});
