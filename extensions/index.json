@@ -1,6 +1,6 @@
 {
 	"format": 1,
-	"issuedAt": 1794783611698,
+	"issuedAt": 1794783907507,
 	"extensions": [
 		{
 			"id": "ambient",
@@ -1031,6 +1031,45 @@
 		},
 		{
 			"id": "homeassistant",
+			"version": "0.5.0",
+			"sdk": "^0.8.47",
+			"url": "homeassistant/homeassistant-0.5.0.famext",
+			"sha256": "5a2a937de352697d6550d5361920c440647a9c5811592f4c4cc600ee99d38389",
+			"size": 259580,
+			"labels": {
+				"de": {
+					"name": "Home Assistant",
+					"description": "Verbindet FamilyOS mit deinem Home Assistant: Zeigt deine Auswahl und schaltet nur, was du erlaubst."
+				},
+				"en": {
+					"name": "Home Assistant",
+					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
+				},
+				"es": {
+					"name": "Home Assistant",
+					"description": "Conecta FamilyOS con tu Home Assistant: muestra lo que elijas y solo cambia lo que permitas."
+				},
+				"nl": {
+					"name": "Home Assistant",
+					"description": "Koppelt FamilyOS aan je Home Assistant: toont wat je kiest en schakelt alleen wat je toestaat."
+				},
+				"tr": {
+					"name": "Home Assistant",
+					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": true,
+					"local": true
+				},
+				"capabilities": 4,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "homeassistant",
 			"version": "0.4.0",
 			"sdk": "^0.8.38",
 			"url": "homeassistant/homeassistant-0.4.0.famext",
@@ -1137,33 +1176,6 @@
 			"url": "homeassistant/homeassistant-0.3.1.famext",
 			"sha256": "4b68c002a08be56e65761b754c6bd1f12e6902942fa2136cc52c78b08e195f64",
 			"size": 179462,
-			"labels": {
-				"en": {
-					"name": "Home Assistant",
-					"description": "Connects FamilyOS to your Home Assistant: shows what you choose, and switches only what you allow."
-				},
-				"tr": {
-					"name": "Home Assistant",
-					"description": "FamilyOS'u Home Assistant'ınıza bağlar: seçtiklerinizi gösterir, yalnızca izin verdiklerinizi açıp kapatır."
-				}
-			},
-			"reach": {
-				"network": {
-					"hosts": [],
-					"userUrls": true,
-					"local": true
-				},
-				"capabilities": 4,
-				"dependsOn": []
-			}
-		},
-		{
-			"id": "homeassistant",
-			"version": "0.3.0",
-			"sdk": "^0.8.12",
-			"url": "homeassistant/homeassistant-0.3.0.famext",
-			"sha256": "032d5369a8b0dd825f401f37657c99609f0bfa3454e9857cb2bd1e0e41eb933f",
-			"size": 178660,
 			"labels": {
 				"en": {
 					"name": "Home Assistant",
