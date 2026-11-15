@@ -264,7 +264,7 @@
 	"history_item_empty": "Nadie ha cambiado esto desde FamilyOS todavía.",
 	"load_failed": "No se pudo leer la conexión.",
 	"load_retry": "Intentar de nuevo",
-	"value_speed": "Encendido · Velocidad {{level}}",
+	"value_speed": "Velocidad {{level}}",
 	"speed_level": "Velocidad {{level}}",
 	"history_set_percentage": "{{who}} puso {{name}} en velocidad {{level}}",
 	"speed_label": "Velocidad",

@@ -68,25 +68,25 @@
 				{@const more = maySwitch && item.control && detailFor(item.entityId, item.value) !== null}
 				<TodayRow title={item.label} onopen={more ? () => (openId = item.id) : undefined}>
 					{#snippet trailing()}
-						<span
-							class="text-[0.9375rem] font-semibold {busy
-								? 'text-ink-soft'
-								: TONE_CLASS[said.tone]}"
-							aria-live="polite">{busy ? t('switching') : said.text}</span
-						>
-						{#if maySwitch && item.control}
-							<Controls {item} {busy} onswitch={(request) => void switcher.run(item, request)} />
-						{/if}
+						{@const words = busy ? t('switching') : said.text}
+						{@const tone = busy ? 'text-ink-soft' : TONE_CLASS[said.tone]}
 						{#if more}
+							<!-- The value itself opens the sheet, so the row keeps one line on a phone. -->
 							<button
 								type="button"
 								onclick={() => (openId = item.id)}
 								aria-label={t('sheet_open', { name: item.label })}
-								class="text-ink-soft hover:text-ink focus-visible:ring-ring -my-1 -me-1 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full focus-visible:ring-2 focus-visible:outline-none"
+								class="hover:bg-ink/5 focus-visible:ring-ring -my-1 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-full ps-2 pe-1 text-[0.9375rem] font-semibold focus-visible:ring-2 focus-visible:outline-none {tone}"
 								data-testid="ha-more-{item.id}"
 							>
-								<ChevronRight class="size-5 rtl:-scale-x-100" aria-hidden="true" />
+								<span aria-live="polite">{words}</span>
+								<ChevronRight class="text-ink-soft size-4 rtl:-scale-x-100" aria-hidden="true" />
 							</button>
+						{:else}
+							<span class="text-[0.9375rem] font-semibold {tone}" aria-live="polite">{words}</span>
+						{/if}
+						{#if maySwitch && item.control}
+							<Controls {item} {busy} onswitch={(request) => void switcher.run(item, request)} />
 						{/if}
 					{/snippet}
 				</TodayRow>

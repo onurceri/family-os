@@ -81,7 +81,7 @@ When the page says **Connected**, use **What to show**:
 | Motion | **Detected** / **Clear** |
 | Smoke, problem | **Alert** / **OK** |
 | Lights, switches, humidifiers | **On** / **Off** |
-| Fans with speeds | **On · Speed 2**, **Off** |
+| Fans with speeds | **Speed 2**, **Off** |
 | Thermostat | Mode and current temperature |
 | Vacuum | **Cleaning**, **Docked**, **Going home**, **Paused**, **Idle**, **Error** |
 | Media player | **Playing**, **Paused**, **Idle**, **On**, **Off**, **Standby**, **Loading** |
@@ -137,7 +137,7 @@ FamilyOS can send notifications to the Home Assistant app on a member's phone, v
 
 Texts go only to your Home Assistant, then through its push service to the phone. Its address must be the **IP address** or an `https` address.
 
-A fan keeps its switch on the row. When Home Assistant reports its speeds (two to six), the row says **On · Speed 2** and has a **›** at the end: tap the name on Today to open a sheet with the switch and the speeds (**1 · 2 · 3 · 4**, a list for five or six), and tap the one you want; it is sent at once and the value says **Switching…** until the fan answers. With **Ask before switching** a tap only chooses, and one button says what will happen, e.g. **Set Air purifier to speed 2**; tapping it sends it. Fans with more speeds, or none Home Assistant reports, have just the switch. People who may not switch things, and displays, see the speed but nothing to tap. **Switched lately** says "Tom set Air purifier to speed 2". Speed is the only thing FamilyOS ever sends along with a switch.
+A fan keeps its switch on the row. When Home Assistant reports its speeds (two to six), the row says **Speed 2 ›** next to the switch: tap the speed (or the name) on Today to open a sheet with the switch and the speeds (**1 · 2 · 3 · 4**, a list for five or six), and tap the one you want; it is sent at once and the value says **Switching…** until the fan answers. With **Ask before switching** a tap only chooses, and one button says what will happen, e.g. **Set Air purifier to speed 2**; tapping it sends it. Fans with more speeds, or none Home Assistant reports, have just the switch. People who may not switch things, and displays, see the speed but nothing to tap. **Switched lately** says "Tom set Air purifier to speed 2". Speed is the only thing FamilyOS ever sends along with a switch.
 
 ## Not possible yet
 

@@ -295,7 +295,7 @@ export function serviceBody(
 	return bodyUnderRule(rule, entityId, value, attributes);
 }
 
-/** Fans with more speeds than this stay on or off: a row has no room for a dozen buttons. */
+/** Fans with more speeds than this stay on or off: a choice of a dozen speeds is no quick change. */
 export const MAX_SPEEDS = 6;
 
 /** The speed (1, 2, 3 …) a request names, for the history's words; never sent to Home Assistant. */

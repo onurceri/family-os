@@ -264,7 +264,7 @@
 	"history_item_empty": "Niemand heeft dit nog vanuit FamilyOS geschakeld.",
 	"load_failed": "De verbinding kon niet worden gelezen.",
 	"load_retry": "Opnieuw proberen",
-	"value_speed": "Aan · Stand {{level}}",
+	"value_speed": "Stand {{level}}",
 	"speed_level": "Stand {{level}}",
 	"history_set_percentage": "{{who}} zette {{name}} op stand {{level}}",
 	"speed_label": "Stand",

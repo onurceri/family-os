@@ -171,8 +171,8 @@ describe('a fan with speeds', () => {
 			.text;
 
 	it('says the speed it is on, and On or Off when it has none to say', () => {
-		expect(fan(true, 25, 25)).toBe('On · Speed 1');
-		expect(fan(true, 100, 25)).toBe('On · Speed 4');
+		expect(fan(true, 25, 25)).toBe('Speed 1');
+		expect(fan(true, 100, 25)).toBe('Speed 4');
 		expect(fan(false, 0, 25)).toBe('Off');
 		expect(fan(true, null, 25)).toBe('On');
 		expect(fan(true, 50, null)).toBe('On');

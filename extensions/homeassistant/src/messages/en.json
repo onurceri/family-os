@@ -264,7 +264,7 @@
 	"history_item_empty": "Nobody has switched this from FamilyOS yet.",
 	"load_failed": "Could not read the connection.",
 	"load_retry": "Try again",
-	"value_speed": "On · Speed {{level}}",
+	"value_speed": "Speed {{level}}",
 	"speed_level": "Speed {{level}}",
 	"history_set_percentage": "{{who}} set {{name}} to speed {{level}}",
 	"speed_label": "Speed",
