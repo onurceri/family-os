@@ -287,39 +287,41 @@
 
 		<div
 			style={skyShown ? colorVars('ink-soft', 'var(--sky-soft)') : undefined}
-			class="relative z-10 grid gap-6 p-10 md:grid-cols-[1fr_auto] md:items-end {hasPhoto
+			class="relative z-10 grid gap-6 p-6 sm:p-10 md:grid-cols-[1fr_auto] md:items-end {hasPhoto
 				? 'content-end drop-shadow-lg'
 				: 'content-center'}"
 		>
-			<div class="grid gap-3">
+			<div class="grid min-w-0 gap-3">
+				<!-- The clock never breaks over two lines; it is smaller on a narrow screen instead. -->
 				<span
-					class="leading-none font-extrabold tracking-tight tabular-nums {hasPhoto
-						? 'text-8xl'
-						: 'text-9xl'}"
+					class="leading-none font-extrabold tracking-tight whitespace-nowrap tabular-nums {hasPhoto
+						? 'text-6xl sm:text-8xl'
+						: 'text-7xl sm:text-9xl'}"
 					data-testid="ambient-clock">{time}</span
 				>
-				<p class="text-3xl font-bold capitalize">{date}</p>
+				<p class="text-2xl font-bold capitalize sm:text-3xl">{date}</p>
 				{#if upcoming.length > 0}
-					<ul class="mt-2 grid gap-1" data-testid="ambient-agenda">
-						{#each upcoming as event, i (event.id)}
-							<li
-								class="flex items-baseline gap-3 {i === 0
-									? 'text-2xl font-semibold'
-									: 'text-xl font-medium opacity-80'}"
-							>
-								{#if i === 0}<span class="text-lg font-bold opacity-80"
-										>{t('ambient_next_event')}</span
-									>{/if}
-								<span class="tabular-nums">{event.time}</span>
-								<span class="min-w-0 truncate">{event.title}</span>
-							</li>
-						{/each}
+					<div class="mt-2 grid gap-1">
+						<p class="text-lg font-bold opacity-80">{t('ambient_next_event')}</p>
+						<!-- Times in one column that never wraps, titles beside them shortened to fit. -->
+						<ul
+							class="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1"
+							data-testid="ambient-agenda"
+						>
+							{#each upcoming as event, i (event.id)}
+								{@const row = i === 0 ? 'text-2xl font-semibold' : 'text-xl font-medium opacity-80'}
+								<li class="contents">
+									<span class="whitespace-nowrap tabular-nums {row}">{event.time}</span>
+									<span class="min-w-0 truncate {row}">{event.title}</span>
+								</li>
+							{/each}
+						</ul>
 						{#if hasPhoto && plan.more > 0}
-							<li class="text-lg font-medium opacity-70" data-testid="ambient-more">
+							<p class="text-lg font-medium opacity-70" data-testid="ambient-more">
 								{t('ambient_more', { count: plan.more })}
-							</li>
+							</p>
 						{/if}
-					</ul>
+					</div>
 				{:else if !hasPhoto && app.can('calendar.view')}
 					<p class="text-ink-soft text-2xl">{t('ambient_nothing')}</p>
 				{/if}
