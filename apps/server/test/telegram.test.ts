@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { type FakeBotApi, startFakeBotApi } from '@famos/adapters/telegram/fake-bot-api';
 import { type CoreTables, telegramLinkChanged } from '@famos/core';
 import type { ExtensionDefinition, Logger } from '@famos/sdk';
+import { addDays, formatDate, todayIn, weekdayOf } from '@famos/time';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.ts';
 import { createHttpApp } from '../src/http/app.ts';
@@ -387,9 +388,16 @@ describe('sharing from Telegram', () => {
 	it('says an event is already there and moves it from the chat instead of adding a second', async () => {
 		await connect();
 		await link(55);
+		// Two Saturdays ahead of the day the test runs, so the dates never fall into the past.
+		const today = todayIn('UTC', Date.now());
+		let galaDate = addDays(today, 2);
+		while (weekdayOf(galaDate) !== 'SA') galaDate = addDays(galaDate, 1);
+		const movedDate = addDays(galaDate, 7);
+		const [, movedMonth, movedDay] = movedDate.split('-').map(Number) as [number, number, number];
+		const movedText = `Sat ${formatDate(movedDate, 'en-GB', { day: 'numeric', month: 'short' })}`;
 		const made = await call('POST', '/api/v1/actions/calendar.createEvent', {
 			title: 'Regional Gala',
-			date: '2026-11-07',
+			date: galaDate,
 			startTime: '18:00',
 		});
 		expect(made.body.status).toBe('applied');
@@ -402,13 +410,13 @@ describe('sharing from Telegram', () => {
 				{
 					kind: 'calendar.event',
 					title: 'Regional gala',
-					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					date: { text: movedText, day: movedDay, month: movedMonth, weekday: 6 },
 					time: '09:00',
 					timeText: '09:00',
 				},
 			],
 		});
-		fake.say(55, '/paylas Regional gala moved to Sat 14 Nov 09:00');
+		fake.say(55, `/paylas Regional gala moved to ${movedText} 09:00`);
 		await until(() => fake.sent().some((m) => m.text === 'Sent to Quick add.'), 'the reply');
 		fake.sent().length = 0;
 		for (let i = 0; i < 4 && fake.sent().length === 0; i++) await runtime.kernel.worker.drain();
@@ -423,7 +431,7 @@ describe('sharing from Telegram', () => {
 			[`a:${draftId}`, `r:${draftId}`],
 			[`m:${draftId}`],
 		]);
-		expect(rows[1]?.[0]?.text).toMatch(/^↪ Move it to .*14.* instead$/);
+		expect(rows[1]?.[0]?.text).toMatch(new RegExp(`^↪ Move it to .*${movedDay}.* instead$`));
 
 		// Moving it: the suggestion becomes the change, still waiting, with its own buttons.
 		fake.press(55, 1, `m:${draftId}`, message?.reply_markup);
@@ -445,13 +453,13 @@ describe('sharing from Telegram', () => {
 				'applied',
 			'the move to be applied',
 		);
-		const november = (
-			await call('GET', '/api/v1/calendar/occurrences?from=2026-11-01&to=2026-11-30')
+		const around = (
+			await call('GET', `/api/v1/calendar/occurrences?from=${today}&to=${addDays(movedDate, 7)}`)
 		).body as { eventId: string; startDate: string | null; start: number | null }[];
-		expect(november).toHaveLength(1);
-		expect(november[0]?.eventId).toBe(galaId);
+		expect(around).toHaveLength(1);
+		expect(around[0]?.eventId).toBe(galaId);
 		expect((await call('GET', `/api/v1/calendar/events/${galaId}`)).body).toMatchObject({
-			date: '2026-11-14',
+			date: movedDate,
 			startTime: '09:00',
 		});
 	});
