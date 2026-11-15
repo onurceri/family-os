@@ -387,9 +387,24 @@ describe('sharing from Telegram', () => {
 	it('says an event is already there and moves it from the chat instead of adding a second', async () => {
 		await connect();
 		await link(55);
+		// Days that are always ahead: the gala on a Saturday two to three weeks from today, moved
+		// to the Saturday after it.
+		const today = new Date();
+		const saturday = (weeksAhead: number) =>
+			new Date(
+				Date.UTC(
+					today.getUTCFullYear(),
+					today.getUTCMonth(),
+					today.getUTCDate() + ((6 - today.getUTCDay() + 7) % 7) + 7 * weeksAhead,
+				),
+			);
+		const iso = (day: Date) => day.toISOString().slice(0, 10);
+		const original = saturday(2);
+		const moved = saturday(3);
+		const movedText = `Sat ${moved.getUTCDate()} ${moved.toLocaleDateString('en', { month: 'short', timeZone: 'UTC' })}`;
 		const made = await call('POST', '/api/v1/actions/calendar.createEvent', {
 			title: 'Regional Gala',
-			date: '2026-11-07',
+			date: iso(original),
 			startTime: '18:00',
 		});
 		expect(made.body.status).toBe('applied');
@@ -402,13 +417,18 @@ describe('sharing from Telegram', () => {
 				{
 					kind: 'calendar.event',
 					title: 'Regional gala',
-					date: { text: 'Sat 14 Nov', day: 14, month: 11, weekday: 6 },
+					date: {
+						text: movedText,
+						day: moved.getUTCDate(),
+						month: moved.getUTCMonth() + 1,
+						weekday: 6,
+					},
 					time: '09:00',
 					timeText: '09:00',
 				},
 			],
 		});
-		fake.say(55, '/paylas Regional gala moved to Sat 14 Nov 09:00');
+		fake.say(55, `/paylas Regional gala moved to ${movedText} 09:00`);
 		await until(() => fake.sent().some((m) => m.text === 'Sent to Quick add.'), 'the reply');
 		fake.sent().length = 0;
 		for (let i = 0; i < 4 && fake.sent().length === 0; i++) await runtime.kernel.worker.drain();
@@ -423,7 +443,9 @@ describe('sharing from Telegram', () => {
 			[`a:${draftId}`, `r:${draftId}`],
 			[`m:${draftId}`],
 		]);
-		expect(rows[1]?.[0]?.text).toMatch(/^↪ Move it to .*14.* instead$/);
+		expect(rows[1]?.[0]?.text).toMatch(
+			new RegExp(`^↪ Move it to .*${moved.getUTCDate()}.* instead$`),
+		);
 
 		// Moving it: the suggestion becomes the change, still waiting, with its own buttons.
 		fake.press(55, 1, `m:${draftId}`, message?.reply_markup);
@@ -445,13 +467,13 @@ describe('sharing from Telegram', () => {
 				'applied',
 			'the move to be applied',
 		);
-		const november = (
-			await call('GET', '/api/v1/calendar/occurrences?from=2026-11-01&to=2026-11-30')
+		const around = (
+			await call('GET', `/api/v1/calendar/occurrences?from=${iso(today)}&to=${iso(saturday(4))}`)
 		).body as { eventId: string; startDate: string | null; start: number | null }[];
-		expect(november).toHaveLength(1);
-		expect(november[0]?.eventId).toBe(galaId);
+		expect(around).toHaveLength(1);
+		expect(around[0]?.eventId).toBe(galaId);
 		expect((await call('GET', `/api/v1/calendar/events/${galaId}`)).body).toMatchObject({
-			date: '2026-11-14',
+			date: iso(moved),
 			startTime: '09:00',
 		});
 	});
