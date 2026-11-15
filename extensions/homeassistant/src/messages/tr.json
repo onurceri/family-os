@@ -208,6 +208,8 @@
 	"ask_run": "{{name}} çalıştırılsın mı?",
 	"ask_hint": "Home Assistant bunu hemen yapar.",
 	"switching": "Uygulanıyor…",
+	"switches_here": "FamilyOS'tan açılıp kapanır",
+	"can_switch": "Açılıp kapatılabilir",
 	"switch_failed": "{{name}} değiştirilemedi.",
 	"page_empty": "Şu an Home Assistant'tan gösterilecek bir şey yok.",
 	"page_unavailable": "Home Assistant'a şu an ulaşılamıyor.",

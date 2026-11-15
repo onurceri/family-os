@@ -28,6 +28,7 @@ export function controlsFor(entityId: string, value: Value): Control[] {
 		case 'light':
 		case 'switch':
 		case 'fan':
+		case 'humidifier':
 		case 'input_boolean': {
 			const on = value.kind === 'binary' && value.on;
 			return [{ kind: 'switch', on, operation: on ? 'turn_off' : 'turn_on' }];

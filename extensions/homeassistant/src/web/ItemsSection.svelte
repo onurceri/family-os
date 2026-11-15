@@ -93,7 +93,9 @@
 		const value = switcher.busy(item.id)
 			? t('switching')
 			: sayValue(app, t, found?.value ?? { kind: 'unavailable' }).text;
-		return found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
+		const base = found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
+		if (operationsOf(item.entityId).length === 0) return base;
+		return `${base} · ${t(item.control ? 'switches_here' : 'can_switch')}`;
 	}
 
 	// Adding

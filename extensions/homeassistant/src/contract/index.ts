@@ -93,13 +93,14 @@ export const ItemIdSchema = z.string().min(1).max(100);
 /**
  * What FamilyOS may ask Home Assistant to do, per domain: the only services it ever calls. The
  * address of a call is built from this table alone, never from what a request says, so nothing
- * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans and helpers are
- * on or off; covers open, close and stop; locks lock and unlock; scenes and scripts run.
+ * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans, humidifiers and
+ * helpers are on or off; covers open, close and stop; locks lock and unlock; scenes and scripts run.
  */
 export const CONTROLS = {
 	light: ['turn_on', 'turn_off'],
 	switch: ['turn_on', 'turn_off'],
 	fan: ['turn_on', 'turn_off'],
+	humidifier: ['turn_on', 'turn_off'],
 	input_boolean: ['turn_on', 'turn_off'],
 	cover: ['open_cover', 'close_cover', 'stop_cover'],
 	lock: ['lock', 'unlock'],

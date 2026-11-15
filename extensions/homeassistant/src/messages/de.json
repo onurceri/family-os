@@ -208,6 +208,8 @@
 	"ask_run": "{{name}} ausführen?",
 	"ask_hint": "Home Assistant führt es sofort aus.",
 	"switching": "Wird geschaltet…",
+	"switches_here": "Schaltbar über FamilyOS",
+	"can_switch": "Kann geschaltet werden",
 	"switch_failed": "{{name}} konnte nicht geschaltet werden.",
 	"page_empty": "Zurzeit gibt es nichts aus Home Assistant anzuzeigen.",
 	"page_unavailable": "Home Assistant ist gerade nicht erreichbar.",

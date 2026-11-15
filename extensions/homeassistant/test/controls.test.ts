@@ -21,6 +21,9 @@ describe('the controls of a row', () => {
 		expect(controlsFor('fan.bedroom', binary(false))).toEqual([
 			{ kind: 'switch', on: false, operation: 'turn_on' },
 		]);
+		expect(controlsFor('humidifier.dehumidifier', binary(true))).toEqual([
+			{ kind: 'switch', on: true, operation: 'turn_off' },
+		]);
 		// Not known: shown off, and turning it on is what the switch offers.
 		expect(controlsFor('switch.kettle', { kind: 'unavailable' })).toEqual([
 			{ kind: 'switch', on: false, operation: 'turn_on' },

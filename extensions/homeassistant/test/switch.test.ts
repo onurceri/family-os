@@ -69,7 +69,17 @@ const connection = (): Promise<Connection> =>
 describe('what may be switched', () => {
 	it('is a table of services per domain, and nothing else', () => {
 		expect(Object.keys(CONTROLS).sort()).toEqual(
-			['cover', 'fan', 'input_boolean', 'light', 'lock', 'scene', 'script', 'switch'].sort(),
+			[
+				'cover',
+				'fan',
+				'humidifier',
+				'input_boolean',
+				'light',
+				'lock',
+				'scene',
+				'script',
+				'switch',
+			].sort(),
 		);
 		expect(operationsOf('light.kitchen')).toEqual(['turn_on', 'turn_off']);
 		expect(operationsOf('cover.garage')).toEqual(['open_cover', 'close_cover', 'stop_cover']);
@@ -222,6 +232,8 @@ describe('the switch job', () => {
 		['scene.evening', 'turn_on', '/api/services/scene/turn_on'],
 		['script.bedtime', 'turn_on', '/api/services/script/turn_on'],
 		['input_boolean.guests', 'turn_off', '/api/services/input_boolean/turn_off'],
+		['humidifier.dehumidifier', 'turn_on', '/api/services/humidifier/turn_on'],
+		['humidifier.dehumidifier', 'turn_off', '/api/services/humidifier/turn_off'],
 	])('%s %s posts to %s', async (entityId, operation, path) => {
 		const item = await add(entityId);
 		await allow(item.id);

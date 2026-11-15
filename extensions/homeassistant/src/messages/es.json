@@ -208,6 +208,8 @@
 	"ask_run": "¿Ejecutar {{name}}?",
 	"ask_hint": "Home Assistant lo hace al momento.",
 	"switching": "Cambiando…",
+	"switches_here": "Se controla desde FamilyOS",
+	"can_switch": "Se puede controlar",
 	"switch_failed": "No se pudo cambiar {{name}}.",
 	"page_empty": "No hay nada de Home Assistant que mostrar ahora mismo.",
 	"page_unavailable": "No se puede acceder a Home Assistant ahora mismo.",

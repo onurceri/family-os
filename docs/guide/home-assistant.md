@@ -80,7 +80,7 @@ When the page says **Connected**, use **What to show**:
 | Locks | **Locked** / **Unlocked** |
 | Motion | **Detected** / **Clear** |
 | Smoke, problem | **Alert** / **OK** |
-| Lights, switches | **On** / **Off** |
+| Lights, switches, humidifiers | **On** / **Off** |
 | Thermostat | Mode and current temperature |
 | Scene, button | **Last run 22:10** (with the date if another day), **Never run** |
 | No value | **Not available** |
@@ -89,14 +89,14 @@ Anything else is worded as Home Assistant words it.
 
 ## Switch things from FamilyOS
 
-Lights, switches, fans, on/off helpers (`input_boolean`), covers, locks, scenes and scripts, one by one:
+Lights, switches, fans, humidifiers (on and off only), on/off helpers (`input_boolean`), covers, locks, scenes and scripts, one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
-2. Turn on **Can be switched from FamilyOS** (off for everything at first).
+2. Turn on **Can be switched from FamilyOS** (off for everything at first). A thing that can be switched says so on its row: **Can be switched**, then **Switches from FamilyOS** once you allow it.
 3. Optionally turn on **Ask before switching** (off for every item; FamilyOS does not guess). Use it for locks and garage doors: FamilyOS then asks first, e.g. "Unlock Front door?". Earlier items keep their choice.
 4. Press **Save**.
 
-The row on Today and on this page then has a switch (lights, switches, fans), **Open** / **Close** (covers; **Stop** while moving), **Lock** / **Unlock**, or **Run** (scenes, scripts). The value says **Switching…** until the new state shows, usually in seconds.
+The row on Today and on this page then has a switch (lights, switches, fans, humidifiers), **Open** / **Close** (covers; **Stop** while moving), **Lock** / **Unlock**, or **Run** (scenes, scripts). The value says **Switching…** until the new state shows, usually in seconds.
 
 **Good to know**
 - Needs the role permission **Switch things through Home Assistant**: admins at first; give it under **Settings → Family → Roles**. Others see values, no switches.
