@@ -96,19 +96,21 @@ export const ItemIdSchema = z.string().min(1).max(100);
  * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans, humidifiers and
  * helpers are on or off; covers and valves open, close and stop; locks lock and unlock; scenes and
  * scripts run; buttons are pressed; vacuums start, pause and go home; media players play, pause and
- * turn on or off; fans also take a speed.
+ * turn on or off; fans also take a speed and a preset, covers and valves a position, humidifiers a
+ * target humidity and a mode, media players a volume. A light is dimmed with `turn_on` and a
+ * brightness (see `SERVICE_DATA`), so it has no service of its own for that.
  */
 export const CONTROLS = {
 	light: ['turn_on', 'turn_off'],
 	switch: ['turn_on', 'turn_off'],
-	fan: ['turn_on', 'turn_off', 'set_percentage'],
-	humidifier: ['turn_on', 'turn_off'],
+	fan: ['turn_on', 'turn_off', 'set_percentage', 'set_preset_mode'],
+	humidifier: ['turn_on', 'turn_off', 'set_humidity', 'set_mode'],
 	input_boolean: ['turn_on', 'turn_off'],
-	cover: ['open_cover', 'close_cover', 'stop_cover'],
+	cover: ['open_cover', 'close_cover', 'stop_cover', 'set_cover_position'],
 	lock: ['lock', 'unlock'],
-	valve: ['open_valve', 'close_valve', 'stop_valve'],
+	valve: ['open_valve', 'close_valve', 'stop_valve', 'set_valve_position'],
 	vacuum: ['start', 'pause', 'return_to_base'],
-	media_player: ['media_play', 'media_pause', 'turn_on', 'turn_off'],
+	media_player: ['media_play', 'media_pause', 'turn_on', 'turn_off', 'volume_set'],
 	button: ['press'],
 	input_button: ['press'],
 	scene: ['turn_on'],
@@ -134,6 +136,12 @@ export const OPERATIONS = [
 	'media_pause',
 	'press',
 	'set_percentage',
+	'set_preset_mode',
+	'set_humidity',
+	'set_mode',
+	'set_cover_position',
+	'set_valve_position',
+	'volume_set',
 ] as const satisfies readonly Operation[];
 export const OperationSchema = z.enum(OPERATIONS);
 
@@ -210,8 +218,10 @@ export type ServiceDataRule =
 			min: Bound;
 			max: Bound;
 			step?: { attribute: string };
+			/** The operation also works without the field (`light.turn_on` without a brightness). */
+			optional?: true;
 	  }
-	| { kind: 'option'; field: string; options: { attribute: string } };
+	| { kind: 'option'; field: string; options: { attribute: string }; optional?: true };
 
 /**
  * The only service data FamilyOS ever sends: per `<domain>.<operation>`, exactly one field with
@@ -222,6 +232,53 @@ export type ServiceDataRule =
  */
 export const SERVICE_DATA: Readonly<Record<string, ServiceDataRule>> = {
 	'fan.set_percentage': { kind: 'number', field: 'percentage', integer: true, min: 0, max: 100 },
+	'fan.set_preset_mode': {
+		kind: 'option',
+		field: 'preset_mode',
+		options: { attribute: 'preset_modes' },
+	},
+	// Switching a light on carries a brightness only when one is chosen; the plain switch sends none.
+	'light.turn_on': {
+		kind: 'number',
+		field: 'brightness_pct',
+		integer: true,
+		min: 1,
+		max: 100,
+		optional: true,
+	},
+	'cover.set_cover_position': {
+		kind: 'number',
+		field: 'position',
+		integer: true,
+		min: 0,
+		max: 100,
+	},
+	'valve.set_valve_position': {
+		kind: 'number',
+		field: 'position',
+		integer: true,
+		min: 0,
+		max: 100,
+	},
+	'humidifier.set_humidity': {
+		kind: 'number',
+		field: 'humidity',
+		integer: true,
+		min: { attribute: 'min_humidity' },
+		max: { attribute: 'max_humidity' },
+	},
+	'humidifier.set_mode': {
+		kind: 'option',
+		field: 'mode',
+		options: { attribute: 'available_modes' },
+	},
+	'media_player.volume_set': {
+		kind: 'number',
+		field: 'volume_level',
+		integer: false,
+		min: 0,
+		max: 1,
+	},
 };
 
 /** The rule for an operation on an entity, or null when it takes no data. */
@@ -281,8 +338,9 @@ export function bodyUnderRule(
 
 /**
  * The body of a service call: the entity, and for an operation in `SERVICE_DATA` its one field.
- * Null refuses: a value for an operation that takes none, none for one that needs it, or one the
- * rule does not allow (see `bodyUnderRule`).
+ * Null refuses: a value for an operation that takes none, none for one that needs it (unless the
+ * rule is `optional`, then the body is the entity alone), or one the rule does not allow (see
+ * `bodyUnderRule`).
  */
 export function serviceBody(
 	entityId: string,
@@ -291,7 +349,8 @@ export function serviceBody(
 	attributes?: Record<string, unknown>,
 ): Record<string, string | number> | null {
 	const rule = serviceDataRule(entityId, operation);
-	if (!rule) return value === undefined || value === null ? { entity_id: entityId } : null;
+	const none = value === undefined || value === null;
+	if (!rule || (rule.optional && none)) return none ? { entity_id: entityId } : null;
 	return bodyUnderRule(rule, entityId, value, attributes);
 }
 
@@ -301,11 +360,26 @@ export const MAX_SPEEDS = 6;
 /** The speed (1, 2, 3 …) a request names, for the history's words; never sent to Home Assistant. */
 export const SpeedLevelSchema = z.number().int().min(1).max(MAX_SPEEDS);
 
+/**
+ * What a switch set, for the history: a number as the percentage it is shown as (a volume of 0.3
+ * is 30), an option as it is. Null for a fan's speed, which the history words by its level, and
+ * for a switch that set nothing.
+ */
+export function chosenOf(operation: string, value: unknown): string | null {
+	if (operation === 'set_percentage') return null;
+	if (typeof value === 'string') return value;
+	if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+	return String(operation === 'volume_set' ? Math.round(value * 100) : value);
+}
+
 export const SwitchInputSchema = z.object({
 	id: ItemIdSchema,
 	operation: OperationSchema,
-	/** A fan's speed in percent; only for `set_percentage`, where it is required. */
-	percentage: z.number().int().min(0).max(100).optional(),
+	/**
+	 * What the operation sets: a number or an option, only where `SERVICE_DATA` has a rule for the
+	 * operation (required unless the rule is optional, as for a light's brightness).
+	 */
+	value: z.union([z.number(), z.string().min(1).max(100)]).optional(),
 	/** The same speed as the fan's own step (1 … 6), for the history; only for `set_percentage`. */
 	level: SpeedLevelSchema.optional(),
 });
@@ -323,6 +397,11 @@ export const SwitchEntrySchema = z.object({
 	operation: OperationSchema,
 	/** A fan's speed (1, 2, 3 …) when the switch set one. */
 	level: SpeedLevelSchema.nullable().optional(),
+	/**
+	 * What a level, a position, a humidity, a volume (as a percentage) or a mode was set to, as
+	 * text; null for a switch that set none.
+	 */
+	chosen: z.string().max(100).nullable().optional(),
 	/** Who asked; null for a display, which is never told who, or for no one. */
 	memberId: z.string().nullable(),
 	/** Home Assistant took the order; false when it could not be done. */
@@ -356,6 +435,38 @@ export const STATE_DOMAINS = [
 	'media_player',
 ] as const;
 
+/** The most options (modes, presets) kept of an entity, and the longest word of one. */
+export const MAX_OPTIONS = 20;
+export const MAX_OPTION_LENGTH = 40;
+
+const OptionsSchema = z.object({
+	options: z.array(z.string().max(MAX_OPTION_LENGTH)).min(1).max(MAX_OPTIONS),
+	current: z.string().max(MAX_OPTION_LENGTH).nullable(),
+});
+const PercentSchema = z.object({ percent: z.number().int().min(0).max(100).nullable() });
+
+/**
+ * What a thing can be set to beyond on and off, from what it reports now: only the groups it
+ * offers are present. A percentage is null while it is not known (a light that is off).
+ */
+export const LevelsSchema = z.object({
+	brightness: PercentSchema.optional(),
+	position: PercentSchema.optional(),
+	volume: PercentSchema.optional(),
+	humidity: z
+		.object({
+			target: z.number().int().nullable(),
+			min: z.number().int(),
+			max: z.number().int(),
+		})
+		.optional(),
+	/** A humidifier's modes. */
+	mode: OptionsSchema.optional(),
+	/** A fan's presets. */
+	preset: OptionsSchema.optional(),
+});
+export type Levels = z.infer<typeof LevelsSchema>;
+
 /**
  * What an entity reads right now, as data and not as words: the interface says it in the
  * reader's language and region.
@@ -372,6 +483,8 @@ export const ValueSchema = z.discriminatedUnion('kind', [
 		deviceClass: z.string().nullable(),
 		/** A fan's speed as Home Assistant reports it; only fans have it. */
 		speed: z.object({ percentage: z.number().nullable(), step: z.number().nullable() }).optional(),
+		/** What a light, a fan or a humidifier can be set to besides on and off. */
+		levels: LevelsSchema.optional(),
 	}),
 	/** A lock, a cover, a valve, a vacuum, a media player or a thermostat: Home Assistant's state word, and a temperature if it has one. */
 	z.object({
@@ -379,6 +492,8 @@ export const ValueSchema = z.discriminatedUnion('kind', [
 		domain: z.enum(STATE_DOMAINS),
 		state: z.string(),
 		temperature: z.number().nullable(),
+		/** A cover's or valve's position, a media player's volume. */
+		levels: LevelsSchema.optional(),
 	}),
 	z.object({ kind: z.literal('text'), text: z.string() }),
 ]);

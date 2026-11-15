@@ -48,6 +48,8 @@ export type HomeAssistantTables = {
 		operation: string;
 		/** A fan's speed (1, 2, 3 …) when the switch set one; null for every other switch. */
 		level: number | null;
+		/** What a level, position, humidity, volume or mode was set to, as text; null otherwise. */
+		chosen: string | null;
 		/** A member's id (members are core's: no foreign key); null when no member asked. */
 		member_id: string | null;
 		/** 1: Home Assistant took the order. */
@@ -181,6 +183,11 @@ export const migrations: Migrations = {
 	'0007_switch_level': {
 		async up(db) {
 			await db.schema.alterTable('homeassistant_switches').addColumn('level', 'integer').execute();
+		},
+	},
+	'0008_switch_chosen': {
+		async up(db) {
+			await db.schema.alterTable('homeassistant_switches').addColumn('chosen', 'text').execute();
 		},
 	},
 };

@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
-	 * Equal tiles for choosing one of two to six levels (a fan's speeds, later presets): 48 px
-	 * high, `idle`, the chosen one `surface` with `shadow-lit`. A radiogroup with one tab stop;
+	 * Equal tiles for choosing one of two to six levels (a fan's speeds, a mode or a preset by its
+	 * word): 48 px high, `idle`, the chosen one `surface` with `shadow-lit`. A radiogroup with one tab stop;
 	 * arrow keys move the focus, Space or Enter chooses.
 	 */
 	let {
@@ -9,9 +9,15 @@
 		value,
 		label,
 		tileLabel,
+		labels,
+		columns = count,
 		disabled = false,
 		onpick,
 	}: {
+		/** Words on the tiles instead of their numbers (modes, presets), in the order of the levels. */
+		labels?: readonly string[];
+		/** Tiles per row; more levels than columns wrap onto further rows. */
+		columns?: number;
 		count: number;
 		/** The chosen level, 1-based; 0 or null for none. */
 		value: number | null;
@@ -51,7 +57,7 @@
 	aria-label={label}
 	tabindex="-1"
 	class="grid gap-2 outline-none"
-	style="grid-template-columns: repeat({count}, minmax(0, 1fr))"
+	style="grid-template-columns: repeat({columns}, minmax(0, 1fr))"
 	{onkeydown}
 >
 	{#each levels as level (level)}
@@ -65,7 +71,7 @@
 			{disabled}
 			onclick={() => onpick(level)}
 			class="bg-idle text-ink-soft aria-checked:bg-surface aria-checked:text-ink aria-checked:shadow-lit aria-checked:ring-ink focus-visible:ring-info h-12 cursor-pointer rounded-[var(--r-ctl)] text-[0.9375rem] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:opacity-45 aria-checked:ring-2 motion-reduce:transition-none"
-			>{level}</button
+			><span class="block truncate px-2">{labels?.[level - 1] ?? level}</span></button
 		>
 	{/each}
 </div>

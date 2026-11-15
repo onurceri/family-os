@@ -1047,6 +1047,30 @@ export interface operations {
                                     percentage: number | null;
                                     step: number | null;
                                 };
+                                levels?: {
+                                    brightness?: {
+                                        percent: number | null;
+                                    };
+                                    position?: {
+                                        percent: number | null;
+                                    };
+                                    volume?: {
+                                        percent: number | null;
+                                    };
+                                    humidity?: {
+                                        target: number | null;
+                                        min: number;
+                                        max: number;
+                                    };
+                                    mode?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                    preset?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "state";
@@ -1054,6 +1078,30 @@ export interface operations {
                                 domain: "lock" | "cover" | "climate" | "valve" | "vacuum" | "media_player";
                                 state: string;
                                 temperature: number | null;
+                                levels?: {
+                                    brightness?: {
+                                        percent: number | null;
+                                    };
+                                    position?: {
+                                        percent: number | null;
+                                    };
+                                    volume?: {
+                                        percent: number | null;
+                                    };
+                                    humidity?: {
+                                        target: number | null;
+                                        min: number;
+                                        max: number;
+                                    };
+                                    mode?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                    preset?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "text";
@@ -1224,6 +1272,30 @@ export interface operations {
                                     percentage: number | null;
                                     step: number | null;
                                 };
+                                levels?: {
+                                    brightness?: {
+                                        percent: number | null;
+                                    };
+                                    position?: {
+                                        percent: number | null;
+                                    };
+                                    volume?: {
+                                        percent: number | null;
+                                    };
+                                    humidity?: {
+                                        target: number | null;
+                                        min: number;
+                                        max: number;
+                                    };
+                                    mode?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                    preset?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "state";
@@ -1231,6 +1303,30 @@ export interface operations {
                                 domain: "lock" | "cover" | "climate" | "valve" | "vacuum" | "media_player";
                                 state: string;
                                 temperature: number | null;
+                                levels?: {
+                                    brightness?: {
+                                        percent: number | null;
+                                    };
+                                    position?: {
+                                        percent: number | null;
+                                    };
+                                    volume?: {
+                                        percent: number | null;
+                                    };
+                                    humidity?: {
+                                        target: number | null;
+                                        min: number;
+                                        max: number;
+                                    };
+                                    mode?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                    preset?: {
+                                        options: string[];
+                                        current: string | null;
+                                    };
+                                };
                             } | {
                                 /** @enum {string} */
                                 kind: "text";
@@ -2075,8 +2171,9 @@ export interface operations {
                             entityId: string;
                             label: string;
                             /** @enum {string} */
-                            operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage";
+                            operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage" | "set_preset_mode" | "set_humidity" | "set_mode" | "set_cover_position" | "set_valve_position" | "volume_set";
                             level?: number | null;
+                            chosen?: string | null;
                             memberId: string | null;
                             ok: boolean;
                             at: number;
@@ -3279,8 +3376,8 @@ export interface operations {
                 "application/json": {
                     id: string;
                     /** @enum {string} */
-                    operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage";
-                    percentage?: number;
+                    operation: "turn_on" | "turn_off" | "open_cover" | "close_cover" | "stop_cover" | "lock" | "unlock" | "open_valve" | "close_valve" | "stop_valve" | "start" | "pause" | "return_to_base" | "media_play" | "media_pause" | "press" | "set_percentage" | "set_preset_mode" | "set_humidity" | "set_mode" | "set_cover_position" | "set_valve_position" | "volume_set";
+                    value?: number | string;
                     level?: number;
                 };
             };

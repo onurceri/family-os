@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Value } from '../src/contract/index.ts';
 import en from '../src/messages/en.json' with { type: 'json' };
 import tr from '../src/messages/tr.json' with { type: 'json' };
 import { describeValue, numberWords, timeWords, type WordDeps } from '../src/web/words.ts';
@@ -178,5 +179,83 @@ describe('a fan with speeds', () => {
 		expect(fan(true, 50, null)).toBe('On');
 		expect(fan(true, 100, 1)).toBe('On');
 		expect(fan(true, 100, 100 / 7)).toBe('On');
+	});
+});
+
+describe('the level on a row', () => {
+	const say = (value: Value, catalog: Record<string, string> = en) =>
+		describeValue(value, deps(catalog)).text;
+	const light = (on: boolean, percent: number | null): Value => ({
+		kind: 'binary',
+		on,
+		deviceClass: null,
+		levels: { brightness: { percent } },
+	});
+	const humidifier = (on: boolean, mode: string | null): Value => ({
+		kind: 'binary',
+		on,
+		deviceClass: null,
+		levels: {
+			humidity: { target: 45, min: 30, max: 80 },
+			mode: { options: ['normal', 'sleep', 'comfortable_mode'], current: mode },
+		},
+	});
+	const cover = (domain: 'cover' | 'valve', state: string, percent: number | null): Value => ({
+		kind: 'state',
+		domain,
+		state,
+		temperature: null,
+		levels: { position: { percent } },
+	});
+
+	it('says how bright a light that is on is', () => {
+		expect(say(light(true, 60))).toBe('On · 60 %');
+		expect(say(light(false, null))).toBe('Off');
+		expect(say(light(true, null))).toBe('On');
+	});
+
+	it('says how far a cover or a valve is open, and only while it is open', () => {
+		expect(say(cover('cover', 'open', 40))).toBe('Open · 40 %');
+		expect(say(cover('valve', 'open', 100))).toBe('Open · 100 %');
+		expect(say(cover('cover', 'closed', 0))).toBe('Closed');
+		expect(say(cover('cover', 'opening', 20))).toBe('Opening…');
+		expect(say(cover('cover', 'open', null))).toBe('Open');
+	});
+
+	it('says a humidifier’s target, and its mode only when it is short', () => {
+		expect(say(humidifier(true, null))).toBe('On · 45 %');
+		expect(say(humidifier(true, 'sleep'))).toBe('On · 45 % · Sleep');
+		expect(say(humidifier(true, 'comfortable_mode'))).toBe('On · 45 %');
+		expect(say(humidifier(false, 'sleep'))).toBe('Off');
+	});
+
+	it('keeps a media player’s state, without the volume', () => {
+		expect(
+			say({
+				kind: 'state',
+				domain: 'media_player',
+				state: 'playing',
+				temperature: null,
+				levels: { volume: { percent: 30 } },
+			}),
+		).toBe('Playing');
+	});
+
+	it('says a fan’s preset when one is active, else its speed', () => {
+		const fan = (current: string | null): Value => ({
+			kind: 'binary',
+			on: true,
+			deviceClass: null,
+			speed: { percentage: 50, step: 25 },
+			levels: { preset: { options: ['auto', 'quiet night'], current } },
+		});
+		expect(say(fan(null))).toBe('Speed 2');
+		expect(say(fan('auto'))).toBe('Auto');
+		// Not one of the common words: as Home Assistant gives it.
+		expect(say(fan('quiet night'))).toBe('quiet night');
+	});
+
+	it('writes a percentage the way the language does', () => {
+		expect(say(light(true, 60), tr)).toBe('Açık · %60');
 	});
 });

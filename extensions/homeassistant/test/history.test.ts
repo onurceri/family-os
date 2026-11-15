@@ -60,6 +60,7 @@ describe('the switch history', () => {
 				label: 'Living room light',
 				operation: 'turn_on',
 				level: null,
+				chosen: null,
 				memberId: admin.memberId,
 				ok: true,
 				at: k.clock.now(),
@@ -181,6 +182,8 @@ describe('saying a switch', () => {
 	const deps = (catalog: Record<string, string>): HistoryDeps => ({
 		t: (key, params) =>
 			(catalog[key] as string).replace(/{{(\w+)}}/g, (_, n: string) => params?.[n] ?? ''),
+		percent: (n) => `${n} %`,
+		option: (word) => word,
 		member: (id) => (id === 'member_tom' ? 'Tom' : id === 'member_mara' ? 'Mara' : null),
 		time: (at) => `at ${at}`,
 	});
@@ -210,6 +213,36 @@ describe('saying a switch', () => {
 		);
 		expect(say(entry({ ...fan, operation: 'turn_off' })).title).toBe('Tom turned off Air purifier');
 		expect(historyKey('fan.a', 'set_percentage')).toBe('history_set_percentage');
+	});
+
+	it('says what a switch set a thing to, and a volume as the volume', () => {
+		const set = (entityId: string, label: string, operation: string, chosen: string) =>
+			say(entry({ entityId, label, operation, chosen } as Partial<SwitchEntry>)).title;
+		expect(set('light.lamp', 'Lamp', 'turn_on', '60')).toBe('Tom set Lamp to 60 %');
+		expect(set('cover.window', 'Window', 'set_cover_position', '40')).toBe(
+			'Tom set Window to 40 %',
+		);
+		expect(set('valve.garden', 'Garden', 'set_valve_position', '0')).toBe('Tom set Garden to 0 %');
+		expect(set('humidifier.bedroom', 'Humidifier', 'set_humidity', '45')).toBe(
+			'Tom set Humidifier to 45 %',
+		);
+		expect(set('humidifier.bedroom', 'Humidifier', 'set_mode', 'sleep')).toBe(
+			'Tom set Humidifier to sleep',
+		);
+		expect(set('fan.winix', 'Purifier', 'set_preset_mode', 'auto')).toBe(
+			'Tom set Purifier to auto',
+		);
+		expect(set('media_player.tv', 'TV', 'volume_set', '30')).toBe(
+			'Tom set the volume of TV to 30 %',
+		);
+		// A mode that looks like a number is still a mode.
+		expect(set('humidifier.bedroom', 'Humidifier', 'set_mode', '2')).toBe(
+			'Tom set Humidifier to 2',
+		);
+		// A plain turn on stays a turn on.
+		expect(say(entry({})).title).toBe('Tom turned on Living room light');
+		expect(historyKey('light.a', 'turn_on')).toBe('history_turn_on');
+		expect(historyKey('light.a', 'turn_on', '60')).toBe('history_set_value');
 	});
 
 	it('says buttons, valves, vacuums and media players', () => {

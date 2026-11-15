@@ -1,9 +1,16 @@
-import { ENTITY_ID_PATTERN, STATE_DOMAINS, type Value } from '../contract/index.ts';
+import {
+	ENTITY_ID_PATTERN,
+	type Levels,
+	MAX_OPTION_LENGTH,
+	MAX_OPTIONS,
+	STATE_DOMAINS,
+	type Value,
+} from '../contract/index.ts';
 
 /**
  * Reading one entity of Home Assistant. An entity's answer holds much more than FamilyOS needs
  * (coordinates, accuracy, who a device belongs to), so the only way in is `pickState`, which keeps
- * nine fields and nothing else, and refuses persons, device trackers and zones.
+ * the few fields below and nothing else, and refuses persons, device trackers and zones.
  */
 
 /** Home Assistant's own words are kept this short: they are shown, nothing more. */
@@ -22,6 +29,8 @@ export interface PickedState {
 	percentage: number | null;
 	/** A fan's step: 100 divided by its speed count. */
 	percentageStep: number | null;
+	/** What it can be set to beyond on and off, when it offers any. */
+	levels: Levels | null;
 	/** When the state last changed, in epoch milliseconds. */
 	changedAt: number | null;
 }
@@ -31,6 +40,66 @@ const finite = (value: unknown): number | null =>
 
 const text = (value: unknown, max = MAX_TEXT): string | null =>
 	typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
+
+const percent = (value: number): number => Math.min(100, Math.max(0, Math.round(value)));
+
+/** A list attribute of words (modes, presets), or null when it holds none. */
+function words(value: unknown): string[] | null {
+	if (!Array.isArray(value)) return null;
+	const list = value
+		.filter((word): word is string => typeof word === 'string' && word.trim() !== '')
+		.map((word) => word.trim())
+		.filter((word) => word.length <= MAX_OPTION_LENGTH)
+		.slice(0, MAX_OPTIONS);
+	return list.length > 0 ? list : null;
+}
+
+const options = (list: unknown, current: unknown) => {
+	const found = words(list);
+	return found ? { options: found, current: text(current, MAX_OPTION_LENGTH) } : undefined;
+};
+
+/**
+ * What a thing offers to set, read from its attributes: a light that dims, a cover's or valve's
+ * position, a humidifier's target and modes, a media player's volume, a fan's presets. A light
+ * is dimmable when it reports a brightness or any colour mode but plain on and off.
+ */
+function levelsOf(domain: string, attributes: Record<string, unknown>): Levels | null {
+	const levels: Levels = {};
+	if (domain === 'light') {
+		const brightness = finite(attributes.brightness);
+		const modes = attributes.supported_color_modes;
+		const dims =
+			brightness !== null ||
+			(Array.isArray(modes) && modes.some((mode) => typeof mode === 'string' && mode !== 'onoff'));
+		if (dims)
+			levels.brightness = {
+				// 1 of 255 is the dimmest a light can be and still be on.
+				percent:
+					brightness === null
+						? null
+						: Math.max(brightness > 0 ? 1 : 0, percent((brightness * 100) / 255)),
+			};
+	} else if (domain === 'cover' || domain === 'valve') {
+		const position = finite(attributes.current_position);
+		if (position !== null) levels.position = { percent: percent(position) };
+	} else if (domain === 'humidifier') {
+		const target = finite(attributes.humidity);
+		const min = finite(attributes.min_humidity);
+		const max = finite(attributes.max_humidity);
+		if (target !== null && min !== null && max !== null && min < max)
+			levels.humidity = { target: Math.round(target), min: Math.ceil(min), max: Math.floor(max) };
+		const mode = options(attributes.available_modes, attributes.mode);
+		if (mode) levels.mode = mode;
+	} else if (domain === 'media_player') {
+		const volume = finite(attributes.volume_level);
+		if (volume !== null) levels.volume = { percent: percent(volume * 100) };
+	} else if (domain === 'fan') {
+		const preset = options(attributes.preset_modes, attributes.preset_mode);
+		if (preset) levels.preset = preset;
+	}
+	return Object.keys(levels).length > 0 ? levels : null;
+}
 
 /** The picked fields of one parsed entity object, or null when it is not a readable entity. */
 export function pickState(body: unknown): PickedState | null {
@@ -58,6 +127,7 @@ export function pickState(body: unknown): PickedState | null {
 		temperature: finite(temperature),
 		percentage: finite(attributes.percentage),
 		percentageStep: finite(attributes.percentage_step),
+		levels: levelsOf(raw.entity_id.slice(0, raw.entity_id.indexOf('.')), attributes),
 		changedAt: Number.isFinite(changed) ? changed : null,
 	};
 }
@@ -103,18 +173,21 @@ export function toValue(state: PickedState): Value {
 			domain: domain as (typeof STATE_DOMAINS)[number],
 			state: word,
 			temperature: state.temperature,
+			...(state.levels ? { levels: state.levels } : {}),
 		};
 	// A binary sensor, a light, a switch, a fan: anything that is on or off.
 	if (word === 'on' || word === 'off') {
 		const on = word === 'on';
+		const levels = state.levels ? { levels: state.levels } : {};
 		if (domain === 'fan')
 			return {
 				kind: 'binary',
 				on,
 				deviceClass: state.deviceClass,
 				speed: { percentage: state.percentage, step: state.percentageStep },
+				...levels,
 			};
-		return { kind: 'binary', on, deviceClass: state.deviceClass };
+		return { kind: 'binary', on, deviceClass: state.deviceClass, ...levels };
 	}
 	return { kind: 'text', text: word };
 }
