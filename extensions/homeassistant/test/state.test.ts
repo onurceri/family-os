@@ -179,6 +179,29 @@ describe('toValue', () => {
 		expect(value('cover.garage', 'opening')).toMatchObject({ kind: 'state', domain: 'cover' });
 	});
 
+	it('reads a valve, a vacuum and a media player by their state words', () => {
+		expect(value('valve.garden', 'open')).toEqual({
+			kind: 'state',
+			domain: 'valve',
+			state: 'open',
+			temperature: null,
+		});
+		expect(value('vacuum.robot', 'docked')).toEqual({
+			kind: 'state',
+			domain: 'vacuum',
+			state: 'docked',
+			temperature: null,
+		});
+		expect(value('media_player.tv', 'playing')).toEqual({
+			kind: 'state',
+			domain: 'media_player',
+			state: 'playing',
+			temperature: null,
+		});
+		expect(value('media_player.tv', 'off')).toMatchObject({ kind: 'state', state: 'off' });
+		expect(value('media_player.tv', 'unavailable')).toEqual({ kind: 'unavailable' });
+	});
+
 	it('reads a thermostat by its state and current temperature, and nothing else of it', () => {
 		const read = value('climate.hall', 'heat', {
 			current_temperature: 21.5,
@@ -191,7 +214,7 @@ describe('toValue', () => {
 
 	it('says any other state as Home Assistant says it', () => {
 		expect(value('weather.home', 'sunny')).toEqual({ kind: 'text', text: 'sunny' });
-		expect(value('media_player.tv', 'playing')).toEqual({ kind: 'text', text: 'playing' });
+		expect(value('select.mode', 'eco')).toEqual({ kind: 'text', text: 'eco' });
 	});
 
 	it('does not make a number of an odd text', () => {

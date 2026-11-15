@@ -76,12 +76,14 @@ When the page says **Connected**, use **What to show**:
 
 | Kind | Reads |
 |---|---|
-| Doors, windows, covers | **Open** / **Closed** |
+| Doors, windows, covers, valves | **Open** / **Closed** |
 | Locks | **Locked** / **Unlocked** |
 | Motion | **Detected** / **Clear** |
 | Smoke, problem | **Alert** / **OK** |
-| Lights, switches | **On** / **Off** |
+| Lights, switches, humidifiers | **On** / **Off** |
 | Thermostat | Mode and current temperature |
+| Vacuum | **Cleaning**, **Docked**, **Going home**, **Paused**, **Idle**, **Error** |
+| Media player | **Playing**, **Paused**, **Idle**, **On**, **Off**, **Standby**, **Loading** |
 | Scene, button | **Last run 22:10** (with the date if another day), **Never run** |
 | No value | **Not available** |
 
@@ -89,14 +91,14 @@ Anything else is worded as Home Assistant words it.
 
 ## Switch things from FamilyOS
 
-Lights, switches, fans, on/off helpers (`input_boolean`), covers, locks, scenes and scripts, one by one:
+Lights, switches, fans, humidifiers (on and off only), on/off helpers (`input_boolean`), covers, water valves, locks, scenes, scripts, buttons, vacuums and media players (play, pause and power only), one by one:
 
 1. In **Settings → Family → Home Assistant**, under **What to show**, tap the thing.
-2. Turn on **Can be switched from FamilyOS** (off for everything at first).
-3. Optionally turn on **Ask before switching** (off for every item; FamilyOS does not guess). Use it for locks and garage doors: FamilyOS then asks first, e.g. "Unlock Front door?". Earlier items keep their choice.
+2. Turn on **Can be switched from FamilyOS** (off for everything at first). Until you allow it, a thing that can be switched says **Can be switched** on its row.
+3. Optionally turn on **Ask before switching** (off for every item; FamilyOS does not guess). Use it for locks, garage doors and water valves: FamilyOS then asks first, e.g. "Unlock Front door?". Earlier items keep their choice.
 4. Press **Save**.
 
-The row on Today and on this page then has a switch (lights, switches, fans), **Open** / **Close** (covers; **Stop** while moving), **Lock** / **Unlock**, or **Run** (scenes, scripts). The value says **Switching…** until the new state shows, usually in seconds.
+The row on Today and on this page then has a switch (lights, switches, fans, humidifiers), **Open** / **Close** (covers; **Stop** while moving), **Lock** / **Unlock**, **Run** (scenes, scripts), **Press** (buttons), **Open** / **Close** (valves; **Stop** while moving), **Start** / **Pause** / **Send home** (vacuums), or **Play** / **Pause** / **Turn on** / **Turn off** (media players, by what they are doing now). The value says **Switching…** until the new state shows, usually in seconds.
 
 **Good to know**
 - Needs the role permission **Switch things through Home Assistant**: admins at first; give it under **Settings → Family → Roles**. Others see values, no switches.
@@ -140,3 +142,4 @@ Texts go only to your Home Assistant, then through its push service to the phone
 - The assistant cannot know who is home or switch anything.
 - No map, only a place's name.
 - Thermostats and alarm panels can be shown, not switched (no temperature setting, arming, disarming).
+- Media players have no volume, source or track; choosing from lists or setting numbers in Home Assistant is not possible.

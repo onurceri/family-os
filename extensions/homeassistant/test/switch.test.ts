@@ -69,12 +69,37 @@ const connection = (): Promise<Connection> =>
 describe('what may be switched', () => {
 	it('is a table of services per domain, and nothing else', () => {
 		expect(Object.keys(CONTROLS).sort()).toEqual(
-			['cover', 'fan', 'input_boolean', 'light', 'lock', 'scene', 'script', 'switch'].sort(),
+			[
+				'button',
+				'cover',
+				'fan',
+				'humidifier',
+				'input_boolean',
+				'input_button',
+				'light',
+				'lock',
+				'media_player',
+				'scene',
+				'script',
+				'switch',
+				'vacuum',
+				'valve',
+			].sort(),
 		);
 		expect(operationsOf('light.kitchen')).toEqual(['turn_on', 'turn_off']);
 		expect(operationsOf('cover.garage')).toEqual(['open_cover', 'close_cover', 'stop_cover']);
 		expect(operationsOf('lock.front_door')).toEqual(['lock', 'unlock']);
 		expect(operationsOf('scene.evening')).toEqual(['turn_on']);
+		expect(operationsOf('button.doorbell')).toEqual(['press']);
+		expect(operationsOf('input_button.bell')).toEqual(['press']);
+		expect(operationsOf('valve.garden')).toEqual(['open_valve', 'close_valve', 'stop_valve']);
+		expect(operationsOf('vacuum.robot')).toEqual(['start', 'pause', 'return_to_base']);
+		expect(operationsOf('media_player.tv')).toEqual([
+			'media_play',
+			'media_pause',
+			'turn_on',
+			'turn_off',
+		]);
 		for (const id of ['sensor.x', 'climate.living', 'alarm_control_panel.home', 'constructor.x'])
 			expect(operationsOf(id)).toEqual([]);
 	});
@@ -85,6 +110,10 @@ describe('what may be switched', () => {
 			expect(serviceFor('light.kitchen', operation)).toBeNull();
 		expect(serviceFor('lock.front_door', 'turn_on')).toBeNull();
 		expect(serviceFor('climate.living', 'turn_on')).toBeNull();
+		expect(serviceFor('light.kitchen', 'press')).toBeNull();
+		expect(serviceFor('media_player.tv', 'start')).toBeNull();
+		expect(serviceFor('vacuum.robot', 'turn_on')).toBeNull();
+		expect(serviceFor('valve.garden', 'open_cover')).toBeNull();
 		expect(serviceFor('__proto__.x', 'turn_on')).toBeNull();
 	});
 });
@@ -148,6 +177,11 @@ describe('switch', () => {
 		await expect(flip(light.id, 'turn_on')).rejects.toMatchObject({ code: 'forbidden' });
 		await allow(light.id);
 		await expect(flip(light.id, 'unlock')).rejects.toMatchObject({ code: 'bad_request' });
+		await expect(flip(light.id, 'press')).rejects.toMatchObject({ code: 'bad_request' });
+		const player = await add('media_player.tv', 'TV');
+		await allow(player.id);
+		await expect(flip(player.id, 'start')).rejects.toMatchObject({ code: 'bad_request' });
+		await expect(flip(player.id, 'open_valve')).rejects.toMatchObject({ code: 'bad_request' });
 		await expect(flip(light.id, '../config')).rejects.toMatchObject({ code: 'bad_request' });
 		await expect(flip('ha_item_missing', 'turn_on')).rejects.toMatchObject({ code: 'not_found' });
 		expect(await jobs()).toEqual([]);
@@ -222,6 +256,20 @@ describe('the switch job', () => {
 		['scene.evening', 'turn_on', '/api/services/scene/turn_on'],
 		['script.bedtime', 'turn_on', '/api/services/script/turn_on'],
 		['input_boolean.guests', 'turn_off', '/api/services/input_boolean/turn_off'],
+		['humidifier.dehumidifier', 'turn_on', '/api/services/humidifier/turn_on'],
+		['humidifier.dehumidifier', 'turn_off', '/api/services/humidifier/turn_off'],
+		['button.doorbell', 'press', '/api/services/button/press'],
+		['input_button.bell', 'press', '/api/services/input_button/press'],
+		['valve.garden', 'open_valve', '/api/services/valve/open_valve'],
+		['valve.garden', 'close_valve', '/api/services/valve/close_valve'],
+		['valve.garden', 'stop_valve', '/api/services/valve/stop_valve'],
+		['vacuum.robot', 'start', '/api/services/vacuum/start'],
+		['vacuum.robot', 'pause', '/api/services/vacuum/pause'],
+		['vacuum.robot', 'return_to_base', '/api/services/vacuum/return_to_base'],
+		['media_player.tv', 'media_play', '/api/services/media_player/media_play'],
+		['media_player.tv', 'media_pause', '/api/services/media_player/media_pause'],
+		['media_player.tv', 'turn_on', '/api/services/media_player/turn_on'],
+		['media_player.tv', 'turn_off', '/api/services/media_player/turn_off'],
 	])('%s %s posts to %s', async (entityId, operation, path) => {
 		const item = await add(entityId);
 		await allow(item.id);

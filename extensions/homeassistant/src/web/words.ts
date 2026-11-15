@@ -33,6 +33,15 @@ export type ValueWord =
 	| 'value_unlocking'
 	| 'value_opening'
 	| 'value_closing'
+	| 'value_cleaning'
+	| 'value_docked'
+	| 'value_returning'
+	| 'value_paused'
+	| 'value_idle'
+	| 'value_error'
+	| 'value_playing'
+	| 'value_standby'
+	| 'value_buffering'
 	| 'value_connected'
 	| 'value_disconnected'
 	| 'value_on'
@@ -78,7 +87,7 @@ const BINARY: Record<string, { on: ValueWord; off: ValueWord; alertWhenOn?: bool
 	connectivity: { on: 'value_connected', off: 'value_disconnected' },
 };
 
-/** State words of locks and covers; any other state is said as Home Assistant says it. */
+/** State words of locks, covers, valves, vacuums, media players and thermostats; any other state is said as Home Assistant says it. */
 const STATE_WORDS: Record<string, Record<string, ValueWord>> = {
 	lock: {
 		locked: 'value_locked',
@@ -94,6 +103,29 @@ const STATE_WORDS: Record<string, Record<string, ValueWord>> = {
 		closed: 'value_closed',
 		opening: 'value_opening',
 		closing: 'value_closing',
+	},
+	valve: {
+		open: 'value_open',
+		closed: 'value_closed',
+		opening: 'value_opening',
+		closing: 'value_closing',
+	},
+	vacuum: {
+		cleaning: 'value_cleaning',
+		docked: 'value_docked',
+		returning: 'value_returning',
+		paused: 'value_paused',
+		idle: 'value_idle',
+		error: 'value_error',
+	},
+	media_player: {
+		playing: 'value_playing',
+		paused: 'value_paused',
+		idle: 'value_idle',
+		on: 'value_on',
+		off: 'value_off',
+		standby: 'value_standby',
+		buffering: 'value_buffering',
 	},
 	// Home Assistant's HVAC modes, a fixed list of its own.
 	climate: {
@@ -138,7 +170,8 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 			const word = key ? deps.t(key) : value.state;
 			return {
 				text: value.temperature === null ? word : `${word} · ${deps.number(value.temperature)}°`,
-				tone: value.state === 'jammed' ? 'attention' : 'ink',
+				// A jammed lock or cover, or a vacuum that stopped on an error, needs someone to look.
+				tone: value.state === 'jammed' || value.state === 'error' ? 'attention' : 'ink',
 			};
 		}
 		case 'text':

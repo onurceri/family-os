@@ -93,7 +93,10 @@
 		const value = switcher.busy(item.id)
 			? t('switching')
 			: sayValue(app, t, found?.value ?? { kind: 'unavailable' }).text;
-		return found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
+		const base = found?.name ? `${found.name} · ${value}` : `${item.entityId} · ${value}`;
+		// An allowed thing shows its own switch or buttons on the row; one that could be allowed says so.
+		if (item.control || operationsOf(item.entityId).length === 0) return base;
+		return `${base} · ${t('can_switch')}`;
 	}
 
 	// Adding

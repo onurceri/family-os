@@ -9,6 +9,15 @@ export type HistoryKey =
 	| 'history_stop_cover'
 	| 'history_lock'
 	| 'history_unlock'
+	| 'history_open_valve'
+	| 'history_close_valve'
+	| 'history_stop_valve'
+	| 'history_start'
+	| 'history_pause'
+	| 'history_return_to_base'
+	| 'history_media_play'
+	| 'history_media_pause'
+	| 'history_press'
 	| 'history_run';
 
 /** Scenes and scripts are run, not turned on. */

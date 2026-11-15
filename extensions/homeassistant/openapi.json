@@ -1537,7 +1537,10 @@
 																		"enum": [
 																			"lock",
 																			"cover",
-																			"climate"
+																			"climate",
+																			"valve",
+																			"vacuum",
+																			"media_player"
 																		]
 																	},
 																	"state": {
@@ -2017,7 +2020,10 @@
 																		"enum": [
 																			"lock",
 																			"cover",
-																			"climate"
+																			"climate",
+																			"valve",
+																			"vacuum",
+																			"media_player"
 																		]
 																	},
 																	"state": {
@@ -3982,7 +3988,16 @@
 															"close_cover",
 															"stop_cover",
 															"lock",
-															"unlock"
+															"unlock",
+															"open_valve",
+															"close_valve",
+															"stop_valve",
+															"start",
+															"pause",
+															"return_to_base",
+															"media_play",
+															"media_pause",
+															"press"
 														]
 													},
 													"memberId": {
@@ -6882,7 +6897,16 @@
 											"close_cover",
 											"stop_cover",
 											"lock",
-											"unlock"
+											"unlock",
+											"open_valve",
+											"close_valve",
+											"stop_valve",
+											"start",
+											"pause",
+											"return_to_base",
+											"media_play",
+											"media_pause",
+											"press"
 										]
 									}
 								},

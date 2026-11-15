@@ -121,13 +121,16 @@ as its browser is Chrome 106 or newer.
       kitchen and photos & weather become optional
 - [x] AI apps sign in with OAuth instead of a pasted key, for the person who approves them
 - **Home Assistant**
-  - [x] Sensors and who is home on Today and the wall display, and switching the devices you choose
+  - [x] Sensors and who is home on Today and the wall display, and switching the devices you choose:
+        lights, switches, fans, humidifiers, covers, valves, locks, buttons, scenes and scripts, robot
+        vacuums (start, pause, send home) and media players (play, pause, on and off)
   - [x] FamilyOS notifications in the Home Assistant app
   - [x] [Integration](https://github.com/onurceri/familyos-homeassistant) (HACS custom repository): the
         family calendar, shopping lists, tasks and chores as entities, and a waiting-for-approval sensor
   - [x] Actions from your automations: add to a list, tick off a chore, post a note on the board
   - [x] Assist talks to FamilyOS as your own AI app, over OAuth
   - [ ] The integration in HACS's default list
+  - [ ] Thermostat temperature, alarm panels and media volume from FamilyOS
 - [ ] Extensions from other authors, with your explicit consent
 - [ ] 1.0: a stable data format and API, with a backward-compatibility promise
 
