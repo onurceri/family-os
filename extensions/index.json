@@ -1,7 +1,49 @@
 {
 	"format": 1,
-	"issuedAt": 1794776320537,
+	"issuedAt": 1794783611698,
 	"extensions": [
+		{
+			"id": "ambient",
+			"version": "0.12.0",
+			"sdk": "^0.8.0",
+			"url": "ambient/ambient-0.12.0.famext",
+			"sha256": "d8e52e4e9f838b35fb445619322825b6251ab61fac4a9ef1d95bb08a16a53012",
+			"size": 128640,
+			"labels": {
+				"de": {
+					"name": "Fotos und Wetter",
+					"description": "Das Wetter auf Heute sowie Familienfotos und Wetter auf Familiendisplays."
+				},
+				"en": {
+					"name": "Photos and weather",
+					"description": "The weather on Today, and family photos and weather on family displays."
+				},
+				"es": {
+					"name": "Fotos y tiempo",
+					"description": "El tiempo en Hoy, y las fotos de la familia y el tiempo en las pantallas de la familia."
+				},
+				"nl": {
+					"name": "Foto’s en weer",
+					"description": "Het weer op Vandaag, en gezinsfoto’s en het weer op gezinsschermen."
+				},
+				"tr": {
+					"name": "Fotoğraflar ve hava durumu",
+					"description": "Bugün sayfasında hava durumu; aile ekranlarında fotoğraflar ve hava durumu."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [
+						"api.open-meteo.com",
+						"geocoding-api.open-meteo.com"
+					],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 3,
+				"dependsOn": []
+			}
+		},
 		{
 			"id": "ambient",
 			"version": "0.11.0",
@@ -143,32 +185,41 @@
 			}
 		},
 		{
-			"id": "ambient",
-			"version": "0.8.4",
+			"id": "assistant",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "ambient/ambient-0.8.4.famext",
-			"sha256": "17138eaef76e45f2db176b4a5d9bf56e7d79e46d997aa7509135fbfc39001873",
-			"size": 114053,
+			"url": "assistant/assistant-0.12.0.famext",
+			"sha256": "33d553c64f47ca157c1d726034b2b39258ff797deb078614b737e643bb5a28d5",
+			"size": 219143,
 			"labels": {
+				"de": {
+					"name": "Assistent",
+					"description": "Stelle Fragen in Alltagssprache und erhalte Vorschläge zur Freigabe."
+				},
 				"en": {
-					"name": "Photos and weather",
-					"description": "The weather on Today, and family photos and weather on family displays."
+					"name": "Assistant",
+					"description": "Ask questions in plain language and get suggestions to approve."
+				},
+				"es": {
+					"name": "Asistente",
+					"description": "Haz preguntas en lenguaje sencillo y recibe sugerencias para aprobar."
+				},
+				"nl": {
+					"name": "Assistent",
+					"description": "Stel vragen in gewone taal en krijg voorstellen om goed te keuren."
 				},
 				"tr": {
-					"name": "Fotoğraflar ve hava durumu",
-					"description": "Bugün sayfasında hava durumu; aile ekranlarında fotoğraflar ve hava durumu."
+					"name": "Asistan",
+					"description": "Düz bir dille soru sorun, onaylayacağınız öneriler alın."
 				}
 			},
 			"reach": {
 				"network": {
-					"hosts": [
-						"api.open-meteo.com",
-						"geocoding-api.open-meteo.com"
-					],
+					"hosts": [],
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 3,
+				"capabilities": 1,
 				"dependsOn": []
 			}
 		},
@@ -301,20 +352,32 @@
 			}
 		},
 		{
-			"id": "assistant",
-			"version": "0.8.4",
+			"id": "board",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "assistant/assistant-0.8.4.famext",
-			"sha256": "5770e6312a44115b51d85625f57aa97f758802fd8eb0e098a7142bd2543af57d",
-			"size": 191214,
+			"url": "board/board-0.12.0.famext",
+			"sha256": "51beccc915d0e7349c12eba3ca0b0ba82245de56a5ddf1739a58f71cd9fe073f",
+			"size": 140924,
 			"labels": {
+				"de": {
+					"name": "Pinnwand",
+					"description": "Kurze Notizen für die ganze Familie auf Zetteln, mit Foto, Enddatum und Stecknadel. Auf einer eigenen Seite, auf Heute und auf Familiendisplays."
+				},
 				"en": {
-					"name": "Assistant",
-					"description": "Ask questions in plain language and get suggestions to approve."
+					"name": "Board",
+					"description": "Short notes for the whole family on papers, with a photo, an end date and a pin. Shown on its own page, on Today and on the family displays."
+				},
+				"es": {
+					"name": "Tablón",
+					"description": "Notas cortas para toda la familia en papeles, con una foto, una fecha de fin y una chincheta. Se ven en su propia página, en Hoy y en las pantallas de la familia."
+				},
+				"nl": {
+					"name": "Prikbord",
+					"description": "Korte briefjes voor het hele gezin, met een foto, een einddatum en een punaise. Te zien op een eigen pagina, op Vandaag en op de gezinsschermen."
 				},
 				"tr": {
-					"name": "Asistan",
-					"description": "Düz bir dille soru sorun, onaylayacağınız öneriler alın."
+					"name": "Pano",
+					"description": "Tüm aile için kâğıtlara yazılmış kısa notlar; fotoğraf, bitiş günü ve sabitleme ile. Kendi sayfasında, Bugün'de ve aile ekranlarında görünür."
 				}
 			},
 			"reach": {
@@ -323,7 +386,7 @@
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 1,
+				"capabilities": 3,
 				"dependsOn": []
 			}
 		},
@@ -456,27 +519,39 @@
 			}
 		},
 		{
-			"id": "board",
-			"version": "0.8.4",
+			"id": "calendar",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "board/board-0.8.4.famext",
-			"sha256": "2851f39a2d5886b15411182e876fbb2a1def5f57f189b09baa92c8e963475a28",
-			"size": 131029,
+			"url": "calendar/calendar-0.12.0.famext",
+			"sha256": "b4171a6c733639eefeeb9c69a413879e15ad48fa57c093e89b241e87cf6a2c5d",
+			"size": 512219,
 			"labels": {
+				"de": {
+					"name": "Kalender",
+					"description": "Gemeinsamer Familienkalender mit einer Karte auf Heute."
+				},
 				"en": {
-					"name": "Board",
-					"description": "Short notes for the whole family on papers, with a photo, an end date and a pin. Shown on its own page, on Today and on the family displays."
+					"name": "Calendar",
+					"description": "Shared family calendar with a Today card."
+				},
+				"es": {
+					"name": "Calendario",
+					"description": "Calendario familiar compartido con una tarjeta en Hoy."
+				},
+				"nl": {
+					"name": "Agenda",
+					"description": "Gedeelde gezinsagenda met een kaart op Vandaag."
 				},
 				"tr": {
-					"name": "Pano",
-					"description": "Tüm aile için kâğıtlara yazılmış kısa notlar; fotoğraf, bitiş günü ve sabitleme ile. Kendi sayfasında, Bugün'de ve aile ekranlarında görünür."
+					"name": "Takvim",
+					"description": "Bugün kartıyla ortak aile takvimi."
 				}
 			},
 			"reach": {
 				"network": {
 					"hosts": [],
-					"userUrls": false,
-					"local": false
+					"userUrls": true,
+					"local": true
 				},
 				"capabilities": 3,
 				"dependsOn": []
@@ -611,27 +686,39 @@
 			}
 		},
 		{
-			"id": "calendar",
-			"version": "0.8.4",
+			"id": "chores",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "calendar/calendar-0.8.4.famext",
-			"sha256": "fe0edf9a95022965740ac810cddd430821b883470224542d7469ea6e5e589a1c",
-			"size": 471282,
+			"url": "chores/chores-0.12.0.famext",
+			"sha256": "c073971587a4f71dc0e0a1adebe260e6f139ee34a1a3b4b034029537752ca901",
+			"size": 140643,
 			"labels": {
+				"de": {
+					"name": "Haushaltsaufgaben",
+					"description": "Haushaltsaufgaben fair abwechseln und mit einem Tippen abhaken."
+				},
 				"en": {
-					"name": "Calendar",
-					"description": "Shared family calendar with a Today card."
+					"name": "Chores",
+					"description": "Household chores that take turns fairly and are ticked off with one tap."
+				},
+				"es": {
+					"name": "Tareas de casa",
+					"description": "Tareas de casa que se turnan de forma justa y se marcan con un toque."
+				},
+				"nl": {
+					"name": "Klusjes",
+					"description": "Huishoudelijke klusjes die eerlijk rouleren en met één tik worden afgevinkt."
 				},
 				"tr": {
-					"name": "Takvim",
-					"description": "Bugün kartıyla ortak aile takvimi."
+					"name": "Ev işleri",
+					"description": "Sırayla adil paylaşılan ve tek dokunuşla işaretlenen ev işleri."
 				}
 			},
 			"reach": {
 				"network": {
 					"hosts": [],
-					"userUrls": true,
-					"local": true
+					"userUrls": false,
+					"local": false
 				},
 				"capabilities": 3,
 				"dependsOn": []
@@ -766,20 +853,32 @@
 			}
 		},
 		{
-			"id": "chores",
-			"version": "0.8.4",
+			"id": "home",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "chores/chores-0.8.4.famext",
-			"sha256": "d22042e554b9c58354af7d495e1c927de2c8b4fdc5c1ef92fa221b5982cb1155",
-			"size": 124419,
+			"url": "home/home-0.12.0.famext",
+			"sha256": "396b40ec0eee18ef1410c1737884b8f3adbc51815e270ae490c6c24e2a966043",
+			"size": 161300,
 			"labels": {
+				"de": {
+					"name": "Zuhause",
+					"description": "Die Wohnungen und Häuser des Haushalts mit Versicherungen und Wartungsterminen, Gegenständen mit Garantie, Versorgungsverträgen, Abos und Unterlagen."
+				},
 				"en": {
-					"name": "Chores",
-					"description": "Household chores that take turns fairly and are ticked off with one tap."
+					"name": "Home",
+					"description": "The household’s homes with their insurance and upkeep dates, the things in them with warranties, utilities and subscriptions, and papers."
+				},
+				"es": {
+					"name": "Hogar",
+					"description": "Las casas del hogar con sus fechas de seguro y mantenimiento, las cosas que hay en ellas con garantías, los suministros y suscripciones, y los documentos."
+				},
+				"nl": {
+					"name": "Huis",
+					"description": "De woningen van het huishouden met hun verzekerings- en onderhoudsdata, de spullen erin met garanties, nutsvoorzieningen en abonnementen, en papieren."
 				},
 				"tr": {
-					"name": "Ev işleri",
-					"description": "Sırayla adil paylaşılan ve tek dokunuşla işaretlenen ev işleri."
+					"name": "Ev",
+					"description": "Evler: sigorta ve bakım tarihleri, içindeki eşyalar ve garantileri, abonelikler ve belgeler."
 				}
 			},
 			"reach": {
@@ -788,8 +887,10 @@
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 3,
-				"dependsOn": []
+				"capabilities": 2,
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
@@ -906,35 +1007,6 @@
 			"url": "home/home-0.8.5.famext",
 			"sha256": "f96cba78b1f66ccf8886e289ccc480a3a3c8816e01967fb3c4a82e84c2d18f9b",
 			"size": 146638,
-			"labels": {
-				"en": {
-					"name": "Home",
-					"description": "The household’s homes with their insurance and upkeep dates, the things in them with warranties, utilities and subscriptions, and papers."
-				},
-				"tr": {
-					"name": "Ev",
-					"description": "Evler: sigorta ve bakım tarihleri, içindeki eşyalar ve garantileri, abonelikler ve belgeler."
-				}
-			},
-			"reach": {
-				"network": {
-					"hosts": [],
-					"userUrls": false,
-					"local": false
-				},
-				"capabilities": 2,
-				"dependsOn": [
-					"records"
-				]
-			}
-		},
-		{
-			"id": "home",
-			"version": "0.8.4",
-			"sdk": "^0.8.0",
-			"url": "home/home-0.8.4.famext",
-			"sha256": "67be2e45d61caccf5a4cb5d7ec5ffce773f08a4fa5698e83e3c037da9a4daaca",
-			"size": 146630,
 			"labels": {
 				"en": {
 					"name": "Home",
@@ -1114,6 +1186,45 @@
 		},
 		{
 			"id": "inbox",
+			"version": "0.12.0",
+			"sdk": "^0.8.0",
+			"url": "inbox/inbox-0.12.0.famext",
+			"sha256": "489e45df40542fcef51856f09e0b6f4a292b9d9aa43829f960cef0aae82b2745",
+			"size": 247725,
+			"labels": {
+				"de": {
+					"name": "Schnellerfassung",
+					"description": "Gib eine Nachricht, ein Foto oder ein Dokument hinzu; die KI schlägt passende Einträge vor."
+				},
+				"en": {
+					"name": "Quick add",
+					"description": "Give it a message, photo or document; the AI suggests what to add."
+				},
+				"es": {
+					"name": "Añadir rápido",
+					"description": "Dale un mensaje, una foto o un documento; la IA sugiere qué añadir."
+				},
+				"nl": {
+					"name": "Snel toevoegen",
+					"description": "Geef het een bericht, foto of document; de AI stelt voor wat er toegevoegd kan worden."
+				},
+				"tr": {
+					"name": "Hızlı ekle",
+					"description": "Ona mesaj, fotoğraf ya da belge ver; yapay zekâ ne ekleneceğini önerir."
+				}
+			},
+			"reach": {
+				"network": {
+					"hosts": [],
+					"userUrls": false,
+					"local": false
+				},
+				"capabilities": 1,
+				"dependsOn": []
+			}
+		},
+		{
+			"id": "inbox",
 			"version": "0.11.0",
 			"sdk": "^0.8.0",
 			"url": "inbox/inbox-0.11.0.famext",
@@ -1241,20 +1352,32 @@
 			}
 		},
 		{
-			"id": "inbox",
-			"version": "0.8.4",
+			"id": "kitchen",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "inbox/inbox-0.8.4.famext",
-			"sha256": "a32af6c67fb4fb1bfbffdfa2215dbedb8636b30444ab4378814a4da5b3b66138",
-			"size": 211507,
+			"url": "kitchen/kitchen-0.12.0.famext",
+			"sha256": "86a8754261d02465e5fbafbc19dd33fe29b46d210af54e4b66c796c3c44f80b5",
+			"size": 176414,
 			"labels": {
+				"de": {
+					"name": "Küche",
+					"description": "Selbst eingetragene Rezepte, ein wöchentlicher Speiseplan und Zutaten für die Einkaufsliste."
+				},
 				"en": {
-					"name": "Quick add",
-					"description": "Give it a message, photo or document; the AI suggests what to add."
+					"name": "Kitchen",
+					"description": "Recipes you type in, a weekly meal plan and ingredients to the shopping list."
+				},
+				"es": {
+					"name": "Cocina",
+					"description": "Recetas que escribes tú, un plan semanal de comidas y los ingredientes a la lista de la compra."
+				},
+				"nl": {
+					"name": "Keuken",
+					"description": "Recepten die je zelf intypt, een weekmenu en ingrediënten naar de boodschappenlijst."
 				},
 				"tr": {
-					"name": "Hızlı ekle",
-					"description": "Ona mesaj, fotoğraf ya da belge ver; yapay zekâ ne ekleneceğini önerir."
+					"name": "Mutfak",
+					"description": "Yazdığın tarifler, haftalık yemek planı ve malzemeleri alışveriş listesine ekleme."
 				}
 			},
 			"reach": {
@@ -1263,7 +1386,7 @@
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 1,
+				"capabilities": 2,
 				"dependsOn": []
 			}
 		},
@@ -1396,20 +1519,32 @@
 			}
 		},
 		{
-			"id": "kitchen",
-			"version": "0.8.4",
+			"id": "lists",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "kitchen/kitchen-0.8.4.famext",
-			"sha256": "3b298629fc586a06bffd59433418d1ca14335c6c997847e657b8f48f6d158f36",
-			"size": 156532,
+			"url": "lists/lists-0.12.0.famext",
+			"sha256": "f4f4b1d9b9e2fe1b06008623466478b772cc61ecaf6558d686c20b4ef910b986",
+			"size": 273628,
 			"labels": {
+				"de": {
+					"name": "Listen",
+					"description": "Aufgaben und Einkaufsliste."
+				},
 				"en": {
-					"name": "Kitchen",
-					"description": "Recipes you type in, a weekly meal plan and ingredients to the shopping list."
+					"name": "Lists",
+					"description": "Tasks and the shopping list."
+				},
+				"es": {
+					"name": "Listas",
+					"description": "Tareas y la lista de la compra."
+				},
+				"nl": {
+					"name": "Lijsten",
+					"description": "Taken en de boodschappenlijst."
 				},
 				"tr": {
-					"name": "Mutfak",
-					"description": "Yazdığın tarifler, haftalık yemek planı ve malzemeleri alışveriş listesine ekleme."
+					"name": "Listeler",
+					"description": "Görevler ve alışveriş listesi."
 				}
 			},
 			"reach": {
@@ -1418,7 +1553,7 @@
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 2,
+				"capabilities": 5,
 				"dependsOn": []
 			}
 		},
@@ -1551,20 +1686,32 @@
 			}
 		},
 		{
-			"id": "lists",
-			"version": "0.8.4",
+			"id": "pets",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "lists/lists-0.8.4.famext",
-			"sha256": "57c227c319872df7bd77cdc4a21cd1615e5f966d68ac6a82dd528b79f7091c54",
-			"size": 245465,
+			"url": "pets/pets-0.12.0.famext",
+			"sha256": "734ff72e602db93d13708a9ddcc6e7da3a4b13b0d6292988318f163fdab2e395",
+			"size": 131634,
 			"labels": {
+				"de": {
+					"name": "Haustiere",
+					"description": "Die Haustiere der Familie mit Impf- und Parasitenbehandlungsterminen, Tierarztdaten, Papieren und Behandlungsverlauf."
+				},
 				"en": {
-					"name": "Lists",
-					"description": "Tasks and the shopping list."
+					"name": "Pets",
+					"description": "The household’s pets with their vaccination and parasite dates, vet details, papers and a treatment history."
+				},
+				"es": {
+					"name": "Mascotas",
+					"description": "Las mascotas de la casa con sus fechas de vacunación y antiparasitarios, datos del veterinario, documentos e historial de tratamientos."
+				},
+				"nl": {
+					"name": "Huisdieren",
+					"description": "De huisdieren van het huishouden met hun vaccinatie- en ontwormingsdata, dierenartsgegevens, papieren en een behandelgeschiedenis."
 				},
 				"tr": {
-					"name": "Listeler",
-					"description": "Görevler ve alışveriş listesi."
+					"name": "Evcil hayvanlar",
+					"description": "Evdeki hayvanlar, aşı ve parazit tarihleri, veteriner bilgileri, belgeleri ve tedavi geçmişi."
 				}
 			},
 			"reach": {
@@ -1573,8 +1720,10 @@
 					"userUrls": false,
 					"local": false
 				},
-				"capabilities": 5,
-				"dependsOn": []
+				"capabilities": 2,
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
@@ -1714,20 +1863,32 @@
 			}
 		},
 		{
-			"id": "pets",
-			"version": "0.8.4",
+			"id": "records",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "pets/pets-0.8.4.famext",
-			"sha256": "3622174eb47ccc9ee6e877a5f88e530a285d873dd32e80a54704c581d46ac47d",
-			"size": 117826,
+			"url": "records/records-0.12.0.famext",
+			"sha256": "71c3e841c641b4da51810801e968a9fef9b4b610bc1b827cdb1ce9987c048090",
+			"size": 151969,
 			"labels": {
+				"de": {
+					"name": "Papiere",
+					"description": "Wiederkehrende Pflichten wie Verlängerungen, Wartungen und Impfungen mit Erinnerungen und den dazugehörigen Papieren."
+				},
 				"en": {
-					"name": "Pets",
-					"description": "The household’s pets with their vaccination and parasite dates, vet details, papers and a treatment history."
+					"name": "Records",
+					"description": "Duties that come back (renewals, services, vaccinations) with reminders, and the papers that go with them."
+				},
+				"es": {
+					"name": "Registros",
+					"description": "Tareas que vuelven (renovaciones, revisiones, vacunas) con recordatorios, y los documentos que van con ellas."
+				},
+				"nl": {
+					"name": "Administratie",
+					"description": "Terugkerende taken (verlengingen, onderhoud, vaccinaties) met herinneringen, en de papieren die erbij horen."
 				},
 				"tr": {
-					"name": "Evcil hayvanlar",
-					"description": "Evdeki hayvanlar, aşı ve parazit tarihleri, veteriner bilgileri, belgeleri ve tedavi geçmişi."
+					"name": "Kayıtlar",
+					"description": "Tekrar eden işler (yenilemeler, bakımlar, aşılar) ve hatırlatmaları; ayrıca belgeleri."
 				}
 			},
 			"reach": {
@@ -1737,9 +1898,7 @@
 					"local": false
 				},
 				"capabilities": 2,
-				"dependsOn": [
-					"records"
-				]
+				"dependsOn": []
 			}
 		},
 		{
@@ -1871,20 +2030,32 @@
 			}
 		},
 		{
-			"id": "records",
-			"version": "0.8.4",
+			"id": "vehicles",
+			"version": "0.12.0",
 			"sdk": "^0.8.0",
-			"url": "records/records-0.8.4.famext",
-			"sha256": "ab28c4aefc9026a8db094b5693512e9cb43eb1b899b7c47fb77fe801190f5e45",
-			"size": 138977,
+			"url": "vehicles/vehicles-0.12.0.famext",
+			"sha256": "98be97392343f740f830f0d70553f2223048b92c5c0fd08483a911cd31660782",
+			"size": 124174,
 			"labels": {
+				"de": {
+					"name": "Fahrzeuge",
+					"description": "Die Autos der Familie mit Versicherungs-, Prüf- und Wartungsterminen, Papieren und Wartungsverlauf."
+				},
 				"en": {
-					"name": "Records",
-					"description": "Duties that come back (renewals, services, vaccinations) with reminders, and the papers that go with them."
+					"name": "Vehicles",
+					"description": "The household’s cars with their insurance, inspection and service dates, papers and a service log."
+				},
+				"es": {
+					"name": "Vehículos",
+					"description": "Los coches del hogar con sus fechas de seguro, revisión y mantenimiento, sus documentos y un registro de revisiones."
+				},
+				"nl": {
+					"name": "Voertuigen",
+					"description": "De auto’s van het huishouden met hun verzekerings-, keurings- en onderhoudsdata, papieren en een onderhoudslogboek."
 				},
 				"tr": {
-					"name": "Kayıtlar",
-					"description": "Tekrar eden işler (yenilemeler, bakımlar, aşılar) ve hatırlatmaları; ayrıca belgeleri."
+					"name": "Araçlar",
+					"description": "Evdeki araçlar: sigorta, muayene ve bakım tarihleri, belgeler ve bakım defteri."
 				}
 			},
 			"reach": {
@@ -1894,7 +2065,9 @@
 					"local": false
 				},
 				"capabilities": 2,
-				"dependsOn": []
+				"dependsOn": [
+					"records"
+				]
 			}
 		},
 		{
@@ -2011,35 +2184,6 @@
 			"url": "vehicles/vehicles-0.8.5.famext",
 			"sha256": "0413fe1f5c998c658e45cba101334a524b81c881d9585755893790ffe2409d34",
 			"size": 112137,
-			"labels": {
-				"en": {
-					"name": "Vehicles",
-					"description": "The household’s cars with their insurance, inspection and service dates, papers and a service log."
-				},
-				"tr": {
-					"name": "Araçlar",
-					"description": "Evdeki araçlar: sigorta, muayene ve bakım tarihleri, belgeler ve bakım defteri."
-				}
-			},
-			"reach": {
-				"network": {
-					"hosts": [],
-					"userUrls": false,
-					"local": false
-				},
-				"capabilities": 2,
-				"dependsOn": [
-					"records"
-				]
-			}
-		},
-		{
-			"id": "vehicles",
-			"version": "0.8.4",
-			"sdk": "^0.8.0",
-			"url": "vehicles/vehicles-0.8.4.famext",
-			"sha256": "37451816ec5cb8c67b6f99071c67ab21e10eea2a76dde4676820aa407505e338",
-			"size": 112134,
 			"labels": {
 				"en": {
 					"name": "Vehicles",
