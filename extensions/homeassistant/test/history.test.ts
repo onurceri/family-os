@@ -202,6 +202,19 @@ describe('saying a switch', () => {
 		expect(say(entry({ ...garage, operation: 'stop_cover' })).title).toBe('Tom stopped Garage');
 	});
 
+	it('says buttons, valves, vacuums and media players', () => {
+		const as = (entityId: string, label: string, operation: SwitchEntry['operation']) =>
+			say(entry({ entityId, label, operation })).title;
+		expect(as('button.doorbell', 'Doorbell', 'press')).toBe('Tom pressed Doorbell');
+		expect(as('valve.garden', 'Garden', 'open_valve')).toBe('Tom opened Garden');
+		expect(as('valve.garden', 'Garden', 'stop_valve')).toBe('Tom stopped Garden');
+		expect(as('vacuum.robot', 'Robot', 'start')).toBe('Tom started Robot');
+		expect(as('vacuum.robot', 'Robot', 'return_to_base')).toBe('Tom sent Robot home');
+		expect(as('media_player.tv', 'TV', 'media_play')).toBe('Tom played TV');
+		expect(as('media_player.tv', 'TV', 'media_pause')).toBe('Tom paused TV');
+		expect(as('media_player.tv', 'TV', 'turn_off')).toBe('Tom turned off TV');
+	});
+
 	it('says a failure plainly, with who asked in the second line', () => {
 		expect(say(entry({ ok: false }))).toEqual({
 			title: 'Could not switch Living room light',

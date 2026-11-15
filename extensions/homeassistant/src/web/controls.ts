@@ -16,6 +16,17 @@ export type ButtonLabel =
 	| 'op_stop_cover'
 	| 'op_lock'
 	| 'op_unlock'
+	| 'op_open_valve'
+	| 'op_close_valve'
+	| 'op_stop_valve'
+	| 'op_start'
+	| 'op_pause'
+	| 'op_return_to_base'
+	| 'op_media_play'
+	| 'op_media_pause'
+	| 'op_turn_on'
+	| 'op_turn_off'
+	| 'op_press'
 	| 'op_run';
 
 const stateOf = (value: Value) => (value.kind === 'state' ? value.state : null);
@@ -51,6 +62,43 @@ export function controlsFor(entityId: string, value: Value): Control[] {
 			if (state === 'unlocked') return [lock];
 			return [lock, unlock];
 		}
+		case 'valve': {
+			const state = stateOf(value);
+			if (state === 'opening' || state === 'closing')
+				return [{ kind: 'button', operation: 'stop_valve', label: 'op_stop_valve' }];
+			const open = { kind: 'button', operation: 'open_valve', label: 'op_open_valve' } as const;
+			const close = { kind: 'button', operation: 'close_valve', label: 'op_close_valve' } as const;
+			if (state === 'open') return [close];
+			if (state === 'closed') return [open];
+			return [open, close];
+		}
+		case 'vacuum': {
+			const state = stateOf(value);
+			const start = { kind: 'button', operation: 'start', label: 'op_start' } as const;
+			const pause = { kind: 'button', operation: 'pause', label: 'op_pause' } as const;
+			const home = {
+				kind: 'button',
+				operation: 'return_to_base',
+				label: 'op_return_to_base',
+			} as const;
+			if (state === 'cleaning') return [pause, home];
+			if (state === 'returning' || state === 'docked') return [start];
+			return [start, home];
+		}
+		case 'media_player': {
+			const state = stateOf(value);
+			const play = { kind: 'button', operation: 'media_play', label: 'op_media_play' } as const;
+			const pause = { kind: 'button', operation: 'media_pause', label: 'op_media_pause' } as const;
+			const on = { kind: 'button', operation: 'turn_on', label: 'op_turn_on' } as const;
+			const off = { kind: 'button', operation: 'turn_off', label: 'op_turn_off' } as const;
+			if (state === 'playing' || state === 'buffering') return [pause, off];
+			if (state === 'paused' || state === 'idle' || state === 'on') return [play, off];
+			if (state === 'off' || state === 'standby') return [on];
+			return [play, pause];
+		}
+		case 'button':
+		case 'input_button':
+			return [{ kind: 'button', operation: 'press', label: 'op_press' }];
 		case 'scene':
 		case 'script':
 			return [{ kind: 'button', operation: 'turn_on', label: 'op_run' }];

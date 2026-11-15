@@ -94,7 +94,9 @@ export const ItemIdSchema = z.string().min(1).max(100);
  * What FamilyOS may ask Home Assistant to do, per domain: the only services it ever calls. The
  * address of a call is built from this table alone, never from what a request says, so nothing
  * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans, humidifiers and
- * helpers are on or off; covers open, close and stop; locks lock and unlock; scenes and scripts run.
+ * helpers are on or off; covers and valves open, close and stop; locks lock and unlock; scenes and
+ * scripts run; buttons are pressed; vacuums start, pause and go home; media players play, pause and
+ * turn on or off.
  */
 export const CONTROLS = {
 	light: ['turn_on', 'turn_off'],
@@ -104,6 +106,11 @@ export const CONTROLS = {
 	input_boolean: ['turn_on', 'turn_off'],
 	cover: ['open_cover', 'close_cover', 'stop_cover'],
 	lock: ['lock', 'unlock'],
+	valve: ['open_valve', 'close_valve', 'stop_valve'],
+	vacuum: ['start', 'pause', 'return_to_base'],
+	media_player: ['media_play', 'media_pause', 'turn_on', 'turn_off'],
+	button: ['press'],
+	input_button: ['press'],
 	scene: ['turn_on'],
 	script: ['turn_on'],
 } as const;
@@ -117,6 +124,15 @@ export const OPERATIONS = [
 	'stop_cover',
 	'lock',
 	'unlock',
+	'open_valve',
+	'close_valve',
+	'stop_valve',
+	'start',
+	'pause',
+	'return_to_base',
+	'media_play',
+	'media_pause',
+	'press',
 ] as const satisfies readonly Operation[];
 export const OperationSchema = z.enum(OPERATIONS);
 
@@ -212,7 +228,14 @@ export const switchFailedPayload = z.object({ id: ItemIdSchema });
 export const valuesChangedPayload = z.object({ id: ItemIdSchema });
 
 /** The domains whose state words FamilyOS knows how to say. */
-export const STATE_DOMAINS = ['lock', 'cover', 'climate'] as const;
+export const STATE_DOMAINS = [
+	'lock',
+	'cover',
+	'climate',
+	'valve',
+	'vacuum',
+	'media_player',
+] as const;
 
 /**
  * What an entity reads right now, as data and not as words: the interface says it in the
@@ -225,7 +248,7 @@ export const ValueSchema = z.discriminatedUnion('kind', [
 	z.object({ kind: z.literal('lastRun'), at: z.number().int().nullable() }),
 	z.object({ kind: z.literal('number'), value: z.number(), unit: z.string().nullable() }),
 	z.object({ kind: z.literal('binary'), on: z.boolean(), deviceClass: z.string().nullable() }),
-	/** A lock, a cover or a thermostat: Home Assistant's state word, and a temperature if it has one. */
+	/** A lock, a cover, a valve, a vacuum, a media player or a thermostat: Home Assistant's state word, and a temperature if it has one. */
 	z.object({
 		kind: z.literal('state'),
 		domain: z.enum(STATE_DOMAINS),
