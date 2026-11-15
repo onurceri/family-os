@@ -1,4 +1,4 @@
-import type { Value } from '../contract/index.js';
+import { fanSpeeds, type Value } from '../contract/index.js';
 
 /**
  * A value of Home Assistant in words. Pure: the translator and the formatters come in, so the
@@ -8,6 +8,7 @@ import type { Value } from '../contract/index.js';
 /** Catalog keys of the words a value can be said with. */
 export type ValueWord =
 	| 'value_unavailable'
+	| 'value_speed'
 	| 'value_never_run'
 	| 'value_last_run'
 	| 'value_open'
@@ -159,6 +160,9 @@ export function describeValue(value: Value, deps: WordDeps): ValueText {
 				on: 'value_on' as const,
 				off: 'value_off' as const,
 			};
+			const level = fanSpeeds(value)?.current;
+			if (value.on && level)
+				return { text: deps.t('value_speed', { level: String(level) }), tone: 'ink' };
 			const alert = value.on && 'alertWhenOn' in words && words.alertWhenOn === true;
 			return {
 				text: deps.t(value.on ? words.on : words.off),

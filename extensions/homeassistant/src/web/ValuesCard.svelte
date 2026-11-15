@@ -3,10 +3,12 @@
 	import type { SlotProps } from '@famos/ui/slots';
 	import type { Values } from '../contract/index.js';
 	import Controls from './Controls.svelte';
+	import { detailFor } from './controls.js';
 	import { loadValues } from './data.js';
 	import { useHomeAssistant } from './i18n.js';
 	import { sayValue, TONE_CLASS } from './say.js';
 	import { createSwitcher } from './switching.svelte.js';
+	import ThingSheet from './ThingSheet.svelte';
 
 	/**
 	 * Today, notes band: the sensors the family chose to show from Home Assistant, one row each,
@@ -32,6 +34,9 @@
 		return values;
 	}
 	const shown = $derived(values?.status === 'ok' ? values.items : []);
+	/** The row whose sheet is open, read live so the sheet follows the value. */
+	let openId = $state<string | null>(null);
+	const opened = $derived(shown.find((item) => item.id === openId) ?? null);
 	const switcher = createSwitcher({ app, t, reload: load, shown: () => shown });
 
 	// Reports only once loaded: the page keeps the last report while a card moves between columns.
@@ -59,19 +64,31 @@
 			{#each shown as item (item.id)}
 				{@const said = sayValue(app, t, item.value)}
 				{@const busy = switcher.busy(item.id)}
-				<TodayRow title={item.label}>
-					{#snippet trailing()}
-						<span
-							class="text-[0.9375rem] font-semibold {busy
-								? 'text-ink-soft'
-								: TONE_CLASS[said.tone]}"
-							aria-live="polite">{busy ? t('switching') : said.text}</span
-						>
-						{#if maySwitch && item.control}
-							<Controls {item} {busy} onswitch={(op) => void switcher.run(item, op)} />
-						{/if}
-					{/snippet}
-				</TodayRow>
+				{@const more = maySwitch && item.control && detailFor(item.entityId, item.value) !== null}
+				{@const controlled = maySwitch && item.control}
+				{#if controlled}
+					<!-- A control is the last item of its row, and the state goes under the name. -->
+					<TodayRow
+						title={item.label}
+						meta={busy ? t('switching') : said.text}
+						metaTone={busy ? 'soft' : said.tone}
+						tall
+						onopen={more ? () => (openId = item.id) : undefined}
+					>
+						{#snippet trailing()}
+							<Controls {item} {busy} onswitch={(request) => void switcher.run(item, request)} />
+						{/snippet}
+					</TodayRow>
+				{:else}
+					<TodayRow title={item.label}>
+						{#snippet trailing()}
+							<span
+								class="text-[0.9375rem] font-semibold {TONE_CLASS[said.tone]}"
+								aria-live="polite">{said.text}</span
+							>
+						{/snippet}
+					</TodayRow>
+				{/if}
 			{/each}
 			{#if !maySwitch && shown.some((item) => item.control)}
 				<p class="text-ink-soft px-1 text-[0.8125rem]" data-testid="homeassistant-switch-hint">
@@ -80,4 +97,14 @@
 			{/if}
 		</div>
 	</TodaySection>
+{/if}
+
+{#if opened}
+	<ThingSheet
+		item={opened}
+		open
+		busy={switcher.busy(opened.id)}
+		onclose={() => (openId = null)}
+		onswitch={(request) => void switcher.run(opened, request)}
+	/>
 {/if}

@@ -164,3 +164,19 @@ describe('timeWords', () => {
 		).toContain('18');
 	});
 });
+
+describe('a fan with speeds', () => {
+	const fan = (on: boolean, percentage: number | null, step: number | null) =>
+		describeValue({ kind: 'binary', on, deviceClass: null, speed: { percentage, step } }, deps())
+			.text;
+
+	it('says the speed it is on, and On or Off when it has none to say', () => {
+		expect(fan(true, 25, 25)).toBe('Speed 1');
+		expect(fan(true, 100, 25)).toBe('Speed 4');
+		expect(fan(false, 0, 25)).toBe('Off');
+		expect(fan(true, null, 25)).toBe('On');
+		expect(fan(true, 50, null)).toBe('On');
+		expect(fan(true, 100, 1)).toBe('On');
+		expect(fan(true, 100, 100 / 7)).toBe('On');
+	});
+});

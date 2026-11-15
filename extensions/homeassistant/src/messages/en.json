@@ -263,5 +263,13 @@
 	"history_item_label": "Switched here lately",
 	"history_item_empty": "Nobody has switched this from FamilyOS yet.",
 	"load_failed": "Could not read the connection.",
-	"load_retry": "Try again"
+	"load_retry": "Try again",
+	"value_speed": "Speed {{level}}",
+	"speed_level": "Speed {{level}}",
+	"history_set_percentage": "{{who}} set {{name}} to speed {{level}}",
+	"speed_label": "Speed",
+	"power_label": "Power",
+	"set": "Set",
+	"ask_note": "Nothing changes until you tap Set.",
+	"sheet_done": "Done"
 }

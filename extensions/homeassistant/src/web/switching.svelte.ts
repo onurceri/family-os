@@ -1,6 +1,6 @@
 import type { AppContext } from '@famos/ui/app';
-import type { Operation, Values } from '../contract/index.js';
-import { POLL_MS, SETTLE_MS, valueKey } from './controls.js';
+import type { Values } from '../contract/index.js';
+import { POLL_MS, SETTLE_MS, type SwitchRequest, valueKey } from './controls.js';
 import { switchItem } from './data.js';
 import type { HomeAssistantT } from './i18n.js';
 
@@ -36,12 +36,12 @@ export function createSwitcher(options: {
 		if (label) app.toast(t('switch_failed', { name: label }));
 	}
 
-	async function run(item: Shown, operation: Operation) {
+	async function run(item: Shown, request: SwitchRequest) {
 		if (pending[item.id]) return;
 		pending[item.id] = true;
 		const before = valueKey(item.value);
 		try {
-			await switchItem(item.id, operation);
+			await switchItem(item.id, request);
 		} catch {
 			fail(item.id);
 			return;

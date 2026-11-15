@@ -6,7 +6,9 @@
 	 * `note`: a tile on the wall (48 px, `surface` + `shadow-lit`, title 600; `idle` recedes it for done or
 	 * receded rows); `outline`: the Coming up strip (1 px line).
 	 * A leading check (tasks, chores), a kind icon in a disc, or nothing; trailing actions or an
-	 * avatar on the right. With `href` the title is the link.
+	 * avatar on the right. With `href` the title is the link. A control (a switch, buttons) is the
+	 * last trailing item and the row's state goes on the meta line; with `onopen` a chevron follows
+	 * the meta.
 	 */
 	let {
 		title,
@@ -20,8 +22,10 @@
 		checkLabel,
 		busy = false,
 		oncheck,
+		onopen,
 		uncertain = false,
 		wrap = false,
+		tall = false,
 		leading,
 		trailing,
 		below,
@@ -41,10 +45,14 @@
 		checkLabel?: string;
 		busy?: boolean;
 		oncheck?: () => void;
+		/** The text opens something (a sheet): the title and meta are one button. */
+		onopen?: () => void;
 		/** Dashed `attention` underline under the meta ("check this"). */
 		uncertain?: boolean;
 		/** The meta wraps instead of being cut with "…" (a sentence that must be read whole). */
 		wrap?: boolean;
+		/** A `note` row with a control at its end: 56 px, so rows with and without one line up. */
+		tall?: boolean;
 		leading?: Snippet;
 		trailing?: Snippet;
 		/** Full-width content under the row (an editor). */
@@ -55,7 +63,7 @@
 		variant === 'needs'
 			? 'min-h-14 px-4 py-2'
 			: variant === 'note'
-				? `min-h-12 rounded-[var(--r-item)] px-1.5 py-1 ${idle ? 'bg-idle' : 'bg-surface shadow-lit'}`
+				? `${tall ? 'min-h-14' : 'min-h-12'} rounded-[var(--r-item)] px-1.5 py-1 ${idle ? 'bg-idle' : 'bg-surface shadow-lit'}`
 				: 'border-line min-h-14 rounded-xl border px-3 py-2',
 	);
 	const tone = $derived(
@@ -68,6 +76,45 @@
 					: 'text-ink-soft',
 	);
 </script>
+
+{#snippet text()}
+	{#if href}
+		<a
+			{href}
+			class="focus-visible:ring-ring truncate rounded-sm text-[0.9375rem] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
+				? 'line-through opacity-60'
+				: ''}">{title}</a
+		>
+	{:else}
+		<b
+			class="truncate text-[0.9375rem] leading-snug font-semibold {check
+				? 'line-through opacity-60'
+				: ''}">{title}</b
+		>
+	{/if}
+	{#if meta && onopen}
+		<!-- The chevron says the text opens something; it follows the meta, never the trailing control. -->
+		<small class="flex min-w-0 items-center gap-0.5 text-[0.8125rem] leading-snug {tone}">
+			<span class="truncate">{meta}</span>
+			<svg
+				class="text-ink-soft size-3.5 shrink-0 rtl:-scale-x-100"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+			>
+		</small>
+	{:else if meta}
+		<small
+			class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
+				? 'decoration-attention underline decoration-dashed underline-offset-4'
+				: ''}">{meta}</small
+		>
+	{/if}
+{/snippet}
 
 <div class="min-w-0">
 	<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 {frame}">
@@ -109,33 +156,26 @@
 		{:else if leading}
 			{@render leading()}
 		{/if}
-		<div
-			class="grid min-w-0 flex-1 basis-40 gap-0.5 {variant === 'note' && check === undefined
-				? 'pl-2.5'
-				: ''}"
-		>
-			{#if href}
-				<a
-					{href}
-					class="focus-visible:ring-ring truncate rounded-sm text-[0.9375rem] leading-snug font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none {check
-						? 'line-through opacity-60'
-						: ''}">{title}</a
-				>
-			{:else}
-				<b
-					class="truncate text-[0.9375rem] leading-snug font-semibold {check
-						? 'line-through opacity-60'
-						: ''}">{title}</b
-				>
-			{/if}
-			{#if meta}
-				<small
-					class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
-						? 'decoration-attention underline decoration-dashed underline-offset-4'
-						: ''}">{meta}</small
-				>
-			{/if}
-		</div>
+		{#if onopen}
+			<button
+				type="button"
+				onclick={onopen}
+				class="focus-visible:ring-ring -my-1 grid min-h-11 min-w-0 flex-1 basis-40 cursor-pointer content-center gap-0.5 rounded-md py-1 text-start focus-visible:ring-2 focus-visible:outline-none {variant ===
+					'note' && check === undefined
+					? 'pl-2.5'
+					: ''}"
+			>
+				{@render text()}
+			</button>
+		{:else}
+			<div
+				class="grid min-w-0 flex-1 basis-40 gap-0.5 {variant === 'note' && check === undefined
+					? 'pl-2.5'
+					: ''}"
+			>
+				{@render text()}
+			</div>
+		{/if}
 		{#if trailing}
 			<!-- Long labels (German "Zum Speiseplan hinzufügen" beside "Ablehnen") wrap to a second line
 			inside the row instead of running past its edge. -->

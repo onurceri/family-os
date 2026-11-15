@@ -256,6 +256,8 @@ describe('the switch job', () => {
 		['scene.evening', 'turn_on', '/api/services/scene/turn_on'],
 		['script.bedtime', 'turn_on', '/api/services/script/turn_on'],
 		['input_boolean.guests', 'turn_off', '/api/services/input_boolean/turn_off'],
+		['fan.winix_play_room', 'turn_on', '/api/services/fan/turn_on'],
+		['fan.winix_play_room', 'turn_off', '/api/services/fan/turn_off'],
 		['humidifier.dehumidifier', 'turn_on', '/api/services/humidifier/turn_on'],
 		['humidifier.dehumidifier', 'turn_off', '/api/services/humidifier/turn_off'],
 		['button.doorbell', 'press', '/api/services/button/press'],
@@ -279,6 +281,91 @@ describe('the switch job', () => {
 		expect(k.http.posted.map((p) => [p.url, p.json])).toEqual([
 			[`${BASE}${path}`, { entity_id: entityId }],
 		]);
+	});
+
+	describe('a fan speed', () => {
+		const flipSpeed = (id: string, extra: Record<string, unknown>, operation = 'set_percentage') =>
+			k.runner.invoke('homeassistant.switch', { id, operation, ...extra }, admin);
+		let fan: Item;
+		beforeEach(async () => {
+			fan = await add('fan.winix_play_room', 'Air purifier');
+			await allow(fan.id);
+		});
+
+		it('posts the percentage and nothing else', async () => {
+			k.http.servePost(`${BASE}/api/services/fan/set_percentage`, {});
+			await flipSpeed(fan.id, { percentage: 25, level: 1 });
+			await k.worker.drain();
+			expect(k.http.posted.map((p) => [p.url, p.json])).toEqual([
+				[
+					`${BASE}/api/services/fan/set_percentage`,
+					{ entity_id: 'fan.winix_play_room', percentage: 25 },
+				],
+			]);
+			const history = await sql<{ operation: string; level: number | null; ok: number }>`
+				select operation, level, ok from homeassistant_switches`.execute(k.ctx.db);
+			expect(history.rows).toEqual([{ operation: 'set_percentage', level: 1, ok: 1 }]);
+		});
+
+		it('keeps two speeds apart, and turn_on and turn_off carry only the entity', async () => {
+			k.http.servePost(`${BASE}/api/services/fan/set_percentage`, {});
+			k.http.servePost(`${BASE}/api/services/fan/turn_off`, {});
+			await flipSpeed(fan.id, { percentage: 25, level: 1 });
+			await flipSpeed(fan.id, { percentage: 50, level: 2 });
+			await k.worker.drain();
+			expect(k.http.posted.map((p) => p.json)).toEqual([
+				{ entity_id: 'fan.winix_play_room', percentage: 25 },
+				{ entity_id: 'fan.winix_play_room', percentage: 50 },
+			]);
+			await flipSpeed(fan.id, {}, 'turn_off');
+			await k.worker.drain();
+			expect(k.http.posted.at(-1)?.json).toEqual({ entity_id: 'fan.winix_play_room' });
+		});
+
+		it.each([
+			['none', {}],
+			['negative', { percentage: -1, level: 1 }],
+			['over 100', { percentage: 101, level: 1 }],
+			['not whole', { percentage: 12.5, level: 1 }],
+			['text', { percentage: '50', level: 1 }],
+			['no level', { percentage: 50 }],
+			['level 0', { percentage: 50, level: 0 }],
+		])('refuses a speed that is %s, and sends nothing', async (_name, extra) => {
+			await expect(flipSpeed(fan.id, extra)).rejects.toMatchObject({ code: 'bad_request' });
+			expect(await jobs()).toEqual([]);
+			expect(k.http.posted).toEqual([]);
+		});
+
+		it('refuses a percentage for any other operation, or for another domain', async () => {
+			await expect(flipSpeed(fan.id, { percentage: 50 }, 'turn_on')).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			await expect(
+				flipSpeed(fan.id, { percentage: 50, level: 2 }, 'turn_off'),
+			).rejects.toMatchObject({ code: 'bad_request' });
+			await expect(flipSpeed(light.id, { percentage: 50, level: 2 })).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			await expect(flipSpeed(light.id, { percentage: 50 }, 'turn_on')).rejects.toMatchObject({
+				code: 'bad_request',
+			});
+			// No other field passes the input.
+			await expect(
+				k.runner.invoke(
+					'homeassistant.switch',
+					{ id: fan.id, operation: 'turn_on', brightness: 255 },
+					admin,
+				),
+			).resolves.toBeTruthy();
+			await k.worker.drain();
+			expect(k.http.posted.every((p) => !('brightness' in (p.json as object)))).toBe(true);
+			expect(await jobs()).toHaveLength(1);
+		});
+
+		it('is not offered for a light', () => {
+			expect(operationsOf('light.kitchen')).not.toContain('set_percentage');
+			expect(operationsOf('fan.a')).toEqual(['turn_on', 'turn_off', 'set_percentage']);
+		});
 	});
 
 	it('marks the token refused on 401 and tells the person who switched', async () => {

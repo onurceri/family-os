@@ -11,8 +11,12 @@ import {
 	EntityIdSchema,
 	ItemIdSchema,
 	LabelSchema,
+	needsAttributes,
 	OperationSchema,
+	SpeedLevelSchema,
 	SwitchInputSchema,
+	serviceBody,
+	serviceDataRule,
 	serviceFor,
 } from '../contract/index.ts';
 import {
@@ -26,13 +30,14 @@ import { recordSwitch } from './history.ts';
 import { findItem, mayControl } from './items.ts';
 import { CALL_MAX_BYTES, CALL_TIMEOUT_MS } from './limits.ts';
 import { tables } from './store.ts';
-import { forgetValues } from './values.ts';
+import { forgetValues, request } from './values.ts';
 
 /**
  * Switching what the family allowed, through Home Assistant. The action only checks and enqueues
  * (a call to Home Assistant changes something outside, so it happens in a job, after the commit);
  * the job calls the one service the table names for the item's domain and the operation. The
- * address is built from the table, never from the input. Displays cannot run actions and the AI
+ * address is built from the table, never from the input, and the body holds the entity plus the
+ * one number `SERVICE_DATA` allows for that operation, nothing else. Displays cannot run actions and the AI
  * may neither run nor suggest this one, so only a person who holds the capability switches.
  */
 
@@ -42,6 +47,9 @@ const DOUBLE_TAP_MS = 3_000;
 const SwitchPayload = z.object({
 	id: ItemIdSchema,
 	operation: OperationSchema,
+	/** A fan's speed: checked again against the contract's table before it is sent. */
+	percentage: z.number().optional(),
+	level: SpeedLevelSchema.optional(),
 	/** Who asked, to tell only them when it could not be done. */
 	memberId: z.string().nullable(),
 	/** The item's name when it was asked for; the item may be gone by the time the job runs. */
@@ -64,6 +72,11 @@ export const switchItem = defineAction({
 			throw new FamosError('forbidden', 'This item may not be switched from FamilyOS');
 		if (!serviceFor(row.entity_id, input.operation))
 			throw new FamosError('bad_request', 'That cannot be done to this item');
+		if (!serviceBody(row.entity_id, input.operation, input.percentage))
+			throw new FamosError('bad_request', 'That needs a speed from 0 to 100 percent, or none');
+		// The level only words the history: it goes with a speed and with nothing else.
+		if ((input.level === undefined) === (input.operation === 'set_percentage'))
+			throw new FamosError('bad_request', 'A speed comes with its level, and nothing else does');
 		const memberId = selfOf(uow.actor);
 		const bucket = Math.floor(uow.clock.now() / DOUBLE_TAP_MS);
 		await uow.enqueue(
@@ -71,11 +84,15 @@ export const switchItem = defineAction({
 			{
 				id: row.id,
 				operation: input.operation,
+				percentage: input.percentage,
+				level: input.level,
 				memberId,
 				label: row.label,
 				entityId: row.entity_id,
 			},
-			{ dedupeKey: `homeassistant.switch:${row.id}:${input.operation}:${bucket}` },
+			{
+				dedupeKey: `homeassistant.switch:${row.id}:${input.operation}:${input.percentage ?? ''}:${bucket}`,
+			},
 		);
 		return { ok: true as const };
 	},
@@ -94,7 +111,7 @@ export const switchJob = defineJob({
 	timeoutMs: 2 * CALL_TIMEOUT_MS,
 	// One more try when Home Assistant did not answer; never more, a switch is wanted now.
 	maxAttempts: 2,
-	async handle(ctx, { id, operation, memberId, label, entityId }, run) {
+	async handle(ctx, { id, operation, percentage, level, memberId, label, entityId }, run) {
 		const row = await findRow(ctx, id);
 		const record = async (ok: boolean) => {
 			const entity = row?.entity_id ?? entityId;
@@ -106,6 +123,7 @@ export const switchJob = defineJob({
 				entityId: entity,
 				label: name,
 				operation,
+				level: level ?? null,
 				memberId,
 				ok,
 			});
@@ -119,14 +137,39 @@ export const switchJob = defineJob({
 		const service = row && mayControl(row) ? serviceFor(row.entity_id, operation) : null;
 		const connection = await load(ctx.db);
 		const token = connection ? ctx.secrets.open(connection.sealed_token) : null;
-		if (!row || !service || !connection || token === null) {
+		// A rule that depends on the entity's own attributes (its limits or options) reads them now.
+		const rule = row ? serviceDataRule(row.entity_id, operation) : null;
+		let attributes: Record<string, unknown> | undefined;
+		if (row && rule && needsAttributes(rule) && connection && token !== null) {
+			try {
+				const read = await ctx.http.get(
+					request(
+						connection.base_url,
+						token,
+						`/api/states/${row.entity_id}`,
+						CALL_TIMEOUT_MS,
+						CALL_MAX_BYTES,
+					),
+				);
+				const parsed: unknown = read.status === 200 ? JSON.parse(read.text) : null;
+				const found = (parsed as { attributes?: unknown } | null)?.attributes;
+				attributes =
+					typeof found === 'object' && found !== null && !Array.isArray(found)
+						? (found as Record<string, unknown>)
+						: {};
+			} catch {
+				attributes = {};
+			}
+		}
+		const body = row ? serviceBody(row.entity_id, operation, percentage, attributes) : null;
+		if (!row || !service || !body || !connection || token === null) {
 			ctx.logger.info({ status: 'not_sent' }, 'home assistant switch');
 			return failed();
 		}
 		try {
 			await ctx.http.post({
 				url: `${connection.base_url}/api/services/${service.domain}/${service.service}`,
-				json: { entity_id: row.entity_id },
+				json: body,
 				allowLocal: true,
 				headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
 				timeoutMs: CALL_TIMEOUT_MS,

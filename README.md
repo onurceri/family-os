@@ -122,7 +122,7 @@ as its browser is Chrome 106 or newer.
 - [x] AI apps sign in with OAuth instead of a pasted key, for the person who approves them
 - **Home Assistant**
   - [x] Sensors and who is home on Today and the wall display, and switching the devices you choose:
-        lights, switches, fans, humidifiers, covers, valves, locks, buttons, scenes and scripts, robot
+        lights, switches, fans (with their speeds), humidifiers, covers, valves, locks, buttons, scenes and scripts, robot
         vacuums (start, pause, send home) and media players (play, pause, on and off)
   - [x] FamilyOS notifications in the Home Assistant app
   - [x] [Integration](https://github.com/onurceri/familyos-homeassistant) (HACS custom repository): the

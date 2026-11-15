@@ -3,7 +3,7 @@ import { ENTITY_ID_PATTERN, STATE_DOMAINS, type Value } from '../contract/index.
 /**
  * Reading one entity of Home Assistant. An entity's answer holds much more than FamilyOS needs
  * (coordinates, accuracy, who a device belongs to), so the only way in is `pickState`, which keeps
- * seven fields and nothing else, and refuses persons, device trackers and zones.
+ * nine fields and nothing else, and refuses persons, device trackers and zones.
  */
 
 /** Home Assistant's own words are kept this short: they are shown, nothing more. */
@@ -18,9 +18,16 @@ export interface PickedState {
 	name: string | null;
 	/** A thermostat's current temperature. */
 	temperature: number | null;
+	/** A fan's speed in percent. */
+	percentage: number | null;
+	/** A fan's step: 100 divided by its speed count. */
+	percentageStep: number | null;
 	/** When the state last changed, in epoch milliseconds. */
 	changedAt: number | null;
 }
+
+const finite = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isFinite(value) ? value : null;
 
 const text = (value: unknown, max = MAX_TEXT): string | null =>
 	typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
@@ -48,8 +55,9 @@ export function pickState(body: unknown): PickedState | null {
 		unit: text(attributes.unit_of_measurement, 20),
 		deviceClass: text(attributes.device_class, 40),
 		name: text(attributes.friendly_name),
-		temperature:
-			typeof temperature === 'number' && Number.isFinite(temperature) ? temperature : null,
+		temperature: finite(temperature),
+		percentage: finite(attributes.percentage),
+		percentageStep: finite(attributes.percentage_step),
 		changedAt: Number.isFinite(changed) ? changed : null,
 	};
 }
@@ -97,7 +105,16 @@ export function toValue(state: PickedState): Value {
 			temperature: state.temperature,
 		};
 	// A binary sensor, a light, a switch, a fan: anything that is on or off.
-	if (word === 'on' || word === 'off')
-		return { kind: 'binary', on: word === 'on', deviceClass: state.deviceClass };
+	if (word === 'on' || word === 'off') {
+		const on = word === 'on';
+		if (domain === 'fan')
+			return {
+				kind: 'binary',
+				on,
+				deviceClass: state.deviceClass,
+				speed: { percentage: state.percentage, step: state.percentageStep },
+			};
+		return { kind: 'binary', on, deviceClass: state.deviceClass };
+	}
 	return { kind: 'text', text: word };
 }

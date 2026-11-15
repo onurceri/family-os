@@ -25,6 +25,7 @@ export async function recordSwitch(
 		entityId: string;
 		label: string;
 		operation: string;
+		level: number | null;
 		memberId: string | null;
 		ok: boolean;
 	},
@@ -40,6 +41,7 @@ export async function recordSwitch(
 			entity_id: entry.entityId,
 			label: entry.label,
 			operation: entry.operation,
+			level: entry.level,
 			member_id: entry.memberId,
 			ok: entry.ok ? 1 : 0,
 			at: now,
@@ -76,6 +78,7 @@ export const getSwitchHistory = defineRoute({
 					entityId: row.entity_id as SwitchEntry['entityId'],
 					label: row.label,
 					operation: row.operation as SwitchEntry['operation'],
+					level: row.level,
 					// A family display shows no names unless it was granted them.
 					memberId: actor.kind === 'display' && !actor.showNames ? null : row.member_id,
 					ok: row.ok === 1,

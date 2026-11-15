@@ -263,5 +263,13 @@
 	"history_item_label": "Burada son açıp kapatılanlar",
 	"history_item_empty": "Bunu FamilyOS'tan henüz kimse açıp kapatmadı.",
 	"load_failed": "Bağlantı okunamadı.",
-	"load_retry": "Tekrar dene"
+	"load_retry": "Tekrar dene",
+	"value_speed": "Hız {{level}}",
+	"speed_level": "Hız {{level}}",
+	"history_set_percentage": "{{who}}, {{name}} hızını {{level}} olarak ayarladı",
+	"speed_label": "Hız",
+	"power_label": "Güç",
+	"set": "Uygula",
+	"ask_note": "Uygula'ya dokunana kadar hiçbir şey değişmez.",
+	"sheet_done": "Bitti"
 }

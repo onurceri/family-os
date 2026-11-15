@@ -59,6 +59,7 @@ describe('the switch history', () => {
 				entityId: 'light.living_room',
 				label: 'Living room light',
 				operation: 'turn_on',
+				level: null,
 				memberId: admin.memberId,
 				ok: true,
 				at: k.clock.now(),
@@ -200,6 +201,15 @@ describe('saying a switch', () => {
 		expect(say(entry({ ...garage, operation: 'open_cover' })).title).toBe('Tom opened Garage');
 		expect(say(entry({ ...garage, operation: 'close_cover' })).title).toBe('Tom closed Garage');
 		expect(say(entry({ ...garage, operation: 'stop_cover' })).title).toBe('Tom stopped Garage');
+	});
+
+	it('says the speed a fan was set to', () => {
+		const fan = { entityId: 'fan.winix_play_room' as const, label: 'Air purifier' };
+		expect(say(entry({ ...fan, operation: 'set_percentage', level: 2 })).title).toBe(
+			'Tom set Air purifier to speed 2',
+		);
+		expect(say(entry({ ...fan, operation: 'turn_off' })).title).toBe('Tom turned off Air purifier');
+		expect(historyKey('fan.a', 'set_percentage')).toBe('history_set_percentage');
 	});
 
 	it('says buttons, valves, vacuums and media players', () => {

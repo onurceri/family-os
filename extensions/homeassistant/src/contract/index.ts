@@ -96,12 +96,12 @@ export const ItemIdSchema = z.string().min(1).max(100);
  * else in Home Assistant can be reached through FamilyOS. Lights, switches, fans, humidifiers and
  * helpers are on or off; covers and valves open, close and stop; locks lock and unlock; scenes and
  * scripts run; buttons are pressed; vacuums start, pause and go home; media players play, pause and
- * turn on or off.
+ * turn on or off; fans also take a speed.
  */
 export const CONTROLS = {
 	light: ['turn_on', 'turn_off'],
 	switch: ['turn_on', 'turn_off'],
-	fan: ['turn_on', 'turn_off'],
+	fan: ['turn_on', 'turn_off', 'set_percentage'],
 	humidifier: ['turn_on', 'turn_off'],
 	input_boolean: ['turn_on', 'turn_off'],
 	cover: ['open_cover', 'close_cover', 'stop_cover'],
@@ -133,6 +133,7 @@ export const OPERATIONS = [
 	'media_play',
 	'media_pause',
 	'press',
+	'set_percentage',
 ] as const satisfies readonly Operation[];
 export const OperationSchema = z.enum(OPERATIONS);
 
@@ -191,7 +192,123 @@ export const SetItemControlInputSchema = z.object({
 	control: z.boolean(),
 	confirm: z.boolean(),
 });
-export const SwitchInputSchema = z.object({ id: ItemIdSchema, operation: OperationSchema });
+
+/** A bound of a number: fixed, or named by an attribute of the entity read when it is sent. */
+type Bound = number | { attribute: string };
+
+/**
+ * The one extra field a service call may carry, and what its value must be. Either a number
+ * (whole or not, between two bounds that are fixed or read from named attributes of the entity,
+ * on the grid of a step attribute when given) or one of the options the entity itself lists in an
+ * attribute (such as `preset_modes`).
+ */
+export type ServiceDataRule =
+	| {
+			kind: 'number';
+			field: string;
+			integer: boolean;
+			min: Bound;
+			max: Bound;
+			step?: { attribute: string };
+	  }
+	| { kind: 'option'; field: string; options: { attribute: string } };
+
+/**
+ * The only service data FamilyOS ever sends: per `<domain>.<operation>`, exactly one field with
+ * the rule its value must meet. A call's body is its entity plus what this table allows for the
+ * operation, built by `serviceBody`; an operation not listed here carries nothing, and no other
+ * field passes. Each entry widens what FamilyOS can do in the home, so one is added deliberately,
+ * with its own tests, never as a side effect of something else.
+ */
+export const SERVICE_DATA: Readonly<Record<string, ServiceDataRule>> = {
+	'fan.set_percentage': { kind: 'number', field: 'percentage', integer: true, min: 0, max: 100 },
+};
+
+/** The rule for an operation on an entity, or null when it takes no data. */
+export function serviceDataRule(entityId: string, operation: string): ServiceDataRule | null {
+	const key = `${domainOf(entityId)}.${operation}`;
+	return Object.hasOwn(SERVICE_DATA, key) ? (SERVICE_DATA[key] ?? null) : null;
+}
+
+/** Whether the rule needs the entity's live attributes to be checked. */
+export function needsAttributes(rule: ServiceDataRule): boolean {
+	if (rule.kind === 'option') return true;
+	return typeof rule.min === 'object' || typeof rule.max === 'object' || rule.step !== undefined;
+}
+
+const finiteNumber = (value: unknown): number | null =>
+	typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+const boundOf = (value: Bound, attributes: Record<string, unknown>): number | null =>
+	typeof value === 'number' ? value : finiteNumber(attributes[value.attribute]);
+
+/**
+ * The body of a service call under one rule: the entity and the rule's one field. Null refuses a
+ * value the rule does not allow. `attributes` are the entity's live attributes; leave them out
+ * where they have not been read (the action's early check): what depends on them is then left to
+ * the job, which reads them and refuses when an attribute is missing.
+ */
+export function bodyUnderRule(
+	rule: ServiceDataRule,
+	entityId: string,
+	value: unknown,
+	attributes?: Record<string, unknown>,
+): Record<string, string | number> | null {
+	const body = (v: string | number) => ({ entity_id: entityId, [rule.field]: v });
+	if (rule.kind === 'option') {
+		if (typeof value !== 'string' || value === '') return null;
+		if (!attributes) return body(value);
+		const list = attributes[rule.options.attribute];
+		return Array.isArray(list) && list.includes(value) ? body(value) : null;
+	}
+	if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+	if (rule.integer && !Number.isInteger(value)) return null;
+	if (typeof rule.min === 'number' && value < rule.min) return null;
+	if (typeof rule.max === 'number' && value > rule.max) return null;
+	if (attributes) {
+		const min = boundOf(rule.min, attributes);
+		const max = boundOf(rule.max, attributes);
+		if (min === null || max === null || value < min || value > max) return null;
+		if (rule.step) {
+			const step = finiteNumber(attributes[rule.step.attribute]);
+			if (step === null || step <= 0) return null;
+			const steps = (value - min) / step;
+			if (Math.abs(steps - Math.round(steps)) > 1e-6) return null;
+		}
+	}
+	return body(value);
+}
+
+/**
+ * The body of a service call: the entity, and for an operation in `SERVICE_DATA` its one field.
+ * Null refuses: a value for an operation that takes none, none for one that needs it, or one the
+ * rule does not allow (see `bodyUnderRule`).
+ */
+export function serviceBody(
+	entityId: string,
+	operation: string,
+	value: unknown,
+	attributes?: Record<string, unknown>,
+): Record<string, string | number> | null {
+	const rule = serviceDataRule(entityId, operation);
+	if (!rule) return value === undefined || value === null ? { entity_id: entityId } : null;
+	return bodyUnderRule(rule, entityId, value, attributes);
+}
+
+/** Fans with more speeds than this stay on or off: a choice of a dozen speeds is no quick change. */
+export const MAX_SPEEDS = 6;
+
+/** The speed (1, 2, 3 …) a request names, for the history's words; never sent to Home Assistant. */
+export const SpeedLevelSchema = z.number().int().min(1).max(MAX_SPEEDS);
+
+export const SwitchInputSchema = z.object({
+	id: ItemIdSchema,
+	operation: OperationSchema,
+	/** A fan's speed in percent; only for `set_percentage`, where it is required. */
+	percentage: z.number().int().min(0).max(100).optional(),
+	/** The same speed as the fan's own step (1 … 6), for the history; only for `set_percentage`. */
+	level: SpeedLevelSchema.optional(),
+});
 
 /** The most switches the history shows at once. */
 export const MAX_HISTORY = 20;
@@ -204,6 +321,8 @@ export const SwitchEntrySchema = z.object({
 	/** The family's name for the item when it was switched. */
 	label: LabelSchema,
 	operation: OperationSchema,
+	/** A fan's speed (1, 2, 3 …) when the switch set one. */
+	level: SpeedLevelSchema.nullable().optional(),
 	/** Who asked; null for a display, which is never told who, or for no one. */
 	memberId: z.string().nullable(),
 	/** Home Assistant took the order; false when it could not be done. */
@@ -247,7 +366,13 @@ export const ValueSchema = z.discriminatedUnion('kind', [
 	/** A scene or a button: when it last ran, or null when it never has. */
 	z.object({ kind: z.literal('lastRun'), at: z.number().int().nullable() }),
 	z.object({ kind: z.literal('number'), value: z.number(), unit: z.string().nullable() }),
-	z.object({ kind: z.literal('binary'), on: z.boolean(), deviceClass: z.string().nullable() }),
+	z.object({
+		kind: z.literal('binary'),
+		on: z.boolean(),
+		deviceClass: z.string().nullable(),
+		/** A fan's speed as Home Assistant reports it; only fans have it. */
+		speed: z.object({ percentage: z.number().nullable(), step: z.number().nullable() }).optional(),
+	}),
 	/** A lock, a cover, a valve, a vacuum, a media player or a thermostat: Home Assistant's state word, and a temperature if it has one. */
 	z.object({
 		kind: z.literal('state'),
@@ -409,3 +534,33 @@ export const NotifyTargetsSchema = z.object({
 export type NotifyTargets = z.infer<typeof NotifyTargetsSchema>;
 
 export const peopleChangedPayload = z.object({});
+
+/** What a fan's speed means: how many speeds it has and which one it is on now. */
+export interface FanSpeeds {
+	speeds: number;
+	/** 0 when off; null when it is on and Home Assistant does not say how fast. */
+	current: number | null;
+}
+
+/**
+ * The speeds of a fan from what Home Assistant reports (`percentage_step` is 100 divided by the
+ * speed count), or null when it has none to pick from: no step, one speed, or more than
+ * `MAX_SPEEDS`.
+ */
+export function fanSpeeds(value: Value): FanSpeeds | null {
+	if (value.kind !== 'binary' || !value.speed) return null;
+	const { percentage, step } = value.speed;
+	if (step === null || !(step > 0)) return null;
+	const speeds = Math.round(100 / step);
+	if (speeds < 2 || speeds > MAX_SPEEDS) return null;
+	if (!value.on) return { speeds, current: 0 };
+	if (percentage === null) return { speeds, current: null };
+	return { speeds, current: Math.min(speeds, Math.max(1, Math.round(percentage / step))) };
+}
+
+/**
+ * The percentage that puts a fan with `speeds` speeds on `level`. Home Assistant rounds a
+ * percentage up to the next speed, so this rounds down: 66 is speed 2 of 3, 67 would be speed 3.
+ */
+export const percentageForLevel = (level: number, speeds: number) =>
+	Math.floor((level * 100) / speeds);

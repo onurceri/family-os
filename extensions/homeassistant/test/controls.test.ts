@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Value } from '../src/contract/index.ts';
 import en from '../src/messages/en.json' with { type: 'json' };
-import { answerKey, askKey, controlsFor } from '../src/web/controls.ts';
+import {
+	answerKey,
+	askKey,
+	controlsFor,
+	detailFor,
+	levelRequest,
+	stagedRequest,
+} from '../src/web/controls.ts';
 
 const binary = (on: boolean): Value => ({ kind: 'binary', on, deviceClass: null });
 const word = (
@@ -130,5 +137,100 @@ describe('the controls of a row', () => {
 			expect(keys).toContain(askKey(entityId, operation));
 			expect(keys).toContain(answerKey(entityId, operation));
 		}
+	});
+});
+
+describe('a fan with speeds', () => {
+	const fan = (on: boolean, percentage: number | null, step: number | null): Value => ({
+		kind: 'binary',
+		on,
+		deviceClass: null,
+		speed: { percentage, step },
+	});
+	const detail = (v: Value) => detailFor('fan.winix_play_room', v);
+
+	it('keeps the switch on its row, and the speeds for the sheet', () => {
+		expect(controlsFor('fan.winix_play_room', fan(true, 25, 25))).toEqual([
+			{ kind: 'switch', on: true, operation: 'turn_off' },
+		]);
+		expect(controlsFor('fan.winix_play_room', fan(false, 0, 25))).toEqual([
+			{ kind: 'switch', on: false, operation: 'turn_on' },
+		]);
+		expect(detail(fan(true, 25, 25))).toEqual({ kind: 'speed', speeds: 4, current: 1 });
+	});
+
+	it('says the speed it is on, 0 when off, null when it does not say', () => {
+		expect(detail(fan(true, 50, 25))).toEqual({ kind: 'speed', speeds: 4, current: 2 });
+		expect(detail(fan(true, 100, 25))).toEqual({ kind: 'speed', speeds: 4, current: 4 });
+		expect(detail(fan(false, 0, 25))).toEqual({ kind: 'speed', speeds: 4, current: 0 });
+		// Between steps rounds to the nearest; never below 1 while on, never above the last.
+		expect(detail(fan(true, 40, 25))).toMatchObject({ current: 2 });
+		expect(detail(fan(true, 1, 25))).toMatchObject({ current: 1 });
+		expect(detail(fan(true, 120, 25))).toMatchObject({ current: 4 });
+		expect(detail(fan(true, null, 25))).toMatchObject({ speeds: 4, current: null });
+		expect(detail(fan(true, 33, 33.33))).toMatchObject({ speeds: 3, current: 1 });
+	});
+
+	it('has no speeds to pick when they are not known, one, or too many', () => {
+		for (const v of [fan(true, 50, null), fan(true, 100, 100), fan(true, 1, 1), fan(false, 0, 1)])
+			expect(detail(v)).toBeNull();
+		expect(detail(binary(false))).toBeNull();
+		expect(detail(fan(true, 100, 100 / 6))).toMatchObject({ speeds: 6 });
+		expect(detail(fan(true, 100, 100 / 7))).toBeNull();
+		// Only a fan has speeds.
+		expect(detailFor('light.kitchen', fan(true, 25, 25))).toBeNull();
+	});
+
+	it('asks for the percentage Home Assistant rounds to that speed', () => {
+		expect(levelRequest(2, 4)).toEqual({ operation: 'set_percentage', percentage: 50, level: 2 });
+		// Home Assistant rounds up to the next speed: 66, not 67, is speed 2 of 3.
+		expect(levelRequest(2, 3)).toEqual({ operation: 'set_percentage', percentage: 66, level: 2 });
+		expect(levelRequest(3, 3)).toMatchObject({ percentage: 100 });
+		for (const speeds of [2, 3, 4, 5, 6])
+			for (let level = 1; level <= speeds; level++) {
+				const percentage = levelRequest(level, speeds).percentage ?? 0;
+				expect(Math.ceil((speeds * percentage) / 100)).toBe(level);
+			}
+	});
+
+	it('sends what a staged power and speed ask for, never more than needed', () => {
+		const stage = (
+			on: boolean,
+			current: number | null,
+			power: boolean | null,
+			level: number | null,
+		) => stagedRequest({ on, current, power, level, speeds: 4 });
+		// Nothing changed.
+		expect(stage(true, 2, null, null)).toBeNull();
+		expect(stage(true, 2, true, 2)).toBeNull();
+		expect(stage(false, 0, false, null)).toBeNull();
+		// Power alone.
+		expect(stage(true, 2, false, null)).toEqual({ operation: 'turn_off' });
+		expect(stage(false, 0, true, null)).toEqual({ operation: 'turn_on' });
+		// A new speed on a fan that is on, or that is off (the percentage turns it on).
+		expect(stage(true, 2, null, 3)).toEqual(levelRequest(3, 4));
+		expect(stage(false, 0, null, 2)).toEqual(levelRequest(2, 4));
+		expect(stage(false, 0, true, 2)).toEqual(levelRequest(2, 4));
+		// On with no known speed: any pick is a change.
+		expect(stage(true, null, null, 2)).toEqual(levelRequest(2, 4));
+		// Turned off wins over a speed picked before: only turn it off, or nothing if already off.
+		expect(stage(true, 2, false, 3)).toEqual({ operation: 'turn_off' });
+		expect(stage(false, 0, false, 3)).toBeNull();
+		// Power on again with the speed it already has.
+		expect(stage(false, 0, true, 2)).toEqual(levelRequest(2, 4));
+	});
+
+	it('has words for its sheet', () => {
+		const keys = new Set(Object.keys(en));
+		for (const key of [
+			'speed_label',
+			'speed_level',
+			'power_label',
+			'set',
+			'ask_note',
+			'value_speed',
+			'sheet_done',
+		])
+			expect(keys).toContain(key);
 	});
 });
