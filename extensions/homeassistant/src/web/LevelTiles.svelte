@@ -64,7 +64,7 @@
 			data-level={level}
 			{disabled}
 			onclick={() => onpick(level)}
-			class="bg-idle text-ink-soft aria-checked:bg-surface aria-checked:text-ink aria-checked:shadow-lit focus-visible:ring-info h-12 cursor-pointer rounded-[var(--r-ctl)] text-[0.9375rem] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:opacity-45 motion-reduce:transition-none"
+			class="bg-idle text-ink-soft aria-checked:bg-surface aria-checked:text-ink aria-checked:shadow-lit aria-checked:ring-2 aria-checked:ring-ink focus-visible:ring-info h-12 cursor-pointer rounded-[var(--r-ctl)] text-[0.9375rem] font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:opacity-45 motion-reduce:transition-none"
 			>{level}</button
 		>
 	{/each}
