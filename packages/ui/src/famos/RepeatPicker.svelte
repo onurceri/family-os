@@ -9,6 +9,10 @@
 		monthly: string;
 		custom: string;
 		until: string;
+		/** "Every", before the interval field; without it (or without `interval`) there is no field. */
+		every?: string;
+		/** The unit after the interval field ("days"), for the count written in it. */
+		unit?: (freq: 'daily' | 'weekly' | 'monthly', count: number) => string;
 		/** The line under the weekly days naming the first time, given the date already written out. */
 		firstTime?: (date: string) => string;
 	}
@@ -32,6 +36,7 @@
 		preset = $bindable(),
 		byDay = $bindable(),
 		until = $bindable(),
+		interval = $bindable(),
 		days,
 		labels,
 		min,
@@ -45,6 +50,8 @@
 		preset: RepeatPreset;
 		byDay: string[];
 		until: string;
+		/** Repeat every this many days, weeks or months; leave out for no interval field. */
+		interval?: number;
 		/** Weekdays in display order with localized short names. */
 		days: readonly { code: string; label: string }[];
 		labels: RepeatLabels;
@@ -66,6 +73,9 @@
 		error?: string | undefined;
 		untilError?: string | undefined;
 	} = $props();
+
+	// The recurrence schema's limits (`@famos/time`), kept here so the shared SDK surface stays as is.
+	const MAX_INTERVAL = { daily: 365, weekly: 52, monthly: 12 } as const;
 
 	const presets = $derived([
 		{ value: 'none', label: labels.none },
@@ -151,6 +161,21 @@
 		{/if}
 	{:else}
 		<FieldError for="{idPrefix}-repeat" {error} />
+	{/if}
+	{#if interval !== undefined && labels.every && (preset === 'daily' || preset === 'weekly' || preset === 'monthly')}
+		<div class="flex items-center gap-2 text-sm">
+			<Label for="{idPrefix}-interval" class="text-ink-soft font-normal">{labels.every}</Label>
+			<Input
+				id="{idPrefix}-interval"
+				type="number"
+				min={1}
+				max={MAX_INTERVAL[preset]}
+				bind:value={interval}
+				class="w-20"
+				data-testid="{idPrefix}-interval"
+			/>
+			<span class="text-ink-soft">{labels.unit?.(preset, interval ?? 1)}</span>
+		</div>
 	{/if}
 	{#if preset !== 'none' && preset !== 'custom'}
 		<div class="grid max-w-56 gap-1.5">

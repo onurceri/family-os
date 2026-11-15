@@ -10,7 +10,7 @@
 |---|---|
 | **Chore**, **Notes** | Notes optional. |
 | **First day it is due** | First date. |
-| **Repeats** | *Once*, *Every day*, *Every week* (days you pick), *Every month*; optional **Until**. |
+| **Repeats** | *Once*, *Every day*, *Every week* (days you pick), *Every month*; **Every** sets how many days, weeks or months apart (*Every 3 days*); optional **Until**. |
 | **Who takes turns** | Tap people; with several, reorder them (first is up first). Empty = anyone. |
 | **How the turn moves on** | With several people (starts at *Take turns*; one person is always that person). |
 

@@ -92,7 +92,15 @@ export function weekdayNames(
 }
 
 type RecurrenceT = (
-	key: 'repeat_daily' | 'repeat_weekly' | 'repeat_weekly_on' | 'repeat_monthly' | 'repeat_until',
+	key:
+		| 'repeat_daily'
+		| 'repeat_weekly'
+		| 'repeat_weekly_on'
+		| 'repeat_monthly'
+		| 'repeat_until'
+		| 'repeat_every_days'
+		| 'repeat_every_weeks'
+		| 'repeat_every_months',
 	options?: Record<string, unknown>,
 ) => string;
 
@@ -115,21 +123,27 @@ export function describeRecurrence(
 		rec.byDay[0] === WEEKDAYS[Temporal.PlainDate.from(startDate).dayOfWeek - 1]
 			? rec.byDay[0]
 			: undefined;
+	const count = rec.interval;
 	let text =
 		rec.freq === 'daily'
-			? t('repeat_daily')
+			? count > 1
+				? t('repeat_every_days', { count })
+				: t('repeat_daily')
 			: rec.freq === 'monthly'
-				? t('repeat_monthly')
+				? count > 1
+					? t('repeat_every_months', { count })
+					: t('repeat_monthly')
 				: ownDay
 					? t('repeat_weekly_on', { day: weekdayNames(locale, 'long')[ownDay] })
-					: t('repeat_weekly');
+					: count > 1
+						? t('repeat_every_weeks', { count })
+						: t('repeat_weekly');
 	if (rec.freq === 'weekly' && !ownDay) {
 		const names = weekdayNames(locale);
 		const order = orderedWeekdays(weekStart);
 		const days = [...rec.byDay].sort((a, b) => order.indexOf(a) - order.indexOf(b));
 		text += ` · ${days.map((d) => names[d]).join(', ')}`;
 	}
-	if (rec.interval > 1) text = `${text} (×${rec.interval})`;
 	if (rec.until)
 		text += ` · ${t('repeat_until', { date: formatDate(rec.until, locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}`;
 	return text;

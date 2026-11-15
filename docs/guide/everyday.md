@@ -150,7 +150,7 @@ Tap an event to change it or **Delete** it (then **Tap again to delete**). Subsc
 
 ### Repeating events
 
-**Repeats**: **Does not repeat**, **Every day**, **Every week** (pick days), **Every month**; **Until** ends it. A change changes the whole series. To remove:
+**Repeats**: **Does not repeat**, **Every day**, **Every week** (pick days), **Every month**; **Every** sets how many days, weeks or months apart (*Every 3 days*, *Every 2 weeks*); **Until** ends it. A change changes the whole series. To remove:
 
 - **Delete only this one** (then **Tap again to skip this one**) skips that day.
 - **Delete whole series** (then **Tap again to delete all**) also removes days moved out with **Only this one**; **Undo** restores them.

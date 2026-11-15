@@ -44,6 +44,13 @@
 		monthly: t('repeat_monthly'),
 		custom: t('repeat_custom'),
 		until: t('field_until'),
+		every: t('repeat_every'),
+		unit: (freq: 'daily' | 'weekly' | 'monthly', count: number) =>
+			freq === 'daily'
+				? t('unit_days', { count })
+				: freq === 'weekly'
+					? t('unit_weeks', { count })
+					: t('unit_months', { count }),
 		firstTime: (date: string) => t('repeat_next', { date }),
 	});
 	const id = (name: string) => `${idPrefix}-${name}`;
@@ -99,6 +106,7 @@
 				bind:preset={value.repeat}
 				bind:byDay={value.byDay}
 				bind:until={value.until}
+				bind:interval={value.interval}
 				{days}
 				labels={repeatLabels}
 				min={value.startDate || undefined}

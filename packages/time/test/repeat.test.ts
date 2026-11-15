@@ -86,7 +86,11 @@ describe('repeatRule', () => {
 
 describe('describeRecurrence', () => {
 	const t = (key: string, options?: Record<string, unknown>) =>
-		key === 'repeat_weekly_on' ? `Every ${options?.day}` : key;
+		key === 'repeat_weekly_on'
+			? `Every ${options?.day}`
+			: options?.count
+				? `${key}:${options.count}`
+				: key;
 	const weekly = (byDay: ('MO' | 'TH' | 'SA')[], interval = 1) =>
 		({ freq: 'weekly', interval, byDay }) as Parameters<typeof describeRecurrence>[0];
 
@@ -104,8 +108,16 @@ describe('describeRecurrence', () => {
 			'repeat_weekly · Thu, Sat',
 		);
 		expect(describeRecurrence(weekly(['SA'], 2), t, 'en', 1, '2026-10-17')).toBe(
-			'repeat_weekly · Sat (×2)',
+			'repeat_every_weeks:2 · Sat',
 		);
+	});
+
+	it('names the interval of a daily or monthly repeat', () => {
+		const rule = (freq: 'daily' | 'monthly', interval: number) =>
+			({ freq, interval }) as Parameters<typeof describeRecurrence>[0];
+		expect(describeRecurrence(rule('daily', 1), t, 'en')).toBe('repeat_daily');
+		expect(describeRecurrence(rule('daily', 3), t, 'en')).toBe('repeat_every_days:3');
+		expect(describeRecurrence(rule('monthly', 2), t, 'en')).toBe('repeat_every_months:2');
 	});
 });
 
