@@ -1,3 +1,4 @@
+import { describeRecurrence } from '@famos/time';
 import { changed, type DraftPresenter, draftDate, removalPresenter } from '@famos/ui/slots';
 import { SquareCheckBig, Users } from '@lucide/svelte';
 import type { CreateChoreInput } from '../contract/index.js';
@@ -21,7 +22,13 @@ export const createChorePresenter: DraftPresenter<CreateChoreInput> = {
 			? [
 					{
 						label: c.t('chores:draft_repeat'),
-						value: c.t(`chores:repeat_${input.recurrence.freq}`),
+						value: describeRecurrence(
+							{ interval: 1, ...input.recurrence } as Parameters<typeof describeRecurrence>[0],
+							(key, options) => c.t(`chores:${key}`, options),
+							c.dateLocale,
+							c.weekStart,
+							input.startDate,
+						),
 					},
 				]
 			: []),

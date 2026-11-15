@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatDate, todayIn } from '@famos/time';
+	import { describeRecurrence, formatDate, todayIn } from '@famos/time';
 	import { Button } from '@famos/ui/button';
 	import { useNow } from '@famos/ui/now';
 	import {
@@ -332,7 +332,15 @@
 					},
 					{
 						label: t('field_repeat'),
-						value: chore.recurrence ? t(`repeat_${chore.recurrence.freq}`) : t('repeat_none'),
+						value: chore.recurrence
+							? describeRecurrence(
+									chore.recurrence,
+									t,
+									app.dateLocale(),
+									app.weekStart(),
+									chore.startDate,
+								)
+							: t('repeat_none'),
 					},
 					{
 						label: t('field_people'),
