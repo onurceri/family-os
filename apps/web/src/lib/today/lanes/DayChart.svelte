@@ -158,7 +158,12 @@
 			{#if lane.kind === 'others'}
 				<span class="disc" aria-hidden="true">+{lane.people}</span>
 			{:else}
-				<Avatar name={lane.name} color={lane.color || 'var(--ink-soft)'} size={32} />
+				<Avatar
+					name={lane.name}
+					color={lane.color || 'var(--ink-soft)'}
+					photo={lane.photoUrl}
+					size={32}
+				/>
 			{/if}
 			<span class="t"
 				><span class="nm"

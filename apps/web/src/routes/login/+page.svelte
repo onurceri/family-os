@@ -2,6 +2,7 @@
 	import { Delete } from '@lucide/svelte';
 	import { Button } from '@famos/ui/button';
 	import { Avatar } from '@famos/ui/famos';
+	import { profilePhotoUrl } from '#lib/member-photo.js';
 	import { Input } from '@famos/ui/input';
 	import { Label } from '@famos/ui/label';
 	import { api } from '#lib/api.js';
@@ -9,7 +10,7 @@
 	import { getLanguages, getLocale, setLocale, t } from '#lib/i18n.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 
-	type Profile = { id: string; displayName: string; color: string };
+	type Profile = { id: string; displayName: string; color: string; photo: string | null };
 
 	let profiles = $state<Profile[]>([]);
 	let selected = $state<Profile | null>(null);
@@ -131,7 +132,12 @@
 					class="bg-surface shadow-lit flex min-h-36 flex-col items-center justify-center gap-3 rounded-xl p-4 text-lg font-bold"
 					onclick={() => choose(profile)}
 				>
-					<Avatar name={profile.displayName} color={profile.color} size={64} />
+					<Avatar
+						name={profile.displayName}
+						color={profile.color}
+						photo={profilePhotoUrl(profile.id, profile.photo)}
+						size={64}
+					/>
 					{profile.displayName}
 				</button>
 			{/each}
@@ -145,7 +151,12 @@
 			aria-labelledby="pin-title"
 		>
 			<div class="grid justify-items-center gap-3">
-				<Avatar name={selected.displayName} color={selected.color} size={56} />
+				<Avatar
+					name={selected.displayName}
+					color={selected.color}
+					photo={profilePhotoUrl(selected.id, selected.photo)}
+					size={56}
+				/>
 				<h1 id="pin-title" class="text-center text-lg font-extrabold">
 					{t('login_pin_for', { name: selected.displayName })}
 				</h1>

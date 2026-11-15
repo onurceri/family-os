@@ -15,6 +15,7 @@
 	import { signOut } from '#lib/auth.js';
 	import { family } from '#lib/family.svelte.js';
 	import { getLanguages, t, tDynamic } from '#lib/i18n.svelte.js';
+	import MemberPhoto from '#lib/MemberPhoto.svelte';
 	import SelectField from '#lib/SelectField.svelte';
 	import { runAction } from '#lib/run-action.js';
 	import { session } from '#lib/session.svelte.js';
@@ -86,9 +87,20 @@
 					meta={[role, session.me.about].filter(Boolean).join(' · ') || undefined}
 					class="min-h-[72px]"
 				>
-					{#snippet lead()}<Avatar name={me.displayName} color={me.color} size={48} />{/snippet}
+					{#snippet lead()}<Avatar
+							name={me.displayName}
+							color={me.color}
+							photo={me.photoUrl}
+							size={48}
+						/>{/snippet}
 				</Row>
 			</Card>
+
+			<Section label={t('member_photo_title')}>
+				<Card pad>
+					<MemberPhoto member={me} />
+				</Card>
+			</Section>
 
 			<Section label={t('profile_language_title')}>
 				<Card rows>

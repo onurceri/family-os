@@ -109,7 +109,12 @@
 				oncheck={() => tick(chore)}
 			>
 				{#snippet trailing()}
-					{#if assignee}<Avatar name={assignee.displayName} color={assignee.color} size={26} />{/if}
+					{#if assignee}<Avatar
+							name={assignee.displayName}
+							color={assignee.color}
+							photo={assignee.photoUrl}
+							size={26}
+						/>{/if}
 				{/snippet}
 			</TodayRow>
 		{/each}

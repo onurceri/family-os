@@ -4,6 +4,8 @@ export interface PresenterMember {
 	id: string;
 	displayName: string;
 	color: string;
+	/** The address of their profile photo, when they have one; built by the app. */
+	photoUrl?: string | null;
 }
 
 /** What a presenter needs from the app to render a draft. */

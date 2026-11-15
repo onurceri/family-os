@@ -81,6 +81,8 @@ const expected: { [T in keyof CoreTables]: Record<keyof CoreTables[T], true> } =
 		about: true,
 		color: true,
 		locale: true,
+		photo: true,
+		photo_type: true,
 		created_at: true,
 		updated_at: true,
 		archived_at: true,

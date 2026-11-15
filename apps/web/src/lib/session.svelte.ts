@@ -1,13 +1,14 @@
 import type { paths } from '@famos/api-client';
 import { accessBook } from './access.svelte';
 import { api } from './api';
+import { withPhotoUrl } from './member-photo';
 
-export type Member =
-	paths['/api/v1/core/me']['get']['responses'][200]['content']['application/json'];
+type ApiMe = paths['/api/v1/core/me']['get']['responses'][200]['content']['application/json'];
+export type Member = ApiMe & { photoUrl: string | null };
 
 async function loadMe() {
 	const res = await api.GET('/api/v1/core/me');
-	return res.data ?? null;
+	return res.data ? withPhotoUrl(res.data) : null;
 }
 
 /**

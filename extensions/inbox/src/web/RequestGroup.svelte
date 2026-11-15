@@ -58,7 +58,12 @@
 				<span>{captureTime(app, group.latest)}</span>
 				{#if person && !named}
 					<span class="flex items-center gap-1.5 font-semibold">
-						<Avatar name={person.displayName} color={person.color} size={18} />
+						<Avatar
+							name={person.displayName}
+							color={person.color}
+							photo={person.photoUrl}
+							size={18}
+						/>
 						{t('from', { name: person.displayName })}
 					</span>
 				{/if}

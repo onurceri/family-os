@@ -14,6 +14,9 @@ export type MembersTable = {
 	about: string | null;
 	color: string;
 	locale: string | null;
+	/** The profile photo's file key and content type; both null without one. */
+	photo: string | null;
+	photo_type: string | null;
 	created_at: number;
 	updated_at: number;
 	archived_at: number | null;

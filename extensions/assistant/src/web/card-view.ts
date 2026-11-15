@@ -148,3 +148,12 @@ export function colorOf(
 	const named = members.filter((member) => member.displayName === name);
 	return named.length === 1 ? (named[0]?.color ?? null) : null;
 }
+
+/** The photo address of the one member with this name, or null (the same rule as `colorOf`). */
+export function photoOf(
+	name: string,
+	members: readonly { displayName: string; photoUrl?: string | null }[],
+): string | null {
+	const named = members.filter((member) => member.displayName === name);
+	return named.length === 1 ? (named[0]?.photoUrl ?? null) : null;
+}

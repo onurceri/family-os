@@ -125,7 +125,12 @@
 			onclick={() => (menuOpen ? close() : open())}
 			class="hover:bg-idle focus-visible:ring-ring flex min-h-13 w-full items-center gap-3 rounded-xl px-3 text-left outline-none focus-visible:ring-2"
 		>
-			<Avatar name={session.me.displayName} color={session.me.color} size={36} />
+			<Avatar
+				name={session.me.displayName}
+				color={session.me.color}
+				photo={session.me.photoUrl}
+				size={36}
+			/>
 			<span class="grid min-w-0 flex-1">
 				<span class="truncate text-sm font-bold">{session.me.displayName}</span>
 				{#if role}<span class="text-ink-soft truncate text-xs">{role}</span>{/if}

@@ -48,7 +48,7 @@
 		format: TodayFormat;
 		words: NextUpWords;
 		/** Whose it is (the item's first member); none for "anyone" or with names off. */
-		member?: { displayName: string; color: string } | null;
+		member?: { displayName: string; color: string; photoUrl?: string | null } | null;
 		mode?: NextUpMode;
 		/** Saves the person's choice (`core.setMyNextUp`); without it there is no toggle. */
 		onmode?: (mode: NextUpMode) => void;
@@ -78,7 +78,12 @@
 
 <section class="hero {variant}" aria-label={name} data-testid="next-up">
 	<div class="lab">
-		{#if member}<Avatar name={member.displayName} color={member.color} size={24} />{/if}
+		{#if member}<Avatar
+				name={member.displayName}
+				color={member.color}
+				photo={member.photoUrl}
+				size={24}
+			/>{/if}
 		<span class="caps"
 			>{words.nextUp}{#if member}{` · ${member.displayName}`}{/if}</span
 		>

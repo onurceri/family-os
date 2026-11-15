@@ -178,7 +178,12 @@
 							<span class="flex shrink-0 -space-x-1.5" aria-hidden="true">
 								{#each who.slice(0, 3) as m (m.id)}
 									<span class="ring-wall rounded-full ring-2"
-										><Avatar name={m.displayName} color={m.color} size={22} /></span
+										><Avatar
+											name={m.displayName}
+											color={m.color}
+											photo={m.photoUrl}
+											size={22}
+										/></span
 									>
 								{/each}
 							</span>

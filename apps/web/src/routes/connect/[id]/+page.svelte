@@ -131,7 +131,12 @@
 						<dd class="flex flex-wrap items-center gap-x-3 gap-y-1">
 							{#if session.me}
 								<span class="flex items-center gap-2 font-bold" data-testid="consent-member">
-									<Avatar name={session.me.displayName} color={session.me.color} size={28} />
+									<Avatar
+										name={session.me.displayName}
+										color={session.me.color}
+										photo={session.me.photoUrl}
+										size={28}
+									/>
 									{session.me.displayName}
 								</span>
 							{/if}

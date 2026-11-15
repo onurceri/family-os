@@ -3,7 +3,7 @@
 	import { todayIn } from '@famos/time';
 	import type { CardWords } from '../contract/card-words.js';
 	import type { AnswerCard } from '../contract/index.js';
-	import { cardView, colorOf, type RowView } from './card-view.js';
+	import { cardView, colorOf, photoOf, type RowView } from './card-view.js';
 	import { useAssistant } from './i18n.js';
 
 	/**
@@ -34,7 +34,7 @@
 				{#each row.people as name (name)}
 					{@const color = colorOf(name, members)}
 					<li class="person">
-						{#if color}<Avatar {name} {color} size={20} />{/if}
+						{#if color}<Avatar {name} {color} photo={photoOf(name, members)} size={20} />{/if}
 						<span>{name}</span>
 					</li>
 				{/each}

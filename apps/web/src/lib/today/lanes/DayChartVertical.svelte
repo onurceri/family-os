@@ -184,7 +184,12 @@
 			{#if lane.kind === 'others'}
 				<span class="disc" aria-hidden="true">+{lane.people}</span>
 			{:else if avatars}
-				<Avatar name={lane.name} color={lane.color || 'var(--ink-soft)'} size={24} />
+				<Avatar
+					name={lane.name}
+					color={lane.color || 'var(--ink-soft)'}
+					photo={lane.photoUrl}
+					size={24}
+				/>
 			{/if}
 			<b title={lane.name}>{lane.short ?? lane.name}</b>
 			{#if lane.note}<small class="note" title={lane.note}>{lane.note}</small>{/if}

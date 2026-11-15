@@ -14,13 +14,23 @@ Each person has a **role** that sets what they can do. Sign-in is separate: emai
 
 Rows say how each person signs in: "Email and password", "PIN on family devices", "Email and password, and a PIN", "No sign-in yet".
 
-**Edit** changes name, role, **About**, color and sign-in; empty fields keep the current value.
+**Edit** changes name, role, **About**, color, photo and sign-in; empty fields keep the current value.
 
 **Good to know**
 - A new PIN or password signs that person out everywhere (an admin changing their own stays signed in).
 - An email used by another member is refused (a new person is kept; try another email).
 - The last admin cannot change role or be removed ("There must always be one admin.").
 - Everyone picks their language under **Settings → You → Profile & sign-in** ([Languages](languages.md)).
+
+### Photos
+
+A photo helps people tell each other apart: it shows beside the name wherever the person appears (Today, lists, the calendar, the sign-in page), inside a ring in their color, because the color still says whose thing something is. Without a photo, or when it cannot load, the initial shows as before.
+
+- **Your own**: **Settings → You → Profile & sign-in** → **Photo** → **Choose a photo**, then **Replace photo** or **Remove photo**.
+- **Someone else's**: only people who may manage members: **Settings → Family → Members** → **Edit** → **Photo**. Displays, connected apps and the AI never set one.
+- Use a JPEG, PNG or WebP picture. The app cuts the middle square and shrinks it before sending; location data in the picture is removed. A change shows at once, also on other open screens.
+- **Privacy**: the photo is kept on your home server and goes nowhere else. FamilyOS does not look people up on Gravatar or any other service. It is visible to whoever may see the family's names: members, displays that show names, and, on a family device, the sign-in page for people with a PIN.
+- Removing a member keeps their photo with their record.
 
 ### Remove a member
 

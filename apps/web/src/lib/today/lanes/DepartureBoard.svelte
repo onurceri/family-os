@@ -47,7 +47,7 @@
 		now: number;
 		format: TodayFormat;
 		words: NextUpWords;
-		member?: { displayName: string; color: string } | null;
+		member?: { displayName: string; color: string; photoUrl?: string | null } | null;
 		mode?: NextUpMode;
 		onmode?: (mode: NextUpMode) => void;
 		then: readonly ThenLine[];
@@ -78,7 +78,12 @@
 		</div>
 		<div class="mid">
 			<div class="lab">
-				{#if member}<Avatar name={member.displayName} color={member.color} size={22} />{/if}
+				{#if member}<Avatar
+						name={member.displayName}
+						color={member.color}
+						photo={member.photoUrl}
+						size={22}
+					/>{/if}
 				<span class="caps"
 					>{words.nextUp}{#if member}{` · ${member.displayName}`}{/if}</span
 				>

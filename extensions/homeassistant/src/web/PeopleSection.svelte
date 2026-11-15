@@ -233,6 +233,7 @@
 				{#snippet lead()}<Avatar
 						name={member.displayName}
 						color={member.color}
+						photo={member.photoUrl}
 						size={32}
 					/>{/snippet}
 			</Row>

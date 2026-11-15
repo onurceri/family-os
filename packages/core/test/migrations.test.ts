@@ -160,7 +160,8 @@ it('adds a principal to idempotency answers and keeps the old rows', async () =>
 				name !== '0007_changes' &&
 				name !== '0008_connected_apps' &&
 				name !== '0009_audit_target' &&
-				name !== '0010_oauth',
+				name !== '0010_oauth' &&
+				name !== '0011_member_photo',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -240,7 +241,10 @@ it('adds connected apps beside the personal keys that already exist', async () =
 	const before = Object.fromEntries(
 		Object.entries(coreMigrations).filter(
 			([name]) =>
-				name !== '0008_connected_apps' && name !== '0009_audit_target' && name !== '0010_oauth',
+				name !== '0008_connected_apps' &&
+				name !== '0009_audit_target' &&
+				name !== '0010_oauth' &&
+				name !== '0011_member_photo',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -285,7 +289,8 @@ it('lets audit rows name their target and keeps the rows from before', async () 
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
 		Object.entries(coreMigrations).filter(
-			([name]) => name !== '0009_audit_target' && name !== '0010_oauth',
+			([name]) =>
+				name !== '0009_audit_target' && name !== '0010_oauth' && name !== '0011_member_photo',
 		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
@@ -324,7 +329,9 @@ it('lets audit rows name their target and keeps the rows from before', async () 
 it('adds sign-in for AI apps and keeps the keys from before', async () => {
 	const { db } = openDatabase({ path: ':memory:' });
 	const before = Object.fromEntries(
-		Object.entries(coreMigrations).filter(([name]) => name !== '0010_oauth'),
+		Object.entries(coreMigrations).filter(
+			([name]) => name !== '0010_oauth' && name !== '0011_member_photo',
+		),
 	);
 	await runMigrations(db, [{ scope: 'core', migrations: before }]);
 	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
@@ -396,4 +403,25 @@ it('adds sign-in for AI apps and keeps the keys from before', async () => {
 		db,
 	);
 	expect(left.rows[0]?.n).toBe(0);
+});
+
+/** Members from before profile photos have none; a photo and its type can be stored after. */
+it('adds profile photo columns and keeps the members from before', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const before = Object.fromEntries(
+		Object.entries(coreMigrations).filter(([name]) => name !== '0011_member_photo'),
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: before }]);
+	await sql`insert into core_members (id, display_name, role_id, color, created_at, updated_at) values ('member_a', 'A', 'admin', '#000000', 1, 1)`.execute(
+		db,
+	);
+	await runMigrations(db, [{ scope: 'core', migrations: coreMigrations }]);
+	const old = await sql<{
+		photo: string | null;
+		photo_type: string | null;
+	}>`select photo, photo_type from core_members`.execute(db);
+	expect(old.rows).toEqual([{ photo: null, photo_type: null }]);
+	await sql`update core_members set photo = 'core/members/member_a/photo_1', photo_type = 'image/jpeg'`.execute(
+		db,
+	);
 });

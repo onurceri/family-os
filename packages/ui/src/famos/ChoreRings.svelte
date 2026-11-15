@@ -8,6 +8,8 @@
 		short?: string;
 		/** The member's colour; none for anyone (the arc is `ink-soft`). */
 		color?: string;
+		/** The member's photo address, when they have one. */
+		photoUrl?: string | null;
 		done: number;
 		total: number;
 	}

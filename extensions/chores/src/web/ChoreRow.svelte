@@ -126,6 +126,6 @@
 		</small>
 	</button>
 	{#if !finished && who}
-		<Avatar name={who.displayName} color={who.color} size={28} />
+		<Avatar name={who.displayName} color={who.color} photo={who.photoUrl} size={28} />
 	{/if}
 </div>

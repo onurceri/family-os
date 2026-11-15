@@ -171,6 +171,7 @@
 			name: member.displayName,
 			short: member.shortName,
 			color: member.color,
+			photoUrl: member.photoUrl ?? null,
 			status: statusOf(member.id),
 			...(data.notes[member.id] && { note: data.notes[member.id] }),
 			people: 1,

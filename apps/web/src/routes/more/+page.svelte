@@ -56,7 +56,12 @@
 					data-testid="more-person"
 					class="{card} focus-visible:ring-ring flex items-center gap-4 p-3 outline-none focus-visible:ring-2"
 				>
-					<Avatar name={session.me.displayName} color={session.me.color} size={48} />
+					<Avatar
+						name={session.me.displayName}
+						color={session.me.color}
+						photo={session.me.photoUrl}
+						size={48}
+					/>
 					<span class="grid min-w-0 flex-1 gap-0.5">
 						<span class="truncate text-[1.0625rem] font-bold">{session.me.displayName}</span>
 						<span class="text-ink-soft text-sm">{hint}</span>
