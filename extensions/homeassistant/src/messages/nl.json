@@ -268,7 +268,8 @@
 	"speed_level": "Stand {{level}}",
 	"history_set_percentage": "{{who}} zette {{name}} op stand {{level}}",
 	"speed_label": "Stand",
-	"speed_set": "{{name}} op stand {{level}} zetten",
-	"sheet_done": "Klaar",
-	"sheet_open": "{{name}}: meer"
+	"power_label": "Aan/uit",
+	"set": "Instellen",
+	"ask_note": "Er verandert niets tot je op Instellen tikt.",
+	"sheet_done": "Klaar"
 }

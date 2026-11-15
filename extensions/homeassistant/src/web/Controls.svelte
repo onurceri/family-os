@@ -4,6 +4,7 @@
 	import type { Values } from '../contract/index.js';
 	import { answerKey, askKey, controlsFor, type SwitchRequest } from './controls.js';
 	import { useHomeAssistant } from './i18n.js';
+	import Switch from './Switch.svelte';
 
 	/**
 	 * The switch or the buttons of a row the family allowed switching, for someone who may. With
@@ -42,21 +43,13 @@
 
 {#each controls as control (control.operation)}
 	{#if control.kind === 'switch'}
-		<button
-			type="button"
-			role="switch"
-			aria-checked={control.on}
-			aria-label={item.label}
+		<Switch
+			on={control.on}
+			label={item.label}
 			disabled={busy}
 			onclick={() => press({ operation: control.operation })}
-			class="group focus-visible:ring-ink -my-2 grid min-h-11 shrink-0 cursor-pointer place-items-center rounded-full px-1 focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-			data-testid="ha-switch-{item.id}"
-		>
-			<span
-				aria-hidden="true"
-				class="bg-ink-soft/35 group-aria-checked:bg-now after:bg-surface after:shadow-lit relative h-7 w-12 rounded-full transition-colors after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform group-aria-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
-			></span>
-		</button>
+			testid="ha-switch-{item.id}"
+		/>
 	{:else}
 		<Button
 			variant="outline"

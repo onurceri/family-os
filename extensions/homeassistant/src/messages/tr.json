@@ -268,7 +268,8 @@
 	"speed_level": "Hız {{level}}",
 	"history_set_percentage": "{{who}}, {{name}} hızını {{level}} olarak ayarladı",
 	"speed_label": "Hız",
-	"speed_set": "{{name}} hızını {{level}} yap",
-	"sheet_done": "Bitti",
-	"sheet_open": "{{name}}: daha fazla"
+	"power_label": "Güç",
+	"set": "Uygula",
+	"ask_note": "Uygula'ya dokunana kadar hiçbir şey değişmez.",
+	"sheet_done": "Bitti"
 }

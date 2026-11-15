@@ -268,7 +268,8 @@
 	"speed_level": "Stufe {{level}}",
 	"history_set_percentage": "{{who}} hat {{name}} auf Stufe {{level}} gestellt",
 	"speed_label": "Stufe",
-	"speed_set": "{{name}} auf Stufe {{level}} stellen",
-	"sheet_done": "Fertig",
-	"sheet_open": "{{name}}: mehr"
+	"power_label": "Strom",
+	"set": "Setzen",
+	"ask_note": "Es ändert sich nichts, bis du auf Setzen tippst.",
+	"sheet_done": "Fertig"
 }

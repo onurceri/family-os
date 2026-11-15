@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Value } from '../src/contract/index.ts';
 import en from '../src/messages/en.json' with { type: 'json' };
-import { answerKey, askKey, controlsFor, detailFor, levelRequest } from '../src/web/controls.ts';
+import {
+	answerKey,
+	askKey,
+	controlsFor,
+	detailFor,
+	levelRequest,
+	stagedRequest,
+} from '../src/web/controls.ts';
 
 const binary = (on: boolean): Value => ({ kind: 'binary', on, deviceClass: null });
 const word = (
@@ -186,15 +193,43 @@ describe('a fan with speeds', () => {
 			}
 	});
 
+	it('sends what a staged power and speed ask for, never more than needed', () => {
+		const stage = (
+			on: boolean,
+			current: number | null,
+			power: boolean | null,
+			level: number | null,
+		) => stagedRequest({ on, current, power, level, speeds: 4 });
+		// Nothing changed.
+		expect(stage(true, 2, null, null)).toBeNull();
+		expect(stage(true, 2, true, 2)).toBeNull();
+		expect(stage(false, 0, false, null)).toBeNull();
+		// Power alone.
+		expect(stage(true, 2, false, null)).toEqual({ operation: 'turn_off' });
+		expect(stage(false, 0, true, null)).toEqual({ operation: 'turn_on' });
+		// A new speed on a fan that is on, or that is off (the percentage turns it on).
+		expect(stage(true, 2, null, 3)).toEqual(levelRequest(3, 4));
+		expect(stage(false, 0, null, 2)).toEqual(levelRequest(2, 4));
+		expect(stage(false, 0, true, 2)).toEqual(levelRequest(2, 4));
+		// On with no known speed: any pick is a change.
+		expect(stage(true, null, null, 2)).toEqual(levelRequest(2, 4));
+		// Turned off wins over a speed picked before: only turn it off, or nothing if already off.
+		expect(stage(true, 2, false, 3)).toEqual({ operation: 'turn_off' });
+		expect(stage(false, 0, false, 3)).toBeNull();
+		// Power on again with the speed it already has.
+		expect(stage(false, 0, true, 2)).toEqual(levelRequest(2, 4));
+	});
+
 	it('has words for its sheet', () => {
 		const keys = new Set(Object.keys(en));
 		for (const key of [
 			'speed_label',
 			'speed_level',
-			'speed_set',
+			'power_label',
+			'set',
+			'ask_note',
 			'value_speed',
 			'sheet_done',
-			'sheet_open',
 		])
 			expect(keys).toContain(key);
 	});

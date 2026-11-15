@@ -28,6 +28,26 @@ export function levelRequest(level: number, speeds: number): SwitchRequest {
 }
 
 /**
+ * What "Set" sends in a sheet that asks first: at most one request. `power` and `level` are what
+ * was staged (null: not touched); `on` and `current` are what the fan is now. A speed picked
+ * while the fan is off needs no turn-on, as the percentage turns it on in Home Assistant; turning
+ * it off wins over a speed picked before.
+ */
+export function stagedRequest(staged: {
+	on: boolean;
+	current: number | null;
+	power: boolean | null;
+	level: number | null;
+	speeds: number;
+}): SwitchRequest | null {
+	const wantsOn = staged.power ?? (staged.level !== null || staged.on);
+	if (!wantsOn) return staged.on ? { operation: 'turn_off' } : null;
+	if (staged.level !== null && (!staged.on || staged.level !== staged.current))
+		return levelRequest(staged.level, staged.speeds);
+	return staged.on ? null : { operation: 'turn_on' };
+}
+
+/**
  * What a row offers beyond its own control, in a sheet that opens from the row: how much, where
  * the row only says on or off. Only a fan's speed so far; `current` is 0 when off and null when
  * it is on and Home Assistant does not say how fast.

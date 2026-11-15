@@ -276,6 +276,7 @@ Height `--ctl`; radius 10; 1 px `line` inset; `surface` on the wall, `wall` insi
 ### 5.3 Choices
 
 - **Segmented control**: `idle` track with 3 px padding, pill radius, height `--ctl` (36 for `sm`), options 14/600 `ink-soft`, the chosen one `surface` + `shadow-lit` + `ink`. ≤ 4 options, all visible, equal padding; `grow` makes options share the width (phone). Arrow keys move; `role="radiogroup"`.
+- **Level tiles**: equal tiles for choosing one of 2 to 6 levels or presets in a sheet (a fan's speeds), in a labelled group (label 14/600, 8 px above the tiles). 48 px high, `--r-ctl` radius, `idle`; the chosen one `surface` + `shadow-lit` + `ink`, as in the segmented control. `role="radiogroup"` with radio tiles; arrow keys move the focus. Use the segmented control for a choice that sits inline in a row or form.
 - **Chips** (36 px, 40 on touch, pill): *filter* `idle`/`ink-soft`, on = `surface` + 2 px `ink` inset ring; *member* has the avatar and the member colour as the ring; *preset* is outlined with a `+` and adds something when tapped (a button, not a toggle).
 - **Check** (26 px circle, 2 px `ink-soft` 55 % ring; done = `now` fill with `on-color` check; a member-coloured ring when assigned): tasks, shopping, chores. **Checkbox** (20 px, radius 6, `ink` fill when on): forms and multi-select. **Switch** (44 × 26, `now` when on): settings. **Radio** only where a native radio is semantically right (rare).
 
@@ -292,6 +293,7 @@ Sidebar rows 36 px, active = `surface` + `shadow-lit`; the bell and `+` in the h
 ### 5.6 Rows, tiles, cards
 
 - **Row**: `display:flex; gap:12px; min-height:48px; padding:6px 12px`. Leading: disc / avatar / check / 18 px icon in `ink-soft`. Text: title 15/600 `ink`, meta 13/400 `ink-soft`, each one line with an ellipsis (two-line rows are 56 px). Trailing: pill, amount (15/700), secondary button `sm`, `⋯`, chevron (`ink-soft`), avatar. Hover (mouse only): `idle` at 55 %. Done: title 500 line-through `ink-soft`.
+- A row's control (a switch, buttons) is its last trailing item, flush to the row's end so every control sits in one column; the row's state goes on the meta line, not beside the control. When the text opens a sheet, a 14 px `ink-soft` chevron follows the meta ("On · Speed 1 ›"), never the control. A row without a control (a sensor) keeps its value trailing, on the same edge.
 - **Tile**: a row on the wall (§2), 6 px apart. Idle tile: `idle`, no shadow. Selected: `shadow-lit` + 2 px `ink` inset ring.
 - **Card**: as in §2; padding 16 × 20 when it holds text instead of rows. `lit` variant: shadow, no line. `quiet` variant: `idle`.
 - `TodayRow` takes the tile style (title 600, 48 px); Needs you rows stay rows inside the lit card.

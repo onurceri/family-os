@@ -268,7 +268,8 @@
 	"speed_level": "Speed {{level}}",
 	"history_set_percentage": "{{who}} set {{name}} to speed {{level}}",
 	"speed_label": "Speed",
-	"speed_set": "Set {{name}} to speed {{level}}",
-	"sheet_done": "Done",
-	"sheet_open": "{{name}}: more"
+	"power_label": "Power",
+	"set": "Set",
+	"ask_note": "Nothing changes until you tap Set.",
+	"sheet_done": "Done"
 }

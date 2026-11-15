@@ -8,7 +8,7 @@
 	 * 12 px below the top, radius 14, a grab handle and a bar with Cancel, the title and Save. A
 	 * `half` sheet (at most 85 %) is for pickers. A modal dialog: focus moves to the first field,
 	 * Tab is trapped, Escape or the scrim asks `onclose`, focus returns to what opened it. Omit
-	 * `onsave` for a sheet without a Save button (a picker).
+	 * `onsave` for a sheet without a Save button (a picker), omit `cancelLabel` for one without Cancel.
 	 */
 	let {
 		open,
@@ -28,7 +28,8 @@
 		/** Cancel, Escape, the scrim. The page decides whether to ask about unsaved changes. */
 		onclose: () => void;
 		onsave?: () => void;
-		cancelLabel: string;
+		/** Omit for a sheet whose only button is the one on the right (a half sheet with Done). */
+		cancelLabel?: string;
 		saveLabel?: string;
 		saveDisabled?: boolean;
 		half?: boolean;
@@ -85,7 +86,9 @@
 		<div class="head">
 			<header class="bar">
 				<span class="l"
-					><Button variant="ghost" size="sm" onclick={onclose}>{cancelLabel}</Button></span
+					>{#if cancelLabel}<Button variant="ghost" size="sm" onclick={onclose}
+							>{cancelLabel}</Button
+						>{/if}</span
 				>
 				<h2 id="{id}-t">{title}</h2>
 				<span class="r"

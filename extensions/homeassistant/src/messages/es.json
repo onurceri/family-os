@@ -268,7 +268,8 @@
 	"speed_level": "Velocidad {{level}}",
 	"history_set_percentage": "{{who}} puso {{name}} en velocidad {{level}}",
 	"speed_label": "Velocidad",
-	"speed_set": "Poner {{name}} en velocidad {{level}}",
-	"sheet_done": "Listo",
-	"sheet_open": "{{name}}: más"
+	"power_label": "Encendido",
+	"set": "Aplicar",
+	"ask_note": "No cambia nada hasta que toques Aplicar.",
+	"sheet_done": "Listo"
 }

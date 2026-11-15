@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ChevronRight } from '@lucide/svelte';
 	import { TodayRow, TodaySection } from '@famos/ui/famos';
 	import type { SlotProps } from '@famos/ui/slots';
 	import type { Values } from '../contract/index.js';
@@ -66,30 +65,30 @@
 				{@const said = sayValue(app, t, item.value)}
 				{@const busy = switcher.busy(item.id)}
 				{@const more = maySwitch && item.control && detailFor(item.entityId, item.value) !== null}
-				<TodayRow title={item.label} onopen={more ? () => (openId = item.id) : undefined}>
-					{#snippet trailing()}
-						{@const words = busy ? t('switching') : said.text}
-						{@const tone = busy ? 'text-ink-soft' : TONE_CLASS[said.tone]}
-						{#if more}
-							<!-- The value itself opens the sheet, so the row keeps one line on a phone. -->
-							<button
-								type="button"
-								onclick={() => (openId = item.id)}
-								aria-label={t('sheet_open', { name: item.label })}
-								class="hover:bg-ink/5 focus-visible:ring-ring -my-1 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-0.5 rounded-full ps-2 pe-1 text-[0.9375rem] font-semibold focus-visible:ring-2 focus-visible:outline-none {tone}"
-								data-testid="ha-more-{item.id}"
-							>
-								<span aria-live="polite">{words}</span>
-								<ChevronRight class="text-ink-soft size-4 rtl:-scale-x-100" aria-hidden="true" />
-							</button>
-						{:else}
-							<span class="text-[0.9375rem] font-semibold {tone}" aria-live="polite">{words}</span>
-						{/if}
-						{#if maySwitch && item.control}
+				{@const controlled = maySwitch && item.control}
+				{#if controlled}
+					<!-- A control is the last item of its row, and the state goes under the name. -->
+					<TodayRow
+						title={item.label}
+						meta={busy ? t('switching') : said.text}
+						metaTone={busy ? 'soft' : said.tone}
+						tall
+						onopen={more ? () => (openId = item.id) : undefined}
+					>
+						{#snippet trailing()}
 							<Controls {item} {busy} onswitch={(request) => void switcher.run(item, request)} />
-						{/if}
-					{/snippet}
-				</TodayRow>
+						{/snippet}
+					</TodayRow>
+				{:else}
+					<TodayRow title={item.label}>
+						{#snippet trailing()}
+							<span
+								class="text-[0.9375rem] font-semibold {TONE_CLASS[said.tone]}"
+								aria-live="polite">{said.text}</span
+							>
+						{/snippet}
+					</TodayRow>
+				{/if}
 			{/each}
 			{#if !maySwitch && shown.some((item) => item.control)}
 				<p class="text-ink-soft px-1 text-[0.8125rem]" data-testid="homeassistant-switch-hint">

@@ -6,7 +6,9 @@
 	 * `note`: a tile on the wall (48 px, `surface` + `shadow-lit`, title 600; `idle` recedes it for done or
 	 * receded rows); `outline`: the Coming up strip (1 px line).
 	 * A leading check (tasks, chores), a kind icon in a disc, or nothing; trailing actions or an
-	 * avatar on the right. With `href` the title is the link.
+	 * avatar on the right. With `href` the title is the link. A control (a switch, buttons) is the
+	 * last trailing item and the row's state goes on the meta line; with `onopen` a chevron follows
+	 * the meta.
 	 */
 	let {
 		title,
@@ -23,6 +25,7 @@
 		onopen,
 		uncertain = false,
 		wrap = false,
+		tall = false,
 		leading,
 		trailing,
 		below,
@@ -48,6 +51,8 @@
 		uncertain?: boolean;
 		/** The meta wraps instead of being cut with "…" (a sentence that must be read whole). */
 		wrap?: boolean;
+		/** A `note` row with a control at its end: 56 px, so rows with and without one line up. */
+		tall?: boolean;
 		leading?: Snippet;
 		trailing?: Snippet;
 		/** Full-width content under the row (an editor). */
@@ -58,7 +63,7 @@
 		variant === 'needs'
 			? 'min-h-14 px-4 py-2'
 			: variant === 'note'
-				? `min-h-12 rounded-[var(--r-item)] px-1.5 py-1 ${idle ? 'bg-idle' : 'bg-surface shadow-lit'}`
+				? `${tall ? 'min-h-14' : 'min-h-12'} rounded-[var(--r-item)] px-1.5 py-1 ${idle ? 'bg-idle' : 'bg-surface shadow-lit'}`
 				: 'border-line min-h-14 rounded-xl border px-3 py-2',
 	);
 	const tone = $derived(
@@ -87,7 +92,22 @@
 				: ''}">{title}</b
 		>
 	{/if}
-	{#if meta}
+	{#if meta && onopen}
+		<!-- The chevron says the text opens something; it follows the meta, never the trailing control. -->
+		<small class="flex min-w-0 items-center gap-0.5 text-[0.8125rem] leading-snug {tone}">
+			<span class="truncate">{meta}</span>
+			<svg
+				class="text-ink-soft size-3.5 shrink-0 rtl:-scale-x-100"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg
+			>
+		</small>
+	{:else if meta}
 		<small
 			class="{wrap ? 'text-pretty' : 'truncate'} text-[0.8125rem] leading-snug {tone} {uncertain
 				? 'decoration-attention underline decoration-dashed underline-offset-4'
