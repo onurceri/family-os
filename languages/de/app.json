@@ -262,6 +262,7 @@
 	"extensions_restart": "Jetzt neu starten",
 	"restart_waiting_one": "{{count}} Änderung an Erweiterungen wird beim Neustart von FamilyOS wirksam",
 	"restart_waiting_other": "{{count}} Änderungen an Erweiterungen werden beim Neustart von FamilyOS wirksam",
+	"restart_waiting_unknown": "Änderungen an Erweiterungen werden beim Neustart von FamilyOS wirksam",
 	"extensions_restart_needed": "Änderungen werden beim Neustart von FamilyOS wirksam. Das dauert ein paar Sekunden. Geöffnete Ansichten aktualisieren sich automatisch.",
 	"extensions_restarting": "FamilyOS wird neu gestartet",
 	"extensions_restarting_hint": "Diese Seite öffnet sich gleich automatisch wieder.",

@@ -275,6 +275,7 @@
 	"restart_waiting_one": "{{count}} cambio en las extensiones se aplica cuando FamilyOS se reinicia",
 	"restart_waiting_other": "{{count}} cambios en las extensiones se aplican cuando FamilyOS se reinicia",
 	"restart_waiting_many": "{{count}} cambios en las extensiones se aplican cuando FamilyOS se reinicia",
+	"restart_waiting_unknown": "Los cambios en las extensiones se aplican cuando FamilyOS se reinicia",
 	"extensions_restart_needed": "Los cambios se aplican cuando FamilyOS se reinicie. Tarda unos segundos y las pantallas abiertas se ponen al día solas.",
 	"extensions_restarting": "FamilyOS se está reiniciando",
 	"extensions_restarting_hint": "Esta página se abrirá de nuevo sola en un momento.",

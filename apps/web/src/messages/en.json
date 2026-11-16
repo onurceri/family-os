@@ -262,6 +262,7 @@
 	"extensions_restart": "Restart now",
 	"restart_waiting_one": "{{count}} change to extensions takes effect when FamilyOS restarts",
 	"restart_waiting_other": "{{count}} changes to extensions take effect when FamilyOS restarts",
+	"restart_waiting_unknown": "Changes to extensions take effect when FamilyOS restarts",
 	"extensions_restart_needed": "Changes take effect when FamilyOS restarts. It takes a few seconds, and open screens catch up by themselves.",
 	"extensions_restarting": "FamilyOS is restarting",
 	"extensions_restarting_hint": "This page opens again by itself in a moment.",
