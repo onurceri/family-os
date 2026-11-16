@@ -30,6 +30,12 @@ describe('event form reasons', () => {
 		expect(validate(base())).toEqual({});
 		expect(known(validate({ ...base(), title: '  ' }))).toEqual({ title: FIELD_REASON.title });
 		expect(known(validate({ ...base(), startTime: '' })).startTime).toBe(FIELD_REASON.time);
+		expect(known(validate({ ...base(), repeat: 'weekly', byDay: ['MO'], interval: 53 }))).toEqual({
+			interval: FIELD_REASON.interval,
+		});
+		expect(
+			known(validate({ ...base(), repeat: 'monthly', interval: null as unknown as number })),
+		).toEqual({ interval: FIELD_REASON.interval });
 		expect(known(validate({ ...base(), repeat: 'weekly', byDay: [] })).recurrence).toBe(
 			FIELD_REASON.repeatDays,
 		);

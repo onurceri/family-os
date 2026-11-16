@@ -45,6 +45,14 @@ describe('field errors', () => {
 		});
 	});
 
+	it('gives a bad repeat interval its own field and words', () => {
+		const errors = issueErrors({}, [
+			{ path: ['recurrence', 'interval'], code: 'too_big' },
+			{ path: ['recurrence', 'until'], code: 'custom' },
+		]);
+		expect(errors).toEqual({ interval: FIELD_REASON.interval, recurrence: FIELD_REASON.check });
+	});
+
 	it('links a refused field to its reason', () => {
 		expect(fieldAria(undefined, 'x')).toEqual({
 			'aria-invalid': undefined,

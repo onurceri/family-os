@@ -7,7 +7,11 @@
 	 * translation key (from a form's `FieldErrors`); `for` is the field's input id, which points
 	 * at this text with `aria-describedby` (`fieldAria`). Nothing when the field is fine.
 	 */
-	let { for: inputId, error }: { for: string; error?: string | undefined } = $props();
+	let {
+		for: inputId,
+		error,
+		params,
+	}: { for: string; error?: string | undefined; params?: Record<string, unknown> } = $props();
 	const app = findApp();
 	// A long text field already says "too long" in its counter; a second line would repeat it.
 	const counted = $derived(
@@ -22,6 +26,6 @@
 		class="text-attention text-[0.8125rem] leading-snug font-semibold"
 		data-testid="field-error"
 	>
-		{app ? app.t(error) : error}
+		{app ? app.t(error, params) : error}
 	</p>
 {/if}

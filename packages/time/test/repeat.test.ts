@@ -5,7 +5,9 @@ import {
 	firstWeekday,
 	followingDays,
 	lastDayOfMonth,
+	MAX_INTERVAL,
 	onlyThisDate,
+	RecurrenceSchema,
 	repeatEditAsks,
 	repeatRule,
 	weekdayOf,
@@ -226,5 +228,19 @@ describe('editing a saved repeat', () => {
 			'SU',
 			'MO',
 		]);
+	});
+});
+
+describe('interval limits', () => {
+	it('are the ones the recurrence schema holds', () => {
+		for (const freq of ['daily', 'weekly', 'monthly'] as const) {
+			const rule = (interval: number) => ({
+				freq,
+				interval,
+				...(freq === 'weekly' && { byDay: ['MO'] }),
+			});
+			expect(RecurrenceSchema.safeParse(rule(MAX_INTERVAL[freq])).success).toBe(true);
+			expect(RecurrenceSchema.safeParse(rule(MAX_INTERVAL[freq] + 1)).success).toBe(false);
+		}
 	});
 });

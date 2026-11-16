@@ -53,6 +53,7 @@ export {
 	firstRepeatDate,
 	followingDays,
 	fromRRule,
+	MAX_INTERVAL,
 	nextDate,
 	onlyThisDate,
 	type Recurrence,

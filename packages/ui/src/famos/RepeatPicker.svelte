@@ -9,8 +9,12 @@
 		monthly: string;
 		custom: string;
 		until: string;
-		/** "Every", before the interval field; without it (or without `interval`) there is no field. */
-		every?: string;
+		/**
+		 * "Every", before the interval field, for the count written in it (a language may say
+		 * "Jeden" for one and "Alle" for more, or nothing before it); without it (or without
+		 * `interval`) there is no field.
+		 */
+		every?: (freq: 'daily' | 'weekly' | 'monthly', count: number) => string;
 		/** The unit after the interval field ("days"), for the count written in it. */
 		unit?: (freq: 'daily' | 'weekly' | 'monthly', count: number) => string;
 		/** The line under the weekly days naming the first time, given the date already written out. */
@@ -19,7 +23,7 @@
 </script>
 
 <script lang="ts">
-	import { firstRepeatDate, formatDate, weekdaysAfterDateChange } from '@famos/time';
+	import { firstRepeatDate, formatDate, MAX_INTERVAL, weekdaysAfterDateChange } from '@famos/time';
 	import { untrack } from 'svelte';
 	import { Input } from '../components/input/index.js';
 	import { Label } from '../components/label/index.js';
@@ -46,6 +50,7 @@
 		idPrefix,
 		error,
 		untilError,
+		intervalError,
 	}: {
 		preset: RepeatPreset;
 		byDay: string[];
@@ -72,10 +77,9 @@
 		idPrefix: string;
 		error?: string | undefined;
 		untilError?: string | undefined;
+		/** The reason (a translation key) the interval is refused; `{{max}}` is the preset's longest. */
+		intervalError?: string | undefined;
 	} = $props();
-
-	// The recurrence schema's limits (`@famos/time`), kept here so the shared SDK surface stays as is.
-	const MAX_INTERVAL = { daily: 365, weekly: 52, monthly: 12 } as const;
 
 	const presets = $derived([
 		{ value: 'none', label: labels.none },
@@ -163,18 +167,30 @@
 		<FieldError for="{idPrefix}-repeat" {error} />
 	{/if}
 	{#if interval !== undefined && labels.every && (preset === 'daily' || preset === 'weekly' || preset === 'monthly')}
-		<div class="flex items-center gap-2 text-sm">
-			<Label for="{idPrefix}-interval" class="text-ink-soft font-normal">{labels.every}</Label>
-			<Input
-				id="{idPrefix}-interval"
-				type="number"
-				min={1}
-				max={MAX_INTERVAL[preset]}
-				bind:value={interval}
-				class="w-20"
-				data-testid="{idPrefix}-interval"
+		{@const lead = labels.every(preset, interval ?? 1)}
+		<div class="grid gap-1.5">
+			<div class="flex items-center gap-2 text-sm">
+				{#if lead}
+					<Label for="{idPrefix}-interval" class="text-ink-soft font-normal">{lead}</Label>
+				{/if}
+				<Input
+					id="{idPrefix}-interval"
+					type="number"
+					min={1}
+					max={MAX_INTERVAL[preset]}
+					bind:value={interval}
+					class="w-20"
+					data-testid="{idPrefix}-interval"
+					aria-label={lead ? undefined : labels.unit?.(preset, interval ?? 1)}
+					{...fieldAria(intervalError, `${idPrefix}-interval`)}
+				/>
+				<span class="text-ink-soft">{labels.unit?.(preset, interval ?? 1)}</span>
+			</div>
+			<FieldError
+				for="{idPrefix}-interval"
+				error={intervalError}
+				params={{ max: MAX_INTERVAL[preset] }}
 			/>
-			<span class="text-ink-soft">{labels.unit?.(preset, interval ?? 1)}</span>
 		</div>
 	{/if}
 	{#if preset !== 'none' && preset !== 'custom'}

@@ -117,6 +117,9 @@ export function repeatChoices(before: RepeatEdit, after: RepeatEdit, from: strin
 	};
 }
 
+/** The longest interval each preset holds (a yearly repeat is a monthly one of 12). */
+export const MAX_INTERVAL = { daily: 365, weekly: 52, monthly: 12 } as const;
+
 /**
  * The recurrence presets the UI offers. Stored as RRULE text, so anything CalDAV can express
  * still round-trips; `fromRRule` returns null for rules outside these presets.
@@ -124,18 +127,18 @@ export function repeatChoices(before: RepeatEdit, after: RepeatEdit, from: strin
 export const RecurrenceSchema = z.discriminatedUnion('freq', [
 	z.object({
 		freq: z.literal('daily'),
-		interval: z.number().int().min(1).max(365).default(1),
+		interval: z.number().int().min(1).max(MAX_INTERVAL.daily).default(1),
 		until: IsoDateSchema.optional(),
 	}),
 	z.object({
 		freq: z.literal('weekly'),
-		interval: z.number().int().min(1).max(52).default(1),
+		interval: z.number().int().min(1).max(MAX_INTERVAL.weekly).default(1),
 		byDay: z.array(z.enum(WEEKDAYS)).min(1).max(7),
 		until: IsoDateSchema.optional(),
 	}),
 	z.object({
 		freq: z.literal('monthly'),
-		interval: z.number().int().min(1).max(12).default(1),
+		interval: z.number().int().min(1).max(MAX_INTERVAL.monthly).default(1),
 		until: IsoDateSchema.optional(),
 	}),
 ]);

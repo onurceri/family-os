@@ -1,6 +1,6 @@
 import { Temporal } from 'temporal-polyfill';
 import { addDays, compareDates } from './dates.ts';
-import { expandDates, type Recurrence, toRRule, WEEKDAYS } from './recurrence.ts';
+import { expandDates, MAX_INTERVAL, type Recurrence, toRRule, WEEKDAYS } from './recurrence.ts';
 
 /** A repeat every N months or every N years (the interval of a bill, an obligation). */
 export type MonthlyOrYearly = { months?: number | undefined; years?: number | undefined };
@@ -54,9 +54,6 @@ export interface RepeatParts {
 	/** How many times in all, when the words say. */
 	count?: number | undefined;
 }
-
-/** The longest interval each preset holds (a yearly repeat is a monthly one of 12). */
-const MAX_INTERVAL = { daily: 365, weekly: 52, monthly: 12 } as const;
 
 /** The last day of the month a date is in. */
 export function lastDayOfMonth(date: string): string {

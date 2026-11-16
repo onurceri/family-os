@@ -218,6 +218,7 @@
 	"field_check": "Check this",
 	"field_repeat_choose": "Choose how it repeats",
 	"field_repeat_days": "Choose at least one day",
+	"field_interval": "Choose a number from 1 to {{max}}",
 	"field_before_start": "This is before the start",
 	"nav_ai": "Provider & models",
 	"nav_extensions": "Extensions",
