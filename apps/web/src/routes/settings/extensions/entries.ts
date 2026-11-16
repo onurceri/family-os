@@ -401,6 +401,22 @@ export function searchProblem(
 	}
 }
 
+/** The Updates label's count: only once a look is done and something is out (none says so below). */
+export function updatesCount(
+	search: { status: string } | null | undefined,
+	updates: readonly unknown[],
+): number | undefined {
+	return search?.status === 'done' && updates.length > 0 ? updates.length : undefined;
+}
+
+/** The weekly look's last failure, while the look is switched on; null when there is nothing to say. */
+export function weeklyFailure(
+	weekly: Found['weekly'],
+): { at: number; said: ReturnType<typeof searchProblem> } | null {
+	if (!weekly.enabled || !weekly.problem || weekly.lastAttemptAt === null) return null;
+	return { at: weekly.lastAttemptAt, said: searchProblem(weekly.problem) };
+}
+
 /** Why a download failed, in the page's words. */
 export interface DownloadProblem {
 	headline: Said<

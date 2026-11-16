@@ -20,6 +20,8 @@ import {
 	stagedEntry,
 	staysInside,
 	updateOf,
+	updatesCount,
+	weeklyFailure,
 	withFound,
 } from './entries.js';
 
@@ -419,5 +421,31 @@ describe('a change that waits for a restart', () => {
 	it('says nothing when nothing waits or nobody was recorded', () => {
 		expect(askedOf(entry('a'), who, when, 'Someone')).toBeNull();
 		expect(askedOf(entry('a', { status: 'pending_install' }), who, when, 'Someone')).toBeNull();
+	});
+});
+
+describe('the Updates section', () => {
+	it('counts updates only once a look is done and something is out', () => {
+		expect(updatesCount(null, [])).toBeUndefined();
+		expect(updatesCount({ status: 'looking' }, [1])).toBeUndefined();
+		expect(updatesCount({ status: 'done' }, [])).toBeUndefined();
+		expect(updatesCount({ status: 'done' }, [1, 2])).toBe(2);
+	});
+
+	const weekly = {
+		enabled: true,
+		lastAttemptAt: 1_700_000_000_000,
+		problem: { reason: 'unreachable' },
+	};
+	it('says when the weekly look failed and why', () => {
+		expect(weeklyFailure(weekly as never)).toEqual({
+			at: 1_700_000_000_000,
+			said: { key: 'extensions_find_unreachable' },
+		});
+	});
+	it('says nothing while the weekly look is off, worked, or never ran', () => {
+		expect(weeklyFailure({ ...weekly, enabled: false } as never)).toBeNull();
+		expect(weeklyFailure({ ...weekly, problem: null } as never)).toBeNull();
+		expect(weeklyFailure({ ...weekly, lastAttemptAt: null } as never)).toBeNull();
 	});
 });
