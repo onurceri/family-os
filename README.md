@@ -131,7 +131,7 @@ as its browser is Chrome 106 or newer.
   - [x] Actions from your automations: add to a list, tick off a chore, post a note on the board
   - [x] Assist talks to FamilyOS as your own AI app, over OAuth
   - [ ] The integration in HACS's default list
-  - [ ] Thermostat temperature, alarm panels and media volume from FamilyOS
+  - [ ] Thermostat temperature and alarm panels from FamilyOS
 - [ ] Extensions from other authors, with your explicit consent
 - [ ] 1.0: a stable data format and API, with a backward-compatibility promise
 
