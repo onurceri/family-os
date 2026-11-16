@@ -67,10 +67,12 @@
 	 * each opening its details with what it reaches and Install; then what the family has
 	 * installed, each with its switch (on or off for everyone, at once) and a menu to uninstall it. Installing and uninstalling take effect when the server restarts, which
 	 * is then the page's one action. A signed package can also come from a file (the head's ⋯):
-	 * the server checks it, and its details open with Install. "Look for more" (the same menu)
-	 * asks the server to read the official index, only then: what it lists that this server lacks
-	 * opens with Download, and a downloaded package is checked and installed like a file. Only
-	 * admins manage this (the capability is critical).
+	 * the server checks it, and its details open with Install. The Updates section, first on the
+	 * page, asks the server to read the official index (so does "Look for more" in the same menu),
+	 * when someone asks or, once an admin switched it on, once a week: a newer version of what is
+	 * installed is listed there with Update, what the index lists that this server lacks opens with
+	 * Download, and a downloaded package is checked and installed like a file. Only admins manage
+	 * this (the capability is critical).
 	 */
 	let list = $state<ExtensionList | null>(null);
 	let error = $state<string | null>(null);
@@ -86,6 +88,8 @@
 	let fileInput = $state<HTMLInputElement | null>(null);
 	/** What the last look in the official index found, and the last download from it. */
 	let found = $state<Found | null>(null);
+	/** The weekly switch as shown; put back to what the server says when it refuses. */
+	let weeklyOn = $state(false);
 	/** The found package whose details are open. */
 	let foundOpen = $state<FoundPackage | null>(null);
 	/** The server would not start the download (the index changed since: look again). */
@@ -115,6 +119,8 @@
 			.join(', ');
 	const grouped = $derived(sections(entries, name));
 	const shown = $derived(withFound(grouped, found?.found ?? []));
+	/** The newer version the index lists for each installed extension. */
+	const newer = $derived(new Map(shown.updates.map((pkg) => [pkg.id, pkg.version])));
 
 	// The details panel lives in the address (?open=<id>), so reload and Back work.
 	const here = $derived(page.url.pathname);
@@ -134,6 +140,7 @@
 		]);
 		list = extensions.data ?? null;
 		found = online.data ?? null;
+		weeklyOn = found?.weekly.enabled ?? false;
 		// "Restart now" in the shell's line arrives here with ?restart=1: ask once, then drop it.
 		if (list && page.url.searchParams.get('restart')) {
 			if (list.restartNeeded) confirmingRestart = true;
@@ -353,6 +360,31 @@
 		foundBox?.focus();
 	}
 
+	/** The row's Update: opens what it reaches and starts the download, unless one is under way. */
+	async function updateFound(pkg: FoundPackage) {
+		foundError = null;
+		foundOpen = pkg;
+		const download = found?.download;
+		if (download?.id === pkg.id && download.version === pkg.version) {
+			if (download.status === 'ready' && download.staged) {
+				staged = download.staged;
+				foundOpen = null;
+			}
+			if (download.status === 'downloading' || download.status === 'ready') return;
+		}
+		await downloadFound(pkg);
+	}
+
+	/** Switches the weekly look on or off; turning it on looks at once. */
+	async function setWeekly(weekly: boolean) {
+		error = null;
+		await runAction(
+			api.POST('/api/v1/actions/core.setExtensionUpdateCheck', { body: { weekly } }),
+			{ onError: (failure) => (error = failure.message) },
+		);
+		await load();
+	}
+
 	async function downloadFound(pkg: FoundPackage) {
 		foundError = null;
 		await runAction(
@@ -494,9 +526,12 @@
 				return t('extensions_status_refused');
 			case 'failed':
 				return t('extensions_status_failed');
-			default:
+			default: {
+				const version = newer.get(entry.id);
+				if (version) return t('extensions_found_newer', { version });
 				// The version is in Details; the row keeps to one line of what it is for.
 				return description(entry);
+			}
 		}
 	}
 
@@ -510,74 +545,132 @@
 {#snippet fileIcon()}<FileUp class="size-4" aria-hidden="true" />{/snippet}
 {#snippet lookIcon()}<Search class="size-4" aria-hidden="true" />{/snippet}
 
-{#snippet lookAgainAction()}
+{#snippet lookAction()}
 	<Button variant="ghost" size="sm" disabled={looking} onclick={() => void look()}
-		><Search class="size-[15px]" aria-hidden="true" />{t('extensions_look_again')}</Button
+		><Search class="size-[15px]" aria-hidden="true" />{t('extensions_look_updates')}</Button
 	>
 {/snippet}
 
-{#snippet foundSection()}
-	<!-- What the index gave is announced when it arrives; focus lands here after a look. -->
-	{#if found?.search}
+{#snippet updatesSection()}
+	{#if found}
 		{@const search = found.search}
-		<div
-			bind:this={foundBox}
-			tabindex="-1"
-			aria-live="polite"
-			class="outline-none"
-			data-testid="found-online"
+		{@const when = (at: number) =>
+			dateTimeFormat({
+				dateStyle: 'medium',
+				timeStyle: 'short',
+				timeZone: family.timeZone,
+			}).format(at)}
+		<Section
+			label={t('extensions_updates')}
+			count={search?.status === 'done' ? shown.updates.length : undefined}
+			actions={lookAction}
 		>
-			<Section
-				label={t('extensions_found')}
-				count={search.status === 'done' ? found.found.length : undefined}
-				actions={lookAgainAction}
+			<!-- What the look gave is announced when it arrives; focus lands here after a look. -->
+			<div
+				bind:this={foundBox}
+				tabindex="-1"
+				aria-live="polite"
+				class="grid gap-3 outline-none"
+				data-testid="updates"
 			>
-				{#if search.status !== 'looking'}
+				{#if search && search.status !== 'looking'}
 					<p class="text-ink-soft text-xs font-semibold" data-testid="found-looked-at">
-						{t('extensions_looked_at', {
-							when: dateTimeFormat({
-								dateStyle: 'medium',
-								timeStyle: 'short',
-								timeZone: family.timeZone,
-							}).format(search.at),
-						})}
+						{t('extensions_looked_at', { when: when(search.at) })}
 					</p>
 				{/if}
-				{#if search.status === 'looking'}
+				{#if !search}
+					<EmptyLine text={t('extensions_updates_never')}>
+						{#snippet icon()}<Search aria-hidden="true" />{/snippet}
+					</EmptyLine>
+				{:else if search.status === 'looking'}
 					<EmptyLine text={t('extensions_looking')}>
 						{#snippet icon()}<Search aria-hidden="true" />{/snippet}
 					</EmptyLine>
 				{:else if search.status === 'failed' && search.problem}
 					{@const said = searchProblem(search.problem)}
 					<Notice tone="alert">{t(said.key)}</Notice>
-				{:else if found.found.length > 0}
-					<Card rows data-testid="found-extensions">
-						{#each shown.found as { pkg, update } (pkg.id)}
+				{:else if shown.updates.length > 0}
+					<Card rows data-testid="extension-updates">
+						{#each shown.updates as pkg (pkg.id)}
 							{@const entry = foundEntry(pkg)}
-							<Row
-								title={name(entry)}
-								meta={update
-									? t('extensions_found_newer', { version: pkg.version })
-									: description(entry)}
-								onclick={() => {
-									foundError = null;
-									foundOpen = pkg;
-								}}
-								aria-label={name(entry)}
-							>
-								{#snippet trail()}
-									<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
-								{/snippet}
-							</Row>
+							{@const downloadingHere =
+								found.download?.id === pkg.id &&
+								found.download.version === pkg.version &&
+								found.download.status === 'downloading'}
+							<div class="flex min-w-0 items-center gap-1 pe-2">
+								<Row
+									class="min-w-0 flex-1"
+									title={name(entry)}
+									meta={t('extensions_update_meta', {
+										version: pkg.version,
+										current: pkg.current ?? '',
+									})}
+									onclick={() => {
+										foundError = null;
+										foundOpen = pkg;
+									}}
+									aria-label={name(entry)}
+								/>
+								<Button
+									variant="ghost"
+									size="sm"
+									class="shrink-0"
+									disabled={downloadingHere}
+									data-testid="update-{pkg.id}"
+									aria-label="{t('extensions_update')}: {name(entry)}"
+									onclick={() => void updateFound(pkg)}>{t('extensions_update')}</Button
+								>
+							</div>
 						{/each}
 					</Card>
 				{:else}
-					<EmptyLine text={t('extensions_found_none')}>
+					<EmptyLine text={t('extensions_updates_none')}>
 						{#snippet icon()}<CircleCheck aria-hidden="true" />{/snippet}
 					</EmptyLine>
 				{/if}
-			</Section>
-		</div>
+			</div>
+			<Card rows>
+				<SwitchRow
+					id="extensions-weekly"
+					label={t('extensions_weekly')}
+					hint={t('extensions_weekly_hint')}
+					bind:checked={weeklyOn}
+					onchange={(weekly) => void setWeekly(weekly)}
+				/>
+			</Card>
+			{#if found.weekly.enabled && found.weekly.problem && found.weekly.lastAttemptAt}
+				{@const said = searchProblem(found.weekly.problem)}
+				<Notice>
+					{t('extensions_weekly_failed', { when: when(found.weekly.lastAttemptAt) })}
+					<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words">{t(said.key)}</span>
+				</Notice>
+			{/if}
+		</Section>
+	{/if}
+{/snippet}
+
+{#snippet foundSection()}
+	{#if found?.search?.status === 'done' && shown.found.length > 0}
+		<Section label={t('extensions_found')} count={shown.found.length}>
+			<Card rows data-testid="found-extensions">
+				{#each shown.found as pkg (pkg.id)}
+					{@const entry = foundEntry(pkg)}
+					<Row
+						title={name(entry)}
+						meta={description(entry)}
+						onclick={() => {
+							foundError = null;
+							foundOpen = pkg;
+						}}
+						aria-label={name(entry)}
+					>
+						{#snippet trail()}
+							<ChevronRight class="text-ink-soft size-4" aria-hidden="true" />
+						{/snippet}
+					</Row>
+				{/each}
+			</Card>
+		</Section>
 	{/if}
 {/snippet}
 
@@ -645,7 +738,8 @@
 					{/if}
 				</Notice>
 			{/if}
-			<!-- What can be installed comes first: the installed list is long, and an extension that
+			{@render updatesSection()}
+			<!-- What can be installed comes next: the installed list is long, and an extension that
 			     was uninstalled is found again here, not below it. -->
 			{#if shown.available.length > 0}{@render availableSection()}{/if}
 			{@render foundSection()}
@@ -724,7 +818,7 @@
 
 	<FoundPanel
 		pkg={staged ? null : foundOpen}
-		update={shown.found.some(({ pkg, update }) => update && pkg.id === foundOpen?.id)}
+		update={shown.updates.some((pkg) => pkg.id === foundOpen?.id)}
 		list={entries}
 		name={foundOpen ? name(foundEntry(foundOpen)) : ''}
 		{names}

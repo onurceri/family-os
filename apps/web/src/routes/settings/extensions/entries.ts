@@ -358,17 +358,18 @@ export function foundEntry(pkg: FoundPackage): Entry {
 /**
  * The page's sections once the index was read: an extension the server offers in an older
  * version than the index is listed once, as found (installing it gets the newest); a found
- * package of an installed extension is an update.
+ * package of an installed extension is an update, and the rest is new here.
  */
 export function withFound(
 	grouped: { installed: Entry[]; available: Entry[] },
 	found: readonly FoundPackage[],
-): { available: Entry[]; found: { pkg: FoundPackage; update: boolean }[] } {
+): { available: Entry[]; updates: FoundPackage[]; found: FoundPackage[] } {
 	const foundIds = new Set(found.map((pkg) => pkg.id));
 	const installed = new Set(grouped.installed.map((entry) => entry.id));
 	return {
 		available: grouped.available.filter((entry) => !foundIds.has(entry.id)),
-		found: found.map((pkg) => ({ pkg, update: installed.has(pkg.id) })),
+		updates: found.filter((pkg) => installed.has(pkg.id)),
+		found: found.filter((pkg) => !installed.has(pkg.id)),
 	};
 }
 
