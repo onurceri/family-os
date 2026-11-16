@@ -86,7 +86,8 @@ async function call(
 		status: res.status,
 		headers: res.headers,
 		text,
-		body: text.startsWith('{') ? JSON.parse(text) : null,
+		// By content type, not by the first byte: a random backup starts with `{` one time in 256.
+		body: res.headers.get('content-type')?.includes('application/json') ? JSON.parse(text) : null,
 		cookie: res.headers
 			.getSetCookie()
 			.map((c) => c.split(';')[0])
