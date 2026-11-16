@@ -72,5 +72,10 @@
 			margin-block: 0;
 			translate: 0 -50%;
 		}
+		/* The translate makes the ⋯ its own stacking layer, so its open menu would sit under
+		   anything positioned that comes later on the page (a chore ring); raise it while open. */
+		.end > :global(.today-block-menu:has([aria-expanded='true'])) {
+			z-index: 50;
+		}
 	}
 </style>
