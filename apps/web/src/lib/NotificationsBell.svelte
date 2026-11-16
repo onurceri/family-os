@@ -205,12 +205,10 @@
 													>{/if}
 											</span>
 											{#if item.body}
-												<span class="text-ink-soft line-clamp-2 text-[0.8125rem]">{item.body}</span>
+												<span class="text-ink-soft line-clamp-4 text-[0.8125rem]">{item.body}</span>
 											{/if}
+											<span class="text-ink-soft text-xs">{ago(item.createdAt)}</span>
 										</span>
-										<span class="text-ink-soft shrink-0 pt-0.5 text-[0.8125rem]"
-											>{ago(item.createdAt)}</span
-										>
 									</button>
 								</li>
 							{/each}
