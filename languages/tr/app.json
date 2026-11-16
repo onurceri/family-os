@@ -260,6 +260,8 @@
 	"extensions_status_refused": "Devre dışı: bu sürüm bu FamilyOS’ta çalışamıyor.",
 	"extensions_status_failed": "Devre dışı: başlatılamadı.",
 	"extensions_restart": "Şimdi yeniden başlat",
+	"restart_waiting_one": "{{count}} uzantı değişikliği FamilyOS yeniden başlayınca geçerli olur",
+	"restart_waiting_other": "{{count}} uzantı değişikliği FamilyOS yeniden başlayınca geçerli olur",
 	"extensions_restart_needed": "Değişiklikler FamilyOS yeniden başlayınca geçerli olur. Birkaç saniye sürer; açık ekranlar kendiliğinden yenilenir.",
 	"extensions_restarting": "FamilyOS yeniden başlıyor",
 	"extensions_restarting_hint": "Bu sayfa birazdan kendiliğinden yeniden açılacak.",

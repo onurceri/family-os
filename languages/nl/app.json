@@ -260,6 +260,8 @@
 	"extensions_status_refused": "Weggelaten: deze versie kan niet draaien op deze FamilyOS.",
 	"extensions_status_failed": "Weggelaten: het kon niet starten.",
 	"extensions_restart": "Nu herstarten",
+	"restart_waiting_one": "{{count}} wijziging aan extensies gaat in zodra FamilyOS opnieuw start",
+	"restart_waiting_other": "{{count}} wijzigingen aan extensies gaan in zodra FamilyOS opnieuw start",
 	"extensions_restart_needed": "Wijzigingen werken als FamilyOS herstart. Dat duurt een paar seconden, en open schermen werken zichzelf bij.",
 	"extensions_restarting": "FamilyOS herstart",
 	"extensions_restarting_hint": "Deze pagina gaat zo vanzelf weer open.",
