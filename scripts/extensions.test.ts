@@ -12,8 +12,11 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 const script = (name: string) => join(import.meta.dirname, name);
 const run = (name: string, ...args: string[]) =>
 	spawnSync('node', [script(name), ...args], { encoding: 'utf8' });
+// Each test starts several node processes one after another; while the whole suite runs in
+// parallel, one start can take seconds, so the default five seconds is not enough.
+const SPAWNS = { timeout: 30_000 };
 
-describe('the release key script', () => {
+describe('the release key script', SPAWNS, () => {
 	it('writes a new private key only to its file, mode 600, and prints the trust root', () => {
 		const file = join(scratch, 'key.pem');
 		const out = run('extension-key.mjs', 'generate', '--out', file);
@@ -38,7 +41,7 @@ describe('the release key script', () => {
 	});
 });
 
-describe('the extensions script', () => {
+describe('the extensions script', SPAWNS, () => {
 	/** A signed package of `id` at 0.1.0, named as a release names it. */
 	async function packed(id: string, privateKey: string): Promise<string> {
 		const dir = mkdtempSync(join(scratch, `${id}-`));
