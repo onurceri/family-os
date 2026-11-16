@@ -635,7 +635,7 @@
 	"notifications_empty": "Nichts Neues. Was deine Aufmerksamkeit braucht, erscheint hier.",
 	"notifications_mark_all_read": "Alle als gelesen markieren",
 	"notifications_unread": "ungelesen",
-	"notifications_in_app_only": "Benachrichtigungen erscheinen hier in der App.",
+	"notifications_in_app_kinds": "Diese erhältst du in der App. Aktiviere Benachrichtigungen auf diesem Gerät oder verknüpfe Telegram, um sie auch dort zu erhalten.",
 	"channels_unavailable_title": "Für dich nicht eingerichtet",
 	"nav_notification_settings": "Benachrichtigungseinstellungen",
 	"notifications_new": "{{count}} neu",

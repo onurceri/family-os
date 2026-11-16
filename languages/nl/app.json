@@ -635,7 +635,7 @@
 	"notifications_empty": "Niets nieuws. Dingen die op jou wachten, verschijnen hier.",
 	"notifications_mark_all_read": "Alles markeren als gelezen",
 	"notifications_unread": "ongelezen",
-	"notifications_in_app_only": "Meldingen verschijnen hier in de app.",
+	"notifications_in_app_kinds": "Je krijgt deze in de app. Zet meldingen aan op dit apparaat of koppel Telegram om ze daar ook te krijgen.",
 	"channels_unavailable_title": "Niet voor jou ingesteld",
 	"nav_notification_settings": "Meldingsinstellingen",
 	"notifications_new": "{{count}} nieuw",
