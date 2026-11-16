@@ -1,5 +1,5 @@
 {
-	"sdk": "0.8.48",
+	"sdk": "0.8.49",
 	"svelte": "5.57",
 	"zod": "4",
 	"kysely": "0.29",
@@ -421,6 +421,7 @@
 			"getTodayBlock",
 			"groupOf",
 			"hasEnded",
+			"inertBeneath",
 			"isMine",
 			"isNightHour",
 			"isTimed",
@@ -432,6 +433,7 @@
 			"minutesUntil",
 			"nextUp",
 			"openPath",
+			"overlayOpen",
 			"pendingWork",
 			"pillOf",
 			"pillText",

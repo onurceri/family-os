@@ -40,6 +40,7 @@
 	import { onExtensionsChanged } from '#lib/server-changes.js';
 	import { accessBook } from '#lib/access.svelte.js';
 	import { session } from '#lib/session.svelte.js';
+	import { offersDeviceCover } from '#lib/device-cover.js';
 	import { enableServiceWorkerUpdates } from '#lib/sw-update.js';
 	import { applyTextSize, dayNight, followDayNight, textSize } from '#lib/theme.svelte.js';
 	import { signOutConfirm } from '#lib/sign-out-confirm.svelte.js';
@@ -452,6 +453,8 @@
 			});
 			// An extension turned on or off changes navigation and capabilities everywhere.
 			const offFeatures = onEvent('core.features.', () => void session.refresh());
+			// This device's photo switch changed (in Settings, on another device): me says it.
+			const offDevice = onEvent('core.device.', () => void session.refresh());
 			// The server restarted with other extensions: this page still runs the old ones. Reloading
 			// is the person's choice, so nothing they are typing is lost.
 			const offChanged = onExtensionsChanged(() =>
@@ -482,6 +485,7 @@
 				offLanguages();
 				offThemes();
 				offFeatures();
+				offDevice();
 				offChanged();
 				offBadges();
 				offAwaiting();
@@ -643,6 +647,9 @@
 		</nav>
 
 		<PreviewBar />
+		<!-- On a family device, what covers the app when nobody has touched it for a while. The app
+		     stays mounted underneath, so a touch brings it back exactly as it was. -->
+		{#if offersDeviceCover(session.me)}<Slot name="device.ambient" />{/if}
 		<!-- A page's code on its way (slow network): the same late, quiet mark as a slow load. -->
 		{#if navigating.to}<LoadingMark />{/if}
 	</div>

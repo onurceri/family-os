@@ -73,6 +73,7 @@ export type { MenuItem } from './menu-items.js';
 export { default as NextUpHero, type NextUpWords } from './NextUpHero.svelte';
 export { default as Notice } from './Notice.svelte';
 export { openPath } from './open-path.js';
+export { inertBeneath, overlayOpen } from './overlay.js';
 export { default as Page } from './Page.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
 export { default as PageTabs } from './PageTabs.svelte';

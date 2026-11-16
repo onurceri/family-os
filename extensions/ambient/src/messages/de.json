@@ -6,7 +6,7 @@
 	"cap_manage": "Displayfotos und Wetter einrichten",
 	"subtitle": "Das Wetter auf Heute sowie Fotos und Wetter auf Wanddisplays. Auf dieser Seite kommt nur das Wetter aus dem Internet, und nur, wenn du es einschaltest. Die Displays selbst rufen nichts ab.",
 	"photos_title": "Fotos",
-	"photos_intro": "Wenn niemand ein Display nutzt, zeigt es eine Diashow dieser Fotos.",
+	"photos_intro": "Wenn niemand ein Display oder ein Familiengerät nutzt, zeigt es eine Diashow dieser Fotos mit Uhr, Datum, Wetter und den nächsten drei Terminen von heute.",
 	"photos_add": "Fotos hinzufügen",
 	"photos_input": "Fotos zum Hinzufügen auswählen",
 	"photos_hint": "Fotos werden vor dem Senden auf diesem Gerät verkleinert. Details wie der Standort werden nicht gespeichert. JPEG, PNG und WebP werden unterstützt.",
@@ -52,8 +52,13 @@
 	"weather_unavailable": "Das Wetter ist gerade nicht verfügbar.",
 	"display_photos": "Fotos",
 	"photos_page_none": "Noch keine Fotos.",
-	"ambient_next_event": "Heute als Nächstes",
+	"ambient_today": "Heute",
+	"ambient_tomorrow": "Morgen",
+	"ambient_all_day": "Ganztägig · {{titles}}",
+	"ambient_cover_label": "Fotoshow. Berühre den Bildschirm, um zurückzukehren.",
 	"ambient_nothing": "Heute nichts weiter geplant",
+	"ambient_more_one": "+{{count}} weitere",
+	"ambient_more_other": "+{{count}} weitere",
 	"wmo_clear": "Klar",
 	"wmo_mostly_clear": "Überwiegend klar",
 	"wmo_partly_cloudy": "Teilweise bewölkt",
@@ -90,5 +95,6 @@
 	"setup_step_text": "Für das Wetter hier und auf einem Familiendisplay",
 	"setup_step_action": "Stadt auswählen",
 	"nav_photos_weather": "Fotos und Wetter",
-	"devices_line": "Fotos, Wetter und die Diashow auf Displays haben eine eigene Seite:"
+	"devices_line": "Fotos, Wetter und die Diashow auf Displays haben eine eigene Seite:",
+	"devices_no_photos": "Noch keine Fotos, die Diashow zeigt also nichts. Füge sie hinzu unter"
 }

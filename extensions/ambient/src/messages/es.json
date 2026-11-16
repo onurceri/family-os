@@ -6,7 +6,7 @@
 	"cap_manage": "Configurar las fotos y el tiempo de las pantallas",
 	"subtitle": "El tiempo en Hoy, y las fotos y el tiempo que muestran las pantallas de la pared. En esta página solo el tiempo viene de internet, y solo cuando lo activas. Las pantallas en sí nunca llaman a nada.",
 	"photos_title": "Fotos",
-	"photos_intro": "Cuando nadie usa una pantalla, esta muestra un pase de diapositivas con estas fotos.",
+	"photos_intro": "Cuando nadie usa una pantalla o un dispositivo de la familia, muestra un pase de diapositivas con estas fotos, la hora, la fecha, el tiempo y las tres cosas siguientes de hoy.",
 	"photos_add": "Añadir fotos",
 	"photos_input": "Elige fotos para añadir",
 	"photos_hint": "Las fotos se reducen en este dispositivo antes de enviarse, y detalles como la ubicación no se guardan. Funcionan JPEG, PNG y WebP.",
@@ -52,8 +52,14 @@
 	"weather_unavailable": "El tiempo no está disponible ahora mismo.",
 	"display_photos": "Fotos",
 	"photos_page_none": "Aún no hay fotos.",
-	"ambient_next_event": "Lo siguiente hoy",
+	"ambient_today": "Hoy",
+	"ambient_tomorrow": "Mañana",
+	"ambient_all_day": "Todo el día · {{titles}}",
+	"ambient_cover_label": "Pase de fotos. Toca la pantalla para volver.",
 	"ambient_nothing": "No hay nada más previsto hoy",
+	"ambient_more_one": "+{{count}} más",
+	"ambient_more_other": "+{{count}} más",
+	"ambient_more_many": "+{{count}} más",
 	"wmo_clear": "Despejado",
 	"wmo_mostly_clear": "Mayormente despejado",
 	"wmo_partly_cloudy": "Parcialmente nublado",
@@ -90,5 +96,6 @@
 	"setup_step_text": "Para el tiempo aquí y en una pantalla de la familia",
 	"setup_step_action": "Elige tu ciudad",
 	"nav_photos_weather": "Fotos y tiempo",
-	"devices_line": "Las fotos, el tiempo y el pase de diapositivas en las pantallas tienen su propia página:"
+	"devices_line": "Las fotos, el tiempo y el pase de diapositivas en las pantallas tienen su propia página:",
+	"devices_no_photos": "Aún no hay fotos, así que el pase de diapositivas no muestra nada. Añádelas en"
 }

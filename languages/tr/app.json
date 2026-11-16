@@ -1309,6 +1309,8 @@
 	"devices_none_hint": "Duvara bir ekran ya da ailenin ortak kullandığı bir tablet veya telefon ekle.",
 	"devices_kind_screen": "Ekran",
 	"devices_family_about": "Bir aile cihazı. Herkes adını seçer ve PIN ile girer.",
+	"devices_slideshow": "Kimse kullanmazken fotoğraflar",
+	"devices_slideshow_hint": "Bir süre dokunulmayınca bu cihaz ailenin fotoğraflarını, yanında bugünün planıyla gösterir (bugün bitince yarının planıyla). Bir dokunuş ekrandakini geri getirir ve hiçbir şeye basmaz; oturum açık kalır.",
 	"devices_left_out": "Ekranında şunlara yer yok: {{parts}}. Daha büyük bir ekran, başka bir stil ya da daha az şey göstermek yer açar.",
 	"devices_left_out_family": "evde kimin olduğu ve herkesin durumu",
 	"devices_left_out_chores": "ev işleri",

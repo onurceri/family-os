@@ -19,6 +19,7 @@ export {
 	type Decision,
 	DecisionSchema,
 } from './decide.ts';
+export * from './device-slideshow.ts';
 export * from './devices.ts';
 export { WAITING_STATUSES } from './draft-expiry.ts';
 export * from './event-audience.ts';

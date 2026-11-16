@@ -6,7 +6,7 @@
 	"cap_manage": "Ekran fotoğraflarını ve hava durumunu ayarlamak",
 	"subtitle": "Bugün sayfasında hava durumu; duvardaki ekranların gösterdiği fotoğraflar ve hava durumu. Bu sayfada internetten yalnızca hava durumu gelir, o da ancak siz açarsanız. Ekranların kendisi hiçbir yere bağlanmaz.",
 	"photos_title": "Fotoğraflar",
-	"photos_intro": "Kimse kullanmazken ekranlar bu fotoğraflardan slayt gösterisi yapar.",
+	"photos_intro": "Kimse kullanmazken ekranlar ve aile cihazları bu fotoğraflardan slayt gösterisi yapar; saati, tarihi, havayı ve bugünün sıradaki üç işini de gösterir.",
 	"photos_add": "Fotoğraf ekle",
 	"photos_input": "Eklenecek fotoğrafları seç",
 	"photos_hint": "Fotoğraflar gönderilmeden önce bu cihazda küçültülür; konum gibi ayrıntılar saklanmaz. JPEG, PNG ve WebP olur.",
@@ -52,8 +52,13 @@
 	"weather_unavailable": "Hava durumu şu an alınamıyor.",
 	"display_photos": "Fotoğraflar",
 	"photos_page_none": "Henüz fotoğraf yok.",
-	"ambient_next_event": "Bugün sıradaki",
+	"ambient_today": "Bugün",
+	"ambient_tomorrow": "Yarın",
+	"ambient_all_day": "Tüm gün · {{titles}}",
+	"ambient_cover_label": "Fotoğraf gösterisi. Geri dönmek için ekrana dokunun.",
 	"ambient_nothing": "Bugün başka plan yok",
+	"ambient_more_one": "+{{count}} tane daha",
+	"ambient_more_other": "+{{count}} tane daha",
 	"wmo_clear": "Açık",
 	"wmo_mostly_clear": "Çoğunlukla açık",
 	"wmo_partly_cloudy": "Parçalı bulutlu",
@@ -90,5 +95,6 @@
 	"setup_step_text": "Burada ve aile ekranında hava durumu için",
 	"setup_step_action": "Şehrini seç",
 	"nav_photos_weather": "Fotoğraflar ve hava durumu",
-	"devices_line": "Fotoğrafların, hava durumunun ve ekranlardaki slayt gösterisinin kendi sayfası var:"
+	"devices_line": "Fotoğrafların, hava durumunun ve ekranlardaki slayt gösterisinin kendi sayfası var:",
+	"devices_no_photos": "Henüz fotoğraf yok, bu yüzden slayt gösterisi bir şey göstermez. Şuradan ekleyin:"
 }

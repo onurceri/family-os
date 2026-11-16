@@ -87,7 +87,7 @@ A browser cookie remembers it; clearing site data forgets it.
 2. Enter the PIN, press the check mark (✓, read as **Sign in**).
 3. Adults: **Sign in with email** below the names (only form shown if nobody has a PIN).
 
-A PIN sign-in lasts while the device is a family device and the role allows PINs.
+A PIN sign-in lasts while the device is a family device and the role allows PINs. Left untouched for a while, a family device shows the family's photos with the day's plan beside them; a touch brings back the page, still signed in. It shows nothing while nobody is signed in, and you can turn it off for one device in **Settings → Devices** (see [Family displays](displays.md#add-a-tablet-or-phone-the-family-shares)); the tablet's own screen timeout must be longer than **Start after**.
 
 ### Stop a device
 
