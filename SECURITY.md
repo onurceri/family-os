@@ -65,8 +65,9 @@ code it can trust:
   private half exists only as a secret of the project's release workflow. There is no setting or
   environment variable that adds a key. Installing needs an admin who is signed in (never an API
   token, an agent or the AI).
-- **Packages from the official index** (Settings → Extensions → Look for more) are downloaded
-  only when an admin asks. The index (`index.json` on the project's GitHub Pages) must carry a
+- **Packages from the official index** (Settings → Extensions → Look for updates, or Look for
+  more) are downloaded only when an admin asks. The index is read only when an admin asks, or
+  once a week when an admin switched that on; the weekly look never downloads or installs. The index (`index.json` on the project's GitHub Pages) must carry a
   signature by a trust root; the server follows no redirect, reads only https from the index's
   own host, caps every size, and checks each download's size and SHA-256 against the index
   before it checks the package itself like a file from the family.

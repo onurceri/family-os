@@ -102,7 +102,7 @@ It makes an outside connection only when you set one up:
   your place rounded to about a kilometre.
 - **AI:** only to a provider you add, per area, and you can keep areas **Off** or **Local only**
   ([AI and privacy](docs/guide/ai.md)).
-- **Extensions:** the signed list is fetched only when you press **Look for more**.
+- **Extensions:** the signed list is fetched only when you press **Look for updates** or **Look for more**, or once a week if an admin switched that on.
 - **Telegram, email, backup targets, calendar subscriptions, Home Assistant:** only the addresses you enter.
 
 Details: [AI and privacy](docs/guide/ai.md), [extensions](docs/guide/extensions.md),

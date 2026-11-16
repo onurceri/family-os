@@ -305,10 +305,8 @@ describe('what the official index found', () => {
 			[pkg('home'), pkg('pets')],
 		);
 		expect(shown.available.map((e) => e.id)).toEqual(['kitchen']);
-		expect(shown.found.map(({ pkg, update }) => [pkg.id, update])).toEqual([
-			['home', false],
-			['pets', true],
-		]);
+		expect(shown.updates.map((pkg) => pkg.id)).toEqual(['pets']);
+		expect(shown.found.map((pkg) => pkg.id)).toEqual(['home']);
 	});
 
 	it('reads what a found package reaches from the index, and what installs with it', () => {

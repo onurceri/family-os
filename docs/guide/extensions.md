@@ -43,11 +43,25 @@ For a `.famext` file, such as a newer version of one you have:
 | **This file holds an older version** | FamilyOS already has a newer one. |
 | **This is not an extension file FamilyOS can read** | Damaged or changed. |
 
+## Updates
+
+**Updates** is the first section of **Extensions**. It says when FamilyOS last looked, how many updates there are, and has **Look for updates**.
+
+1. **Look for updates** (or **⋯** → **Look for more**) makes FamilyOS fetch its signed index. It never does this at start or in the background, unless you switch on the weekly look below.
+2. Each update is a row: **Version 1.1.0 is out; you have 1.0.0**. Press **Update**, or tap the row, for what it reaches and **Who made it**. FamilyOS downloads it and checks it against the index. Press **Update** again, then restart ([Restart](#restart)). The extension's row in **Installed** also says **Version 1.1.0 is out**.
+3. Nothing to update says **Every installed extension is up to date**.
+
+**Look for updates once a week** is off until an admin turns it on (turning it on looks at once). FamilyOS then reads its signed list from the internet about every seven days, and admins get a notification when a newer version of an extension you downloaded is out (choose who hears it under [Notifications](notifications.md)). It sends nothing about your family and never downloads or installs by itself. If a weekly look does not work, the page says so and FamilyOS tries again the next day.
+
+**Good to know**
+- Extensions that come with FamilyOS update with FamilyOS. The ones you downloaded or installed from a file update here.
+- Updates to FamilyOS itself are not announced here.
+
 ## Look for more online
 
-1. **⋯** → **Look for more**. FamilyOS fetches its signed index **only when you ask**, never in the background or at start.
-2. **Found online** lists what you lack: extensions not bundled, and newer versions (**Version 1.1.0 is out**). A bundled, uninstalled extension appears only with a newer version. It shows **Last looked 19 Oct 2026, 03:35** and **Look again**.
-3. Tap one for purpose, version and download size, press **Download** (checked against the index), then **Install** (or **Update**) after reading what it reaches and **Who made it**.
+1. **⋯** → **Look for more** does the same look as **Look for updates**.
+2. **Found online** lists what you lack: extensions not bundled. A bundled, uninstalled extension appears only with a newer version. Updates of what you installed are under **Updates**.
+3. Tap one for purpose, version and download size, press **Download** (checked against the index), then **Install** after reading what it reaches and **Who made it**.
 
 | If it says | Meaning |
 |---|---|
@@ -59,7 +73,7 @@ For a `.famext` file, such as a newer version of one you have:
 
 ## Restart
 
-Pending changes show on the row to every admin ("Mara asked to uninstall at … · waiting for a restart"). **Restart now** lists what changes and who asked, then restarts; the page reopens by itself, usually in seconds. Nothing is lost.
+Pending changes show on the row to every admin ("Mara asked to uninstall at … · waiting for a restart"). Until the restart, admins also see a line on Today and in Settings ("1 change to extensions takes effect when FamilyOS restarts") with **Restart now**. **Restart now** lists what changes and who asked, then restarts; the page reopens by itself, usually in seconds. Nothing is lost.
 
 **Good to know**
 - Family displays reload by themselves. People see **FamilyOS changed** with **Reload**, so nothing they type is lost.
