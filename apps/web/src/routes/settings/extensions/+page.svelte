@@ -56,6 +56,8 @@
 		sections,
 		stagedEntry,
 		updateOf,
+		updatesCount,
+		weeklyFailure,
 		withFound,
 	} from './entries.js';
 	import ExtensionPanel from './ExtensionPanel.svelte';
@@ -562,7 +564,7 @@
 			}).format(at)}
 		<Section
 			label={t('extensions_updates')}
-			count={search?.status === 'done' ? shown.updates.length : undefined}
+			count={updatesCount(search, shown.updates)}
 			actions={lookAction}
 		>
 			<!-- What the look gave is announced when it arrives; focus lands here after a look. -->
@@ -638,11 +640,13 @@
 					onchange={(weekly) => void setWeekly(weekly)}
 				/>
 			</Card>
-			{#if found.weekly.enabled && found.weekly.problem && found.weekly.lastAttemptAt}
-				{@const said = searchProblem(found.weekly.problem)}
+			{@const failure = weeklyFailure(found.weekly)}
+			{#if failure}
 				<Notice>
-					{t('extensions_weekly_failed', { when: when(found.weekly.lastAttemptAt) })}
-					<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words">{t(said.key)}</span>
+					{t('extensions_weekly_failed', { when: when(failure.at) })}
+					<span class="text-ink-soft mt-1 block text-[0.8125rem] break-words"
+						>{t(failure.said.key)}</span
+					>
 				</Notice>
 			{/if}
 		</Section>
