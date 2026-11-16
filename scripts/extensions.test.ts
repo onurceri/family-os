@@ -66,6 +66,23 @@ describe('the extensions script', () => {
 		expect(index.extensions.map((e: { id: string }) => e.id).sort()).toEqual(['garden', 'pond']);
 	});
 
+	it('names the product version, and keeps it when a later run gives none', async () => {
+		const { privateKey } = generateSigningKey();
+		const site = join(scratch, 'product-site');
+		const first = run('extensions.mjs', 'index', site, '--product', '1.2.3');
+		expect(first.status).toBe(0);
+		expect(first.stdout).toContain('FamilyOS 1.2.3');
+		const read = () => JSON.parse(readFileSync(join(site, 'index.json'), 'utf8'));
+		expect(read().product).toEqual({ version: '1.2.3' });
+		const later = run('extensions.mjs', 'index', site, '--add', await packed('pond', privateKey));
+		expect(later.status).toBe(0);
+		expect(read().product).toEqual({ version: '1.2.3' });
+		expect(read().extensions.map((e: { id: string }) => e.id)).toEqual(['pond']);
+		const refused = run('extensions.mjs', 'index', site, '--product', 'v1.3.0');
+		expect(refused.status).toBe(1);
+		expect(refused.stderr).toContain('product must be a version like 1.2.3');
+	});
+
 	it('writes an empty index and signs it with a key from the environment', () => {
 		const file = join(scratch, 'sign-key.pem');
 		execFileSync('node', [script('extension-key.mjs'), 'generate', '--out', file]);

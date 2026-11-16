@@ -42,3 +42,28 @@ describe('workflow checkouts', () => {
 		});
 	}
 });
+
+/** A product release must never publish an index without its version. */
+describe('the product version in the extension index', () => {
+	const read = (name: string) => readFileSync(join(dir, name), 'utf8');
+
+	it('is handed by the Release workflow to the publishing workflow', () => {
+		const release = read('release.yml');
+		const job = release.slice(release.indexOf('\n  extensions:'));
+		expect(job).toContain('uses: ./.github/workflows/publish-extensions.yml');
+		expect(job).toMatch(/^ {4}with:\n(?: {6}\S.*\n)* {6}product: \$\{\{ github\.ref_name \}\}$/m);
+	});
+
+	it('reaches the index step of the publishing workflow', () => {
+		const publish = read('publish-extensions.yml');
+		expect(publish).toMatch(/^ {6}product:\n/m);
+		expect(publish).toMatch(/^ {6}PRODUCT: \$\{\{ inputs\.product \}\}$/m);
+		const step = publish
+			.split('\n')
+			.find((line) => line.includes('node scripts/extensions.mjs index '));
+		// Before --add: the files after it are read as the rest of the arguments.
+		expect(step).toContain(
+			`node scripts/extensions.mjs index pages/extensions \${PRODUCT:+--product "\${PRODUCT#v}"} --add `,
+		);
+	});
+});

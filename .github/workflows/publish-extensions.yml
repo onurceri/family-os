@@ -20,6 +20,10 @@ on:
         description: Extension ids, space-separated; empty means every one the image ships
         type: string
         default: ""
+      product:
+        description: The FamilyOS release tag (v<x.y.z>) when the product is released; empty for an extension's own release
+        type: string
+        default: ""
     secrets:
       FAMOS_EXTENSION_SIGNING_KEY:
         required: true
@@ -44,6 +48,7 @@ jobs:
       TAG: ${{ inputs.tag }}
       TITLE: ${{ inputs.title }}
       IDS: ${{ inputs.ids }}
+      PRODUCT: ${{ inputs.product }}
     # The signing key is set only on the steps that use it: installing and building run
     # dependency and repository code, which must never be able to read it.
     steps:
@@ -106,8 +111,11 @@ jobs:
       - name: Add the packages to the index and sign it
         env:
           FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}
+        # A product release names its version in the index (servers show admins that it is out);
+        # an extension's own release passes none and the index keeps the one it named. The option
+        # goes before --add: the files after --add are read as the rest of the arguments.
         run: |
-          node scripts/extensions.mjs index pages/extensions --add famext/*.famext
+          node scripts/extensions.mjs index pages/extensions ${PRODUCT:+--product "${PRODUCT#v}"} --add famext/*.famext
           node scripts/extensions.mjs sign pages/extensions/index.json --key-env FAMOS_EXTENSION_SIGNING_KEY
           # Pages serves the files as they are, without a Jekyll build.
           touch pages/.nojekyll

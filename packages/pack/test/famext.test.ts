@@ -134,6 +134,69 @@ describe('the published index', () => {
 		);
 	});
 
+	it('names the product version a product release gives, and an index without one has none', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		const plain = await writeIndex(site, { now: 1 });
+		expect(plain.index).not.toHaveProperty('product');
+		expect(JSON.parse(readFileSync(join(site, INDEX_FILE), 'utf8'))).not.toHaveProperty('product');
+		const { index } = await writeIndex(site, { now: 2, product: '0.13.0' });
+		expect(index.product).toEqual({ version: '0.13.0' });
+		expect(Object.keys(JSON.parse(readFileSync(join(site, INDEX_FILE), 'utf8')))).toEqual([
+			'format',
+			'issuedAt',
+			'product',
+			'extensions',
+		]);
+	});
+
+	it("keeps the product version through an extension's own release", async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		await writeIndex(site, { product: '0.13.0' });
+		const { index } = await writeIndex(site, { add: [await packed('garden', '1.0.0')] });
+		expect(index.product).toEqual({ version: '0.13.0' });
+		expect(index.extensions.map((e) => e.id)).toEqual(['garden']);
+	});
+
+	it('never lowers the product version', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		await writeIndex(site, { product: '0.13.0' });
+		// Re-running an older release, or a patch on an older line.
+		expect((await writeIndex(site, { product: '0.12.4' })).index.product).toEqual({
+			version: '0.13.0',
+		});
+		expect((await writeIndex(site, { product: '0.13.0' })).index.product).toEqual({
+			version: '0.13.0',
+		});
+		// Ordered as versions, not as text.
+		expect((await writeIndex(site, { product: '0.100.0' })).index.product).toEqual({
+			version: '0.100.0',
+		});
+	});
+
+	it('refuses a product version with a v, missing parts or a pre-release', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		for (const product of ['v1.2.3', '1.2', '1.2.3-rc.1'])
+			await expect(writeIndex(site, { product })).rejects.toThrow(
+				'product must be a version like 1.2.3',
+			);
+		// Nothing was written.
+		expect(() => readFileSync(join(site, INDEX_FILE))).toThrow();
+	});
+
+	it('drops a product version in the old index it cannot read, and stops at an unreadable index', async () => {
+		const site = mkdtempSync(join(scratch, 'site-'));
+		writeFileSync(
+			join(site, INDEX_FILE),
+			JSON.stringify({ format: 1, issuedAt: 1, product: { version: 'x' }, extensions: [] }),
+		);
+		expect((await writeIndex(site, {})).index).not.toHaveProperty('product');
+		expect((await writeIndex(site, { product: '1.0.0' })).index.product).toEqual({
+			version: '1.0.0',
+		});
+		writeFileSync(join(site, INDEX_FILE), '{ not json');
+		await expect(writeIndex(site, {})).rejects.toThrow(/is not valid JSON/);
+	});
+
 	it('lists every published file, newest version first, and keeps the newest few', async () => {
 		const site = mkdtempSync(join(scratch, 'site-'));
 		const first = await packed('garden', '1.0.0');
