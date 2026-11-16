@@ -1,0 +1,114 @@
+name: README pictures
+
+# Makes the pictures of the README again from the current UI (`pnpm sweep:readme`) and, when any
+# changed, opens a pull request on the branch `readme-pictures` with each one shown before and
+# after. Runs after a product release and by hand, always on the tip of main, so the pull request
+# merges cleanly whatever started it. The job that installs and builds holds only a read token;
+# the job that pushes and opens the pull request runs no project code but the body script.
+# Opening the pull request needs the repository setting "Allow GitHub Actions to create and
+# approve pull requests" (Settings -> Actions -> General). A pull request made with the job's
+# token does not start CI, so the second job starts it.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+env:
+  # Privacy-first project: no tool telemetry from CI.
+  TURBO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+
+concurrency:
+  group: readme-pictures
+  cancel-in-progress: false
+
+jobs:
+  pictures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      base: ${{ steps.base.outputs.sha }}
+    # Same image as the e2e job of ci.yml: the browser and its system libraries are in it.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          persist-credentials: false
+      - id: base
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/setup
+      - name: Install cwebp
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq webp
+      - run: pnpm build
+      - run: pnpm --filter @famos/e2e sweep:readme
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: readme-pictures
+          path: |
+            docs/images
+            README.md
+          retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: readme-pictures-png
+          path: apps/e2e/test-results/readme
+          retention-days: 7
+          if-no-files-found: ignore
+
+  propose:
+    needs: pictures
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # the readme-pictures branch
+      pull-requests: write # the pull request
+      actions: write # starting CI on the branch
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.pictures.outputs.base }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: readme-pictures
+          path: .
+      - name: Propose the new pictures
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ needs.pictures.outputs.base }}
+        run: |
+          if [ -z "$(git status --porcelain -- docs/images README.md)" ]; then
+            echo "The pictures of the README are up to date; nothing to propose." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git switch -c readme-pictures
+          git add docs/images README.md
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "docs(readme): refresh the pictures"
+          head=$(git rev-parse HEAD)
+          # The branch belongs to this workflow: each run replaces it.
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" readme-pictures
+          node scripts/readme-pictures.mjs body --repo "$GITHUB_REPOSITORY" --base "$BASE" --head "$head" > "$RUNNER_TEMP/body.md"
+          number=$(gh pr list --head readme-pictures --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh pr edit "$number" --body-file "$RUNNER_TEMP/body.md"
+            echo "Updated pull request #$number." >> "$GITHUB_STEP_SUMMARY"
+          else
+            url=$(gh pr create --base main --head readme-pictures --title "docs(readme): refresh the pictures" --body-file "$RUNNER_TEMP/body.md")
+            echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # Its pull request's checks do not start from the job's token.
+          gh workflow run ci.yml --ref readme-pictures

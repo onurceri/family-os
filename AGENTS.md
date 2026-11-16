@@ -142,6 +142,7 @@ pnpm dev            # server (tsx watch, :3000) + web (vite, proxies /api) in wa
 pnpm test           # unit and integration tests (Vitest)
 pnpm e2e            # essential flows in Playwright against the production build (apps/e2e; fake model, temp data)
 pnpm sweep          # screenshots of every page for a UI review (test-results/sweep; not a test)
+pnpm sweep:readme   # makes the README's eight pictures again into docs/images (needs pnpm build and cwebp; a workflow runs it after a release)
 pnpm release x.y.z  # bump, commit and tag a release locally (docs/releasing.md); a person pushes
 pnpm lint           # Biome, Prettier (.svelte), dependency-cruiser
 pnpm typecheck      # tsc and svelte-check
