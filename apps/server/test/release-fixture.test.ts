@@ -16,7 +16,7 @@ const extensions = await discoverSourceExtensions();
  * migration that was edited, renamed or dropped shows up here, because only a fresh database
  * gets the edited version.
  */
-const FIXTURE = join(import.meta.dirname, 'fixtures/release-0.11.0.sqlite');
+const FIXTURE = join(import.meta.dirname, 'fixtures/release-0.12.0.sqlite');
 /** The key the fixture was made with; the fixture holds no other secret. */
 const FIXTURE_SECRET = 'famos-upgrade-fixture-secret-0.10.0-not-a-real-key';
 
