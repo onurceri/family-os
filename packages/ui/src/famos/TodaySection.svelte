@@ -29,7 +29,7 @@
 </script>
 
 <section class="grid min-w-0 content-start gap-2.5">
-	<div class="flex min-h-6 items-baseline gap-2">
+	<div class="row flex min-h-6 items-baseline gap-2">
 		{#if dot}<span class="bg-attention size-2 shrink-0 self-center rounded-full" aria-hidden="true"
 			></span>{/if}
 		<h2
@@ -61,15 +61,23 @@
 	.end > :global(.today-block-menu) {
 		margin-inline-start: 4px;
 	}
-	/* With a mouse the ⋯ only shows while the section is hovered or focused. It sits just past the
-	   row's end, out of the flow, so the link ("Calendar") stays at the column's edge and nothing
-	   moves when it appears. On touch it is always there, after the link. */
+	/* With a mouse the ⋯ only shows while the section is hovered or focused. It sits just before
+	   the link, out of the flow, so the link ("Calendar") stays at the column's edge and nothing
+	   moves when it appears; the title keeps room for it, so a long one truncates before it. It
+	   stays inside its own column: past the row's end it would cover the next column's label
+	   wherever the gap between them is narrower than the button. On touch it is always there,
+	   after the link. */
 	@media (hover: hover) and (pointer: fine) {
+		.row:has(:global(.today-block-menu)) > h2 {
+			/* The 36 px button and its 4 px margin, less the row's 8 px gap. */
+			margin-inline-end: 32px;
+		}
 		.end > :global(.today-block-menu) {
 			position: absolute;
-			inset-inline-start: 100%;
+			inset-inline-end: 100%;
 			top: 50%;
 			margin-block: 0;
+			margin-inline: 0 4px;
 			translate: 0 -50%;
 		}
 		/* The translate makes the ⋯ its own stacking layer, so its open menu would sit under
