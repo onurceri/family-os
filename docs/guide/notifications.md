@@ -15,6 +15,8 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 | Duties | Assignee (all who see records if none) | Days before, and on the due day, at the [reminder time](region.md) ([What needs doing and Papers](records.md)). |
 | Backup could not be sent off | Admins | [Backups](backups.md) |
 | Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |
+| Updates for extensions you downloaded | Admins | The weekly look finds a newer version ([Extensions](extensions.md)). Opens Extensions. |
+| A newer FamilyOS is out | Admins | The weekly look finds a newer FamilyOS, once per version. Opens Extensions, which shows how to update. |
 
 **Good to know**
 - Never told about your own suggestions; what you share is yours alone to decide, so other adults are not told about it.

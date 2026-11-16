@@ -55,7 +55,7 @@ For a `.famext` file, such as a newer version of one you have:
 
 **Good to know**
 - Extensions that come with FamilyOS update with FamilyOS. The ones you downloaded or installed from a file update here.
-- Updates to FamilyOS itself are not announced here.
+- The same look also tells admins when a newer FamilyOS is out: two rows at the top of **Updates** (**FamilyOS 0.13.0 is out**, which opens what is new, and **How to update**), and a notification when the weekly look is on. FamilyOS never updates itself; you update it where it runs ([Update](install.md#update)).
 
 ## Look for more online
 

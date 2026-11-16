@@ -31,6 +31,7 @@
 	import { getLocale, t, tDynamic } from '#lib/i18n.svelte.js';
 	import { type ActionFailure, runAction } from '#lib/run-action.js';
 	import { family } from '#lib/family.svelte.js';
+	import { releaseNotesUrl, UPDATE_GUIDE } from '#lib/project-links.js';
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { onEvent } from '#lib/realtime.js';
 	import { readBoot } from '#lib/restart.js';
@@ -88,6 +89,8 @@
 	let staged = $state<Staged | null>(null);
 	let fileError = $state<{ text: string; detail?: string } | null>(null);
 	let fileInput = $state<HTMLInputElement | null>(null);
+	/** The project's own pages open in a new tab and nothing is fetched from them. */
+	const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
 	/** What the last look in the official index found, and the last download from it. */
 	let found = $state<Found | null>(null);
 	/** The weekly switch as shown; put back to what the server says when it refuses. */
@@ -567,6 +570,23 @@
 			count={updatesCount(search, shown.updates)}
 			actions={lookAction}
 		>
+			{#if found.product.newer}
+				{@const newer = found.product.newer}
+				<Card rows data-testid="product-update">
+					<Row
+						title={t('extensions_product_out', { version: newer })}
+						meta={t('extensions_product_meta', { current: found.product.current })}
+						href={releaseNotesUrl(newer) ?? undefined}
+						{...external}
+					/>
+					<Row
+						title={t('extensions_product_how')}
+						meta={t('extensions_product_how_meta')}
+						href={UPDATE_GUIDE}
+						{...external}
+					/>
+				</Card>
+			{/if}
 			<!-- What the look gave is announced when it arrives; focus lands here after a look. -->
 			<div
 				bind:this={foundBox}
