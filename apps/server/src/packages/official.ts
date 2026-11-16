@@ -8,7 +8,8 @@ import { SignatureSchema } from './verify.ts';
 
 /**
  * The official index of extension packages, on the project's GitHub Pages, next to its
- * signature (`index.json.sig`). It is read only when a person presses "Look for more".
+ * signature (`index.json.sig`). It is read only when a person presses "Look for more", or once a
+ * week when an admin switched the weekly look for updates on.
  */
 export const OFFICIAL_INDEX_URL = 'https://onurceri.github.io/family-os/extensions/index.json';
 

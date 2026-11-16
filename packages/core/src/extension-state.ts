@@ -131,6 +131,11 @@ export interface ExtensionPackage {
 	manifest: ExtensionManifest;
 	/** Its name and description per language code, for a package whose texts are not loaded. */
 	labels: Record<string, { name: string; description: string }>;
+	/**
+	 * It runs from a package the family downloaded or uploaded, not one in the image: it does not
+	 * update with FamilyOS itself.
+	 */
+	stored?: boolean;
 }
 
 /** A signed package that was uploaded and checked, waiting to be installed. */
@@ -198,7 +203,8 @@ export interface ExtensionPackagesPort {
 	 * Fetches the official index and checks its signature. Throws a `FamosError` whose
 	 * `details.reason` says why it failed (`unreachable`, `unsigned`, `invalid`, `index_older`,
 	 * `index_future`). `newestSeen` is the issue date of the newest index accepted before. Absent where
-	 * the server cannot look online. Network I/O: called from a job only, when a person asked.
+	 * the server cannot look online. Network I/O: called from a job only, when a person asked, or by
+	 * the weekly check a family switched on.
 	 */
 	findPackages?(
 		newestSeen: number | null,

@@ -15,6 +15,7 @@ import {
 	createExtensionFind,
 	ExtensionDownloadSchema,
 	ExtensionSearchSchema,
+	ExtensionWeeklyCheckSchema,
 	FoundExtensionSchema,
 } from './extension-find.ts';
 import {
@@ -496,7 +497,11 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		},
 	});
 
-	const finder = createExtensionFind({ packages: deps.packages, assertPerson });
+	const finder = createExtensionFind({
+		packages: deps.packages,
+		assertPerson,
+		installed: async (db) => (await currentState(db)).installed,
+	});
 
 	const FoundSchema = z.object({
 		/** The last search, or null when nobody looked yet. */
@@ -506,6 +511,8 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		download: ExtensionDownloadSchema.extend({
 			staged: StagedExtensionSchema.nullable(),
 		}).nullable(),
+		/** The weekly look for updates: on or off, its last try and why that failed. */
+		weekly: ExtensionWeeklyCheckSchema,
 	});
 
 	const found = defineRoute({

@@ -14,6 +14,13 @@ export const backupRestored = defineNotificationKind({
 	audience: 'core.settings.manage',
 });
 
+/** Admins are told when a newer version of an extension they downloaded is out (weekly check). */
+export const extensionUpdates = defineNotificationKind({
+	id: 'core.extensionUpdates',
+	label: 'app:notify_kind_extension_updates',
+	audience: 'core.extensions.manage',
+});
+
 /** The person behind a suggestion is told when someone else approved or rejected it. */
 export const draftDecided = defineNotificationKind({
 	id: 'core.draftDecided',

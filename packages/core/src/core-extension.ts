@@ -14,6 +14,7 @@ import {
 	backupRestored,
 	draftDecided,
 	draftWaiting,
+	extensionUpdates,
 } from './core-extension/notification-kinds.ts';
 import { createRoles } from './core-extension/roles.ts';
 import { createSettings } from './core-extension/settings.ts';
@@ -23,6 +24,7 @@ import { createSuggestions } from './core-extension/suggestions.ts';
 import { today } from './core-extension/today.ts';
 import { listDeviceSlideshow, setDeviceSlideshow } from './device-slideshow.ts';
 import { scheduleExpiry } from './draft-expiry.ts';
+import { scheduleUpdateCheck } from './extension-find.ts';
 import { pruneIdempotency, schedulePrune } from './idempotency.ts';
 import { createLanguages } from './languages.ts';
 import { createMemory } from './memory.ts';
@@ -44,6 +46,7 @@ export {
 	backupRestored,
 	draftDecided,
 	draftWaiting,
+	extensionUpdates,
 } from './core-extension/notification-kinds.ts';
 export { CapabilityViewSchema, RoleViewSchema } from './core-extension/roles.ts';
 
@@ -145,6 +148,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			draftDecided,
 			backupFailed,
 			backupRestored,
+			extensionUpdates,
 			...oauthNotifications,
 			...autoApproval.notifications,
 		],
@@ -197,6 +201,8 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			await scheduleOAuthCleanup(ctx, ctx.clock.now() + DAY_MS);
 			await schedulePruneChanges(ctx, ctx.clock.now() + DAY_MS);
 			await schedulePruneHistory(ctx, ctx.clock.now() + DAY_MS);
+			// The weekly look for extension updates ticks daily and looks only when it is due and on.
+			await scheduleUpdateCheck(ctx, ctx.clock.now() + DAY_MS);
 			// Suggestions about a day that has passed expire shortly after midnight (family time).
 			await scheduleExpiry(ctx);
 		},
