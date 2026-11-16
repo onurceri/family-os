@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
 	type Actor,
+	DAY_MS,
 	defineAction,
 	defineCapability,
 	defineExtension,
@@ -24,6 +25,7 @@ import {
 	writeExtensionState,
 } from '../src/extension-state.ts';
 import { isExtensionRefusedError } from '../src/registry.ts';
+import { writeJson } from '../src/settings-json.ts';
 import type { CoreTables } from '../src/tables.ts';
 import { createTestKernel, defineTestExtension, type TestKernel } from './harness.ts';
 
@@ -648,7 +650,12 @@ describe('looking for more in the official index', () => {
 		const k = await kernel({ extensions: [notes], extensionPackages: port });
 		await k.worker.drain();
 		expect(calls.find).toBe(0);
-		expect(await found(k)).toEqual({ search: null, found: [], download: null });
+		expect(await found(k)).toEqual({
+			search: null,
+			found: [],
+			download: null,
+			weekly: { enabled: false, lastAttemptAt: null, problem: null },
+		});
 
 		const admin = (await k.member('admin')).actor;
 		await expect(k.runner.invoke('core.findExtensions', {}, admin)).resolves.toMatchObject({
@@ -669,6 +676,7 @@ describe('looking for more in the official index', () => {
 				},
 			],
 			download: null,
+			weekly: { enabled: false, lastAttemptAt: null, problem: null },
 		});
 		// Looking again: nothing is offered until the new search is done.
 		await k.runner.invoke('core.findExtensions', {}, admin);
@@ -789,5 +797,251 @@ describe('looking for more in the official index', () => {
 			await expect(k2.runner.invoke('core.findExtensions', {}, actor)).rejects.toMatchObject({
 				code: 'forbidden',
 			});
+	});
+
+	describe('the weekly look for updates', () => {
+		const herbs = ext('herbs');
+		const pkg = (def: ExtensionDefinition, more: Partial<ExtensionPackage> = {}) => ({
+			id: def.id,
+			version: def.manifest.version,
+			always: false,
+			manifest: parseManifest(def.manifest),
+			labels: { en: { name: def.id, description: `The ${def.id}` } },
+			...more,
+		});
+		/**
+		 * `notes` comes with the image, `garden` runs from a downloaded package, and `herbs` was
+		 * downloaded but is not installed. The index answers `index.listed`, or throws `index.fail`.
+		 */
+		function weekly() {
+			const index = { listed: [] as IndexedPackage[], fail: null as Error | null };
+			const calls = { find: 0, download: 0 };
+			const port: ExtensionPackagesPort = {
+				list: () => [
+					pkg(notes, { always: true }),
+					pkg(garden, { stored: true }),
+					pkg(herbs, { stored: true }),
+				],
+				place: (source) => Promise.reject(new FamosError('not_found', JSON.stringify(source))),
+				async findPackages() {
+					calls.find++;
+					if (index.fail) throw index.fail;
+					return { packages: index.listed, issuedAt: null };
+				},
+				async download() {
+					calls.download++;
+					throw new FamosError('bad_request', 'The weekly look never downloads');
+				},
+			};
+			return { port, index, calls };
+		}
+		const start = (w: ReturnType<typeof weekly>) =>
+			kernel({ extensions: [notes, garden], extensionPackages: w.port });
+		const days = async (k: TestKernel, n: number) => {
+			for (let i = 0; i < n; i++) {
+				k.clock.advance(DAY_MS);
+				await k.worker.drain();
+			}
+		};
+		const switchOn = async (k: TestKernel, weekly = true, by?: Actor) => {
+			const admin = by ?? (await k.member('admin')).actor;
+			await k.runner.invoke('core.setExtensionUpdateCheck', { weekly }, admin);
+			await k.worker.drain();
+		};
+		const told = async (k: TestKernel) =>
+			(
+				await k.ctx.db
+					.withTables<CoreTables>()
+					.selectFrom('core_notifications')
+					.select('member_id')
+					.where('kind', '=', 'core.extensionUpdates')
+					.execute()
+			)
+				.map((row) => row.member_id)
+				.sort();
+
+		it('never looks while it is off', async () => {
+			const w = weekly();
+			const k = await start(w);
+			await days(k, 8);
+			expect(w.calls.find).toBe(0);
+			expect((await found(k)).weekly).toEqual({
+				enabled: false,
+				lastAttemptAt: null,
+				problem: null,
+			});
+		});
+
+		it('looks at once when switched on, then once a week', async () => {
+			const w = weekly();
+			const k = await start(w);
+			await switchOn(k);
+			expect(w.calls.find).toBe(1);
+			expect((await found(k)).weekly).toMatchObject({ enabled: true });
+			await days(k, 6);
+			expect(w.calls.find).toBe(1);
+			await days(k, 1);
+			expect(w.calls.find).toBe(2);
+			expect((await found(k)).weekly).toEqual({
+				enabled: true,
+				lastAttemptAt: k.clock.now(),
+				problem: null,
+			});
+			// Switched off, it stops looking.
+			await switchOn(k, false);
+			await days(k, 14);
+			expect(w.calls.find).toBe(2);
+			expect(w.calls.download).toBe(0);
+		});
+
+		it('waits a week after a look by hand', async () => {
+			const w = weekly();
+			const k = await start(w);
+			await switchOn(k);
+			await days(k, 4);
+			await k.runner.invoke('core.findExtensions', {}, (await k.member('admin')).actor);
+			await k.worker.drain();
+			expect(w.calls.find).toBe(2);
+			await days(k, 3);
+			expect(w.calls.find).toBe(2);
+			await days(k, 4);
+			expect(w.calls.find).toBe(3);
+		});
+
+		it('tells each admin once of a newer version of an extension they downloaded', async () => {
+			const w = weekly();
+			w.index.listed = [entry('garden', '1.0.0')];
+			const k = await start(w);
+			const first = await k.member('admin');
+			const everyAdmin = [first.member.id, (await k.member('admin')).member.id].sort();
+			await k.member('member');
+			await switchOn(k, true, first.actor);
+			// A look by hand tells nobody: the admin is on the page.
+			expect(await told(k)).toEqual([]);
+			await days(k, 7);
+			expect(await told(k)).toEqual(everyAdmin);
+			// The same index a week later: nobody hears of it again.
+			await days(k, 7);
+			expect(w.calls.find).toBe(3);
+			expect(await told(k)).toEqual(everyAdmin);
+			// A still newer version: once more.
+			w.index.listed = [entry('garden', '1.1.0')];
+			await days(k, 7);
+			expect(await told(k)).toEqual([...everyAdmin, ...everyAdmin].sort());
+			expect(w.calls.download).toBe(0);
+		});
+
+		it('tells nobody of extensions in the image, ones not installed, or new ones', async () => {
+			const w = weekly();
+			w.index.listed = [entry('notes', '1.0.0'), entry('herbs', '1.0.0'), entry('pond', '1.0.0')];
+			const k = await start(w);
+			await k.member('admin');
+			await switchOn(k);
+			await days(k, 7);
+			expect(w.calls.find).toBe(2);
+			expect(await told(k)).toEqual([]);
+			// The page still lists every one of them.
+			expect((await found(k)).found.map((f: { id: string }) => f.id)).toEqual([
+				'herbs',
+				'notes',
+				'pond',
+			]);
+			expect(w.calls.download).toBe(0);
+		});
+
+		it('keeps what the last look found when it fails, and tries again the next day', async () => {
+			const w = weekly();
+			w.index.listed = [entry('garden', '1.0.0')];
+			const k = await start(w);
+			await k.member('admin');
+			await switchOn(k);
+			const before = await found(k);
+			w.index.fail = new FamosError('bad_request', 'No answer', { reason: 'unreachable' });
+			await days(k, 7);
+			expect(w.calls.find).toBe(2);
+			const after = await found(k);
+			expect(after.weekly).toEqual({
+				enabled: true,
+				lastAttemptAt: k.clock.now(),
+				problem: { reason: 'unreachable', code: null, params: {} },
+			});
+			expect(after.search).toEqual(before.search);
+			expect(after.found).toEqual(before.found);
+			expect(after.found.map((f: { id: string }) => f.id)).toEqual(['garden']);
+			await days(k, 1);
+			expect(w.calls.find).toBe(3);
+			expect(await told(k)).toEqual([]);
+			// Once it works again, admins hear of the update.
+			w.index.fail = null;
+			await days(k, 1);
+			expect(w.calls.find).toBe(4);
+			expect((await found(k)).weekly.problem).toBeNull();
+			expect((await told(k)).length).toBeGreaterThan(0);
+			// Switching it off forgets the last failure.
+			w.index.fail = new FamosError('bad_request', 'No answer', { reason: 'unreachable' });
+			await days(k, 7);
+			expect((await found(k)).weekly.problem).toMatchObject({ reason: 'unreachable' });
+			await switchOn(k, false);
+			expect((await found(k)).weekly).toMatchObject({ enabled: false, problem: null });
+			expect(w.calls.download).toBe(0);
+		});
+
+		it('is switched only by a person who manages extensions, on a server that can look', async () => {
+			const k = await kernel({
+				extensions: [notes],
+				extensionPackages: packages([{ ext: notes }]),
+			});
+			const admin = (await k.member('admin')).actor;
+			await expect(
+				k.runner.invoke('core.setExtensionUpdateCheck', { weekly: true }, admin),
+			).rejects.toMatchObject({ code: 'bad_request' });
+			await expect(
+				k.runner.invoke('core.setExtensionUpdateCheck', { weekly: false }, admin),
+			).resolves.toMatchObject({ output: { weekly: false } });
+
+			const w = weekly();
+			const k2 = await start(w);
+			const admin2 = (await k2.member('admin')).actor;
+			const actors: Actor[] = [
+				(await k2.member('member')).actor,
+				{ kind: 'display', deviceId: 'd', capabilities: [], showNames: false },
+				{ kind: 'ai', mode: 'agent', source: 'mcp', onBehalfOf: admin2.memberId, roleId: 'admin' },
+				{
+					kind: 'app',
+					appId: 'app_0198c2a0-0000-7000-8000-000000000001',
+					roleId: 'admin',
+					mode: 'apply',
+				},
+			];
+			for (const actor of actors)
+				await expect(
+					k2.runner.invoke('core.setExtensionUpdateCheck', { weekly: true }, actor),
+				).rejects.toMatchObject({ code: 'forbidden' });
+			await k2.worker.drain();
+			expect(w.calls.find).toBe(0);
+			expect((await found(k2)).weekly.enabled).toBe(false);
+		});
+
+		it('reads what a server stored before the weekly look existed', async () => {
+			const w = weekly();
+			const k = await start(w);
+			const at = k.clock.now();
+			await writeJson(
+				k.ctx.db,
+				'extension_index',
+				{
+					search: { status: 'done', at, problem: null },
+					packages: [entry('garden', '1.0.0')],
+					newestIssuedAt: null,
+					download: null,
+				},
+				at,
+			);
+			expect(await found(k)).toMatchObject({
+				search: { status: 'done', at },
+				found: [{ id: 'garden', version: '1.0.0', current: '0.0.0' }],
+				weekly: { enabled: false, lastAttemptAt: null, problem: null },
+			});
+		});
 	});
 });

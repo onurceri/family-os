@@ -164,7 +164,6 @@ function packagesPort(
 			},
 		]),
 	);
-	const plain = ({ stored: _, ...pkg }: Known): ExtensionPackage => pkg;
 	/** An older version than this server has would never run (the highest one does): refused. */
 	const assertNotOlder = (staged: StagedPackage) => {
 		const have = byId.get(staged.id);
@@ -182,12 +181,12 @@ function packagesPort(
 		return staged;
 	}
 	return {
-		list: () => [...byId.values()].map(plain),
+		list: () => [...byId.values()],
 		async place(source) {
 			if ('id' in source) {
 				const found = byId.get(source.id);
 				if (!found) throw new FamosError('not_found', `No extension "${source.id}" to install`);
-				return plain(found);
+				return found;
 			}
 			if (!store) throw new FamosError('not_found', 'This server cannot install from a file');
 			const staged = await store.staged(source.staged);
@@ -196,7 +195,7 @@ function packagesPort(
 				const have = byId.get(staged.id);
 				// The same version as the shipped one: the shipped copy runs, nothing to place.
 				if (have && !have.stored && compareVersions(staged.version, have.version) === 0)
-					return plain(have);
+					return have;
 			}
 			const placed = await store.place(source.staged);
 			const pkg: Known = {
@@ -208,7 +207,7 @@ function packagesPort(
 				stored: true,
 			};
 			byId.set(placed.id, pkg);
-			return plain(pkg);
+			return pkg;
 		},
 		...(store && {
 			stage,

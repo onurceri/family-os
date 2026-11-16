@@ -1,10 +1,12 @@
 import {
 	type Actor,
 	compareVersions,
+	DAY_MS,
 	type DbExecutor,
 	defineAction,
 	defineEvent,
 	defineJob,
+	type ExtensionContext,
 	FamosError,
 	isFamosError,
 	SDK_VERSION,
@@ -30,6 +32,12 @@ export const extensionsFound = defineEvent('core.extensions.found', z.object({})
 const KEY = 'extension_index';
 export const FIND_JOB = 'core.fetchExtensionIndex';
 export const DOWNLOAD_JOB = 'core.fetchExtensionPackage';
+export const CHECK_JOB = 'core.checkExtensionUpdates';
+
+/** How long after a look that worked the weekly check looks again (half a day of slack for the tick). */
+const WEEK_DUE_MS = 7 * DAY_MS - DAY_MS / 2;
+/** A look still marked as running after this long was lost (a crash): it no longer holds others back. */
+const LOOK_STALE_MS = 60 * 60_000;
 
 /**
  * Why looking or downloading failed, from the `details` of the error, for a page to say:
@@ -58,6 +66,13 @@ export const ExtensionSearchSchema = z.object({
 	problem: ExtensionFindProblemSchema.nullable(),
 });
 
+/** The weekly look for updates: whether it is on, when it last tried, and why that failed. */
+export const ExtensionWeeklyCheckSchema = z.object({
+	enabled: z.boolean(),
+	lastAttemptAt: z.number().nullable(),
+	problem: ExtensionFindProblemSchema.nullable(),
+});
+
 /** The last download of a package the index lists. */
 export const ExtensionDownloadSchema = z.object({
 	id: z.string(),
@@ -76,10 +91,44 @@ const StateSchema = z.object({
 	newestIssuedAt: z.number().nullable().default(null),
 	/** With the staged package's digest once it is ready. */
 	download: ExtensionDownloadSchema.extend({ digest: z.string().nullable() }).nullable(),
+	/** The weekly check a family may switch on; off until an admin does. */
+	auto: z
+		.object({
+			weekly: z.boolean(),
+			/** When the weekly check last tried to look, whether it worked or not. */
+			lastAttemptAt: z.number().nullable(),
+			/** Why its last try failed; null once one worked. */
+			problem: ExtensionFindProblemSchema.nullable(),
+			/** Per extension id, the highest version admins were told of, so nobody hears twice. */
+			notified: z.record(z.string(), z.string()),
+		})
+		.default({ weekly: false, lastAttemptAt: null, problem: null, notified: {} }),
 });
 type State = z.infer<typeof StateSchema>;
 
-const empty = (): State => ({ search: null, packages: [], newestIssuedAt: null, download: null });
+const empty = (): State => ({
+	search: null,
+	packages: [],
+	newestIssuedAt: null,
+	download: null,
+	auto: { weekly: false, lastAttemptAt: null, problem: null, notified: {} },
+});
+
+/** A look someone started that has not finished (and is not a lost one from before a crash). */
+const lookRunning = (state: State, now: number) =>
+	state.search?.status === 'looking' && now - state.search.at < LOOK_STALE_MS;
+
+/** One pending tick per day, so restarts and the job's own rescheduling never pile up. */
+export async function scheduleUpdateCheck(
+	ctx: Pick<ExtensionContext, 'enqueue'>,
+	runAt: number,
+): Promise<void> {
+	await ctx.enqueue(
+		CHECK_JOB,
+		{},
+		{ runAt, dedupeKey: `${CHECK_JOB}:${Math.floor(runAt / DAY_MS)}` },
+	);
+}
 
 async function readState(db: DbExecutor): Promise<State> {
 	const parsed = StateSchema.safeParse(await readJson<unknown>(db, KEY, null));
@@ -148,14 +197,17 @@ export interface ExtensionFindDeps {
 	packages: () => ExtensionPackagesPort;
 	/** Refuses anyone but a person signed in to the app (or the command line). */
 	assertPerson: (actor: Actor, what: string) => void;
+	/** The ids the family installed. */
+	installed: (db: DbExecutor) => Promise<readonly string[]>;
 }
 
 /**
  * Looking for more extensions in the official index, and downloading one. Both reach the
- * internet, so they happen only when a person asks (never on a schedule or at start), as jobs:
- * the index is fetched and its signature checked, a download is checked against the index and
- * staged like an uploaded file, and installing it is then the same `core.installExtension` as
- * for a file.
+ * internet, so they happen as jobs and never at start: the index is fetched when a person asks,
+ * or once a week when an admin switched the weekly check on (it then tells admins of newer
+ * versions of the extensions they downloaded); a package is downloaded only when a person asks,
+ * checked against the index and staged like an uploaded file, and installing it is then the same
+ * `core.installExtension` as for a file.
  */
 export function createExtensionFind(deps: ExtensionFindDeps) {
 	const save = (db: DbExecutor, state: State, now: number) => writeJson(db, KEY, state, now);
@@ -178,6 +230,41 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 			await uow.enqueue(FIND_JOB, {});
 			uow.emit(extensionsFound, {});
 			return { queued: true as const };
+		},
+	});
+
+	const setUpdateCheck = defineAction({
+		id: 'core.setExtensionUpdateCheck',
+		title: 'Switch the weekly look for extension updates on or off',
+		input: z.object({ weekly: z.boolean() }),
+		output: z.object({ weekly: z.boolean() }),
+		requires: CORE_CAPABILITIES.extensionsManage.id,
+		approval: 'never',
+		async run(uow, input) {
+			deps.assertPerson(uow.actor, 'change how FamilyOS looks for extension updates');
+			if (input.weekly && !deps.packages().findPackages)
+				throw new FamosError('bad_request', 'This server cannot look for extensions online');
+			const now = uow.clock.now();
+			const state = await readState(uow.db);
+			const auto = {
+				...state.auto,
+				weekly: input.weekly,
+				problem: input.weekly ? state.auto.problem : null,
+			};
+			// Switching it on looks at once, so the family sees what the choice does.
+			const look = input.weekly && !lookRunning(state, now);
+			await save(
+				uow.db,
+				{
+					...state,
+					auto,
+					...(look && { search: { status: 'looking' as const, at: now, problem: null } }),
+				},
+				now,
+			);
+			if (look) await uow.enqueue(FIND_JOB, {});
+			uow.emit(extensionsFound, {});
+			return { weekly: input.weekly };
 		},
 	});
 
@@ -255,6 +342,93 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 		},
 	});
 
+	/**
+	 * A daily tick: once a week, when the family switched it on, it reads the index like a look by
+	 * hand and tells admins of a newer version of an installed extension that runs from a
+	 * downloaded package (those in the image update with FamilyOS itself). It never downloads.
+	 */
+	const checkUpdates = defineJob({
+		name: CHECK_JOB,
+		payload: z.object({}),
+		maxAttempts: 2,
+		timeoutMs: 60_000,
+		async handle(ctx) {
+			const at = ctx.clock.now();
+			// The next tick first, so a failure never ends the chain.
+			await scheduleUpdateCheck(ctx, at + DAY_MS);
+			const port = deps.packages();
+			const state = await readState(ctx.db);
+			if (!state.auto.weekly || !port.findPackages || lookRunning(state, at)) return;
+			// A look by hand counts as well: it postpones this one.
+			const lastDoneAt = state.search?.status === 'done' ? state.search.at : null;
+			if (lastDoneAt !== null && at - lastDoneAt < WEEK_DUE_MS) return;
+
+			let found: Awaited<ReturnType<NonNullable<ExtensionPackagesPort['findPackages']>>>;
+			try {
+				found = await port.findPackages(state.newestIssuedAt, at);
+			} catch (error) {
+				// Kept for the page; what the last look found stays offered. Tomorrow's tick tries again.
+				const problem = problemOf(error);
+				ctx.logger.warn({ reason: problem.reason }, 'the weekly look for extensions failed');
+				await ctx.unit(async (uow) => {
+					const latest = await readState(uow.db);
+					await save(
+						uow.db,
+						{ ...latest, auto: { ...latest.auto, lastAttemptAt: at, problem } },
+						at,
+					);
+					uow.emit(extensionsFound, {});
+				});
+				return;
+			}
+
+			const downloaded = new Set(
+				port
+					.list()
+					.filter((p) => p.stored)
+					.map((p) => p.id),
+			);
+			const here = new Map(port.list().map((p) => [p.id, p.version] as const));
+			await ctx.unit(async (uow) => {
+				const latest = await readState(uow.db);
+				const installed = new Set(await deps.installed(uow.db));
+				const fresh = newerThanHere(found.packages, here).filter((update) => {
+					if (!installed.has(update.id) || !downloaded.has(update.id)) return false;
+					const told = latest.auto.notified[update.id];
+					return told === undefined || compareVersions(update.version, told) > 0;
+				});
+				const notified = { ...latest.auto.notified };
+				for (const update of fresh) notified[update.id] = update.version;
+				await save(
+					uow.db,
+					{
+						...latest,
+						search: { status: 'done', at, problem: null },
+						packages: found.packages,
+						newestIssuedAt: Math.max(latest.newestIssuedAt ?? 0, found.issuedAt ?? 0) || null,
+						auto: { ...latest.auto, lastAttemptAt: at, problem: null, notified },
+					},
+					at,
+				);
+				if (fresh.length > 0)
+					await uow.notify({
+						kind: 'core.extensionUpdates',
+						to: { capability: CORE_CAPABILITIES.extensionsManage.id },
+						title: { key: 'app:notify_extension_updates_title' },
+						body: { key: 'app:notify_extension_updates_body', params: { count: fresh.length } },
+						url: '/settings/extensions',
+						source: { kind: 'extension_index', id: 'updates' },
+						dedupeKey:
+							`extension-updates:${fresh.map((f) => `${f.id}@${f.version}`).join(',')}`.slice(
+								0,
+								200,
+							),
+					});
+				uow.emit(extensionsFound, {});
+			});
+		},
+	});
+
 	const fetchPackage = defineJob({
 		name: DOWNLOAD_JOB,
 		payload: z.object({ extensionId: z.string(), version: z.string() }),
@@ -307,18 +481,19 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 	});
 
 	return {
-		actions: [find, download],
-		jobs: [fetchIndex, fetchPackage],
+		actions: [find, setUpdateCheck, download],
+		jobs: [fetchIndex, checkUpdates, fetchPackage],
 		events: [extensionsFound],
 		/**
 		 * The last search, what it found that this server lacks, and the last download with its
 		 * staged package (checked again; null once it is gone: staged packages nobody installed
-		 * are removed after a day).
+		 * are removed after a day), and the weekly check.
 		 */
 		async describe(db: DbExecutor): Promise<{
 			search: z.infer<typeof ExtensionSearchSchema> | null;
 			found: FoundExtension[];
 			download: (ExtensionDownload & { staged: StagedPackage | null }) | null;
+			weekly: z.infer<typeof ExtensionWeeklyCheckSchema>;
 		}> {
 			const state = await readState(db);
 			const port = deps.packages();
@@ -334,7 +509,8 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 			}
 			// Only what the last search found: while looking, or after it failed, nothing is offered.
 			const found = state.search?.status === 'done' ? newerThanHere(state.packages, here) : [];
-			return { search: state.search, found, download };
+			const { weekly: enabled, lastAttemptAt, problem } = state.auto;
+			return { search: state.search, found, download, weekly: { enabled, lastAttemptAt, problem } };
 		},
 	};
 }

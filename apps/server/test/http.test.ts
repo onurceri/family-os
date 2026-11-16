@@ -914,6 +914,11 @@ describe('HTTP API', () => {
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{
+				id: 'core.extensionUpdates',
+				label: 'İndirdiğin eklentiler için güncellemeler',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
 				id: 'core.aiAppConnected',
 				label: 'Hesabınıza bir yapay zekâ uygulaması bağlandı',
 				defaultChannels: ['webpush', 'telegram'],
