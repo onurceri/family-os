@@ -27,7 +27,7 @@ A `fix` that repairs something a family could not do at all (adding, ticking, si
 
 The **Release** workflow then runs every check (lint, typecheck, tests, E2E), verifies the tag matches the version, pushes `ghcr.io/onurceri/familyos` for amd64 and arm64 as `0.2.0`, `0.2` and `latest` (plus `1` from 1.0 on), creates the GitHub release with the notes, and then publishes the extension packages (below).
 
-After a release tag, the **README pictures** workflow (`.github/workflows/readme-pictures.yml`) makes the pictures of the README again from the current UI and, if any changed, opens a pull request on the branch `readme-pictures` with each one before and after in its body. Review it and merge it. It can also be run by hand (Actions, README pictures, Run workflow), and needs the setting "Allow GitHub Actions to create and approve pull requests" (Settings, Actions, General). Locally: `pnpm sweep:readme` (needs `pnpm build` first and `cwebp`).
+After a release tag, the **README pictures** workflow (`.github/workflows/readme-pictures.yml`) makes the pictures of the README again from the current UI and, if any changed, opens a pull request on the branch `readme-pictures` with each one before and after in its body. Its CI waits until you press **Approve and run workflows** on the pull request (GitHub asks for this on pull requests the workflow opens); then review the pictures and merge it. It can also be run by hand (Actions, README pictures, Run workflow), and needs the setting "Allow GitHub Actions to create and approve pull requests" (Settings, Actions, General). Locally: `pnpm sweep:readme` (needs `pnpm build` first and `cwebp`).
 
 ## Before a release, check older browsers
 
