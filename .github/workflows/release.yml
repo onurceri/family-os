@@ -107,5 +107,6 @@ jobs:
     with:
       tag: ${{ github.ref_name }}
       title: FamilyOS ${{ github.ref_name }}
+      product: ${{ github.ref_name }}
     secrets:
       FAMOS_EXTENSION_SIGNING_KEY: ${{ secrets.FAMOS_EXTENSION_SIGNING_KEY }}

@@ -149,7 +149,38 @@ export interface ExtensionIndex {
 	format: 1;
 	/** When the index was written (epoch ms), inside the signed bytes: servers refuse an older one. */
 	issuedAt: number;
+	/**
+	 * The newest FamilyOS release (`x.y.z`), inside the signed bytes. Servers only show it: nothing
+	 * is downloaded or applied for it.
+	 */
+	product?: { version: string };
 	extensions: IndexEntry[];
+}
+
+/** A released product version: no `v`, no pre-release part (a pre-release publishes no index). */
+const PRODUCT_VERSION = /^\d+\.\d+\.\d+$/;
+
+/**
+ * The product version the folder's current `index.json` names, or undefined when there is no
+ * index yet or it names none. An index that cannot be read stops the run instead: writing a new
+ * one without its product version would announce nothing until the next product release.
+ */
+async function previousProductVersion(dir: string): Promise<string | undefined> {
+	let text: string;
+	try {
+		text = await readFile(join(dir, INDEX_FILE), 'utf8');
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+		throw error;
+	}
+	let previous: unknown;
+	try {
+		previous = JSON.parse(text);
+	} catch {
+		throw new Error(`${join(dir, INDEX_FILE)} is not valid JSON`);
+	}
+	const version = (previous as { product?: { version?: unknown } } | null)?.product?.version;
+	return typeof version === 'string' && PRODUCT_VERSION.test(version) ? version : undefined;
 }
 
 /** What a packed package says it is, read from its `famos-package.json` without unpacking it. */
@@ -199,13 +230,25 @@ export async function signFile(file: string, key: KeyObject): Promise<PackageSig
  * every file left. A version already published with other bytes is refused: a server that was
  * told one hash for a version must never be handed another. The index is written unsigned;
  * `signFile` signs it.
+ *
+ * `product` is the FamilyOS version a product release publishes. Without it (an extension's own
+ * release) the previous index's product version is kept, and an older one never replaces a newer
+ * one, so re-running an old release cannot announce an older version.
  */
 export async function writeIndex(
 	dir: string,
-	options: { add?: readonly string[]; keep?: number; now?: number } = {},
+	options: { add?: readonly string[]; keep?: number; now?: number; product?: string } = {},
 ): Promise<{ index: ExtensionIndex; removed: string[] }> {
 	const keep = options.keep ?? 5;
 	if (!Number.isInteger(keep) || keep < 1) throw new Error('keep must be a whole number above 0');
+	if (options.product !== undefined && !PRODUCT_VERSION.test(options.product))
+		throw new Error('product must be a version like 1.2.3');
+	const previous = await previousProductVersion(dir);
+	const productVersion =
+		options.product === undefined ||
+		(previous !== undefined && compareVersions(previous, options.product) > 0)
+			? previous
+			: options.product;
 	for (const file of options.add ?? []) {
 		const { id, version } = await readPackedDescription(file);
 		const name = `${id}-${version}${ARCHIVE_EXTENSION}`;
@@ -254,7 +297,12 @@ export async function writeIndex(
 			});
 		}
 	}
-	const index: ExtensionIndex = { format: 1, issuedAt: options.now ?? Date.now(), extensions };
+	const index: ExtensionIndex = {
+		format: 1,
+		issuedAt: options.now ?? Date.now(),
+		...(productVersion !== undefined && { product: { version: productVersion } }),
+		extensions,
+	};
 	await mkdir(dir, { recursive: true });
 	await writeFile(join(dir, INDEX_FILE), `${JSON.stringify(index, null, '\t')}\n`);
 	return { index, removed };

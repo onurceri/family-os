@@ -4,9 +4,10 @@
 //     Packs each built package (extensions/<id>/dist, from `pnpm build`) into
 //     <dir>/<id>-<version>.famext, signed. Without ids: every extension extensions.json ships.
 //     With --version, a package of another version is refused (a release publishes one).
-//   node scripts/extensions.mjs index <dir> [--add <file.famext>…] [--keep <n>]
+//   node scripts/extensions.mjs index <dir> [--product <x.y.z>] [--add <file.famext>…] [--keep <n>]
 //     Copies the files into the published folder (<dir>/<id>/), keeps the newest n versions of
-//     each (5) and writes <dir>/index.json.
+//     each (5) and writes <dir>/index.json. --product names the FamilyOS version a product
+//     release publishes; without it the index keeps the one it named, and it is never lowered.
 //   node scripts/extensions.mjs sign <file> (--key-env <VAR> | --key-file <pem>)
 //     Writes <file>.sig, the signature of its exact bytes (how index.json is signed).
 // The key is read from a file or an environment variable and never printed.
@@ -25,7 +26,7 @@ import {
 const root = join(import.meta.dirname, '..');
 const usage = `Usage:
   node scripts/extensions.mjs pack [<id>…] --out <dir> (--key-env <VAR> | --key-file <pem>) [--version <x.y.z>]
-  node scripts/extensions.mjs index <dir> [--add <file.famext>…] [--keep <n>]
+  node scripts/extensions.mjs index <dir> [--product <x.y.z>] [--add <file.famext>…] [--keep <n>]
   node scripts/extensions.mjs sign <file> (--key-env <VAR> | --key-file <pem>)`;
 
 const { values, positionals } = parseArgs({
@@ -37,6 +38,7 @@ const { values, positionals } = parseArgs({
 		'key-file': { type: 'string' },
 		add: { type: 'string', multiple: true },
 		keep: { type: 'string' },
+		product: { type: 'string' },
 	},
 });
 const [command, ...rest] = positionals;
@@ -87,9 +89,11 @@ try {
 			const { index, removed } = await writeIndex(dir, {
 				add: [...(values.add ?? []), ...more],
 				...(keep !== undefined && { keep }),
+				...(values.product !== undefined && { product: values.product }),
 			});
 			for (const path of removed) console.log(`removed ${path}`);
-			console.log(`${join(dir, 'index.json')}: ${index.extensions.length} packages`);
+			const product = index.product ? `, FamilyOS ${index.product.version}` : '';
+			console.log(`${join(dir, 'index.json')}: ${index.extensions.length} packages${product}`);
 			break;
 		}
 		case 'sign': {
