@@ -4,7 +4,7 @@
 chores, recipes and paperwork, on your own hardware (a Raspberry Pi is enough). An AI model of your
 choice suggests; a person in the family approves.
 
-![FamilyOS on a phone and on a display on the kitchen wall: the time, the weather, the next thing, each person's day, chores, shopping and meals](docs/images/hero-kitchen.webp)
+![FamilyOS on a phone and on a display on the kitchen wall: Today shows the time, the weather, the next thing, each person's day, chores, shopping and the board](docs/images/hero-kitchen.webp)
 
 https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
 
@@ -45,7 +45,7 @@ Ask Hermes Agent, Claude or any MCP app about your family. Its changes wait for 
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/readme-display.webp" width="100%" alt="A wall display at night in the Wall style: big clock, the next thing, who is next, tasks and shopping"><br>
+<img src="docs/images/readme-display.webp" width="100%" alt="A wall display at night in the Wall style: big clock, the next thing, who is next, shopping, the board and the house"><br>
 <b>Family display</b><br>
 A wall tablet or an old TV shows the day. It can never change anything.
 </td>
