@@ -14,6 +14,7 @@ import { CORE_CAPABILITIES } from './core-capabilities.ts';
 import {
 	createExtensionFind,
 	ExtensionDownloadSchema,
+	ExtensionProductSchema,
 	ExtensionSearchSchema,
 	ExtensionWeeklyCheckSchema,
 	FoundExtensionSchema,
@@ -152,6 +153,8 @@ export interface ExtensionInstallDeps {
 	/** Installed extensions that did not load at this start. */
 	refused: () => readonly RefusedExtension[];
 	features: () => Features;
+	/** The FamilyOS version this server runs. */
+	appVersion: string;
 }
 
 /**
@@ -501,6 +504,7 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		packages: deps.packages,
 		assertPerson,
 		installed: async (db) => (await currentState(db)).installed,
+		appVersion: deps.appVersion,
 	});
 
 	const FoundSchema = z.object({
@@ -513,6 +517,8 @@ export function createExtensionInstall(deps: ExtensionInstallDeps) {
 		}).nullable(),
 		/** The weekly look for updates: on or off, its last try and why that failed. */
 		weekly: ExtensionWeeklyCheckSchema,
+		/** The FamilyOS version this server runs, and a newer one the index named (only shown). */
+		product: ExtensionProductSchema,
 	});
 
 	const found = defineRoute({

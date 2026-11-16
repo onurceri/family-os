@@ -336,6 +336,7 @@ describe('delivery', () => {
 			'core.backupFailed',
 			'core.backupRestored',
 			'core.extensionUpdates',
+			'core.productUpdate',
 			'core.aiAppConnected',
 			'core.aiAppDisconnected',
 			'core.autoApprovalStopped',
@@ -541,6 +542,11 @@ describe('reading and preferences', () => {
 			{
 				id: 'core.extensionUpdates',
 				label: 'en|app:notify_kind_extension_updates|',
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
+				id: 'core.productUpdate',
+				label: 'en|app:notify_kind_product_update|',
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{

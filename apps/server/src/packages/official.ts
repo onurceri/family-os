@@ -9,7 +9,8 @@ import { SignatureSchema } from './verify.ts';
 /**
  * The official index of extension packages, on the project's GitHub Pages, next to its
  * signature (`index.json.sig`). It is read only when a person presses "Look for more", or once a
- * week when an admin switched the weekly look for updates on.
+ * week when an admin switched the weekly look for updates on. It also names the newest FamilyOS
+ * release, which this server only shows to admins: FamilyOS itself is never downloaded from it.
  */
 export const OFFICIAL_INDEX_URL = 'https://onurceri.github.io/family-os/extensions/index.json';
 
@@ -64,16 +65,25 @@ const IndexSchema = z.object({
 	format: z.literal(1),
 	/** Epoch ms the index was written; absent in an index from before it was dated. */
 	issuedAt: z.number().int().positive().optional(),
+	/** The newest FamilyOS release; one this server cannot read counts as absent. */
+	product: z
+		.object({ version: z.string().max(32).regex(VERSION) })
+		.optional()
+		.catch(undefined),
 	extensions: z.array(EntrySchema).max(5000),
 });
 
 /** How far ahead of this server's clock an index may be dated (clocks differ a little). */
 export const INDEX_FUTURE_MS = 24 * 60 * 60 * 1000;
 
-/** The index's packages and when it was issued (null for an index from before it was dated). */
+/**
+ * The index's packages, when it was issued (null for an index from before it was dated) and the
+ * newest FamilyOS release it names (null when it names none).
+ */
 export interface FetchedIndex {
 	packages: IndexedPackage[];
 	issuedAt: number | null;
+	productVersion: string | null;
 }
 
 const problem = (
@@ -223,7 +233,7 @@ export async function fetchIndex(
 		if (at.protocol !== 'https:' || at.origin !== url.origin) return [];
 		return [{ ...entry, url: at.href }];
 	});
-	return { packages, issuedAt };
+	return { packages, issuedAt, productVersion: index.product?.version ?? null };
 }
 
 /** What a parsed manifest reaches, in the shape the index states it. */

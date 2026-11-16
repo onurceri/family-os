@@ -919,6 +919,11 @@ describe('HTTP API', () => {
 				defaultChannels: ['webpush', 'telegram'],
 			},
 			{
+				id: 'core.productUpdate',
+				label: "FamilyOS'un daha yeni bir sürümü çıktı",
+				defaultChannels: ['webpush', 'telegram'],
+			},
+			{
 				id: 'core.aiAppConnected',
 				label: 'Hesabınıza bir yapay zekâ uygulaması bağlandı',
 				defaultChannels: ['webpush', 'telegram'],

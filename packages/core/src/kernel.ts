@@ -330,6 +330,7 @@ export function createKernel(options: KernelOptions): Kernel {
 		registry: () => registry,
 		refused: () => refused,
 		features: () => features,
+		appVersion: options.appVersion,
 	});
 	const enqueueIn = async (db: DbExecutor, job: string, payload: unknown) => {
 		const def = registry.jobs.get(job);

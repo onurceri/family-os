@@ -16670,6 +16670,10 @@ export interface operations {
                                 };
                             } | null;
                         };
+                        product: {
+                            current: string;
+                            newer: string | null;
+                        };
                     };
                 };
             };

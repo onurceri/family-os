@@ -42,7 +42,7 @@ async function publish(
 	options: {
 		signWith?: string;
 		/** Changes what the index says before it is signed. */
-		edit?: (index: { extensions: Record<string, unknown>[] }) => void;
+		edit?: (index: { extensions: Record<string, unknown>[]; [field: string]: unknown }) => void;
 	} = {},
 ) {
 	const dir = fresh('pages');
@@ -223,6 +223,28 @@ describe('the official index', () => {
 		writeFileSync(index, JSON.stringify(parsed));
 		await signFile(index, createPrivateKey(TEST_KEY.privateKey));
 		expect((await find(site.fetch)).map((p) => p.version)).toEqual(['1.0.0']);
+	});
+});
+
+describe('the FamilyOS version the index names', () => {
+	const read = async (edit?: (index: Record<string, unknown>) => void) => {
+		const site = await publish([{ id: 'garden', version: '1.0.0' }], edit ? { edit } : {});
+		return fetchIndex(official(site.fetch), null, Date.now());
+	};
+
+	it('is answered when the index names one, and null when it names none', async () => {
+		expect((await read((index) => (index.product = { version: '1.2.3' }))).productVersion).toBe(
+			'1.2.3',
+		);
+		expect((await read()).productVersion).toBeNull();
+	});
+
+	it('counts as absent when this server cannot read it, and the packages are still read', async () => {
+		for (const product of [{ version: 'x' }, '1.2.3', { version: '1.2.3-rc.1' }, null]) {
+			const fetched = await read((index) => (index.product = product));
+			expect(fetched.productVersion).toBeNull();
+			expect(fetched.packages.map((p) => p.id)).toEqual(['garden']);
+		}
 	});
 });
 
@@ -445,12 +467,20 @@ describe('Look for more, end to end', () => {
 	}
 
 	it('finds, downloads, installs and runs a package from a signed index', async () => {
-		const site = await publish([
-			{ id: 'garden', version: '1.0.0' },
-			{ id: 'garden', version: '1.1.0' },
-			// One this server cannot run is not offered.
-			{ id: 'pond', version: '1.0.0', sdk: '^99.0.0' },
-		]);
+		const site = await publish(
+			[
+				{ id: 'garden', version: '1.0.0' },
+				{ id: 'garden', version: '1.1.0' },
+				// One this server cannot run is not offered.
+				{ id: 'pond', version: '1.0.0', sdk: '^99.0.0' },
+			],
+			{
+				// A FamilyOS release newer than any this server runs: shown, never fetched.
+				edit: (index) => {
+					index.product = { version: '999.0.0' };
+				},
+			},
+		);
 		const dataDir = fresh('data');
 		const { runtime, app, config } = await start(dataDir, site.fetch);
 		const json = { 'content-type': 'application/json' };
@@ -480,6 +510,7 @@ describe('Look for more, end to end', () => {
 				search: { status: string } | null;
 				found: { id: string; version: string }[];
 				download: { status: string; staged: { digest: string; signer: unknown } | null } | null;
+				product: { current: string; newer: string | null };
 			};
 
 		// Nothing is fetched until someone asks.
@@ -494,7 +525,13 @@ describe('Look for more, end to end', () => {
 			search: { status: 'done' },
 			found: [{ id: 'garden', version: '1.1.0' }],
 			download: null,
+			product: { current: expect.any(String), newer: '999.0.0' },
 		});
+		// Reading the product version fetched nothing but the index and its signature.
+		expect(site.calls.map((c) => new URL(c.url).pathname)).toEqual([
+			'/extensions/index.json',
+			'/extensions/index.json.sig',
+		]);
 
 		await request(
 			'POST',
