@@ -440,8 +440,11 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 				colorScheme: 'light',
 			});
 			const phone = await phoneContext.newPage();
+			// Without what waits for Deniz, the phone shows the same next thing as the wall.
+			await hide(['needs']);
 			await open(phone, '/');
 			const phoneShot = await phone.screenshot();
+			await hide(null);
 			await phoneContext.close();
 
 			// The tablet: a paired display, in daylight.
