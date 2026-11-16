@@ -14,8 +14,11 @@
 		data-testid="pending-restart"
 	>
 		<RotateCcw class="size-4 shrink-0" aria-hidden="true" />
+		<!-- A change made from the command line leaves no entry to count. -->
 		<span class="min-w-0 flex-1"
-			>{t('restart_waiting', { count: Math.max(1, pendingRestart.count) })}</span
+			>{pendingRestart.count > 0
+				? t('restart_waiting', { count: pendingRestart.count })
+				: t('restart_waiting_unknown')}</span
 		>
 		<Button variant="ghost" size="sm" href="/settings/extensions?restart=1">
 			{t('extensions_restart')}
