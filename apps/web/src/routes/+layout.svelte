@@ -19,6 +19,9 @@
 	import { notifications } from '#lib/notifications.svelte.js';
 	import { offline } from '#lib/offline.svelte.js';
 	import OfflineStatus from '#lib/OfflineStatus.svelte';
+	import PendingRestart from '#lib/PendingRestart.svelte';
+	import { showsRestartLine } from '#lib/pending-restart.js';
+	import { pendingRestart } from '#lib/pending-restart.svelte.js';
 	import NotificationsBell from '#lib/NotificationsBell.svelte';
 	import Sidebar from '#lib/Sidebar.svelte';
 	import SettingsSidebar from '#lib/SettingsSidebar.svelte';
@@ -426,6 +429,7 @@
 		return untrack(() => {
 			const disconnect = connectRealtime();
 			void family.refresh();
+			void pendingRestart.refresh();
 			const off = onEvent('core.member.', () => {
 				void session.refresh();
 				void family.refresh();
@@ -437,6 +441,7 @@
 			// Changes made while the socket was not yet (or no longer) open were missed.
 			const offReconnect = onReconnect(() => {
 				void family.refresh();
+				void pendingRestart.refresh();
 				void appearance.refresh();
 				void awaiting.refresh();
 				void accessBook.load();
@@ -453,6 +458,8 @@
 			});
 			// An extension turned on or off changes navigation and capabilities everywhere.
 			const offFeatures = onEvent('core.features.', () => void session.refresh());
+			// Changes to extensions wait for a restart; the shell says so to those who may restart.
+			const offExtensions = onEvent('core.extensions.', () => void pendingRestart.refresh());
 			// This device's photo switch changed (in Settings, on another device): me says it.
 			const offDevice = onEvent('core.device.', () => void session.refresh());
 			// The server restarted with other extensions: this page still runs the old ones. Reloading
@@ -485,6 +492,7 @@
 				offLanguages();
 				offThemes();
 				offFeatures();
+				offExtensions();
 				offDevice();
 				offChanged();
 				offBadges();
@@ -623,6 +631,15 @@
 				: '[--shell-bottom:9rem] md:[--shell-bottom:2.5rem]'} px-(--shell-x) pt-(--shell-top) pb-(--shell-bottom)"
 		>
 			<OfflineStatus />
+			<PendingRestart
+				show={showsRestartLine({
+					can: session.can('core.extensions.manage'),
+					needed: pendingRestart.needed,
+					path,
+					today: TODAY.path,
+					settingsMode,
+				})}
+			/>
 			{#if settingsMode && path !== '/more'}
 				<a
 					href={stackBack.href}

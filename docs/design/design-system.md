@@ -391,6 +391,7 @@ When the weather is on, the sky behind it shows it (`WeatherSky` in `@famos/ui/f
 - Extensions contribute pages with `placement: 'primary' | 'more'` and an optional `group` (`packages/ui/src/slots.ts`). The phone shows at most three primary pages between Today and More; the rest overflow into More, so new pages never break the layout.
 - The **bell** shows the unread count and opens a notifications popover (sidebar and rail); on phones a bell in Today's head opens `/notifications`. Preferences live at `/settings/notifications`. **+** is Quick add's capture panel (`nav.action`), an icon button, never a filled one.
 - An `attention` badge marks a section that needs someone (suggestions waiting on Quick add).
+- Admins who may restart FamilyOS see a quiet `idle` line ("N changes to extensions take effect when FamilyOS restarts", with a ghost **Restart now**) above Today and settings pages, until the restart; it is not dismissable and not shown on the Extensions page, which owns the restart.
 - The person menu: *Profile & sign-in · Appearance · Notifications · Sign out*. On the phone, More holds the rest (§7.4).
 
 ### 7.2 Settings information architecture

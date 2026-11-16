@@ -134,6 +134,11 @@
 		]);
 		list = extensions.data ?? null;
 		found = online.data ?? null;
+		// "Restart now" in the shell's line arrives here with ?restart=1: ask once, then drop it.
+		if (list && page.url.searchParams.get('restart')) {
+			if (list.restartNeeded) confirmingRestart = true;
+			void goto(here, { replace: true, reset: false });
+		}
 		// The download this panel waits for is checked and staged: it installs like a file.
 		const download = found?.download;
 		if (
