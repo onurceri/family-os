@@ -655,6 +655,7 @@ describe('looking for more in the official index', () => {
 			found: [],
 			download: null,
 			weekly: { enabled: false, lastAttemptAt: null, problem: null },
+			product: { current: '0.0.0-test', newer: null },
 		});
 
 		const admin = (await k.member('admin')).actor;
@@ -677,6 +678,7 @@ describe('looking for more in the official index', () => {
 			],
 			download: null,
 			weekly: { enabled: false, lastAttemptAt: null, problem: null },
+			product: { current: '0.0.0-test', newer: null },
 		});
 		// Looking again: nothing is offered until the new search is done.
 		await k.runner.invoke('core.findExtensions', {}, admin);
@@ -814,7 +816,11 @@ describe('looking for more in the official index', () => {
 		 * downloaded but is not installed. The index answers `index.listed`, or throws `index.fail`.
 		 */
 		function weekly() {
-			const index = { listed: [] as IndexedPackage[], fail: null as Error | null };
+			const index = {
+				listed: [] as IndexedPackage[],
+				fail: null as Error | null,
+				product: undefined as string | undefined,
+			};
 			const calls = { find: 0, download: 0 };
 			const port: ExtensionPackagesPort = {
 				list: () => [
@@ -826,7 +832,11 @@ describe('looking for more in the official index', () => {
 				async findPackages() {
 					calls.find++;
 					if (index.fail) throw index.fail;
-					return { packages: index.listed, issuedAt: null };
+					return {
+						packages: index.listed,
+						issuedAt: null,
+						...(index.product !== undefined && { productVersion: index.product }),
+					};
 				},
 				async download() {
 					calls.download++;
@@ -835,8 +845,12 @@ describe('looking for more in the official index', () => {
 			};
 			return { port, index, calls };
 		}
-		const start = (w: ReturnType<typeof weekly>) =>
-			kernel({ extensions: [notes, garden], extensionPackages: w.port });
+		const start = (w: ReturnType<typeof weekly>, appVersion?: string) =>
+			kernel({
+				extensions: [notes, garden],
+				extensionPackages: w.port,
+				...(appVersion !== undefined && { appVersion }),
+			});
 		const days = async (k: TestKernel, n: number) => {
 			for (let i = 0; i < n; i++) {
 				k.clock.advance(DAY_MS);
@@ -848,17 +862,18 @@ describe('looking for more in the official index', () => {
 			await k.runner.invoke('core.setExtensionUpdateCheck', { weekly }, admin);
 			await k.worker.drain();
 		};
-		const told = async (k: TestKernel) =>
+		const told = async (k: TestKernel, kind = 'core.extensionUpdates') =>
 			(
 				await k.ctx.db
 					.withTables<CoreTables>()
 					.selectFrom('core_notifications')
 					.select('member_id')
-					.where('kind', '=', 'core.extensionUpdates')
+					.where('kind', '=', kind)
 					.execute()
 			)
 				.map((row) => row.member_id)
 				.sort();
+		const toldOfProduct = (k: TestKernel) => told(k, 'core.productUpdate');
 
 		it('never looks while it is off', async () => {
 			const w = weekly();
@@ -1041,6 +1056,140 @@ describe('looking for more in the official index', () => {
 				search: { status: 'done', at },
 				found: [{ id: 'garden', version: '1.0.0', current: '0.0.0' }],
 				weekly: { enabled: false, lastAttemptAt: null, problem: null },
+				product: { current: '0.0.0-test', newer: null },
+			});
+		});
+
+		describe('a newer FamilyOS', () => {
+			it('is shown after a look by hand, and nobody is told', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.0.0');
+				await k.member('admin');
+				await k.runner.invoke('core.findExtensions', {}, (await k.member('admin')).actor);
+				await k.worker.drain();
+				expect((await found(k)).product).toEqual({ current: '1.0.0', newer: '1.1.0' });
+				expect(await toldOfProduct(k)).toEqual([]);
+				expect(w.calls.download).toBe(0);
+			});
+
+			it('is told by the weekly look to those who manage extensions, once per version', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.0.0');
+				const first = await k.member('admin');
+				const everyAdmin = [first.member.id, (await k.member('admin')).member.id].sort();
+				await k.member('member');
+				// Switching on looks at once, by the same job as a look by hand: nobody is told yet.
+				await switchOn(k, true, first.actor);
+				expect(await toldOfProduct(k)).toEqual([]);
+				await days(k, 7);
+				expect(await toldOfProduct(k)).toEqual(everyAdmin);
+				// The same index a week later: nobody hears of it again.
+				await days(k, 7);
+				expect(w.calls.find).toBe(3);
+				expect(await toldOfProduct(k)).toEqual(everyAdmin);
+				// A still newer release: once more, whether or not extension updates were found.
+				w.index.product = '1.2.0';
+				await days(k, 7);
+				expect(await toldOfProduct(k)).toEqual([...everyAdmin, ...everyAdmin].sort());
+				expect(await told(k)).toEqual([]);
+				expect((await found(k)).product).toEqual({ current: '1.0.0', newer: '1.2.0' });
+				const sent = await k.ctx.db
+					.withTables<CoreTables>()
+					.selectFrom('core_notifications')
+					.select(['url', 'source_kind', 'source_id', 'dedupe_key'])
+					.where('kind', '=', 'core.productUpdate')
+					.where('dedupe_key', '=', 'product-update:1.2.0')
+					.execute();
+				expect(sent).toHaveLength(2);
+				expect(sent[0]).toMatchObject({
+					url: '/settings/extensions',
+					source_kind: 'extension_index',
+					source_id: 'product',
+				});
+				expect(w.calls.download).toBe(0);
+			});
+
+			it('is neither told nor shown when this server runs that version or a newer one', async () => {
+				for (const product of ['1.0.0', '0.9.0']) {
+					const w = weekly();
+					w.index.product = product;
+					const k = await start(w, '1.0.0');
+					await k.member('admin');
+					await switchOn(k);
+					await days(k, 7);
+					expect(w.calls.find).toBe(2);
+					expect(await toldOfProduct(k)).toEqual([]);
+					expect((await found(k)).product).toEqual({ current: '1.0.0', newer: null });
+					expect(w.calls.download).toBe(0);
+				}
+			});
+
+			it('is told to a server on a pre-release of it', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.1.0-rc.1');
+				const admin = await k.member('admin');
+				await switchOn(k, true, admin.actor);
+				await days(k, 7);
+				expect(await toldOfProduct(k)).toEqual([admin.member.id]);
+				expect((await found(k)).product).toEqual({ current: '1.1.0-rc.1', newer: '1.1.0' });
+			});
+
+			it('stays shown while a later look runs or after it failed', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.0.0');
+				const admin = (await k.member('admin')).actor;
+				await switchOn(k, true, admin);
+				w.index.fail = new FamosError('bad_request', 'No answer', { reason: 'unreachable' });
+				await days(k, 7);
+				expect((await found(k)).weekly.problem).toMatchObject({ reason: 'unreachable' });
+				expect((await found(k)).product.newer).toBe('1.1.0');
+				await k.runner.invoke('core.findExtensions', {}, admin);
+				expect((await found(k)).search).toMatchObject({ status: 'looking' });
+				expect((await found(k)).product.newer).toBe('1.1.0');
+				await k.worker.drain();
+				expect((await found(k)).search).toMatchObject({ status: 'failed' });
+				expect((await found(k)).product.newer).toBe('1.1.0');
+				expect(w.calls.download).toBe(0);
+			});
+
+			it('is forgotten when the index no longer names one, and an old port names none', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.0.0');
+				const admin = (await k.member('admin')).actor;
+				await switchOn(k, true, admin);
+				expect((await found(k)).product.newer).toBe('1.1.0');
+				w.index.product = undefined;
+				await k.runner.invoke('core.findExtensions', {}, admin);
+				await k.worker.drain();
+				expect((await found(k)).product).toEqual({ current: '1.0.0', newer: null });
+			});
+
+			it('is never read while the weekly look is off and nobody looks', async () => {
+				const w = weekly();
+				w.index.product = '1.1.0';
+				const k = await start(w, '1.0.0');
+				await k.member('admin');
+				await days(k, 15);
+				expect(w.calls.find).toBe(0);
+				expect(await toldOfProduct(k)).toEqual([]);
+				expect((await found(k)).product).toEqual({ current: '1.0.0', newer: null });
+			});
+
+			it('is answered only to those who manage extensions', async () => {
+				const w = weekly();
+				const k = await start(w, '1.0.0');
+				const member = (await k.member('member')).actor;
+				// The route is held by the server to this capability, which a member lacks.
+				const route = k.registry.routes.find(
+					(r) => r.route.operationId === 'core.getFoundExtensions',
+				);
+				expect(route?.route.requires).toBe('core.extensions.manage');
+				expect(k.ctx.access.can(member, 'core.extensions.manage')).toBe(false);
 			});
 		});
 	});

@@ -15,6 +15,7 @@ import {
 	draftDecided,
 	draftWaiting,
 	extensionUpdates,
+	productUpdate,
 } from './core-extension/notification-kinds.ts';
 import { createRoles } from './core-extension/roles.ts';
 import { createSettings } from './core-extension/settings.ts';
@@ -47,6 +48,7 @@ export {
 	draftDecided,
 	draftWaiting,
 	extensionUpdates,
+	productUpdate,
 } from './core-extension/notification-kinds.ts';
 export { CapabilityViewSchema, RoleViewSchema } from './core-extension/roles.ts';
 
@@ -149,6 +151,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			backupFailed,
 			backupRestored,
 			extensionUpdates,
+			productUpdate,
 			...oauthNotifications,
 			...autoApproval.notifications,
 		],

@@ -21,6 +21,16 @@ export const extensionUpdates = defineNotificationKind({
 	audience: 'core.extensions.manage',
 });
 
+/**
+ * Admins are told when a newer FamilyOS is out (weekly check), once per version. It is only
+ * told: FamilyOS never updates itself.
+ */
+export const productUpdate = defineNotificationKind({
+	id: 'core.productUpdate',
+	label: 'app:notify_kind_product_update',
+	audience: 'core.extensions.manage',
+});
+
 /** The person behind a suggestion is told when someone else approved or rejected it. */
 export const draftDecided = defineNotificationKind({
 	id: 'core.draftDecided',

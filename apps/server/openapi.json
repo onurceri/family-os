@@ -31563,13 +31563,32 @@
 												"lastAttemptAt",
 												"problem"
 											]
+										},
+										"product": {
+											"type": "object",
+											"properties": {
+												"current": {
+													"type": "string"
+												},
+												"newer": {
+													"type": [
+														"string",
+														"null"
+													]
+												}
+											},
+											"required": [
+												"current",
+												"newer"
+											]
 										}
 									},
 									"required": [
 										"search",
 										"found",
 										"download",
-										"weekly"
+										"weekly",
+										"product"
 									]
 								}
 							}

@@ -96,6 +96,8 @@ export async function createTestKernel(
 		/** Model calls to replace (default: no model set). */
 		llm?: Partial<LlmPort>;
 		worker?: WorkerOptions;
+		/** The FamilyOS version the kernel runs (default `0.0.0-test`). */
+		appVersion?: string;
 	} = {},
 ): Promise<TestKernel> {
 	const handle = openDatabase({ path: options.dbPath ?? ':memory:' });
@@ -198,7 +200,7 @@ export async function createTestKernel(
 			{ scope: 'email', migrations: emailMigrations },
 			{ scope: 'backup', migrations: backupMigrations },
 		],
-		appVersion: '0.0.0-test',
+		appVersion: options.appVersion ?? '0.0.0-test',
 		...(options.channels && { channels: options.channels }),
 		...(options.publicUrl && { publicUrl: options.publicUrl }),
 		...(options.translate && { translate: options.translate }),

@@ -204,12 +204,17 @@ export interface ExtensionPackagesPort {
 	 * `details.reason` says why it failed (`unreachable`, `unsigned`, `invalid`, `index_older`,
 	 * `index_future`). `newestSeen` is the issue date of the newest index accepted before. Absent where
 	 * the server cannot look online. Network I/O: called from a job only, when a person asked, or by
-	 * the weekly check a family switched on.
+	 * the weekly check a family switched on. `productVersion` is the newest FamilyOS release the
+	 * index names (null or absent when it names none); it is only shown, never downloaded.
 	 */
 	findPackages?(
 		newestSeen: number | null,
 		now: number,
-	): Promise<{ packages: IndexedPackage[]; issuedAt: number | null }>;
+	): Promise<{
+		packages: IndexedPackage[];
+		issuedAt: number | null;
+		productVersion?: string | null;
+	}>;
 	/**
 	 * Downloads a package the index lists, checks its size and SHA-256 against the index
 	 * (`details.reason` `mismatch`), then stages it like an uploaded file. Network I/O: called

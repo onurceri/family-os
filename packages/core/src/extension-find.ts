@@ -103,6 +103,15 @@ const StateSchema = z.object({
 			notified: z.record(z.string(), z.string()),
 		})
 		.default({ weekly: false, lastAttemptAt: null, problem: null, notified: {} }),
+	/** The newest FamilyOS release the index names: only shown to admins, never downloaded. */
+	product: z
+		.object({
+			/** What the last index that was read named; null when it named none. */
+			latest: z.string().nullable(),
+			/** The highest version admins were told of, so nobody hears of one twice. */
+			notified: z.string().nullable(),
+		})
+		.default({ latest: null, notified: null }),
 });
 type State = z.infer<typeof StateSchema>;
 
@@ -112,6 +121,15 @@ const empty = (): State => ({
 	newestIssuedAt: null,
 	download: null,
 	auto: { weekly: false, lastAttemptAt: null, problem: null, notified: {} },
+	product: { latest: null, notified: null },
+});
+
+/** The newest FamilyOS release the index named, when it is newer than the one this server runs. */
+export const ExtensionProductSchema = z.object({
+	/** The version this server runs. */
+	current: z.string(),
+	/** The newer release, or null when the index named none newer. */
+	newer: z.string().nullable(),
 });
 
 /** A look someone started that has not finished (and is not a lost one from before a crash). */
@@ -199,15 +217,19 @@ export interface ExtensionFindDeps {
 	assertPerson: (actor: Actor, what: string) => void;
 	/** The ids the family installed. */
 	installed: (db: DbExecutor) => Promise<readonly string[]>;
+	/** The FamilyOS version this server runs. */
+	appVersion: string;
 }
 
 /**
  * Looking for more extensions in the official index, and downloading one. Both reach the
  * internet, so they happen as jobs and never at start: the index is fetched when a person asks,
  * or once a week when an admin switched the weekly check on (it then tells admins of newer
- * versions of the extensions they downloaded); a package is downloaded only when a person asks,
- * checked against the index and staged like an uploaded file, and installing it is then the same
- * `core.installExtension` as for a file.
+ * versions of the extensions they downloaded, and of a newer FamilyOS); a package is downloaded
+ * only when a person asks, checked against the index and staged like an uploaded file, and
+ * installing it is then the same `core.installExtension` as for a file. FamilyOS itself is never
+ * downloaded or updated here: its newer version is only shown, as the family updates it where it
+ * runs.
  */
 export function createExtensionFind(deps: ExtensionFindDeps) {
 	const save = (db: DbExecutor, state: State, now: number) => writeJson(db, KEY, state, now);
@@ -330,6 +352,7 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 					search: { status: 'done', at, problem: null },
 					packages: found.packages,
 					newestIssuedAt: Math.max(state.newestIssuedAt ?? 0, found.issuedAt ?? 0) || null,
+					product: { ...state.product, latest: found.productVersion ?? null },
 				};
 			} catch (error) {
 				// Said on the page; looking again is the person's choice, so nothing is retried.
@@ -345,7 +368,8 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 	/**
 	 * A daily tick: once a week, when the family switched it on, it reads the index like a look by
 	 * hand and tells admins of a newer version of an installed extension that runs from a
-	 * downloaded package (those in the image update with FamilyOS itself). It never downloads.
+	 * downloaded package (those in the image update with FamilyOS itself), and of a newer FamilyOS,
+	 * once per version. It never downloads.
 	 */
 	const checkUpdates = defineJob({
 		name: CHECK_JOB,
@@ -399,6 +423,12 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 				});
 				const notified = { ...latest.auto.notified };
 				for (const update of fresh) notified[update.id] = update.version;
+				const product = found.productVersion ?? null;
+				const productTold = latest.product.notified;
+				const productFresh =
+					product !== null &&
+					compareVersions(product, deps.appVersion) > 0 &&
+					(productTold === null || compareVersions(product, productTold) > 0);
 				await save(
 					uow.db,
 					{
@@ -407,6 +437,10 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 						packages: found.packages,
 						newestIssuedAt: Math.max(latest.newestIssuedAt ?? 0, found.issuedAt ?? 0) || null,
 						auto: { ...latest.auto, lastAttemptAt: at, problem: null, notified },
+						product: {
+							latest: product,
+							notified: productFresh ? product : latest.product.notified,
+						},
 					},
 					at,
 				);
@@ -423,6 +457,19 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 								0,
 								200,
 							),
+					});
+				if (productFresh)
+					await uow.notify({
+						kind: 'core.productUpdate',
+						to: { capability: CORE_CAPABILITIES.extensionsManage.id },
+						title: { key: 'app:notify_product_update_title', params: { version: product } },
+						body: {
+							key: 'app:notify_product_update_body',
+							params: { current: deps.appVersion },
+						},
+						url: '/settings/extensions',
+						source: { kind: 'extension_index', id: 'product' },
+						dedupeKey: `product-update:${product}`,
 					});
 				uow.emit(extensionsFound, {});
 			});
@@ -487,13 +534,14 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 		/**
 		 * The last search, what it found that this server lacks, and the last download with its
 		 * staged package (checked again; null once it is gone: staged packages nobody installed
-		 * are removed after a day), and the weekly check.
+		 * are removed after a day), the weekly check, and a newer FamilyOS the index named.
 		 */
 		async describe(db: DbExecutor): Promise<{
 			search: z.infer<typeof ExtensionSearchSchema> | null;
 			found: FoundExtension[];
 			download: (ExtensionDownload & { staged: StagedPackage | null }) | null;
 			weekly: z.infer<typeof ExtensionWeeklyCheckSchema>;
+			product: z.infer<typeof ExtensionProductSchema>;
 		}> {
 			const state = await readState(db);
 			const port = deps.packages();
@@ -510,7 +558,16 @@ export function createExtensionFind(deps: ExtensionFindDeps) {
 			// Only what the last search found: while looking, or after it failed, nothing is offered.
 			const found = state.search?.status === 'done' ? newerThanHere(state.packages, here) : [];
 			const { weekly: enabled, lastAttemptAt, problem } = state.auto;
-			return { search: state.search, found, download, weekly: { enabled, lastAttemptAt, problem } };
+			// A release stays released: shown while a look runs or after one failed, unlike `found`.
+			const latest = state.product.latest;
+			const newer = latest !== null && compareVersions(latest, deps.appVersion) > 0 ? latest : null;
+			return {
+				search: state.search,
+				found,
+				download,
+				weekly: { enabled, lastAttemptAt, problem },
+				product: { current: deps.appVersion, newer },
+			};
 		},
 	};
 }
