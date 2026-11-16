@@ -45,13 +45,13 @@ For a `.famext` file, such as a newer version of one you have:
 
 ## Updates
 
-**Updates** is the first section of **Extensions**. It says when FamilyOS last looked, how many updates there are, and has **Look for updates**.
+**Updates** is the first section of **Extensions**. It says when FamilyOS last looked, how many updates there are, and has **Check for updates**.
 
-1. **Look for updates** (or **⋯** → **Look for more**) makes FamilyOS fetch its signed index. It never does this at start or in the background, unless you switch on the weekly look below.
+1. **Check for updates** (or **⋯** → **Look for more**) makes FamilyOS fetch its signed index. It never does this at start or in the background, unless you switch on the weekly look below.
 2. Each update is a row: **Version 1.1.0 is out; you have 1.0.0**. Press **Update**, or tap the row, for what it reaches and **Who made it**. FamilyOS downloads it and checks it against the index. Press **Update** again, then restart ([Restart](#restart)). The extension's row in **Installed** also says **Version 1.1.0 is out**.
 3. Nothing to update says **Every installed extension is up to date**.
 
-**Look for updates once a week** is off until an admin turns it on (turning it on looks at once). FamilyOS then reads its signed list from the internet about every seven days, and admins get a notification when a newer version of an extension you downloaded is out (choose who hears it under [Notifications](notifications.md)). It sends nothing about your family and never downloads or installs by itself. If a weekly look does not work, the page says so and FamilyOS tries again the next day.
+**Check for updates once a week** is off until an admin turns it on (turning it on looks at once). FamilyOS then reads its signed list from the internet about every seven days, and admins get a notification when a newer version of an extension you downloaded is out (choose who hears it under [Notifications](notifications.md)). It sends nothing about your family and never downloads or installs by itself. If a weekly look does not work, the page says so and FamilyOS tries again the next day.
 
 **Good to know**
 - Extensions that come with FamilyOS update with FamilyOS. The ones you downloaded or installed from a file update here.
@@ -59,7 +59,7 @@ For a `.famext` file, such as a newer version of one you have:
 
 ## Look for more online
 
-1. **⋯** → **Look for more** does the same look as **Look for updates**.
+1. **⋯** → **Look for more** does the same look as **Check for updates**.
 2. **Found online** lists what you lack: extensions not bundled. A bundled, uninstalled extension appears only with a newer version. Updates of what you installed are under **Updates**.
 3. Tap one for purpose, version and download size, press **Download** (checked against the index), then **Install** after reading what it reaches and **Who made it**.
 
