@@ -57,4 +57,4 @@ Switch on **Quiet hours**, set **From** and **Until** (default 22:00–07:00; ma
 
 ## What goes where
 
-Under quiet hours each kind has a switch per channel: **Phone notifications** (once a device is on) and **Telegram** (once linked). Choices are yours alone. Without a channel the page says notifications appear in the app. Kinds you can never get (backup message for non-admins) are not listed.
+Under quiet hours each kind has a switch per channel: **Phone notifications** (once a device is on) and **Telegram** (once linked). Choices are yours alone. Without a channel the page lists the kinds you get in the app, with no switches, and says how to get them on a phone or in Telegram too. Kinds you can never get (backup message for non-admins) are not listed.

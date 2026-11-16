@@ -2,7 +2,7 @@
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
-	import { Card, Page, PageHeader, Section, SwitchRow } from '@famos/ui/famos';
+	import { Card, Page, PageHeader, Row, Section, SwitchRow } from '@famos/ui/famos';
 	import { Input } from '@famos/ui/input';
 	import { api } from '#lib/api.js';
 	import { runAction } from '#lib/run-action.js';
@@ -222,7 +222,14 @@
 			{/if}
 
 			{#if available.length === 0}
-				<p class="text-ink-soft max-w-prose px-1 text-sm">{t('notifications_in_app_only')}</p>
+				<p class="text-ink-soft max-w-prose px-1 text-sm">{t('notifications_in_app_kinds')}</p>
+				{#if options.kinds.length > 0}
+					<Card rows>
+						{#each options.kinds as kind (kind.id)}
+							<Row title={kind.label} />
+						{/each}
+					</Card>
+				{/if}
 			{:else}
 				{#each options.kinds as kind (kind.id)}
 					<Section label={kind.label}>

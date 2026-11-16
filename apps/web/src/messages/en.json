@@ -635,7 +635,7 @@
 	"notifications_empty": "Nothing new. Things that need you will show up here.",
 	"notifications_mark_all_read": "Mark all as read",
 	"notifications_unread": "unread",
-	"notifications_in_app_only": "Notifications appear here in the app.",
+	"notifications_in_app_kinds": "You get these in the app. Turn on notifications on this device or link Telegram to get them there too.",
 	"channels_unavailable_title": "Not set up for you",
 	"nav_notification_settings": "Notification settings",
 	"notifications_new": "{{count}} new",
