@@ -6,8 +6,9 @@ name: README pictures
 # merges cleanly whatever started it. The job that installs and builds holds only a read token;
 # the job that pushes and opens the pull request runs no project code but the body script.
 # Opening the pull request needs the repository setting "Allow GitHub Actions to create and
-# approve pull requests" (Settings -> Actions -> General). A pull request made with the job's
-# token does not start CI, so the second job starts it.
+# approve pull requests" (Settings -> Actions -> General). CI on a pull request the job's token
+# opened waits for a maintainer's "Approve and run workflows" on the pull request; only that run
+# counts as its required check.
 on:
   workflow_dispatch:
   push:
@@ -74,7 +75,6 @@ jobs:
     permissions:
       contents: write # the readme-pictures branch
       pull-requests: write # the pull request
-      actions: write # starting CI on the branch
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -110,5 +110,4 @@ jobs:
             url=$(gh pr create --base main --head readme-pictures --title "docs(readme): refresh the pictures" --body-file "$RUNNER_TEMP/body.md")
             echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
           fi
-          # Its pull request's checks do not start from the job's token.
-          gh workflow run ci.yml --ref readme-pictures
+          echo "CI on the pull request waits for Approve and run workflows." >> "$GITHUB_STEP_SUMMARY"
