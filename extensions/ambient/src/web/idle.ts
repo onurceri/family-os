@@ -1,18 +1,31 @@
 /**
  * Whether ambient mode covers the screen now: it may take over (`idle`, false on a screen that
- * has pages, where the photos are a page instead), nothing is covering it yet, and nobody has
+ * has pages, where the photos are a page instead), nothing is covering it yet, no dialog or side
+ * panel is open (the top layer would keep a dialog floating over the photos), and nobody has
  * touched the screen for the idle time.
  */
 export function shouldCover(input: {
 	idle: boolean;
 	covering: boolean;
+	overlayOpen: boolean;
 	lastActivity: number;
 	now: number;
 	idleMinutes: number;
 }): boolean {
 	return (
-		input.idle && !input.covering && input.now - input.lastActivity >= input.idleMinutes * 60_000
+		input.idle &&
+		!input.covering &&
+		!input.overlayOpen &&
+		input.now - input.lastActivity >= input.idleMinutes * 60_000
 	);
+}
+
+/**
+ * The time the idle wait counts from. While a dialog or a side panel is open the person is still
+ * there, so the wait starts again from now; once it closes, the whole idle time runs from then.
+ */
+export function idleSince(lastActivity: number, now: number, overlayOpen: boolean): number {
+	return overlayOpen ? now : lastActivity;
 }
 
 /**
@@ -33,6 +46,18 @@ export function hasCover(input: {
 
 /** Input that counts as someone using the screen. */
 export const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
+/**
+ * Input that counts as use without ending the cover: the mouse wheel and a mouse moving. They
+ * arrive many times a second, so one counts at most once per `USE_EVERY_MS`.
+ */
+export const USE_EVENTS = ['wheel', 'pointermove'] as const;
+export const USE_EVERY_MS = 1000;
+
+/** Whether a wheel or pointer-move event counts now, given when input last counted. */
+export function countsAsUse(lastCounted: number, now: number): boolean {
+	return now - lastCounted >= USE_EVERY_MS;
+}
+
 /** Everything a touch, a click or a key sends, so none of it reaches what is under the cover. */
 export const COVER_EVENTS = [
 	...ACTIVITY_EVENTS,

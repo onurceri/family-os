@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { COVER_EVENTS, coverInput, hasCover, shouldCover } from '../src/web/idle.js';
+import {
+	COVER_EVENTS,
+	countsAsUse,
+	coverInput,
+	hasCover,
+	idleSince,
+	shouldCover,
+	USE_EVENTS,
+} from '../src/web/idle.js';
 
-const base = { idle: true, covering: false, lastActivity: 0, now: 5 * 60_000, idleMinutes: 5 };
+const base = {
+	idle: true,
+	covering: false,
+	overlayOpen: false,
+	lastActivity: 0,
+	now: 5 * 60_000,
+	idleMinutes: 5,
+};
 
 describe('when ambient mode takes over', () => {
 	it('covers the screen once nobody has touched it for the idle time', () => {
@@ -11,6 +26,21 @@ describe('when ambient mode takes over', () => {
 
 	it('does not take over a screen that has pages, however long it is left', () => {
 		expect(shouldCover({ ...base, idle: false, now: 24 * 60 * 60_000 })).toBe(false);
+	});
+
+	it('waits while a dialog or a side panel is open, however long the screen was left', () => {
+		expect(shouldCover({ ...base, overlayOpen: true, now: 24 * 60 * 60_000 })).toBe(false);
+	});
+
+	it('counts the idle time from when the dialog or panel closed', () => {
+		const closedAt = 60 * 60_000;
+		// Open: the wait keeps starting again from now.
+		expect(idleSince(0, closedAt, true)).toBe(closedAt);
+		// Closed: it runs from there, and the cover comes after the whole idle time.
+		const since = idleSince(closedAt, closedAt + 1000, false);
+		expect(since).toBe(closedAt);
+		expect(shouldCover({ ...base, lastActivity: since, now: closedAt + 4 * 60_000 })).toBe(false);
+		expect(shouldCover({ ...base, lastActivity: since, now: closedAt + 5 * 60_000 })).toBe(true);
 	});
 
 	it('has nothing to start while it already covers the screen', () => {
@@ -52,5 +82,20 @@ describe('the touch that takes the cover away', () => {
 
 	it('a key ends the cover and is not typed into the app', () => {
 		expect(coverInput('keydown', true)).toBe('end');
+	});
+});
+
+describe('the wheel and the mouse', () => {
+	it('count as use but are not input the cover swallows', () => {
+		for (const name of USE_EVENTS) {
+			expect((COVER_EVENTS as readonly string[]).includes(name)).toBe(false);
+			expect(coverInput(name, true)).toBe('hold');
+		}
+		expect([...USE_EVENTS].sort()).toEqual(['pointermove', 'wheel']);
+	});
+
+	it('count at most once a second', () => {
+		expect(countsAsUse(0, 999)).toBe(false);
+		expect(countsAsUse(0, 1000)).toBe(true);
 	});
 });
