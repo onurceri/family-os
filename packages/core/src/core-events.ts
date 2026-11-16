@@ -111,6 +111,14 @@ export const deviceChanged = defineEvent(
 	z.object({ deviceId: z.string() }),
 	{ audience: (payload) => [CORE_CAPABILITIES.devicesManage.id, { device: payload.deviceId }] },
 );
+/**
+ * A family device's photo switch changed. Whoever is signed in anywhere hears of it (the device
+ * itself has no way to be addressed, so its signed-in person is told), and the payload names no
+ * device, so no one learns of another device from it. It makes the page read who it is again.
+ */
+export const deviceSlideshowChanged = defineEvent('core.device.slideshow.changed', z.object({}), {
+	audience: [CORE_CAPABILITIES.devicesManage.id, ANY_MEMBER],
+});
 /** A display told what its screen had no room for (Settings → Devices shows it). */
 export const displayFitChanged = defineEvent(
 	'core.displayFit.changed',
@@ -138,6 +146,7 @@ export const coreEvents = [
 	sessionEnded,
 	roleChanged,
 	deviceChanged,
+	deviceSlideshowChanged,
 	displayFitChanged,
 	featuresChanged,
 	aiAreasChanged,

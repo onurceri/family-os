@@ -1,7 +1,7 @@
 import { type DbExecutor, defineAction, defineRoute, FamosError, idSchema } from '@famos/sdk';
 import { z } from 'zod';
 import { CORE_CAPABILITIES } from './core-capabilities.ts';
-import { deviceChanged } from './core-events.ts';
+import { deviceSlideshowChanged } from './core-events.ts';
 import { readJson, writeJson } from './settings-json.ts';
 import type { CoreTables } from './tables.ts';
 
@@ -54,8 +54,8 @@ export const setDeviceSlideshow = defineAction({
 		if (input.on) delete devices[input.deviceId];
 		else devices[input.deviceId] = false;
 		await writeJson(uow.db, KEY, { devices }, uow.clock.now());
-		// The devices list in Settings reads again.
-		uow.emit(deviceChanged, { deviceId: input.deviceId });
+		// The devices list in Settings reads again, and the device itself follows without a reload.
+		uow.emit(deviceSlideshowChanged, {});
 		return { deviceId: input.deviceId, on: input.on };
 	},
 });

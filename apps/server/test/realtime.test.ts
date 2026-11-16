@@ -122,6 +122,17 @@ describe('who hears of an event', () => {
 		]);
 	});
 
+	it('tells the person on a family device that its photo switch changed, a display nothing, and names no device', async () => {
+		const hub = hubOf();
+		const person = connect(hub, (await k.member('member', 'Plain')).actor);
+		const screen = connect(hub, display([]));
+
+		await k.bus.publish('core.device.slideshow.changed', {});
+
+		expect(person.names()).toEqual(['core.device.slideshow.changed']);
+		expect(screen.names()).toEqual([]);
+	});
+
 	it('gives a member without calendar.view no calendar events', async () => {
 		const hub = hubOf();
 		const limited = await k.member(await roleWithout('calendar.view'), 'Limited');

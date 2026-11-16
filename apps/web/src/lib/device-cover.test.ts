@@ -15,4 +15,13 @@ describe('the cover for when nobody is using the app', () => {
 		expect(offersDeviceCover(null)).toBe(false);
 		expect(offersDeviceCover(undefined)).toBe(false);
 	});
+
+	it('goes away when the session ends or the device is removed (me becomes null)', () => {
+		// The shell mounts the `device.ambient` slot only while this is true, so the cover unmounts
+		// with the person and the sign-in page is what remains.
+		let me: { device: { slideshow: boolean } | null } | null = { device: { slideshow: true } };
+		expect(offersDeviceCover(me)).toBe(true);
+		me = null;
+		expect(offersDeviceCover(me)).toBe(false);
+	});
 });

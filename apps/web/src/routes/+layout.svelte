@@ -453,6 +453,8 @@
 			});
 			// An extension turned on or off changes navigation and capabilities everywhere.
 			const offFeatures = onEvent('core.features.', () => void session.refresh());
+			// This device's photo switch changed (in Settings, on another device): me says it.
+			const offDevice = onEvent('core.device.', () => void session.refresh());
 			// The server restarted with other extensions: this page still runs the old ones. Reloading
 			// is the person's choice, so nothing they are typing is lost.
 			const offChanged = onExtensionsChanged(() =>
@@ -483,6 +485,7 @@
 				offLanguages();
 				offThemes();
 				offFeatures();
+				offDevice();
 				offChanged();
 				offBadges();
 				offAwaiting();
